@@ -305,6 +305,46 @@
   .slot.tappable:after{content:'›'; color:var(--dim); font-size:17px; margin-left:2px;}
 
 
+  /* ---------------- set clocks ---------------- */
+  .setblk{padding:10px 0 4px; border-bottom:1px solid var(--line);}
+  .setblk:last-child{border-bottom:0;}
+  .setblk.done{opacity:.62;}
+  .setblk.cur{opacity:1;}
+  .set-hd{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+  .set-nm{font-size:11px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;}
+  .setblk.cur .set-nm{color:var(--tealT);}
+  .set-clock{font-size:12px; font-weight:800; color:var(--mut);
+    font-variant-numeric:tabular-nums;}
+  .set-clock.low{color:var(--coralT);}
+  .set-sub{font-size:10.5px; font-weight:700; color:var(--dim); margin-top:4px;}
+  .bar{height:6px; border-radius:99px; background:var(--card3); overflow:hidden; margin-top:6px;}
+  .bar > span{display:block; height:100%; border-radius:99px; background:var(--teal);
+    transition:width .3s ease;}
+  .bar.good > span{background:var(--green);}
+  .bar.bad > span{background:var(--coral);}
+  .srow{display:flex; align-items:baseline; gap:8px; padding:4px 0 0; font-size:12px;}
+  .sr-role{flex:0 0 52px; font-size:9px; font-weight:900; letter-spacing:.9px;
+    text-transform:uppercase; color:var(--dim);}
+  .sr-song{flex:1; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap;}
+  .sr-len{font-variant-numeric:tabular-nums; color:var(--mut); font-weight:700;}
+
+  .rset{margin-bottom:14px;}
+  .rset:last-child{margin-bottom:0;}
+  .rset-hd{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+  .rs-nm{font-size:12px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;}
+  .rs-clock{font-size:12.5px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .rs-clock i{font-style:normal; color:var(--dim); font-weight:700;}
+  .rs-note{font-size:11.5px; font-weight:700; color:var(--mut); margin:5px 0 3px;}
+  .rs-note b{color:var(--goldT);}
+  .rs-empty{font-size:12px; color:var(--dim); font-weight:700; padding:6px 0;}
+
+  .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
+  .btn.small{font-size:13px; padding:9px 14px; margin-top:7px;}
+  .bdlen{font-size:12px; color:var(--dim); font-weight:700;}
+  .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
+    color:var(--goldT); font-style:italic;}
+
   .toast{position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0)); z-index:99;
     transform:translateX(-50%) translateY(80px); background:var(--card3);
     border:1px solid var(--line2); padding:11px 17px; border-radius:10px;
@@ -404,8 +444,9 @@
 
 <script type="module">
 import {
-  SLOTS, NUM_ROUNDS, COMPLETION_BONUS, ARC_MAX,
-  scoreSetlist, scorePerf, slotFit, tagsOf, isJamchart, isRecommended, hasSegue,
+  SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
+  scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
+  budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js';
 import { loadBand, setLabel, setRank } from './dataLoader.js';
 
@@ -420,17 +461,16 @@ const BANDS = [
 
 const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
 
-// A round is only a decision if there is a setlist to read. The Goose archive
-// logs early bar gigs as one or two songs — 18 shows are a single song — and
-// drawing one hands the player a round with nothing to choose. Requiring a full
-// show keeps 529 of Goose's 655.
+// A round is only a decision if there is a setlist to read, and — now that time
+// is the currency — only if the songs have durations to spend. 17% of songs in
+// the archive are untimed, so a show is drawable when it is at least this long
+// AND every song in it is timed. That leaves 425 of Goose's 655.
 const MIN_SONGS_PER_SHOW = 8;
 
-/** Shows worth drafting from. Falls back to the whole set for a band whose
- *  archive is too thin to fill eight rounds, so a sparse band still plays. */
 function drawableShows(shows){
-  const full = shows.filter(s => s.songs.length >= MIN_SONGS_PER_SHOW);
-  return full.length >= NUM_ROUNDS ? full : shows;
+  const full = shows.filter(s =>
+    s.songs.length >= MIN_SONGS_PER_SHOW && s.songs.every(p => lenOf(p) > 0));
+  return full.length >= 12 ? full : shows.filter(s => s.songs.some(p => lenOf(p) > 0));
 }
 
 /* song_ids already locked into a slot — a setlist should not repeat a song.
@@ -440,10 +480,6 @@ function drawableShows(shows){
  * twice (a sandwich: play it, jam out, segue away, segue back), but that never
  * reaches here — each round draws a distinct show and locks exactly one song
  * from it, so the two halves of a sandwich can never both be picked. */
-function lockedSongIds(){
-  return new Set(S.slots.filter(Boolean).map(s => s.song_id));
-}
-
 // ── seeded RNG (mulberry32, per the house convention) ─────────────────────────
 function hash32(s){
   let h = 0x811c9dc5;
@@ -503,11 +539,11 @@ const S = {
   screen: 'home',
   band: null,          // band config
   data: null,          // { shows, segues }
-  drawn: [],           // the 8 shows for this run
+  show: null,          // tonight's drawn show
   round: 0,
-  slots: new Array(NUM_ROUNDS).fill(null),
+  sets: [[], [], []],  // Set I / Set II / Encore, in running order
+  closed: [false, false, false],
   pickedSong: null,
-  pickedSlot: null,
   hint: '',
   hintBad: false,
   error: '',
@@ -562,14 +598,14 @@ function renderHome(){
 
 // ── reveal ───────────────────────────────────────────────────────────────────
 function renderReveal(){
-  const show = S.drawn[S.round];
+  const show = S.show;
   app.innerHTML = `
     <div class="reveal">
-      <div class="eyebrow">Round ${S.round + 1} of ${NUM_ROUNDS}</div>
+      <div class="eyebrow">${esc(SETS[Math.max(0, currentSet())].label)} · pick ${S.round + 1}</div>
       <div class="reveal-win" id="revealWin">
         <div class="reveal-bar">
           <span class="eyebrow" id="revealLbl">Searching the archive</span>
-          <span class="n">${String(S.round + 1).padStart(2, '0')} / ${NUM_ROUNDS}</span>
+          <span class="n">${String(S.round + 1).padStart(2, '0')}</span>
         </div>
         <div class="reveal-body">
           <div class="reveal-date" id="rDate">&nbsp;</div>
@@ -600,7 +636,7 @@ function renderReveal(){
     c.textContent = `${show.songs.length} songs played`;
     c.classList.remove('hidden');
     document.getElementById('rCue').classList.remove('hidden');
-    S.revealTimer = setTimeout(() => setScreen('draft'), 1500);
+    S.revealTimer = setTimeout(() => setScreen('draft'), 850);
   };
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -608,119 +644,106 @@ function renderReveal(){
 
   // Spin through real shows, easing out, then land on the drawn one.
   const pool = S.data.shows;
-  const TOTAL = 26;
+  const TOTAL = 14;
   let n = 0;
   const tick = () => {
     paint(pool[Math.floor(Math.random() * pool.length)]);
     n++;
     if (n >= TOTAL){ land(); return; }
     const p = n / TOTAL;
-    const delay = p < 0.4 ? 60 : p < 0.6 ? 100 : p < 0.75 ? 170 : p < 0.88 ? 270 : 400;
+    const delay = p < 0.4 ? 55 : p < 0.65 ? 85 : p < 0.85 ? 140 : 240;
     S.revealTimer = setTimeout(tick, delay);
   };
   S.revealTimer = setTimeout(tick, 60);
 }
 
 // ── setlist panel (shared by draft + result) ─────────────────────────────────
-function slotRowsHTML({ interactive, scored }){
-  const groups = [
-    { label: 'Set I',  idx: [0, 1, 2] },
-    { label: 'Set II', idx: [3, 4, 5, 6] },
-    { label: 'Encore', idx: [7] },
-  ];
+/* The three sets, their clocks, and what is in them. This is the board: the
+   player reads remaining time here and nowhere else. */
+function setsPanelHTML({ live }){
+  const bud = budgets(S.sets, S.closed);
+  const cur = live ? currentSet() : -1;
 
-  return groups.map((g, gi) => {
-    const rows = g.idx.map(i => {
-      const perf = S.slots[i];
-      const slot = SLOTS[i];
+  return SETS.map((cfg, i) => {
+    const songs = S.sets[i];
+    const used = songs.reduce((a, p) => a + lenOf(p), 0);
+    const left = bud[i] - used;
+    const pct = bud[i] > 0 ? Math.min(100, used / bud[i] * 100) : 0;
+    const isCur = i === cur;
+    const done = S.closed[i] || setFull(S.sets, i);
+    const inherited = i === ENCORE_INDEX && bud[i] > cfg.seconds;
 
-      // Segue marker sits above the row it segues *into*.
-      let segueMark = '';
-      if (scored && i > 0 && hasSegue(S.slots, i - 1, S.data.segues)){
-        const pts = scored.segues.find(s => s.to === i);
-        segueMark = `<div class="segue">&rsaquo; segue +${pts ? pts.points : 0}</div>`;
-      }
-
-      if (perf){
-        const acc = accentOf(perf);
-        const pts = scored && scored.songs[i]
-          ? `<span class="pts">${scored.songs[i].subtotal}</span>` : '';
-        // Scored rows are buttons: tapping one opens its full arithmetic.
-        const tag = scored ? 'button' : 'div';
-        const attrs = scored ? ` type="button" data-peek="${i}"` : '';
-        return `${segueMark}<${tag} class="slot filled${scored ? ' tappable' : ''}"${attrs}
-          style="--acc:${acc.v}">
-          <span class="nm">${esc(slot.name)}</span>
-          <span class="val">${esc(perf.song)}</span>${pts}
-        </${tag}>`;
-      }
-
-      // Empty slot. During the draft it is a drop target and previews fit.
-      let cls = 'slot';
-      let fitLabel = '';
-      if (interactive){
-        cls += ' open';
-        if (S.pickedSlot === i) cls += ' sel';
-        if (S.pickedSong){
-          const fit = slotFit(S.pickedSong.tags, i);
-          if (fit !== 'neutral') cls += ` fit-${fit}`;
-          fitLabel = ` — ${fit === 'great' ? 'great fit' : fit === 'ok' ? 'decent fit' : 'poor fit'}`;
-        }
-      }
-      const tag = slot.tags.length ? slot.tags.join(' / ') : 'anything';
-      return `${segueMark}<button class="${cls}" type="button" ${interactive ? `data-slot="${i}"` : 'disabled'}
-        aria-label="${esc(slot.label)} — wants ${esc(tag)}${fitLabel}">
-        <span class="nm">${esc(slot.name)}</span><span class="rule"></span>
-      </button>`;
+    const rows = songs.map((p, j) => {
+      const role = roleAt(i, j, songs.length);
+      return `<div class="srow">
+        <span class="sr-role">${esc(role.name)}</span>
+        <span class="sr-song">${esc(p.song)}</span>
+        <span class="sr-len">${fmtClock(lenOf(p))}</span>
+      </div>`;
     }).join('');
 
-    return `<div class="slotgrp"><div class="lbl">${g.label}</div>${rows}</div>
-      ${gi === 0 ? '<div class="setbreak">~ set break ~</div>' : ''}`;
+    return `<div class="setblk ${isCur ? 'cur' : ''} ${done ? 'done' : ''}">
+      <div class="set-hd">
+        <span class="set-nm">${esc(cfg.label)}</span>
+        <span class="set-clock ${left < 5 * 60 ? 'low' : ''}">
+          ${done ? 'closed' : `${fmtClock(Math.max(0, left))} left`}
+        </span>
+      </div>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="set-sub">${songs.length}/${cfg.maxSongs} songs · ${fmtClock(used)} of ${fmtClock(bud[i])}${
+        inherited ? ` · +${fmtClock(bud[i] - cfg.seconds)} banked` : ''}</div>
+      ${rows}
+    </div>`;
   }).join('');
 }
 
 // ── draft ────────────────────────────────────────────────────────────────────
 function renderDraft(){
-  const show = S.drawn[S.round];
+  const show = S.show;
   const taken = lockedSongIds();
+  const si = currentSet();
+  if (si === -1){ finishShow(); return; }
+  const cfg = SETS[si];
+  const left = remaining(S.sets, si, S.closed);
 
-  // Songs grouped by set, in running order.
   const bySet = new Map();
-  for (const s of show.songs){
-    if (!bySet.has(s.set)) bySet.set(s.set, []);
-    bySet.get(s.set).push(s);
+  for (const p of show.songs){
+    if (!bySet.has(p.set)) bySet.set(p.set, []);
+    bySet.get(p.set).push(p);
   }
-  const setKeys = Array.from(bySet.keys()).sort((a, b) => setRank(a) - setRank(b));
+  const keys = Array.from(bySet.keys()).sort((a, b) => setRank(a) - setRank(b));
 
-  // Never leave a round unplayable. If a show's whole setlist is already in the
-  // slots there is nothing legal to pick, so allow the repeat rather than trap
-  // the player — a duplicate beats a dead end.
-  const anyFree = show.songs.some(s => !taken.has(s.song_id));
+  // Every song is shown, but one that will not fit the clock is dead — saying
+  // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
+  const fits = show.songs.filter(p => !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed));
 
-  const songsHTML = setKeys.map(k => {
-    const rows = bySet.get(k).map(s => {
-      const acc = accentOf(s);
-      const idx = show.songs.indexOf(s);
-      const used = anyFree && taken.has(s.song_id);
+  const songsHTML = keys.map(k => {
+    const rows = bySet.get(k).map(p => {
+      const acc = accentOf(p);
+      const idx = show.songs.indexOf(p);
+      const used = taken.has(p.song_id);
+      const room = canPlace(S.sets, si, p, S.closed);
+      const dead = used || !room;
       const chips = [];
-      if (isRecommended(s)) chips.push('<span class="chip rec">RECOMMENDED</span>');
-      else if (isJamchart(s)) chips.push('<span class="chip">JAMCHART</span>');
+      if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
+      else if (isJamchart(p)) chips.push('<span class="chip">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
-      const gap = Number(s.show_gap) || 0;
+      const gap = Number(p.show_gap) || 0;
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      const len = fmtLen(s.length_sec);
-      const sel = S.pickedSong === s;
-      return `<button class="song${used ? ' used' : ''}" type="button" data-song="${idx}"
-          aria-pressed="${sel}" ${used ? 'disabled aria-disabled="true"' : ''}
+      const why = used ? 'already in your show'
+        : !room ? (lenOf(p) > left ? `needs ${fmtClock(lenOf(p) - left)} more` : 'set is full')
+        : '';
+      return `<button class="song${dead ? ' used' : ''}" type="button" data-song="${idx}"
+          aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
         <span class="l">
-          <span class="t">${esc(s.song)}</span>
-          ${used ? '<span class="o">already in your setlist</span>'
-            : s.is_cover === 'true' && s.original_artist
-              ? `<span class="o">orig. ${esc(s.original_artist)}</span>` : ''}
+          <span class="t">${esc(p.song)}</span>
+          ${why ? `<span class="o">${esc(why)}</span>`
+            : p.is_cover === 'true' && p.original_artist
+              ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
         </span>
         <span class="r">
-          ${len ? `<span class="len">${len}</span>` : ''}
+          <span class="len">${fmtClock(lenOf(p))}</span>
           <span class="chips">${chips.join('')}</span>
         </span>
       </button>`;
@@ -728,16 +751,13 @@ function renderDraft(){
     return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
   }).join('');
 
-  const canLock = S.pickedSong && S.pickedSlot !== null;
-
   app.innerHTML = `
     <div class="card hud">
       <div>
-        <div class="rd">Round ${S.round + 1}<span style="color:var(--dim)">/${NUM_ROUNDS}</span></div>
-        <div class="md">${esc(S.band.label)}</div>
+        <div class="rd">${esc(cfg.label)}<span style="color:var(--dim)"> · ${fmtClock(Math.max(0, left))} left</span></div>
+        <div class="md">${esc(S.band.label)} · pick ${S.round + 1}</div>
       </div>
-      <div class="pips">${Array.from({ length: NUM_ROUNDS }, (_, i) =>
-        `<span class="pip ${i < S.round ? 'done' : i === S.round ? 'now' : ''}"></span>`).join('')}</div>
+      <button class="btn tiny" type="button" id="openSets">Show clock</button>
     </div>
 
     <div class="board">
@@ -747,59 +767,63 @@ function renderDraft(){
           <div class="v">${esc(show.venue || '')}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
         </div>
+        ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
+          Close the set and move on.</div>`}
         ${songsHTML}
       </div>
 
       <div class="slotcol" id="slotCol">
         <aside class="card setlist">
           <div class="sheetgrab"></div>
-          <h2>${S.pickedSong ? 'Choose a slot' : 'Your setlist'}</h2>
+          <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Tonight'}</h2>
           <div class="sub">${S.pickedSong
-            ? esc(S.pickedSong.song)
-            : `${S.slots.filter(Boolean).length} of ${NUM_ROUNDS} locked`}</div>
-          ${slotRowsHTML({ interactive: true, scored: null })}
+            ? `${esc(S.pickedSong.song)} · ${fmtClock(lenOf(S.pickedSong))}`
+            : 'Two sets and an encore. Spend the time well.'}</div>
+          ${setsPanelHTML({ live: true })}
           <div class="lockbar">
-            <button class="btn primary" type="button" id="lockBtn" ${canLock ? '' : 'disabled'}>
-              Lock it in
+            <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
+              ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
-            <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint || 'Pick a song, then a slot.')}</div>
+            <button class="btn ghost small" type="button" id="closeSetBtn">
+              ${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}
+            </button>
+            <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
+              || (si === ENCORE_INDEX
+                ? 'Leftover time from the sets is yours here.'
+                : 'Close early and the encore inherits the time.'))}</div>
           </div>
         </aside>
       </div>
     </div>`;
 
-  // The sheet is only a sheet under 860px; above that the panel is always on
-  // screen and this class does nothing.
-  document.body.classList.toggle('sheet-on', !!S.pickedSong);
+  // If nothing in this show fits, the only move left is closing the set — and on
+  // a phone that button lives in the sheet. Open it rather than hiding the exit.
+  document.body.classList.toggle('sheet-on',
+    !!S.pickedSong || S.sheetForced || !fits.length);
 }
 
 // ── result ───────────────────────────────────────────────────────────────────
 /* One row of the per-song breakdown: the arithmetic, in the order the model
    asks its four questions, so the number is readable rather than asserted. */
-function songBreakdownHTML(perf, sc, slotIdx, opts = {}){
-  const slot = SLOTS[slotIdx];
-  const fitWord = { great: 'Perfect fit', ok: 'Good fit', neutral: 'Neutral', bad: 'Wrong slot' }[sc.fit];
+function songBreakdownHTML(perf, sc, opts = {}){
+  const fitWord = { great: 'Perfect fit', ok: 'Good fit', neutral: 'Neutral', bad: 'Wrong spot' }[sc.fit];
   const reasons = sc.versionReasons.length
     ? sc.versionReasons.map(v => `<span class="vr">${esc(v.label)} <b>+${v.mult.toFixed(2)}</b></span>`).join('')
     : '<span class="vr dim">Standard version</span>';
-
   return `
     <div class="bdrow">
       <div class="bdhd">
         <div>
-          ${opts.hideSlot ? '' : `<div class="bdslot">${esc(slot.label)}</div>`}
-          <div class="bdsong">${esc(perf.song)}</div>
+          ${opts.hideRole ? '' : `<div class="bdslot">${esc(sc.role)}</div>`}
+          <div class="bdsong">${esc(perf.song)} <span class="bdlen">${fmtClock(lenOf(perf))}</span></div>
         </div>
         <div class="bdpts">${sc.subtotal}</div>
       </div>
       <div class="bdmath">
-        <span class="bdterm"><i>Song</i><b>${sc.base}</b></span>
-        <span class="bdop">×</span>
-        <span class="bdterm"><i>Version</i><b>${sc.versionMult.toFixed(2)}</b></span>
-        <span class="bdop">×</span>
+        <span class="bdterm"><i>Song</i><b>${sc.base}</b></span><span class="bdop">×</span>
+        <span class="bdterm"><i>Version</i><b>${sc.versionMult.toFixed(2)}</b></span><span class="bdop">×</span>
         <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span>
-        <span class="bdop">=</span>
-        <span class="bdterm tot"><b>${sc.subtotal}</b></span>
+        <span class="bdop">=</span><span class="bdterm tot"><b>${sc.subtotal}</b></span>
       </div>
       <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span></div>
       ${perf.jamchart_note ? `<div class="bdnote">${esc(perf.jamchart_note)}</div>` : ''}
@@ -808,79 +832,89 @@ function songBreakdownHTML(perf, sc, slotIdx, opts = {}){
 
 function renderResult(){
   const r = S.result;
-  const f = r.flow;
-  const segueTotal = f.segues.reduce((a, s) => a + s.points, 0);
-  const segueNames = f.segues.map(s =>
-    `${S.slots[s.from].song} → ${S.slots[s.to].song}`);
+  let n = 0;
+  const idx = new Map();   // flat index -> {perf, score} for the detail sheet
+  r.perSet.forEach(set => set.forEach(x => idx.set(n++, x)));
+  S._flat = idx;
+
+  const setBlocks = r.perSet.map((set, i) => {
+    const t = r.time[i];
+    let k = 0;
+    for (let j = 0; j < i; j++) k += r.perSet[j].length;
+    return `
+      <div class="rset">
+        <div class="rset-hd">
+          <span class="rs-nm">${esc(SETS[i].label)}</span>
+          <span class="rs-clock">${fmtClock(t.used)} <i>of ${fmtClock(t.budget)}</i></span>
+        </div>
+        <div class="bar ${t.ratio >= 0.93 ? 'good' : t.ratio < 0.8 ? 'bad' : ''}">
+          <span style="width:${Math.min(100, t.ratio * 100)}%"></span></div>
+        <div class="rs-note">${esc(t.note)} <b>+${t.points}</b></div>
+        ${set.length ? set.map((x, j) => `
+          <button class="slot filled tappable" type="button" data-peek="${k + j}"
+            style="--acc:${accentOf(x.perf).v}">
+            <span class="nm">${esc(x.role.name)}</span>
+            <span class="val">${esc(x.perf.song)}</span>
+            <span class="pts">${x.score.subtotal}</span>
+          </button>`).join('')
+          : '<div class="rs-empty">Nothing played.</div>'}
+      </div>`;
+  }).join('');
 
   app.innerHTML = `
     <div class="result">
       <div class="card scorebox">
         <div class="eyebrow">Final score</div>
         <div class="n" id="scoreN">0</div>
-        <div class="band-meta" style="margin:8px 0 0">${esc(S.band.label)}</div>
+        <div class="headline">&ldquo;${esc(r.headline)}&rdquo;</div>
+        <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
+          ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
       </div>
 
       <div class="breakdown">
         <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
-        <div class="bd"><div class="v">${f.total}</div><div class="k">Flow</div></div>
-        <div class="bd"><div class="v">${r.completion}</div><div class="k">Complete</div></div>
+        <div class="bd"><div class="v">${r.timeTotal}</div><div class="k">Time</div></div>
+        <div class="bd"><div class="v">${r.flowTotal}</div><div class="k">Flow</div></div>
       </div>
 
       <div class="card setlist" style="position:static">
-        <h2>Your setlist</h2>
-        <div class="sub">Tap a slot to see how it scored.</div>
-        ${slotRowsHTML({ interactive: false, scored: r })}
+        <h2>The show</h2>
+        <div class="sub">Tap a song to see how it scored.</div>
+        ${setBlocks}
       </div>
 
       <div class="card scoresheet">
         <h2>How this scored</h2>
-        <div class="sub">Each song is worth
-          <b>how loved it is</b> × <b>how special that version was</b> ×
-          <b>how well it fits the slot</b>. Then the setlist is judged as a whole.</div>
+        <div class="sub">Each song is <b>how loved it is</b> × <b>how special that version was</b>
+          × <b>how well it suited where it landed</b>. Then the night is judged as a whole.</div>
 
         <div class="sheetgrp">
-          <h3>Songs <span>${r.songTotal}</span></h3>
-          <div class="sub" style="margin:0">Every song scored
-            <b>esteem × version × placement</b>. Tap a slot above for its working.</div>
+          <h3>Time <span>${r.timeTotal}</span></h3>
+          ${r.time.map(t => `<div class="flowrow">
+            <div class="fl"><b>${esc(t.label)}</b>
+              <i>${fmtClock(t.used)} of ${fmtClock(t.budget)} — ${esc(t.note)}</i></div>
+            <div class="fp">${t.points}</div></div>`).join('')}
         </div>
 
         <div class="sheetgrp">
-          <h3>Flow <span>${f.total}</span></h3>
+          <h3>Flow <span>${r.flowTotal}</span></h3>
           <div class="flowrow">
-            <div class="fl">
-              <b>Segues</b>
-              <i>${f.segues.length
-                ? esc(segueNames.join(' · ')) + ' — pairs Goose really has played back to back'
-                : 'No two of your picks are a segue the band has actually played'}</i>
-            </div>
-            <div class="fp">${segueTotal}</div>
+            <div class="fl"><b>Segues</b><i>${r.segues.length
+              ? esc(r.segues.map(x => `${x.a} → ${x.b}`).join(' · '))
+              : 'No two songs you played back to back are a segue the band has played'}</i></div>
+            <div class="fp">${r.segues.reduce((a, x) => a + x.points, 0)}</div>
           </div>
           <div class="flowrow">
-            <div class="fl">
-              <b>Energy arc</b>
-              <i>${f.arc >= ARC_MAX * 0.75 ? 'Builds and releases where a real set does'
-                 : f.arc >= ARC_MAX * 0.4 ? 'Roughly the right shape, with some slots fighting it'
-                 : 'The peaks and lulls are not where the set wants them'}</i>
-            </div>
-            <div class="fp">${f.arc}</div>
+            <div class="fl"><b>Energy arc</b><i>${r.arc >= ARC_MAX * 0.75
+              ? 'Builds and releases where a real show does'
+              : r.arc >= ARC_MAX * 0.4 ? 'Roughly the right shape'
+              : 'The peaks and lulls are not where the night wants them'}</i></div>
+            <div class="fp">${r.arc}</div>
           </div>
           <div class="flowrow">
-            <div class="fl">
-              <b>Variety</b>
-              <i>${f.roles.length} distinct role${f.roles.length === 1 ? '' : 's'}${
-                f.roles.length ? ' — ' + esc(f.roles.join(', ')) : ''}</i>
-            </div>
-            <div class="fp">${f.variety}</div>
-          </div>
-        </div>
-
-        <div class="sheetgrp">
-          <h3>Completion <span>${r.completion}</span></h3>
-          <div class="flowrow">
-            <div class="fl"><b>All eight slots filled</b>
-              <i>${r.completion ? 'Full setlist' : 'Some slots left empty'}</i></div>
-            <div class="fp">${r.completion}</div>
+            <div class="fl"><b>Variety</b><i>${r.roles.length} distinct role${
+              r.roles.length === 1 ? '' : 's'}${r.roles.length ? ' — ' + esc(r.roles.join(', ')) : ''}</i></div>
+            <div class="fp">${r.variety}</div>
           </div>
         </div>
 
@@ -894,12 +928,10 @@ function renderResult(){
       </div>
     </div>`;
 
-  // Count the score up.
   const el = document.getElementById('scoreN');
   const target = r.total;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches){
-    el.textContent = target;
-  } else {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches){ el.textContent = target; }
+  else {
     const t0 = performance.now(), dur = 900;
     const step = now => {
       const p = Math.min((now - t0) / dur, 1);
@@ -910,25 +942,20 @@ function renderResult(){
   }
 }
 
-/* The full arithmetic for one slot, on demand. This is the depth the result
-   screen used to print inline for all eight at once — 3.7 phone screens of it. */
 function openDetail(i){
-  const sc = S.result && S.result.songs[i];
-  const perf = S.slots[i];
-  if (!sc || !perf) return;
+  const x = S._flat && S._flat.get(i);
+  if (!x) return;
   document.getElementById('detailInner').innerHTML = `
     <div class="grab"></div>
     <div class="sheet-hd">
-      <h2>${esc(SLOTS[i].label)}</h2>
+      <h2>${esc(x.role.name)}</h2>
       <button class="x" type="button" id="detailClose">Close</button>
     </div>
-    ${songBreakdownHTML(perf, sc, i, { hideSlot: true })}`;
+    ${songBreakdownHTML(x.perf, x.score, { hideRole: true })}`;
   document.getElementById('detailSheet').classList.add('on');
 }
 function closeDetail(){ document.getElementById('detailSheet').classList.remove('on'); }
 
-/* The sheet lives outside #app so a re-render cannot destroy it mid-animation,
-   which also means the app's click handler never sees it. Wire it separately. */
 document.getElementById('detailSheet').addEventListener('click', e => {
   if (e.target.id === 'detailSheet' || e.target.closest('#detailClose')) closeDetail();
 });
@@ -937,28 +964,27 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
   if (document.body.classList.contains('sheet-on')){
-    S.pickedSong = null; S.pickedSlot = null; S.hint = ''; S.hintBad = false;
+    S.pickedSong = null; S.sheetForced = false; S.hint = ''; S.hintBad = false;
     renderDraft();
   }
 });
 
 function shareText(){
-  const marks = S.slots.map((p, i) => {
-    if (!p) return '⬛';
-    const fit = slotFit(p.tags, i);
-    return fit === 'great' ? '🟩' : fit === 'ok' ? '🟨' : fit === 'bad' ? '🟥' : '⬜';
-  }).join('');
+  const r = S.result;
   const lines = [
     `🎵 Run The Setlist — ${S.band.label}`,
-    `Score: ${S.result.total}`,
-    marks,
+    `Score: ${r.total}`,
+    ...r.time.map(t => `${t.label}: ${fmtClock(t.used)}/${fmtClock(t.budget)} ${
+      '█'.repeat(Math.round(t.ratio * 10)).padEnd(10, '░')}`),
+    `"${r.headline}"`,
   ];
-  if (S.result.segues.length) lines.push(`${S.result.segues.length} segue${S.result.segues.length > 1 ? 's' : ''} landed`);
+  if (r.segues.length) lines.push(`${r.segues.length} segue${r.segues.length > 1 ? 's' : ''} landed`);
   lines.push('', 'runthe.gg/setlist');
   return lines.join('\n');
 }
 
-// ── flow ─────────────────────────────────────────────────────────────────────
+
+// ── loading / data ───────────────────────────────────────────────────────────
 function renderLoading(msg){
   app.innerHTML = `<div class="loading"><div class="spinner"></div><div>${esc(msg)}</div></div>`;
 }
@@ -970,16 +996,17 @@ async function fetchBand(band){
   if (!res.ok){
     throw new Error(res.status === 404
       ? `No data file yet for ${band.label} — run scripts/setlist/ingest_band.mjs to build ${band.csv}.`
-      : `Couldn't load ${band.label} data (HTTP ${res.status}).`);
+      : `Could not load ${band.csv} (${res.status}).`);
   }
   const data = loadBand(await res.text());
-  if (data.shows.length < NUM_ROUNDS){
-    throw new Error(`${band.label} has only ${data.shows.length} shows — needs at least ${NUM_ROUNDS}.`);
+  if (drawableShows(data.shows).length < 12){
+    throw new Error(`${band.label} has too few timed shows to build a night.`);
   }
   csvCache.set(band.id, data);
   return data;
 }
 
+// ── running a show ───────────────────────────────────────────────────────────
 async function start(bandId){
   const band = BANDS.find(b => b.id === bandId);
   if (!band) return;
@@ -997,40 +1024,80 @@ async function start(bandId){
   }
 
   // Fresh draw every run — there is no shared/seeded mode yet.
-  const seed = hash32(`${bandId}|${Date.now()}|${Math.random()}`);
-
-  S.drawn = shuffle(drawableShows(S.data.shows), mulberry32(seed)).slice(0, NUM_ROUNDS);
+  S.rng = mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
   S.round = 0;
-  S.slots = new Array(NUM_ROUNDS).fill(null);
-  S.pickedSong = null; S.pickedSlot = null;
+  S.sets = [[], [], []];
+  S.closed = [false, false, false];
+  S.seenShows = new Set();
+  S.pickedSong = null; S.sheetForced = false;
   S.hint = ''; S.hintBad = false; S.result = null;
+  drawShow();
   setScreen('reveal');
 }
 
+/** Draw tonight's show — never the same one twice in a run. */
+function drawShow(){
+  const all = drawableShows(S.data.shows);
+  const fresh = all.filter(x => !S.seenShows.has(x.show_id));
+  const from = fresh.length ? fresh : all;
+  S.show = from[Math.floor(S.rng() * from.length)];
+  S.seenShows.add(S.show.show_id);
+}
+
+/** Index of the set being built, or -1 when the show is over. */
+function currentSet(){
+  return S.closed.findIndex((c, i) => !c && !setFull(S.sets, i));
+}
+
+function lockedSongIds(){
+  return new Set(S.sets.flat().map(p => p.song_id));
+}
+
 function lockIn(){
-  const song = S.pickedSong, slot = S.pickedSlot;
-  if (!song || slot === null) return;
-  if (S.slots[slot]) return;
+  const song = S.pickedSong;
+  const si = currentSet();
+  if (!song || si === -1) return;
   if (lockedSongIds().has(song.song_id)) return;
+  if (!canPlace(S.sets, si, song, S.closed)) return;
 
-  S.slots[slot] = song;
-  S.pickedSong = null; S.pickedSlot = null;
-  S.hint = ''; S.hintBad = false;
+  S.sets[si].push(song);
+  S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
 
-  if (S.round + 1 >= NUM_ROUNDS){
-    S.result = scoreSetlist(S.slots, S.data.segues);
-    setScreen('result');
-  } else {
-    S.round += 1;
-    setScreen('reveal');
-  }
+  // A set that can hold nothing more closes itself, so the player is never left
+  // staring at a set with forty seconds in it.
+  if (setFull(S.sets, si)) S.closed[si] = true;
+  nextRound();
+}
+
+/** Close the current set. Whatever is left flows to the encore. */
+function closeSet(){
+  const si = currentSet();
+  if (si === -1) return;
+  S.closed[si] = true;
+  S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
+  if (currentSet() === -1){ finishShow(); return; }
+  nextRound();
+}
+
+function nextRound(){
+  if (currentSet() === -1){ finishShow(); return; }
+  S.round += 1;
+  if (S.round >= MAX_ROUNDS){ finishShow(); return; }
+  drawShow();
+  setScreen('reveal');
+}
+
+function finishShow(){
+  S.result = scoreShow(S.sets, S.data.segues);
+  setScreen('result');
 }
 
 function render(){
-  if (S.screen === 'home')   return renderHome();
-  if (S.screen === 'reveal') return renderReveal();
-  if (S.screen === 'draft')  return renderDraft();
-  if (S.screen === 'result') return renderResult();
+  if (S.screen === 'home')    return renderHome();
+  if (S.screen === 'loading') return;
+  if (S.screen === 'reveal')  return renderReveal();
+  if (S.screen === 'draft')   return renderDraft();
+  if (S.screen === 'result')  return renderResult();
 }
 
 // ── events ───────────────────────────────────────────────────────────────────
@@ -1043,7 +1110,7 @@ app.addEventListener('click', e => {
 
   // Sheet scrim: a tap outside the panel puts the song back.
   if (e.target.id === 'slotCol'){
-    S.pickedSong = null; S.pickedSlot = null; S.hint = ''; S.hintBad = false;
+    S.pickedSong = null; S.sheetForced = false; S.hint = ''; S.hintBad = false;
     renderDraft();
     return;
   }
@@ -1051,13 +1118,16 @@ app.addEventListener('click', e => {
   const songBtn = e.target.closest('[data-song]');
   if (songBtn){
     if (songBtn.disabled) return;
-    const show = S.drawn[S.round];
+    const show = S.show;
     const s = show.songs[Number(songBtn.dataset.song)];
     if (s !== S.pickedSong && lockedSongIds().has(s.song_id)){
-      S.hint = `${s.song} is already in your setlist.`;
-      S.hintBad = true;
-      renderDraft();
-      return;
+      S.hint = `${s.song} is already in your show.`;
+      S.hintBad = true; renderDraft(); return;
+    }
+    const si = currentSet();
+    if (s !== S.pickedSong && si !== -1 && !canPlace(S.sets, si, s, S.closed)){
+      S.hint = `No room for ${fmtClock(lenOf(s))} in ${SETS[si].label}.`;
+      S.hintBad = true; renderDraft(); return;
     }
     S.pickedSong = S.pickedSong === s ? null : s;
     S.hint = S.pickedSong ? 'Now choose a slot.' : '';
@@ -1066,18 +1136,12 @@ app.addEventListener('click', e => {
     return;
   }
 
-  const slotBtn = e.target.closest('[data-slot]');
-  if (slotBtn){
-    const i = Number(slotBtn.dataset.slot);
-    if (S.slots[i]) return;
-    S.pickedSlot = S.pickedSlot === i ? null : i;
-    if (!S.pickedSong){ S.hint = 'Pick a song first.'; S.hintBad = true; }
-    else { S.hint = 'Locked slots can’t be changed.'; S.hintBad = false; }
-    renderDraft();
-    return;
-  }
 
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
+  if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
+  if (e.target.closest('#openSets')){
+    S.sheetForced = !S.sheetForced; renderDraft(); return;
+  }
   if (e.target.closest('#homeBtn')){ setScreen('home'); return; }
 
   const peek = e.target.closest('[data-peek]');
