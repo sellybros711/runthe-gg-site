@@ -109,13 +109,19 @@ The eight slots and the tags each wants:
 | 6 | Set II Closer | `closer` `peak` |
 | 7 | Encore | `encore` |
 
-## Modes
+## Mode
 
-**Solo** — fresh random seed, replay as much as you like.
-**Daily** — seeded by `hash(band + local YYYY-MM-DD)`, so everyone drafting
-today's Goose gets the same eight shows in the same order. One attempt per band
-per day, held in `localStorage` under `setlist_daily_<band>_<date>` along with
-the day's result, which the home screen re-opens rather than replaying.
+**One mode, on purpose.** Every run draws a fresh random eight shows and can be
+replayed as often as you like. The structure is still being worked out, so
+there is deliberately nothing to perfect around yet — no daily, no streak, no
+carry-over state.
+
+A daily existed and was removed: it was seeded by `hash(band + local date)` so
+everyone got the same eight shows, allowed one attempt per band per day, and
+persisted to `localStorage` under `setlist_daily_<band>_<date>`. Reinstating it
+means re-seeding the draw in `start()` and restoring that read/write — the
+scoring, draw and share paths are all mode-agnostic now, so nothing else has to
+change. Nothing is written to `localStorage` today except the shared theme key.
 
 There is deliberately **no backend** — no database, no auth, no leaderboard.
 

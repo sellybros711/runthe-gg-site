@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Run The Setlist: Daily Setlist Drafting Game | RunThe.GG</title>
+<title>Run The Setlist: Setlist Drafting Game | RunThe.GG</title>
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -119,9 +119,7 @@
   .band-hd h2{font-family:var(--hero); font-size:30px; margin:0; text-transform:uppercase;
     letter-spacing:.5px;}
   .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:14px;}
-  .band-actions{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  @media (max-width:520px){ .band-actions{grid-template-columns:1fr;} }
-  .lockNote{margin-top:11px; font-size:12.5px; color:var(--goldT); font-weight:700;}
+  .band-actions{display:grid; grid-template-columns:1fr; gap:10px;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -239,9 +237,6 @@
   .bd .v{font-family:var(--hero); font-size:24px; line-height:1;}
   .bd .k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
     color:var(--dim); margin-top:5px;}
-  .countdown{text-align:center; font-size:12px; font-weight:800; letter-spacing:1.6px;
-    text-transform:uppercase; color:var(--dim); margin:14px 0;}
-  .countdown b{color:var(--goldT); font-variant-numeric:tabular-nums; letter-spacing:1px;}
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
 
   .loading{min-height:60dvh; display:flex; flex-direction:column; align-items:center;
@@ -322,24 +317,6 @@ function shuffle(arr, rng){
   return a;
 }
 
-// ── dates & storage ──────────────────────────────────────────────────────────
-/* Local date, not UTC — the daily rolls over at the player's midnight, which is
-   what the countdown on the result screen counts down to. */
-function todayStr(){
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
-    + '-' + String(d.getDate()).padStart(2, '0');
-}
-const dailyKey = band => `setlist_daily_${band}_${todayStr()}`;
-
-function readDaily(band){
-  try { return JSON.parse(localStorage.getItem(dailyKey(band))) || null; }
-  catch(e){ return null; }
-}
-function writeDaily(band, payload){
-  try { localStorage.setItem(dailyKey(band), JSON.stringify(payload)); } catch(e){}
-}
-
 // ── formatting ───────────────────────────────────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(d){
@@ -375,7 +352,6 @@ function accentOf(perf){
 const S = {
   screen: 'home',
   band: null,          // band config
-  mode: null,          // 'daily' | 'solo'
   data: null,          // { shows, segues }
   drawn: [],           // the 8 shows for this run
   round: 0,
@@ -386,7 +362,6 @@ const S = {
   hintBad: false,
   error: '',
   result: null,
-  countdownTimer: null,
   revealTimer: null,
 };
 
@@ -394,8 +369,6 @@ const app = document.getElementById('app');
 
 function setScreen(name){
   clearTimeout(S.revealTimer);
-  clearInterval(S.countdownTimer);
-  S.countdownTimer = null;
   S.screen = name;
   render();
 }
@@ -403,24 +376,17 @@ function setScreen(name){
 // ── home ─────────────────────────────────────────────────────────────────────
 function renderHome(){
   const bands = BANDS.map(b => {
-    const done = readDaily(b.id);
-    const lock = done
-      ? `<div class="lockNote">Today's daily is done — you scored ${done.total}. Come back tomorrow.</div>`
-      : '';
     const warn = b.sample
-      ? `<div class="warn">Invented data for a band that doesn't exist. Here so the game is playable before the real archive lands.</div>`
+      ? `<div class="warn">Invented data for a band that doesn't exist — kept as a test fixture.</div>`
       : '';
     return `
       <section class="card band">
         <div class="band-hd"><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}</div>
         <div class="band-actions">
-          <button class="btn primary" data-start="${b.id}" data-mode="daily"
-            ${done ? 'disabled' : ''}>${done ? 'Daily played' : "Today's Daily"}</button>
-          <button class="btn" data-start="${b.id}" data-mode="solo">Solo run</button>
+          <button class="btn primary" data-start="${b.id}">Draft a setlist</button>
         </div>
-        ${done ? `<div class="actions" style="margin-top:10px"><button class="btn ghost" data-review="${b.id}">See today's setlist</button></div>` : ''}
-        ${lock}${warn}
+        ${warn}
       </section>`;
   }).join('');
 
@@ -601,7 +567,7 @@ function renderDraft(){
     <div class="card hud">
       <div>
         <div class="rd">Round ${S.round + 1}<span style="color:var(--dim)">/${NUM_ROUNDS}</span></div>
-        <div class="md">${S.mode === 'daily' ? 'Daily' : 'Solo'} · ${esc(S.band.label)}</div>
+        <div class="md">${esc(S.band.label)}</div>
       </div>
       <div class="pips">${Array.from({ length: NUM_ROUNDS }, (_, i) =>
         `<span class="pip ${i < S.round ? 'done' : i === S.round ? 'now' : ''}"></span>`).join('')}</div>
@@ -642,9 +608,7 @@ function renderResult(){
       <div class="card scorebox">
         <div class="eyebrow">Final score</div>
         <div class="n" id="scoreN">0</div>
-        <div class="band-meta" style="margin:8px 0 0">
-          ${esc(S.band.label)} · ${S.mode === 'daily' ? `Daily · ${todayStr()}` : 'Solo run'}
-        </div>
+        <div class="band-meta" style="margin:8px 0 0">${esc(S.band.label)}</div>
       </div>
 
       <div class="breakdown">
@@ -659,14 +623,9 @@ function renderResult(){
         ${slotRowsHTML({ interactive: false, scored: r })}
       </div>
 
-      ${S.mode === 'daily'
-        ? `<div class="countdown">Next daily in <b id="cdown">--:--:--</b></div>` : ''}
-
       <div class="actions">
         <button class="btn primary" type="button" id="shareBtn">Copy score card</button>
-        ${S.mode === 'solo'
-          ? `<button class="btn" type="button" data-start="${S.band.id}" data-mode="solo">Play again</button>`
-          : ''}
+        <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
         <button class="btn ghost" type="button" id="homeBtn">Back to bands</button>
       </div>
     </div>`;
@@ -685,22 +644,6 @@ function renderResult(){
     };
     requestAnimationFrame(step);
   }
-
-  if (S.mode === 'daily') startCountdown();
-}
-
-function startCountdown(){
-  const el = document.getElementById('cdown');
-  if (!el) return;
-  const tick = () => {
-    const now = new Date();
-    const mid = new Date(now); mid.setHours(24, 0, 0, 0);
-    let d = Math.max(0, mid - now);
-    const h = Math.floor(d / 3600000), m = Math.floor(d % 3600000 / 60000), s = Math.floor(d % 60000 / 1000);
-    el.textContent = [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
-  };
-  tick();
-  S.countdownTimer = setInterval(tick, 1000);
 }
 
 function shareText(){
@@ -711,7 +654,6 @@ function shareText(){
   }).join('');
   const lines = [
     `🎵 Run The Setlist — ${S.band.label}`,
-    S.mode === 'daily' ? `Daily ${todayStr()}` : 'Solo run',
     `Score: ${S.result.total}`,
     marks,
   ];
@@ -742,16 +684,11 @@ async function fetchBand(band){
   return data;
 }
 
-async function start(bandId, mode){
+async function start(bandId){
   const band = BANDS.find(b => b.id === bandId);
   if (!band) return;
 
-  if (mode === 'daily'){
-    const done = readDaily(bandId);
-    if (done){ reviewDaily(bandId); return; }
-  }
-
-  S.band = band; S.mode = mode; S.error = '';
+  S.band = band; S.error = '';
   setScreen('loading');
   renderLoading(`Loading the ${band.label} archive…`);
 
@@ -763,9 +700,8 @@ async function start(bandId, mode){
     return;
   }
 
-  const seed = mode === 'daily'
-    ? hash32(`${bandId}|${todayStr()}`)
-    : hash32(`${bandId}|solo|${Date.now()}|${Math.random()}`);
+  // Fresh draw every run — there is no shared/seeded mode yet.
+  const seed = hash32(`${bandId}|${Date.now()}|${Math.random()}`);
 
   S.drawn = shuffle(drawableShows(S.data.shows), mulberry32(seed)).slice(0, NUM_ROUNDS);
   S.round = 0;
@@ -773,26 +709,6 @@ async function start(bandId, mode){
   S.pickedSong = null; S.pickedSlot = null;
   S.hint = ''; S.hintBad = false; S.result = null;
   setScreen('reveal');
-}
-
-/* Re-open a finished daily from localStorage without replaying it. */
-async function reviewDaily(bandId){
-  const band = BANDS.find(b => b.id === bandId);
-  const saved = readDaily(bandId);
-  if (!band || !saved) return;
-
-  S.band = band; S.mode = 'daily'; S.error = '';
-  setScreen('loading');
-  renderLoading('Loading your setlist…');
-
-  try {
-    S.data = await fetchBand(band);
-  } catch (e){
-    S.error = e.message; setScreen('home'); return;
-  }
-  S.slots = saved.slots || new Array(NUM_ROUNDS).fill(null);
-  S.result = scoreSetlist(S.slots, S.data.segues);
-  setScreen('result');
 }
 
 function lockIn(){
@@ -806,9 +722,6 @@ function lockIn(){
 
   if (S.round + 1 >= NUM_ROUNDS){
     S.result = scoreSetlist(S.slots, S.data.segues);
-    if (S.mode === 'daily'){
-      writeDaily(S.band.id, { slots: S.slots, total: S.result.total, ts: Date.now() });
-    }
     setScreen('result');
   } else {
     S.round += 1;
@@ -827,11 +740,9 @@ function render(){
 app.addEventListener('click', e => {
   const startBtn = e.target.closest('[data-start]');
   if (startBtn && !startBtn.disabled){
-    start(startBtn.dataset.start, startBtn.dataset.mode);
+    start(startBtn.dataset.start);
     return;
   }
-  const reviewBtn = e.target.closest('[data-review]');
-  if (reviewBtn){ reviewDaily(reviewBtn.dataset.review); return; }
 
   const songBtn = e.target.closest('[data-song]');
   if (songBtn){
