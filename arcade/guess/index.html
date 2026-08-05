@@ -188,6 +188,31 @@
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
   .search .go, .cluebtn{transition:transform .08s, box-shadow .08s, filter .12s;}
   .search .go:active, .cluebtn:active{transform:translate(1px,1px);}
+
+  /* =================================================================
+     SPORTS-MACHINE SKIN — "Scouting Terminal"
+     Replaces flat Wordle fills with bordered readout cells and frames
+     the grid as a scouting console. Visual only — no logic changes.
+     ================================================================= */
+  body{ background-image:repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 3%, transparent) 0 1px, transparent 1px 22px); background-attachment:fixed; }
+
+  /* console bezel with an accent read-out strip */
+  .board{ border-width:2px; border-color:var(--line2); border-radius:7px; position:relative; padding-top:15px; }
+  .board::before{ content:""; position:absolute; left:12px; right:12px; top:0; height:3px;
+    background:linear-gradient(90deg, var(--blue), var(--coral)); border-radius:0 0 3px 3px; }
+  .collab span{ font-size:8px; letter-spacing:.05em; }
+
+  /* readout cells: bordered + tinted instead of solid Wordle blocks */
+  .tile{ border-radius:3px; border:2px solid var(--line2); background:var(--card2); color:var(--ink); position:relative; }
+  .tile.hit{ background:color-mix(in srgb, var(--hit) 20%, var(--card2)); border-color:var(--hit); color:var(--ink); }
+  .tile.close{ background:color-mix(in srgb, var(--close) 24%, var(--card2)); border-color:var(--close); color:var(--ink); }
+  .tile.miss{ background:var(--card2); border-color:var(--line2); color:var(--mut); }
+  .tile.blank{ background:transparent; border-style:dashed; border-color:var(--line2); }
+  .guess .nm{ text-transform:uppercase; letter-spacing:.03em; }
+
+  /* player-database input + submit */
+  .search input{ border-width:2px; border-radius:6px; }
+  .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.05em; }
 </style>
 </head>
 <body>

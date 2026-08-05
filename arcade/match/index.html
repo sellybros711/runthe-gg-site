@@ -392,6 +392,37 @@
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
   .checkbtn, .btn{transition:transform .08s, box-shadow .08s, filter .12s;}
   .checkbtn:active, .btn:active{transform:translate(2px,2px);}
+
+  /* =================================================================
+     SPORTS-MACHINE SKIN — "Locker Room Board"
+     Moves Daily Match off the flat Connections look: sharper corners,
+     nameplate tiles, athletic lineup racks, a faint court hatch.
+     Visual only — no DOM / logic / localStorage changes.
+     ================================================================= */
+  :root{ --r-lg:6px; --r-md:5px; --r-sm:4px; }
+  body{ background-image:repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 3%, transparent) 0 1px, transparent 1px 22px); background-attachment:fixed; }
+
+  /* roster tray around the unplaced names */
+  #pool{ border:2px solid var(--line2); border-radius:var(--r-md); padding:11px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--card) 60%, var(--bg)), var(--card));
+    box-shadow:inset 0 2px 10px -7px rgba(0,0,0,.6); }
+
+  /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour) */
+  .tile{ border-width:2px; border-radius:4px; text-transform:uppercase; letter-spacing:.02em;
+    box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
+  .tile:active{ box-shadow:var(--a-shadow-press,1px 1px 0 rgba(7,20,38,.16)); }
+  .tile.locked{ box-shadow:none; }
+
+  /* lineup racks */
+  .lane{ border-width:2px; border-left-width:6px; border-radius:var(--r-md);
+    box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.20)); }
+  .lane-name{ font-family:var(--hero); font-weight:400; font-size:16px; letter-spacing:.02em; text-transform:uppercase; }
+  .lane-chip{ border-radius:3px; box-shadow:0 0 0 2px color-mix(in srgb, var(--lc) 30%, transparent); }
+  .slot{ border-radius:4px; }
+
+  /* section headers as scoreboard labels */
+  .pool-h .t{ font-size:18px; letter-spacing:.05em; }
+  .checkbtn{ border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
 </style>
 </head>
 <body>
