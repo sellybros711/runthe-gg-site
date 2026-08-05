@@ -48,7 +48,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `song_id` | Stable song identity. **Segues and gap are keyed on this**, so it must be consistent across shows. |
 | `is_cover` | `true` / `false`. |
 | `original_artist` | Blank for originals. |
-| `length_sec` | Integer seconds. Feeds the version multiplier (15 min / 20 min tiers). Blank is tolerated. |
+| `length_sec` | Integer seconds. **Load-bearing since v4** — it is the resource a player spends, so a show is only drawable when every song in it is timed. Also feeds the version multiplier (15 / 20 min tiers). |
 | `show_gap` | Shows between this play and the song's previous one. `0` on debut. **Feeds rarity scoring.** |
 | `times_played` | Running count including this play. Display only. |
 | `rarity_rating` | The rarity tier this gap lands in. Display only — `scoring.js` recomputes from `show_gap`. |
@@ -58,12 +58,12 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `jamchart_note` | The curators' prose on why this version matters. Shown on the result screen. |
 | `transition` | Raw transition mark out of this song (`>`, `->`, `,`, ``). |
 | `is_segue` | `true` when `transition` is a real segue (`>` / `->`). |
-| `tags` | Pipe-delimited slot-fit tags. **Drives placement scoring.** |
+| `tags` | Pipe-delimited role tags. **Drives placement scoring.** |
 
 ## Tags
 
 Six tags, and only these six, are scored: `opener`, `closer`, `jam`, `peak`,
-`ballad`, `encore`. `scoring.js` maps them onto the 8 slots.
+`ballad`, `encore`. `scoring.js` maps them onto the role a song lands in.
 
 **These are inferred, not sourced.** elgoose has no field saying a song is a
 ballad, so `ingest_band.mjs` derives each tag from the song's own history across
@@ -112,4 +112,6 @@ Jamchart standing comes down the same API as everything else.
 1. Write `setlist/data/<band>.csv` to this contract.
 2. Add an entry to `BANDS` in `setlist/index.html`.
 
-Every run draws a fresh random eight shows; there is no seeded mode.
+Every run draws fresh random shows until the night is over; there is no seeded
+mode. Set budgets (75 / 70 / 10 minutes) are the medians of this archive — see
+the "How a show works" section of the README.
