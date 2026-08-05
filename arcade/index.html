@@ -13,6 +13,7 @@
   var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
   if(t !== 'light' && t !== 'dark'){
     t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}   // pin resolved theme so every page matches
   }
   document.documentElement.setAttribute('data-theme', t);
 })();
