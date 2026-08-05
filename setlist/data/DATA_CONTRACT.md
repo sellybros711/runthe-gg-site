@@ -8,7 +8,28 @@ Generate with:
 
 ```
 node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
+node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
+
+As of the last run: **7504 performances · 655 shows · 366 songs**, 2014–2026.
+A run that lands far below that is a bad run, not a smaller band — see below.
+
+### Two things that will silently corrupt a run
+
+elgoose.net serves ~100 bands from one API, and every response mixes them
+together. The ingester filters on `artist_id` (`1` = Goose, `--artist` to
+change it). Without that filter the CSV fills up with Orebolo, Vasudo and
+Umphrey's McGee shows.
+
+The API also caps **any** response at 4000 rows, with no error and no paging —
+the array just ends. `/setlists.json` and `/setlists/artist_id/1.json` both blow
+past that cap, so neither can return a full history; the ingester fetches year
+by year for this reason and flags any year that hits the cap.
+
+Related: the API throttles by returning an empty `200` rather than a `429`, so
+a year can vanish from an otherwise clean-looking run. The ingester paces its
+requests, retries empty responses, and prints a per-year row count — if a year
+reports `0 rows after retries`, re-run before trusting the file.
 
 ## Columns
 

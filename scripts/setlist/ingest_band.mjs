@@ -5,6 +5,7 @@
  *   node scripts/setlist/ingest_band.mjs --out /tmp/goose.csv
  *   node scripts/setlist/ingest_band.mjs --limit 200   # last 200 shows only
  *   node scripts/setlist/ingest_band.mjs --from 2019 --to 2024
+ *   node scripts/setlist/ingest_band.mjs --artist 8    # Orebolo instead of Goose
  *   node scripts/setlist/ingest_band.mjs --key XXXX    # or ELGOOSE_API_KEY
  *
  * START WITH --probe. It fetches one year, prints the field names the API
@@ -20,6 +21,21 @@
  *   tracktime ("mm:ss") · transition (" > " / " -> ") · isjamchart (0/1, on the
  *   row itself) · isoriginal (1 = original, 0 = cover) · original_artist ("" for
  *   originals) · venuename · city · state
+ *
+ * elgoose.net hosts MANY bands, not just Goose (Orebolo, Vasudo, Great Blue,
+ * Umphrey's McGee, Dead & Company...). Two consequences, both learned the hard
+ * way — the first version of this script tripped over both and silently wrote a
+ * file that was half other people's shows and stopped in 2022:
+ *   - Every response mixes artists. Rows MUST be filtered on artist_id
+ *     (ARTIST_ID below, 1 = Goose) or the CSV is a mongrel.
+ *   - The API caps ANY single response at ROW_CAP (4000) rows with no error and
+ *     no next-page link — it just stops. /setlists.json and
+ *     /setlists/artist_id/1.json both blow straight through that cap, so
+ *     neither can ever return a complete history. Only the per-year route stays
+ *     comfortably under it, which is why this fetches year by year.
+ *
+ * The API also rate-limits by returning an empty 200 rather than a 429, so a
+ * bare loop silently drops whole years. getJSON retries empties with backoff.
  *
  * Three things the source schema forces:
  *   - No gap field exists. show_gap is COMPUTED as the number of shows between
@@ -37,6 +53,15 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dir, '..', '..');
 
 const API = 'https://elgoose.net/api/v2';
+
+// Hard server-side cap on rows in a single response. Not documented and not
+// signalled in the payload — the array just ends. Any response landing on this
+// number exactly should be treated as truncated, not complete.
+const ROW_CAP = 4000;
+
+// Gap between year requests. The whole run is ~13 requests, so this costs a few
+// seconds and is the difference between a complete file and a silently short one.
+const YEAR_DELAY_MS = 600;
 
 // ── tag thresholds ───────────────────────────────────────────────────────────
 // elgoose carries no "this song is a ballad" field, so the six tags the game
@@ -64,9 +89,13 @@ function arg(name, fallback) {
 const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
 const LIMIT = Number(arg('limit', 0)) || 0;
 const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
-const FROM = Number(arg('from', 2014));
+const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site is 2014
 const TO = Number(arg('to', new Date().getFullYear()));
 const PROBE = process.argv.includes('--probe');
+
+// elgoose artist ids: 1 Goose · 8 Orebolo · 2 Vasudo · 3 Great Blue.
+// Pass --artist '' to keep every band (almost never what you want).
+const ARTIST_ID = String(arg('artist', '1')).trim();
 
 // ── fetch ────────────────────────────────────────────────────────────────────
 function withKey(url) {
@@ -74,7 +103,9 @@ function withKey(url) {
   return url + (url.includes('?') ? '&' : '?') + `apikey=${encodeURIComponent(KEY)}`;
 }
 
-async function getJSON(url) {
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function fetchOnce(url) {
   let res;
   try {
     res = await fetch(withKey(url), { headers: { accept: 'application/json' } });
@@ -101,42 +132,89 @@ async function getJSON(url) {
 }
 
 /**
- * Every setlist row the site has.
- * Tries the bulk endpoint first, then falls back to year-by-year. Reports which
- * route worked so a future schema change is obvious from the log rather than
- * silently producing a short file.
+ * fetchOnce with backoff.
+ *
+ * The API throttles by handing back an empty 200 instead of a 429, so an empty
+ * array is retried like an error when the caller says a year should have rows.
+ * Without this, a clean-looking run quietly loses whole years — 2021, 2023 and
+ * 2025 all came back empty on one pass and full on the next.
  */
-async function fetchAllRows() {
-  for (const url of [`${API}/setlists.json`]) {
+async function getJSON(url, { tries = 6, retryEmpty = false } = {}) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    if (i) await sleep(1000 * 2 ** (i - 1));   // 1s, 2s, 4s, 8s, 16s
     try {
-      const rows = await getJSON(url);
-      if (rows.length) { console.log(`  bulk endpoint worked: ${rows.length} rows from ${url}`); return rows; }
-      console.warn(`  ${url} returned 0 rows — falling back to per-year`);
+      const data = await fetchOnce(url);
+      if (data.length || !retryEmpty) return data;
+      lastErr = new Error(`empty response (likely throttled) — ${url}`);
     } catch (e) {
-      console.warn(`  bulk fetch unavailable (${e.message})`);
-      console.warn('  falling back to per-year');
+      lastErr = e;
     }
   }
+  if (retryEmpty) return [];   // caller reports the gap in context
+  throw lastErr;
+}
 
+/**
+ * Every setlist row the site has for ARTIST_ID, fetched year by year.
+ *
+ * Deliberately NOT using /setlists.json or /setlists/artist_id/<id>.json: both
+ * exceed ROW_CAP for Goose and get silently truncated (the bulk route returns
+ * 4000 rows of 18 different bands ending in 2022). Per-year is the only route
+ * whose responses stay under the cap, and each year is checked against it so a
+ * future band that outgrows it fails loudly instead of quietly.
+ */
+async function fetchAllRows() {
   const out = [];
   const failures = [];
+  const empty = [];
+  const truncated = [];
+
   for (let y = FROM; y <= TO; y++) {
+    // Pace the loop. Fired back to back, the API starts returning empty 200s
+    // around the tenth request and the backoff alone cannot dig out of it.
+    if (y > FROM) await sleep(YEAR_DELAY_MS);
     try {
-      const rows = await getJSON(`${API}/setlists/showyear/${y}.json`);
-      out.push(...rows);
-      console.log(`  ${y}: ${rows.length} rows`);
+      // Years in range are expected to have shows, so retry an empty response.
+      const rows = await getJSON(`${API}/setlists/showyear/${y}.json`, { retryEmpty: true });
+      if (!rows.length) { empty.push(y); console.warn(`  ${y}: 0 rows after retries`); continue; }
+      if (rows.length >= ROW_CAP) truncated.push(y);
+
+      const mine = ARTIST_ID ? rows.filter(r => String(r.artist_id) === ARTIST_ID) : rows;
+      out.push(...mine);
+      console.log(
+        `  ${y}: ${String(mine.length).padStart(4)} rows` +
+        (ARTIST_ID ? ` (of ${rows.length} across all artists)` : '') +
+        (rows.length >= ROW_CAP ? '  <-- AT ROW CAP, TRUNCATED' : '')
+      );
     } catch (e) {
       failures.push(y);
       console.warn(`  ${y}: ${e.message}`);
     }
   }
-  if (failures.length && failures.length === (TO - FROM + 1)) {
+
+  const span = TO - FROM + 1;
+  if (failures.length + empty.length === span) {
     throw new Error(
-      `every year from ${FROM} to ${TO} failed. The endpoint shape has probably ` +
-      `changed — run with --probe to see what the API actually returns.`
+      `every year from ${FROM} to ${TO} came back empty or failed. The endpoint ` +
+      `shape has probably changed — run with --probe to see what the API returns.`
     );
   }
-  if (failures.length) console.warn(`  NOTE: ${failures.length} year(s) failed: ${failures.join(', ')}`);
+  if (failures.length) console.warn(`\n  NOTE: ${failures.length} year(s) failed: ${failures.join(', ')}`);
+  if (empty.length) {
+    console.warn(`  NOTE: ${empty.length} year(s) returned nothing: ${empty.join(', ')}`);
+    console.warn('  If the band was active then, this is throttling — just run it again.');
+  }
+  if (truncated.length) {
+    console.warn(`\n  WARNING: ${truncated.join(', ')} hit the ${ROW_CAP}-row cap and are INCOMPLETE.`);
+    console.warn('  Split those years further (the API has no paging) before trusting the file.');
+  }
+  if (ARTIST_ID && !out.length) {
+    throw new Error(
+      `rows were returned but none had artist_id ${ARTIST_ID}. Check the id ` +
+      `(--artist) — run --probe to see which artists the API is serving.`
+    );
+  }
   return out;
 }
 
@@ -148,9 +226,23 @@ async function probe() {
   const year = Number(arg('probe-year', TO - 1));
   const url = `${API}/setlists/showyear/${year}.json`;
   console.log(`Probing ${url}\n`);
-  const rows = await getJSON(url);
-  console.log(`${rows.length} rows returned.\n`);
+  const rows = await getJSON(url, { retryEmpty: true });
+  console.log(`${rows.length} rows returned.${rows.length >= ROW_CAP ? '  <-- AT ROW CAP, TRUNCATED' : ''}\n`);
   if (!rows.length) return;
+
+  // Which bands are in here? Every response mixes them, so this is the check
+  // that matters most before trusting a run.
+  const byArtist = new Map();
+  for (const r of rows) {
+    const k = `${r.artist_id} ${r.artist}`;
+    byArtist.set(k, (byArtist.get(k) || 0) + 1);
+  }
+  console.log(`Artists in this response (filtering on artist_id ${ARTIST_ID || '— none, keeping all'}):`);
+  for (const [k, n] of [...byArtist].sort((a, b) => b[1] - a[1])) {
+    const id = k.split(' ')[0];
+    console.log(`  ${String(n).padStart(4)}  ${k}${id === ARTIST_ID ? '   <-- kept' : ''}`);
+  }
+  console.log();
 
   console.log('Field names on the first row:');
   console.log('  ' + Object.keys(rows[0]).join('\n  '));
@@ -158,7 +250,7 @@ async function probe() {
   console.log(JSON.stringify(rows[0], null, 2));
 
   const need = ['show_id', 'showdate', 'song_id', 'songname', 'setnumber', 'position',
-                'tracktime', 'transition', 'isjamchart', 'isoriginal', 'venuename'];
+                'tracktime', 'transition', 'isjamchart', 'isoriginal', 'venuename', 'artist_id'];
   const missing = need.filter(f => !(f in rows[0]));
   console.log(missing.length
     ? `\nMISSING expected fields: ${missing.join(', ')}\n` +
@@ -423,7 +515,7 @@ export function buildCSV(raw, opts = {}) {
 async function main() {
   if (PROBE) return probe();
 
-  console.log('Fetching setlists from elgoose.net...');
+  console.log(`Fetching setlists from elgoose.net (artist_id ${ARTIST_ID || 'all'}, ${FROM}–${TO})...`);
   const raw = await fetchAllRows();
   if (!raw.length) throw new Error('No rows returned — nothing to write.');
   console.log(`  ${raw.length} raw rows`);
@@ -435,7 +527,16 @@ async function main() {
 
   console.log(`\nWrote ${OUT}`);
   console.log(`  ${performances} performances · ${shows} shows · ${songs} distinct songs`);
-  console.log('\nExpect roughly 14k performances across ~1180 shows for Goose.');
+
+  // Measured against the live API in Aug 2026, Goose only, 2014–2026. The site
+  // lists ~855 Goose shows but only ~655 carry a setlist (the rest are
+  // announced-but-unplayed dates), so shows-with-songs is the number to watch.
+  if (ARTIST_ID === '1' && !LIMIT) {
+    console.log('\nExpect roughly 7.5k performances across ~655 shows for Goose.');
+    if (performances < 6000 || shows < 550) {
+      console.warn('That is well short — a year was probably throttled. Re-run; it is not sticky.');
+    }
+  }
   console.log('If the counts are far off, run with --probe before trusting the file.');
 }
 
