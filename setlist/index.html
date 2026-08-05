@@ -361,26 +361,57 @@
    *
    * scripts/setlist/check_data.mjs asserts the role hues stay distinct. */
   .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
-  .chip{font-size:9.5px; font-weight:900; letter-spacing:.7px; text-transform:uppercase;
-    padding:2px 5px; border-radius:4px; background:var(--line); color:var(--mut);}
+  .chip{display:inline-block; font-size:9.5px; font-weight:900; letter-spacing:.7px;
+    text-transform:uppercase; padding:2px 5px; border-radius:4px; background:var(--line);
+    color:var(--mut);}
 
   /* ROLE — outlined. What the song IS. The left strip on the card carries the
      same colour, so this is the quiet family. */
   .chip.acc{background:transparent; color:var(--acc);
     box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
 
-  /* FLOW — solid green. Something happens at this song. */
-  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);}
-  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;}
+  /* ...except the peak, which melts. Sagging bottom corners and two drips of
+     different lengths — a matched pair reads as legs, not as running colour.
+     The margin reserves the drips' room so they never reach the row below. */
+  .chip.acc.peak{position:relative; margin-bottom:6px; border-radius:4px 4px 9px 6px;}
+  .chip.acc.peak:before, .chip.acc.peak:after{content:''; position:absolute; top:100%;
+    background:color-mix(in srgb,var(--acc) 60%, transparent); border-radius:0 0 2px 2px;}
+  .chip.acc.peak:before{left:20%; width:3.5px; height:7px;}
+  .chip.acc.peak:after{left:55%; width:2.5px; height:4px;}
+
+  /* FLOW — solid green, and both of them are shaped like what they mean.
+     A setlist writes a segue as ">", so the segue chip is an arrow pointing
+     at the song it lands on. A sandwich is drawn as one: crust on top and
+     bottom, filling between, domed like a bun. */
+  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
+    padding-right:11px;
+    clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
+  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px; padding:1px 7px;
+    border-top:4px solid #E3A857; border-bottom:3px solid #C98B3E;
+    border-radius:9px 9px 4px 4px;}
 
   /* RARITY — solid gold. */
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
 
-  /* ARCHIVE — tie dye, and the only place on a card it appears. RECOMMENDED
-     is the stronger claim (worth 0.55 of a version multiplier against the
-     jamchart's 0.30) so it gets the filled dye; JAMCHART gets a dyed edge.
-     Dark ink on the fill because the dye's own colours are what carry it —
-     coloured text on a coloured ground at this size is a smudge. */
+  /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
+   *
+   * A badge marked the single highest-scoring song of the show 66% of the
+   * time, and a player who could see the badges scored 1132 against 994 for
+   * one who could not. That is a lot of the game being answered on the card.
+   *
+   * Splitting them keeps the useful half and takes back the surprise.
+   * JAMCHART is a fact about the take and it is what does most of the
+   * guiding — it stays. RECOMMENDED is the archive's verdict on which
+   * version is THE one; there are only 123 of them in 7504 performances, and
+   * they average 98 points against 43 for an unbadged take. Telling you in
+   * advance turns the best moment in the game into an instruction.
+   *
+   * So it is hidden while you draft and revealed when the show plays back:
+   * you find out you took the definitive version at the same moment the
+   * crowd does. The scorecard and the one-that-got-away still name it.
+   *
+   * Dark ink on the fill because the dye's own colours are what carry it —
+   * coloured text on a coloured ground at this size is a smudge. */
   /* The dye must SWEEP inside a chip this small, not sit zoomed into one arc
      of it. At 260% a jamchart border showed a single gold edge and read as
      ENCORE; at 100% the whole wheel crosses the chip and it is unmistakable. */
@@ -602,6 +633,7 @@
   .sim-nm{font-size:15.5px; font-weight:800; min-width:0;}
   .sim-pts{font-family:var(--hero); font-size:19px; color:var(--goldT); flex:0 0 auto;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
+  .sim-badge{margin-top:6px;}
   .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;}
   .sim-seg b{color:var(--goldT);}
   .sim-time{font-size:12px; font-weight:700; color:var(--mut); padding:2px 2px 6px;}
@@ -1169,9 +1201,8 @@ function renderDraft(){
       const chips = [];
       if (sandwich && !dead) chips.push('<span class="chip sand">CLOSES SANDWICH</span>');
       else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
-      if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
-      else if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
-      if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
+      if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
+      if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
       const why = used ? 'already in your show'
@@ -1687,6 +1718,8 @@ function showBeats(){
         role: r.perSet[si][j].role.name,
         gained: sc.subtotal,
         reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length),
+        // Held back from the draft card on purpose — this is where it lands.
+        recommended: isRecommended(perf),
         event: seg ? eventLine(seg.kinds, j + perf.song.length) : null,
         segPoints: seg ? seg.points : 0,
       });
@@ -1741,6 +1774,7 @@ function renderShow(){
             <span class="sim-pts">+${b.gained}</span>
           </div>
           <div class="sim-react">${esc(b.reaction)}</div>
+          ${b.recommended ? `<div class="sim-badge"><span class="chip rec">The archive&rsquo;s pick</span></div>` : ''}
         </div>`);
       subEl.textContent = b.perf.song;
     } else if (b.kind === 'time'){
