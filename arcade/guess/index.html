@@ -71,6 +71,12 @@
     letter-spacing:.1em; color:#fff; background:var(--blue); border-radius:999px; padding:2px 8px;}
 
   /* guess input */
+  /* Pro version switcher: change sport without leaving the game */
+  .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  .modesw.hidden{display:none;}
+  .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
+  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
+  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
   .searchwrap{position:relative; margin-bottom:8px;}
   .search{display:flex; gap:8px;}
   .search input{flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
@@ -195,6 +201,7 @@
 
   <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
+  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="searchwrap">
     <div class="search">
       <input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a player's name…" aria-label="Guess a player" />
@@ -261,6 +268,7 @@
 <script src="/arcade/rosters.js"></script>
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
+<script src="/arcade/mode.js"></script>
 <script src="/arcade/archive.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js"></script>
@@ -271,7 +279,10 @@
   if(window.RTGHowto) RTGHowto.init('guess');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var MAX = 8, SAVE_KEY='rtg:guess:v1';
+  var MAX = 8, GAME_BASE='guess';
+  // Mode-parameterized ids (Pro version picker): 'all' keeps base ids; a sport
+  // mode suffixes them (guess_nba) and forces the daily target to that league.
+  var MODE='all', SPORTFILTER=null, GAME='guess', SAVE_KEY='rtg:guess:v1', RESUME_KEY='rtg:resume:guess';
   var TEAM_SPORTS = {NBA:1,NFL:1,MLB:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -282,7 +293,7 @@
   // First (ranked) play uses the deterministic daily seed so everyone gets the
   // same mystery player for the leaderboard. Replays reseed randomly for a fresh target.
   var rng, servedDaily=false;
-  function seedDaily(){ rng=mulberry32(xmur3('guess-'+DATE)()); }
+  function seedDaily(){ var s=(window.RTGMode?RTGMode.seed(GAME_BASE,MODE,DATE):(GAME_BASE+'-'+DATE)); rng=mulberry32(xmur3(s)()); }
   function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
   seedDaily();
 
@@ -365,7 +376,10 @@
      has to be that target's. */
   var TARGET, SPORT, POOL;
   function pickTarget(){
-    TARGET = TARGETS[Math.floor(rng()*TARGETS.length)] || TARGETS[0];
+    // sport version forces the daily target to that league; 'all' uses the full pool
+    var pool = SPORTFILTER ? TARGETS.filter(function(e){ return e.sport===SPORTFILTER; }) : TARGETS;
+    if(!pool.length) pool = TARGETS;
+    TARGET = pool[Math.floor(rng()*pool.length)] || pool[0];
     SPORT = TARGET.sport;
     POOL = GUESSABLE.filter(function(e){ return e.sport===SPORT; });
     byId={}; POOL.forEach(function(e){ byId[e.id]=e; });
@@ -604,14 +618,14 @@
 
   // ---- timer ----
   function startIfNeeded(){ if(started||done) return;
-    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt('guess'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
+    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); tick=setInterval(function(){ elapsed=(performance.now()-startTs)/1000; },500); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateLead(){
     var b=document.getElementById('sportBadge'); if(b) b.textContent=SPORT;
     var v=document.querySelector('.lead .v'); if(!v) return;
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
     var traits = ROSTER_MODE
       ? (SPORT==='NFL'
@@ -625,7 +639,7 @@
   }
   function beginAttempt(){
     // Ranked first play = the daily target; every replay picks a fresh random target.
-    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('guess')>0);
+    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
     pickTarget();
@@ -678,7 +692,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -690,7 +704,7 @@
   // ---- mid-run reload protection: persist the in-progress RANKED attempt so a
   // refresh doesn't burn the daily token. Only the first (ranked) play is saved;
   // archive practice and replays never are.
-  var RESUME_KEY='rtg:resume:guess';
+  // RESUME_KEY is mode-keyed (set by configureMode).
   function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
   function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), g:guesses.map(function(e){ return e.id; }), c:cluesUsed })); }catch(e){} }
@@ -723,7 +737,7 @@
     document.getElementById('yourBest').textContent = s.bestStreak||0;
 
     if(w && attemptFirst && window.RTG_BOARD){
-      RTG_BOARD.submit('guess', DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
@@ -734,7 +748,7 @@
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', function(){
@@ -766,7 +780,7 @@
   function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function renderRealBoard(){
     if(!window.RTG_BOARD) return;
-    RTG_BOARD.leaderboard('guess', DATE, 5).then(function(rows){
+    RTG_BOARD.leaderboard(GAME, DATE, 5).then(function(rows){
       if(rows===null) return;
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
@@ -801,25 +815,74 @@
     document.getElementById('scrim').classList.remove('hidden'); startCountdown();
   }
 
-  // ---- boot ----
-  var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
-  if(saved.bestStreak){ document.getElementById('yourBest').textContent=saved.bestStreak; }
-  // A mid-run snapshot from TODAY, with the token already spent (playsOf>0) but
-  // the game never finished (lastDone!==DATE) → resume instead of lockout/replay.
-  var RES=loadResume();
-  var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf('guess')>0;
-  if(!ARCHIVE && RES && !canResume) clearResume();   // stale or invalid snapshot
-  if(canResume){
-    resumeAttempt(RES);
-  } else if(!ARCHIVE && saved.lastDone===DATE && saved.last && window.RTGTokens && !RTGTokens.canPlay('guess')){
-    lockToday(saved);           // out of plays → locked review
-  } else {
-    beginAttempt();             // fresh playable game (same daily target); charge only on first guess (archive: past-day practice)
+  // ---- mode config + boot ----
+  function configureMode(mode){
+    MODE = (window.RTGMode && mode) ? mode : 'all';
+    SPORTFILTER = (window.RTGMode ? RTGMode.sportOf(MODE) : null);
+    GAME = (window.RTGMode ? RTGMode.key(GAME_BASE, MODE) : GAME_BASE);
+    SAVE_KEY = 'rtg:guess' + (MODE==='all'?'':':'+MODE) + ':v1';
+    RESUME_KEY = 'rtg:resume:' + GAME;
   }
+  function renderSwitcher(){
+    var el=document.getElementById('modesw'); if(!el) return;
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
+    el.classList.remove('hidden');
+    el.innerHTML = RTGMode.MODES.map(function(m){
+      var lab = m.k==='all' ? 'All' : m.label;
+      return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
+    }).join('');
+    [].forEach.call(el.querySelectorAll('button'), function(b){ b.addEventListener('click', function(){ switchMode(b.dataset.m); }); });
+  }
+  function switchMode(mode){
+    if(!window.RTGMode || mode===MODE) return;
+    try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
+    if(!ARCHIVE && !done) clearResume();   // leaving mid-game abandons this version's attempt
+    configureMode(mode);
+    servedDaily=false;                     // new version's first play is its ranked daily
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    renderSwitcher();
+    bootCurrentMode();
+    toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
+  }
+  function bootCurrentMode(){
+    var saved=load();
+    document.getElementById('streakN').textContent=saved.streak||0;
+    document.getElementById('yourBest').textContent=saved.bestStreak||0;
+    var RES=loadResume();
+    var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
+    if(!ARCHIVE && RES && !canResume) clearResume();   // stale or invalid snapshot
+    if(canResume){ resumeAttempt(RES); }
+    else if(!ARCHIVE && saved.lastDone===DATE && saved.last && window.RTGTokens && !RTGTokens.canPlay(GAME)){ lockToday(saved); }
+    else { beginAttempt(); }
+    if(window.RTG_BOARD){
+      renderRealBoard();
+      if(RTG_BOARD.state().signedIn){ RTG_BOARD.streakOf(GAME).then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
+    }
+  }
+  function startWith(mode){ configureMode(mode); renderSwitcher(); bootCurrentMode(); }
+  function activeResumeMode(){
+    var cands = (window.RTGMode && RTGMode.eligible() && !ARCHIVE) ? ['all','nba','nfl','mlb'] : ['all'];
+    for(var i=0;i<cands.length;i++){
+      var m=cands[i], g=(window.RTGMode?RTGMode.key(GAME_BASE,m):GAME_BASE);
+      var r; try{ r=JSON.parse(LS.getItem('rtg:resume:'+g)); }catch(e){ r=null; }
+      if(!(r && r.d===DATE)) continue;
+      var sv; try{ sv=JSON.parse(LS.getItem('rtg:guess'+(m==='all'?'':':'+m)+':v1'))||{}; }catch(e){ sv={}; }
+      if(sv.lastDone===DATE) continue;
+      if(!(window.RTGTokens && RTGTokens.playsOf(g)>0)) continue;
+      return m;
+    }
+    return null;
+  }
+
+  var rmode=activeResumeMode();
+  if(rmode){ startWith(rmode); }
+  else if(window.RTGMode && RTGMode.eligible() && !ARCHIVE){ RTGMode.choose(GAME_BASE, { title:'Guess the Player' }).then(startWith); }
+  else { startWith('all'); }
+
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){
-      if(st.signedIn){ RTG_BOARD.streakOf('guess').then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
+      if(st.signedIn){ RTG_BOARD.streakOf(GAME).then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
       renderRealBoard();
     });
   }
