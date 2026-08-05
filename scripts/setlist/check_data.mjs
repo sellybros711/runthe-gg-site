@@ -99,6 +99,17 @@ for (const band of BANDS) {
 
   check(segues.size > 0, `segue pairs found (${segues.size})`);
 
+  // The draft screen shows "ran into X" and highlights the song that finishes an
+  // open segue. Both read fields the loader derives, so if that derivation
+  // breaks the arrows quietly vanish and the mechanic goes back to being luck.
+  const { partners } = loadBand(text);
+  const withPartner = shows.flatMap(x => x.songs).filter(r => r.segued_into);
+  check(withPartner.length > 0, `performances carrying a segue partner (${withPartner.length})`);
+  check(partners && partners.size > 0, `songs with a known segue partner (${partners ? partners.size : 0})`);
+  const bad = withPartner.filter(r => !r.segued_into_id || r.is_segue !== 'true');
+  check(!bad.length, 'every segue partner belongs to a song that actually segued',
+    bad.length ? `${bad.length} rows` : '');
+
   // Scoring reads crowd_rating as song esteem. If the jamchart join silently
   // breaks, every song collapses to the neutral base and the game goes flat —
   // which is exactly the bug v2 shipped with, so it is worth asserting.
