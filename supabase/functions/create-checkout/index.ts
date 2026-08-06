@@ -34,7 +34,9 @@ const corsFor = (req: Request) => {
   const dev = origin === "null" || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   return {
     "access-control-allow-origin": dev ? origin : SITE_URL,
-    "access-control-allow-headers": "authorization, content-type",
+    // supabase-js sends apikey + x-client-info alongside the JWT; the browser
+    // refuses to POST unless the preflight allows every header it plans to send.
+    "access-control-allow-headers": "authorization, apikey, content-type, x-client-info",
     "access-control-allow-methods": "POST, OPTIONS",
   };
 };
