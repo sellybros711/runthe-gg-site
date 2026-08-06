@@ -303,7 +303,10 @@
     if(shield){ p.textContent='Save ready'; p.classList.remove('used'); }
     else { p.textContent='Save used'; p.classList.add('used'); } }
 
-  function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
+  // years (from the decade span) + the teams they suited up for — the two
+  // clues the player actually reasons from. Sport is implied by the teams.
+  function eraStr(e){ var d=e.decade; if(!d||!d.length) return ''; var a=d[0], b=d[d.length-1]; return a===b ? (a+'s') : (a+'s–'+b+'s'); }
+  function metaLine(e){ return [eraStr(e)].concat(e.t||[]).filter(Boolean).join(' · '); }
   // team-color accent: look up the player's team in the shared palette
   function teamStyle(e){
     var tm=e.t&&e.t[0], c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);   // matches the team shown on the card

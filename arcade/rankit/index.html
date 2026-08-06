@@ -143,6 +143,8 @@
   .abtn.gold{background:var(--pink); color:#fff; border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
+  .rk-nudge{animation:rknudge .38s ease;}
+  @keyframes rknudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
   /* podium flash */
   .podium{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; background:rgba(3,9,18,.55); backdrop-filter:blur(3px); animation:podfade .2s ease;}
   .podium.out{opacity:0; transition:opacity .3s;}
@@ -240,7 +242,7 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Rank all five right to clear the set. One wrong order ends your run.</span></div>
+    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place — then one more try.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -251,7 +253,7 @@
   <div class="rows" id="rows"></div>
 
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
-  <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check. One wrong order ends your run.</div>
+  <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check. You get two tries per set.</div>
 
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
@@ -391,7 +393,7 @@
   var SETS=buildRun();
 
   var run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, lastCheck=null, reveal=false, charged=false, attemptFirst=false;
-  var order=[];
+  var order=[], setTries=0;   // two tries per set: first blind (count only), second decisive
   var CUR=null;    // the set actually dealt on screen; check() always compares against THIS object
   var drag=null;   // in-flight drag gesture; committed on release or right before a check
   var rowsEl=document.getElementById('rows');
@@ -476,7 +478,8 @@
     var S=CUR=curSet();
     order=shuffle(S.answer);
     for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
-    lastCheck=null; reveal=false;
+    lastCheck=null; reveal=false; setTries=0;
+    var cb0=document.getElementById('checkBtn'); if(cb0) cb0.textContent='Check order';
     document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1)+' of '+SETS.length;
     document.getElementById('prompt').innerHTML=S.lead;
     document.getElementById('axTop').textContent='↑ '+S.axisTop;
@@ -504,30 +507,39 @@
     // A board that reads correct along the asked axis always clears.
     var keys=S.answer.map(function(e){ return S.key(e); });
     var correct=order.map(function(e,i){ return S.key(e)===keys[i]; });
-    var allRight=correct.every(Boolean);
-    lastCheck=correct; reveal=true; busy=true; render();
+    var nRight=correct.filter(Boolean).length, allRight=nRight===order.length;
+
     if(allRight){
-      // set cleared — count it and serve the next one
-      run++;
-      document.getElementById('runN').textContent=run;
-      saveResume();
+      // cleared — reveal, count it, serve the next set
+      lastCheck=correct; reveal=true; busy=true; render();
+      run++; document.getElementById('runN').textContent=run; saveResume();
       if(window.RTGSound) RTGSound.lock();
       showPodium(order, S);
-      setTimeout(function(){
-        busy=false;
-        if(run>=SETS.length){ finish(); return; }   // cleared the whole run
-        startSet();
-      }, 2050);
-    } else {
-      // any wrong slot ends the run: reveal the values, then the correct order
-      if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){
-        order=S.answer.slice();
-        lastCheck=order.map(function(){ return true; });
-        render();
-        setTimeout(function(){ busy=false; finish(); }, 900);
-      }, 1500);
+      setTimeout(function(){ busy=false; if(run>=SETS.length){ finish(); return; } startSet(); }, 2050);
+      return;
     }
+
+    setTries++;
+    if(setTries<2){
+      // FIRST try: tell them ONLY how many are in the right spot — no colours,
+      // no values revealed — then let them fix it. The run does NOT end.
+      if(window.RTGSound){ (RTGSound.soft||RTGSound.wrong).call(RTGSound); }
+      var h=document.getElementById('hintline');
+      if(h) h.innerHTML='<b>'+nRight+' / '+order.length+'</b> in the right spot — one more try. (Which ones? That’s for you to figure out.)';
+      var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check — last try';
+      var rowsWrap=document.getElementById('rows'); if(rowsWrap){ rowsWrap.classList.remove('rk-nudge'); void rowsWrap.offsetWidth; rowsWrap.classList.add('rk-nudge'); }
+      return;
+    }
+
+    // SECOND try failed: reveal per-slot, then the correct order, then end.
+    lastCheck=correct; reveal=true; busy=true; render();
+    if(window.RTGSound) RTGSound.wrong();
+    setTimeout(function(){
+      order=S.answer.slice();
+      lastCheck=order.map(function(){ return true; });
+      render();
+      setTimeout(function(){ busy=false; finish(); }, 900);
+    }, 1500);
   }
 
   function startIfNeeded(){ if(started||done) return;

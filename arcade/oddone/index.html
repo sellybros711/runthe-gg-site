@@ -79,6 +79,9 @@
   .choice.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 15%, var(--card));}
   .choice.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 14%, var(--card));}
   .choice.dim{opacity:.5;}
+  .whyq{text-align:center; font-weight:900; font-size:13px; color:var(--ink); margin:2px 0 4px;}
+  .whyq span{color:var(--goldT); font-size:11px; letter-spacing:.04em;}
+  .choice.why{text-align:center;}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -399,11 +402,56 @@
     if(right){
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 1250);
+      setTimeout(function(){ askWhy(r); }, 1250);   // bonus round, then advance
     } else {
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 1600);
     }
+  }
+
+  // Bonus after a correct spot: name WHY the four are linked for +5 coins.
+  // Decoys are verified false against the four (a decoy can never be secretly
+  // true), and this never affects the run or streak — pure upside.
+  function coinAdd(n){ try{ var v=parseInt(LS.getItem('runthegrid_coins')||'0',10)||0; LS.setItem('runthegrid_coins', String(Math.max(0,v+n))); }catch(e){} }
+  function whyTrueLabel(r){
+    if(r.type==='t') return 'All played for '+r.team;
+    if(r.type==='p') return 'All '+r.conn;
+    if(r.type==='d') return 'All starred in '+r.conn;
+    return 'All Hall of Famers';
+  }
+  function askWhy(r){
+    var four = r.five.filter(function(id){ return id!==r.odd; }).map(function(id){ return byId[id]; });
+    var trueLab = whyTrueLabel(r);
+    var CAND = [
+      { lab:'All Hall of Famers', p:function(e){ return !!e.hof; } },
+      { lab:'All born in the USA', p:function(e){ return e.nat==='United States'; } },
+      { lab:'All No. 1 overall picks', p:function(e){ return e.dp===1; } },
+      { lab:'All active in the 2010s', p:function(e){ return (e.decade||[]).indexOf(2010)>=0; } },
+      { lab:'All active in the 2000s', p:function(e){ return (e.decade||[]).indexOf(2000)>=0; } },
+      { lab:'All MVP winners', p:function(e){ return (e.aw||[]).some(function(a){ return /MVP/i.test(a); }); } }
+    ];
+    var decoys=[];
+    shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
+    ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
+    var opts = shuffle([trueLab].concat(decoys));
+    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked? <span>+5 🪙</span></div>' +
+      opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
+    var answered=false;
+    function go(){ if(answered) return; answered=true; busy=false; renderRound(); }
+    [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(b){
+      b.addEventListener('click', function(){
+        if(answered) return; answered=true;
+        var ok=b.dataset.l===trueLab;
+        [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(x){
+          if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
+          if(x===b && !ok) x.classList.add('wrong');
+        });
+        if(ok){ coinAdd(5); toast('🪙 +5 — you knew why!'); if(window.RTGSound) RTGSound.lock(); }
+        else { toast('The link: '+trueLab); }
+        setTimeout(go, 1150);
+      });
+    });
+    setTimeout(go, 6000);   // ignored → just move on
   }
 
   function startIfNeeded(){ if(started||done) return;

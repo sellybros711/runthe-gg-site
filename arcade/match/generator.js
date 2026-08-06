@@ -237,7 +237,10 @@
   // career carries the board while achievement/statistical are empty (no awards
   // yet); wordplay is capped so it's flavor, not a crutch. MIN_FAMILIES rises
   // back to 2–3 automatically once awards/milestones fill those families in.
-  var FAM_CAP = { wordplay: 2 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
+  // wordplay (surname / name-also / alliterative) is capped at ONE per board so
+  // a board can never be solved by scanning last names — it forces real sports
+  // groups (teams, jersey numbers, decades, draft classes, nationalities, …).
+  var FAM_CAP = { wordplay: 1 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
   var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
   function pickCategories(cats, rng) {
     for (var attempt = 0; attempt < 200; attempt++) {
