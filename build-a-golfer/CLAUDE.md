@@ -14091,6 +14091,54 @@ allows Google Fonts, or self-host Anton.*
   server error - send that line and it points straight at the root cause (a Supabase health/Disk-IO issue
   like the 2026-07-22 outage would read as a timeout/fetch error).
 
+- **Fast sim sold with the pass · animated gold PRO usernames · forced-rename moderation tool (owner
+  batch).** Three asks:
+  1. **"Fast simulation should also be included in the tour pass."** It already WAS, in code: `paceMs()`
+     downgrades `fast`→`normal` for non-Pro and the pace toggle skips it, but it appeared in NO pass copy,
+     so nobody knew they were buying it. Added it to `passPerksHTML` (the sales-page perk list), the
+     FREE-vs-PRO lane comparison, and the post-purchase benefits explainer. No mechanic change.
+  2. **"Usernames of people with the pro tour pass displayed with an animated gold effect."** The client
+     knew its OWN pass (`runtour_wallet.pass_active`) but nothing about other players: `tour_pass` is
+     RLS'd to its owner and no board RPC carried a pro flag. New **`supabase/74_runtour_pro_users.sql`**
+     (owner-run) exposes the CURRENT season's holders in one tiny read (`user_id, username`, SECURITY
+     DEFINER so it can read tour_pass + call the anon-ungranted `runtour_pass_season()`, hard `limit 5000`,
+     granted to anon+authenticated). Chose this over adding an `is_pro` column to six board functions:
+     each is a delicate drop+recreate the client has fallbacks for, two are perf-tuned by 61, and a
+     per-board column could NOT cover the streak board (username only, no id). Client: `proLoad()` caches
+     the set for 5 min (fails open), `isProUser(uid,name)` matches by id or username (your own row uses the
+     authoritative wallet), and `proNameHTML()` wraps the name in `.proname` - an animated gold sweep
+     (`proShine`, reduced-motion static). Applied to the season/career board rows + podium, Play 18 +
+     weekly, the streak boards, Course Records' today board + podium, and the player card's nameplate;
+     anonymised guests are never gilded. Validated migration 74 on a local Postgres (only the current-season
+     holder returns, an expired 'S0' pass does not, anon can call it but still can't read `tour_pass`,
+     idempotent) and the client in Playwright (gold on all 5 surfaces, guest never gilded, the computed
+     style really animates, 0 page errors).
+  3. **"The user georgefloyd69 - make them change their name."** The username is DENORMALISED, so renaming
+     the profile alone would leave it on every posted row. New **`supabase/75_runtour_force_rename.sql`**
+     (owner-run), written as a REUSABLE moderation tool rather than a hand edit: `runtour_force_rename
+     (username, reason)` renames the account to a neutral `player_<8 hex>` placeholder, scrubs the frozen
+     copies in `runtour_scores.display_name` / `runtour_daily_scores.display_name` / `drafts.username`
+     (each guarded by `to_regclass`/`information_schema` so a missing table can't fail it), and records a
+     flag; `username_ok` gains a "real people mocked as usernames" blocklist section so the name and its
+     underscore/leetspeak variants can never be taken again; `set_username` now CLEARS the flag, so picking
+     a valid new name is what satisfies it. The flag lives in its own `runtour_name_flags` table with
+     OWNER-ONLY RLS (profiles is world-readable, so a flag column there would publish who was actioned)
+     plus a `runtour_my_name_flag()` RPC that returns the reason for the CALLER only. The function is
+     service_role/SQL-editor only - never callable from a browser - and the migration calls it once for
+     `georgefloyd69` (a no-op on re-run). Client: `checkNameFlag()` runs in the post-sign-in chain; when
+     flagged the account overlay opens on "Choose a new username" with the reason in a red card and is
+     NOT dismissible (no ✕, Escape ignored, the mobile Back guard re-pushes), until a valid name saves.
+     Validated 75 on a local Postgres across 8 checks: profile renamed, all three frozen-copy tables
+     scrubbed (0 occurrences left), the name + `george_floyd` + `G3orgeFloyd` all rejected while a normal
+     name passes, the flag stored with the old name for the record, a valid rename clears the flag, the
+     retired name can't be retaken, a full re-run is a no-op, and `authenticated` is denied the tool.
+     Client verified in Playwright (forced open with no ✕, survives Escape + popstate + a route to the
+     profile, saving clears it and the overlay behaves normally again, an unflagged account is never
+     gated). **ACTIONS: run `supabase/74_runtour_pro_users.sql` and `supabase/75_runtour_force_rename.sql`.**
+     Until then: nobody is gilded (fail-open) and the account keeps its name.
+  Full regression green (board retry/timeout suite, gold-name suite, an 18-hole practice round), 0 page
+  errors. Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
