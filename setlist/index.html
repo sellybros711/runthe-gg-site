@@ -37,8 +37,15 @@
     --greenT:#48D17A; --redT:#FF625F; --blueT:#5C8CFF;
     /* Peak's own hue. It used to borrow --redT, which sits 3 degrees off
        --coralT, so COVER and PEAK chips were the same colour on screen. */
-    --pinkT:#FF6FC1; --peak-ink:#2A0714;
+    --pinkT:#FF6FC1;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    /* THREE SPEEDS AND ONE CURVE.
+       Durations had grown to eleven different values between .1s and .5s and
+       four easings, which is why nothing felt of a piece. Everything that
+       moves now picks one of these. --ease is a soft ease-out: quick to leave,
+       gentle to arrive, which is what reads as "smooth" rather than "slow". */
+    --t-fast:120ms; --t-base:220ms; --t-slow:340ms;
+    --ease:cubic-bezier(.33,1,.68,1);
     --r-lg:14px; --r-md:10px; --r-sm:8px;
     /* Tie dye, from the existing accents rather than a new palette — the same
        five colours the chips and accent strips already use, swept round. */
@@ -54,7 +61,7 @@
        a wider face would push "remaining" back out of a 390px screen. */
     /* The melted bottom edge, shared by anything that should look like it is
        running. preserveAspectRatio=none so one path fits any chip width. */
-    --melt:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 26' preserveAspectRatio='none'%3E%3Cpath d='M0 0h60v14c-3.2 0-2.6 7.5-6.4 7.5S50 14 47 14s-2 4-4.4 4-2.6-4-5.2-4-2.4 10-6.4 10-3.6-10-6.2-10-2.2 5.5-4.6 5.5S18 14 15.4 14s-2.2 3.5-4.4 3.5S8.8 14 6.4 14 4 16.5 2 16.5.6 14 0 14z' fill='%23000'/%3E%3C/svg%3E");
+    --melt:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 26' preserveAspectRatio='none'%3E%3Cpath d='M0 0h60v19c-2.4 0-2 4-5 4s-2.6-4-5-4-1.8 2.6-4 2.6-2.2-2.6-4.6-2.6-2 5-5 5-2.8-5-5-5-1.8 2.4-4 2.4-2-2.4-4.4-2.4-1.8 3-4 3-2.2-3-4.6-3-1.6 1.8-3.4 1.8S1.2 19 0 19z' fill='%23000'/%3E%3C/svg%3E");
     --hero:'Alfa Slab One', Rockwell, Georgia, serif;
     --ui:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -64,7 +71,7 @@
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --violetT:#6D3BD6;
-    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86; --peak-ink:#FFF1F8;
+    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -82,6 +89,19 @@
   .hidden{display:none !important;}
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
     clip:rect(0 0 0 0); white-space:nowrap; border:0;}
+
+  /* One place that honours the preference, rather than four rules opting out
+     one at a time and the other dozen quietly ignoring it. Not 0s: a hair of
+     duration keeps transitionend firing, which the reel spin waits on. */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:.01ms !important; animation-iteration-count:1 !important;
+      transition-duration:.01ms !important; scroll-behavior:auto !important;
+    }
+    /* The loading ring is exempt and slowed instead. It is the only animation
+       here that carries information, and a frozen one reads as stuck. */
+    .spinner{animation-duration:2s !important; animation-iteration-count:infinite !important;}
+  }
 
   /* ---------------- shell ---------------- */
   .wrap{width:100%; max-width:1080px; margin:0 auto;
@@ -101,7 +121,6 @@
     background:var(--dye); background-size:140% 100%; opacity:.85;
     animation:dyeSlide 26s linear infinite;}
   @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:140% 50%;} }
-  @media (prefers-reduced-motion: reduce){ .topbar:after{animation:none;} }
   body.playing .topbar{padding-bottom:6px;}
   body.playing .brand img{height:30px;}
   .icon-btn{width:34px; height:36px; display:inline-flex; align-items:center; justify-content:center;
@@ -127,7 +146,8 @@
   .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
     border-radius:var(--r-md); border:1px solid var(--line2); background:var(--card2);
     color:var(--ink); font-weight:800; font-size:15px; padding:13px 18px;
-    transition:background .15s, border-color .15s, color .15s, transform .1s;}
+    transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+      color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);}
   .btn:hover{border-color:var(--teal);}
   .btn:active{transform:translateY(1px);}
   /* The way out of a set, at the end of the list, where you look for it after
@@ -169,7 +189,7 @@
      filling the line and running past the gutter. */
   .hero h1{font-family:var(--hero); font-size:clamp(38px,9.2vw,68px); line-height:.94;
     letter-spacing:0; margin:5px 0 9px; text-transform:uppercase;}
-  .hero h1 .accent{color:var(--gold);}
+  .hero h1 .accent{color:var(--ink);}
   /* @supports so a browser without background-clip:text still shows the word in
      gold rather than showing nothing at all. */
   @supports (-webkit-background-clip: text) or (background-clip: text) {
@@ -184,7 +204,6 @@
     0%,100%{ background-position:44% 46%; }
     50%    { background-position:56% 54%; }
   }
-  @media (prefers-reduced-motion: reduce){ .hero h1 .accent{animation:none;} }
   .tagline{font-size:13px; font-weight:800; letter-spacing:2.6px; text-transform:uppercase;
     color:var(--mut); margin:2px 0 10px;}
   @media (max-width:420px){ .tagline{font-size:11px; letter-spacing:1.8px;} }
@@ -235,23 +254,27 @@
   .reveal{min-height:70dvh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:22px; text-align:center;}
   .reveal-win{width:100%; max-width:520px; border-radius:var(--r-lg); overflow:hidden;
-    border:1px solid var(--line2); background:var(--card); box-shadow:var(--shadow);
-    transition:border-color .35s, box-shadow .35s;}
-  .reveal-win.landed{border-color:var(--gold);
-    box-shadow:0 0 0 1px var(--gold), 0 12px 40px -14px color-mix(in srgb,var(--gold) 60%, transparent);}
+    border:2px solid var(--line2); background:var(--card); box-shadow:var(--shadow);
+    transition:border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);}
+  .reveal-win.landed{border-color:transparent;
+    background:linear-gradient(var(--card),var(--card)) padding-box,
+               var(--dye) border-box;
+    background-size:auto, 100% 100%;
+    box-shadow:0 12px 44px -16px color-mix(in srgb,var(--violet) 55%, transparent);}
   .reveal-bar{display:flex; align-items:center; justify-content:space-between; gap:10px;
     padding:10px 16px; background:var(--card2); border-bottom:1px solid var(--line);}
   .reveal-bar .n{font-weight:900; font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums;}
   .reveal-body{padding:34px 22px; min-height:186px; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:7px;}
   .reveal-date{font-family:var(--hero); font-size:clamp(28px,7vw,40px); line-height:1.02;
-    color:var(--dim); transition:color .3s;}
+    color:var(--dim); transition:color var(--t-base) var(--ease);}
   .landed .reveal-date{color:var(--ink);}
-  .reveal-venue{font-size:15px; font-weight:800; color:var(--dim); transition:color .3s;}
+  .reveal-venue{font-size:15px; font-weight:800; color:var(--dim);
+    transition:color var(--t-base) var(--ease);}
   .landed .reveal-venue{color:var(--tealT);}
   .reveal-city{font-size:13px; font-weight:600; color:var(--dim);}
   .reveal-count{margin-top:8px; font-size:12px; font-weight:800; letter-spacing:1.6px;
-    text-transform:uppercase; color:var(--goldT);}
+    text-transform:uppercase; color:var(--mut);}
   .reveal-cue{font-size:13px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--mut);}
 
@@ -272,20 +295,19 @@
   .timebar{width:100%; height:5px; border-radius:99px; background:var(--card3);
     overflow:hidden; margin:1px 0 0;}
   .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
-    transition:width .35s ease, background-color .35s ease;}
+    transition:width var(--t-slow) var(--ease), background-color var(--t-slow) var(--ease);}
   .timebar.clk-low > span{background:var(--goldT);}
   .timebar.clk-out > span{background:var(--redT);}
   .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
-    transition:color .3s ease;}
+    transition:color var(--t-base) var(--ease);}
   .hud .rd-clock.clk-low{color:var(--goldT);}
   .hud .rd-clock.clk-out{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
   @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
-  @media (prefers-reduced-motion: reduce){ .hud .rd-clock.clk-out{animation:none;} }
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
-  .pip.done{background:var(--gold);} .pip.now{background:var(--teal); transform:scale(1.25);}
+  .pip.done{background:var(--mut);} .pip.now{background:var(--teal); transform:scale(1.25);}
 
   .board{display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:18px; align-items:start;}
 
@@ -297,16 +319,16 @@
     .board > .slotcol{position:fixed; inset:0; z-index:60; display:flex;
       align-items:flex-end; justify-content:center; background:rgba(0,0,0,0);
       visibility:hidden; pointer-events:none;
-      transition:background .28s ease, visibility 0s .28s;}
+      transition:background var(--t-slow) var(--ease), visibility 0s var(--t-slow);}
     body.sheet-on .board > .slotcol{visibility:visible; pointer-events:auto;
-      background:rgba(0,0,0,.62); transition:background .28s ease, visibility 0s;}
+      background:rgba(0,0,0,.62); transition:background var(--t-slow) var(--ease), visibility 0s;}
     .board > .slotcol > .setlist{width:100%; max-width:560px; margin:0;
       border-radius:18px 18px 0 0; border-bottom:0; max-height:84dvh; overflow-y:auto;
       padding-bottom:calc(14px + env(safe-area-inset-bottom,0));
       transform:translateY(100%); opacity:0;
-      transition:transform .22s ease, opacity .16s ease;}
+      transition:transform var(--t-base) var(--ease), opacity var(--t-base) var(--ease);}
     body.sheet-on .board > .slotcol > .setlist{transform:translateY(0); opacity:1;
-      transition:transform .34s cubic-bezier(.33,1,.68,1), opacity .22s ease;}
+      transition:transform var(--t-slow) var(--ease), opacity var(--t-base) var(--ease);}
     .sheetgrab{display:block;}
   }
   .sheetgrab{display:none; width:38px; height:4px; border-radius:99px;
@@ -329,19 +351,20 @@
   .song{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; width:100%;
     text-align:left; padding:10px 12px; border-radius:var(--r-sm); background:var(--card);
     border:1px solid var(--line); border-left:3px solid var(--acc, var(--line2));
-    transition:background .15s, border-color .15s, transform .1s;}
+    transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+      transform var(--t-fast) var(--ease);}
   .song:hover{background:var(--card2);}
   .song.used{opacity:.4; cursor:not-allowed;}
   .song.used:hover{background:var(--card);}
   .song.used .t{text-decoration:line-through;}
-  .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--goldT);
+  .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--greenT);
     font-size:16px; line-height:1; vertical-align:-1px;}
-  .song .o.seg{color:var(--goldT);}
+  .song .o.seg{color:var(--greenT);}
   .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
-    font-weight:700; line-height:1.45; color:var(--goldT);
-    background:color-mix(in srgb,var(--gold) 12%, transparent);
-    border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
+    font-weight:700; line-height:1.45; color:var(--greenT);
+    background:color-mix(in srgb,var(--green) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--green) 30%, transparent);}
   .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
@@ -360,15 +383,15 @@
     font-variant-numeric:tabular-nums;}
   .sf-song{flex:1; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis;
     white-space:nowrap;}
-  .sf-seg{font-style:normal; color:var(--goldT); font-weight:900; margin-left:3px;}
+  .sf-seg{font-style:normal; color:var(--greenT); font-weight:900; margin-left:3px;}
   .sf-len{color:var(--mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
   .sf-none{font-size:12px; font-weight:600; color:var(--dim); padding:2px 0 3px;}
 
   .hunt{margin-bottom:10px; padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px;
     font-weight:700; line-height:1.5; color:var(--mut);
-    background:color-mix(in srgb,var(--gold) 10%, transparent);
-    border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
-  .hunt b{color:var(--goldT);}
+    background:color-mix(in srgb,var(--green) 10%, transparent);
+    border:1px solid color-mix(in srgb,var(--green) 30%, transparent);}
+  .hunt b{color:var(--greenT);}
   .hunt.hot{background:color-mix(in srgb,var(--green) 12%, transparent);
     border-color:color-mix(in srgb,var(--green) 38%, transparent);}
   .hunt.hot b{color:var(--greenT);}
@@ -430,12 +453,16 @@
   .chip.acc{background:transparent; color:var(--acc);
     box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
 
-  /* ...except the peak, which melts, and is the one role loud enough to be
-     filled. The drip is cut out of the chip's own body by an SVG mask, so it
-     stays inside the chip's box and can never reach the row below. Percent
-     encoded rather than raw angle brackets so it is not a Chrome-only trick. */
-  .chip.acc.peak{background:var(--acc); color:var(--peak-ink); box-shadow:none;
-    letter-spacing:.9px; padding:2px 6px 6px; border-radius:5px 5px 0 0;
+  /* ...except the peak, which melts. The drip is cut out of the chip's own
+     body by an SVG mask, so it stays inside the chip's box and can never reach
+     the row below. Percent encoded rather than raw angle brackets so it is not
+     a Chrome-only trick.
+     Tinted, not filled: solid pink with dark ink at 9.5px was hard to read and
+     shouted over every other chip on the row. Same weight as its neighbours
+     now, and the melt still reads. The lobes are half as deep as the first
+     cut, which was eating into the text. */
+  .chip.acc.peak{background:color-mix(in srgb,var(--acc) 26%, transparent);
+    color:var(--acc); box-shadow:none; padding:2px 6px 5px; border-radius:5px 5px 0 0;
     -webkit-mask:var(--melt) no-repeat center/100% 100%;
     mask:var(--melt) no-repeat center/100% 100%;}
 
@@ -493,7 +520,8 @@
     color:var(--dim); padding-bottom:5px; margin-bottom:6px; border-bottom:1px solid var(--line);}
   .slot{display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:7px 9px;
     border-radius:var(--r-sm); background:transparent; border:1px solid transparent;
-    margin-bottom:3px; transition:background .15s, border-color .15s, box-shadow .2s;}
+    margin-bottom:3px; transition:background var(--t-fast) var(--ease),
+      border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);}
   .slot .nm{font-size:10.5px; font-weight:900; letter-spacing:.8px; text-transform:uppercase;
     color:var(--dim); width:64px; flex-shrink:0;}
   /* overflow-wrap so a long title breaks rather than being cut: adding the
@@ -539,18 +567,18 @@
   /* The ceiling. Deliberately below the score and above the breakdown: it is
      the second thing you look at, not the first. */
   .ceiling{padding:14px 16px 15px; margin-bottom:16px;
-    border-color:color-mix(in srgb,var(--gold) 30%, transparent);}
+    border-color:color-mix(in srgb,var(--teal) 30%, transparent);}
   .ceiling.maxed{border-color:color-mix(in srgb,var(--green) 45%, transparent);}
   .ceil-lbl{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--dim); margin-bottom:6px;}
   .ceil-row{display:flex; align-items:baseline; gap:12px;}
-  .ceil-n{font-family:var(--hero); font-size:38px; line-height:1; color:var(--goldT);
+  .ceil-n{font-family:var(--hero); font-size:38px; line-height:1; color:var(--tealT);
     flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .ceiling.maxed .ceil-n{color:var(--greenT);}
   .ceil-say{font-size:13px; font-weight:700; color:var(--mut); line-height:1.45;}
   .ceil-say b{color:var(--ink);}
   .ceil-bar{height:5px; border-radius:99px; background:var(--card3); overflow:hidden; margin:10px 0 7px;}
-  .ceil-bar > span{display:block; height:100%; border-radius:99px; background:var(--goldT);}
+  .ceil-bar > span{display:block; height:100%; border-radius:99px; background:var(--tealT);}
   .ceiling.maxed .ceil-bar > span{background:var(--greenT);}
   .ceil-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45;}
   .breakdown{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:16px 0;}
@@ -568,17 +596,17 @@
   .sheet{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end;
     justify-content:center; padding:0; background:rgba(0,0,0,0);
     visibility:hidden; pointer-events:none;
-    transition:background .28s ease, visibility 0s .28s;}
+    transition:background var(--t-slow) var(--ease), visibility 0s var(--t-slow);}
   .sheet.on{visibility:visible; pointer-events:auto; background:rgba(0,0,0,.62);
-    transition:background .28s ease, visibility 0s;}
+    transition:background var(--t-slow) var(--ease), visibility 0s;}
   .sheet .inner{width:100%; max-width:560px; background:var(--card);
     border:1px solid var(--line2); border-bottom:0;
     border-radius:18px 18px 0 0; padding:8px 16px calc(16px + env(safe-area-inset-bottom,0));
     max-height:82dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
     transform:translateY(100%); opacity:0;
-    transition:transform .22s ease, opacity .16s ease;}
+    transition:transform var(--t-base) var(--ease), opacity var(--t-base) var(--ease);}
   .sheet.on .inner{transform:translateY(0); opacity:1;
-    transition:transform .34s cubic-bezier(.33,1,.68,1), opacity .22s ease;}
+    transition:transform var(--t-slow) var(--ease), opacity var(--t-base) var(--ease);}
   .grab{width:38px; height:4px; border-radius:99px; background:var(--line2);
     margin:4px auto 12px;}
   .sheet-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
@@ -608,7 +636,7 @@
   .set-sub{font-size:10.5px; font-weight:700; color:var(--dim); margin-top:4px;}
   .bar{height:6px; border-radius:99px; background:var(--card3); overflow:hidden; margin-top:6px;}
   .bar > span{display:block; height:100%; border-radius:99px; background:var(--teal);
-    transition:width .3s ease;}
+    transition:width var(--t-slow) var(--ease);}
   .bar.good > span{background:var(--green);}
   .bar.bad > span{background:var(--coral);}
   .srow{display:flex; align-items:baseline; gap:8px; padding:4px 0 0; font-size:12px;}
@@ -625,7 +653,7 @@
   .rs-clock{font-size:12.5px; font-weight:800; font-variant-numeric:tabular-nums;}
   .rs-clock i{font-style:normal; color:var(--dim); font-weight:700;}
   .rs-note{font-size:11.5px; font-weight:700; color:var(--mut); margin:5px 0 3px;}
-  .rs-note b{color:var(--goldT);}
+  .rs-note b{color:var(--ink);}
   .rs-empty{font-size:12px; color:var(--dim); font-weight:700; padding:6px 0;}
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
@@ -636,7 +664,7 @@
   .btn.tiny.spin:disabled{border-color:var(--line2); color:var(--dim); background:transparent;}
   .btn.danger{background:var(--red); color:#2A0906; border-color:transparent; font-weight:900;}
   .respin-hd{font-family:var(--hero); font-size:22px; text-transform:uppercase; margin:2px 0 4px;}
-  .respin-why{font-size:14px; font-weight:700; color:var(--goldT); font-style:italic;
+  .respin-why{font-size:14px; font-weight:700; color:var(--mut); font-style:italic;
     margin-bottom:8px; line-height:1.4;}
   .respin-cost{font-size:13px; font-weight:700; color:var(--mut); line-height:1.5;
     margin-bottom:14px;}
@@ -652,10 +680,8 @@
      translating the strip so the target row sits in the window. */
   .reels{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
   .reel{position:relative; overflow:hidden; border-radius:var(--r-md);
-    border:2px solid transparent;
-    background:linear-gradient(var(--card2),var(--card2)) padding-box,
-               var(--dye) border-box;
-    background-size:auto, 100% 100%;}
+    background:var(--card2); border:1px solid var(--line2);
+    transition:border-color var(--t-base) var(--ease);}
   .reel.year{height:52px;}
   .reel.show{height:84px;}
   .reel:after{content:''; position:absolute; inset:0; pointer-events:none;
@@ -669,10 +695,9 @@
   .ri-date{font-family:var(--hero); font-size:20px; line-height:1.1;}
   .ri-venue{font-size:12px; font-weight:700; color:var(--mut); margin-top:3px;
     max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  /* Landed: the dye stops drifting and the edge goes solid, so "this one is
-     yours" is a state you can see rather than infer. */
-  .reel.locked{background:linear-gradient(var(--card2),var(--card2)) padding-box,
-               var(--dye) border-box; filter:saturate(1.15);}
+  /* Landed reels go bright and neutral. The dye belongs to the frame around
+     them; two dyed edges inside one card fought each other. */
+  .reel.locked{border-color:color-mix(in srgb,var(--ink) 42%, transparent);}
   .reel.locked .ri-year, .reel.locked .ri-date{color:var(--tealT);}
   .reel-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
     color:var(--dim); margin-bottom:4px;}
@@ -685,11 +710,11 @@
     background:transparent; border-style:dashed;}
   .btn.closeset .cs-t{font-size:14px; font-weight:800;}
   .btn.closeset .cs-s{font-size:11px; font-weight:700; color:var(--dim);}
-  .btn.closeset:hover{border-color:var(--gold); border-style:solid;}
+  .btn.closeset:hover{border-color:var(--teal); border-style:solid;}
   /* When the set is nearly spent, or nothing fits, this IS the move. */
-  .btn.closeset.urge{border-style:solid; border-color:var(--gold); background:
-    color-mix(in srgb,var(--gold) 12%, transparent);}
-  .btn.closeset.urge .cs-t{color:var(--goldT);}
+  .btn.closeset.urge{border-style:solid; border-color:var(--teal); background:
+    color-mix(in srgb,var(--teal) 12%, transparent);}
+  .btn.closeset.urge .cs-t{color:var(--tealT);}
 
   .banked{margin-top:5px; font-size:11px; font-weight:800; color:var(--greenT);}
   .banked b{font-variant-numeric:tabular-nums;}
@@ -704,17 +729,17 @@
   .ga-len{font-family:var(--body); font-size:13px; font-weight:800; color:var(--mut);}
   .ga-meta{font-size:12px; font-weight:700; color:var(--dim); margin-top:3px;}
   .ga-why{font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.5; margin-top:7px;}
-  .ga-why b{color:var(--goldT);}
+  .ga-why b{color:var(--ink);}
 
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
-    color:var(--goldT); font-style:italic;}
+    color:var(--mut); font-style:italic;}
 
   /* ---------------- the show playback ---------------- */
   .showsim{padding-top:6px;}
   .sim-head{position:sticky; top:52px; z-index:20; padding:12px 16px; text-align:center;
     margin-bottom:12px;}
   .sim-score{font-family:var(--hero); font-size:44px; line-height:1;
-    font-variant-numeric:tabular-nums; transition:color .5s ease;}
+    font-variant-numeric:tabular-nums; transition:color var(--t-slow) var(--ease);}
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sim-feed{display:flex; flex-direction:column; gap:8px;}
@@ -722,32 +747,32 @@
     color:var(--dim); padding:10px 0 2px; border-top:1px solid var(--line);}
   .sim-song{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
     padding:10px 13px; box-shadow:var(--shadow);
-    animation:simIn .28s cubic-bezier(.16,.84,.3,1) both;}
+    animation:simIn var(--t-base) var(--ease) both;}
   @keyframes simIn{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
-  @media (prefers-reduced-motion: reduce){ .sim-song{animation:none;} }
   .sim-row{display:flex; align-items:baseline; gap:9px;}
   .sim-nm{font-size:15.5px; font-weight:800; min-width:0; flex:1;}
   /* How long the song ran is half of every decision the player just made, so
      it belongs on the row that reports what the decision was worth. */
   .sim-len{font-size:12.5px; font-weight:700; color:var(--dim); flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
-  .sim-pts{font-family:var(--hero); font-size:19px; color:var(--goldT); flex:0 0 auto;}
+  .sim-pts{font-family:var(--hero); font-size:19px; color:var(--ink); flex:0 0 auto;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
   .sim-badge{margin-top:6px;}
   .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;}
-  .sim-seg b{color:var(--goldT);}
+  .sim-seg b{color:var(--ink);}
   .sim-time{font-size:12px; font-weight:700; color:var(--mut); padding:2px 2px 6px;}
-  .sim-time b{color:var(--goldT);}
+  .sim-time b{color:var(--ink);}
   .sim-final{margin-top:10px; padding-top:12px; border-top:2px solid var(--line2); text-align:center;}
   .sim-rest{font-size:12.5px; font-weight:700; color:var(--mut);}
-  .sim-rest b{color:var(--goldT);}
+  .sim-rest b{color:var(--ink);}
   .sim-final .headline{margin:8px 0 14px;}
 
   .toast{position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0)); z-index:99;
     transform:translateX(-50%) translateY(80px); background:var(--card3);
     border:1px solid var(--line2); padding:11px 17px; border-radius:10px;
     font-weight:800; font-size:13.5px; opacity:0; pointer-events:none;
-    transition:transform .25s ease, opacity .25s ease; box-shadow:var(--shadow);}
+    transition:transform var(--t-base) var(--ease), opacity var(--t-base) var(--ease);
+    box-shadow:var(--shadow);}
   .toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
 
   /* ---------------- result: how this scored ---------------- */
@@ -767,7 +792,7 @@
   .bdslot{font-size:10.5px; font-weight:900; letter-spacing:1.4px; text-transform:uppercase;
     color:var(--dim);}
   .bdsong{font-size:15px; font-weight:800; margin-top:1px;}
-  .bdpts{font-family:var(--hero); font-size:22px; color:var(--goldT); flex:0 0 auto;}
+  .bdpts{font-family:var(--hero); font-size:22px; color:var(--ink); flex:0 0 auto;}
   .bdmath{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px;}
   .bdterm{display:inline-flex; flex-direction:column; align-items:center; gap:1px;
     padding:4px 9px; border-radius:var(--r-sm); background:var(--card2);
@@ -779,7 +804,7 @@
   .bdterm.ok{border-color:color-mix(in srgb,var(--teal) 55%, transparent);}
   .bdterm.bad{border-color:color-mix(in srgb,var(--red) 55%, transparent);}
   .bdterm.tot{background:var(--card3); border-color:var(--line2);}
-  .bdterm.tot b{color:var(--goldT);}
+  .bdterm.tot b{color:var(--ink);}
   .bdop{color:var(--dim); font-weight:800; font-size:13px;}
   .bdwhy{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;}
   .vr{font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px;
@@ -807,19 +832,18 @@
   .fl b{display:block; font-size:14px; font-weight:800;}
   .fl i{display:block; font-style:normal; font-size:12px; color:var(--mut); font-weight:600;
     line-height:1.5; margin-top:2px;}
-  .fp{font-family:var(--hero); font-size:20px; color:var(--goldT); flex:0 0 auto;}
+  .fp{font-family:var(--hero); font-size:20px; color:var(--ink); flex:0 0 auto;}
   .sheettot{display:flex; justify-content:space-between; align-items:baseline;
     padding-top:13px; border-top:2px solid var(--line2);}
   .sheettot span{font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--dim);}
-  .sheettot b{font-family:var(--hero); font-size:30px; color:var(--goldT);}
+  .sheettot b{font-family:var(--hero); font-size:30px; color:var(--ink);}
 
   .loading{min-height:60dvh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:12px; color:var(--mut); font-weight:800;}
   .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--line2);
     border-top-color:var(--teal); animation:spin .8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  @media (prefers-reduced-motion:reduce){ .spinner{animation-duration:2s;} }
 </style>
 </head>
 <body>
