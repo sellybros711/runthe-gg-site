@@ -262,6 +262,33 @@ const CONSTANTS = {
    */
   ELITE_FLOOR: 95,
   ELITE_FULL: 105,
+  /*
+   * ─── THE ORDINARY SUNDAY, READ THE SAME WAY AS THE LAST GAME ────────────────
+   *
+   * The weekly edge used to be bonus-only: flat 1.000 everywhere under CLASS_FLOOR, so a
+   * weak roster was never punished from week to week, merely unhelped, and it stopped
+   * climbing at CLASS_FULL even though rosters run fifteen points past it. That put it at
+   * odds with the final, which had opinions in both directions. These give it the same
+   * shape: under CLASS_PIVOT it drops below 1.000 to 1 - CLASS_DROP at CLASS_DROP_FLOOR,
+   * the common band from CLASS_PIVOT to CLASS_MID gets less than it used to, and past
+   * CLASS_FULL it keeps paying to CLASS_TOP, which is the same natural cap the final uses.
+   *
+   *     <= 86   0.940      90   1.020      95   1.131 (unchanged)
+   *       100   1.190 (unchanged)      115   1.250
+   *
+   * 95 THROUGH 100 IS DELIBERATELY UNTOUCHED. SCALE is solved against a cap-optimal roster
+   * winning 88-90% of its regular-season games, and that roster sits in this stretch, so
+   * moving it would mean re-sweeping SCALE. Measured after the change the anchor reads
+   * 89.6%, inside the band, and every archetype and wheel policy in simulator.js still
+   * passes -- so this is a change to the two tails, not a rebalance of the middle.
+   */
+  CLASS_PIVOT: 90,
+  CLASS_DROP_FLOOR: 86,
+  CLASS_DROP: 0.06,
+  CLASS_BREAK_EDGE: 1.020,
+  CLASS_MID: 95,
+  CLASS_TOP: 115,
+  CLASS_TOP_EDGE: 0.06,
   ELITE_BYE_RATING: 100,
   ELITE_BYE_WINS: 13,
 
@@ -278,50 +305,73 @@ const CONSTANTS = {
    * it 16%: twelve points of overall bought a factor of two, and teams the game itself
    * grades a C were lifting the trophy.
    *
-   * So the final reads the ROSTER where the other rounds read the record. Below
-   * FINAL_EDGE_LOW the opponent's score is multiplied up, reaching FINAL_EDGE_PENALTY at
-   * FINAL_EDGE_FLOOR; above FINAL_EDGE_HIGH it is divided down, reaching FINAL_EDGE_BONUS
-   * at FINAL_EDGE_CEIL. Between LOW and HIGH nothing happens at all, so the band the game
-   * calls a good team plays exactly the final it always played, and the change is a
-   * rotation about that band rather than a thumb on the scale.
+   * So the final reads the ROSTER where the other rounds read the record, as four straight
+   * segments through one neutral point:
    *
-   * A 100-plus roster is effectively undraftable under the cap (4,500 rosters drafted off
-   * the real wheel topped out at 99.2), which is why CEIL sits at 102 rather than out past
-   * the legends: the bonus has to be substantially paid by the time the best reachable team
-   * gets there or it is decoration.
+   *     <= 86   0.550   FLOOR, the full PENALTY: the opponent scores 82% more
+   *        90   0.860   BREAK, the bottom of the band most people actually reach
+   *        95   1.000   PIVOT, and the ONLY even final in the game
+   *       100   1.100   KNEE
+   *    115.08   1.250   CEIL, the best team that can legally be built
    *
-   * WHAT IT DOES. Win rate in the final, per band, before and after, measured on those
-   * drafted rosters over 25,000 finals a band:
+   * THE PIVOT IS 95, NOT 90, because 90 is where everybody is. Driven through the real
+   * wheel, a player taking the optimal squad from the draws he was actually dealt has a
+   * median overall of 88.8, and 33.5% of those runs land in 90-95 -- by far the biggest
+   * band above 90. That band used to sit at exactly 1.000 across all five points, so four
+   * points of roster quality bought literally nothing in the game that ends the season.
+   * Now every one of them is a real deficit and only a 95 gets an even final.
    *
-   *     overall   80    84    88    91    94    98
-   *     before   8.4   9.9  12.2  13.8  15.3  17.3
-   *     after    1.6   3.2   8.6  13.8  15.3  21.6
+   * CEIL IS THE NATURAL CAP, not a round number. A search over the whole player pool under
+   * the real draft rules -- six slots, one man per team-season, $140M -- puts the single
+   * best legal roster at 115.08: Lamar Jackson 2019 and Marshall Faulk 2000 at $48M each,
+   * then four cheap Ravens out of four different seasons, which stacks ten franchise links
+   * on the quarterback hub for a 1.138 chemistry. Putting CEIL there means the maximum edge
+   * is earned by exactly one combination and every point below it still buys something,
+   * rather than the curve flattening out over a range where better teams still exist. The
+   * top is a chemistry puzzle, not a spending contest: the cap makes stars exclusive.
    *
-   * The whole range used to be worth a factor of two. It is now worth a factor of
-   * thirteen, which is what it should have been worth all along in a game about how good
-   * your roster is.
+   * WHAT IT DOES. Measured paired -- same rosters, same schedules, same brackets, same
+   * seeds under both curves, 60,000 seasons per overall -- as a share of the Super Bowls
+   * each band reaches:
    *
-   * NOTHING HERE TOUCHES GETTING THERE. Seeding, home field and the first three rounds are
-   * exactly as they were, so a C-plus team still reaches the Super Bowl as often as it ever
-   * did. It just has to beat the Dolphins to keep the trophy, and now it usually cannot.
+   *     band      84-88  88-90  90-92  92-94  94-96  96-100  100-105  105-111
+   *     before      6.8   11.0   13.3   14.7   16.6    20.4     26.5     31.0
+   *     after       1.5    4.3    8.5   12.0   16.3    21.9     29.5     38.1
+   *
+   * AND IT MAKES THE GAME HARDER, which is the honest headline and not a side effect. 93%
+   * of runs land below the pivot, so weighting those bands by where players actually finish
+   * gives 0.57% of seasons ending in a title before and 0.40% after for a skilled player,
+   * and 0.072% to 0.034% for somebody signing the best man on each draw. Perfect seasons
+   * fall with them, 0.037% to 0.029% and 0.0029% to 0.0015%. Fewer people win, and the ones
+   * who do are the ones who built something.
+   *
+   * GETTING THERE IS NOW READ THE SAME WAY. This used to leave seeding and the earlier
+   * rounds alone, which meant the ordinary Sunday said one thing about a roster and the
+   * last game said another: weeklyEdge started at 84 and stopped at 100, the playoff
+   * strength term did nothing until 95 and stopped at 105, and the final stopped at 102.
+   * Three floors and three ceilings for one question. They now share this one's shape --
+   * see CLASS_PIVOT and playoffShare.
    *
    * GM mode keeps its own arrangement. Its final already carries a home-field term
    * (GM_FINAL_HOME_FIELD) sized against a different bracket, and there the roster you
    * finish with is a thing you built out of one you were handed.
    */
-  FINAL_EDGE_FLOOR: 82,
-  FINAL_EDGE_LOW: 90,
-  FINAL_EDGE_HIGH: 95,
-  FINAL_EDGE_CEIL: 102,
-  FINAL_EDGE_PENALTY: 0.30,
+  FINAL_EDGE_FLOOR: 86,
+  FINAL_EDGE_BREAK: 90,
+  FINAL_EDGE_PIVOT: 95,
+  FINAL_EDGE_KNEE: 100,
+  FINAL_EDGE_CEIL: 115,
+  FINAL_EDGE_PENALTY: 0.45,
+  FINAL_EDGE_BREAK_EDGE: 0.86,
+  FINAL_EDGE_KNEE_BONUS: 0.10,
   /*
-   * Trimmed from 0.18 once the weekly edge landed. The bonus was sized against a top of the
-   * game that reached the final 9.8% of the time; better records took that to 15.8%, so the
-   * same bonus was being paid out on half again as many finals. Halving it leaves the elite
-   * clearly better off in the last game than they were this morning without the title
-   * arriving twice as often as it used to.
+   * Raised from 0.09, and it buys less per point than that sounds: the old bonus was fully
+   * paid by 102 while this one is spread all the way to 115.08, so a 105 gets 1.15 where a
+   * naive reading of "0.09 to 0.25" would suggest far more. That is the intended trade for
+   * putting CEIL at the natural cap -- a longer runway makes each point worth less, and in
+   * exchange the best possible team is the only thing that collects the whole of it.
    */
-  FINAL_EDGE_BONUS: 0.09,
+  FINAL_EDGE_BONUS: 0.25,
 
   /*
    * ─── CLASS, OVER SEVENTEEN WEEKS ────────────────────────────────────────────
@@ -663,7 +713,9 @@ function playoffShare(wins, rating) {
   const span = CONSTANTS.ELITE_FULL - CONSTANTS.ELITE_FLOOR;
   const byStrength = span > 0
     ? Math.max(0, Math.min(1, (rating - CONSTANTS.ELITE_FLOOR) / span)) : 0;
-  return Math.min(1, Math.max(byRecord, byStrength));
+  /* Only the STRENGTH path may pass the old cap: a hot 17-win team keeps the old top share,
+     so the extra reach at the top is bought with roster quality rather than a lucky season. */
+  return Math.max(Math.min(1, byRecord), byStrength);
 }
 
 /*
@@ -673,10 +725,28 @@ function playoffShare(wins, rating) {
  */
 function weeklyEdge(rating, constants = CONSTANTS) {
   const C = constants;
-  if (!(rating > C.CLASS_FLOOR) || !(C.CLASS_EDGE > 0)) return 1;
+  if (!(C.CLASS_EDGE > 0)) return 1;
   const span = C.CLASS_FULL - C.CLASS_FLOOR;
-  const t = span > 0 ? Math.min(1, (rating - C.CLASS_FLOOR) / span) : 1;
-  return 1 + C.CLASS_EDGE * t;
+  const at = (r) => 1 + C.CLASS_EDGE * (span > 0 ? Math.min(1, (r - C.CLASS_FLOOR) / span) : 1);
+  /* The ordinary Sunday now agrees with the final about the two tails: it turns against a
+     roster under CLASS_PIVOT instead of merely going neutral, gives the common band less
+     than it used to, and keeps paying past CLASS_FULL where it used to stop. */
+  if (rating < C.CLASS_PIVOT) {
+    const dspan = C.CLASS_PIVOT - C.CLASS_DROP_FLOOR;
+    const t = dspan > 0 ? Math.max(0, Math.min(1, (rating - C.CLASS_DROP_FLOOR) / dspan)) : 1;
+    return (1 - C.CLASS_DROP) + (C.CLASS_BREAK_EDGE - (1 - C.CLASS_DROP)) * t;
+  }
+  if (rating < C.CLASS_MID) {
+    const mspan = C.CLASS_MID - C.CLASS_PIVOT;
+    const t = mspan > 0 ? (rating - C.CLASS_PIVOT) / mspan : 1;
+    return C.CLASS_BREAK_EDGE + (at(C.CLASS_MID) - C.CLASS_BREAK_EDGE) * t;
+  }
+  if (rating > C.CLASS_FULL) {
+    const uspan = C.CLASS_TOP - C.CLASS_FULL;
+    const t = uspan > 0 ? Math.min(1, (rating - C.CLASS_FULL) / uspan) : 1;
+    return at(C.CLASS_FULL) + C.CLASS_TOP_EDGE * t;
+  }
+  return at(rating);
 }
 
 /*
@@ -719,27 +789,43 @@ function weeklyEdgeVs(rating, opponent, constants = CONSTANTS) {
 /*
  * THE TITLE GAME'S OPINION OF YOUR ROSTER, as a divisor on the opponent's score.
  *
- * 1 means the neutral final every mode used to play. Under FINAL_EDGE_LOW it falls toward
- * 1 - PENALTY, over FINAL_EDGE_HIGH it climbs toward 1 + BONUS, and in between it is
- * exactly 1. Ramps are linear because the reason for them is legible and a curve would
- * only make the same argument less clearly. See CONSTANTS.FINAL_EDGE_*.
+ * Monotone across the whole range with exactly one neutral overall, FINAL_EDGE_PIVOT. It
+ * falls steeply from there to 1 - PENALTY at FINAL_EDGE_FLOOR by way of FINAL_EDGE_BREAK,
+ * and climbs from there to 1 + BONUS at FINAL_EDGE_CEIL by way of FINAL_EDGE_KNEE, which is
+ * what makes each point above the pivot worth more than the last. Every segment is linear
+ * because the reason for it is legible and a curve would only make the same argument less
+ * clearly. See CONSTANTS.FINAL_EDGE_*.
  *
  * No rating means no opinion: callers with nothing to hand get the old neutral game.
  */
 function finalEdge(rating, constants = CONSTANTS) {
   if (!(rating > 0)) return 1;
   const C = constants;
-  if (rating < C.FINAL_EDGE_LOW) {
-    const span = C.FINAL_EDGE_LOW - C.FINAL_EDGE_FLOOR;
-    const t = span > 0 ? Math.min(1, (C.FINAL_EDGE_LOW - rating) / span) : 1;
-    return 1 - C.FINAL_EDGE_PENALTY * t;
+  const floorEdge = 1 - C.FINAL_EDGE_PENALTY;
+  /* THE CLIFF. Everything at or under FLOOR takes the full penalty, and from there to BREAK
+     the climb is steep: this is the stretch that has to read as hopeless. */
+  if (rating < C.FINAL_EDGE_BREAK) {
+    const span = C.FINAL_EDGE_BREAK - C.FINAL_EDGE_FLOOR;
+    const t = span > 0 ? Math.max(0, Math.min(1, (rating - C.FINAL_EDGE_FLOOR) / span)) : 1;
+    return floorEdge + (C.FINAL_EDGE_BREAK_EDGE - floorEdge) * t;
   }
-  if (rating > C.FINAL_EDGE_HIGH) {
-    const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_HIGH;
-    const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_HIGH) / span) : 1;
-    return 1 + C.FINAL_EDGE_BONUS * t;
+  /* THE COMMON BAND. Most rosters land here, so it is no longer the even game it used to be:
+     a 90 is behind in the final and only a 95 is level. */
+  if (rating < C.FINAL_EDGE_PIVOT) {
+    const span = C.FINAL_EDGE_PIVOT - C.FINAL_EDGE_BREAK;
+    const t = span > 0 ? (rating - C.FINAL_EDGE_BREAK) / span : 1;
+    return C.FINAL_EDGE_BREAK_EDGE + (1 - C.FINAL_EDGE_BREAK_EDGE) * t;
   }
-  return 1;
+  /* ABOVE THE PIVOT IT PAYS, AND THE RATE GROWS. Gentle to KNEE, then steeper to CEIL. */
+  if (rating <= C.FINAL_EDGE_KNEE) {
+    const span = C.FINAL_EDGE_KNEE - C.FINAL_EDGE_PIVOT;
+    const t = span > 0 ? (rating - C.FINAL_EDGE_PIVOT) / span : 1;
+    return 1 + C.FINAL_EDGE_KNEE_BONUS * t;
+  }
+  const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_KNEE;
+  const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_KNEE) / span) : 1;
+  return 1 + C.FINAL_EDGE_KNEE_BONUS
+    + (C.FINAL_EDGE_BONUS - C.FINAL_EDGE_KNEE_BONUS) * t;
 }
 
 /**
