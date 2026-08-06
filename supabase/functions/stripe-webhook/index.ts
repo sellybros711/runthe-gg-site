@@ -106,7 +106,9 @@ Deno.serve(async (req) => {
         }
 
         // ---- coins ----
-        // First-purchase +100% on the first paid COIN pack — decided by the SERVER.
+        // First purchase of EACH bucket size gets +100%, once per size — decided by the SERVER.
+        // (Owner decision 2026-08-06: per-size doubles, the mobile-game standard.) Only 'paid'
+        // rows count, so a fully-refunded purchase re-arms that size's bonus.
         let coins = pkg.coins ?? 0;
         let pkgKey = pkg.id;
         const { count } = await admin
@@ -114,7 +116,7 @@ Deno.serve(async (req) => {
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
           .eq("status", "paid")
-          .gt("coins", 0); // token/pass rows don't count toward the coin first-purchase bonus
+          .in("package_id", [pkg.id, `${pkg.id}+fp`]); // this size, doubled or not
         if ((count ?? 0) === 0) {
           coins = (pkg.coins ?? 0) * FIRST_PURCHASE_MULTIPLIER;
           pkgKey = `${pkg.id}+fp`;

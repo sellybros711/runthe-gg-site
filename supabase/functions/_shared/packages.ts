@@ -130,8 +130,9 @@ export const PACKAGES: Record<string, CoinPackage> = {
   },
 };
 
-// One-time first-purchase incentive: +100% coins on a player's first paid
-// COIN pack (does not apply to tokens or the pass).
+// First-purchase incentive: +100% coins on a player's first paid purchase of
+// EACH bucket size (once per size; does not apply to tokens or the pass).
+// The webhook decides eligibility by querying coin_purchase for that size.
 export const FIRST_PURCHASE_MULTIPLIER = 2;
 
 export function getPackage(id: string | null | undefined): CoinPackage | null {
