@@ -90,10 +90,14 @@
   .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:10px;
     padding:calc(8px + env(safe-area-inset-top,0)) 0 8px; background:var(--bg);
     border-bottom:1px solid var(--line);}
-  .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px;
-    background:var(--dye); background-size:300% 100%; opacity:.5;
-    animation:dyeSlide 22s linear infinite;}
-  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:300% 50%;} }
+  /* The top rule is the page's one continuous piece of tie dye. It was set to
+     300% wide, which zoomed so far into the gradient that only a single colour
+     was ever on screen — the same mistake the jamchart chip made. At 140% the
+     whole wheel crosses the bar and the slide actually reads as a sweep. */
+  .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px;
+    background:var(--dye); background-size:140% 100%; opacity:.85;
+    animation:dyeSlide 26s linear infinite;}
+  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:140% 50%;} }
   @media (prefers-reduced-motion: reduce){ .topbar:after{animation:none;} }
   body.playing .topbar{padding-bottom:6px;}
   body.playing .brand img{height:30px;}
@@ -225,10 +229,23 @@
   /* ---------------- draft ---------------- */
   .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:9px 14px; margin-bottom:10px;}
-  .hud{gap:8px;}
-  .hud > div:first-child{min-width:0;}
+  /* wrap + a full-width bar row: the clock reads better as one line across the
+     whole card than as a stub under the set name. */
+  .hud{gap:8px 8px; flex-wrap:wrap;}
+  .hud > div:first-child{min-width:0; flex:1;}
   .hud .rd{font-family:var(--ui); font-size:18px; line-height:1.05;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .hud .rd-left{font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.4px;
+    text-transform:uppercase; color:var(--dim); margin-left:1px;}
+  .hud .rd-left.warn{color:var(--goldT);} .hud .rd-left.crit{color:var(--redT);}
+  /* A bar so the clock can be read at a glance instead of parsed. Green while
+     there is room, gold when the set is nearly spent, red at the curfew. */
+  .timebar{width:100%; height:5px; border-radius:99px; background:var(--card3);
+    overflow:hidden; margin:1px 0 0;}
+  .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
+    transition:width .35s ease, background-color .35s ease;}
+  .timebar.warn > span{background:var(--goldT);}
+  .timebar.crit > span{background:var(--redT);}
   .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
     transition:color .3s ease;}
   .hud .rd-clock.warn{color:var(--goldT);}
@@ -271,6 +288,10 @@
 
   .showcard{padding:11px 15px; margin-bottom:10px;}
   .showcard .d{font-family:var(--hero); font-size:21px; line-height:1.05;}
+  .showcard .night{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
+    letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
+    padding:1px 5px; border-radius:4px;
+    background:color-mix(in srgb,var(--gold) 18%, transparent);}
   .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
   .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
 
@@ -333,6 +354,8 @@
     box-shadow:0 0 0 1px var(--teal);}
   .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
   .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
+  .song .o.notime{color:var(--redT); font-weight:800;}
+  .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-size:12.5px; font-weight:800; color:var(--mut); font-variant-numeric:tabular-nums;}
   /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
@@ -478,6 +501,23 @@
   .grade-warm{color:var(--goldT);}
   .grade-cold{color:var(--redT);}
   /* Four categories, two rows on a phone rather than four squeezed columns. */
+  /* The ceiling. Deliberately below the score and above the breakdown: it is
+     the second thing you look at, not the first. */
+  .ceiling{padding:14px 16px 15px; margin-bottom:16px;
+    border-color:color-mix(in srgb,var(--gold) 30%, transparent);}
+  .ceiling.maxed{border-color:color-mix(in srgb,var(--green) 45%, transparent);}
+  .ceil-lbl{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
+    color:var(--dim); margin-bottom:6px;}
+  .ceil-row{display:flex; align-items:baseline; gap:12px;}
+  .ceil-n{font-family:var(--hero); font-size:38px; line-height:1; color:var(--goldT);
+    flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .ceiling.maxed .ceil-n{color:var(--greenT);}
+  .ceil-say{font-size:13px; font-weight:700; color:var(--mut); line-height:1.45;}
+  .ceil-say b{color:var(--ink);}
+  .ceil-bar{height:5px; border-radius:99px; background:var(--card3); overflow:hidden; margin:10px 0 7px;}
+  .ceil-bar > span{display:block; height:100%; border-radius:99px; background:var(--goldT);}
+  .ceiling.maxed .ceil-bar > span{background:var(--greenT);}
+  .ceil-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45;}
   .breakdown{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:16px 0;}
   @media (min-width:520px){ .breakdown{grid-template-columns:repeat(4,minmax(0,1fr));} }
   .bd{padding:12px 10px; text-align:center; border-radius:var(--r-md); background:var(--card2);
@@ -555,9 +595,18 @@
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
   .hud-btns{display:flex; gap:6px; align-items:center; flex:0 0 auto;}
-  .btn.tiny.spin{border-color:color-mix(in srgb,var(--gold) 45%, transparent);
-    color:var(--goldT);}
-  .btn.tiny.spin:disabled{border-color:var(--line2); color:var(--dim);}
+  /* Red, because it spends the one thing you cannot get back. */
+  .btn.tiny.spin{border-color:color-mix(in srgb,var(--red) 50%, transparent);
+    color:var(--redT); background:color-mix(in srgb,var(--red) 10%, transparent);}
+  .btn.tiny.spin:disabled{border-color:var(--line2); color:var(--dim); background:transparent;}
+  .btn.danger{background:var(--red); color:#2A0906; border-color:transparent; font-weight:900;}
+  .respin-hd{font-family:var(--hero); font-size:22px; text-transform:uppercase; margin:2px 0 4px;}
+  .respin-why{font-size:14px; font-weight:700; color:var(--goldT); font-style:italic;
+    margin-bottom:8px; line-height:1.4;}
+  .respin-cost{font-size:13px; font-weight:700; color:var(--mut); line-height:1.5;
+    margin-bottom:14px;}
+  .respin-cost b{color:var(--redT);}
+  .respin-acts{display:flex; flex-direction:column; gap:8px;}
   .nospin{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
     color:var(--dim);}
 
@@ -568,7 +617,10 @@
      translating the strip so the target row sits in the window. */
   .reels{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
   .reel{position:relative; overflow:hidden; border-radius:var(--r-md);
-    background:var(--card2); border:1px solid var(--line);}
+    border:2px solid transparent;
+    background:linear-gradient(var(--card2),var(--card2)) padding-box,
+               var(--dye) border-box;
+    background-size:auto, 100% 100%;}
   .reel.year{height:52px;}
   .reel.show{height:84px;}
   .reel:after{content:''; position:absolute; inset:0; pointer-events:none;
@@ -582,7 +634,10 @@
   .ri-date{font-family:var(--hero); font-size:20px; line-height:1.1;}
   .ri-venue{font-size:12px; font-weight:700; color:var(--mut); margin-top:3px;
     max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .reel.locked{border-color:color-mix(in srgb,var(--teal) 55%, transparent);}
+  /* Landed: the dye stops drifting and the edge goes solid, so "this one is
+     yours" is a state you can see rather than infer. */
+  .reel.locked{background:linear-gradient(var(--card2),var(--card2)) padding-box,
+               var(--dye) border-box; filter:saturate(1.15);}
   .reel.locked .ri-year, .reel.locked .ri-date{color:var(--tealT);}
   .reel-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
     color:var(--dim); margin-bottom:4px;}
@@ -773,18 +828,21 @@ setTimeout(function(){
 <div class="sheet" id="detailSheet" role="dialog" aria-modal="true" aria-label="Slot breakdown">
   <div class="inner" id="detailInner"></div>
 </div>
+<div class="sheet" id="respinSheet" role="dialog" aria-modal="true" aria-label="Confirm respin">
+  <div class="inner" id="respinInner"></div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
 import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
-  RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
+  RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway, respinLine, bestPossible,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
   reactionFor, eventLine, setOpenLine,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=13';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=13';
+} from './scoring.js?v=14';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=14';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -896,6 +954,7 @@ const S = {
   respins: 0,          // how many this run — each costs more than the last
   seenShows: new Set(),
   seenSongs: [],       // every song offered, for "the one that got away"
+  drafted: [],         // {show, perf, si} per pick — replayed for the ceiling
   sofarAll: false,     // is the on-screen setlist showing every set?
   pickedSong: null,
   hint: '',
@@ -1185,6 +1244,9 @@ function renderDraft(){
   if (si === -1){ finishShow(); return; }
   const cfg = SETS[si];
   const left = remaining(S.sets, si, S.closed, S.spent);
+  // The set's whole allowance, so the clock bar has something to be a fraction
+  // of — the encore's grows with whatever the two sets banked.
+  const budget = budgets(S.sets, S.closed, S.spent)[si];
 
   const bySet = new Map();
   for (const p of show.songs){
@@ -1219,10 +1281,16 @@ function renderDraft(){
       if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      const why = used ? 'already in your show'
-        : !room ? (lenOf(p) > left ? `needs ${fmtClock(lenOf(p) - left)} more` : 'set is full')
-        : strands ? 'segues — no room to land it'
+      const over = lenOf(p) - left;
+      const why = used ? 'Already in your show'
+        : !room ? (over > 0
+            ? `${fmtClock(over)} too long &mdash; only ${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}`
+            : `${esc(cfg.label)} is full &mdash; ${SETS[si].maxSongs} songs is the cap`)
+        : strands ? 'Segues, and nothing here lands it'
         : '';
+      // Out of time is a different kind of no from already-played, and the
+      // player needs to know which wall they hit.
+      const whyClass = !used && !room ? ' notime' : '';
       return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
@@ -1230,7 +1298,7 @@ function renderDraft(){
         <span class="l">
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
-          ${why ? `<span class="o">${esc(why)}</span>`
+          ${why ? `<span class="o${whyClass}">${why}</span>`
             : p.segued_into ? `<span class="o seg">&rsaquo; ${esc(p.segued_into)}${
                 (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
                          return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
@@ -1252,10 +1320,10 @@ function renderDraft(){
       <div>
         <div class="rd">${esc(cfg.label)}
           <span class="rd-clock ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
-            >${fmtClock(Math.max(0, left))}</span></div>
-        <div class="md"><span class="rd-rem ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
-          >remaining</span> · pick ${S.round + 1}${
-          S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
+            >${fmtClock(Math.max(0, left))}</span>
+          <span class="rd-left ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}">left</span></div>
+        <div class="md">pick ${S.round + 1}${
+          S.respins ? ` · ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
       </div>
       <div class="hud-btns">
         ${(() => {
@@ -1264,17 +1332,21 @@ function renderDraft(){
           if (cost === null) return '<span class="nospin">No spins left</span>';
           return `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
             title="${can ? '' : 'Not enough time left in this set'}">
-            Spin &middot; ${fmtClock(cost)}</button>`;
+            Respin &middot; ${fmtClock(cost)}</button>`;
         })()}
         <button class="btn tiny" type="button" id="openSets">Clock</button>
       </div>
+      <div class="timebar ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+        role="img" aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
+        <span style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget)))}%"></span></div>
     </div>
 
     <div class="board">
       <div>
         <div class="card showcard">
           <div class="d">${esc(fmtDate(show.show_date))}</div>
-          <div class="v">${esc(show.venue || '')}</div>
+          <div class="v">${esc(show.venue || '')}${show.run
+            ? `<span class="night">Night ${show.run.night} of ${show.run.of}</span>` : ''}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
         </div>
         ${sofarHTML(si)}
@@ -1399,6 +1471,23 @@ function renderResult(){
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
       </div>
 
+      ${S.best ? (() => {
+        const gap = S.best.total - r.total;
+        const pct = Math.round(100 * r.total / Math.max(1, S.best.total));
+        return `<div class="card ceiling${gap <= 0 ? ' maxed' : ''}">
+          <div class="ceil-lbl">The best line through your shows</div>
+          <div class="ceil-row">
+            <div class="ceil-n">${S.best.total}</div>
+            <div class="ceil-say">${gap <= 0
+              ? 'Nothing we tried beat it. That is the show those nights had in them.'
+              : `${gap} more was on the table &mdash; you got <b>${pct}%</b> of it.`}</div>
+          </div>
+          <div class="ceil-bar"><span style="width:${Math.min(100, pct)}%"></span></div>
+          <div class="ceil-fine">Same nights, same order, same rules. Every point of it
+            was yours to take.</div>
+        </div>`;
+      })() : ''}
+
       ${S.missed ? `
       <div class="card gotaway">
         <div class="ga-lbl">The one that got away</div>
@@ -1455,6 +1544,10 @@ function renderResult(){
             : `<div class="flowrow">
                 <div class="fl"><b>Segues</b><i>No two songs you played back to back are a segue the band has played</i></div>
                 <div class="fp">0</div></div>`}
+          ${r.cooldowns.map(c => `<div class="flowrow">
+            <div class="fl"><b>${esc(c.a)} &rarr; ${esc(c.b)}</b><i>Came down after a big one
+              &mdash; the room got to breathe</i></div>
+            <div class="fp">${c.points}</div></div>`).join('')}
           <div class="flowrow">
             <div class="fl"><b>Energy arc</b><i>${r.arc >= ARC_MAX * 0.75
               ? 'Builds and releases where a real show does'
@@ -1511,6 +1604,34 @@ function openDetail(i){
   document.getElementById('detailSheet').classList.add('on');
 }
 function closeDetail(){ document.getElementById('detailSheet').classList.remove('on'); }
+
+/* Respin asks first. It spends stage time out of the set you are building, and
+   a thumb landing on it by accident used to cost five minutes with no way back.
+   The reason rotates so the fourth one of a game still reads. */
+function askRespin(){
+  const si = currentSet();
+  if (si === -1) return;
+  const cost = respinCost(S.respins);
+  if (cost === null || !canRespin(S.sets, si, S.respins, S.closed, S.spent)) return;
+  const after = remaining(S.sets, si, S.closed, S.spent) - cost;
+  document.getElementById('respinInner').innerHTML = `
+    <div class="grab"></div>
+    <div class="respin-hd">Respin?</div>
+    <div class="respin-why">&ldquo;${esc(respinLine(S.respins + S.round))}&rdquo;</div>
+    <div class="respin-cost">A new night costs <b>${fmtClock(cost)}</b> of
+      ${esc(SETS[si].label)}. You would have <b>${fmtClock(Math.max(0, after))}</b> left
+      to fill, and the show on screen now is gone for good.</div>
+    <div class="respin-acts">
+      <button class="btn danger" type="button" id="respinYes">Spend ${fmtClock(cost)} &amp; respin</button>
+      <button class="btn" type="button" id="respinNo">Keep this show</button>
+    </div>`;
+  document.getElementById('respinSheet').classList.add('on');
+}
+function closeRespin(){ document.getElementById('respinSheet').classList.remove('on'); }
+document.getElementById('respinSheet').addEventListener('click', e => {
+  if (e.target.id === 'respinSheet' || e.target.closest('#respinNo')){ closeRespin(); return; }
+  if (e.target.closest('#respinYes')){ closeRespin(); respin(); }
+});
 
 document.getElementById('detailSheet').addEventListener('click', e => {
   if (e.target.id === 'detailSheet' || e.target.closest('#detailClose')) closeDetail();
@@ -1603,6 +1724,8 @@ async function start(bandId){
   S.closed = [false, false, false];
   S.spent = [0, 0, 0];
   S.respins = 0;
+  S.drafted = [];
+  S.best = null;
   S.seenShows = new Set();
   S.seenSongs = [];
   S.pickedSong = null; S.sheetForced = false;
@@ -1639,6 +1762,9 @@ function lockIn(){
   if (!canPlace(S.sets, si, song, S.closed, S.spent)) return;
 
   S.sets[si].push(song);
+  // Remember the show this came out of, so the scorecard can replay the exact
+  // hand the player was dealt and say what the best line through it was worth.
+  S.drafted.push({ show: S.show, perf: song, si });
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
 
   // A set that can hold nothing more closes itself, so the player is never left
@@ -1698,6 +1824,11 @@ function nextRound(){
 
 function finishShow(){
   S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts);
+  // The ceiling: the same shows, in the same order, played as well as we can
+  // find. Guaranteed reachable, so it is a target rather than a taunt.
+  try {
+    S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent);
+  } catch (err) { S.best = null; }
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
   setScreen('show');
 }
@@ -1891,7 +2022,7 @@ app.addEventListener('click', e => {
 
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
   if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
-  if (e.target.closest('#respinBtn')){ respin(); return; }
+  if (e.target.closest('#respinBtn')){ askRespin(); return; }
   if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;

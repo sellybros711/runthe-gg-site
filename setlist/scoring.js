@@ -172,6 +172,52 @@ export const SANDWICH_BONUS = 70;       // A > B > A, closed
  *    each one pays less, so a couple of well-chosen ones stay worth chasing
  *    and a farmed row of them stops running away with the show.
  */
+/*
+ * THE COOLDOWN.
+ *
+ * A band that plays a peak and then plays another peak has not built
+ * anything — the room has nowhere left to go. The move is to come down
+ * afterwards and let people breathe.
+ *
+ * Both halves are defined from the data rather than from taste. A BIG song is
+ * energy 5 or fifteen minutes and up; a BREATHER is energy 3 or less AND no
+ * more than 60% of the big one's running time. Across the archive the band
+ * has 1286 big songs and follows 38% of them with a genuine breather — often
+ * enough that a player can aim for it, rare enough that it is a choice.
+ *
+ * The first cut keyed on tags alone and fired 0.59 times a show, which is not
+ * a mechanic, it is a rounding error. Length is what carries the signal:
+ * only 7.5% of takes are tagged peak, but 18% run past fifteen minutes.
+ *
+ * Small on purpose. Unlike a segue it costs nothing to attempt, so it must
+ * not pay like one.
+ */
+export const PEAK_ENERGY = 5;
+export const COOLDOWN_BREATHER_ENERGY = 3;
+export const COOLDOWN_LENGTH_RATIO = 0.6;
+export const COOLDOWN_BONUS = 20;
+
+/** Is this song a peak the room needs to come down from? */
+export function isBigMoment(perf) {
+  return energyOf(perf) >= PEAK_ENERGY || lenOf(perf) >= LEN_15MIN;
+}
+
+/** Every big-song → breather pair inside a set. */
+export function cooldowns(sets) {
+  const hits = [];
+  (sets || []).forEach((songs, si) => {
+    for (let i = 0; i < (songs || []).length - 1; i++) {
+      const a = songs[i], b = songs[i + 1];
+      if (!isBigMoment(a)) continue;
+      if (energyOf(b) > COOLDOWN_BREATHER_ENERGY) continue;
+      if (lenOf(b) > lenOf(a) * COOLDOWN_LENGTH_RATIO) continue;
+      hits.push({ set: si, from: i, to: i + 1, points: COOLDOWN_BONUS,
+        a: a.song, b: b.song });
+    }
+  });
+  return hits;
+}
+
 export const SEGUE_FAMILIAR_FLOOR = 0.30;
 export const SEGUE_FAMILIAR_K = 0.55;
 /** How much a link is worth given how often the band has played that pair. */
@@ -616,6 +662,29 @@ export function reactionFor(score, perf, seed = 0) {
   return pick('flat');
 }
 
+/*
+ * WHY THE BAND WANTS A MINUTE.
+ *
+ * A respin costs stage time, which is the only currency in the game, so it
+ * deserves a confirmation rather than a stray thumb. These are what the
+ * confirmation says, and they rotate so the fourth one still lands.
+ */
+export const RESPIN_LINES = [
+  'The band needs a minute to gameplan.',
+  'Somebody broke a string. Again.',
+  'Long look at the setlist taped to the monitor.',
+  'A huddle by the drum riser. Nobody looks happy.',
+  'Guitar tech sprinting. This will cost you.',
+  'Tuning. Extremely thorough tuning.',
+  'The keyboard player has an idea. It takes a while.',
+  'Whispered conference at the mic stand.',
+];
+
+/** A rotating reason for the respin confirmation. */
+export function respinLine(n = 0) {
+  return RESPIN_LINES[Math.abs(n) % RESPIN_LINES.length];
+}
+
 /** The louder line for a segue, graded by what kind it was. */
 export function eventLine(kinds, seed = 0) {
   if (!kinds) return null;
@@ -811,10 +880,12 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   }));
   const breadthTotal = breadth.reduce((a, c) => a + (c.got ? c.points : 0), 0);
 
+  const coolHits = cooldowns(s);
   // Flow is how the picks hang together; breadth is what the night contained.
   // They are siblings, not one inside the other — a scoresheet heading has to
   // equal the rows printed under it.
-  const flowTotal = segueHits.reduce((a, x) => a + x.points, 0) + arc;
+  const flowTotal = segueHits.reduce((a, x) => a + x.points, 0)
+    + coolHits.reduce((a, x) => a + x.points, 0) + arc;
 
   // The fan headline.
   const totalBudget = bud.reduce((a, b) => a + b, 0);
@@ -840,6 +911,7 @@ export function scoreShow(sets, segues, spent, segueCounts) {
     rarestSegue: segueHits.length
       ? Math.min(...segueHits.map(x => x.times)) : null,
     sandwiches: segueHits.filter(x => x.kinds.includes('sandwich')).length,
+    cooldowns: coolHits.length,
     total: songTotal + timeTotal + flowTotal + breadthTotal,
   };
   const headline = (HEADLINES.find(h => h.when(stats)) || HEADLINES[HEADLINES.length - 1]).text;
@@ -848,9 +920,129 @@ export function scoreShow(sets, segues, spent, segueCounts) {
     total: songTotal + timeTotal + flowTotal + breadthTotal,
     songTotal, timeTotal, flowTotal,
     perSet, time, arc, breadth, breadthTotal, roles,
-    segues: segueHits,
+    segues: segueHits, cooldowns: coolHits,
     headline, stats,
     totalUsed, totalBudget,
+  };
+}
+
+/*
+ * WHAT THE BEST LINE THROUGH YOUR OWN SHOWS WAS WORTH.
+ *
+ * A score with nothing to compare it to is a number. This replays the EXACT
+ * shows the player drafted from, in the order they came up, and searches for
+ * the best assignment: same shows, same number of picks, same rules, same
+ * time already burned on respins. So the answer is always reachable — it is
+ * not a fantasy setlist built from songs they never saw.
+ *
+ * It is a beam search, not an exhaustive one. The decision space is a set
+ * partition on top of a per-round choice, and the honest thing is to call the
+ * result the best line FOUND rather than the maximum — which is how the UI
+ * words it. Beam width and the per-round candidate cap keep it to a few
+ * thousand scoreShow calls, fast enough to run on a phone at the final
+ * whistle.
+ */
+export const BEST_BEAM = 24;
+export const BEST_CANDIDATES = 8;
+
+export function bestPossible(drafted, segues, segueCounts, spent) {
+  const seq = (drafted || []).filter(d => d && d.show && d.show.songs && d.show.songs.length);
+  if (!seq.length) return null;
+
+  const clone = st => ({
+    sets: st.sets.map(a => a.slice()),
+    closed: st.closed.slice(),
+    si: st.si,
+    taken: new Set(st.taken),
+    total: st.total,
+  });
+  const rank = st => scoreShow(st.sets, segues, spent, segueCounts).total;
+
+  const fresh = () => ({ sets: [[], [], []], closed: [false, false, false], si: 0,
+                         taken: new Set(), total: 0 });
+  let beam = [fresh()];
+
+  /* The line the player actually played is walked alongside the beam and is
+     never pruned. Without it a beam that took a wrong turn early could report
+     a "best" BELOW what the player scored, which happened in 7 of 40 test
+     games — once by 395 points. A ceiling under the thing it is a ceiling for
+     is worse than no ceiling at all. */
+  let mirror = fresh();
+
+  /* A state with no legal move has not failed — its show is simply over, the
+     same way the real game ends when nothing else fits. Dropping those was
+     killing the whole beam: it spends its best songs early, fills all three
+     sets, and by round 16 every branch is out of room at once. Keep them,
+     stop expanding them, and let them compete on their final score. */
+  const finished = [];
+
+  for (const step of seq) {
+    const show = step.show;
+    const next = [];
+
+    if (mirror) {
+      const si = Math.min(step.si === undefined ? mirror.si : step.si, SETS.length - 1);
+      while (mirror.si < si) { mirror.closed[mirror.si] = true; mirror.si += 1; }
+      if (step.perf) {
+        mirror.sets[mirror.si].push(step.perf);
+        mirror.taken.add(step.perf.song_id);
+        mirror.total = rank(mirror);
+      }
+    }
+
+    for (const st of beam) {
+      const before = next.length;
+      // Either play into the current set, or close it first and play into the
+      // next one. Closing is free of a round; it is a decision, not a pick.
+      for (const advance of [false, true]) {
+        const base = advance ? clone(st) : st;
+        if (advance) {
+          if (base.si >= SETS.length - 1) continue;
+          if (danglingSegue(base.sets, base.si)) continue;
+          base.closed[base.si] = true;
+          base.si += 1;
+        }
+        const si = base.si;
+        const legal = show.songs.filter(p => {
+          const sandwich = closesSandwich(base.sets[si], p, segues);
+          if (base.taken.has(p.song_id) && !sandwich) return false;
+          if (!canPlace(base.sets, si, p, base.closed, spent)) return false;
+          if (wouldStrand(base.sets, si, p, base.closed, spent)) return false;
+          return true;
+        });
+        if (!legal.length) continue;
+        // Pre-rank cheaply so the expensive full scoring only sees contenders.
+        const role = roleAt(si, base.sets[si].length, base.sets[si].length + 1);
+        const short = legal
+          .map(p => [p, scorePerf(p, role).subtotal])
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, BEST_CANDIDATES)
+          .map(x => x[0]);
+        for (const p of short) {
+          const cand = clone(base);
+          cand.sets[si].push(p);
+          cand.taken.add(p.song_id);
+          cand.total = rank(cand);
+          next.push(cand);
+        }
+      }
+      if (next.length === before) finished.push(st);
+    }
+    // A dead-ended beam must NOT end the loop: the mirror still has rounds of
+    // the player's line left to walk, and cutting it short was reporting a
+    // ceiling below the player's own score.
+    next.sort((a, b) => b.total - a.total);
+    beam = next.slice(0, BEST_BEAM);
+  }
+
+  const all = beam.concat(finished, [mirror]);
+  let best = all[0];
+  for (const st of all) if (st.total > best.total) best = st;
+  return {
+    total: scoreShow(best.sets, segues, spent, segueCounts).total,
+    sets: best.sets,
+    // True when the search could not beat the line the player actually played.
+    matchedPlayer: !!mirror && best === mirror,
   };
 }
 

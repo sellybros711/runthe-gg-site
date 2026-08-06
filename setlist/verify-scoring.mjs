@@ -14,6 +14,8 @@ import {
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
   familiarityMult, segueDecay, segueKey, gradeScore, gradeRunning, GRADE_WARM, GRADE_HOT,
+  cooldowns, isBigMoment, COOLDOWN_BONUS, COOLDOWN_BREATHER_ENERGY, COOLDOWN_LENGTH_RATIO,
+  bestPossible, respinLine, RESPIN_LINES, LEN_15MIN,
   SEGUE_FAMILIAR_FLOOR, SEGUE_DECAY_FREE, SEGUE_DECAY_FLOOR,
   TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY, RESPIN_COSTS, respinCost, canRespin,
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
@@ -320,6 +322,90 @@ group('a score colour means a rating', () => {
   // The last playback beat must agree with the scorecard, always.
   for (const t of [400, 900, GRADE_WARM, 1100, GRADE_HOT, 1600])
     eq(gradeRunning(t, 1), gradeScore(t), `playback and scorecard agree at ${t}`);
+});
+
+group('the cooldown', () => {
+  const mk = (id, o = {}) => perf({ song_id: id, len: 600, ...o });
+  const big = mk('a', { tags: 'peak', len: 1000 });
+  const longOne = mk('L', { len: LEN_15MIN });
+
+  eq(isBigMoment(big), true, 'a peak is a big moment');
+  eq(isBigMoment(longOne), true, 'so is anything past fifteen minutes');
+  eq(isBigMoment(mk('z', { len: 400 })), false, 'a short untagged song is not');
+
+  const breather = mk('b', { tags: 'ballad', len: 400 });
+  eq(cooldowns([[big, breather], [], []]).length, 1, 'peak into a breather counts');
+  eq(cooldowns([[big, mk('c', { tags: 'peak', len: 400 })], [], []]).length, 0,
+     'peak into another peak does not — the room has nowhere to go');
+  eq(cooldowns([[big, mk('d', { tags: 'ballad', len: 999 })], [], []]).length, 0,
+     'a quiet song that runs nearly as long is not a breather');
+  eq(cooldowns([[big], [breather], []]).length, 0, 'and it has to be inside one set');
+  eq(cooldowns([[breather, big], [], []]).length, 0, 'the order matters');
+
+  const scored = scoreShow([[big, breather], [], []], new Set());
+  eq(scored.cooldowns.length, 1, 'scoreShow reports it');
+  eq(scored.stats.cooldowns, 1, 'and counts it for the headline');
+  eq(scored.flowTotal, scored.arc + COOLDOWN_BONUS, 'and it lands inside Flow');
+  eq(cooldowns([]).length, 0, 'no sets, no cooldowns');
+  eq(cooldowns([[], [], []]).length, 0, 'empty sets, no cooldowns');
+});
+
+group('the ceiling is reachable and never below you', () => {
+  const mk = (id, o = {}) => perf({ song_id: id, len: 600, crowd: 40, ...o });
+  const show = songs => ({ songs });
+
+  eq(bestPossible([], new Set(), undefined, [0, 0, 0]), null, 'no shows, no ceiling');
+  eq(bestPossible(null, new Set(), undefined, [0, 0, 0]), null, 'no input, no ceiling');
+
+  const a = mk('a', { crowd: 80, len: 900 }), b = mk('b', { crowd: 20 });
+  const c = mk('c', { crowd: 70 }), d = mk('d', { crowd: 10 });
+  const drafted = [
+    { show: show([a, b]), perf: b, si: 0 },
+    { show: show([c, d]), perf: d, si: 0 },
+  ];
+  const played = scoreShow([[b, d], [], []], new Set(), [0, 0, 0]);
+  const ceil = bestPossible(drafted, new Set(), undefined, [0, 0, 0]);
+  eq(ceil.total > played.total, true, 'taking the better song of each pair scores more');
+  eq(ceil.matchedPlayer, false, 'and the search beat the player');
+  eq(typeof ceil.matchedPlayer, 'boolean', 'matchedPlayer is always a boolean');
+
+  /* THE ONE GUARANTEE THAT MATTERS. A ceiling below the score it is a ceiling
+     for is worse than no ceiling, and two separate bugs produced exactly that:
+     a dead-ended beam used to abandon the player's line mid-walk, and states
+     with no legal move were dropped instead of kept as finished shows. The
+     player's own line is walked alongside the search and never pruned, so this
+     must hold for every shape of night. Note the searcher may also move set
+     boundaries — beating a "best song every round" line is correct, not a bug. */
+  let checked = 0;
+  for (const n of [1, 2, 3, 5, 8]) {
+    for (const takeWorst of [true, false]) {
+      const steps = [], sets = [[], [], []];
+      for (let i = 0; i < n; i++) {
+        const good = mk(`g${i}`, { crowd: 70, len: 500 + i * 40 });
+        const bad = mk(`b${i}`, { crowd: 15, len: 500 + i * 40 });
+        const picked = takeWorst ? bad : good;
+        const si = i < 3 ? 0 : i < 6 ? 1 : 2;
+        steps.push({ show: show([good, bad]), perf: picked, si });
+        sets[si].push(picked);
+      }
+      const mine = scoreShow(sets, new Set(), [0, 0, 0]).total;
+      const top = bestPossible(steps, new Set(), undefined, [0, 0, 0]);
+      eq(top.total >= mine, true,
+         `${n} rounds taking the ${takeWorst ? 'worse' : 'better'} song: ` +
+         `ceiling ${top.total} >= played ${mine}`);
+      checked++;
+    }
+  }
+  eq(checked, 10, 'every shape of night was checked');
+});
+
+group('the respin asks first', () => {
+  eq(RESPIN_LINES.length >= 4, true, 'enough lines that they do not repeat immediately');
+  eq(new Set(RESPIN_LINES).size, RESPIN_LINES.length, 'every line is distinct');
+  eq(respinLine(0), RESPIN_LINES[0], 'the first line is the first line');
+  eq(respinLine(RESPIN_LINES.length), RESPIN_LINES[0], 'and they wrap');
+  eq(typeof respinLine(-3), 'string', 'a negative seed still returns a line');
+  eq(RESPIN_LINES.every(l => l.length > 12), true, 'every line says something');
 });
 
 group('respins cost stage time', () => {
