@@ -106,6 +106,33 @@ export function loadBand(csvText) {
 
   const shows = Array.from(byShow.values());
 
+  /* Multi-night runs. A third of this band's shows are one night of two or
+     more at the same venue, and "night 2 of 3" is how anybody who was there
+     would describe it — the second night of a run is a different thing from a
+     one-off, and players who know the band know it. Consecutive calendar
+     dates at the same venue, which is what a run is. */
+  {
+    const key = s => `${s.venue}|${s.city}|${s.state}`;
+    const day = d => Math.floor(Date.parse(`${d}T00:00:00Z`) / 86400000);
+    const byVenue = new Map();
+    for (const s of shows) {
+      if (!s.venue) continue;
+      if (!byVenue.has(key(s))) byVenue.set(key(s), []);
+      byVenue.get(key(s)).push(s);
+    }
+    for (const list of byVenue.values()) {
+      list.sort((a, b) => String(a.show_date).localeCompare(String(b.show_date)));
+      let i = 0;
+      while (i < list.length) {
+        let j = i;
+        while (j + 1 < list.length && day(list[j + 1].show_date) === day(list[j].show_date) + 1) j++;
+        const of = j - i + 1;
+        if (of > 1) for (let k = i; k <= j; k++) list[k].run = { night: k - i + 1, of };
+        i = j + 1;
+      }
+    }
+  }
+
   for (const show of shows) {
     // Running order: by set, then by position within the set.
     show.songs.sort((a, b) => {
