@@ -6147,8 +6147,17 @@ function passClaim(tier, lane){
   if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
   arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
 }
-function passClaimAll(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
-  for(let i=1;i<=t;i++){ if(passClaim(i,'free').ok) n++; if(pro && passClaim(i,'prem').ok) n++; } return n; }
+// Returns the list of rewards actually granted, so the caller can break them down in a summary.
+function passClaimAll(){ if(!sbSignedIn()) return []; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); const got=[];
+  for(let i=1;i<=t;i++){ const rf=passClaim(i,'free'); if(rf.ok) got.push(rf.reward); if(pro){ const rp=passClaim(i,'prem'); if(rp.ok) got.push(rp.reward); } } return got; }
+// Roll a list of claimed rewards up into totals: coins, packs by tier, shards by rarity, cosmetics.
+function passClaimAgg(list){ const agg={n:list.length, coins:0, packs:{}, shards:{}, cos:[]};
+  list.forEach(r=>{ if(!r) return;
+    if(r.coins) agg.coins+=r.coins;
+    if(r.pack){ agg.packs[r.pack.tier]=(agg.packs[r.pack.tier]||0)+(r.pack.n||1); }
+    if(r.shard){ agg.shards[r.shard.r]=(agg.shards[r.shard.r]||0)+(r.shard.n||1); }
+    if(r.cos) agg.cos.push(r.cos); });
+  return agg; }
 function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
   for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
 // passBuyPro (the 30,000-coin Pro unlock) is REMOVED — decision A. PRO comes only from the $14.99
@@ -7285,6 +7294,7 @@ function render(){
     if(S.overlay==='playercard') overlayPlayerCard(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='tourpass') overlayTourPass(app);
+    if(S.overlay==='passclaim') overlayPassClaim(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
@@ -22065,7 +22075,7 @@ function overlayTourPass(screen){
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   const bp=ov.querySelector('[data-buypass]'); if(bp) bp.onclick=()=>{ beginPassPurchase(); };
-  const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const n=passClaimAll(); if(n>0){ toast('<span style="color:var(--gold);font-weight:800">Claimed '+n+' reward'+(n>1?'s':'')+'!</span>',3200); render(); } };
+  const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const got=passClaimAll(); if(got.length){ S.passClaimSummary=passClaimAgg(got); S.overlay='passclaim'; render(); } };
   ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
   screen.appendChild(ov);
   requestAnimationFrame(()=>{ const cur=ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,tier)+'"]'); if(cur) cur.scrollIntoView({block:'center'}); });
@@ -22084,6 +22094,31 @@ function tourPassCard(){
   </button>`);
   card.onclick=()=>{ S.overlay='tourpass'; render(); };
   return card;
+}
+// A quick "here's everything you just claimed" breakdown after Claim all, so a batch of tier rewards
+// doesn't just vanish into the wallet with a one-line toast. Reads S.passClaimSummary (a passClaimAgg).
+function overlayPassClaim(screen){
+  try{ passStyleOnce(); }catch(e){}
+  const a=S.passClaimSummary||{n:0,coins:0,packs:{},shards:{},cos:[]};
+  const cells=[];
+  // packs first (the exciting ones), then cosmetics, shards, coins last
+  Object.keys(a.packs).forEach(tier=>cells.push(passRewardCell({pack:{tier:tier, n:a.packs[tier]}})));
+  (a.cos||[]).forEach(c=>cells.push(passRewardCell({cos:c})));
+  Object.keys(a.shards).forEach(r=>cells.push(passRewardCell({shard:{r:r, n:a.shards[r]}})));
+  if(a.coins>0) cells.push(passRewardCell({coins:a.coins}));
+  const grid=cells.map(c=>`<div class="tp-cell claimed" style="border-color:rgba(241,208,74,.35)">${c}</div>`).join('');
+  const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎟️ Tour Pass</div>
+    <h3 style="margin:12px 0 2px">${a.n} reward${a.n===1?'':'s'} claimed!</h3>
+    <p class="lede" style="margin:0 auto 14px;max-width:420px">Everything from your reached tiers, straight into your account.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-width:440px;margin:0 auto 14px">${grid}</div>
+    ${a.coins>0?`<div style="font-family:var(--display);font-size:20px;color:#ffd45e;margin:0 0 4px"><span style="width:20px;height:20px;display:inline-block;vertical-align:-3px">${ic('coin',{size:'20px'})}</span> +${coinFmt(a.coins)} coins total</div>`:''}
+    <button class="btn goldfill done" style="max-width:360px;margin:8px auto 0">Nice ▸</button>
+    <div class="small muted" style="margin-top:10px">Packs are waiting in Pro Shop → Packs.</div></div>`);
+  const back=()=>{ S.passClaimSummary=null; S.overlay='tourpass'; render(); };   // return to the pass track
+  ov.querySelector('.x').onclick=back; ov.querySelector('.done').onclick=back;
+  screen.appendChild(ov);
 }
 function shopBoostTxt(boost){ if(!boost) return ''; return Object.keys(boost).map(k=>{ const v=boost[k]; return `<span style="color:${v>=0?'#35d6a0':'#e2554e'}">${v>=0?'+':''}${v} ${RSHORT[k]||k}</span>`; }).join(' · '); }
 function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
