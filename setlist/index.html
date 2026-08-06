@@ -897,6 +897,12 @@ const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
 // AND every song in it is timed. That leaves 425 of Goose's 655.
 const MIN_SONGS_PER_SHOW = 8;
 
+/* When the close-set button appears at the end of the song list. With an hour
+   still to fill it is noise on every screen; "do I want any of these at all"
+   only becomes a real question once the set is nearly spent. The sheet's copy
+   is always there, so the action is never out of reach. */
+const LIST_CLOSE_AT = 10 * 60;
+
 function drawableShows(shows){
   const full = shows.filter(s =>
     s.songs.length >= MIN_SONGS_PER_SHOW && s.songs.every(p => lenOf(p) > 0));
@@ -1358,13 +1364,13 @@ function renderDraft(){
       </button>`;
     }).join('');
     return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
-  }).join('') + `
+  }).join('') + (left < LIST_CLOSE_AT ? `
     <button class="btn listclose" type="button" data-close-set>
       <span class="lc-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
       <span class="lc-s">${si === ENCORE_INDEX
         ? 'Nothing here? Finish and score the night.'
         : `Nothing here? Bank ${fmtClock(Math.max(0, left))} for the encore.`}</span>
-    </button>`;
+    </button>` : '');
 
   app.innerHTML = `
     <div class="card hud">
