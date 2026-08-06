@@ -2413,11 +2413,11 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=19"></script>
+<script src="engine.js?v=20"></script>
 <script src="run.js?v=10"></script>
 <script src="achievements.js?v=8"></script>
 <script src="auth.js?v=1"></script>
-<script src="board.js?v=1"></script>
+<script src="board.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -3331,11 +3331,12 @@ function rowFromBoard(r){
     seed:r.playoff_seed, national_rank:r.national_rank, eliminated_in:r.eliminated_in,
     bowl:!!r.bowl, bowl_won:r.bowl_won,
     /* The server stores the tier as 'ny6' | 'bowl' | 'minor' and the game says
-       'major' for the middle one. WHICH bowl inside the tier is not stored at
-       all, so bowl_key stays null here and the named-bowl badges read local
-       rows only until the board learns the column. */
+       'major' for the middle one. WHICH bowl is stored as a slug, and the name
+       is looked up here rather than read off the row: nothing the database holds
+       is ever displayed as text. Rows written before 64_cfb_bowl_key.sql have no
+       slug and resolve to null, which reads as the tier, the way they always did. */
     bowl_tier:r.bowl==='bowl'?'major':(r.bowl||null),
-    bowl_key:null, bowl_name:null,
+    bowl_key:r.bowl_key||null, bowl_name:E.bowlName(r.bowl_key),
     run_mode:r.run_mode||null,
     chemistry_pct:r.chemistry_pct==null?null:Number(r.chemistry_pct),
     spend_musd:r.spend_musd==null?null:Number(r.spend_musd),
@@ -3446,11 +3447,17 @@ function lbRow(r,pos){
   const mine=myRunId&&r.id===myRunId;
   const who=r.display_name?esc(r.display_name):'Anonymous';
   const rec=r.wins+'-'+r.losses;
+  /* WHICH bowl, when the row knows. The name is looked up from the slug against
+     the game's own bowl table, never read off the row as text, so a season can
+     only ever be labelled with a bowl this build knows about. Rows written before
+     64_cfb_bowl_key.sql carry no slug and keep the wording they have always had,
+     which is why both halves stay here rather than one replacing the other. */
+  const bowlNm=E.bowlName(r.bowl_key);
   const what=r.perfect?'Perfect season'
     :r.title_won?'National champions'
     :r.eliminated_in?'Out in the '+esc(r.eliminated_in.replace('CFP ',''))
-    :r.bowl_won?'Bowl champions'
-    :r.bowl?'Bowl loss'
+    :r.bowl_won?(bowlNm?esc(bowlNm)+' champions':'Bowl champions')
+    :r.bowl?(bowlNm?'Lost the '+esc(bowlNm):'Bowl loss')
     :'Missed the playoffs';
   let v,k,gold=false;
   if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
@@ -3504,6 +3511,10 @@ async function submitRun(o,selectionRank,stats){
     overall:stats.overall,
     perfectPct:null,
     runMode:runMode(run),
+    /* The slug, never the name. Nine badges key off which bowl was won, and a
+       signed-in player's trophy case is rebuilt from these rows, so leaving this
+       out did not make those nine hard, it made them impossible. */
+    bowlKey:o.bowlInfo?o.bowlInfo.key:null,
   };
   const id=await B.submit(payload);
   if(id){ myRunId=id; pendingClaim=authState.signedIn?null:id;

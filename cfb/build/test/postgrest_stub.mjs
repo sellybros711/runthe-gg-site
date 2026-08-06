@@ -106,6 +106,7 @@ createServer(async (req, res) => {
         num(p.p_squad_fppg), num(p.p_structure_mult), num(p.p_team_rating),
         num(p.p_overall), num(p.p_perfect_pct),
         p.p_run_mode == null ? lit('free') : lit(p.p_run_mode),
+        p.p_bowl_key == null ? 'null' : lit(p.p_bowl_key),
       ].join(',');
       return send(200, Number(asUser(`select cfb_submit_run(${args})`)));
     }

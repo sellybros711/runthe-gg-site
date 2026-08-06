@@ -1238,6 +1238,13 @@ window.GA_ID='G-L29P5MRWKE';
   .rept-gt{background:linear-gradient(90deg,#ff5e5e,#ffd23f,#4be3a8,#3b82f6,#c79bff,#ff5e5e); background-size:300% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
     font-weight:900; animation:reptShimmer 3.2s linear infinite}     /* G.O.A.T. - prismatic */
   @keyframes reptShimmer{to{background-position:200% center}}
+  /* Tour Pass PRO username - an animated gold sweep so pass holders stand out on every board (owner) */
+  .proname{background:linear-gradient(90deg,#c9962a 0%,#f6d97a 18%,#fffbe8 32%,#f1d04a 46%,#c9962a 62%,#f6d97a 80%,#c9962a 100%);
+    background-size:220% auto; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+    font-weight:900; animation:proShine 2.6s linear infinite;
+    filter:drop-shadow(0 0 6px rgba(241,208,74,.45))}
+  @keyframes proShine{to{background-position:220% center}}
+  @media (prefers-reduced-motion:reduce){ .proname{animation:none; background-position:32% center} }
   @media (prefers-reduced-motion:reduce){ .rept-ss,.rept-im,.rept-ic,.rept-gt{animation:none} }
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
   /* collapsible career groups (native <details>, no re-render needed) */
@@ -1806,6 +1813,9 @@ window.GA_ID='G-L29P5MRWKE';
   .setup-shopbtn .ssb-go{margin-left:auto;opacity:.75}
   .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(241,208,74,.13); border:1px solid rgba(241,208,74,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
+  button.coinpill{cursor:pointer; font-family:var(--body)}
+  button.coinpill:hover{background:rgba(241,208,74,.2); border-color:var(--gold)}
+  .cp-log{font-size:11px; opacity:.75; margin-left:1px}
   .shop-refcta{display:flex; align-items:center; gap:9px; width:100%; text-align:left; margin:0 0 8px; padding:9px 12px; border-radius:11px; cursor:pointer;
     border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(10,22,38,.28)); color:var(--gold); font:800 13px var(--body); line-height:1.25}
   .shop-refcta .small{font-weight:600; color:var(--pagemut)}
@@ -3026,6 +3036,40 @@ const REP_CLASS={
   'Star':'st',         'All-Star':'as',        'Standout':'sd',         'Champion':'ch',          'Elite':'el',
   'Superstar':'ss',    'Legend':'lg',          'Immortal':'im',         'Icon':'ic',              'G.O.A.T.':'gt' };
 function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; return 'rept'+(k?' rept-'+k:''); }
+/* ---------------------------------------------------------------------------
+   Tour Pass PRO name badge (owner: "user names of people with the pro tour pass
+   displayed with an animated gold effect"). The client knows its OWN pass from
+   the wallet, but not other players' - supabase/74_runtour_pro_users.sql exposes
+   the set of CURRENT-season pass holders in one tiny cached read, so every board
+   can gild matching names (matched by user id, or by username on the streak
+   board, which carries no id). Fails open: no backend / migration → nobody gilded.
+--------------------------------------------------------------------------- */
+var _proCache={ids:null,names:null,t:0,loading:false};
+function proLoad(){
+  if(!sb) return;
+  if(_proCache.loading) return;
+  if(_proCache.ids && (Date.now()-_proCache.t)<300000) return;   // 5 min is plenty for a purchase to show up
+  _proCache.loading=true;
+  rpcTry('runtour_pro_users',undefined,8000).then(({data,error})=>{
+    _proCache.loading=false; _proCache.t=Date.now();
+    if(error){ if(!_proCache.ids){ _proCache.ids=new Set(); _proCache.names=new Set(); } return; }
+    _proCache.ids=new Set((data||[]).map(r=>r.user_id).filter(Boolean));
+    _proCache.names=new Set((data||[]).map(r=>(r.username||'').toLowerCase()).filter(Boolean));
+    render();
+  }).catch(()=>{ _proCache.loading=false; _proCache.t=Date.now(); });
+}
+// true when THIS row belongs to a current-season Tour Pass holder
+function isProUser(uid,name){
+  if(sbUser && uid && uid===sbUser.id) return passProActive();         // your own row: the wallet is authoritative
+  if(!_proCache.ids) return false;
+  if(uid && _proCache.ids.has(uid)) return true;
+  return !!(name && _proCache.names.has(String(name).toLowerCase()));
+}
+// escaped name, wrapped in the animated gold treatment when the player holds the pass
+function proNameHTML(name,uid){
+  const t=esc(name==null?'':name);
+  return isProUser(uid,name) ? `<span class="proname" title="Tour Pass PRO">${t}</span>` : t;
+}
 // CS394: a representative glow colour per tier (low → cool/grey, high → gold/violet/prismatic) for the H2H
 // preview tier ring. One entry per rank in REP_ORDER (Amateur..G.O.A.T.).
 const REP_GLOW=['#8aa0a8','#8fce86','#7bbf9e','#9fb0b8','#7fd6c4','#3fb8a0','#8ec5ff','#c99a4a','#e08a52','#ff8fb0','#cdd6dc','#ffd34d','#3fd0ff','#ff6a5a','#b98bff','#ff5ad0','#a97bff','#8fe6ff','#ffd76a','#ff7bd9'];
@@ -7779,12 +7823,13 @@ function overlayAccount(screen){
   // signing in to claim a daily round → run the claim and drop back to the result screen, not the profile
   if(S._dailyClaimFlow && sbSignedIn()){ maybeClaimDaily(); S._dailyClaimFlow=false; S.overlay=null; S.screen='dailyresult'; render(); return; }
   // signed in + has a username → the profile lives on the Player overlay
-  if(sbSignedIn() && sbUsername && S.acctMode!=='username'){ S.overlay='record'; render(); return; }
+  const forceName=nameChangeRequired();
+  if(sbSignedIn() && sbUsername && S.acctMode!=='username' && !forceName){ S.overlay='record'; render(); return; }
   const mode = sbSignedIn() ? 'username' : (S.acctMode==='signup'?'signup':'signin');
   const err=S.acctErr||''; const busy=!!S.acctBusy;
-  const title=mode==='username'?'Pick a username':(mode==='signup'?'Create your account':'Sign in');
+  const title=mode==='username'?(forceName?'Choose a new username':'Pick a username'):(mode==='signup'?'Create your account':'Sign in');
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Account">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    ${forceName?'':'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'}
     <h3>${title}</h3><div class="authbox"></div></div>`);
   const box=ov.querySelector('.authbox');
   const go=async(fn)=>{ if(S.acctBusy)return; S.acctErr=''; S.acctBusy=true; render();
@@ -7794,7 +7839,8 @@ function overlayAccount(screen){
     else if(sbSignedIn()&&sbUsername) S.overlay='record';
     render(); };
   if(mode==='username'){
-    box.innerHTML=`<p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards, 3–20 letters or numbers.</p>
+    box.innerHTML=`${forceName?`<div class="scout" style="border-color:#e2554e;margin:0 0 10px;text-align:left"><b style="color:#ff8a80">Username removed</b><div class="small" style="margin-top:3px;color:#dfeae2">${esc(sbNameFlag)}</div></div>`:''}
+      <p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards, 3–20 letters or numbers.</p>
       <input class="name" id="au-user" maxlength="20" placeholder="e.g. BirdieKing" autocomplete="off">
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-set" style="margin-top:10px" ${busy?'disabled':''}>${busy?'Saving…':'Save username'}</button>
@@ -7836,7 +7882,7 @@ function overlayAccount(screen){
       else { const id=box.querySelector('#au-id').value; if(!id.trim()||!pass){S.acctErr='Enter your login and password.';render();return;} go(()=>sbSignInPassword(id,pass)); } };
     box.querySelector('#au-swap').onclick=(e)=>{ e.preventDefault(); S.acctMode=isUp?'signin':'signup'; S.acctErr=''; S.acctNote=''; render(); };
   }
-  ov.querySelector('.x').onclick=()=>{ S.overlay=null; S.acctErr=''; S.acctNote=''; render(); };
+  const xb=ov.querySelector('.x'); if(xb) xb.onclick=()=>{ S.overlay=null; S.acctErr=''; S.acctNote=''; render(); };   // absent while a rename is forced
   screen.appendChild(ov);
 }
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
@@ -8085,7 +8131,7 @@ function playerCardHTML(cv){
         ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
         ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
         <div class="pcgolfer">${pxFigureHTML(cv.look,280)}</div>
-        <div class="pcplate" style="${plateCss(plate)}"><div class="pcpn">${esc(cv.name)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
+        <div class="pcplate" style="${plateCss(plate)}"><div class="pcpn">${proNameHTML(cv.name, cv.self?(sbUser&&sbUser.id):cv.uid)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
       </div>
       <div class="pcard-face pcard-back">
         <img class="pcbg dim" src="${pxCardBgURL(bg)}" alt="">
@@ -8100,7 +8146,7 @@ function playerCardHTML(cv){
     </div></div>`;
 }
 function overlayPlayerCard(app){
-  pcStyleOnce();
+  pcStyleOnce(); if(sb) proLoad();
   const cv=S.cardView; if(!cv){ S.overlay=null; return; }
   const shown=cv._shown; cv._shown=true;   // entrance animation only on the first render (async stat loads re-render)
   const ov=$(`<div class="pcov" role="dialog" aria-modal="true" aria-label="Player card">
@@ -8115,6 +8161,7 @@ function overlayPlayerCard(app){
   app.appendChild(ov);
 }
 function overlayLeaderboard(screen){
+  if(sb) proLoad();
   const c=career();
   _pcRows.length=0;   // player-card tap registry rebuilds with the board
   const tab=S.lbTab||'season';
@@ -8137,7 +8184,7 @@ function overlayLeaderboard(screen){
     // CS214: the server can't sort by a derived stat, so fetch the (earnings-ordered) base board - lbLoad
     // falls back to earnings order when p_sort is unknown - and rank it client-side by golferStats().
     const k=tab+':'+sort+ksuf; let v=lbCache[k];
-    if(!v){ lbLoad(tab,sort,'desc',since,ksuf); v=lbCache[k]; }
+    if(boardStale(v)){ lbLoad(tab,sort,'desc',since,ksuf); v=lbCache[k]; }
     view=v;
     if(v && v.ok){
       const rows=v.rows.filter(r=>r.skills && CATS.every(cc=>typeof r.skills[cc.k]==='number'))
@@ -8149,24 +8196,24 @@ function overlayLeaderboard(screen){
     } else dirRows=[];
   } else if(dir==='asc'){
     const kAsc=tab+':'+sort+ksuf+':asc'; let vAsc=lbCache[kAsc];
-    if(!vAsc){ lbLoad(tab,sort,'asc',since,ksuf); vAsc=lbCache[kAsc]; }
+    if(boardStale(vAsc)){ lbLoad(tab,sort,'asc',since,ksuf); vAsc=lbCache[kAsc]; }
     if(vAsc && vAsc.ok && !vAsc.legacyDir){ view=vAsc; dirRows=vAsc.rows; }     // true bottom N, worst-first
     else if(vAsc && vAsc.loading){ view=vAsc; dirRows=[]; }
     else {                                                                       // pre-migration fallback
       const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
-      if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
+      if(boardStale(vDesc)){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
       view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows.slice().reverse():[];
     }
   }else{
     const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
-    if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
+    if(boardStale(vDesc)){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look,pc)=>`<div class="lb ${you?'you':''}" ${pc!=null?`data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(name)}’s player card"`:''} style="grid-template-columns:26px 32px 1fr auto${pc!=null?';cursor:pointer':''}">
+  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look,pc,pro)=>`<div class="lb ${you?'you':''}" ${pc!=null?`data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(name)}’s player card"`:''} style="grid-template-columns:26px 32px 1fr auto${pc!=null?';cursor:pointer':''}">
       <span class="pos">${pos===1?'🏆':pos}</span>
       ${pxAvatarChip(look||S.look||DEFLOOK,30)}
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pro?`<span class="proname" title="Tour Pass PRO">${esc(name)}</span>`:esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}</span>
       <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?rp:null; };   // raw tier name; repClass picks the effect
   const globalOk = view && view.ok;
@@ -8218,7 +8265,7 @@ function overlayLeaderboard(screen){
       // 65_ (owner): the small row avatar tracks the player's CURRENT golfer (cur_look, updated whenever
       // they change their character); the frozen at-submit look stays on the podium figures below.
       const pc=pcReg(Object.assign({},r,{rep_pts:(id.rep!=null?id.rep:r.rep_pts)}), id.name, tab==='career'?'career':'season');
-      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK),pc);
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK),pc,isProUser(r.user_id,id.name));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
@@ -8230,7 +8277,7 @@ function overlayLeaderboard(screen){
       // golfer for legacy rows with no look, or before migration 52 is applied).
       podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
         const pc=pcReg(Object.assign({},r,{rep_pts:(id.rep!=null?id.rep:r.rep_pts)}), id.name, tab==='career'?'career':'season');
-        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(id.name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(id.name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${proNameHTML(id.name,r.user_id)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
     }
     // CS505 (owner): the top 3 live ONLY on the podium — the ranked list below starts at #4 whenever a
     // podium is shown, so nobody appears twice.
@@ -8261,6 +8308,8 @@ function overlayLeaderboard(screen){
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
     board += guestBoardCTA;   // signed-out players still get the sign-in prompt in local-fallback mode
+    // owner ("leaderboard won't load"): the failure used to be silent - now it says so and can be retried
+    if(sb) board = `<div class="small muted center" style="padding:10px 8px 4px">Global board unavailable right now${boardErrTxt(view)?' ('+esc(boardErrTxt(view))+')':''}, showing your own results.</div><div class="center" style="padding:0 8px 10px"><button class="btn ghost lbretry" style="width:auto;padding:7px 14px;font-size:12.5px">↺ Try again</button></div>` + board;
   }
   // sign-in banner reflects the shared RunThe.GG session, opens the in-game account flow
   const signCTA=`<button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
@@ -8296,6 +8345,7 @@ function overlayLeaderboard(screen){
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbretry').forEach(b=>b.onclick=()=>{ lbCache={}; render(); });   // drop the cached failure, the render refetches
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});   // reset to high→low on tab change
   ov.querySelectorAll('.lbwin').forEach(b=>b.onclick=()=>{S.lbWindow=b.dataset.win;render();});   // CS417 Today/This week/All-Time
   ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
@@ -8312,6 +8362,7 @@ function overlayLeaderboard(screen){
 // show each player's customized golfer on the podium and a live rotation countdown. Self-contained so the
 // season/career board logic above is untouched.
 function overlayLeaderboardDaily(screen, tab){
+  if(sb) proLoad();
   const weekly=(tab==='weekly');
   _pcRows.length=0;   // player-card tap registry rebuilds with the board
   const day=todayKey(), wr=weekDayRange();
@@ -8355,13 +8406,13 @@ function overlayLeaderboardDaily(screen, tab){
     return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:26px 32px 1fr auto;cursor:pointer">
       <span class="pos">${r.rank===1?'🏆':r.rank}</span>
       ${pxAvatarChip(you(r)?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub(r)}</div></span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${proNameHTML(r.display_name,r.user_id)}</div><div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub(r)}</div></span>
       <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`; };
   let podium='';
   if(srows.length>=3){
     const pod=[srows[1],srows[0],srows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
     podium='<div class="lbpodium">'+pod.map((r,di)=>{ const pc=pcReg(r, r.display_name, 'daily');
-      return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):p18val(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+      return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${proNameHTML(r.display_name,r.user_id)}</div><div class="vl">${weekly?scoreWk(r):p18val(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
   }
   const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
       <div style="font-size:22px;line-height:1">🔒</div>
@@ -8424,22 +8475,26 @@ function overlayLeaderboardDaily(screen, tab){
 // CS401: the ACTIVE daily-streak leaderboard (a self-contained tab, mirrors overlayLeaderboardDaily).
 let streakBoardCache=null;
 function streakBoardLoad(){
-  if(!sb){ streakBoardCache={loading:false,ok:false,rows:[]}; return; }
+  // t is what boardStale() reads, so a failed streak board retries when you reopen it (never hammers)
+  if(!sb){ streakBoardCache={loading:false,ok:false,rows:[],err:'offline',t:Date.now()}; return; }
   if(streakBoardCache && streakBoardCache.loading) return;
-  streakBoardCache={loading:true,ok:false,rows:[]};
-  sb.rpc('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
-    streakBoardCache = error ? {loading:false,ok:false,rows:[]} : {loading:false,ok:true,rows:(data||[])};
-    if((S.overlay==='leaderboard' && (S.lbTab==='streaks')) || S.overlay==='courserecords') render();
-  }).catch(()=>{ streakBoardCache={loading:false,ok:false,rows:[]}; if((S.overlay==='leaderboard'&&S.lbTab==='streaks')||S.overlay==='courserecords') render(); });
+  streakBoardCache={loading:true,ok:false,rows:[],t:Date.now()};
+  const done=()=>{ if((S.overlay==='leaderboard' && (S.lbTab==='streaks')) || S.overlay==='courserecords') render(); };
+  rpcTry('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
+    streakBoardCache = error ? {loading:false,ok:false,rows:[],err:(error.message||'error'),t:Date.now()}
+                             : {loading:false,ok:true,rows:(data||[]),t:Date.now()};
+    done();
+  }).catch(e=>{ streakBoardCache={loading:false,ok:false,rows:[],err:(e&&e.message)||'error',t:Date.now()}; done(); });
 }
 function overlayStreakBoard(screen){
-  if(!streakBoardCache) streakBoardLoad();
+  if(sb) proLoad();
+  if(boardStale(streakBoardCache)) streakBoardLoad();
   const c=streakBoardCache, loading=!c||c.loading, ok=c&&c.ok, rows=ok?c.rows:[];
   const meName=(sbUsername||'').toLowerCase();
   const you=r=>!r.is_guest && meName && (r.username||'').toLowerCase()===meName;
   const rowHTML=(r,i)=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${i===0?'🏆':(i+1)}</span>
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap${r.is_guest?';color:var(--muted)':''}">${esc(r.is_guest?'Guest':(r.username||'Golfer'))}</div><div class="small muted" style="font-size:10.5px">best ${r.longest||r.current} days</div></span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap${r.is_guest?';color:var(--muted)':''}">${r.is_guest?'Guest':proNameHTML(r.username||'Golfer',null)}</div><div class="small muted" style="font-size:10.5px">best ${r.longest||r.current} days</div></span>
       <span class="mny" style="white-space:nowrap"><b style="color:var(--gold)">🔥 ${r.current}</b></span></div>`;
   const guestCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
       <div style="font-size:22px;line-height:1">🔒</div><b style="color:var(--gold);display:block;margin-top:5px">Your streak posts as "Guest"</b>
@@ -19893,7 +19948,7 @@ function scrDailyIntro(){
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
 function scrDailyPreview(){
-  if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
+  if(sb && boardStale(crCache)) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add(scrHero(S.special?'Monthly Spotlight':'Play 18', S.special?'Special event · today only':"Today's course"));
   if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
@@ -20299,7 +20354,7 @@ function beginDailyRound(){
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
-  if(sb && !S.special){ const d=S.dailySeed||todayKey(); if(dbCache===null||dbCache.day!==d) dbLoad(d); }
+  if(sb && !S.special){ const d=S.dailySeed||todayKey(); if(boardStale(dbCache)||dbCache.day!==d) dbLoad(d); }
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -21760,9 +21815,9 @@ function scrDailyRound(){
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();
-  if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
+  if(sb && boardStale(crCache)) crLoad();   // ensure the course-record comparison reflects the global record
   const _ds2=S.dailySeed||todayKey();
-  if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
+  if(sb && (boardStale(dbCache)||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
   const practice=!!(S.dailyResult&&S.dailyResult.practice);
   const best=practice?null:dailyBest(); const justPlayed=!!S.dailyResult;   // practice never compares to the real day's best
   const r=S.dailyResult||best;
@@ -22198,7 +22253,8 @@ function passPerksHTML(){
     ['target','Unlimited daily plays','No attempt cap on Beat the Pro for the whole season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Opened from the Pro Shop whenever you want'],
-    ['bolt',PASS_PRO_MULT+'× coins from every round','Everything you play pays more, all season']];
+    ['bolt',PASS_PRO_MULT+'× coins from every round','Everything you play pays more, all season'],
+    ['clock','Fast simulation','The quickest sim pace in career mode, get through a season in half the time']];
   return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
 }
 // The giant, unmissable price CTA.
@@ -22223,7 +22279,7 @@ function overlayTourPass(screen){
       <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
         <li><i>✓</i>All 50 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
       <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
-        <li><i>★</i>Everything in FREE</li><li><i>★</i>All 50 PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li></ul></div>
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All 50 PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
       </div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
     const cta=$(`<div class="tps-cta">
@@ -23831,7 +23887,7 @@ function bucketShopNode(){
     pc.appendChild($('<div style="font-family:var(--display);font-size:22px;color:'+passCol+';text-align:center">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode']].forEach(function(p){
+    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🕒','Fast simulation, the quickest sim pace in career mode']].forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);
@@ -23894,6 +23950,8 @@ function bucketShopNode(){
   });
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.<br><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with a purchase? Contact us</a></div>'));
   var _pi=wrap.querySelector('.pissue'); if(_pi) _pi.onclick=function(e){ e.preventDefault(); S.fbText=''; fbReset('purchase'); render(); };
+  if(sbSignedIn()){ var chB=$('<button class="btn ghost" style="width:auto;margin:12px auto 0;padding:8px 14px;font-size:12.5px;display:block">🧾 Coin history ▸</button>');
+    chB.onclick=function(){ openCoinLog('shop'); }; wrap.appendChild(chB); }
   return wrap;
 }
 function packShopNode(){
@@ -23901,8 +23959,6 @@ function packShopNode(){
   var p=packState(), free=packIsFree(), credits=packCredits(), bal=coinBalance();
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:380px;margin:6px auto 2px;line-height:1.5">Spin the wheel, land on an item from the whole locker. Higher tiers have better odds. (Earned Legend gear never drops.)</div>'));
-  if(sbSignedIn()){ var chB=$('<button class="btn ghost" style="width:auto;margin:6px auto 0;padding:7px 13px;font-size:12.5px;display:block">🧾 Coin history ▸</button>');
-    chB.onclick=function(){ openCoinLog('shop'); }; wrap.appendChild(chB); }
   if(free||credits>0){
     wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
       +(free?'🎁 Your first pack is on us — open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready — open a Base pack, from your challenges &amp; streak!'))+'</div>'));
@@ -23996,7 +24052,7 @@ function overlayShop(screen){
     <div class="shop-bar"><h3>Pro Shop</h3>
       <div style="display:flex;align-items:flex-start;gap:8px">
         <div class="shop-wallet">
-          <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
+          <button class="coinpill" data-coinlog title="Coin history" aria-label="Coin history"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}<span class="cp-log">🧾</span></button>
           ${BUCKETS_ENABLED?`<button class="buycoins ${sec==='buckets'?'on':''}" data-sec="buckets">＋ Buy Coins</button>`:''}
         </div>
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
@@ -24019,6 +24075,7 @@ function overlayShop(screen){
     <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own, colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button></div>`);
   ov.appendChild(promos);
+  sticky.querySelectorAll('[data-coinlog]').forEach(x=>x.onclick=()=>{ openCoinLog('shop'); });   // the balance opens the coin ledger (it lives with the coins, not with the packs)
   promos.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
   // CS452: clear link from the STORE to the CLOSET (edit-your-golfer). If the shop was opened from the closet
   // (screen already 'setup'), just close the overlay to reveal it; otherwise open the closet in edit mode.
@@ -24162,15 +24219,16 @@ function overlayShop(screen){
   screen.appendChild(ov);
 }
 function overlayCourseRecords(screen){
+  if(sb) proLoad();
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
   const tab=(S.crTab==='legend'||S.crTab==='streaks'||S.crTab==='all')?S.crTab:'human';
   _pcRows.length=0;   // player-card tap registry rebuilds with this overlay (owner: cards open here too)
   if(sb){
-    if(tab==='human'){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }
-    else if(tab==='all'){ if(crCache===null) crLoad(); }
+    if(tab==='human'){ if(boardStale(crCache)) crLoad(); if(boardStale(dbCache)||dbCache.day!==todaySeed) dbLoad(todaySeed); }
+    else if(tab==='all'){ if(boardStale(crCache)) crLoad(); }
     // Legend boards are only fetched once the player actually opens that tab (most never will)
-    else if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
+    else if(tab==='legend'){ if(boardStale(crCacheLegend)) crLoadLegend(); if(boardStale(dbCacheLegend)||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
   }
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -24187,18 +24245,19 @@ function overlayCourseRecords(screen){
       <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   if(tab==='streaks'){
     // ---- Active Streaks tab (guests included - they post + display as "Guest", 63_) ----
-    if(!streakBoardCache) streakBoardLoad();
+    if(boardStale(streakBoardCache)) streakBoardLoad();
     const _sc=streakBoardCache, _sLoad=!_sc||_sc.loading, _sOk=_sc&&_sc.ok, _sRows=_sOk?_sc.rows.slice(0,20):[];
     let streakHTML;
     if(_sLoad) streakHTML='<div class="small muted center" style="padding:12px 8px">Loading streaks…</div>';
     else if(_sOk&&_sRows.length){ streakHTML='<div class="board">'+_sRows.map((r,i)=>{ const guest=!!r.is_guest, nm=guest?'Guest':(r.username||'Golfer');
       const you=!guest&&sbUsername&&(r.username||'').toLowerCase()===sbUsername.toLowerCase();
-      return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${esc(nm)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
+      return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${guest?esc(nm):proNameHTML(nm,null)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
     else if(_sOk) streakHTML='<div class="small muted center" style="padding:12px 8px">No active streaks yet, start one today.</div>';
-    else streakHTML='<div class="small muted center" style="padding:12px 8px">Streak board is unavailable right now.</div>';
+    else streakHTML='';
     ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Active streaks</h2>
       <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
     const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
+    if(!_sLoad && !_sOk) ov.appendChild(boardFailNode('Couldn’t load the streak board. '+(boardErrTxt(_sc)||'Check your connection and try again.'), ()=>{ streakBoardCache=null; streakBoardLoad(); }));
     if(!sbSignedIn()) ov.appendChild($(`<p class="small muted center" style="margin:10px 0 0">Your streak posts as "Guest". Sign in to put your name on it.</p>`));
   } else if(tab==='all'){
     // ---- ALL COURSES tab: every course + its all-time record (owner) ----
@@ -24209,15 +24268,15 @@ function overlayCourseRecords(screen){
   } else {
   const boardCache = tab==='legend' ? dbCacheLegend : dbCache;
   // today's global board
-  let boardHTML='';
+  let boardHTML='', boardFail=false;
   if(sb){
-    if(boardCache===null||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
+    if(boardCache===null||boardCache.loading||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
     else if(boardCache.ok && boardCache.rows.length){
       // owner: a top-3 podium like the other leaderboards; the ranked list then starts at #4 (CS505)
       let podHTML='';
       if(boardCache.rows.length>=3){ const rws=boardCache.rows, pod=[rws[1],rws[0],rws[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
         podHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const pc=pcReg(Object.assign({course_key:today},r), r.display_name, 'daily');
-        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`; }).join('')+'</div>'; }
+        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${proNameHTML(r.display_name,r.user_id)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`; }).join('')+'</div>'; }
       // owner: EVERY posted entry shows (no display cap); avatar left of the name, archetype right of the OVR
       boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0).map(r=>{
         const you=(sbUser&&r.user_id===sbUser.id);
@@ -24227,10 +24286,10 @@ function overlayCourseRecords(screen){
         return `<div class="lb ${you?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:30px 34px 1fr auto;cursor:pointer">
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
         <span style="display:flex;align-items:center">${pxAvatarChip(you?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}</span>
-        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${arch?' · '+esc(arch.name):''}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
+        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${proNameHTML(r.display_name,r.user_id)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${arch?' · '+esc(arch.name):''}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
         <span class="sc" style="color:var(--gold);font-weight:800;text-align:right;white-space:nowrap">${dTot(r.to_par, (DAILY_COURSES[today]||{}).par)}</span></div>`; }).join('')+`</div>`;
     } else if(boardCache.ok){ boardHTML=`<div class="small muted center" style="padding:14px 8px">${tab==='legend'?'No legend rounds posted yet today.':'No rounds posted yet today, be the first.'}</div>`; }
-    else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
+    else { boardHTML=''; boardFail=true; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
   if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board, free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
   // owner ("it says the course record is -9 but when you click it, it shows -4"): the preview's record link
@@ -24257,6 +24316,9 @@ function overlayCourseRecords(screen){
   ov.appendChild($(`<div><div style="margin:16px 0 4px;font-family:var(--display);font-size:clamp(19px,5vw,24px);line-height:1.1"><span style="color:var(--gold)">Today</span> at ${esc(dShort(DAILY_COURSES[today].v))}</div>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'Legend-token rounds posted today only. Beat the all-time record above to take it.':'Rounds posted today only, lowest wins the day. Beat the all-time record above to take it.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
+  // owner ("leaderboard won't load"): a failed board now says why and offers a retry instead of a dead end
+  if(boardFail) ov.appendChild(boardFailNode('Couldn’t load today’s board. '+(boardErrTxt(boardCache)||'Check your connection and try again.'),
+    ()=>{ if(tab==='legend'){ dbCacheLegend=null; dbLoadLegend(todaySeed); } else { dbCache=null; dbLoad(todaySeed); } }));
   if(tab==='legend'){
     // the legend tier keeps its own all-time records here (the ALL COURSES tab holds the human records)
     const online=!!(crCacheLegend&&crCacheLegend.ok);
@@ -24654,7 +24716,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -24710,8 +24772,27 @@ async function sbSignOut(){
   // (RunThePitch's separate session key is left untouched.)
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
   setRemember(false);
-  sbUser=null; sbUsername=null; sbProfile=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
+  sbUser=null; sbUsername=null; sbProfile=null; sbNameFlag=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
   _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;
+}
+/* ---------------------------------------------------------------------------
+   Forced rename (moderation). supabase/75_runtour_force_rename.sql retires an
+   abusive username, scrubs the frozen copies on every posted row, and flags the
+   account. runtour_my_name_flag() returns the reason for the CALLER only, so no
+   one can see who else was actioned. When flagged the game opens the username
+   picker and won't let it be dismissed until a new name is saved.
+--------------------------------------------------------------------------- */
+var sbNameFlag=null;
+function nameChangeRequired(){ return !!(sbNameFlag && sbSignedIn()); }
+async function checkNameFlag(){
+  if(!sb||!sbUser) { sbNameFlag=null; return; }
+  try{
+    const {data,error}=await sb.rpc('runtour_my_name_flag');
+    if(error) return;                                   // pre-migration / offline → nothing changes
+    const r=(data&&data[0]&&data[0].reason)||null;
+    if(r && !sbNameFlag){ sbNameFlag=r; S.overlay='account'; S.acctMode='username'; S.acctErr=''; render(); }
+    else sbNameFlag=r;
+  }catch(e){}
 }
 async function sbSetUsername(name){
   if(!sb||!sbUser) throw new Error('Sign in first.');
@@ -24721,7 +24802,7 @@ async function sbSetUsername(name){
   if(ok===false) throw new Error('That username is taken.');
   const {error}=await sb.rpc('set_username',{p_username:name});
   if(error) throw new Error(error.message||'Could not set that username.');
-  sbUsername=name;
+  sbUsername=name; sbNameFlag=null;   // a valid new name satisfies a forced rename
 }
 async function sbLoadProfile(){
   if(!sb||!sbUser){ sbProfile=null; return; }
@@ -25244,6 +25325,41 @@ function careerRankCard(){
   card.querySelector('button').onclick=()=>{ S.lbTab='career'; S.lbWindow='all'; S.overlay='leaderboard'; render(); };
   return card;
 }
+/* ---------------------------------------------------------------------------
+   Board loading (owner: "leaderboard won't load"). Every network-backed board used to cache a
+   FAILURE forever - the overlays only re-fetched when the cache was still null - so ONE blip (a
+   slow phone connection, a hung request, a backend hiccup) left "unavailable right now" until a
+   hard refresh, and the real reason was swallowed with no console output. Now:
+     - rpcTry races the call against a timeout so a hung request can never spin forever,
+     - the failure reason is logged AND kept on the cache so the UI can show it,
+     - boardStale() lets a FAILED cache retry when you reopen the board (after a short backoff),
+       while a successful or in-flight one is left alone.
+--------------------------------------------------------------------------- */
+var BOARD_TIMEOUT_MS=12000, BOARD_RETRY_MS=6000;
+async function rpcTry(name,args,ms){
+  let to;
+  try{
+    const r=await Promise.race([
+      sb.rpc(name,args),
+      new Promise(res=>{ to=setTimeout(()=>res({data:null,error:{message:'timed out'}}), ms||BOARD_TIMEOUT_MS); })
+    ]);
+    if(r&&r.error) console.error('[RunTheTour] '+name+' failed:', r.error.message||r.error);
+    return r||{data:null,error:{message:'no response'}};
+  }catch(e){
+    console.error('[RunTheTour] '+name+' threw:', e);
+    return {data:null,error:{message:(e&&e.message)||'network error'}};
+  }finally{ clearTimeout(to); }
+}
+function boardErrTxt(c){ const m=c&&c.err?String(c.err):''; return m?m.slice(0,90):''; }
+// null → never loaded; a failed load is retryable once the backoff has passed; loading/ok are not
+function boardStale(c){ return !c || (!c.ok && !c.loading && (Date.now()-(c.t||0))>BOARD_RETRY_MS); }
+// a small "couldn't load + Try again" block for any board; retry() clears the cache and refetches
+function boardFailNode(msg,retry){
+  const n=$(`<div class="center" style="padding:12px 8px"><div class="small muted">${esc(msg||'Couldn’t reach the leaderboard right now.')}</div>
+    <button class="btn ghost" style="width:auto;margin:8px auto 0;padding:7px 14px;font-size:12.5px">↺ Try again</button></div>`);
+  n.querySelector('button').onclick=()=>{ try{ retry&&retry(); }catch(e){} render(); };
+  return n;
+}
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
 async function lbLoad(tab,sort,dir,since,ksuf){
@@ -25253,18 +25369,18 @@ async function lbLoad(tab,sort,dir,since,ksuf){
   // keys the date-scoped windows separately; since = the window's start passed to the board as p_since.
   const k=(dir==='asc')?(tab+':'+sort+ksuf+':asc'):(tab+':'+sort+ksuf);
   if(lbCache[k] && lbCache[k].loading) return;          // already fetching
-  if(!sb){ lbCache[k]={rows:[],ok:false}; render(); return; }
-  lbCache[k]={loading:true};
+  if(!sb){ lbCache[k]={rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  lbCache[k]={loading:true,rows:[],t:Date.now()};
   try{
     const fn=(tab==='career')?'runtour_career_board':'runtour_season_board';
     let legacyDir=false;
     // p_since is migration 58; if unsupported, drop it and show the all-time board (fail-open window).
-    let r=await sb.rpc(fn, since?{p_limit:200,p_sort:sort,p_dir:dir,p_since:since}:{p_limit:200,p_sort:sort,p_dir:dir});
-    if(r.error && since){ r=await sb.rpc(fn,{p_limit:200,p_sort:sort,p_dir:dir}); }   // pre-58 → all-time
-    if(r.error){ legacyDir=true; r=await sb.rpc(fn,{p_limit:200,p_sort:sort}); }      // DB without p_dir → top-N only
-    if(r.error){ r=await sb.rpc(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
-    lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir};
-  }catch(e){ lbCache[k]={rows:[],ok:false}; }
+    let r=await rpcTry(fn, since?{p_limit:200,p_sort:sort,p_dir:dir,p_since:since}:{p_limit:200,p_sort:sort,p_dir:dir});
+    if(r.error && since){ r=await rpcTry(fn,{p_limit:200,p_sort:sort,p_dir:dir}); }   // pre-58 → all-time
+    if(r.error){ legacyDir=true; r=await rpcTry(fn,{p_limit:200,p_sort:sort}); }      // DB without p_dir → top-N only
+    if(r.error){ r=await rpcTry(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
+    lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir,err:r.error?(r.error.message||'error'):'',t:Date.now()};
+  }catch(e){ lbCache[k]={rows:[],ok:false,err:(e&&e.message)||'error',t:Date.now()}; }
   render();   // refresh whatever's open
 }
 /* ---- Daily Challenge backend (Phase 3): submit best round + global board/records. Fails open. ---- */
@@ -25351,36 +25467,40 @@ async function reconcileDailyAttempts(){
   }catch(e){ /* fail open, local count stands until the next check */ }
 }
 async function crLoad(){
-  if(!sb){ crCache={recs:{},ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_course_records');
-    const recs=buildCourseRecs(data); crCache={recs,ok:!error};
-    if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
-  }catch(e){ crCache={recs:{},ok:false}; }
+  if(!sb){ crCache={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(crCache&&crCache.loading) return;
+  crCache={recs:(crCache&&crCache.recs)||{},ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_course_records');
+  const recs=buildCourseRecs(data); crCache={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
+  if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
   render();
 }
 // Legend-tier course records, a separate board so retired-legend peak builds don't just own every
 // freshly-drafted golfer's shot at a human record. Fails open (empty, ok:false) until the owner runs
 // supabase/30_runtour_legend.sql, the RPC call below simply errors until then, caught below.
 async function crLoadLegend(){
-  if(!sb){ crCacheLegend={recs:{},ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_course_records',{p_legend:true});
-    const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error};
-    if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
-  }catch(e){ crCacheLegend={recs:{},ok:false}; }
+  if(!sb){ crCacheLegend={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(crCacheLegend&&crCacheLegend.loading) return;
+  crCacheLegend={recs:(crCacheLegend&&crCacheLegend.recs)||{},ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_course_records',{p_legend:true});
+  const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
+  if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
   render();
 }
 async function dbLoad(day){
-  if(!sb){ dbCache={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200});
-    dbCache={day,rows:(data||[]),ok:!error};
-  }catch(e){ dbCache={day,rows:[],ok:false}; }
+  if(!sb){ dbCache={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(dbCache&&dbCache.loading&&dbCache.day===day) return;
+  dbCache={day,rows:[],ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200});
+  dbCache={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
 async function dbLoadLegend(day){
-  if(!sb){ dbCacheLegend={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
-    dbCacheLegend={day,rows:(data||[]),ok:!error};
-  }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
+  if(!sb){ dbCacheLegend={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(dbCacheLegend&&dbCacheLegend.loading&&dbCacheLegend.day===day) return;
+  dbCacheLegend={day,rows:[],ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
+  dbCacheLegend={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
 // Monthly Spotlight course records / board (own bucket, own weather). Fails open (empty) until the owner
@@ -26684,7 +26804,7 @@ else { window.addEventListener('DOMContentLoaded', sbInit); }
 try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
 // CS356c: global Escape-to-close for any open overlay (belt-and-suspenders alongside the Close buttons,
 // which can be scrolled out of reach on long overlays like the Trophy Room).
-try{ window.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.overlay){ S.overlay=null; render(); } }); }catch(e){}
+try{ window.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.overlay){ if(S.overlay==='account' && nameChangeRequired()) return; S.overlay=null; render(); } }); }catch(e){}
 // Mobile hardware/gesture Back: close an open overlay instead of exiting the game/PWA. We keep exactly
 // ONE guard history entry alive while any overlay is open. A Back press pops it -> popstate closes the
 // overlay. Closing via the in-app X or Escape rolls the guard back (history.back) so no phantom entry is
@@ -26698,7 +26818,9 @@ function syncOverlayBack(){
   }catch(e){}
   _ovClosing=false;
 }
-try{ window.addEventListener('popstate',function(){ if(S.overlay){ _ovClosing=true; _ovHist=false; S.overlay=null; try{render();}catch(e){} } }); }catch(e){}
+try{ window.addEventListener('popstate',function(){
+  if(S.overlay==='account' && nameChangeRequired()){ try{ history.pushState({rttOv:1},''); }catch(e){} return; }   // a forced rename can't be backed out of
+  if(S.overlay){ _ovClosing=true; _ovHist=false; S.overlay=null; try{render();}catch(e){} } }); }catch(e){}
 // Service worker: network-first for the HTML so a new deploy reaches players without a manual ?v= cache-bust,
 // with a cached copy as the offline fallback. Feature-detected + fully guarded; never blocks or breaks the game.
 if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }catch(e){} }

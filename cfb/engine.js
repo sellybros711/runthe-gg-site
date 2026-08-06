@@ -548,8 +548,36 @@ function selectBowl(roster, chemResult, rng, tier = 'major') {
     return { key: 'runthegg', name: BOWLS_HOUSE.name, tagline: BOWLS_HOUSE.tagline, tier, house: true };
   }
   const b = list[Math.floor(rng() * list.length)];
-  const key = b.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  return { key, name: b.name, tagline: b.tagline, tier };
+  return { key: bowlKey(b.name), name: b.name, tagline: b.tagline, tier };
+}
+
+/* The slug a bowl is stored under. One definition, because the leaderboard reads
+   back what selectBowl() wrote and the two agreeing is the whole mechanism. */
+function bowlKey(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+/* The name for a stored slug, or null.
+ *
+ * THE LOOKUP IS THE SECURITY BOUNDARY. cfb_runs stores the slug and never the
+ * name, so a row can only ever be rendered as a bowl this table already knows
+ * about. A slug from a crafted client resolves to null and the caller falls back
+ * to the tier wording: the worst it achieves is a row that says less than it
+ * could have, rather than text of somebody's choosing on a public board.
+ *
+ * Built once, lazily, rather than on every leaderboard row: a hundred-row board
+ * would otherwise walk all thirty-odd bowls a hundred times to render a line of
+ * text. */
+let BOWL_BY_KEY = null;
+function bowlName(key) {
+  if (!key) return null;
+  if (!BOWL_BY_KEY) {
+    BOWL_BY_KEY = { runthegg: BOWLS_HOUSE.name };
+    for (const tier of Object.keys(BOWLS)) {
+      for (const b of BOWLS[tier]) BOWL_BY_KEY[bowlKey(b.name)] = b.name;
+    }
+  }
+  return BOWL_BY_KEY[key] || null;
 }
 
 // ─── chemistry ──────────────────────────────────────────────────────────────
@@ -1649,7 +1677,7 @@ const publicAPI = {
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport,
-  selectBowl, BOWLS,
+  selectBowl, BOWLS, bowlKey, bowlName,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
     const cut = s.strength.indexOf('. ');

@@ -100,12 +100,29 @@ select t_ok('  ...NY6 tier, 11-2, 13 games, not in the playoff',
       and seed_label='New Year''s Six Bowl'
      from cfb_runs order by id desc limit 1));
 
--- The bowl tier is a function of losses, and the client never sends it.
-select t_ok('7-5 ranked 60th reaches an ordinary bowl and loses it',
+-- THE BOWL TIER IS A FUNCTION OF THE RANKING, and the client never sends it.
+-- It used to be read off the loss count here, which is not what engine.js does
+-- and never was: seedFromRanking() needs six wins to go bowling and then reads
+-- the ranking, top 18 for a New Year's Six and top 40 for a major. The two rules
+-- disagree constantly, so a season recorded a tier it had not played. See the
+-- header of 64_cfb_bowl_key.sql, and test_bowl_key.mjs, which sweeps every
+-- reachable (wins, rank) against the engine rather than spot-checking four.
+select t_ok('7-5 ranked 60th reaches a minor bowl and loses it',
   t_submit(7, 60, 0, false, array['u1:2016','u2:2007','u3:2014','u4:2014','u5:2009','u6:2017']) like 'id:%');
-select t_ok('  ...bowl tier, 7-6, 13 games',
-  (select bowl='bowl' and not bowl_won and wins=7 and losses=6 and games=13
+select t_ok('  ...minor tier, 7-6, 13 games, because 60th is outside the top 40',
+  (select bowl='minor' and not bowl_won and wins=7 and losses=6 and games=13
      from cfb_runs order by id desc limit 1));
+
+-- The two seasons the old rule got backwards, kept as the regression they are.
+select t_ok('9-3 ranked 44th is a MINOR bowl, not a New Year''s Six',
+  t_submit(9, 44, 0, true, array['x1:2016','x2:2007','x3:2014','x4:2014','x5:2009','x6:2017']) like 'id:%');
+select t_ok('  ...three losses does not buy a New Year''s Six',
+  (select bowl='minor' from cfb_runs order by id desc limit 1));
+
+select t_ok('6-6 ranked 15th IS a New Year''s Six',
+  t_submit(6, 15, 0, true, array['y1:2016','y2:2007','y3:2014','y4:2014','y5:2009','y6:2017']) like 'id:%');
+select t_ok('  ...six losses does not disqualify a top-18 team',
+  (select bowl='ny6' from cfb_runs order by id desc limit 1));
 
 select t_ok('6-6 ranked 90th reaches a minor bowl',
   t_submit(6, 90, 0, true, array['v1:2016','v2:2007','v3:2014','v4:2014','v5:2009','v6:2017']) like 'id:%');

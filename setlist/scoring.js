@@ -237,6 +237,79 @@ export function segueDecay(n) {
   return Math.max(SEGUE_DECAY_FLOOR, 1 - SEGUE_DECAY_STEP * (n - SEGUE_DECAY_FREE));
 }
 
+/*
+ * MONOTONY: THREE OF THE SAME THING, UNCONNECTED.
+ *
+ * The band runs three-plus songs of one kind in 23% of shows. A player who
+ * only follows the points does it in 90% of them, up to six deep. So the
+ * scoring was pushing people into a set that never changes gear, and it was
+ * almost always jams: of 102 same-kind runs in the archive, 101 are jams.
+ *
+ * But "three jams in a row" is the wrong thing to punish, and the archive is
+ * what says so. When the band DOES stack three jams, they weld them together:
+ *
+ *                          links inside the run    that band's own baseline
+ *   the band                      62%                      46%
+ *   a points-chasing player       27%                      25%
+ *
+ * The band's long jam runs are a suite, well clear of their own segue rate.
+ * The player's sit exactly at baseline, which means the jams landing together
+ * is incidental — they are stacking the best-scoring cards and those happen
+ * to all be jams. A segued jam suite is the best thing in this band. Three
+ * unconnected jams is a set that never breathes.
+ *
+ * So a real segue RESETS the run, which puts this rule on the same side as
+ * the segue bonus instead of fighting it.
+ *
+ * It is a multiplier on the song's own points rather than a flat deduction,
+ * like familiarityMult and segueDecay above: stacking three BIG jams should
+ * cost more than stacking three small ones, since that is the play worth
+ * discouraging, and a multiplier cannot drive a score negative. It escalates
+ * because the fourth and fifth need to hurt more than the third — a flat hit
+ * on the third gets absorbed and the pile carries on.
+ */
+/** Tags that describe what a song IS. opener/closer/encore describe where it
+    sat in its source show, so they are not a kind of song for this purpose. */
+export const MONO_KINDS = ['jam', 'peak', 'ballad'];
+/** The run length at which the penalty starts. */
+export const MONO_AT = 3;
+/** What the 3rd, 4th and 5th-or-later song of a run keeps. */
+export const MONO_MULTS = [0.75, 0.55, 0.40];
+
+/**
+ * How deep into an unbroken same-kind run this song sits. 1 means it starts
+ * one. A song is only part of the run if the WHOLE run shares one kind, so
+ * jam, jam+peak, peak is three songs and no run.
+ *
+ * @param {Array} songs one set, in running order
+ * @param {number} i    the index being scored
+ * @param {Set} segues  canonical pairs; a real segue resets the run
+ */
+export function monotonyRun(songs, i, segues) {
+  const kindsOf = p => tagsOf(p).filter(t => MONO_KINDS.includes(t));
+  let shared = kindsOf(songs[i]);
+  if (!shared.length) return { depth: 1, kind: null };
+  let depth = 1;
+  for (let k = i - 1; k >= 0; k--) {
+    // Welded to what came before, so this is a suite and the count restarts.
+    if (segues && segues.has(segueKey(songs[k], songs[k + 1]))) break;
+    const next = kindsOf(songs[k]).filter(t => shared.includes(t));
+    if (!next.length) break;
+    shared = next;
+    depth++;
+  }
+  return { depth, kind: shared[0] };
+}
+export function monotonyDepth(songs, i, segues) {
+  return monotonyRun(songs, i, segues).depth;
+}
+
+/** What a song at that depth keeps of its own points. */
+export function monotonyMult(depth) {
+  if (depth < MONO_AT) return 1;
+  return MONO_MULTS[Math.min(depth - MONO_AT, MONO_MULTS.length - 1)];
+}
+
 /* A set never ends mid-segue: across 1135 real Goose sets, not one closes on a
    song marked as segueing out. So the game will not let you either — and a
    song is refused when placing it would leave no room to land it. */
@@ -293,7 +366,37 @@ export const ARC_ZERO_AT = 2;
  */
 export const BREADTH_BUSTOUT_GAP = 50;
 export const BREADTH_BIG_JAM = 1200;    // 20 minutes
-export const BREADTH_ROLES = 5;
+/*
+ * THE FULL SPECTRUM.
+ *
+ * This asked for five of the six roles and fired for 67-71% of shows no
+ * matter how well they were played, which makes it a participation prize
+ * rather than a card. The reason is that ENCORE is nearly free (you always
+ * play one) so "five" really meant "four plus the encore you were going to
+ * play anyway".
+ *
+ * All six is the real thing, and it gets HARDER the better you play: 21% of
+ * careless shows manage it against 10% of sharp ones. That inversion is the
+ * whole point. Ballads are 2% of the archive and score badly, so a player
+ * chasing points drops them (38% of careless shows contain one, 17% of sharp
+ * ones). A tester who deliberately hunts all six was doing the most
+ * interesting thing in the game and getting nothing for it.
+ *
+ * It is the biggest card now, and the miss line names the roles you are
+ * short, because "you got everything but a ballad" is a thing a player can
+ * act on and "the night only did one thing" is not.
+ */
+export const ROLE_KINDS = ['opener', 'jam', 'peak', 'ballad', 'closer', 'encore'];
+export const BREADTH_ROLES = ROLE_KINDS.length;
+
+/** "an opener", "a ballad" — the roles start with both vowels and consonants. */
+const article = word => (/^[aeiou]/i.test(word) ? 'an' : 'a');
+
+/** Which of the six kinds a night never played. */
+export function rolesMissing(songs) {
+  const had = new Set((songs || []).flatMap(tagsOf));
+  return ROLE_KINDS.filter(r => !had.has(r));
+}
 export const BREADTH = [
   { id: 'cover',    points: 34, label: 'A cover',
     blurb: 'Somebody else\'s song, made yours',
@@ -311,10 +414,20 @@ export const BREADTH = [
     blurb: 'One song given the whole room',
     has: songs => songs.some(p => lenOf(p) >= BREADTH_BIG_JAM),
     missed: 'Nothing ran long enough to get lost in' },
-  { id: 'roles',    points: 22, label: `${BREADTH_ROLES} distinct roles`,
-    blurb: 'Openers, jams, peaks, ballads, closers',
-    has: songs => new Set(songs.flatMap(tagsOf)).size >= BREADTH_ROLES,
-    missed: 'The night only ever did one thing' },
+  { id: 'roles',    points: 44, label: 'Every kind of song',
+    blurb: 'An opener, a jam, a peak, a ballad, a closer and an encore',
+    has: songs => rolesMissing(songs).length === 0,
+    missed: 'The night only ever did one thing',
+    // Names what is missing, so the card teaches the chase instead of just
+    // withholding points.
+    detail: songs => {
+      const gone = rolesMissing(songs);
+      if (!gone.length) return null;
+      if (gone.length >= 4) return `Only ${BREADTH_ROLES - gone.length} of the six kinds`;
+      const list = gone.length === 1 ? gone[0]
+        : `${gone.slice(0, -1).join(', ')} or ${gone[gone.length - 1]}`;
+      return `Everything except ${article(gone[0])} ${list}`;
+    } },
 ];
 export const BREADTH_MAX = BREADTH.reduce((a, b) => a + b.points, 0);
 
@@ -436,7 +549,7 @@ export function energyOf(perf) {
 }
 
 /** Full breakdown for one performance, given the role it landed in. */
-export function scorePerf(perf, role) {
+export function scorePerf(perf, role, mono = 1) {
   const base = baseOf(perf);
   const v = versionParts(perf);
   const fit = roleFit(perf && perf.tags, role);
@@ -448,7 +561,8 @@ export function scorePerf(perf, role) {
     role: role.name,
     fit,
     placementMult: pm,
-    subtotal: Math.round(base * v.mult * pm),
+    monotonyMult: mono,
+    subtotal: Math.round(base * v.mult * pm * mono),
   };
 }
 
@@ -937,12 +1051,32 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   const bud = budgets(s, undefined, spent);
 
   // Songs, scored against the role each ended up in.
-  const perSet = s.map((songs, si) => songs.map((p, i) => ({
-    perf: p,
-    role: roleAt(si, i, songs.length),
-    score: scorePerf(p, roleAt(si, i, songs.length)),
-  })));
+  const perSet = s.map((songs, si) => songs.map((p, i) => {
+    const role = roleAt(si, i, songs.length);
+    const run = monotonyRun(songs, i, segues);
+    return {
+      perf: p,
+      role,
+      mono: run,
+      score: scorePerf(p, role, monotonyMult(run.depth)),
+    };
+  }));
   const songTotal = perSet.flat().reduce((a, x) => a + x.score.subtotal, 0);
+
+  // What the repetition cost, itemised, so the scorecard can show its working
+  // rather than just handing back a smaller number than the player expected.
+  const monoHits = [];
+  perSet.forEach((songs, si) => songs.forEach((x, i) => {
+    if (x.score.monotonyMult >= 1) return;
+    const full = Math.round(x.score.base * x.score.versionMult * x.score.placementMult);
+    monoHits.push({
+      set: si, at: i, song: x.perf.song,
+      kind: x.mono.kind, depth: x.mono.depth,
+      mult: x.score.monotonyMult,
+      lost: full - x.score.subtotal,
+    });
+  }));
+  const monoLost = monoHits.reduce((a, x) => a + x.lost, 0);
 
   // Time — per set, and only for sets that had a budget to spend.
   const time = s.map((songs, i) => {
@@ -1011,11 +1145,13 @@ export function scoreShow(sets, segues, spent, segueCounts) {
 
   const roles = [...new Set(all.flatMap(x => tagsOf(x.perf)))];
   const flatSongs = all.map(x => x.perf);
-  const breadth = BREADTH.map(c => ({
-    id: c.id, label: c.label, blurb: c.blurb, missed: c.missed,
-    got: all.length ? c.has(flatSongs) : false,
-    points: c.points,
-  }));
+  const breadth = BREADTH.map(c => {
+    const got = all.length ? c.has(flatSongs) : false;
+    return {
+      id: c.id, label: c.label, blurb: c.blurb, points: c.points, got,
+      missed: (!got && c.detail && all.length && c.detail(flatSongs)) || c.missed,
+    };
+  });
   const breadthTotal = breadth.reduce((a, c) => a + (c.got ? c.points : 0), 0);
 
   const coolHits = cooldowns(s);
@@ -1058,7 +1194,7 @@ export function scoreShow(sets, segues, spent, segueCounts) {
     total: songTotal + timeTotal + flowTotal + breadthTotal,
     songTotal, timeTotal, flowTotal,
     perSet, time, arc, breadth, breadthTotal, roles,
-    segues: segueHits, cooldowns: coolHits,
+    segues: segueHits, cooldowns: coolHits, monotony: monoHits, monoLost,
     headline, stats,
     totalUsed, totalBudget,
   };
