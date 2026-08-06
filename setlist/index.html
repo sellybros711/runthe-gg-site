@@ -37,7 +37,7 @@
     --greenT:#48D17A; --redT:#FF625F; --blueT:#5C8CFF;
     /* Peak's own hue. It used to borrow --redT, which sits 3 degrees off
        --coralT, so COVER and PEAK chips were the same colour on screen. */
-    --pinkT:#FF6FC1;
+    --pinkT:#FF6FC1; --peak-ink:#2A0714;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --r-lg:14px; --r-md:10px; --r-sm:8px;
     /* Tie dye, from the existing accents rather than a new palette — the same
@@ -52,6 +52,9 @@
        --ui is that same condensed Anton, kept for the handful of small
        letterspaced labels where a slab turns to mush and, in the HUD, where
        a wider face would push "remaining" back out of a 390px screen. */
+    /* The melted bottom edge, shared by anything that should look like it is
+       running. preserveAspectRatio=none so one path fits any chip width. */
+    --melt:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 26' preserveAspectRatio='none'%3E%3Cpath d='M0 0h60v14c-3.2 0-2.6 7.5-6.4 7.5S50 14 47 14s-2 4-4.4 4-2.6-4-5.2-4-2.4 10-6.4 10-3.6-10-6.2-10-2.2 5.5-4.6 5.5S18 14 15.4 14s-2.2 3.5-4.4 3.5S8.8 14 6.4 14 4 16.5 2 16.5.6 14 0 14z' fill='%23000'/%3E%3C/svg%3E");
     --hero:'Alfa Slab One', Rockwell, Georgia, serif;
     --ui:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -61,7 +64,7 @@
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --violetT:#6D3BD6;
-    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86;
+    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86; --peak-ink:#FFF1F8;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -383,24 +386,30 @@
    *   - sandwich and segue never co-occur; the markup picks one
    *
    * scripts/setlist/check_data.mjs asserts the role hues stay distinct. */
-  .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
-  .chip{display:inline-block; font-size:9.5px; font-weight:900; letter-spacing:.7px;
-    text-transform:uppercase; padding:2px 5px; border-radius:4px; background:var(--line);
-    color:var(--mut);}
+  /* flex-start, not the default stretch: the peak chip is taller than the rest
+     because its drip hangs below the pill, and stretch was making every chip
+     sharing its row 19px tall to match. Each chip keeps its own height and the
+     drip is the only thing that hangs. */
+  .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;
+    align-items:flex-start;}
+  .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
+    letter-spacing:.7px; text-transform:uppercase; padding:2px 5px; border-radius:4px;
+    background:var(--line); color:var(--mut);}
+  .chip svg{display:block; flex:0 0 auto;}
 
   /* ROLE — outlined. What the song IS. The left strip on the card carries the
      same colour, so this is the quiet family. */
   .chip.acc{background:transparent; color:var(--acc);
     box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
 
-  /* ...except the peak, which melts. Sagging bottom corners and two drips of
-     different lengths — a matched pair reads as legs, not as running colour.
-     The margin reserves the drips' room so they never reach the row below. */
-  .chip.acc.peak{position:relative; margin-bottom:6px; border-radius:4px 4px 9px 6px;}
-  .chip.acc.peak:before, .chip.acc.peak:after{content:''; position:absolute; top:100%;
-    background:color-mix(in srgb,var(--acc) 60%, transparent); border-radius:0 0 2px 2px;}
-  .chip.acc.peak:before{left:20%; width:3.5px; height:7px;}
-  .chip.acc.peak:after{left:55%; width:2.5px; height:4px;}
+  /* ...except the peak, which melts, and is the one role loud enough to be
+     filled. The drip is cut out of the chip's own body by an SVG mask, so it
+     stays inside the chip's box and can never reach the row below. Percent
+     encoded rather than raw angle brackets so it is not a Chrome-only trick. */
+  .chip.acc.peak{background:var(--acc); color:var(--peak-ink); box-shadow:none;
+    letter-spacing:.9px; padding:2px 6px 6px; border-radius:5px 5px 0 0;
+    -webkit-mask:var(--melt) no-repeat center/100% 100%;
+    mask:var(--melt) no-repeat center/100% 100%;}
 
   /* FLOW — solid green, and both of them are shaped like what they mean.
      A setlist writes a segue as ">", so the segue chip is an arrow pointing
@@ -409,9 +418,7 @@
   .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
     padding-right:11px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
-  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px; padding:1px 7px;
-    border-top:4px solid #E3A857; border-bottom:3px solid #C98B3E;
-    border-radius:9px 9px 4px 4px;}
+  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px; padding:2px 7px;}
 
   /* RARITY — solid gold. */
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
@@ -914,6 +921,14 @@ function esc(s){
     c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
+/* A sandwich, 11px, drawn rather than described. The chip used to try to be
+   one out of a green pill and two tan borders, which at true size read as a
+   green pill with an orange outline and nothing else. */
+const ICON_SANDWICH = `<svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+  <path d="M1.5 5.2C1.5 3.4 3.9 2 7 2s5.5 1.4 5.5 3.2v.6h-11z" fill="currentColor"/>
+  <rect x="1.5" y="6.6" width="11" height="1.7" rx=".85" fill="currentColor" opacity=".55"/>
+  <rect x="1.5" y="9.1" width="11" height="2.6" rx="1.1" fill="currentColor"/></svg>`;
+
 /* Accent for a song, mapped onto the site palette. Order matters: the most
    characterful trait wins.
  *
@@ -1275,7 +1290,8 @@ function renderDraft(){
       const dead = used || !room || strands;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
       const chips = [];
-      if (sandwich && !dead) chips.push('<span class="chip sand">CLOSES SANDWICH</span>');
+      if (sandwich && !dead) chips.push(
+        `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
       else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
       if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
