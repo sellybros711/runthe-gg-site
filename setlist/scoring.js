@@ -237,6 +237,79 @@ export function segueDecay(n) {
   return Math.max(SEGUE_DECAY_FLOOR, 1 - SEGUE_DECAY_STEP * (n - SEGUE_DECAY_FREE));
 }
 
+/*
+ * MONOTONY: THREE OF THE SAME THING, UNCONNECTED.
+ *
+ * The band runs three-plus songs of one kind in 23% of shows. A player who
+ * only follows the points does it in 90% of them, up to six deep. So the
+ * scoring was pushing people into a set that never changes gear, and it was
+ * almost always jams: of 102 same-kind runs in the archive, 101 are jams.
+ *
+ * But "three jams in a row" is the wrong thing to punish, and the archive is
+ * what says so. When the band DOES stack three jams, they weld them together:
+ *
+ *                          links inside the run    that band's own baseline
+ *   the band                      62%                      46%
+ *   a points-chasing player       27%                      25%
+ *
+ * The band's long jam runs are a suite, well clear of their own segue rate.
+ * The player's sit exactly at baseline, which means the jams landing together
+ * is incidental — they are stacking the best-scoring cards and those happen
+ * to all be jams. A segued jam suite is the best thing in this band. Three
+ * unconnected jams is a set that never breathes.
+ *
+ * So a real segue RESETS the run, which puts this rule on the same side as
+ * the segue bonus instead of fighting it.
+ *
+ * It is a multiplier on the song's own points rather than a flat deduction,
+ * like familiarityMult and segueDecay above: stacking three BIG jams should
+ * cost more than stacking three small ones, since that is the play worth
+ * discouraging, and a multiplier cannot drive a score negative. It escalates
+ * because the fourth and fifth need to hurt more than the third — a flat hit
+ * on the third gets absorbed and the pile carries on.
+ */
+/** Tags that describe what a song IS. opener/closer/encore describe where it
+    sat in its source show, so they are not a kind of song for this purpose. */
+export const MONO_KINDS = ['jam', 'peak', 'ballad'];
+/** The run length at which the penalty starts. */
+export const MONO_AT = 3;
+/** What the 3rd, 4th and 5th-or-later song of a run keeps. */
+export const MONO_MULTS = [0.75, 0.55, 0.40];
+
+/**
+ * How deep into an unbroken same-kind run this song sits. 1 means it starts
+ * one. A song is only part of the run if the WHOLE run shares one kind, so
+ * jam, jam+peak, peak is three songs and no run.
+ *
+ * @param {Array} songs one set, in running order
+ * @param {number} i    the index being scored
+ * @param {Set} segues  canonical pairs; a real segue resets the run
+ */
+export function monotonyRun(songs, i, segues) {
+  const kindsOf = p => tagsOf(p).filter(t => MONO_KINDS.includes(t));
+  let shared = kindsOf(songs[i]);
+  if (!shared.length) return { depth: 1, kind: null };
+  let depth = 1;
+  for (let k = i - 1; k >= 0; k--) {
+    // Welded to what came before, so this is a suite and the count restarts.
+    if (segues && segues.has(segueKey(songs[k], songs[k + 1]))) break;
+    const next = kindsOf(songs[k]).filter(t => shared.includes(t));
+    if (!next.length) break;
+    shared = next;
+    depth++;
+  }
+  return { depth, kind: shared[0] };
+}
+export function monotonyDepth(songs, i, segues) {
+  return monotonyRun(songs, i, segues).depth;
+}
+
+/** What a song at that depth keeps of its own points. */
+export function monotonyMult(depth) {
+  if (depth < MONO_AT) return 1;
+  return MONO_MULTS[Math.min(depth - MONO_AT, MONO_MULTS.length - 1)];
+}
+
 /* A set never ends mid-segue: across 1135 real Goose sets, not one closes on a
    song marked as segueing out. So the game will not let you either — and a
    song is refused when placing it would leave no room to land it. */
@@ -476,7 +549,7 @@ export function energyOf(perf) {
 }
 
 /** Full breakdown for one performance, given the role it landed in. */
-export function scorePerf(perf, role) {
+export function scorePerf(perf, role, mono = 1) {
   const base = baseOf(perf);
   const v = versionParts(perf);
   const fit = roleFit(perf && perf.tags, role);
@@ -488,7 +561,8 @@ export function scorePerf(perf, role) {
     role: role.name,
     fit,
     placementMult: pm,
-    subtotal: Math.round(base * v.mult * pm),
+    monotonyMult: mono,
+    subtotal: Math.round(base * v.mult * pm * mono),
   };
 }
 
@@ -977,12 +1051,32 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   const bud = budgets(s, undefined, spent);
 
   // Songs, scored against the role each ended up in.
-  const perSet = s.map((songs, si) => songs.map((p, i) => ({
-    perf: p,
-    role: roleAt(si, i, songs.length),
-    score: scorePerf(p, roleAt(si, i, songs.length)),
-  })));
+  const perSet = s.map((songs, si) => songs.map((p, i) => {
+    const role = roleAt(si, i, songs.length);
+    const run = monotonyRun(songs, i, segues);
+    return {
+      perf: p,
+      role,
+      mono: run,
+      score: scorePerf(p, role, monotonyMult(run.depth)),
+    };
+  }));
   const songTotal = perSet.flat().reduce((a, x) => a + x.score.subtotal, 0);
+
+  // What the repetition cost, itemised, so the scorecard can show its working
+  // rather than just handing back a smaller number than the player expected.
+  const monoHits = [];
+  perSet.forEach((songs, si) => songs.forEach((x, i) => {
+    if (x.score.monotonyMult >= 1) return;
+    const full = Math.round(x.score.base * x.score.versionMult * x.score.placementMult);
+    monoHits.push({
+      set: si, at: i, song: x.perf.song,
+      kind: x.mono.kind, depth: x.mono.depth,
+      mult: x.score.monotonyMult,
+      lost: full - x.score.subtotal,
+    });
+  }));
+  const monoLost = monoHits.reduce((a, x) => a + x.lost, 0);
 
   // Time — per set, and only for sets that had a budget to spend.
   const time = s.map((songs, i) => {
@@ -1100,7 +1194,7 @@ export function scoreShow(sets, segues, spent, segueCounts) {
     total: songTotal + timeTotal + flowTotal + breadthTotal,
     songTotal, timeTotal, flowTotal,
     perSet, time, arc, breadth, breadthTotal, roles,
-    segues: segueHits, cooldowns: coolHits,
+    segues: segueHits, cooldowns: coolHits, monotony: monoHits, monoLost,
     headline, stats,
     totalUsed, totalBudget,
   };
