@@ -845,11 +845,11 @@ import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway, respinLine, bestPossible,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
-  reactionFor, eventLine, setOpenLine,
+  reactionFor, eventLine, setOpenLine, GAP_RARE,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=14';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=14';
+} from './scoring.js?v=15';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=15';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1296,7 +1296,7 @@ function renderDraft(){
       if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
-      if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
+      if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
       const over = lenOf(p) - left;
       const why = used ? 'Already in your show'
         : !room ? (over > 0
@@ -1863,6 +1863,14 @@ function showBeats(){
   const r = S.result;
   const beats = [];
   let running = 0, played = 0;
+  // Which songs the cooldown rule scored, so the crowd can mention the one
+  // thing the scoresheet already rewards.
+  const cooled = new Set(r.cooldowns.map(c => `${c.set}:${c.to}`));
+  // Shared across the whole night so no crowd line repeats until its bucket
+  // is spent. The offset is the night's own score, so a replay is identical.
+  const rotation = new Map();
+  const rxOffset = Math.abs(r.total);
+  const lastSet = S.sets.reduce((m, set, i) => set.length ? i : m, -1);
 
   S.sets.forEach((set, si) => {
     if (!set.length) return;
@@ -1879,7 +1887,12 @@ function showBeats(){
         kind: 'song', perf, sc, running, played,
         role: r.perSet[si][j].role.name,
         gained: sc.subtotal,
-        reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length),
+        reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length, {
+          first: si === 0 && j === 0,
+          last: si === lastSet && j === set.length - 1,
+          cooldown: cooled.has(`${si}:${j}`),
+          rotation, offset: rxOffset,
+        }),
         // Held back from the draft card on purpose — this is where it lands.
         recommended: isRecommended(perf),
         event: seg ? eventLine(seg.kinds, j + perf.song.length) : null,
