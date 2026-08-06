@@ -6060,11 +6060,8 @@ function coinShort(n){ n=Math.round(n||0);
    handles). To LAUNCH a feature to everyone, flip its own _LIVE flag to true. */
 const DEV_USERS=['csel8','runnyj'];
 function devMode(){ return sbSignedIn() && DEV_USERS.indexOf((sbUsername||'').toLowerCase())>=0; }
-// Dev accounts get an EARLY-ACCESS switch in their Settings page (menu) — off by default, so the
-// in-progress paid features stay hidden until they opt in. Only devMode() accounts see the switch.
-function devPreviewOn(){ return LS.get('bag_dev_preview',false)===true; }
 const TOURPASS_LIVE=true;                        // LIVE — the Tour Pass is released to everyone
-function passEnabled(){ return TOURPASS_LIVE || (devMode() && devPreviewOn()); }
+function passEnabled(){ return TOURPASS_LIVE; }
 
 /* ============================ TOUR PASS — 60-day season pass ============================
    The battle pass that ties the whole economy together. A 60-day GLOBAL season (ET-aligned, like the
@@ -8622,7 +8619,6 @@ function overlayMenu(screen){
   settings.appendChild(menuToggle('🔊','Sound','Holed putts, wins & streaks','bag_sfx_sound',true));
   settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments · Android only (iOS blocks web vibration)','bag_sfx_haptic',true));
   // Dev-only: opt into in-progress paid features (Tour Pass, etc.) before public launch. Hidden from everyone else.
-  if(devMode()) settings.appendChild(menuToggle('🧪','Early Access','Preview in-progress paid features (Tour Pass) — dev only','bag_dev_preview',false));
   ov.appendChild(settings);
   const info=$(`<div style="margin-bottom:6px"></div>`);
   info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
