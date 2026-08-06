@@ -14060,6 +14060,37 @@ allows Google Fonts, or self-host Anton.*
   all 9 shop sections, tapping it opens `coinlog` with the correct return (`shop`) and closing returns to the
   shop, and the Buy Coins page has its own history button; 0 page errors. Deployed to /golf.
 
+- **Leaderboards recover from a failed load instead of staying broken (owner IMG_9314: "Leaderboard won't
+  load" - the Course Records page showing "Today's online board is unavailable right now").** Investigated
+  first: the call itself is correct (today ET 20260806 -> Colonial/"Old Republic", so `p_day` is a valid
+  int; `runtour_daily_board`'s deployed signature `(int,int,boolean,boolean)` matches the client's args;
+  the anon JWT is valid to 2036; `runtour_daily_scores` has the `(day,to_par)` indexes so the query is
+  cheap). The sandbox network policy blocks `supabase.co`, so the live endpoint can't be probed from here -
+  but the CLIENT had a real defect that turns ANY transient failure into a permanent one:
+  - **A failure was cached forever.** `dbLoad`/`crLoad`/`lbLoad`/`streakBoardLoad` stored `{ok:false}` and
+    every overlay only refetched when the cache was still `null` - so one blip (a flaky 5G request, a hung
+    fetch, a backend hiccup) left "unavailable right now" for the whole session, with no way back but a
+    hard refresh. That matches "won't load" exactly.
+  - **The reason was swallowed** (`catch(e){...ok:false}` with no logging), so a screenshot could never
+    diagnose it.
+  Fixes: a shared `rpcTry(name,args,ms)` races every board RPC against a **12s timeout** (a hung request
+  can no longer spin forever) and `console.error`s the real failure; the reason is kept on the cache and
+  **shown on screen**; `boardStale(c)` lets a FAILED board **retry when you reopen it** (6s backoff) while
+  a successful or in-flight load is left alone; and every failure surface (today's board, the streak board,
+  the season/career leaderboard's offline fallback) gained a **"Try again"** button. Applied to all 8
+  loaders + all 11 call sites. `BOARD_TIMEOUT_MS`/`BOARD_RETRY_MS` are `var` (not `const`) so an early
+  `boardStale()` call can never TDZ-crash the script.
+  Verified in Playwright with a controllable fake client: a failure shows "Couldn't load today's board.
+  FetchError: network down" + Try again (not stuck loading); reopening after the backoff **retries** and
+  loads (the old code never would); the Try again button recovers without a reload; a never-settling
+  request times out to `err:'timed out'` instead of spinning; the leaderboard shows "Global board
+  unavailable ... showing your own results" + a working retry. Regression: 12 re-renders during a
+  persistent failure fire only **2** calls (no hammering), guest Course Records + all 4 leaderboard tabs
+  render, and a full 18-hole practice round completes to the result - 0 page errors throughout.
+  Deployed to /golf. **NOTE for the owner:** the next time it happens the screen now names the actual
+  server error - send that line and it points straight at the root cause (a Supabase health/Disk-IO issue
+  like the 2026-07-22 outage would read as a timeout/fetch error).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
