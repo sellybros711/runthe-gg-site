@@ -1914,10 +1914,16 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(128,255,118,.34); background:linear-gradient(140deg,#0b1e3d,#071427 62%,#0a1f14);
     box-shadow:0 10px 26px -16px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06)}
   .ggad:hover{border-color:#80ff76; background:linear-gradient(140deg,#0e2549,#08172c 62%,#0c2718)}
-  .ggad-mark{flex:0 0 auto; display:flex; align-items:center; gap:3px; padding:7px 9px; border-radius:10px;
+  /* the real RunThe.GG app icon; the CSS wordmark stays as a fallback if the asset can't load */
+  .ggad-mark{flex:0 0 auto; display:flex; align-items:center; gap:3px}
+  .ggad-logo{width:46px; height:46px; display:block; border-radius:11px; image-rendering:pixelated;
+    border:1px solid rgba(128,255,118,.35); box-shadow:0 4px 14px -6px rgba(0,0,0,.8)}
+  .ggad-tm{display:none; align-items:center; gap:3px; padding:7px 9px; border-radius:10px;
     background:#050d1c; border:1px solid rgba(128,255,118,.3)}
-  .ggad-mark b{font:900 9px/1.05 var(--body); letter-spacing:.1em; color:#eef4ff}
-  .ggad-mark i{font:900 15px/1 var(--body); font-style:normal; color:#80ff76; text-shadow:0 0 10px rgba(128,255,118,.45)}
+  .ggad-mark.nologo .ggad-logo{display:none}
+  .ggad-mark.nologo .ggad-tm{display:flex}
+  .ggad-tm b{font:900 9px/1.05 var(--body); letter-spacing:.1em; color:#eef4ff}
+  .ggad-tm i{font:900 15px/1 var(--body); font-style:normal; color:#80ff76; text-shadow:0 0 10px rgba(128,255,118,.45)}
   .ggad-txt{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left}
   .ggad-txt b{font:800 13.5px/1.2 var(--body); color:#eef4ff}
   .ggad-txt span{font:600 11px/1.35 var(--body); color:#9fb4c8}
@@ -7251,7 +7257,7 @@ function footer(){
     // Owner: the old "Love soccer? Try RunThePitch" pill becomes a proper little RunThe.GG ad that
     // promotes the whole platform (more games, one account) and sends people to the hub.
     f.appendChild($(`<a class="ggad" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
-      <span class="ggad-mark"><b>RUN<br>THE</b><i>.GG</i></span>
+      <span class="ggad-mark"><img class="ggad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="46" height="46" loading="lazy" onerror="this.closest('.ggad-mark').classList.add('nologo')"><span class="ggad-tm"><b>RUN<br>THE</b><i>.GG</i></span></span>
       <span class="ggad-txt"><b>More games at RunThe.GG</b>
         <span class="ggad-long">One free account plays them all. RunThePitch soccer, RunTheTour golf, and more on the way.</span>
         <span class="ggad-short">RunThePitch, RunTheTour &amp; more, one free account</span></span>
