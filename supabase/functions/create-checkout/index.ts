@@ -26,19 +26,25 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
 });
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://runthe.gg";
 
-const CORS = {
-  "access-control-allow-origin": SITE_URL,
-  "access-control-allow-headers": "authorization, content-type",
-  "access-control-allow-methods": "POST, OPTIONS",
+// The live site, plus localhost / file:// pages so test-mode purchases can be
+// exercised from a local copy of the client. Auth is the bearer JWT (never a
+// cookie), so echoing a dev origin grants nothing a caller doesn't already hold.
+const corsFor = (req: Request) => {
+  const origin = req.headers.get("origin") ?? "";
+  const dev = origin === "null" || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  return {
+    "access-control-allow-origin": dev ? origin : SITE_URL,
+    "access-control-allow-headers": "authorization, content-type",
+    "access-control-allow-methods": "POST, OPTIONS",
+  };
 };
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, "content-type": "application/json" },
-  });
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsFor(req), "content-type": "application/json" },
+    });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsFor(req) });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
 
   // Identify the buyer from their JWT — purchases require an account.
