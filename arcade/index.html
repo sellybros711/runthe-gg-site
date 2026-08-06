@@ -781,6 +781,43 @@
   var kDone = (ks.lastDone === t);
   var aDone = (as.lastDone === t);
 
+  // ---- ARCADE TICKET: one daily punch-card across all nine games ----
+  (function(){
+    var GAMES=[
+      ['Table',tDone],['Match',mDone],['Career',rDone],['Odd One',oDone],['Rank It',kDone],
+      ['Guess',gDone],['Alma',aDone],['Search',wDone],['Crossword',cDone]
+    ];
+    var doneN=GAMES.filter(function(x){return x[1];}).length;
+    var perfect=doneN===GAMES.length;
+    var css=document.createElement('style');
+    css.textContent=
+      '.aticket{background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      '.aticket .tk-top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}'+
+      '.aticket .tk-h{font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:15px; color:var(--ink);}'+
+      '.aticket .tk-n{font-size:11px; font-weight:900; letter-spacing:.08em; color:'+(perfect?'var(--goldT)':'var(--mut)')+';}'+
+      '.aticket .tk-share{margin-left:auto; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:11px; border-radius:8px; padding:6px 11px; cursor:pointer; font-family:inherit;}'+
+      '.aticket .tk-row{display:flex; flex-wrap:wrap; gap:6px 10px;}'+
+      '.aticket .tk-g{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:var(--mut);}'+
+      '.aticket .tk-g i{width:16px; height:16px; border-radius:50%; border:2px dashed var(--line2); display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:9px;}'+
+      '.aticket .tk-g.on{color:var(--ink);}'+
+      '.aticket .tk-g.on i{border:2px solid var(--green); background:color-mix(in srgb, var(--green) 22%, var(--card)); color:var(--greenT);}'+
+      '.aticket .tk-perf{font-family:var(--hero); font-weight:400; letter-spacing:.14em; color:var(--goldT); font-size:13px; margin-top:9px; text-align:center; animation:tkpop .5s ease;}'+
+      '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}';
+    document.head.appendChild(css);
+    var el=document.createElement('div'); el.className='aticket';
+    el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / 9 punched</span><button class="tk-share" type="button">Share</button></div>'+
+      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
+      (perfect?'<div class="tk-perf">\u2605 PERFECT DAY \u2014 ALL 9 CLEARED \u2605</div>':'');
+    var host=document.getElementById('puzzles');
+    if(host) host.insertBefore(el, host.firstChild);
+    el.querySelector('.tk-share').addEventListener('click', function(){
+      var bar=GAMES.map(function(x){return x[1]?'\ud83c\udfab':'\u2b1c';}).join('');
+      var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / 9 games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
+      if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(txt); this.textContent='Copied!'; }
+    });
+  })();
+
   // One free ranked play per game per day. Unplayed → PLAY. Played:
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }

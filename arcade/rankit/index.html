@@ -143,6 +143,18 @@
   .abtn.gold{background:var(--pink); color:#fff; border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
+  /* podium flash */
+  .podium{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; background:rgba(3,9,18,.55); backdrop-filter:blur(3px); animation:podfade .2s ease;}
+  .podium.out{opacity:0; transition:opacity .3s;}
+  @keyframes podfade{from{opacity:0}to{opacity:1}}
+  .pod-in{width:min(92vw,380px); background:var(--card); border:2px solid var(--green); border-radius:14px; padding:16px 16px 12px; box-shadow:0 30px 80px -20px rgba(0,0,0,.7);}
+  .pod-h{text-align:center; font-family:var(--hero); font-weight:400; letter-spacing:.1em; color:var(--greenT); font-size:16px; margin-bottom:10px;}
+  .pod-row{display:flex; align-items:center; gap:10px; padding:6px 4px; border-top:1px solid var(--line); animation:podrow .3s ease both;}
+  .pod-row:first-of-type{border-top:0;}
+  @keyframes podrow{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+  .pod-m{flex:0 0 24px; text-align:center; font-weight:900; color:var(--mut);}
+  .pod-n{flex:1; min-width:0; font-weight:900; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pod-v{flex:0 0 auto; font-weight:900; font-size:12px; color:var(--pinkT);}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -192,7 +204,7 @@
     box-shadow:4px 4px 0 rgba(7,20,38,.30); }
 
   /* lineup nameplate */
-  .rrow{ position:relative; z-index:1; border-width:2px; border-left:6px solid var(--pink); border-radius:5px;
+  .rrow{ position:relative; z-index:1; border-width:2px; border-left:6px solid var(--tp,var(--pink)); border-radius:5px;
     background:color-mix(in srgb, var(--ink) 4%, var(--card));
     box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); }
   .ritem.dragging .rrow{ box-shadow:9px 9px 0 rgba(7,20,38,.32); }
@@ -283,6 +295,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/stats.js"></script>
+<script src="/arcade/teamcolors.js"></script>
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/mode.js"></script>
@@ -390,9 +403,11 @@
     var S=CUR||curSet();
     rowsEl.innerHTML = order.map(function(e,i){
       var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(reveal?' show-era':'');
+      var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(e.t&&e.t[0]);
+      var st=tc?(' style="--tp:'+tc.p+'"'):'';
       return '<div class="ritem">'+
         '<span class="rord">'+(i+1)+'</span>'+
-        '<div class="'+cls+'">'+
+        '<div class="'+cls+'"'+st+'>'+
           '<div class="rmeta"><span class="nm">'+esc(e.name)+'</span><span class="sub">'+esc(metaLine(e))+'</span></div>'+
           '<span class="era">'+esc(S.val(e))+'</span>'+
           '<span class="ctrl"><button data-mv="'+i+'" data-dir="-1" '+(i===0||done||busy?'disabled':'')+' aria-label="Move up">▲</button>'+
@@ -470,6 +485,17 @@
   }
 
   document.getElementById('checkBtn').addEventListener('click', check);
+  // quick podium flash when a set clears: 1st-to-5th with their values
+  function showPodium(o, S){
+    var MED=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4','5'];
+    var el=document.createElement('div'); el.className='podium';
+    el.innerHTML='<div class="pod-in"><div class="pod-h">SET CLEARED</div>'+o.map(function(e,i){
+      return '<div class="pod-row" style="animation-delay:'+(i*90)+'ms"><span class="pod-m">'+MED[i]+'</span><span class="pod-n">'+esc(e.name)+'</span><span class="pod-v">'+esc(S.val(e))+'</span></div>';
+    }).join('')+'</div>';
+    document.body.appendChild(el);
+    setTimeout(function(){ el.classList.add('out'); }, 1650);
+    setTimeout(function(){ el.remove(); }, 1950);
+  }
   function check(){
     if(done||busy) return; startIfNeeded();
     commitDrag();   // a row still being held counts exactly where it visually sits
@@ -486,12 +512,12 @@
       document.getElementById('runN').textContent=run;
       saveResume();
       if(window.RTGSound) RTGSound.lock();
-      toast('Set cleared!');
+      showPodium(order, S);
       setTimeout(function(){
         busy=false;
         if(run>=SETS.length){ finish(); return; }   // cleared the whole run
         startSet();
-      }, 1100);
+      }, 2050);
     } else {
       // any wrong slot ends the run: reveal the values, then the correct order
       if(window.RTGSound) RTGSound.wrong();
