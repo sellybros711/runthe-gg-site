@@ -22589,6 +22589,40 @@ function maybePassRewards(){ try{
   var pkNm=''; try{ pkNm=packType(tier).name; }catch(e){}
   try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
 }catch(e){} }
+// Coin-bucket BONUS PACKS (Large +1 Tour / XL +1 Champion / Mega +3 Champion): advertised on the store
+// card, granted HERE client-side (packs are a client-side store — the webhook only credits coins). Reads
+// the account's own coin_purchase rows (RLS owner-read, migration 70) so the grant is idempotent per
+// purchase (keyed on the Stripe event id), RETROACTIVE for past purchases, and cross-device (the granted
+// set is cloud-synced). A purchase refunded before its packs were granted never grants; granted-then-
+// refunded keeps them (consumed, same posture as the pass packs).
+var _bucketRewardsBusy=false;
+function maybeBucketRewards(){ try{
+  if(_bucketRewardsBusy || !sb || !sbSignedIn()) return;
+  var tiers={}; BUCKETS.forEach(function(b){ if(b.packTier&&b.packN) tiers[b.id]={t:b.packTier,n:b.packN,name:b.name}; });
+  _bucketRewardsBusy=true;
+  sb.from('coin_purchase').select('stripe_event,package_id,status').order('created_at',{ascending:false}).limit(100).then(function(res){
+    _bucketRewardsBusy=false;
+    var rows=(res&&res.data)||[]; if(!rows.length) return;
+    var st=LS.get(acctKey('bag_bucket_packs'),null)||{}; st.granted=st.granted||{};
+    var got=[], changed=false;
+    rows.forEach(function(r){
+      var cfg=tiers[r&&r.package_id]; if(!cfg||!r.stripe_event) return;
+      if(st.granted[r.stripe_event]) return;
+      st.granted[r.stripe_event]=1; changed=true;
+      if(r.status!=='paid') return;   // refunded/disputed before the packs were granted -> never grant
+      if(typeof grantFreePack==='function'){ grantFreePack(cfg.n,{tier:cfg.t,silent:true}); got.push(cfg.n+' '+packType(cfg.t).name+(cfg.n>1?'s':'')+' · '+cfg.name); }
+    });
+    if(changed){ LS.set(acctKey('bag_bucket_packs'), st); try{ cloudPush(); }catch(e){} }
+    if(got.length){ try{ toast('<span style="color:var(--gold);font-weight:800">🎁 Bonus packs added!</span><br><span class="small">'+got.join('<br>')+'<br>Open them in the Pro Shop → Packs.</span>', 6200); render(); }catch(e){} }
+  }).catch(function(){ _bucketRewardsBusy=false; });
+}catch(e){ _bucketRewardsBusy=false; } }
+// union merge of the granted-purchase set (grow-only): once a purchase's packs are granted on ANY device,
+// no other device re-grants them.
+function mergeBucketPacks(local, server){
+  var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
+  var g=Object.assign({}, s.granted||{}, l.granted||{});
+  return { granted:g };
+}
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
 function rollPackRarity(odds){ odds=odds||PACK_ODDS; var r=Math.random(),a=0; for(var i=0;i<odds.length;i++){ a+=odds[i][1]; if(r<a) return odds[i][0]; } return 'common'; }
@@ -23175,7 +23209,7 @@ function coinBucketSVG(level,col,size){
 function bucketShopNode(){
   packStyleOnce();
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
-  var wi=walletInfo(), firstBuy=!!(wi && (wi.lifePurchased||0)===0);   // server gives +100% on the FIRST paid pack
+  var wi=walletInfo(), firstBuy=!(wi && (wi.lifePurchased||0)>0);   // server gives +100% on the FIRST paid pack — show the 2× notice to ANYONE who has never purchased (incl. guests/wallet-loading)
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   // ---- Tour Pass (60-day season — THE one pass sold) ----
   if(TOURPASS_ENABLED){
@@ -23978,7 +24012,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -24159,6 +24193,7 @@ function cloudBundle(){
     weeklychal: LS.get(acctKey('bag_weeklychal'), null),         // this week's challenge progress
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
+    bucketpacks: LS.get(acctKey('bag_bucket_packs'), null),      // coin-bucket bonus packs already granted (stripe_event set)
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
     pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
@@ -24402,6 +24437,7 @@ async function cloudPull(){
     { const mw=mergeWeeklyChal(LS.get(acctKey('bag_weeklychal'),null), server.weeklychal); if(mw) LS.set(acctKey('bag_weeklychal'), mw); }
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
     if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
+    { const mb=mergeBucketPacks(LS.get(acctKey('bag_bucket_packs'),null), server.bucketpacks); if(mb&&Object.keys(mb.granted||{}).length) LS.set(acctKey('bag_bucket_packs'), mb); }   // bucket bonus packs granted-set cross-device
     { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
@@ -24922,6 +24958,7 @@ function purchaseCheck(){
   var tries=0, before=paidCoins(), tokBefore=dailyTokens(), passBefore=dailyPassActive(), doneMsg=false;
   function say(){ if(doneMsg) return; doneMsg=true;
     try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
+    try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega) — granted from the server purchase rows
     try{ toast('<b style="color:#ffd45e">Purchase complete — added to your account!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
     try{ render(); }catch(e){} }
   (function poll(){ tries++; loadWallet();
