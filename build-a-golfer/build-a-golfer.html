@@ -8140,7 +8140,7 @@ function overlayLeaderboard(screen){
     // CS214: the server can't sort by a derived stat, so fetch the (earnings-ordered) base board - lbLoad
     // falls back to earnings order when p_sort is unknown - and rank it client-side by golferStats().
     const k=tab+':'+sort+ksuf; let v=lbCache[k];
-    if(!v){ lbLoad(tab,sort,'desc',since,ksuf); v=lbCache[k]; }
+    if(boardStale(v)){ lbLoad(tab,sort,'desc',since,ksuf); v=lbCache[k]; }
     view=v;
     if(v && v.ok){
       const rows=v.rows.filter(r=>r.skills && CATS.every(cc=>typeof r.skills[cc.k]==='number'))
@@ -8152,17 +8152,17 @@ function overlayLeaderboard(screen){
     } else dirRows=[];
   } else if(dir==='asc'){
     const kAsc=tab+':'+sort+ksuf+':asc'; let vAsc=lbCache[kAsc];
-    if(!vAsc){ lbLoad(tab,sort,'asc',since,ksuf); vAsc=lbCache[kAsc]; }
+    if(boardStale(vAsc)){ lbLoad(tab,sort,'asc',since,ksuf); vAsc=lbCache[kAsc]; }
     if(vAsc && vAsc.ok && !vAsc.legacyDir){ view=vAsc; dirRows=vAsc.rows; }     // true bottom N, worst-first
     else if(vAsc && vAsc.loading){ view=vAsc; dirRows=[]; }
     else {                                                                       // pre-migration fallback
       const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
-      if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
+      if(boardStale(vDesc)){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
       view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows.slice().reverse():[];
     }
   }else{
     const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
-    if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
+    if(boardStale(vDesc)){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
@@ -8264,6 +8264,8 @@ function overlayLeaderboard(screen){
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
     board += guestBoardCTA;   // signed-out players still get the sign-in prompt in local-fallback mode
+    // owner ("leaderboard won't load"): the failure used to be silent - now it says so and can be retried
+    if(sb) board = `<div class="small muted center" style="padding:10px 8px 4px">Global board unavailable right now${boardErrTxt(view)?' ('+esc(boardErrTxt(view))+')':''}, showing your own results.</div><div class="center" style="padding:0 8px 10px"><button class="btn ghost lbretry" style="width:auto;padding:7px 14px;font-size:12.5px">↺ Try again</button></div>` + board;
   }
   // sign-in banner reflects the shared RunThe.GG session, opens the in-game account flow
   const signCTA=`<button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
@@ -8299,6 +8301,7 @@ function overlayLeaderboard(screen){
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbretry').forEach(b=>b.onclick=()=>{ lbCache={}; render(); });   // drop the cached failure, the render refetches
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});   // reset to high→low on tab change
   ov.querySelectorAll('.lbwin').forEach(b=>b.onclick=()=>{S.lbWindow=b.dataset.win;render();});   // CS417 Today/This week/All-Time
   ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
@@ -8427,16 +8430,19 @@ function overlayLeaderboardDaily(screen, tab){
 // CS401: the ACTIVE daily-streak leaderboard (a self-contained tab, mirrors overlayLeaderboardDaily).
 let streakBoardCache=null;
 function streakBoardLoad(){
-  if(!sb){ streakBoardCache={loading:false,ok:false,rows:[]}; return; }
+  // t is what boardStale() reads, so a failed streak board retries when you reopen it (never hammers)
+  if(!sb){ streakBoardCache={loading:false,ok:false,rows:[],err:'offline',t:Date.now()}; return; }
   if(streakBoardCache && streakBoardCache.loading) return;
-  streakBoardCache={loading:true,ok:false,rows:[]};
-  sb.rpc('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
-    streakBoardCache = error ? {loading:false,ok:false,rows:[]} : {loading:false,ok:true,rows:(data||[])};
-    if((S.overlay==='leaderboard' && (S.lbTab==='streaks')) || S.overlay==='courserecords') render();
-  }).catch(()=>{ streakBoardCache={loading:false,ok:false,rows:[]}; if((S.overlay==='leaderboard'&&S.lbTab==='streaks')||S.overlay==='courserecords') render(); });
+  streakBoardCache={loading:true,ok:false,rows:[],t:Date.now()};
+  const done=()=>{ if((S.overlay==='leaderboard' && (S.lbTab==='streaks')) || S.overlay==='courserecords') render(); };
+  rpcTry('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
+    streakBoardCache = error ? {loading:false,ok:false,rows:[],err:(error.message||'error'),t:Date.now()}
+                             : {loading:false,ok:true,rows:(data||[]),t:Date.now()};
+    done();
+  }).catch(e=>{ streakBoardCache={loading:false,ok:false,rows:[],err:(e&&e.message)||'error',t:Date.now()}; done(); });
 }
 function overlayStreakBoard(screen){
-  if(!streakBoardCache) streakBoardLoad();
+  if(boardStale(streakBoardCache)) streakBoardLoad();
   const c=streakBoardCache, loading=!c||c.loading, ok=c&&c.ok, rows=ok?c.rows:[];
   const meName=(sbUsername||'').toLowerCase();
   const you=r=>!r.is_guest && meName && (r.username||'').toLowerCase()===meName;
@@ -19896,7 +19902,7 @@ function scrDailyIntro(){
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
 function scrDailyPreview(){
-  if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
+  if(sb && boardStale(crCache)) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add(scrHero(S.special?'Monthly Spotlight':'Play 18', S.special?'Special event · today only':"Today's course"));
   if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
@@ -20302,7 +20308,7 @@ function beginDailyRound(){
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
-  if(sb && !S.special){ const d=S.dailySeed||todayKey(); if(dbCache===null||dbCache.day!==d) dbLoad(d); }
+  if(sb && !S.special){ const d=S.dailySeed||todayKey(); if(boardStale(dbCache)||dbCache.day!==d) dbLoad(d); }
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -21763,9 +21769,9 @@ function scrDailyRound(){
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();
-  if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
+  if(sb && boardStale(crCache)) crLoad();   // ensure the course-record comparison reflects the global record
   const _ds2=S.dailySeed||todayKey();
-  if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
+  if(sb && (boardStale(dbCache)||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
   const practice=!!(S.dailyResult&&S.dailyResult.practice);
   const best=practice?null:dailyBest(); const justPlayed=!!S.dailyResult;   // practice never compares to the real day's best
   const r=S.dailyResult||best;
@@ -24171,10 +24177,10 @@ function overlayCourseRecords(screen){
   const tab=(S.crTab==='legend'||S.crTab==='streaks'||S.crTab==='all')?S.crTab:'human';
   _pcRows.length=0;   // player-card tap registry rebuilds with this overlay (owner: cards open here too)
   if(sb){
-    if(tab==='human'){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }
-    else if(tab==='all'){ if(crCache===null) crLoad(); }
+    if(tab==='human'){ if(boardStale(crCache)) crLoad(); if(boardStale(dbCache)||dbCache.day!==todaySeed) dbLoad(todaySeed); }
+    else if(tab==='all'){ if(boardStale(crCache)) crLoad(); }
     // Legend boards are only fetched once the player actually opens that tab (most never will)
-    else if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
+    else if(tab==='legend'){ if(boardStale(crCacheLegend)) crLoadLegend(); if(boardStale(dbCacheLegend)||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
   }
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -24191,7 +24197,7 @@ function overlayCourseRecords(screen){
       <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   if(tab==='streaks'){
     // ---- Active Streaks tab (guests included - they post + display as "Guest", 63_) ----
-    if(!streakBoardCache) streakBoardLoad();
+    if(boardStale(streakBoardCache)) streakBoardLoad();
     const _sc=streakBoardCache, _sLoad=!_sc||_sc.loading, _sOk=_sc&&_sc.ok, _sRows=_sOk?_sc.rows.slice(0,20):[];
     let streakHTML;
     if(_sLoad) streakHTML='<div class="small muted center" style="padding:12px 8px">Loading streaks…</div>';
@@ -24199,10 +24205,11 @@ function overlayCourseRecords(screen){
       const you=!guest&&sbUsername&&(r.username||'').toLowerCase()===sbUsername.toLowerCase();
       return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${esc(nm)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
     else if(_sOk) streakHTML='<div class="small muted center" style="padding:12px 8px">No active streaks yet, start one today.</div>';
-    else streakHTML='<div class="small muted center" style="padding:12px 8px">Streak board is unavailable right now.</div>';
+    else streakHTML='';
     ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Active streaks</h2>
       <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
     const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
+    if(!_sLoad && !_sOk) ov.appendChild(boardFailNode('Couldn’t load the streak board. '+(boardErrTxt(_sc)||'Check your connection and try again.'), ()=>{ streakBoardCache=null; streakBoardLoad(); }));
     if(!sbSignedIn()) ov.appendChild($(`<p class="small muted center" style="margin:10px 0 0">Your streak posts as "Guest". Sign in to put your name on it.</p>`));
   } else if(tab==='all'){
     // ---- ALL COURSES tab: every course + its all-time record (owner) ----
@@ -24213,9 +24220,9 @@ function overlayCourseRecords(screen){
   } else {
   const boardCache = tab==='legend' ? dbCacheLegend : dbCache;
   // today's global board
-  let boardHTML='';
+  let boardHTML='', boardFail=false;
   if(sb){
-    if(boardCache===null||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
+    if(boardCache===null||boardCache.loading||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
     else if(boardCache.ok && boardCache.rows.length){
       // owner: a top-3 podium like the other leaderboards; the ranked list then starts at #4 (CS505)
       let podHTML='';
@@ -24234,7 +24241,7 @@ function overlayCourseRecords(screen){
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${arch?' · '+esc(arch.name):''}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
         <span class="sc" style="color:var(--gold);font-weight:800;text-align:right;white-space:nowrap">${dTot(r.to_par, (DAILY_COURSES[today]||{}).par)}</span></div>`; }).join('')+`</div>`;
     } else if(boardCache.ok){ boardHTML=`<div class="small muted center" style="padding:14px 8px">${tab==='legend'?'No legend rounds posted yet today.':'No rounds posted yet today, be the first.'}</div>`; }
-    else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
+    else { boardHTML=''; boardFail=true; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
   if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board, free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
   // owner ("it says the course record is -9 but when you click it, it shows -4"): the preview's record link
@@ -24261,6 +24268,9 @@ function overlayCourseRecords(screen){
   ov.appendChild($(`<div><div style="margin:16px 0 4px;font-family:var(--display);font-size:clamp(19px,5vw,24px);line-height:1.1"><span style="color:var(--gold)">Today</span> at ${esc(dShort(DAILY_COURSES[today].v))}</div>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'Legend-token rounds posted today only. Beat the all-time record above to take it.':'Rounds posted today only, lowest wins the day. Beat the all-time record above to take it.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
+  // owner ("leaderboard won't load"): a failed board now says why and offers a retry instead of a dead end
+  if(boardFail) ov.appendChild(boardFailNode('Couldn’t load today’s board. '+(boardErrTxt(boardCache)||'Check your connection and try again.'),
+    ()=>{ if(tab==='legend'){ dbCacheLegend=null; dbLoadLegend(todaySeed); } else { dbCache=null; dbLoad(todaySeed); } }));
   if(tab==='legend'){
     // the legend tier keeps its own all-time records here (the ALL COURSES tab holds the human records)
     const online=!!(crCacheLegend&&crCacheLegend.ok);
@@ -25248,6 +25258,41 @@ function careerRankCard(){
   card.querySelector('button').onclick=()=>{ S.lbTab='career'; S.lbWindow='all'; S.overlay='leaderboard'; render(); };
   return card;
 }
+/* ---------------------------------------------------------------------------
+   Board loading (owner: "leaderboard won't load"). Every network-backed board used to cache a
+   FAILURE forever - the overlays only re-fetched when the cache was still null - so ONE blip (a
+   slow phone connection, a hung request, a backend hiccup) left "unavailable right now" until a
+   hard refresh, and the real reason was swallowed with no console output. Now:
+     - rpcTry races the call against a timeout so a hung request can never spin forever,
+     - the failure reason is logged AND kept on the cache so the UI can show it,
+     - boardStale() lets a FAILED cache retry when you reopen the board (after a short backoff),
+       while a successful or in-flight one is left alone.
+--------------------------------------------------------------------------- */
+var BOARD_TIMEOUT_MS=12000, BOARD_RETRY_MS=6000;
+async function rpcTry(name,args,ms){
+  let to;
+  try{
+    const r=await Promise.race([
+      sb.rpc(name,args),
+      new Promise(res=>{ to=setTimeout(()=>res({data:null,error:{message:'timed out'}}), ms||BOARD_TIMEOUT_MS); })
+    ]);
+    if(r&&r.error) console.error('[RunTheTour] '+name+' failed:', r.error.message||r.error);
+    return r||{data:null,error:{message:'no response'}};
+  }catch(e){
+    console.error('[RunTheTour] '+name+' threw:', e);
+    return {data:null,error:{message:(e&&e.message)||'network error'}};
+  }finally{ clearTimeout(to); }
+}
+function boardErrTxt(c){ const m=c&&c.err?String(c.err):''; return m?m.slice(0,90):''; }
+// null → never loaded; a failed load is retryable once the backoff has passed; loading/ok are not
+function boardStale(c){ return !c || (!c.ok && !c.loading && (Date.now()-(c.t||0))>BOARD_RETRY_MS); }
+// a small "couldn't load + Try again" block for any board; retry() clears the cache and refetches
+function boardFailNode(msg,retry){
+  const n=$(`<div class="center" style="padding:12px 8px"><div class="small muted">${esc(msg||'Couldn’t reach the leaderboard right now.')}</div>
+    <button class="btn ghost" style="width:auto;margin:8px auto 0;padding:7px 14px;font-size:12.5px">↺ Try again</button></div>`);
+  n.querySelector('button').onclick=()=>{ try{ retry&&retry(); }catch(e){} render(); };
+  return n;
+}
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
 async function lbLoad(tab,sort,dir,since,ksuf){
@@ -25257,18 +25302,18 @@ async function lbLoad(tab,sort,dir,since,ksuf){
   // keys the date-scoped windows separately; since = the window's start passed to the board as p_since.
   const k=(dir==='asc')?(tab+':'+sort+ksuf+':asc'):(tab+':'+sort+ksuf);
   if(lbCache[k] && lbCache[k].loading) return;          // already fetching
-  if(!sb){ lbCache[k]={rows:[],ok:false}; render(); return; }
-  lbCache[k]={loading:true};
+  if(!sb){ lbCache[k]={rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  lbCache[k]={loading:true,rows:[],t:Date.now()};
   try{
     const fn=(tab==='career')?'runtour_career_board':'runtour_season_board';
     let legacyDir=false;
     // p_since is migration 58; if unsupported, drop it and show the all-time board (fail-open window).
-    let r=await sb.rpc(fn, since?{p_limit:200,p_sort:sort,p_dir:dir,p_since:since}:{p_limit:200,p_sort:sort,p_dir:dir});
-    if(r.error && since){ r=await sb.rpc(fn,{p_limit:200,p_sort:sort,p_dir:dir}); }   // pre-58 → all-time
-    if(r.error){ legacyDir=true; r=await sb.rpc(fn,{p_limit:200,p_sort:sort}); }      // DB without p_dir → top-N only
-    if(r.error){ r=await sb.rpc(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
-    lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir};
-  }catch(e){ lbCache[k]={rows:[],ok:false}; }
+    let r=await rpcTry(fn, since?{p_limit:200,p_sort:sort,p_dir:dir,p_since:since}:{p_limit:200,p_sort:sort,p_dir:dir});
+    if(r.error && since){ r=await rpcTry(fn,{p_limit:200,p_sort:sort,p_dir:dir}); }   // pre-58 → all-time
+    if(r.error){ legacyDir=true; r=await rpcTry(fn,{p_limit:200,p_sort:sort}); }      // DB without p_dir → top-N only
+    if(r.error){ r=await rpcTry(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
+    lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir,err:r.error?(r.error.message||'error'):'',t:Date.now()};
+  }catch(e){ lbCache[k]={rows:[],ok:false,err:(e&&e.message)||'error',t:Date.now()}; }
   render();   // refresh whatever's open
 }
 /* ---- Daily Challenge backend (Phase 3): submit best round + global board/records. Fails open. ---- */
@@ -25355,36 +25400,40 @@ async function reconcileDailyAttempts(){
   }catch(e){ /* fail open, local count stands until the next check */ }
 }
 async function crLoad(){
-  if(!sb){ crCache={recs:{},ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_course_records');
-    const recs=buildCourseRecs(data); crCache={recs,ok:!error};
-    if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
-  }catch(e){ crCache={recs:{},ok:false}; }
+  if(!sb){ crCache={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(crCache&&crCache.loading) return;
+  crCache={recs:(crCache&&crCache.recs)||{},ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_course_records');
+  const recs=buildCourseRecs(data); crCache={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
+  if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
   render();
 }
 // Legend-tier course records, a separate board so retired-legend peak builds don't just own every
 // freshly-drafted golfer's shot at a human record. Fails open (empty, ok:false) until the owner runs
 // supabase/30_runtour_legend.sql, the RPC call below simply errors until then, caught below.
 async function crLoadLegend(){
-  if(!sb){ crCacheLegend={recs:{},ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_course_records',{p_legend:true});
-    const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error};
-    if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
-  }catch(e){ crCacheLegend={recs:{},ok:false}; }
+  if(!sb){ crCacheLegend={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(crCacheLegend&&crCacheLegend.loading) return;
+  crCacheLegend={recs:(crCacheLegend&&crCacheLegend.recs)||{},ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_course_records',{p_legend:true});
+  const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
+  if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
   render();
 }
 async function dbLoad(day){
-  if(!sb){ dbCache={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200});
-    dbCache={day,rows:(data||[]),ok:!error};
-  }catch(e){ dbCache={day,rows:[],ok:false}; }
+  if(!sb){ dbCache={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(dbCache&&dbCache.loading&&dbCache.day===day) return;
+  dbCache={day,rows:[],ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200});
+  dbCache={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
 async function dbLoadLegend(day){
-  if(!sb){ dbCacheLegend={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
-    dbCacheLegend={day,rows:(data||[]),ok:!error};
-  }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
+  if(!sb){ dbCacheLegend={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
+  if(dbCacheLegend&&dbCacheLegend.loading&&dbCacheLegend.day===day) return;
+  dbCacheLegend={day,rows:[],ok:false,loading:true,t:Date.now()};
+  const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
+  dbCacheLegend={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
 // Monthly Spotlight course records / board (own bucket, own weather). Fails open (empty) until the owner
