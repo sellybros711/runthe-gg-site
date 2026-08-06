@@ -197,6 +197,9 @@ export const COOLDOWN_BREATHER_ENERGY = 3;
 export const COOLDOWN_LENGTH_RATIO = 0.6;
 export const COOLDOWN_BONUS = 20;
 
+/* Under three minutes is a tease, not a song — 2.5% of takes. */
+export const TEASE_SECONDS = 180;
+
 /** Is this song a peak the room needs to come down from? */
 export function isBigMoment(perf) {
   return energyOf(perf) >= PEAK_ENERGY || lenOf(perf) >= LEN_15MIN;
@@ -573,11 +576,43 @@ export function setNote(ratio, songs) {
  * 100-show bustout and a twenty-two minute type II are different nights and
  * should not draw the same sentence.
  */
-const RX = {
+export const RX = {
+  /* Three tiers of not-played-in-a-while, because 22 shows and 300 shows are
+     not the same event. The loudest ones say the number — a crowd that has
+     waited two years knows exactly how long it has been.
+     {gap} is the whole phrase ("147 shows"); {n} is the bare number. */
+  rare: [
+    'Not played in {gap}. Real cheer from down front.',
+    '{gap} since the last one. The rail noticed immediately.',
+    'Deep cut. A pocket of the floor lost it.',
+    'Somebody in section 102 has waited all tour for that.',
+    'Been a while. The people who knew went properly loud.',
+    'Dusted off. Three rows understood immediately.',
+  ],
   bustout: [
-    'BUSTOUT. Nobody had that on their card.',
-    'Bustout! The taper section audibly gasped.',
-    'First time in forever. Phones up before the second bar.',
+    'BUSTOUT. {gap}. Nobody had that on their card.',
+    'Bustout! {gap} deep. The taper section audibly gasped.',
+    'First time in {gap}. Phones up before the second bar.',
+    '{gap} of waiting, gone in one downbeat.',
+  ],
+  unicorn: [
+    '{gap}. The roof came off. Grown adults crying.',
+    'Are you kidding. {gap}. The lot will talk for years.',
+    'Nobody alive expected that. {gap} since the last one.',
+    'A {n}-show bustout. Somebody just got their whitest whale.',
+  ],
+  /* A bustout in the wrong slot is two true things at once, and picking one
+     lost the other: the room still erupts, and it was still the wrong place
+     for it. So the line says both. */
+  bustoutClash: [
+    '{gap}! And they buried it. Still bedlam, mind.',
+    'Huge bustout, wrong moment. The pop was real anyway.',
+    '{gap} of waiting, spent in the wrong slot. Still counts.',
+  ],
+  bustoutCover: [
+    'A cover nobody had heard in {gap}. Bedlam.',
+    'Bustout AND a cover, {gap} deep. The floor came apart.',
+    'They dusted off somebody else\'s song after {gap}.',
   ],
   legend: [
     'Full hose. The rail came apart.',
@@ -596,11 +631,40 @@ const RX = {
     'Nice patient build. Room locked in.',
     'Plinko into bliss. Heads grinning up front.',
     'Legs on that one. Tapers are pleased.',
+    'Found the groove and stayed in it. No complaints.',
+    'Got weird in the middle. The right kind of weird.',
+    'Second jam was better than the first. Rare.',
   ],
   cover: [
     'Cover! The floor clocked it inside two bars.',
     'Deep cut cover. Huge pop of recognition.',
     'Nobody expected that one. Big singalong.',
+    'Took somebody else\'s song and kept it.',
+    'Half the room knew it, the other half pretended.',
+    'Covers night energy for three and a half minutes.',
+  ],
+  /* The come-down after a big one. The mechanic already scores this; the
+     crowd had nothing to say about it, which made it invisible. */
+  cooldown: [
+    'Everybody exhales. Perfect place for it.',
+    'Beers refilled, legs recovered. Exactly what that needed.',
+    'The room comes down together. Nicely judged.',
+    'Soft landing after all that. Somebody knew what to do.',
+  ],
+  tease: [
+    'Barely a minute of it. The floor screamed anyway.',
+    'A tease, and the room caught it instantly.',
+    'Short, sharp, gone. Half the floor is asking what that was.',
+  ],
+  opening: [
+    'Lights down, first notes. The place erupts.',
+    'Openers do not usually get that reaction.',
+    'Straight out of the gate. Nobody is sitting down tonight.',
+  ],
+  lastcall: [
+    'Last one. Nobody wanted the lights.',
+    'That is the night. House lights, everybody hoarse.',
+    'Final note, and the room does not move for a second.',
   ],
   breather: [
     'Lighters up. Earned breather.',
@@ -623,11 +687,22 @@ const RX = {
     'Solid. Crowd stayed with it.',
     'Kept it in the pocket. Easy sway.',
     'Well played, no notes.',
+    'Tight. Nobody put their phone away, nobody left.',
+    'Did the job. Good energy in the room.',
+    'Clean version. The heads nodded along.',
   ],
+  /* The commonest bucket by a distance — roughly a quarter of every song
+     played — so it needs the deepest rotation. Three lines meant a player saw
+     the same one four times a night. */
   flat: [
     'Straight ahead. Beer line got long.',
     'Fine. A few people sat down on the lawn.',
     'Polite. Setbreak energy, mid-set.',
+    'Played it straight. Nobody minded.',
+    'A song happened. The lot heard about it later.',
+    'Serviceable. Good time to find your people.',
+    'Held the room, did not move it.',
+    'Nice enough. The rail checked their texts.',
   ],
   clash: [
     'Wrong read. That killed the momentum.',
@@ -642,25 +717,88 @@ const RX = {
  * @param {object} perf   the performance row, for the reason behind it
  * @param {number} seed   keeps a replay deterministic
  */
-export function reactionFor(score, perf, seed = 0) {
-  const pick = key => RX[key][Math.abs(seed) % RX[key].length];
+/*
+ * GAP TIERS, SHARED WITH THE CARD.
+ *
+ * The draft card printed "43 SHOW GAP" and then the crowd said "beer line got
+ * long", because the chip appeared at a gap of 20 and the bustout reaction
+ * only fired at 50. 68% of every take wearing a gap chip was advertised as
+ * rare and then greeted with silence. The card and the crowd now read the
+ * same numbers, so they cannot drift apart again.
+ */
+export const GAP_RARE = 20;                       // 7.8% of drawable takes
+export const GAP_BUSTOUT = BREADTH_BUSTOUT_GAP;   // 2.3%, and the breadth card
+export const GAP_UNICORN = 100;                   // 1.6%, top gap on record 543
+
+/** "147 shows" / "one show" — the phrase the loud lines drop into. */
+export function gapPhrase(gap) {
+  const n = Math.max(0, Math.round(Number(gap) || 0));
+  return n === 1 ? 'one show' : `${n} shows`;
+}
+
+/**
+ * What the room says about a song, given how it scored and what it was.
+ *
+ * @param {object} score  the scorePerf result
+ * @param {object} perf   the performance row, for the reason behind it
+ * @param {number} seed   keeps a replay deterministic
+ * @param {object} ctx    where in the night it landed: {first, last, cooldown}
+ */
+export function reactionFor(score, perf, seed = 0, ctx = {}) {
+  /* Rotate within a bucket across the night. Keying the line purely off a
+     per-song seed put "section 102" on screen four times in one show, because
+     a four-line bucket that fires five times will collide however clever the
+     seed is. With a rotation the Nth use of a bucket takes the Nth line, so a
+     repeat only happens once the bucket is genuinely exhausted. The offset
+     keeps two shows from opening with the same lines, and comes from the
+     show's own numbers so a replay is identical. */
+  const pick = key => {
+    const lines = RX[key];
+    let i;
+    if (ctx.rotation) {
+      const used = ctx.rotation.get(key) || 0;
+      ctx.rotation.set(key, used + 1);
+      i = ((ctx.offset || 0) + used) % lines.length;
+    } else {
+      i = Math.abs(seed) % lines.length;
+    }
+    const n = Math.max(0, Math.round(Number(perf && perf.show_gap) || 0));
+    return lines[i]
+      .replace(/\{gap\}/g, gapPhrase(n))
+      .replace(/\{n\}/g, String(n));
+  };
   const gap = Number(perf && perf.show_gap) || 0;
   const len = lenOf(perf);
   const tags = tagsOf(perf);
+  const cover = String(perf && perf.is_cover) === 'true';
+
+  /* A real bustout outranks everything, including a bad fit. The room does not
+     care that it landed in the wrong slot — it has not heard the song in two
+     years. Below GAP_BUSTOUT a wrong slot still gets the wrong-slot line. */
+  if (gap >= GAP_BUSTOUT && score.fit === 'bad') return pick('bustoutClash');
+  if (gap >= GAP_UNICORN) return pick('unicorn');
+  if (gap >= GAP_BUSTOUT) return pick(cover ? 'bustoutCover' : 'bustout');
 
   if (score.fit === 'bad') return pick('clash');
-  if (gap >= 50) return pick('bustout');
+  if (gap >= GAP_RARE) return pick('rare');
+
   if (isRecommended(perf) && len >= LEN_20MIN) return pick('legend');
   if (len >= LEN_20MIN || (isRecommended(perf) && len >= LEN_15MIN)) return pick('monster');
   if (isJamchart(perf) || len >= LEN_15MIN) return pick('jam');
-  if (String(perf && perf.is_cover) === 'true') return pick('cover');
+  // Scored by cooldowns(), so the crowd should hear it too.
+  if (ctx.cooldown) return pick('cooldown');
+  if (len > 0 && len < TEASE_SECONDS) return pick('tease');
+  if (cover) return pick('cover');
   if (tags.includes('ballad')) return pick('breather');
+  if (ctx.last) return pick('lastcall');
   if (score.role === 'Encore') return pick('encore');
   if (score.role === 'Closer' && score.fit !== 'neutral') return pick('closer');
+  if (ctx.first) return pick('opening');
   if (score.role === 'Opener' && score.fit !== 'neutral') return pick('opener');
   if (score.subtotal >= 55) return pick('good');
   return pick('flat');
 }
+
 
 /*
  * WHY THE BAND WANTS A MINUTE.

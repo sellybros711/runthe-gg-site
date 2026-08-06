@@ -15,6 +15,7 @@ import {
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
   familiarityMult, segueDecay, segueKey, gradeScore, gradeRunning, GRADE_WARM, GRADE_HOT,
   cooldowns, isBigMoment, COOLDOWN_BONUS, COOLDOWN_BREATHER_ENERGY, COOLDOWN_LENGTH_RATIO,
+  GAP_RARE, GAP_BUSTOUT, GAP_UNICORN, gapPhrase, TEASE_SECONDS, RX,
   bestPossible, respinLine, RESPIN_LINES, LEN_15MIN,
   SEGUE_FAMILIAR_FLOOR, SEGUE_DECAY_FREE, SEGUE_DECAY_FLOOR,
   TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY, RESPIN_COSTS, respinCost, canRespin,
@@ -534,37 +535,102 @@ group('the one that got away', () => {
 });
 
 group('fan reactions are keyed to why', () => {
-  const R = (o, roleName='Mid', fit='neutral') =>
+  const R = (o, roleName = 'Mid', fit = 'neutral', ctx = {}, seed = 0) =>
     reactionFor({ subtotal: o.sub === undefined ? 60 : o.sub, fit, role: roleName },
-                perf(o), 0);
+                perf(o), seed, ctx);
 
-  eq(/BUSTOUT|Bustout|forever/.test(R({ gap: 100 })), true, 'a 100-show gap is a bustout');
+  /* THE CARD AND THE CROWD READ THE SAME NUMBER.
+     The chip appeared at a gap of 20 and the bustout reaction fired at 50, so
+     68% of every take wearing a "N SHOW GAP" chip was advertised as rare and
+     then greeted with "beer line got long". */
+  eq(GAP_RARE < GAP_BUSTOUT && GAP_BUSTOUT < GAP_UNICORN, true, 'the tiers are in order');
+  eq(/cheer|since the last|Deep cut|section 102/i.test(R({ gap: GAP_RARE })), true,
+     'the gap that earns a chip also earns a reaction');
+  eq(/cheer|since the last|Deep cut|section 102|BUSTOUT|roof came off/i
+       .test(R({ gap: GAP_RARE - 1 })), false,
+     'and one show short of it says nothing about the gap');
+  eq(/BUSTOUT|Bustout|First time|waiting/i.test(R({ gap: GAP_BUSTOUT })), true,
+     'a real bustout is a bustout');
+  eq(/roof came off|Are you kidding|Nobody alive|whitest whale/i.test(R({ gap: GAP_UNICORN })), true,
+     'and a hundred shows is its own thing again');
+
+  // The number is in the line, because a crowd that waited knows how long.
+  eq(R({ gap: 147 }, 'Mid', 'neutral', {}, 0).includes('147 shows'), true,
+     'the loud lines say the number');
+  eq(R({ gap: 1 }, 'Mid', 'neutral', {}, 1).includes('{gap}'), false,
+     'no template token ever reaches the screen');
+  eq(gapPhrase(1), 'one show', 'one show is not "1 shows"');
+  eq(gapPhrase(147), '147 shows', 'and the rest are plain');
+
+  /* A bustout in the wrong slot is two true things at once. Choosing one lost
+     the other, so the line says both. */
+  const badBustout = R({ gap: 200 }, 'Peak', 'bad');
+  eq(/buried|wrong moment|wrong slot/i.test(badBustout), true,
+     'a badly placed bustout is still called out as badly placed');
+  eq(/bedlam|pop was real|Still counts/i.test(badBustout), true,
+     '...and still gets its pop');
+  eq(/momentum|thinned|Air came/.test(R({ gap: GAP_RARE }, 'Peak', 'bad')), true,
+     'but a merely rare song in the wrong slot is just a mistake');
+
   eq(/hose|send each other|type II|bliss/i.test(R({ rec: 1, len: 1300 })), true,
      'a recommended 20-minute version is a legend line');
   eq(/twenty|type II|Whale|Peaked/i.test(R({ len: 1300 })), true, 'a 20-minute version went there');
   eq(/jam vehicle|patient|Plinko|Legs/i.test(R({ jam: 1 })), true, 'a jamchart version gets jam talk');
   eq(/[Cc]over/.test(R({ is_cover: 'true' })), true, 'a cover is called out');
+  eq(/heard in|Bustout AND|dusted off/i.test(R({ is_cover: 'true', gap: 80 })), true,
+     'a cover that is also a bustout gets both');
   eq(/Lighters|exhale|Pretty/.test(R({ tags: 'ballad' })), true, 'a ballad is the breather');
   eq(/momentum|thinned|Air came/.test(R({}, 'Peak', 'bad')), true, 'a clash kills the room');
 
-  // The clash line must win over everything, including a bustout.
-  eq(/momentum|thinned|Air came/.test(R({ gap: 200 }, 'Peak', 'bad')), true,
-     'a badly placed bustout still reads as a mistake');
+  // Context: where in the night it landed, and the cooldown the rule pays for.
+  eq(/exhale|refilled|comes down|Soft landing/i.test(R({}, 'Mid', 'neutral', { cooldown: true })), true,
+     'the breather after a big one is heard, not just scored');
+  eq(/erupts|Openers do not|out of the gate/i.test(R({}, 'Mid', 'neutral', { first: true })), true,
+     'the first song of the night gets the lights-down line');
+  eq(/Last one|house lights|Final note/i.test(R({}, 'Mid', 'neutral', { last: true })), true,
+     'and the last one gets the house lights');
+  eq(/minute of it|tease|Short, sharp/i.test(R({ len: TEASE_SECONDS - 1 })), true,
+     'anything under three minutes is a tease');
+  eq(/minute of it|tease|Short, sharp/i.test(R({ len: TEASE_SECONDS })), false,
+     'and three minutes exactly is a song');
 
-  // Every line is short enough to read in one beat of playback.
-  const all = [];
-  for (const g of [0, 100]) for (const l of [300, 1300]) for (const f of ['neutral','bad','great'])
-    all.push(R({ gap: g, len: l }, 'Mid', f));
-  eq(all.every(x => typeof x === 'string' && x.length > 0 && x.length <= 60), true,
-     'every reaction is a one-breath line');
+  /* Every line, at every seed, with the biggest gap on record substituted, has
+     to read in one beat of playback. Templating made this easy to break: a
+     line that fits empty can overflow once "543 shows" lands in it. */
+  const long = [];
+  for (const g of [0, GAP_RARE, GAP_BUSTOUT, GAP_UNICORN, 543])
+    for (let seed = 0; seed < 8; seed++)
+      for (const f of ['neutral', 'bad', 'great'])
+        for (const ctx of [{}, { first: true }, { last: true }, { cooldown: true }]) {
+          const t = R({ gap: g, len: 600 }, 'Mid', f, ctx, seed);
+          if (typeof t !== 'string' || !t.length || t.length > 60) long.push(`${t.length}: ${t}`);
+        }
+  eq(long.length, 0, `every reaction reads in one beat${long.length ? ` — ${long[0]}` : ''}`);
 
-  eq(eventLine(['sandwich']).includes('andwich'), true, 'a sandwich announces itself');
-  eq(/no gap|not stopped/i.test(eventLine(['chain'])), true, 'a chain says it has not stopped');
-  eq(/tape|everybody knows/i.test(eventLine(['exact'])), true, 'an exact rebuild references the tape');
-  eq(eventLine(null), null, 'no segue, no line');
-  eq(typeof setOpenLine(0), 'string', 'each set gets an opening line');
-  eq(setOpenLine(1).toLowerCase().includes('setbreak'), true, 'Set II comes back from setbreak');
+  /* Rotation: the same bucket firing repeatedly must walk its lines rather
+     than repeat one. A four-line bucket used four times produced the identical
+     sentence four times in one show before this. */
+  const rot = new Map();
+  const seen = [];
+  for (let i = 0; i < 4; i++)
+    seen.push(reactionFor({ subtotal: 60, fit: 'neutral', role: 'Mid' },
+              perf({ gap: GAP_RARE }), i * 13, { rotation: rot, offset: 0 }));
+  eq(new Set(seen).size, 4, 'four uses of a four-line bucket give four different lines');
+  eq(rot.get('rare'), 4, 'and the rotation counted them');
+
+  // A different show opens on a different line, but a replay of one show is
+  // identical — the offset is the night's own score, not a random number.
+  const line = off => reactionFor({ subtotal: 60, fit: 'neutral', role: 'Mid' },
+    perf({ gap: GAP_RARE }), 0, { rotation: new Map(), offset: off });
+  eq(line(0) !== line(1), true, 'two shows do not open on the same line');
+  eq(line(7), line(7), 'and the same show replays the same');
+
+  // No bucket may be empty, or a situation resolves to undefined on screen.
+  eq(Object.values(RX).every(v => Array.isArray(v) && v.length &&
+       v.every(t => typeof t === 'string' && t.trim())), true,
+     'every reaction bucket has real lines in it');
 });
+
 
 group('scoreShow totals', () => {
   const mk = (id, tags, len) => perf({ song_id: id, tags, len, crowd: 30 });
