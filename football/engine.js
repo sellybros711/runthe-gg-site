@@ -309,11 +309,29 @@ const CONSTANTS = {
    * (GM_FINAL_HOME_FIELD) sized against a different bracket, and there the roster you
    * finish with is a thing you built out of one you were handed.
    */
-  FINAL_EDGE_FLOOR: 82,
-  FINAL_EDGE_LOW: 90,
-  FINAL_EDGE_HIGH: 95,
-  FINAL_EDGE_CEIL: 102,
-  FINAL_EDGE_PENALTY: 0.30,
+  /*
+   * ONE CURVE THROUGH 90, replacing a penalty ramp, a five-point dead zone and a separate
+   * bonus ramp. The dead zone was the problem: 90 through 95 all played a perfectly even
+   * Super Bowl, so four points of overall bought nothing at all in the one game that decides
+   * the season, and a 90 converted a final about as often as a 95.
+   *
+   * FINAL_EDGE_PIVOT is now the only neutral overall in the game: the hardest roster that
+   * still has a real chance. Below it the curve collapses over PIVOT - FLOOR points to
+   * 1 - PENALTY, which is meant to read as virtually impossible rather than merely unlikely.
+   * Above it every single point of overall buys something, all the way to CEIL, which sits
+   * at the top of what any mode can actually build rather than at the top of the draftable
+   * range: the point of the climb is that it keeps paying.
+   *
+   * FLOOR is 88 and not 82 on purpose. The drop has to be steep to make 89 hopeless while 90
+   * is only hard, and a ramp spread over eight points cannot do that; over two, it can.
+   * Everything at or under 88 gets the same full penalty, which is the honest reading of
+   * "virtually impossible" - there is no interesting difference between an 84 and an 87 in a
+   * game against the 1972 Dolphins.
+   */
+  FINAL_EDGE_FLOOR: 88,
+  FINAL_EDGE_PIVOT: 90,
+  FINAL_EDGE_CEIL: 110,
+  FINAL_EDGE_PENALTY: 0.45,
   /*
    * Trimmed from 0.18 once the weekly edge landed. The bonus was sized against a top of the
    * game that reached the final 9.8% of the time; better records took that to 15.8%, so the
@@ -321,7 +339,7 @@ const CONSTANTS = {
    * clearly better off in the last game than they were this morning without the title
    * arriving twice as often as it used to.
    */
-  FINAL_EDGE_BONUS: 0.09,
+  FINAL_EDGE_BONUS: 0.25,
 
   /*
    * ─── CLASS, OVER SEVENTEEN WEEKS ────────────────────────────────────────────
@@ -719,27 +737,24 @@ function weeklyEdgeVs(rating, opponent, constants = CONSTANTS) {
 /*
  * THE TITLE GAME'S OPINION OF YOUR ROSTER, as a divisor on the opponent's score.
  *
- * 1 means the neutral final every mode used to play. Under FINAL_EDGE_LOW it falls toward
- * 1 - PENALTY, over FINAL_EDGE_HIGH it climbs toward 1 + BONUS, and in between it is
- * exactly 1. Ramps are linear because the reason for them is legible and a curve would
- * only make the same argument less clearly. See CONSTANTS.FINAL_EDGE_*.
+ * Monotone the whole way and neutral at exactly one overall, FINAL_EDGE_PIVOT. Below it the
+ * curve falls to 1 - PENALTY by FINAL_EDGE_FLOOR; above it it climbs to 1 + BONUS by
+ * FINAL_EDGE_CEIL. Both ramps are linear because the reason for them is legible and a curve
+ * would only make the same argument less clearly. See CONSTANTS.FINAL_EDGE_*.
  *
  * No rating means no opinion: callers with nothing to hand get the old neutral game.
  */
 function finalEdge(rating, constants = CONSTANTS) {
   if (!(rating > 0)) return 1;
   const C = constants;
-  if (rating < C.FINAL_EDGE_LOW) {
-    const span = C.FINAL_EDGE_LOW - C.FINAL_EDGE_FLOOR;
-    const t = span > 0 ? Math.min(1, (C.FINAL_EDGE_LOW - rating) / span) : 1;
+  if (rating < C.FINAL_EDGE_PIVOT) {
+    const span = C.FINAL_EDGE_PIVOT - C.FINAL_EDGE_FLOOR;
+    const t = span > 0 ? Math.min(1, (C.FINAL_EDGE_PIVOT - rating) / span) : 1;
     return 1 - C.FINAL_EDGE_PENALTY * t;
   }
-  if (rating > C.FINAL_EDGE_HIGH) {
-    const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_HIGH;
-    const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_HIGH) / span) : 1;
-    return 1 + C.FINAL_EDGE_BONUS * t;
-  }
-  return 1;
+  const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_PIVOT;
+  const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_PIVOT) / span) : 1;
+  return 1 + C.FINAL_EDGE_BONUS * t;
 }
 
 /**
