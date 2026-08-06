@@ -78,9 +78,10 @@
   .pathcard .plab{text-align:center; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-bottom:12px;}
   .path{display:flex; flex-direction:column; gap:0;}
   .stop{display:flex; align-items:center; gap:12px;}
-  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--green); background:var(--card); color:var(--greenT); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1;}
-  .stop:first-child .dot{background:var(--green); color:#071426;}
-  .stop:last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
+  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:#fff; font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
+  .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
+  .stop:not([style]):first-child .dot{background:var(--green); color:#071426;}
+  .stop:not([style]):last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
   .stop .tm{font-weight:900; font-size:15.5px; color:var(--ink); min-width:0;}
   .stop .steptag{margin-left:auto; flex:0 0 auto; font-size:8.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); background:var(--card2); border:1px solid var(--line2); border-radius:999px; padding:3px 9px;}
   .stop .steptag.last{color:var(--greenT); border-color:color-mix(in srgb, var(--green) 45%, transparent);}
@@ -226,6 +227,7 @@
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js"></script>
 <script src="/arcade/data.js"></script>
+<script src="/arcade/teamcolors.js"></script>
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/mode.js"></script>
@@ -313,7 +315,9 @@
     var teams=target.t;
     pathEl.innerHTML = teams.map(function(tm,i){
       var tag = i===0 ? '<span class="steptag">First team</span>' : (i===teams.length-1 ? '<span class="steptag last">Most recent</span>' : '');
-      return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
+      var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
+      var st=tc?(' style="--pc:'+tc.p+'"'):'';
+      return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"'+st+'><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
     }).join('');
     choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });

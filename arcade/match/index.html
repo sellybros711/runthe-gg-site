@@ -812,8 +812,12 @@
         var head = document.createElement('div');
         head.className = 'lane-head';
         if (isLocked && cat) {
+          // difficulty tag: lane order in day.lanes runs easiest -> trickiest
+          var dIdx = -1; for (var dj = 0; dj < day.lanes.length; dj++) { if (day.lanes[dj].id === cat.id) { dIdx = dj; break; } }
+          var DIFF = ['Easiest', 'Easy', 'Medium', 'Hard', 'Trickiest'];
+          var dTag = dIdx >= 0 ? '<span class="lane-sport" style="color:var(--lc); border-color:color-mix(in srgb, var(--lc) 55%, transparent)">' + DIFF[Math.min(dIdx, DIFF.length - 1)] + '</span>' : '';
           head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
-            '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
+            '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' + dTag +
             '<span class="lane-check">✓ Locked</span>';
         } else if (revLabel) {
           head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
