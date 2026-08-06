@@ -14,6 +14,7 @@ import {
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
   ROLE_KINDS, BREADTH_ROLES, rolesMissing,
+  MONO_KINDS, MONO_AT, MONO_MULTS, monotonyRun, monotonyDepth, monotonyMult,
   familiarityMult, segueDecay, segueKey, gradeScore, gradeRunning, GRADE_WARM, GRADE_HOT,
   cooldowns, isBigMoment, COOLDOWN_BONUS, COOLDOWN_BREATHER_ENERGY, COOLDOWN_LENGTH_RATIO,
   GAP_RARE, GAP_BUSTOUT, GAP_UNICORN, gapPhrase, TEASE_SECONDS, RX,
@@ -332,6 +333,75 @@ group('breadth replaces a category nobody could fail', () => {
      'Everything except an opener, peak or ballad', 'three gaps list out');
   eq(miss('roles', [base({ tags: 'jam' })]), 'Only 1 of the six kinds',
      'four or more gaps count up instead of listing');
+});
+
+group('monotony: three of the same thing, unconnected', () => {
+  const jam = i => perf({ song_id: `j${i}`, song: `Jam ${i}`, tags: 'jam', len: 600 });
+  const jams = n => Array.from({ length: n }, (_, i) => jam(i));
+  const depth = (songs, i, seg) => monotonyDepth(songs, i, seg);
+
+  eq(MONO_KINDS, ['jam', 'peak', 'ballad'], 'only the tags that say what a song IS');
+  eq(MONO_KINDS.includes('opener') || MONO_KINDS.includes('encore'), false,
+     'position tags describe the source show, not the song');
+  eq(MONO_AT, 3, 'the third of a kind is where it starts');
+
+  // Depth counts backwards through an unbroken run.
+  const four = jams(4);
+  eq([0, 1, 2, 3].map(i => depth(four, i, new Set())), [1, 2, 3, 4], 'a run counts up');
+  eq([0, 1, 2, 3].map(i => monotonyMult(depth(four, i, new Set()))),
+     [1, 1, MONO_MULTS[0], MONO_MULTS[1]], 'and the first two are free');
+  eq(monotonyMult(9), MONO_MULTS[MONO_MULTS.length - 1], 'past the table it flattens out');
+
+  // A different kind of song breaks it.
+  const broken = [jam(0), jam(1), perf({ song_id: 'b', tags: 'ballad' }), jam(2), jam(3)];
+  eq(broken.map((_, i) => depth(broken, i, new Set())), [1, 2, 1, 1, 2], 'a change of gear resets');
+  // So does an untagged song, and 32% of the pool is untagged.
+  const plain = [jam(0), jam(1), perf({ song_id: 'p' }), jam(2), jam(3)];
+  eq(depth(plain, 4, new Set()), 2, 'an untagged song resets it too');
+  eq(depth(plain, 2, new Set()), 1, 'and is never itself part of a run');
+
+  // THE POINT OF THE RULE. The band's three-jam runs are segued together 62%
+  // of the time against their own 46% baseline; a points-chasing player's sit
+  // at 27% against a 25% baseline. A welded suite is the best thing in this
+  // band, so a real segue resets the count.
+  const suite = jams(4);
+  const seg = new Set([segueKey(suite[0], suite[1]), segueKey(suite[1], suite[2])]);
+  eq(suite.map((_, i) => depth(suite, i, seg)), [1, 1, 1, 2], 'a segue resets the run');
+  eq(suite.every((_, i) => monotonyMult(depth(suite, i, seg)) === 1),
+     true, 'so a segued jam suite is paid in full');
+  eq(depth(jams(4), 3, new Set()), 4, 'while the same four unconnected are 4 deep');
+
+  // The whole run must share ONE kind, so a chain of overlaps is not a run.
+  const chain = [perf({ song_id: 'a', tags: 'jam' }), perf({ song_id: 'b', tags: 'jam|peak' }),
+                 perf({ song_id: 'c', tags: 'peak' })];
+  eq(depth(chain, 2, new Set()), 2, 'jam, jam+peak, peak is not three of a kind');
+  eq(monotonyRun(chain, 2, new Set()).kind, 'peak', 'and the run it IS gets named');
+
+  // It reaches the score, and it is a multiplier on the song rather than a
+  // flat deduction, so stacking three BIG jams costs more than three small.
+  const big = i => perf({ song_id: `B${i}`, tags: 'jam', len: 1200, crowd: 5 });
+  const small = i => perf({ song_id: `s${i}`, tags: 'jam', len: 300, crowd: 1 });
+  const cost = mk => {
+    const r = scoreShow([[mk(0), mk(1), mk(2)], [], []], new Set());
+    return r.monoLost;
+  };
+  eq(cost(big) > cost(small), true, 'stacking big songs costs more than stacking small ones');
+  eq(scoreShow([[jam(0), jam(1)], [], []], new Set()).monoLost, 0, 'two in a row is free');
+
+  const r = scoreShow([[jam(0), jam(1), jam(2), jam(3)], [], []], new Set());
+  eq(r.monotony.length, 2, 'the third and fourth are both itemised');
+  eq(r.monotony.map(m => m.depth), [3, 4], 'each knows how deep it sat');
+  eq(r.monotony.every(m => m.kind === 'jam'), true, 'and which kind repeated');
+  eq(r.monoLost, r.monotony.reduce((a, m) => a + m.lost, 0), 'monoLost is the sum of the rows');
+  eq(r.monoLost > 0, true, 'and it actually costs something');
+  // The scorecard prints a gross line and subtracts the rows from it, so the
+  // arithmetic on screen has to close.
+  eq(r.songTotal + r.monoLost > r.songTotal, true, 'the gross line is above the net');
+
+  // A night that changes gear pays nothing, which is the honest player.
+  const varied = scoreShow([[jam(0), perf({ song_id: 'v', tags: 'ballad' }), jam(1),
+                             perf({ song_id: 'w' }), jam(2)], [], []], new Set());
+  eq(varied.monoLost, 0, 'a night that moves around is never touched');
 });
 
 group('a score colour means a rating', () => {

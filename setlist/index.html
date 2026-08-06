@@ -478,6 +478,11 @@
   /* RARITY — solid gold. */
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
 
+  /* MONOTONY — the only chip that warns rather than tempts, so it is the only
+     one in red. It has to be on the card BEFORE the pick: a penalty you first
+     meet on the scorecard is a gotcha. */
+  .chip.mono{background:color-mix(in srgb,var(--red) 16%, transparent); color:var(--redT);}
+
   /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
    *
    * A badge marked the single highest-scoring song of the show 66% of the
@@ -898,10 +903,11 @@ import {
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway, respinLine, bestPossible,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
   reactionFor, eventLine, setOpenLine, GAP_RARE,
+  monotonyRun, MONO_AT,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=15';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=15';
+} from './scoring.js?v=16';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=16';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -978,6 +984,10 @@ function fmtLen(sec){
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+/* Only ever used for a run length, which starts at 3 and rarely passes 6. */
+function ordinal(n){
+  return `${n}${n === 3 ? 'rd' : 'th'}`;
 }
 
 /* A sandwich, 11px, drawn rather than described. The chip used to try to be
@@ -1360,6 +1370,14 @@ function renderDraft(){
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
       else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
       if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
+      // What this pick would cost by repeating the gear the set is already in.
+      if (!dead) {
+        const run = monotonyRun(S.sets[si].concat([p]), S.sets[si].length, S.data.segues);
+        // The role chip sits right beside this one and already says which
+        // kind, so naming it again just makes a long chip out of a short one.
+        if (run.depth >= MONO_AT) chips.push(
+          `<span class="chip mono">${ordinal(run.depth).toUpperCase()} IN A ROW</span>`);
+      }
       if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
@@ -1601,6 +1619,17 @@ function renderResult(){
         <h2>How this scored</h2>
         <div class="sub">Each song is <b>how loved it is</b> × <b>how special that version was</b>
           × <b>how well it suited where it landed</b>. Then the night is judged as a whole.</div>
+
+        ${r.monoLost ? `<div class="sheetgrp">
+          <h3>Songs <span>${r.songTotal}</span></h3>
+          <div class="flowrow">
+            <div class="fl"><b>${r.stats.songs} songs</b><i>Before the set started repeating itself.
+              A segue would have held a run together.</i></div>
+            <div class="fp">${r.songTotal + r.monoLost}</div></div>
+          ${r.monotony.map(m => `<div class="flowrow miss">
+            <div class="fl"><b>${esc(m.song)}</b><i>${ordinal(m.depth)} ${esc(m.kind)} in a row</i></div>
+            <div class="fp">-${m.lost}</div></div>`).join('')}
+        </div>` : ''}
 
         <div class="sheetgrp">
           <h3>Time <span>${r.timeTotal}</span></h3>
