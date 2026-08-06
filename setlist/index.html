@@ -188,8 +188,11 @@
      This was three cards side by side, which at 390px gave each of them a
      column about seven characters wide: "Spin a year, / then a night / from it
      / a real concert," over seven lines. A numbered list reads in one pass and
-     is shorter than the grid it replaces. The lead clause of each line is the
-     point; the rest is the detail behind it. */
+     is shorter than the grid it replaces.
+
+     Plain sentences, second person, contractions. The first version wrote
+     every line as a bold fragment followed by a supporting fragment, five
+     times running, which is a rhythm nobody uses out loud. */
   .how{margin:20px 0 14px;}
   .how h3{font-family:var(--ui); font-size:13px; letter-spacing:2.6px; text-transform:uppercase;
     color:var(--dim); margin:0 0 10px; font-weight:400;}
@@ -198,8 +201,7 @@
   .steps b{flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:grid;
     place-items:center; font-family:var(--ui); font-size:12px; line-height:1;
     color:var(--bg); background:var(--teal); margin-top:1px;}
-  .steps span{font-size:13px; line-height:1.5; color:var(--mut); font-weight:600;}
-  .steps s{text-decoration:none; color:var(--ink); font-weight:800;}
+  .steps span{font-size:13.5px; line-height:1.5; color:var(--ink); font-weight:600;}
 
   .tryout{margin:18px 0 4px; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
@@ -878,7 +880,7 @@ const BANDS = [
   { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',
     note: '655 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
-    note: 'Invented data, for testing the pipeline', sample: true },
+    note: 'Made-up data, for testing', sample: true },
 ];
 
 const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
@@ -1031,7 +1033,7 @@ function renderHome(){
       <div class="eyebrow">RunThe.GG presents</div>
       <h1><span class="accent">Segue</span></h1>
       <div class="tagline">The Setlist Builder Game</div>
-      <p>Build the night you wish they had played.</p>
+      <p>Build the night you wish they'd played.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
@@ -1040,22 +1042,22 @@ function renderHome(){
     <section class="how">
       <h3>How it works</h3>
       <ol class="steps">
-        <li><b>1</b><span><s>Spin a real night.</s> Every show they have
-          actually played.</span></li>
-        <li><b>2</b><span><s>Time is the currency.</s> Two sets and an encore,
-          each on its own curfew.</span></li>
-        <li><b>3</b><span><s>No takebacks.</s> One song a spin, and you say
-          when a set ends.</span></li>
-        <li><b>4</b><span><s>Segues, bustouts and monster jams score.</s>
-          So does coming down after a peak.</span></li>
-        <li><b>5</b><span><s>Then it plays back.</s> Song by song, to a
-          crowd.</span></li>
+        <li><b>1</b><span>You get a random show from the band's history.
+          Pick one song off it.</span></li>
+        <li><b>2</b><span>That song uses up its real running time, so a
+          20-minute jam costs you 20 minutes.</span></li>
+        <li><b>3</b><span>You've got two sets and an encore, each on a clock,
+          and you decide when a set ends.</span></li>
+        <li><b>4</b><span>Rare songs, great versions and real segues are worth
+          the most.</span></li>
+        <li><b>5</b><span>When you're done, the show plays back song by song
+          and the crowd reacts.</span></li>
       </ol>
     </section>
 
     ${test.length ? `<div class="tryout">
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
-      <span>A band that does not exist, for testing the pipeline.</span>
+      <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
 }
 
@@ -1418,14 +1420,14 @@ function renderDraft(){
           <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Tonight'}</h2>
           <div class="sub">${S.pickedSong
             ? `${esc(S.pickedSong.song)} · ${fmtClock(lenOf(S.pickedSong))}`
-            : 'Two sets and an encore. Spend the time well.'}</div>
+            : 'Two sets and an encore to fill.'}</div>
           ${setsPanelHTML({ live: true })}
           <div class="lockbar">
             <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
             ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
-              <div class="commit">This one segues. You will need to land it next
+              <div class="commit">This one segues, so you'll need to land it next
                 or the transition is lost.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn">
@@ -1435,7 +1437,7 @@ function renderDraft(){
                 : `Banks ${fmtClock(Math.max(0, left))} for the encore`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
-              || (!fits.length ? 'Nothing here fits. Closing is the only move.'
+              || (!fits.length ? "Nothing here fits. You'll have to close the set."
                 : si === ENCORE_INDEX ? 'Leftover time from the sets is yours here.'
                 : 'Every minute you leave unplayed goes to the encore.'))}</div>
           </div>
@@ -1666,9 +1668,9 @@ function askRespin(){
     <div class="grab"></div>
     <div class="respin-hd">Respin?</div>
     <div class="respin-why">&ldquo;${esc(respinLine(S.respins + S.round))}&rdquo;</div>
-    <div class="respin-cost">A new night costs <b>${fmtClock(cost)}</b> of
-      ${esc(SETS[si].label)}. You would have <b>${fmtClock(Math.max(0, after))}</b> left
-      to fill, and the show on screen now is gone for good.</div>
+    <div class="respin-cost">A new show costs <b>${fmtClock(cost)}</b> of
+      ${esc(SETS[si].label)}, leaving you <b>${fmtClock(Math.max(0, after))}</b> to fill.
+      The one on screen is gone for good.</div>
     <div class="respin-acts">
       <button class="btn danger" type="button" id="respinYes">Spend ${fmtClock(cost)} &amp; respin</button>
       <button class="btn" type="button" id="respinNo">Keep this show</button>
