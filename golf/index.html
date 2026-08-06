@@ -5924,7 +5924,7 @@ function passEnabled(){ return TOURPASS_LIVE || (devMode() && devPreviewOn()); }
    season, so the previous season's rewards lock out — a genuine limited-time chase. The server pass
    also grants unlimited daily plays + 1.5× rewards + 30,000 coins + 2 seasonal packs (see TOURPASS). */
 const TOURPASS_LEN=60;                                        // days per season
-const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,6,1)/86400000);// season 1 began (ET) Jul 1 2026 — MUST match runtour_pass_season (migration 72)
+const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
 const PASS_TIERS=50;
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
