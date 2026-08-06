@@ -14,6 +14,7 @@ export PGHOST=/tmp PGPORT=5433
 psql -d cfbtest -f cfb/build/test/stub_supabase.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
 psql -d cfbtest -f supabase/63_cfb_run_mode.sql
+psql -d cfbtest -f supabase/64_cfb_bowl_key.sql
 ```
 
 `stub_supabase.sql` is the slice of Supabase the migration leans on: the `profiles`
@@ -24,7 +25,7 @@ in as, because `cfb_submit_run()` reads the display name out of `profiles` and a
 empty table records a null name rather than failing, which reads as a product bug
 in a database that was simply never filled in.
 
-Run the two migrations in order, on a database that has never had them: that is the
+Run the three migrations in order, on a database that has never had them: that is the
 same thing launch day does to the production project, and it is worth having proved
 before the day rather than during it.
 
@@ -32,12 +33,13 @@ before the day rather than during it.
 
 | File | What it proves |
 |---|---|
-| `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. 49 assertions. |
+| `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
 | `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
+| `test_bowl_key.mjs` | Which bowl a season played, as the row records it. Sweeps every reachable (wins, rank) and demands the database and `seedFromRanking()` agree on the tier, round-trips all 37 bowl names through the slug and back, and proves the named-bowl badges are earnable signed in, which they were not before `64_cfb_bowl_key.sql`. |
 | `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
 | `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
 | `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
@@ -54,12 +56,13 @@ node cfb/build/test/test_gates.mjs
 node cfb/build/test/test_conference.mjs
 node cfb/build/test/test_challenge.mjs
 node cfb/build/test/test_ranks_tab.mjs
+node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
 node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Seven bugs these caught, so far
+## Nine bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -96,3 +99,22 @@ parameter needs adding in two places, and the failure is quiet.
 function` only replaces a function with the *same* argument list. A new parameter creates a
 second overload beside the old one, and then every call that fits both is ambiguous. The
 suite now drops every overload of its helpers before defining them.
+
+**Nine badges were impossible for anybody with an account.** Six New Year's Six badges, the
+sweep of all six and both RunThe.GG Bowl badges key off `bowl_key`, and `cfb_runs` had no
+such column: which bowl inside a tier is a draw made in the browser and it was never sent.
+A signed-in trophy case is rebuilt from board rows, so those nine could not fire, while a
+guest playing the same seasons earned them from local history. That asymmetry is why
+nobody noticed. `64_cfb_bowl_key.sql` adds the column; `test_bowl_key.mjs` asserts the
+badge is EARNED rather than merely listed, because a locked badge carries the same name
+and the same description and differs only by a class.
+
+**The database and the engine picked the bowl tier from different variables.** `engine.js`
+needs six wins to go bowling and then reads the RANKING: top 18 a New Year's Six, top 40 a
+major. 62 read the LOSS COUNT: three or fewer a New Year's Six, five or fewer a major. So a
+9-3 team ranked 44th played a small bowl on screen and recorded as a New Year's Six, and a
+6-6 team ranked 15th did the reverse. Survivable while the tier only chose a word; not
+survivable once the row also carried which bowl, because then the tier and the slug came
+from different rules and "win all six New Year's Six bowls" could be completed with six
+small-bowl trophies. The fix is in 64, and the test now sweeps all 143 reachable
+(wins, rank) pairs against `seedFromRanking()` instead of spot-checking four of them.

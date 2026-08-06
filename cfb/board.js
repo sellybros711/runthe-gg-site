@@ -54,7 +54,7 @@
 
   const COLS = 'id,created_at,display_name,run_mode,regular_wins,playoff_wins,wins,losses,games,' +
     'national_rank,playoff_seed,made_playoffs,title_won,perfect,eliminated_in,bowl,' +
-    'bowl_won,seed_label,point_diff,chemistry_pct,spend_musd,respins,sig_wins,' +
+    'bowl_won,bowl_key,seed_label,point_diff,chemistry_pct,spend_musd,respins,sig_wins,' +
     'best_win_rank,squad_fppg,structure_mult,team_rating,overall,perfect_pct,picks,slots';
 
   /* THE THREE THINGS A BOARD CAN BE SORTED BY, and the column each orders on. Named
@@ -275,6 +275,11 @@
       p_overall:       p.overall == null ? null : round2(p.overall),
       p_perfect_pct:   p.perfectPct == null ? null : Math.round(p.perfectPct),
       p_run_mode:      modeOf(p.runMode),
+      /* WHICH bowl, as a slug rather than a name. The server keeps it only when a
+         bowl was actually played, and the client renders a name by looking the
+         slug up in its own table, so nothing that arrives at the database is ever
+         displayed back. See supabase/64_cfb_bowl_key.sql. */
+      p_bowl_key:      p.bowlKey || null,
     };
     try {
       const res = await timed(base() + 'rpc/cfb_submit_run', {
