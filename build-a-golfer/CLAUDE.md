@@ -13987,6 +13987,34 @@ allows Google Fonts, or self-host Anton.*
      season → summary and a full 18-hole daily round both complete with 0 page errors.
   Deployed to /golf.
 
+- **TOUR PASS PAGE REBUILT as a sales set piece (owner IMG_9292 + two Clash Royale references: "I want to
+  SIGNIFICANTLY enhance this page... a lot more graphics and visuals and more exciting ui and ux that will
+  make people want to buy this. We really want to sell everything").** The signed-out Tour Pass page was a
+  gold heading, a wall-of-text paragraph, a scout box and a huge empty green void; the signed-in upsell was
+  one violet button. Both now sell with PICTURES, and every picture is DERIVED from the real reward tables
+  (`passTierReward` walked across all 50 tiers), so the pitch can never drift from what the track pays out.
+  - **`passLootSummary(lane)` / `passLootTilesHTML(lane)`** - the visual loot pile: the real pack art
+    (`pxPackURL`), rarity-coloured shard glyphs (`ACC_RARITY`), the exclusive cosmetics' own thumbnails
+    (`cosThumbHTML`) and the coin total, as gold-glowing EXCLUSIVE / violet PRO / plain tiles.
+  - **`passHeroNode`** - a hero banner: YOUR OWN pixel golfer wearing the tier-50 Champion Aura + Tour Pass
+    Plate, over rotating gold rays + floating sparkles, with the season, a days-left chip and the display-
+    font TOUR PASS title in the lemon-gold foil.
+  - **Signed-out page**: pointed season ribbon -> hero -> FREE loot pile -> PRO loot pile -> a FREE ($0) vs
+    PRO ($14.99) lane comparison -> the 5-perk value stack (`passPerksHTML`) -> a giant sign-in CTA (you
+    cannot buy without an account) + the price note. No prose paragraph anywhere.
+  - **Signed-in without Pro**: the same hero + the full PRO loot pile + perks + an unmissable
+    `$14.99` CTA (`passBuyButtonHTML`, sheen-swept) above the track, opening with a
+    "**N Pro rewards are already waiting** on tiers you have reached" hook. The page now OPENS ON the pitch
+    (a "See the track - you're on Tier N" jump button drops onto the track); Pro holders are unchanged and
+    still auto-scroll straight to their current tier.
+  - **Fixed a real gap the hero surfaced**: `passcrown` (the Tour Pass capstone aura) and `rungames` had no
+    `--fxc` CSS entry and no `PXFX_PARTS`, so BOTH rendered with no glow anywhere in the game. Both now
+    glow (passcrown shimmers gold with 9 sparkles) - the tier-50 reward finally looks like a reward.
+  Verified in Playwright: signed-out / signed-in-no-pro / Pro all render; the claim + claim-all flows, the
+  home Tour Pass card and a full 18-hole practice round still work; 390px and 1280px layouts with no
+  horizontal overflow; sign-in routes to the account overlay; 0 page errors throughout. Deployed to /golf.
+  Tunable: the `.tps-*` CSS in `passStyleOnce`, the perk rows in `passPerksHTML`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
