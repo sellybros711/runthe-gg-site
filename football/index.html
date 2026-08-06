@@ -4914,6 +4914,47 @@ function sheet(p){
 }
 $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet();});
 
+/*
+ * A YES/NO SHEET, for the two ways out of a run in progress.
+ *
+ * It replaces a two-tap arm on the logo. The arm worked, in that nobody left a run by
+ * accident, but it only ever SAID what it wanted in a toast, which is four seconds of small
+ * text at the bottom of the screen for a decision that throws away twenty minutes. A tap on
+ * a logo is not obviously a way out of anything, so the second tap was being asked for
+ * before the player knew what the first one had started.
+ *
+ * The sheet says the thing instead: what will happen, what is lost, and two buttons that
+ * name their own outcomes. `.btn` is already the red one, so the destructive answer looks
+ * destructive without inventing a colour for it.
+ *
+ * FOCUS GOES TO THE SAFE BUTTON. This can be raised by a mis-tap, so the key that gets held
+ * down or the Enter that arrives a moment late has to land on "keep playing" rather than on
+ * the one with no undo. Escape and the backdrop both cancel, which is what every other sheet
+ * in the game already does.
+ */
+function confirmSheet(o){
+  $('sheet-in').innerHTML=
+    (o.eyebrow?'<div class="eyebrow" style="color:var(--red)">'+esc(o.eyebrow)+'</div>':'')+
+    '<h2 class="display" style="font-size:24px;margin:4px 0 6px">'+esc(o.title)+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0 0 14px;line-height:1.5">'+esc(o.body)+'</p>'+
+    '<div><button class="btn" id="cf-yes">'+esc(o.confirm)+'</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost" id="cf-no">'+esc(o.cancel)+'</button></div>';
+  $('sheet').classList.add('on');
+  const shut=()=>{
+    $('sheet').classList.remove('on');
+    document.removeEventListener('keydown',onKey);
+  };
+  function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); shut(); } }
+  document.addEventListener('keydown',onKey);
+  $('cf-yes').onclick=()=>{ shut(); o.onConfirm(); };
+  $('cf-no').onclick=shut;
+  /* The backdrop listener above already closes it, so cancelling by tapping outside needs
+     nothing here beyond making sure this sheet's key handler goes with it. */
+  const bd=(e)=>{ if(e.target===$('sheet')){ $('sheet').removeEventListener('click',bd); shut(); } };
+  $('sheet').addEventListener('click',bd);
+  const safe=$('cf-no'); if(safe&&safe.focus) safe.focus();
+}
+
 /* EVERY run starts here.
    `submitted` and `myRanks` belong to one run, and nothing was clearing them, so
    recordRun() returned its early "already sent" answer for the second run of a page
@@ -12028,21 +12069,26 @@ document.querySelectorAll('.js-back[data-back="intro"]').forEach((b)=>{ b.onclic
    Mid-run it arms first. The Quit button already established that ending a run takes two
    taps, and the logo sits in the header on every screen where the thumb also reaches for the
    profile button, so an accidental hit would be easy and expensive. */
-let homeArmed=null;
+/* Kept as a no-op hook because nextSpin() and the screen changes call it. The logo no longer
+   arms, so there is nothing to disarm, and leaving the calls in place is cheaper than hunting
+   every site that resets a state that no longer exists. */
 function resetHome(){
-  if(homeArmed){clearTimeout(homeArmed);homeArmed=null;}
   const b=$('b-home'); if(b) b.classList.remove('armed');
 }
 $('b-home').onclick=(e)=>{
   e.preventDefault();
   const live=!!run&&!$('s-intro').classList.contains('on');
   if(!live){ toIntro(); return; }
-  if(homeArmed){ resetHome(); toIntro(); return; }
-  /* The prompt goes in a toast, not in the header. Putting it in the header's own text made
-     it carry a whole sentence, and at 320px the header has 2px of slack. */
-  toast('Tap the logo again to leave this run');
-  $('b-home').classList.add('armed');
-  homeArmed=setTimeout(resetHome,4000);
+  confirmSheet({
+    eyebrow:'Leaving',
+    title:'Leave this run?',
+    /* Accurate on every screen the header appears on, which is the whole run and not just the
+       draft: nothing reaches the leaderboard until a season is finished. */
+    body:'Your progress will be lost. A run is only recorded once you have played the season out.',
+    confirm:'Leave this run',
+    cancel:'Keep playing',
+    onConfirm:()=>{ toIntro(); },
+  });
 };
 
 /* QUITTING A DRAFT, in two taps.
