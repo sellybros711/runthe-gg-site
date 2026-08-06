@@ -438,9 +438,15 @@
     margin-bottom:3px; transition:background .15s, border-color .15s, box-shadow .2s;}
   .slot .nm{font-size:10.5px; font-weight:900; letter-spacing:.8px; text-transform:uppercase;
     color:var(--dim); width:64px; flex-shrink:0;}
+  /* overflow-wrap so a long title breaks rather than being cut: adding the
+     running time took 2px off this column, which was enough to clip
+     "Same Old Shenanigans" at 320px. */
   .slot .val{flex:1; min-width:0; font-weight:800; font-size:14px; line-height:1.25;
-    color:var(--acc, var(--ink)); overflow:hidden; text-overflow:ellipsis;}
+    color:var(--acc, var(--ink)); overflow:hidden; text-overflow:ellipsis;
+    overflow-wrap:anywhere;}
   .slot .rule{flex:1; height:0; border-bottom:1px dashed var(--line2);}
+  .slot .len{font-size:11.5px; font-weight:700; color:var(--dim); font-variant-numeric:tabular-nums;
+    flex-shrink:0;}
   .slot .pts{font-size:12.5px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums;
     flex-shrink:0;}
   .slot.open{cursor:pointer;}
@@ -629,8 +635,12 @@
     animation:simIn .28s cubic-bezier(.16,.84,.3,1) both;}
   @keyframes simIn{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce){ .sim-song{animation:none;} }
-  .sim-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
-  .sim-nm{font-size:15.5px; font-weight:800; min-width:0;}
+  .sim-row{display:flex; align-items:baseline; gap:9px;}
+  .sim-nm{font-size:15.5px; font-weight:800; min-width:0; flex:1;}
+  /* How long the song ran is half of every decision the player just made, so
+     it belongs on the row that reports what the decision was worth. */
+  .sim-len{font-size:12.5px; font-weight:700; color:var(--dim); flex:0 0 auto;
+    font-variant-numeric:tabular-nums;}
   .sim-pts{font-family:var(--hero); font-size:19px; color:var(--goldT); flex:0 0 auto;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
   .sim-badge{margin-top:6px;}
@@ -1139,7 +1149,11 @@ function sofarHTML(si){
           <div class="sf-row">
             <span class="sf-n">${j + 1}</span>
             <span class="sf-song">${esc(p.song)}${
-              j < set.length - 1 && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
+              // Same test scoring uses. Without the is_segue check this drew an
+              // arrow on any pair the band has ever segued, including takes
+              // that ended clean — an arrow the scorecard then paid nothing for.
+              j < set.length - 1 && String(p.is_segue) === 'true'
+                && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
                 ? '<i class="sf-seg">&rsaquo;</i>' : ''}</span>
             <span class="sf-len">${fmtClock(lenOf(p))}</span>
           </div>`).join('')}
@@ -1368,6 +1382,7 @@ function renderResult(){
             style="--acc:${accentOf(x.perf).v}">
             <span class="nm">${esc(x.role.name)}</span>
             <span class="val">${esc(x.perf.song)}</span>
+            <span class="len">${fmtClock(lenOf(x.perf))}</span>
             <span class="pts">${x.score.subtotal}</span>
           </button>`).join('')
           : '<div class="rs-empty">Nothing played.</div>'}
@@ -1771,6 +1786,7 @@ function renderShow(){
             b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
           <div class="sim-row">
             <span class="sim-nm">${esc(b.perf.song)}</span>
+            <span class="sim-len">${fmtClock(lenOf(b.perf))}</span>
             <span class="sim-pts">+${b.gained}</span>
           </div>
           <div class="sim-react">${esc(b.reaction)}</div>
