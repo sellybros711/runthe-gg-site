@@ -3390,6 +3390,39 @@ function overlayLogin(screen){
   ov.querySelector('.x').onclick=close; ov.querySelector('.collect').onclick=close;
   screen.appendChild(ov);
 }
+// ════ SEASON 1 LAUNCH POP-UP (owner, Aug 6 2026) ════════════════════════════════════════════════
+// One-time announcement for RETURNING players the first time they open the game after launch:
+// Season 1 (Summer Smash) is underway and the store is open. Free-to-play reminder + a thank-you.
+// Brand-new players skip it (they get the first-run onboarding instead, and "thanks for the support
+// to this point" isn't for someone who just arrived). Device-local flag; fires only when no other
+// overlay is up, so it politely waits out the login-bonus popup and shows on the next title render.
+function maybeS1LaunchPopup(){ try{
+  if(LS.get('bag_s1_launch_seen',false)) return;
+  if(S.overlay || S.screen!=='title') return;
+  if(typeof isNewPlayer==='function' && isNewPlayer()) return;
+  if(!BUCKETS_ENABLED) return;
+  LS.set('bag_s1_launch_seen',true);
+  try{ track('s1_launch_popup'); }catch(e){}
+  S.overlay='s1launch'; render();
+}catch(e){} }
+function overlayS1Launch(screen){
+  const acc='#ff9d3a';
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:${acc};border-color:${acc};margin:0 auto">⛳ Season 1 · Summer Smash</div>
+    <h3 style="margin:14px 0 4px;font-size:26px">The Tour is officially underway!</h3>
+    <p class="lede" style="max-width:430px;margin:0 auto 12px">Season 1 has begun, and the store is now open.</p>
+    <div style="background:linear-gradient(160deg,rgba(255,157,58,.14),rgba(255,157,58,.03));border:1px solid rgba(255,157,58,.5);border-radius:14px;padding:13px 14px;max-width:430px;margin:0 auto 12px;text-align:left">
+      <div class="small" style="color:#eaf5ee;line-height:1.55">Run The Tour is <b style="color:${acc}">fully free to play</b>, always. Every mode, every career, all of it. For anyone who wants a little more, there is now an optional store: coin buckets, Daily Tokens, and the 60-day Season 1 Tour Pass.</div>
+    </div>
+    <p class="small" style="max-width:430px;margin:0 auto 16px;color:#cfe6d8;line-height:1.6">Thank you for all the love and support to this point. It got us here. Now go run the tour. ❤️</p>
+    <button class="btn goldfill store" style="max-width:360px;margin:0 auto 8px">See the store ▸</button>
+    <button class="btn ghost play" style="max-width:360px;margin:0 auto">Let's play</button></div>`);
+  const close=()=>{ S.overlay=null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.play').onclick=close;
+  ov.querySelector('.store').onclick=()=>{ try{ track('s1_launch_store'); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
+  screen.appendChild(ov);
+}
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -7119,6 +7152,7 @@ function render(){
     if(S.overlay==='confirmSkip') overlayConfirmSkip(app);
     if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='login') overlayLogin(app);
+    if(S.overlay==='s1launch') overlayS1Launch(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -8939,6 +8973,9 @@ function scrTitle(){
     add(w);
     return;
   }
+  // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
+  // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
+  setTimeout(function(){ try{ maybeS1LaunchPopup(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
   // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
@@ -23202,10 +23239,34 @@ function coinBucketSVG(level,col,size){
   spill[level-1].forEach(function(p){ C+=coin(p[0],p[1],4.2); });
   return '<svg viewBox="0 0 48 48" width="'+size+'" height="'+size+'" style="display:block">'+bk+C+'</svg>';
 }
+// Per-SIZE first-purchase double (owner decision 2026-08-06, "each size doubles once"): the first paid
+// purchase of EACH bucket size gets +100% coins, decided by the SERVER (stripe-webhook queries
+// coin_purchase for that size; a fully-refunded size re-arms its bonus). The client mirrors that check
+// for DISPLAY only, by reading the account's own coin_purchase rows (RLS owner-read, migration 70).
+// _bucketBuysCache: null = not loaded; {set:Set(<bucket ids already bought+paid>)} once fetched.
+var _bucketBuysCache=null, _bucketBuysBusy=false;
+function loadBucketBuys(force){
+  if(!sb||!sbSignedIn()){ _bucketBuysCache=null; return; }
+  if(_bucketBuysBusy || (_bucketBuysCache && !force)) return;
+  _bucketBuysBusy=true;
+  try{ sb.from('coin_purchase').select('package_id,status').eq('status','paid').limit(200).then(function(res){
+    _bucketBuysBusy=false;
+    var set=new Set();
+    ((res&&res.data)||[]).forEach(function(r){ var base=String((r&&r.package_id)||'').replace(/\+fp$/,'');
+      if(BUCKETS.some(function(b){return b.id===base;})) set.add(base); });
+    _bucketBuysCache={set:set};
+    try{ render(); }catch(e){}
+  }).catch(function(){ _bucketBuysBusy=false; }); }catch(e){ _bucketBuysBusy=false; }
+}
+// Which bucket sizes still carry their one-time 2×? Guests / signed-out / still-loading show the bonus
+// on every size (optimistic; almost everyone seeing the store hasn't bought yet, and the server is the
+// authority on what's actually credited).
+function bucketBuys(){ if(_bucketBuysCache) return _bucketBuysCache.set; loadBucketBuys(); return new Set(); }
 function bucketShopNode(){
   packStyleOnce();
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
-  var wi=walletInfo(), firstBuy=!(wi && (wi.lifePurchased||0)>0);   // server gives +100% on the FIRST paid pack — show the 2× notice to ANYONE who has never purchased (incl. guests/wallet-loading)
+  var buys=bucketBuys();                  // bucket sizes this account has already bought (paid)
+  var anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   // ---- Tour Pass (60-day season — THE one pass sold) ----
   if(TOURPASS_ENABLED){
@@ -23250,9 +23311,10 @@ function bucketShopNode(){
   // ---- Coins (buckets) — at the BOTTOM of the store ----
   wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#F1D04A">Coins</div>'));
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 6px;line-height:1.5">Coins for gear &amp; packs.</div>'));
-  if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
+  if(anyFirst) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First-time bonus, <span style="color:#fff">DOUBLE coins</span> the first time you buy each bucket!</div>'));
   BUCKETS.forEach(function(b,bi){
-    var coins=firstBuy?b.coins*2:b.coins;
+    var fb=!buys.has(b.id);            // this size's one-time 2× is still available
+    var coins=fb?b.coins*2:b.coins;
     // extra line: "+X% value" and any bonus packs granted (Large/XL/Mega). NO "careers" language (owner rule).
     var extras=[];
     if(b.bonus) extras.push('<b style="color:'+b.col+'">+'+b.bonus+'% value</b>');
@@ -23263,7 +23325,11 @@ function bucketShopNode(){
       +'<div style="flex:0 0 auto;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center">'+coinBucketSVG(bi+1,b.col,[34,45,56,66,74][bi])+'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
-        +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
+        +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:6px;margin-top:1px;flex-wrap:wrap"><span style="width:16px;height:16px;flex:0 0 auto">'+ic('coin',{size:'16px'})+'</span>'
+          +(fb?'<span style="text-decoration:line-through;color:#8fa898;font-weight:700;font-size:14px">'+coinFmt(b.coins)+'</span>':'')
+          +'<span>'+coinFmt(coins)+'</span>'
+          +(fb?'<span style="font:800 8.5px var(--body);letter-spacing:.06em;background:var(--gold);color:#0c1f16;border-radius:20px;padding:2px 7px;white-space:nowrap">FIRST-TIME BONUS 2×</span>':'')
+        +'</div>'
         +(extras.length?'<div class="small" style="color:#cfe6d8;margin-top:2px">'+extras.join(' · ')+'</div>':'')
       +'</div>'
       +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">$'+b.usd.toFixed(2)+'</button>'
@@ -24955,6 +25021,7 @@ function purchaseCheck(){
   function say(){ if(doneMsg) return; doneMsg=true;
     try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
     try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega) — granted from the server purchase rows
+    try{ _bucketBuysCache=null; loadBucketBuys(true); }catch(e){}  // refresh the per-size first-purchase 2× display
     try{ toast('<b style="color:#ffd45e">Purchase complete — added to your account!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
     try{ render(); }catch(e){} }
   (function poll(){ tries++; loadWallet();
