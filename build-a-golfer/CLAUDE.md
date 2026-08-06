@@ -14048,6 +14048,18 @@ allows Google Fonts, or self-host Anton.*
   invite CTAs still work and scroll away while the tabs stay pinned; overlay sweep + a full 18-hole
   practice round; 0 page errors. Deployed to /golf.
 
+- **Coin history moved off the Packs page onto the coin surfaces (owner: "that's not where I envisioned the
+  coin history being located. We need a different place for it because that's for packs").** The
+  `openCoinLog` ledger had exactly one entry point, buried at the bottom of the Pro Shop's **Packs** section
+  (`packShopNode`) - a page about packs, not coins. Moved it to where coins actually live: the Pro Shop's
+  **coin balance is now a button** (`.coinpill` span -> button, with a small 🧾 receipt affordance +
+  `title`/`aria-label`) that opens the ledger, so it's reachable from EVERY shop section (the pill lives in
+  the sticky shop bar); and the **Buy Coins page** (`bucketShopNode`) carries a "🧾 Coin history ▸" button at
+  the bottom, right under the purchase buckets. Removed it from the Packs section. The existing ≡-menu row is
+  unchanged. Verified in Playwright: the Packs page no longer has the history button, the pill is a button on
+  all 9 shop sections, tapping it opens `coinlog` with the correct return (`shop`) and closing returns to the
+  shop, and the Buy Coins page has its own history button; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
