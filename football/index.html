@@ -578,6 +578,19 @@ window.GA_ID='G-L29P5MRWKE';
      site put them. The follow line is the house wording from RunThePitch; the difference
      here is that it carries the mark, because a line of grey text above a row of grey
      legal links is a line nobody reads. */
+  /* FOUR MARKS, CENTRED, at the bottom of the footer. Sized as tap targets rather than
+     footnotes: 40px squares clear the 44px guidance once the 9px gap is counted either side,
+     which the 17px inline glyph they replaced did not.
+     display is repeated on the anchor because `.legal a` is a class plus a type and beats a
+     bare class, so the footer's nav-row underline and padding would otherwise win here. */
+  .socrow{display:flex;justify-content:center;gap:9px;margin:18px 0 0}
+  .socrow a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;
+    padding:0;border-radius:11px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.035);text-decoration:none;
+    transition:border-color .12s,background .12s}
+  .socrow a:hover{border-color:var(--red);background:rgba(255,255,255,.07)}
+  .socrow svg{width:17px;height:17px;fill:var(--dim)}
+  .socrow a:hover svg{fill:var(--ink)}
   .xfollow{display:flex;align-items:center;justify-content:center;gap:9px;margin:18px 0 0;
     padding:12px 14px;border-radius:12px;text-align:left;
     background:rgba(255,255,255,.035);border:1px solid var(--line-2)}
@@ -3351,32 +3364,6 @@ window.GA_ID='G-L29P5MRWKE';
     visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
   .sheet.on{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.72);
     transition:background .3s ease,visibility 0s}
-  /* ─── THE PANEL'S UTILITY BLOCK ───────────────────────────────────────────────────
-     Rows, not a paragraph of links: each one is a tap target the width of the sheet, which
-     is what the home screen's grey run-on line of seven links never was. */
-  .pf-menu{margin-top:16px;border-top:1px solid var(--line-2);padding-top:6px}
-  .pf-row{display:flex;align-items:center;gap:11px;width:100%;padding:12px 4px;
-    background:none;border:0;text-align:left;color:var(--ink);font-family:var(--fb);
-    font-size:14.5px;font-weight:600;border-radius:9px;transition:background .12s}
-  .pf-row:hover{background:rgba(255,255,255,.04)}
-  .pf-row:active{background:rgba(255,255,255,.07)}
-  .pf-row svg{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:var(--dim);
-    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .pf-legal{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:12px;padding-top:12px;
-    border-top:1px solid var(--line-2)}
-  .pf-legal a{font-size:12.5px;color:var(--dim);text-decoration:none}
-  .pf-legal a:hover{color:var(--ink);text-decoration:underline}
-  /* Four marks, evenly spaced, no labels. The handles live in the title and aria-label so a
-     row of glyphs is not the only thing telling somebody which account is which. */
-  .pf-social{display:flex;gap:9px;margin-top:14px}
-  .pf-social a{display:flex;align-items:center;justify-content:center;width:38px;height:38px;
-    border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.02);
-    transition:border-color .12s,background .12s}
-  .pf-social a:hover{border-color:var(--red);background:rgba(255,255,255,.05)}
-  .pf-social svg{width:17px;height:17px;fill:var(--dim)}
-  .pf-social a:hover svg{fill:var(--ink)}
-  .pf-fine{margin:13px 0 0;font-size:11px;line-height:1.55;color:var(--dim-2)}
-  .pf-fine a{color:var(--dim);text-decoration:underline}
   .sheet .inner{width:100%;max-width:560px;background:var(--grad-panel);border:1px solid var(--line-2);
     border-radius:16px;padding:16px;max-height:86vh;overflow-y:auto;will-change:transform;
     transform:translateY(100%);opacity:0;transition:transform .24s ease,opacity .18s ease}
@@ -3554,22 +3541,40 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          Every link opens in a new tab, deliberately. There is no mid-run save yet,
          so following a link in this tab during a draft would throw the run away. -->
-    <!-- WHAT IS LEFT OF THE FOOTER, and where the rest of it went.
-         The links, the attribution and the follow block now live at the bottom of the
-         profile panel, behind the button in the header. Seven grey links and two
-         paragraphs directly under START A RUN were the first thing a new player read,
-         and none of it is anything anybody needs before their first draft.
-         THE DISCLAIMER STAYS ON THE PAGE. It is here because the game is built out of
-         real clubs and real players, and that claim should not need a tap to find. The
-         attribution and the legal pages moved; this one line did not. -->
     <footer class="legal">
-      <p class="src">An unofficial fan project, not affiliated with or endorsed by the
-        NFL, the NFLPA or any club.</p>
+      <p><a href="/football/how-to-play.html" target="_blank" rel="noopener">How to play</a><span>&middot;</span><a
+        href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
+        href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
+        href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+        href="/about.html" target="_blank" rel="noopener">About</a><span>&middot;</span><a
+        href="/contact.html" target="_blank" rel="noopener">Contact</a><span>&middot;</span><a
+        href="/" target="_blank" rel="noopener">More games</a></p>
+      <p class="src">Stats, scores and coaches from
+        <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>
+        and <a href="https://github.com/nflverse/nfldata" target="_blank" rel="noopener">nfldata</a>.
+        An unofficial fan project, not affiliated with or endorsed by the NFL, the
+        NFLPA or any club.</p>
       <!-- Follow, and tell us what is wrong with it. Both in the footer, which is where
            RunThePitch and RunTheTour put them, so somebody who plays two of these games
            finds the same two things in the same place. Feedback is a sheet rather than a
            link to a contact page: there is no mid-run save, so sending somebody to
            another page to report a bug would throw away the run they are reporting. -->
+      <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
+      <!-- ALL FOUR, where there was only X. Four marks rather than four sentences: the
+           footer already carries a line of legal links and a paragraph of attribution, and
+           "Follow @RunTheGG on X for news and updates" spelled out four times would be
+           longer than everything above it. The handle is in the title and the aria-label,
+           so the glyph is never the only thing saying which account it is. -->
+      <div class="socrow">
+        <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer"
+          title="X, @RunTheGG" aria-label="X, @RunTheGG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+        <a href="https://instagram.com/runthe.gg" target="_blank" rel="noopener noreferrer"
+          title="Instagram, @runthe.gg" aria-label="Instagram, @runthe.gg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.96.24 2.65.5.71.28 1.31.65 1.91 1.25.6.6.97 1.2 1.25 1.91.26.69.45 1.48.5 2.65.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.24 1.96-.5 2.65a5.3 5.3 0 0 1-1.25 1.91c-.6.6-1.2.97-1.91 1.25-.69.26-1.48.45-2.65.5-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.96-.24-2.65-.5a5.3 5.3 0 0 1-1.91-1.25 5.3 5.3 0 0 1-1.25-1.91c-.26-.69-.45-1.48-.5-2.65C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.24-1.96.5-2.65.28-.71.65-1.31 1.25-1.91.6-.6 1.2-.97 1.91-1.25.69-.26 1.48-.45 2.65-.5C8.42 2.21 8.8 2.2 12 2.2Zm0 1.98c-3.14 0-3.5.01-4.73.07-.94.04-1.5.19-1.93.36-.47.18-.81.4-1.17.76-.36.36-.58.7-.76 1.17-.17.43-.32.99-.36 1.93-.06 1.23-.07 1.59-.07 4.73s.01 3.5.07 4.73c.4.94.19 1.5.36 1.93.18.47.4.81.76 1.17.36.36.7.58 1.17.76.43.17.99.32 1.93.36 1.23.06 1.59.07 4.73.07s3.5-.01 4.73-.07c.94-.04 1.5-.19 1.93-.36.47-.18.81-.4 1.17-.76.36-.36.58-.7.76-1.17.17-.43.32-.99.36-1.93.06-1.23.07-1.59.07-4.73s-.01-3.5-.07-4.73c-.04-.94-.19-1.5-.36-1.93a3.15 3.15 0 0 0-.76-1.17 3.15 3.15 0 0 0-1.17-.76c-.43-.17-.99-.32-1.93-.36-1.23-.06-1.59-.07-4.73-.07Zm0 3.37a4.45 4.45 0 1 1 0 8.9 4.45 4.45 0 0 1 0-8.9Zm0 7.34a2.89 2.89 0 1 0 0-5.78 2.89 2.89 0 0 0 0 5.78Zm5.66-7.52a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0Z"/></svg></a>
+        <a href="https://tiktok.com/@runthegames" target="_blank" rel="noopener noreferrer"
+          title="TikTok, @runthegames" aria-label="TikTok, @runthegames"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-1.85-2.48V9.77a5.67 5.67 0 1 0 4.94 5.63V8.9a7.32 7.32 0 0 0 4.28 1.38V7.19a4.28 4.28 0 0 1-3.22-1.37Z"/></svg></a>
+        <a href="https://discord.gg/cxPx8TcSe" target="_blank" rel="noopener noreferrer"
+          title="Discord, join the server" aria-label="Discord, join the server"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.32 4.94A19.8 19.8 0 0 0 15.4 3.4a.07.07 0 0 0-.08.04c-.21.38-.45.87-.62 1.25a18.3 18.3 0 0 0-5.4 0 12.6 12.6 0 0 0-.63-1.25.08.08 0 0 0-.08-.04A19.7 19.7 0 0 0 3.68 4.94a.07.07 0 0 0-.03.03C.53 9.6-.32 14.11.1 18.57a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.993 3.03.08.08 0 0 0 .085-.03c.462-.63.874-1.295 1.226-1.994a.08.08 0 0 0-.043-.11 13.1 13.1 0 0 1-1.872-.892.08.08 0 0 1-.008-.132c.126-.094.252-.192.372-.291a.08.08 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.08.08 0 0 1 .079.009c.12.099.246.198.373.292a.08.08 0 0 1-.006.131 12.3 12.3 0 0 1-1.873.892.08.08 0 0 0-.042.111c.36.699.772 1.363 1.225 1.993a.08.08 0 0 0 .085.03 19.9 19.9 0 0 0 6.002-3.03.08.08 0 0 0 .032-.055c.5-5.155-.838-9.63-3.549-13.607a.06.06 0 0 0-.031-.03ZM8.02 15.85c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419Zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419Z"/></svg></a>
+      </div>
     </footer>
   </div>
 
@@ -10255,79 +10260,11 @@ async function careerPaint(userId){
   };
 }
 
-/*
- * ─── THE BOTTOM OF THE PANEL ────────────────────────────────────────────────────────
- *
- * Everything a player needs occasionally and nothing they need mid-draft: the three utility
- * screens, the legal pages, who the data comes from, and where to follow the games. All of
- * it used to sit on the home screen, which meant the first thing anybody saw under START A
- * RUN was seven grey links and a disclaimer. This is the same information one tap further
- * away, behind the button people already press to find their own name.
- *
- * Appended to EVERY branch of profileSheet, including the signed-out and accounts-offline
- * ones, by going into the shared `close` string. A guest has more use for How to play and
- * the leaderboard than a signed-in player does, so hiding it behind sign-in would be exactly
- * backwards.
- *
- * The three buttons re-enter the same functions the home screen's own buttons call, so there
- * is one How to play in the game and not a copy of it living in a panel.
- */
-const SOCIALS=[
-  {n:'X',u:'https://x.com/RunTheGG',h:'@RunTheGG',
-   d:'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z'},
-  {n:'Instagram',u:'https://instagram.com/runthe.gg',h:'@runthe.gg',
-   d:'M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.96.24 2.65.5.71.28 1.31.65 1.91 1.25.6.6.97 1.2 1.25 1.91.26.69.45 1.48.5 2.65.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.24 1.96-.5 2.65a5.3 5.3 0 0 1-1.25 1.91c-.6.6-1.2.97-1.91 1.25-.69.26-1.48.45-2.65.5-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.96-.24-2.65-.5a5.3 5.3 0 0 1-1.91-1.25 5.3 5.3 0 0 1-1.25-1.91c-.26-.69-.45-1.48-.5-2.65C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.24-1.96.5-2.65.28-.71.65-1.31 1.25-1.91.6-.6 1.2-.97 1.91-1.25.69-.26 1.48-.45 2.65-.5C8.42 2.21 8.8 2.2 12 2.2Zm0 1.98c-3.14 0-3.5.01-4.73.07-.94.04-1.5.19-1.93.36-.47.18-.81.4-1.17.76-.36.36-.58.7-.76 1.17-.17.43-.32.99-.36 1.93-.06 1.23-.07 1.59-.07 4.73s.01 3.5.07 4.73c.4.94.19 1.5.36 1.93.18.47.4.81.76 1.17.36.36.7.58 1.17.76.43.17.99.32 1.93.36 1.23.06 1.59.07 4.73.07s3.5-.01 4.73-.07c.94-.04 1.5-.19 1.93-.36.47-.18.81-.4 1.17-.76.36-.36.58-.7.76-1.17.17-.43.32-.99.36-1.93.06-1.23.07-1.59.07-4.73s-.01-3.5-.07-4.73c-.04-.94-.19-1.5-.36-1.93a3.15 3.15 0 0 0-.76-1.17 3.15 3.15 0 0 0-1.17-.76c-.43-.17-.99-.32-1.93-.36-1.23-.06-1.59-.07-4.73-.07Zm0 3.37a4.45 4.45 0 1 1 0 8.9 4.45 4.45 0 0 1 0-8.9Zm0 7.34a2.89 2.89 0 1 0 0-5.78 2.89 2.89 0 0 0 0 5.78Zm5.66-7.52a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0Z'},
-  {n:'TikTok',u:'https://tiktok.com/@runthegames',h:'@runthegames',
-   d:'M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-1.85-2.48V9.77a5.67 5.67 0 1 0 4.94 5.63V8.9a7.32 7.32 0 0 0 4.28 1.38V7.19a4.28 4.28 0 0 1-3.22-1.37Z'},
-  {n:'Discord',u:'https://discord.gg/cxPx8TcSe',h:'Join the Discord',
-   d:'M20.32 4.94A19.8 19.8 0 0 0 15.4 3.4a.07.07 0 0 0-.08.04c-.21.38-.45.87-.62 1.25a18.3 18.3 0 0 0-5.4 0 12.6 12.6 0 0 0-.63-1.25.08.08 0 0 0-.08-.04A19.7 19.7 0 0 0 3.68 4.94a.07.07 0 0 0-.03.03C.53 9.6-.32 14.11.1 18.57a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.993 3.03.08.08 0 0 0 .085-.03c.462-.63.874-1.295 1.226-1.994a.08.08 0 0 0-.043-.11 13.1 13.1 0 0 1-1.872-.892.08.08 0 0 1-.008-.132c.126-.094.252-.192.372-.291a.08.08 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.08.08 0 0 1 .079.009c.12.099.246.198.373.292a.08.08 0 0 1-.006.131 12.3 12.3 0 0 1-1.873.892.08.08 0 0 0-.042.111c.36.699.772 1.363 1.225 1.993a.08.08 0 0 0 .085.03 19.9 19.9 0 0 0 6.002-3.03.08.08 0 0 0 .032-.055c.5-5.155-.838-9.63-3.549-13.607a.06.06 0 0 0-.031-.03ZM8.02 15.85c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419Zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419Z'},
-];
-const socialRow=()=>'<div class="pf-social">'+SOCIALS.map(o=>
-  '<a href="'+o.u+'" target="_blank" rel="noopener noreferrer" title="'+esc(o.n+' '+o.h)+'"'+
-  ' aria-label="'+esc(o.n+', '+o.h)+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+
-  '<path d="'+o.d+'"/></svg></a>').join('')+'</div>';
-
-const PF_ICON={
-  how:'<path d="M4 5.5A2 2 0 0 1 6 3.5h5v17H6a2 2 0 0 0-2 2Z"/><path d="M20 5.5a2 2 0 0 0-2-2h-5v17h5a2 2 0 0 1 2 2Z"/>',
-  board:'<path d="M5 21V10"/><path d="M12 21V4"/><path d="M19 21v-7"/>',
-  mail:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>',
-};
-function panelFooter(){
-  const row=(id,icon,label)=>'<button type="button" class="pf-row" id="'+id+'">'+
-    '<svg viewBox="0 0 24 24" aria-hidden="true">'+PF_ICON[icon]+'</svg>'+
-    '<span>'+esc(label)+'</span></button>';
-  const link=(href,label)=>'<a href="'+href+'" target="_blank" rel="noopener">'+esc(label)+'</a>';
-  return '<div class="pf-menu">'+
-      row('pf-how','how','How to play')+
-      row('pf-board','board','Leaderboard')+
-      row('pf-fb','mail','Send feedback')+
-    '</div>'+
-    '<div class="pf-legal">'+
-      link('/privacy.html','Privacy')+link('/terms.html','Terms')+
-      link('/disclaimer.html','Disclaimer')+link('/about.html','About')+
-      link('/contact.html','Contact')+link('/','More games')+
-    '</div>'+
-    socialRow()+
-    '<p class="pf-fine">Stats, scores and coaches from '+
-      '<a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>'+
-      ' and <a href="https://github.com/nflverse/nfldata" target="_blank" rel="noopener">nfldata</a>. '+
-      'An unofficial fan project, not affiliated with or endorsed by the NFL, the NFLPA or '+
-      'any club.</p>';
-}
-/* Wired after every render, because innerHTML replaced the buttons the last render bound. */
-function wirePanelFooter(){
-  const go=(id,fn)=>{ const b=$(id); if(b) b.onclick=()=>{ closeSheet(); fn(); }; };
-  go('pf-how',howToPlay);
-  go('pf-board',openBoard);
-  go('pf-fb',()=>feedbackSheet());
-}
-
 function profileSheet(msg,ok){
   const box=$('sheet-in');
   box.dataset.kind='profile';
   const st=authState;
-  const close=panelFooter()+
-    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  const close='<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
 
   /* The library did not load, which is a CDN being blocked or an ad blocker. Say that
      rather than showing a form that cannot submit. */
@@ -10665,9 +10602,6 @@ async function sendFeedback(){
 const openSheet=()=>{
   $('sheet').classList.add('on');
   const x=$('sh-x'); if(x) x.onclick=closeSheet;
-  /* innerHTML replaced whatever the last render bound, so the panel's rows are re-wired
-     every time a sheet opens. A no-op for every sheet that does not carry them. */
-  wirePanelFooter();
 };
 /* Closing was written inline in five places as
    $('sheet').classList.remove('on'). Named here because a sheet with its own buttons, like
@@ -12061,8 +11995,7 @@ $('o-tabs').addEventListener('click',(e)=>{
   setOverTab(b.dataset.ot);
 });
 
-/* Send feedback lives in the profile panel now, so there is no button here to bind. The
-   panel wires its own copy in wirePanelFooter(); this line would have thrown on load. */
+$('b-feedback').onclick=()=>feedbackSheet();
 $('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
