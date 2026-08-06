@@ -1786,8 +1786,16 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
   /* the shop overlay's sticky handles its own top spacing, so drop the .ov top padding to raise the frozen block */
   .ov.ov-shop{padding-top:0}
-  .shop-bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
-  .shop-bar h3{margin:0; font-size:22px}
+  .shop-bar{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  .shop-bar h3{margin:0; font-size:22px; line-height:1.1}
+  /* wallet block: the balance with a Buy Coins button right under it, so buying coins is ALWAYS on
+     screen (it used to be the last tab in a row that scrolled off the right edge on a phone). */
+  .shop-wallet{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex:0 0 auto}
+  .buycoins{border:0; cursor:pointer; border-radius:9px; padding:7px 12px; white-space:nowrap;
+    font:900 11.5px/1 var(--body); letter-spacing:.04em; color:#2a1e05; background:var(--gold-grad-d);
+    box-shadow:0 5px 14px -7px rgba(241,208,74,.95), inset 0 1px 0 rgba(255,255,255,.35)}
+  .buycoins:hover{filter:brightness(1.07)}
+  .buycoins.on{box-shadow:0 0 0 2px rgba(255,255,255,.55), 0 5px 14px -7px rgba(241,208,74,.95)}
   /* customize: active boosts + Pro Shop button under the golfer */
   .setup-under{margin:8px 2px 2px; display:flex; flex-direction:column; gap:9px}
   .setup-shopbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; border-radius:12px;
@@ -1846,6 +1854,12 @@ window.GA_ID='G-L29P5MRWKE';
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
     padding:8px 4px; border-radius:8px; cursor:pointer; letter-spacing:.02em}
   .segrow button.on{background:var(--gold); color:#3a2708}
+  /* SHOP tabs: a fixed 4-across grid that wraps to a second row instead of one long row that ran off
+     the right edge of a phone. Labels wrap rather than overflow, so every section is always reachable. */
+  .segrow.shopseg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px}
+  .segrow.shopseg button{flex:none; min-width:0; white-space:normal; line-height:1.14; font-size:11.5px;
+    padding:8px 3px; min-height:42px; display:flex; align-items:center; justify-content:center; text-align:center}
+  @media (max-width:360px){ .segrow.shopseg button{font-size:10.5px} }
   .catrow{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:9px 2px 3px; scrollbar-width:none}
   .catrow::-webkit-scrollbar{display:none}
   .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
@@ -1894,6 +1908,23 @@ window.GA_ID='G-L29P5MRWKE';
   /* ---- footer ---- */
   .foot{max-width:438px; margin:18px auto 0; text-align:center; position:relative; z-index:2}
   .footpills{display:flex; flex-wrap:wrap; gap:10px 10px; row-gap:8px; justify-content:center}
+  /* the RunThe.GG house ad in the footer: promotes the platform, links to the hub */
+  .ggad{display:flex; align-items:center; gap:11px; max-width:520px; margin:12px auto 0; padding:11px 13px;
+    border-radius:14px; text-decoration:none; color:inherit; cursor:pointer;
+    border:1px solid rgba(128,255,118,.34); background:linear-gradient(140deg,#0b1e3d,#071427 62%,#0a1f14);
+    box-shadow:0 10px 26px -16px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06)}
+  .ggad:hover{border-color:#80ff76; background:linear-gradient(140deg,#0e2549,#08172c 62%,#0c2718)}
+  .ggad-mark{flex:0 0 auto; display:flex; align-items:center; gap:3px; padding:7px 9px; border-radius:10px;
+    background:#050d1c; border:1px solid rgba(128,255,118,.3)}
+  .ggad-mark b{font:900 9px/1.05 var(--body); letter-spacing:.1em; color:#eef4ff}
+  .ggad-mark i{font:900 15px/1 var(--body); font-style:normal; color:#80ff76; text-shadow:0 0 10px rgba(128,255,118,.45)}
+  .ggad-txt{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left}
+  .ggad-txt b{font:800 13.5px/1.2 var(--body); color:#eef4ff}
+  .ggad-txt span{font:600 11px/1.35 var(--body); color:#9fb4c8}
+  .ggad-go{flex:0 0 auto; font:900 11px/1 var(--body); letter-spacing:.05em; color:#061a10;
+    background:linear-gradient(180deg,#a6ff9d,#5bd94a); border-radius:8px; padding:8px 11px; white-space:nowrap}
+  .ggad-short{display:none}
+  @media (max-width:460px){ .ggad-long{display:none} .ggad-short{display:block} .ggad-txt b{font-size:12.5px} .ggad-txt span{font-size:10.5px} }
   .footnote{margin-top:14px; font-weight:700; color:var(--pagemut)} .footnote b{color:var(--teal)}
   .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
   .footlinks span{display:inline-block; margin:0 2px; padding:8px 6px}
@@ -3362,7 +3393,7 @@ function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=logi
   // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
   // other popup is already up, DEFER this login bonus so the two don't clobber each other — it opens
   // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
-  if(S.overlay || s1LaunchPending()){ S._loginPending=true; return; }
+  if(S.overlay || s1LaunchPending() || welcomePackPending()){ S._loginPending=true; return; }
   S.overlay='login'; try{ render(); }catch(e){} }
 // Is the one-time Season 1 launch popup still owed to this player? (Same eligibility maybeS1LaunchPopup
 // uses, checked BEFORE it sets the seen flag — so a still-pending season popup can gate the login bonus.)
@@ -3375,7 +3406,8 @@ function s1LaunchPending(){ try{
 // Show a deferred daily-login bonus once nothing is in its way (no overlay up, season launch done).
 function flushPendingLogin(){ if(!S._loginPending) return;
   if(S.overlay) return;                 // wait for a clean screen
-  if(s1LaunchPending()) return;         // the season launch goes first
+  if(welcomePackPending()) return;      // the welcome gift goes first
+  if(s1LaunchPending()) return;         // then the season launch
   S._loginPending=false; S.overlay='login'; try{ render(); }catch(e){} }
 function loginSlotInner(d){ const kind=LOGIN_TRACK[d];
   if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
@@ -3417,6 +3449,7 @@ function overlayLogin(screen){
 function maybeS1LaunchPopup(){ try{
   if(LS.get('bag_s1_launch_seen',false)) return;
   if(S.overlay || S.screen!=='title') return;
+  if(typeof welcomePackPending==='function' && welcomePackPending()) return;   // the welcome gift goes first
   if(typeof isNewPlayer==='function' && isNewPlayer()) return;
   if(!BUCKETS_ENABLED) return;
   LS.set('bag_s1_launch_seen',true);
@@ -7214,8 +7247,15 @@ function footer(){
     fp.appendChild(fbPill);
     const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
     fp.appendChild(a2h);
-    fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
     f.appendChild(fp);
+    // Owner: the old "Love soccer? Try RunThePitch" pill becomes a proper little RunThe.GG ad that
+    // promotes the whole platform (more games, one account) and sends people to the hub.
+    f.appendChild($(`<a class="ggad" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
+      <span class="ggad-mark"><b>RUN<br>THE</b><i>.GG</i></span>
+      <span class="ggad-txt"><b>More games at RunThe.GG</b>
+        <span class="ggad-long">One free account plays them all. RunThePitch soccer, RunTheTour golf, and more on the way.</span>
+        <span class="ggad-short">RunThePitch, RunTheTour &amp; more, one free account</span></span>
+      <span class="ggad-go">Play ↗</span></a>`));
   }
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<button type="button" style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer">${t}</button>`); s.onclick=fn; return s;};
@@ -7302,6 +7342,7 @@ function render(){
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
+    if(S.overlay==='welcomepack') overlayWelcomePack(app);
     if(S.overlay==='packbatch') overlayPackBatch(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
@@ -9134,7 +9175,7 @@ function scrTitle(){
   }
   // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
   // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
@@ -23053,7 +23094,39 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
 // incentive). Runs after cloudPull so the flag is synced first and a second device never re-grants.
 function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState().welcomePack) return;
   var p=packState(); p.welcomePack=true; p.packEarned=(p.packEarned||0)+1; packSave(p);
-  toast('<span style="color:var(--gold);font-weight:800">🎁 Welcome to RunThe.GG!</span><br><span class="small">Here’s a FREE pack, on us. Open it in the Pro Shop → Packs.</span>', 5200); }
+  // Owner: this is a real MOMENT, not a toast that vanishes before you can act on it. It gets a proper
+  // popup with a button that takes you straight into the pack (or you close it and open it later).
+  S._welcomePop=true; try{ track('welcome_pack'); }catch(e){}
+  flushPendingWelcome(); }
+// Show the welcome popup as soon as nothing is in its way (it takes priority over the season-launch
+// and daily-login popups — it's the sign-up reward, so it lands first).
+function flushPendingWelcome(){ if(!S._welcomePop) return; if(S.overlay) return;
+  var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','careerend','circuitend'];
+  if(busy.indexOf(S.screen)>=0) return;                     // never interrupt a live round / draft / ceremony
+  S._welcomePop=false; S.overlay='welcomepack'; try{ render(); }catch(e){} }
+function welcomePackPending(){ return !!S._welcomePop; }
+function overlayWelcomePack(screen){
+  var tier='base', pt=packType(tier);
+  var ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Welcome gift" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎁 Welcome gift</div>
+    <h3 style="margin:12px 0 2px">Welcome to RunThe.GG!</h3>
+    <p class="lede" style="margin:0 auto 14px;max-width:400px">Your free account comes with a free pack, on us. Spin the wheel and see what you pull.</p>
+    <div style="position:relative;max-width:300px;margin:0 auto 14px;padding:16px 12px 14px;border-radius:16px;
+      border:1px solid ${pt.col};background:radial-gradient(120% 90% at 50% 0%,${pt.col}22,rgba(255,255,255,.02) 70%);
+      box-shadow:0 0 30px -14px ${pt.col}">
+      <img src="${pxPackURL(tier)}" alt="" style="width:88px;height:110px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))">
+      <div style="font-family:var(--display);font-size:22px;color:${pt.col};margin-top:8px">${esc(pt.name)}</div>
+      <div class="small muted" style="margin-top:2px">Every pack can land anything in the locker</div></div>
+    <button class="btn goldfill open" style="max-width:360px;margin:0 auto">Open my pack ▸</button>
+    <button class="btn ghost later" style="max-width:360px;margin:9px auto 0">Open it later</button>
+    <div class="small muted" style="margin-top:10px">It stays saved in Pro Shop → Packs until you use it.</div></div>`);
+  var close=function(){ S.overlay=null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.later').onclick=close;
+  ov.querySelector('.open').onclick=function(){ try{ track('welcome_pack_open'); }catch(e){}
+    S.overlay=null; try{ startPackDeal({pack:tier}); }catch(e){ S.overlay='shop'; S.shopSec='packs'; render(); } };
+  screen.appendChild(ov);
+}
 // The current Tour Pass period as the server sees it ('S<n>' — the 60-day season key, migration 72);
 // gates the once-per-season client grant of the pass's seasonal packs. Fallback only — the wallet's
 // pass_period from runtour_wallet() is authoritative when present.
@@ -23915,13 +23988,14 @@ function overlayShop(screen){
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
     <div class="shop-bar"><h3>Pro Shop</h3>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div class="shop-wallet">
+          <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
+          ${BUCKETS_ENABLED?`<button class="buycoins ${sec==='buckets'?'on':''}" data-sec="buckets">＋ Buy Coins</button>`:''}
+        </div>
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
-    <div class="shop-preview">${avatarFullHTML()}</div>
-    <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own — colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
-    <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
-    <div class="segrow">
+    ${(['apparel','accessories','effects','bag','owned','drops'].indexOf(sec)>=0)?`<div class="shop-preview">${avatarFullHTML()}</div>`:''}
+    <div class="segrow shopseg">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       ${packsOn()?`<button data-sec="shards" class="${sec==='shards'?'on':''}">◆ Shards</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
@@ -23929,15 +24003,20 @@ function overlayShop(screen){
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
       <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects${secDot('effects')}</button>
-      <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button>
-      ${BUCKETS_ENABLED?`<button data-sec="buckets" class="${sec==='buckets'?'on':''}">Buy Coins</button>`:''}</div>
+      <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
-  sticky.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
+  // The two house CTAs (closet + invite) live in the SCROLL flow, not the pinned header: the sticky
+  // block stays short (bar + wallet + golfer + tabs) so the shop is easy to navigate on a phone.
+  const promos=$(`<div class="shop-promos">
+    <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own, colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
+    <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button></div>`);
+  ov.appendChild(promos);
+  promos.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
   // CS452: clear link from the STORE to the CLOSET (edit-your-golfer). If the shop was opened from the closet
   // (screen already 'setup'), just close the overlay to reveal it; otherwise open the closet in edit mode.
-  sticky.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
+  promos.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
     if(S.screen==='setup'){ render(); return; } S.setupEdit=true; S.setupReturn=null; S.screen='setup'; S.setupCat='shirt'; render(); });
   if(sec==='buckets'){
     ov.appendChild(bucketShopNode());
