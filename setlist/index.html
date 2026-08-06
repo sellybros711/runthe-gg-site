@@ -130,6 +130,15 @@
     transition:background .15s, border-color .15s, color .15s, transform .1s;}
   .btn:hover{border-color:var(--teal);}
   .btn:active{transform:translateY(1px);}
+  /* The way out of a set, at the end of the list, where you look for it after
+     deciding you want none of these. The one in the sheet stays; both are the
+     same action. Dashed, so it does not read as another song. */
+  .btn.listclose{flex-direction:column; align-items:center; gap:2px;
+    margin:14px 0 4px; padding:12px 14px; border-style:dashed;
+    border-color:var(--line2); background:transparent;}
+  .btn.listclose:hover{background:var(--card2);}
+  .btn.listclose .lc-t{font-weight:800; font-size:14px;}
+  .btn.listclose .lc-s{font-size:11.5px; font-weight:600; color:var(--dim);}
   .btn.primary{background:var(--teal); border-color:var(--teal); color:#04121F;}
   .btn.primary:hover{filter:brightness(1.08);}
   /* The one thing a first visit is here to press. */
@@ -257,24 +266,21 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .hud .rd-left{font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.4px;
     text-transform:uppercase; color:var(--dim); margin-left:1px;}
-  .hud .rd-left.warn{color:var(--goldT);} .hud .rd-left.crit{color:var(--redT);}
+  .hud .rd-left.clk-low{color:var(--goldT);} .hud .rd-left.clk-out{color:var(--redT);}
   /* A bar so the clock can be read at a glance instead of parsed. Green while
      there is room, gold when the set is nearly spent, red at the curfew. */
   .timebar{width:100%; height:5px; border-radius:99px; background:var(--card3);
     overflow:hidden; margin:1px 0 0;}
   .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
     transition:width .35s ease, background-color .35s ease;}
-  .timebar.warn > span{background:var(--goldT);}
-  .timebar.crit > span{background:var(--redT);}
+  .timebar.clk-low > span{background:var(--goldT);}
+  .timebar.clk-out > span{background:var(--redT);}
   .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
     transition:color .3s ease;}
-  .hud .rd-clock.warn{color:var(--goldT);}
-  .hud .rd-clock.crit{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
+  .hud .rd-clock.clk-low{color:var(--goldT);}
+  .hud .rd-clock.clk-out{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
   @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
-  @media (prefers-reduced-motion: reduce){ .hud .rd-clock.crit{animation:none;} }
-  .hud .rd-rem{color:var(--dim);}
-  .hud .rd-rem.warn{color:var(--goldT);}
-  .hud .rd-rem.crit{color:var(--redT);}
+  @media (prefers-reduced-motion: reduce){ .hud .rd-clock.clk-out{animation:none;} }
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
@@ -1352,15 +1358,21 @@ function renderDraft(){
       </button>`;
     }).join('');
     return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
-  }).join('');
+  }).join('') + `
+    <button class="btn listclose" type="button" data-close-set>
+      <span class="lc-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
+      <span class="lc-s">${si === ENCORE_INDEX
+        ? 'Nothing here? Finish and score the night.'
+        : `Nothing here? Bank ${fmtClock(Math.max(0, left))} for the encore.`}</span>
+    </button>`;
 
   app.innerHTML = `
     <div class="card hud">
       <div>
         <div class="rd">${esc(cfg.label)}
-          <span class="rd-clock ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+          <span class="rd-clock ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
             >${fmtClock(Math.max(0, left))}</span>
-          <span class="rd-left ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}">left</span></div>
+          <span class="rd-left ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}">left</span></div>
         <div class="md">pick ${S.round + 1}${
           S.respins ? ` · ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
       </div>
@@ -1375,7 +1387,7 @@ function renderDraft(){
         })()}
         <button class="btn tiny" type="button" id="openSets">Clock</button>
       </div>
-      <div class="timebar ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+      <div class="timebar ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
         role="img" aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
         <span style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget)))}%"></span></div>
     </div>
@@ -1419,7 +1431,7 @@ function renderDraft(){
               <div class="commit">This one segues, so you'll need to land it next
                 or the transition is lost.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
-              type="button" id="closeSetBtn">
+              type="button" id="closeSetBtn" data-close-set>
               <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
               <span class="cs-s">${si === ENCORE_INDEX
                 ? 'Final. Scores the night.'
@@ -2091,7 +2103,7 @@ app.addEventListener('click', e => {
 
 
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
-  if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
+  if (e.target.closest('[data-close-set]')){ closeSet(); return; }
   if (e.target.closest('#respinBtn')){ askRespin(); return; }
   if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }
   if (e.target.closest('#openSets')){
