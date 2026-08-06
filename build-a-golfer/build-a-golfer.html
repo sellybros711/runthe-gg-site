@@ -7295,6 +7295,7 @@ function render(){
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='tourpass') overlayTourPass(app);
     if(S.overlay==='passclaim') overlayPassClaim(app);
+    if(S.overlay==='legchoice') overlayLegendaryChoice(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
@@ -7536,8 +7537,8 @@ function scrRules(){
 
   perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Colors and clubs are yours to buy. The unique gear is a chase — pull it from packs or redeem shards.',[
     ['🎨','Buy the basics','Shirt, hat, trouser and shoe colors, simple patterns and the store club sets are always direct-buy with coins.'],
-    ['🎁','Pack Exclusives','Unique headwear, eyewear, special patterns, glow effects, clubs, balls and more can\'t be bought with coins — they come from packs or shard redemption. That\'s the collection everyone shows off.'],
-    ['◆','Shards pick your target','Collect shards of a rarity, then redeem ANY pack-exclusive item of that rarity straight from its shop tile — the guaranteed path to the exact piece you want.'],
+    ['🎁','Pack Exclusives','Unique headwear, eyewear, special patterns, glow effects, clubs, balls and more can\'t be bought with coins — they come from packs. That\'s the collection everyone shows off.'],
+    ['◆','Shard Exchange','Duplicate pulls earn shards. Trade 5 shards of a rarity to spin a wheel for an item of the next rarity up — commons build to a rare, rares to an epic, epics to a legendary. Cash in 5 legendary shards for the capstone reward.'],
     ['✨','Never miss new gear','A red dot and a "NEW" ribbon flag anything you\'ve unlocked but not looked at yet, so your latest gear is easy to find.'],
   ]);
 
@@ -22232,19 +22233,13 @@ function shopPreviewRarity(pv){ try{
     if(pv.kind==='cos') return packRarityOf(cosmeticPriceBase(pv.cat,pv.id));
     if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id]; return (it&&SHARD_COST[it.rarity])?it.rarity:null; }
   }catch(e){} return null; }
-// redeem the previewed item with dupe shards instead of coins (the deterministic pity path)
-function shopRedeemShards(){ const pv=S.shopPreview; if(!pv||!sbSignedIn()) return; if(cosRewardOnly(pv.cat,pv.id)){ toast('Collection reward - own the whole collection to earn it'); return; }
-  if(pv.kind==='cos'){ const _dl=itemDropLocked(pv.cat,pv.id); if(_dl){ toast(_dl.name+' is out of season · '+dropReturnsLabel(_dl)); return; } }
-  const r=shopPreviewRarity(pv); if(!r) return;
-  if(!shardSpend(r,SHARD_COST[r])){ toast('Not enough shards'); return; }
-  const s=coinState();
-  if(pv.kind==='cos'){ s.owned[cosKey(pv.cat,pv.id)]=1; coinSave(s); try{ cosEquip(pv.cat,pv.id); }catch(e){} }
-  else { s.owned[pv.id]=1; coinSave(s); try{ accEquip(pv.id); }catch(e){} }
-  S.shopPreview=null; toast('◆ Redeemed with shards & equipped!'); try{ track('shard_redeem',{rarity:r}); }catch(e){} render(); }
+// (removed per-item shard redemption) — shards now feed the tiered Shard Exchange upgrade ladder.
+// Kept as a safe route so any stray caller lands on the exchange instead of the old redeem path.
+function shopRedeemShards(){ S.shopPreview=null; S.overlay='shop'; S.shopSec='shards'; render(); }
 // the preview+confirm card for a pending shop purchase (shared by the Pro Shop + the setup screen).
 function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></span>`);
   const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
-  const rar=shopPreviewRarity(pv), shN=rar?shardBal(rar):0, shNeed=rar?SHARD_COST[rar]:0, canShard=rar&&shN>=shNeed;
+  const rar=shopPreviewRarity(pv);
   const packOnly=(pv.kind==='acc') || (pv.kind==='cos' && typeof cosPackOnly==='function' && cosPackOnly(pv.cat,pv.id));
   if(packOnly){   // PACK EXCLUSIVE detail card: no coin buy - open packs, or redeem with shards
     let lore2='', boostTxt2='';
@@ -22258,18 +22253,18 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       ${rarChip2}
       ${lore2?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore2)}”</div>`:''}
       ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
-      <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins - <b>pull it from packs</b>, or trade in shards for it.</div>
-      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Your ${rar?ACC_RARITY[rar].label:''} shards: <b>${shN}/${shNeed}</b> · duplicates from packs & challenge rewards earn more</div>
+      <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins — <b>pull it from packs</b>.</div>
+      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade 5 up a rarity in the <b>Shard Exchange</b>.</div>
       <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Close</button>
         <button class="btn goldfill" id="pv-packs" style="flex:1;margin:0">🎁 Open Packs ▸</button>
       </div>
-      <button class="btn teal" id="pv-shard" style="margin-top:10px" ${canShard?'':'disabled'}>◆ Redeem with ${shNeed} ${rar?ACC_RARITY[rar].label:''} shards${canShard?'':' · not enough yet'}<span class="sub">${canShard?'No coins spent - yours instantly':'Duplicates in packs + daily/weekly rewards earn shards'}</span></button>
+      <button class="btn teal" id="pv-exch" style="margin-top:10px">◆ Shard Exchange ▸<span class="sub">Trade 5 shards to upgrade a rarity</span></button>
       </div>`);
     card2.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
     card2.querySelector('#pv-packs').onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec='packs'; S.shopDrop=null; render(); };
-    const shb2=card2.querySelector('#pv-shard'); if(shb2&&canShard) shb2.onclick=shopRedeemShards;
+    card2.querySelector('#pv-exch').onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec='shards'; render(); };
     return card2;
   }
   // look pass: the confirm card doubles as the item DETAIL view - rarity chip + lore line + boost chips
@@ -22287,17 +22282,14 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
     <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
     <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
     <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
-    ${rar&&shN>0?`<div class="small" style="margin-top:7px;color:${ACC_RARITY[rar].c}">◆ You have ${shN}/${shNeed} ${ACC_RARITY[rar].label} shards${canShard?'':' — dupes from packs earn more'}</div>`:''}
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
       <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
     </div>
-    ${canShard?`<button class="btn teal" id="pv-shard" style="margin-top:10px">◆ Redeem with ${shNeed} ${ACC_RARITY[rar].label} shards<span class="sub">No coins spent — shards come from duplicate pack pulls</span></button>`:''}
     ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store · your first buy of each size is 2×</span></button>`:''}
     </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
   const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
-  const shb=card.querySelector('#pv-shard'); if(shb) shb.onclick=shopRedeemShards;
   const gcb=card.querySelector('#pv-getcoins'); if(gcb) gcb.onclick=()=>{ try{ track('nudge_getcoins',{from:'preview'}); }catch(e){} S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
   return card;
 }
@@ -22753,9 +22745,9 @@ function packCreditFields(tier){ tier=tier||'base';
   return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters — the Tour Pass grants these
 }
 /* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity ON TOP of the coin
-   refund. Collect SHARD_COST[r] shards of a rarity and redeem them for ANY item of that rarity (the redeem
-   button lives on the shop confirm card) - a deterministic pity path, so packs never go dead once a player
-   owns most of a tier. Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
+   refund. Collect EXCHANGE_COST shards of a rarity and feed the Shard Exchange upgrade ladder (below) to
+   trade UP a rarity - a deterministic pity path, so packs never go dead once a player owns most of a tier.
+   Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
 const SHARD_COST={common:3, rare:3, epic:4, legendary:5};
 function shardBal(r){ const p=packState(); return Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0)); }
 function shardEarn(r,n){ if(!SHARD_COST[r]) return; const p=packState(); p['shardE_'+r]=(p['shardE_'+r]||0)+(n||1); packSave(p); }
@@ -22763,8 +22755,117 @@ function shardSpend(r,n){ if(!SHARD_COST[r]) return false; const p=packState();
   if(Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0))<(n||1)) return false;
   p['shardS_'+r]=(p['shardS_'+r]||0)+(n||1); packSave(p); return true; }
 function shardSummaryHTML(){ const parts=PACK_RANK.map(r=>{ const b=shardBal(r); if(!b) return '';
-    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid ${ACC_RARITY[r].c}66;color:${ACC_RARITY[r].c};font-weight:800;font-size:11.5px">◆ ${b}/${SHARD_COST[r]} ${ACC_RARITY[r].label}</span>`; }).filter(Boolean);
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid ${ACC_RARITY[r].c}66;color:${ACC_RARITY[r].c};font-weight:800;font-size:11.5px">◆ ${b}/${EXCHANGE_COST} ${ACC_RARITY[r].label}</span>`; }).filter(Boolean);
   return parts.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0 2px">${parts.join('')}</div>`:''; }
+// ══════ SHARD EXCHANGE — an upgrade LADDER (owner): trade 5 shards of a rarity for a WHEEL of the NEXT
+// rarity up. Common → Rare wheel, Rare → Epic wheel, Epic → Legendary wheel. 5 Legendary shards cash in
+// for the capstone: coins + a themed pack + a choose-1-of-3-legendaries (see all 3, keep one). Replaces
+// the old redeem-a-specific-item path. A won item you already own refunds coins + 1 shard of THAT rarity,
+// so a duplicate still advances you toward the next rung. ══════════════════════════════════════════════
+const EXCHANGE_COST=5;
+const NEXT_RARITY={common:'rare', rare:'epic', epic:'legendary'};
+const LEG_EXCHANGE_COINS=25000;
+function poolByRarity(rar){ return packPool().filter(function(e){ return e.rarity===rar; }); }
+function pickRarityItem(rar, preferUnowned){ var pool=poolByRarity(rar); if(!pool.length) return null;
+  if(preferUnowned){ var un=pool.filter(function(e){ return !packOwns(e); }); if(un.length) return un[Math.floor(Math.random()*un.length)]; }
+  return pool[Math.floor(Math.random()*pool.length)]; }
+// grant a won exchange item (or, if already owned, the same coin + shard-of-its-rarity refund a pack dupe gives)
+function grantExchangeItem(item){ var dupe=packOwns(item), refund=0;
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{ shardEarn(item.rarity,1); }catch(e){} }
+  else packGrant(item);
+  return {item:item, rarity:item.rarity, dupe:dupe, refund:refund}; }
+function buildExchangeReel(winItem, target){ var TOTAL=54, WIN=48, reel=[];
+  for(var i=0;i<TOTAL;i++){ reel.push(i===WIN?winItem:(pickRarityItem(target,false)||winItem)); }
+  return {reel:reel, winIdx:WIN}; }
+function startShardExchange(fromRarity){
+  if(!packsOn()){ toast('Packs are off'); return; }
+  if(!sbSignedIn()){ toast('Sign in to exchange shards'); return; }
+  if(shardBal(fromRarity) < EXCHANGE_COST){ toast('Need '+EXCHANGE_COST+' '+ACC_RARITY[fromRarity].label+' shards'); return; }
+  if(fromRarity==='legendary'){ startLegendaryExchange(); return; }
+  var target=NEXT_RARITY[fromRarity]; if(!target){ toast('Cannot exchange those'); return; }
+  if(!poolByRarity(target).length){ toast('No '+ACC_RARITY[target].label+' items available'); return; }
+  if(!shardSpend(fromRarity, EXCHANGE_COST)){ toast('Not enough shards'); return; }
+  var win=grantExchangeItem(pickRarityItem(target,true));
+  var wheel=buildExchangeReel(win.item, target);
+  S.packWheel={reel:wheel.reel, winIdx:wheel.winIdx, win:win, spun:false, done:false, exchange:true, fromRarity:fromRarity, targetRarity:target, pack:'base'};
+  try{ track('shard_exchange',{from:fromRarity,to:target,dupe:win.dupe}); }catch(e){}
+  S.overlay='packwheel'; render();
+}
+// the "themed pack" for the legendary capstone: the live seasonal pack if one is running, else Champion.
+function themedPackTier(){ var ld=(typeof liveThemedDrop==='function')&&liveThemedDrop();
+  if(ld){ var k=Object.keys(PACK_TYPES).find(function(t){ return PACK_TYPES[t].seasonal && PACK_TYPES[t].dropId===ld.id && packTierLive(t); }); if(k) return k; }
+  return 'champ'; }
+function startLegendaryExchange(){
+  if(shardBal('legendary') < EXCHANGE_COST){ toast('Need '+EXCHANGE_COST+' Legendary shards'); return; }
+  if(!poolByRarity('legendary').length){ toast('No Legendary items available'); return; }
+  if(!shardSpend('legendary', EXCHANGE_COST)){ toast('Not enough shards'); return; }
+  // pick 3 distinct legendaries to CHOOSE from (prefer unowned, top up with owned if fewer than 3 are unowned)
+  var pool=poolByRarity('legendary'), un=pool.filter(function(e){ return !packOwns(e); });
+  var src=(un.length>=3?un:un.concat(pool.filter(function(e){ return packOwns(e); }))).slice();
+  for(var i=src.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=src[i]; src[i]=src[j]; src[j]=t; }
+  var picks=[], seen={}; src.forEach(function(e){ if(picks.length<3 && !seen[e.key]){ seen[e.key]=1; picks.push(e); } });
+  addBonusCoins(LEG_EXCHANGE_COINS,{silent:true});                        // coins now
+  var pTier=themedPackTier(); try{ grantFreePack(1,{tier:pTier, silent:true}); }catch(e){}   // + a themed pack credit
+  S.legChoice={picks:picks, coins:LEG_EXCHANGE_COINS, packTier:pTier, chosen:null};
+  try{ track('shard_exchange',{from:'legendary',to:'choice'}); }catch(e){}
+  S.overlay='legchoice'; render();
+}
+function legChoosePick(idx){ var lc=S.legChoice; if(!lc||lc.chosen!=null||!lc.picks[idx]) return;
+  lc.result=grantExchangeItem(lc.picks[idx]); lc.chosen=idx; try{ track('leg_choice_pick'); }catch(e){} render(); }
+// The Shards section body: a card per rarity with the trade-up button (5 → next-rarity wheel; legendary → capstone).
+function shardExchangeNode(){
+  var wrap=$('<div style="max-width:520px;margin:0 auto"></div>');
+  wrap.appendChild($('<div class="small muted" style="text-align:center;line-height:1.55;margin:0 0 14px">Trade up your shards. Five shards of a rarity spin a wheel of the next rarity up, guaranteed. Duplicates refund coins plus a shard of that rarity, so you always climb.</div>'));
+  ['common','rare','epic','legendary'].forEach(function(r){
+    var bal=shardBal(r), can=bal>=EXCHANGE_COST, rc=ACC_RARITY[r].c, next=NEXT_RARITY[r];
+    var sub=(r==='legendary')?'5 → coins + a pack + pick 1 of 3 Legendaries':'5 → a random '+ACC_RARITY[next].label+' item';
+    var btnLabel=(r==='legendary')?(can?'Cash in 5 Legendary shards ▸':'Collect 5 Legendary shards'):(can?'Exchange 5 → '+ACC_RARITY[next].label+' wheel ▸':'Collect 5 '+ACC_RARITY[r].label+' shards');
+    var card=$('<div style="border:1.5px solid '+rc+'55;border-radius:14px;padding:13px 14px;margin:0 0 10px;background:linear-gradient(160deg,'+rc+'14,rgba(0,0,0,.14))">'
+      +'<div style="display:flex;align-items:center;gap:11px">'
+        +'<span style="font:900 21px var(--body);color:'+rc+';white-space:nowrap">◆ '+bal+'</span>'
+        +'<div style="text-align:left;min-width:0"><div style="font-weight:800;color:'+rc+'">'+ACC_RARITY[r].label+' shards</div>'
+          +'<div class="small muted">'+sub+'</div></div>'
+        +'<div style="margin-left:auto;text-align:right;white-space:nowrap"><span class="small" style="color:'+(can?rc:'#8ea9bb')+';font-weight:800">'+Math.min(bal,EXCHANGE_COST)+'/'+EXCHANGE_COST+'</span></div>'
+      +'</div>'
+      +'<button class="btn '+(can?(r==='legendary'?'goldfill':'teal'):'ghost')+'" data-ex="'+r+'"'+(can?'':' disabled')+' style="margin-top:11px">'+btnLabel+'</button>'
+    +'</div>');
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll('[data-ex]').forEach(function(b){ b.onclick=function(){ startShardExchange(b.getAttribute('data-ex')); }; });
+  return wrap;
+}
+// The Legendary capstone: three legendaries face-up, keep the one you choose (+ the coins & pack already granted).
+function overlayLegendaryChoice(screen){
+  try{ packStyleOnce(); }catch(e){}
+  var lc=S.legChoice; if(!lc){ S.overlay='shop'; S.shopSec='shards'; return; }
+  var picks=lc.picks||[], chosen=lc.chosen, LC=PACK_RCOL.legendary, res=lc.result;
+  var cards=picks.map(function(it,i){ var boost=packItemBoostTxt(it), dim=(chosen!=null && chosen!==i);
+    return '<button class="legpick" data-pick="'+i+'"'+(chosen!=null?' disabled':'')
+      +' style="flex:1;min-width:0;max-width:150px;cursor:'+(chosen!=null?'default':'pointer')+';'
+      +'background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(0,0,0,.18));border:2px solid '+LC+';border-radius:14px;padding:11px 6px 9px;'
+      +(dim?'opacity:.38;':'')+(chosen===i?'box-shadow:0 0 20px '+LC+'99;':'')+'display:flex;flex-direction:column;align-items:center;gap:3px">'
+      +'<span style="font:800 8.5px var(--body);letter-spacing:.14em;color:#0c1f16;background:'+LC+';border-radius:999px;padding:2px 8px">LEGENDARY</span>'
+      +'<div style="margin:5px 0">'+packCardVisual(it)+'</div>'
+      +'<span style="font-weight:800;font-size:12.5px;color:var(--oncard);line-height:1.15;text-align:center">'+esc(it.name)+'</span>'
+      +(boost?'<span class="small" style="color:#8fe0c4;font-size:10px">'+esc(boost)+'</span>':'<span class="small muted" style="font-size:10px">Cosmetic</span>')
+      +'</button>'; }).join('');
+  var head=(chosen==null)?'Choose your Legendary':'Legendary claimed!';
+  var sub=(chosen==null)?'See all three, then keep the one you want.':(res&&res.dupe?('You already owned it — refunded '+coinFmt(res.refund)+' coins + a Legendary shard.'):(esc((res&&res.item&&res.item.name)||'')+' is yours.'));
+  var ov=$('<div class="ov" role="dialog" aria-modal="true" style="text-align:center">'
+    +'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'
+    +'<div class="tag" style="color:'+LC+';border-color:'+LC+';margin:0 auto">◆ Legendary Exchange</div>'
+    +'<h3 style="margin:12px 0 2px">'+head+'</h3>'
+    +'<p class="lede" style="margin:0 auto 12px;max-width:440px">'+sub+'</p>'
+    +'<div style="display:flex;gap:8px;justify-content:center;max-width:480px;margin:0 auto 14px">'+cards+'</div>'
+    +'<div class="scout" style="max-width:440px;margin:0 auto 12px;text-align:center;border-color:'+LC+'"><b style="color:#ffd45e">Also claimed</b><div class="small" style="margin-top:3px"><span style="width:13px;height:13px;display:inline-block;vertical-align:-2px">'+ic('coin',{size:'13px'})+'</span> +'+coinFmt(lc.coins)+' coins · '+esc(packType(lc.packTier).name)+' (free in Pro Shop → Packs)</div></div>'
+    +(chosen!=null?'<button class="btn goldfill done" style="max-width:360px;margin:0 auto">Done ▸</button>':'<div class="small muted">Tap a card to keep it</div>')
+    +'</div>');
+  ov.querySelectorAll('[data-pick]').forEach(function(b){ b.onclick=function(){ legChoosePick(+b.getAttribute('data-pick')); }; });
+  var close=function(){ S.legChoice=null; S.overlay='shop'; S.shopSec='shards'; render(); };
+  ov.querySelector('.x').onclick=function(){ if(chosen==null){ toast('Pick one of the three to keep first'); return; } close(); };
+  var d=ov.querySelector('.done'); if(d) d.onclick=close;
+  screen.appendChild(ov);
+}
 function packCredits(tier){ var f=packCreditFields(tier||'base'), p=packState(); return Math.max(0,(p[f[0]]||0)-(p[f[1]]||0)); }
 function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedIn()||!(n>0)) return 0;
   var f=packCreditFields(opts.tier||'base'), p=packState(); p[f[0]]=(p[f[0]]||0)+n; packSave(p);
@@ -23189,15 +23290,19 @@ function overlayPackWheel(app){
   packStyleOnce();
   var reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var win=w.win, big=(win.rarity==='epic'||win.rarity==='legendary');
-  var pt=packType(w.pack||'base');                              // CS406: the pack tier (color + name)
+  // SHARD EXCHANGE reuses this wheel with a synthetic "pack type" colored by the target rarity.
+  var pt=w.exchange
+    ? {id:'exchange', name:'Shard Exchange', short:ACC_RARITY[w.targetRarity].label, col:ACC_RARITY[w.targetRarity].c, accent:ACC_RARITY[w.targetRarity].c, glow:ACC_RARITY[w.targetRarity].c+'88', odds:null, price:0, seasonal:false}
+    : packType(w.pack||'base');                                // CS406: the pack tier (color + name)
   var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack wheel"></div>');
-  function titleTxt(){ var pre=(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):''); if(S.packBundle){ pre+='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
+  function titleTxt(){ if(w.exchange){ var lab=ACC_RARITY[w.targetRarity].label; return '<span style="color:'+pt.col+'">Shard Exchange</span> · '+(w.done?'You got a '+lab+' item!':(w.spun?'Landing...':'Spin for a '+lab+' item')); }
+    var pre=(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):''); if(S.packBundle){ pre+='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
   var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
   // CS463: an escape hatch so a pack open can never trap the shop. Only shown when nothing prepaid is left
   // un-opened (a single pack, or the last pack of a bundle) — the shown item is already granted, so closing loses nothing.
   if(!S.packBundle || (S.packBundle.done||0) >= S.packBundle.total){
     var xb=$('<button class="x" aria-label="Close">✕</button>');
-    xb.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+    xb.onclick=function(){ var ex=w.exchange; S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec=ex?'shards':'packs'; render(); };
     ov.appendChild(xb);
   }
   var wheel=$('<div class="pwheel" style="--pw:'+pt.col+';border-color:'+pt.col+';box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 22px '+pt.glow+'"></div>');
@@ -23217,10 +23322,14 @@ function overlayPackWheel(app){
     footer.innerHTML='';
     if(!w.done){
       if(!w.spun){ var sb=$('<button class="btn goldfill">Spin the wheel</button>'); sb.onclick=function(){ spin(); }; footer.appendChild(sb);
+        if(w.exchange){   // a rarity-locked wheel — no odds, just the guarantee
+          footer.appendChild($('<div class="small" style="margin-top:12px">Guaranteed <b style="color:'+pt.col+'">'+ACC_RARITY[w.targetRarity].label+'</b> item</div>'));
+        } else {
         // owner: show this pack's drop-rate odds under the spin button - it goes away once you spin
         var odds=(pt.odds||PACK_ODDS);
         var oddsHTML=odds.map(function(o){ var rc=PACK_RCOL[o[0]]||'#b8c4bd'; return '<span style="color:'+rc+';white-space:nowrap"><b>'+(Math.round(o[1]*1000)/10)+'%</b> '+PACK_RLABEL[o[0]]+'</span>'; }).join('<span style="opacity:.35;margin:0 2px">·</span>');
         footer.appendChild($('<div class="pwodds" style="margin-top:12px;text-align:center"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:9.5px;margin-bottom:5px">Odds this pack</div><div class="small" style="line-height:1.8;font-size:12px">'+oddsHTML+'</div></div>'));
+        }
       }
       else footer.appendChild($('<div class="small muted">Good luck...</div>'));
       return;
@@ -23249,6 +23358,13 @@ function overlayPackWheel(app){
         eb.disabled=true; eb.textContent='\u2713 Equipped';
         if(!footer.querySelector('.preq')) footer.insertBefore($('<div class="preq">\u2713 Equipped! '+esc(item.name)+' is now on your golfer</div>'), btns);
       }; btns.appendChild(eb); }
+    if(w.exchange){   // exchange again (if you have 5 more of the same shard) or done → back to the Shards section
+      var canAgain=shardBal(w.fromRarity)>=EXCHANGE_COST;
+      var exAgain=$('<button class="btn '+(canAgain?'teal':'ghost')+'"'+(canAgain?'':' disabled')+'>'+(canAgain?'Exchange 5 more '+ACC_RARITY[w.fromRarity].label+' shards ▸':'Need 5 '+ACC_RARITY[w.fromRarity].label+' shards')+'</button>');
+      if(canAgain) exAgain.onclick=function(){ startShardExchange(w.fromRarity); };
+      var exDone=$('<button class="btn ghost">Done</button>'); exDone.onclick=function(){ S.packWheel=null; S.overlay='shop'; S.shopSec='shards'; render(); };
+      btns.appendChild(exAgain); btns.appendChild(exDone); footer.appendChild(btns); return;
+    }
     if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
       var bleft=S.packBundle.total-(S.packBundle.done||0);
       var nxt=$('<button class="btn teal">Next pack ▸ · '+bleft+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
@@ -23578,7 +23694,7 @@ function packShopNode(){
     tiers.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
-  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b>. Collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();
+  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b>. Collect '+EXCHANGE_COST+' shards of a rarity and trade them in the <b>Shard Exchange</b> to upgrade to an item of the next rarity up.</div>'+shardSummaryHTML();
   wrap.appendChild(odds);
   // #5 discoverability: signed-in and can't afford even the cheapest pack → point at Buy Coins (tasteful,
   // only at the moment it's actually useful).
@@ -23608,7 +23724,7 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='drops'&&sec!=='buckets') sec='apparel';
+  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if((sec==='shards')&&!packsOn()) sec='apparel'; if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='shards'&&sec!=='drops'&&sec!=='buckets') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
@@ -23629,6 +23745,7 @@ function overlayShop(screen){
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
+      ${packsOn()?`<button data-sec="shards" class="${sec==='shards'?'on':''}">◆ Shards</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs${(sec!=='bag'&&cosCatNew('club')>0)?NDOT:''}</button>
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
@@ -23659,6 +23776,14 @@ function overlayShop(screen){
         pb.onclick=()=>{ S.shopSec='drops'; S.shopDrop=ld.id; render(); };
         ov.appendChild(pb); } }catch(e){}
     ov.appendChild(packShopNode());
+    ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
+    sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
+    ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
+  if(sec==='shards'){
+    ov.appendChild($(`<div style="text-align:center;margin:2px 0 4px"><div style="font-family:var(--display);font-size:20px;color:var(--gold)">◆ Shard Exchange</div></div>`));
+    ov.appendChild(shardExchangeNode());
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
     ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
