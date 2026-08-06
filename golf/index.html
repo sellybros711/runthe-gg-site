@@ -21993,9 +21993,9 @@ function overlayTourPass(screen){
     const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" aria-label="Tour Pass">
       <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
       <h3 style="margin-top:34px">Tour Pass</h3>
-      <p class="lede" style="margin-top:-2px">A 60-day season track. Earn Pass XP in every mode and climb 50 tiers of coins, packs, shards and exclusive cosmetics — free for everyone. The Tour Pass unlocks the Pro lane all season.</p>
+      <p class="lede" style="margin-top:-2px">A 60-day season track. The FREE lane is open to everyone: earn Pass XP in every mode and climb 50 tiers of coins, packs and shards. The Tour Pass ($${TOURPASS.usd.toFixed(2)} a season, in the store) unlocks the PRO lane and its bigger rewards all season.</p>
       <div class="scout" style="text-align:center;border-color:#a78bfa"><b style="color:#a78bfa">Sign in to play the Tour Pass</b><div class="small muted" style="margin-top:3px">Season ${ssn.n} · ${ssn.daysLeft} days left</div></div>
-      <button class="btn goldfill" id="tp-signin">Sign in ▸</button>
+      <button class="btn violet" id="tp-signin">Sign in ▸</button>
       <button class="btn red">Close</button></div>`);
     ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
     ov.querySelector('#tp-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
