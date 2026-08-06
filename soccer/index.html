@@ -173,9 +173,32 @@
   /* RunThe.GG cross-promo banners — top (hub) + bottom (more games). Full-width
      slim strips with a centred pill button; kept clear of the fixed corner
      toggles by generous side padding. Themed via the shared palette vars. */
-  .rtg-banner{display:flex;justify-content:center;align-items:center;text-decoration:none;
-    margin:0 -16px;padding:8px 54px;-webkit-tap-highlight-color:transparent;}
-  .rtg-banner.rtg-bottom{margin:2px -16px 16px;padding-top:16px;border-top:1px solid var(--border-soft);}
+  /* Bottom cross-promo ad card — dark navy panel with a teal glow, the R·GAMES
+     badge, copy, and a green Play button. Kept dark in both themes (brand look). */
+  .rtg-ad{display:flex;align-items:center;gap:14px;text-decoration:none;margin:4px 0 16px;padding:13px 15px;
+    background:linear-gradient(180deg,#102338,#0a1725);border:1.5px solid var(--teal);border-radius:16px;
+    box-shadow:0 0 0 1px rgba(60,232,184,.10),0 6px 20px rgba(0,0,0,.34),0 0 22px rgba(60,232,184,.10);
+    -webkit-tap-highlight-color:transparent;transition:transform .1s ease,box-shadow .15s ease;}
+  .rtg-ad:hover{box-shadow:0 0 0 1px rgba(60,232,184,.24),0 8px 26px rgba(0,0,0,.42),0 0 30px rgba(60,232,184,.18);}
+  .rtg-ad:active{transform:translateY(1px);}
+  .rtg-ad-logo{width:56px;height:56px;border-radius:13px;flex:0 0 auto;display:block;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+  .rtg-ad-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left;}
+  .rtg-ad-title{font-weight:900;font-size:18px;letter-spacing:.2px;color:#eef4fb;line-height:1.12;}
+  .rtg-ad-title .gg{color:var(--teal);}
+  .rtg-ad-sub{font-weight:600;font-size:12.5px;line-height:1.28;color:#9fb2c6;}
+  .rtg-ad-cta{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+    font-weight:900;font-size:15px;letter-spacing:.3px;color:#0a2417;
+    background:linear-gradient(180deg,#a6ec7c,#5fce4e);border-radius:12px;padding:11px 18px;
+    box-shadow:0 3px 10px rgba(0,0,0,.3);}
+  .rtg-ad:hover .rtg-ad-cta{filter:brightness(1.05);}
+  .rtg-ad-arrow{font-weight:900;}
+  @media (max-width:400px){
+    .rtg-ad{gap:11px;padding:12px;}
+    .rtg-ad-logo{width:48px;height:48px;}
+    .rtg-ad-title{font-size:16px;}
+    .rtg-ad-sub{font-size:11.5px;}
+    .rtg-ad-cta{padding:10px 14px;font-size:14px;}
+  }
 
   /* Top header bar: menu · RunThe.GG hub · theme + profile. Full-width strip that
      holds the (re-parented) menu/theme toggles, so all top controls live in one bar. */
@@ -4223,9 +4246,14 @@ window.GA_ID='G-L29P5MRWKE';
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
-    <!-- Bottom cross-promo banner: more games at the RunThe.GG hub -->
-    <a class="rtg-banner rtg-bottom" href="https://runthe.gg" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
-      <span class="rtg-pill"><span class="rtg-ico" aria-hidden="true">🎮</span><span class="rtg-lbl">More Games at</span><span class="rtg-wm">RunThe<span class="gg">.GG</span></span><span class="rtg-arrow" aria-hidden="true">↗</span></span>
+    <!-- Bottom cross-promo ad: the RunThe.GG hub (all games, one account) -->
+    <a class="rtg-ad" href="https://runthe.gg" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
+      <img class="rtg-ad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="192" height="192" loading="lazy">
+      <span class="rtg-ad-copy">
+        <span class="rtg-ad-title">More games at RunThe<span class="gg">.GG</span></span>
+        <span class="rtg-ad-sub">RunThePitch, RunTheTour &amp; more, one free account</span>
+      </span>
+      <span class="rtg-ad-cta">Play <span class="rtg-ad-arrow" aria-hidden="true">↗</span></span>
     </a>
     <div class="footer-actions">
       <button id="btn-roster-updates" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 14 20" aria-hidden="true"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="currentColor"/></svg> Roster Updates</button>
