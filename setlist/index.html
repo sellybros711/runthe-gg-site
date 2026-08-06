@@ -1289,7 +1289,6 @@ function sofarHTML(si){
 
 function renderDraft(){
   const show = S.show;
-  const taken = lockedSongIds();
   const si = currentSet();
   if (si === -1){ finishShow(); return; }
   const cfg = SETS[si];
@@ -1307,22 +1306,18 @@ function renderDraft(){
 
   // Every song is shown, but one that will not fit the clock is dead — saying
   // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
-  const fits = show.songs.filter(p => !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
+  const fits = show.songs.filter(p => !pickBlock(p, si));
   const hunt = huntingFor();
   const canFinish = hunt && show.songs.some(p =>
-    hunt.partners.has(p.song_id) && !taken.has(p.song_id)
-    && canPlace(S.sets, si, p, S.closed, S.spent));
+    hunt.partners.has(p.song_id) && !pickBlock(p, si));
 
   const songsHTML = keys.map(k => {
     const rows = bySet.get(k).map(p => {
       const acc = accentOf(p);
       const idx = show.songs.indexOf(p);
-      const strands = wouldStrand(S.sets, si, p, S.closed, S.spent);
       const sandwich = closesSandwich(S.sets[si], p, S.data.segues);
-      // A repeat is allowed in exactly one case: closing a sandwich.
-      const used = taken.has(p.song_id) && !sandwich;
-      const room = canPlace(S.sets, si, p, S.closed, S.spent);
-      const dead = used || !room || strands;
+      const why = pickBlock(p, si);
+      const dead = !!why;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
       const chips = [];
       if (sandwich && !dead) chips.push(
@@ -1332,15 +1327,9 @@ function renderDraft(){
       if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      const over = lenOf(p) - left;
-      const why = used ? 'Already played'
-        : !room ? (over > 0 ? `${fmtClock(over)} too long`
-                            : `${esc(cfg.label)} is full`)
-        : strands ? 'Nothing here lands it'
-        : '';
       // Out of time is a different kind of no from already-played, and the
       // player needs to know which wall they hit.
-      const whyClass = !used && !room ? ' notime' : '';
+      const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
       return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
@@ -1804,12 +1793,35 @@ function lockedSongIds(){
   return new Set(S.sets.flat().map(p => p.song_id));
 }
 
+/* WHY A SONG CANNOT BE PLAYED, or null if it can.
+ *
+ * There used to be three answers to this and they disagreed. The card allowed
+ * a repeat when it closed a sandwich; the tap handler and lockIn refused every
+ * repeat. So a song wearing CLOSES SANDWICH rendered as playable, and tapping
+ * it did nothing at all: the loudest thing in the game was unreachable.
+ *
+ * Every caller goes through here now. The string it returns is the same one
+ * printed on the card, so the reason a player is refused is the reason they
+ * were shown.
+ */
+function pickBlock(perf, si){
+  if (si === -1) return 'No set is open';
+  // A repeat is allowed in exactly one case: closing a sandwich.
+  if (lockedSongIds().has(perf.song_id)
+      && !closesSandwich(S.sets[si], perf, S.data.segues)) return 'Already played';
+  if (!canPlace(S.sets, si, perf, S.closed, S.spent)){
+    const over = lenOf(perf) - remaining(S.sets, si, S.closed, S.spent);
+    return over > 0 ? `${fmtClock(over)} too long` : `${SETS[si].label} is full`;
+  }
+  if (wouldStrand(S.sets, si, perf, S.closed, S.spent)) return 'Nothing here lands it';
+  return null;
+}
+
 function lockIn(){
   const song = S.pickedSong;
   const si = currentSet();
   if (!song || si === -1) return;
-  if (lockedSongIds().has(song.song_id)) return;
-  if (!canPlace(S.sets, si, song, S.closed, S.spent)) return;
+  if (pickBlock(song, si)) return;
 
   S.sets[si].push(song);
   // Remember the show this came out of, so the scorecard can replay the exact
@@ -1836,9 +1848,7 @@ function closeSet(){
   const si = currentSet();
   if (si === -1) return;
   const dangling = danglingSegue(S.sets, si);
-  const taken = lockedSongIds();
-  const couldLand = S.show && S.show.songs.some(p =>
-    !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
+  const couldLand = S.show && S.show.songs.some(p => !pickBlock(p, si));
   if (dangling && couldLand){
     S.hint = `${dangling.song} segues. Play what it runs into before closing.`;
     S.hintBad = true;
@@ -2066,13 +2076,10 @@ app.addEventListener('click', e => {
     if (songBtn.disabled) return;
     const show = S.show;
     const s = show.songs[Number(songBtn.dataset.song)];
-    if (s !== S.pickedSong && lockedSongIds().has(s.song_id)){
-      S.hint = `${s.song} is already in your show.`;
-      S.hintBad = true; renderDraft(); return;
-    }
     const si = currentSet();
-    if (s !== S.pickedSong && si !== -1 && !canPlace(S.sets, si, s, S.closed, S.spent)){
-      S.hint = `No room for ${fmtClock(lenOf(s))} in ${SETS[si].label}.`;
+    const block = s === S.pickedSong ? null : pickBlock(s, si);
+    if (block){
+      S.hint = `${s.song}: ${block.toLowerCase()}.`;
       S.hintBad = true; renderDraft(); return;
     }
     S.pickedSong = S.pickedSong === s ? null : s;
