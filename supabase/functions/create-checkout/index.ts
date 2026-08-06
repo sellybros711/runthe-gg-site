@@ -25,6 +25,11 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   httpClient: Stripe.createFetchHttpClient(),
 });
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://runthe.gg";
+// (price, package) pairs already verified against Stripe this instance — see the checkout guard below.
+const _priceVerified = new Set<string>();
+// Stripe Tax needs the account's tax settings configured (origin address etc.) before live sessions
+// with automatic_tax succeed. Launch-safe default: OFF until the owner sets the secret STRIPE_TAX=on.
+const TAX_ON = (Deno.env.get("STRIPE_TAX") ?? "").toLowerCase() === "on";
 
 // The live site, plus localhost / file:// pages so test-mode purchases can be
 // exercised from a local copy of the client. Auth is the bearer JWT (never a
@@ -75,6 +80,31 @@ Deno.serve(async (req) => {
     return json({ error: "package unavailable" }, 503);
   }
 
+  // Guard against a miswired STRIPE_PRICE_* secret: the Stripe Price behind this package must be a
+  // one-time USD price whose amount matches the package exactly, or a paste-slip in the dashboard
+  // would charge players the wrong amount for what they're buying. Verified once per (price, package)
+  // per instance; a mismatch refuses checkout and names the bad secret in the logs.
+  const okKey = `${pkg.id}:${priceId}`;
+  if (!_priceVerified.has(okKey)) {
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      const cents = price.unit_amount ?? -1;
+      const cur = (price.currency ?? "usd").toLowerCase();
+      if (price.recurring || cents !== pkg.priceCents || cur !== "usd") {
+        console.error(
+          `PRICE MISMATCH for package ${pkg.id}: secret ${pkg.priceEnv} -> ${priceId} is ` +
+          `${cur} ${cents}${price.recurring ? " (recurring)" : ""}, expected usd ${pkg.priceCents}. ` +
+          `Re-paste the correct Price ID into ${pkg.priceEnv}.`,
+        );
+        return json({ error: "package unavailable" }, 503);
+      }
+      _priceVerified.add(okKey);
+    } catch (err) {
+      console.error(`price lookup failed for ${pkg.id} (${pkg.priceEnv}=${priceId}):`, (err as Error).message);
+      return json({ error: "package unavailable" }, 503);
+    }
+  }
+
   // Tour Pass double-purchase guard: one pass per 60-day season. The season is
   // computed by the DB (runtour_pass_status, migration 72) with the buyer's own
   // JWT, so a tampered client can't skip it. Fail OPEN on an RPC error (e.g. the
@@ -109,7 +139,7 @@ Deno.serve(async (req) => {
       payment_intent_data: { metadata: { user_id: user.id, package_id: pkg.id } },
       success_url: `${SITE_URL}${returnPath}?purchase=success`,
       cancel_url: `${SITE_URL}${returnPath}?purchase=cancelled`,
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: TAX_ON },
     });
     return json({ url: session.url });
   } catch (err) {
