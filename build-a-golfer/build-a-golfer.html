@@ -1973,7 +1973,7 @@ h2{font-size:11px;letter-spacing:.04em}
 <h2>How the game works</h2>
 <p>Every spin reveals a real golfer, and you take one of their eight attributes (distance, accuracy, approach, short game, scrambling, bunker, putting or composure) to fill a slot on your build. You get two re-spins for the whole draft. Once all eight slots are filled you have a golfer, and you take them out on tour.</p>
 <p>Career mode runs up to 30 seasons. Your golfer ages, peaks and declines, chasing majors, the Atlantic Cup, the Nations Cup and international medals while you manage injuries, sponsors, rivalries and roughly $2.8M a year of tour costs. The daily challenge is a single 18-hole round at a rotating real course, the same for everyone, resetting at midnight ET. Online head-to-head offers 1v1, Best Ball, Scramble and Free-for-All against real players.</p>
-<p>Run The Tour is free, funded by advertising, and nothing in it can be bought with real money. Read the full <a href="/golf/how-to-play.html" style="color:#EBA61F">How to Play guide</a> for the complete rules, pull odds and strategy.</p>
+<p>Run The Tour is free to play, with optional in-game upgrades. Read the full <a href="/golf/how-to-play.html" style="color:#EBA61F">How to Play guide</a> for the complete rules, pull odds and strategy.</p>
 <p><strong>This game needs JavaScript enabled to play.</strong> Please turn on JavaScript and reload.</p>
 <p><a href="/golf/how-to-play.html" style="color:#EBA61F">How to play</a> &middot;
 <a href="/" style="color:#EBA61F">More games</a> &middot;
@@ -5908,7 +5908,7 @@ function devMode(){ return sbSignedIn() && DEV_USERS.indexOf((sbUsername||'').to
 // Dev accounts get an EARLY-ACCESS switch in their Settings page (menu) — off by default, so the
 // in-progress paid features stay hidden until they opt in. Only devMode() accounts see the switch.
 function devPreviewOn(){ return LS.get('bag_dev_preview',false)===true; }
-const TOURPASS_LIVE=false;                       // set true to release the Tour Pass to everyone
+const TOURPASS_LIVE=true;                        // LIVE — the Tour Pass is released to everyone
 function passEnabled(){ return TOURPASS_LIVE || (devMode() && devPreviewOn()); }
 
 /* ============================ TOUR PASS — 60-day season pass ============================
@@ -22241,18 +22241,14 @@ const PACK_TYPES={
 // The "$1.99 = 15,000 coins = one full 30-year career's earnings" anchor, as an escalating-value
 // ladder (bigger buckets = more coins per dollar + bonus packs). BUILT BEHIND A FLAG.
 //
-// GOING LIVE requires TWO things this build does NOT include:
-//   (1) a payment provider (Stripe Checkout on web / App Store & Play IAP in a wrapped app), and
-//   (2) SERVER-SIDE FULFILLMENT. Coins are granted client-side today (addBonusCoins), so purchased
-//       coins MUST be credited by a verified-payment webhook writing to the account server-side -
-//       NEVER by the client (beginBucketPurchase below never grants coins), or they're a trivial
-//       console exploit. This also reverses the current "coins can never be bought" Terms/perk copy,
-//       which must be updated before the flag is flipped.
 // LIVE: wired to the Stripe backend (create-checkout + stripe-webhook + migration 70's coin_wallet).
+// Purchased coins are credited ONLY by the signed webhook writing coin_wallet server-side — the client
+// never grants paid coins (a tampered client can't mint them). Terms/How-to copy reflects real-money
+// purchases (free to play, optional upgrades, no cash value, sales final).
 // package id + coins MUST match supabase/functions/_shared/packages.ts (the SERVER is authoritative on
 // coins delivered — a tampered client can't change what it receives). First purchase gets +100% coins,
 // applied SERVER-SIDE in the webhook. Set BUCKETS_ENABLED=false to instantly pull the store offline.
-const BUCKETS_ENABLED=false;
+const BUCKETS_ENABLED=true;   // LIVE — Stripe checkout + webhook fulfillment are wired
 // Coin buckets (owner-approved tiers). `bonus` = % extra coins vs the base $1.99=15,000 rate (display only,
 // derived). packTier/packN = BONUS PACKS granted on purchase (Large/XL/Mega). id + coins MUST match
 // supabase/functions/_shared/packages.ts (the SERVER is authoritative on what's delivered). First purchase
@@ -22273,7 +22269,7 @@ const BUCKETS=[
 function packTierLabel(t){ return t==='champ'?'Champion':t==='tour'?'Tour':'Base'; }   // bonus-pack display name
 // ---- Daily Tokens: buy extra Daily-Challenge attempts beyond the free 3/day. Server-authoritative
 // (credited by the Stripe webhook, spent via runtour_spend_token). ids + counts MUST match packages.ts.
-const TOKENS_ENABLED=false;
+const TOKENS_ENABLED=true;    // LIVE
 const DAILY_TOKENS=[
   {id:'tok1',  n:1,  usd:1.99},
   {id:'tok3',  n:3,  usd:2.99, badge:'POPULAR'},
@@ -22287,7 +22283,7 @@ const DAILY_TOKENS=[
 // +30,000 coins credited instantly (server-side), and 2 seasonal packs (granted client-side once per
 // season). When the season rolls over you buy the new season's pass. id/coins MUST match packages.ts.
 // create-checkout refuses a second purchase in the same season (409).
-const TOURPASS_ENABLED=false;
+const TOURPASS_ENABLED=true;  // LIVE
 const TOURPASS={ id:'tourpass', usd:14.99, coins:30000, packs:2 };
 const PASS_REWARD_MULT=1.5;   // Tour Pass holders earn 1.5× coins from play
 function passThemeName(){ try{ return 'Season '+passSeason().n+' Tour Pass'; }catch(e){ return 'Tour Pass'; } }
