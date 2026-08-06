@@ -1,16 +1,26 @@
-/* The Where it ranks tab, in both of its lives.
+/* The Where it ranks tab, in all three of its lives.
  *
  *   (nohup python3 -m http.server 8080 &)
  *   (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
  *   node cfb/build/test/test_ranks_tab.mjs
  *
- * Until launch the tab is a designed placeholder: three dead windows and a
- * sentence saying when they fill in. The wiring behind it is already written
- * and reads window.PS_CFB_RANKS_LIVE, so the second half of this file IS the
- * launch-day test, run against the local PostgREST stand-in: flip the flag,
- * play a season, and the same cells must come back as "#N of M".
+ * The tab decides for itself which life it is in, by asking the board. Three
+ * cases, and the middle one is the one that matters:
+ *
+ *   pinned off        window.PS_CFB_RANKS_LIVE=false, the designed placeholder
+ *   table not there   nothing pinned, and the server 404s cfb_runs. This is
+ *                     the real pre-launch state, and it has to reach the SAME
+ *                     placeholder rather than "could not be read", because
+ *                     "not open yet" and "did not answer" are different facts
+ *   board answering   nothing pinned, the local PostgREST stand-in behind it,
+ *                     and the cells must come back as "#N of M" with no flag
+ *                     flipped and nothing deployed
+ *
+ * The third case is the launch: it proves the tab goes live off the migration
+ * alone.
  */
 import { chromium } from 'playwright';
+import http from 'node:http';
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
 const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
 let bad=0;
@@ -41,17 +51,46 @@ async function playToResults(page){
   await page.waitForTimeout(4000);
   return !!(await page.$('#s-over.on'));
 }
-async function newPage(live){
+/* A server that answers every board call the way a Supabase project answers before
+   the migration has been run: PostgREST's own 404 body, naming the missing table.
+   That body is what sets needsMigration, so this is the pre-launch server. */
+const noTable=http.createServer((req,res)=>{
+  /* CORS answered properly, because that is what the real project does: the
+     gateway allows the call and PostgREST behind it is the thing that 404s. A
+     stub that failed the preflight instead would test a network error, which is
+     the other case entirely and the one this must not be confused with. */
+  const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*',
+    'Access-Control-Expose-Headers':'content-range'};
+  if(req.method==='OPTIONS'){res.writeHead(204,cors);return res.end();}
+  res.writeHead(404,Object.assign({'Content-Type':'application/json'},cors));
+  res.end(JSON.stringify({code:'PGRST205',details:null,
+    hint:"Perhaps you meant the table 'public.ps_runs'",
+    message:"Could not find the table 'public.cfb_runs' in the schema cache"}));
+});
+await new Promise((r)=>noTable.listen(5556,r));
+
+/* live: true pins on, false pins off, null leaves it to work itself out. */
+async function newPage(live,port){
   const page=await b.newPage({viewport:{width:600,height:1000}});
   page.on('pageerror',(e)=>{console.log('  PAGE ERROR: '+e.message);bad++;});
-  await page.addInitScript(`window.PS_CFB_BOARD_URL='http://localhost:5555';
-    ${live?'window.PS_CFB_RANKS_LIVE=true;':''}`);
+  await page.addInitScript(`window.PS_CFB_BOARD_URL='http://localhost:${port||5555}';
+    ${live===null?'':'window.PS_CFB_RANKS_LIVE='+(live?'true':'false')+';'}`);
   await page.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await page.waitForTimeout(2500);
   return page;
 }
 
-console.log('\n=== before launch: the placeholder ===');
+async function expectPlaceholder(p,what){
+  const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.className+' | '+e.textContent));
+  ok(what+': three windows, all drawn dead',
+    cells.length===3&&cells.every(c=>/dead/.test(c)&&/at launch/.test(c)), cells.join('  '));
+  ok(what+': labelled Today, This week, All time',
+    /Today/.test(cells[0]||'')&&/This week/.test(cells[1]||'')&&/All time/.test(cells[2]||''));
+  const foot=await p.textContent('#o-ranks .rankfoot');
+  ok(what+': and it says when they fill in', /switch on at launch/.test(foot), foot.slice(0,60));
+}
+
+console.log('\n=== pinned off: the designed placeholder ===');
 {
   const p=await newPage(false);
   ok('reached the results screen', await playToResults(p));
@@ -59,19 +98,28 @@ console.log('\n=== before launch: the placeholder ===');
   await p.click('.overtab[data-t="ranks"]');
   await p.waitForTimeout(300);
   ok('the pane opens', await p.$eval('#op-ranks',(el)=>el.classList.contains('on')));
-  const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.className+' | '+e.textContent));
-  ok('three windows, all drawn dead', cells.length===3&&cells.every(c=>/dead/.test(c)&&/at launch/.test(c)));
-  ok('labelled Today, This week, All time',
-    /Today/.test(cells[0])&&/This week/.test(cells[1])&&/All time/.test(cells[2]));
-  const foot=await p.textContent('#o-ranks .rankfoot');
-  ok('and it says when they fill in', /switch on at launch/.test(foot), foot.slice(0,60));
+  await expectPlaceholder(p,'pinned off');
   await p.screenshot({path:SS+'ranks_placeholder.png'});
   await p.close();
 }
 
-console.log('\n=== launch day: the flag flipped, against the stub board ===');
+console.log('\n=== nothing pinned, table not there: the same placeholder ===');
 {
-  const p=await newPage(true);
+  const p=await newPage(null,5556);
+  ok('reached the results screen', await playToResults(p));
+  await p.click('.overtab[data-t="ranks"]');
+  await p.waitForTimeout(2500);
+  await expectPlaceholder(p,'no table');
+  ok('and the place line says the board opens at launch',
+    /opens at launch/.test(await p.textContent('#o-place')||''),
+    (await p.textContent('#o-place')||'').slice(0,70));
+  await p.screenshot({path:SS+'ranks_no_table.png'});
+  await p.close();
+}
+
+console.log('\n=== nothing pinned, the board answering: live with no flag flipped ===');
+{
+  const p=await newPage(null);
   ok('reached the results screen', await playToResults(p));
   await p.click('.overtab[data-t="ranks"]');
   await p.waitForTimeout(2500);
@@ -82,6 +130,7 @@ console.log('\n=== launch day: the flag flipped, against the stub board ===');
   await p.close();
 }
 
+noTable.close();
 await b.close();
 console.log(bad?('\n'+bad+' FAILURES'):'\nall clear');
 process.exit(bad?1:0);

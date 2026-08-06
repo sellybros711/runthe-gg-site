@@ -13,12 +13,20 @@ createdb -h /tmp -p 5433 cfbtest
 export PGHOST=/tmp PGPORT=5433
 psql -d cfbtest -f cfb/build/test/stub_supabase.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
+psql -d cfbtest -f supabase/63_cfb_run_mode.sql
 ```
 
 `stub_supabase.sql` is the slice of Supabase the migration leans on: the `profiles`
 table from `10_accounts.sql`, the `anon` and `authenticated` roles, and an `auth.uid()`
 that reads a session setting instead of a JWT so a test can submit as a guest, as one
-account and then as another.
+account and then as another. It also seeds the two accounts the browser suites sign
+in as, because `cfb_submit_run()` reads the display name out of `profiles` and an
+empty table records a null name rather than failing, which reads as a product bug
+in a database that was simply never filled in.
+
+Run the two migrations in order, on a database that has never had them: that is the
+same thing launch day does to the production project, and it is worth having proved
+before the day rather than during it.
 
 ## The suites
 
@@ -29,8 +37,12 @@ account and then as another.
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
+| `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
+| `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
+| `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
 | `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
 | `postgrest_stub.mjs` | Not a test. A PostgREST-shaped front end for the real database, so the browser talks to something that parses its URLs independently. |
+| `gzip_server.mjs` | Not a test. A static server that gzips the way GitHub Pages gzips. `python3 -m http.server` does not, and the 5MB player file goes over the wire at 727K, so an uncompressed measurement measures a page nobody is served. |
 
 ```
 psql -d cfbtest -f cfb/build/test/test_leaderboard.sql          # look for FAIL
@@ -40,6 +52,10 @@ node cfb/build/test/test_score_parity.mjs cfbtest
 node cfb/build/test/test_board_e2e.mjs
 node cfb/build/test/test_gates.mjs
 node cfb/build/test/test_conference.mjs
+node cfb/build/test/test_challenge.mjs
+node cfb/build/test/test_ranks_tab.mjs
+(nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
+node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 

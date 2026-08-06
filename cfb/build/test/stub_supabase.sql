@@ -22,5 +22,15 @@ create table if not exists profiles (
   username citext unique
 );
 
+-- The two accounts every suite here signs in as. Seeded with the schema rather than
+-- by hand, because cfb_submit_run() reads the display name OUT of this table: an
+-- empty profiles does not fail loudly, it records the season under a null name, and
+-- the suite that checks the name then fails on a database that was simply never
+-- filled in. Setting up a fresh test database must not be a step somebody remembers.
+insert into profiles (id, username) values
+  ('11111111-1111-1111-1111-111111111111', 'coachprime'),
+  ('22222222-2222-2222-2222-222222222222', 'nicksaban')
+on conflict (id) do nothing;
+
 create role anon;
 create role authenticated;

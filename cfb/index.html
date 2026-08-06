@@ -12,6 +12,7 @@
      Leads with the verb, names the constraint that makes it a game, ends on the goal. -->
 <meta name="description" content="Spin for a year and a school, sign six players off six draws under an $11M NIL budget, then play all 12 games and chase a perfect college football season. Free, no download, new every run.">
 <meta name="keywords" content="college football game, CFB draft game, free online college football game, college football roster builder, college football simulation game, perfect season">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/cfb/">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3419,7 +3420,8 @@ async function paintBoard(){
     $('lb-rows').innerHTML='';
     $('lb-note').style.display='';
     $('lb-note').textContent=B.needsMigration
-      ? 'The leaderboard is not set up on the server yet.'
+      ? 'The leaderboard opens at launch. Your seasons are saved and go into the '+
+        'standings the moment it does.'
       : 'The leaderboard is not reachable right now. Your seasons are still being recorded.';
     return;
   }
@@ -3540,8 +3542,14 @@ async function paintPlace(){
     B.placeIn(opts,'record',score), B.total(opts),
   ]);
   if(place===null){
-    el.innerHTML='<div class="placebox"><div class="pl">The leaderboard is not reachable '+
-      'right now. This season is still yours; it just is not ranked yet.</div>'+
+    /* Two ways to have no place, and they read differently. Before the migration
+       runs there is no board to be ranked on yet; after it, a null is a network
+       that did not answer. board.js knows which, so say which. */
+    el.innerHTML='<div class="placebox"><div class="pl">'+(B.needsMigration
+      ? 'The leaderboard opens at launch. This season is saved and goes into the '+
+        'standings the moment it does.'
+      : 'The leaderboard is not reachable right now. This season is still yours; it '+
+        'just is not ranked yet.')+'</div>'+
       '<button id="o-lb">Board</button></div>';
   }else{
     myPlace=place;
@@ -3560,19 +3568,29 @@ async function paintPlace(){
 }
 
 /* ── Where it ranks: the three-window placings tab ─────────────────
-   THE LAUNCH SWITCH. board.js can already answer this (ranks() asks the same
-   PostgREST view the place line above reads), but the production Supabase
-   project is not stood up until launch, so until then the tab is an honest
-   placeholder: the same three windows, drawn dead, saying when they fill in.
-   RIGHT BEFORE GOING LIVE flip this to `true` (a test can set
-   window.PS_CFB_RANKS_LIVE=true instead, which is why the global is read)
-   and the identical cells fill from the board with nothing else to write. */
-const RANKS_LIVE=window.PS_CFB_RANKS_LIVE===true;
+   THE LAUNCH SWITCH, WHICH THROWS ITSELF.
+
+   board.js can already answer this: ranks() asks the same PostgREST view the place
+   line above reads. The only open question is whether the table is on the server
+   yet, and the board answers that one too. A PostgREST 404 for cfb_runs sets
+   needsMigration, which is precisely the difference between "the board is not open
+   yet" and "the board did not answer just now", and those two want different
+   words. So the tab asks, and picks its copy from what comes back.
+
+   That is deliberate rather than lazy: a hardcoded flag would need a deploy timed
+   to the minute the migration lands, and a stale `false` would hide a board that
+   was working. This way the day supabase/62_cfb_leaderboard.sql runs, the cells
+   fill in on the next season anybody finishes, with nothing to ship.
+
+   window.PS_CFB_RANKS_LIVE still pins it either way, which is how the tests drive
+   both states without a server. */
+const RANKS_PINNED=window.PS_CFB_RANKS_LIVE===true?true:
+                   window.PS_CFB_RANKS_LIVE===false?false:null;
 const RANK_WINDOWS=[['today','Today'],['week','This week'],['all','All time']];
-function rankCell(label,w){
+function rankCell(label,w,dash){
   if(!w||w.place==null) return '<div class="rcell dead"><span class="rw">'+label+
-    '</span><span class="rn">--</span><span class="rof">'+
-    (RANKS_LIVE?'not available':'at launch')+'</span></div>';
+    '</span><span class="rn">--</span><span class="rof">'+(dash||'not available')+
+    '</span></div>';
   const cls=w.place===1?' top1':(w.place<=10?' top10':'');
   return '<div class="rcell'+cls+'"><span class="rw">'+label+'</span>'+
     '<span class="rn">#'+w.place.toLocaleString()+'</span>'+
@@ -3583,20 +3601,20 @@ async function paintRanksTab(){
   const who='Where this season places among every '+
     (run.conference?esc(run.conference)+' draft':'free play')+
     ' season recorded: today, this week, all time.';
-  if(!RANKS_LIVE||!B||!run.boardStats){
-    el.innerHTML='<p class="rankwho">'+who+'</p>'+
-      '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,null)).join('')+'</div>'+
-      '<p class="rankfoot">Placements switch on at launch, when everyone starts counting '+
-      'on the same board. This season is saved and goes into the standings the moment '+
-      'the board opens.</p>';
-    return;
-  }
+  const notOpen=()=>'<p class="rankwho">'+who+'</p>'+
+    '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,null,'at launch')).join('')+'</div>'+
+    '<p class="rankfoot">Placements switch on at launch, when everyone starts counting '+
+    'on the same board. This season is saved and goes into the standings the moment '+
+    'the board opens.</p>';
+  if(RANKS_PINNED===false||!B||!run.boardStats){ el.innerHTML=notOpen(); return; }
   el.innerHTML='<p class="rankwho">'+who+'</p>'+
     '<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,run.boardStats.pointDiff);
   let r=null; try{ r=await B.ranks(score,runMode(run)); }catch(_){}
   const any=r&&RANK_WINDOWS.some(([k])=>r[k]&&r[k].place!=null);
   if(!any){
+    /* The table is not there yet: that is the pre-launch state, not a fault. */
+    if(B.needsMigration&&RANKS_PINNED!==true){ el.innerHTML=notOpen(); return; }
     el.innerHTML='<p class="rankwho">'+who+'</p>'+
       '<p class="rankfoot">The leaderboard could not be read just now, so there is no '+
       'placing to show. Nothing else about your season changes.</p>';
@@ -6412,16 +6430,37 @@ function howToPlay(){
       '3</span>Re-spin the year or the team for '+R1+', off your budget.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
-      '4</span>Players who shared a program, a state or a conference build <b>chemistry</b>.</li>'+
+      '4</span>Players with a history together build <b>chemistry</b>: a quarterback and the receiver he threw to most of all, then teammates, brothers, a shared school, a shared coach, a shared home state, a shared conference. At most <b>two running backs</b>, and some players count at two positions.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
       '5</span>Play all <b>12 games</b>. Finish in the <b>top 12</b> of the country and you are in the Playoff. Win big, not just often: margin is what separates two teams with the same record.</li>'+
     '</ul>'+
-    '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish undefeated. Nobody has ever done it.</p>'+
+    '<p class="dim" id="how-perfect" style="font-size:12.5px;margin:13px 0 0">'+perfectLine(null)+'</p>'+
     '<p style="font-size:12.5px;margin:9px 0 0"><a href="/cfb/how-to-play.html" style="color:var(--green);font-weight:700;text-decoration:none">Read the full guide &rarr;</a></p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet();
   $('sh-x').onclick=closeSheet;
+
+  /* The perfect-season line asks the board how many there are, and rewrites itself if
+     the board answers. Until it answers, and if it never does, the line keeps the
+     "nobody" wording, which is the safe thing to say when the count is unknown. */
+  if(B&&typeof B.perfectCount==='function'){
+    B.perfectCount().then((n)=>{
+      const el=$('how-perfect');
+      if(el&&n!==null&&n!==undefined) el.innerHTML=perfectLine(n);
+    }).catch(()=>{});
+  }
+}
+
+/* The undefeated line, in words. Zero or unknown keeps "nobody"; small counts read as
+   words so "done twice" lands better than "done 2 times"; anything larger takes the
+   numeral. */
+function perfectLine(n){
+  const head='Win everything and you finish <b>undefeated national champions</b>. ';
+  if(n===null||n===undefined||n<=0) return head+'Nobody has ever done it.';
+  const WORD={1:'once',2:'twice',3:'three times',4:'four times',5:'five times'};
+  const times=WORD[n]||(n.toLocaleString()+' times');
+  return head+'It has been done <b>'+times+'</b>.';
 }
 
 /* ── wire up buttons ─────────────────────────────────────────── */
