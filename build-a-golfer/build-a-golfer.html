@@ -3487,8 +3487,10 @@ function overlayPurchased(screen){
     +'<div style="font:800 11px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#35d6a0;margin-bottom:10px">✓ Purchase complete</div>'
     +inner
     +'<button class="btn ghost done" style="max-width:360px;margin:0 auto">Done</button>'
-    +'<div class="small muted" style="margin-top:12px">Thanks for supporting RunThe.GG ⛳</div></div>');
+    +'<div class="small muted" style="margin-top:12px">Thanks for supporting RunThe.GG ⛳</div>'
+    +'<div class="small" style="margin-top:8px"><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with your purchase? Contact us</a></div></div>');
   var close=function(){ S.overlay=null; S.purchased=null; render(); };
+  var pi=ov.querySelector('.pissue'); if(pi) pi.onclick=function(e){ e.preventDefault(); S.purchased=null; S.fbText=''; fbReset('purchase'); render(); };
   ov.querySelector('.x').onclick=close; ov.querySelector('.done').onclick=close;
   var act=ov.querySelector('.act'); if(act) act.onclick=function(){
     try{ track('purchase_celebrate_act',{kind:p.kind}); }catch(e){}
@@ -8714,11 +8716,11 @@ function overlayFeedback(screen){
     screen.appendChild(ov); return;
   }
   ov.appendChild($(`<p class="lede" style="margin:2px 0 14px">Found a bug, have an idea, or just want to tell us something? We'd love to hear it, RunTheTour is in active development and your feedback drives what we build next.</p>`));
-  const cats=[['bug','bug','Bug',"Something's broken"],['idea','bulb','Idea','A request or improvement'],['other','chat','Other','Anything else']];
-  const chips=$(`<div style="display:flex;gap:8px;margin-bottom:14px"></div>`);
+  const cats=[['bug','bug','Bug',"Something's broken"],['purchase','cart','Purchase','Billing or store'],['idea','bulb','Idea','A request or improvement'],['other','chat','Other','Anything else']];
+  const chips=$(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>`);
   cats.forEach(([k,icn,lbl,desc])=>{
     const on=S.fbCat===k;
-    const c=$(`<button type="button" style="flex:1 1 0;min-width:0;background:${on?'linear-gradient(180deg,#1ec6a6,#0a7c67)':'linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14))'};color:${on?'#04211c':'var(--oncard)'};border:1.5px solid ${on?'var(--teal)':'var(--line)'};border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center">
+    const c=$(`<button type="button" style="min-width:0;background:${on?'linear-gradient(180deg,#1ec6a6,#0a7c67)':'linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14))'};color:${on?'#04211c':'var(--oncard)'};border:1.5px solid ${on?'var(--teal)':'var(--line)'};border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center">
       <span style="display:inline-block;line-height:1">${ic(icn,{size:20})}</span>
       <span style="display:block;font-weight:800;font-size:13px;margin-top:3px">${lbl}</span>
       <span style="display:block;font-size:10px;opacity:.72;margin-top:1px">${desc}</span></button>`);
@@ -8726,7 +8728,7 @@ function overlayFeedback(screen){
     chips.appendChild(c);
   });
   ov.appendChild(chips);
-  const ph=S.fbCat==='bug'?'What happened, and what were you doing when it broke?':S.fbCat==='idea'?'What would make the game better?':'Tell us anything…';
+  const ph=S.fbCat==='bug'?'What happened, and what were you doing when it broke?':S.fbCat==='purchase'?'What did you buy, and what went wrong? Include the email you used at checkout so we can find your order.':S.fbCat==='idea'?'What would make the game better?':'Tell us anything…';
   const ta=$(`<textarea rows="5" placeholder="${esc(ph)}" style="width:100%;box-sizing:border-box;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.14));color:var(--oncard);border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-family:var(--body);font-size:15px;line-height:1.4;resize:vertical;min-height:112px"></textarea>`);
   ta.value=S.fbText||''; ta.oninput=()=>{ S.fbText=ta.value; };
   ov.appendChild(ta);
@@ -23462,7 +23464,8 @@ function bucketShopNode(){
     card.querySelector('.buybtn').onclick=function(){ beginBucketPurchase(b.id); };
     wrap.appendChild(card);
   });
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.</div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.<br><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with a purchase? Contact us</a></div>'));
+  var _pi=wrap.querySelector('.pissue'); if(_pi) _pi.onclick=function(e){ e.preventDefault(); S.fbText=''; fbReset('purchase'); render(); };
   return wrap;
 }
 function packShopNode(){
