@@ -4369,9 +4369,11 @@ function buildGuestMajorField(){
 // rating they were stamped with at the moment they retired.
 // Senior pros stay dangerous: on the (shorter, no-cut) Legend Circuit a retired great recovers a good
 // chunk of the peak form that fully-age-declined ratings strip away, so the circuit field is genuinely
-// competitive (top ~87, median ~78) instead of a weak lay-up (was top 80 / median 72, which let any
-// OVR-82+ entrant win an absurd number of times).
-const CIRCUIT_VET=0.42;
+// competitive instead of a weak lay-up. Re-tuned 0.42 → 0.72 (owner won EVERY event two straight
+// circuit seasons at 0.42 — a boosted ~94 entrant was winning ~46% of events). At 0.72 the field runs
+// top ~88 / median ~82 and, Monte-Carlo vs the live simRound: an 86 entrant wins ~1/season, 90 ~2-3,
+// a boosted 94 ~4, a maxed 97 ~6 — a Langer-great year is possible, a clean sweep isn't.
+const CIRCUIT_VET=0.72;
 function legendField(n){
   const w=ensureWorld(); if(!w || !w.alumni.length) return [];
   return w.alumni.slice(-Math.max(n*3, 150))
@@ -5909,7 +5911,8 @@ function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent) + pa
 // Call sites must have already checked coinBalance() >= price. The paid-remainder spend is server-authoritative
 // (runtour_spend_paid, atomic + row-locked); the local wallet cache is updated optimistically and self-heals
 // from the server value the RPC returns (or a reload on error).
-function coinCharge(price){ price=Math.round(price||0); if(price<=0) return;
+function coinCharge(price, why){ price=Math.round(price||0); if(price<=0) return;
+  coinLog(-price, why||'Store purchase');
   const s=coinState(); const earnedAvail=Math.max(0, coinsEarned()-(s.spent||0));
   const fromEarned=Math.min(price, earnedAvail);
   if(fromEarned>0){ s.spent=(s.spent||0)+fromEarned; coinSave(s); }
@@ -5922,8 +5925,44 @@ function coinCharge(price){ price=Math.round(price||0); if(price<=0) return;
 // Added on top of the derived earned total (kept out of coinsEarnedRaw to avoid the reset-baseline loop).
 function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSignedIn()||n<=0) return 0;
   const s=coinState(); s.bonus=(s.bonus||0)+n; s.seen=(s.seen||0); coinSave(s);
+  if(!opts.nolog) coinLog(n, opts.label?String(opts.label).replace(/<[^>]*>/g,''):'Reward');
   if(!opts.silent){ try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(opts.label?' '+opts.label:' earned')+'!'); }catch(e){} }
   return n; }
+// ═══ #8 COIN HISTORY ═══ a lightweight ledger of every earn & spend so the balance is explainable.
+// Account-scoped, DEVICE-local (a display log capped at 150 entries, not an accounting system — the
+// server wallet + the derived earned totals stay the source of truth for the balance itself). Written
+// from the chokepoints every coin mutation funnels through: addBonusCoins (all bonus earns, incl. the
+// play faucets via awardPlayCoins), coinCharge (all spends), reconcileCoins (derived progress coins),
+// and purchaseCheck (store-bought coins landing from the webhook).
+function coinLog(amt, why){ try{ amt=Math.round(amt||0); if(!amt || !sbSignedIn()) return;
+  const k=acctKey('bag_coinlog'), s=LS.get(k,null)||{e:[]}; if(!Array.isArray(s.e)) s.e=[];
+  s.e.push({t:Date.now(), a:amt, w:String(why||'').slice(0,64)});
+  if(s.e.length>150) s.e=s.e.slice(-150);
+  LS.set(k,s);
+}catch(e){} }
+function coinLogEntries(){ try{ const s=LS.get(acctKey('bag_coinlog'),null); return (s&&Array.isArray(s.e))?s.e.slice().reverse():[]; }catch(e){ return []; } }
+function openCoinLog(ret){ S.coinlogReturn=ret||null; S.overlay='coinlog'; render(); }
+function overlayCoinLog(screen){
+  const es=coinLogEntries();
+  const rows=es.map(en=>{ const d=new Date(en.t||0);
+    const ds=(d.getMonth()+1)+'/'+d.getDate()+' '+(d.getHours()%12||12)+':'+String(d.getMinutes()).padStart(2,'0')+(d.getHours()<12?'am':'pm');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="flex:0 0 auto;font:800 14px var(--body);color:${en.a>0?'#35d6a0':'#ff7a70'};min-width:82px;text-align:right">${en.a>0?'+':'−'}${coinFmt(Math.abs(en.a))}</span>
+      <span class="small" style="flex:1;color:#dbeee2;text-align:left;min-width:0">${esc(en.w||'')}</span>
+      <span class="small muted" style="flex:0 0 auto;white-space:nowrap">${ds}</span></div>`; }).join('');
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🧾 Coin History</div>
+    <div style="display:inline-flex;align-items:center;gap:8px;margin:12px auto 0;font:900 30px var(--body);color:#ffd45e"><span style="width:24px;height:24px;flex:0 0 auto">${ic('coin',{size:'24px'})}</span>${coinFmt(coinBalance())}</div>
+    <div class="small muted" style="margin-bottom:12px">your current balance</div>
+    ${es.length?`<div style="max-width:500px;margin:0 auto;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden">${rows}</div>`
+      :`<p class="lede" style="max-width:420px;margin:0 auto">Nothing recorded on this device yet. Coins you earn and spend show up here as you play.</p>`}
+    <div class="small muted" style="max-width:420px;margin:10px auto 0">History is kept on this device. The balance itself always syncs with your account.</div>
+    <button class="btn red" style="margin-top:14px;max-width:360px;margin-left:auto;margin-right:auto">Close</button></div>`);
+  const close=()=>{ const ret=S.coinlogReturn; S.coinlogReturn=null; S.overlay=ret||null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.red').onclick=close;
+  screen.appendChild(ov);
+}
 // CS459 (owner): one-time coin grant to specific accounts. Keyed on the SERVER-attributed username
 // (unique, so only the real accounts match - nobody else can hold these handles) + a synced version flag
 // (grantV rides in bag_coins, so mergeCoins carries it across devices), so it credits each named account
@@ -5997,7 +6036,8 @@ function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0;
   var base=n;   // Tour Pass XP is earned from the BASE (pre-mult) amount, so the Pro coin mult never double-dips XP
   var mult=passRewardMult(), passBonus=mult>1;   // Tour Pass holders earn bigger & better
   if(passBonus){ n=Math.round(n*mult); }
-  addBonusCoins(n,{silent:true});
+  addBonusCoins(n,{silent:true,nolog:true});
+  coinLog(n, label?String(label).replace(/<[^>]*>/g,''):'Played & earned');
   passAddXp(base*PASS_XP_RATE);   // Tour Pass: every play faucet feeds the Track
   try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+(passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
@@ -6107,7 +6147,7 @@ function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(c
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
 function reconcileCoins(silent){ try{ checkDropRewards(); }catch(e){} if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarnedRaw(); let gain=0, changed=false;
-  if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
+  if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; try{ coinLog(gain,'Progress & achievements'); }catch(x){} }
   // CS405 self-heal: `spent` can never legitimately exceed what's been earned. A cross-device merge (or a
   // baseline/derived drop) can leave spent > earned, a phantom deficit that keeps the balance at 0 and
   // absorbs new earnings. Clamp it down (owned gear is preserved) so earned coins show immediately.
@@ -7234,6 +7274,7 @@ function render(){
     if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='s1launch') overlayS1Launch(app);
     if(S.overlay==='purchased') overlayPurchased(app);
+    if(S.overlay==='coinlog') overlayCoinLog(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -8558,6 +8599,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
   if(SHOP_ENABLED) play.appendChild(menuRow(ic('cart'),'Pro Shop', signedIn?('Coins: '+coinFmt(coinBalance())+' · gear & boosts'):'Sign in to earn coins & gear',go(()=>{S.overlay='shop';})));
+  if(SHOP_ENABLED&&signedIn) play.appendChild(menuRow('🧾','Coin History','Where your coins came from & went',go(()=>{ S.coinlogReturn=null; S.overlay='coinlog'; })));
   ov.appendChild(play);
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
@@ -23428,6 +23470,8 @@ function packShopNode(){
   var p=packState(), free=packIsFree(), credits=packCredits(), bal=coinBalance();
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:380px;margin:6px auto 2px;line-height:1.5">Spin the wheel, land on an item from the whole locker. Higher tiers have better odds. (Earned Legend gear never drops.)</div>'));
+  if(sbSignedIn()){ var chB=$('<button class="btn ghost" style="width:auto;margin:6px auto 0;padding:7px 13px;font-size:12.5px;display:block">🧾 Coin history ▸</button>');
+    chB.onclick=function(){ openCoinLog('shop'); }; wrap.appendChild(chB); }
   if(free||credits>0){
     wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
       +(free?'🎁 Your first pack is on us — open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready — open a Base pack, from your challenges &amp; streak!'))+'</div>'));
@@ -25117,10 +25161,11 @@ function purchaseCheck(){
     // properly instead of a passing toast. No delta after the polls = the webhook is slow: soft toast.
     var cd=paidCoins()-before, td=dailyTokens()-tokBefore, passNew=dailyPassActive()&&!passBefore, p=null;
     try{
-      if(passNew) p={kind:'pass', coins:Math.max(0,cd)};
+      if(passNew){ p={kind:'pass', coins:Math.max(0,cd)}; if(cd>0) coinLog(cd,'Tour Pass purchase'); }
       else if(td>0) p={kind:'tokens', n:td};
       else if(cd>0){ var b2=BUCKETS.find(function(x){return x.coins*2===cd;}), b1=b2||BUCKETS.find(function(x){return x.coins===cd;});
-        p={kind:'coins', coins:cd, doubled:!!b2, bucket:b1||null}; }
+        p={kind:'coins', coins:cd, doubled:!!b2, bucket:b1||null};
+        coinLog(cd,(b1?b1.name:'Coin purchase')+(b2?' · first-time 2×':'')+' · store'); }
     }catch(e){}
     if(p){ S.purchased=p; S.overlay='purchased'; try{ sfx('win'); }catch(e){} try{ buzz([12,40,12]); }catch(e){} }
     else { try{ toast('<b style="color:#ffd45e">Payment received!</b><br><span class="small">Your items are on the way, they’ll appear in a moment. Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){} }
