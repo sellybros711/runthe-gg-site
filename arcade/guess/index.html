@@ -784,7 +784,10 @@
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
+    // skill tier by guesses used — instant dopamine on a win (becomes a live
+    // percentile once the leaderboard has a real distribution to rank against)
+    var TIER=['','Bullseye — first try! 🎯','Sniper — 2 guesses 🎯','Scout-level — 3 guesses 🔭','Sharp — 4 guesses','Solid — 5 guesses','Clutch — 6 guesses','Down to the wire — 7','Buzzer-beater — 8 ⏱'];
+    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
     (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');
       if(rc){ rc.style.borderLeft=c?('5px solid '+c.p):''; rc.style.background=c?('color-mix(in srgb, '+c.p+' 10%, var(--card2))'):''; } })();
