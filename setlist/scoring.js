@@ -293,7 +293,37 @@ export const ARC_ZERO_AT = 2;
  */
 export const BREADTH_BUSTOUT_GAP = 50;
 export const BREADTH_BIG_JAM = 1200;    // 20 minutes
-export const BREADTH_ROLES = 5;
+/*
+ * THE FULL SPECTRUM.
+ *
+ * This asked for five of the six roles and fired for 67-71% of shows no
+ * matter how well they were played, which makes it a participation prize
+ * rather than a card. The reason is that ENCORE is nearly free (you always
+ * play one) so "five" really meant "four plus the encore you were going to
+ * play anyway".
+ *
+ * All six is the real thing, and it gets HARDER the better you play: 21% of
+ * careless shows manage it against 10% of sharp ones. That inversion is the
+ * whole point. Ballads are 2% of the archive and score badly, so a player
+ * chasing points drops them (38% of careless shows contain one, 17% of sharp
+ * ones). A tester who deliberately hunts all six was doing the most
+ * interesting thing in the game and getting nothing for it.
+ *
+ * It is the biggest card now, and the miss line names the roles you are
+ * short, because "you got everything but a ballad" is a thing a player can
+ * act on and "the night only did one thing" is not.
+ */
+export const ROLE_KINDS = ['opener', 'jam', 'peak', 'ballad', 'closer', 'encore'];
+export const BREADTH_ROLES = ROLE_KINDS.length;
+
+/** "an opener", "a ballad" — the roles start with both vowels and consonants. */
+const article = word => (/^[aeiou]/i.test(word) ? 'an' : 'a');
+
+/** Which of the six kinds a night never played. */
+export function rolesMissing(songs) {
+  const had = new Set((songs || []).flatMap(tagsOf));
+  return ROLE_KINDS.filter(r => !had.has(r));
+}
 export const BREADTH = [
   { id: 'cover',    points: 34, label: 'A cover',
     blurb: 'Somebody else\'s song, made yours',
@@ -311,10 +341,20 @@ export const BREADTH = [
     blurb: 'One song given the whole room',
     has: songs => songs.some(p => lenOf(p) >= BREADTH_BIG_JAM),
     missed: 'Nothing ran long enough to get lost in' },
-  { id: 'roles',    points: 22, label: `${BREADTH_ROLES} distinct roles`,
-    blurb: 'Openers, jams, peaks, ballads, closers',
-    has: songs => new Set(songs.flatMap(tagsOf)).size >= BREADTH_ROLES,
-    missed: 'The night only ever did one thing' },
+  { id: 'roles',    points: 44, label: 'Every kind of song',
+    blurb: 'An opener, a jam, a peak, a ballad, a closer and an encore',
+    has: songs => rolesMissing(songs).length === 0,
+    missed: 'The night only ever did one thing',
+    // Names what is missing, so the card teaches the chase instead of just
+    // withholding points.
+    detail: songs => {
+      const gone = rolesMissing(songs);
+      if (!gone.length) return null;
+      if (gone.length >= 4) return `Only ${BREADTH_ROLES - gone.length} of the six kinds`;
+      const list = gone.length === 1 ? gone[0]
+        : `${gone.slice(0, -1).join(', ')} or ${gone[gone.length - 1]}`;
+      return `Everything except ${article(gone[0])} ${list}`;
+    } },
 ];
 export const BREADTH_MAX = BREADTH.reduce((a, b) => a + b.points, 0);
 
@@ -1011,11 +1051,13 @@ export function scoreShow(sets, segues, spent, segueCounts) {
 
   const roles = [...new Set(all.flatMap(x => tagsOf(x.perf)))];
   const flatSongs = all.map(x => x.perf);
-  const breadth = BREADTH.map(c => ({
-    id: c.id, label: c.label, blurb: c.blurb, missed: c.missed,
-    got: all.length ? c.has(flatSongs) : false,
-    points: c.points,
-  }));
+  const breadth = BREADTH.map(c => {
+    const got = all.length ? c.has(flatSongs) : false;
+    return {
+      id: c.id, label: c.label, blurb: c.blurb, points: c.points, got,
+      missed: (!got && c.detail && all.length && c.detail(flatSongs)) || c.missed,
+    };
+  });
   const breadthTotal = breadth.reduce((a, c) => a + (c.got ? c.points : 0), 0);
 
   const coolHits = cooldowns(s);
