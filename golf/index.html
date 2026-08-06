@@ -957,6 +957,7 @@ window.GA_ID='G-L29P5MRWKE';
   .fx-gold.fx-gold{ --fxc:#f1d04a; animation-name:fxShim } .fx-frost{ --fxc:#9fdcff; animation-duration:3.2s } .fx-void{ --fxc:#8a54d0; animation-duration:2.8s }
   .fx-emerald{ --fxc:#35d6a0; animation-duration:3s } .fx-crimson{ --fxc:#ff5a4d; animation-duration:2.6s } .fx-sapphire{ --fxc:#4aa3ff; animation-duration:3.1s }
   .fx-phoenix.fx-phoenix{ --fxc:#ff8c1a; animation-duration:2.4s; animation-name:fxShim } .fx-celestial.fx-celestial{ --fxc:#b088ff; animation-duration:2.6s; animation-name:fxShim } .fx-heatwave{ --fxc:#ff6a3a; animation-duration:2.7s } .fx-ecto{ --fxc:#7dff5a; animation-duration:2.9s } .fx-stadium{ --fxc:#e8f2ff; animation-duration:3.2s }
+  .fx-rungames{ --fxc:#80ff76; animation-duration:2.8s } .fx-passcrown.fx-passcrown{ --fxc:#ffd447; animation-duration:2.2s; animation-name:fxShim }
   .fx-prism.fx-prism{ animation:fxPrism 3s linear infinite } .fx-inferno.fx-inferno{ --fxc:#ff5a1e; animation:fxFlick 1.1s steps(6,end) infinite } .fx-electric.fx-electric{ --fxc:#35e0ff; animation:fxCrackle .9s ease-in-out infinite }
   /* legendary shimmer: the glow pulse plus a brightness/saturation sheen on the sprite itself */
   @keyframes fxShim{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 2px var(--fxc)) brightness(1) saturate(1)}
@@ -6279,6 +6280,8 @@ const PXFX_PARTS={
   heatwave:{t:'rise', g:'✧', cols:['#ff9a5a','#ff6a3a'], n:6, dur:2.2},
   ecto:    {t:'drift',g:'✧', cols:['#a8ff8a','#7dff5a'], n:6},
   stadium: {t:'blink',g:'✦', cols:['#ffffff','#e8f2ff'], n:7},
+  rungames:{t:'rise', g:'✦', cols:['#c8ffc0','#80ff76'], n:6, dur:2.6},
+  passcrown:{t:'rise',g:'✦', cols:['#fff6cf','#ffd447','#ffe9a0'], n:9, dur:2.2},   // Tour Pass capstone: the gold champion shimmer
 };
 const FXP_POS=[[8,74],[84,58],[24,86],[66,18],[44,64],[92,38],[2,32],[54,90],[34,10],[74,80]];   // fixed spots, no rng
 function pxFxParts(look,fs){ try{
@@ -22015,21 +22018,174 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   .tp-badge.done{background:rgba(53,214,160,.18);color:#35d6a0}
   .tp-badge.lock{background:rgba(255,255,255,.08);color:var(--muted)}
   .tp-claim{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);border:0;border-radius:7px;padding:5px 13px;font:900 10px/1 var(--body);background:linear-gradient(180deg,#ffd447,#eba61f);color:#241a05;cursor:pointer}
-  .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#a78bfa,#7048d6);color:#fff}`;
+  .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#a78bfa,#7048d6);color:#fff}
+  /* ---------- Tour Pass sales surfaces (signed-out page + the Go Pro pitch) ---------- */
+  .tps-ribbon{position:relative;max-width:540px;margin:30px auto 0;padding:11px 34px;text-align:center;color:#fff;
+    font:900 12.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;
+    background:linear-gradient(180deg,#c06bff,#7a2fd0);
+    clip-path:polygon(0 0,100% 0,calc(100% - 15px) 50%,100% 100%,0 100%,15px 50%);
+    filter:drop-shadow(0 8px 16px rgba(162,75,224,.45))}
+  .tps-hero{position:relative;max-width:540px;margin:10px auto 0;border-radius:18px;overflow:hidden;
+    border:1px solid rgba(167,139,250,.5);padding:16px 14px 18px;text-align:center;
+    background:radial-gradient(120% 95% at 50% 0%,rgba(162,75,224,.45),rgba(8,28,17,.15) 64%),linear-gradient(180deg,#170c2c,#081c11 72%);
+    box-shadow:0 18px 44px -26px rgba(162,75,224,.9),inset 0 1px 0 rgba(255,255,255,.08)}
+  .tps-rays{position:absolute;left:50%;top:-60%;width:200%;height:200%;transform:translateX(-50%);pointer-events:none;
+    background:conic-gradient(from 0deg,rgba(255,212,71,.13) 0 5deg,transparent 5deg 28deg);animation:tpsSpin 34s linear infinite}
+  @keyframes tpsSpin{to{transform:translateX(-50%) rotate(360deg)}}
+  .tps-spark{position:absolute;color:#ffd447;font-size:13px;pointer-events:none;opacity:.85;animation:tpsFloat 3.6s ease-in-out infinite}
+  @keyframes tpsFloat{0%,100%{transform:translateY(0) scale(1);opacity:.3}50%{transform:translateY(-9px) scale(1.25);opacity:.95}}
+  .tps-hero-in{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .tps-fig{flex:0 0 auto;filter:drop-shadow(0 10px 16px rgba(0,0,0,.55))}
+  .tps-htxt{flex:1 1 210px;min-width:180px;text-align:left}
+  .tps-kick{font:900 10.5px/1 var(--body);letter-spacing:.2em;color:#c9aaff;margin-bottom:6px}
+  .tps-title{font-family:var(--display);font-size:clamp(30px,9vw,44px);line-height:.94;margin:0;color:var(--oncard);text-transform:uppercase}
+  .tps-title b{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .tps-sub{font:700 12.5px/1.4 var(--body);color:#dfe9e1;margin:7px 0 0}
+  .tps-chips{position:relative;display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:13px}
+  .tps-chip{font:900 10px/1 var(--body);letter-spacing:.1em;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.09);color:#e6efe8;border:1px solid rgba(255,255,255,.14)}
+  .tps-chip.hot{background:linear-gradient(180deg,rgba(241,208,74,.22),rgba(241,208,74,.08));border-color:var(--gold);color:var(--gold)}
+  .tps-sec{max-width:540px;margin:18px auto 0}
+  .tps-h{font:900 11px/1 var(--body);letter-spacing:.2em;color:var(--muted);text-align:center;margin:0 0 10px}
+  .tps-loot{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px}
+  .tps-item{position:relative;border-radius:13px;border:1px solid rgba(255,255,255,.12);padding:13px 6px 9px;min-height:104px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))}
+  .tps-item .tps-n{font:900 10.5px/1.2 var(--body);color:var(--oncard)}
+  .tps-item .tps-q{font:900 12px/1 var(--body);color:var(--gold)}
+  .tps-item.ex{border-color:var(--gold);box-shadow:0 0 0 1px rgba(241,208,74,.35),0 0 22px -8px rgba(241,208,74,.8);
+    background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(255,255,255,.02))}
+  .tps-item.pro{border-color:rgba(167,139,250,.65);box-shadow:0 0 20px -10px #a24be0;background:linear-gradient(180deg,rgba(162,75,224,.18),rgba(255,255,255,.02))}
+  .tps-tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font:900 8px/1 var(--body);letter-spacing:.1em;padding:4px 8px;border-radius:7px;white-space:nowrap}
+  .tps-thumb{width:44px;height:44px}
+  .tps-thumb .sthumb{width:100%;height:100%;display:block}
+  .tps-thumb img,.tps-thumb canvas,.tps-thumb svg{width:100%;height:100%;object-fit:contain}
+  .tps-lanes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tps-lane{border-radius:14px;padding:13px 11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);text-align:center}
+  .tps-lane.pro{border-color:#a78bfa;background:linear-gradient(180deg,rgba(162,75,224,.22),rgba(255,255,255,.02));box-shadow:0 0 30px -16px #a24be0}
+  .tps-lname{font:900 12px/1 var(--body);letter-spacing:.16em;color:var(--muted)}
+  .tps-lane.pro .tps-lname{color:#c9aaff}
+  .tps-lbig{font-family:var(--display);font-size:24px;line-height:1;margin:7px 0 8px;color:var(--oncard)}
+  .tps-lane.pro .tps-lbig{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .tps-ll{list-style:none;padding:0;margin:0;font:700 11.5px/1.5 var(--body);color:#cfe0d4;text-align:left}
+  .tps-ll li{display:flex;gap:6px;align-items:flex-start;margin-top:4px}
+  .tps-ll li i{font-style:normal;color:#35d6a0;flex:0 0 auto}
+  .tps-lane.pro .tps-ll li i{color:var(--gold)}
+  .tps-perks{display:grid;grid-template-columns:1fr;gap:7px}
+  .tps-perk{display:flex;gap:11px;align-items:center;padding:10px 12px;border-radius:11px;border:1px solid rgba(167,139,250,.28);background:rgba(162,75,224,.08)}
+  .tps-perk .tps-pi{width:34px;height:34px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--gold);
+    border-radius:9px;background:rgba(241,208,74,.15);border:1px solid rgba(241,208,74,.3)}
+  .tps-perk b{font:900 12.5px/1.2 var(--body);color:var(--oncard);display:block}
+  .tps-perk span{font:700 11px/1.3 var(--body);color:var(--muted)}
+  .tps-cta{max-width:540px;margin:18px auto 0;text-align:center}
+  .tps-buy{position:relative;display:block;width:100%;border:0;cursor:pointer;border-radius:15px;padding:15px 16px 14px;
+    background:linear-gradient(180deg,#b45cff,#6f28c6);color:#fff;box-shadow:0 14px 30px -16px rgba(162,75,224,1),inset 0 1px 0 rgba(255,255,255,.28);
+    font:900 19px/1 var(--body);letter-spacing:.02em;overflow:hidden}
+  .tps-buy .tps-price{display:block;font-family:var(--display);font-size:34px;line-height:1;margin-top:8px;
+    background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .tps-buy .tps-fine{display:block;font:700 11px/1.3 var(--body);color:rgba(255,255,255,.82);margin-top:7px;letter-spacing:0}
+  .tps-buy:after{content:'';position:absolute;top:0;left:-60%;width:38%;height:100%;transform:skewX(-18deg);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:tpsSheen 3.4s ease-in-out infinite}
+  @keyframes tpsSheen{0%{left:-60%}55%,100%{left:130%}}
+  .tps-note{font:700 11.5px/1.45 var(--body);color:var(--muted);margin:10px auto 0;max-width:460px}
+  @media (max-width:430px){ .tps-htxt{text-align:center;flex-basis:100%} .tps-lanes{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:reduce){ .tps-rays,.tps-spark{animation:none} .tps-spark{opacity:.6} .tps-buy:after{display:none} }`;
   document.head.appendChild(st);
+}
+/* ---- Tour Pass SALES surfaces -----------------------------------------------------------------
+   The pass has to sell itself with pictures, not a paragraph: the actual pack art, the actual
+   exclusive cosmetics, the golfer wearing the tier-50 aura. Everything below is DERIVED from the
+   real reward tables (passTierReward), so the pitch can never drift from what the track pays out. */
+function passLootSummary(lane){
+  const a={coins:0, packs:{}, shards:{}, cos:[]};
+  for(let t=1;t<=PASS_TIERS;t++){ const r=passTierReward(t,lane);
+    if(r.coins) a.coins+=r.coins;
+    if(r.pack)  a.packs[r.pack.tier]=(a.packs[r.pack.tier]||0)+(r.pack.n||1);
+    if(r.shard) a.shards[r.shard.r]=(a.shards[r.shard.r]||0)+(r.shard.n||1);
+    if(r.cos)   a.cos.push(r.cos); }
+  return a;
+}
+function passCosThumb(c){ const col=(c.cat==='fx'&&PXFX_BY[c.id])?PXFX_BY[c.id].col:null; return cosThumbHTML(c.cat,{id:c.id,col:col}); }
+// The visual loot pile for a lane: exclusives first (they're the chase), then packs, shards, coins.
+function passLootTilesHTML(lane){
+  const a=passLootSummary(lane), pro=lane==='prem', out=[];
+  a.cos.forEach(c=>out.push(`<div class="tps-item ex"><span class="tps-tag" style="background:var(--gold-grad-d);color:#241a05">EXCLUSIVE</span>
+    <div class="tps-thumb">${passCosThumb(c)}</div><span class="tps-n">${esc(c.name)}</span></div>`));
+  ['champ','tour','base'].forEach(t=>{ const n=a.packs[t]; if(!n) return;
+    out.push(`<div class="tps-item${t==='champ'?' ex':(t==='tour'&&pro?' pro':'')}"><img src="${pxPackURL(t)}" alt="" style="width:40px;height:50px;object-fit:contain;image-rendering:pixelated">
+      <span class="tps-n">${esc(packType(t).name)}</span><span class="tps-q">×${n}</span></div>`); });
+  ['legendary','epic','rare','common'].forEach(r=>{ const n=a.shards[r]; if(!n) return; const rr=ACC_RARITY[r];
+    out.push(`<div class="tps-item${r==='legendary'?' ex':''}"><span style="font:900 30px/1 var(--body);color:${rr.c};text-shadow:0 0 14px ${rr.c}">◆</span>
+      <span class="tps-n" style="color:${rr.c}">${rr.label} shard${n>1?'s':''}</span><span class="tps-q" style="color:${rr.c}">×${n}</span></div>`); });
+  if(a.coins>0) out.push(`<div class="tps-item"><span style="width:38px;height:38px;display:block">${ic('coin',{size:'38px'})}</span>
+    <span class="tps-n" style="color:#ffd45e">Coins</span><span class="tps-q">${coinFmt(a.coins)}</span></div>`);
+  return out.join('');
+}
+function passSparkHTML(){
+  const pts=[[8,18],[26,64],[52,10],[74,52],[90,24],[40,80],[63,78],[16,44]];
+  return pts.map((p,i)=>`<span class="tps-spark" style="left:${p[0]}%;top:${p[1]}%;animation-delay:${(i*0.42).toFixed(2)}s">✦</span>`).join('');
+}
+// The hero: your own golfer wearing the tier-50 capstone aura, under the season + countdown.
+function passHeroNode(ssn, opts){
+  opts=opts||{};
+  const look=Object.assign({}, S.look||DEFLOOK, {fx:'passcrown', plate:'passplate'});
+  return $(`<div class="tps-hero">
+    <div class="tps-rays"></div>${passSparkHTML()}
+    <div class="tps-hero-in">
+      <div class="tps-fig">${pxFigureHTML(look,132)}</div>
+      <div class="tps-htxt">
+        <div class="tps-kick">SEASON ${ssn.n} · 50 TIERS</div>
+        <h2 class="tps-title">Tour<br><b>Pass</b></h2>
+        <p class="tps-sub">${opts.sub||'Play any mode, climb the track, cash in packs, shards, coins and season-exclusive gear.'}</p>
+      </div>
+    </div>
+    <div class="tps-chips">
+      <span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span>
+      <span class="tps-chip">FREE LANE FOR EVERYONE</span>
+      <span class="tps-chip">RESETS AT SEASON END</span>
+    </div></div>`);
+}
+// The Pro perk stack (the $14.99 value story), used on both the sales page and the in-track upsell.
+function passPerksHTML(){
+  const rows=[
+    ['crown','Every PRO reward, all 50 tiers','Packs, shards, coins and the exclusive Plate + Champion Aura'],
+    ['target','Unlimited daily plays','No attempt cap on Beat the Pro for the whole season'],
+    ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
+    ['cart',TOURPASS.packs+' seasonal packs on the spot','Opened from the Pro Shop whenever you want'],
+    ['bolt',PASS_PRO_MULT+'× coins from every round','Everything you play pays more, all season']];
+  return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
+}
+// The giant, unmissable price CTA.
+function passBuyButtonHTML(label){
+  return `<button class="tps-buy" data-buypass>${esc(label||'Unlock the PRO lane')}
+    <span class="tps-price">$${TOURPASS.usd.toFixed(2)}</span>
+    <span class="tps-fine">One purchase · the full ${TOURPASS_LEN}-day season · no subscription</span></button>`;
 }
 function overlayTourPass(screen){
   if(!passEnabled()){ S.overlay=null; return; }   // dev/early-access gate until the Tour Pass launches
   passStyleOnce();
   const ssn=passSeason();
   if(!sbSignedIn()){
-    const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" aria-label="Tour Pass">
-      <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-      <h3 style="margin-top:34px">Tour Pass</h3>
-      <p class="lede" style="margin-top:-2px">A 60-day season track. The FREE lane is open to everyone: earn Pass XP in every mode and climb 50 tiers of coins, packs and shards. The Tour Pass ($${TOURPASS.usd.toFixed(2)} a season, in the store) unlocks the PRO lane and its bigger rewards all season.</p>
-      <div class="scout" style="text-align:center;border-color:#a78bfa"><b style="color:#a78bfa">Sign in to play the Tour Pass</b><div class="small muted" style="margin-top:3px">Season ${ssn.n} · ${ssn.daysLeft} days left</div></div>
-      <button class="btn violet" id="tp-signin">Sign in ▸</button>
-      <button class="btn red">Close</button></div>`);
+    const ov=$(`<div class="ov tpov tps-page" role="dialog" aria-modal="true" aria-label="Tour Pass">
+      <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
+    ov.appendChild($(`<div class="tps-ribbon">The Season Is Live</div>`));
+    ov.appendChild(passHeroNode(ssn));
+    const free=$(`<div class="tps-sec"><div class="tps-h">FREE LANE · EVERY PLAYER EARNS THIS</div><div class="tps-loot">${passLootTilesHTML('free')}</div></div>`);
+    ov.appendChild(free);
+    ov.appendChild($(`<div class="tps-sec"><div class="tps-h">PRO LANE · WITH THE TOUR PASS</div><div class="tps-loot">${passLootTilesHTML('prem')}</div></div>`));
+    ov.appendChild($(`<div class="tps-sec"><div class="tps-h">TWO LANES, ONE TRACK</div><div class="tps-lanes">
+      <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
+        <li><i>✓</i>All 50 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
+      <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All 50 PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li></ul></div>
+      </div></div>`));
+    ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
+    const cta=$(`<div class="tps-cta">
+      <button class="tps-buy" id="tp-signin">Start climbing, free
+        <span class="tps-price">Sign in ▸</span>
+        <span class="tps-fine">Create a free RunThe.GG account and your Season ${ssn.n} track starts on the next round you play</span></button>
+      <div class="tps-note">The Tour Pass ($${TOURPASS.usd.toFixed(2)}) is available in the store once you're signed in. ${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left in Season ${ssn.n}, then the track resets.</div></div>`);
+    ov.appendChild(cta);
+    ov.appendChild($(`<button class="btn red" style="margin-top:16px">Close</button>`));
     ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
     ov.querySelector('#tp-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     screen.appendChild(ov); return;
@@ -22049,7 +22205,25 @@ function overlayTourPass(screen){
   if(!pro){
     if(TOURPASS_ENABLED){
       // The ONE way to go Pro: the $14.99 60-day Tour Pass (server-authoritative; Stripe checkout).
-      cta.appendChild($(`<button class="btn violet feat" data-buypass style="margin:0 auto">🔓 Go Pro · Tour Pass $${TOURPASS.usd.toFixed(2)}<span class="sub">Every tier's Pro rewards this season, +${coinFmt(TOURPASS.coins)} coins, ${TOURPASS.packs} seasonal packs, unlimited daily plays &amp; ${PASS_REWARD_MULT}× coins</span></button>`));
+      // Sell it with the actual goods: the exclusive cosmetics on your own golfer, the real pack art,
+      // the perk stack, then an unmissable price.
+      const look=Object.assign({}, S.look||DEFLOOK, {fx:'passcrown', plate:'passplate'});
+      let locked=0; for(let i=1;i<=tier;i++) if(s.claimed.prem.indexOf(i)<0) locked++;   // Pro rewards already banked up on tiers you have reached
+      cta.appendChild($(`<div class="tps-hero" style="margin-top:2px">
+        <div class="tps-rays"></div>${passSparkHTML()}
+        <div class="tps-hero-in">
+          <div class="tps-fig">${pxFigureHTML(look,116)}</div>
+          <div class="tps-htxt">
+            <div class="tps-kick">PRO LANE · LOCKED</div>
+            <h2 class="tps-title" style="font-size:clamp(26px,7.5vw,36px)">Go <b>Pro</b></h2>
+            <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all 50 Pro rewards, the Tour Pass Plate and the Champion Aura for the rest of Season ${ssn.n}.</p>
+          </div>
+        </div>
+        <div class="tps-chips"><span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span><span class="tps-chip">SEASON EXCLUSIVE</span></div></div>`));
+      cta.appendChild($(`<div class="tps-sec" style="margin-top:12px"><div class="tps-h">EVERYTHING IN THE PRO LANE</div><div class="tps-loot">${passLootTilesHTML('prem')}</div></div>`));
+      cta.appendChild($(`<div class="tps-sec" style="margin-top:12px"><div class="tps-perks">${passPerksHTML()}</div></div>`));
+      cta.appendChild($(`<div class="tps-cta" style="margin-top:14px">${passBuyButtonHTML('Unlock the PRO lane')}
+        <button class="btn ghost" data-jump style="margin:10px auto 0;max-width:380px">See the track · you're on Tier ${tier} ▸</button></div>`));
     } else {
       cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">Pro lane</b> <span class="small muted">· unlocks with the Tour Pass — coming soon</span></div>`));
     }
@@ -22079,7 +22253,11 @@ function overlayTourPass(screen){
   const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const got=passClaimAll(); if(got.length){ S.passClaimSummary=passClaimAgg(got); S.overlay='passclaim'; render(); } };
   ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
   screen.appendChild(ov);
-  requestAnimationFrame(()=>{ const cur=ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,tier)+'"]'); if(cur) cur.scrollIntoView({block:'center'}); });
+  const jump=()=>{ const cur=ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,tier)+'"]'); if(cur) cur.scrollIntoView({block:'center', behavior:'smooth'}); };
+  const jb=ov.querySelector('[data-jump]'); if(jb) jb.onclick=jump;
+  // Pro holders land on their current tier (the track IS the page). Without Pro the page opens on the
+  // Go Pro pitch instead, with the jump button above to drop straight onto the track.
+  if(pro||!TOURPASS_ENABLED) requestAnimationFrame(()=>{ const cur=ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,tier)+'"]'); if(cur) cur.scrollIntoView({block:'center'}); });
 }
 // Home-screen Tour Pass card (a mode card in the .stack)
 function tourPassCard(){
