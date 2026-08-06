@@ -3354,11 +3354,28 @@ function loginRewLabel(o){ if(!o) return '';
 function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=loginState();
   if(s.day===t) return;                              // already claimed today
   const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
-  const rew=loginReward(n); grantLoginReward(rew);
+  const rew=loginReward(n); grantLoginReward(rew);   // grant now (idempotent by day) regardless of display
   loginSave({day:t, n:n});
-  S.loginReward=rew; S.overlay='login';
+  S.loginReward=rew;
   try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
-  try{ render(); }catch(e){} }
+  // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
+  // other popup is already up, DEFER this login bonus so the two don't clobber each other — it opens
+  // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
+  if(S.overlay || s1LaunchPending()){ S._loginPending=true; return; }
+  S.overlay='login'; try{ render(); }catch(e){} }
+// Is the one-time Season 1 launch popup still owed to this player? (Same eligibility maybeS1LaunchPopup
+// uses, checked BEFORE it sets the seen flag — so a still-pending season popup can gate the login bonus.)
+function s1LaunchPending(){ try{
+  if(LS.get('bag_s1_launch_seen',false)) return false;
+  if(typeof isNewPlayer==='function' && isNewPlayer()) return false;
+  if(!BUCKETS_ENABLED) return false;
+  return true;
+}catch(e){ return false; } }
+// Show a deferred daily-login bonus once nothing is in its way (no overlay up, season launch done).
+function flushPendingLogin(){ if(!S._loginPending) return;
+  if(S.overlay) return;                 // wait for a clean screen
+  if(s1LaunchPending()) return;         // the season launch goes first
+  S._loginPending=false; S.overlay='login'; try{ render(); }catch(e){} }
 function loginSlotInner(d){ const kind=LOGIN_TRACK[d];
   if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
   if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
@@ -3442,7 +3459,14 @@ function overlayS1Launch(screen){
     <button class="btn store s1btn s1store" style="max-width:360px;margin:0 auto 8px">See the store ▸</button>
     <button class="btn ghost play s1btn" style="max-width:360px;margin:0 auto">Let's play</button>
     </div></div>`);
-  const close=()=>{ S.overlay=null; render(); };
+  const close=()=>{
+    // If a daily-login bonus is queued behind this, swap STRAIGHT to it — never pass through the
+    // null-overlay state, which would fire the Back-button history.back() whose popstate then closes
+    // the login popup out from under us (overlay stays "open" the whole time, so history is undisturbed).
+    if(S._loginPending && typeof s1LaunchPending==='function' && !s1LaunchPending()){
+      S._loginPending=false; S.overlay='login'; try{ track('login_bonus_after_s1'); }catch(e){} render(); return; }
+    S.overlay=null; render();
+  };
   ov.querySelector('.x').onclick=close; ov.querySelector('.play').onclick=close;
   ov.querySelector('.store').onclick=()=>{ try{ track('s1_launch_store'); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
   screen.appendChild(ov);
@@ -9096,7 +9120,7 @@ function scrTitle(){
   }
   // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeS1LaunchPopup(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
   // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
