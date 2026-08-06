@@ -14015,6 +14015,39 @@ allows Google Fonts, or self-host Anton.*
   horizontal overflow; sign-in routes to the account overlay; 0 page errors throughout. Deployed to /golf.
   Tunable: the `.tps-*` CSS in `passStyleOnce`, the perk rows in `passPerksHTML`.
 
+- **Welcome-pack POPUP, a RunThe.GG footer ad, and a Pro Shop navigation revamp (owner batch, 2
+  screenshots).** Three asks:
+  1. **"I don't like how it's a temporary popup"** - the welcome free pack was a 5-second toast that
+     vanished before you could act on it. `maybeWelcomePack` now grants the pack and opens a REAL modal
+     (`overlayWelcomePack`): the pack art + name, and two buttons - **"Open my pack"** (goes straight into
+     the pack wheel, free, via `startPackDeal({pack:'base'})`) or **"Open it later"** (it stays in Pro Shop
+     -> Packs). Deferred while you're in a live round / draft / ceremony (`S._welcomePop` + a busy-screen
+     list) and flushed on the next clean title render; it takes PRIORITY over the season-launch and
+     daily-login popups (both now gate on `welcomePackPending()`), so the sign-up reward lands first.
+     Still once per account (the cloud-synced `welcomePack` flag is unchanged).
+  2. **Footer "Love soccer? Try RunThePitch" pill -> a RunThe.GG house ad** (owner: "a little ad for
+     RunThe.gg promoting more games... should link them to RunThe.gg"). New `.ggad` card under the footer
+     pills: the `.GG` mark, "More games at RunThe.GG", the platform pitch (one free account, RunThePitch +
+     RunTheTour + more on the way) and a green **Play ↗** CTA, linking to the hub at `/`. A shorter
+     sub-line under 460px so it stays two lines on a phone.
+  3. **Pro Shop navigation revamp** (owner: "the buy coins menu is getting pushed off the screen on
+     mobile... we must make sure that buy coins is visible! Maybe it can be a button right under your coin
+     amount"). Root cause: the 9 section tabs were one flex row whose items had `min-width:auto`, so they
+     couldn't shrink and the row overflowed the right edge - Buy Coins (last) was off-screen.
+     - **Buy Coins is out of the tab row** and is now a gold **＋ Buy Coins** button directly under the
+       coin balance in the shop bar (`.shop-wallet`), on EVERY section, highlighting when you're in it.
+     - **The remaining 8 tabs are a 4-across grid that wraps to two rows** (`.segrow.shopseg`): no
+       horizontal scroll, every section visible at once, labels wrap instead of overflowing.
+     - **The pinned header got much shorter**: the closet + invite CTAs moved OUT of the sticky block into
+       the scroll flow, and the golfer preview only pins on sections where it means something
+       (apparel/accessories/effects/clubs/my-items/drops), not on Packs/Shards/Buy Coins. The Packs page's
+       frozen header went **~517px -> 179px** on a 390px phone, so you land on actual packs, not chrome.
+  Verified in Playwright: the popup grants once, opens the FREE pack wheel, defers while busy and flushes
+  on the title, "later" closes cleanly; the ad links to `/` with the old pill gone and reads on phone +
+  desktop; all 9 shop sections render 8 tabs with no overflow + a working Buy Coins button, the closet/
+  invite CTAs still work and scroll away while the tabs stay pinned; overlay sweep + a full 18-hole
+  practice round; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
