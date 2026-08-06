@@ -157,7 +157,7 @@ group('time scoring', () => {
 
   eq(scoreShow([[], [], []], new Set()).timeTotal, 0, 'an empty night scores no time');
   eq(setNote(1, 1), 'Filled to the curfew.', 'set note at the top');
-  eq(setNote(0.7, 1), 'Cut short — the crowd noticed.', 'set note when short');
+  eq(setNote(0.7, 1), 'Cut short. The crowd noticed.', 'set note when short');
   eq(setNote(0.3, 1), 'Barely a set.', 'set note when barely played');
   eq(setNote(0.9, 0), 'Never happened.', 'an empty set says so regardless of ratio');
 });

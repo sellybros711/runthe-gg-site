@@ -16,11 +16,11 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock — then watch your show play back to a crowd." />
+<meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock, then watch your show play back to a crowd." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Cg fill='none' stroke-width='2.6'%3E%3Ccircle cx='16' cy='16' r='2' stroke='%23F06A5F'/%3E%3Ccircle cx='16' cy='16' r='5.2' stroke='%23F2B632'/%3E%3Ccircle cx='16' cy='16' r='8.4' stroke='%2348D17A'/%3E%3Ccircle cx='16' cy='16' r='11.6' stroke='%2337C5D5'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
 <meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
-<meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew — then watch the show play back." />
+<meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back." />
 <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -132,6 +132,8 @@
   .btn:active{transform:translateY(1px);}
   .btn.primary{background:var(--teal); border-color:var(--teal); color:#04121F;}
   .btn.primary:hover{filter:brightness(1.08);}
+  /* The one thing a first visit is here to press. */
+  .btn.big{font-size:16px; padding:14px 16px; margin-top:12px;}
   .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
   .btn.ghost{background:transparent;}
 
@@ -182,13 +184,27 @@
 
   /* Three columns even on a phone: the copy is short, and stacked they cost
      three times the height for the same three sentences. */
-  .steps{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 16px;}
-  .step{padding:11px 11px 12px; border-radius:var(--r-md); background:var(--card);
-    border:1px solid var(--line);}
-  .step b{display:block; font-family:var(--ui); font-size:18px; color:var(--teal); line-height:1;
-    margin-bottom:5px;}
-  .step span{font-size:11.5px; color:var(--mut); line-height:1.45; font-weight:600;}
-  @media (max-width:420px){ .step{padding:9px 9px 10px;} .step span{font-size:11px;} }
+  /* HOW IT WORKS.
+     This was three cards side by side, which at 390px gave each of them a
+     column about seven characters wide: "Spin a year, / then a night / from it
+     / a real concert," over seven lines. A numbered list reads in one pass and
+     is shorter than the grid it replaces. The lead clause of each line is the
+     point; the rest is the detail behind it. */
+  .how{margin:20px 0 14px;}
+  .how h3{font-family:var(--ui); font-size:13px; letter-spacing:2.6px; text-transform:uppercase;
+    color:var(--dim); margin:0 0 10px; font-weight:400;}
+  .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .steps li{display:flex; gap:10px; align-items:flex-start;}
+  .steps b{flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:grid;
+    place-items:center; font-family:var(--ui); font-size:12px; line-height:1;
+    color:var(--bg); background:var(--teal); margin-top:1px;}
+  .steps span{font-size:13px; line-height:1.5; color:var(--mut); font-weight:600;}
+  .steps s{text-decoration:none; color:var(--ink); font-weight:800;}
+
+  .tryout{margin:18px 0 4px; text-align:center;}
+  .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
+  .tryout span{display:block; margin-top:7px; font-size:11.5px; font-weight:600;
+    color:var(--dim);}
 
   .bands{display:flex; flex-direction:column; gap:11px;}
   .band{padding:14px 16px 14px;}
@@ -197,7 +213,6 @@
   .band-hd h2{font-family:var(--hero); font-size:30px; margin:0; text-transform:uppercase;
     letter-spacing:.5px;}
   .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:11px;}
-  .band-actions{display:grid; grid-template-columns:1fr; gap:10px;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -355,6 +370,11 @@
      with no notable role — now grey — from getting a grey selection ring. */
   .song[aria-pressed="true"]{background:var(--card3); border-color:var(--teal);
     box-shadow:0 0 0 1px var(--teal);}
+  .song.used{padding-top:6px; padding-bottom:6px;}
+  .song.used .chips{display:none;}
+  .song.used .t{font-size:13px;}
+  .song.used .o{margin-top:1px;}
+  .song.used .r{gap:0;}
   .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
   .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
   .song .o.notime{color:var(--redT); font-weight:800;}
@@ -855,9 +875,10 @@ import { loadBand, setLabel, setRank } from './dataLoader.js?v=15';
 // `sample` is invented data used to exercise the pipeline — see
 // scripts/setlist/make_sample.mjs. Real bands come from the ingester.
 const BANDS = [
-  { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',  note: 'elgoose.net archive' },
+  { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',
+    note: '655 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
-    note: 'Test data — not a real band', sample: true },
+    note: 'Invented data, for testing the pipeline', sample: true },
 ];
 
 const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
@@ -992,38 +1013,50 @@ function setScreen(name){
 
 // ── home ─────────────────────────────────────────────────────────────────────
 function renderHome(){
-  const bands = BANDS.map(b => {
-    const warn = b.sample
-      ? `<div class="warn">Invented data for a band that doesn't exist — kept as a test fixture.</div>`
-      : '';
-    return `
+  const real = BANDS.filter(b => !b.sample);
+  const test = BANDS.filter(b => b.sample);
+
+  const card = b => `
       <section class="card band">
         <div class="band-hd"><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}</div>
-        <div class="band-actions">
-          <button class="btn primary" data-start="${b.id}">Draft a setlist</button>
-        </div>
-        ${warn}
+        <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
       </section>`;
-  }).join('');
 
+  /* The button comes before the how-it-works, not after. A returning player
+     wants the button; a new one gets a single sentence above it and the rules
+     underneath, where they can read them or not. */
   app.innerHTML = `
     <div class="hero">
       <div class="eyebrow">RunThe.GG presents</div>
       <h1><span class="accent">Segue</span></h1>
       <div class="tagline">The Setlist Builder Game</div>
-      <p>Two sets, an encore, and a curfew on each. Spin up real shows, spend
-        their songs against the clock, and build the night you wish they'd played.</p>
-    </div>
-
-    <div class="steps">
-      <div class="step"><b>01</b><span>Spin a year, then a night from it — a real concert, from the band's whole history.</span></div>
-      <div class="step"><b>02</b><span>Pull one song and play it. It spends its running time from your set. No takebacks.</span></div>
-      <div class="step"><b>03</b><span>Bustouts, monster versions and real segues all score. Then the show plays back to a crowd.</span></div>
+      <p>Build the night you wish they had played.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
-    <div class="bands">${bands}</div>`;
+    <div class="bands">${real.map(card).join('')}</div>
+
+    <section class="how">
+      <h3>How it works</h3>
+      <ol class="steps">
+        <li><b>1</b><span><s>Spin a real night.</s> Every show they have
+          actually played.</span></li>
+        <li><b>2</b><span><s>Time is the currency.</s> Two sets and an encore,
+          each on its own curfew.</span></li>
+        <li><b>3</b><span><s>No takebacks.</s> One song a spin, and you say
+          when a set ends.</span></li>
+        <li><b>4</b><span><s>Segues, bustouts and monster jams score.</s>
+          So does coming down after a peak.</span></li>
+        <li><b>5</b><span><s>Then it plays back.</s> Song by song, to a
+          crowd.</span></li>
+      </ol>
+    </section>
+
+    ${test.length ? `<div class="tryout">
+      <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
+      <span>A band that does not exist, for testing the pipeline.</span>
+    </div>` : ''}`;
 }
 
 // ── reveal ───────────────────────────────────────────────────────────────────
@@ -1238,7 +1271,7 @@ function sofarHTML(si){
     <div class="sofar empty">
       <div class="sf-hd"><b>Your setlist</b>
         <button class="sf-tog" type="button" id="sofarTog">show all ${played}</button></div>
-      <div class="sf-none">${esc(SETS[si].label)} is empty — this is the opener.</div>
+      <div class="sf-none">${esc(SETS[si].label)} is empty. This one opens it.</div>
     </div>`;
 
   return `
@@ -1298,11 +1331,10 @@ function renderDraft(){
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
       const over = lenOf(p) - left;
-      const why = used ? 'Already in your show'
-        : !room ? (over > 0
-            ? `${fmtClock(over)} too long &mdash; only ${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}`
-            : `${esc(cfg.label)} is full &mdash; ${SETS[si].maxSongs} songs is the cap`)
-        : strands ? 'Segues, and nothing here lands it'
+      const why = used ? 'Already played'
+        : !room ? (over > 0 ? `${fmtClock(over)} too long`
+                            : `${esc(cfg.label)} is full`)
+        : strands ? 'Nothing here lands it'
         : '';
       // Out of time is a different kind of no from already-played, and the
       // player needs to know which wall they hit.
@@ -1369,10 +1401,10 @@ function renderDraft(){
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
           <b>${esc(hunt.from.song)} &rsaquo;</b>
           ${canFinish
-            ? 'is still going — a song below finishes it.'
+            ? 'is still going. A song below finishes it.'
             : `is still going. Nothing here lands it${
                 canRespin(S.sets, si, S.respins, S.closed, S.spent)
-                  ? ` — spinning costs ${fmtClock(respinCost(S.respins))}.`
+                  ? `. A respin costs ${fmtClock(respinCost(S.respins))}.`
                   : '. Play anything to move on.'}`}
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
@@ -1393,7 +1425,7 @@ function renderDraft(){
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
             ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
-              <div class="commit">This one segues — you will need to land it next
+              <div class="commit">This one segues. You will need to land it next
                 or the transition is lost.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn">
@@ -1403,7 +1435,7 @@ function renderDraft(){
                 : `Banks ${fmtClock(Math.max(0, left))} for the encore`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
-              || (!fits.length ? 'Nothing here fits — closing is the only move.'
+              || (!fits.length ? 'Nothing here fits. Closing is the only move.'
                 : si === ENCORE_INDEX ? 'Leftover time from the sets is yours here.'
                 : 'Every minute you leave unplayed goes to the encore.'))}</div>
           </div>
@@ -1496,7 +1528,7 @@ function renderResult(){
             <div class="ceil-n">${S.best.total}</div>
             <div class="ceil-say">${gap <= 0
               ? 'Nothing we tried beat it. That is the show those nights had in them.'
-              : `${gap} more was on the table &mdash; you got <b>${pct}%</b> of it.`}</div>
+              : `${gap} more was on the table. You got <b>${pct}%</b> of it.`}</div>
           </div>
           <div class="ceil-bar"><span style="width:${Math.min(100, pct)}%"></span></div>
           <div class="ceil-fine">Same nights, same order, same rules. Every point of it
@@ -1515,7 +1547,7 @@ function renderResult(){
           ${S.missed.role ? `As ${esc(S.missed.role.name.toLowerCase())} it` : 'It'}
           was worth <b>${S.missed.score.subtotal}</b>${
             S.missed.score.versionReasons.length
-              ? ' — ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
+              ? ': ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
               : ''}.</div>
       </div>` : ''}
 
@@ -1541,7 +1573,7 @@ function renderResult(){
           <h3>Time <span>${r.timeTotal}</span></h3>
           ${r.time.map(t => `<div class="flowrow">
             <div class="fl"><b>${esc(t.label)}</b>
-              <i>${fmtClock(t.used)} of ${fmtClock(t.budget)} — ${esc(t.note)}</i></div>
+              <i>${fmtClock(t.used)} of ${fmtClock(t.budget)}. ${esc(t.note)}</i></div>
             <div class="fp">${t.points}</div></div>`).join('')}
         </div>
 
@@ -1551,7 +1583,7 @@ function renderResult(){
             ? r.segues.map(x => `<div class="flowrow">
                 <div class="fl"><b>${esc(x.a)} → ${esc(x.b)}</b><i>${
                   x.times > 1
-                    ? `The band has played this pair ${x.times} times — ${
+                    ? `The band has played this pair ${x.times} times, worth ${
                         Math.round(x.fam * 100)}% of a first-time find`
                     : 'They have played this pair once, ever'}${
                   x.decay < 1 ? ` · ${Math.round(x.decay * 100)}% (segue ${
@@ -1562,7 +1594,7 @@ function renderResult(){
                 <div class="fp">0</div></div>`}
           ${r.cooldowns.map(c => `<div class="flowrow">
             <div class="fl"><b>${esc(c.a)} &rarr; ${esc(c.b)}</b><i>Came down after a big one
-              &mdash; the room got to breathe</i></div>
+              and the room got to breathe</i></div>
             <div class="fp">${c.points}</div></div>`).join('')}
           <div class="flowrow">
             <div class="fl"><b>Energy arc</b><i>${r.arc >= ARC_MAX * 0.75
@@ -1666,7 +1698,7 @@ function shareText(){
   const r = S.result;
   const lines = [];
 
-  lines.push('SEGUE — ' + S.band.label.toUpperCase());
+  lines.push('SEGUE // ' + S.band.label.toUpperCase());
   lines.push('');
 
   S.sets.forEach((set, i) => {
@@ -1705,7 +1737,7 @@ async function fetchBand(band){
   const res = await fetch(`${band.csv}?v=${DATA_VERSION}`);
   if (!res.ok){
     throw new Error(res.status === 404
-      ? `No data file yet for ${band.label} — run scripts/setlist/ingest_band.mjs to build ${band.csv}.`
+      ? `No data file yet for ${band.label}. Run scripts/setlist/ingest_band.mjs to build ${band.csv}.`
       : `Could not load ${band.csv} (${res.status}).`);
   }
   const data = loadBand(await res.text());
@@ -1806,7 +1838,7 @@ function closeSet(){
   const couldLand = S.show && S.show.songs.some(p =>
     !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
   if (dangling && couldLand){
-    S.hint = `${dangling.song} segues — play what it runs into before closing.`;
+    S.hint = `${dangling.song} segues. Play what it runs into before closing.`;
     S.hintBad = true;
     renderDraft();
     return;
@@ -1956,7 +1988,7 @@ function renderShow(){
     } else if (b.kind === 'time'){
       feed.insertAdjacentHTML('beforeend', `
         <div class="sim-time">${esc(b.label)} ran ${fmtClock(b.used)} of ${fmtClock(b.budget)}
-          — ${esc(b.note)} <b>+${b.points}</b></div>`);
+          &middot; ${esc(b.note)} <b>+${b.points}</b></div>`);
     } else {
       feed.insertAdjacentHTML('beforeend', `
         <div class="sim-final">
