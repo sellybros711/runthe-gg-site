@@ -1,3 +1,6 @@
 node_modules/
 football/build/.cache/
 cfb/build/.cache/
+
+# Local data exports (scripts/pull-ps-runs.mjs)
+ps_runs_export.csv
