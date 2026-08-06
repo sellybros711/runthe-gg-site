@@ -13,6 +13,7 @@ import {
   SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
+  ROLE_KINDS, BREADTH_ROLES, rolesMissing,
   familiarityMult, segueDecay, segueKey, gradeScore, gradeRunning, GRADE_WARM, GRADE_HOT,
   cooldowns, isBigMoment, COOLDOWN_BONUS, COOLDOWN_BREATHER_ENERGY, COOLDOWN_LENGTH_RATIO,
   GAP_RARE, GAP_BUSTOUT, GAP_UNICORN, gapPhrase, TEASE_SECONDS, RX,
@@ -284,6 +285,10 @@ group('breadth replaces a category nobody could fail', () => {
     const r = scoreShow([songs, [], []], new Set());
     return r.breadth.find(c => c.id === id).got;
   };
+  const miss = (id, songs) => {
+    const r = scoreShow([songs, [], []], new Set());
+    return r.breadth.find(c => c.id === id).missed;
+  };
   eq(BREADTH_MAX, BREADTH.reduce((a, c) => a + c.points, 0), 'BREADTH_MAX is the sum of the cards');
   eq(BREADTH.length, 5, 'five cards');
   eq(has('cover', [base({ song_id: 'a' })]), false, 'no cover by default');
@@ -303,6 +308,30 @@ group('breadth replaces a category nobody could fail', () => {
   // maxed by random play, greedy play and segue farming alike.
   const narrow = scoreShow([[base({ song_id: 'a', tags: 'jam' }), base({ song_id: 'b', tags: 'jam' })], [], []], new Set());
   eq(narrow.breadthTotal < BREADTH_MAX, true, 'a one-note night does not max breadth');
+
+  // The roles card is all six kinds, not five of six. Five of six fires for
+  // ~70% of shows however they are played, because the encore is nearly free.
+  const kinds = ROLE_KINDS.map((t, i) => base({ song_id: `r${i}`, tags: t }));
+  eq(BREADTH_ROLES, 6, 'six kinds of song');
+  eq(has('roles', kinds), true, 'all six claims the card');
+  ROLE_KINDS.forEach(drop => {
+    eq(has('roles', kinds.filter(p => p.tags !== drop)), false, `dropping the ${drop} loses it`);
+  });
+  eq(BREADTH.find(c => c.id === 'roles').points, Math.max(...BREADTH.map(c => c.points)),
+     'and it is the biggest card, because it is the hardest');
+
+  // Missing it should name the gap. A player can act on "everything but a
+  // ballad"; they cannot act on "the night only did one thing".
+  eq(rolesMissing(kinds), [], 'nothing missing from a full spread');
+  eq(rolesMissing(kinds.filter(p => p.tags !== 'ballad')), ['ballad'], 'one gap is named');
+  eq(miss('roles', kinds.filter(p => p.tags !== 'ballad')), 'Everything except a ballad',
+     'one gap reads as prose');
+  eq(miss('roles', kinds.filter(p => !['peak', 'ballad'].includes(p.tags))),
+     'Everything except a peak or ballad', 'two gaps are joined with an or');
+  eq(miss('roles', kinds.filter(p => !['opener', 'peak', 'ballad'].includes(p.tags))),
+     'Everything except an opener, peak or ballad', 'three gaps list out');
+  eq(miss('roles', [base({ tags: 'jam' })]), 'Only 1 of the six kinds',
+     'four or more gaps count up instead of listing');
 });
 
 group('a score colour means a rating', () => {
