@@ -3470,7 +3470,7 @@ function overlayPurchased(screen){
   } else if(p.kind==='tokens'){
     inner='<div class="tag" style="color:#5bcfe8;border-color:#5bcfe8;margin:0 auto">🎫 Daily Tokens</div>'
       +'<h3 style="margin:14px 0 4px;font-size:26px">+'+p.n+' Daily Token'+(p.n>1?'s':'')+'!</h3>'
-      +'<p class="lede" style="max-width:420px;margin:0 auto 14px">Extra runs at today’s course — use one any time you’re out of free attempts. You now have <b style="color:#5bcfe8">'+dailyTokens()+'</b>.</p>'
+      +'<p class="lede" style="max-width:420px;margin:0 auto 14px">Extra runs at today’s course, use one any time you’re out of free attempts. You now have <b style="color:#5bcfe8">'+dailyTokens()+'</b>.</p>'
       +'<button class="btn blue act" style="max-width:360px;margin:0 auto 8px">Play the Daily ▸</button>';
   } else {
     var b=p.bucket;
@@ -3478,8 +3478,8 @@ function overlayPurchased(screen){
       +'<h3 style="margin:14px 0 2px;font-size:26px">'+(b?esc(b.name):'Coins')+' delivered!</h3>'
       +'<div style="display:inline-flex;align-items:center;gap:8px;margin:6px auto 2px;font:900 40px var(--body);color:#ffd45e"><span style="width:30px;height:30px;flex:0 0 auto">'+ic('coin',{size:'30px'})+'</span><span class="pcoins">+0</span></div>'
       +(p.doubled?'<div style="margin:6px auto 0"><span style="display:inline-block;font:800 10px var(--body);letter-spacing:.08em;background:var(--gold);color:#0c1f16;border-radius:20px;padding:3px 10px">FIRST-TIME BONUS APPLIED · 2× COINS</span></div>':'')
-      +'<p class="lede" style="max-width:420px;margin:10px auto 12px">Straight into your wallet — spend them on gear, packs and colors in the Pro Shop.</p>'
-      +(b&&b.packTier?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:'+b.col+'"><b style="color:'+b.col+'">🎁 +'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added — Pro Shop → Packs</div></div>':'')
+      +'<p class="lede" style="max-width:420px;margin:10px auto 12px">Straight into your wallet. Spend them on gear, packs and colors in the Pro Shop.</p>'
+      +(b&&b.packTier?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:'+b.col+'"><b style="color:'+b.col+'">🎁 +'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added · Pro Shop → Packs</div></div>':'')
       +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">'+(b&&b.packTier?'Open your pack'+(b.packN>1?'s':'')+' ▸':'Spend them ▸')+'</button>';
   }
   var ov=$('<div class="ov" role="dialog" aria-modal="true" style="text-align:center">'
@@ -6060,7 +6060,7 @@ function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) 
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
   s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
   if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
-// Reward tables — milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
+// Reward tables - milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
 // FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
 // Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
 // with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
@@ -22194,7 +22194,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
     </div>
     ${canShard?`<button class="btn teal" id="pv-shard" style="margin-top:10px">◆ Redeem with ${shNeed} ${ACC_RARITY[rar].label} shards<span class="sub">No coins spent — shards come from duplicate pack pulls</span></button>`:''}
-    ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store — your first buy of each size is 2×</span></button>`:''}
+    ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store · your first buy of each size is 2×</span></button>`:''}
     </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
   const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
@@ -23476,12 +23476,12 @@ function packShopNode(){
     tiers.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
-  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b> — collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();
+  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b>. Collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();
   wrap.appendChild(odds);
   // #5 discoverability: signed-in and can't afford even the cheapest pack → point at Buy Coins (tasteful,
   // only at the moment it's actually useful).
   try{ if(BUCKETS_ENABLED && sbSignedIn() && bal<Math.min.apply(null,packTierList().map(packPrice))){
-    var gc=$('<button class="btn" style="max-width:380px;margin:12px auto 0;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Short on coins? Buy Coins ▸<span class="sub">Coin buckets in the store — your first buy of each size is 2×</span></button>');
+    var gc=$('<button class="btn" style="max-width:380px;margin:12px auto 0;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Short on coins? Buy Coins ▸<span class="sub">Coin buckets in the store · your first buy of each size is 2×</span></button>');
     gc.onclick=function(){ try{ track('nudge_getcoins',{from:'packs'}); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
     wrap.appendChild(gc);
   } }catch(e){}
@@ -25123,7 +25123,7 @@ function purchaseCheck(){
         p={kind:'coins', coins:cd, doubled:!!b2, bucket:b1||null}; }
     }catch(e){}
     if(p){ S.purchased=p; S.overlay='purchased'; try{ sfx('win'); }catch(e){} try{ buzz([12,40,12]); }catch(e){} }
-    else { try{ toast('<b style="color:#ffd45e">Payment received!</b><br><span class="small">Your items are on the way — they’ll appear in a moment. Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){} }
+    else { try{ toast('<b style="color:#ffd45e">Payment received!</b><br><span class="small">Your items are on the way, they’ll appear in a moment. Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){} }
     try{ render(); }catch(e){} }
   (function poll(){ tries++; loadWallet();
     setTimeout(function(){ if(paidCoins()>before || dailyTokens()>tokBefore || dailyPassActive()!==passBefore || tries>=6){ say(); } else { poll(); } }, 1500);
