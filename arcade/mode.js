@@ -51,9 +51,88 @@
       '.rtgm-opt.on{border-color:var(--mc);background:color-mix(in srgb, var(--mc) 15%, var(--card2,#162B44));}' +
       '.rtgm-opt:active{transform:scale(.995);}' +
       '.rtgm-lab{font-weight:900;font-size:16px;}' +
-      '.rtgm-msub{font-size:11px;font-weight:700;color:var(--mut,#A9B8CB);text-transform:uppercase;letter-spacing:.05em;}';
+      '.rtgm-msub{font-size:11px;font-weight:700;color:var(--mut,#A9B8CB);text-transform:uppercase;letter-spacing:.05em;}' +
+      '.rtgm-opt.lk{opacity:.55;cursor:pointer;}' +
+      '.rtgm-opt.lk .rtgm-lab::after{content:" 🔒";font-size:12px;}' +
+      '.rtgm-cta{margin-top:14px;width:100%;border:0;border-radius:11px;background:var(--gold,#F2B632);color:#20180A;font-weight:900;font-size:14px;padding:13px;min-height:46px;cursor:pointer;font-family:inherit;}' +
+      '.rtgm-cta:disabled{opacity:.6;cursor:default;}' +
+      '.rtgm-fine{font-size:10.5px;color:var(--mut,#A9B8CB);margin:9px 0 0;font-weight:600;line-height:1.4;}' +
+      '.rtgm-x{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line2,rgba(255,255,255,.15));background:var(--card2,#162B44);color:var(--ink,#F4F7FB);font-size:13px;cursor:pointer;}';
     document.head.appendChild(s);
   }
+
+  // Pro upsell: shown when a FREE user taps a locked sport version. Reuses the
+  // archive gate's checkout flow (POST /api/stripe/checkout with the signed-in
+  // Supabase user id); asks for sign-in first when signed out.
+  function showUpsell(title) {
+    ensureStyle();
+    var scr = document.createElement('div'); scr.className = 'rtgm-scrim';
+    scr.innerHTML =
+      '<div class="rtgm-sheet" role="dialog" aria-label="Run The Arcade Pro">' +
+        '<button class="rtgm-x" type="button" aria-label="Close">✕</button>' +
+        '<div class="rtgm-pill">PRO</div>' +
+        '<h2 class="rtgm-h">Play every version</h2>' +
+        '<p class="rtgm-sub">Pro unlocks an NBA-only, NFL-only and MLB-only edition of ' + esc(title || 'each game') + ' — each with its own daily board and streak — plus unlimited plays and the full archive.</p>' +
+        '<div class="rtgm-opts">' + MODES.filter(function (m) { return m.k !== 'all'; }).map(function (m) {
+          return '<div class="rtgm-opt lk" style="--mc:' + m.c + '"><span class="rtgm-lab">' + esc(m.label) + '</span><span class="rtgm-msub">' + esc(m.sub) + '</span></div>';
+        }).join('') + '</div>' +
+        '<button class="rtgm-cta" type="button">Get Pro</button>' +
+        '<p class="rtgm-fine">Cancel anytime. Your free All-Sports streaks are untouched.</p>' +
+      '</div>';
+    document.body.appendChild(scr);
+    function close() { scr.remove(); }
+    scr.addEventListener('click', function (e) { if (e.target === scr) close(); });
+    scr.querySelector('.rtgm-x').addEventListener('click', close);
+    var cta = scr.querySelector('.rtgm-cta'), fine = scr.querySelector('.rtgm-fine');
+    cta.addEventListener('click', function () {
+      cta.disabled = true; cta.textContent = 'Opening checkout…';
+      var st = (window.RTG_BOARD && window.RTG_BOARD.state()) || {};
+      if (!st.signedIn) {
+        fine.textContent = 'Sign in with your RunThe.GG account first, then tap Get Pro.';
+        cta.disabled = false; cta.textContent = 'Get Pro';
+        return;
+      }
+      fetch('/api/stripe/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: st.userId })
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.ok && res.d && res.d.url) { location.href = res.d.url; return; }
+          fine.textContent = 'Checkout isn’t live yet — check back soon.';
+          cta.disabled = false; cta.textContent = 'Get Pro';
+        })
+        .catch(function () {
+          fine.textContent = 'Checkout isn’t live yet — check back soon.';
+          cta.disabled = false; cta.textContent = 'Get Pro';
+        });
+    });
+  }
+
+  // Free users: fill the (otherwise hidden) #modesw strip with a locked
+  // switcher — All active, sport versions padlocked, tap → upsell. Games hide
+  // the strip synchronously at boot for free users, so we fill it after.
+  function mountLockedSwitcher() {
+    try {
+      if (eligible()) return;
+      if (window.RTGArchive && window.RTGArchive.active && window.RTGArchive.active()) return;
+      var el = document.getElementById('modesw'); if (!el || el.dataset.rtgmLocked) return;
+      el.dataset.rtgmLocked = '1';
+      el.classList.remove('hidden');
+      el.innerHTML = MODES.map(function (m) {
+        return '<button type="button" data-k="' + m.k + '" class="' + (m.k === 'all' ? 'on' : '') + '"' +
+          (m.k === 'all' ? '' : ' aria-label="' + esc(m.label) + ' version, Pro feature" style="opacity:.55"') + '>' +
+          esc(m.label) + (m.k === 'all' ? '' : ' 🔒') + '</button>';
+      }).join('');
+      var title = (document.title.split('|')[0] || '').replace(/Run The Arcade:?/i, '').trim() || 'this game';
+      [].forEach.call(el.querySelectorAll('button'), function (b) {
+        if (b.dataset.k === 'all') return;
+        b.addEventListener('click', function () { showUpsell(title); });
+      });
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(mountLockedSwitcher, 600); });
+  } else { setTimeout(mountLockedSwitcher, 600); }
 
   // choose(base,{title}) -> Promise<mode>. Free/archive resolve to 'all' with no UI.
   function choose(base, opts) {
@@ -81,5 +160,5 @@
     });
   }
 
-  window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed, last: last, choose: choose };
+  window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed, last: last, choose: choose, upsell: showUpsell };
 })();
