@@ -3407,20 +3407,100 @@ function maybeS1LaunchPopup(){ try{
 }catch(e){} }
 function overlayS1Launch(screen){
   const acc='#ff9d3a';
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" style="text-align:center">
+  // vertically centered (margin:auto inside a flex column, so it still scrolls cleanly if it's ever
+  // taller than the viewport) + scaled up on desktop (owner: "centered + significantly bigger").
+  const ov=$(`<div class="ov s1ov" role="dialog" aria-modal="true" style="text-align:center">
+    <style>
+      .ov.s1ov{display:flex;flex-direction:column;background:
+        radial-gradient(90% 52% at 50% -8%, rgba(255,157,58,.22), rgba(255,157,58,0) 62%),
+        radial-gradient(70% 40% at 50% 108%, rgba(247,83,77,.14), rgba(247,83,77,0) 60%),
+        var(--pagebg)}
+      .ov.s1ov .s1wrap{margin:auto;width:100%}
+      .ov.s1ov .s1head{background:linear-gradient(180deg,#ffe08a 0%,#ffb15a 55%,#ff9d3a 100%);
+        -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+      .ov.s1ov .s1store{background:linear-gradient(160deg,#ffca7a,#ff9d3a 45%,#e8792a) !important;
+        color:#3a1c06 !important;border:0 !important;box-shadow:0 6px 22px rgba(255,157,58,.35),inset 0 1px 0 rgba(255,255,255,.5) !important}
+      @media(min-width:700px){
+        .ov.s1ov .s1tag{font-size:13.5px !important;padding:6px 16px !important}
+        .ov.s1ov .s1head{font-size:46px !important;margin:22px 0 10px !important}
+        .ov.s1ov .s1lede{font-size:20px !important;max-width:600px !important}
+        .ov.s1ov .s1card{max-width:600px !important;padding:20px 24px !important}
+        .ov.s1ov .s1card .small{font-size:16.5px !important;line-height:1.6 !important}
+        .ov.s1ov .s1thanks{font-size:16px !important;max-width:600px !important;margin-bottom:24px !important}
+        .ov.s1ov .s1btn{max-width:460px !important;font-size:20px !important;padding:17px !important}
+      }
+    </style>
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <div class="tag" style="color:${acc};border-color:${acc};margin:0 auto">⛳ Season 1 · Summer Smash</div>
-    <h3 style="margin:14px 0 4px;font-size:26px">The Tour is officially underway!</h3>
-    <p class="lede" style="max-width:430px;margin:0 auto 12px">Season 1 has begun, and the store is now open.</p>
-    <div style="background:linear-gradient(160deg,rgba(255,157,58,.14),rgba(255,157,58,.03));border:1px solid rgba(255,157,58,.5);border-radius:14px;padding:13px 14px;max-width:430px;margin:0 auto 12px;text-align:left">
-      <div class="small" style="color:#eaf5ee;line-height:1.55">Run The Tour is <b style="color:${acc}">fully free to play</b>, always. Every mode, every career, all of it. For anyone who wants a little more, there is now an optional store: coin buckets, Daily Tokens, and the 60-day Season 1 Tour Pass.</div>
+    <div class="s1wrap">
+    <div class="tag s1tag" style="color:${acc};border-color:${acc};margin:0 auto">☀ Summer Smash</div>
+    <h3 class="s1head" style="margin:14px 0 4px;font-size:30px">Season 1 is underway!</h3>
+    <p class="lede s1lede" style="max-width:430px;margin:0 auto 12px;color:#ffd9ad">Summer Smash has begun, and the store is now open.</p>
+    <div class="s1card" style="background:linear-gradient(160deg,rgba(255,157,58,.2),rgba(247,83,77,.06));border:1px solid rgba(255,157,58,.55);border-radius:14px;padding:13px 14px;max-width:430px;margin:0 auto 12px;text-align:left">
+      <div class="small" style="color:#ffeedd;line-height:1.55">Run The Tour is <b style="color:${acc}">fully free to play</b>, always. Every mode, every career, all of it. For anyone who wants a little more, there is now an optional store: coin buckets, Daily Tokens, and the 60-day Season 1 Tour Pass.</div>
     </div>
-    <p class="small" style="max-width:430px;margin:0 auto 16px;color:#cfe6d8;line-height:1.6">Thank you for all the love and support to this point. It got us here. Now go run the tour. ❤️</p>
-    <button class="btn goldfill store" style="max-width:360px;margin:0 auto 8px">See the store ▸</button>
-    <button class="btn ghost play" style="max-width:360px;margin:0 auto">Let's play</button></div>`);
+    <p class="small s1thanks" style="max-width:430px;margin:0 auto 16px;color:#f5d9c2;line-height:1.6">Thank you for all the love and support to this point. It got us here. Now go run the tour. ❤️</p>
+    <button class="btn store s1btn s1store" style="max-width:360px;margin:0 auto 8px">See the store ▸</button>
+    <button class="btn ghost play s1btn" style="max-width:360px;margin:0 auto">Let's play</button>
+    </div></div>`);
   const close=()=>{ S.overlay=null; render(); };
   ov.querySelector('.x').onclick=close; ov.querySelector('.play').onclick=close;
   ov.querySelector('.store').onclick=()=>{ try{ track('s1_launch_store'); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
+  screen.appendChild(ov);
+}
+// ════ POST-PURCHASE CELEBRATION (#6) ═══════════════════════════════════════════════════════════
+// Fired from purchaseCheck once the webhook-credited goods actually LAND in the wallet (a delta is
+// proof of delivery — the signed webhook is the only thing that credits). A real "you got it"
+// moment — coin count-up, confetti, the first-time 2× called out — with the follow-through action
+// for what was bought: claim the bonus pack, see the pass perks, or go play the daily.
+function overlayPurchased(screen){
+  var p=S.purchased||{kind:'coins',coins:0};
+  try{ packStyleOnce(); }catch(e){}   // .packconf confetti CSS lives there — guarantee it's injected
+  var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){}
+  var inner='';
+  if(p.kind==='pass'){
+    var ssn=passSeason();
+    inner='<div class="tag" style="color:#a24be0;border-color:#a24be0;margin:0 auto">🎟️ Tour Pass</div>'
+      +'<h3 style="margin:14px 0 4px;font-size:26px">'+esc(passThemeName())+' is ACTIVE!</h3>'
+      +'<p class="lede" style="max-width:420px;margin:0 auto 12px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left).</p>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin:0 auto 14px;max-width:320px;text-align:left">'
+      +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from every mode, starting now']]
+        .map(function(x){ return '<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+x[0]+'</span><span>'+esc(x[1])+'</span></div>'; }).join('')
+      +'</div>'
+      +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">Open your packs ▸</button>';
+  } else if(p.kind==='tokens'){
+    inner='<div class="tag" style="color:#5bcfe8;border-color:#5bcfe8;margin:0 auto">🎫 Daily Tokens</div>'
+      +'<h3 style="margin:14px 0 4px;font-size:26px">+'+p.n+' Daily Token'+(p.n>1?'s':'')+'!</h3>'
+      +'<p class="lede" style="max-width:420px;margin:0 auto 14px">Extra runs at today’s course — use one any time you’re out of free attempts. You now have <b style="color:#5bcfe8">'+dailyTokens()+'</b>.</p>'
+      +'<button class="btn blue act" style="max-width:360px;margin:0 auto 8px">Play the Daily ▸</button>';
+  } else {
+    var b=p.bucket;
+    inner='<div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🪙 Coins</div>'
+      +'<h3 style="margin:14px 0 2px;font-size:26px">'+(b?esc(b.name):'Coins')+' delivered!</h3>'
+      +'<div style="display:inline-flex;align-items:center;gap:8px;margin:6px auto 2px;font:900 40px var(--body);color:#ffd45e"><span style="width:30px;height:30px;flex:0 0 auto">'+ic('coin',{size:'30px'})+'</span><span class="pcoins">+0</span></div>'
+      +(p.doubled?'<div style="margin:6px auto 0"><span style="display:inline-block;font:800 10px var(--body);letter-spacing:.08em;background:var(--gold);color:#0c1f16;border-radius:20px;padding:3px 10px">FIRST-TIME BONUS APPLIED · 2× COINS</span></div>':'')
+      +'<p class="lede" style="max-width:420px;margin:10px auto 12px">Straight into your wallet — spend them on gear, packs and colors in the Pro Shop.</p>'
+      +(b&&b.packTier?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:'+b.col+'"><b style="color:'+b.col+'">🎁 +'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added — Pro Shop → Packs</div></div>':'')
+      +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">'+(b&&b.packTier?'Open your pack'+(b.packN>1?'s':'')+' ▸':'Spend them ▸')+'</button>';
+  }
+  var ov=$('<div class="ov" role="dialog" aria-modal="true" style="text-align:center">'
+    +'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'
+    +'<div style="font:800 11px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#35d6a0;margin-bottom:10px">✓ Purchase complete</div>'
+    +inner
+    +'<button class="btn ghost done" style="max-width:360px;margin:0 auto">Done</button>'
+    +'<div class="small muted" style="margin-top:12px">Thanks for supporting RunThe.GG ⛳</div></div>');
+  var close=function(){ S.overlay=null; S.purchased=null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.done').onclick=close;
+  var act=ov.querySelector('.act'); if(act) act.onclick=function(){
+    try{ track('purchase_celebrate_act',{kind:p.kind}); }catch(e){}
+    S.purchased=null;
+    if(p.kind==='tokens'){ S.overlay=null; render(); try{ startDailyChallenge(); }catch(e){} return; }
+    S.overlay='shop'; S.shopSec=(p.kind==='pass'||(p.bucket&&p.bucket.packTier))?'packs':'apparel'; render(); };
+  var el=ov.querySelector('.pcoins');
+  if(el){ var target=p.coins||0;
+    if(reduce){ el.textContent='+'+coinFmt(target); }
+    else { try{ _animCount(el,0,target,function(v){return '+'+coinFmt(Math.round(v));},1150); }catch(e){ el.textContent='+'+coinFmt(target); } } }
+  if(!reduce){ try{ var cv=$('<canvas class="packconf"></canvas>'); ov.appendChild(cv);
+    setTimeout(function(){ try{ confettiRun(cv,{colors:['#F1D04A','#35d6a0','#ffffff'],mode:'cannons',count:90}); }catch(e){} },140); }catch(e){} }
   screen.appendChild(ov);
 }
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
@@ -7153,6 +7233,7 @@ function render(){
     if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='s1launch') overlayS1Launch(app);
+    if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -22113,10 +22194,12 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
     </div>
     ${canShard?`<button class="btn teal" id="pv-shard" style="margin-top:10px">◆ Redeem with ${shNeed} ${ACC_RARITY[rar].label} shards<span class="sub">No coins spent — shards come from duplicate pack pulls</span></button>`:''}
+    ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store — your first buy of each size is 2×</span></button>`:''}
     </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
   const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
   const shb=card.querySelector('#pv-shard'); if(shb) shb.onclick=shopRedeemShards;
+  const gcb=card.querySelector('#pv-getcoins'); if(gcb) gcb.onclick=()=>{ try{ track('nudge_getcoins',{from:'preview'}); }catch(e){} S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
   return card;
 }
 // CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
@@ -23395,6 +23478,13 @@ function packShopNode(){
   tbl+='</div>';
   odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b> — collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();
   wrap.appendChild(odds);
+  // #5 discoverability: signed-in and can't afford even the cheapest pack → point at Buy Coins (tasteful,
+  // only at the moment it's actually useful).
+  try{ if(BUCKETS_ENABLED && sbSignedIn() && bal<Math.min.apply(null,packTierList().map(packPrice))){
+    var gc=$('<button class="btn" style="max-width:380px;margin:12px auto 0;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Short on coins? Buy Coins ▸<span class="sub">Coin buckets in the store — your first buy of each size is 2×</span></button>');
+    gc.onclick=function(){ try{ track('nudge_getcoins',{from:'packs'}); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
+    wrap.appendChild(gc);
+  } }catch(e){}
   return wrap;
 }
 function overlayShop(screen){
@@ -25022,7 +25112,18 @@ function purchaseCheck(){
     try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
     try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega) — granted from the server purchase rows
     try{ _bucketBuysCache=null; loadBucketBuys(true); }catch(e){}  // refresh the per-size first-purchase 2× display
-    try{ toast('<b style="color:#ffd45e">Purchase complete — added to your account!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
+    // #6 post-purchase celebration: figure out WHAT landed (from the wallet deltas — the webhook is the
+    // only thing that credits, so a delta means the goods are genuinely in the account) and celebrate it
+    // properly instead of a passing toast. No delta after the polls = the webhook is slow: soft toast.
+    var cd=paidCoins()-before, td=dailyTokens()-tokBefore, passNew=dailyPassActive()&&!passBefore, p=null;
+    try{
+      if(passNew) p={kind:'pass', coins:Math.max(0,cd)};
+      else if(td>0) p={kind:'tokens', n:td};
+      else if(cd>0){ var b2=BUCKETS.find(function(x){return x.coins*2===cd;}), b1=b2||BUCKETS.find(function(x){return x.coins===cd;});
+        p={kind:'coins', coins:cd, doubled:!!b2, bucket:b1||null}; }
+    }catch(e){}
+    if(p){ S.purchased=p; S.overlay='purchased'; try{ sfx('win'); }catch(e){} try{ buzz([12,40,12]); }catch(e){} }
+    else { try{ toast('<b style="color:#ffd45e">Payment received!</b><br><span class="small">Your items are on the way — they’ll appear in a moment. Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){} }
     try{ render(); }catch(e){} }
   (function poll(){ tries++; loadWallet();
     setTimeout(function(){ if(paidCoins()>before || dailyTokens()>tokBefore || dailyPassActive()!==passBefore || tries>=6){ say(); } else { poll(); } }, 1500);
