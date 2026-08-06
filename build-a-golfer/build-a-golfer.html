@@ -22531,7 +22531,12 @@ function packSave(p){ LS.set(acctKey('bag_packs'),p); if(typeof cloudPush==='fun
 // CS400: earned FREE PACK credits (from weekly challenges + 7-day streaks). Tracked as monotonic
 // earned/spent counters so a cloud merge (max/max) can never resurrect a spent credit. credits = earned - spent.
 // CS407: credits are now per-TIER (base / tour / champ), so a streak reward can grant a specific-tier pack.
-function packCreditFields(tier){ return tier==='tour'?['tourEarned','tourSpent']:tier==='champ'?['champEarned','champSpent']:['packEarned','packSpent']; }
+function packCreditFields(tier){ tier=tier||'base';
+  if(tier==='tour') return ['tourEarned','tourSpent'];
+  if(tier==='champ') return ['champEarned','champSpent'];
+  if(tier==='base') return ['packEarned','packSpent'];
+  return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters — the Tour Pass grants these
+}
 /* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity ON TOP of the coin
    refund. Collect SHARD_COST[r] shards of a rarity and redeem them for ANY item of that rarity (the redeem
    button lives on the shop confirm card) - a deterministic pity path, so packs never go dead once a player
@@ -22567,13 +22572,22 @@ function passPackTier(){ var t='tour'; try{ Object.keys(PACK_TYPES).forEach(func
 function maybePassRewards(){ try{
   if(!sbSignedIn() || !dailyPassActive()) return;
   var period=(_walletCache&&_walletCache.passPeriod)||passPeriodNow();
-  var st=LS.get(acctKey('bag_pass'),null)||{};
-  if(st.claimed===period) return;                        // already granted this season's pass packs
+  var st=LS.get(acctKey('bag_pass'),null)||{}, n=TOURPASS.packs||0, tier=passPackTier();
+  if(st.claimed===period){
+    // one-time heal (test era): before seasonal credit fields existed, an S1 grant made while a seasonal
+    // pack was live fell through to the BASE counters. Re-grant the intended seasonal credits once.
+    if(period==='S1' && tier!=='base' && tier!=='tour' && !st.tierFix && n>0 && typeof grantFreePack==='function'){
+      st.tierFix=true; LS.set(acctKey('bag_pass'), st); grantFreePack(n,{tier:tier, silent:true});
+      try{ cloudPush(); }catch(e){}
+      try{ toast('🎁 Your '+n+' '+esc(packType(tier).name)+'s from the Tour Pass are ready — Pro Shop → Packs.', 4600); }catch(e){}
+    }
+    return;
+  }
   st.claimed=period; LS.set(acctKey('bag_pass'), st);
-  var n=TOURPASS.packs||0, tier=passPackTier();
   if(n>0 && typeof grantFreePack==='function'){ grantFreePack(n,{tier:tier, silent:true}); }
   try{ cloudPush(); }catch(e){}
-  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' seasonal pack'+(n>1?'s':''):'')+'.</span>', 5200); }catch(e){}
+  var pkNm=''; try{ pkNm=packType(tier).name; }catch(e){}
+  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
 }catch(e){} }
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
@@ -22716,7 +22730,10 @@ function startPackDeal(opts){ opts=opts||{};
   var free=false;
   if(!opts.bundle){                                    // a bundle sub-open is prepaid: never free/credit
     var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
-    var freeCredit=!freeFirst && !pt.seasonal && packCredits(tier)>0;   // CS407: earned free-pack credit (never on seasonal — coins only)
+    // CS407: earned free-pack credits are per-tier. Seasonal tiers honor credits too (they can only come
+    // from an explicit grant, e.g. the Tour Pass's seasonal packs) — coins-only otherwise; the window
+    // gate above still blocks out-of-season opens.
+    var freeCredit=!freeFirst && packCredits(tier)>0;
     free=freeFirst||freeCredit;
     if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } coinCharge(pt.price); }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
@@ -22876,7 +22893,7 @@ function packOpenRest(){
     var tier=w.pack||'base', pt=packType(tier), guard=0;
     while(guard++<200){
       var freeFirst=(tier==='base') && packIsFree();
-      var cr=pt.seasonal?0:packCredits(tier);
+      var cr=packCredits(tier);
       if(!freeFirst && cr<=0) break;                     // no more free/credit packs of this tier
       var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p);
       var win2=rollPackWin(tier); if(win2.err) break;
@@ -22998,7 +23015,7 @@ function overlayPackWheel(app){
       var d2=$('<div class="packbtns"></div>'); var done2=$('<button class="btn ghost">Done</button>'); done2.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); }; d2.appendChild(done2); footer.appendChild(d2);
       return;
     }
-    var isBase=(pt.id==='base'), cr=pt.seasonal?0:packCredits(pt.id);
+    var isBase=(pt.id==='base'), cr=packCredits(pt.id);
     var freeNext=(isBase&&packIsFree())||cr>0, can=freeNext||packAffordable(pt.id);
     var againLabel=freeNext?('Open a FREE '+esc(pt.short)+' pack'+(cr>0?' · '+cr+' left':'')):('Open another '+esc(pt.short)+' · '+coinFmt(pt.price));
     var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>'+againLabel+'</button>'); again.onclick=function(){ startPackDeal({pack:pt.id}); };
@@ -23242,7 +23259,7 @@ function packShopNode(){
     var pt=packType(id);
     var epicPlus=pt.odds.reduce(function(a,o){ return a+((o[0]==='epic'||o[0]==='legendary')?o[1]:0); },0);
     var legPct=(pt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
-    var isBase=(id==='base'), cr=pt.seasonal?0:packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
+    var isBase=(id==='base'), cr=packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
     var seasonD=pt.seasonal?dropById(pt.dropId):null;
     var glowSh=pt.seasonal?'':'box-shadow:0 0 22px '+pt.glow+';';   // seasonal card gets an animated pulsing glow instead
     var card=$('<div class="'+(pt.seasonal?'packcard-glow':'')+'" style="--pkg:'+pt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';'+glowSh+'"></div>');
@@ -23348,9 +23365,9 @@ function overlayShop(screen){
   }
   if(sec==='packs'){
     try{ const ld=liveThemedDrop();
-      if(ld){ const pb=$(`<button class="homedrop" style="--dacc:${ld.accent};margin:0 0 12px">
+      if(ld){ const pb=$(`<button class="homedrop" style="--dacc:${ld.accent};margin:0 auto 12px;justify-content:center;text-align:center">
           <span class="hd-dot"></span>
-          <span class="hd-txt"><b>${esc(ld.name)} items are in packs NOW</b><span>Limited window · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]} · see the collection ▸</span></span>`);
+          <span class="hd-txt" style="align-items:center"><b>${esc(ld.name)} items are in packs NOW</b><span>Limited window · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]} · see the collection ▸</span></span>`);
         pb.onclick=()=>{ S.shopSec='drops'; S.shopDrop=ld.id; render(); };
         ov.appendChild(pb); } }catch(e){}
     ov.appendChild(packShopNode());
@@ -24156,8 +24173,9 @@ function mergePass(local, server){
   var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
   var lc=l.claimed||'', sc=s.claimed||'';
   var rank=function(p){ var m=/^S(\d+)$/.exec(p); return m? 1e6+(+m[1]) : (p?1:0); };   // season keys outrank legacy months outrank empty
-  if(rank(sc)!==rank(lc)) return { claimed: rank(sc)>rank(lc)?sc:lc };
-  return { claimed: (sc>lc?sc:lc) };   // same rank class (two legacy months): keep the later string
+  var fix=!!(l.tierFix||s.tierFix);   // union the one-time seasonal-credit heal flag so it never re-fires after a sync
+  if(rank(sc)!==rank(lc)) return { claimed: rank(sc)>rank(lc)?sc:lc, tierFix:fix };
+  return { claimed: (sc>lc?sc:lc), tierFix:fix };   // same rank class (two legacy months): keep the later string
 }
 // distinct Prime cards rolled: UNION the name→1 maps (grow-only), so a Prime rolled on any device stays counted.
 function mergePrimes(local, server){
@@ -24187,6 +24205,9 @@ function mergePacks(local, server){
     welcomePack:!!(l.welcomePack||s.welcomePack)});
   // dupe shards: monotonic earned/spent per rarity, max-merged so a spent shard can never resurrect
   ['common','rare','epic','legendary'].forEach(r=>{ ['shardE_'+r,'shardS_'+r].forEach(k=>{ merged[k]=Math.max(l[k]||0,s[k]||0); }); });
+  // seasonal-tier credits (summerEarned/summerSpent, ...): same monotonic max/max, discovered generically
+  // so a future seasonal pack tier syncs without touching this merge again.
+  Object.keys(Object.assign({},l,s)).forEach(k=>{ if(/^[a-z]+(Earned|Spent)$/.test(k)) merged[k]=Math.max(l[k]||0,s[k]||0); });
   return merged;
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
