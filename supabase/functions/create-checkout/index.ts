@@ -67,6 +67,27 @@ Deno.serve(async (req) => {
     return json({ error: "package unavailable" }, 503);
   }
 
+  // Tour Pass double-purchase guard: one pass per 60-day season. The season is
+  // computed by the DB (runtour_pass_status, migration 72) with the buyer's own
+  // JWT, so a tampered client can't skip it. Fail OPEN on an RPC error (e.g. the
+  // migration not applied yet) — the webhook/DB side still handles a duplicate
+  // gracefully (coins credited, pass row conflict is a no-op).
+  if (pkg.kind === "pass") {
+    try {
+      const { data, error } = await supabase.rpc("runtour_pass_status");
+      const st = Array.isArray(data) ? data[0] : data;
+      if (!error && st && st.pass_active) {
+        return json(
+          { error: "you already have this season's Tour Pass — it's active until the season ends" },
+          409,
+        );
+      }
+      if (error) console.error("pass-status check failed (proceeding):", error.message);
+    } catch (e) {
+      console.error("pass-status check failed (proceeding):", (e as Error).message);
+    }
+  }
+
   const returnPath = (payload.return_path ?? "/golf/").replace(/[^a-zA-Z0-9/_-]/g, "");
 
   try {

@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
         }
 
         if (pkg.kind === "pass") {
-          // Grant the current month's Tour Pass + its coin reward.
+          // Grant the current 60-day SEASON's Tour Pass + its coin reward
+          // (migration 72: the DB computes the season; period = 'S<n>').
           const { data, error } = await admin.rpc("runtour_grant_pass", {
             p_user: userId,
             p_event: event.id,

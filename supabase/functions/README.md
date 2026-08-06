@@ -20,9 +20,11 @@ browser ──(JWT)──▶ runtour_wallet() / runtour_spend_paid() / runtour_c
 
 ```bash
 # via Supabase SQL editor, or:
-supabase db push        # (or run the files directly)
-#   supabase/70_runtour_wallet.sql        — coin wallet (already applied)
-#   supabase/71_runtour_tokens_pass.sql   — Daily Tokens + monthly Tour Pass
+supabase db push        # (or run the files directly, in order)
+#   supabase/70_runtour_wallet.sql        — coin wallet
+#   supabase/71_runtour_tokens_pass.sql   — Daily Tokens + the pass tables
+#   supabase/72_runtour_pass_season.sql   — Tour Pass → the 60-DAY SEASON model
+#                                           (also retires the founder bonus)
 ```
 
 ## 2. Create the products in the Stripe Dashboard
@@ -51,14 +53,17 @@ Large / XL / Mega also grant bonus packs (handled client-side):
 | 7 Daily Tokens | $4.99  | 7      |
 | 15 Daily Tokens| $9.99  | 15     |
 
-**Tour Pass** (`kind: pass`) — a **one-time monthly** purchase (buy again each
-calendar month). Grants the current month's pass: 30,000 coins credited + a
-`tour_pass` entitlement (the client then unlocks unlimited daily plays, a 1.5×
-reward multiplier, and 2 seasonal packs while active):
+**Tour Pass** (`kind: pass`) — THE one and only pass: a **one-time purchase per
+60-day season** (the global season matching the in-game Tour Pass track; buy
+again when a new season starts). Grants the current season's pass: 30,000 coins
+credited + a `tour_pass` entitlement, period `'S<n>'` (the client then unlocks
+the PRO lane of the Tour Pass track, unlimited daily plays, a 1.5× reward
+multiplier, and 2 seasonal packs while active). `create-checkout` refuses a
+second purchase in the same season (409):
 
-| Package        | Price  | Grants                              |
-|----------------|--------|-------------------------------------|
-| Tour Pass      | $14.99 | 30,000 coins + this month's pass    |
+| Package                  | Price  | Grants                              |
+|--------------------------|--------|-------------------------------------|
+| Tour Pass (60-day season)| $14.99 | 30,000 coins + this season's pass   |
 
 Copy each **Price ID** (`price_...`).
 
@@ -135,31 +140,44 @@ feature, set:
 
 - `const BUCKETS_ENABLED=false;`  → `true`   (needs `STRIPE_PRICE_SMALL/MEDIUM/LARGE/XL/MEGA`)
 - `const TOKENS_ENABLED=false;`   → `true`   (needs `STRIPE_PRICE_TOK1/3/7/15`)
-- `const TOURPASS_ENABLED=false;` → `true`   (needs `STRIPE_PRICE_TOURPASS` **and** migration 71)
+- `const TOURPASS_ENABLED=false;` → `true`   (needs `STRIPE_PRICE_TOURPASS` **and** migrations 71 + 72)
 
 then redeploy the client (copy `build-a-golfer.html` → `golf/index.html`). Each
 flag is an independent kill-switch. `runtour_wallet()` returns `daily_tokens`/
 `pass_active` only after migration 71 — before it, tokens read 0 and the pass
 reads inactive, so the daily gate behaves exactly as today.
 
-## Tour Pass model
+## Tour Pass model (60-day season — migration 72)
 
-- A **new themed pass each calendar month**; buying grants **this month only**
-  (`tour_pass(user_id, period='YYYY-MM')`). Active = a row for the current UTC
-  month; it lapses at month end and a new one must be bought.
-- Server credits the pass **coins** into `paid_coins` at purchase. The **seasonal
-  packs** are granted client-side once per period (`bag_pass.claimed`, cloud-
-  synced) — packs are an inherently client-side store.
-- While active: unlimited daily plays (bypasses the free 3/day cap), a **1.5×**
-  coin reward multiplier on play, and the seasonal packs.
-- Month boundary uses **UTC** (`to_char(now() at time zone 'utc','YYYY-MM')`),
-  a few hours off the daily's ET reset — acceptable; note it if strict alignment
-  is ever needed.
+- **One pass, one purchase per 60-day season.** Seasons are global and match the
+  in-game Tour Pass track exactly: Season 1 began **Jul 1 2026** (US Eastern day
+  boundary, like the Daily); `runtour_pass_season()` in the DB is the server's
+  source of truth (`period = 'S<n>'`). Buying grants **this season only**
+  (`tour_pass(user_id, period='S<n>')`); it lapses at the season rollover and
+  the new season's pass must be bought.
+- **Double-purchase guard**: `create-checkout` calls `runtour_pass_status()`
+  with the buyer's JWT and returns **409** if the season's pass is already
+  active. The DB is also safe if a duplicate ever slips through (coins still
+  credited; the pass row conflict is a no-op).
+- Server credits the pass **coins** (30,000) into `paid_coins` at purchase. The
+  **2 seasonal packs** are granted client-side once per season
+  (`bag_pass.claimed = 'S<n>'`, cloud-synced) — packs are an inherently
+  client-side store.
+- While active the client unlocks: the **PRO lane** of the Tour Pass track (the
+  ONLY way regular players get PRO — the old 30,000-coin unlock is removed),
+  **unlimited daily plays** (bypasses the free 3/day cap), and a **1.5×** coin
+  reward multiplier on play. The dev accounts (CSel8/RunnyJ) get PRO free via
+  `devMode()` for testing and never need to purchase.
+- Refunds/disputes revoke the season's entitlement (`runtour_refund_purchase`
+  deletes the `tour_pass` row for the period stored on the purchase) and claw
+  back the 30,000 coins.
+- The founder bonus (`runtour_claim_founder`) is **retired** by migration 72
+  (owner decision; the cutoff passed and the client never called it).
 
 ## Still open / tunable
 
-- Tune `runtour_claim_founder` (`v_amount`, `v_cutoff` in `70_...`) to the real
-  founder bonus + launch instant.
 - Pass reward magnitude/mult, token counts, and coin-bucket amounts are all in
   `_shared/packages.ts` (server, authoritative) + the client config constants
   (`TOURPASS`, `DAILY_TOKENS`, `PASS_REWARD_MULT`, `BUCKETS`) — keep them in sync.
+- The season anchor/length live in `runtour_pass_season()` (SQL) and
+  `TOURPASS_EPOCH`/`TOURPASS_LEN` (client) — they MUST stay identical.

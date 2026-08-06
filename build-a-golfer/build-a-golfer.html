@@ -5777,9 +5777,11 @@ function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
 var _walletCache=null;   // {paid, lifePurchased, lifeGranted, tokens, passActive, passPeriod} or null
 function paidCoins(){ return _walletCache?(_walletCache.paid||0):0; }
 function walletInfo(){ return _walletCache; }
-// Daily Tokens = bought extra Daily-Challenge attempts (beyond the free 3/day). Tour Pass = a monthly
-// one-time entitlement (unlimited daily plays + a reward multiplier + seasonal packs while active).
-// Both are server-authoritative (runtour_wallet); daily_tokens/pass_active are absent pre-migration-71 → 0/false.
+// Daily Tokens = bought extra Daily-Challenge attempts (beyond the free 3/day). Tour Pass = a one-time
+// entitlement for the current 60-DAY SEASON (unlimited daily plays + the PRO lane of the Tour Pass track
+// + a reward multiplier + seasonal packs while active). Both are server-authoritative (runtour_wallet);
+// daily_tokens/pass_active are absent pre-migration-71 → 0/false; migration 72 makes pass_active follow
+// the 60-day season (pass_period = 'S<n>') instead of the calendar month.
 function dailyTokens(){ return _walletCache?(_walletCache.tokens||0):0; }
 function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
 function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
@@ -5909,19 +5911,21 @@ function devPreviewOn(){ return LS.get('bag_dev_preview',false)===true; }
 const TOURPASS_LIVE=false;                       // set true to release the Tour Pass to everyone
 function passEnabled(){ return TOURPASS_LIVE || (devMode() && devPreviewOn()); }
 
-/* ============================ TOUR PASS — 60-day umbrella season pass ============================
-   An EARNED (coin-unlocked) battle pass that ties the whole economy together. A 60-day GLOBAL season
-   (ET-aligned, like the Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode
-   (folded into the awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online
-   H2H, and moments all feed it). Two lanes per tier: FREE (everyone) + PRO (unlock once per season
-   with COINS — never real money). Rewards are drawn from the EXISTING pools (coins / shards / packs /
-   cosmetics), so there's no new currency. Season-scoped state in bag_tourpass resets each season, so
-   the previous season's rewards lock out — a genuine limited-time chase. Distinct from the DISABLED
-   real-money monthly subscription (bag_pass / TOURPASS / the passRewardMult wallet). */
+/* ============================ TOUR PASS — 60-day season pass ============================
+   The battle pass that ties the whole economy together. A 60-day GLOBAL season (ET-aligned, like the
+   Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
+   awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online H2H, and moments
+   all feed it). Two lanes per tier: FREE (everyone) + PRO. OWNER DECISION (2026-08): the ONLY way a
+   regular player unlocks PRO is the real-money 60-day Tour Pass ($14.99 — the TOURPASS package, one
+   purchase per season, server entitlement via runtour_wallet().pass_active / migration 72). The old
+   30,000-coin Pro unlock is REMOVED. The dev accounts (CSel8/RunnyJ) get PRO free via devMode() so
+   they can test without purchasing. Rewards are drawn from the EXISTING pools (coins / shards /
+   packs / cosmetics), so there's no new currency. Season-scoped state in bag_tourpass resets each
+   season, so the previous season's rewards lock out — a genuine limited-time chase. The server pass
+   also grants unlimited daily plays + 1.5× rewards + 30,000 coins + 2 seasonal packs (see TOURPASS). */
 const TOURPASS_LEN=60;                                        // days per season
-const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,6,1)/86400000);// season 1 began (ET) Jul 1 2026 (tunable launch anchor)
+const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,6,1)/86400000);// season 1 began (ET) Jul 1 2026 — MUST match runtour_pass_season (migration 72)
 const PASS_TIERS=50;
-const PASS_PRO_PRICE=30000;                                  // coins to unlock the Pro lane for the season
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
@@ -5932,7 +5936,10 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
   s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro; return s; }
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
-function passProActive(){ return sbSignedIn() && passState().pro; }
+// PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
+// per season) OR a dev account (CSel8/RunnyJ test free, never purchase). The legacy coin-unlocked
+// s.pro flag is no longer read — decision A: the $14.99 pass is the ONLY PRO unlock for players.
+function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()); }
 // XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
 function passTierCost(t){ return 140 + (t-1)*11; }
 function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
@@ -5955,7 +5962,7 @@ function passTierReward(t, lane){
 function passClaim(tier, lane){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in'};
   const s=passState(); if(passTierAt(s.xp)<tier) return {ok:false,msg:'Reach tier '+tier+' first'};
-  if(lane==='prem' && !s.pro) return {ok:false,msg:'Unlock the Pro Pass to claim'};
+  if(lane==='prem' && !passProActive()) return {ok:false,msg:'Get the Tour Pass to claim Pro rewards'};
   const arr=lane==='prem'?s.claimed.prem:s.claimed.free; if(arr.indexOf(tier)>=0) return {ok:false,msg:'Already claimed'};
   const r=passTierReward(tier, lane);
   if(r.coins) addBonusCoins(r.coins,{silent:true});
@@ -5964,13 +5971,14 @@ function passClaim(tier, lane){
   if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
   arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
 }
-function passClaimAll(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp); let n=0;
-  for(let i=1;i<=t;i++){ if(passClaim(i,'free').ok) n++; if(s.pro && passClaim(i,'prem').ok) n++; } return n; }
-function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp); let n=0;
-  for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(s.pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
-function passBuyPro(){ if(!sbSignedIn()) return {ok:false,msg:'Sign in'}; const s=passState(); if(s.pro) return {ok:false,msg:'Already unlocked'};
-  if(coinBalance()<PASS_PRO_PRICE) return {ok:false,msg:'Not enough coins'};
-  coinCharge(PASS_PRO_PRICE); s.pro=true; passSave(s); track('tourpass_buy_pro',{season:s.season}); return {ok:true}; }
+function passClaimAll(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
+  for(let i=1;i<=t;i++){ if(passClaim(i,'free').ok) n++; if(pro && passClaim(i,'prem').ok) n++; } return n; }
+function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
+  for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
+// passBuyPro (the 30,000-coin Pro unlock) is REMOVED — decision A. PRO comes only from the $14.99
+// 60-day Tour Pass (see beginPassPurchase) or devMode(). Retro-claims are safe: passClaim gates the
+// prem lane on passProActive(), so the moment the wallet shows pass_active every reached tier's Pro
+// reward becomes claimable (dedup via the claimed arrays).
 function mergeTourPass(local, server){
   if(!server) return local; if(!local) return server;
   if((server.season||0) > (local.season||0)) return server;
@@ -6067,7 +6075,7 @@ const PXFX=[
   {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
   {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}},
   // Tour Pass Track capstone (level 50) — pass:true keeps it out of the shop + pack pool + shards, so it is
-  // ONLY obtainable by maxing that month's Tour Pass. A one-month-only exclusive (genuinely limited).
+  // ONLY obtainable by maxing that season's Tour Pass. A one-season-only exclusive (genuinely limited).
   {id:'passcrown', name:'Tour Champion Aura', hist:'Only for those who ran the whole Tour Pass', price:0, pass:true, col:'#ffd447', tracer:{g:'rgba(255,212,71,.65)', c:'#fff6cf'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
 function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
@@ -8338,7 +8346,7 @@ function overlayDailyDone(screen){
   const moreHTML = !sbSignedIn() ? '' : (tok>0
     ? `<button class="btn blue" id="dd-token" style="margin-bottom:8px">▶ Play again — use a token (${tok} left)</button>`
     : (moreSell
-      ? `<div class="scout" style="text-align:center;margin:4px 0 10px;border-color:#5bcfe8"><b style="color:#5bcfe8">Want more plays?</b><div class="small muted" style="margin:3px 0 9px">${TOKENS_ENABLED?'Buy extra Daily Tokens':''}${(TOKENS_ENABLED&&TOURPASS_ENABLED)?', or ':''}${TOURPASS_ENABLED?'get the Tour Pass for unlimited plays all month':''}.</div>
+      ? `<div class="scout" style="text-align:center;margin:4px 0 10px;border-color:#5bcfe8"><b style="color:#5bcfe8">Want more plays?</b><div class="small muted" style="margin:3px 0 9px">${TOKENS_ENABLED?'Buy extra Daily Tokens':''}${(TOKENS_ENABLED&&TOURPASS_ENABLED)?', or ':''}${TOURPASS_ENABLED?'get the Tour Pass for unlimited plays all season':''}.</div>
          <div style="display:flex;gap:8px;justify-content:center">${TOKENS_ENABLED?`<button class="btn" id="dd-buytok" style="width:auto;padding:9px 14px;font-size:13px;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Tokens</button>`:''}${TOURPASS_ENABLED?`<button class="btn" id="dd-pass" style="width:auto;padding:9px 14px;font-size:13px;background:#a24be0;color:#fff;font-weight:900">Tour Pass</button>`:''}</div></div>`
       : ''));
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
@@ -21825,7 +21833,7 @@ function overlayTourPass(screen){
     const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" aria-label="Tour Pass">
       <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
       <h3 style="margin-top:34px">Tour Pass</h3>
-      <p class="lede" style="margin-top:-2px">A 60-day season track. Earn Pass XP in every mode and climb 50 tiers of coins, packs, shards and exclusive cosmetics — free for everyone, with a coin-unlocked Pro lane.</p>
+      <p class="lede" style="margin-top:-2px">A 60-day season track. Earn Pass XP in every mode and climb 50 tiers of coins, packs, shards and exclusive cosmetics — free for everyone. The Tour Pass unlocks the Pro lane all season.</p>
       <div class="scout" style="text-align:center;border-color:#a78bfa"><b style="color:#a78bfa">Sign in to play the Tour Pass</b><div class="small muted" style="margin-top:3px">Season ${ssn.n} · ${ssn.daysLeft} days left</div></div>
       <button class="btn goldfill" id="tp-signin">Sign in ▸</button>
       <button class="btn red">Close</button></div>`);
@@ -21833,7 +21841,7 @@ function overlayTourPass(screen){
     ov.querySelector('#tp-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     screen.appendChild(ov); return;
   }
-  const s=passState(), tier=passTierAt(s.xp), capXp=passXpForTier(PASS_TIERS);
+  const s=passState(), tier=passTierAt(s.xp), capXp=passXpForTier(PASS_TIERS), pro=passProActive();
   const base=tier<PASS_TIERS?passXpForTier(tier):capXp, nxt=tier<PASS_TIERS?passXpForTier(tier+1):capXp;
   const into=Math.min(s.xp,capXp)-base, need=Math.max(1,nxt-base), pct=tier<PASS_TIERS?Math.min(100,Math.round(100*into/need)):100;
   const claimable=passClaimable();
@@ -21841,23 +21849,29 @@ function overlayTourPass(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
   ov.appendChild($(`<div class="tp-head">
     <div class="tp-kick">TOUR PASS · SEASON ${ssn.n}</div>
-    <div class="tp-tier">Tier <b>${tier}</b> / ${PASS_TIERS}${s.pro?' <span class="tp-pro">PRO</span>':''}</div>
+    <div class="tp-tier">Tier <b>${tier}</b> / ${PASS_TIERS}${pro?' <span class="tp-pro">PRO</span>':''}</div>
     <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div><span>${tier<PASS_TIERS?into+' / '+need+' XP to Tier '+(tier+1):'MAX TIER'}</span></div>
     <div class="tp-meta">${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left this season · earn Pass XP in every mode</div></div>`));
   const cta=$(`<div class="tp-cta"></div>`);
-  if(!s.pro){ const afford=coinBalance()>=PASS_PRO_PRICE;
-    cta.appendChild($(`<button class="btn violet feat" data-buypro ${afford?'':'disabled'} style="margin:0 auto">🔓 Unlock Pro Pass<span class="sub">${coinFmt(PASS_PRO_PRICE)} coins · every tier's Pro rewards, exclusive cosmetics &amp; 1.25× coins</span></button>`)); }
-  else cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">✓ Pro Pass active</b> <span class="small muted">· claim both lanes on every tier you reach</span></div>`));
+  if(!pro){
+    if(TOURPASS_ENABLED){
+      // The ONE way to go Pro: the $14.99 60-day Tour Pass (server-authoritative; Stripe checkout).
+      cta.appendChild($(`<button class="btn violet feat" data-buypass style="margin:0 auto">🔓 Go Pro · Tour Pass $${TOURPASS.usd.toFixed(2)}<span class="sub">Every tier's Pro rewards this season, +${coinFmt(TOURPASS.coins)} coins, ${TOURPASS.packs} seasonal packs, unlimited daily plays &amp; ${PASS_REWARD_MULT}× coins</span></button>`));
+    } else {
+      cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">Pro lane</b> <span class="small muted">· unlocks with the Tour Pass — coming soon</span></div>`));
+    }
+  }
+  else cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">✓ Pro active${devMode()&&!dailyPassActive()?' (dev)':''} · Season ${ssn.n}</b> <span class="small muted">· claim both lanes on every tier you reach</span></div>`));
   if(claimable>0) cta.appendChild($(`<button class="btn goldfill" data-claimall style="margin:10px auto 0">Claim all · ${claimable} ready</button>`));
   ov.appendChild(cta);
-  ov.appendChild($(`<div class="tp-legend"><span>TIER</span><span>FREE</span><span class="pro">PRO${s.pro?'':' · locked'}</span></div>`));
+  ov.appendChild($(`<div class="tp-legend"><span>TIER</span><span>FREE</span><span class="pro">PRO${pro?'':' · locked'}</span></div>`));
   const track=$(`<div class="tp-track"></div>`);
   for(let t=1;t<=PASS_TIERS;t++){
     const reached=tier>=t, fC=s.claimed.free.indexOf(t)>=0, pC=s.claimed.prem.indexOf(t)>=0;
     const cell=(lane)=>{ const r=passTierReward(t,lane), claimed=lane==='prem'?pC:fC;
       let badge, st;
       if(claimed){ badge=`<span class="tp-badge done">✓ Claimed</span>`; st='claimed'; }
-      else if(reached && (lane==='free'||s.pro)){ badge=`<button class="tp-claim" data-claim="${t}" data-lane="${lane}">Claim</button>`; st='claimable'; }
+      else if(reached && (lane==='free'||pro)){ badge=`<button class="tp-claim" data-claim="${t}" data-lane="${lane}">Claim</button>`; st='claimable'; }
       else if(reached && lane==='prem'){ badge=`<span class="tp-badge lock">Pro only</span>`; st='prolock'; }
       else { badge=`<span class="tp-badge lock">🔒 Tier ${t}</span>`; st='locked'; }
       return `<div class="tp-cell ${lane} ${st}">${passRewardCell(r)}${badge}</div>`; };
@@ -21868,7 +21882,7 @@ function overlayTourPass(screen){
   ov.appendChild(track);
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
-  const bp=ov.querySelector('[data-buypro]'); if(bp) bp.onclick=()=>{ const r=passBuyPro(); if(r.ok){ toast('<span style="color:#a78bfa;font-weight:800">Pro Pass unlocked!</span><br><span class="small">Claim your Pro rewards on every tier you\'ve reached.</span>',3600); render(); } else toast(r.msg); };
+  const bp=ov.querySelector('[data-buypass]'); if(bp) bp.onclick=()=>{ beginPassPurchase(); };
   const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const n=passClaimAll(); if(n>0){ toast('<span style="color:var(--gold);font-weight:800">Claimed '+n+' reward'+(n>1?'s':'')+'!</span>',3200); render(); } };
   ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
   screen.appendChild(ov);
@@ -21878,7 +21892,7 @@ function overlayTourPass(screen){
 function tourPassCard(){
   const ssn=passSeason(); let mid, badge=`<span class="gc-badge">S${ssn.n}</span>`;
   if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
-    mid=`Tier ${tier}/${PASS_TIERS}${s.pro?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
+    mid=`Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
     if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
   } else mid=`Earn XP in every mode · climb 50 tiers of rewards`;
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
@@ -22255,7 +22269,7 @@ const BUCKETS=[
 // has: created the Stripe Product/Price + set its STRIPE_PRICE_* secret, redeployed create-checkout +
 // stripe-webhook (they import _shared/packages.ts), and run supabase/71_runtour_tokens_pass.sql.
 //   TOKENS_ENABLED   → STRIPE_PRICE_TOK1/TOK3/TOK7/TOK15  (extra Daily-Challenge attempts)
-//   TOURPASS_ENABLED → STRIPE_PRICE_TOURPASS + migration 71 (monthly Tour Pass)
+//   TOURPASS_ENABLED → STRIPE_PRICE_TOURPASS + migrations 71+72 (the 60-day season Tour Pass)
 function packTierLabel(t){ return t==='champ'?'Champion':t==='tour'?'Tour':'Base'; }   // bonus-pack display name
 // ---- Daily Tokens: buy extra Daily-Challenge attempts beyond the free 3/day. Server-authoritative
 // (credited by the Stripe webhook, spent via runtour_spend_token). ids + counts MUST match packages.ts.
@@ -22266,14 +22280,17 @@ const DAILY_TOKENS=[
   {id:'tok7',  n:7,  usd:4.99},
   {id:'tok15', n:15, usd:9.99, badge:'BEST VALUE'},
 ];
-// ---- Tour Pass: a ONE-TIME monthly purchase. A new themed pass runs each calendar month; buying grants
-// THIS month's pass. While active: unlimited daily plays, a reward multiplier (earn bigger & better), a
-// coin drop + seasonal packs. When the month resets you buy a new pass. id/coins MUST match packages.ts.
+// ---- Tour Pass: THE one and only pass — a ONE-TIME purchase per 60-DAY SEASON (owner decision: the
+// monthly pass is removed; everything is built around the 60-day Tour Pass). Buying grants THIS
+// season only (server entitlement, migration 72; the season matches the in-game Tour Pass track).
+// While active: the PRO lane of the Tour Pass track, unlimited daily plays, a 1.5× reward multiplier,
+// +30,000 coins credited instantly (server-side), and 2 seasonal packs (granted client-side once per
+// season). When the season rolls over you buy the new season's pass. id/coins MUST match packages.ts.
+// create-checkout refuses a second purchase in the same season (409).
 const TOURPASS_ENABLED=false;
 const TOURPASS={ id:'tourpass', usd:14.99, coins:30000, packs:2 };
 const PASS_REWARD_MULT=1.5;   // Tour Pass holders earn 1.5× coins from play
-const _PASS_THEMES=['Winter Classic','Cold Snap','Spring Swing','Fairway Bloom','Peak Approach','Summer Heat','Midsummer Run','Dog Days','Autumn Drive','Fall Classic','Playoff Push','Holiday Cup'];
-function passThemeName(){ try{ return _PASS_THEMES[new Date().getMonth()]+' Pass'; }catch(e){ return 'Tour Pass'; } }
+function passThemeName(){ try{ return 'Season '+passSeason().n+' Tour Pass'; }catch(e){ return 'Tour Pass'; } }
 // shared checkout kickoff for any package (coins / tokens / pass). create-checkout authenticates the buyer
 // from their JWT, looks up the package + Stripe Price on the SERVER, and returns a hosted Checkout URL.
 // Coins/tokens/pass are credited ONLY by the signed webhook — the client never grants them.
@@ -22538,9 +22555,10 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
 function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState().welcomePack) return;
   var p=packState(); p.welcomePack=true; p.packEarned=(p.packEarned||0)+1; packSave(p);
   toast('<span style="color:var(--gold);font-weight:800">🎁 Welcome to RunThe.GG!</span><br><span class="small">Here’s a FREE pack, on us. Open it in the Pro Shop → Packs.</span>', 5200); }
-// The current calendar month as the server sees the Tour Pass period (UTC 'YYYY-MM'); gates the
-// once-per-period client grant of the pass's seasonal packs.
-function passPeriodNow(){ try{ return new Date().toISOString().slice(0,7); }catch(e){ return ''; } }
+// The current Tour Pass period as the server sees it ('S<n>' — the 60-day season key, migration 72);
+// gates the once-per-season client grant of the pass's seasonal packs. Fallback only — the wallet's
+// pass_period from runtour_wallet() is authoritative when present.
+function passPeriodNow(){ try{ return 'S'+passSeason().n; }catch(e){ return ''; } }
 function passPackTier(){ var t='tour'; try{ Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TYPES[id].seasonal && packTierLive(id)) t=id; }); }catch(e){} return t; }
 // Tour Pass rewards are split: the pass COINS are credited SERVER-SIDE at purchase (in the wallet); the
 // SEASONAL PACKS are granted here, client-side, once per pass period (packs are an inherently client-side
@@ -22550,12 +22568,12 @@ function maybePassRewards(){ try{
   if(!sbSignedIn() || !dailyPassActive()) return;
   var period=(_walletCache&&_walletCache.passPeriod)||passPeriodNow();
   var st=LS.get(acctKey('bag_pass'),null)||{};
-  if(st.claimed===period) return;                        // already granted this month's pass packs
+  if(st.claimed===period) return;                        // already granted this season's pass packs
   st.claimed=period; LS.set(acctKey('bag_pass'), st);
   var n=TOURPASS.packs||0, tier=passPackTier();
   if(n>0 && typeof grantFreePack==='function'){ grantFreePack(n,{tier:tier, silent:true}); }
   try{ cloudPush(); }catch(e){}
-  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">Unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' seasonal pack'+(n>1?'s':''):'')+'.</span>', 5200); }catch(e){}
+  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' seasonal pack'+(n>1?'s':''):'')+'.</span>', 5200); }catch(e){}
 }catch(e){} }
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
@@ -23142,23 +23160,23 @@ function bucketShopNode(){
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
   var wi=walletInfo(), firstBuy=!!(wi && (wi.lifePurchased||0)===0);   // server gives +100% on the FIRST paid pack
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  // ---- Tour Pass (monthly) ----
+  // ---- Tour Pass (60-day season — THE one pass sold) ----
   if(TOURPASS_ENABLED){
-    var passCol='#a24be0', active=dailyPassActive();
+    var passCol='#a24be0', active=dailyPassActive(), ssn=passSeason();
     wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol+'">Tour Pass</div>'));
     var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:linear-gradient(165deg,'+passCol+'22,#0c1f16);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
     pc.appendChild($('<div style="font-family:var(--display);font-size:22px;color:'+passCol+';text-align:center">'+esc(passThemeName())+'</div>'));
-    pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A new themed pass every month</div>'));
+    pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['♾️','Unlimited daily plays at any course'],['🏆','Extra rewards & challenges all month'],['🎁','Free bundle of seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode']].forEach(function(p){
+    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode']].forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);
     if(active){
-      pc.appendChild($('<div style="margin-top:11px;text-align:center;font:900 14px var(--body);color:#35d6a0;background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.4);border-radius:12px;padding:9px">✓ Active this month · unlimited plays &amp; '+PASS_REWARD_MULT+'× rewards</div>'));
-      pc.appendChild($('<div class="small muted" style="text-align:center;margin-top:6px">Ends when the month resets — grab next month’s pass then.</div>'));
+      pc.appendChild($('<div style="margin-top:11px;text-align:center;font:900 14px var(--body);color:#35d6a0;background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.4);border-radius:12px;padding:9px">✓ Active · PRO lane, unlimited plays &amp; '+PASS_REWARD_MULT+'× rewards</div>'));
+      pc.appendChild($('<div class="small muted" style="text-align:center;margin-top:6px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left). The Season '+(ssn.n+1)+' pass goes on sale when the new season starts.</div>'));
     } else {
-      var pbuy=$('<button class="btn" style="width:100%;margin:11px 0 0;background:'+passCol+';color:#fff;font-weight:900;font-size:16px">Get the Tour Pass · $'+TOURPASS.usd.toFixed(2)+'</button>');
+      var pbuy=$('<button class="btn" style="width:100%;margin:11px 0 0;background:'+passCol+';color:#fff;font-weight:900;font-size:16px">Get the Season '+ssn.n+' Pass · $'+TOURPASS.usd.toFixed(2)+'</button>');
       pbuy.onclick=function(){ beginPassPurchase(); };
       pc.appendChild(pbuy);
     }
@@ -24130,11 +24148,16 @@ function cloudBundle(){
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
   };
 }
-// Tour Pass claim flag: the LATER claimed month wins (so a device that already granted this month's packs
-// won't re-grant), matching how a pass is a per-period one-time client reward.
+// Tour Pass claim flag: the LATER claimed period wins (so a device that already granted this season's
+// packs won't re-grant). Periods are season keys 'S<n>' (migration 72) — compare the season NUMBER, not
+// the string ('S9' > 'S10' lexicographically would regress the flag at season 10 and re-grant packs).
+// A season key always beats a legacy 'YYYY-MM' month key (the season model supersedes the monthly one).
 function mergePass(local, server){
   var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
-  var lc=l.claimed||'', sc=s.claimed||''; return { claimed: (sc>lc?sc:lc) };
+  var lc=l.claimed||'', sc=s.claimed||'';
+  var rank=function(p){ var m=/^S(\d+)$/.exec(p); return m? 1e6+(+m[1]) : (p?1:0); };   // season keys outrank legacy months outrank empty
+  if(rank(sc)!==rank(lc)) return { claimed: rank(sc)>rank(lc)?sc:lc };
+  return { claimed: (sc>lc?sc:lc) };   // same rank class (two legacy months): keep the later string
 }
 // distinct Prime cards rolled: UNION the name→1 maps (grow-only), so a Prime rolled on any device stays counted.
 function mergePrimes(local, server){

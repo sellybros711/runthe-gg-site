@@ -6,7 +6,7 @@
 // what it receives. The webhook branches on `kind` to fulfill:
 //   coins  → runtour_credit_purchase  (adds paid_coins; first-purchase +100%)
 //   tokens → runtour_credit_tokens    (adds extra Daily-Challenge attempts)
-//   pass   → runtour_grant_pass       (grants the current month's Tour Pass)
+//   pass   → runtour_grant_pass       (grants the current 60-DAY SEASON's Tour Pass)
 //
 // Prices are created as Products/Prices in the Stripe Dashboard; paste each
 // Price ID into the STRIPE_PRICE_* env vars (see functions/README.md). Do NOT
@@ -108,16 +108,20 @@ export const PACKAGES: Record<string, CoinPackage> = {
     priceEnv: "STRIPE_PRICE_TOK15",
   },
 
-  // ---- Tour Pass (one-time monthly purchase; grants the current month's pass)
-  // A new themed pass runs each calendar month; buying grants THIS month only.
-  // The server credits passCoins into paid_coins and records the month's
-  // entitlement (tour_pass); the client grants the seasonal packs, unlocks
-  // unlimited daily plays, and applies a reward multiplier while the pass is
-  // active. When the month ends the entitlement lapses and a new pass must be
-  // bought.
+  // ---- Tour Pass — THE one and only pass: a one-time purchase per 60-DAY
+  // SEASON (owner decision: the monthly pass is removed; everything is built
+  // around the 60-day Tour Pass). Seasons are global and match the in-game
+  // Tour Pass track (Season 1 began Jul 1 2026 ET; migration 72 computes the
+  // season server-side). Buying grants THIS season only: the server credits
+  // passCoins into paid_coins and records the season's entitlement
+  // (tour_pass, period 'S<n>'); the client then unlocks the PRO lane of the
+  // Tour Pass track, unlimited daily plays, a 1.5× reward multiplier, and
+  // grants the 2 seasonal packs. When the season rolls over the entitlement
+  // lapses and the new season's pass must be bought. create-checkout refuses
+  // a second purchase in the same season (runtour_pass_status → 409).
   tourpass: {
     id: "tourpass",
-    label: "Tour Pass",
+    label: "Tour Pass (60-day season)",
     kind: "pass",
     passCoins: 30000, // coins credited on purchase
     passPacks: 2,     // seasonal packs granted client-side for this period
