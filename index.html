@@ -429,6 +429,9 @@ window.GA_ID='G-L29P5MRWKE';
     .nav-btn{padding:8px 11px;font-size:12.5px;}
     /* drop the oversized hero so the page opens on PLAY NOW + the games */
     .brand.hero{display:none;}
+    /* ...but keep a one-line purpose statement visible (Google OAuth branding review reads the page
+       for the app name + what the app does; the hero carries both on desktop, this covers mobile) */
+    .m-purpose{display:block;}
     .games-head{margin-top:14px;}
     .nav.signed-in .nav-chip .nm{display:none;}
     .nav.signed-in .nav-chip{padding:5px;}
@@ -450,6 +453,8 @@ window.GA_ID='G-L29P5MRWKE';
   .brand.hero{max-width:var(--col);margin:0 auto;padding-top:18px;}
   .brand.hero .wordmark{max-width:480px;}
   .brand.hero .tag{margin-top:12px;}
+  .m-purpose{display:none;color:var(--mut);font-size:13px;line-height:1.55;margin:12px auto 0;max-width:520px;text-align:center;padding:0 6px;}
+  .m-purpose b{color:var(--ink);}
 
   /* ---- games section header ---- */
   .games-head{max-width:var(--maxw);margin:22px auto 12px;display:flex;align-items:center;justify-content:flex-start;gap:12px 14px;flex-wrap:wrap;}
@@ -568,6 +573,7 @@ window.GA_ID='G-L29P5MRWKE';
       <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in. No downloading necessary.</p>
       <div class="hero-status"><span class="dot"></span><b>3&nbsp;games live</b> · more on the way</div>
     </header>
+    <p class="m-purpose"><b>Run The Games</b> (RunThe.GG) is a collection of free, data-driven sports simulation games you play right in your browser. A free account saves your progress, trophies and leaderboard rank across every game.</p>
 
     <div class="games-head">
       <h2>Play now</h2>
