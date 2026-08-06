@@ -298,7 +298,7 @@ export const BREADTH = [
   { id: 'cover',    points: 34, label: 'A cover',
     blurb: 'Somebody else\'s song, made yours',
     has: songs => songs.some(p => flag(p.is_cover)),
-    missed: 'No covers — every song was one of their own' },
+    missed: 'No covers. Every song was one of their own' },
   { id: 'bustout',  points: 32, label: 'A bustout',
     blurb: `Not played for ${BREADTH_BUSTOUT_GAP}+ shows`,
     has: songs => songs.some(p => (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP),
@@ -550,7 +550,7 @@ export function setNote(ratio, songs) {
   if (ratio >= 0.97) return 'Filled to the curfew.';
   if (ratio >= 0.9) return 'Paced about right.';
   if (ratio >= SHORT_SET_RATIO) return 'A little room left on the table.';
-  if (ratio >= 0.6) return 'Cut short — the crowd noticed.';
+  if (ratio >= 0.6) return 'Cut short. The crowd noticed.';
   return 'Barely a set.';
 }
 
@@ -828,7 +828,7 @@ export function eventLine(kinds, seed = 0) {
   if (!kinds) return null;
   const one = a => a[Math.abs(seed) % a.length];
   if (kinds.includes('sandwich')) return one([
-    'And back into it — sandwich closed. The floor lost it.',
+    'And back into it. Sandwich closed, and the floor lost it.',
     'Came all the way back around. Sandwich complete.',
   ]);
   if (kinds.includes('chain')) return one([
@@ -839,7 +839,7 @@ export function eventLine(kinds, seed = 0) {
     'Same transition as the tape. Seamless.',
     'Exactly like the version everybody knows. No gap.',
   ]);
-  return one(['No gap — straight in.', 'Ran it right into the next one.']);
+  return one(['No gap. Straight in.', 'Ran it right into the next one.']);
 }
 
 /** What the room does between sets. */

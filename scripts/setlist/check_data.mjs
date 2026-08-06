@@ -18,7 +18,7 @@ const read = p => readFileSync(resolve(repoRoot, p), 'utf8');
 let failures = 0;
 const ok = m => console.log(`  ok    ${m}`);
 const fail = m => { failures++; console.error(`  FAIL  ${m}`); };
-const check = (cond, m, detail) => cond ? ok(m) : fail(`${m}${detail ? ` — ${detail}` : ''}`);
+const check = (cond, m, detail) => cond ? ok(m) : fail(`${m}${detail ? `: ${detail}` : ''}`);
 
 // The column list DATA_CONTRACT.md promises, in order. dataLoader reads by name
 // so order is not load-bearing, but a missing column silently degrades the game.
@@ -186,6 +186,32 @@ const dyed = [...new Set([...game.matchAll(/\.chip\.([a-z]+)\{[^}]*var\(--dye\)/
   .map(m => m[1]))].sort();
 check(dyed.join(',') === 'jc,rec', 'only the archive chips use tie dye',
   `dyed: ${dyed.join(', ') || 'none'}`);
+
+console.log();
+
+/* Em dashes are banned from anything a player reads. They are easy to
+   reintroduce one string at a time, so this strips the comments (where they
+   are fine, and where most of them live) and fails on any that are left. */
+console.log('copy');
+const stripComments = src => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
+  .replace(/(^|[^:])\/\/[^\n]*/g, '$1');       // line comments, sparing URLs
+for (const file of ['setlist/index.html', 'setlist/scoring.js', 'setlist/dataLoader.js']) {
+  const bare = stripComments(read(file));
+  const hits = [...bare.matchAll(/.{0,44}[\u2014].{0,24}/g)].map(m => m[0].trim());
+  check(!hits.length, `no em dashes in ${file}`,
+    hits.length ? `${hits.length}, e.g. "${hits[0]}"` : '');
+}
+
+// The home screen states the size of the archive. A data refresh that moves
+// the number must move the copy with it.
+const claimed = game.match(/(\d[\d,]*)\s+shows from the elgoose\.net archive/);
+check(!!claimed, 'the home screen states the archive size');
+if (claimed) {
+  const said = Number(claimed[1].replace(/,/g, ''));
+  const actual = loadBand(read('setlist/data/goose.csv')).shows.length;
+  check(said === actual, `home screen says ${said} shows and the data has ${actual}`);
+}
 
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
