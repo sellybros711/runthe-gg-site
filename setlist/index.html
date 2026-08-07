@@ -476,15 +476,20 @@
      own strokes cross. Rendered side by side that reads as a mistake.
      greenT stays as the colour for anything without background-clip:text,
      where the fallback is an invisible arrow rather than a green one. */
-  .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--greenT);
-    font-size:16px; line-height:1; vertical-align:-1px;}
-  .segmark{font-style:normal; font-weight:900; color:var(--greenT);}
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .segout, .sf-seg, .segmark{
-      background:var(--dye-line); background-size:100% 100%; background-position:50% 50%;
-      -webkit-background-clip:text; background-clip:text;
-      -webkit-text-fill-color:transparent; color:transparent;}
-  }
+  /* DRAWN, NOT TYPED. It was the &rsaquo; character, and that glyph is tiny
+     inside its em box: measured against a 19px title, the arrow's box was
+     16px and its actual INK was 6px wide. Raising the font-size only inflates
+     the empty box around it.
+     This is the brand mark's own chevron on a viewBox cropped to the stroke,
+     so the box IS the ink, sized in em so it tracks whatever the title is
+     set at. Same path and the same round caps as the app icon. */
+  .segout, .sf-seg, .segmark{display:inline-block; width:.5em; height:.72em;
+    vertical-align:-.03em; background:var(--dye-line); flex:0 0 auto;
+    -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
+    mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
+  .segout{margin-left:.26em;}
+  .segmark{margin-right:.1em;}
+
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
     background:color-mix(in srgb,var(--green) 12%, transparent);
@@ -1166,8 +1171,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=24';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=24';
+} from './scoring.js?v=25';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=25';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1569,7 +1574,7 @@ function sofarHTML(si){
               // that ended clean — an arrow the scorecard then paid nothing for.
               j < set.length - 1 && String(p.is_segue) === 'true'
                 && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
-                ? '<i class="sf-seg">&rsaquo;</i>' : ''}</span>
+                ? '<i class="sf-seg" aria-hidden="true"></i>' : ''}</span>
             <span class="sf-len">${fmtClock(lenOf(p))}</span>
           </div>`).join('')}
       </div>`);
@@ -1636,7 +1641,7 @@ function renderDraft(){
       const oLine = why
         ? `<span class="o${whyClass}">${why}</span>`
         : p.segued_into
-          ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
+          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i> ${esc(p.segued_into)}${
               partnerCount > 1 ? ` <i>or ${partnerCount - 1} more</i>` : ''}</span>`
           : p.is_cover === 'true' && p.original_artist
             ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : '';
@@ -1665,7 +1670,7 @@ function renderDraft(){
           style="--acc:${acc.v}">
         <span class="l">
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
-            ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
+            ? '<span class="segout" role="img" aria-label="segued into the next song"></span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
           ${oLine}
         </span>
@@ -2143,6 +2148,26 @@ function dyeTextGradient(x, gx, gy, w, h){
   return g;
 }
 
+/* The mark's own chevron, stroked rather than typed. The card had the same
+   problem the app did: the > glyph is tiny inside its em box, so beside a
+   35px title it read as a stray mark rather than as the brand. Stroked to a
+   given cap height, it lands at the size the title is actually set at. */
+function drawChevron(x, px, baselineY, capH){
+  const w = capH * 0.62, top = baselineY - capH;
+  x.save();
+  x.lineWidth = Math.max(3, capH * 0.20);
+  x.lineCap = 'round';
+  x.lineJoin = 'round';
+  x.strokeStyle = dyeTextGradient(x, px, baselineY, w, capH);
+  x.beginPath();
+  x.moveTo(px + w * 0.12, top + capH * 0.10);
+  x.lineTo(px + w * 0.86, top + capH * 0.50);
+  x.lineTo(px + w * 0.12, top + capH * 0.90);
+  x.stroke();
+  x.restore();
+  return w;
+}
+
 /** Canvas has no letter-spacing, and a small caps label needs it to read. */
 function letterspaceCard(x, text, sx, y, gap){
   let cx = sx;
@@ -2236,19 +2261,14 @@ async function renderShareCard(r){
       x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
       const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
-      let tx = cx + x.measureText(label).width + 6;
+      let tx = cx + x.measureText(label).width + 10;
       if (n){
         // Raised to the cap line, the way a footnote marker sits on paper.
         x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
         x.fillText(String(n), tx, ly - 16);
         tx += x.measureText(String(n)).width + 8;
       }
-      if (seg){
-        x.font = '700 35px Archivo';
-        const aw = x.measureText('›').width;
-        x.fillStyle = dyeTextGradient(x, tx, ly, aw, 26);
-        x.fillText('›', tx, ly);
-      }
+      if (seg) drawChevron(x, tx, ly, 26);
       ly += ROW;
     });
     return ly;
