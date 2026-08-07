@@ -222,6 +222,19 @@ check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar sho
 check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
 check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
 
+/* The redesign, guarded at the points it would silently regress to a default.
+   The song list was fourteen identical rounded cards and the home page was a
+   centred stack with numbered circles; both are the shapes a component
+   library hands you, and both are one careless edit away from coming back. */
+check(/\.hero\{[^}]*background:var\(--dye\)/.test(game),
+      'the hero is a dye field, not a flat background');
+check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
+check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
+      'how-it-works dropped the numbered circles');
+check(/<details class="about"/.test(game), 'the about wall is folded away');
+check(/body\.playing \.about\{display:none/.test(game),
+      'and gone entirely once you are playing');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
