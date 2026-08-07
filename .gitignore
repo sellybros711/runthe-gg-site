@@ -2,5 +2,9 @@ node_modules/
 football/build/.cache/
 cfb/build/.cache/
 
+# Fonts cached by scripts/setlist/make_brand.mjs
+.cache/
+node_modules/
+
 # Local data exports (scripts/pull-ps-runs.mjs)
 ps_runs_export.csv

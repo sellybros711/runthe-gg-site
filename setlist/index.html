@@ -17,11 +17,26 @@
 })();
 </script>
 <meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock, then watch your show play back to a crowd." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Cg fill='none' stroke-width='2.6'%3E%3Ccircle cx='16' cy='16' r='2' stroke='%23F06A5F'/%3E%3Ccircle cx='16' cy='16' r='5.2' stroke='%23F2B632'/%3E%3Ccircle cx='16' cy='16' r='8.4' stroke='%2348D17A'/%3E%3Ccircle cx='16' cy='16' r='11.6' stroke='%2337C5D5'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
+<!-- Segue's own mark, not the RunThe.GG suite rings. Generated from one
+     definition by scripts/setlist/make_brand.mjs, so it cannot drift from the
+     palette the game itself uses. -->
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/segue-icon_32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/segue-icon_16.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/segue-icon_192.png" />
+<link rel="apple-touch-icon" href="/assets/segue-icon_180.png" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://runthe.gg/setlist/" />
+<meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
 <meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back." />
-<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png" />
+<meta property="og:image" content="https://runthe.gg/assets/segue-og_1200x630.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Segue: The Setlist Builder Game" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Segue: The Setlist Builder Game" />
+<meta name="twitter:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back." />
+<meta name="twitter:image" content="https://runthe.gg/assets/segue-og_1200x630.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -906,8 +921,8 @@ import {
   monotonyRun, MONO_AT,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=16';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=16';
+} from './scoring.js?v=17';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=17';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1678,7 +1693,8 @@ function renderResult(){
       </div>
 
       <div class="actions">
-        <button class="btn primary" type="button" id="shareBtn">Copy score card</button>
+        <button class="btn primary" type="button" id="shareImgBtn">Share score card</button>
+        <button class="btn" type="button" id="shareBtn">Copy as text</button>
         <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
         <button class="btn ghost" type="button" id="homeBtn">Back to bands</button>
       </div>
@@ -1755,6 +1771,238 @@ document.addEventListener('keydown', e => {
     renderDraft();
   }
 });
+
+/* ── the score card people actually post ────────────────────────────────────
+ *
+ * A setlist is a picture. Copying it as text meant every share landed in a
+ * feed as a wall of unformatted song titles under a generic RunThe.GG
+ * thumbnail, which is a poor advert for a game about how a night looks.
+ *
+ * Drawn on a canvas at 1080x1350 rather than screenshotted off the DOM: the
+ * result screen is a scrolling mobile layout and a crop of it is not a poster.
+ * The palette, the segue arrows and the red/yellow/green grade are the game's
+ * own, so the card and the app cannot disagree.
+ */
+const CARD_W = 1080, CARD_H = 1350, CARD_PAD = 64;
+const CARD_INK = '#F4F7FB', CARD_MUT = '#A9B8CB', CARD_DIM = '#7C8DA3', CARD_NAVY = '#071426';
+const GRADE_HEX = { hot: '#48D17A', warm: '#F2B632', cold: '#FF625F' };
+const DYE_STOPS = [[0,'#F06A5F'],[62,'#F2B632'],[128,'#48D17A'],[196,'#37C5D5'],[268,'#A982F3'],[360,'#F06A5F']];
+
+function dyeAt(deg){
+  const d = ((deg % 360) + 360) % 360;
+  const hx = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  for (let i = 0; i < DYE_STOPS.length - 1; i++){
+    const [a, ca] = DYE_STOPS[i], [b, cb] = DYE_STOPS[i + 1];
+    if (d >= a && d <= b){
+      const t = (d - a) / (b - a), p = hx(ca), q = hx(cb);
+      return `rgb(${Math.round(p[0]+(q[0]-p[0])*t)},${Math.round(p[1]+(q[1]-p[1])*t)},${Math.round(p[2]+(q[2]-p[2])*t)})`;
+    }
+  }
+  return DYE_STOPS[0][1];
+}
+/* Canvas has no conic gradient. Wedges, over an opaque base disc: without the
+   base the antialiased edges never reach full coverage and the mark lands at
+   about 75% alpha, which reads as washed-out pastel. */
+function dyeDisc(x, cx, cy, r){
+  x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fillStyle = dyeAt(0); x.fill();
+  for (let d = 0; d < 360; d++){
+    x.beginPath(); x.moveTo(cx, cy);
+    x.arc(cx, cy, r, (210 + d - 90) * Math.PI / 180, (210 + d + 2.5 - 90) * Math.PI / 180);
+    x.closePath(); x.fillStyle = dyeAt(d); x.fill();
+  }
+}
+/** The app icon, drawn at any size: a chevron on a field of tie dye. */
+function drawCardMark(x, px, py, size){
+  const s = size / 100;
+  x.save();
+  x.beginPath(); x.roundRect(px, py, size, size, size * 0.22); x.clip();
+  dyeDisc(x, px + size / 2, py + size / 2, size * 0.75);
+  x.lineWidth = 15 * s; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = CARD_NAVY;
+  x.beginPath();
+  x.moveTo(px + 38 * s, py + 26 * s);
+  x.lineTo(px + 66 * s, py + 50 * s);
+  x.lineTo(px + 38 * s, py + 74 * s);
+  x.stroke();
+  x.restore();
+}
+/** Trim to fit, because a 40-character song title cannot widen the column. */
+function fitText(x, text, max){
+  if (x.measureText(text).width <= max) return text;
+  let t = text;
+  while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1);
+  return t + '…';
+}
+/** Break on words up to a line budget. Headlines are sentences, not labels,
+    and ellipsing one at the column edge cuts it off mid-thought. */
+function wrapText(x, text, max, maxLines){
+  const words = String(text).split(/\s+/), lines = [];
+  let line = '';
+  for (const w of words){
+    const next = line ? `${line} ${w}` : w;
+    if (x.measureText(next).width <= max){ line = next; continue; }
+    lines.push(line);
+    line = w;
+    if (lines.length === maxLines - 1) break;
+  }
+  const rest = words.slice(lines.join(' ').split(/\s+/).filter(Boolean).length).join(' ');
+  lines.push(lines.length === maxLines - 1 ? fitText(x, rest, max) : line);
+  return lines.filter(Boolean).slice(0, maxLines);
+}
+
+async function renderShareCard(r){
+  /* Canvas paints whatever is loaded at the moment of the call, silently, so
+     an unloaded face comes out as the default sans and the card ships wrong. */
+  await document.fonts.ready;
+  await Promise.all([
+    document.fonts.load('130px "Alfa Slab One"'),
+    document.fonts.load('700 30px Archivo'),
+    document.fonts.load('900 30px Archivo'),
+  ]);
+
+  const c = document.createElement('canvas');
+  c.width = CARD_W; c.height = CARD_H;
+  const x = c.getContext('2d');
+  x.fillStyle = CARD_NAVY; x.fillRect(0, 0, CARD_W, CARD_H);
+
+  // The dye spiral, bled off the bottom-right corner.
+  const sp = document.createElement('canvas'); sp.width = CARD_W; sp.height = CARD_H;
+  const spx = sp.getContext('2d');
+  const SCX = CARD_W + 60, SCY = CARD_H - 40;
+  dyeDisc(spx, SCX, SCY, 720);
+  const rg = document.createElement('canvas'); rg.width = CARD_W; rg.height = CARD_H;
+  const rgx = rg.getContext('2d');
+  rgx.strokeStyle = '#000'; rgx.lineWidth = 15;
+  /* One destination-in at the end. Compositing ring by ring intersects each
+     new ring with what is left, so the mask empties out after a few strokes. */
+  for (let rr = 700; rr > 10; rr -= 42){
+    rgx.globalAlpha = Math.max(0.10, 1 - rr / 720);
+    rgx.beginPath(); rgx.arc(SCX, SCY, rr, 0, Math.PI * 2); rgx.stroke();
+  }
+  spx.globalCompositeOperation = 'destination-in';
+  spx.drawImage(rg, 0, 0);
+  x.save(); x.globalAlpha = 0.34; x.drawImage(sp, 0, 0); x.restore();
+
+  // ── masthead ──
+  drawCardMark(x, CARD_PAD, CARD_PAD, 88);
+  x.textBaseline = 'alphabetic';
+  x.font = '68px "Alfa Slab One"'; x.fillStyle = CARD_INK;
+  x.fillText('SEGUE', CARD_PAD + 110, CARD_PAD + 68);
+  x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
+  x.fillText(String(S.band.label || '').toUpperCase(), CARD_PAD + 112, CARD_PAD + 100);
+
+  // ── the score, which is the reason anybody posts this ──
+  const grade = gradeScore(r.total);
+  x.textAlign = 'right';
+  x.font = '150px "Alfa Slab One"'; x.fillStyle = GRADE_HEX[grade] || CARD_INK;
+  x.fillText(String(r.total), CARD_W - CARD_PAD, CARD_PAD + 128);
+  x.font = '900 22px Archivo'; x.fillStyle = CARD_MUT;
+  x.fillText('POINTS', CARD_W - CARD_PAD, CARD_PAD + 160);
+  x.textAlign = 'left';
+
+  let y = CARD_PAD + 214;
+  x.strokeStyle = 'rgba(244,247,251,.14)'; x.lineWidth = 2;
+  x.beginPath(); x.moveTo(CARD_PAD, y); x.lineTo(CARD_W - CARD_PAD, y); x.stroke();
+
+  // ── the headline, the one line a reader actually reads ──
+  y += 52;
+  x.font = '700 31px Archivo'; x.fillStyle = CARD_INK;
+  const headLines = wrapText(x, `“${r.headline}”`, CARD_W - CARD_PAD * 2, 2);
+  headLines.forEach((ln, i) => x.fillText(ln, CARD_PAD, y + i * 40));
+  y += (headLines.length - 1) * 40;
+
+  // ── the setlist, two columns so eight and eight sit side by side ──
+  const COL_GAP = 44, COL_W = (CARD_W - CARD_PAD * 2 - COL_GAP) / 2;
+  /* Centre the setlist in the room it actually has. A fourteen-song night is
+     half the height of a nineteen-song one, and anchoring it to the headline
+     left a third of the card empty above the footer. */
+  const ROW = 44, HEAD = 40;
+  const mainRows = Math.max(S.sets[0].length, S.sets[1].length);
+  const blockH = (mainRows ? HEAD + mainRows * ROW : 0)
+    + (S.sets[2].length ? 26 + HEAD + S.sets[2].length * ROW : 0);
+  const bandTop = y + 54, bandBottom = CARD_H - CARD_PAD - 150;
+  y = bandTop + Math.max(0, (bandBottom - bandTop - blockH) / 2);
+  const drawSet = (songs, si, cx, cy, width) => {
+    if (!songs.length) return cy;
+    x.font = '900 22px Archivo'; x.fillStyle = CARD_DIM;
+    x.fillText(SETS[si].label.toUpperCase(), cx, cy);
+    let ly = cy + 40;
+    x.font = '700 29px Archivo';
+    songs.forEach((p, j) => {
+      const nxt = songs[j + 1];
+      const seg = nxt && String(p.is_segue) === 'true'
+        && S.data.segues.has(`${p.song_id}|${nxt.song_id}`);
+      x.fillStyle = CARD_INK;
+      const label = fitText(x, p.song, width - (seg ? 30 : 0));
+      x.fillText(label, cx, ly);
+      if (seg){
+        x.fillStyle = GRADE_HEX.hot;
+        x.fillText('›', cx + x.measureText(label).width + 10, ly);
+      }
+      ly += 44;
+    });
+    return ly;
+  };
+  const leftEnd = drawSet(S.sets[0], 0, CARD_PAD, y, COL_W);
+  const rightEnd = drawSet(S.sets[1], 1, CARD_PAD + COL_W + COL_GAP, y, COL_W);
+  let ey = Math.max(leftEnd, rightEnd) + 26;
+  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, CARD_W - CARD_PAD * 2);
+
+  /* What the night contained, pinned above the footer rather than left to
+     float under the setlist. A short night is only fourteen songs and the
+     chips ended up marooned halfway up with a third of the card blank. Two
+     rows of headroom, so a wide sweep wraps without hitting the footer. */
+  const got = r.breadth.filter(cd => cd.got).map(cd => cd.label);
+  if (got.length){
+    let bx = CARD_PAD, by = Math.max(ey + 30, CARD_H - CARD_PAD - 116);
+    x.font = '900 20px Archivo';
+    got.forEach(label => {
+      const t = label.toUpperCase(), w = x.measureText(t).width + 30;
+      if (bx + w > CARD_W - CARD_PAD){ bx = CARD_PAD; by += 46; }
+      x.fillStyle = 'rgba(72,209,122,.16)';
+      x.beginPath(); x.roundRect(bx, by - 24, w, 36, 18); x.fill();
+      x.fillStyle = GRADE_HEX.hot;
+      x.fillText(t, bx + 15, by);
+      bx += w + 12;
+    });
+  }
+
+  // ── footer ──
+  x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
+  x.fillText('RUNTHE.GG/SETLIST', CARD_PAD, CARD_H - CARD_PAD);
+  x.textAlign = 'right';
+  x.fillStyle = CARD_MUT;
+  x.fillText(`${r.stats.songs} SONGS · ${fmtClock(r.totalUsed)} ON STAGE`, CARD_W - CARD_PAD, CARD_H - CARD_PAD);
+  x.textAlign = 'left';
+  return c;
+}
+
+/* Share sheet where there is one (a phone), download where there is not.
+   navigator.share must be called in the click's own task or Safari rejects it
+   as untrusted, so the blob is awaited inside the handler, not before it. */
+async function shareCardImage(btn){
+  const label = btn.textContent;
+  btn.textContent = 'Drawing…';
+  try {
+    const canvas = await renderShareCard(S.result);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const file = new File([blob], 'segue-setlist.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], text: shareText() });
+      btn.textContent = label;
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'segue-setlist.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    btn.textContent = 'Saved';
+  } catch (err){
+    // A cancelled share sheet is not a failure, and must not shout.
+    btn.textContent = err && err.name === 'AbortError' ? label : 'Could not save';
+  }
+  setTimeout(() => { btn.textContent = label; }, 2200);
+}
 
 function shareText(){
   const r = S.result;
@@ -2173,12 +2421,15 @@ app.addEventListener('click', e => {
   const peek = e.target.closest('[data-peek]');
   if (peek){ openDetail(Number(peek.dataset.peek)); return; }
 
+  const shareImg = e.target.closest('#shareImgBtn');
+  if (shareImg){ shareCardImage(shareImg); return; }
+
   const share = e.target.closest('#shareBtn');
   if (share){
     const text = shareText();
     navigator.clipboard.writeText(text).then(() => {
       share.textContent = 'Copied';
-      setTimeout(() => { share.textContent = 'Copy score card'; }, 2200);
+      setTimeout(() => { share.textContent = 'Copy as text'; }, 2200);
     }).catch(() => { window.prompt('Copy your score card:', text); });
   }
 });
