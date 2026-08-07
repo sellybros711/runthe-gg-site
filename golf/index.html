@@ -3054,31 +3054,48 @@ function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; r
    can gild matching names (matched by user id, or by username on the streak
    board, which carries no id). Fails open: no backend / migration → nobody gilded.
 --------------------------------------------------------------------------- */
-var _proCache={ids:null,names:null,t:0,loading:false};
-function proLoad(){
+var _proCache={ids:null,names:null,t:0,loading:false,ok:false};
+var PRO_TTL_OK=300000, PRO_TTL_FAIL=45000;   // re-ask 45s after a failure/empty read instead of sitting white for 5 min
+function proLoad(force){
   if(!sb) return;
   if(_proCache.loading) return;
-  if(_proCache.ids && (Date.now()-_proCache.t)<300000) return;   // 5 min is plenty for a purchase to show up
+  const ttl=_proCache.ok?PRO_TTL_OK:PRO_TTL_FAIL;
+  if(!force && _proCache.ids && (Date.now()-_proCache.t)<ttl) return;
   _proCache.loading=true;
   rpcTry('runtour_pro_users',undefined,8000).then(({data,error})=>{
     _proCache.loading=false; _proCache.t=Date.now();
-    if(error){ if(!_proCache.ids){ _proCache.ids=new Set(); _proCache.names=new Set(); } return; }
+    if(error){ _proCache.ok=false;
+      // surface the real reason - a silent empty set is why a pass holder can read as a plain name
+      console.error('[RunTheTour] runtour_pro_users failed:', error.message||error);
+      if(!_proCache.ids){ _proCache.ids=new Set(); _proCache.names=new Set(); } return; }
+    _proCache.ok=true;
     _proCache.ids=new Set((data||[]).map(r=>r.user_id).filter(Boolean));
     _proCache.names=new Set((data||[]).map(r=>(r.username||'').toLowerCase()).filter(Boolean));
+    if(!_proCache.ids.size) console.warn('[RunTheTour] runtour_pro_users returned 0 pass holders for the current season');
     render();
-  }).catch(()=>{ _proCache.loading=false; _proCache.t=Date.now(); });
+  }).catch(()=>{ _proCache.loading=false; _proCache.ok=false; _proCache.t=Date.now(); });
 }
-// true when THIS row belongs to a current-season Tour Pass holder
+// true when THIS row belongs to a current-season Tour Pass holder.
+// Three sources, in order: your own wallet (authoritative for you), the dev accounts (they hold PRO via
+// devMode() with NO purchase row, so the server set can never know about them - without this they read as
+// plain names on everyone ELSE's screen), then the server's current-season holder set.
 function isProUser(uid,name){
   if(sbUser && uid && uid===sbUser.id) return passProActive();         // your own row: the wallet is authoritative
+  const n=name?String(name).toLowerCase():'';
+  try{ if(n && typeof DEV_USERS!=='undefined' && DEV_USERS.indexOf(n)>=0) return true; }catch(e){}
   if(!_proCache.ids) return false;
   if(uid && _proCache.ids.has(uid)) return true;
-  return !!(name && _proCache.names.has(String(name).toLowerCase()));
+  return !!(n && _proCache.names.has(n));
 }
 // escaped name, wrapped in the animated gold treatment when the player holds the pass
 function proNameHTML(name,uid){
   const t=esc(name==null?'':name);
   return isProUser(uid,name) ? `<span class="proname" title="Tour Pass PRO">${t}</span>` : t;
+}
+// the H2H unit's display name for the live watch scoreboard, gilded when that unit holds the Tour Pass
+function h2hUnitNm(ui){
+  const nm=(S.h2h&&S.h2h.unitNames&&S.h2h.unitNames[ui])||'';
+  return (S.h2h&&S.h2h.unitPro&&S.h2h.unitPro[ui]) ? `<span class="proname" title="Tour Pass PRO">${esc(nm)}</span>` : esc(nm);
 }
 // CS394: a representative glow colour per tier (low → cool/grey, high → gold/violet/prismatic) for the H2H
 // preview tier ring. One entry per rank in REP_ORDER (Amateur..G.O.A.T.).
@@ -3356,7 +3373,10 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // Economy re-anchor: coins are much harder to earn (so $1.99 ≈ a full career's grind). Coin days (1,2,5) 150 → 350 → 1,000.
 const STREAK_WEEK_COIN_DAY={1:150, 2:350, 3:350, 4:350, 5:1000, 6:1000, 7:1000};
 function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||150; }
-const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'champpack'};   // CS461: daily-CHALLENGE day 7 = the BEST (Champion) pack
+// Economy rebalance: the day-7 capstone was a CHAMPION pack every single week (45,000 coins ≈ 12 weeks of a
+// player's whole coin income, handed out 52×/yr). The weekly payoff moment stays, one tier down — Champion
+// packs are now earned from drops / the Tour Pass / a purchase, so the top tier means something.
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};   // daily-CHALLENGE day 7 = a Tour pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -3422,7 +3442,9 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
 // above. Just signing in each (ET) day advances the loop and grants that day's reward; DAY 7 = a medium
 // (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
 // (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
-const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+// Economy rebalance: day 7 was a Tour pack for simply OPENING the game 7 times, on top of the daily-challenge
+// track's own weekly pack. Logging in still pays a pack, at the base tier.
+const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'basepack'};
 const LOGIN_COIN_DAY={1:50,2:75,3:100,5:150};
 function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!=='object') s={day:null,n:0}; s.n=s.n||0; return s; }
 function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
@@ -3745,6 +3767,14 @@ function weekDayRange(){ const start=weekKey()*7*86400000, pk=ms=>{ const d=new 
 // only as that coin curve - never surfaced to the player). Weekly challenges also grant a "mulli-spin".
 const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all the day's daily quests
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
+const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
+const WEEKLY_CHAL_COINS=1500;  // coins paid by a weekly challenge that doesn't carry a pack
+// Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins — a RARE shard is 15,000 and an EPIC
+// 27,500 (3.4× a Base pack) — so these two lines were quietly the largest reward faucet in the game
+// (~215,000 coins/week between them, i.e. ~3 hand-picked items every week). Halved: the daily all-done
+// bonus pays a COMMON shard, and only the first WEEKLY_PACK_N weeklies pay an EPIC (the rest pay RARE).
+const DAILY_QUEST_SHARD='common';   // rarity of the shard for finishing all of the day's quests
+const WEEKLY_SHARD_TOP='epic', WEEKLY_SHARD_REST='rare';
 const LEVEL_COIN=250;          // Pro Shop coins granted per internal coin-curve step reached
 function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
   s.xp=s.xp||0; s.mulliEarned=s.mulliEarned||0; s.mulliSpent=s.mulliSpent||0; return s; }
@@ -3781,7 +3811,7 @@ function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquest
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
-  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn('rare',1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
+  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn(DAILY_QUEST_SHARD,1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
   else { LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); }
   return leveled; }
 // ---- Weekly challenges (rotate weekly, cross-mode, harder; each done → XP + a mulli-spin) ----
@@ -3811,7 +3841,17 @@ function weekChalDoneCount(w){ w=w||weekChal(); return weeklySet().filter(c=>w.d
 function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekChal(); w.prog[metric]=(w.prog[metric]||0)+n;
   const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
   LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
-  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); try{ shardEarn('epic',1); }catch(e){} track('weekly_chal_done',{id:c.id}); });   // CS400: each weekly → a free pack · pack-only economy: +◆1 epic shard
+  // Economy rebalance: all 4 weeklies used to pay a free pack (4/wk on top of the two reward tracks). Now the
+  // first WEEKLY_PACK_N pay a pack and the rest pay COINS — deliberately NOT more shards, since one epic shard
+  // is worth ~27,500 coins (3.4× a base pack), so paying in shards would have made the leak bigger, not smaller.
+  // Every weekly still pays its Tour Rep + a shard, so the targeted-item path is untouched.
+  const wset=weeklySet();
+  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP);
+    const idx=wset.findIndex(x=>x&&x.id===c.id);
+    const top=(idx>=0 && idx<WEEKLY_PACK_N);
+    if(top){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
+    else if(typeof addBonusCoins==='function') addBonusCoins(WEEKLY_CHAL_COINS,{silent:true});
+    try{ shardEarn(top?WEEKLY_SHARD_TOP:WEEKLY_SHARD_REST,1); }catch(e){} track('weekly_chal_done',{id:c.id}); });
   if(newly.length){ try{ recordAchEvent({inc:{weeklyDone:newly.length}}); evaluateAch(); }catch(e){} }
   if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
   return newly; }
@@ -3838,11 +3878,11 @@ function challengesNode(){
   el.appendChild($(repTierBarHTML(ms)));
   const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 rare shard</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · 🎁 pack · ◆1 epic shard</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · ◆1 shard · first ${WEEKLY_PACK_N} → 🎁 pack + ◆epic</span></div>${wr}</div>`));
   return el;
 }
 // CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
@@ -6022,8 +6062,12 @@ function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
 function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
 function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
   try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){ var d=r.data[0];
+      var wasPro=!!(_walletCache&&_walletCache.passActive);
       _walletCache={paid:+d.paid_coins||0, lifePurchased:+d.lifetime_purchased||0, lifeGranted:+d.lifetime_granted||0,
         tokens:+d.daily_tokens||0, passActive:!!d.pass_active, passPeriod:d.pass_period||null};
+      // pass just went active (a purchase landed) → re-pull the holder set so the gold name shows up for
+      // everyone straight away instead of after the cache TTL
+      if(_walletCache.passActive && !wasPro){ try{ proLoad(true); }catch(e){} }
       if(cb){ try{cb();}catch(e){} } else { try{render();}catch(e){} } } }).catch(function(){}); }catch(e){} }
 // coinBalance = spendable EARNED coins + PURCHASED coins (server wallet).
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent) + paidCoins(); }
@@ -6183,7 +6227,7 @@ function passEnabled(){ return TOURPASS_LIVE; }
 
 /* ============================ TOUR PASS — 60-day season pass ============================
    The battle pass that ties the whole economy together. A 60-day GLOBAL season (ET-aligned, like the
-   Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
+   Daily) with a 60-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
    awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online H2H, and moments
    all feed it). Two lanes per tier: FREE (everyone) + PRO. OWNER DECISION (2026-08): the ONLY way a
    regular player unlocks PRO is the real-money 60-day Tour Pass ($14.99 — the TOURPASS package, one
@@ -6195,7 +6239,7 @@ function passEnabled(){ return TOURPASS_LIVE; }
    also grants unlimited daily plays + 1.5× rewards + 30,000 coins + 2 seasonal packs (see TOURPASS). */
 const TOURPASS_LEN=60;                                        // days per season
 const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
-const PASS_TIERS=50;
+const PASS_TIERS=60;
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
@@ -6204,25 +6248,76 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   if(!s||typeof s!=='object'||s.season!==cur){ s={season:cur, xp:0, pro:false, claimed:{free:[],prem:[]}}; }   // new season -> fresh (last season's rewards lock out)
   if(!s.claimed||typeof s.claimed!=='object') s.claimed={free:[],prem:[]};
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
-  s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro; return s; }
+  s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro;
+  if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
+  return s; }
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
 // PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
 // per season) OR a dev account (CSel8/RunnyJ test free, never purchase). The legacy coin-unlocked
 // s.pro flag is no longer read — decision A: the $14.99 pass is the ONLY PRO unlock for players.
 function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()); }
 // XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
-function passTierCost(t){ return 140 + (t-1)*11; }
-function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
+//
+// CALIBRATION (this is the part that matters). Pass XP comes ONLY from awardPlayCoins(base)*PASS_XP_RATE —
+// the daily, a finished season, an online win, a played Moment. Streak/login/quest coins bypass it entirely.
+// After the coin re-anchor (COIN_DAILY=60) a daily player earns just ~168 XP/day, so the previous curve's
+// 48,415 total needed ~289 days of a 60-DAY season: the track was literally impossible to finish. The v2
+// comment claiming "~41-45 days" was computed against the pre-re-anchor faucet and was simply wrong.
+//
+// v3 is sized to the REAL rate: 60 tiers totalling ~15,960 XP, so a committed player (daily + a season every
+// week or so, ~290 XP/day) tops out around day 55 of the 60-day season and a daily-only player lands around
+// tier 48 by day 60 — the top tiers stay aspirational without being impossible. The climb also STEEPENS
+// as you go: tier 1 costs 90, tier 30 costs 232, tier 60 costs 556 (6.2× tier 1), so the back half is a real
+// grind while the opening still pays out fast.
+const PASS_CURVE_V=3;                                        // bump to re-convert everyone's XP onto a new curve
+const PASS_C0=90, PASS_C1=2, PASS_C2=0.10;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
+function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
+var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
+function passXpForTier(t){
+  if(!_passCum){ _passCum=[0]; let x=0; for(let i=1;i<=PASS_TIERS;i++){ x+=passTierCost(i); _passCum.push(Math.round(x)); } }
+  return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
+}
+// Every curve the game has ever shipped, so a player on ANY old version converts correctly.
+const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,               tiers:50},
+                    2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1), tiers:50},
+                    3:{cost:t=>passTierCost(t),             tiers:60} };
+// One-time migration onto the current curve. Preserves the player's exact TIER and their fractional progress
+// into the next one, so nobody loses visible progress or re-locks a reward — only the shape of what's AHEAD
+// changes. Converting from v2 LOWERS the raw XP number (v3 is a much smaller scale); the tier is what matters.
+function passConvertCurve(s){
+  const from=PASS_CURVES[s.curveV|0]||PASS_CURVES[1], oldT=from.tiers;
+  let cum=[0],x=0; for(let i=1;i<=oldT;i++){ x+=from.cost(i); cum.push(x); }
+  let t=0; while(t<oldT && s.xp>=cum[t+1]) t++;
+  const b=cum[t], n=t<oldT?cum[t+1]:b;
+  const frac=(t<oldT && n>b) ? Math.max(0,Math.min(0.999,(s.xp-b)/(n-b))) : 0;
+  t=Math.min(t,PASS_TIERS);
+  s.xp=Math.round(passXpForTier(t) + frac*(t<PASS_TIERS?passTierCost(t+1):0));
+  s.curveV=PASS_CURVE_V; return s;
+}
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
-  s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
-  if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
+  if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
+  s.xp+=Math.round(n); passSave(s); }
+// Owner: a proper level-up moment after a season / daily / h2h round, not a toast mid-play. Deferred the
+// same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
+// they're safely on screen. Only fires when a TIER was actually gained.
+function passLevelPending(){ const p=S._passPop; if(!p||!passEnabled()||!sbSignedIn()) return false;
+  return passTierAt(passState().xp)>p.tier0; }
+function flushPassLevel(){
+  if(!passLevelPending()){ S._passPop=null; return; }
+  if(S.overlay) return;                                   // let the welcome gift / login bonus land first
+  var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','setup'];
+  if(busy.indexOf(S.screen)>=0) return;                   // never interrupt a live round / draft
+  const s=passState(), p=S._passPop;
+  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierAt(s.xp)};
+  S._passPop=null; S.overlay='passlevel'; try{ track('tourpass_levelup',{from:p.tier0,to:S.passLevel.tier1}); }catch(e){}
+  try{ render(); }catch(e){} }
 // Reward tables - milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
 // FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
 // Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
 // with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
-const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 50:{pack:{tier:'tour',n:1}, coins:3000} };
-const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 45:{shard:{r:'rare',n:1}}, 50:{pack:{tier:'base',n:1}, coins:1500}, 55:{shard:{r:'rare',n:2}}, 60:{pack:{tier:'tour',n:1}, coins:3000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{pack:{tier:'champ',n:1}, coins:2500}, 53:{pack:{tier:'tour',n:1}}, 56:{shard:{r:'legendary',n:1}}, 58:{pack:{tier:'champ',n:1}}, 60:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
 function passTierReward(t, lane){
   const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
   if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
@@ -6263,7 +6358,16 @@ function mergeTourPass(local, server){
   if((server.season||0) > (local.season||0)) return server;
   if((local.season||0) > (server.season||0)) return local;
   const uni=(a,b)=>{ const s=new Set(); (a||[]).forEach(x=>s.add(x)); (b||[]).forEach(x=>s.add(x)); return [...s]; };
+  // XP is only comparable WITHIN a curve version: v2's numbers are ~3x v3's for the same tier, so a plain
+  // max() would let a stale device's big v2 number read as a much higher tier once stamped v3. When the
+  // versions differ, take the already-CONVERTED side wholesale; only compare xp when they agree.
+  const lv=+local.curveV||0, sv=+server.curveV||0;
+  if(lv!==sv){ const w=lv>sv?local:server, o=lv>sv?server:local;
+    return { season:w.season, xp:+w.xp||0, pro:!!(w.pro||o.pro), curveV:Math.max(lv,sv),
+      claimed:{ free:uni(w.claimed&&w.claimed.free, o.claimed&&o.claimed.free),
+                prem:uni(w.claimed&&w.claimed.prem, o.claimed&&o.claimed.prem) } }; }
   return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
+    curveV:Math.max(lv,sv),
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
               prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
 }
@@ -7423,6 +7527,7 @@ function render(){
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
     if(S.overlay==='welcomepack') overlayWelcomePack(app);
+    if(S.overlay==='passlevel') overlayPassLevel(app);
     if(S.overlay==='packbatch') overlayPackBatch(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
@@ -7467,6 +7572,11 @@ function render(){
       <button class="btn goldfill" id="rerr-home">Back to Home</button></div>`);
     const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
     screen.appendChild(fb);
+  }
+  // Tour Pass level-up: flushed here (once the result screen is actually on screen) rather than from inside
+  // each screen fn, so an early return in one of them can't skip it. Deferred a beat so the page paints first.
+  if(passLevelPending() && !S.overlay && ['summary','dailyresult','h2hresult','careerend','circuitend'].indexOf(S.screen)>=0){
+    setTimeout(()=>{ try{ flushPassLevel(); }catch(e){} }, 520);
   }
   // CS304: persistent bottom tab nav. Appended AFTER the screen dispatch so has-cupbar (set by the team-cup
   // screen) is known. Hidden on immersive live-play screens with their own bottom controls; an open
@@ -7669,7 +7779,7 @@ function scrRules(){
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
     ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards.'],
-    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a rare shard, each weekly challenge pays an epic shard, and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
+    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
@@ -22265,7 +22375,7 @@ function passHeroNode(ssn, opts){
     <div class="tps-hero-in">
       <div class="tps-fig">${pxFigureHTML(look,132)}</div>
       <div class="tps-htxt">
-        <div class="tps-kick">SEASON ${ssn.n} · 50 TIERS</div>
+        <div class="tps-kick">SEASON ${ssn.n} · ${PASS_TIERS} TIERS</div>
         <h2 class="tps-title">Tour<br><b>Pass</b></h2>
         <p class="tps-sub">${opts.sub||'Play any mode, climb the track, cash in packs, shards, coins and season-exclusive gear.'}</p>
       </div>
@@ -22279,7 +22389,7 @@ function passHeroNode(ssn, opts){
 // The Pro perk stack (the $14.99 value story), used on both the sales page and the in-track upsell.
 function passPerksHTML(){
   const rows=[
-    ['crown','Every PRO reward, all 50 tiers','Packs, shards, coins and the exclusive Plate + Champion Aura'],
+    ['crown','Every PRO reward, all 60 tiers','Packs, shards, coins and the exclusive Plate + Champion Aura'],
     ['target','Unlimited daily plays','No attempt cap on Beat the Pro for the whole season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Opened from the Pro Shop whenever you want'],
@@ -22307,9 +22417,9 @@ function overlayTourPass(screen){
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">PRO LANE · WITH THE TOUR PASS</div><div class="tps-loot">${passLootTilesHTML('prem')}</div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">TWO LANES, ONE TRACK</div><div class="tps-lanes">
       <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
-        <li><i>✓</i>All 50 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
+        <li><i>✓</i>All 60 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
       <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
-        <li><i>★</i>Everything in FREE</li><li><i>★</i>All 50 PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
       </div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
     const cta=$(`<div class="tps-cta">
@@ -22349,7 +22459,7 @@ function overlayTourPass(screen){
           <div class="tps-htxt">
             <div class="tps-kick">PRO LANE · LOCKED</div>
             <h2 class="tps-title" style="font-size:clamp(26px,7.5vw,36px)">Go <b>Pro</b></h2>
-            <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all 50 Pro rewards, the Tour Pass Plate and the Champion Aura for the rest of Season ${ssn.n}.</p>
+            <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all ${PASS_TIERS} Pro rewards, the Tour Pass Plate and the Champion Aura for the rest of Season ${ssn.n}.</p>
           </div>
         </div>
         <div class="tps-chips"><span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span><span class="tps-chip">SEASON EXCLUSIVE</span></div></div>`));
@@ -22398,7 +22508,7 @@ function tourPassCard(){
   if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
     mid=`Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
     if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
-  } else mid=`Earn XP in every mode · climb 50 tiers of rewards`;
+  } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season Pass</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
     <div class="gc-mid">${mid}</div>
@@ -23197,6 +23307,113 @@ function flushPendingWelcome(){ if(!S._welcomePop) return; if(S.overlay) return;
   if(busy.indexOf(S.screen)>=0) return;                     // never interrupt a live round / draft / ceremony
   S._welcomePop=false; S.overlay='welcomepack'; try{ render(); }catch(e){} }
 function welcomePackPending(){ return !!S._welcomePop; }
+/* ---------------------------------------------------------------------------
+   TOUR PASS LEVEL-UP (owner): after a season / daily / h2h round, show the live
+   XP bar with the level you were on at the LEFT and the next one at the RIGHT,
+   fill it, roll over into the next level (repeating for every tier gained),
+   then list what those tiers unlocked and offer to go collect it.
+--------------------------------------------------------------------------- */
+function passLevelStyleOnce(){ if(document.getElementById('plcss')) return;
+  const st=document.createElement('style'); st.id='plcss'; st.textContent=`
+  .plov{text-align:center}
+  .pl-kick{font:800 10.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#ffd447;margin-bottom:4px}
+  .pl-title{font-family:var(--display);font-size:clamp(26px,7.4vw,36px);line-height:1.05;margin:0 0 2px}
+  .pl-sub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
+  .pl-rail{display:flex;align-items:center;gap:10px;max-width:440px;margin:0 auto}
+  .pl-lv{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border:2px solid rgba(255,255,255,.16);background:rgba(0,0,0,.3);transition:all .35s ease}
+  .pl-lv b{font:900 19px/1 var(--body);color:#fff}
+  .pl-lv span{font:800 7.5px/1 var(--body);letter-spacing:.12em;color:var(--muted);margin-top:2px}
+  .pl-lv.on{border-color:#ffd447;background:linear-gradient(180deg,rgba(241,208,74,.3),rgba(241,208,74,.1));box-shadow:0 0 18px rgba(241,208,74,.45)}
+  .pl-lv.on b{color:#ffd447}
+  .pl-bar{position:relative;flex:1 1 auto;height:18px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;
+    border:1px solid rgba(255,255,255,.08)}
+  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,#f0a51e,#ffd447,#fff3bd);box-shadow:0 0 12px rgba(241,208,74,.5)}
+  .pl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 10px/1 var(--body);
+    font-style:normal;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+  .pl-gain{margin:12px 0 0;font:900 15px/1.2 var(--body);color:#ffd447;min-height:18px}
+  .pl-rw{margin:14px auto 0;max-width:440px;text-align:left}
+  .pl-rw h4{font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+  .pl-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.07);margin-bottom:6px}
+  .pl-row.pro{border-color:rgba(162,75,224,.5);background:rgba(162,75,224,.12)}
+  .pl-row .pl-t{flex:0 0 auto;font:900 10px/1 var(--body);color:#ffd447;min-width:34px}
+  .pl-row.pro .pl-t{color:#c9a0ff}
+  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:12.5px;color:var(--oncard)}
+  .pl-lock{margin-top:8px;font-size:11.5px;color:#c9a0ff}
+  @media (prefers-reduced-motion:reduce){ .pl-fill{transition:none!important} .pl-lv{transition:none!important} }`;
+  document.head.appendChild(st); }
+// one line per reward on a tier, e.g. "Tour pack · 1,500 coins"
+function passRewardLine(r){
+  const bits=[];
+  if(r.pack) bits.push((r.pack.n>1?r.pack.n+'× ':'')+packType(r.pack.tier).name);
+  if(r.cos)  bits.push(r.cos.name);
+  if(r.shard) bits.push((r.shard.n||1)+'× '+r.shard.r+' shard');
+  if(r.coins) bits.push(coinFmt(r.coins)+' coins');
+  return bits.join(' · ')||'Rewards';
+}
+function overlayPassLevel(screen){
+  const pl=S.passLevel; if(!pl){ S.overlay=null; return; }
+  passLevelStyleOnce();
+  const pro=passProActive(), gained=Math.max(0,pl.tier1-pl.tier0), cap=passXpForTier(PASS_TIERS);
+  const ov=$(`<div class="ov plov" role="dialog" aria-modal="true" aria-label="Tour Pass level up"></div>`);
+  ov.appendChild($(`<div><div class="pl-kick">Tour Pass · Season ${passSeason().n}</div>
+    <h3 class="pl-title">Tier ${pl.tier1} reached</h3>
+    <p class="pl-sub">${gained>1?gained+' tiers climbed this time':'You levelled up the Track'}</p></div>`));
+  // the rail: level you were on (left) → bar → the next level (right)
+  const rail=$(`<div class="pl-rail">
+    <div class="pl-lv" id="pl-l"><b>${pl.tier0}</b><span>TIER</span></div>
+    <div class="pl-bar"><div class="pl-fill" id="pl-f"></div><em id="pl-x"></em></div>
+    <div class="pl-lv" id="pl-r"><b>${Math.min(PASS_TIERS,pl.tier0+1)}</b><span>NEXT</span></div>
+  </div>`);
+  ov.appendChild(rail);
+  const gain=$(`<div class="pl-gain" id="pl-g">+${coinFmt(Math.round(pl.xp1-pl.xp0))} XP</div>`); ov.appendChild(gain);
+  // what those tiers unlocked (free always; pro too when they hold the pass, else a nudge)
+  const rw=$(`<div class="pl-rw"><h4>Unlocked</h4></div>`);
+  for(let t=pl.tier0+1;t<=pl.tier1;t++){
+    rw.appendChild($(`<div class="pl-row"><span class="pl-t">T${t}</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'free')))}</span></div>`));
+    if(pro) rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${t} PRO</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'prem')))}</span></div>`));
+  }
+  if(!pro && TOURPASS_ENABLED) rw.appendChild($(`<div class="pl-lock">The PRO rewards on ${gained>1?'these tiers':'this tier'} are waiting too, unlock them with the Tour Pass.</div>`));
+  ov.appendChild(rw);
+  const go=$(`<button class="btn goldfill" style="margin-top:16px">Collect in the Tour Pass ▸<span class="sub">${passClaimable()} reward${passClaimable()===1?'':'s'} ready to claim</span></button>`);
+  go.onclick=()=>{ S.passLevel=null; S.overlay='tourpass'; track('tourpass_levelup_go'); render(); };
+  ov.appendChild(go);
+  const later=$(`<button class="btn ghost" style="margin-top:8px">Later</button>`);
+  later.onclick=()=>{ S.passLevel=null; S.overlay=null; render(); };
+  ov.appendChild(later);
+  screen.appendChild(ov);
+  // ---- animate: fill this tier, roll the numbers over, repeat for every tier gained ----
+  const fill=ov.querySelector('#pl-f'), lab=ov.querySelector('#pl-x'),
+        lv=ov.querySelector('#pl-l'), nx=ov.querySelector('#pl-r'), gEl=ov.querySelector('#pl-g');
+  const reduce=(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+  const pctInto=(xp,t)=>{ if(t>=PASS_TIERS) return 100;
+    const b=passXpForTier(t), n=passXpForTier(t+1); return Math.max(0,Math.min(100,100*(Math.min(xp,cap)-b)/Math.max(1,n-b))); };
+  const label=(xp,t)=>{ if(t>=PASS_TIERS) return 'MAX TIER';
+    const b=passXpForTier(t), n=passXpForTier(t+1); return Math.round(Math.min(xp,cap)-b)+' / '+(n-b)+' XP'; };
+  const setStop=(t)=>{ lv.querySelector('b').textContent=t; nx.querySelector('b').textContent=Math.min(PASS_TIERS,t+1); };
+  const rest=()=>{ setStop(pl.tier1); fill.style.transition='width .6s ease'; fill.style.width=pctInto(pl.xp1,pl.tier1)+'%';
+    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.textContent='+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP · Tier '+pl.tier0+' → '+pl.tier1; };
+  // pace it so one level feels weighty but a big climb doesn't drag (the whole run stays ~4s)
+  const FILL=Math.max(260, Math.round(850/Math.max(1,Math.sqrt(gained)))), HOLD=Math.max(120, Math.round(FILL*0.29));
+  if(reduce){ rest(); return; }
+  // start where the run began
+  fill.style.transition='none'; fill.style.width=pctInto(pl.xp0,pl.tier0)+'%'; lab.textContent=label(pl.xp0,pl.tier0);
+  let t=pl.tier0;
+  const step=()=>{
+    if(!ov.isConnected) return;                        // a re-render replaced us, stop cleanly
+    if(t>=pl.tier1){ rest(); return; }
+    setStop(t);
+    fill.style.transition='none'; fill.style.width=pctInto(t===pl.tier0?pl.xp0:passXpForTier(t),t)+'%';
+    requestAnimationFrame(()=>{ if(!ov.isConnected) return;
+      fill.style.transition='width '+FILL+'ms cubic-bezier(.25,.8,.3,1)'; fill.style.width='100%'; lab.textContent=label(passXpForTier(t+1),t);
+      setTimeout(()=>{ if(!ov.isConnected) return;
+        t++; nx.classList.add('on'); try{ sfx('streak'); buzz(18); }catch(e){}
+        setTimeout(()=>{ if(!ov.isConnected) return; nx.classList.remove('on'); step(); }, HOLD);
+      }, FILL+60); });
+  };
+  setTimeout(step, 320);
+}
 function overlayWelcomePack(screen){
   var tier='base', pt=packType(tier);
   var ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Welcome gift" style="text-align:center">
@@ -24751,7 +24968,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -26116,6 +26333,8 @@ function h2hBuildPlay(){
   let ci=1;
   S.h2h.unitCols=units.map((u,ui)=>ui===myIdx?H2H_BALL_COLS[0]:H2H_BALL_COLS[Math.min(ci++,3)]);
   S.h2h.unitNames=units.map(u=>u.kind==='team'?`Team ${(u.id|0)+1}`:String(u.label||''));
+  // Tour Pass holders get the gold name in the live watch too (a unit is PRO if any member holds it)
+  S.h2h.unitPro=units.map(u=>(u.members||[]).some(p=>isProUser(p.user_id,p.username)));
   S.h2h.playHoles=[];
   for(let i=0;i<holes;i++){
     const h=course.holes[i], par=h[0], yards=h[1];
@@ -26384,7 +26603,7 @@ function scrH2HLobby(){
       ? `<span class="small"><span style="color:var(--gold)">Team ${(p.team|0)+1}</span> <span style="color:${stCol}">· ${stTxt}</span></span>`
       : `<span class="small" style="color:${stCol}">${stTxt}</span>`;
     list.appendChild($(`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-radius:10px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:rgba(255,255,255,.02)">
-      <span style="font-weight:${mine?800:600}">${esc(p.username)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>
+      <span style="font-weight:${mine?800:600}">${proNameHTML(p.username,p.user_id)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>
       ${rightHTML}</div>`));
   });
   for(let i=0;i<need;i++) list.appendChild($(`<div style="padding:9px 13px;border-radius:10px;border:1px dashed var(--line);opacity:.5" class="small muted">Waiting for a player…</div>`));
@@ -26506,7 +26725,7 @@ function h2hTpColor(tp){ return tp<0?'#35d6a0':tp>0?'#e88':'var(--oncard)'; }
 // one standings row for a unit (player or team) at a running to-par
 function h2hUnitRow(u, tp, opts){
   opts=opts||{}; const win=opts.win, mine=opts.mine, rank=opts.rank, big=opts.big;
-  const mem = u.kind==='team' ? `<div class="small muted" style="margin-top:2px">${esc(u.members.map(p=>p.username).join(' & '))}${mine?' · your team':''}</div>` : '';
+  const mem = u.kind==='team' ? `<div class="small muted" style="margin-top:2px">${u.members.map(p=>proNameHTML(p.username,p.user_id)).join(' &amp; ')}${mine?' · your team':''}</div>` : '';
   const nm = u.kind==='team' ? `Team ${(u.id|0)+1}` : esc(u.label);
   return `<div style="display:flex;align-items:center;justify-content:space-between;padding:${big?'13px 16px':'11px 14px'};border-radius:12px;border:1px solid ${win?'var(--gold)':mine?'rgba(241,208,74,.5)':'var(--line)'};background:${win?'rgba(241,208,74,.10)':'rgba(255,255,255,.02)'}">
     <span><span style="font-weight:800;font-size:${big?16:15}px">${rank?`<span class="mono muted" style="margin-right:7px">${rank}</span>`:''}${win?'🏆 ':''}${nm}${mine&&u.kind!=='team'?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>${mem}</span>
@@ -26530,7 +26749,7 @@ function scrH2HPreview(){
   // header: name / (members or archetype)
   grid.appendChild($(`<div></div>`));
   units.forEach((u,ix)=>{ const mine=u.members.some(p=>p.user_id===h2hUid());
-    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:proNameHTML(u.label,(u.members[0]||{}).user_id);
     const sub=u.kind==='team'?esc(u.members.map(p=>p.username).join(' & ')):esc(archetype(u.dispSkills).name);
     // CS393: show each competitor's customized golfer at the top of their column (the look already travels
     // with the draft via h2h_state → members[].draft.look). Teams show both partners' golfers side by side.
@@ -26603,9 +26822,9 @@ function scrH2HWatch(){
       const curW=h.order[Math.max(0,Math.min(R.step||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n}</div></div>`);
       S.h2h.units.forEach((u,ui)=>{ const isIn=holed.has(ui), tp=u.scores[R.hole], mine=u.members.some(p=>p.user_id===h2hUid());
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[ui]}"></span><span class="nm">${esc(S.h2h.unitNames[ui])}</span><span class="tp" style="color:${isIn?dScoreCol(tp):'#8fa39a'}">${isIn?esc(dResultLong(h.par,tp)):'…'}</span></div>`)); });
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[ui]}"></span><span class="nm">${h2hUnitNm(ui)}</span><span class="tp" style="color:${isIn?dScoreCol(tp):'#8fa39a'}">${isIn?esc(dResultLong(h.par,tp)):'…'}</span></div>`)); });
       shell.appendChild(bd);
-      if(stW && stW.d && !R.done) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[curW.u]}">${esc(S.h2h.unitNames[curW.u])}</b> · ${esc(stW.d)}</div>`));
+      if(stW && stW.d && !R.done) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[curW.u]}">${h2hUnitNm(curW.u)}</b> · ${esc(stW.d)}</div>`));
       add(hvn);
     } else add($(`<div class="center muted" style="padding:24px 8px">Replaying…</div>`));
     const ctrl=$(`<div class="stack" style="max-width:320px;margin:14px auto 0"></div>`);
@@ -26639,12 +26858,12 @@ function scrH2HWatch(){
       const holed=h2hHoledUnits(h, S.h2h.wStep);
       const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)+(holed.has(ui)?(u.scores[played]||0):0)})).sort((a,b)=>a.tp-b.tp);
       rows.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid());
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${esc(S.h2h.unitNames[r.ui])}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${h2hUnitNm(r.ui)}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
       });
       shell.appendChild(bd);
       // ONE clear shot description that swaps to whoever is playing as the shots simulate
       const cur=curW, st=stW;
-      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${esc(S.h2h.unitNames[cur.u])}</b> · ${esc(st.d)}</div>`));
+      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${h2hUnitNm(cur.u)}</b> · ${esc(st.d)}</div>`));
       add(hvn);
     } else {
       add($(`<div class="center muted" style="padding:24px 8px">Playing…</div>`));
@@ -26725,7 +26944,7 @@ function h2hResultCard(){
   const rows=units.map((u,ui)=>{
     const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
     const isWin=winId!=null && u.id===winId;
-    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:proNameHTML(u.label,(u.members[0]||{}).user_id);
     const labelHTML=`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span class="rsc-dot" style="background:${col}"></span>${nm}`;
     return { labelHTML, mine, win:isWin, strokes:u.scores.map((tp,i)=>course.holes[i][0]+tp), tp:u.scores.slice() };
   });
@@ -26812,7 +27031,7 @@ async function h2hLoadBoard(mode){
   const rowHTML=(r,rank,mine)=>{ const pct=r.win_pct!=null?Math.round(r.win_pct*100)+'%':'-';
     return `<div class="lb${mine?' lbme':''}" style="grid-template-columns:30px 1fr 84px 60px${mine?';border:1px solid var(--gold);border-radius:10px':''}">
       <span class="mono" style="${mine?'color:var(--gold);font-weight:800':'opacity:.7'}">${rank}</span>
-      <span class="pl" style="font-weight:${mine?800:600}">${mine?'You · ':''}${esc(r.username)}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
+      <span class="pl" style="font-weight:${mine?800:600}">${mine?'You · ':''}${proNameHTML(r.username,r.user_id||null)}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
       <span class="mny mono" style="text-align:right">${r.wins}-${r.losses}</span>
       <span class="mny mono" style="text-align:right">${pct}</span></div>`; };
   // PIN your record + rank at the very top (owner/Jordo: "always see ur record and place at the top")
