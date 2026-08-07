@@ -3054,31 +3054,48 @@ function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; r
    can gild matching names (matched by user id, or by username on the streak
    board, which carries no id). Fails open: no backend / migration → nobody gilded.
 --------------------------------------------------------------------------- */
-var _proCache={ids:null,names:null,t:0,loading:false};
-function proLoad(){
+var _proCache={ids:null,names:null,t:0,loading:false,ok:false};
+var PRO_TTL_OK=300000, PRO_TTL_FAIL=45000;   // re-ask 45s after a failure/empty read instead of sitting white for 5 min
+function proLoad(force){
   if(!sb) return;
   if(_proCache.loading) return;
-  if(_proCache.ids && (Date.now()-_proCache.t)<300000) return;   // 5 min is plenty for a purchase to show up
+  const ttl=_proCache.ok?PRO_TTL_OK:PRO_TTL_FAIL;
+  if(!force && _proCache.ids && (Date.now()-_proCache.t)<ttl) return;
   _proCache.loading=true;
   rpcTry('runtour_pro_users',undefined,8000).then(({data,error})=>{
     _proCache.loading=false; _proCache.t=Date.now();
-    if(error){ if(!_proCache.ids){ _proCache.ids=new Set(); _proCache.names=new Set(); } return; }
+    if(error){ _proCache.ok=false;
+      // surface the real reason - a silent empty set is why a pass holder can read as a plain name
+      console.error('[RunTheTour] runtour_pro_users failed:', error.message||error);
+      if(!_proCache.ids){ _proCache.ids=new Set(); _proCache.names=new Set(); } return; }
+    _proCache.ok=true;
     _proCache.ids=new Set((data||[]).map(r=>r.user_id).filter(Boolean));
     _proCache.names=new Set((data||[]).map(r=>(r.username||'').toLowerCase()).filter(Boolean));
+    if(!_proCache.ids.size) console.warn('[RunTheTour] runtour_pro_users returned 0 pass holders for the current season');
     render();
-  }).catch(()=>{ _proCache.loading=false; _proCache.t=Date.now(); });
+  }).catch(()=>{ _proCache.loading=false; _proCache.ok=false; _proCache.t=Date.now(); });
 }
-// true when THIS row belongs to a current-season Tour Pass holder
+// true when THIS row belongs to a current-season Tour Pass holder.
+// Three sources, in order: your own wallet (authoritative for you), the dev accounts (they hold PRO via
+// devMode() with NO purchase row, so the server set can never know about them - without this they read as
+// plain names on everyone ELSE's screen), then the server's current-season holder set.
 function isProUser(uid,name){
   if(sbUser && uid && uid===sbUser.id) return passProActive();         // your own row: the wallet is authoritative
+  const n=name?String(name).toLowerCase():'';
+  try{ if(n && typeof DEV_USERS!=='undefined' && DEV_USERS.indexOf(n)>=0) return true; }catch(e){}
   if(!_proCache.ids) return false;
   if(uid && _proCache.ids.has(uid)) return true;
-  return !!(name && _proCache.names.has(String(name).toLowerCase()));
+  return !!(n && _proCache.names.has(n));
 }
 // escaped name, wrapped in the animated gold treatment when the player holds the pass
 function proNameHTML(name,uid){
   const t=esc(name==null?'':name);
   return isProUser(uid,name) ? `<span class="proname" title="Tour Pass PRO">${t}</span>` : t;
+}
+// the H2H unit's display name for the live watch scoreboard, gilded when that unit holds the Tour Pass
+function h2hUnitNm(ui){
+  const nm=(S.h2h&&S.h2h.unitNames&&S.h2h.unitNames[ui])||'';
+  return (S.h2h&&S.h2h.unitPro&&S.h2h.unitPro[ui]) ? `<span class="proname" title="Tour Pass PRO">${esc(nm)}</span>` : esc(nm);
 }
 // CS394: a representative glow colour per tier (low → cool/grey, high → gold/violet/prismatic) for the H2H
 // preview tier ring. One entry per rank in REP_ORDER (Amateur..G.O.A.T.).
@@ -6045,8 +6062,12 @@ function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
 function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
 function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
   try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){ var d=r.data[0];
+      var wasPro=!!(_walletCache&&_walletCache.passActive);
       _walletCache={paid:+d.paid_coins||0, lifePurchased:+d.lifetime_purchased||0, lifeGranted:+d.lifetime_granted||0,
         tokens:+d.daily_tokens||0, passActive:!!d.pass_active, passPeriod:d.pass_period||null};
+      // pass just went active (a purchase landed) → re-pull the holder set so the gold name shows up for
+      // everyone straight away instead of after the cache TTL
+      if(_walletCache.passActive && !wasPro){ try{ proLoad(true); }catch(e){} }
       if(cb){ try{cb();}catch(e){} } else { try{render();}catch(e){} } } }).catch(function(){}); }catch(e){} }
 // coinBalance = spendable EARNED coins + PURCHASED coins (server wallet).
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent) + paidCoins(); }
@@ -24926,7 +24947,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -26291,6 +26312,8 @@ function h2hBuildPlay(){
   let ci=1;
   S.h2h.unitCols=units.map((u,ui)=>ui===myIdx?H2H_BALL_COLS[0]:H2H_BALL_COLS[Math.min(ci++,3)]);
   S.h2h.unitNames=units.map(u=>u.kind==='team'?`Team ${(u.id|0)+1}`:String(u.label||''));
+  // Tour Pass holders get the gold name in the live watch too (a unit is PRO if any member holds it)
+  S.h2h.unitPro=units.map(u=>(u.members||[]).some(p=>isProUser(p.user_id,p.username)));
   S.h2h.playHoles=[];
   for(let i=0;i<holes;i++){
     const h=course.holes[i], par=h[0], yards=h[1];
@@ -26559,7 +26582,7 @@ function scrH2HLobby(){
       ? `<span class="small"><span style="color:var(--gold)">Team ${(p.team|0)+1}</span> <span style="color:${stCol}">· ${stTxt}</span></span>`
       : `<span class="small" style="color:${stCol}">${stTxt}</span>`;
     list.appendChild($(`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-radius:10px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:rgba(255,255,255,.02)">
-      <span style="font-weight:${mine?800:600}">${esc(p.username)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>
+      <span style="font-weight:${mine?800:600}">${proNameHTML(p.username,p.user_id)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>
       ${rightHTML}</div>`));
   });
   for(let i=0;i<need;i++) list.appendChild($(`<div style="padding:9px 13px;border-radius:10px;border:1px dashed var(--line);opacity:.5" class="small muted">Waiting for a player…</div>`));
@@ -26681,7 +26704,7 @@ function h2hTpColor(tp){ return tp<0?'#35d6a0':tp>0?'#e88':'var(--oncard)'; }
 // one standings row for a unit (player or team) at a running to-par
 function h2hUnitRow(u, tp, opts){
   opts=opts||{}; const win=opts.win, mine=opts.mine, rank=opts.rank, big=opts.big;
-  const mem = u.kind==='team' ? `<div class="small muted" style="margin-top:2px">${esc(u.members.map(p=>p.username).join(' & '))}${mine?' · your team':''}</div>` : '';
+  const mem = u.kind==='team' ? `<div class="small muted" style="margin-top:2px">${u.members.map(p=>proNameHTML(p.username,p.user_id)).join(' &amp; ')}${mine?' · your team':''}</div>` : '';
   const nm = u.kind==='team' ? `Team ${(u.id|0)+1}` : esc(u.label);
   return `<div style="display:flex;align-items:center;justify-content:space-between;padding:${big?'13px 16px':'11px 14px'};border-radius:12px;border:1px solid ${win?'var(--gold)':mine?'rgba(241,208,74,.5)':'var(--line)'};background:${win?'rgba(241,208,74,.10)':'rgba(255,255,255,.02)'}">
     <span><span style="font-weight:800;font-size:${big?16:15}px">${rank?`<span class="mono muted" style="margin-right:7px">${rank}</span>`:''}${win?'🏆 ':''}${nm}${mine&&u.kind!=='team'?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>${mem}</span>
@@ -26705,7 +26728,7 @@ function scrH2HPreview(){
   // header: name / (members or archetype)
   grid.appendChild($(`<div></div>`));
   units.forEach((u,ix)=>{ const mine=u.members.some(p=>p.user_id===h2hUid());
-    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:proNameHTML(u.label,(u.members[0]||{}).user_id);
     const sub=u.kind==='team'?esc(u.members.map(p=>p.username).join(' & ')):esc(archetype(u.dispSkills).name);
     // CS393: show each competitor's customized golfer at the top of their column (the look already travels
     // with the draft via h2h_state → members[].draft.look). Teams show both partners' golfers side by side.
@@ -26778,9 +26801,9 @@ function scrH2HWatch(){
       const curW=h.order[Math.max(0,Math.min(R.step||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n}</div></div>`);
       S.h2h.units.forEach((u,ui)=>{ const isIn=holed.has(ui), tp=u.scores[R.hole], mine=u.members.some(p=>p.user_id===h2hUid());
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[ui]}"></span><span class="nm">${esc(S.h2h.unitNames[ui])}</span><span class="tp" style="color:${isIn?dScoreCol(tp):'#8fa39a'}">${isIn?esc(dResultLong(h.par,tp)):'…'}</span></div>`)); });
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[ui]}"></span><span class="nm">${h2hUnitNm(ui)}</span><span class="tp" style="color:${isIn?dScoreCol(tp):'#8fa39a'}">${isIn?esc(dResultLong(h.par,tp)):'…'}</span></div>`)); });
       shell.appendChild(bd);
-      if(stW && stW.d && !R.done) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[curW.u]}">${esc(S.h2h.unitNames[curW.u])}</b> · ${esc(stW.d)}</div>`));
+      if(stW && stW.d && !R.done) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[curW.u]}">${h2hUnitNm(curW.u)}</b> · ${esc(stW.d)}</div>`));
       add(hvn);
     } else add($(`<div class="center muted" style="padding:24px 8px">Replaying…</div>`));
     const ctrl=$(`<div class="stack" style="max-width:320px;margin:14px auto 0"></div>`);
@@ -26814,12 +26837,12 @@ function scrH2HWatch(){
       const holed=h2hHoledUnits(h, S.h2h.wStep);
       const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)+(holed.has(ui)?(u.scores[played]||0):0)})).sort((a,b)=>a.tp-b.tp);
       rows.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid());
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${esc(S.h2h.unitNames[r.ui])}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${h2hUnitNm(r.ui)}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
       });
       shell.appendChild(bd);
       // ONE clear shot description that swaps to whoever is playing as the shots simulate
       const cur=curW, st=stW;
-      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${esc(S.h2h.unitNames[cur.u])}</b> · ${esc(st.d)}</div>`));
+      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${h2hUnitNm(cur.u)}</b> · ${esc(st.d)}</div>`));
       add(hvn);
     } else {
       add($(`<div class="center muted" style="padding:24px 8px">Playing…</div>`));
@@ -26900,7 +26923,7 @@ function h2hResultCard(){
   const rows=units.map((u,ui)=>{
     const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
     const isWin=winId!=null && u.id===winId;
-    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:proNameHTML(u.label,(u.members[0]||{}).user_id);
     const labelHTML=`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span class="rsc-dot" style="background:${col}"></span>${nm}`;
     return { labelHTML, mine, win:isWin, strokes:u.scores.map((tp,i)=>course.holes[i][0]+tp), tp:u.scores.slice() };
   });
@@ -26987,7 +27010,7 @@ async function h2hLoadBoard(mode){
   const rowHTML=(r,rank,mine)=>{ const pct=r.win_pct!=null?Math.round(r.win_pct*100)+'%':'-';
     return `<div class="lb${mine?' lbme':''}" style="grid-template-columns:30px 1fr 84px 60px${mine?';border:1px solid var(--gold);border-radius:10px':''}">
       <span class="mono" style="${mine?'color:var(--gold);font-weight:800':'opacity:.7'}">${rank}</span>
-      <span class="pl" style="font-weight:${mine?800:600}">${mine?'You · ':''}${esc(r.username)}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
+      <span class="pl" style="font-weight:${mine?800:600}">${mine?'You · ':''}${proNameHTML(r.username,r.user_id||null)}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
       <span class="mny mono" style="text-align:right">${r.wins}-${r.losses}</span>
       <span class="mny mono" style="text-align:right">${pct}</span></div>`; };
   // PIN your record + rank at the very top (owner/Jordo: "always see ur record and place at the top")
