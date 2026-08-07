@@ -131,9 +131,13 @@
   }
 
   /* ---------------- shell ---------------- */
+  /* The gutter is a token so full-bleed blocks can cancel it exactly. The
+     poster hero has to reach the screen edge, and a hardcoded 18px here with
+     a 14px override below is two numbers to get wrong in three places. */
+  :root{--gut:18px;}
+  @media (max-width:640px){ :root{--gut:14px;} }
   .wrap{width:100%; max-width:1080px; margin:0 auto;
-    padding:0 18px calc(24px + env(safe-area-inset-bottom,0));}
-  @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
+    padding:0 var(--gut) calc(24px + env(safe-area-inset-bottom,0));}
 
   /* Sticky and short. The draft screen is the one a player sits on eight times
      a game, so every fixed pixel here is a pixel of song list they lose. */
@@ -215,23 +219,30 @@
   .btn.ghost{background:transparent;}
 
   /* ---------------- home ---------------- */
-  .hero{text-align:center; padding:16px 0 20px; position:relative; isolation:isolate;}
-  .hero:before{
-    content:''; position:absolute; z-index:-1; left:50%; top:38%;
-    width:min(560px, 130vw); aspect-ratio:1; transform:translate(-50%,-50%);
-    background:var(--dye);
-    /* Concentric rings turn the sweep into a spiral without an image. */
-    -webkit-mask:
-      repeating-radial-gradient(circle at 50% 50%, #000 0 7px, transparent 7px 20px),
-      radial-gradient(circle at 50% 50%, #000 12%, rgba(0,0,0,.55) 42%, transparent 70%);
-    -webkit-mask-composite:source-in;
-    mask:
-      repeating-radial-gradient(circle at 50% 50%, #000 0 7px, transparent 7px 20px),
-      radial-gradient(circle at 50% 50%, #000 12%, rgba(0,0,0,.55) 42%, transparent 70%);
-    mask-composite:intersect;
-    opacity:.10; pointer-events:none;
-  }
-  :root[data-theme="light"] .hero:before{opacity:.09;}
+  /* THE HERO IS A GIG POSTER.
+     It was a centred stack: eyebrow, wordmark, tagline, sentence, all axis
+     aligned on a flat background with the dye spiral at 10% behind it, which
+     is the default landing page and looked like one. The spiral was so faint
+     on the light theme it may as well not have been there.
+     Now the dye is the FIELD, at full strength, with the type knocked into it
+     in ink. It is the one loud moment on the page: everything below stays
+     quiet so this can be loud. */
+  .hero{position:relative; isolation:isolate; overflow:hidden;
+    margin:10px calc(var(--gut) * -1) 16px; padding:22px var(--gut) 20px;
+    background:var(--dye); background-size:150% 150%; background-position:50% 50%;
+    animation:dyeDrift 22s ease-in-out infinite;}
+  /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
+     makes it look printed. Sized in px so it stays a screen rather than
+     scaling into stripes on a wide viewport. */
+  .hero:before{content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.30) 1px, transparent 1.7px);
+    background-size:4px 4px; mix-blend-mode:multiply;}
+  .hero > *{position:relative;}
+  /* Ink, not --ink. The field underneath is the dye in both themes, so the
+     type on it cannot follow the theme or it turns white-on-yellow in light. */
+  .hero .eyebrow, .hero .tagline, .hero p{color:#12100E;}
+  .hero .eyebrow{opacity:.72;}
+  .hero p{max-width:32ch; font-weight:800;}
   /* No added tracking: the slab carries its own sidebearings, and at 40px on a
      320px screen the extra half-pixel per letter is the difference between
      filling the line and running past the gutter. */
@@ -248,28 +259,21 @@
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
 
-  .hero h1{font-family:var(--hero); font-size:clamp(38px,9.2vw,68px); line-height:.94;
-    letter-spacing:0; margin:5px 0 9px; text-transform:uppercase;}
-  .hero h1 .accent{color:var(--ink);}
-  /* @supports so a browser without background-clip:text still shows the word in
-     gold rather than showing nothing at all. */
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .hero h1 .accent{
-      background:var(--dye); background-size:180% 180%; background-position:50% 50%;
-      -webkit-background-clip:text; background-clip:text;
-      -webkit-text-fill-color:transparent; color:transparent;
-      animation:dyeDrift 18s ease-in-out infinite;
-    }
-  }
+  /* The condensed face, not the slab. The slab filled the line at 40px and had
+     no room left to get bigger; Anton at the same width runs half again the
+     height, which is what makes it read as a poster rather than as a heading.
+     The dye moved to the field behind it, so the word itself is solid ink. */
+  .hero h1{font-family:var(--ui); font-size:clamp(58px,17vw,104px); line-height:.84;
+    letter-spacing:-1px; margin:2px 0 4px; text-transform:uppercase; color:#12100E;}
+  .hero h1 .accent{color:inherit;}
   @keyframes dyeDrift{
     0%,100%{ background-position:44% 46%; }
     50%    { background-position:56% 54%; }
   }
-  .tagline{font-size:13px; font-weight:800; letter-spacing:2.6px; text-transform:uppercase;
-    color:var(--mut); margin:2px 0 10px;}
-  @media (max-width:420px){ .tagline{font-size:11px; letter-spacing:1.8px;} }
-  .hero p{max-width:34ch; margin:0 auto; color:var(--mut); font-size:15px; line-height:1.55;
-    font-weight:600;}
+  .tagline{font-family:var(--ui); font-size:19px; letter-spacing:.5px; text-transform:uppercase;
+    line-height:1.05; margin:0 0 8px;}
+  @media (max-width:420px){ .tagline{font-size:17px;} }
+  .hero p{margin:0; font-size:14px; line-height:1.45;}
 
   /* Three columns even on a phone: the copy is short, and stacked they cost
      three times the height for the same three sentences. */
@@ -283,13 +287,27 @@
      every line as a bold fragment followed by a supporting fragment, five
      times running, which is a rhythm nobody uses out loud. */
   .how{margin:20px 0 14px;}
-  .how h3{font-family:var(--ui); font-size:13px; letter-spacing:2.6px; text-transform:uppercase;
-    color:var(--dim); margin:0 0 10px; font-weight:400;}
-  .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
-  .steps li{display:flex; gap:10px; align-items:flex-start;}
-  .steps b{flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:grid;
-    place-items:center; font-family:var(--ui); font-size:12px; line-height:1;
-    color:var(--bg); background:var(--teal); margin-top:1px;}
+  /* A heading with a rule running off the end of it, so the section reads as
+     a block on a poster rather than as a label floating above a list. */
+  .how h3{font-family:var(--ui); font-size:15px; letter-spacing:3px; text-transform:uppercase;
+    color:var(--ink); margin:0 0 12px; font-weight:400;
+    display:flex; align-items:center; gap:10px;}
+  .how h3:after{content:''; flex:1; height:3px; background:var(--ink); opacity:.85;}
+  /* Numbered teal circles are the single most default component on the web,
+     and five of them stacked is what made this read as a template. The number
+     is set in the display face at the size of a track number on a sleeve, and
+     the rule between rows does the separating that the circles were doing. */
+  .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
+  .steps li{display:flex; gap:13px; align-items:baseline; padding:11px 0;
+    border-top:1px solid var(--line);}
+  .steps li:first-child{border-top:0; padding-top:2px;}
+  .steps b{flex:0 0 auto; width:30px; font-family:var(--ui); font-weight:400;
+    font-size:30px; line-height:.9; color:var(--acc-step, var(--dim)); text-align:left;}
+  .steps li:nth-child(1) b{--acc-step:var(--coralT);}
+  .steps li:nth-child(2) b{--acc-step:var(--goldT);}
+  .steps li:nth-child(3) b{--acc-step:var(--greenT);}
+  .steps li:nth-child(4) b{--acc-step:var(--tealT);}
+  .steps li:nth-child(5) b{--acc-step:var(--violetT);}
   .steps span{font-size:13.5px; line-height:1.5; color:var(--ink); font-weight:600;}
 
   .tryout{margin:18px 0 4px; text-align:center;}
@@ -299,9 +317,12 @@
 
   .bands{display:flex; flex-direction:column; gap:11px;}
   .band{padding:14px 16px 14px;}
+  .bands .card{border-radius:var(--r-sm); border-width:2px; border-color:var(--ink);
+    box-shadow:6px 6px 0 0 color-mix(in srgb, var(--ink) 16%, transparent);}
   .band-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
     margin-bottom:4px;}
-  .band-hd h2{font-family:var(--hero); font-size:30px; margin:0; text-transform:uppercase;
+  .band-hd h2{font-family:var(--ui); font-size:40px; line-height:.92; letter-spacing:-.5px;
+    margin:0; text-transform:uppercase;
     letter-spacing:.5px;}
   .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:11px;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
@@ -407,16 +428,36 @@
   .setgrp{margin-bottom:14px;}
   .setgrp h3{font-size:11px; font-weight:900; letter-spacing:2.4px; text-transform:uppercase;
     color:var(--dim); margin:0 0 8px;}
-  .songs{display:flex; flex-direction:column; gap:6px;}
+  /* THE SONG LIST IS A SETLIST, NOT A STACK OF CARDS.
+     Fourteen identical rounded panels in a column is the default mobile list
+     and it read as one: a card per song spent a border, a radius, a shadow
+     and 12px of padding on every row to say nothing, and buried the titles
+     in the middle of them.
+     A real set list is typed straight down a sheet, so this is: no box, a
+     hairline between rows, the title in the condensed face at nearly twice
+     the size it was, and the running time hung on the right where a set list
+     hangs it. The accent survives as a short rule at the left edge instead of
+     a border on a card that no longer exists. */
+  .songs{display:flex; flex-direction:column;}
+  .sheetpad{position:relative; padding:2px 0;}
+  /* Paper. Two hairline gradients rather than an image, and only barely on:
+     enough that the surface is not flat, not enough to fight the type. */
+  .sheetpad:before{content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(128,128,128,.05) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(128,128,128,.04) 0 1px, transparent 1px 4px);}
 
-  .song{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; width:100%;
-    text-align:left; padding:10px 12px; border-radius:var(--r-sm); background:var(--card);
-    border:1px solid var(--line); border-left:3px solid var(--acc, var(--line2));
-    transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
-      transform var(--t-fast) var(--ease);}
-  .song:hover{background:var(--card2);}
-  .song.used{opacity:.4; cursor:not-allowed;}
-  .song.used:hover{background:var(--card);}
+  .song{display:flex; align-items:baseline; justify-content:space-between; gap:9px; width:100%;
+    text-align:left; padding:9px 4px 9px 11px; border-radius:0; background:transparent;
+    border:0; border-bottom:1px solid var(--line); position:relative;
+    transition:background var(--t-fast) var(--ease), padding var(--t-fast) var(--ease);}
+  /* The accent, kept as a mark on the sheet rather than a card edge. */
+  .song:before{content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px;
+    background:var(--acc, transparent); border-radius:2px;}
+  .song:last-child{border-bottom:0;}
+  .song:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
+  .song.used{opacity:.36; cursor:not-allowed;}
+  .song.used:hover{background:transparent;}
   .song.used .t{text-decoration:line-through;}
   /* THE SEGUE ARROW IS THE BRAND MARK, so it wears the mark's tie dye.
      Only the standalone markers, the ones that sit against a song title the
@@ -477,19 +518,33 @@
   /* Selection rings in teal, the UI's action colour, not in the song's accent.
      Accent is identity; selection is a thing you did. It also stops a song
      with no notable role — now grey — from getting a grey selection ring. */
-  .song[aria-pressed="true"]{background:var(--card3); border-color:var(--teal);
-    box-shadow:0 0 0 1px var(--teal);}
+  /* Selection has to carry without a card to outline. A filled band plus a
+     heavy teal rule down the left reads at a glance on a sheet; a border
+     alone did not, because there is no longer an edge for it to sit on. */
+  .song[aria-pressed="true"]{background:color-mix(in srgb, var(--teal) 15%, transparent);}
+  .song[aria-pressed="true"]:before{background:var(--teal); width:4px; top:4px; bottom:4px;}
   .song.used{padding-top:6px; padding-bottom:6px;}
   .song.used .chips{display:none;}
   .song.used .t{font-size:13px;}
   .song.used .o{margin-top:1px;}
   .song.used .r{gap:0;}
-  .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
-  .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
+  /* The title is the row. Anton at 22px is the same ink a set list uses and
+     it fits: measured at 320px, a 30-character title still lands on one line
+     with the time beside it. */
+  .song .t{font-family:var(--ui); font-weight:400; font-size:22px; line-height:1.06;
+    letter-spacing:.2px;}
+  .song.used .t{font-size:18px;}
+  /* The left column wraps as a row: title, then chips, and anything
+     descriptive drops to its own line underneath rather than running on after
+     the title and wrapping mid-phrase. */
+  .song .l{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 7px; min-width:0; flex:1 1 auto;}
+  .song .r{flex:0 0 auto;}
+  .song .o{flex:0 0 100%; font-size:11.5px; font-weight:600; color:var(--dim); margin-top:0;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
-  .song .len{font-size:12.5px; font-weight:800; color:var(--mut); font-variant-numeric:tabular-nums;}
+  .song .len{font-family:var(--ui); font-weight:400; font-size:18px; color:var(--mut);
+    font-variant-numeric:tabular-nums; letter-spacing:.3px;}
   /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
    *
    * Every chip belongs to exactly one of four families, and a family is told
@@ -519,8 +574,12 @@
      because its drip hangs below the pill, and stretch was making every chip
      sharing its row 19px tall to match. Each chip keeps its own height and the
      drip is the only thing that hangs. */
-  .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;
-    align-items:flex-start;}
+  /* Beside the title, not stacked under the running time. On the right they
+     pushed every tagged row onto two lines and left the time floating above a
+     chip, so a list of eight songs had eight different heights. A set list
+     annotates in the margin next to the song. */
+  .chips{display:inline-flex; gap:4px; flex-wrap:wrap; justify-content:flex-start;
+    align-items:center;}
   .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
     letter-spacing:.7px; text-transform:uppercase; padding:2px 5px; border-radius:4px;
     background:var(--line); color:var(--mut);}
@@ -937,6 +996,16 @@
      as to somebody who has just finished a show. */
   .about{max-width:760px; margin:44px auto 0; padding-top:26px;
     border-top:1px solid var(--line); color:var(--mut);}
+  /* Once the game is running it is not a page with an About section on it, it
+     is a game. The copy is for whoever landed here cold. */
+  body.playing .about{display:none;}
+  .about > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px;}
+  .about > summary::-webkit-details-marker{display:none;}
+  .about > summary:after{content:''; width:7px; height:7px; flex:0 0 auto;
+    border-right:2px solid var(--dim); border-bottom:2px solid var(--dim);
+    transform:rotate(45deg) translateY(-2px); transition:transform var(--t-fast) var(--ease);}
+  .about[open] > summary:after{transform:rotate(-135deg) translateY(-1px);}
+  .about > summary h2{margin:0;}
   .about h2{font-family:var(--ui); font-size:13px; font-weight:800; letter-spacing:2.6px;
     text-transform:uppercase; color:var(--dim); margin:0 0 14px;}
   .about h3{font-family:var(--ui); font-size:15px; font-weight:800; color:var(--ink);
@@ -978,10 +1047,16 @@
   </div>
   <main id="app" aria-live="polite"></main>
 
-  <!-- Outside #app on purpose: render() replaces the contents of #app on every state change,
-       so anything put in there is gone the moment the game boots. -->
-  <section class="about">
-    <h2>About Segue</h2>
+  <!-- Outside #app on purpose: render() replaces the contents of #app on every state
+       change, so anything put in there is gone the moment the game boots.
+
+       FOLDED, AND GONE ENTIRELY ONCE YOU ARE PLAYING. Five paragraphs of prose sat open
+       under every screen in the game, so a draft with two songs on it ended in a wall of
+       copy about what a jam band is. It stays in the DOM either way, because a crawler
+       reads a closed <details> and this is the only page on the site that explains what
+       the game is. -->
+  <details class="about">
+    <summary><h2>About Segue</h2></summary>
     <p><strong>Segue</strong> is a free setlist-builder game about jam bands, played in the
       browser with nothing to download and no account required. You are handed real concerts
       and asked to build a better night out of them.</p>
@@ -1010,7 +1085,7 @@
     <p>Segue is an unofficial fan project. It is not affiliated with, endorsed by, or
       connected to any band, venue or promoter, and all song and band names belong to their
       respective owners.</p>
-  </section>
+  </details>
 
   <!-- Placeholder slot; the initialiser at the foot of this file refuses to start one, so
        this renders nothing until a real unit id is pasted in. -->
@@ -1560,6 +1635,7 @@ function renderDraft(){
         <span class="l">
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
+          <span class="chips">${chips.join('')}</span>
           ${why ? `<span class="o${whyClass}">${why}</span>`
             : p.segued_into ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
                 (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
@@ -1568,10 +1644,7 @@ function renderDraft(){
             : p.is_cover === 'true' && p.original_artist
               ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
         </span>
-        <span class="r">
-          <span class="len">${fmtClock(lenOf(p))}</span>
-          <span class="chips">${chips.join('')}</span>
-        </span>
+        <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;
     }).join('');
     return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
