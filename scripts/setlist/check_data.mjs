@@ -212,8 +212,28 @@ check(game.includes('twitter:card'), 'a twitter card type is declared');
 for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
   check(existsSync(resolve(repoRoot, m[1].slice(1))), `${m[1]} is on disk`);
 
-// The home screen wears the same mark as the tab, drawn in CSS.
-check(game.includes('class="heromark"'), 'the home screen shows the mark');
+/* The mark is drawn in CSS and worn in two places: the home screen and the
+   top bar. Matched on the class rather than on a whole class attribute, which
+   is what broke when the tile picked up a second class. */
+/* The mark lives in the top bar only. It was in the hero too, which put it
+   and the wordmark twice on one screen about 60px apart. */
+check(!/\bheromark\b/.test(game), 'the hero does not repeat the top bar mark');
+check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar shows the mark');
+check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
+check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
+
+/* The redesign, guarded at the points it would silently regress to a default.
+   The song list was fourteen identical rounded cards and the home page was a
+   centred stack with numbered circles; both are the shapes a component
+   library hands you, and both are one careless edit away from coming back. */
+check(/\.hero\{[^}]*background:var\(--dye\)/.test(game),
+      'the hero is a dye field, not a flat background');
+check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
+check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
+      'how-it-works dropped the numbered circles');
+check(/<details class="about"/.test(game), 'the about wall is folded away');
+check(/body\.playing \.about\{display:none/.test(game),
+      'and gone entirely once you are playing');
 
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
