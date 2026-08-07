@@ -10630,28 +10630,92 @@ function pfAccount(msg,ok){
     '<div class="hrow" style="margin-top:14px">'+
       '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
       '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
-    '<div class="pfdanger">'+
-      '<p class="shsec" style="margin:0">Delete your account</p>'+
-      '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">This ends your '+
-        'RunThe.GG account across <b>every game on the site</b>, not just this one. It cannot '+
-        'be undone. Runs already on a leaderboard stay there without your name on them.</p>'+
-      '<div style="margin-top:9px"><button class="btn del sm" id="a-del">Delete my account</button></div>'+
-    '</div>'+
+    pfDangerHtml()+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
-  openSheet(); pfWireCommon();
-  /* TWO TAPS, and the second one says what it does. One tap on a destructive control is how
-     an account gets deleted by a thumb reaching for Sign out, which is directly above it. */
-  let armed=false;
-  const del=$('a-del'), note=$('pf-delnote');
+  openSheet(); pfWireCommon(); pfWireDelete();
+}
+
+const PF_DEL_NOTE='This ends your RunThe.GG account across <b>every game on the site</b>, '+
+  'not just this one. It cannot be undone. Runs already on a leaderboard stay there without '+
+  'your name on them.';
+function pfDangerHtml(){
+  return '<div class="pfdanger">'+
+    '<p class="shsec" style="margin:0">Delete your account</p>'+
+    '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">'+PF_DEL_NOTE+'</p>'+
+    '<div id="pf-delconfirm" hidden></div>'+
+    '<div style="margin-top:9px"><button class="btn del sm" id="a-del">Delete my account</button></div>'+
+    '<div style="margin-top:8px" id="pf-delback" hidden>'+
+      '<button class="btn ghost sm" id="a-delcancel">Keep my account</button></div>'+
+  '</div>';
+}
+/* THREE DELIBERATE ACTS, AND ONE OF THEM IS TYPING.
+   One tap on a destructive control is how an account gets deleted by a thumb reaching for
+   Sign out, which sits directly above it -- and a SECOND tap on the same button, in the
+   same place, is very nearly the same thumb. Two taps was not really two confirmations, it
+   was one confirmation with a pause in it.
+
+   So the three steps do not sit on top of each other. The first says what is actually lost
+   and changes nothing. The second opens a field. The third cannot fire at all until your
+   own name has been typed into that field by hand, which is the one thing a stray tap, a
+   double tap or a fat thumb cannot do by accident. Nothing here is recoverable -- there is
+   no undo, no grace period and no way for support to put it back -- so the guard costs a
+   few seconds and not having it costs somebody their account.
+
+   THE WAY OUT IS ON SCREEN FROM THE FIRST TAP ONWARDS. A guard you cannot back out of is a
+   trap rather than a guard, and somebody who opened this to read it should be able to close
+   it without wondering whether the next tap is the one that fires. */
+function pfWireDelete(){
+  const del=$('a-del'), note=$('pf-delnote'), conf=$('pf-delconfirm'), back=$('pf-delback');
+  if(!del||!note||!conf||!back) return;
+  /* Your own name is the phrase, because it is the one string you can always produce and
+     never type by accident. An account with no name yet cannot reach this screen, but if it
+     ever did, the word stands in rather than an empty field matching an empty box. */
+  const phrase=(authState.name||'').trim()||'DELETE';
+  const same=(v)=>String(v||'').trim().toLowerCase()===phrase.toLowerCase();
+  let step=0;
+
+  const reset=()=>{
+    step=0;
+    del.disabled=false; del.classList.remove('armed');
+    del.textContent='Delete my account';
+    note.innerHTML=PF_DEL_NOTE;
+    conf.hidden=true; conf.innerHTML='';
+    back.hidden=true;
+  };
+  $('a-delcancel').onclick=reset;
+
   del.onclick=async()=>{
-    if(!armed){
-      armed=true;
-      del.classList.add('armed');
-      del.textContent='Yes, delete everything';
-      note.innerHTML='<b>Last chance.</b> Tap again and your account, your name and your '+
-        'claim on every run in every RunThe.GG game are gone for good.';
+    /* ONE: spell out the loss. The button is still quiet, and Keep my account appears. */
+    if(step===0){
+      step=1;
+      del.textContent='I understand, continue';
+      note.innerHTML='<b>This cannot be undone.</b> Your sign-in, your name, your circle and '+
+        'your claim on every run you have posted in every RunThe.GG game go for good. There '+
+        'is no undo and nobody can put it back.';
+      back.hidden=false;
       return;
     }
+    /* TWO: the field, and the button goes red and dead until the field matches. */
+    if(step===1){
+      step=2;
+      conf.hidden=false;
+      conf.innerHTML='<p class="dim" style="font-size:11.5px;margin:11px 0 0">Type '+
+        '<b style="color:var(--ink)">'+esc(phrase)+'</b> below to confirm.</p>'+
+        '<input class="fld" id="a-delname" autocapitalize="off" autocorrect="off" '+
+          'spellcheck="false" autocomplete="off" placeholder="'+esc(phrase)+'" '+
+          'aria-label="Type your name to confirm">';
+      del.classList.add('armed');
+      del.textContent='Delete my account forever';
+      del.disabled=true;
+      const f=$('a-delname');
+      f.oninput=()=>{ del.disabled=!same(f.value); };
+      try{ f.focus(); }catch(e){}
+      return;
+    }
+    /* THREE. The field is read again here rather than trusted from the input handler,
+       because `disabled` is a property on an element and the console can clear it. */
+    const f=$('a-delname');
+    if(!f||!same(f.value)){ del.disabled=true; return; }
     busy('a-del','Deleting');
     const r=await A().deleteAccount();
     if(r&&r.ok){ closeSheet(); toast('Your account has been deleted.'); return; }
