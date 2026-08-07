@@ -71,6 +71,14 @@
     --dye:conic-gradient(from 210deg at 50% 50%,
       var(--coral) 0deg, var(--gold) 62deg, var(--green) 128deg,
       var(--teal) 196deg, var(--violet) 268deg, var(--coral) 360deg);
+    /* The same five colours as a straight sweep, for anything too SMALL to
+       hold the conic. A conic radiates from its own centre, so a 16px glyph
+       samples whatever slice of the wheel happens to fall across its strokes
+       and two arrows sitting side by side come out different colours, which
+       reads as a bug rather than as a brand. The linear version lands the
+       same on every instance at every size. */
+    --dye-line:linear-gradient(120deg, var(--coral) 0%, var(--gold) 25%,
+      var(--green) 50%, var(--teal) 75%, var(--violet) 100%);
     /* Two display faces, split by size rather than by taste.
        --hero is the loud one: a 70s slab that belongs next to tie dye, and
        wide enough that the conic gradient sweeps its whole range across a
@@ -389,8 +397,25 @@
   .song.used{opacity:.4; cursor:not-allowed;}
   .song.used:hover{background:var(--card);}
   .song.used .t{text-decoration:line-through;}
+  /* THE SEGUE ARROW IS THE BRAND MARK, so it wears the mark's tie dye.
+     Only the standalone markers, the ones that sit against a song title the
+     way the icon's chevron sits in its tile. The lines that DESCRIBE a segue
+     ("ran into Arcadia", the playback beat) are sentences, and running a
+     five-colour sweep through a sentence makes it unreadable.
+     --dye-line, not --dye: at 16px the conic gave the two arrows on one card
+     different colours, because each samples whatever slice of the wheel its
+     own strokes cross. Rendered side by side that reads as a mistake.
+     greenT stays as the colour for anything without background-clip:text,
+     where the fallback is an invisible arrow rather than a green one. */
   .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--greenT);
     font-size:16px; line-height:1; vertical-align:-1px;}
+  .segmark{font-style:normal; font-weight:900; color:var(--greenT);}
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .segout, .sf-seg, .segmark{
+      background:var(--dye-line); background-size:100% 100%; background-position:50% 50%;
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;}
+  }
   .song .o.seg{color:var(--greenT);}
   .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
@@ -1027,8 +1052,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=19';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=19';
+} from './scoring.js?v=22';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=22';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1514,7 +1539,7 @@ function renderDraft(){
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
           ${why ? `<span class="o${whyClass}">${why}</span>`
-            : p.segued_into ? `<span class="o seg">&rsaquo; ${esc(p.segued_into)}${
+            : p.segued_into ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
                 (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
                          return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
               }</span>`
@@ -1985,6 +2010,17 @@ function showNotes(sets){
 }
 
 
+/* The dye across a glyph. Canvas cannot fill text with a conic, so the sweep
+   is linear and diagonal across the glyph's own box, which at arrow size shows
+   the same run of colour the conic does. All five stops, in palette order, so
+   the arrow reads as the same tie dye as the mark rather than as a gradient
+   that happens to be colourful. */
+function dyeTextGradient(x, gx, gy, w, h){
+  const g = x.createLinearGradient(gx, gy - h, gx + w, gy);
+  DYE_STOPS.slice(0, 5).forEach(([, hex], i) => g.addColorStop(i / 4, hex));
+  return g;
+}
+
 /** Canvas has no letter-spacing, and a small caps label needs it to read. */
 function letterspaceCard(x, text, sx, y, gap){
   let cx = sx;
@@ -2086,7 +2122,9 @@ async function renderShareCard(r){
         tx += x.measureText(String(n)).width + 8;
       }
       if (seg){
-        x.font = '700 35px Archivo'; x.fillStyle = GRADE_HEX.hot;
+        x.font = '700 35px Archivo';
+        const aw = x.measureText('›').width;
+        x.fillStyle = dyeTextGradient(x, tx, ly, aw, 26);
         x.fillText('›', tx, ly);
       }
       ly += ROW;
