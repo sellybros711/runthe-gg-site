@@ -264,6 +264,9 @@
   .taskcard:hover{border-color:var(--globe);transform:translateY(-2px);
     background:linear-gradient(180deg,rgba(236,181,80,.09),rgba(236,181,80,.02));box-shadow:0 12px 28px -16px rgba(236,181,80,.5);}
   .taskcard .ct{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .flagimg{display:inline-block;vertical-align:middle;background:#0a081a;border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 4px 14px rgba(0,0,0,.42);}
+  .flagimg.hero{box-shadow:0 10px 30px -6px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);}
   .catchip{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
     background:rgba(236,181,80,.14);color:#F6D488;border:1px solid rgba(236,181,80,.3);}
   .catchip.reflex{background:rgba(238,90,68,.14);color:#ffc2be;border-color:rgba(238,90,68,.32);}
@@ -602,6 +605,32 @@
   /* ------------------------------------------------------------- utilities */
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  /* ---- real flag images: derive ISO-3166 alpha-2 from the emoji flag's two
+     regional-indicator codepoints, then serve the crisp SVG bundled locally
+     under /globe/flags (from the MIT-licensed flag-icons set — self-contained,
+     no external CDN). Any non-country emoji (team animals, subdivisions) fails
+     the map and falls back to the emoji; so does a load error, via flagFB(). ---- */
+  function flagISO(f){
+    if(!f) return null; var cp=[], i=0;
+    while(i<f.length){ var c=f.codePointAt(i); cp.push(c); i+=c>0xFFFF?2:1; }
+    if(cp.length===2 && cp[0]>=0x1F1E6 && cp[0]<=0x1F1FF && cp[1]>=0x1F1E6 && cp[1]<=0x1F1FF)
+      return String.fromCharCode(97+cp[0]-0x1F1E6)+String.fromCharCode(97+cp[1]-0x1F1E6);
+    return null;
+  }
+  function flagImg(emoji, o){
+    o=o||{}; var iso=flagISO(emoji), fit=o.fit||'cover', fs=o.fs||(o.w?Math.round(o.w*0.9):40);
+    if(!iso) return '<span class="flagemoji" style="font-size:'+fs+'px;line-height:1">'+(emoji||'')+'</span>';
+    var sz = o.fill ? 'width:100%;height:100%' : 'width:'+(o.w||64)+'px;height:'+(o.h||Math.round((o.w||64)*0.66))+'px';
+    var rad = o.fill ? '' : ';border-radius:'+(o.rad!=null?o.rad:Math.max(4,Math.round((o.w||64)*0.08)))+'px';
+    return '<img class="flagimg'+(o.cls?' '+o.cls:'')+'" src="/globe/flags/'+iso+'.svg" alt="flag" '
+      + 'loading="lazy" decoding="async" data-fb="'+esc(emoji)+'" data-fs="'+fs+'" onerror="flagFB(this)" '
+      + 'style="'+sz+';object-fit:'+fit+rad+'">';
+  }
+  function flagFB(img){
+    var s=document.createElement('span'); s.className='flagemoji';
+    s.style.cssText='font-size:'+(img.getAttribute('data-fs')||'40')+'px;line-height:1';
+    s.textContent=img.getAttribute('data-fb')||''; if(img.parentNode) img.parentNode.replaceChild(s,img);
+  }
   function rnd(a,b){ return a + Math.random()*(b-a); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -1358,7 +1387,7 @@
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
         + '<div class="dest">'
-          + '<div class="fl">'+d.flag+'</div>'
+          + '<div class="fl">'+flagImg(d.flag,{w:132,h:88,fit:'cover',rad:14,cls:'hero'})+'</div>'
           + '<div class="cn">'+esc(d.name)+'</div>'
           + '<div class="rg">'+esc(d.region)+'</div>'
           + (d.final?'<div><span class="final-badge">🏁 The Final · '+esc(d.landmark||'the finish line')+'</span></div>':'')
@@ -1511,7 +1540,7 @@
   /* ---------- minigame: multiple choice (trivia / math) ---------- */
   function mgMcq(t){
     var order = shuffle(t.options.map(function(o,i){ return {o:o,i:i}; }));
-    var flag = t.flag ? '<div style="text-align:center;font-size:88px;line-height:1;margin:2px 0 12px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))">'+t.flag+'</div>' : '';
+    var flag = t.flag ? '<div style="text-align:center;margin:2px 0 14px">'+flagImg(t.flag,{w:168,h:112,fit:'contain',rad:12,cls:'hero'})+'</div>' : '';
     var html=flag+'<div class="prompt">'+esc(t.q)+'</div><div class="opts">';
     order.forEach(function(x,j){ html += '<button class="opt" data-i="'+x.i+'" data-j="'+j+'">'+esc(x.o)+'</button>'; });
     html+='</div>'; $('mg').innerHTML=html;
@@ -1540,7 +1569,7 @@
     S.fr={ order:shuffle([0,1,2,3,4,5]) };
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="frbox" style="position:relative;width:180px;height:126px;margin:6px auto 4px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);display:flex;align-items:center;justify-content:center;background:#0a081a">'
-        + '<div style="font-size:104px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">'+t.flag+'</div>'
+        + flagImg(t.flag,{fill:true,fit:'cover'})
         + tiles
       + '</div>'
       + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag — each wrong guess reveals another piece.</div>'
@@ -2391,7 +2420,7 @@
   function cpPaint(t){
     var r=S.cp.rounds[S.cp.i];
     var st=$('cpst'); if(st) st.innerHTML='Target <b>'+(S.cp.i+1)+'</b>/'+S.cp.rounds.length;
-    var tg=$('cptgt'); if(tg){ tg.innerHTML=r.flag+' '+esc(r.name); swapIn(tg); }
+    var tg=$('cptgt'); if(tg){ tg.innerHTML=flagImg(r.flag,{w:30,h:20,rad:4})+' '+esc(r.name); swapIn(tg); }
   }
   function cpAns(t,d,btn){
     if(S.play.done || S.cp.lock) return;
@@ -2544,7 +2573,7 @@
         + '<div style="position:absolute;left:8px;bottom:8px;width:16px;height:16px;border-left:2px solid rgba(255,255,255,.6);border-bottom:2px solid rgba(255,255,255,.6)"></div>'
         + '<div style="position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-right:2px solid rgba(255,255,255,.6);border-bottom:2px solid rgba(255,255,255,.6)"></div>'
         + '<div style="position:absolute;left:10px;top:9px;display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:#ff5a5a"><span style="width:7px;height:7px;border-radius:50%;background:#ff5a5a;display:inline-block"></span>REC</div>'
-        + '<div id="pssub" style="position:absolute;font-size:40px;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))">'+(t.flag||'🌍')+'</div>'
+        + '<div id="pssub" style="position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))">'+(t.flag?flagImg(t.flag,{w:60,h:40,rad:6}):'<span style="font-size:40px">🌍</span>')+'</div>'
         + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px solid var(--goldhi);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.28);transition:width .25s ease,height .25s ease,border-color .15s"></div>'
       + '</div>'
       + '<button class="btn globe" id="psshut" style="margin-top:12px">📸 Snap</button>';
@@ -2816,7 +2845,7 @@
     S.dt={ shown:1, done:false };
     var sus=t.suspects.map(function(s,i){
       return '<button class="dtsus" data-i="'+i+'" style="display:flex;align-items:center;gap:8px;justify-content:center;padding:12px 8px;border:1px solid var(--cardb);border-radius:12px;background:var(--card2);color:var(--ink);font-weight:800;font-size:15px;cursor:pointer">'
-        + '<span style="font-size:24px">'+s.flag+'</span><span>'+esc(s.name)+'</span></button>';
+        + flagImg(s.flag,{w:34,h:23,rad:5})+'<span>'+esc(s.name)+'</span></button>';
     }).join('');
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="dtfile" style="background:var(--card);border:1px dashed var(--cardb);border-radius:12px;padding:12px 14px;margin-bottom:12px">'
