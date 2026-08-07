@@ -2019,6 +2019,26 @@ window.GA_ID='G-L29P5MRWKE';
   .follow a{color:var(--dim-2);text-decoration:none;font-family:var(--fn);font-size:11px;
     font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:color .15s}
   .follow a:hover{color:var(--ink)}
+  /* ── the social row ──────────────────────────────────────────────
+     Four marks rather than four sentences. The footer already carries a paragraph of
+     attribution and a line of legal links, and "Follow @RunTheGG on X for news and updates"
+     spelled out four times would be longer than everything above it. The handle is in the
+     title and the aria-label of each, so the glyph is never the only thing naming the
+     account. Same four in the same order as the NFL game, because they are one account
+     each and a player who found them there should find them here.
+
+     THESE RULES HAVE TO COME AFTER `.legal a`, not before. Both are a class plus a type, so
+     they carry the same specificity and the later one wins -- written above the footer's own
+     link rules, every icon would take the nav-row underline on hover. */
+  .socrow{display:flex;justify-content:center;gap:9px;margin:16px 0 0}
+  .socrow a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;
+    padding:0;border-radius:11px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.035);text-decoration:none;
+    transition:border-color .12s,background .12s}
+  .socrow a:hover{border-color:var(--green);background:rgba(255,255,255,.07);
+    text-decoration:none}
+  .socrow svg{width:17px;height:17px;fill:var(--dim)}
+  .socrow a:hover svg{fill:var(--ink)}
 
   /* ── résumé strip (results) ─────────────────────────────────────
      The season's collegiate calling cards: your conference (or conference
@@ -2207,6 +2227,19 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
       <div class="follow">
         <a href="https://runthe.gg">RunThe.GG</a>
+      </div>
+      <!-- ALL FOUR, the same accounts the NFL game links to. Four marks rather than four
+           sentences: the handle is in the title and the aria-label of each, so the glyph is
+           never the only thing saying which account it is. -->
+      <div class="socrow">
+        <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer"
+          title="X, @RunTheGG" aria-label="X, @RunTheGG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+        <a href="https://instagram.com/runthe.gg" target="_blank" rel="noopener noreferrer"
+          title="Instagram, @runthe.gg" aria-label="Instagram, @runthe.gg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.96.24 2.65.5.71.28 1.31.65 1.91 1.25.6.6.97 1.2 1.25 1.91.26.69.45 1.48.5 2.65.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.24 1.96-.5 2.65a5.3 5.3 0 0 1-1.25 1.91c-.6.6-1.2.97-1.91 1.25-.69.26-1.48.45-2.65.5-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.96-.24-2.65-.5a5.3 5.3 0 0 1-1.91-1.25 5.3 5.3 0 0 1-1.25-1.91c-.26-.69-.45-1.48-.5-2.65C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.24-1.96.5-2.65.28-.71.65-1.31 1.25-1.91.6-.6 1.2-.97 1.91-1.25.69-.26 1.48-.45 2.65-.5C8.42 2.21 8.8 2.2 12 2.2Zm0 1.98c-3.14 0-3.5.01-4.73.07-.94.04-1.5.19-1.93.36-.47.18-.81.4-1.17.76-.36.36-.58.7-.76 1.17-.17.43-.32.99-.36 1.93-.06 1.23-.07 1.59-.07 4.73s.01 3.5.07 4.73c.4.94.19 1.5.36 1.93.18.47.4.81.76 1.17.36.36.7.58 1.17.76.43.17.99.32 1.93.36 1.23.06 1.59.07 4.73.07s3.5-.01 4.73-.07c.94-.04 1.5-.19 1.93-.36.47-.18.81-.4 1.17-.76.36-.36.58-.7.76-1.17.17-.43.32-.99.36-1.93.06-1.23.07-1.59.07-4.73s-.01-3.5-.07-4.73c-.04-.94-.19-1.5-.36-1.93a3.15 3.15 0 0 0-.76-1.17 3.15 3.15 0 0 0-1.17-.76c-.43-.17-.99-.32-1.93-.36-1.23-.06-1.59-.07-4.73-.07Zm0 3.37a4.45 4.45 0 1 1 0 8.9 4.45 4.45 0 0 1 0-8.9Zm0 7.34a2.89 2.89 0 1 0 0-5.78 2.89 2.89 0 0 0 0 5.78Zm5.66-7.52a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0Z"/></svg></a>
+        <a href="https://tiktok.com/@runthegames" target="_blank" rel="noopener noreferrer"
+          title="TikTok, @runthegames" aria-label="TikTok, @runthegames"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-1.85-2.48V9.77a5.67 5.67 0 1 0 4.94 5.63V8.9a7.32 7.32 0 0 0 4.28 1.38V7.19a4.28 4.28 0 0 1-3.22-1.37Z"/></svg></a>
+        <a href="https://discord.gg/cxPx8TcSe" target="_blank" rel="noopener noreferrer"
+          title="Discord, join the server" aria-label="Discord, join the server"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.32 4.94A19.8 19.8 0 0 0 15.4 3.4a.07.07 0 0 0-.08.04c-.21.38-.45.87-.62 1.25a18.3 18.3 0 0 0-5.4 0 12.6 12.6 0 0 0-.63-1.25.08.08 0 0 0-.08-.04A19.7 19.7 0 0 0 3.68 4.94a.07.07 0 0 0-.03.03C.53 9.6-.32 14.11.1 18.57a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.993 3.03.08.08 0 0 0 .085-.03c.462-.63.874-1.295 1.226-1.994a.08.08 0 0 0-.043-.11 13.1 13.1 0 0 1-1.872-.892.08.08 0 0 1-.008-.132c.126-.094.252-.192.372-.291a.08.08 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.08.08 0 0 1 .079.009c.12.099.246.198.373.292a.08.08 0 0 1-.006.131 12.3 12.3 0 0 1-1.873.892.08.08 0 0 0-.042.111c.36.699.772 1.363 1.225 1.993a.08.08 0 0 0 .085.03 19.9 19.9 0 0 0 6.002-3.03.08.08 0 0 0 .032-.055c.5-5.155-.838-9.63-3.549-13.607a.06.06 0 0 0-.031-.03ZM8.02 15.85c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419Zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419Z"/></svg></a>
       </div>
     </div>
   </div>
