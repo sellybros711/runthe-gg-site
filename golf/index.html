@@ -6204,15 +6204,38 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   if(!s||typeof s!=='object'||s.season!==cur){ s={season:cur, xp:0, pro:false, claimed:{free:[],prem:[]}}; }   // new season -> fresh (last season's rewards lock out)
   if(!s.claimed||typeof s.claimed!=='object') s.claimed={free:[],prem:[]};
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
-  s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro; return s; }
+  s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro;
+  if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
+  return s; }
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
 // PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
 // per season) OR a dev account (CSel8/RunnyJ test free, never purchase). The legacy coin-unlocked
 // s.pro flag is no longer read — decision A: the $14.99 pass is the ONLY PRO unlock for players.
 function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()); }
-// XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
-function passTierCost(t){ return 140 + (t-1)*11; }
-function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
+// XP curve: rising cost per tier (early cheap, later a real grind). passXpForTier(t)=cumulative XP to REACH tier t.
+// Owner: the original LINEAR ramp (140 + 11/tier) was far too shallow — tier 50 cost only 4.9× tier 1, so a
+// single dominant season jumped 3+ tiers even in the 30s and a daily player maxed the 60-day track in ~18
+// days. Now QUADRATIC: tier 1 stays cheap (150) and tier 50 costs 2,414 (16×), so the back half is earned.
+// A dominant season is ~1.5 tiers at tier 32 (was 3.5) and a committed daily player maxes around day 41-45.
+const PASS_CURVE_V=2;                                        // bump to re-convert everyone's XP onto a new curve
+const PASS_C0=150, PASS_C1=7, PASS_C2=0.8;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
+function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
+var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks all 50 per render)
+function passXpForTier(t){
+  if(!_passCum){ _passCum=[0]; let x=0; for(let i=1;i<=PASS_TIERS;i++){ x+=passTierCost(i); _passCum.push(Math.round(x)); } }
+  return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
+}
+// One-time migration onto the new curve. Preserves the player's exact TIER and their fractional progress into
+// the next one, so nobody loses visible progress or re-locks a reward — only the tiers AHEAD get pricier.
+function passConvertCurve(s){
+  const oldCost=t=>140+(t-1)*11; let cum=[0],x=0;
+  for(let i=1;i<=PASS_TIERS;i++){ x+=oldCost(i); cum.push(x); }
+  let t=0; while(t<PASS_TIERS && s.xp>=cum[t+1]) t++;
+  const b=cum[t], n=t<PASS_TIERS?cum[t+1]:b;
+  const frac=(t<PASS_TIERS && n>b) ? Math.max(0,Math.min(0.999,(s.xp-b)/(n-b))) : 0;
+  s.xp=Math.round(passXpForTier(t) + frac*(t<PASS_TIERS?passTierCost(t+1):0));
+  s.curveV=PASS_CURVE_V; return s;
+}
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
   if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
@@ -6277,7 +6300,9 @@ function mergeTourPass(local, server){
   if((server.season||0) > (local.season||0)) return server;
   if((local.season||0) > (server.season||0)) return local;
   const uni=(a,b)=>{ const s=new Set(); (a||[]).forEach(x=>s.add(x)); (b||[]).forEach(x=>s.add(x)); return [...s]; };
+  // curveV rides along (max) so a synced state is never re-converted — double-converting would inflate XP.
   return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
+    curveV:Math.max(+local.curveV||0,+server.curveV||0),
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
               prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
 }
