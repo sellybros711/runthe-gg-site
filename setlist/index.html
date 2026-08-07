@@ -1024,11 +1024,11 @@ import {
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway, respinLine, bestPossible,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
   reactionFor, eventLine, setOpenLine, GAP_RARE,
-  monotonyRun, MONO_AT,
+  monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=18';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=18';
+} from './scoring.js?v=19';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=19';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1939,21 +1939,56 @@ function fitText(x, text, max){
   while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1);
   return t + '…';
 }
-/** Break on words up to a line budget. Headlines are sentences, not labels,
-    and ellipsing one at the column edge cuts it off mid-thought. */
-function wrapText(x, text, max, maxLines){
-  const words = String(text).split(/\s+/), lines = [];
-  let line = '';
-  for (const w of words){
-    const next = line ? `${line} ${w}` : w;
-    if (x.measureText(next).width <= max){ line = next; continue; }
-    lines.push(line);
-    line = w;
-    if (lines.length === maxLines - 1) break;
-  }
-  const rest = words.slice(lines.join(' ').split(/\s+/).filter(Boolean).length).join(' ');
-  lines.push(lines.length === maxLines - 1 ? fitText(x, rest, max) : line);
-  return lines.filter(Boolean).slice(0, maxLines);
+/*
+ * SHOW NOTES. The card used to end in a row of pills naming what the night
+ * contained: "a cover", "a bustout". True, but it never said WHICH song, so
+ * the reader had to take it on faith and the most interesting fact on the
+ * card (that Lady Marmalade is a Labelle song) was not on the card at all.
+ *
+ * So the notes are footnotes now. Each one is pinned to the song that earned
+ * it and the song carries its number, which is how a setlist gets annotated
+ * on paper.
+ *
+ * One note per song, because two superscripts on one title is a mess and the
+ * numbering stops being a footnote and starts being a table. When a song
+ * qualifies for several, the rarest fact wins: a bustout is a once-in-years
+ * event, a cover is a choice, a twenty minute jam is a decision, and being
+ * flagged in the archive is an opinion.
+ */
+/* 35% of the drawable pool carries something worth a note, so a sixteen-song
+   night collects 5 or 6 of them on average and a third of nights would run
+   past a cap of six. Eight fits because each note is one line: the number is
+   already pointing at the song, so reprinting the title under it was using
+   two rows to say what the superscript says. */
+const NOTE_CAP = 8;
+function showNotes(sets){
+  const found = [];
+  sets.forEach((songs, si) => (songs || []).forEach(p => {
+    const gap = Number(p.show_gap) || 0, len = lenOf(p);
+    let note = null, rank = 9;
+    if (gap >= BREADTH_BUSTOUT_GAP){ note = `First in ${gap} shows`; rank = 0; }
+    else if (String(p.is_cover) === 'true'){
+      note = p.original_artist ? `Originally by ${p.original_artist}` : 'A cover';
+      rank = 1;
+    }
+    else if (len >= LEN_20MIN){ note = `${fmtClock(len)} of it`; rank = 2; }
+    else if (isJamchart(p)){ note = 'Flagged in the archive'; rank = 3; }
+    if (note) found.push({ perf: p, set: si, note, rank });
+  }));
+  /* Over the cap, drop the least remarkable rather than whatever happened to
+     be last, then renumber in playing order so the numbers still read down
+     the setlist. */
+  const kept = found.slice().sort((a, b) => a.rank - b.rank).slice(0, NOTE_CAP);
+  const order = found.filter(f => kept.includes(f));
+  order.forEach((f, i) => { f.n = i + 1; });
+  return order;
+}
+
+
+/** Canvas has no letter-spacing, and a small caps label needs it to read. */
+function letterspaceCard(x, text, sx, y, gap){
+  let cx = sx;
+  for (const ch of text){ x.fillText(ch, cx, y); cx += x.measureText(ch).width + gap; }
 }
 
 async function renderShareCard(r){
@@ -2010,75 +2045,91 @@ async function renderShareCard(r){
   x.strokeStyle = 'rgba(244,247,251,.14)'; x.lineWidth = 2;
   x.beginPath(); x.moveTo(CARD_PAD, y); x.lineTo(CARD_W - CARD_PAD, y); x.stroke();
 
-  // ── the headline, the one line a reader actually reads ──
-  y += 52;
-  x.font = '700 31px Archivo'; x.fillStyle = CARD_INK;
-  const headLines = wrapText(x, `“${r.headline}”`, CARD_W - CARD_PAD * 2, 2);
-  headLines.forEach((ln, i) => x.fillText(ln, CARD_PAD, y + i * 40));
-  y += (headLines.length - 1) * 40;
+  /* The setlist IS the card, so it gets the room the fan headline used to
+     take. The headline is still on the result screen and still in the copied
+     text; it was the least re-readable thing here and it cost two lines. */
+  const notes = showNotes(S.sets);
+  const noteOf = perf => (notes.find(n => n.perf === perf) || {}).n;
 
   // ── the setlist, two columns so eight and eight sit side by side ──
   const COL_GAP = 44, COL_W = (CARD_W - CARD_PAD * 2 - COL_GAP) / 2;
   /* Centre the setlist in the room it actually has. A fourteen-song night is
-     half the height of a nineteen-song one, and anchoring it to the headline
-     left a third of the card empty above the footer. */
-  const ROW = 44, HEAD = 40;
+     half the height of a nineteen-song one, and anchoring it to the top left
+     a third of the card empty above the footer. */
+  const ROW = 52, HEAD = 46;
+  const notesH = notes.length ? 34 + 36 * Math.ceil(notes.length / 2) : 0;
   const mainRows = Math.max(S.sets[0].length, S.sets[1].length);
   const blockH = (mainRows ? HEAD + mainRows * ROW : 0)
-    + (S.sets[2].length ? 26 + HEAD + S.sets[2].length * ROW : 0);
-  const bandTop = y + 54, bandBottom = CARD_H - CARD_PAD - 150;
+    + (S.sets[2].length ? 30 + HEAD + S.sets[2].length * ROW : 0);
+  const bandTop = y + 46, bandBottom = CARD_H - CARD_PAD - 96 - notesH;
   y = bandTop + Math.max(0, (bandBottom - bandTop - blockH) / 2);
   const drawSet = (songs, si, cx, cy, width) => {
     if (!songs.length) return cy;
-    x.font = '900 22px Archivo'; x.fillStyle = CARD_DIM;
+    x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
     x.fillText(SETS[si].label.toUpperCase(), cx, cy);
-    let ly = cy + 40;
-    x.font = '700 29px Archivo';
+    let ly = cy + HEAD;
     songs.forEach((p, j) => {
       const nxt = songs[j + 1];
       const seg = nxt && String(p.is_segue) === 'true'
         && S.data.segues.has(`${p.song_id}|${nxt.song_id}`);
-      x.fillStyle = CARD_INK;
-      const label = fitText(x, p.song, width - (seg ? 30 : 0));
+      const n = noteOf(p);
+      // Reserve the room the marks need before deciding where to truncate.
+      const tail = (n ? 22 : 0) + (seg ? 28 : 0);
+      x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
+      const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
-      if (seg){
-        x.fillStyle = GRADE_HEX.hot;
-        x.fillText('›', cx + x.measureText(label).width + 10, ly);
+      let tx = cx + x.measureText(label).width + 6;
+      if (n){
+        // Raised to the cap line, the way a footnote marker sits on paper.
+        x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
+        x.fillText(String(n), tx, ly - 16);
+        tx += x.measureText(String(n)).width + 8;
       }
-      ly += 44;
+      if (seg){
+        x.font = '700 35px Archivo'; x.fillStyle = GRADE_HEX.hot;
+        x.fillText('›', tx, ly);
+      }
+      ly += ROW;
     });
     return ly;
   };
   const leftEnd = drawSet(S.sets[0], 0, CARD_PAD, y, COL_W);
   const rightEnd = drawSet(S.sets[1], 1, CARD_PAD + COL_W + COL_GAP, y, COL_W);
-  let ey = Math.max(leftEnd, rightEnd) + 26;
+  let ey = Math.max(leftEnd, rightEnd) + 30;
   ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, CARD_W - CARD_PAD * 2);
 
-  /* What the night contained, pinned above the footer rather than left to
-     float under the setlist. A short night is only fourteen songs and the
-     chips ended up marooned halfway up with a third of the card blank. Two
-     rows of headroom, so a wide sweep wraps without hitting the footer. */
-  const got = r.breadth.filter(cd => cd.got).map(cd => cd.label);
-  if (got.length){
-    let bx = CARD_PAD, by = Math.max(ey + 30, CARD_H - CARD_PAD - 116);
-    x.font = '900 20px Archivo';
-    got.forEach(label => {
-      const t = label.toUpperCase(), w = x.measureText(t).width + 30;
-      if (bx + w > CARD_W - CARD_PAD){ bx = CARD_PAD; by += 46; }
-      x.fillStyle = 'rgba(72,209,122,.16)';
-      x.beginPath(); x.roundRect(bx, by - 24, w, 36, 18); x.fill();
-      x.fillStyle = GRADE_HEX.hot;
-      x.fillText(t, bx + 15, by);
-      bx += w + 12;
+  // ── show notes, keyed to the numbers on the songs ──
+  if (notes.length){
+    const top = CARD_H - CARD_PAD - 96 - notesH;
+    x.font = '900 21px Archivo'; x.fillStyle = CARD_DIM;
+    letterspaceCard(x, 'SHOW NOTES', CARD_PAD, top, 4);
+    // Two columns, filled down the left then the right, so the numbers read
+    // in order rather than zig-zagging across the card.
+    const half = Math.ceil(notes.length / 2);
+    notes.forEach((n, i) => {
+      const col = i < half ? 0 : 1;
+      const row = i < half ? i : i - half;
+      const nx = CARD_PAD + col * (COL_W + COL_GAP);
+      const ny = top + 42 + row * 36;
+      x.font = '900 21px Archivo'; x.fillStyle = GRADE_HEX.hot;
+      x.fillText(String(n.n), nx, ny);
+      const numW = x.measureText(String(n.n)).width + 12;
+      x.font = '700 24px Archivo'; x.fillStyle = CARD_MUT;
+      x.fillText(fitText(x, n.note, COL_W - numW), nx + numW, ny);
     });
   }
 
-  // ── footer ──
-  x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
-  x.fillText('RUNTHE.GG/SETLIST', CARD_PAD, CARD_H - CARD_PAD);
+  /* The footer's job is the URL. It was the same size and the same grey as
+     the stats beside it, which made the one thing that brings anybody back
+     the least visible thing on the card. */
+  const fy = CARD_H - CARD_PAD - 6;
+  x.strokeStyle = 'rgba(244,247,251,.14)'; x.lineWidth = 2;
+  x.beginPath(); x.moveTo(CARD_PAD, fy - 54); x.lineTo(CARD_W - CARD_PAD, fy - 54); x.stroke();
+  x.font = '38px "Alfa Slab One"'; x.fillStyle = CARD_INK;
+  x.fillText('RUNTHE.GG/SETLIST', CARD_PAD, fy);
   x.textAlign = 'right';
-  x.fillStyle = CARD_MUT;
-  x.fillText(`${r.stats.songs} SONGS · ${fmtClock(r.totalUsed)} ON STAGE`, CARD_W - CARD_PAD, CARD_H - CARD_PAD);
+  x.font = '900 21px Archivo'; x.fillStyle = CARD_DIM;
+  x.fillText(`${r.stats.songs} SONGS · ${fmtClock(r.totalUsed)} ON STAGE`, CARD_W - CARD_PAD, fy - 4);
   x.textAlign = 'left';
   return c;
 }
