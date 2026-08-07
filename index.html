@@ -1103,6 +1103,16 @@ window.GA_ID='G-L29P5MRWKE';
     $('modal').addEventListener('click',function(e){ if(e.target===$('modal')) closeModal(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !$('modal').hidden) closeModal(); });
     if(!(window.supabase && window.supabase.createClient)) return;   // fail open: panel + CTA still work, modal shows "offline"
+    // Inbound bridge: if the user is signed in on RunTheTour (golf) but the home
+    // page's default key is empty, copy the golf session over before createClient
+    // reads it — otherwise navigating from golf to here renders the user as logged out.
+    try{
+      var _def=localStorage.getItem(DEFAULT_KEY);
+      if(!(_def && _def.indexOf('access_token')>=0)){
+        var _golf=localStorage.getItem(GOLF_KEY);
+        if(_golf && _golf.indexOf('access_token')>=0) localStorage.setItem(DEFAULT_KEY,_golf);
+      }
+    }catch(e){}
     try{
       sb=window.supabase.createClient(SB_URL,SB_ANON,{ auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
     }catch(e){ sb=null; return; }
