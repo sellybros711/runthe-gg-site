@@ -14185,6 +14185,34 @@ allows Google Fonts, or self-host Anton.*
   would otherwise have been clobbered). If other sessions keep editing `golf/index.html`, they should either
   rebase on latest main and regenerate from `build-a-golfer.html`, or not touch the deployed file at all.
 
+- **TOUR PASS XP CURVE — late tiers are now a real grind (owner: "I just went from level 32 to 35 in one
+  season. Way too easy").** The curve DID rise, but far too shallowly: `cost(t)=140+(t-1)*11` made tier 50 cost
+  only 4.9x tier 1 (679 vs 140), so the whole 50-tier track was 20,475 XP. Measured against the live faucets
+  (`passAddXp(base*PASS_XP_RATE)`, rate 0.6 XP per base coin): a dominant season (~2,900 base coins) bought
+  **3.54 tiers at tier 32** - exactly the owner's 32->35 - and a committed daily player maxed the 60-day track
+  in **18 days**.
+  - **New curve is QUADRATIC**: `cost(t)=150 + 7*(t-1) + 0.8*(t-1)^2` (tunable `PASS_C0/C1/C2`). Tier 1 stays
+    cheap at 150 so the opening still feels rewarding; tier 50 costs **2,414** (16x tier 1) and the full track
+    is **48,415 XP** (2.4x). Effect: a dominant season at tier 32 is now **1.46 tiers** (was 3.54), a mid
+    season 0.25, and a committed daily player (~1,800 base coins/day) maxes around **day 45** of 60 - still
+    finishable for a $14.99 buyer, but the back half is genuinely earned instead of free-wheeling.
+  - **Nobody loses progress.** A one-time migration (`passConvertCurve`, gated by `PASS_CURVE_V`, run from
+    `passState`) re-maps each player's XP onto the new curve preserving their **exact tier AND their
+    fractional progress into the next one** - so the owner stays at 35, every claimed/claimable reward is
+    unchanged, and only the tiers AHEAD get pricier. Verified: old-curve tiers 10/32/35/49 all convert to the
+    same tier, and a player halfway into tier 33 is still halfway.
+  - **Cross-device safe.** Converted XP is HIGHER than the old value for the same tier (tier 35: 11,445 ->
+    20,363), so `mergeTourPass`'s max-merge can't regress it, and `curveV` now rides through the merge (max)
+    so a synced state is never double-converted (which would inflate XP). `passXpForTier` is memoized
+    (`_passCum`, `var` so an early call can't TDZ-crash) since the pass page walks all 50 tiers per render.
+  - Verified in Playwright against the live file: curve + totals; conversion preserves tier and partial
+    progress; a re-read does NOT re-convert; merge carries curveV; the owner's exact case (legacy tier-35
+    state -> migrates to 35 -> a dominant season now gains **1** tier, was 3); the Tour Pass page renders all
+    50 tiers with the new XP labels; the level-up popup fires and animates on the new curve; a 60-day daily-play
+    sim maxes at day 45; draft/round paths clean - **0 page errors** throughout; `node --check` clean.
+  Deployed to /golf. Tunable: `PASS_C0/C1/C2` (shape) and `PASS_XP_RATE` (how fast coins feed the track); bump
+  `PASS_CURVE_V` to re-map everyone onto any future curve.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
