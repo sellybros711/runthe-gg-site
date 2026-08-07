@@ -2127,7 +2127,7 @@ window.GA_ID='G-L29P5MRWKE';
      puts a money label above the bar and a money caption under it, which is what tells
      you the bar is about money and not about the percentage across the row. */
   .capwrap .perslot{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);
-    margin-top:7px;white-space:nowrap}
+    white-space:nowrap}
   .capwrap .perslot.low{color:#f87171}
   /* Thinner than it was. It starts full and drains, so at the first spin it was a solid
      slab of blue and the largest thing in the HUD, carrying no information at all: you
@@ -2194,10 +2194,19 @@ window.GA_ID='G-L29P5MRWKE';
   .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
   /* Label and value on one baseline. min-width on the value so the label does not slide
      left and right as the number changes width between spins. */
-  .chem{display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
-  .chem .ck{font-family:var(--fn);font-size:9.5px;font-weight:600;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
-  .chemval{font-family:var(--fd);font-size:22px;line-height:1;min-width:62px;text-align:right}
+  /* No min-width. It existed to stop an inline label shifting sideways as the number
+     changed width; the label is a column heading now, so the value simply sits on the
+     right edge and "None", "+4.9%" and "-12.3%" all end in the same place. */
+  .chemval{font-family:var(--fd);font-size:22px;line-height:1;text-align:right;flex:0 0 auto}
+  /* The caption row under the bar. Two facts about what is left: the money per open spot,
+     and which spin you are on. The per-spot figure never wraps, and the counter gives way
+     first, because "Lions - Spin 3 of 6" losing its tail is a smaller loss than the money
+     figure being pushed off its edge. */
+  .capfoot{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    margin-top:7px}
+  .capfoot .perslot{margin-top:0;flex:0 0 auto}
+  .capfoot .spinc{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;text-align:right}
   .chemval.pos{color:#4ade80} .chemval.zero{color:var(--dim-2)} .chemval.neg{color:var(--red)}
   .chembar{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
   .chembar i{display:block;height:100%;border-radius:99px;
@@ -3735,27 +3744,35 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-draft">
     <div class="capwrap">
-      <!-- ONE LABEL PER FACT, AND THE BAR BACK WITH THE MONEY.
-           This carried three unrelated things and labelled two of them with one string:
-           the eyebrow read "Chemistry, spin 1 of 6", so the big number under it could
-           have been either, and the money bar sat directly under the percentage while
-           belonging to the figure on the other side of the row.
+      <!-- TWO STATS, IN TWO COLUMNS, EACH LABELLED THE SAME WAY.
+           The intent here was always "two parallel eyebrows, each naming its own column".
+           The markup did not do that. The left eyebrow named a column and the right one
+           held a FACT -- "Spin 1 of 6" -- while chemistry's label sat down on the value
+           row, inline beside its number and two points smaller than the eyebrow above it.
+           So nothing lined up: a label, then a fact; a value, then a label, then a value.
+           The eye found no column, and the gap between the money and the word CHEMISTRY
+           opened a hole across the middle of the block.
 
-           Now: the two eyebrows are parallel, each naming its own column. Chemistry
-           carries its own label on its own baseline, so the percentage is never orphaned
-           and never competes with the money for size. And the bar is bracketed by money
-           facts, label above and per-spot caption below, which is what makes it read as
-           the budget gauge it is. -->
+           Now the rows do what they say. Labels on the first row, values on the second,
+           both right-hand items sharing the left-hand items' treatment and baseline. The
+           spin counter moves to the caption row under the bar, which is where it belongs
+           anyway: like the per-spot figure beside it, it counts down what is left rather
+           than measuring what you have. That row is the widest thing here, so the counter
+           is allowed to shrink and, in One Franchise runs where it carries the club name
+           as well, to truncate rather than shove the money figure around. -->
       <div class="cap-hd">
         <span class="eyebrow">Money left</span>
-        <span class="eyebrow" id="d-count">Spin 1 of 6</span>
+        <span class="eyebrow">Chemistry</span>
       </div>
       <div class="capline">
         <div class="amt num" id="c-amt"></div>
-        <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">0.0%</span></div>
+        <div class="chemval num zero" id="c-chem">0.0%</div>
       </div>
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
-      <div class="perslot num" id="c-per"></div>
+      <div class="capfoot">
+        <div class="perslot num" id="c-per"></div>
+        <span class="eyebrow spinc" id="d-count">Spin 1 of 6</span>
+      </div>
       <div class="note" id="c-note" style="display:none"></div>
       <!-- THE LINEUP, once the field has scrolled off. Height is reserved at every scroll
            position and only the opacity changes, because growing a sticky block when they
@@ -5467,8 +5484,12 @@ function paintTop(){
   if(replaceCtx){
     $('d-count').textContent='Cap replacement';
   }else{
-    $('d-count').textContent=(run.franchise?E.nickname(run.franchise)+' · ':'')+
-      'Spin '+Math.min(6,run.roster.length+1)+' of 6';
+    /* THE SPIN COUNT LEADS, the club follows. This line lives in the caption row now and
+       is allowed to truncate there, so the order decides what survives a narrow screen.
+       Club-first lost the count -- "LOS ANGELES CHARGERS..." -- which is the half that
+       actually changes as you draft. */
+    $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6'+
+      (run.franchise?' · '+E.nickname(run.franchise):'');
   }
 }
 
