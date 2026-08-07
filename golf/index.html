@@ -1942,6 +1942,16 @@ window.GA_ID='G-L29P5MRWKE';
   .ggad-short{display:none}
   @media (max-width:460px){ .ggad-long{display:none} .ggad-short{display:block} .ggad-txt b{font-size:12.5px} .ggad-txt span{font-size:10.5px} }
   .footnote{margin-top:14px; font-weight:700; color:var(--pagemut)} .footnote b{color:var(--teal)}
+  /* ---- THE ADSENSE BANNER, ABOVE THE FOOTER LINKS ----
+     In the page rather than pinned, so it cannot be tapped on the way past. Takes no space
+     until AdSense fills it: the ins collapses when it declines, and the label and rule ride
+     the same condition, because a label over an empty box is worse than no label. */
+  .rtp-ad-inline{max-width:728px; margin:14px auto 0; text-align:center}
+  .rtp-ad-inline .adsbygoogle{display:block}
+  .rtp-ad-inline .rtp-ad-label{display:none; font-size:9.5px; font-weight:800;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--pagemut);
+    margin:0 0 6px; padding-top:14px; border-top:1px solid rgba(255,255,255,.10)}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
   .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
   .footlinks span{display:inline-block; margin:0 2px; padding:8px 6px}
   .footlinks span:empty{padding:0}
@@ -7307,6 +7317,26 @@ function footer(){
         <span class="ggad-short">RunThePitch, RunTheTour &amp; more, one free account</span></span>
       <span class="ggad-go">Play ↗</span></a>`));
   }
+  /* THE ADSENSE UNIT, built here because this whole footer is constructed in JS.
+     Started inline rather than by a page-level initialiser for the same reason: the element
+     does not exist until this runs. Two guards, both load-bearing -- a placeholder slot is
+     never pushed, and a unit that already carries data-adsbygoogle-status is never pushed
+     twice, which matters because this footer is rebuilt on re-render and a second push
+     against the same ins is an AdSense error. */
+  const adWrap=$(`<div class="rtp-ad-inline">
+    <span class="rtp-ad-label">Advertisement</span>
+    <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257"
+         data-ad-slot="0000000000" data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+  </div>`);
+  f.appendChild(adWrap);
+  try{
+    const ins=adWrap.querySelector('ins.adsbygoogle');
+    const slot=ins && ins.getAttribute('data-ad-slot');
+    if(ins && slot && !/^0+$/.test(slot) && !ins.hasAttribute('data-adsbygoogle-status')){
+      (window.adsbygoogle=window.adsbygoogle||[]).push({});
+    }
+  }catch(e){}
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<button type="button" style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer">${t}</button>`); s.onclick=fn; return s;};
   links.appendChild($(`<a href="/" style="color:inherit;text-decoration:none;cursor:pointer">Home</a>`));

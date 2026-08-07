@@ -3195,6 +3195,17 @@
   .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
     background:var(--white); border-top:1px solid rgba(127,127,127,.18); }
   .rtp-ad-mobile-bottom .adsbygoogle{ display:inline-block; width:320px; height:50px; }
+
+  /* ---- THE IN-FLOW BANNER, ABOVE THE SITE FOOTER ----
+     In the page rather than pinned, so it cannot be tapped on the way past. It takes no
+     space until AdSense fills it: the ins collapses when it declines, and the label and its
+     rule ride the same condition, because a label over an empty box is worse than none. */
+  .rtp-ad-inline{ max-width:728px; margin:26px auto 0; text-align:center; }
+  .rtp-ad-inline .adsbygoogle{ display:block; }
+  .rtp-ad-inline .rtp-ad-label{ display:none; font-size:9.5px; font-weight:800;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 6px; padding-top:16px; border-top:1px solid var(--border-soft); }
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{ display:block; }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
     .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
@@ -4243,6 +4254,17 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="wc-board-back" class="btn red big">BACK</button>
     </div>
   </section>
+
+  <!-- The banner, above the footer. Placeholder slot: the initialiser refuses to start one,
+       so this renders nothing until a real unit id is pasted in. -->
+  <div class="rtp-ad-inline">
+    <span class="rtp-ad-label">Advertisement</span>
+    <ins class="adsbygoogle"
+         data-ad-client="ca-pub-5952069078178257"
+         data-ad-slot="0000000000"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+  </div>
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
@@ -14911,8 +14933,13 @@ boot().then(async ()=>{
   // blocked, or slow adsbygoogle.js can never throw and break the game.
   (function(){
     try{
-      var ads = document.querySelectorAll('.adsbygoogle');
+      var ads = document.querySelectorAll('ins.adsbygoogle');
       for (var i=0;i<ads.length;i++){
+        /* Never start a unit whose slot is still all zeros. This page's three units carry
+           real ids, but a placeholder pushed here would either serve nothing or, worse,
+           be filled against whichever unit the id was copied from. */
+        var slot = ads[i].getAttribute('data-ad-slot');
+        if (!slot || /^0+$/.test(slot)) continue;
         (adsbygoogle = window.adsbygoogle || []).push({});
       }
     }catch(e){}

@@ -17,6 +17,9 @@
 })();
 </script>
 <meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock, then watch your show play back to a crowd." />
+<!-- AdSense. This page was the only game on the site without it, which meant it was the one
+     page a site-wide review could not verify. Async and crossorigin, matching the others. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Cg fill='none' stroke-width='2.6'%3E%3Ccircle cx='16' cy='16' r='2' stroke='%23F06A5F'/%3E%3Ccircle cx='16' cy='16' r='5.2' stroke='%23F2B632'/%3E%3Ccircle cx='16' cy='16' r='8.4' stroke='%2348D17A'/%3E%3Ccircle cx='16' cy='16' r='11.6' stroke='%2337C5D5'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
 <meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
@@ -871,6 +874,16 @@
   .sfoot a:hover{color:var(--ink); text-decoration:underline;}
   .sfoot span{display:inline-block; margin:0 6px; opacity:.5;}
   .sfoot .src{margin:12px 0 0; font-size:12px; line-height:1.55; color:var(--dim);}
+
+  /* The ad slot, above the footer. Nothing until AdSense fills it: the ins collapses when
+     it declines, so an unsold page looks exactly as it does with no ad markup at all, and
+     the label rides the same condition. */
+  .rtp-ad-inline{max-width:728px; margin:34px auto 0; text-align:center;}
+  .rtp-ad-inline .adsbygoogle{display:block;}
+  .rtp-ad-inline .rtp-ad-label{display:none; font-family:var(--ui); font-size:9.5px;
+    font-weight:800; letter-spacing:2.2px; text-transform:uppercase; color:var(--dim);
+    margin:0 0 6px; padding-top:16px; border-top:1px solid var(--line);}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
 </style>
 </head>
 <body>
@@ -922,6 +935,16 @@
       respective owners.</p>
   </section>
 
+  <!-- Placeholder slot; the initialiser at the foot of this file refuses to start one, so
+       this renders nothing until a real unit id is pasted in. -->
+  <div class="rtp-ad-inline">
+    <span class="rtp-ad-label">Advertisement</span>
+    <ins class="adsbygoogle"
+         data-ad-client="ca-pub-5952069078178257"
+         data-ad-slot="0000000000"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+  </div>
   <footer class="sfoot">
     <p>
       <a href="/">RunThe.GG</a><span>&middot;</span><a href="/about.html">About</a><span>&middot;</span><a
@@ -2262,6 +2285,20 @@ document.getElementById('themeBtn').addEventListener('click', () => {
 });
 
 render();
+</script>
+<script>
+  /* Start each unit once, and never a placeholder. Wrapped so a blocked adsbygoogle.js
+     cannot throw into the page. */
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
 </script>
 </body>
 </html>

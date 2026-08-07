@@ -552,6 +552,19 @@ window.GA_ID='G-L29P5MRWKE';
   .installrow{max-width:var(--col);margin:24px auto 0;}
   .installrow .btn{opacity:.85;font-size:13px;}
   .installrow .btn:hover{opacity:1;}
+
+  /* ---- THE AD SLOT, ABOVE THE FOOTER ----
+     Takes no space until it is filled: the ins collapses when AdSense declines, so an
+     unsold page is pixel-identical to one with no ad markup at all. The label and its rule
+     are on the same condition, because "Advertisement" over an empty box is worse than no
+     label. Browsers without :has get the ad and no label, which is fine: the unit is
+     visibly an ad either way. */
+  .rtp-ad-inline{max-width:728px;margin:26px auto 0;text-align:center;}
+  .rtp-ad-inline .adsbygoogle{display:block;}
+  .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--mut);opacity:.7;
+    margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line);}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
 </style>
 </head>
 <body>
@@ -736,6 +749,20 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="btn ghost" id="install-btn" type="button"><i class="pico pico-install" aria-hidden="true"></i> Add RunThe.GG to your Home Screen</button>
     </div>
 
+    <!-- The banner, at the end of the page and above the legal links. In the flow rather
+         than pinned: a sticky strip is under the thumb for the whole scroll, and an
+         accidental tap on an ad is what gets a placement called deceptive. It occupies
+         nothing until AdSense fills it, and the label appears on the same condition. The
+         slot id is a placeholder and the initialiser below refuses to start a placeholder,
+         so this renders nothing until a real unit exists in the dashboard. -->
+    <div class="rtp-ad-inline">
+      <span class="rtp-ad-label">Advertisement</span>
+      <ins class="adsbygoogle"
+           data-ad-client="ca-pub-5952069078178257"
+           data-ad-slot="0000000000"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+    </div>
     <footer class="foot">
       <span class="follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for news &amp; updates</a></span>
       <a href="/about.html">About</a><span class="sep">·</span>
@@ -1193,6 +1220,25 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     if(typeof gtag==='function') gtag('event','game_card_clicked',{game:game});
   });
 });
+</script>
+
+<script>
+  /* Start each AdSense unit exactly once, and never start a placeholder.
+     Wrapped so a missing, blocked or slow adsbygoogle.js cannot throw: an ad blocker is
+     the common case here, not the edge case. A unit whose slot is still all zeros is
+     SKIPPED, because pushing one either serves nothing or, if the id were ever copied
+     from another page, reports this page's traffic against that page's unit. Paste the
+     real id in and it starts on its own. */
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
 </script>
 
 </body>

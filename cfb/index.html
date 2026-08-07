@@ -1748,6 +1748,16 @@ window.GA_ID='G-L29P5MRWKE';
   .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
     background:#0b1220;border-top:1px solid var(--line);pointer-events:auto}
   .rtp-ad-mobile-bottom .adsbygoogle{display:inline-block;width:320px;height:50px}
+
+  /* ---- THE IN-FLOW BANNER, ABOVE THE LEGAL LINE ----
+     In the page rather than pinned, so nothing is tapped on the way past it. It takes no
+     space until AdSense fills it, and the label rides the same condition. */
+  .rtp-ad-inline{max-width:728px;margin:26px auto 0;text-align:center}
+  .rtp-ad-inline .adsbygoogle{display:block}
+  .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
+    margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line)}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
@@ -2004,6 +2014,17 @@ or endorsed by the NCAA, the CFP or any school.
     <div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
       <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
+    </div>
+
+    <!-- The banner, above the legal line. Placeholder slot; the initialiser at the foot of
+         this file refuses to start one, so it renders nothing until a real id is pasted. -->
+    <div class="rtp-ad-inline">
+      <span class="rtp-ad-label">Advertisement</span>
+      <ins class="adsbygoogle"
+           data-ad-client="ca-pub-5952069078178257"
+           data-ad-slot="0000000000"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
     </div>
 
     <!-- The attribution and the disclaimer both have to stay, so they are set as one
