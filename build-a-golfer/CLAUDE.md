@@ -14251,6 +14251,38 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. Tunable: `STREAK_WEEK_TRACK` / `LOGIN_TRACK` (per-day reward), `WEEKLY_PACK_N`,
   `WEEKLY_CHAL_COINS`; the shard faucets are the `shardEarn` call sites + `SHARD_COST`.
 
+- **GOLD PRO NAMES: fixed the case that never worked + wired HEAD TO HEAD (owner: "users who have the pro
+  tour pass should have a gold animated name on everybody's leaderboards, and in head to head mode... it has
+  to work. I still see a user who has the tour pass with a white name").** Two real defects, one of them the
+  likely cause of the exact report:
+  1. **DEV ACCOUNTS held PRO with no purchase row, so nobody else could ever see it.** `passProActive()` =
+    `dailyPassActive() || devMode()`, and `devMode()` grants PRO to `DEV_USERS=['csel8','runnyj']` locally with
+    NO row in `tour_pass` - but the cross-player lookup `runtour_pro_users()` (migration 74) reads exactly that
+    table. So a dev account's own screen showed gold while **every other player's screen showed a plain white
+    name**, which is precisely "a user who has the tour pass with a white name". `isProUser` now also gilds the
+    DEV_USERS list (already hardcoded client-side, so no server round trip needed).
+  2. **Head to head had NO gold treatment at all** - `proNameHTML` was wired into the 6 leaderboard surfaces
+    but zero H2H screens. Now wired into all of them: the lobby roster, the Tale-of-the-Tape preview (column
+    header + the team members line), the live watch scoreboard + shot-description bar (via a new per-unit
+    `S.h2h.unitPro` flag + `h2hUnitNm()`, since those render from plain `unitNames` strings), the result
+    scorecard legend, and the H2H win/loss leaderboard. H2H matches by USERNAME against the server holder set,
+    so it stays server-truthed rather than trusting a client-declared flag.
+  Robustness + diagnosis (so a future miss is findable): a FAILED/empty `runtour_pro_users` read now retries
+  after **45s** instead of sitting white for the full 5-minute TTL (`PRO_TTL_OK`/`PRO_TTL_FAIL`), the real
+  error is `console.error`'d and a zero-holder read is `console.warn`'d (a silent empty set was why a holder
+  could read as a plain name with no clue why), the set is force-refreshed **on sign-in** and **the moment a
+  purchase lands** (`loadWallet` sees pass_active flip false->true), so a new buyer is gold within seconds
+  rather than after the cache expires.
+  Verified in Playwright: dev accounts gild on a client that is NOT them; server matches by id AND by username;
+  a non-holder stays plain; the name is still escaped (`<img src=x>` -> entities); the gold is genuinely live
+  (computed `animation-name: proShine`, `background-clip: text`, weight 900); H2H lobby, preview and win/loss
+  board each render exactly one gilded name with the non-holder plain; the season leaderboard still gilds; a
+  full draft regresses clean - 0 page errors throughout; `node --check` clean. Deployed to /golf.
+  **If a genuine PAYING holder still shows white**, the console now names the cause: "runtour_pro_users failed:
+  <reason>" means the RPC is erroring, "returned 0 pass holders" means the server has no current-season
+  `tour_pass` row for them (i.e. the entitlement itself, not the display, is the problem - check
+  `runtour_wallet().pass_active` and the `tour_pass.period` vs `runtour_pass_season()`).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
