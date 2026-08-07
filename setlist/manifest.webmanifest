@@ -1,0 +1,39 @@
+{
+  "id": "/setlist/",
+  "name": "Segue: The Setlist Builder Game",
+  "short_name": "Segue",
+  "description": "Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back.",
+  "categories": ["games", "music"],
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "icons": [
+    {
+      "src": "/assets/segue-icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/segue-icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/segue-icon-maskable_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/segue-icon-maskable_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

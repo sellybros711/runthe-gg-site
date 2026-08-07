@@ -101,16 +101,35 @@ function fillDye(x, cx, cy, radius) {
   }
 }
 
-/** The mark, at any size, on transparent. */
-function drawMark(size) {
+/**
+ * The mark, at any size, on transparent.
+ *
+ * @param {number} size
+ * @param {boolean} maskable Draw the Android adaptive-icon variant instead:
+ *   full bleed with no corner radius, and the chevron shrunk into the middle.
+ *   A launcher crops a maskable icon to whatever shape it likes and only the
+ *   centre 80% is guaranteed to survive, so handing it the rounded tile (as
+ *   the other games in this repo do) gets the corners sliced off and the
+ *   squircle re-cut at a different radius.
+ */
+function drawMark(size, maskable = false) {
   const c = createCanvas(size, size), x = c.getContext('2d');
   const s = size / 100;                        // the mark is authored on a 100 grid
   x.save();
   x.beginPath();
-  x.roundRect(0, 0, size, size, size * 0.22);
+  if (maskable) x.rect(0, 0, size, size);
+  else x.roundRect(0, 0, size, size, size * 0.22);
   x.clip();
   // The dye has to cover the corners, so the sweep radius is the diagonal.
   fillDye(x, size / 2, size / 2, size * 0.75);
+  /* Pull the chevron toward the centre so it sits inside the safe circle.
+     0.68 puts the arrow's furthest point at 34% from centre, comfortably
+     inside the 40% a maskable icon is allowed to rely on. */
+  if (maskable) {
+    x.translate(size / 2, size / 2);
+    x.scale(0.68, 0.68);
+    x.translate(-size / 2, -size / 2);
+  }
   /* The chevron is painted navy rather than knocked through to transparency.
      A hole takes the colour of whatever is behind it, which is charming in a
      browser tab and a liability as an app icon, where the launcher picks the
@@ -226,6 +245,11 @@ for (const s of ICONS) {
   writeFileSync(join(OUT, name), drawMark(s).toBuffer('image/png'));
   console.log(`  ${name}`);
 }
+for (const s of [192, 512]) {
+  const name = `segue-icon-maskable_${s}.png`;
+  writeFileSync(join(OUT, name), drawMark(s, true).toBuffer('image/png'));
+  console.log(`  ${name}`);
+}
 writeFileSync(join(OUT, 'segue-og_1200x630.png'), drawOG().toBuffer('image/png'));
 console.log('  segue-og_1200x630.png');
-console.log(`\n${ICONS.length + 1} assets written to assets/`);
+console.log(`\n${ICONS.length + 3} assets written to assets/`);
