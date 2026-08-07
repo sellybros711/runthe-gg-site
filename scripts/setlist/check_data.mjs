@@ -215,7 +215,9 @@ for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
 /* The mark is drawn in CSS and worn in two places: the home screen and the
    top bar. Matched on the class rather than on a whole class attribute, which
    is what broke when the tile picked up a second class. */
-check(/class="[^"]*\bheromark\b/.test(game), 'the home screen shows the mark');
+/* The mark lives in the top bar only. It was in the hero too, which put it
+   and the wordmark twice on one screen about 60px apart. */
+check(!/\bheromark\b/.test(game), 'the hero does not repeat the top bar mark');
 check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar shows the mark');
 check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
 check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
