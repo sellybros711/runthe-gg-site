@@ -416,8 +416,15 @@
   .sheetgrab{display:none; width:38px; height:4px; border-radius:99px;
     background:var(--line2); margin:0 auto 12px;}
 
-  .showcard{padding:11px 15px; margin-bottom:10px;}
-  .showcard .d{font-family:var(--hero); font-size:21px; line-height:1.05;}
+  /* THE SHOW IS A HEADING, NOT A CARD. Once the songs under it stopped being
+     cards, the panel around the date was the only box left on the screen and
+     became the loudest thing on it. It is the marquee line for the sheet
+     below, so it is set like one: date large, venue and city beneath, and a
+     rule holding it to the list rather than a border floating it above. */
+  .showcard{padding:2px 0 9px; margin-bottom:8px; background:transparent; border:0;
+    border-bottom:3px solid var(--ink); box-shadow:none; border-radius:0;}
+  .showcard .d{font-family:var(--ui); font-size:29px; line-height:1; letter-spacing:.2px;
+    text-transform:uppercase;}
   .showcard .night{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
     letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
     padding:1px 5px; border-radius:4px;
@@ -478,8 +485,6 @@
       -webkit-background-clip:text; background-clip:text;
       -webkit-text-fill-color:transparent; color:transparent;}
   }
-  .song .o.seg{color:var(--greenT);}
-  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
     background:color-mix(in srgb,var(--green) 12%, transparent);
@@ -528,22 +533,33 @@
   .song.used .t{font-size:13px;}
   .song.used .o{margin-top:1px;}
   .song.used .r{gap:0;}
-  /* The title is the row. Anton at 22px is the same ink a set list uses and
-     it fits: measured at 320px, a 30-character title still lands on one line
-     with the time beside it. */
-  .song .t{font-family:var(--ui); font-weight:400; font-size:22px; line-height:1.06;
+  /* Dialled back from 22px. Measured over 226 rows, 45% carry a second line
+     and row heights ran from 42px to 103px: at 22px a long title wrapped, and
+     a list where every row is a different height is the thing that reads as
+     overwhelming, not the size of any one row.
+     19px still sets the title as the row without pushing it to two lines. */
+  .song .t{font-family:var(--ui); font-weight:400; font-size:19px; line-height:1.1;
     letter-spacing:.2px;}
-  .song.used .t{font-size:18px;}
+  .song.used .t{font-size:16px;}
   /* The left column wraps as a row: title, then chips, and anything
      descriptive drops to its own line underneath rather than running on after
      the title and wrapping mid-phrase. */
   .song .l{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 7px; min-width:0; flex:1 1 auto;}
   .song .r{flex:0 0 auto;}
-  .song .o{flex:0 0 100%; font-size:11.5px; font-weight:600; color:var(--dim); margin-top:0;}
+  /* One line, always. This is the row that varied: "ran into Silver Rising or
+     6 others" wrapped to a third line on a narrow screen and took the row to
+     103px. It is also the line that shouted, in bold green on 45% of rows. */
+  .song .o{flex:0 0 100%; font-size:11.5px; font-weight:600; color:var(--dim); margin-top:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+  /* The arrow keeps the dye, because that is the mechanic. The partner name
+     steps down from bold green to the muted ink: naming it is enough, it does
+     not also have to be the loudest thing on the row. */
+  .song .o.seg{color:var(--mut); font-weight:700;}
+  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
-  .song .len{font-family:var(--ui); font-weight:400; font-size:18px; color:var(--mut);
+  .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
   /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
    *
@@ -1609,6 +1625,23 @@ function renderDraft(){
       const why = pickBlock(p, si);
       const dead = !!why;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
+      /* The second line, decided BEFORE the chips, because the two were saying
+         the same thing. A cover with no segue partner printed "orig. Bobby
+         Blue Bland" AND a COVER chip on the same row: the line already names
+         it as a cover, and it names who by. */
+      // Out of time is a different kind of no from already-played, and the
+      // player needs to know which wall they hit.
+      const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
+      const partnerCount = (S.data.partners.get(p.song_id) || new Set()).size;
+      const oLine = why
+        ? `<span class="o${whyClass}">${why}</span>`
+        : p.segued_into
+          ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
+              partnerCount > 1 ? ` <i>or ${partnerCount - 1} more</i>` : ''}</span>`
+          : p.is_cover === 'true' && p.original_artist
+            ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : '';
+      const origShown = !why && !p.segued_into && p.is_cover === 'true' && !!p.original_artist;
+
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
@@ -1622,12 +1655,10 @@ function renderDraft(){
         if (run.depth >= MONO_AT) chips.push(
           `<span class="chip mono">${ordinal(run.depth).toUpperCase()} IN A ROW</span>`);
       }
-      if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
+      if (acc.chip && !(acc.chip === 'cover' && origShown))
+        chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      // Out of time is a different kind of no from already-played, and the
-      // player needs to know which wall they hit.
-      const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
       return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
@@ -1636,13 +1667,7 @@ function renderDraft(){
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
-          ${why ? `<span class="o${whyClass}">${why}</span>`
-            : p.segued_into ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
-                (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
-                         return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
-              }</span>`
-            : p.is_cover === 'true' && p.original_artist
-              ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
+          ${oLine}
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;
