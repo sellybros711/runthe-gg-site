@@ -1346,8 +1346,15 @@ window.GA_ID='G-L29P5MRWKE';
   .achchev{width:0;height:0;border-left:4.5px solid transparent;border-right:4.5px solid transparent;
     border-top:5.5px solid var(--dim-2);justify-self:end;transition:transform .16s ease}
   .achgrp.open .achchev{transform:rotate(180deg)}
-  .achbody{display:none;padding-bottom:10px}
-  .achgrp.open .achbody{display:block}
+  /* display:none to display:block lived here and is what made this snap. The rule that
+     replaces it is with the other drop-downs, further down; the padding stays, on the inner
+     wrapper, because padding on the grid row would not collapse with it. */
+  /* THE PADDING GOES ON WHAT IS INSIDE THE CLIPPED BOX, not on the box. overflow:hidden
+     clips content and not padding, so 10px of padding on .achin left every shut group ten
+     pixels tall -- a row of thin gaps down the cabinet, which is exactly the kind of thing
+     that reads as sloppy without being nameable. A margin on the last child is inside the
+     clip and collapses with it. */
+  .achin>:last-child{margin-bottom:10px}
   .achlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .achlist+.achtiles{margin-top:6px}
   @media(max-width:420px){ .achlist{grid-template-columns:1fr} }
@@ -1535,7 +1542,8 @@ window.GA_ID='G-L29P5MRWKE';
   .rp-room.over{color:#fca5a5;font-weight:800}
   .rp-cut{font-size:11.5px;color:#fca5a5;padding:8px 11px 2px;line-height:1.35}
   .rp-cut b{color:#fecaca}
-  .roster-panel>summary .rp-caret{transition:transform .18s;color:var(--dim-2);font-size:11px}
+  .roster-panel>summary .rp-caret{transition:transform .28s cubic-bezier(.22,.9,.26,1);
+    color:var(--dim-2);font-size:11px}
   .roster-panel[open]>summary .rp-caret{transform:rotate(180deg)}
   .roster-panel .rp-body{padding:0 10px 10px}
   .rp-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;
@@ -3497,11 +3505,37 @@ window.GA_ID='G-L29P5MRWKE';
     visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
   .sheet.on{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.72);
     transition:background .3s ease,visibility 0s}
+  /* ONE CURVE IN BOTH DIRECTIONS, and the close is the quicker of the two. It used to
+     leave on `ease`, which is a different shape from the one it arrived on, so a sheet
+     opened and shut in quick succession did not look like the same object twice.
+     Momentum-scrolling on the panel, because it is the one thing on screen that scrolls
+     under a finger and iOS does not give it that by default. */
   .sheet .inner{width:100%;max-width:560px;background:var(--grad-panel);border:1px solid var(--line-2);
-    border-radius:16px;padding:16px;max-height:86vh;overflow-y:auto;will-change:transform;
-    transform:translateY(100%);opacity:0;transition:transform .24s ease,opacity .18s ease}
+    border-radius:16px;padding:16px;max-height:86vh;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;will-change:transform;
+    transform:translateY(100%);opacity:0;
+    transition:transform .26s cubic-bezier(.4,0,.7,.3),opacity .18s ease}
   .sheet.on .inner{transform:translateY(0);opacity:1;
-    transition:transform .38s cubic-bezier(.33,1,.68,1),opacity .25s ease}
+    transition:transform .42s cubic-bezier(.22,.9,.26,1),opacity .26s ease}
+  /* ── DROP-DOWNS AND SHEET SWAPS ────────────────────────────────
+     The heights are driven inline by slideDetails(); what lives here is the part that has
+     to be true before the first frame -- a panel that can be clipped -- and the swap. */
+  details>summary{-webkit-tap-highlight-color:transparent}
+  /* The caret and the panel move on the same curve and in the same time, so the arrow is
+     not still turning after the panel has settled. */
+  details.drop>summary .caret{transition:transform .28s cubic-bezier(.22,.9,.26,1)}
+  /* CONTENT SWAPS INSIDE AN OPEN SHEET. On the CHILDREN and not on the box, because the box
+     carries the sheet's own open transform and an animation on it would fight the
+     transition that is already running there. */
+  #sheet-in.swap>*{animation:sheetSwap .3s cubic-bezier(.22,.9,.26,1) both}
+  @keyframes sheetSwap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  /* A COLLAPSIBLE THAT IS NOT A <details>. 0fr to 1fr on a grid row animates from nothing
+     to whatever the content turns out to be, with no height to measure and nothing to go
+     stale when the content changes underneath it. */
+  .achbody{display:grid;grid-template-rows:0fr;opacity:0;
+    transition:grid-template-rows .3s cubic-bezier(.22,.9,.26,1),opacity .22s ease}
+  .achgrp.open .achbody{grid-template-rows:1fr;opacity:1}
+  .achin{overflow:hidden;min-height:0}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
   .hr{height:1px;background:var(--line);margin:14px 0}
 
@@ -10495,7 +10529,10 @@ function achBlock(res){
     const cards=gotG.filter(a=>!a.compact).concat(offG.filter(a=>!a.compact));
     const tiles=gotG.filter(a=>a.compact).concat(offG.filter(a=>a.compact));
     const gotSet=new Set(gotG.map(a=>a.id));
-    h+='<div class="achbody">';
+    /* ONE WRAPPER INSIDE THE BODY, because the body is now a single grid row that animates
+       from 0fr to 1fr and a row can only collapse one child. Cards and tiles go in it
+       together. */
+    h+='<div class="achbody"><div class="achin">';
     if(cards.length){
       h+='<div class="achlist">';
       cards.forEach(a=>{h+=chip(a,gotSet.has(a.id));});
@@ -10506,7 +10543,7 @@ function achBlock(res){
       tiles.forEach(a=>{h+=tile(a,gotSet.has(a.id));});
       h+='</div>';
     }
-    h+='</div></div>';
+    h+='</div></div></div>';
   });
   return h;
 }
@@ -12710,6 +12747,91 @@ $('b-quit').onclick=()=>{
   b.textContent='Tap again to quit';
   b.classList.add('armed');
 };
+
+/* ── EVERY DROP-DOWN AND EVERY POP-UP, SMOOTHED ─────────────────────
+   THREE THINGS IN THIS GAME OPENED BY SNAPPING, and all three are the same bug wearing
+   different clothes: something goes from not-rendered to rendered in one frame.
+
+     <details>            the browser hides the content outright when it is shut, so there
+                          is nothing to transition and the panel appears at full height.
+     .achbody             display:none to display:block, which no transition can touch.
+     the sheet's contents which are replaced wholesale by innerHTML while the sheet is
+                          already up, so navigating the profile was a hard cut.
+
+   The sheet's own entrance was already animated and stays as it was; what follows is
+   everything that happens once it is open, plus the two collapsibles. */
+const DROP_MS=280;
+
+/* ONE DELEGATED HANDLER FOR EVERY <details> ON THE PAGE, in the capture phase so it runs
+   before the browser's own toggle and can take it over. It measures the panel, sets the
+   start height, and transitions to the end; the native `open` flag is flipped at the start
+   when opening and at the end when closing, so the content is laid out for the whole
+   animation in both directions.
+
+   ANYTHING UNUSUAL IS LEFT ALONE. A <details> whose summary is followed by more than one
+   element cannot be measured as a single box, so this bows out and lets the browser do
+   what it always did rather than animating half a panel. */
+function wireSmoothDrops(){
+  document.addEventListener('click',(e)=>{
+    const sum=e.target.closest&&e.target.closest('summary'); if(!sum) return;
+    const d=sum.parentElement;
+    if(!d||d.tagName!=='DETAILS') return;
+    const body=sum.nextElementSibling;
+    if(!body||body.nextElementSibling) return;
+    e.preventDefault();
+    /* A second tap mid-flight would fight the first and leave an inline height behind. */
+    if(d.dataset.anim==='1') return;
+    slideDetails(d,body,!d.open);
+  },true);
+}
+function slideDetails(d,body,open){
+  d.dataset.anim='1';
+  /* Opened FIRST when opening, because a shut <details> does not lay its content out and
+     scrollHeight would be zero. */
+  if(open) d.open=true;
+  const h=body.scrollHeight;
+  body.style.overflow='hidden';
+  body.style.height=(open?0:h)+'px';
+  body.style.opacity=open?'0':'1';
+  /* TWO FRAMES, NOT ONE. A start value and an end value set in the same frame are one style
+     change and animate nothing; the first frame is what commits the start. */
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    body.style.transition='height '+DROP_MS+'ms cubic-bezier(.22,.9,.26,1),opacity '+
+      Math.round(DROP_MS*0.62)+'ms ease';
+    body.style.height=(open?h:0)+'px';
+    body.style.opacity=open?'1':'0';
+  }));
+  /* Cleared on a timer rather than on transitionend, because the reduced-motion rule
+     flattens the transition to nothing and no transitionend would ever arrive. Every inline
+     style this set is removed, so the panel goes back to being sized by its content. */
+  clearTimeout(d._dropT);
+  d._dropT=setTimeout(()=>{
+    body.style.transition=body.style.height=body.style.opacity=body.style.overflow='';
+    if(!open) d.open=false;
+    d.dataset.anim='';
+  },DROP_MS+40);
+}
+
+/* A CONTENT SWAP INSIDE AN OPEN SHEET. Watched rather than called, because the profile
+   alone paints into this box from a dozen places and every one of them would have had to
+   remember. childList on the box itself and not on its subtree, so a panel filling itself
+   in later -- the career numbers, the badge shelves -- is not mistaken for a page change. */
+function wireSheetSwap(){
+  const box=$('sheet-in'), sheet=$('sheet');
+  if(!box||!sheet||typeof MutationObserver!=='function') return;
+  new MutationObserver(()=>{
+    /* Only when the sheet is ALREADY up. A sheet's first paint happens before it is shown
+       and the entrance is the animation for that one. */
+    if(!sheet.classList.contains('on')) return;
+    /* BACK AT THE TOP, which is a bigger part of feeling smooth than any easing: going from
+       a scrolled list back to the hub used to land you halfway down a screen of nothing. */
+    box.scrollTop=0;
+    box.classList.remove('swap'); void box.offsetWidth; box.classList.add('swap');
+  }).observe(box,{childList:true});
+}
+
+wireSmoothDrops();
+wireSheetSwap();
 
 boot();
 })();
