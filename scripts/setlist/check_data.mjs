@@ -212,6 +212,32 @@ check(game.includes('twitter:card'), 'a twitter card type is declared');
 for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
   check(existsSync(resolve(repoRoot, m[1].slice(1))), `${m[1]} is on disk`);
 
+// The home screen wears the same mark as the tab, drawn in CSS.
+check(game.includes('class="heromark"'), 'the home screen shows the mark');
+
+/* The manifest is what makes it installable. A launcher crops a MASKABLE icon
+   to whatever shape it likes and keeps only the middle, so shipping the
+   rounded tile for that role gets its corners sliced off and the squircle
+   re-cut at some other radius. Every other game in this repo does exactly
+   that, which is why this asserts the two roles use different files. */
+check(game.includes('rel="manifest"'), 'the page links a manifest');
+let manifest = null;
+try { manifest = JSON.parse(read('setlist/manifest.webmanifest')); ok('the manifest parses'); }
+catch (e) { fail(`the manifest parses: ${e.message}`); }
+if (manifest) {
+  check(manifest.start_url === './' && manifest.scope === './', 'it is scoped to /setlist/');
+  check(manifest.theme_color === '#071426', 'the theme colour is the game\'s navy');
+  const byPurpose = p => (manifest.icons || []).filter(i => (i.purpose || 'any').split(/\s+/).includes(p));
+  const any = byPurpose('any'), maskable = byPurpose('maskable');
+  check(any.length > 0, 'it declares a normal icon');
+  check(maskable.length > 0, 'it declares a maskable icon');
+  const shared = maskable.filter(m => any.some(a => a.src === m.src)).map(m => m.src);
+  check(!shared.length, 'the maskable icon is its own file, not the rounded one',
+    shared.join(', '));
+  for (const i of manifest.icons || [])
+    check(existsSync(resolve(repoRoot, i.src.replace(/^\//, ''))), `${i.src} is on disk`);
+}
+
 /* Em dashes are banned from anything a player reads. They are easy to
    reintroduce one string at a time, so this strips the comments (where they
    are fine, and where most of them live) and fails on any that are left. */
