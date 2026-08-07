@@ -14213,6 +14213,37 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. Tunable: `PASS_C0/C1/C2` (shape) and `PASS_XP_RATE` (how fast coins feed the track); bump
   `PASS_CURVE_V` to re-map everyone onto any future curve.
 
+- **COIN/PACK ECONOMY AUDIT + free-pack trim (owner: "check the coin economy too, are packs too easy to
+  earn?").** Measured the live faucets for a fully engaged player (daily every day + login streak + weeklies)
+  rather than eyeballing constants. The answer was yes, and the imbalance was far bigger than expected:
+  - **Coins earned: 3,835/week. Free packs handed out: 8/week** (6 Base + 1 Tour + 1 **Champion**) worth
+    **115,000 coins ≈ $15.26** at the $1.99=15,000 bucket anchor - i.e. free packs delivered **30x the entire
+    coin faucet**. A **Champion pack every single week** (45,000 coins = **11.7 weeks** of a player's whole coin
+    income, or $5.97) - 52 of them a year. Buying a Base pack with coins takes 2.1 weeks while you are handed
+    six, so the coin grind AND the pack-shaped pull of the coin buckets were both undercut by the reward loop.
+  - The stack: the daily-challenge advent (day 4 Base + day 7 **Champion**), the login calendar (day 4 Base +
+    day 7 Tour), and 4 weekly challenges at 1 pack each. Each is defensible alone; together it was a firehose.
+  - **Owner picked Option B** (trim tiers + weeklies; leave the coin faucet as the $-anchored premium lane):
+    advent day 7 **Champion -> Tour**, login day 7 **Tour -> Base**, and weekly challenges **4 packs -> 2**
+    (`WEEKLY_PACK_N`) with the other two paying **coins** (`WEEKLY_CHAL_COINS=1500`) instead. Result:
+    **5 packs/week, 62,000 value (-46%), ZERO Champion packs from repeating faucets** (they now come only from
+    drops / the Tour Pass / a purchase, so the top tier means something), and the weekly coin faucet rises
+    3,835 -> 6,835, feeding the starved currency. Every reward MOMENT is intact - only the tier changed.
+  - **Deliberately NOT paid in shards.** One epic shard is worth ~27,500 coins (`RARITY_PRICE/SHARD_COST`),
+    i.e. **3.4x a Base pack**, so swapping the removed packs for shards would have made the leak bigger. Every
+    weekly still pays its Tour Rep + its epic shard, so the targeted-item path is untouched.
+  - **FLAGGED, NOT CHANGED - shards are the bigger leak.** The same engaged player earns **275,000 coins of
+    shard value per week** (10 rare + 4 epic + 3 common) = **3.3 chosen rare items + 1 chosen epic item every
+    week, free and TARGETED**. Post-trim that is ~80% of all reward value (~$45/wk, ~$2,372/yr). Drivers: daily
+    quests all-done -> +1 RARE shard/day (7/wk) and each weekly -> +1 EPIC shard (4/wk = exactly one free epic
+    item). Left for the owner's call since the shard path is a deliberate design (the "pack-only economy"
+    targeted-unlock lane), and gutting it would strand players with no way to aim at a specific item.
+  Verified in Playwright against the live functions: advent day 7 grants a Tour credit and **0 Champion**,
+  login day 7 grants a Base credit, 4 weeklies grant exactly **2** packs + coins, the Challenges panel and the
+  advent calendar render the new rewards (no stale "Champ" cell), 0 page errors; `node --check` clean.
+  Deployed to /golf. Tunable: `STREAK_WEEK_TRACK` / `LOGIN_TRACK` (per-day reward), `WEEKLY_PACK_N`,
+  `WEEKLY_CHAL_COINS`; the shard faucets are the `shardEarn` call sites + `SHARD_COST`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

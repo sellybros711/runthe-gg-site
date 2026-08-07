@@ -3356,7 +3356,10 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // Economy re-anchor: coins are much harder to earn (so $1.99 ≈ a full career's grind). Coin days (1,2,5) 150 → 350 → 1,000.
 const STREAK_WEEK_COIN_DAY={1:150, 2:350, 3:350, 4:350, 5:1000, 6:1000, 7:1000};
 function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||150; }
-const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'champpack'};   // CS461: daily-CHALLENGE day 7 = the BEST (Champion) pack
+// Economy rebalance: the day-7 capstone was a CHAMPION pack every single week (45,000 coins ≈ 12 weeks of a
+// player's whole coin income, handed out 52×/yr). The weekly payoff moment stays, one tier down — Champion
+// packs are now earned from drops / the Tour Pass / a purchase, so the top tier means something.
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};   // daily-CHALLENGE day 7 = a Tour pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -3422,7 +3425,9 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
 // above. Just signing in each (ET) day advances the loop and grants that day's reward; DAY 7 = a medium
 // (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
 // (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
-const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+// Economy rebalance: day 7 was a Tour pack for simply OPENING the game 7 times, on top of the daily-challenge
+// track's own weekly pack. Logging in still pays a pack, at the base tier.
+const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'basepack'};
 const LOGIN_COIN_DAY={1:50,2:75,3:100,5:150};
 function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!=='object') s={day:null,n:0}; s.n=s.n||0; return s; }
 function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
@@ -3745,6 +3750,8 @@ function weekDayRange(){ const start=weekKey()*7*86400000, pk=ms=>{ const d=new 
 // only as that coin curve - never surfaced to the player). Weekly challenges also grant a "mulli-spin".
 const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all the day's daily quests
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
+const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
+const WEEKLY_CHAL_COINS=1500;  // coins paid by a weekly challenge that doesn't carry a pack
 const LEVEL_COIN=250;          // Pro Shop coins granted per internal coin-curve step reached
 function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
   s.xp=s.xp||0; s.mulliEarned=s.mulliEarned||0; s.mulliSpent=s.mulliSpent||0; return s; }
@@ -3811,7 +3818,16 @@ function weekChalDoneCount(w){ w=w||weekChal(); return weeklySet().filter(c=>w.d
 function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekChal(); w.prog[metric]=(w.prog[metric]||0)+n;
   const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
   LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
-  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); try{ shardEarn('epic',1); }catch(e){} track('weekly_chal_done',{id:c.id}); });   // CS400: each weekly → a free pack · pack-only economy: +◆1 epic shard
+  // Economy rebalance: all 4 weeklies used to pay a free pack (4/wk on top of the two reward tracks). Now the
+  // first WEEKLY_PACK_N pay a pack and the rest pay COINS — deliberately NOT more shards, since one epic shard
+  // is worth ~27,500 coins (3.4× a base pack), so paying in shards would have made the leak bigger, not smaller.
+  // Every weekly still pays its Tour Rep + its epic shard, so the targeted-item path is untouched.
+  const wset=weeklySet();
+  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP);
+    const idx=wset.findIndex(x=>x&&x.id===c.id);
+    if(idx>=0 && idx<WEEKLY_PACK_N){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
+    else if(typeof addBonusCoins==='function') addBonusCoins(WEEKLY_CHAL_COINS,{silent:true});
+    try{ shardEarn('epic',1); }catch(e){} track('weekly_chal_done',{id:c.id}); });
   if(newly.length){ try{ recordAchEvent({inc:{weeklyDone:newly.length}}); evaluateAch(); }catch(e){} }
   if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
   return newly; }
@@ -3842,7 +3858,7 @@ function challengesNode(){
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · 🎁 pack · ◆1 epic shard</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · ◆1 epic shard · 🎁 pack on the first ${WEEKLY_PACK_N}</span></div>${wr}</div>`));
   return el;
 }
 // CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
