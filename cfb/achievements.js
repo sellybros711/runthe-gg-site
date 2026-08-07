@@ -455,11 +455,39 @@
       play: ctx.play, title: ctx.title,
       stats: {
         runs: ctx.total,
+        /* How many rows this evaluation actually walked, which is not always `runs`: a
+           capped fetch knows the true total from the server and holds only the most recent
+           of them. Anything expressed as a RATE has to divide by this rather than by the
+           total, or a career of six hundred seasons reads as a 10% playoff rate because
+           only five hundred were counted. */
+        shown: ctx.rows.length,
         titles: ctx.titles.length,
         playoffs: ctx.count((r) => isTrue(r.made_playoffs)),
         bestRank: (function () {
           const vals = ctx.rows.map((r) => num(r.national_rank)).filter((v) => v !== null);
           return vals.length ? Math.min.apply(null, vals) : null;
+        })(),
+        /* THREE MORE, because the career row read four numbers where the NFL game reads
+           six, and the three it was missing are the ones a player checks: how good was my
+           best team, what is my best record, and how many perfect seasons. All three come
+           off the same walk this function is already doing. */
+        perfect: ctx.count((r) => isTrue(r.perfect)),
+        bestOverall: (function () {
+          const vals = ctx.rows.map((r) => num(r.overall)).filter((v) => v !== null);
+          return vals.length ? Math.max.apply(null, vals) : null;
+        })(),
+        /* Most wins, then fewest losses. Not the board's score, which tie-breaks on point
+           difference: rowFromBoard does not keep point_diff, and a career headline that
+           disagreed with the board over which 12-1 was better would be worse than one that
+           does not try to rank them at all. */
+        bestRec: (function () {
+          let best = null;
+          for (const r of ctx.rows) {
+            const w = num(r.wins), l = num(r.losses);
+            if (w === null || l === null) continue;
+            if (!best || w > best.w || (w === best.w && l < best.l)) best = { w, l };
+          }
+          return best ? best.w + '-' + best.l : null;
         })(),
       },
     };

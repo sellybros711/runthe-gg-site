@@ -55,7 +55,18 @@
   const COLS = 'id,created_at,display_name,run_mode,regular_wins,playoff_wins,wins,losses,games,' +
     'national_rank,playoff_seed,made_playoffs,title_won,perfect,eliminated_in,bowl,' +
     'bowl_won,bowl_key,seed_label,point_diff,chemistry_pct,spend_musd,respins,sig_wins,' +
-    'best_win_rank,squad_fppg,structure_mult,team_rating,overall,perfect_pct,picks,slots';
+    'best_win_rank,squad_fppg,structure_mult,team_rating,overall,perfect_pct,picks,slots,' +
+    /* THE CIRCLE, drawn from the ROW's own columns and never from the viewer's, so two
+       people who both play in Virginia colors both show Virginia. See
+       supabase/66_cfb_profile_avatars.sql. A project that has not run that file yet has no
+       such columns and PostgREST answers 400 to the whole select, which is why every list
+       call below drops back to the columns without them rather than showing an empty
+       board. */
+    'display_school,display_initials';
+  /* The same list minus the two 66 adds, for exactly that fallback. */
+  const COLS_NO_AVATAR = COLS.replace(',display_school,display_initials', '');
+  let avatarCols = true;
+  const cols = () => (avatarCols ? COLS : COLS_NO_AVATAR);
 
   /* THE THREE THINGS A BOARD CAN BE SORTED BY, and the column each orders on. Named
      here rather than taking a column name from the caller, so nothing can put an
@@ -373,17 +384,37 @@
     return by;
   }
 
+  /* ONE RETRY, AND ONLY EVER ONE. A project that has the college game but has not run
+     66_cfb_profile_avatars.sql has no display_school or display_initials, and PostgREST
+     answers 400 to the whole select rather than ignoring the two it does not know -- so
+     without this the board would be empty on that project rather than merely circle-less.
+     The flag is sticky, so the cost is one wasted request per page load and not one per
+     query, and it flips only on 400: a 500 or a network failure is not "the columns are
+     missing" and must keep reporting itself as what it is.
+
+     `build` takes the column list rather than closing over it, because the retry has to
+     produce the same URL with a different select and the rest of the query is different
+     for each of the three callers. */
+  async function selectRows(build, init) {
+    let res = await timed(build(cols()), init);
+    if (!res.ok && res.status === 400 && avatarCols) {
+      avatarCols = false;
+      res = await timed(build(cols()), init);
+    }
+    return res;
+  }
+
   /* ---------------- the list ---------------- */
   async function top(opts, limit, sort) {
     const key = SORTS[sort] ? sort : 'record';
     const col = SORTS[key];
     const way = DIR[key];
-    const q = base() + TABLE + '?select=' + COLS +
+    const q = (c) => base() + TABLE + '?select=' + c +
       '&order=' + col + '.' + way + ',created_at.' + ORDER_TIEBREAK[way] +
       '&limit=' + (limit || 25) + scope(opts) +
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
-      const res = await timed(q, { headers: headers() });
+      const res = await selectRows(q, { headers: headers() });
       if (!res.ok) return await fail('board', res);
       const rows = await res.json().catch(() => null);
       return Array.isArray(rows) ? rows : null;
@@ -405,10 +436,10 @@
   async function mine(userId, limit) {
     if (!userId) return null;
     try {
-      const q = base() + TABLE + '?select=' + COLS +
+      const q = (c) => base() + TABLE + '?select=' + c +
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
-      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      const res = await selectRows(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('mine', res);
       const rows = await res.json().catch(() => null);
       if (!Array.isArray(rows)) return null;
@@ -419,12 +450,71 @@
   async function byId(id) {
     if (!id) return null;
     try {
-      const q = base() + TABLE + '?select=' + COLS + '&id=eq.' + encodeURIComponent(id) + '&limit=1';
-      const res = await timed(q, { headers: headers() });
+      const q = (c) => base() + TABLE + '?select=' + c + '&id=eq.' +
+        encodeURIComponent(id) + '&limit=1';
+      const res = await selectRows(q, { headers: headers() });
       if (!res.ok) return await fail('row', res);
       const rows = await res.json().catch(() => null);
       return (Array.isArray(rows) && rows[0]) || null;
     } catch (e) { return failThrown('row', e); }
+  }
+
+  /* ---------------- your circle ----------------
+     WHAT THIS ACCOUNT HAS CHOSEN, read from profiles rather than from a row of yours,
+     because a player who has never finished a season still has a circle and there would be
+     no row to read it off. The school is this game's; the initials are the site's, shared
+     with the NFL game, which is why they come out of the same avatar_initials column.
+     See supabase/66_cfb_profile_avatars.sql. */
+  let avatarFnMissing = false;
+  async function myAvatar(userId) {
+    if (!userId) return null;
+    try {
+      const q = base() + 'profiles?select=cfb_school,avatar_initials&id=eq.' +
+        encodeURIComponent(userId);
+      const res = await timed(q, { headers: headers() });
+      /* A project one file behind has no such columns, and that is not an error worth
+         surfacing: it means the same thing as having chosen nothing. */
+      if (!res.ok) {
+        if (res.status === 400) return { school: null, initials: null };
+        return await fail('avatar', res);
+      }
+      const rows = await res.json().catch(() => null);
+      const r = (Array.isArray(rows) && rows[0]) || {};
+      return { school: r.cfb_school || null, initials: r.avatar_initials || null };
+    } catch (e) { return failThrown('avatar', e); }
+  }
+
+  /* THE ONLY WRITE PATH. cfb_set_avatar() validates the school against its own shape rule
+     and strips the initials to at most two of A-Z0-9, then rewrites every one of the
+     caller's rows in the same transaction, so the board is never half one circle and half
+     another. Nothing here trusts what it sent: the pair the function returns is what was
+     actually stored, and that is what the caller renders. */
+  async function setAvatar(school, initials) {
+    try {
+      const res = await timed(base() + 'rpc/cfb_set_avatar', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ p_school: school || '', p_initials: initials || '' }) });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        lastError = { where: 'avatar', status: res.status, code: (body && body.code) || '',
+          message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
+        /* NOT offline. A refused school is the database working exactly as intended, and
+           marking the whole board unreachable over it would put a "not reachable" notice on
+           a leaderboard that is answering every other call. */
+        /* THE FUNCTION IS NOT THERE, which is a different thing from the call being refused
+           and the one the caller has to tell apart: nothing the player does will make it
+           work, so the answer is not "try again". PostgREST says PGRST202 with a 404 when a
+           function is missing from its schema cache. */
+        if (res.status === 404 || lastError.code === 'PGRST202') avatarFnMissing = true;
+        return { error: lastError.message, code: lastError.code, status: res.status,
+          missing: avatarFnMissing };
+      }
+      /* `returns table` comes back as an array of one row. */
+      const r = (Array.isArray(body) ? body[0] : body) || {};
+      return { school: r.school || null, initials: r.initials || null };
+    } catch (e) {
+      return { error: (e && e.message) || 'the request did not complete' };
+    }
   }
 
   /* The same arithmetic the generated `score` column does, so the results screen can
@@ -440,6 +530,8 @@
   window.PS_CFB_BOARD = {
     API_VERSION: 1,
     submit, probe, ranks, placeIn, total, perfectCount, top, mine, byId, scoreOf,
+    myAvatar, setAvatar,
+    get avatarFnMissing() { return avatarFnMissing; },
     cutoffISO, SORTS, DIR, MODES,
     get offline() { return offline; },
     get lastError() { return lastError; },

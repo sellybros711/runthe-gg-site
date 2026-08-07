@@ -315,6 +315,12 @@ window.GA_ID='G-L29P5MRWKE';
   .shsec .cnt{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
     color:var(--dim-2);margin-left:6px;text-transform:none}
   .careerrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  /* Six across a phone is four pixels a digit. Three by two, which also puts the two
+     counts that are trophies -- perfect seasons and titles -- side by side on the lower
+     row where the gold reads as a pair rather than as scatter. */
+  .careerrow.six{grid-template-columns:repeat(3,1fr)}
+  .careerrow .cc.gold{border-color:rgba(251,191,36,.38);background:rgba(251,191,36,.07)}
+  .careerrow .cc.gold b{color:#fcd34d}
   .careerrow .cc{border:1px solid var(--line);border-radius:10px;background:var(--panel);
     padding:9px 6px;text-align:center;min-width:0}
   .careerrow .cc b{display:block;font-family:var(--fd);font-size:22px;line-height:1;color:var(--ink)}
@@ -331,10 +337,31 @@ window.GA_ID='G-L29P5MRWKE';
   .stk-l{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim);margin-top:3px}
   .stk-s{font-size:10.5px;color:var(--dim-2);margin-top:3px}
-  .achgrp{margin-top:10px}
-  .achgrp-h{display:flex;align-items:baseline;font-family:var(--fn);font-size:10px;font-weight:800;
-    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
-  .achgrp-h span{margin-left:auto;color:var(--dim-2)}
+  /* One bar for the cabinet and one per group, the same element, so "how far in am I"
+     reads the same at both altitudes. */
+  .achbar{height:4px;border-radius:3px;background:rgba(148,163,184,.16);overflow:hidden;
+    margin:6px 0 2px}
+  .achbar i{display:block;height:100%;border-radius:3px;
+    background:linear-gradient(90deg,#c98b52,#fbbf24)}
+  .achshelf-h{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);margin:11px 0 5px}
+  .achgrp{margin-top:7px;border-top:1px solid var(--line-2)}
+  .achgrp-h{display:grid;grid-template-columns:1fr auto 54px 14px;align-items:center;gap:8px;
+    font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim);padding:10px 0;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .achgrp-h:hover .achgrp-n{color:var(--ink)}
+  .achgrp-h:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+  .achgrp.open .achgrp-n{color:var(--ink)}
+  .achgrp-c{font-size:10px;color:var(--dim-2);letter-spacing:.04em}
+  .achgrp-h .achbar{margin:0}
+  /* A chevron rather than a plus, rotated on open: the one affordance that reads as "there
+     is more under here" without a word of label. */
+  .achchev{width:0;height:0;border-left:4.5px solid transparent;border-right:4.5px solid transparent;
+    border-top:5.5px solid var(--dim-2);justify-self:end;transition:transform .16s ease}
+  .achgrp.open .achchev{transform:rotate(180deg)}
+  .achbody{display:none;padding-bottom:10px}
+  .achgrp.open .achbody{display:block}
   .achlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   @media(max-width:420px){ .achlist{grid-template-columns:1fr} }
   .ach{border-radius:9px;border:1.5px solid var(--line);background:var(--panel);padding:7px 9px}
@@ -1725,6 +1752,20 @@ window.GA_ID='G-L29P5MRWKE';
      rule sits below this one, so it wins. It should. The two say different things -- the
      rail says the row is yours, the gold number says it is the best run on the board -- and
      being first is not worth less for being yours. */
+  /* ── THE PROFILE CIRCLE ────────────────────────────────────────
+     One element at three sizes: 26px on a board row, .big on nothing yet, .huge in the
+     school picker's preview. The fill and the ring are set inline per circle by
+     avatarHTML(), because on a board every row is a different school -- so nothing here
+     may set a background, or it would fight the row it is drawing. */
+  .pfp{flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--fn);font-size:10.5px;font-weight:800;line-height:1;
+    letter-spacing:.01em;overflow:hidden}
+  .pfp.anon{border:1px dashed var(--line)}
+  .pfp.big{flex-basis:34px;width:34px;height:34px;font-size:13px}
+  .pfp.huge{flex-basis:56px;width:56px;height:56px;font-size:20px}
+  /* 320px is the narrowest phone this has to fit, and the circle is the newest thing on
+     the row, so it is what gives way rather than the record or the name. */
+  @media(max-width:359px){ .pfp{flex-basis:22px;width:22px;height:22px;font-size:9.5px} }
   .lbr .rk{flex:0 0 28px;font-family:var(--fn);font-size:14px;font-weight:600;
     color:var(--dim-2);text-align:right}
   .lbr.top1 .rk{color:#fbbf24} .lbr.top2 .rk{color:#e2e8f0} .lbr.top3 .rk{color:#c98b52}
@@ -1896,6 +1937,17 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--panel);color:var(--ink);font-family:var(--fb);font-size:15px;
     margin-top:8px}
   .fld:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+  /* ── the circle editor ─────────────────────────────────────────
+     The preview and the initials side by side, because they are one object: the letters are
+     yours and the two colors are your school's, and picking either without seeing the other
+     is picking blind. */
+  .pfpedit{display:flex;align-items:center;gap:13px;margin-top:11px}
+  .pfpedit .col{flex:1;min-width:0}
+  .fld.inits{text-transform:uppercase;letter-spacing:.18em;font-family:var(--fn);
+    font-weight:800;max-width:110px}
+  .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
+    color:var(--dim)}
+  .pfpteam b{color:var(--ink)}
   .autherr{margin:9px 0 0;font-size:12.5px;color:#fca5a5;line-height:1.4}
   .authok{margin:9px 0 0;font-size:12.5px;color:#6ee7b7;line-height:1.4}
   .authswap{margin:11px 0 0;font-size:12.5px;color:var(--dim);text-align:center}
@@ -2682,9 +2734,9 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=20"></script>
 <script src="run.js?v=10"></script>
-<script src="achievements.js?v=8"></script>
+<script src="achievements.js?v=9"></script>
 <script src="auth.js?v=2"></script>
-<script src="board.js?v=2"></script>
+<script src="board.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -2987,6 +3039,74 @@ const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;
    header, dark navies, maroons and blacks get lifted until they stand out. */
 const textSafe=(hex)=>{ let c=hex; for(let i=0;i<12 && lumOf(c)<0.5;i++) c=shade(c,0.15); return c; };
 
+/* ── THE PROFILE CIRCLE ──────────────────────────────────────────────
+   ONE FUNCTION DRAWS IT EVERYWHERE: the header bubble, the profile hub, the account panel
+   and -- new with 66_cfb_profile_avatars.sql -- every row on the leaderboard. Board rows
+   draw from the ROW's own display_school and display_initials, never from the viewer's, so
+   two people who both play in Virginia colors both show Virginia.
+
+   EVERYBODY GETS A SCHOOL, CHOSEN OR NOT. A column where some circles wear two-tone school
+   colors and the rest are a flat house green reads as half-finished, so a player who has
+   picked nothing is given one derived from their name. That is not a claim anybody can see
+   -- nothing says "plays for Alabama", it is a color -- and it is stable, because the same
+   name always hashes to the same school. `chosen` is what the picker needs in order not to
+   mark a school nobody picked. */
+const avatarHash=(str)=>{ let h=0;
+  for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0;
+  return Math.abs(h); };
+let avatarSchoolsCache=null;
+const avatarSchools=()=>{
+  if(avatarSchoolsCache) return avatarSchoolsCache;
+  if(!DATA) return [];
+  avatarSchoolsCache=schoolGroups().flatMap(g=>g.teams);
+  return avatarSchoolsCache;
+};
+const schoolByName=(name)=>name?avatarSchools().find(t=>t.school===name)||null:null;
+
+function avatarOf(name,school,initials){
+  const nm=(name||'').trim();
+  if(!nm) return {bg:'rgba(255,255,255,.05)',ring:'',fg:'transparent',text:'',anon:true};
+  /* Stored initials win, and cfb_set_avatar has already cut them to one or two of A-Z0-9.
+     The fallback is the first two characters of the name, the same rule initialsOf uses. */
+  const two=esc((initials||nm.slice(0,2)).toUpperCase());
+  const picked=schoolByName(school);
+  const all=avatarSchools();
+  const t=picked||(all.length?all[avatarHash(nm.toLowerCase())%all.length]:null);
+  if(!t) return {bg:'#1f7a5c',ring:'rgba(255,255,255,.28)',fg:'#fff',text:two,anon:false,
+    school:null,chosen:false};
+  /* The ring is the school's SECOND color, which is the whole reason two are worth
+     carrying: a lot of primaries are a navy or a black that sinks into this page, and the
+     ring is what keeps the disc a disc. Lifted the same way the header's is. */
+  const b=t.alt||'#ffffff';
+  const bl=lumOf(b);
+  return {bg:t.color,ring:(bl>0.85||bl<0.06)?shade(t.color,bl>0.5?0.42:0.5):textSafe(b),
+    fg:lumOf(t.color)>0.62?'#111':'#fff',text:two,anon:false,school:t.school,
+    chosen:!!picked};
+}
+
+/* One circle, as markup. `cls` lets the caller size it, so the board rows, the hub and the
+   picker use the same element at three sizes rather than three that can drift apart. The
+   ring is an inset box-shadow rather than a border, so it costs the disc no width. */
+function avatarHTML(a,cls){
+  return '<span class="pfp'+(cls?' '+cls:'')+(a.anon?' anon':'')+'" aria-hidden="true" '+
+    'style="background:'+a.bg+';color:'+a.fg+
+    (a.ring?';box-shadow:inset 0 0 0 2px '+a.ring:'')+'">'+a.text+'</span>';
+}
+
+/* WHAT THIS ACCOUNT HAS CHOSEN, held at module scope because the header, the hub and the
+   picker all read it and none of them should cause a round trip. Loaded once per sign-in
+   by loadMyAvatar(); `loaded` tells the picker whether a blank means "nothing chosen" or
+   "not asked yet". */
+let myAvatar={school:null,initials:null,loaded:false};
+async function loadMyAvatar(){
+  if(!authState.signedIn||!authState.userId||!B||!B.myAvatar){
+    myAvatar={school:null,initials:null,loaded:true}; return myAvatar; }
+  const r=await B.myAvatar(authState.userId);
+  myAvatar=r?{school:r.school||null,initials:r.initials||null,loaded:true}
+            :{school:null,initials:null,loaded:true};
+  return myAvatar;
+}
+
 let selectedSchool=null;
 /* remember=false drops the theme from the page WITHOUT forgetting which school it
    was. That is what signing out does: the colors go back to default because they
@@ -3042,7 +3162,10 @@ function updateAvatar(){
   const av=$('b-profile'); if(!av) return;
   const ab=av.querySelector('.ab');
   const name=authState.signedIn?authState.name:null;
-  const ini=name?initialsOf(name):'';
+  /* Stored initials win over the two derived from the name, which is the only thing that
+     changed here: the fill and the ring still come from the themed --pfp/--pfpring the
+     school picker sets, because the header bubble is painted by CSS rather than inline. */
+  const ini=name?((myAvatar.initials||initialsOf(name))||'') : '';
   if(ini){ av.classList.add('signed'); ab.textContent=ini; }
   else{ av.classList.remove('signed'); ab.textContent=''; }
   av.setAttribute('aria-label',
@@ -3117,10 +3240,16 @@ function pfWire(box){
      these handlers simply find nothing to bind to. */
   box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
     if(!authState.signedIn) return;
-    const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
-    if(t){applyTheme(t);ga('school_selected',{school:t.school});} closeSheet();
+    /* Tapping the school you already have picked clears it, which is what the copy under
+       the grid promises and the only way back to no school without the Default button. */
+    const name=btn.dataset.school;
+    pfpPend.school=(pfpPend.school===name)?null:name;
+    pfpDirty=true;
+    pfLook();
   });
-  const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
+  const def=$('sp-default'); if(def) def.onclick=()=>{
+    pfpPend.school=null; pfpDirty=true; pfLook();
+  };
   /* Straight to the Account page, which is the one thing the gate is asking for. */
   const gin=box.querySelector('#gate-in');
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:profileTab}); openProfile('account'); };
@@ -3346,14 +3475,54 @@ function pfCase(){
   const box=$('sheet-in');
   ga('career_viewed');
   box.innerHTML=pfHead(TAB_TITLE.case)+trophyCaseHtml()+pfClose();
-  openSheet(); pfWire(box);
+  openSheet(); pfWire(box); achWire(box);
+  /* Only once the rows are actually in. trophyCaseHtml paints a spinner and repaints
+     itself through openProfile('case') when careerLoad lands, so this runs on that second
+     pass and not on the one that has nothing to evaluate. */
+  const res=(careerRows||!authState.signedIn)?achState(careerRows||null):null;
+  if(res) achAnnounce(authState.userId,res);
 }
-function pfLook(){
+function pfLook(msg,ok){
   profileTab='school'; pfPaint++;
   const box=$('sheet-in');
   ga('school_picker_opened');
-  box.innerHTML=pfHead(TAB_TITLE.school)+schoolPickerHtml()+pfClose();
-  openSheet(); pfWire(box);
+  /* A REPAINT NORMALLY STARTS FROM WHAT IS STORED. The two exceptions are a repaint caused
+     by a tap, which has to keep the pending choice it was caused by, and one caused by a
+     failed save, which has to keep what the player was trying to store rather than throwing
+     it away and making them find the school again. */
+  if(pfpDirty) pfpDirty=false;
+  else pfpPend={school:myAvatar.school||(selectedSchool&&selectedSchool.school)||null,
+                initials:myAvatar.initials||null};
+  box.innerHTML=pfHead(TAB_TITLE.school)+(msg?fbMsg(msg,ok):'')+schoolPickerHtml()+pfClose();
+  openSheet(); pfWire(box); paintPfpEdit();
+  const save=$('a-savepfp');
+  if(save) save.onclick=async()=>{
+    if(!B||!B.setAvatar) return pfLook('Boards are not available right now, so there was '+
+      'nothing to save to. Nothing has changed.');
+    save.disabled=true; save.textContent='Saving...';
+    const r=await B.setAvatar(pfpPend.school,pfpPend.initials);
+    if(r&&r.error){
+      /* KEEP WHAT THEY PICKED, and say it in English. "Could not find the function
+         public.cfb_set_avatar(p_school, p_initials) in the schema cache" is a true sentence
+         for whoever runs the database and gibberish to everybody else. */
+      pfpDirty=true;
+      pfLook(r.missing
+        ? 'Schools and initials are not switched on for this game yet, so there was nothing '+
+          'to save to. Nothing has changed, and your pick is still here.'
+        : r.error);
+      return;
+    }
+    /* WHAT THE DATABASE STORED, not what was sent. It strips and uppercases, and a settings
+       screen that shows the request rather than the result is a settings screen that lies. */
+    myAvatar={school:(r&&r.school)||null,initials:(r&&r.initials)||null,loaded:true};
+    applyTheme(schoolByName(myAvatar.school));
+    updateAvatar();
+    if(myAvatar.school) ga('school_selected',{school:myAvatar.school});
+    /* Every row of yours was rewritten server-side in the same transaction, so anything
+       already on screen is a repaint behind. */
+    if($('s-board').classList.contains('on')) paintBoard();
+    pfLook('Saved.',true);
+  };
 }
 function pfAccount(){
   profileTab='account'; pfPaint++;
@@ -3797,9 +3966,21 @@ function bootAuth(){
     }
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
-    if(st.userId!==wasId){ careerRows=null; careerRaw=null; careerTotal=0; }
+    if(st.userId!==wasId){ careerRows=null; careerRaw=null; careerTotal=0;
+      myAvatar={school:null,initials:null,loaded:false}; }
     /* Colors follow the account: on when signed in, default when not. */
     syncTheme();
+    /* AND THE ACCOUNT'S SCHOOL OUTRANKS THIS BROWSER'S. The local copy is what paints
+       instantly on load, before auth has answered; once the account answers, it is the
+       durable one and wins -- which is the whole point of 66, since the local copy does
+       not survive a cleared browser or a second device. Not awaited: the page is already
+       themed from localStorage and this only corrects it if they disagree. */
+    if(st.signedIn) loadMyAvatar().then(()=>{
+      updateAvatar();
+      const t=schoolByName(myAvatar.school);
+      if(t&&(!selectedSchool||selectedSchool.school!==t.school)) applyTheme(t);
+      else if(!myAvatar.school&&selectedSchool) applyTheme(null);
+    });
     if($('sheet').classList.contains('on')&&profileTab==='account') openProfile('account');
   });
   a.boot();
@@ -3852,8 +4033,21 @@ function accountHtml(){
         '<input class="fld" id="ac-name" placeholder="Your name" autocomplete="username" maxlength="20">'+
         '<button class="btn sm" id="ac-setname" style="margin-top:9px">Save the name</button>'+msg;
     }else{
+      /* AND YOU CAN CHANGE IT. There was no way to: the name field only ever appeared for
+         an account that had never set one, so a typo picked in the first ten seconds was
+         permanent. The server side has always been there -- set_username() validates and
+         cfb_rename_runs() fixes every season already on the board -- so this was a missing
+         input and nothing else. */
       body+='<p class="dim" style="font-size:13px;margin:0">Every season you finish is '+
-        'recorded under this name, on this device and any other you sign in on.</p>'+msg+
+        'recorded under this name, on this device and any other you sign in on.</p>'+
+        '<input class="fld" id="ac-name" placeholder="'+esc(st.name)+'" '+
+          'autocomplete="username" autocapitalize="off" autocorrect="off" '+
+          'spellcheck="false" maxlength="20">'+
+        '<button class="btn ghost sm" id="ac-setname" style="margin-top:9px;width:100%">'+
+          'Change my name</button>'+
+        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Three to twenty letters, '+
+          'numbers or underscores. Changing it renames the seasons already on the board.</p>'+
+        msg+
         '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+
           '<button class="btn ghost sm" id="ac-feedback">Send feedback</button>'+
           '<button class="btn ghost sm" id="ac-out">Sign out</button></div>';
@@ -3918,8 +4112,12 @@ function wireAccount(){
     if(!v) return done({error:'Type a name first.'});
     busy('ac-setname','Saving...');
     const r=await a.setName(v);
-    if(!r.error) ga('username_set');
-    done(r);
+    if(!r.error){ ga('username_set');
+      /* The rename rewrote every row of yours server-side, so a board on screen behind the
+         sheet is a repaint behind, and the cached career rows carry the old name too. */
+      careerRows=null; careerRaw=null; careerTotal=0;
+      if($('s-board').classList.contains('on')) paintBoard(); }
+    done(r,r&&!r.error?'That is your name now.':null);
   };
 
   const fb=box.querySelector('#ac-feedback');
@@ -3971,7 +4169,7 @@ function schoolPickerHtml(){
       gateCard({with:'School colors come with an account',
                 needs:'School colors need an account.'});
   }
-  const cur=selectedSchool?selectedSchool.school:null;
+  const cur=pfpPend.school||null;
   const acc=schoolGroups().map(g=>{
     const open=g.teams.some(t=>t.school===cur)?' open':'';
     const sw=g.teams.map(t=>'<button class="swatch'+(t.school===cur?' on':'')+'" data-school="'+esc(t.school)+'" '+
@@ -3980,10 +4178,90 @@ function schoolPickerHtml(){
     return '<details'+open+'><summary>'+esc(g.name)+'<span class="cnt">'+g.teams.length+'</span></summary>'+
       '<div class="schoolgrid">'+sw+'</div></details>';
   }).join('');
-  return '<p class="dim" style="font-size:13px;margin:0 0 10px">Themes the home and draft screens in your team&rsquo;s colors.</p>'+
+  /* THE CIRCLE IS THE PREVIEW AND THE INITIALS SIT BESIDE IT, the same shape the NFL game
+     uses, because they are one object: the letters are yours and the two colors are your
+     school's, and picking either without seeing the other is picking blind.
+
+     A TAP NO LONGER SAVES. It used to apply the theme and close the sheet, which was fine
+     when the choice lived in this browser and cost nothing. It is a round trip now, and
+     more to the point there are two fields: a tap sets a pending choice, the preview
+     redraws, and Save writes both at once. */
+  return '<p class="dim" style="font-size:13px;margin:0 0 10px">Your circle, on every board '+
+    'and every screen. Themes the home and draft screens in your school&rsquo;s colors too.</p>'+
+    '<div class="pfpedit"><span id="pfp-demo"></span>'+
+      '<div class="col">'+
+        '<label class="dim" style="font-size:11.5px;display:block" for="a-inits">Initials</label>'+
+        '<input class="fld inits" id="a-inits" autocapitalize="characters" autocorrect="off" '+
+          'spellcheck="false" inputmode="text" maxlength="2" '+
+          'placeholder="'+esc((authState.name||'').slice(0,2).toUpperCase())+'">'+
+      '</div>'+
+    '</div>'+
+    '<p class="pfpteam" id="pfp-team"></p>'+
     '<div class="schoolacc">'+acc+'</div>'+
-    '<div style="margin-top:10px"><button class="btn ghost sm" id="sp-default" style="width:100%">Default colors</button></div>';
+    '<div style="margin-top:10px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="sp-default" style="width:100%">'+
+      'Default colors</button></div>'+
+    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the school whose colors you '+
+      'want beside your name, or tap it again for none. Initials are two letters or numbers, '+
+      'or leave them blank for the first two of your name.</p>';
 }
+
+/* WHAT IS PENDING, not what is stored. Held at module scope so a repaint of the page --
+   which happens on every tap, because the accordion is rebuilt with the new selection --
+   does not throw the other field away. */
+let pfpPend={school:null,initials:null}, pfpDirty=false;
+function paintPfpEdit(){
+  const demo=$('pfp-demo'), inits=$('a-inits'), label=$('pfp-team');
+  if(!demo||!inits) return;
+  inits.value=pfpPend.initials||'';
+  const draw=()=>{
+    const a=avatarOf(authState.name||'',pfpPend.school,pfpPend.initials);
+    demo.innerHTML=avatarHTML(a,'huge');
+    if(label){
+      /* Which of the two it is, in words, because the grid cannot say it: a marked school
+         and an unmarked one that happens to be the color on your circle look the same at a
+         glance, and the difference is whether anybody chose it. */
+      label.innerHTML=a.chosen
+        ? 'Playing in <b>'+esc(a.school)+'</b> colors'
+        : (a.school?'No school picked, so you are showing <b>'+esc(a.school)+
+           '</b> colors for now':'');
+    }
+  };
+  inits.oninput=()=>{
+    /* Stripped and uppercased as they type, so the field can only ever hold what
+       cfb_set_avatar would accept -- and a rejected save cannot be caused by a character
+       the field allowed. */
+    const v=inits.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,2);
+    if(v!==inits.value) inits.value=v;
+    pfpPend.initials=v||null;
+    draw();
+  };
+  draw();
+}
+/* SIX NUMBERS, NOT FOUR, and written once for the case and the signed-out peek so they
+   cannot drift. The three that were missing -- best overall, best record and perfect
+   seasons -- are the ones a player actually checks, and the NFL game has shown all six
+   since its career panel existed.
+
+   PLAYOFFS IS A RATE RATHER THAN A COUNT, which is the one thing that changed rather than
+   being added. Nine playoff seasons means nothing without knowing whether that was out of
+   ten or out of ninety, and the count was quietly flattering: everybody's went up forever.
+   Counted against the seasons the evaluation actually walked, not against the career total,
+   since a capped fetch has no playoff figure for the ones it did not read. */
+function careerCells(s){
+  const cell=(v,k,gold)=>'<div class="cc'+(gold&&v!=='0'&&v!=='--'?' gold':'')+'">'+
+    '<b>'+v+'</b><span>'+k+'</span></div>';
+  const rate=s.shown?Math.round(s.playoffs/s.shown*100)+'%':'--';
+  return '<div class="careerrow six">'+
+    cell(Number(s.runs||0).toLocaleString(),'seasons')+
+    cell(s.bestOverall==null?'--':Number(s.bestOverall).toFixed(1),'best overall')+
+    cell(s.bestRec||'--','best record')+
+    cell(String(s.perfect||0),'perfect',true)+
+    cell(String(s.titles||0),'titles',true)+
+    cell(rate,'playoffs')+
+  '</div>';
+}
+
 /* Earned first, because a case is for showing what you have. Locked ones stay
    on the shelf, grayed, with what they want, because that is the only part of
    an unearned badge worth reading. */
@@ -4026,10 +4304,7 @@ function trophyCaseHtml(){
     'No seasons yet. Finish one and this fills up.</p>'+
     '<p class="dim" style="font-size:11.5px;margin:8px 0 0">There are '+res.total+
     ' badges waiting, from reaching a bowl to a perfect season.</p>'+achShelves(res);
-  const cell=(v,k)=>'<div class="cc"><b>'+v+'</b><span>'+k+'</span></div>';
-  const career='<p class="shsec" style="margin-top:0">Your career</p><div class="careerrow">'+
-    cell(s.runs,'seasons')+cell(s.titles,'titles')+cell(s.playoffs,'playoffs')+
-    cell(s.bestRank?'#'+s.bestRank:'--','best rank')+'</div>';
+  const career='<p class="shsec" style="margin-top:0">Your career</p>'+careerCells(s)+'';
   const p=res.play,t=res.title;
   const alive=p.current>0&&!p.playedToday;
   const stk=(v,lbl,sub,cls)=>'<div class="stk'+(cls?' '+cls:'')+'">'+
@@ -4065,10 +4340,7 @@ function peekCaseHtml(res){
       'this starts filling up. There are <b style="color:var(--ink)">'+res.total+
       '</b> badges in here, from reaching a bowl to winning the title from the 9 seed.</p>';
   }else{
-    const cell=(v,k)=>'<div class="cc"><b>'+v+'</b><span>'+k+'</span></div>';
-    head='<p class="shsec" style="margin-top:0">Your career</p><div class="careerrow">'+
-      cell(s.runs,'seasons')+cell(s.titles,'titles')+cell(s.playoffs,'playoffs')+
-      cell(s.bestRank?'#'+s.bestRank:'--','best rank')+'</div>';
+    head='<p class="shsec" style="margin-top:0">Your career</p>'+careerCells(s);
   }
 
   /* Earned first and in full. A player who has been going a while should see their
@@ -4099,20 +4371,106 @@ function peekCaseHtml(res){
     'for good and carries them to any device you sign in on.</p>';
 }
 
+/* ── THE CABINET ─────────────────────────────────────────────────────
+   IT WAS A FLAT WALL OF NINETY-FIVE CARDS, all eight groups open at once, with no way to
+   tell at a glance how far in you were or which of them were the rare ones. Three things
+   the NFL game's has had since its cabinet existed, and now this one does:
+
+     A BAR, for the cabinet and one per group, the same element at both altitudes so "how
+       far in am I" reads the same way twice.
+     A SHELF OF YOUR BEST, gold and legend only and rarest first. A shelf of bronzes is not
+       a trophy shelf, so the top two tiers are the only ones on it.
+     GROUPS THAT COLLAPSE, shut by default, with a chevron. Ninety-five cards is four
+       screens of scrolling to reach the last group; eight headings is one.
+
+   NO TILE VARIANT HERE. The NFL cabinet renders its collection badges -- the vintages, the
+   thirty-two -- as compact tiles, because a year needs no description line. Nothing in this
+   catalog is marked compact, so every badge is a card and the branch would be dead code. */
 function achShelves(res){
   const A=window.PS_CFB_ACH;
-  let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+res.total+'</span></p>';
+  const pct=(n,d)=>d?Math.round(n/d*100):0;
+  const bar=(n,d)=>'<div class="achbar"><i style="width:'+pct(n,d)+'%"></i></div>';
   const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
-  for(const g of A.GROUPS){
-    const got=res.earned.filter(a=>a.group===g), off=res.locked.filter(a=>a.group===g);
-    if(!got.length&&!off.length) continue;
-    got.sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
-    h+='<div class="achgrp"><div class="achgrp-h">'+esc(g)+
-      '<span>'+got.length+'/'+(got.length+off.length)+'</span></div><div class="achlist">'+
-      got.map(a=>chip(a,true)).join('')+off.map(a=>chip(a,false)).join('')+'</div></div>';
+
+  let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+
+    res.total+'</span></p>'+bar(res.earned.length,res.total);
+
+  const showcase=res.earned.filter(a=>a.tier==='legend'||a.tier==='gold')
+    .sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]).slice(0,6);
+  if(showcase.length){
+    h+='<div class="achshelf-h">Your best</div><div class="achlist achshelf">'+
+      showcase.map(a=>chip(a,true)).join('')+'</div>';
   }
+
+  A.GROUPS.forEach((g)=>{
+    const got=res.earned.filter(a=>a.group===g), off=res.locked.filter(a=>a.group===g);
+    const n=got.length+off.length;
+    if(!n) return;
+    got.sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+    h+='<div class="achgrp">'+
+      '<div class="achgrp-h" role="button" tabindex="0" aria-expanded="false">'+
+        '<span class="achgrp-n">'+esc(g)+'</span>'+
+        '<span class="achgrp-c">'+got.length+'/'+n+'</span>'+
+        bar(got.length,n)+'<span class="achchev"></span></div>'+
+      /* Earned before locked, so an opened group opens on what you have rather than on
+         what you have not. */
+      '<div class="achbody"><div class="achlist">'+
+        got.map(a=>chip(a,true)).join('')+off.map(a=>chip(a,false)).join('')+
+      '</div></div></div>';
+  });
   return h;
+}
+
+/* Delegated once per paint rather than bound per heading, because a cabinet is up to eight
+   of them and the body they open is rebuilt whenever the case repaints. */
+function achWire(root){
+  if(!root) return;
+  root.addEventListener('click',(e)=>{
+    const head=e.target.closest('.achgrp-h'); if(!head||!root.contains(head)) return;
+    const grp=head.parentNode, open=grp.classList.toggle('open');
+    head.setAttribute('aria-expanded',open?'true':'false');
+  });
+  root.addEventListener('keydown',(e)=>{
+    if(e.key!=='Enter'&&e.key!==' ') return;
+    const head=e.target.closest&&e.target.closest('.achgrp-h'); if(!head) return;
+    e.preventDefault(); head.click();
+  });
+}
+
+/* ── WHAT YOU HAVE NOT BEEN TOLD ABOUT YET ───────────────────────────
+   The results screen calls out badges the season just finished earned, which covers the
+   normal case and misses two: a badge that became true because of a season finished on
+   another device, and one added to the catalog in a later build that lights up
+   retroactively. Neither has a results screen to be announced on, so the cabinet announces
+   them the first time it is opened.
+
+   THE FIRST SIGHTING IS RECORDED QUIETLY. Somebody whose case was already full before this
+   shipped would otherwise get ninety-five headlines at once, so the first read marks
+   everything seen without saying anything; only what turns up after that celebrates. */
+const ACH_SEEN_KEY='cfb_ach_seen';
+function achSeen(userId){
+  try{ const all=JSON.parse(localStorage.getItem(ACH_SEEN_KEY)||'{}');
+    return new Set(all[userId||'anon']||[]); }catch(e){ return new Set(); }
+}
+function achMarkSeen(userId,ids){
+  try{ const all=JSON.parse(localStorage.getItem(ACH_SEEN_KEY)||'{}');
+    all[userId||'anon']=Array.from(new Set((all[userId||'anon']||[]).concat(ids)));
+    localStorage.setItem(ACH_SEEN_KEY,JSON.stringify(all)); }catch(e){}
+}
+function achAnnounce(userId,res){
+  if(!res) return [];
+  const seen=achSeen(userId);
+  const fresh=res.earned.filter(a=>!seen.has(a.id));
+  if(!fresh.length) return [];
+  const firstSighting=seen.size===0;
+  achMarkSeen(userId,res.earned.map(a=>a.id));
+  if(firstSighting) return fresh;
+  /* Three at most, spaced, because the toast is one line and a queue of eleven of them is
+     a wall rather than a reward. */
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>toast('Badge: '+a.name),700+i*2000));
+  fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
+  return fresh;
 }
 $('b-profile').onclick=()=>openProfile();
 /* NOT APPLIED HERE ANY MORE. The saved school is read at the top of applyTheme's
@@ -4339,8 +4697,14 @@ function lbRow(r,pos){
   if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
   else if(lbSort==='rank'){ v='#'+r.national_rank; k='in the country'; gold=r.national_rank===1; }
   else { v=rec; k=r.perfect?'perfect':'record'; gold=!!r.perfect; }
+  /* THE CIRCLE GOES BETWEEN THE NUMBER AND THE NAME, which is where a face sits on every
+     other leaderboard anybody has used. Drawn from the ROW's own columns, never from the
+     viewer's, so two people who both play in Virginia colors both show Virginia. A guest
+     row has no name and gets the dashed outline, which is honest: nobody has claimed it. */
+  const pf=avatarOf(r.display_name,r.display_school,r.display_initials);
   return '<div class="lbr'+(mine?' me':'')+(just?' just':'')+(pos<=3?' top'+pos:'')+'">'+
     '<span class="rk">'+pos+'</span>'+
+    avatarHTML(pf)+
     '<span class="who"><b>'+who+'</b><span>'+
       (lbSort==='record'?what:rec+' &middot; '+what)+'</span></span>'+
     '<span class="val"><b'+(gold?' class="gold"':'')+'>'+v+'</b><span>'+k+'</span></span></div>';
