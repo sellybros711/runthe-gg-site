@@ -1496,6 +1496,95 @@ window.GA_ID='G-L29P5MRWKE';
   .swaps{margin-top:4px}
   .caveat{color:var(--dim-2);font-size:11px;margin:11px 0 0;line-height:1.4}
 
+  /* ── the profile hub and its pages ──────────────────────────────
+     This screen used to be three tabs across the top of one sheet: your account, a hundred
+     and thirty schools, and the trophy case. The school list is the problem -- it is deep
+     enough that the tab strip scrolls off the top of a phone, so the way back to the other
+     two is somewhere above the fold, and the case is where a player actually spends time.
+
+     Now it is a hub and four pages. The hub fits a phone without scrolling and says only who
+     you are and how to get somewhere; each page holds one subject and comes back with a
+     single tap. Nothing was deleted in the move, it was distributed -- and the seasons list,
+     which cfb never had at all, was added. Same shape as the NFL game, in this game's
+     colors and this game's vocabulary: a finished run here is a SEASON. */
+  .pfid{display:flex;align-items:center;gap:12px;margin:10px 0 2px}
+  .pfid .pfp{flex:0 0 46px;width:46px;height:46px;border-radius:50%;display:grid;
+    place-items:center;font-family:var(--fn);font-size:16px;font-weight:700;
+    background:var(--grad-green);color:#04231a}
+  .pfid .pfp.anon{background:none;border:1px dashed var(--line);color:var(--dim)}
+  .pfid .pfn{min-width:0}
+  .pfid .pfn b{display:block;font-family:var(--fd);font-size:25px;line-height:1.05;
+    color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pfid .pfn span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:3px}
+  /* Two numbers, not the whole case. These are the two a player checks often enough to
+     earn a place on the front; everything else is one tap away. */
+  .pfstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 4px}
+  .pfstat{padding:9px 11px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--line)}
+  .pfstat b{display:block;font-family:var(--fd);font-size:21px;line-height:1;color:var(--ink)}
+  .pfstat span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+  .pfnav{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:12px}
+  .pfrow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:11px 12px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--line);transition:border-color .12s ease,transform .08s ease}
+  .pfrow:hover{border-color:var(--line-2)}
+  .pfrow:active{transform:scale(.985)}
+  .pfrow .t{flex:1;min-width:0}
+  .pfrow .t b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:600;
+    color:var(--ink)}
+  .pfrow .t span{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pfrow .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
+  /* The page header. The back arrow is a real button at a real size, because it is the only
+     way out of every page here and a 12px chevron is not a target. */
+  .pfhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .pfback{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--line);color:var(--ink);font-size:19px;line-height:1}
+  .pfback:active{transform:scale(.94)}
+  .pftitle{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .pftabs{display:flex;gap:6px;margin-bottom:10px}
+  .pftab{flex:1;padding:8px 4px;border-radius:9px;background:var(--panel);
+    border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
+    color:var(--dim);text-align:center;white-space:nowrap}
+  .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
+  /* The danger zone, and it looks like one without shouting: the button is quiet until it
+     is armed, because the loud version invites the tap it is trying to make you think about. */
+  .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .pfdanger .btn.del{color:#f87171;border:1px solid rgba(239,68,68,.35);background:transparent}
+  .pfdanger .btn.del.armed{color:#fff;border-color:transparent;
+    background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
+  /* One season, in a list. Same row wherever a season is listed, so a season looks the
+     same on every page it appears on. */
+  .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
+  .bestrow{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;
+    border-radius:10px;cursor:pointer;text-align:left;width:100%;
+    background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .bestrow .n{flex:0 0 18px;font-family:var(--fn);font-size:13px;font-weight:600;
+    color:var(--dim-2);text-align:right}
+  .bestrow .who{flex:1;min-width:0}
+  .bestrow .who b{display:block;font-family:var(--fn);font-size:14px;font-weight:600;
+    line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bestrow .who span{display:block;font-size:10.5px;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .bestrow .rt{flex:0 0 auto;text-align:right}
+  .bestrow .rt b{display:block;font-family:var(--fn);font-size:15px;font-weight:600;
+    line-height:1.15}
+  .bestrow .rt span{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2)}
+  .bestrow .go{flex:0 0 auto;color:var(--dim-2);font-size:17px;line-height:1}
+  .bestrow.top1{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
+  .bestrow.top1 .n,.bestrow.top1 .rt b{color:#fcd34d}
+  .bestrow:hover{border-color:var(--line-2)}
+  /* The four numbers under a season's roster on the detail sheet. */
+  .rdstat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
+  .rdstat div{min-width:0;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035);
+    border:1px solid var(--line)}
+  .rdstat b{display:block;font-family:var(--fn);font-size:17px;font-weight:600;line-height:1.1}
+  .rdstat span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim-2);margin-top:3px}
+
   /* ── utilities ──────────────────────────────────────────────── */
   .crash{display:none;position:fixed;left:10px;right:10px;bottom:14px;z-index:99;cursor:pointer;
     padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.4;
@@ -2437,7 +2526,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="engine.js?v=20"></script>
 <script src="run.js?v=10"></script>
 <script src="achievements.js?v=8"></script>
-<script src="auth.js?v=1"></script>
+<script src="auth.js?v=2"></script>
 <script src="board.js?v=2"></script>
 <script>
 (function(){
@@ -2803,31 +2892,69 @@ function updateAvatar(){
     (name?'Signed in as '+name+'. ':'Not signed in. ')+
     (selectedSchool?'Colors: '+selectedSchool.school+'. ':'')+'Open your profile');
 }
-/* THE PROFILE SHEET holds three things, on three tabs: who you are, the colors
-   you play in, and what you have done in them. Tabs rather than one long scroll
-   because the school list is a hundred buttons deep and would bury the other two
-   under it. Which tab opens is remembered for the session, so somebody chasing a
-   badge does not walk past the school list every time. */
+/* ── THE PROFILE HUB AND ITS PAGES ──────────────────────────────────
+   THIS USED TO BE THREE TABS ACROSS THE TOP OF ONE SHEET: your account, the colors
+   you play in, and what you have done in them. The school list is what broke it --
+   a hundred and thirty buttons deep, so the tab strip is scrolled off the top of a
+   phone by the time you have found your school, and the way back to the other two
+   is somewhere above the fold.
+
+   Now it is a hub and four pages. The hub fits a phone without scrolling and says
+   only who you are and how to get somewhere; each page holds one subject and comes
+   back with a single tap. Nothing was taken away in the move, it was distributed --
+   and one thing was added, because cfb had no way at all to look at a season it had
+   already played. Same shape as the NFL game's profile, in this game's vocabulary:
+   a finished run here is a SEASON, not a draft.
+
+   openProfile() STAYS THE ONE DOOR IN. Eight places call it, from the gate cards to
+   the results screen to bootAuth, and every one of them names a page it wants. It is
+   now a router rather than a painter, so all eight keep working and none of them has
+   to know that the hub exists. */
 let profileTab='account';
-const TAB_TITLE={account:'Your account',school:'Pick your colors',case:'Trophy case'};
+const TAB_TITLE={account:'Your account',school:'Customize',case:'Trophy case',
+  seasons:'Your seasons'};
+
+/* THE HUB IS ONLY A HUB WHEN THERE IS SOMEBODY TO BE ONE FOR. Signed out, or signed
+   in without a name yet, every row on it would lead to a gate card, and the useful
+   thing this sheet can do is show the way in instead. */
+const pfHubOk=()=>!!(A()&&authState.ready&&authState.signedIn&&authState.name);
+
+/* Every paint of this sheet bumps the token. An async fill checks it before writing,
+   because careerLoad() can land after the player has moved to another page and a
+   number written into a screen that is no longer there is the good case -- the bad
+   one is writing it into a screen that reused the same id. */
+let pfPaint=0;
+
+const PF_PAGES={account:1,school:1,case:1,seasons:1};
 function openProfile(tab){
   if(!DATA) return;
-  profileTab=tab||profileTab;
-  const box=$('sheet-in');
-  const t=(k,label)=>'<button data-tab="'+k+'"'+(profileTab===k?' class="on"':'')+'>'+label+'</button>';
-  const head=
-    '<div class="eyebrow green">Your profile</div>'+
-    '<h2 class="display" style="font-size:22px;margin:4px 0 10px">'+TAB_TITLE[profileTab]+'</h2>'+
-    '<div class="achtabs" style="grid-template-columns:1fr 1fr 1fr">'+
-      t('account','Account')+t('school','Colors')+t('case','Trophy case')+
-    '</div>';
-  ga(profileTab==='case'?'career_viewed':profileTab==='account'?'account_opened':'school_picker_opened');
-  box.innerHTML=head+
-    (profileTab==='account'?accountHtml():profileTab==='school'?schoolPickerHtml():trophyCaseHtml())+
-    '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">Close</button></div>';
-  openSheet();
-  if(profileTab==='account') wireAccount();
-  box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
+  const page=PF_PAGES[tab]?tab:(pfHubOk()?'hub':'account');
+  if(page==='hub') return pfHub();
+  if(page==='seasons') return pfSeasons('recent');
+  if(page==='school') return pfLook();
+  if(page==='case') return pfCase();
+  return pfAccount();
+}
+
+/* ── the pieces every profile page shares ── */
+function pfHead(title){
+  return '<div class="pfhead">'+
+    (pfHubOk()?'<button class="pfback" id="pf-back" aria-label="Back to your profile">&lsaquo;</button>':'')+
+    '<span class="pftitle">'+esc(title)+'</span></div>';
+}
+function pfNavRow(id,title,sub){
+  return '<button class="pfrow" id="'+id+'"><span class="t"><b>'+esc(title)+'</b>'+
+    '<span>'+esc(sub)+'</span></span><span class="go">&rsaquo;</span></button>';
+}
+const pfClose=()=>'<div style="margin-top:14px"><button class="btn ghost sm" id="sp-x" '+
+  'style="width:100%">Close</button></div>';
+
+/* Bound after each paint rather than delegated, because each page replaces the whole
+   contents of the sheet. Everything here is optional: a page that has no swatches and
+   no gate simply binds nothing. */
+function pfWire(box){
+  const x=$('sp-x'); if(x) x.onclick=closeSheet;
+  const b=$('pf-back'); if(b) b.onclick=()=>pfHub();
   /* THE GATE IS NOT DECORATION. There are no .swatch buttons in the markup at all
      while signed out, so a color cannot be picked by reaching past the panel, and
      these handlers simply find nothing to bind to. */
@@ -2837,10 +2964,291 @@ function openProfile(tab){
     if(t){applyTheme(t);ga('school_selected',{school:t.school});} closeSheet();
   });
   const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
-  /* Straight to the Account tab, which is the one thing the gate is asking for. */
+  /* Straight to the Account page, which is the one thing the gate is asking for. */
   const gin=box.querySelector('#gate-in');
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:profileTab}); openProfile('account'); };
-  $('sp-x').onclick=closeSheet;
+}
+
+/* ── the hub ── */
+function pfHub(){
+  if(!pfHubOk()) return openProfile('account');
+  profileTab='hub'; pfPaint++;
+  const box=$('sheet-in'), nm=authState.name||'';
+  ga('profile_hub_opened');
+  box.innerHTML=
+    '<div class="eyebrow green">Your profile</div>'+
+    '<div class="pfid"><span class="pfp">'+esc(initialsOf(nm))+'</span>'+
+      '<span class="pfn"><b>'+esc(nm)+'</b>'+
+      '<span>'+esc(authState.email||'Your RunThe.GG account')+'</span></span></div>'+
+    /* TWO NUMBERS, NOT THE CAREER ROW. These are the two worth checking often enough to
+       earn a place on the front; titles, playoffs and best rank are one tap away in the
+       case, where they have always lived. */
+    '<div class="pfstats">'+
+      '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Seasons played</span></div>'+
+      '<div class="pfstat"><b id="pf-best">&mdash;</b><span>Best overall</span></div>'+
+    '</div>'+
+    '<div class="pfnav">'+
+      pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record')+
+      pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges')+
+      pfNavRow('pf-go-look','Customize','The school colors you play in')+
+      pfNavRow('pf-go-acct','Account','Your name, and signing out')+
+    '</div>'+pfClose();
+  openSheet(); pfWire(box);
+  $('pf-go-seasons').onclick=()=>openProfile('seasons');
+  $('pf-go-case').onclick=()=>openProfile('case');
+  $('pf-go-look').onclick=()=>openProfile('school');
+  $('pf-go-acct').onclick=()=>openProfile('account');
+  pfHubStats();
+}
+
+/* The two headline numbers, filled once the seasons land. The hub opens immediately and
+   these arrive into it, because a profile that waits on a network call before it draws
+   anything is a profile that feels broken on a slow connection. */
+async function pfHubStats(){
+  const mine=pfPaint;
+  await careerLoad();
+  if(mine!==pfPaint) return;
+  const runs=$('pf-runs'), best=$('pf-best');
+  if(!runs||!best) return;
+  const rows=careerRaw||[];
+  runs.textContent=(careerTotal||rows.length).toLocaleString();
+  let top=null;
+  rows.forEach(r=>{ if(r.overall==null) return;
+    const v=Number(r.overall); if(isFinite(v)&&(top===null||v>top)) top=v; });
+  best.textContent=top===null?'—':top.toFixed(1);
+}
+
+/* ── your seasons ──────────────────────────────────────────────────
+   The same rows ordered three ways. Sorting happens here rather than in the query
+   because careerLoad already holds up to 500 of your seasons with every column these
+   need, so a tab is a sort and not a round trip. */
+const PF_SEASON_TABS={recent:'Recent',overall:'Best overall',record:'Best record'};
+const PF_SEASON_MAX=25;
+/* The board's own score, so "best record" here means exactly what leading the board by
+   record means: wins first, point difference as the tie-break. Falling back to wins
+   alone if board.js is blocked keeps the tab useful rather than empty. */
+const pfScore=(r)=>(B&&B.scoreOf)?B.scoreOf(r.wins,Number(r.point_diff)||0):(r.wins||0)*10000;
+const pfWhen=(r)=>{ const d=new Date(r.created_at); return isNaN(d)?0:d.getTime(); };
+function pfSeasonSort(rows,tab){
+  const r=rows.slice();
+  if(tab==='overall') return r.sort((a,b)=>
+    (b.overall==null?-1:Number(b.overall))-(a.overall==null?-1:Number(a.overall))
+    ||pfWhen(b)-pfWhen(a)).slice(0,PF_SEASON_MAX);
+  if(tab==='record') return r.sort((a,b)=>pfScore(b)-pfScore(a)||pfWhen(b)-pfWhen(a))
+    .slice(0,PF_SEASON_MAX);
+  return r.sort((a,b)=>pfWhen(b)-pfWhen(a)).slice(0,PF_SEASON_MAX);
+}
+function pfSeasons(tab){
+  tab=PF_SEASON_TABS[tab]?tab:'recent';
+  profileTab='seasons'; pfPaint++;
+  const box=$('sheet-in');
+  ga('seasons_viewed',{tab:tab});
+  box.innerHTML=pfHead(TAB_TITLE.seasons)+
+    '<div class="pftabs">'+Object.keys(PF_SEASON_TABS).map(k=>
+      '<button class="pftab'+(k===tab?' on':'')+'" data-tab="'+k+'">'+
+        PF_SEASON_TABS[k]+'</button>').join('')+'</div>'+
+    '<div id="pf-list"><div class="rload"><i></i><i></i><i></i>'+
+      '<span>Fetching your seasons</span></div></div>'+pfClose();
+  openSheet(); pfWire(box);
+  box.querySelectorAll('.pftab').forEach(b=>{ b.onclick=()=>pfSeasons(b.dataset.tab); });
+  pfSeasonsPaint(tab);
+}
+async function pfSeasonsPaint(tab){
+  const mine=pfPaint;
+  await careerLoad();
+  if(mine!==pfPaint) return;
+  const slot=$('pf-list'); if(!slot) return;
+  const rows=careerRaw;
+  if(!rows||!rows.length){
+    slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">'+
+      (rows?'No seasons recorded yet. Finish one and it lands here.'
+        :'Your seasons could not be fetched just now. Nothing has been lost.')+'</p>';
+    return;
+  }
+  const list=pfSeasonSort(rows,tab);
+  const day=(iso)=>{ const d=new Date(iso);
+    return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); };
+  slot.innerHTML='<div class="bestlist">'+list.map((r,i)=>{
+    const when=day(r.created_at);
+    return '<button class="bestrow'+(i===0&&tab!=='recent'?' top1':'')+'" data-i="'+i+'">'+
+      '<span class="n">'+(i+1)+'</span>'+
+      '<span class="who"><b>'+esc(r.wins+'-'+r.losses)+' &middot; '+seasonFate(r)+'</b>'+
+        '<span>'+esc(modeLabel(r.run_mode||'free')+(when?' · '+when:''))+'</span></span>'+
+      '<span class="rt"><b>'+(r.overall==null?'—':Number(r.overall).toFixed(1))+
+        '</b><span>overall</span></span>'+
+      '<span class="go">&rsaquo;</span></button>';
+  }).join('')+'</div>'+
+    (rows.length>list.length?'<p class="caveat" style="margin:8px 0 0">Showing '+
+      list.length+' of '+(careerTotal||rows.length).toLocaleString()+' seasons.</p>':'');
+  slot.querySelector('.bestlist').onclick=(e)=>{
+    const b=e.target.closest('.bestrow'); if(!b) return;
+    const row=list[+b.dataset.i];
+    if(row) seasonSheet(row,()=>pfSeasons(tab));
+  };
+}
+
+/* ── one season, in full ────────────────────────────────────────────
+   NEW HERE, NOT PORTED. cfb has never had a way to look at a season once the results
+   screen was gone: the board rows are not clickable and the trophy case counts seasons
+   without showing any. This is that sheet.
+
+   The six are resolved against THIS browser's copy of the player data, from the ids on
+   the row -- the same rule every other list in this game follows, and the reason a row
+   whose players this build does not know says so rather than drawing six blanks. */
+function cfbSlotOrder(players){
+  const left=players.slice(), out=[];
+  /* The row stores the six in draft order and stores E.SLOTS as a flat list beside them,
+     which does not say which player took which slot. So the slots are worked out the same
+     way the draft filled them: exact position first, then anything eligible. */
+  E.SLOTS.forEach(slot=>{
+    let i=left.findIndex(p=>p&&p.position===slot);
+    if(i<0) i=left.findIndex(p=>p&&E.canFillSlot(p,slot));
+    if(i<0) return;
+    out.push({p:left[i],slot:slot}); left.splice(i,1);
+  });
+  left.forEach(p=>{ if(p) out.push({p:p,slot:p.position}); });
+  return out;
+}
+/* HOW FAR THE SEASON WENT, in one phrase. Shared with the leaderboard row rather than
+   written twice, because the board and your own list disagreeing about what a season was
+   is the kind of thing nobody notices until they screenshot both.
+
+   WHICH bowl, when the row knows. The name is looked up from the slug against the game's
+   own bowl table, never read off the row as text, so a season can only ever be labeled
+   with a bowl this build knows about. Rows written before 64_cfb_bowl_key.sql carry no
+   slug and keep the wording they have always had, which is why both halves stay here
+   rather than one replacing the other. */
+function seasonFate(r){
+  const bowlNm=E.bowlName(r.bowl_key);
+  return r.perfect?'Perfect season'
+    :r.title_won?'National champions'
+    :r.eliminated_in?'Out in the '+esc(String(r.eliminated_in).replace('CFP ',''))
+    :r.bowl_won?(bowlNm?esc(bowlNm)+' champions':'Bowl champions')
+    :r.bowl?(bowlNm?'Lost the '+esc(bowlNm):'Bowl loss')
+    :'Missed the playoffs';
+}
+function seasonSheet(row,back){
+  pfPaint++;
+  const men=cfbSlotOrder((row.picks||[]).map(k=>{
+    /* Stored "id:season" on the board and keyed "id|season" here. Only the first colon
+       is replaced, because a player id may carry one and the season never does. */
+    const key=String(k).replace(':','|');
+    return (BYKEY&&BYKEY.get(key))||null;
+  }).filter(Boolean));
+  const missing=(row.picks||[]).length-men.length;
+  const num=(v)=>v==null?null:(isFinite(Number(v))?Number(v):null);
+  const overall=num(row.overall), fppg=num(row.squad_fppg), mult=num(row.structure_mult);
+  const chem=num(row.chemistry_pct), spend=num(row.spend_musd);
+  const when=(()=>{ const d=new Date(row.created_at);
+    return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}); })();
+  const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
+
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow green">Your season</div>'+
+    '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
+      esc(row.wins+'-'+row.losses)+'</h2>'+
+    '<p class="dim" style="font-size:12.5px;margin:0">'+seasonFate(row)+' &middot; '+
+      esc(modeLabel(row.run_mode||'free'))+(when?' &middot; '+esc(when):'')+'</p>'+
+    (men.length?'<div class="rost">'+men.map(m=>{
+      const a=topAward(m.p);
+      return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
+        '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
+          esc(m.p.school||'')+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
+        '</span></span>'+
+        (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+        '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
+        '</span></span></div>';
+    }).join('')+'</div>'
+      :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This season&rsquo;s players '+
+       'are not in the player data this browser has.</p>')+
+    (missing&&men.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
+      ' of the six could not be looked up here.</p>':'')+
+    '<div class="rdstat">'+
+      tile(overall===null?'--':overall.toFixed(1),'Team overall')+
+      tile(row.national_rank?'#'+row.national_rank:'--','In the country')+
+      tile(chem===null?'--':pc(chem/100),'Chemistry')+
+      tile(spend===null?'--':M0(spend),'Spent')+
+    '</div>'+
+    (fppg!==null&&mult!==null&&overall!==null
+      ? '<p class="caveat">'+fppg.toFixed(1)+' squad FPPG, '+pc(chem===null?0:chem/100)+
+        ' chemistry and '+pc(mult-1)+' for how the six fit together multiply out to '+
+        overall.toFixed(1)+' team overall.</p>'
+      : '<p class="caveat">This season was recorded before the game stored the numbers '+
+        'behind the overall.</p>')+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="sp-x" style="width:100%">'+
+      (back?'Back':'Close')+'</button></div>';
+  openSheet();
+  $('sp-x').onclick=()=>{ if(back) back(); else closeSheet(); };
+}
+
+/* ── the other three pages ──────────────────────────────────────────
+   Each is the panel that used to sit under a tab, with a page header above it instead of
+   the tab strip. The html builders themselves are untouched. */
+function pfCase(){
+  profileTab='case'; pfPaint++;
+  const box=$('sheet-in');
+  ga('career_viewed');
+  box.innerHTML=pfHead(TAB_TITLE.case)+trophyCaseHtml()+pfClose();
+  openSheet(); pfWire(box);
+}
+function pfLook(){
+  profileTab='school'; pfPaint++;
+  const box=$('sheet-in');
+  ga('school_picker_opened');
+  box.innerHTML=pfHead(TAB_TITLE.school)+schoolPickerHtml()+pfClose();
+  openSheet(); pfWire(box);
+}
+function pfAccount(){
+  profileTab='account'; pfPaint++;
+  const box=$('sheet-in');
+  ga('account_opened');
+  /* THE DELETE BUTTON IS FOR A REAL ACCOUNT ONLY. Signed out this page is the sign-in
+     form, and signed in without a name it is the name form; offering to end an account
+     under either of those is offering to end something that is not there yet. */
+  const canDelete=pfHubOk();
+  box.innerHTML=pfHead(TAB_TITLE.account)+accountHtml()+
+    (canDelete?pfDangerHtml():'')+pfClose();
+  openSheet(); wireAccount(); pfWire(box);
+  if(canDelete) pfWireDelete();
+}
+function pfDangerHtml(){
+  return '<div class="pfdanger">'+
+    '<p class="shsec" style="margin:0">Delete your account</p>'+
+    '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">This ends your '+
+      'RunThe.GG account across <b>every game on the site</b>, not just this one. It cannot '+
+      'be undone. Seasons already on a leaderboard stay there without your name on them.</p>'+
+    '<div style="margin-top:9px"><button class="btn del sm" id="a-del" style="width:100%">'+
+      'Delete my account</button></div></div>';
+}
+/* TWO TAPS, and the second one says what it does. One tap on a destructive control is how
+   an account gets deleted by a thumb reaching for Sign out, which is directly above it. */
+function pfWireDelete(){
+  const del=$('a-del'), note=$('pf-delnote');
+  if(!del) return;
+  let armed=false;
+  del.onclick=async()=>{
+    if(!armed){
+      armed=true;
+      del.classList.add('armed');
+      del.textContent='Yes, delete everything';
+      note.innerHTML='<b>Last chance.</b> Tap again and your account, your name and your '+
+        'claim on every season in every RunThe.GG game are gone for good.';
+      return;
+    }
+    del.disabled=true; del.textContent='Deleting...';
+    const a=A();
+    const r=a&&a.deleteAccount?await a.deleteAccount():{error:'Accounts are not available right now.'};
+    if(r&&r.ok){ careerRows=null; careerRaw=null; careerTotal=0;
+      closeSheet(); toast('Your account has been deleted.'); return; }
+    /* A REFUSAL IS NOT AN ERROR, and the common one is a live subscription that nothing
+       here can cancel. Say which it was, put the button back, and delete nothing. */
+    authMsg={err:(r&&r.reason==='active_subscription')
+      ? 'You have a subscription that is still '+(r.status||'active')+'. Cancel it first, '+
+        'then delete the account, so you are not charged for one you no longer have.'
+      : (r&&r.reason==='not_signed_in') ? 'You are not signed in any more.'
+      : ((r&&r.error)||'That did not work. Nothing has been deleted.')};
+    openProfile('account');
+  };
 }
 /* ── more ways to play ────────────────────────────────────────────
    Two things under one heading: the other way to play this game, and a signpost
@@ -2978,7 +3386,7 @@ function bootAuth(){
     }
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
-    if(st.userId!==wasId) careerRows=null;
+    if(st.userId!==wasId){ careerRows=null; careerRaw=null; careerTotal=0; }
     /* Colors follow the account: on when signed in, default when not. */
     syncTheme();
     if($('sheet').classList.contains('on')&&profileTab==='account') openProfile('account');
@@ -3096,7 +3504,8 @@ function wireAccount(){
 
   const out=box.querySelector('#ac-out');
   if(out) out.onclick=async()=>{ if(authBusy)return; busy('ac-out','Signing out...');
-    await a.signOut(); careerRows=null; authMsg=null; openProfile('account'); authBusy=false; };
+    await a.signOut(); careerRows=null; careerRaw=null; careerTotal=0; authMsg=null;
+    openProfile('account'); authBusy=false; };
 }
 
 /* THE GATE, ONE FUNCTION, because two tabs put it up and they must not drift.
@@ -3320,7 +3729,13 @@ function achResolve(key){ return BYKEY?(BYKEY.get(key)||null):null; }
    Fetched once per sign-in and held, because the cabinet is opened far more often
    than it changes and forty badge tests walking a re-fetched list is forty walks
    plus a round trip. Cleared on any change of account by bootAuth(). */
-let careerRows=null, careerLoading=null, careerFailed=false;
+/* TWO SHAPES OFF ONE FETCH. careerRows is the badge shape -- rowFromBoard throws away
+   everything the trophy case does not test, which is most of the row. The seasons list and
+   the season sheet want the parts it threw away: the rating, the spend, the slot list, the
+   point difference, the row id. So the board rows are kept as they arrived as well, in
+   careerRaw, and the two views read whichever one answers their question. One request
+   either way; this is a second reference to the same array of objects, not a second copy. */
+let careerRows=null, careerRaw=null, careerTotal=0, careerLoading=null, careerFailed=false;
 function careerLoad(){
   if(!authState.signedIn||!authState.userId||!B){ careerFailed=true; return Promise.resolve(null); }
   if(careerRows) return Promise.resolve(careerRows);
@@ -3329,6 +3744,8 @@ function careerLoad(){
   careerLoading=B.mine(authState.userId,500).then((r)=>{
     careerLoading=null;
     if(!r||!Array.isArray(r.rows)){ careerFailed=true; return null; }
+    careerRaw=r.rows;
+    careerTotal=r.total||r.rows.length;
     careerRows=r.rows.map(rowFromBoard);
     return careerRows;
   }).catch(()=>{ careerLoading=null; careerFailed=true; return null; });
@@ -3468,18 +3885,7 @@ function lbRow(r,pos){
   const mine=myRunId&&r.id===myRunId;
   const who=r.display_name?esc(r.display_name):'Anonymous';
   const rec=r.wins+'-'+r.losses;
-  /* WHICH bowl, when the row knows. The name is looked up from the slug against
-     the game's own bowl table, never read off the row as text, so a season can
-     only ever be labeled with a bowl this build knows about. Rows written before
-     64_cfb_bowl_key.sql carry no slug and keep the wording they have always had,
-     which is why both halves stay here rather than one replacing the other. */
-  const bowlNm=E.bowlName(r.bowl_key);
-  const what=r.perfect?'Perfect season'
-    :r.title_won?'National champions'
-    :r.eliminated_in?'Out in the '+esc(r.eliminated_in.replace('CFP ',''))
-    :r.bowl_won?(bowlNm?esc(bowlNm)+' champions':'Bowl champions')
-    :r.bowl?(bowlNm?'Lost the '+esc(bowlNm):'Bowl loss')
-    :'Missed the playoffs';
+  const what=seasonFate(r);
   let v,k,gold=false;
   if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
   else if(lbSort==='rank'){ v='#'+r.national_rank; k='in the country'; gold=r.national_rank===1; }
