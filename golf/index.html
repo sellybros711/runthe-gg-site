@@ -3752,6 +3752,12 @@ const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all th
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
 const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
 const WEEKLY_CHAL_COINS=1500;  // coins paid by a weekly challenge that doesn't carry a pack
+// Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins — a RARE shard is 15,000 and an EPIC
+// 27,500 (3.4× a Base pack) — so these two lines were quietly the largest reward faucet in the game
+// (~215,000 coins/week between them, i.e. ~3 hand-picked items every week). Halved: the daily all-done
+// bonus pays a COMMON shard, and only the first WEEKLY_PACK_N weeklies pay an EPIC (the rest pay RARE).
+const DAILY_QUEST_SHARD='common';   // rarity of the shard for finishing all of the day's quests
+const WEEKLY_SHARD_TOP='epic', WEEKLY_SHARD_REST='rare';
 const LEVEL_COIN=250;          // Pro Shop coins granted per internal coin-curve step reached
 function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
   s.xp=s.xp||0; s.mulliEarned=s.mulliEarned||0; s.mulliSpent=s.mulliSpent||0; return s; }
@@ -3788,7 +3794,7 @@ function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquest
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
-  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn('rare',1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
+  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn(DAILY_QUEST_SHARD,1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
   else { LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); }
   return leveled; }
 // ---- Weekly challenges (rotate weekly, cross-mode, harder; each done → XP + a mulli-spin) ----
@@ -3821,13 +3827,14 @@ function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekCh
   // Economy rebalance: all 4 weeklies used to pay a free pack (4/wk on top of the two reward tracks). Now the
   // first WEEKLY_PACK_N pay a pack and the rest pay COINS — deliberately NOT more shards, since one epic shard
   // is worth ~27,500 coins (3.4× a base pack), so paying in shards would have made the leak bigger, not smaller.
-  // Every weekly still pays its Tour Rep + its epic shard, so the targeted-item path is untouched.
+  // Every weekly still pays its Tour Rep + a shard, so the targeted-item path is untouched.
   const wset=weeklySet();
   newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP);
     const idx=wset.findIndex(x=>x&&x.id===c.id);
-    if(idx>=0 && idx<WEEKLY_PACK_N){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
+    const top=(idx>=0 && idx<WEEKLY_PACK_N);
+    if(top){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
     else if(typeof addBonusCoins==='function') addBonusCoins(WEEKLY_CHAL_COINS,{silent:true});
-    try{ shardEarn('epic',1); }catch(e){} track('weekly_chal_done',{id:c.id}); });
+    try{ shardEarn(top?WEEKLY_SHARD_TOP:WEEKLY_SHARD_REST,1); }catch(e){} track('weekly_chal_done',{id:c.id}); });
   if(newly.length){ try{ recordAchEvent({inc:{weeklyDone:newly.length}}); evaluateAch(); }catch(e){} }
   if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
   return newly; }
@@ -3854,11 +3861,11 @@ function challengesNode(){
   el.appendChild($(repTierBarHTML(ms)));
   const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 rare shard</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · ◆1 epic shard · 🎁 pack on the first ${WEEKLY_PACK_N}</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · ◆1 shard · first ${WEEKLY_PACK_N} → 🎁 pack + ◆epic</span></div>${wr}</div>`));
   return el;
 }
 // CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
@@ -7730,7 +7737,7 @@ function scrRules(){
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
     ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards.'],
-    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a rare shard, each weekly challenge pays an epic shard, and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
+    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
