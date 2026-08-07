@@ -631,6 +631,56 @@
     s.style.cssText='font-size:'+(img.getAttribute('data-fs')||'40')+'px;line-height:1';
     s.textContent=img.getAttribute('data-fb')||''; if(img.parentNode) img.parentNode.replaceChild(s,img);
   }
+
+  /* ---- FX: on-demand canvas confetti / particle bursts. The canvas is created
+     only while particles are alive and removed when they settle, so it costs
+     nothing at rest. Honours prefers-reduced-motion. ---- */
+  var FX = (function(){
+    var reduce = false;
+    try { reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+    var COLORS=['#ECB550','#EE5A44','#3FCE86','#ffffff','#F6D488','#6AA9FF'];
+    var parts=[], raf=null, canvas=null, ctx=null;
+    function ensure(){
+      if(!canvas){ canvas=document.createElement('canvas'); canvas.id='fxcanvas';
+        canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999';
+        document.body.appendChild(canvas); }
+      var dpr=window.devicePixelRatio||1;
+      canvas.width=window.innerWidth*dpr; canvas.height=window.innerHeight*dpr;
+      ctx=canvas.getContext('2d'); return canvas;
+    }
+    function tick(){
+      var dpr=window.devicePixelRatio||1, alive=false;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(var i=0;i<parts.length;i++){ var p=parts[i]; if(p.life<=0) continue; alive=true;
+        p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life--;
+        ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,p.life/24));
+        ctx.translate(p.x*dpr,p.y*dpr); ctx.rotate(p.rot); ctx.fillStyle=p.c;
+        if(p.round){ ctx.beginPath(); ctx.arc(0,0,p.s*dpr*0.5,0,6.29); ctx.fill(); }
+        else ctx.fillRect(-p.s*dpr*0.5,-p.s*dpr*0.35,p.s*dpr,p.s*dpr*0.7);
+        ctx.restore();
+      }
+      if(alive) raf=requestAnimationFrame(tick);
+      else { if(raf) cancelAnimationFrame(raf); raf=null; if(canvas&&canvas.parentNode) canvas.parentNode.removeChild(canvas); canvas=null; ctx=null; parts=[]; }
+    }
+    function burst(x,y,n,spread,power){
+      if(reduce) return; ensure(); n=n||60; spread=spread||Math.PI*1.3; power=power||7;
+      for(var i=0;i<n;i++){ var ang=(-Math.PI/2)+(Math.random()-0.5)*spread, sp=power*(0.4+Math.random());
+        parts.push({ x:x, y:y, vx:Math.cos(ang)*sp*(0.7+Math.random()*0.6), vy:Math.sin(ang)*sp-Math.random()*2,
+          g:0.15+Math.random()*0.1, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.45,
+          s:5+Math.random()*6, round:Math.random()<0.3, c:COLORS[Math.floor(Math.random()*COLORS.length)],
+          life:70+Math.random()*45 }); }
+      if(!raf) raf=requestAnimationFrame(tick);
+    }
+    return {
+      burst:burst,
+      pop:function(el){ if(!el||!el.getBoundingClientRect) return; var r=el.getBoundingClientRect(); burst(r.left+r.width/2, r.top+r.height*0.5, 20, Math.PI*1.5, 5); },
+      celebrate:function(){ var w=window.innerWidth, h=window.innerHeight;
+        burst(w*0.5, h*0.3, 130, Math.PI*1.7, 9);
+        setTimeout(function(){ burst(w*0.18, h*0.26, 70, Math.PI*1.2, 8); burst(w*0.82, h*0.26, 70, Math.PI*1.2, 8); }, 240);
+        setTimeout(function(){ burst(w*0.5, h*0.22, 90, Math.PI*1.8, 8); }, 520);
+      }
+    };
+  })();
   function rnd(a,b){ return a + Math.random()*(b-a); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -1548,7 +1598,7 @@
       b.onclick=function(){
         if(S.play.done) return;
         var correct = (+b.getAttribute('data-i'))===t.a;
-        if(correct){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); S.play.done=true; setTimeout(finishTask,220); }
+        if(correct){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); S.play.done=true; setTimeout(finishTask,220); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
       };
     });
@@ -1578,7 +1628,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
       b.onclick=function(){
         if(S.play.done) return;
-        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
+        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); frReveal(); }
       };
     });
@@ -3263,6 +3313,7 @@
     if(final){
       var youWon2 = ranked[0].id==='you';
       sfx(youWon2?'win':'lose');
+      if(youWon2){ setTimeout(FX.celebrate,220); setTimeout(FX.celebrate,1400); }
       recordRaceEnd(ranked);
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">Race again 🌍</button></div>';
       $('home').onclick=function(){ S.screen='home'; render(); };
@@ -3280,6 +3331,7 @@
       $('home').onclick=function(){ S.screen='home'; render(); };
       $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
     } else {
+      setTimeout(function(){ FX.burst(window.innerWidth*0.5, window.innerHeight*0.28, 70, Math.PI*1.5, 8); }, 200);
       btns.innerHTML='<button class="btn globe" id="next" style="margin-top:14px">Next Stage ›</button>';
       $('next').onclick=function(){ groundAndAdvance(groundedTeam); S.round++; drawStage(); };
     }
@@ -3674,7 +3726,7 @@
       + '<div class="lb">'+rowsHtml+'</div><div id="lbbtns"></div></div>' + foot();
     var btns=$('lbbtns');
     if(final){
-      var youWon2=ranked[0].id==='you'; sfx(youWon2?'win':'lose'); recordRaceEnd(ranked); duoClearSess();
+      var youWon2=ranked[0].id==='you'; sfx(youWon2?'win':'lose'); if(youWon2){ setTimeout(FX.celebrate,220); setTimeout(FX.celebrate,1400); } recordRaceEnd(ranked); duoClearSess();
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">New team race 🌍</button></div>';
       $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
       $('again').onclick=function(){ duoLeave(); S.screen='online'; render(); };
