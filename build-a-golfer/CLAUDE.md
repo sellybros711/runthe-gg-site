@@ -14283,6 +14283,51 @@ allows Google Fonts, or self-host Anton.*
   `tour_pass` row for them (i.e. the entitlement itself, not the display, is the problem - check
   `runtour_wallet().pass_active` and the `tour_pass.period` vs `runtour_pass_season()`).
 
+- **TOUR PASS -> 60 TIERS, recalibrated + a steeper climb (owner: "I want to increase the tour pass to 60
+  levels and fix the rewards accordingly, and I still think we should make it slightly harder to level up as
+  you go up in levels").** Measuring the real earn rate first turned this from an extension into a rescue.
+  **Pass XP comes ONLY from `awardPlayCoins(base) * PASS_XP_RATE`** - the daily, a finished season, an online
+  win, a played Moment; streak/login/quest coins bypass it entirely. At the post-re-anchor faucet a daily
+  player earns just **~168 XP/day**, so the v2 curve's 48,415-XP total needed **~289 days of a 60-DAY
+  season**: the 50-tier track was literally impossible to finish, and the v2 note claiming "~41-45 days" had
+  been computed against the pre-re-anchor faucet and was simply wrong. So 60 tiers had to come with a
+  recalibration, not just 10 more rows.
+  - **`PASS_TIERS` 50 -> 60** and a new **v3 curve** (`PASS_CURVE_V=3`, `PASS_C0=90 / C1=2 / C2=0.10`):
+    cost(t)=90+2(t-1)+0.10(t-1)^2, total **15,961 XP**. The climb STEEPENS as asked - tier 1 costs 90,
+    tier 30 costs 232, tier 60 costs **556 (6.2x tier 1)**, strictly rising every tier - while a committed
+    player (~290 XP/day) now tops out around **day 55** of 60 and a daily-only player lands around **tier 48**
+    by day 60. (First cut at C0=120/C1=3/C2=0.05 hit the same total but only a 3.9x spread; steepened to
+    6.2x to honour the "harder as you go up" ask without pushing the total out of reach.)
+  - **Nobody loses progress, from ANY old version.** A `PASS_CURVES` registry now holds every curve the game
+    has shipped (v1 linear/50, v2 quadratic/50, v3/60) and `passConvertCurve` converts from whichever version
+    the save carries, preserving the player's exact TIER and their fractional progress into the next one
+    (verified from both v1 and v2 at tiers 1/10/20/32/35/49/50, including half-way states). `passState` runs
+    it once when `curveV` mismatches; a v3 state is never re-converted.
+  - **Cross-device merge fixed for the version change.** v3's XP numbers are ~3x SMALLER than v2's for the
+    same tier, so the old `max(xp)` merge would have let a stale v2 device's big number read as a much higher
+    tier once stamped v3. `mergeTourPass` now takes the already-CONVERTED (higher `curveV`) side wholesale
+    when the versions differ, unioning claims + OR-ing pro, and only compares xp when both sides agree.
+    Verified: a v3-tier-20 local merged against a v2-tier-35 server stays tier 20 with both claim lists kept.
+  - **Rewards for 51-60.** The capstones MOVED to tier 60 (free: Tour Pack + 3,000 coins; PRO: the exclusive
+    Tour Champion Aura + 5,000 coins) and the old tier-50 slots became strong-but-not-final milestones (free
+    Base pack + 1,500; PRO Champion pack + 2,500), with new milestones at 45/55 free (rare shards) and
+    53/56/58 PRO (Tour pack / legendary shard / Champion pack). The formulaic filler already scales with the
+    tier, so every one of the 120 lane-tiers pays something (verified: 0 empty). Net extension vs the old 50:
+    free +14,280 coins, +1 Tour pack, +2 rare shards, +1 cosmetic; PRO +21,520 coins, +1 Tour pack,
+    +1 Champion pack, +1 epic shard, +1 legendary shard, +1 cosmetic.
+  - **Copy** now reads 60 everywhere it is user-facing and is driven off `PASS_TIERS` so it can never drift
+    again: the sales hero kicker ("SEASON 1 - 60 TIERS"), the perk list, the FREE/PRO lane comparison, the
+    in-track upsell and the home Tour Pass card.
+  Verified in Playwright against the live file: curve shape (strictly rising, 6.2x spread, 15,961 total,
+  `passTierAt` round-trips at every tier boundary and caps at 60); conversions from v1 and v2 preserve tier +
+  fraction and never re-convert; the cross-version merge; every tier pays a reward and the milestones land
+  where intended; the pass page renders **60** rows with the tier-60 capstone and no "50" copy left anywhere
+  in the overlay; the home card reads "Tier 35/60"; the level-up popup fires and animates on the new curve;
+  and the full regressions (18-hole practice round, the tour-pass claim/claim-all suite, the gold PRO-name
+  suite) stay green - 0 page errors throughout. Deployed to /golf. Tunable: `PASS_C0/C1/C2` (shape),
+  `PASS_TIERS`, `PASS_XP_RATE` (how fast play feeds the track), and the `PASS_FREE_MILE`/`PASS_PREM_MILE`
+  milestone tables; bump `PASS_CURVE_V` + add a `PASS_CURVES` entry to re-map everyone onto any future curve.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

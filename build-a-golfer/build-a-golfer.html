@@ -6227,7 +6227,7 @@ function passEnabled(){ return TOURPASS_LIVE; }
 
 /* ============================ TOUR PASS — 60-day season pass ============================
    The battle pass that ties the whole economy together. A 60-day GLOBAL season (ET-aligned, like the
-   Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
+   Daily) with a 60-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
    awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online H2H, and moments
    all feed it). Two lanes per tier: FREE (everyone) + PRO. OWNER DECISION (2026-08): the ONLY way a
    regular player unlocks PRO is the real-money 60-day Tour Pass ($14.99 — the TOURPASS package, one
@@ -6239,7 +6239,7 @@ function passEnabled(){ return TOURPASS_LIVE; }
    also grants unlimited daily plays + 1.5× rewards + 30,000 coins + 2 seasonal packs (see TOURPASS). */
 const TOURPASS_LEN=60;                                        // days per season
 const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
-const PASS_TIERS=50;
+const PASS_TIERS=60;
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
@@ -6256,27 +6256,41 @@ function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(ty
 // per season) OR a dev account (CSel8/RunnyJ test free, never purchase). The legacy coin-unlocked
 // s.pro flag is no longer read — decision A: the $14.99 pass is the ONLY PRO unlock for players.
 function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()); }
-// XP curve: rising cost per tier (early cheap, later a real grind). passXpForTier(t)=cumulative XP to REACH tier t.
-// Owner: the original LINEAR ramp (140 + 11/tier) was far too shallow — tier 50 cost only 4.9× tier 1, so a
-// single dominant season jumped 3+ tiers even in the 30s and a daily player maxed the 60-day track in ~18
-// days. Now QUADRATIC: tier 1 stays cheap (150) and tier 50 costs 2,414 (16×), so the back half is earned.
-// A dominant season is ~1.5 tiers at tier 32 (was 3.5) and a committed daily player maxes around day 41-45.
-const PASS_CURVE_V=2;                                        // bump to re-convert everyone's XP onto a new curve
-const PASS_C0=150, PASS_C1=7, PASS_C2=0.8;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
+// XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
+//
+// CALIBRATION (this is the part that matters). Pass XP comes ONLY from awardPlayCoins(base)*PASS_XP_RATE —
+// the daily, a finished season, an online win, a played Moment. Streak/login/quest coins bypass it entirely.
+// After the coin re-anchor (COIN_DAILY=60) a daily player earns just ~168 XP/day, so the previous curve's
+// 48,415 total needed ~289 days of a 60-DAY season: the track was literally impossible to finish. The v2
+// comment claiming "~41-45 days" was computed against the pre-re-anchor faucet and was simply wrong.
+//
+// v3 is sized to the REAL rate: 60 tiers totalling ~15,960 XP, so a committed player (daily + a season every
+// week or so, ~290 XP/day) tops out around day 55 of the 60-day season and a daily-only player lands around
+// tier 48 by day 60 — the top tiers stay aspirational without being impossible. The climb also STEEPENS
+// as you go: tier 1 costs 90, tier 30 costs 232, tier 60 costs 556 (6.2× tier 1), so the back half is a real
+// grind while the opening still pays out fast.
+const PASS_CURVE_V=3;                                        // bump to re-convert everyone's XP onto a new curve
+const PASS_C0=90, PASS_C1=2, PASS_C2=0.10;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
 function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
-var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks all 50 per render)
+var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
 function passXpForTier(t){
   if(!_passCum){ _passCum=[0]; let x=0; for(let i=1;i<=PASS_TIERS;i++){ x+=passTierCost(i); _passCum.push(Math.round(x)); } }
   return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
 }
-// One-time migration onto the new curve. Preserves the player's exact TIER and their fractional progress into
-// the next one, so nobody loses visible progress or re-locks a reward — only the tiers AHEAD get pricier.
+// Every curve the game has ever shipped, so a player on ANY old version converts correctly.
+const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,               tiers:50},
+                    2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1), tiers:50},
+                    3:{cost:t=>passTierCost(t),             tiers:60} };
+// One-time migration onto the current curve. Preserves the player's exact TIER and their fractional progress
+// into the next one, so nobody loses visible progress or re-locks a reward — only the shape of what's AHEAD
+// changes. Converting from v2 LOWERS the raw XP number (v3 is a much smaller scale); the tier is what matters.
 function passConvertCurve(s){
-  const oldCost=t=>140+(t-1)*11; let cum=[0],x=0;
-  for(let i=1;i<=PASS_TIERS;i++){ x+=oldCost(i); cum.push(x); }
-  let t=0; while(t<PASS_TIERS && s.xp>=cum[t+1]) t++;
-  const b=cum[t], n=t<PASS_TIERS?cum[t+1]:b;
-  const frac=(t<PASS_TIERS && n>b) ? Math.max(0,Math.min(0.999,(s.xp-b)/(n-b))) : 0;
+  const from=PASS_CURVES[s.curveV|0]||PASS_CURVES[1], oldT=from.tiers;
+  let cum=[0],x=0; for(let i=1;i<=oldT;i++){ x+=from.cost(i); cum.push(x); }
+  let t=0; while(t<oldT && s.xp>=cum[t+1]) t++;
+  const b=cum[t], n=t<oldT?cum[t+1]:b;
+  const frac=(t<oldT && n>b) ? Math.max(0,Math.min(0.999,(s.xp-b)/(n-b))) : 0;
+  t=Math.min(t,PASS_TIERS);
   s.xp=Math.round(passXpForTier(t) + frac*(t<PASS_TIERS?passTierCost(t+1):0));
   s.curveV=PASS_CURVE_V; return s;
 }
@@ -6302,8 +6316,8 @@ function flushPassLevel(){
 // FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
 // Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
 // with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
-const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 50:{pack:{tier:'tour',n:1}, coins:3000} };
-const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 45:{shard:{r:'rare',n:1}}, 50:{pack:{tier:'base',n:1}, coins:1500}, 55:{shard:{r:'rare',n:2}}, 60:{pack:{tier:'tour',n:1}, coins:3000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{pack:{tier:'champ',n:1}, coins:2500}, 53:{pack:{tier:'tour',n:1}}, 56:{shard:{r:'legendary',n:1}}, 58:{pack:{tier:'champ',n:1}}, 60:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
 function passTierReward(t, lane){
   const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
   if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
@@ -6344,9 +6358,16 @@ function mergeTourPass(local, server){
   if((server.season||0) > (local.season||0)) return server;
   if((local.season||0) > (server.season||0)) return local;
   const uni=(a,b)=>{ const s=new Set(); (a||[]).forEach(x=>s.add(x)); (b||[]).forEach(x=>s.add(x)); return [...s]; };
-  // curveV rides along (max) so a synced state is never re-converted — double-converting would inflate XP.
+  // XP is only comparable WITHIN a curve version: v2's numbers are ~3x v3's for the same tier, so a plain
+  // max() would let a stale device's big v2 number read as a much higher tier once stamped v3. When the
+  // versions differ, take the already-CONVERTED side wholesale; only compare xp when they agree.
+  const lv=+local.curveV||0, sv=+server.curveV||0;
+  if(lv!==sv){ const w=lv>sv?local:server, o=lv>sv?server:local;
+    return { season:w.season, xp:+w.xp||0, pro:!!(w.pro||o.pro), curveV:Math.max(lv,sv),
+      claimed:{ free:uni(w.claimed&&w.claimed.free, o.claimed&&o.claimed.free),
+                prem:uni(w.claimed&&w.claimed.prem, o.claimed&&o.claimed.prem) } }; }
   return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
-    curveV:Math.max(+local.curveV||0,+server.curveV||0),
+    curveV:Math.max(lv,sv),
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
               prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
 }
@@ -22354,7 +22375,7 @@ function passHeroNode(ssn, opts){
     <div class="tps-hero-in">
       <div class="tps-fig">${pxFigureHTML(look,132)}</div>
       <div class="tps-htxt">
-        <div class="tps-kick">SEASON ${ssn.n} · 50 TIERS</div>
+        <div class="tps-kick">SEASON ${ssn.n} · ${PASS_TIERS} TIERS</div>
         <h2 class="tps-title">Tour<br><b>Pass</b></h2>
         <p class="tps-sub">${opts.sub||'Play any mode, climb the track, cash in packs, shards, coins and season-exclusive gear.'}</p>
       </div>
@@ -22368,7 +22389,7 @@ function passHeroNode(ssn, opts){
 // The Pro perk stack (the $14.99 value story), used on both the sales page and the in-track upsell.
 function passPerksHTML(){
   const rows=[
-    ['crown','Every PRO reward, all 50 tiers','Packs, shards, coins and the exclusive Plate + Champion Aura'],
+    ['crown','Every PRO reward, all 60 tiers','Packs, shards, coins and the exclusive Plate + Champion Aura'],
     ['target','Unlimited daily plays','No attempt cap on Beat the Pro for the whole season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Opened from the Pro Shop whenever you want'],
@@ -22396,9 +22417,9 @@ function overlayTourPass(screen){
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">PRO LANE · WITH THE TOUR PASS</div><div class="tps-loot">${passLootTilesHTML('prem')}</div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">TWO LANES, ONE TRACK</div><div class="tps-lanes">
       <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
-        <li><i>✓</i>All 50 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
+        <li><i>✓</i>All 60 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
       <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
-        <li><i>★</i>Everything in FREE</li><li><i>★</i>All 50 PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
       </div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
     const cta=$(`<div class="tps-cta">
@@ -22438,7 +22459,7 @@ function overlayTourPass(screen){
           <div class="tps-htxt">
             <div class="tps-kick">PRO LANE · LOCKED</div>
             <h2 class="tps-title" style="font-size:clamp(26px,7.5vw,36px)">Go <b>Pro</b></h2>
-            <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all 50 Pro rewards, the Tour Pass Plate and the Champion Aura for the rest of Season ${ssn.n}.</p>
+            <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all ${PASS_TIERS} Pro rewards, the Tour Pass Plate and the Champion Aura for the rest of Season ${ssn.n}.</p>
           </div>
         </div>
         <div class="tps-chips"><span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span><span class="tps-chip">SEASON EXCLUSIVE</span></div></div>`));
@@ -22487,7 +22508,7 @@ function tourPassCard(){
   if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
     mid=`Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
     if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
-  } else mid=`Earn XP in every mode · climb 50 tiers of rewards`;
+  } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season Pass</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
     <div class="gc-mid">${mid}</div>
