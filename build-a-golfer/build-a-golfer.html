@@ -6205,8 +6205,22 @@ function passTierCost(t){ return 140 + (t-1)*11; }
 function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
-  s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
-  if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
+  if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
+  s.xp+=Math.round(n); passSave(s); }
+// Owner: a proper level-up moment after a season / daily / h2h round, not a toast mid-play. Deferred the
+// same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
+// they're safely on screen. Only fires when a TIER was actually gained.
+function passLevelPending(){ const p=S._passPop; if(!p||!passEnabled()||!sbSignedIn()) return false;
+  return passTierAt(passState().xp)>p.tier0; }
+function flushPassLevel(){
+  if(!passLevelPending()){ S._passPop=null; return; }
+  if(S.overlay) return;                                   // let the welcome gift / login bonus land first
+  var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','setup'];
+  if(busy.indexOf(S.screen)>=0) return;                   // never interrupt a live round / draft
+  const s=passState(), p=S._passPop;
+  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierAt(s.xp)};
+  S._passPop=null; S.overlay='passlevel'; try{ track('tourpass_levelup',{from:p.tier0,to:S.passLevel.tier1}); }catch(e){}
+  try{ render(); }catch(e){} }
 // Reward tables - milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
 // FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
 // Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
@@ -7393,6 +7407,7 @@ function render(){
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
     if(S.overlay==='welcomepack') overlayWelcomePack(app);
+    if(S.overlay==='passlevel') overlayPassLevel(app);
     if(S.overlay==='packbatch') overlayPackBatch(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
@@ -7437,6 +7452,11 @@ function render(){
       <button class="btn goldfill" id="rerr-home">Back to Home</button></div>`);
     const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
     screen.appendChild(fb);
+  }
+  // Tour Pass level-up: flushed here (once the result screen is actually on screen) rather than from inside
+  // each screen fn, so an early return in one of them can't skip it. Deferred a beat so the page paints first.
+  if(passLevelPending() && !S.overlay && ['summary','dailyresult','h2hresult','careerend','circuitend'].indexOf(S.screen)>=0){
+    setTimeout(()=>{ try{ flushPassLevel(); }catch(e){} }, 520);
   }
   // CS304: persistent bottom tab nav. Appended AFTER the screen dispatch so has-cupbar (set by the team-cup
   // screen) is known. Hidden on immersive live-play screens with their own bottom controls; an open
@@ -23167,6 +23187,113 @@ function flushPendingWelcome(){ if(!S._welcomePop) return; if(S.overlay) return;
   if(busy.indexOf(S.screen)>=0) return;                     // never interrupt a live round / draft / ceremony
   S._welcomePop=false; S.overlay='welcomepack'; try{ render(); }catch(e){} }
 function welcomePackPending(){ return !!S._welcomePop; }
+/* ---------------------------------------------------------------------------
+   TOUR PASS LEVEL-UP (owner): after a season / daily / h2h round, show the live
+   XP bar with the level you were on at the LEFT and the next one at the RIGHT,
+   fill it, roll over into the next level (repeating for every tier gained),
+   then list what those tiers unlocked and offer to go collect it.
+--------------------------------------------------------------------------- */
+function passLevelStyleOnce(){ if(document.getElementById('plcss')) return;
+  const st=document.createElement('style'); st.id='plcss'; st.textContent=`
+  .plov{text-align:center}
+  .pl-kick{font:800 10.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#ffd447;margin-bottom:4px}
+  .pl-title{font-family:var(--display);font-size:clamp(26px,7.4vw,36px);line-height:1.05;margin:0 0 2px}
+  .pl-sub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
+  .pl-rail{display:flex;align-items:center;gap:10px;max-width:440px;margin:0 auto}
+  .pl-lv{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border:2px solid rgba(255,255,255,.16);background:rgba(0,0,0,.3);transition:all .35s ease}
+  .pl-lv b{font:900 19px/1 var(--body);color:#fff}
+  .pl-lv span{font:800 7.5px/1 var(--body);letter-spacing:.12em;color:var(--muted);margin-top:2px}
+  .pl-lv.on{border-color:#ffd447;background:linear-gradient(180deg,rgba(241,208,74,.3),rgba(241,208,74,.1));box-shadow:0 0 18px rgba(241,208,74,.45)}
+  .pl-lv.on b{color:#ffd447}
+  .pl-bar{position:relative;flex:1 1 auto;height:18px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;
+    border:1px solid rgba(255,255,255,.08)}
+  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,#f0a51e,#ffd447,#fff3bd);box-shadow:0 0 12px rgba(241,208,74,.5)}
+  .pl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 10px/1 var(--body);
+    font-style:normal;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+  .pl-gain{margin:12px 0 0;font:900 15px/1.2 var(--body);color:#ffd447;min-height:18px}
+  .pl-rw{margin:14px auto 0;max-width:440px;text-align:left}
+  .pl-rw h4{font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+  .pl-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.07);margin-bottom:6px}
+  .pl-row.pro{border-color:rgba(162,75,224,.5);background:rgba(162,75,224,.12)}
+  .pl-row .pl-t{flex:0 0 auto;font:900 10px/1 var(--body);color:#ffd447;min-width:34px}
+  .pl-row.pro .pl-t{color:#c9a0ff}
+  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:12.5px;color:var(--oncard)}
+  .pl-lock{margin-top:8px;font-size:11.5px;color:#c9a0ff}
+  @media (prefers-reduced-motion:reduce){ .pl-fill{transition:none!important} .pl-lv{transition:none!important} }`;
+  document.head.appendChild(st); }
+// one line per reward on a tier, e.g. "Tour pack · 1,500 coins"
+function passRewardLine(r){
+  const bits=[];
+  if(r.pack) bits.push((r.pack.n>1?r.pack.n+'× ':'')+packType(r.pack.tier).name);
+  if(r.cos)  bits.push(r.cos.name);
+  if(r.shard) bits.push((r.shard.n||1)+'× '+r.shard.r+' shard');
+  if(r.coins) bits.push(coinFmt(r.coins)+' coins');
+  return bits.join(' · ')||'Rewards';
+}
+function overlayPassLevel(screen){
+  const pl=S.passLevel; if(!pl){ S.overlay=null; return; }
+  passLevelStyleOnce();
+  const pro=passProActive(), gained=Math.max(0,pl.tier1-pl.tier0), cap=passXpForTier(PASS_TIERS);
+  const ov=$(`<div class="ov plov" role="dialog" aria-modal="true" aria-label="Tour Pass level up"></div>`);
+  ov.appendChild($(`<div><div class="pl-kick">Tour Pass · Season ${passSeason().n}</div>
+    <h3 class="pl-title">Tier ${pl.tier1} reached</h3>
+    <p class="pl-sub">${gained>1?gained+' tiers climbed this time':'You levelled up the Track'}</p></div>`));
+  // the rail: level you were on (left) → bar → the next level (right)
+  const rail=$(`<div class="pl-rail">
+    <div class="pl-lv" id="pl-l"><b>${pl.tier0}</b><span>TIER</span></div>
+    <div class="pl-bar"><div class="pl-fill" id="pl-f"></div><em id="pl-x"></em></div>
+    <div class="pl-lv" id="pl-r"><b>${Math.min(PASS_TIERS,pl.tier0+1)}</b><span>NEXT</span></div>
+  </div>`);
+  ov.appendChild(rail);
+  const gain=$(`<div class="pl-gain" id="pl-g">+${coinFmt(Math.round(pl.xp1-pl.xp0))} XP</div>`); ov.appendChild(gain);
+  // what those tiers unlocked (free always; pro too when they hold the pass, else a nudge)
+  const rw=$(`<div class="pl-rw"><h4>Unlocked</h4></div>`);
+  for(let t=pl.tier0+1;t<=pl.tier1;t++){
+    rw.appendChild($(`<div class="pl-row"><span class="pl-t">T${t}</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'free')))}</span></div>`));
+    if(pro) rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${t} PRO</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'prem')))}</span></div>`));
+  }
+  if(!pro && TOURPASS_ENABLED) rw.appendChild($(`<div class="pl-lock">The PRO rewards on ${gained>1?'these tiers':'this tier'} are waiting too, unlock them with the Tour Pass.</div>`));
+  ov.appendChild(rw);
+  const go=$(`<button class="btn goldfill" style="margin-top:16px">Collect in the Tour Pass ▸<span class="sub">${passClaimable()} reward${passClaimable()===1?'':'s'} ready to claim</span></button>`);
+  go.onclick=()=>{ S.passLevel=null; S.overlay='tourpass'; track('tourpass_levelup_go'); render(); };
+  ov.appendChild(go);
+  const later=$(`<button class="btn ghost" style="margin-top:8px">Later</button>`);
+  later.onclick=()=>{ S.passLevel=null; S.overlay=null; render(); };
+  ov.appendChild(later);
+  screen.appendChild(ov);
+  // ---- animate: fill this tier, roll the numbers over, repeat for every tier gained ----
+  const fill=ov.querySelector('#pl-f'), lab=ov.querySelector('#pl-x'),
+        lv=ov.querySelector('#pl-l'), nx=ov.querySelector('#pl-r'), gEl=ov.querySelector('#pl-g');
+  const reduce=(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+  const pctInto=(xp,t)=>{ if(t>=PASS_TIERS) return 100;
+    const b=passXpForTier(t), n=passXpForTier(t+1); return Math.max(0,Math.min(100,100*(Math.min(xp,cap)-b)/Math.max(1,n-b))); };
+  const label=(xp,t)=>{ if(t>=PASS_TIERS) return 'MAX TIER';
+    const b=passXpForTier(t), n=passXpForTier(t+1); return Math.round(Math.min(xp,cap)-b)+' / '+(n-b)+' XP'; };
+  const setStop=(t)=>{ lv.querySelector('b').textContent=t; nx.querySelector('b').textContent=Math.min(PASS_TIERS,t+1); };
+  const rest=()=>{ setStop(pl.tier1); fill.style.transition='width .6s ease'; fill.style.width=pctInto(pl.xp1,pl.tier1)+'%';
+    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.textContent='+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP · Tier '+pl.tier0+' → '+pl.tier1; };
+  // pace it so one level feels weighty but a big climb doesn't drag (the whole run stays ~4s)
+  const FILL=Math.max(260, Math.round(850/Math.max(1,Math.sqrt(gained)))), HOLD=Math.max(120, Math.round(FILL*0.29));
+  if(reduce){ rest(); return; }
+  // start where the run began
+  fill.style.transition='none'; fill.style.width=pctInto(pl.xp0,pl.tier0)+'%'; lab.textContent=label(pl.xp0,pl.tier0);
+  let t=pl.tier0;
+  const step=()=>{
+    if(!ov.isConnected) return;                        // a re-render replaced us, stop cleanly
+    if(t>=pl.tier1){ rest(); return; }
+    setStop(t);
+    fill.style.transition='none'; fill.style.width=pctInto(t===pl.tier0?pl.xp0:passXpForTier(t),t)+'%';
+    requestAnimationFrame(()=>{ if(!ov.isConnected) return;
+      fill.style.transition='width '+FILL+'ms cubic-bezier(.25,.8,.3,1)'; fill.style.width='100%'; lab.textContent=label(passXpForTier(t+1),t);
+      setTimeout(()=>{ if(!ov.isConnected) return;
+        t++; nx.classList.add('on'); try{ sfx('streak'); buzz(18); }catch(e){}
+        setTimeout(()=>{ if(!ov.isConnected) return; nx.classList.remove('on'); step(); }, HOLD);
+      }, FILL+60); });
+  };
+  setTimeout(step, 320);
+}
 function overlayWelcomePack(screen){
   var tier='base', pt=packType(tier);
   var ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Welcome gift" style="text-align:center">
