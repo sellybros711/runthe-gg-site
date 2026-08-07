@@ -10081,7 +10081,7 @@ function paintPfpEdit(nm){
          glance, and the difference is whether anybody chose it. */
       label.innerHTML=a.chosen
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
-        : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colours for now';
+        : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colors for now';
     }
   };
   swatches.innerHTML=AVATAR_TEAMS.map(k=>{
@@ -10454,7 +10454,7 @@ function pfHub(msg,ok){
       pfNavRow('pf-go-drafts','Your drafts','Recent, best rated and best record')+
       pfNavRow('pf-go-career','Career','Every number, and your streak')+
       pfNavRow('pf-go-badges','Badges','What you have earned so far')+
-      pfNavRow('pf-go-look','Your circle','The club colours beside your name')+
+      pfNavRow('pf-go-look','Customize','Your circle, initials and club colors')+
       pfNavRow('pf-go-acct','Account','Your name, feedback, signing out')+
     '</div>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
@@ -10597,7 +10597,7 @@ async function pfBadgesPaint(userId){
 function pfLook(){
   const box=$('sheet-in'); box.dataset.kind='profile';
   const nm=authState.name||'';
-  box.innerHTML=pfHead('Your circle')+
+  box.innerHTML=pfHead('Customize')+
     '<div class="pfpedit">'+
       '<span id="pfp-demo"></span>'+
       '<div class="col">'+
@@ -10609,7 +10609,7 @@ function pfLook(){
     '</div>'+
     '<p class="pfpteam" id="pfp-team"></p>'+
     '<div class="swatches" id="a-swatches"></div>'+
-    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colours you '+
+    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colors you '+
       'want beside your name, or tap it again for none. Initials are two letters or numbers, '+
       'or leave them blank for the first two of your name.</p>'+
     '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
@@ -11524,9 +11524,9 @@ async function runDiagnostics(){
       'supabase/55_football_avatars_setup.sql, which sets this up from any starting state '+
       'and ends by reporting what is now in place.';
   }else if(r.write&&r.write.healthy&&B.needsAvatarMigration){
-    verdict='The board works, but nobody can choose a colour.';
+    verdict='The board works, but nobody can choose a color.';
     fix='53_football_profile_avatars.sql has not been run, so ps_runs has no display_color '+
-      'column. Names and places are unaffected and every circle falls back to the colour '+
+      'column. Names and places are unaffected and every circle falls back to the color '+
       'worked out from the name, which is why nothing looks broken.';
   }else if(r.write&&r.write.healthy){
     verdict='Everything is wired up correctly.';
