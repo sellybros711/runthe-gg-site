@@ -14139,6 +14139,16 @@ allows Google Fonts, or self-host Anton.*
   Full regression green (board retry/timeout suite, gold-name suite, an 18-hole practice round), 0 page
   errors. Deployed client to /golf.
 
+- **2026-08-06: owner ran migrations 74 and 75 successfully.** Both LIVE: **74** (`runtour_pro_users` -
+  Tour Pass holders' usernames now render with the animated gold sweep on every board + the player card),
+  **75** (forced rename - `runtour_force_rename('georgefloyd69', ...)` returned uid
+  `4475a0a1-a17f-49a5-95bb-e1858c3a043a`, i.e. the account was found and actioned: renamed to
+  `player_4475a0a1`, its frozen name copies scrubbed from runtour_scores / runtour_daily_scores / drafts,
+  flagged for a forced rename on next load, and the name + variants permanently blocked by `username_ok`).
+  The account is NOT banned - careers, coins and stats are untouched; the flag clears itself as soon as
+  they save a valid new name. The reusable tool is `select public.runtour_force_rename('<name>', '<reason>');`
+  (service_role / SQL editor only). No outstanding runtour migrations at this point.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
