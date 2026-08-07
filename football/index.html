@@ -3124,6 +3124,28 @@ window.GA_ID='G-L29P5MRWKE';
   body.rtp-hide-ads .rtp-ad-mobile-bottom{display:none !important}
   @media (max-width:1199px){ body.rtp-hide-ads{padding-bottom:0 !important} }
 
+  /* ---- THE IN-FLOW BANNER, ABOVE THE FOOTER ----
+     A unit in the page rather than pinned to the viewport: it sits at the end of the home
+     screen, under the last button and over the legal links, so it is reached by scrolling
+     to the bottom rather than by being carried there. Nothing can be tapped by accident on
+     the way past it, which is the failure mode a sticky strip has and the one that gets a
+     placement called deceptive.
+
+     IT TAKES NO SPACE UNTIL IT HAS SOMETHING IN IT. The <ins> collapses to nothing when
+     AdSense declines to fill, so an unsold page looks exactly like it did before rather
+     than carrying a reserved grey rectangle. The label and the rule appear on the same
+     condition, because "Advertisement" over an empty box is worse than no label at all.
+     Browsers without :has simply get the ad with no label, which is allowed and honest --
+     the unit is visibly an ad either way. */
+  .rtp-ad-inline{max-width:728px;margin:18px auto 4px;text-align:center}
+  .rtp-ad-inline .adsbygoogle{display:block}
+  .rtp-ad-inline .rtp-ad-label{display:none;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
+    margin:0 0 6px;padding-top:14px;border-top:1px solid var(--line)}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The gameplay screens stay clear for the same reason the pinned strip does. */
+  body.rtp-hide-ads .rtp-ad-inline{display:none}
+
   /* COACH PANEL.
      WHAT WAS WRONG WITH IT. The headline was "x1.06 TEAM SHAPE", a multiplier and a phrase
      that only mean anything if you have read the code. A player looking at it could not say
@@ -3571,6 +3593,20 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          Every link opens in a new tab, deliberately. There is no mid-run save yet,
          so following a link in this tab during a draft would throw the run away. -->
+    <!-- The banner, between the last button and the legal links. Responsive rather than a
+         fixed 320x50: on a phone it runs the content width, on a desktop it caps at the
+         728px leaderboard shape instead of stretching across the whole window. The slot id
+         is a placeholder until the unit exists in the dashboard, and the initialiser at the
+         foot of this file refuses to start a placeholder, so this renders nothing at all
+         until a real id is pasted in. -->
+    <div class="rtp-ad-inline">
+      <span class="rtp-ad-label">Advertisement</span>
+      <ins class="adsbygoogle"
+           data-ad-client="ca-pub-5952069078178257"
+           data-ad-slot="0000000000"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+    </div>
     <footer class="legal">
       <p><a href="/football/how-to-play.html" target="_blank" rel="noopener">How to play</a><span>&middot;</span><a
         href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
