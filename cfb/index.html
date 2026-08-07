@@ -1591,6 +1591,55 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(160deg,#4a1216,#24090c);border:1px solid rgba(239,68,68,.5);
     box-shadow:0 12px 30px -10px #000}
   .load{text-align:center;padding:80px 20px}
+  /* ── THE LOADING SCREEN ──────────────────────────────────────────
+     .load stays exactly as it was, because the "could not load the data" branch still
+     paints into it. Everything below is the boot screen proper.
+
+     THE BAR IS NOT DECORATION AND NOT A TIMER. It steps forward as each of the seven data
+     files lands and again when the league is indexed, so the position is the truth about
+     how much is done. A fake bar that always takes the same two seconds is a worse lie than
+     three dots, because it looks like information. */
+  .boot{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:min(56vh,440px);padding:36px 20px}
+  .bootmark{width:76px;height:69px;display:block;
+    filter:drop-shadow(0 0 12px rgba(16,185,129,.26)) drop-shadow(0 6px 18px rgba(0,0,0,.55));
+    animation:bootRise .5s var(--ez) both,bootFloat 3.6s cubic-bezier(.4,0,.2,1) .5s infinite}
+  /* THE WORDMARK IS THE HEADLINE'S, NOT THE HEADER'S. The header lockup sets the three
+     words on one line with College overlapping left and right, which is a miniature tuned
+     for 15px: at three times that it runs past a phone and wraps into a heap. The front
+     page already has the large-size answer -- Perfect, the torn COLLEGE laid across both
+     lines, Season, stacked -- so this is that, one step smaller. */
+  .bootwm{font-family:var(--fd);text-transform:uppercase;line-height:.84;letter-spacing:.01em;
+    font-size:clamp(29px,9.5vw,44px);margin-top:16px;
+    animation:bootRise .5s var(--ez) .07s both}
+  .bootwm .ln{display:block}
+  .bootwm .freak{font-family:'Metal Mania',var(--fd);display:block;transform:rotate(-4deg);
+    font-size:1.2em;line-height:.82;margin:-.05em 0 -.04em;position:relative;z-index:2;
+    color:var(--green);text-shadow:0 0 16px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.65)}
+  .bootbar{position:relative;width:min(238px,66vw);height:5px;margin-top:21px;
+    border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
+    animation:bootRise .5s var(--ez) .14s both}
+  .bootbar i{position:relative;display:block;height:100%;width:0;border-radius:99px;
+    overflow:hidden;background:linear-gradient(90deg,#34d399,#10b981 55%,#059669);
+    box-shadow:0 0 10px rgba(16,185,129,.7),0 0 26px rgba(16,185,129,.38);
+    transition:width .6s var(--ez)}
+  /* A SWEEP ACROSS THE FILLED PART, always running and clipped to it. The bar advances in
+     steps, so between two files landing it is a still image; the sweep is what says the
+     game is still working rather than wedged. */
+  .bootbar i::after{content:'';position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
+    animation:bootSweep 1.5s linear infinite}
+  .bootsay{margin:13px 0 0;font-family:var(--fn);font-size:11.5px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);
+    animation:bootRise .5s var(--ez) .2s both}
+  @keyframes bootRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes bootFloat{
+    0%,100%{transform:translateY(0);
+      filter:drop-shadow(0 0 12px rgba(16,185,129,.26)) drop-shadow(0 6px 18px rgba(0,0,0,.55))}
+    50%{transform:translateY(-5px);
+      filter:drop-shadow(0 0 22px rgba(16,185,129,.5)) drop-shadow(0 8px 22px rgba(0,0,0,.55))}
+  }
+  @keyframes bootSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
   .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
   .dots i{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:bounce 1s infinite}
   .dots i:nth-child(2){animation-delay:.15s;background:#fff}
@@ -1801,6 +1850,14 @@ window.GA_ID='G-L29P5MRWKE';
   .authok{margin:9px 0 0;font-size:12.5px;color:#6ee7b7;line-height:1.4}
   .authswap{margin:11px 0 0;font-size:12.5px;color:var(--dim);text-align:center}
   .authswap button{color:var(--green);font-weight:700;text-decoration:underline}
+  /* The feedback form, inside the sheet the rest of the game already uses. */
+  .fbrow{margin:9px 0 0}
+  .fbcats{display:flex;gap:0;margin-top:11px}
+  /* A textarea is not a .fld: it needs a height, and it must only ever grow downwards,
+     because a horizontal drag handle inside a padded sheet on a phone is a way to push
+     the send button off the screen. */
+  textarea.fld{display:block;min-height:104px;resize:vertical;line-height:1.45;font-size:14.5px}
+  .fbnote{margin:9px 0 0;font-size:11.5px;line-height:1.5;color:var(--dim-2)}
   .gbtn{width:100%;margin-top:9px;padding:12px;border-radius:10px;background:#fff;
     color:#1f2937;font-family:var(--fn);font-size:14px;font-weight:700;
     display:flex;align-items:center;justify-content:center;gap:9px}
@@ -2051,10 +2108,21 @@ or endorsed by the NCAA, the CFP or any school.
     </div>
   </header>
 
-  <!-- s-load -->
+  <!-- s-load
+       THE FIRST THING ANYBODY SEES. Three bouncing dots said "something is happening" and
+       nothing else -- not what game this is, not how much of the wait is left. This says
+       both: the mark and the wordmark, so the brand is on screen before the game is, and a
+       bar underneath that is measuring the actual load rather than running a timer.
+       The NFL game carries the same screen in red; this one is green, which is the only
+       difference between them. -->
   <div class="screen on" id="s-load">
-    <div class="load"><div class="dots"><i></i><i></i><i></i></div>
-    <p class="dim" style="font-size:13px">Loading player data&#8230;</p></div>
+    <div class="load boot">
+      <img class="bootmark" src="mark.png?v=2" width="76" height="69" alt="" decoding="async">
+      <div class="bootwm"><span class="ln">Perfect</span><span class="freak">College</span><span class="ln">Season</span></div>
+      <div class="bootbar" id="boot-bar" role="progressbar" aria-label="Loading the game"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="boot-fill"></i></div>
+      <p class="bootsay" id="boot-say">Loading every season since 2005</p>
+    </div>
   </div>
 
   <!-- s-intro -->
@@ -2122,6 +2190,12 @@ or endorsed by the NCAA, the CFP or any school.
       <p>Player data from <a href="https://collegefootballdata.com" target="_blank" rel="noopener">CollegeFootballData.com</a>.
         An unofficial fan project, not affiliated with or endorsed by the NCAA, the CFP or any school.</p>
       <p><a href="/cfb/how-to-play.html">How to play</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
+      <!-- Tell us what is wrong with it, in the footer, which is where the NFL game and
+           RunThePitch and RunTheTour all put it, so somebody who plays two of these finds
+           the same thing in the same place. A sheet rather than a link to a contact page:
+           there is no mid-run save, so sending somebody to another page to report a bug
+           would throw away the run they are reporting. -->
+      <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
       <div class="follow">
         <a href="https://runthe.gg">RunThe.GG</a>
       </div>
@@ -2991,7 +3065,7 @@ function pfHub(){
       pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record')+
       pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges')+
       pfNavRow('pf-go-look','Customize','The school colors you play in')+
-      pfNavRow('pf-go-acct','Account','Your name, and signing out')+
+      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out')+
     '</div>'+pfClose();
   openSheet(); pfWire(box);
   $('pf-go-seasons').onclick=()=>openProfile('seasons');
@@ -3313,6 +3387,197 @@ function pfWireDelete(){
     openProfile('account');
   };
 }
+/* ── FEEDBACK ───────────────────────────────────────────────────────
+   THE SAME FORM THE NFL GAME HAS, AND IT ACTUALLY SENDS. This game had no way to report a
+   bug at all: a player who hit one had the choice of finding an address on another page or
+   not bothering, and almost everybody picks the second. Sending somebody to a contact page
+   is worse here than it looks, because there is no mid-run save -- leaving the page to
+   report a bug throws away the run you are reporting.
+
+   NO BACKEND. It posts to FormSubmit's AJAX endpoint, which relays to the address below and
+   needs no key in the page and no server of ours. The address is already activated: a new
+   address gets a one-time confirmation on its first submission, and that has happened for
+   this one.
+
+   AND IT KEEPS TRYING. A send that fails is not lost and does not go to the mail app: it is
+   written to localStorage and retried on the next load and after the next message, until it
+   lands. A player on a train should not have to think about it, and a message that only
+   sends when the network happens to be up is not a feedback channel.
+
+   ITS OWN QUEUE KEY. cfb_feedback_queue, not the football game's ps_feedback_queue, because
+   both games run on the same origin and share localStorage: one key would have each game
+   draining the other's outbox and stamping it with its own subject line. */
+const FB_EMAIL='sellybros711@gmail.com';
+const FB_ENDPOINT='https://formsubmit.co/ajax/'+FB_EMAIL;
+const FB_QUEUE='cfb_feedback_queue';
+const FB_QUEUE_MAX=20;
+const FB_CATS=[['bug','Bug'],['idea','Idea'],['other','Other']];
+let fbCat='bug';
+
+/* localStorage throws rather than returning null in a browser with storage blocked, in
+   private mode on some versions of Safari, and inside some in-app webviews. Every access
+   goes through these, so a blocked store costs the retry and nothing else. */
+function fbQueueLoad(){
+  try{ const a=JSON.parse(localStorage.getItem(FB_QUEUE)||'[]');
+    return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function fbQueueSave(a){
+  /* Capped, because this is a queue that only drains when the network allows and nothing
+     else prunes it. The newest are kept: an hour-old bug report is worth more than a
+     week-old one, and 20 x ~2KB cannot fill a 5MB store. */
+  try{ localStorage.setItem(FB_QUEUE,JSON.stringify(a.slice(-FB_QUEUE_MAX))); return true; }
+  catch(e){ return false; }
+}
+async function fbPost(payload){
+  try{
+    const r=await fetch(FB_ENDPOINT,{method:'POST',mode:'cors',
+      headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify(payload)});
+    return !!(r&&r.ok);
+  }catch(e){ return false; }
+}
+/* Drains what is waiting. Called on load and after every send, and it never re-sends
+   anything that has already landed: a message leaves the queue only once the relay has
+   accepted it. */
+let fbFlushing=false;
+async function fbFlush(){
+  if(fbFlushing) return 0;
+  const q=fbQueueLoad(); if(!q.length) return 0;
+  fbFlushing=true;
+  const keep=[];
+  for(const p of q){ if(!(await fbPost(p))) keep.push(p); }
+  fbQueueSave(keep);
+  fbFlushing=false;
+  return q.length-keep.length;
+}
+/* Declared above feedbackSheet, which reads it, rather than below. */
+const fbDraft={msg:'',email:''};
+/* NOT authMsg. That name is already a mutable {err}|{ok} object in this file, read by
+   accountHtml, so a function of the same name would shadow it and break sign-in. */
+const fbMsg=(m,ok)=>'<p class="'+(ok?'authok':'autherr')+'">'+esc(m)+'</p>';
+
+/* WHAT WAS ON SCREEN WHEN THEY WROTE IT. Attached automatically, because "the wheel got
+   stuck" is unactionable and "the wheel got stuck, on the draft screen, four of six picked,
+   in an SEC run, on iOS Safari" is a bug that can be found. Nothing here is anything the
+   player typed, and nothing identifies them beyond the account they already chose to have. */
+function fbContext(){
+  try{
+    const scr=(document.querySelector('.screen.on')||{}).id||'-';
+    const who=authState.signedIn?(authState.name||'(no name yet)'):'(guest)';
+    let where='no run';
+    const kind=run?' ('+modeLabel(runMode(run))+')':'';
+    if(run&&run.outcome) where='finished '+run.outcome.record+kind;
+    else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of '+E.SLOTS.length+
+      ' picked'+kind;
+    return 'Screen: '+scr+'\nRun: '+where+'\nAccount: '+who+
+      '\nEngine: '+E.API_VERSION+', run '+R.API_VERSION+', board '+(B?B.API_VERSION:'offline')+
+      '\nViewport: '+window.innerWidth+'x'+window.innerHeight+
+      '\nURL: '+location.href+'\nUA: '+navigator.userAgent;
+  }catch(e){ return 'context unavailable: '+((e&&e.message)||'unknown'); }
+}
+
+function feedbackSheet(msg,ok){
+  if(!msg) ga('feedback_opened');
+  const box=$('sheet-in');
+  box.dataset.kind='feedback';
+  box.innerHTML='<div class="eyebrow green">Tell us</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Send feedback</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">Found a bug, or thought of something '+
+      'that would make this better? It gets read.</p>'+
+    (msg?fbMsg(msg,ok):'')+
+    '<div class="fbcats"><div class="seg" id="fb-cats">'+
+      FB_CATS.map(([k,label])=>'<button'+(k===fbCat?' class="on"':'')+' data-cat="'+k+
+        '">'+label+'</button>').join('')+'</div></div>'+
+    '<textarea class="fld" id="fb-msg" rows="5" maxlength="1500" '+
+      'placeholder="What happened, or what would you like to see?"></textarea>'+
+    '<input class="fld" id="fb-email" type="email" maxlength="120" autocomplete="email" '+
+      'placeholder="your email, only if you want a reply">'+
+    '<div style="margin-top:10px"><button class="btn" id="fb-send">Send</button></div>'+
+    '<p class="fbnote">What screen you are on, which version you are running and your '+
+      'browser go along with it, so a bug can be found without a conversation about it. '+
+      'Nothing else.</p>'+
+    '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">'+
+      'Close</button></div>';
+  openSheet();
+  $('sp-x').onclick=closeSheet;
+  /* Whatever was typed survives a repaint, which happens whenever the form comes back with
+     a message on it. Losing 1,500 characters of bug report to a failed send would be worse
+     than the bug. */
+  if(fbDraft.msg) $('fb-msg').value=fbDraft.msg;
+  $('fb-email').value=fbDraft.email||(authState.signedIn&&authState.email)||'';
+  $('fb-cats').onclick=(e)=>{
+    const b=e.target.closest('button'); if(!b||b.dataset.cat===fbCat) return;
+    fbDraft.msg=$('fb-msg').value; fbDraft.email=$('fb-email').value;
+    fbCat=b.dataset.cat; feedbackSheet();
+  };
+  $('fb-send').onclick=sendFeedback;
+  setTimeout(()=>{ const t=$('fb-msg'); if(t&&$('sheet-in').dataset.kind==='feedback') t.focus(); },60);
+}
+
+async function sendFeedback(){
+  const body=($('fb-msg').value||'').trim();
+  const email=($('fb-email').value||'').trim();
+  fbDraft.msg=$('fb-msg').value; fbDraft.email=email;
+  if(!body){ feedbackSheet('Write something first, then send.'); return; }
+  const label=FB_CATS.find(([k])=>k===fbCat)[1];
+  /* _template:'table' so it arrives readable rather than as a wall of JSON, and
+     _captcha:'false' because an AJAX post has no page to show a captcha on. Field names are
+     the column headings in that table, which is why they are words and not identifiers.
+     THE SUBJECT NAMES THIS GAME, so two games relaying through one address do not arrive
+     as one undifferentiated pile. */
+  const payload={
+    _subject:'College Football Perfect Season, '+label+' feedback',
+    _template:'table',
+    _captcha:'false',
+    Category:label,
+    Message:body,
+    'Reply email':email||'(not provided)',
+    Context:fbContext(),
+  };
+  /* SO REPLY WORKS. Without this the reply-to is the relay, and answering a player means
+     copying their address out of the body by hand. Only set when it actually looks like an
+     address, because a malformed reply-to gets the whole message rejected, and losing a bug
+     report over a typo in an optional field would be a poor trade. */
+  if(/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) payload._replyto=email;
+
+  const btn=$('fb-send'); if(btn){ btn.disabled=true; btn.textContent='Sending...'; }
+  if(await fbPost(payload)){
+    ga('feedback_sent',{category:label});
+    fbDraft.msg=''; fbDraft.email='';
+    closeSheet(); toast('Sent. Thank you');
+    fbFlush();                    // anything waiting can go out on the same working network
+    return;
+  }
+  /* IT DID NOT SEND, SO IT IS QUEUED, and the sheet closes anyway: the message is safe, and
+     keeping the form open with the text still in it would invite sending it twice. */
+  if(fbQueueSave(fbQueueLoad().concat([payload]))){
+    fbDraft.msg=''; fbDraft.email='';
+    closeSheet();
+    toast('Saved. It will send itself when you are back online');
+    return;
+  }
+  /* Nowhere to keep it either, which means storage is blocked as well as the network. This
+     is the only case that hands the message back, and it stays on screen with every
+     character in place because there is nothing else holding it.
+
+     THE SHEET IS REDRAWN BEFORE THE MAILTO IS ATTEMPTED, and the order is the whole point.
+     Assigning to location starts a navigation, and a DOM write made after that can be
+     thrown away with the page that is on its way out.
+
+     "SHOULD OPEN", not "has been opened". A mailto does nothing at all in a browser with no
+     mail handler and there is no way to find out which happened, so the message does not
+     claim the part that cannot be checked. It names the address instead, which is the one
+     thing that works either way. */
+  feedbackSheet('That could not be sent, and this browser will not let the game hold on to '+
+    'it either. Your mail app should open with the message in it. If nothing opens, nothing '+
+    'has been lost: send it to '+FB_EMAIL+'.');
+  const mail='mailto:'+FB_EMAIL+'?subject='+
+    encodeURIComponent('College Football Perfect Season, '+label+' feedback')+
+    '&body='+encodeURIComponent(body+'\n\n--- context ---\n'+payload.Context+
+    (email?'\nReply to: '+email:''));
+  try{ window.location.href=mail; }catch(e){ /* nothing more to try */ }
+}
+
 /* ── more ways to play ────────────────────────────────────────────
    Two things under one heading: the other way to play this game, and a signpost
    to the other game. Kept apart by a rule, because a link to a different game on
@@ -3499,7 +3764,9 @@ function accountHtml(){
     }else{
       body+='<p class="dim" style="font-size:13px;margin:0">Every season you finish is '+
         'recorded under this name, on this device and any other you sign in on.</p>'+msg+
-        '<button class="btn ghost sm" id="ac-out" style="margin-top:12px;width:100%">Sign out</button>';
+        '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+
+          '<button class="btn ghost sm" id="ac-feedback">Send feedback</button>'+
+          '<button class="btn ghost sm" id="ac-out">Sign out</button></div>';
     }
     return body;
   }
@@ -3564,6 +3831,9 @@ function wireAccount(){
     if(!r.error) ga('username_set');
     done(r);
   };
+
+  const fb=box.querySelector('#ac-feedback');
+  if(fb) fb.onclick=()=>feedbackSheet();
 
   const out=box.querySelector('#ac-out');
   if(out) out.onclick=async()=>{ if(authBusy)return; busy('ac-out','Signing out...');
@@ -4149,9 +4419,35 @@ function patchLastRun(patch){
 }
 
 /* ── boot ────────────────────────────────────────────────────── */
+/* ── THE LOADING BAR ────────────────────────────────────────────────
+   NINE STEPS, AND EVERY ONE OF THEM IS SOMETHING THAT ACTUALLY FINISHED: the seven data
+   files as each one parses, the league index, and the first paint. So the bar is reporting
+   rather than performing, and it moves at whatever speed the connection is really going.
+   A bar that always fills in two seconds is a worse lie than three dots, because it looks
+   like information.
+
+   Every lookup is guarded because this also runs after the error branch has replaced the
+   whole screen with a message, and a boot that throws inside its own progress meter would
+   replace a readable failure with a blank one. */
+const BOOT_STEPS=9;
+let bootAt=0;
+function bootStep(say){
+  bootAt++;
+  const pct=Math.min(100,Math.round(100*bootAt/BOOT_STEPS));
+  const f=$('boot-fill'); if(f) f.style.width=pct+'%';
+  const b=$('boot-bar'); if(b) b.setAttribute('aria-valuenow',String(pct));
+  const t=$('boot-say'); if(t&&say) t.textContent=say;
+}
+
 async function boot(){
+  const t0=(window.performance&&performance.now)?performance.now():0;
   try{
-    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    /* The step lands after the parse, not after the response: the file of player seasons
+       is large enough that the JSON parse is a real part of the wait, and a bar that
+       jumped to full while the main thread was still busy would be lying at the one
+       moment it matters. */
+    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+      .then(v=>{bootStep(); return v;});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/cfb_player_seasons.json'),j('data/cfb_team_seasons.json'),
       j('data/cfb_battery.json'),j('data/cfb_coaches.json'),
@@ -4162,11 +4458,25 @@ async function boot(){
     CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
+    bootStep('Building the league');
     $('h-field').innerHTML=fieldMarkings();
     buildTicker();
     bootAuth();
     ga('game_loaded');
+    bootStep('Ready');
+    /* LET THE BAR VISIBLY REACH THE END, BUT ONLY WHEN THERE WAS A WAIT TO FINISH. Off a
+       warm cache this whole function is over in a tenth of a second and the screen has
+       barely registered; holding it there would be adding a delay in order to show off a
+       loading screen, which is the opposite of the point. Past about a third of a second
+       the player has been looking at the bar, and cutting it off at 90-something is the
+       one thing that would make the whole screen feel cheap. */
+    const spent=((window.performance&&performance.now)?performance.now():0)-t0;
+    if(spent>380) await new Promise(r=>setTimeout(r,240));
     if(!routeChallenge()) show('s-intro');
+    /* Anything a previous visit could not send. Deliberately not awaited and deliberately
+       last: it is somebody else's message from an earlier session, and it must not hold up
+       this one by a single frame. */
+    fbFlush();
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -6967,6 +7277,7 @@ function perfectLine(n){
 /* ── wire up buttons ─────────────────────────────────────────── */
 $('b-play-intro').onclick=()=>beginDraft();
 $('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
+$('b-feedback').onclick=()=>feedbackSheet();
 $('b-modes').onclick=modeMenu;
 $('b-lb-intro').onclick=()=>openBoard();
 $('lb-comp').onchange=(e)=>{

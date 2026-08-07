@@ -3415,11 +3415,55 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(160deg,#4a1216,#24090c);border:1px solid rgba(239,68,68,.5);
     box-shadow:0 12px 30px -10px #000}
   .load{text-align:center;padding:80px 20px}
-  .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
-  .dots i{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:bounce 1s infinite}
-  .dots i:nth-child(2){animation-delay:.15s;background:#fff}
-  .dots i:nth-child(3){animation-delay:.3s;background:var(--red)}
-  @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-7px);opacity:1}}
+  /* ── THE LOADING SCREEN ──────────────────────────────────────────
+     .load stays exactly as it was, because the "could not load the data" branch still
+     paints into it. Everything below is the boot screen proper.
+
+     THE BAR IS NOT DECORATION AND NOT A TIMER. It steps forward as each of the seven data
+     files lands and again when the league is indexed, so the position is the truth about
+     how much is done. A fake bar that always takes the same two seconds is a worse lie than
+     three dots, because it looks like information. */
+  .boot{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:min(56vh,440px);padding:36px 20px}
+  .bootmark{width:76px;height:69px;display:block;
+    filter:drop-shadow(0 0 12px rgba(239,68,68,.26)) drop-shadow(0 6px 18px rgba(0,0,0,.55));
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) both,
+              bootFloat 3.6s cubic-bezier(.4,0,.2,1) .5s infinite}
+  /* .brand as well as .bootname, so the wordmark is the header's wordmark -- one set of
+     rules for the red Season, and in the college game for the torn Metal Mania College --
+     at a size this screen chooses. The two-class selector outruns the header's own media
+     queries without needing !important. */
+  .bootname.brand{display:block;font-size:clamp(21px,6.4vw,29px);letter-spacing:.05em;
+    line-height:1.04;margin-top:15px;overflow:visible;
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .07s both}
+  .bootbar{position:relative;width:min(238px,66vw);height:5px;margin-top:21px;
+    border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .14s both}
+  .bootbar i{position:relative;display:block;height:100%;width:0;border-radius:99px;
+    overflow:hidden;background:linear-gradient(90deg,#f87171,#ef4444 55%,#dc2626);
+    box-shadow:0 0 10px rgba(239,68,68,.7),0 0 26px rgba(239,68,68,.38);
+    transition:width .6s cubic-bezier(.22,.9,.26,1)}
+  /* A SWEEP ACROSS THE FILLED PART, always running and clipped to it. The bar advances in
+     steps, so between two files landing it is a still image; the sweep is what says the
+     game is still working rather than wedged. */
+  .bootbar i::after{content:'';position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
+    animation:bootSweep 1.5s linear infinite}
+  .bootsay{margin:13px 0 0;font-family:var(--fn);font-size:11.5px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .2s both}
+  @keyframes bootRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes bootFloat{
+    0%,100%{transform:translateY(0);
+      filter:drop-shadow(0 0 12px rgba(239,68,68,.26)) drop-shadow(0 6px 18px rgba(0,0,0,.55))}
+    50%{transform:translateY(-5px);
+      filter:drop-shadow(0 0 22px rgba(239,68,68,.5)) drop-shadow(0 8px 22px rgba(0,0,0,.55))}
+  }
+  @keyframes bootSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+  /* .dots and @keyframes bounce lived here. The boot screen was their only caller in this
+     game, and nothing else draws three bouncing dots -- the board's loader is .rload and the
+     deal carousel's page markers are .deal-dots, both with their own rules. The college
+     game still has them, because its gate card and trophy case use them. */
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);z-index:99;
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
@@ -3597,9 +3641,19 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div>
   </header>
 
+  <!-- THE FIRST THING ANYBODY SEES. Three bouncing dots said "something is happening"
+       and nothing else -- not what game this is, not how much of the wait is left. This
+       says both: the mark and the wordmark, so the brand is on screen before the game is,
+       and a bar underneath that is measuring the actual load rather than running a timer.
+       role/aria-valuenow are on the track so a screen reader gets the same number. -->
   <div class="screen on" id="s-load">
-    <div class="load"><div class="dots"><i></i><i></i><i></i></div>
-      <div class="dim">Loading every season since 1999</div></div>
+    <div class="load boot">
+      <img class="bootmark" src="mark.png?v=2" width="76" height="69" alt="" decoding="async">
+      <div class="bootname brand">The Perfect<i> Season</i></div>
+      <div class="bootbar" id="boot-bar" role="progressbar" aria-label="Loading the game"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="boot-fill"></i></div>
+      <p class="bootsay" id="boot-say">Loading every season since 1999</p>
+    </div>
   </div>
 
   <!-- THE LANDING SCREEN
@@ -4772,7 +4826,28 @@ function show(id){
   document.querySelectorAll('.tabwrap>.tabs').forEach(hintScroll);}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2300);}
 
+/* ── THE LOADING BAR ────────────────────────────────────────────────
+   NINE STEPS, AND EVERY ONE OF THEM IS SOMETHING THAT ACTUALLY FINISHED: the seven data
+   files as each one parses, the league index, and the first paint. So the bar is reporting
+   rather than performing, and it moves at whatever speed the connection is really going.
+   A bar that always fills in two seconds is a worse lie than three dots, because it looks
+   like information.
+
+   Every lookup is guarded because this also runs after the error branch has replaced the
+   whole screen with a message, and a boot that throws inside its own progress meter would
+   replace a readable failure with a blank one. */
+const BOOT_STEPS=9;
+let bootAt=0;
+function bootStep(say){
+  bootAt++;
+  const pct=Math.min(100,Math.round(100*bootAt/BOOT_STEPS));
+  const f=$('boot-fill'); if(f) f.style.width=pct+'%';
+  const b=$('boot-bar'); if(b) b.setAttribute('aria-valuenow',String(pct));
+  const t=$('boot-say'); if(t&&say) t.textContent=say;
+}
+
 async function boot(){
+  const t0=(window.performance&&performance.now)?performance.now():0;
   try{
     /* v6: every team-season can now field a quarterback and a tight end. Thirteen clubs that
        split a season between two or three starters had nobody clear the games threshold, so
@@ -4780,7 +4855,11 @@ async function boot(){
        returning visitor is not served last week's copy, which would still have the holes and
        could not resolve a challenge link naming one of the newly admitted men.
        v5 was when player_seasons.json started carrying awards. */
-    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    /* The step lands after the parse, not after the response: on a 3MB file of player
+       seasons the JSON parse is a real part of the wait, and a bar that jumped to full
+       while the main thread was still busy would be lying at the one moment it matters. */
+    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+      .then(v=>{bootStep(); return v;});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
       j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),
@@ -4788,8 +4867,18 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
+    bootStep('Building the league');
     $('h-field').innerHTML=fieldMarkings();
     authBoot(); watchTabs(); wireDealNav(); paintNewChip();
+    bootStep('Ready');
+    /* LET THE BAR VISIBLY REACH THE END, BUT ONLY WHEN THERE WAS A WAIT TO FINISH. Off a
+       warm cache this whole function is over in a tenth of a second and the screen has
+       barely registered; holding it there would be adding a delay in order to show off a
+       loading screen, which is the opposite of the point. Past about a third of a second
+       the player has been looking at the bar, and cutting it off at 90-something is the
+       one thing that would make the whole screen feel cheap. */
+    const spent=((window.performance&&performance.now)?performance.now():0)-t0;
+    if(spent>380) await new Promise(r=>setTimeout(r,240));
     /* A challenge link (?c=) or a result link (?cr=) takes over the first screen; otherwise
        the normal intro. routeChallenge falls back to false on anything it cannot decode. */
     if(!routeChallenge()) show('s-intro');
