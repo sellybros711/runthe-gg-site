@@ -151,10 +151,30 @@
      guest, so this hands the live access token over. */
   const token = () => (session && session.access_token) || null;
 
+  /* ENDING THE ACCOUNT. The whole job is one RPC -- see supabase/65_delete_account.sql --
+     because the client cannot reach auth.users and should not be given a delete policy on a
+     dozen game tables to do the same thing. Three outcomes are worth telling apart, so the
+     caller can say something true about each: it worked, the server refused (and why), or
+     the call itself failed. A refusal is NOT an error: the common one is a live Stripe
+     subscription, which nothing here can cancel, and the player has to do that first.
+     Sign-out is ours to do afterwards, because the session outlives the row it points at. */
+  async function deleteAccount() {
+    if (!sb) return { error: 'Accounts are not available right now.' };
+    try {
+      const { data, error } = await sb.rpc('rtg_delete_my_account');
+      if (error) return { error: error.message || String(error) };
+      if (!data || data.ok !== true) {
+        return { reason: (data && data.reason) || 'failed', status: data && data.status };
+      }
+      try { await signOut(); } catch (e) {}
+      return { ok: true };
+    } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
+  }
+
   window.PS_AUTH = {
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, claim, token,
+    available, setName, claim, token, deleteAccount,
   };
 })();

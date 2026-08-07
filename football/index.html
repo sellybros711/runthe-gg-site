@@ -3463,6 +3463,59 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* Your best drafts. Same row shape as the leaderboard, so a run reads the same wherever
      it appears, with the place on the left replaced by a medal position in your own list. */
+  /* ---------- THE PROFILE HUB AND ITS PAGES ----------
+     This screen used to be one sheet you scrolled: name, six career numbers, five best
+     drafts, streaks, the badge cabinet, a thirty-two club picker, the name field, and the
+     sign-out. Everything about the account was there, which was the problem -- to reach the
+     one thing you came for you travelled past the other six.
+
+     Now it is a hub and five pages. The hub fits a phone without scrolling and says only who
+     you are and how to get somewhere; each page holds one subject and comes back with a
+     single tap. Nothing was deleted in the move, it was distributed. */
+  .pfid{display:flex;align-items:center;gap:12px;margin:10px 0 2px}
+  .pfid .pfav{flex:0 0 auto}
+  .pfid .pfn{min-width:0}
+  .pfid .pfn b{display:block;font-family:var(--fd);font-size:25px;line-height:1.05;
+    color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pfid .pfn span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:3px}
+  /* Two numbers, not six. The rest live one tap away on Career; these are the two a player
+     checks often enough to earn a place on the front. */
+  .pfstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 4px}
+  .pfstat{padding:9px 11px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--line)}
+  .pfstat b{display:block;font-family:var(--fd);font-size:21px;line-height:1;color:var(--ink)}
+  .pfstat span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+  .pfnav{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:12px}
+  .pfrow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:11px 12px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--line);transition:border-color .12s ease,transform .08s ease}
+  .pfrow:hover{border-color:var(--line-2)}
+  .pfrow:active{transform:scale(.985)}
+  .pfrow .t{flex:1;min-width:0}
+  .pfrow .t b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:600;
+    color:var(--ink)}
+  .pfrow .t span{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pfrow .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
+  /* The page header. The back arrow is a real button at a real size, because it is the only
+     way out of every page here and a 12px chevron is not a target. */
+  .pfhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .pfback{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--line);color:var(--ink);font-size:19px;line-height:1}
+  .pfback:active{transform:scale(.94)}
+  .pftitle{font-family:var(--fn);font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .pftabs{display:flex;gap:6px;margin-bottom:10px}
+  .pftab{flex:1;padding:8px 4px;border-radius:9px;background:var(--panel);
+    border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
+    color:var(--dim);text-align:center;white-space:nowrap}
+  .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
+  /* The danger zone, and it looks like one without shouting: the button is quiet until it
+     is armed, because the loud version invites the tap it is trying to make you think about. */
+  .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .pfdanger .btn.del{color:#f87171;border:1px solid rgba(239,68,68,.35);background:transparent}
+  .pfdanger .btn.del.armed{color:#fff;background:var(--grad-red);border-color:transparent}
   .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
   .bestrow{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;
     border-radius:10px;cursor:pointer;text-align:left;width:100%;
@@ -10352,30 +10405,263 @@ function achWire(root){
   });
 }
 
-async function careerPaint(userId){
-  const slot=$('sh-career'); if(!slot) return;
+/* careerPaint() lived here. Its three jobs were split when the profile became a hub and
+   five pages: the career numbers and the streak are pfCareerPaint(), the badge cabinet is
+   pfBadgesPaint(), and each now repaints only its own page. */
+
+/* ---------- THE PROFILE HUB ----------
+   One screen that says who you are and where to go, and five pages behind it. The rule for
+   what earns a place on the hub: a player checks it often, or it is how they leave. Anything
+   read occasionally lives on a page. */
+
+/* The handlers every profile screen shares. Bound after each paint rather than delegated,
+   because each page replaces the sheet's whole contents. */
+function pfWireCommon(){
+  const f=$('a-feedback'); if(f) f.onclick=()=>feedbackSheet();
+  const o=$('a-signout'); if(o) o.onclick=async()=>{ await A().signOut(); profileSheet(); };
+  const x=$('sh-x'); if(x) x.onclick=closeSheet;
+  const b=$('pf-back'); if(b) b.onclick=()=>pfHub();
+  const n=$('a-setname'); if(n) n.onclick=async()=>{
+    const v=($('a-name').value||'').trim();
+    if(!v){ profileSheet('Type a name first.'); return; }
+    busy('a-setname','Saving');
+    const r=await A().setName(v);
+    profileSheet(r.error||'Saved.',!r.error);
+  };
+}
+
+function pfHead(title){
+  return '<div class="pfhead"><button class="pfback" id="pf-back" aria-label="Back to your profile">&lsaquo;</button>'+
+    '<span class="pftitle">'+esc(title)+'</span></div>';
+}
+function pfNavRow(id,title,sub){
+  return '<button class="pfrow" id="'+id+'"><span class="t"><b>'+esc(title)+'</b>'+
+    '<span>'+esc(sub)+'</span></span><span class="go">&rsaquo;</span></button>';
+}
+
+function pfHub(msg,ok){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  const st=authState, nm=st.name;
+  box.innerHTML='<div class="eyebrow">Your profile</div>'+
+    '<div class="pfid"><span class="pfav" id="pf-av"></span>'+
+      '<span class="pfn"><b>'+esc(nm)+'</b><span id="pf-sub">Your RunThe.GG account</span></span></div>'+
+    (msg?authMsg(msg,ok):'')+
+    '<div class="pfstats">'+
+      '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Runs played</span></div>'+
+      '<div class="pfstat"><b id="pf-best">&mdash;</b><span>Best rating</span></div>'+
+    '</div>'+
+    '<div class="pfnav">'+
+      pfNavRow('pf-go-drafts','Your drafts','Recent, best rated and best record')+
+      pfNavRow('pf-go-career','Career','Every number, and your streak')+
+      pfNavRow('pf-go-badges','Badges','What you have earned so far')+
+      pfNavRow('pf-go-look','Your circle','The club colours beside your name')+
+      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out')+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon();
+  /* The same circle the header and every board row draw, from the same function, so the
+     hub cannot disagree with them about what you look like. */
+  try{
+    const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
+    const av=$('pf-av');
+    av.className='pfav avatar signed';
+    av.style.setProperty('--pfp',a.bg);
+    av.style.setProperty('--pfpring',a.ring||'transparent');
+    av.style.color=a.fg;
+    av.innerHTML='<span class="in">'+a.text+'</span>';
+  }catch(e){}
+  $('pf-go-drafts').onclick=()=>pfDrafts('recent');
+  $('pf-go-career').onclick=()=>pfCareer();
+  $('pf-go-badges').onclick=()=>pfBadges();
+  $('pf-go-look').onclick=()=>pfLook();
+  $('pf-go-acct').onclick=()=>pfAccount();
+  pfHubStats(st.userId);
+}
+
+/* The two headline numbers, filled once the history lands. The hub opens immediately and
+   these arrive into it, because a profile that waits on a network call to draw anything is
+   a profile that feels broken on a slow connection. */
+async function pfHubStats(userId){
   const c=await careerLoad(userId);
-  /* The sheet may have been closed, reopened as something else, or repainted while that
-     was in flight. Re-read the slot rather than trusting the one captured above. */
-  const now=$('sh-career');
-  if(!now||$('sheet-in').dataset.kind!=='profile') return;
-  if(c&&c.rows.length) ga('career_viewed',{runs:c.total,best_rating:careerStats(c.rows,c.total).bestRating});
-  if(!c){
-    now.innerHTML='<p class="shsec">Your career</p>'+
-      '<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run history could not '+
-      'be read just now. Nothing has been lost.</p>';
+  if(!c||$('sheet-in').dataset.kind!=='profile') return;
+  const runs=$('pf-runs'), best=$('pf-best');
+  if(!runs||!best) return;
+  const s=careerStats(c.rows,c.total);
+  runs.textContent=(s.runs||0).toLocaleString();
+  best.textContent=s.bestRating!=null?Number(s.bestRating).toFixed(1):'—';
+}
+
+/* ---------- DRAFTS ----------
+   The same rows, ordered three ways. Sorting happens here rather than on the server because
+   careerLoad already holds up to 500 of your runs with every field these need, so a tab is a
+   sort and not a round trip. */
+const PF_DRAFT_TABS={recent:'Recent',rating:'Best rating',record:'Best record'};
+const PF_DRAFT_MAX=25;
+function pfDraftSort(rows,tab){
+  const r=rows.slice();
+  if(tab==='rating') return careerBest(rows,PF_DRAFT_MAX);
+  if(tab==='record') return r.sort((a,b)=>B.scoreOf(b.wins,Number(b.point_diff))
+      -B.scoreOf(a.wins,Number(a.point_diff))
+      ||new Date(a.created_at)-new Date(b.created_at)).slice(0,PF_DRAFT_MAX);
+  return r.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,PF_DRAFT_MAX);
+}
+function pfDrafts(tab){
+  tab=PF_DRAFT_TABS[tab]?tab:'recent';
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  box.innerHTML=pfHead('Your drafts')+
+    '<div class="pftabs">'+Object.keys(PF_DRAFT_TABS).map(k=>
+      '<button class="pftab'+(k===tab?' on':'')+'" data-tab="'+k+'">'+PF_DRAFT_TABS[k]+'</button>').join('')+'</div>'+
+    '<div id="pf-list"><div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
+      '<span>Reading your runs</span></div></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon();
+  box.querySelectorAll('.pftab').forEach(b=>{ b.onclick=()=>pfDrafts(b.dataset.tab); });
+  pfDraftsPaint(authState.userId,tab);
+}
+async function pfDraftsPaint(userId,tab){
+  const c=await careerLoad(userId);
+  const slot=$('pf-list');
+  if(!slot||$('sheet-in').dataset.kind!=='profile') return;
+  if(!c||!c.rows.length){
+    slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">'+
+      (c?'No runs recorded yet. Finish a season and it lands here.'
+        :'Your run history could not be read just now. Nothing has been lost.')+'</p>';
     return;
   }
+  const list=pfDraftSort(c.rows,tab);
+  const day=(iso)=>{ const d=new Date(iso);
+    return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); };
+  /* The best-drafts row, reused exactly. A run should look the same wherever it is listed,
+     and this row already earned its layout on the career panel. */
+  slot.innerHTML='<div class="bestlist">'+list.map((r,i)=>
+    '<button class="bestrow'+(i===0&&tab!=='recent'?' top1':'')+'" data-i="'+i+'">'+
+      '<span class="n">'+(i+1)+'</span>'+
+      '<span class="who"><b>'+esc(r.wins+'-'+r.losses+
+        (r.perfect?' perfect season':' '+String(r.seed_label||'').toLowerCase()))+'</b>'+
+        '<span>'+esc((rosterLine(r.picks)||runKindOf(r))+
+          (day(r.created_at)?' · '+day(r.created_at):''))+'</span></span>'+
+      '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'—')+
+        '</b><span>rating</span></span>'+
+      '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
+    (c.rows.length>list.length?'<p class="caveat" style="margin:8px 0 0">Showing '+
+      list.length+' of '+c.rows.length.toLocaleString()+' runs.</p>':'');
+  slot.querySelector('.bestlist').onclick=(e)=>{
+    const b=e.target.closest('.bestrow'); if(!b) return;
+    const row=list[+b.dataset.i];
+    if(row) runDetail(row,()=>pfDrafts(tab));
+  };
+}
+
+/* ---------- CAREER, BADGES, CIRCLE, ACCOUNT ---------- */
+function pfCareer(){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  box.innerHTML=pfHead('Career')+
+    '<div id="sh-career"><div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
+      '<span>Reading your runs</span></div></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon(); pfCareerPaint(authState.userId);
+}
+async function pfCareerPaint(userId){
+  const c=await careerLoad(userId);
+  const slot=$('sh-career');
+  if(!slot||$('sheet-in').dataset.kind!=='profile') return;
+  if(!c){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run '+
+    'history could not be read just now. Nothing has been lost.</p>'; return; }
   const res=achEvaluate(c.rows);
-  now.innerHTML=careerBlock(c)+(res?streakBlock(res)+achBlock(res):'');
-  if(res){ achWire(now); achAnnounce(userId,res,true); }
-  /* Delegated on the list rather than bound per row, and the row index is looked up in the
-     same sorted list the markup came from, so the run a tap opens is the run it shows. */
-  const list=now.querySelector('.bestlist');
+  slot.innerHTML=careerBlock(c)+(res?streakBlock(res):'');
+  const list=slot.querySelector('.bestlist');
   if(list) list.onclick=(e)=>{
     const b=e.target.closest('.bestrow'); if(!b) return;
     const row=careerBest(c.rows,5)[+b.dataset.best];
-    if(row) runDetail(row,()=>profileSheet());
+    if(row) runDetail(row,()=>pfCareer());
+  };
+}
+function pfBadges(){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  box.innerHTML=pfHead('Badges')+
+    '<div id="sh-ach"><div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
+      '<span>Reading your runs</span></div></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon(); pfBadgesPaint(authState.userId);
+}
+async function pfBadgesPaint(userId){
+  const c=await careerLoad(userId);
+  const slot=$('sh-ach');
+  if(!slot||$('sheet-in').dataset.kind!=='profile') return;
+  const res=c?achEvaluate(c.rows):null;
+  if(!res){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Nothing '+
+    'to show yet. Finish a season and your first badges land here.</p>'; return; }
+  slot.innerHTML=achBlock(res);
+  achWire(slot); achAnnounce(userId,res,true);
+}
+function pfLook(){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  const nm=authState.name||'';
+  box.innerHTML=pfHead('Your circle')+
+    '<div class="pfpedit">'+
+      '<span id="pfp-demo"></span>'+
+      '<div class="col">'+
+        '<label class="dim" style="font-size:11.5px;display:block">Initials</label>'+
+        '<input class="fld inits" id="a-inits" autocapitalize="characters" '+
+          'autocorrect="off" spellcheck="false" inputmode="text" '+
+          'placeholder="'+esc(nm.slice(0,2).toUpperCase())+'">'+
+      '</div>'+
+    '</div>'+
+    '<p class="pfpteam" id="pfp-team"></p>'+
+    '<div class="swatches" id="a-swatches"></div>'+
+    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colours you '+
+      'want beside your name, or tap it again for none. Initials are two letters or numbers, '+
+      'or leave them blank for the first two of your name.</p>'+
+    '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon(); paintPfpEdit(nm);
+}
+function pfAccount(msg,ok){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  const nm=authState.name||'';
+  box.innerHTML=pfHead('Account')+
+    (msg?authMsg(msg,ok):'')+
+    '<p class="shsec">Your name</p>'+
+    '<input class="fld" id="a-name" placeholder="'+esc(nm)+'" autocapitalize="off" '+
+      'autocorrect="off" spellcheck="false" maxlength="20">'+
+    '<div style="margin-top:9px"><button class="btn" id="a-setname">Change my name</button></div>'+
+    '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are recorded '+
+      'under this name. Changing it renames the ones already on the board.</p>'+
+    '<div class="hrow" style="margin-top:14px">'+
+      '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
+      '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
+    '<div class="pfdanger">'+
+      '<p class="shsec" style="margin:0">Delete your account</p>'+
+      '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">This ends your '+
+        'RunThe.GG account across <b>every game on the site</b>, not just this one. It cannot '+
+        'be undone. Runs already on a leaderboard stay there without your name on them.</p>'+
+      '<div style="margin-top:9px"><button class="btn del sm" id="a-del">Delete my account</button></div>'+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon();
+  /* TWO TAPS, and the second one says what it does. One tap on a destructive control is how
+     an account gets deleted by a thumb reaching for Sign out, which is directly above it. */
+  let armed=false;
+  const del=$('a-del'), note=$('pf-delnote');
+  del.onclick=async()=>{
+    if(!armed){
+      armed=true;
+      del.classList.add('armed');
+      del.textContent='Yes, delete everything';
+      note.innerHTML='<b>Last chance.</b> Tap again and your account, your name and your '+
+        'claim on every run in every RunThe.GG game are gone for good.';
+      return;
+    }
+    busy('a-del','Deleting');
+    const r=await A().deleteAccount();
+    if(r&&r.ok){ closeSheet(); toast('Your account has been deleted.'); return; }
+    if(r&&r.reason==='active_subscription'){
+      pfAccount('You have a subscription that is still '+esc(r.status||'active')+
+        '. Cancel it first, then delete the account, so you are not charged for one you no longer have.');
+      return;
+    }
+    if(r&&r.reason==='not_signed_in'){ pfAccount('You are not signed in any more.'); return; }
+    pfAccount((r&&r.error)||'That did not work. Nothing has been deleted.');
   };
 }
 
@@ -10398,73 +10684,24 @@ function profileSheet(msg,ok){
 
   if(st.signedIn){
     const nm=st.name;
-    box.innerHTML='<div class="eyebrow">Your profile</div>'+
-      (nm
-        ? '<h2 class="display" style="font-size:25px;margin:4px 0 2px">'+esc(nm)+'</h2>'+
-          '<p class="dim" style="font-size:12.5px;margin:0">'+esc(st.email||'')+'</p>'
-        : '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Pick a name</h2>'+
-          '<p class="dim" style="font-size:13.5px;margin:0">This is what the leaderboard '+
-          'will call you. Three to twenty letters, numbers or underscores.</p>')+
-      (msg?authMsg(msg,ok):'')+
-      /* THE CAREER PANEL GOES ABOVE THE SETTINGS, and only once there is a name.
-         What you came to the profile to look at is your record; the name field and the
-         sign-out button are housekeeping, and putting housekeeping first made this sheet
-         read as a settings page with your history hidden under it. Nobody without a name
-         has anything to show yet, and for them picking one IS the whole job of this
-         screen, so the panel stays out of the way until there is one.
-         An empty div, filled by careerPaint once the request lands. */
-      (nm?'<div id="sh-career"><p class="shsec">Your career</p>'+
-        '<div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
-        '<span>Reading your runs</span></div></div>':'')+
-      /* YOUR CIRCLE, and the two things about it you get to choose. Above the name field
-         because it is the more interesting of the two settings and the one that shows up
-         next to your name on every board; changing your name is rarer.
-         Only for an account that has a name, for the same reason the career panel is: with
-         no name there is nothing to derive a circle from and picking one is not the job of
-         the screen yet. */
-      (nm?'<p class="shsec">Your team and your circle</p>'+
-        '<div class="pfpedit">'+
-          '<span id="pfp-demo"></span>'+
-          '<div class="col">'+
-            '<label class="dim" style="font-size:11.5px;display:block">Initials</label>'+
-            /* NO maxlength. It fights the filter below rather than helping it: the browser
-               cuts the value to two characters BEFORE the input handler runs, so pasting
-               "a-b!" arrived as "a-" and came out "A" instead of "AB". The filter already
-               slices to two, and it is the one that knows which characters count. */
-            '<input class="fld inits" id="a-inits" autocapitalize="characters" '+
-              'autocorrect="off" spellcheck="false" inputmode="text" '+
-              'placeholder="'+esc(nm.slice(0,2).toUpperCase())+'">'+
-          '</div>'+
-        '</div>'+
-        '<p class="pfpteam" id="pfp-team"></p>'+
-        '<div class="swatches" id="a-swatches"></div>'+
-        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colours '+
-          'you want beside your name, or tap it again for none. Initials are two letters or '+
-          'numbers, or leave them blank for the first two of your name.</p>'+
-        '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
-        '<div class="hr" style="margin:15px 0"></div>':'')+
-      '<input class="fld" id="a-name" placeholder="'+(nm?esc(nm):'yourname')+
-        '" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">'+
-      '<div style="margin-top:9px"><button class="btn" id="a-setname">'+
-        (nm?'Change my name':'Save my name')+'</button></div>'+
-      '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are '+
-      'recorded under this name. Changing it renames the ones already on the board.</p>'+
-      '<div class="hrow" style="margin-top:12px">'+
-        '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
-        '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
-      close;
-    openSheet();
-    if(nm) paintPfpEdit(nm);
-    if(nm) careerPaint(st.userId);
-    $('a-feedback').onclick=()=>feedbackSheet();
-    $('a-setname').onclick=async()=>{
-      const v=($('a-name').value||'').trim();
-      if(!v){ profileSheet('Type a name first.'); return; }
-      busy('a-setname','Saving');
-      const r=await A().setName(v);
-      profileSheet(r.error||'Saved.',!r.error);
-    };
-    $('a-signout').onclick=async()=>{ await A().signOut(); profileSheet(); };
+    /* NO NAME YET, so there is nothing to be a hub of. Picking one IS the whole job of
+       this screen for a new account, and it stays a single form until that is done. */
+    if(!nm){
+      box.innerHTML='<div class="eyebrow">Your profile</div>'+
+        '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Pick a name</h2>'+
+        '<p class="dim" style="font-size:13.5px;margin:0">This is the name your runs are '+
+        'recorded under, on every board in every game.</p>'+
+        (msg?authMsg(msg,ok):'')+
+        '<div style="margin-top:12px"><input class="fld" id="a-name" placeholder="yourname" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20"></div>'+
+        '<div style="margin-top:9px"><button class="btn" id="a-setname">Save my name</button></div>'+
+        '<div class="hrow" style="margin-top:12px">'+
+          '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
+          '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+close;
+      openSheet(); pfWireCommon();
+      return;
+    }
+    pfHub(msg,ok);
     return;
   }
 
