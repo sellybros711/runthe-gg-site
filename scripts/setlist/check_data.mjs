@@ -212,8 +212,13 @@ check(game.includes('twitter:card'), 'a twitter card type is declared');
 for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
   check(existsSync(resolve(repoRoot, m[1].slice(1))), `${m[1]} is on disk`);
 
-// The home screen wears the same mark as the tab, drawn in CSS.
-check(game.includes('class="heromark"'), 'the home screen shows the mark');
+/* The mark is drawn in CSS and worn in two places: the home screen and the
+   top bar. Matched on the class rather than on a whole class attribute, which
+   is what broke when the tile picked up a second class. */
+check(/class="[^"]*\bheromark\b/.test(game), 'the home screen shows the mark');
+check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar shows the mark');
+check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
+check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
 
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
