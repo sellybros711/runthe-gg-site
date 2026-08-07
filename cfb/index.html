@@ -1549,12 +1549,21 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
     color:var(--dim);text-align:center;white-space:nowrap}
   .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
-  /* The danger zone, and it looks like one without shouting: the button is quiet until it
-     is armed, because the loud version invites the tap it is trying to make you think about. */
+  /* RED, AND THE ONLY RED ON THE SCREEN. The primary button in this game is green, so the
+     college Account page never had the NFL game's problem of a harmless control being the
+     loudest thing on it -- but the two games should not disagree about what ending an account
+     looks like, and this is the one control on either page that is irreversible.
+
+     A LOUD BUTTON IS NOT A DANGEROUS ONE ANY MORE. Being quiet used to be the guard -- the
+     button was trying not to be tapped. It does not have to do that job now: a tap on this
+     opens a warning and nothing else, and the delete cannot fire until a name has been typed
+     into a field by hand. So it can afford to look like what it is.
+     The armed state still has to read as a further step, so it goes darker and takes a ring. */
   .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .pfdanger .btn.del{color:#f87171;border:1px solid rgba(239,68,68,.35);background:transparent}
-  .pfdanger .btn.del.armed{color:#fff;border-color:transparent;
-    background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
+  .pfdanger .btn.del{color:#fff;border:none;
+    background:linear-gradient(135deg,#f05252 0%,#b91c1c 100%)}
+  .pfdanger .btn.del.armed{background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
+    box-shadow:0 0 0 3px rgba(239,68,68,.28),var(--shadow)}
   /* One season, in a list. Same row wherever a season is listed, so a season looks the
      same on every page it appears on. */
   .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
@@ -3293,7 +3302,7 @@ function pfDangerHtml(){
     '<p class="shsec" style="margin:0">Delete your account</p>'+
     '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">'+PF_DEL_NOTE+'</p>'+
     '<div id="pf-delconfirm" hidden></div>'+
-    '<div style="margin-top:9px"><button class="btn del sm" id="a-del" style="width:100%">'+
+    '<div style="margin-top:9px"><button class="btn del" id="a-del">'+
       'Delete my account</button></div>'+
     '<div style="margin-top:8px" id="pf-delback" hidden>'+
       '<button class="btn ghost sm" id="a-delcancel" style="width:100%">Keep my account'+

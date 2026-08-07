@@ -3555,11 +3555,22 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
     color:var(--dim);text-align:center;white-space:nowrap}
   .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
-  /* The danger zone, and it looks like one without shouting: the button is quiet until it
-     is armed, because the loud version invites the tap it is trying to make you think about. */
+  /* THE RED BELONGS HERE, AND IT USED TO BELONG TO "CHANGE MY NAME".
+     Every primary button in this game is the red gradient, so on the Account page the loudest
+     control was Change my name and the quietest was Delete my account, which is the hierarchy
+     of that page exactly backwards: the eye landed on the harmless one and slid past the
+     irreversible one. The two have swapped. Change my name is a ghost button now, alongside
+     Send feedback and Sign out, and this is the only filled control on the screen.
+
+     A LOUD BUTTON IS NOT A DANGEROUS ONE ANY MORE. Being quiet used to be the guard -- the
+     button was trying not to be tapped. It does not have to do that job now: a tap on this
+     opens a warning and nothing else, and the delete cannot fire until a name has been typed
+     into a field by hand. So it can afford to look like what it is.
+     The armed state still has to read as a further step, so it goes darker and takes a ring. */
   .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .pfdanger .btn.del{color:#f87171;border:1px solid rgba(239,68,68,.35);background:transparent}
-  .pfdanger .btn.del.armed{color:#fff;background:var(--grad-red);border-color:transparent}
+  .pfdanger .btn.del{color:#fff;border:none;background:var(--grad-red)}
+  .pfdanger .btn.del.armed{background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
+    box-shadow:0 0 0 3px rgba(239,68,68,.28),var(--shadow)}
   .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
   .bestrow{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;
     border-radius:10px;cursor:pointer;text-align:left;width:100%;
@@ -10713,7 +10724,7 @@ function pfAccount(msg,ok){
     '<p class="shsec">Your name</p>'+
     '<input class="fld" id="a-name" placeholder="'+esc(nm)+'" autocapitalize="off" '+
       'autocorrect="off" spellcheck="false" maxlength="20">'+
-    '<div style="margin-top:9px"><button class="btn" id="a-setname">Change my name</button></div>'+
+    '<div style="margin-top:9px"><button class="btn ghost" id="a-setname">Change my name</button></div>'+
     '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are recorded '+
       'under this name. Changing it renames the ones already on the board.</p>'+
     '<div class="hrow" style="margin-top:14px">'+
@@ -10732,7 +10743,7 @@ function pfDangerHtml(){
     '<p class="shsec" style="margin:0">Delete your account</p>'+
     '<p class="dim" style="font-size:11.5px;margin:7px 0 0" id="pf-delnote">'+PF_DEL_NOTE+'</p>'+
     '<div id="pf-delconfirm" hidden></div>'+
-    '<div style="margin-top:9px"><button class="btn del sm" id="a-del">Delete my account</button></div>'+
+    '<div style="margin-top:9px"><button class="btn del" id="a-del">Delete my account</button></div>'+
     '<div style="margin-top:8px" id="pf-delback" hidden>'+
       '<button class="btn ghost sm" id="a-delcancel">Keep my account</button></div>'+
   '</div>';
