@@ -2508,6 +2508,12 @@ window.GA_ID='G-L29P5MRWKE';
   .tile:active{transform:scale(.975)}
   .tile.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.22)}
   .tile .th{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  /* The chips travel as ONE flex child. The header row is space-between, so two loose
+     chips would push the price out and leave a gap down the middle of every dual-position
+     card. Wrapped, a man with two positions occupies the same slot in the row as a man
+     with one, just wider. */
+  .tile .poss{display:flex;align-items:center;gap:4px;flex:0 0 auto;min-width:0}
+  .tile.mini .poss{gap:3px}
   .tile .pos{flex:0 0 auto;min-width:31px;text-align:center;padding:3px 0;border-radius:7px;
     color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;
     letter-spacing:.06em}
@@ -4453,6 +4459,20 @@ const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
 function posPaint(pos){
   return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
 }
+/* A PLAYER'S POSITION CHIPS. A man who plays two spots gets two chips, each in its own
+   colour, rather than one chip reading "WR/QB" painted the colour of whichever position
+   nflverse happened to list first. The old form said the right words in the wrong colour:
+   Terrelle Pryor's quarterback half was drawn receiver blue, and the two positions that
+   make him worth drafting looked like one.
+   Single-position players go through the same wrapper so there is one code path and, at
+   one chip, an identical result. */
+function posChips(p){
+  const list=E.positionsOf(p);
+  const all=list.length?list:[p.position];
+  return '<span class="poss">'+all.map(function(pos){
+    return '<span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>';
+  }).join('')+'</span>';
+}
 /* The club plate under a player on the field. Era code, not the current one: a 2014
    Raider is OAK, and labelling him LV would contradict the "2014 Oakland Raiders" the
    rest of the game shows. `on` is the engine's own measured choice of black or white
@@ -5683,8 +5703,7 @@ const stagger=(i)=>Math.min(220,(i||0)*28);
    line, and twice as many players are on screen at once. */
 function optTile(row){
   const p=row.p, i=row.i;
-  const head='<span class="pos" style="'+posPaint(p.position)+'">'+
-    esc(E.positionLabel(p))+'</span><span class="pr">'+M(p.price_musd)+'</span>';
+  const head=posChips(p)+'<span class="pr">'+M(p.price_musd)+'</span>';
   const who='<span class="nm">'+esc(p.name)+'</span>'+
     '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
@@ -7089,8 +7108,7 @@ function enterMarket(){
    scale. A player who has drafted a roster recognises these on sight, which is the point:
    one card for one player, everywhere in the game. */
 function dealTile(p,mode){
-  const head='<span class="pos" style="'+posPaint(p.position)+'">'+esc(E.positionLabel(p))+'</span>'+
-    '<span class="pr">'+M(p.price_musd)+'</span>';
+  const head=posChips(p)+'<span class="pr">'+M(p.price_musd)+'</span>';
   /* Week-to-week character, from the same sd the sim draws his games with. A second
      axis to trade on: the steady man shows up every Sunday, the boom-bust man wins
      shootouts and loses Tuesdays. Only the calmest and wildest quarters get a chip. */
