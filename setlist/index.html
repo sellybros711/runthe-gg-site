@@ -849,6 +849,28 @@
   .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--line2);
     border-top-color:var(--teal); animation:spin .8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---- WHAT THE PAGE SAYS WHEN THE GAME IS NOT RUNNING ----
+     The game is an ES module that writes the whole of itself into #app, so what is actually
+     SERVED here is a header and an empty element: a reader who does not run scripts, and any
+     crawler, got a back arrow and nothing else. This block is real markup outside #app, so it
+     survives the render and describes the game to both. It is not a stub for the app and it
+     is not hidden text -- it sits under the game as an about section, which is what it reads
+     as to somebody who has just finished a show. */
+  .about{max-width:760px; margin:44px auto 0; padding-top:26px;
+    border-top:1px solid var(--line); color:var(--mut);}
+  .about h2{font-family:var(--ui); font-size:13px; font-weight:800; letter-spacing:2.6px;
+    text-transform:uppercase; color:var(--dim); margin:0 0 14px;}
+  .about h3{font-family:var(--ui); font-size:15px; font-weight:800; color:var(--ink);
+    margin:22px 0 6px;}
+  .about p{margin:0 0 12px; font-size:14.5px; line-height:1.62;}
+  .about a{color:var(--teal);}
+  .sfoot{max-width:760px; margin:30px auto 0; padding:18px 0 34px;
+    border-top:1px solid var(--line); color:var(--dim); font-size:13px; text-align:center;}
+  .sfoot a{color:inherit; text-decoration:none;}
+  .sfoot a:hover{color:var(--ink); text-decoration:underline;}
+  .sfoot span{display:inline-block; margin:0 6px; opacity:.5;}
+  .sfoot .src{margin:12px 0 0; font-size:12px; line-height:1.55; color:var(--dim);}
 </style>
 </head>
 <body>
@@ -865,6 +887,53 @@
     </button>
   </div>
   <main id="app" aria-live="polite"></main>
+
+  <!-- Outside #app on purpose: render() replaces the contents of #app on every state change,
+       so anything put in there is gone the moment the game boots. -->
+  <section class="about">
+    <h2>About Segue</h2>
+    <p><strong>Segue</strong> is a free setlist-builder game about jam bands, played in the
+      browser with nothing to download and no account required. You are handed real concerts
+      and asked to build a better night out of them.</p>
+
+    <h3>How a round works</h3>
+    <p>Pick a band. Each round spins up one real concert from that band's history, and you
+      pull a single song off it. The song's actual running time comes off your set clock, so a
+      twenty-minute jam costs what a twenty-minute jam costs, and the choice is always the same
+      one: take the song you want, or take the song that fits.</p>
+    <p>You build two sets and an encore. Each has its own curfew, and every pick is final:
+      there is no undo, so a set that runs long is a set you have to finish long. When the
+      encore closes, the night plays back song by song to a crowd that reacts to what you
+      actually booked.</p>
+
+    <h3>Segues</h3>
+    <p>Songs that ran into each other on the night can run into each other in your set too.
+      Chaining them is worth more than playing the same songs apart, which is the whole
+      argument the game is making: a setlist is not a list of good songs, it is an order.</p>
+
+    <h3>Where the shows come from</h3>
+    <p>Every concert, song and running time is real. The current band is Goose, with 7,504
+      recorded performances across 655 shows between 2014 and 2026, taken from the community
+      archive at <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
+      Nothing is generated: if a show is in the game, it happened, in that order, at that
+      length.</p>
+    <p>Segue is an unofficial fan project. It is not affiliated with, endorsed by, or
+      connected to any band, venue or promoter, and all song and band names belong to their
+      respective owners.</p>
+  </section>
+
+  <footer class="sfoot">
+    <p>
+      <a href="/">RunThe.GG</a><span>&middot;</span><a href="/about.html">About</a><span>&middot;</span><a
+        href="/privacy.html">Privacy</a><span>&middot;</span><a
+        href="/terms.html">Terms</a><span>&middot;</span><a
+        href="/disclaimer.html">Disclaimer</a><span>&middot;</span><a
+        href="/contact.html">Contact</a>
+    </p>
+    <p class="src">Show data from the Goose community archive at
+      <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
+      An unofficial fan project, not affiliated with or endorsed by any band or venue.</p>
+  </footer>
 </div>
 
 <script>
