@@ -1698,7 +1698,33 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 11px;
     border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
   /* Your own season, wherever it lands in the list. */
-  .lbr.me{border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.09)}
+  /* ── YOUR ROWS ─────────────────────────────────────────────────
+     A RAIL DOWN THE LEFT EDGE, because that is what a thumb scrolling a list of five
+     hundred rows can actually catch. A tint alone is a wash across the whole row at close
+     to the value of the row behind it, and on a phone at speed it does not register; a hard
+     vertical stroke at a fixed x does, and it is the one shape on the row nothing else uses.
+
+     BLUE, NOT GREEN AND NOT GOLD, AND THAT IS THE POINT. Gold on this board is an
+     achievement -- the top of it, a perfect season -- and it has to keep meaning that.
+     Green is this game's house color and is already on half the screen, so a green row does
+     not stand out from a green page. Blue is used for nothing else here, it means the row
+     is yours, and it is the same blue the NFL game uses for the same thing: one account
+     plays both, and "this one is mine" should not change color when you change game. */
+  .lbr.me{position:relative;border-color:rgba(59,130,246,.55);
+    background:rgba(59,130,246,.10)}
+  .lbr.me .rk{color:#93c5fd}
+  .lbr.me::before{content:'';position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;
+    border-radius:10px 0 0 10px;background:linear-gradient(180deg,#60a5fa,#3b82f6);
+    box-shadow:0 0 8px rgba(59,130,246,.5)}
+  /* The season just posted is a step louder than your older ones, because on the board that
+     opens straight off a results screen it is the row being looked for. */
+  .lbr.me.just{border-color:rgba(59,130,246,.8);background:rgba(59,130,246,.17)}
+  .lbr.me.just::before{width:4px}
+  /* THE TOP-THREE METAL SURVIVES ON A ROW OF YOURS, and that is on purpose rather than by
+     accident: `.lbr.me .rk` and `.lbr.top1 .rk` carry the same specificity, and the top-three
+     rule sits below this one, so it wins. It should. The two say different things -- the
+     rail says the row is yours, the gold number says it is the best run on the board -- and
+     being first is not worth less for being yours. */
   .lbr .rk{flex:0 0 28px;font-family:var(--fn);font-size:14px;font-weight:600;
     color:var(--dim-2);text-align:right}
   .lbr.top1 .rk{color:#fbbf24} .lbr.top2 .rk{color:#e2e8f0} .lbr.top3 .rk{color:#c98b52}
@@ -4254,20 +4280,46 @@ async function paintBoard(){
   $('lb-rows').innerHTML=rows.map((r,i)=>lbRow(r,i+1)).join('');
 }
 
+/* ── WHOSE ROW IS THIS ───────────────────────────────────────────────
+   TWO QUESTIONS THAT USED TO BE ONE, AND THEY ARE NOT THE SAME.
+
+   `just` is the season submitted in this session: the one the board was opened to show.
+   `mine` is EVERY season on this board that belongs to the signed-in account. This is the
+   one that was missing. Marking only the season you had just posted meant that on the
+   all-time board -- where somebody with forty seasons has forty rows -- thirty-nine of them
+   looked exactly like a stranger's, and opening the board any way other than off a results
+   screen marked nothing at all. Finding your own drafts meant reading names.
+
+   THE ROWS CARRY NO user_id, only the display_name cfb_submit_run() copied out of profiles
+   when the season was submitted. That is enough, because usernames are unique --
+   set_username enforces it server-side -- so on this board the name IS the identity.
+   Compared with case and surrounding space taken off, and only while signed in under a
+   name, so a signed-out viewer never lights up the nameless rows a guest leaves behind. */
+const myBoardName=()=>((authState.signedIn&&authState.name)||'').trim().toLowerCase();
+function isMyRow(r){
+  if(!r) return false;
+  /* The season just submitted counts whatever the name situation is: it is yours by the
+     fact that this browser posted it, claimed or not. */
+  if(myRunId&&r.id===myRunId) return true;
+  const me=myBoardName();
+  return !!(me&&r.display_name&&String(r.display_name).trim().toLowerCase()===me);
+}
+
 /* One row. THE VALUE COLUMN CHANGES WITH THE AXIS, because a board sorted by
    something it does not show is a board you cannot check. */
 function lbRow(r,pos){
-  const mine=myRunId&&r.id===myRunId;
-  const who=r.display_name?esc(r.display_name):'Anonymous';
+  const just=!!(myRunId&&r.id===myRunId);
+  const mine=just||isMyRow(r);
+  const who=mine?'You':(r.display_name?esc(r.display_name):'Anonymous');
   const rec=r.wins+'-'+r.losses;
   const what=seasonFate(r);
   let v,k,gold=false;
   if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
   else if(lbSort==='rank'){ v='#'+r.national_rank; k='in the country'; gold=r.national_rank===1; }
   else { v=rec; k=r.perfect?'perfect':'record'; gold=!!r.perfect; }
-  return '<div class="lbr'+(mine?' me':'')+(pos<=3?' top'+pos:'')+'">'+
+  return '<div class="lbr'+(mine?' me':'')+(just?' just':'')+(pos<=3?' top'+pos:'')+'">'+
     '<span class="rk">'+pos+'</span>'+
-    '<span class="who"><b>'+who+(mine?' (you)':'')+'</b><span>'+
+    '<span class="who"><b>'+who+'</b><span>'+
       (lbSort==='record'?what:rec+' &middot; '+what)+'</span></span>'+
     '<span class="val"><b'+(gold?' class="gold"':'')+'>'+v+'</b><span>'+k+'</span></span></div>';
 }

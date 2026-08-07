@@ -828,6 +828,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pod.perfect .pr{color:#fcd34d}
   .pod.mine{border-color:rgba(59,130,246,.6);
     background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.04))}
+  .pod.just{border-color:rgba(59,130,246,.85)}
 
   /* sign-in */
   .fld{display:block;width:100%;margin-top:8px;padding:12px 13px;border-radius:11px;
@@ -1681,8 +1682,29 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr .rec span{display:block;font-size:10px;color:var(--dim-2)}
   .lbr.gold{border-color:rgba(251,191,36,.42);background:rgba(251,191,36,.07)}
   .lbr.gold .rk{color:#fcd34d}
-  .lbr.mine{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.09)}
+  /* ── YOUR ROWS ─────────────────────────────────────────────────
+     A RAIL DOWN THE LEFT EDGE, because that is what a thumb scrolling a list of five
+     hundred rows can actually catch. The blue tint alone is a wash across the whole row
+     at the same value as the row behind it, and on a phone at speed it does not register;
+     a hard vertical stroke at a fixed x does, and it is the one shape on the row that
+     nothing else uses.
+
+     BLUE, AND NOT GOLD, DELIBERATELY. Gold on this board is an achievement -- a perfect
+     season, or leading -- and it has to keep meaning that. Blue means the row is yours,
+     which is a fact about the reader rather than about the run, and the two must never be
+     the same color or a good row of somebody else's reads as one of yours. The college
+     game marks its rows the same blue for the same reason, though its own house color is
+     green: one account plays both, and "this one is mine" should not change color when
+     you change game. */
+  .lbr.mine{position:relative;border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.09)}
   .lbr.mine .rk{color:#93c5fd}
+  .lbr.mine::before{content:'';position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;
+    border-radius:10px 0 0 10px;background:linear-gradient(180deg,#60a5fa,#3b82f6);
+    box-shadow:0 0 8px rgba(59,130,246,.5)}
+  /* And the run just posted is a step louder than your older ones, because on the screen
+     that opens straight off a results page it is the row being looked for. */
+  .lbr.mine.just{border-color:rgba(59,130,246,.75);background:rgba(59,130,246,.16)}
+  .lbr.mine.just::before{width:4px}
   /* JUST ARRIVED. A player who signs in from the results page is brought here to be
      shown one row out of twenty-five, and .mine alone is a faint blue tint that does not
      survive that hunt. Three pulses, then it settles back into .mine and stays found. */
@@ -11370,7 +11392,10 @@ async function showMyRowOnBoard(){
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
      you today. The podium counts: rows one to three are up there and not in the list. */
-  const el=$('lb-rows').querySelector('.lbr.mine')||$('lb-podium').querySelector('.pod.mine');
+  /* .just, not .mine. Since .mine marks every run on the board that belongs to you,
+     querySelector would hand back whichever of them sits highest and scroll to a season
+     from three weeks ago instead of the one that was just played. */
+  const el=$('lb-rows').querySelector('.lbr.just')||$('lb-podium').querySelector('.pod.just');
   if(el){
     el.scrollIntoView({block:'center',behavior:HERO_REDUCE?'auto':'smooth'});
     el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
@@ -12026,7 +12051,8 @@ function paintPodium(rows){
   el.className='podium on';
   el.innerHTML='<div class="podrow">'+order.map((i)=>{
     const row=rows[i], place=i+1;
-    const mine=submitted&&row.id===submitted;
+    const just=!!(submitted&&submitted!=='guest'&&row.id===submitted);
+    const mine=just||isMyRow(row);
     /* THE PODIUM SHOWS WHAT THE BOARD IS RANKED ON, whichever axis that is. It used to ask
        only whether the axis was rating and otherwise print the record, which put the record
        on the steps of a board sorted by GM rating: three figures that had nothing to do with
@@ -12040,8 +12066,8 @@ function paintPodium(rows){
       :lbSort==='rating'?'rating'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
     const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
-    return '<div class="pod p'+place+(mine?' mine':'')+(row.perfect?' perfect':'')
-      +'" data-i="'+i+'">'+
+    return '<div class="pod p'+place+(mine?' mine':'')+(just?' just':'')+
+      (row.perfect?' perfect':'')+'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
       avatarHTML(pf,'big')+
       '<span class="pn">'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</span>'+
@@ -12203,7 +12229,8 @@ function runDetail(row,back){
    shown anywhere, which is the reason there is no name column yet. */
 function boardRow(row,i){
   const rank=i+1;
-  const mine=submitted&&row.id===submitted;
+  const just=!!(submitted&&submitted!=='guest'&&row.id===submitted);
+  const mine=just||isMyRow(row);
   /* Gold is for leading a board, so it is wrong on a reversed one: row 1 there is
      the worst run in the window, and gilding it says the opposite of what it is. */
   /* Gilded for a perfect season, not for leading. Rank is already said by the rank. */
@@ -12216,7 +12243,8 @@ function boardRow(row,i){
      other leaderboard anybody has used. Drawn from the ROW's own columns, never from the
      viewer's: two people who both chose teal both show teal. */
   const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
-  return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
+  return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+(just?' just':'')+
+    '" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
     avatarHTML(pf)+
     '<span class="who"><b>'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</b>'+
@@ -12234,6 +12262,34 @@ function boardRow(row,i){
 function playerName(row,mine){
   if(mine) return 'You';
   return (row&&row.display_name)||'Anonymous';
+}
+
+/* ── WHOSE ROW IS THIS ───────────────────────────────────────────────
+   TWO QUESTIONS THAT USED TO BE ONE, AND THEY ARE NOT THE SAME.
+
+   `just` is the run submitted in this session: the one the board was opened to show, the
+   one the sticky preview watches, the one "take me to my run" scrolls to. There is at most
+   one of it, and code downstream relies on that.
+
+   `mine` is EVERY run on this board that belongs to the signed-in account. This is the one
+   that was missing. Marking only the run you had just posted meant that on the all-time
+   board -- where somebody with forty drafts has forty rows -- thirty-nine of them looked
+   exactly like a stranger's, and arriving at the board any other way than off a results
+   screen marked nothing at all. Finding your own drafts meant reading names.
+
+   THE ROWS CARRY NO user_id, only the display_name the server copied out of profiles when
+   the run was submitted. That is enough, because usernames are unique -- set_username
+   enforces it server-side -- so on this board the name IS the identity. Compared with case
+   and surrounding space taken off, and only while signed in under a name, so a signed-out
+   viewer never lights up the nameless rows a guest leaves behind. */
+const myBoardName=()=>((authState.signedIn&&authState.name)||'').trim().toLowerCase();
+function isMyRow(row){
+  if(!row) return false;
+  /* The run just submitted counts whatever the name situation is: it is yours by the fact
+     that this browser posted it, and its name column may not even be readable yet. */
+  if(submitted&&submitted!=='guest'&&row.id===submitted) return true;
+  const me=myBoardName();
+  return !!(me&&row.display_name&&String(row.display_name).trim().toLowerCase()===me);
 }
 
 /* The line under the name: what the run did, then who was on it. */
@@ -12438,8 +12494,10 @@ function paintMyPin(rows){
   el.classList.remove('away');
   /* Your real row, when the run is on this board and inside the 500. Nothing to watch
      otherwise, and the preview simply stays up. */
+  /* .just for the same reason: this observer stands the preview down when YOUR ROW FOR
+     THIS RUN is on screen, and any other row of yours scrolling past is not that. */
   const real=submitted&&submitted!=='guest'
-    ? $('lb-rows').querySelector('.lbr.mine') : null;
+    ? $('lb-rows').querySelector('.lbr.just') : null;
   if(!real||typeof IntersectionObserver!=='function') return;
   myPinObs=new IntersectionObserver((es)=>{
     for(const e of es) el.classList.toggle('away',e.isIntersecting);
