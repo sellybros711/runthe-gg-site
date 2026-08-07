@@ -324,12 +324,59 @@ function respin(run, data, kind) {
   return spin(run, data, constraint);
 }
 
-function sign(run, player) {
+/*
+ * EVERY EMPTY SPOT THIS MAN COULD TAKE, one per distinct spot NAME, in slot order.
+ *
+ * slotForPlayer() answers "where does he go", which is the right question for somebody who
+ * played one position and the wrong one for somebody who played two. Randall Cobb caught
+ * passes and carried the ball; with a receiver spot and a back spot both open, the function
+ * above puts him at receiver because his PRIMARY comes first in his own list, and that is
+ * not a tidying detail -- it decides what is left for the five picks after him. There is no
+ * default that is right there, so the caller has to be able to ask.
+ *
+ * THE POSITION CAP IS APPLIED THE SAME WAY IT IS THERE, and it has to be: this list decides
+ * what the chooser may offer, and offering a spot that sign() would then refuse is worse
+ * than never having asked. Two backs is the limit, so a third RB has nowhere to go -- but a
+ * hybrid whose OTHER position is still under its cap can be taken at that one.
+ *
+ * ONE PER NAME. The slot list carries two WR spots and two FLEX spots, and a choice between
+ * two identical things is not a choice.
+ */
+function slotChoices(run, player) {
+  const caps = E.CONSTANTS.POSITION_MAX || {};
+  const held = (pos) => run.roster.filter((p) => p.position === pos).length;
+  const allowed = E.positionsOf(player)
+    .filter((pos) => { const c = caps[pos]; return c == null || held(pos) < c; });
+  if (!allowed.length) return [];
+  const seen = new Set();
+  const out = [];
+  for (const i of openSlots(run)) {
+    const name = E.SLOTS[i];
+    if (seen.has(name)) continue;
+    const fits = allowed.some((pos) => name === pos
+      || (E.SLOT_ELIGIBILITY[name] || []).includes(pos));
+    if (!fits) continue;
+    seen.add(name);
+    out.push(i);
+  }
+  return out;
+}
+
+/*
+ * `want` is an optional slot index, for the caller that asked. It is CHECKED and not
+ * trusted -- it has to be an empty spot this player can actually fill, position cap and all
+ * -- because it arrives from the client and a slot index is the one number here that decides
+ * what the rest of the draft may hold. Left out, the old rule applies and nothing about a
+ * one-position signing changes.
+ */
+function sign(run, player, want) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
-  const slot = slotForPlayer(run, player);
+  const slot = (want === undefined || want === null)
+    ? slotForPlayer(run, player)
+    : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
 
   run.roster.push(player);
@@ -789,7 +836,7 @@ const api = {
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
-  openSlots, openSlotNames, slotForPlayer, TUNING,
+  openSlots, openSlotNames, slotForPlayer, slotChoices, TUNING,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
