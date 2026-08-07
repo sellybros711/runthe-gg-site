@@ -245,6 +245,12 @@
   /* destination reveal */
   .dest{text-align:center;padding:6px 0 2px;}
   .dest .fl{font-size:64px;line-height:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));}
+  .destbanner{position:relative;margin:-18px -18px 0;height:132px;overflow:hidden;
+    border-bottom:1px solid rgba(255,255,255,.08);}
+  .destbanner::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(20,16,36,0) 55%,rgba(20,16,36,.55) 100%);}
+  .destcard .dest{margin-top:0;}
+  .destcard .dest .fl{margin-top:-52px;position:relative;z-index:2;}
   .dest .cn{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:36px;margin-top:8px;letter-spacing:.01em;
     color:var(--goldhi);text-shadow:0 2px 14px rgba(0,0,0,.5);}
   .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
@@ -681,6 +687,63 @@
       }
     };
   })();
+
+  /* ---- destination "postcard": a procedurally-drawn SVG scene for EVERY place
+     (sky tinted by region, sun/moon, stars, layered skyline, water reflection),
+     with an iconic landmark silhouette layered in when the name is recognised.
+     Deterministic per destination name, so a place always looks the same. ---- */
+  function seedRng(str){ var h=2166136261; str=String(str||''); for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return function(){ h+=0x6D2B79F5; var t=h; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  var SCENE_SKY = {
+    'North America':['#7fa6de','#4a63ac','#26305e'], 'South America':['#ffca69','#f0803f','#4a2752'],
+    'Europe':['#9ab6e6','#5c78bd','#2a355f'], 'Africa':['#f3b45a','#dd6f38','#4f2f4c'],
+    'Middle East':['#f0a95f','#df6b3e','#532c48'], 'Asia':['#f58a72','#c94f6b','#382a5c'],
+    'Oceania':['#79d3dd','#3fa0c0','#1f4767'], 'Caribbean':['#7fdcc9','#2fa0a8','#1f4a63']
+  };
+  // iconic silhouettes, drawn bottom-anchored around x=200 on a 0..130 canvas (ground y=104)
+  function landmarkPath(name){
+    var n=(name||'').toLowerCase(), g='#0d0a1e';
+    function P(d){ return '<path d="'+d+'" fill="'+g+'"/>'; }
+    if(/eiffel/.test(n)) return P('M200 40 L192 104 L208 104 Z M196 74 L204 74 L206 84 L194 84 Z')+'<rect x="197" y="30" width="6" height="14" fill="'+g+'"/><path d="M200 30 L200 22" stroke="'+g+'" stroke-width="2"/>';
+    if(/tower bridge|big ben|london|westminster|tower of london/.test(n)) return '<rect x="188" y="52" width="18" height="52" fill="'+g+'"/><path d="M188 52 L197 40 L206 52 Z" fill="'+g+'"/><rect x="192" y="58" width="10" height="12" fill="#241a3a"/>';
+    if(/statue of liberty|liberty/.test(n)) return '<rect x="190" y="86" width="20" height="18" fill="'+g+'"/><rect x="197" y="60" width="6" height="26" fill="'+g+'"/><circle cx="200" cy="55" r="5" fill="'+g+'"/><path d="M203 55 L206 40 L209 55 Z" fill="'+g+'"/><path d="M195 50 l-4 -3 m10 3 l0 -6 m5 6 l4 -3" stroke="'+g+'" stroke-width="1.5"/>';
+    if(/taj/.test(n)) return '<rect x="184" y="88" width="32" height="16" fill="'+g+'"/><path d="M200 52 q-14 0 -14 36 l28 0 q0 -36 -14 -36" fill="'+g+'"/><circle cx="200" cy="50" r="4" fill="'+g+'"/><rect x="176" y="66" width="5" height="38" fill="'+g+'"/><rect x="219" y="66" width="5" height="38" fill="'+g+'"/>';
+    if(/colosseum|rome|roman|vatican/.test(n)) return '<path d="M172 104 q28 -34 56 0 Z" fill="'+g+'"/><rect x="172" y="80" width="56" height="24" fill="'+g+'"/>';
+    if(/torii|inari|tokyo|kyoto|osaka|fuji/.test(n)) return '<rect x="180" y="58" width="40" height="6" fill="'+g+'"/><rect x="178" y="66" width="44" height="5" fill="'+g+'"/><rect x="185" y="64" width="6" height="40" fill="'+g+'"/><rect x="209" y="64" width="6" height="40" fill="'+g+'"/>';
+    if(/pyramid|giza|egypt|cairo/.test(n)) return '<path d="M170 104 L192 62 L214 104 Z" fill="'+g+'"/><path d="M206 104 L222 74 L238 104 Z" fill="#120e26"/>';
+    if(/opera|sydney/.test(n)) return '<path d="M176 104 q6 -26 20 -6 q-2 -22 16 -4 q4 -14 14 10 Z" fill="'+g+'"/>';
+    if(/christ|redeemer|rio/.test(n)) return '<rect x="197" y="58" width="6" height="30" fill="'+g+'"/><rect x="182" y="66" width="36" height="5" fill="'+g+'"/><circle cx="200" cy="53" r="4" fill="'+g+'"/><path d="M186 104 q14 -20 28 0 Z" fill="'+g+'"/>';
+    if(/cn tower|toronto|space needle|seattle/.test(n)) return '<rect x="197" y="46" width="6" height="58" fill="'+g+'"/><ellipse cx="200" cy="60" rx="12" ry="5" fill="'+g+'"/>';
+    if(/sagrada|barcelona|gaud/.test(n)) return '<path d="M186 104 L190 58 L194 104 Z M196 104 L200 50 L204 104 Z M206 104 L210 60 L214 104 Z" fill="'+g+'"/>';
+    if(/acropolis|parthenon|athens|greece/.test(n)) return '<rect x="180" y="72" width="40" height="32" fill="'+g+'"/><path d="M176 72 L200 60 L224 72 Z" fill="'+g+'"/><rect x="184" y="76" width="4" height="28" fill="#241a3a"/><rect x="198" y="76" width="4" height="28" fill="#241a3a"/><rect x="212" y="76" width="4" height="28" fill="#241a3a"/>';
+    return null;
+  }
+  function destScene(dest, o){
+    o=o||{}; var name=dest.name||'', land=dest.landmark||'', region=dest.region||'';
+    var sky=SCENE_SKY[region]||['#6a86c4','#46579c','#242349'];
+    var rng=seedRng(name+region), night=/night|caldera|northern lights|reykjav|aurora/i.test(land)||rng()<0.28;
+    var id='sc'+Math.floor(rng()*1e6);
+    var stars=''; if(night||rng()<0.5){ for(var s=0;s<26;s++){ stars+='<circle cx="'+(rng()*400).toFixed(0)+'" cy="'+(rng()*54).toFixed(0)+'" r="'+(rng()<0.2?1.4:0.8).toFixed(1)+'" fill="rgba(255,255,255,'+(0.35+rng()*0.5).toFixed(2)+')"/>'; } }
+    var sunX=(60+rng()*280).toFixed(0), sunY=(46+rng()*22).toFixed(0), sunR=(16+rng()*8).toFixed(0);
+    var sunC=night?'#f4f1e4':'#ffdf8e';
+    // far skyline (two layers) + landmark
+    function skyline(y, col, minH, maxH, w){ var out='', x=0; while(x<400){ var bw=w+rng()*w, bh=minH+rng()*(maxH-minH); out+='<rect x="'+x.toFixed(0)+'" y="'+(y-bh).toFixed(0)+'" width="'+(bw+1).toFixed(0)+'" height="'+bh.toFixed(0)+'" fill="'+col+'"/>'; x+=bw*0.82; } return out; }
+    var lm=landmarkPath(land)||landmarkPath(name);
+    var svg='<svg class="destscene" viewBox="0 0 400 130" preserveAspectRatio="xMidYMax slice" aria-hidden="true" style="display:block;width:100%;height:100%">'
+      + '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0" stop-color="'+sky[2]+'"/><stop offset="0.55" stop-color="'+sky[1]+'"/><stop offset="1" stop-color="'+sky[0]+'"/></linearGradient>'
+        + '<linearGradient id="'+id+'w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+sky[0]+'" stop-opacity="0.9"/><stop offset="1" stop-color="'+sky[1]+'" stop-opacity="0.6"/></linearGradient></defs>'
+      + '<rect width="400" height="130" fill="url(#'+id+')"/>'
+      + stars
+      + '<circle cx="'+sunX+'" cy="'+sunY+'" r="'+sunR+'" fill="'+sunC+'" opacity="'+(night?0.9:0.95)+'"/>'
+      + '<rect x="0" y="104" width="400" height="26" fill="url(#'+id+'w)"/>'   // water
+      + '<circle cx="'+sunX+'" cy="'+(116).toFixed(0)+'" r="'+(sunR*0.7).toFixed(0)+'" fill="'+sunC+'" opacity="0.22"/>'  // reflection
+      + skyline(106, 'rgba(13,10,30,0.55)', 20, 46, 26)   // far
+      + skyline(105, '#0d0a1e', 14, 40, 20)               // near
+      + (lm||'')                                          // landmark stands in front, fully readable
+      + '<rect x="0" y="103" width="400" height="2" fill="rgba(255,255,255,0.08)"/>'
+      + '</svg>';
+    return svg;
+  }
   function rnd(a,b){ return a + Math.random()*(b-a); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -1435,7 +1498,8 @@
   function viewDraw(){
     var d=S.dest;
     app.innerHTML = topbar() + hud()
-      + '<div class="card">'
+      + '<div class="card destcard">'
+        + '<div class="destbanner">'+destScene(d)+'</div>'
         + '<div class="dest">'
           + '<div class="fl">'+flagImg(d.flag,{w:132,h:88,fit:'cover',rad:14,cls:'hero'})+'</div>'
           + '<div class="cn">'+esc(d.name)+'</div>'
