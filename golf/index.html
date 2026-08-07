@@ -24732,6 +24732,11 @@ async function sbApply(session){
   S.authPending=false;   // OAuth round-trip resolved (success or not), drop the "finishing" pill
   try{ flushFeedback(); }catch(e){}   // post any feedback queued while offline / before the migration went live (guests too)
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
+  try{
+    const homeKey='sb-jcrrxqfpdelrmvjuihnm-auth-token';
+    if(session){ const v=localStorage.getItem(RTT_AUTH_KEY); if(v) localStorage.setItem(homeKey,v); }
+    else localStorage.removeItem(homeKey);
+  }catch(e){}
   let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
     // small, fast query, needed to decide signed-in vs username-picker
