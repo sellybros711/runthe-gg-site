@@ -370,32 +370,52 @@
     color:var(--mut);}
 
   /* ---------------- draft ---------------- */
-  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:9px 14px; margin-bottom:10px;}
-  /* wrap + a full-width bar row: the clock reads better as one line across the
-     whole card than as a stub under the set name. */
-  .hud{gap:8px 8px; flex-wrap:wrap;}
-  .hud > div:first-child{min-width:0; flex:1;}
-  .hud .rd{font-family:var(--ui); font-size:18px; line-height:1.05;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .hud .rd-left{font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.4px;
-    text-transform:uppercase; color:var(--dim); margin-left:1px;}
-  .hud .rd-left.clk-low{color:var(--goldT);} .hud .rd-left.clk-out{color:var(--redT);}
-  /* A bar so the clock can be read at a glance instead of parsed. Green while
-     there is room, gold when the set is nearly spent, red at the curfew. */
-  .timebar{width:100%; height:5px; border-radius:99px; background:var(--card3);
-    overflow:hidden; margin:1px 0 0;}
+  /* THE CLOCK IS THE GAME. Everything here exists to say one thing: this is
+     draining and you are spending it. */
+  .hud{display:block; padding:10px 14px 11px; margin-bottom:10px;}
+  .hud-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .hud-where{font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+    color:var(--dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  .hud-clock{display:flex; align-items:baseline; gap:9px; margin:5px 0 7px;}
+  /* The number, at the size of the thing you are actually playing against.
+     It was 18px and sharing that size with the set name. */
+  .hc-n{font-family:var(--ui); font-size:42px; line-height:.9; letter-spacing:-.5px;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+    transition:color var(--t-base) var(--ease);}
+  .hc-l{font-size:10.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim); line-height:1.15;}
+  /* What the night has already cost, opposite the number, so the pair reads
+     as spent-against-remaining rather than as a lone figure. */
+  .hc-used{margin-left:auto; text-align:right; font-family:var(--ui); font-size:17px;
+    color:var(--dim); font-variant-numeric:tabular-nums; line-height:1;}
+  .hc-used i{display:block; font-family:var(--body); font-style:normal; font-size:9.5px;
+    font-weight:900; letter-spacing:1.4px; text-transform:uppercase; margin-top:3px;}
+  .hud.clk-low .hc-n, .hud.clk-low .hc-l{color:var(--goldT);}
+  .hud.clk-out .hc-n, .hud.clk-out .hc-l{color:var(--redT);}
+  .hud.clk-out .hc-n{animation:clockPulse 1.6s ease-in-out infinite;}
+  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+
+  /* Thicker, and the track is dark so the spent part of the set is visible
+     rather than implied. At 5px on a light card the bar was a hairline. */
+  .timebar{width:100%; height:9px; border-radius:99px; overflow:hidden; margin:0;
+    background:color-mix(in srgb, var(--ink) 13%, transparent);}
   .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
     transition:width var(--t-slow) var(--ease), background-color var(--t-slow) var(--ease);}
-  .timebar.clk-low > span{background:var(--goldT);}
-  .timebar.clk-out > span{background:var(--redT);}
-  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
-    transition:color var(--t-base) var(--ease);}
-  .hud .rd-clock.clk-low{color:var(--goldT);}
-  .hud .rd-clock.clk-out{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
-  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
-  .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-    color:var(--dim); margin-top:3px;}
+  .hud.clk-low .timebar > span{background:var(--goldT);}
+  .hud.clk-out .timebar > span{background:var(--redT);}
+
+  /* The night, to scale. Two sets and an encore, each block as wide as its own
+     budget, so where you are is a place in the evening and not just a label. */
+  .nightstrip{display:flex; gap:3px; margin-top:7px;}
+  .ns-seg{height:16px; border-radius:3px; display:flex; align-items:center;
+    justify-content:center; overflow:hidden; background:color-mix(in srgb, var(--ink) 8%, transparent);}
+  .ns-seg i{font-style:normal; font-size:8.5px; font-weight:900; letter-spacing:1.2px;
+    text-transform:uppercase; color:var(--dim); white-space:nowrap;}
+  .ns-seg.done{background:color-mix(in srgb, var(--ink) 22%, transparent);}
+  .ns-seg.done i{color:var(--mut);}
+  .ns-seg.now{background:var(--teal);}
+  .ns-seg.now i{color:var(--bg);}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
   .pip.done{background:var(--mut);} .pip.now{background:var(--teal); transform:scale(1.25);}
@@ -1180,8 +1200,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=26';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=26';
+} from './scoring.js?v=27';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=27';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1696,30 +1716,51 @@ function renderDraft(){
     </button>` : '');
 
   app.innerHTML = `
-    <div class="card hud">
-      <div>
-        <div class="rd">${esc(cfg.label)}
-          <span class="rd-clock ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
-            >${fmtClock(Math.max(0, left))}</span>
-          <span class="rd-left ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}">left</span></div>
-        <div class="md">pick ${S.round + 1}${
-          S.respins ? ` · ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
+    ${(() => {
+      /* THE CLOCK IS THE GAME, so it is the biggest thing on the screen.
+         It used to read "Set I 75:00 left" with the set name and the time at
+         the same size and "left" at 10px, over a full green bar. Nothing
+         about that said a countdown: green and full reads as healthy
+         progress, and the number you are actually playing against was one
+         word among four. */
+      const state = left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : '';
+      const used = Math.max(0, budget - left);
+      const cost = respinCost(S.respins);
+      const can = canRespin(S.sets, si, S.respins, S.closed, S.spent);
+      /* The whole night, so the set you are in is a place rather than a
+         label. Each block is sized by its own budget, so the encore reads as
+         the ten minutes it is. */
+      const strip = SETS.map((cfg2, i) => {
+        const st = S.closed[i] ? 'done' : i === si ? 'now' : 'todo';
+        /* The encore is 600 seconds of a 9300 second night, so its block is
+           6.5% wide: about 23px, which clipped "Encore" to "CO". */
+        const nm = i === ENCORE_INDEX ? 'E' : cfg2.label;
+        return `<span class="ns-seg ${st}" style="flex:${cfg2.seconds}"
+          title="${esc(cfg2.label)}"><i>${esc(nm)}</i></span>`;
+      }).join('');
+      return `<div class="card hud ${state}">
+      <div class="hud-row">
+        <div class="hud-where">${esc(cfg.label)} &middot; pick ${S.round + 1}${
+          S.respins ? ` &middot; ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
+        <div class="hud-btns">
+          ${cost === null ? '<span class="nospin">No spins left</span>'
+            : `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
+                title="${can ? 'Trade stage time for a different show' : 'Not enough time left in this set'}"
+                >Respin</button>`}
+          <button class="btn tiny" type="button" id="openSets">Time</button>
+        </div>
       </div>
-      <div class="hud-btns">
-        ${(() => {
-          const cost = respinCost(S.respins);
-          const can = canRespin(S.sets, si, S.respins, S.closed, S.spent);
-          if (cost === null) return '<span class="nospin">No spins left</span>';
-          return `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
-            title="${can ? '' : 'Not enough time left in this set'}">
-            Respin &middot; ${fmtClock(cost)}</button>`;
-        })()}
-        <button class="btn tiny" type="button" id="openSets">Clock</button>
+      <div class="hud-clock" role="img"
+        aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
+        <span class="hc-n">${fmtClock(Math.max(0, left))}</span>
+        <span class="hc-l">left in<br>${esc(cfg.label)}</span>
+        <span class="hc-used">${fmtClock(used)}<i>on stage</i></span>
       </div>
-      <div class="timebar ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
-        role="img" aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
+      <div class="timebar">
         <span style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget)))}%"></span></div>
-    </div>
+      <div class="nightstrip">${strip}</div>
+    </div>`;
+    })()}
 
     <div class="board">
       <div>

@@ -235,6 +235,16 @@ check(/<details class="about"/.test(game), 'the about wall is folded away');
 check(/body\.playing \.about\{display:none/.test(game),
       'and gone entirely once you are playing');
 
+/* The HUD's whole job is to make the clock feel like the thing you are
+   playing against. It shipped once with the set name and the countdown at the
+   same size over a full green bar, which reads as healthy progress. */
+check(/\.hc-n\{[^}]*font-size:4\dpx/.test(game), 'the countdown is the biggest thing in the HUD');
+check(/>Respin<\/button>/.test(game), 'the respin button just says Respin');
+check(!/Respin\s*&middot;\s*\$\{fmtClock\(cost\)\}/.test(game),
+      'and does not carry its price in the label');
+check(/class="respin-cost"/.test(game), 'the price is on the confirm instead');
+check(/class="nightstrip"/.test(game), 'the HUD shows the shape of the night');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
