@@ -3536,6 +3536,23 @@ window.GA_ID='G-L29P5MRWKE';
     transition:grid-template-rows .3s cubic-bezier(.22,.9,.26,1),opacity .22s ease}
   .achgrp.open .achbody{grid-template-rows:1fr;opacity:1}
   .achin{overflow:hidden;min-height:0}
+  /* ── WHERE DOES HE PLAY ────────────────────────────────────────
+     One row a spot, sized like every other tappable row in a sheet, with the spot's own
+     position color on the tag so the answer is recognisable before the words are read. */
+  .slotpick{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:13px}
+  .slotopt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:11px 12px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--line);transition:border-color .12s ease,transform .08s ease}
+  .slotopt:hover{border-color:var(--line-2)}
+  .slotopt:active{transform:scale(.985)}
+  .slotopt .tag{flex:0 0 46px;text-align:center;color:#fff;font-family:var(--fn);font-size:10.5px;
+    font-weight:800;letter-spacing:.05em;padding:5px 0;border-radius:7px}
+  .slotopt .t{flex:1;min-width:0}
+  .slotopt .t b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:600;
+    color:var(--ink)}
+  .slotopt .t span{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .slotopt .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
   .hr{height:1px;background:var(--line);margin:14px 0}
 
@@ -4439,7 +4456,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=50"></script>
-<script src="run.js?v=67"></script>
+<script src="run.js?v=68"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6094,13 +6111,65 @@ $('opts').addEventListener('click',e=>{
     show('s-season'); simTimer=setTimeout(ctx.resumeStep,400);
     return;
   }
-  try{R.sign(run,p);}catch(err){toast(err.message);return;}
-  ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:runMode(),club:run&&run.franchise||null});
+  /* A MAN WHO PLAYS TWO POSITIONS GETS ASKED WHERE HE PLAYS. See slotChoices() in run.js:
+     there is no default that is right for him, because which spot he takes decides what is
+     left for the picks after him. Everybody else signs the way they always did. */
+  if(E.positionsOf(p).length>1){
+    const choices=R.slotChoices(run,p);
+    if(choices.length>1){ askSlot(p,choices); return; }
+  }
+  signInto(p,null);
+});
+
+/* WHERE DOES HE PLAY. Only ever put up for a two-position man with more than one spot open
+   to him, so it is a question and not a formality: every button here leads somewhere
+   genuinely different for the rest of the draft.
+
+   The line under each spot is the reason to pick it -- what is still open afterwards --
+   because that is the whole of the decision and working it out in your head means holding
+   six slots and two positions at once. */
+function askSlot(p,choices){
+  const slots=slotsNow();
+  const box=$('sheet-in');
+  box.dataset.kind='slot';
+  box.style.borderTop='';
+  const after=(i)=>{
+    const left=R.openSlots(run).filter(x=>x!==i).map(x=>slots[x]);
+    return left.length?'Leaves '+left.join(', ')+' to fill':'Fills your last spot';
+  };
+  box.innerHTML='<div class="eyebrow">Two positions</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Where does '+
+      esc(p.last||p.name)+' play?</h2>'+
+    /* "Either" was wrong the moment FLEX joined the list -- there are two or three of these
+       depending on what is still open, and a sentence that promises two under a list of
+       three is the kind of thing that makes a player distrust the rest of the screen. */
+    '<p class="dim" style="font-size:13.5px;margin:0">He can play any of these, and which '+
+      'one he takes decides what is left for your other picks.</p>'+
+    '<div class="slotpick">'+choices.map(i=>
+      '<button class="slotopt" data-i="'+i+'">'+
+        '<span class="tag" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
+        '<span class="t"><b>Play him at '+esc(slots[i])+'</b>'+
+        '<span>'+esc(after(i))+'</span></span>'+
+        '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
+    '<div style="margin-top:12px"><button class="btn ghost" id="sh-x">Not yet</button></div>';
+  openSheet();
+  box.querySelectorAll('.slotopt').forEach(b=>{ b.onclick=()=>{
+    closeSheet();
+    signInto(p,+b.dataset.i);
+  }; });
+}
+
+/* The half of the tile handler that happens once a spot is settled, shared by the ordinary
+   path and by the chooser so the two cannot drift. */
+function signInto(p,slot){
+  try{R.sign(run,p,slot);}catch(err){toast(err.message);return;}
+  ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:runMode(),club:run&&run.franchise||null,
+    slot:slot===null?null:slotsNow()[slot],slot_chosen:slot!==null});
   if(run.phase===R.PHASES.SEASON){
     ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)+E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed,mode:runMode(),club:run&&run.franchise||null});
     paintSquad();
   }else nextSpin();
-});
+}
 
 /* ---------- squad ---------- */
 /* One line icon per scheme, in the scheme's own color (the tile sets `color`, and

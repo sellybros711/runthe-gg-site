@@ -520,6 +520,33 @@ function slotForPlayer(run, player) {
   return flex === undefined ? null : flex;
 }
 
+/*
+ * EVERY EMPTY SPOT THIS MAN COULD TAKE, one per distinct spot NAME, in slot order.
+ *
+ * slotForPlayer() answers "where does he go", which is the right question for a man who
+ * plays one position: his own spot if it is open, FLEX if it is not, and that ordering is
+ * strictly better for him than any other. It is the wrong question for a man who plays two.
+ * Cordarrelle Patterson is a running back and a receiver, and with both spots open the
+ * function above puts him at running back for no better reason than that RB comes before WR
+ * in the slot list -- and that is not a tidying detail, it decides which spots are left for
+ * the five picks after him. Taking him at receiver keeps the running back spot open. There
+ * is no default that is right there, so the caller has to be able to ask.
+ *
+ * ONE PER NAME. The slot list carries two WR spots, and offering "WR" twice is a choice
+ * between two identical things.
+ */
+function slotChoices(run, player) {
+  const slots = slotsOf(run);
+  const seen = new Set();
+  const out = [];
+  for (const i of openSlots(run)) {
+    if (!E.fillsSlot(slots[i], player) || seen.has(slots[i])) continue;
+    seen.add(slots[i]);
+    out.push(i);
+  }
+  return out;
+}
+
 /** Names of the spots still to fill, for display. */
 function openSlotNames(run) {
   const slots = slotsOf(run);
@@ -704,13 +731,22 @@ function respin(run, data, kind) {
   return spin(run, data, constraint);
 }
 
-function sign(run, player) {
+/*
+ * `want` is an optional slot index, for the caller that asked. It is CHECKED and not
+ * trusted -- it has to be an empty spot this player can actually fill -- because it arrives
+ * from the client and a slot index is the one number here that decides what the rest of the
+ * draft may hold. Left out, the old rule applies and nothing about a one-position signing
+ * changes.
+ */
+function sign(run, player, want) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   /* The same predicate the board uses, so a tile you can see is a tile you can take. */
   if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
-  const slot = slotForPlayer(run, player);
+  const slot = (want === undefined || want === null)
+    ? slotForPlayer(run, player)
+    : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
 
   run.roster.push(player);
@@ -2830,7 +2866,7 @@ const api = {
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
-  openSlots, openSlotNames, slotForPlayer, TUNING,
+  openSlots, openSlotNames, slotForPlayer, slotChoices, TUNING,
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   pushBack,
