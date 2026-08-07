@@ -416,8 +416,15 @@
   .sheetgrab{display:none; width:38px; height:4px; border-radius:99px;
     background:var(--line2); margin:0 auto 12px;}
 
-  .showcard{padding:11px 15px; margin-bottom:10px;}
-  .showcard .d{font-family:var(--hero); font-size:21px; line-height:1.05;}
+  /* THE SHOW IS A HEADING, NOT A CARD. Once the songs under it stopped being
+     cards, the panel around the date was the only box left on the screen and
+     became the loudest thing on it. It is the marquee line for the sheet
+     below, so it is set like one: date large, venue and city beneath, and a
+     rule holding it to the list rather than a border floating it above. */
+  .showcard{padding:2px 0 9px; margin-bottom:8px; background:transparent; border:0;
+    border-bottom:3px solid var(--ink); box-shadow:none; border-radius:0;}
+  .showcard .d{font-family:var(--ui); font-size:29px; line-height:1; letter-spacing:.2px;
+    text-transform:uppercase;}
   .showcard .night{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
     letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
     padding:1px 5px; border-radius:4px;
@@ -469,17 +476,20 @@
      own strokes cross. Rendered side by side that reads as a mistake.
      greenT stays as the colour for anything without background-clip:text,
      where the fallback is an invisible arrow rather than a green one. */
-  .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--greenT);
-    font-size:16px; line-height:1; vertical-align:-1px;}
-  .segmark{font-style:normal; font-weight:900; color:var(--greenT);}
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .segout, .sf-seg, .segmark{
-      background:var(--dye-line); background-size:100% 100%; background-position:50% 50%;
-      -webkit-background-clip:text; background-clip:text;
-      -webkit-text-fill-color:transparent; color:transparent;}
-  }
-  .song .o.seg{color:var(--greenT);}
-  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
+  /* DRAWN, NOT TYPED. It was the &rsaquo; character, and that glyph is tiny
+     inside its em box: measured against a 19px title, the arrow's box was
+     16px and its actual INK was 6px wide. Raising the font-size only inflates
+     the empty box around it.
+     This is the brand mark's own chevron on a viewBox cropped to the stroke,
+     so the box IS the ink, sized in em so it tracks whatever the title is
+     set at. Same path and the same round caps as the app icon. */
+  .segout, .sf-seg, .segmark{display:inline-block; width:.5em; height:.72em;
+    vertical-align:-.03em; background:var(--dye-line); flex:0 0 auto;
+    -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
+    mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
+  .segout{margin-left:.26em;}
+  .segmark{margin-right:.1em;}
+
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
     background:color-mix(in srgb,var(--green) 12%, transparent);
@@ -528,22 +538,33 @@
   .song.used .t{font-size:13px;}
   .song.used .o{margin-top:1px;}
   .song.used .r{gap:0;}
-  /* The title is the row. Anton at 22px is the same ink a set list uses and
-     it fits: measured at 320px, a 30-character title still lands on one line
-     with the time beside it. */
-  .song .t{font-family:var(--ui); font-weight:400; font-size:22px; line-height:1.06;
+  /* Dialled back from 22px. Measured over 226 rows, 45% carry a second line
+     and row heights ran from 42px to 103px: at 22px a long title wrapped, and
+     a list where every row is a different height is the thing that reads as
+     overwhelming, not the size of any one row.
+     19px still sets the title as the row without pushing it to two lines. */
+  .song .t{font-family:var(--ui); font-weight:400; font-size:19px; line-height:1.1;
     letter-spacing:.2px;}
-  .song.used .t{font-size:18px;}
+  .song.used .t{font-size:16px;}
   /* The left column wraps as a row: title, then chips, and anything
      descriptive drops to its own line underneath rather than running on after
      the title and wrapping mid-phrase. */
   .song .l{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 7px; min-width:0; flex:1 1 auto;}
   .song .r{flex:0 0 auto;}
-  .song .o{flex:0 0 100%; font-size:11.5px; font-weight:600; color:var(--dim); margin-top:0;}
+  /* One line, always. This is the row that varied: "ran into Silver Rising or
+     6 others" wrapped to a third line on a narrow screen and took the row to
+     103px. It is also the line that shouted, in bold green on 45% of rows. */
+  .song .o{flex:0 0 100%; font-size:11.5px; font-weight:600; color:var(--dim); margin-top:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+  /* The arrow keeps the dye, because that is the mechanic. The partner name
+     steps down from bold green to the muted ink: naming it is enough, it does
+     not also have to be the loudest thing on the row. */
+  .song .o.seg{color:var(--mut); font-weight:700;}
+  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
-  .song .len{font-family:var(--ui); font-weight:400; font-size:18px; color:var(--mut);
+  .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
   /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
    *
@@ -1150,8 +1171,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=24';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=24';
+} from './scoring.js?v=25';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=25';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1553,7 +1574,7 @@ function sofarHTML(si){
               // that ended clean — an arrow the scorecard then paid nothing for.
               j < set.length - 1 && String(p.is_segue) === 'true'
                 && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
-                ? '<i class="sf-seg">&rsaquo;</i>' : ''}</span>
+                ? '<i class="sf-seg" aria-hidden="true"></i>' : ''}</span>
             <span class="sf-len">${fmtClock(lenOf(p))}</span>
           </div>`).join('')}
       </div>`);
@@ -1609,6 +1630,23 @@ function renderDraft(){
       const why = pickBlock(p, si);
       const dead = !!why;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
+      /* The second line, decided BEFORE the chips, because the two were saying
+         the same thing. A cover with no segue partner printed "orig. Bobby
+         Blue Bland" AND a COVER chip on the same row: the line already names
+         it as a cover, and it names who by. */
+      // Out of time is a different kind of no from already-played, and the
+      // player needs to know which wall they hit.
+      const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
+      const partnerCount = (S.data.partners.get(p.song_id) || new Set()).size;
+      const oLine = why
+        ? `<span class="o${whyClass}">${why}</span>`
+        : p.segued_into
+          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i> ${esc(p.segued_into)}${
+              partnerCount > 1 ? ` <i>or ${partnerCount - 1} more</i>` : ''}</span>`
+          : p.is_cover === 'true' && p.original_artist
+            ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : '';
+      const origShown = !why && !p.segued_into && p.is_cover === 'true' && !!p.original_artist;
+
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
@@ -1622,27 +1660,19 @@ function renderDraft(){
         if (run.depth >= MONO_AT) chips.push(
           `<span class="chip mono">${ordinal(run.depth).toUpperCase()} IN A ROW</span>`);
       }
-      if (acc.chip) chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
+      if (acc.chip && !(acc.chip === 'cover' && origShown))
+        chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      // Out of time is a different kind of no from already-played, and the
-      // player needs to know which wall they hit.
-      const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
       return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
         <span class="l">
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
-            ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
+            ? '<span class="segout" role="img" aria-label="segued into the next song"></span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
-          ${why ? `<span class="o${whyClass}">${why}</span>`
-            : p.segued_into ? `<span class="o seg"><i class="segmark">&rsaquo;</i> ${esc(p.segued_into)}${
-                (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
-                         return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
-              }</span>`
-            : p.is_cover === 'true' && p.original_artist
-              ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
+          ${oLine}
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;
@@ -2118,6 +2148,26 @@ function dyeTextGradient(x, gx, gy, w, h){
   return g;
 }
 
+/* The mark's own chevron, stroked rather than typed. The card had the same
+   problem the app did: the > glyph is tiny inside its em box, so beside a
+   35px title it read as a stray mark rather than as the brand. Stroked to a
+   given cap height, it lands at the size the title is actually set at. */
+function drawChevron(x, px, baselineY, capH){
+  const w = capH * 0.62, top = baselineY - capH;
+  x.save();
+  x.lineWidth = Math.max(3, capH * 0.20);
+  x.lineCap = 'round';
+  x.lineJoin = 'round';
+  x.strokeStyle = dyeTextGradient(x, px, baselineY, w, capH);
+  x.beginPath();
+  x.moveTo(px + w * 0.12, top + capH * 0.10);
+  x.lineTo(px + w * 0.86, top + capH * 0.50);
+  x.lineTo(px + w * 0.12, top + capH * 0.90);
+  x.stroke();
+  x.restore();
+  return w;
+}
+
 /** Canvas has no letter-spacing, and a small caps label needs it to read. */
 function letterspaceCard(x, text, sx, y, gap){
   let cx = sx;
@@ -2211,19 +2261,14 @@ async function renderShareCard(r){
       x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
       const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
-      let tx = cx + x.measureText(label).width + 6;
+      let tx = cx + x.measureText(label).width + 10;
       if (n){
         // Raised to the cap line, the way a footnote marker sits on paper.
         x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
         x.fillText(String(n), tx, ly - 16);
         tx += x.measureText(String(n)).width + 8;
       }
-      if (seg){
-        x.font = '700 35px Archivo';
-        const aw = x.measureText('›').width;
-        x.fillStyle = dyeTextGradient(x, tx, ly, aw, 26);
-        x.fillText('›', tx, ly);
-      }
+      if (seg) drawChevron(x, tx, ly, 26);
       ly += ROW;
     });
     return ly;
