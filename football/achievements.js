@@ -28,7 +28,7 @@
  * cannot know its answer must return false rather than guess. That is why almost every test
  * is written against a filtered list rather than a raw count.
  *
- * Headless and dependency-free, so the catalogue can be tested in node against real rows.
+ * Headless and dependency-free, so the catalog can be tested in node against real rows.
  * Browser: window.PS_ACH. Node: require('./achievements.js').
  */
 (function () {
@@ -115,7 +115,7 @@
    * than pretending. Indices, not names, because two different seasons of the same man share
    * a name and would collapse into one node.
    */
-  function analyseLinks(roster, pairLinks, sameClub) {
+  function analyzeLinks(roster, pairLinks, sameClub) {
     const n = roster.length;
     const out = { types: new Set(), pairs: 0, connected: false, allPairs: false, biggest: 0,
       qbBothWrs: false, qbRbAndTe: false };
@@ -207,7 +207,7 @@
         if (roster.length !== r.picks.length) roster = [];
       }
       const links = roster.length
-        ? analyseLinks(roster, pairLinks, r.run_mode === 'club')
+        ? analyzeLinks(roster, pairLinks, r.run_mode === 'club')
         : { types: new Set(), pairs: 0, connected: false, allPairs: false, biggest: 0 };
       /* The largest group of men off one single team-season, which is what a stack is. */
       let stack = 0;
@@ -308,7 +308,7 @@
     const modeOf = (r) => r.run_mode || null;
     const clubsPlayed = new Set(asc.map((r) => r.franchise).filter(Boolean));
     /* A banner belongs to a club only when the run was actually locked to that club. A free
-       run carrying somebody's favourite team in the franchise column is not a One Franchise
+       run carrying somebody's favorite team in the franchise column is not a One Franchise
        title, which is the same distinction runKindOf() makes on the results screen. */
     const clubBanners = new Set(titles.filter((r) => r.run_mode === 'club' && r.franchise)
       .map((r) => r.franchise));
@@ -341,8 +341,8 @@
     };
   }
 
-  /* ---------------- the catalogue ----------------
-     tier drives the colour only: bronze, silver, gold, legend.
+  /* ---------------- the catalog ----------------
+     tier drives the color only: bronze, silver, gold, legend.
      group drives which shelf it sits on. `compact` marks a collection badge, which the
      profile draws as a small tile because its name IS its description. */
   const A = (id, name, desc, tier, group, test) => ({ id, name, desc, tier, group, test });
@@ -394,8 +394,8 @@
   const posCount = (ros, pos) => ros.filter((p) => p.position === pos).length;
   const rosterSpend = (ros) => ros.reduce((t, p) => t + Number(p.price_musd || 0), 0);
 
-  const CATALOGUE = [];
-  const add = (a) => { CATALOGUE.push(a); return a; };
+  const CATALOG = [];
+  const add = (a) => { CATALOG.push(a); return a; };
 
   /* ===================== MILESTONES ===================== */
   [[1, 'Welcome to the league', 'bronze'], [5, 'Getting the hang of it', 'bronze'],
@@ -684,7 +684,7 @@
     'silver', 'History',
     (c) => c.anyRoster((ros) => ros.some((p) => has(p.draft_year)
       && Number(p.season) - Number(p.draft_year) >= 10))));
-  add(A('greybeard', 'Fifteen years in',
+  add(A('graybeard', 'Fifteen years in',
     'Draft a player fifteen or more seasons into his career.', 'gold', 'History',
     (c) => c.anyRoster((ros) => ros.some((p) => has(p.draft_year)
       && Number(p.season) - Number(p.draft_year) >= 15))));
@@ -893,7 +893,7 @@
   add(A('gave_them_more', 'They asked, you paid',
     'Take a deal where the other GM wanted a second player you had not offered.',
     'silver', 'Front office', (c) => c.moveRuns.some((m) => m.askedFor >= 1)));
-  add(A('asked_for_the_best', 'Priced out of a favourite',
+  add(A('asked_for_the_best', 'Priced out of a favorite',
     'Give up a 15-point-a-game player the other GM asked for on top of the deal.',
     'gold', 'Front office',
     (c) => c.askedPlayers.some((p) => Number(p.ppr_ppg_mean) >= 15)));
@@ -1048,7 +1048,7 @@
     'Calendar', 'Streaks'];
 
   /*
-   * Evaluate the whole catalogue. A test that throws is treated as not earned rather than
+   * Evaluate the whole catalog. A test that throws is treated as not earned rather than
    * taking the profile down with it: a badge is decoration and a broken one must not cost
    * somebody their career panel.
    *
@@ -1059,13 +1059,13 @@
     const list = Array.isArray(rows) ? rows : [];
     const ctx = buildContext(list, resolve, opts);
     const earned = [], locked = [];
-    for (const a of CATALOGUE) {
+    for (const a of CATALOG) {
       let ok = false;
       try { ok = !!a.test(ctx); } catch (e) { ok = false; }
       (ok ? earned : locked).push(a);
     }
     return {
-      earned, locked, total: CATALOGUE.length,
+      earned, locked, total: CATALOG.length,
       play: ctx.play, title: ctx.title,
       stats: {
         runs: ctx.total,
@@ -1083,8 +1083,8 @@
   }
 
   const api = {
-    CATALOGUE, GROUPS, TIER_ORDER, CLUBS, SEASONS, COLLEGES, CAP, TRADE_DEADLINE_WEEK,
-    evaluate, playStreak, titleStreak, dayKey, analyseLinks,
+    CATALOG, GROUPS, TIER_ORDER, CLUBS, SEASONS, COLLEGES, CAP, TRADE_DEADLINE_WEEK,
+    evaluate, playStreak, titleStreak, dayKey, analyzeLinks,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.PS_ACH = api;

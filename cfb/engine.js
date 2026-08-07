@@ -41,7 +41,7 @@ const CONSTANTS = {
   MAX_RESPINS: 3,
   /* HOW MANY OF ONE POSITION A ROSTER MAY HOLD. With two flex spots open to a
      running back, a roster could otherwise stack three of them, which is not a
-     real offence. Two is the limit: one in the dedicated back spot and at most
+     real offense. Two is the limit: one in the dedicated back spot and at most
      one more in a flex. Quarterbacks are capped at one by having a single slot
      and no flex eligibility; receivers and tight ends are left uncapped so an
      all-receiver Air Raid stays a legal choice. */
@@ -124,8 +124,8 @@ const CONSTANTS = {
   CONSISTENCY: 0.40,
   OPP_CONSISTENCY: 0.40,
   PLAYOFF_HOME_FIELD: 0.35,
-  // How much of an opponent's defence is applied to your offence. See resolveGame.
-  DEFENCE_WEIGHT: 0.65,
+  // How much of an opponent's defense is applied to your offense. See resolveGame.
+  DEFENSE_WEIGHT: 0.65,
 };
 
 // ─── conferences ────────────────────────────────────────────────────────────
@@ -313,7 +313,7 @@ function playoffRoundNames(rounds) {
 
 /* WHAT THE COMMITTEE WEIGHS. Wins and losses first, the way they do in life,
    then how good the team looked (scoring margin as a z-score) and who it played.
-   Records are normalised to a 12-game season so a team that played fourteen is
+   Records are normalized to a 12-game season so a team that played fourteen is
    not rewarded for the extra chances.
    Z went from 1.8 to 4.5 so that margin can actually bridge a loss. At 1.8 one
    loss cost 7.5 resume points while the whole spread of margins inside a record
@@ -367,7 +367,7 @@ function nationalRank(resume, prepared) {
    the same scale as the teams it is being ranked against, which it was not
    before: without it you look better than a real team at 6-6 and worse at 12-0.
    Re-measure it with cfb/build/test/probe_economy.mjs if SCALE, the cap or
-   DEFENCE_WEIGHT move, because all three change what a margin looks like. */
+   DEFENSE_WEIGHT move, because all three change what a margin looks like. */
 const MARGIN_GAIN = 1.30;
 
 function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
@@ -382,7 +382,7 @@ function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
 /* THE RATING, owned here rather than by the page, because playRun needs it: the
    championship game is decided partly on it. It is resolveGame's own line with
    the per-opponent term removed, so it is what a roster is worth against an
-   average defence. */
+   average defense. */
 function teamRating(roster, chemistryMultiplier) {
   const fppg = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   return fppg * chemistryMultiplier * rosterStructure(roster).multiplier;
@@ -541,7 +541,7 @@ const BOWLS_HOUSE = {
    the house's own RunThe.GG Bowl, a rare draw at any tier; the rest is a seeded
    pick from that tier's fictional bowls. The roster and chemistry are kept in the
    signature so callers do not have to change, though the pick no longer reads
-   them: a bowl is where your season ranked, not what your offence looked like. */
+   them: a bowl is where your season ranked, not what your offense looked like. */
 function selectBowl(roster, chemResult, rng, tier = 'major') {
   const list = BOWLS[tier] || BOWLS.major;
   if (rng() < (CONSTANTS.RUNTHE_BOWL_CHANCE || 0)) {
@@ -591,7 +591,7 @@ function bowlName(key) {
    shared home state and a shared coach were all worth exactly the same 0.01,
    which said that having played in the same league is the same bond as having
    played for the same man. It also made 93% of every roster's links identical,
-   so the chemistry rail drew every arc in one colour and the tiers below could
+   so the chemistry rail drew every arc in one color and the tiers below could
    not tell them apart. They are spread now, in the order the bonds actually
    rank: same league at the bottom, then the same state, the same coach, the same
    school, then blood, then genuine teammates, then a quarterback and the man he
@@ -675,30 +675,30 @@ function washColor(hex, targetL, satCap = 40) {
   return hslToHex(h, Math.min(s, satCap), targetL);
 }
 
-/* THE OPPONENT'S REAL COLOUR, dark enough for the white scoreboard text but not
+/* THE OPPONENT'S REAL COLOR, dark enough for the white scoreboard text but not
    washed to mud. It used to be pinned at lightness 15 with saturation capped at
    40, which turned a crimson like Georgia's #ba0c2f into a maroon; your own side
    sits near lightness 27 at full saturation, so the two never matched. The panel
    fill now lands at 30 with the cap at 64, which reads as the team's true hue and
-   still carries white text, and a genuine grey or black (no hue to boost) stays
-   grey rather than being invented into a dull red. */
+   still carries white text, and a genuine gray or black (no hue to boost) stays
+   gray rather than being invented into a dull red. */
 function washColors(color, altColor) {
   const primary = color || '#333333';
   const bg = washColor(primary, 30, 64);
-  /* The accent is the alternate colour, but only if it actually has a hue: a lot
+  /* The accent is the alternate color, but only if it actually has a hue: a lot
      of teams pair a bright primary with black or white, and a black alt washed
-     out to a grey stripe next to a red panel. When the alt is achromatic, lift
+     out to a gray stripe next to a red panel. When the alt is achromatic, lift
      the primary instead so the stripe is a lighter shade of the team's own red or
-     blue rather than a grey seam. */
+     blue rather than a gray seam. */
   const altHasHue = altColor && chromaOf(altColor) >= CHROMA_FLOOR;
   const accent = washColor(altHasHue ? altColor : primary, altHasHue ? 46 : 52, 64);
   return { bg, accent };
 }
 
-// HOW FAR FROM GREY A COLOR HAS TO BE BEFORE IT HAS A HUE AT ALL, as a 0..255
+// HOW FAR FROM GRAY A COLOR HAS TO BE BEFORE IT HAS A HUE AT ALL, as a 0..255
 // spread between its brightest and darkest channel. White, black, silver and
 // charcoal are all below this, and for all of them hexToHsl reports hue 0, which is
-// not a fact about the colour: it is what the formula returns when there is no hue
+// not a fact about the color: it is what the formula returns when there is no hue
 // to report.
 const CHROMA_FLOOR = 20;
 function chromaOf(hex) {
@@ -711,12 +711,12 @@ function chromaOf(hex) {
 // to a saturation floor (already-vivid ones keep their own), and set a lightness
 // that stays dark enough for the white landed text while reading as the true hue.
 //
-// A GREY IS NOT A DULL RED. This used to force the saturation floor onto every
+// A GRAY IS NOT A DULL RED. This used to force the saturation floor onto every
 // input, and hexToHsl reports hue 0 for anything achromatic, so #ffffff came back
 // as #dd3c3c and #000000 as #671e1e. Kentucky is blue and white and was drawn with
 // a red border; Iowa is black and gold and was drawn on dark red. About half the
 // schools in the game have a white, black or silver in their pair, so about half
-// were wrong. Below the chroma floor the colour keeps its neutrality and only its
+// were wrong. Below the chroma floor the color keeps its neutrality and only its
 // lightness is set.
 function wheelColor(hex, minS, targetL, neutralL) {
   if (chromaOf(hex) < CHROMA_FLOOR) return hslToHex(0, 0, neutralL === undefined ? targetL : neutralL);
@@ -727,13 +727,13 @@ function wheelColor(hex, minS, targetL, neutralL) {
 function wheelColors(color, altColor) {
   const primary = color || '#334155';
   const secondary = altColor || color || '#94a3b8';
-  // A neutral primary lands near black rather than at mid grey, because a black
+  // A neutral primary lands near black rather than at mid gray, because a black
   // helmet school should read black: Iowa, Purdue, Oregon State.
   const bg = wheelColor(primary, 55, 26, 13);
   // A DARK NEUTRAL TRIM CANNOT BE DRAWN AS ITSELF. The accent is the box's border,
   // and Georgia's black on Georgia's red is a border nobody can see. A light neutral
   // would be a lie in the other direction, so a dark achromatic secondary falls back
-  // to the school's OWN colour lifted off the background: still the school's palette,
+  // to the school's OWN color lifted off the background: still the school's palette,
   // and actually visible. A light neutral is kept as one, which is the white trim on
   // Kentucky, Alabama and Penn State and the whole point of this.
   let accent;
@@ -775,7 +775,7 @@ function teamInk(team) {
 /* WHAT EACH TIER MEANS ON SCREEN, and the thresholds sit between the real link
    values rather than above them. The old floors wanted 0.08 for a strong link
    when the best link in the game is worth 0.05, so STRONG COULD NEVER BE EARNED
-   and every arc on the chemistry rail drew in the weak colour. Now:
+   and every arc on the chemistry rail drew in the weak color. Now:
      strong, gold  they actually played together, or are family, or are a
                    quarterback and his receiver
      good,   green they shared a school, a coach or a home state
@@ -818,7 +818,7 @@ const fitAvg = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
    the position, but the quarterback slot can also be filled by somebody who
    played both, so a roster can have a quarterback without anyone whose PRIMARY
    position is one. Falling back to the best passer among the men who played the
-   position keeps that roster from reading as having nobody under centre. */
+   position keeps that roster from reading as having nobody under center. */
 function findQB(roster) {
   return roster.find(p => p.position === 'QB')
     || roster.filter(p => p.alt_position === 'QB')
@@ -1037,9 +1037,9 @@ const SLOT_ELIGIBILITY = {
 /* EVERY POSITION A MAN ACTUALLY PLAYED. Most players have one. The ones who
    genuinely lined up at two carry alt_position, set by the production in
    cfb/build/dual-positions.mjs, and they can be signed at either: Dexter
-   McCluster at receiver or at back, Kerry Meier at receiver or under centre.
+   McCluster at receiver or at back, Kerry Meier at receiver or under center.
    position stays the primary, so anything that wants a single answer (the chip
-   colour, the scheme detector) keeps reading the same field it always did. */
+   color, the scheme detector) keeps reading the same field it always did. */
 function positionsOf(player) {
   return player && player.alt_position
     ? [player.position, player.alt_position]
@@ -1359,15 +1359,15 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   }
 
   const structure = rosterStructure(roster).multiplier;
-  /* THE DEFENCE DAMPS YOUR OFFENCE, IT DOES NOT SCALE IT. The raw ratio treats a
-     defence as if it multiplied your whole output: the best defences in the data
+  /* THE DEFENSE DAMPS YOUR OFFENSE, IT DOES NOT SCALE IT. The raw ratio treats a
+     defense as if it multiplied your whole output: the best defenses in the data
      allow 17 points against a league average of 27, so a straight ratio cut your
-     scoring by 37% before a snap was played. That is more than any real defence
+     scoring by 37% before a snap was played. That is more than any real defense
      does, and it is why the last two playoff rounds used to be 25-point losses
-     rather than games. DEFENCE_WEIGHT pulls the ratio toward 1, keeping the sign
+     rather than games. DEFENSE_WEIGHT pulls the ratio toward 1, keeping the sign
      and the ordering while making the elasticity believable. */
   const defenseModifier = 1 +
-    (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENCE_WEIGHT ?? 1);
+    (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENSE_WEIGHT ?? 1);
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
   let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);
@@ -1385,7 +1385,7 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
 
 /* ─── the Challenge Bowl ──────────────────────────────────────────────────────
  * Two DRAFTED rosters against each other, which resolveGame cannot do: its
- * opponent is a real team season with a defence, and here both sides live in
+ * opponent is a real team season with a defense, and here both sides live in
  * fantasy space. Same shape as the NFL game's resolver.
  *
  * A single game is naturally a coin flip, which would reward luck over
@@ -1396,7 +1396,7 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
  * Scoring is in a FIXED order (a then b) so the result is identical for
  * everyone who recomputes it from the same seed: the challenger, the friend,
  * and anyone they show it to. Callers always pass a = challenger, b = friend;
- * the UI decides which side is labelled "you". */
+ * the UI decides which side is labeled "you". */
 const BOWL_CONSISTENCY = 0.62;
 
 function teamOffense(roster, chemistryMultiplier, rng, consistency) {
@@ -1457,12 +1457,12 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
     percentileIn(cal.internal_margin_q, internalMargin)));
 
-  if (!cal.real_pairs || !cal.internal_offence_q) {
+  if (!cal.real_pairs || !cal.internal_offense_q) {
     return legacyFootballScore(marginTarget, won, rng, cal);
   }
 
   const pointsTarget = valueAt(cal.real_team_pts_q,
-    percentileIn(cal.internal_offence_q, yourScore));
+    percentileIn(cal.internal_offense_q, yourScore));
 
   const TM = SCORELINE_TOLERANCE.margin, TP = SCORELINE_TOLERANCE.points;
   const pairs = cal.real_pairs;

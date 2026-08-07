@@ -17,12 +17,12 @@
 <link rel="canonical" href="https://runthe.gg/football/">
 <link rel="manifest" href="manifest.webmanifest">
 <!-- THE MARK: ONE PICTURE, EVERYWHERE.
-     A helmet built from four puzzle pieces with a facemask, centred on a #111827 plate at
+     A helmet built from four puzzle pieces with a facemask, centerd on a #111827 plate at
      every size. 16 and 32 used to be the four pieces alone, on the argument that the facemask
      goes to smudge that small, and the facemask was asked for everywhere instead.
 
      The tradeoff is real and worth writing down rather than discovering later: a browser tab
-     draws the favicon at 1x, so at 16px the facemask is a handful of grey pixels and reads as
+     draws the favicon at 1x, so at 16px the facemask is a handful of gray pixels and reads as
      texture rather than as a helmet. At 32, which is what a retina tab actually uses, it
      reads properly. What it buys is one mark instead of two. -->
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
@@ -426,9 +426,9 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar>*{position:relative}
   .avatar svg{width:19px;height:19px;fill:none;stroke:var(--dim);stroke-width:1.7;
     stroke-linecap:round}
-  /* The chosen colours when there are any, the old blue when there are not: a signed-in
+  /* The chosen colors when there are any, the old blue when there are not: a signed-in
      player with no name yet has nothing to derive one from. The ring is the club's second
-     colour, drawn inside so the button's 34px circle stays 34px. */
+     color, drawn inside so the button's 34px circle stays 34px. */
   .avatar.signed:before{background:var(--pfp,var(--grad-blue));border-color:transparent;
     box-shadow:inset 0 0 0 2px var(--pfpring,transparent)}
   .avatar.signed svg{stroke:#fff}
@@ -576,9 +576,9 @@ window.GA_ID='G-L29P5MRWKE';
   /* ---------- FOLLOW ON X, AND SEND FEEDBACK ----------
      Both live at the foot of the landing screen, which is where the other games on this
      site put them. The follow line is the house wording from RunThePitch; the difference
-     here is that it carries the mark, because a line of grey text above a row of grey
+     here is that it carries the mark, because a line of gray text above a row of gray
      legal links is a line nobody reads. */
-  /* FOUR MARKS, CENTRED, at the bottom of the footer. Sized as tap targets rather than
+  /* FOUR MARKS, CENTERD, at the bottom of the footer. Sized as tap targets rather than
      footnotes: 40px squares clear the 44px guidance once the 9px gap is counted either side,
      which the 17px inline glyph they replaced did not.
      display is repeated on the anchor because `.legal a` is a class plus a type and beats a
@@ -757,12 +757,12 @@ window.GA_ID='G-L29P5MRWKE';
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 11px center;background-size:15px}
   .lbmode select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-  /* The club's own colours on the bar, so the board you are looking at is obvious before
+  /* The club's own colors on the bar, so the board you are looking at is obvious before
      you read the name of it. Set from script, because there are thirty-two of them. */
   .lbmode.isclub select{border-color:var(--c1);
     box-shadow:inset 3px 0 0 var(--c2),inset 0 0 0 1px transparent}
   /* The Trade Machine board, marked the same way a club board is but with the mode's own
-     colour rather than a team's, so it reads as its own competition at a glance. */
+     color rather than a team's, so it reads as its own competition at a glance. */
   .lbmode.istrade select{border-color:rgba(56,189,248,.55);
     box-shadow:inset 3px 0 0 #38bdf8,inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
@@ -802,9 +802,9 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);border-bottom:none;cursor:pointer}
   .pod .pl{display:block;font-family:var(--fd);font-size:20px;line-height:1;
     color:var(--dim-2)}
-  /* CENTRED. .pod is text-align:center and every other child is display:block, which
-     centres their TEXT; .pfp is a 34px grid box, so the text rule did nothing for it and it
-     sat against the left edge of the step. Auto margins are what centre a fixed-width
+  /* CENTERD. .pod is text-align:center and every other child is display:block, which
+     centers their TEXT; .pfp is a 34px grid box, so the text rule did nothing for it and it
+     sat against the left edge of the step. Auto margins are what center a fixed-width
      block. */
   .pod .pfp{margin:7px auto 0}
   .pod .pn{display:block;font-size:11.5px;font-weight:700;margin-top:5px;
@@ -822,7 +822,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pod.p2 .pl{color:#cbd5e1}
   .pod.p3{border-color:rgba(180,120,70,.34)}
   .pod.p3 .pl{color:#c08457}
-  /* A PERFECT SEASON ON THE STEPS. The place colours above are medals, gold-silver-bronze,
+  /* A PERFECT SEASON ON THE STEPS. The place colors above are medals, gold-silver-bronze,
      which is a different claim from the gilded number and stays. What joins the rule is the
      FIGURE: gold on the podium means the same thing it means in the list below it. */
   .pod.perfect .pr{color:#fcd34d}
@@ -864,13 +864,13 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr .rk{flex:0 0 26px;font-family:var(--fn);font-size:14px;font-weight:600;color:var(--dim-2);
     text-align:right}
   /* THE PROFILE CIRCLE, on a board row and on a podium step.
-     One element at two sizes rather than two elements that drift apart. The colour and the
+     One element at two sizes rather than two elements that drift apart. The color and the
      letters come from a style attribute, because they are per-row data and there is no
      stylesheet that can know them; the shape, size and type are here. */
   .pfp{flex:0 0 auto;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
     font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.02em;
     line-height:1;text-transform:uppercase;overflow:hidden}
-  /* A guest has no identity to show, so the disc is an outline rather than a colour with
+  /* A guest has no identity to show, so the disc is an outline rather than a color with
      invented letters in it. It is still drawn, so every name on the board starts at the
      same x and the column reads as a column. */
   .pfp.anon{border:1px dashed var(--line-2);background:none !important}
@@ -882,7 +882,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pfpedit{display:flex;align-items:center;gap:13px;margin-top:11px}
   .pfpedit .col{flex:1;min-width:0}
   /* THIRTY-TWO CLUBS, WITH THEIR CODES UNDER THEM.
-     Circles alone were fine for nine abstract colours and are useless for thirty-two clubs:
+     Circles alone were fine for nine abstract colors and are useless for thirty-two clubs:
      nobody scans a grid of discs for the Bengals. The code is what makes it findable, and
      the grid is sorted by it, so finding yours is alphabetical rather than a hunt. auto-fill
      rather than a fixed column count, so the same rule gives five across at 320 and six at
@@ -905,7 +905,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE CLUB PICKER that starts a One Franchise run. Two across at every width, because
      this grid carries the club's NAME and the profile swatches do not: a player choosing who
      to build has to read "Buccaneers", and thirty-two three-letter codes is a puzzle. The
-     colours are the same two the profile circle uses, so the club a player already picked
+     colors are the same two the profile circle uses, so the club a player already picked
      for themselves is recognisable in this grid at a glance. */
   /* .clubtile and not .club, which is a name this file cannot have twice. The leaderboard
      marks its competition bar with a state class on a wrapper, and a bare .club rule turned
@@ -936,7 +936,7 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard .mc-arrow{margin-left:auto;width:20px;height:20px;fill:none;stroke:var(--dim-2);
     stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   .modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
-  /* The One Franchise card themes to the player's own profile team colour (--mc-a / --mc-a2
+  /* The One Franchise card themes to the player's own profile team color (--mc-a / --mc-a2
      / --mc-bd set in modeMenu). The red here is the fallback for signed-out players and
      anyone who has not chosen a club. */
   .modecard.mc-club{border-color:var(--mc-bd,rgba(239,68,68,.35))}
@@ -958,7 +958,7 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-cap .mc-title{color:#4ade80}
   .modecard.mc-trade{border-color:rgba(217,119,6,.35)}
   .modecard.mc-trade .mc-title{color:#fbbf24}
-  /* NEW wears launch green: the quiet grey of the Beta chip said "still cooking", and a
+  /* NEW wears launch green: the quiet gray of the Beta chip said "still cooking", and a
      launch tag should say the opposite. */
   .mc-new{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.16);color:#4ade80;
@@ -968,7 +968,7 @@ window.GA_ID='G-L29P5MRWKE';
     padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.10);color:var(--dim-2);
     vertical-align:middle;margin-left:6px}
   /* Real gold rather than bronze: the darker end of an amber gradient reads brown at this
-     size, so both stops sit high and the text is the dark colour instead. */
+     size, so both stops sit high and the text is the dark color instead. */
   .mc-soon-tag.gold{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600;
     box-shadow:0 1px 10px -2px rgba(251,191,36,.6)}
 
@@ -996,8 +996,8 @@ window.GA_ID='G-L29P5MRWKE';
   .xpromo{margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
   .xpromo .xp-h{font-family:var(--fn);font-size:12.5px;font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin:0 0 10px}
-  /* Emerald, which is the college game's colour on the RunThe.GG home page and on its own
-     pages. Borrowed on purpose: somebody who has seen it before should recognise it here. */
+  /* Emerald, which is the college game's color on the RunThe.GG home page and on its own
+     pages. Borrowed on purpose: somebody who has seen it before should recognize it here. */
   .modecard.mc-cfb{border-color:rgba(16,185,129,.38)}
   .modecard.mc-cfb .mc-icon{background:linear-gradient(135deg,#10b981 0%,#047857 100%)}
   .modecard.mc-cfb .mc-title{color:#5eead4}
@@ -1008,18 +1008,18 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard .mc-flag{display:block;margin-bottom:9px}
   .modecard .mc-flag .mc-soon-tag{margin-left:0}
 
-  /* ---- AND WHILE IT IS NOT OUT YET, IT IS GREY ----
-     The emerald border and the teal title above are the college game's own colours, and
-     wearing them made an unclickable card look like a live one -- a coloured frame around a
-     coloured heading is what every other control on this screen uses to say "press me".
+  /* ---- AND WHILE IT IS NOT OUT YET, IT IS GRAY ----
+     The emerald border and the teal title above are the college game's own colors, and
+     wearing them made an unclickable card look like a live one -- a colored frame around a
+     colored heading is what every other control on this screen uses to say "press me".
      So the identity waits: in preview state the frame, the heading and the icon all go
      neutral, and the frame goes DASHED, which is the one border style nothing clickable in
-     this game uses. The colours come back on their own when CFB_LIVE flips, because
+     this game uses. The colors come back on their own when CFB_LIVE flips, because
      .mc-preview is only applied while it is false.
      Written after the .mc-cfb rules and with a class more than they carry, so it wins on
      both counts rather than relying on either.
      The gold badge is untouched, and deliberately: it is the whole point of the card, it is
-     the one thing here meant to catch the eye, and greying it would leave nothing saying the
+     the one thing here meant to catch the eye, and graying it would leave nothing saying the
      game is coming at all. Which is also why none of this is done with opacity on the card
      -- see the note above .modecard.mc-preview. */
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
@@ -1034,7 +1034,7 @@ window.GA_ID='G-L29P5MRWKE';
      The little platform banner the other games carry in their footer -- "more games, one
      free account", the R GAMES app icon, and a Play pill that sends you to the hub. Ported
      from RunTheTour so somebody who plays two of these finds the same thing in the same
-     place. Recoloured from that game's green to THIS game's red: a green banner on the NFL
+     place. Recolored from that game's green to THIS game's red: a green banner on the NFL
      screen would look like it wandered in from another site. The icon is the shared asset;
      the CSS wordmark is a fallback if it can't load. */
   .ggad{display:flex; align-items:center; gap:11px; max-width:520px; margin:16px auto 0; padding:11px 13px;
@@ -1091,7 +1091,7 @@ window.GA_ID='G-L29P5MRWKE';
   .tt-cap .tc-room.over{color:#fca5a5;font-weight:700}
   .tt-cap .tc-d{font-weight:700}
   .tt-cap .tc-d.up{color:#4ade80} .tt-cap .tc-d.dn{color:#fca5a5}
-  /* The ceiling the deal would leave you on, when cash is changing hands. Amber, the colour
+  /* The ceiling the deal would leave you on, when cash is changing hands. Amber, the color
      this mode uses for money going out that does not come back. */
   .tt-cap .tc-cash{color:var(--ink);font-weight:700}
 
@@ -1155,7 +1155,7 @@ window.GA_ID='G-L29P5MRWKE';
   .tt-row .tr-nm{font-family:var(--fb);font-size:12.5px;font-weight:600;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tt-row .tr-pts{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--dim)}
-  /* Arriving, leaving, and staying, told by colour AND by a mark, so the three states are
+  /* Arriving, leaving, and staying, told by color AND by a mark, so the three states are
      not carried by hue alone. */
   .tt-row.in{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.45)}
   .tt-row.in .tr-nm{color:#bbf7d0}
@@ -1221,7 +1221,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dc-head.out{color:var(--red)} .dc-head.in{color:#22c55e}
   .dc-tiles{display:flex;flex-direction:column;justify-content:center;gap:5px;height:100%}
   /* THE DRAFT BOARD'S CARD, SHRUNK -- same class, same background, border, chip and FPPG
-     treatment, so a player recognises it from the draft. Only the type scale changes,
+     treatment, so a player recognizes it from the draft. Only the type scale changes,
      because two of these now sit side by side in half the width one had. */
   .tile.mini{padding:7px 8px;border-radius:10px;gap:0}
   .tile.mini .pos{min-width:27px;font-size:9px;padding:2px 0}
@@ -1376,8 +1376,8 @@ window.GA_ID='G-L29P5MRWKE';
   .ach-n{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.02em;
     color:var(--ink);line-height:1.2}
   .ach-d{font-size:10px;color:var(--dim);line-height:1.3;margin-top:2px}
-  /* Every earned tier gets its colour in the FILL as well as the border. Border alone was
-     not enough: silver on a dark panel read as greyed-out, so an earned badge could be
+  /* Every earned tier gets its color in the FILL as well as the border. Border alone was
+     not enough: silver on a dark panel read as grayed-out, so an earned badge could be
      mistaken for a locked one at a glance, which defeats the point of a cabinet. */
   .ach.bronze{border-color:rgba(180,120,70,.55);
     background:linear-gradient(150deg,rgba(201,139,82,.11),var(--panel))}
@@ -1408,7 +1408,7 @@ window.GA_ID='G-L29P5MRWKE';
   .tmi-row:first-of-type{border-top:0}
   /* Rules accent follows the player's club (teamInk, lightened to clear the dark card),
      falling back to plain ink when no club is chosen. The rest of the Trade Machine stays
-     neutral; only this sheet wears your colours. */
+     neutral; only this sheet wears your colors. */
   .tmi-k{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.07em;
     text-transform:uppercase;color:var(--rules-accent,var(--ink));padding-top:2px}
   .tmi-row b{color:var(--rules-accent,var(--ink))}
@@ -1457,7 +1457,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes rvpop{0%{opacity:0;transform:translateY(14px) scale(.9)}
     55%{transform:translateY(-3px) scale(1.03)}100%{opacity:1;transform:none}}
   @keyframes rvfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  /* The card's colour flashes up as it lands, then settles — the little hit per player. */
+  /* The card's color flashes up as it lands, then settles — the little hit per player. */
   @keyframes rvflash{0%{box-shadow:0 0 0 0 var(--rvglow),0 0 22px 2px var(--rvglow)}
     100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}}
   @keyframes rvgradeIn{0%{opacity:0;transform:scale(.4) rotate(-12deg)}
@@ -1582,10 +1582,10 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-row.picked .sh-fppg{color:var(--ink)}
   .shop-cap{margin-top:10px;font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim);text-align:center}
   .shop-cap b{color:var(--ink)}
-  /* Cap trouble is red wherever it is mentioned, so the colour means one thing across the
+  /* Cap trouble is red wherever it is mentioned, so the color means one thing across the
      whole mode rather than being decoration on each screen. */
   .shop-cap .over{color:#fca5a5} .shop-cap .over b{color:#fecaca}
-  /* The market title names who is on the block, so the man leaving is emphasised there. */
+  /* The market title names who is on the block, so the man leaving is emphasized there. */
   #tw-title b{color:var(--ink)}
   /* Kept from the old live preview: the cut screen still marks an arriving player NEW. */
   .rp-in{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.06em;
@@ -1644,7 +1644,7 @@ window.GA_ID='G-L29P5MRWKE';
   .clubtile.mine{border-color:var(--c1)}
   .clubtile:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   /* Two characters is a two-character field. A full-width input for it invites a word. */
-  /* .08em, not .18. Two characters centred with heavy tracking read as two separate things
+  /* .08em, not .18. Two characters centerd with heavy tracking read as two separate things
      with a gap between them: "Q9" came out "Q 9", which is not what will be on the board. */
   .inits{width:78px;text-align:center;letter-spacing:.08em;text-transform:uppercase;
     font-family:var(--fn);font-weight:700}
@@ -1844,7 +1844,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rules .n{flex:0 0 24px;height:24px;border-radius:7px;background:var(--grad-blue);color:#fff;
     font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
   /* The emphasis in a rule is the rule. Red, the same red the eyebrow above the list
-     uses, so the four things you have to know are the four things that are coloured. */
+     uses, so the four things you have to know are the four things that are colored. */
   .rules b{color:var(--red)}
 
   /* THE FIELD ITSELF. This rule was lost when the team picker's styles were cut out, because
@@ -1858,7 +1858,7 @@ window.GA_ID='G-L29P5MRWKE';
      field that broke: 47px of label under a back at 64% does not fit in 0.46 of 330px.
      Same aspect as the draft field now, which is the one the formation was solved for. */
   .field.short{aspect-ratio:1/0.54}
-  /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
+  /* THE CLUB WASH IS GONE, along with the favorite team it tinted the field with. It
      screened E.washColors() of your club over every field; with no club there is nothing for
      it to be a wash of, and --tc1 would never be set, so it painted nothing. The end-zone
      gradients below keep their own blue and red defaults, which is what they always fell
@@ -1870,7 +1870,7 @@ window.GA_ID='G-L29P5MRWKE';
 
      Now it reads as a field. Every five yards at 9% white, every ten at 16% and a little
      wider, the 50 brightest of all, and real hash marks: two short-dashed rows inboard,
-     which is what actually sits on a field, rather than full-height coloured verticals.
+     which is what actually sits on a field, rather than full-height colored verticals.
      Held under 20% throughout, because the chips and their names sit on top of this and
      legibility beats decoration. Re-measured by v40 after the change. */
   /* THE MARKINGS: a real field's furniture, lit from above.
@@ -1900,7 +1900,7 @@ window.GA_ID='G-L29P5MRWKE';
   .field .fnum{position:absolute;display:flex;align-items:center;gap:0;
     font-family:var(--fd);font-size:30px;line-height:1;
     color:rgba(255,255,255,.10);letter-spacing:.06em}
-  /* CENTRED ON THE LINE, WITH THE LINE BETWEEN THE DIGITS. That is how a field is painted: on
+  /* CENTERD ON THE LINE, WITH THE LINE BETWEEN THE DIGITS. That is how a field is painted: on
      a 10 the 1 sits one side of the yard line and the 0 the other. The gap element is the
      space the line shows through, and it is why the digits are separate spans rather than one
      string. Hard against the sidelines at 10%. */
@@ -1913,7 +1913,7 @@ window.GA_ID='G-L29P5MRWKE';
      shape. */
   .field .fnum .d{flex:0 0 auto;width:.62em;font-variant-numeric:tabular-nums}
   /* THE INK LEANS TOWARD THE LINE, not the box.
-     Equal boxes made the spacing consistent but not right: a 1 is a narrow glyph centred in
+     Equal boxes made the spacing consistent but not right: a 1 is a narrow glyph centerd in
      its box, so its INK sat further from the yard line than a 0's, which fills the box. The
      boxes measured dead even and the 1s and 2s still read as too far out. Each digit is now
      aligned to the edge that faces the gap, so what is 4.5px from the line is the ink rather
@@ -1932,11 +1932,11 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE ARROW POINTS AT THE GOAL LINE, which is upfield, on both sides.
      The two sides need opposite triangles to get there, and assuming one would do was the bug:
      the left number is turned -90deg and the right +90deg, so a triangle pointing the same way
-     in its own box ends up pointing up on one side and down on the other. Colouring the left
+     in its own box ends up pointing up on one side and down on the other. Coloring the left
      border makes it point right in local space, the right border makes it point left, and
      after each rotation both land pointing up the field. */
-  /* The arrow is taken OUT of the centred row. It used to be a flex item, so centring the row
-     on the yard line centred the digits AND the arrow together and left the digits five to
+  /* The arrow is taken OUT of the centerd row. It used to be a flex item, so centring the row
+     on the yard line centerd the digits AND the arrow together and left the digits five to
      nine pixels off the line they are supposed to straddle. Absolutely positioned, only the
      numerals decide where the pair sits.
 
@@ -2015,7 +2015,7 @@ window.GA_ID='G-L29P5MRWKE';
   .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
   /* THE DISC IS ANCHORED TO THE SPOT, NOT THE BOX.
-     This was translate(-50%,-50%), which centres the whole chip on its point. The chip grows
+     This was translate(-50%,-50%), which centers the whole chip on its point. The chip grows
      taller the moment a player signs, because a name and a team line appear under the disc, so
      centring the box moved the DISC up by half the label height: the top-row receivers ended up
      half outside the field. Offsetting by the disc's own radius instead pins the disc to the
@@ -2063,26 +2063,26 @@ window.GA_ID='G-L29P5MRWKE';
   .chip .lab{display:block}
   /* Wider than the 62px chip so a name like Roethlisberger fits, but capped against the
      viewport: at 320 a fixed 78px ran the outside receivers' names 5px off the edge of
-     the field, and the field clips. The margin re-centres it on the chip, since auto
+     the field, and the field clips. The margin re-centers it on the chip, since auto
      margins compute to zero on a box wider than its container. */
   .chip{--labw:min(78px,19vw)}
   .chip .who{width:var(--labw);margin:3px 0 2px calc((62px - var(--labw))/2);
     font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* Capped at the chip's own width. The club plate and the season are centred on a
+  /* Capped at the chip's own width. The club plate and the season are centerd on a
      block that was free to be as wide as its content, so a tight end and the receiver
      outside him printed OAK 2013 through NYG 2007. */
   .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:13px;
     max-width:100%;overflow:hidden;white-space:nowrap}
-  /* THE TEAM CODE ON A PLATE IN THAT CLUB'S COLOUR.
+  /* THE TEAM CODE ON A PLATE IN THAT CLUB'S COLOR.
      The code carries the team and the year carries the season, and the team is the part
-     you are pattern-matching for chemistry, so it gets the colour. On a plate rather than
+     you are pattern-matching for chemistry, so it gets the color. On a plate rather than
      inside the disc: the disc already carries the position, and painting the club over it
      would cost the one thing the formation has to say at a glance.
 
      True club primary rather than the washed version, because a plate has its own ground
      and does not have to survive on the field's. A hairline round it so a black or navy
-     club still reads as a plate, and the text colour is measured per club rather than
+     club still reads as a plate, and the text color is measured per club rather than
      assumed white. */
   .chip .yr .tc{display:inline-block;padding:0 4px;border-radius:4px;line-height:12px;
     font-size:8px;letter-spacing:.05em;vertical-align:1px;
@@ -2137,16 +2137,16 @@ window.GA_ID='G-L29P5MRWKE';
   .bar i.low{background:var(--grad-red)}
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
-  /* ---------- ONE FRANCHISE WEARS THE TEAM'S COLOURS ----------
+  /* ---------- ONE FRANCHISE WEARS THE TEAM'S COLORS ----------
      Set from script as six custom properties on <body>; see dressTeam() for what each one
-     is for and why five colours are needed rather than two. Everything here is scoped to
+     is for and why five colors are needed rather than two. Everything here is scoped to
      body.oneteam, so free play is untouched by all of it.
 
-     WHAT IS NOT COLOURED, and this is the whole discipline of the block. Position colours
+     WHAT IS NOT COLORED, and this is the whole discipline of the block. Position colors
      stay: a QB chip is red in every mode because red means quarterback, and a Chiefs run
-     recolouring it would break the one legend the game has. Outcome colours stay: gold is
+     recoloring it would break the one legend the game has. Outcome colors stay: gold is
      a perfect season, green is good chemistry, red is over budget. Those are meanings, not
-     decoration, and a team's colours cannot be allowed to say them. What gets coloured is
+     decoration, and a team's colors cannot be allowed to say them. What gets colored is
      everything that was arbitrary blue: the budget gauge, the field, the eyebrows, the
      forward button, your side of the score bug. */
 
@@ -2170,7 +2170,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* THE FIELD, WASHED. This is the one that makes a Dolphins draft look like a Dolphins
      draft, because the field is the biggest object on the screen. It went away with the
-     favourite-team picker, which is what the note above .field.short is about; it is back
+     favorite-team picker, which is what the note above .field.short is about; it is back
      here scoped to the one mode that has a team to wash it with.
 
      Two stops from the two washes and 0.16 at the top falling to nothing by the halfway
@@ -2187,9 +2187,9 @@ window.GA_ID='G-L29P5MRWKE';
   body.oneteam .respins .respin{border-color:var(--tw1)}
   body.oneteam .dpips i.on{background:var(--tw1);color:var(--ton)}
 
-  /* The leaderboard is shared ground and keeps the site's colours: it lists thirty-two
-     teams' runs at once, so painting it one team's colours would be a lie about whose board
-     it is. The competition bar already carries the team's two colours on its own. */
+  /* The leaderboard is shared ground and keeps the site's colors: it lists thirty-two
+     teams' runs at once, so painting it one team's colors would be a lie about whose board
+     it is. The competition bar already carries the team's two colors on its own. */
 
   .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
   /* Label and value on one baseline. min-width on the value so the label does not slide
@@ -2599,7 +2599,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gamecard:before{content:'';position:absolute;inset:0;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 40px)}
   .gamecard>*{position:relative}
-  /* THE WEEK LANDING. The card takes the colour of the result for a beat, which is the whole
+  /* THE WEEK LANDING. The card takes the color of the result for a beat, which is the whole
      difference between a scoreboard and a list of numbers being replaced. */
   .gamecard.won{animation:cardwon .55s ease-out both}
   .gamecard.lost{animation:cardlost .55s ease-out both}
@@ -2611,7 +2611,7 @@ window.GA_ID='G-L29P5MRWKE';
     100%{box-shadow:0 0 0 14px rgba(239,68,68,0);border-color:var(--line)}}
   /* The record: two halves that move independently, so a win and a loss do not look the same. */
   #v-rec b{font-family:inherit;font-weight:inherit;display:inline-block}
-  /* On the club-coloured plate the old dim-2 dash vanished, so 2-1 read as "2 1". */
+  /* On the club-colored plate the old dim-2 dash vanished, so 2-1 read as "2 1". */
   #v-rec i{font-style:normal;color:rgba(255,255,255,.6);margin:0 1px}
   #v-rec b.bump{animation:recbump .42s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes recbump{0%{transform:scale(1)}38%{transform:scale(1.34)}100%{transform:scale(1)}}
@@ -2745,10 +2745,10 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* THE SCORE BUG
      Two tiers, the way a broadcast builds one. On top, a plate per team painted in
-     that club's colour carrying its code, its record and its score. Underneath, a
+     that club's color carrying its code, its record and its score. Underneath, a
      strip with the quarter, the clock and which game this is.
 
-     No club marks anywhere: this game licences none, and the three-letter code of the
+     No club marks anywhere: this game licenses none, and the three-letter code of the
      era does the same job in less room. The strip's right cell is where a broadcast
      puts down and distance; there is no down and distance to show here, so it carries
      the thing you do want mid-run, which is the week or the round.
@@ -2758,14 +2758,14 @@ window.GA_ID='G-L29P5MRWKE';
      A broadcast bug is not a flat panel: every cell is a moulded piece with a lit top
      edge, a shadowed bottom edge and its own seam. That is what the depth here is for.
      The plate carries a specular sweep across its top half, a bright inner rule along
-     the top and the club's secondary colour as a rule along the bottom; the score sits
+     the top and the club's secondary color as a rule along the bottom; the score sits
      in its own recessed well; the strip's cells are pressed into the strip rather than
      printed on it; and the round cell is cut to a chevron, the way a network cuts the
      down-and-distance cell. */
   /* ── SCORE BUG ────────────────────────────────────────────────────────────────
-     Aqua-gloss broadcast bug: rounded glassy plates in the club colour with a wet
+     Aqua-gloss broadcast bug: rounded glassy plates in the club color with a wet
      sheen across the top, the score in a WHITE pill. Dark numerals on white read
-     sharp over any club colour, which is what keeps the two sides legible even when
+     sharp over any club color, which is what keeps the two sides legible even when
      both wash to a similar blue. Set in Barlow Condensed. The 2000s era swaps the
      whole thing for an LED jumbotron (.bug.led) at the end of this block. */
   .bug{border-radius:16px;overflow:hidden;padding:5px;
@@ -2804,7 +2804,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The wet sheen across the top half, the whole point of the look. */
   .bug .bt:before{content:'';position:absolute;left:6px;right:6px;top:4px;height:42%;border-radius:10px;
     background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.04));pointer-events:none}
-  /* The club's second colour as a rule along the foot of its own plate. */
+  /* The club's second color as a rule along the foot of its own plate. */
   .bug .bt:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
     background:var(--tcol2,rgba(255,255,255,.3))}
   .bug .bt .cd{position:relative;font-family:var(--fbar);font-weight:800;font-size:22px;line-height:1;
@@ -2847,7 +2847,7 @@ window.GA_ID='G-L29P5MRWKE';
   .bug .bbot .q{font-size:15px;letter-spacing:.04em;color:#cbd5e1;flex:0 0 auto;line-height:1}
   .bug .bbot .ck{font-size:20px;line-height:1;color:#fff;flex:0 0 auto;font-variant-numeric:tabular-nums}
   .bug .bbot .ck:empty{display:none}
-  /* The round or the week, hard right, as a coloured tag. Slate by default and for the
+  /* The round or the week, hard right, as a colored tag. Slate by default and for the
      season's week; it climbs blue, brushed silver, gold up the playoffs (round rules below). */
   .bug .bbot .rd{margin-left:auto;font-size:14px;letter-spacing:.05em;line-height:1;white-space:nowrap;
     color:#e6edf6;background:linear-gradient(180deg,#586479,#333c4c);padding:5px 12px;border-radius:8px;
@@ -3148,7 +3148,7 @@ window.GA_ID='G-L29P5MRWKE';
 
      IT TAKES NO SPACE UNTIL IT HAS SOMETHING IN IT. The <ins> collapses to nothing when
      AdSense declines to fill, so an unsold page looks exactly like it did before rather
-     than carrying a reserved grey rectangle. The label and the rule appear on the same
+     than carrying a reserved gray rectangle. The label and the rule appear on the same
      condition, because "Advertisement" over an empty box is worse than no label at all.
      Browsers without :has simply get the ad with no label, which is allowed and honest --
      the unit is visibly an ad either way. */
@@ -3195,7 +3195,7 @@ window.GA_ID='G-L29P5MRWKE';
   .meter .track i{display:block;height:100%;border-radius:99px;
     transition:width .5s cubic-bezier(.2,.8,.3,1)}
   /* Offensive scheme panel. When the roster fits one of the ten schemes the panel
-     wears that scheme's own colour on the stripe, the name, the icon and the +3%
+     wears that scheme's own color on the stripe, the name, the icon and the +3%
      badge. With no scheme it falls back to the plain coach's take (scheme-none). */
   .schemepanel{position:relative;overflow:hidden}
   .schemepanel .stripe{position:absolute;top:0;left:0;right:0;height:3px}
@@ -3467,7 +3467,7 @@ window.GA_ID='G-L29P5MRWKE';
      This screen used to be one sheet you scrolled: name, six career numbers, five best
      drafts, streaks, the badge cabinet, a thirty-two club picker, the name field, and the
      sign-out. Everything about the account was there, which was the problem -- to reach the
-     one thing you came for you travelled past the other six.
+     one thing you came for you traveled past the other six.
 
      Now it is a hub and five pages. The hub fits a phone without scrolling and says only who
      you are and how to get somewhere; each page holds one subject and comes back with a
@@ -3569,7 +3569,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <!-- THE MARK, top left of the banner, on every screen.
          THE WHOLE MARK, facemask included.
 
-         It shipped as the four pieces alone on the grounds that the facemask was a grey
+         It shipped as the four pieces alone on the grounds that the facemask was a gray
          smudge below about 40px. That was judged off a 1x render, which is the wrong test:
          phones draw this header at 2x or 3x, so a 30px box is really 60 or 90 device pixels
          and the facemask has plenty of room. Re-rendered at 1x, 2x and 3x, it reads clearly
@@ -3664,7 +3664,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <!-- The banner, between the last button and the legal links. Responsive rather than a
          fixed 320x50: on a phone it runs the content width, on a desktop it caps at the
          728px leaderboard shape instead of stretching across the whole window. The slot id
-         is a placeholder until the unit exists in the dashboard, and the initialiser at the
+         is a placeholder until the unit exists in the dashboard, and the initializer at the
          foot of this file refuses to start a placeholder, so this renders nothing at all
          until a real id is pasted in. -->
     <div class="rtp-ad-inline">
@@ -3797,7 +3797,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-draft">
     <div class="capwrap">
-      <!-- TWO STATS, IN TWO COLUMNS, EACH LABELLED THE SAME WAY.
+      <!-- TWO STATS, IN TWO COLUMNS, EACH LABELED THE SAME WAY.
            The intent here was always "two parallel eyebrows, each naming its own column".
            The markup did not do that. The left eyebrow named a column and the right one
            held a FACT -- "Spin 1 of 6" -- while chemistry's label sat down on the value
@@ -4295,7 +4295,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <!-- ===== AdSense units. Manual, and placed before the overlays so the sheet, the toast and
      the crash banner all paint above them. The slot ids are placeholders until the units are
-     created in the dashboard; the initialiser at the foot of this file refuses to start a unit
+     created in the dashboard; the initializer at the foot of this file refuses to start a unit
      whose slot is still a placeholder, rather than reporting this game's traffic against
      another game's unit. ===== -->
 <div class="rtp-ad-rail rtp-ad-left">
@@ -4406,23 +4406,23 @@ function chemOpts(){ return {sameClub:!!(run&&run.franchise)}; }
 
 /* ---------- THE TEAM SKIN ----------
    One Franchise mode should not look like free play with a different wheel, so the moment a team
-   is chosen the page carries its colours: the money gauge, the field, the eyebrows, the
+   is chosen the page carries its colors: the money gauge, the field, the eyebrows, the
    forward button and your side of the score bug. All of it comes off six custom properties
    set on <body>, which is what makes it one function rather than a change on every screen.
 
-   FIVE COLOURS AND NOT TWO, and each one exists because the other four cannot do its job:
+   FIVE COLORS AND NOT TWO, and each one exists because the other four cannot do its job:
 
      --t1 / --t2   the true primary and secondary. For fills that sit on their own ground,
-                   like a solid chip, where the real colour reads correctly.
+                   like a solid chip, where the real color reads correctly.
      --tw1 / --tw2 the wash pair. Fourteen of the thirty-two clubs have a primary within
                    1.6:1 of this page's background, so a bar or a gauge painted in --t1 is
                    invisible for nearly half the league. The washes are floored into a range
                    that shows on dark, hue untouched. Worked out in engine.js.
-     --tink        a colour that can carry TEXT, which is a harder job again: every one of
+     --tink        a color that can carry TEXT, which is a harder job again: every one of
                    the thirty-two clears 4.5:1 against the page.
      --ton         white or near-black, whichever survives on top of --t1.
 
-   Cleared on the way out, so a free run cannot inherit the last team's colours. */
+   Cleared on the way out, so a free run cannot inherit the last team's colors. */
 const TEAM_VARS=['--t1','--t2','--tw1','--tw2','--tink','--ton','--tb1','--tb2'];
 function dressTeam(){
   const b=document.body;
@@ -4437,7 +4437,7 @@ function dressTeam(){
   set('--tw1',w.a); set('--tw2',w.b); set('--tink',E.teamInk(f));
   /* The forward button's own pair, one hue dark enough that white always wins. Not the two
      washes: both are mid-tone by construction, so Baltimore's purple-to-gold carried its
-     label at 2.14:1 and there was no third colour to try. Worked out in engine.js. */
+     label at 2.14:1 and there was no third color to try. Worked out in engine.js. */
   const g=E.teamButton(f);
   set('--tb1',g.a); set('--tb2',g.b);
 }
@@ -4530,8 +4530,8 @@ function posPaint(pos){
   return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
 }
 /* A PLAYER'S POSITION CHIPS. A man who plays two spots gets two chips, each in its own
-   colour, rather than one chip reading "WR/QB" painted the colour of whichever position
-   nflverse happened to list first. The old form said the right words in the wrong colour:
+   color, rather than one chip reading "WR/QB" painted the color of whichever position
+   nflverse happened to list first. The old form said the right words in the wrong color:
    Terrelle Pryor's quarterback half was drawn receiver blue, and the two positions that
    make him worth drafting looked like one.
    Single-position players go through the same wrapper so there is one code path and, at
@@ -4544,7 +4544,7 @@ function posChips(p){
   }).join('')+'</span>';
 }
 /* The club plate under a player on the field. Era code, not the current one: a 2014
-   Raider is OAK, and labelling him LV would contradict the "2014 Oakland Raiders" the
+   Raider is OAK, and labeling him LV would contradict the "2014 Oakland Raiders" the
    rest of the game shows. `on` is the engine's own measured choice of black or white
    text for that primary, so no club gets an unreadable plate. */
 function tcPlate(franchise,season){
@@ -4552,13 +4552,13 @@ function tcPlate(franchise,season){
   return '<span class="tc" style="--tcbg:'+c.primary+';--tcon:'+c.on+'">'+
     esc(E.eraCode(franchise,season))+'</span>';
 }
-/* HOW A ROSTER ROW IS LABELLED, in one place, because four screens were each deciding it
+/* HOW A ROSTER ROW IS LABELED, in one place, because four screens were each deciding it
    differently and two of them disagreed with the field.
 
    The label is the SLOT, so the sixth row always reads FLEX and a roster always reads
-   QB RB WR WR TE FLEX. The colour is the PLAYER'S position, so a flex filled by a back is
+   QB RB WR WR TE FLEX. The color is the PLAYER'S position, so a flex filled by a back is
    green and one filled by a receiver is blue. That way the row says both things at once: which
-   spot it is, and who is in it. Labelling it by the player made the flex invisible; colouring
+   spot it is, and who is in it. Labeling it by the player made the flex invisible; coloring
    it purple made the position invisible. */
 /* AWARDS.
    They arrive on a player row as full names, because that is what they are called and
@@ -4604,7 +4604,7 @@ function bySlotOrder(men){
     const i=rest.findIndex(m=>m.slot===slot);
     if(i>=0) out.push(rest.splice(i,1)[0]);
   }
-  return out.concat(rest);          // anything with an unrecognised slot goes last, not lost
+  return out.concat(rest);          // anything with an unrecognized slot goes last, not lost
 }
 /* The same five colors as real hex, for the canvas share card, which cannot use a
    CSS variable. Resolved from the stylesheet so there is one palette in the file. */
@@ -4688,7 +4688,7 @@ const SPOTS = {
    * only free slot, so there are exactly four) at nine field sizes from 320 to 768, both
    * aspects, with and without the team-plate line. Zero discs over text, nothing off the
    * field. What is left is label boxes touching, which is not the same thing: both are
-   * centred text with an ellipsis and the box is far wider than most surnames.
+   * centerd text with an ellipsis and the box is far wider than most surnames.
    */
   TE:   [[], [{x:68,y:24}], [{x:68,y:24},{x:32,y:24}]],
   FLEX: {x:32,y:24},
@@ -4838,7 +4838,7 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
 
    The top edge starts on a round number so the markings land where they would in life. */
 /* THE RED ZONE, with the end zone at the top of the picture.
-   The offence moves up the screen, so the goal line sits above the receivers and the end zone
+   The offense moves up the screen, so the goal line sits above the receivers and the end zone
    above that. Twenty-two yards in view: four of end zone, the goal line, then the 5, the 10 and
    the 15, which are the numbers a red-zone snap is played between. */
 /* 24 yards in view: four of end zone, the goal line, then out to the 20. That puts the two
@@ -4848,7 +4848,7 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
    and the 10 is the only number, which is what a red-zone camera actually frames. */
 const FIELD_YARDS=23, FIELD_EZ_YARDS=4;
 
-/* The lines run ACROSS, because the offence moves up the screen: the receivers are at 26% of
+/* The lines run ACROSS, because the offense moves up the screen: the receivers are at 26% of
    the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
    direction of play, and the old field had them parallel to it, which is the pitch turned 90
    degrees from the formation standing on it. */
@@ -4882,7 +4882,7 @@ function fieldMarkings(){
       if(line%10===0&&top>8&&top<92){
         /* THE YARD LINE RUNS BETWEEN THE TWO DIGITS, which is how a real field is painted:
            the 1 sits one side of the 10 and the 0 the other. So the digits are separate
-           elements with a gap, and the pair is centred ON the line rather than pushed clear
+           elements with a gap, and the pair is centerd ON the line rather than pushed clear
            of it. Pushing it clear was the previous attempt and it is not what a field does. */
         const d=String(line).split('');
         const pair='<span class="d one">'+d[0]+'</span><span class="gap"></span>'+
@@ -4945,7 +4945,7 @@ function drawField(el,live){
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     /* Team code before the year, so a chip says which team-season the player came out of
        rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
-       labelling him LV would contradict the "2014 Oakland Raiders" the rest of the game
+       labeling him LV would contradict the "2014 Oakland Raiders" the rest of the game
        shows. */
     c.querySelector('.yr').innerHTML=p?tcPlate(p.franchise,p.season)+' '+p.season:'';
     /* How many players he connects to, in his strongest link's color. The web
@@ -5119,7 +5119,7 @@ $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet();})
  *
  * The sheet says the thing instead: what will happen, what is lost, and two buttons that
  * name their own outcomes. `.btn` is already the red one, so the destructive answer looks
- * destructive without inventing a colour for it.
+ * destructive without inventing a color for it.
  *
  * FOCUS GOES TO THE SAFE BUTTON. This can be raised by a mis-tap, so the key that gets held
  * down or the Enter that arrives a moment late has to land on "keep playing" rather than on
@@ -5142,7 +5142,7 @@ function confirmSheet(o){
   document.addEventListener('keydown',onKey);
   $('cf-yes').onclick=()=>{ shut(); o.onConfirm(); };
   $('cf-no').onclick=shut;
-  /* The backdrop listener above already closes it, so cancelling by tapping outside needs
+  /* The backdrop listener above already closes it, so canceling by tapping outside needs
      nothing here beyond making sure this sheet's key handler goes with it. */
   const bd=(e)=>{ if(e.target===$('sheet')){ $('sheet').removeEventListener('click',bd); shut(); } };
   $('sheet').addEventListener('click',bd);
@@ -5199,8 +5199,8 @@ $('b-start').onclick=()=>{ beginDraft({}); };
    Pick a club and every spin of the draft is that club. Only the year moves, so the run is
    an attempt at the best team that club could ever have fielded out of 1999 to 2025.
 
-   The picker is the thirty-two colourways the profile circle already uses, so a player who
-   has chosen a club for their circle sees it first and recognises the grid. */
+   The picker is the thirty-two colorways the profile circle already uses, so a player who
+   has chosen a club for their circle sees it first and recognizes the grid. */
 /* ---------- ONE FRANCHISE NEEDS AN ACCOUNT ----------
    The one part of the game behind a wall, and the reason is the mode itself: it is thirty-two
    boards, and the whole point of picking a team is being ranked against everybody else who
@@ -5266,7 +5266,7 @@ function hexRGBA(hex,a){
 }
 
 /* Multiply a #rrggbb toward black by factor f (0..1), hue and saturation left where they
-   are — a plain brightness cut, which is all the club-colour gradient needs. */
+   are — a plain brightness cut, which is all the club-color gradient needs. */
 function scaleHex(hex,f){
   const h=(hex||'').replace('#',''); if(h.length!==6) return hex;
   const n=parseInt(h,16);
@@ -5274,10 +5274,10 @@ function scaleHex(hex,f){
   return '#'+(((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1));
 }
 
-/* Darken a club colour only as far as white text/artwork needs to read on it, and no
+/* Darken a club color only as far as white text/artwork needs to read on it, and no
    further. A navy that already carries white is returned untouched; a bright gold is taken
    down until it clears. Iterated in small steps against the engine's own contrast measure,
-   so both ends of a two-colour gradient can hold a white label without either being
+   so both ends of a two-color gradient can hold a white label without either being
    flattened to black. */
 function darkenForWhite(hex,target){
   target=target||4.0; let c=hex, f=1;
@@ -5286,7 +5286,7 @@ function darkenForWhite(hex,target){
 }
 
 /* ---- THE COLLEGE FOOTBALL CROSS-PROMO ----
-   ONE SWITCH. Flip CFB_LIVE to true on launch day and the card stops being greyed out, drops
+   ONE SWITCH. Flip CFB_LIVE to true on launch day and the card stops being grayed out, drops
    the Coming Soon badge, gains its chevron and starts opening the game. Nothing else to change
    and nothing else to remember.
 
@@ -5392,8 +5392,8 @@ function modeMenu(){
   openSheet();
   /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
      same key the header disc uses — the club they chose, or the one their name lands on —
-     so the card always matches the colour they see on their avatar. The icon runs a gradient
-     across BOTH of the club's colours, the title takes teamInk (the primary lifted bright
+     so the card always matches the color they see on their avatar. The icon runs a gradient
+     across BOTH of the club's colors, the title takes teamInk (the primary lifted bright
      enough for text on the dark card) and the border takes the secondary as an accent.
      Signed-out / no-name players keep the red CSS fallback. */
   const av=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
@@ -5635,7 +5635,7 @@ function spinBoth(draw,done){
   /* ALL-TIME TEAM MODE: THE TEAM WHEEL DOES NOT SPIN.
      It cannot land anywhere else, and a wheel that winds up and stops on the answer it was
      always going to give is a lie about how random the draw is. It sits still in the club's
-     colours with the club's name on it while the year wheel does the work, which is exactly
+     colors with the club's name on it while the year wheel does the work, which is exactly
      what the mode is: one club, any year. */
   if(run&&run.franchise){
     tBox.className='reelbox team clubbed locked';
@@ -5884,7 +5884,7 @@ function paintOpts(draw){
 function paintRespins(){
   const el=$('d-respin');
   /* ONE BUTTON IN ALL-TIME TEAM MODE. "New team, same year" cannot do anything when the
-     draft is locked to one club, and canRespin already says so in words. Printing it greyed
+     draft is locked to one club, and canRespin already says so in words. Printing it grayed
      out with "no other 2014 team you could use" on every single spin is a dead control
      explaining itself over and over; the mode's whole promise is that the team never
      changes. */
@@ -5947,7 +5947,7 @@ $('opts').addEventListener('click',e=>{
 });
 
 /* ---------- squad ---------- */
-/* One line icon per scheme, in the scheme's own colour (the tile sets `color`, and
+/* One line icon per scheme, in the scheme's own color (the tile sets `color`, and
    every path draws with currentColor). Keyed to the engine's scheme keys. */
 const SCHEME_ICONS={
   greatest_show:'<polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/>',
@@ -6034,7 +6034,7 @@ function paintSquad(){
   const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
   const strong='<b style="color:'+fitBand.c+'">';
   /* Scheme mode swaps the coach's take headline for the scheme's own identity: its
-     name in the scheme colour, its tagline, and the +3% it earns. No scheme falls
+     name in the scheme color, its tagline, and the +3% it earns. No scheme falls
      back to the verdict and the multiplier sentence. */
   const schemeName=st.scheme?E.SCHEME_NAMES[st.scheme]:null;
   $('q-panel').className='panel schemepanel scheme-'+(st.scheme||'none');
@@ -6071,7 +6071,7 @@ function paintSquad(){
        These measure DISTANCE FROM THE LEAGUE-AVERAGE SHAPE instead, 25% of yards on the
        ground and 24% through one man, both measured. That is one meaning per bar and it
        discriminates. The league figures used to be printed on every row, which was the
-       longest text in the panel and the least useful: the coloured word already says whether
+       longest text in the panel and the least useful: the colored word already says whether
        the number beside it is a good one, and the notes underneath say why when it matters. */
     meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+
       (100-st.rushShare*100).toFixed(0)+'% pass',
@@ -6131,8 +6131,8 @@ function boxScore(r){
   const when=r.playoff?(ROUND_SHORT[r.round]||String(r.round||'Playoffs').toUpperCase()):('Week '+r.week);
   const total=r.lines.reduce((t,l)=>t+l.pts,0);
   const avgTotal=r.lines.reduce((t,l)=>t+l.avg,0);
-  /* Opponent defence, from the same ratio the sim used: above 1 means they gave up more
-     than a league-average defence, so a high-scoring day was partly the matchup. */
+  /* Opponent defense, from the same ratio the sim used: above 1 means they gave up more
+     than a league-average defense, so a high-scoring day was partly the matchup. */
   const dm=r.defMod||1;
   const dTxt=dm>=1.08?'Generous':dm>=0.96?'Average':dm>=0.88?'Stingy':'Elite';
   const best=r.lines.reduce((a,b)=>b.pts>a.pts?b:a);
@@ -6217,15 +6217,15 @@ function paintCalendar(justPlayed){
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
 }
 
-/* WHOSE COLOURS YOUR SIDE OF THE SCORE BUG WEARS.
+/* WHOSE COLORS YOUR SIDE OF THE SCORE BUG WEARS.
    In free play the deep blue it always was: you are a roster of six men from thirty years,
-   not anybody's franchise, so there is nothing to take a colour from.
+   not anybody's franchise, so there is nothing to take a color from.
 
    In One Franchise mode it is your team, and that needs one guard. The comment this replaces
    said your plate was "a deeper blue than the wash palette reaches, so it never lands on
-   top of an opponent's colour", which is exactly the protection a team colour gives up:
+   top of an opponent's color", which is exactly the protection a team color gives up:
    half the league washes to a pale blue, so a Lions run against the Bills would be two
-   plates of the same colour with the scores between them. So if the opponent's wash is
+   plates of the same color with the scores between them. So if the opponent's wash is
    within 1.35:1 of yours, your plate falls back to the deep blue for that game only, and
    the one screen where telling the two sides apart matters most keeps telling them apart. */
 const YOU_BLUE={a:'#1f5fc4',b:'#93c5fd'};
@@ -6376,7 +6376,7 @@ function countTo(el,to,ms){
    seventeen instant substitutions: nothing arrived, nothing landed, and the streak that is the
    actual story of a season was invisible.
 
-   Now the two scores count up together, the card takes the colour of the result for a beat, the
+   Now the two scores count up together, the card takes the color of the result for a beat, the
    tick that just landed pops, the winning half of the record ticks over, and a streak of three
    or more says so. All of it is decoration over the same numbers: the result is decided in
    advanceWeek before any of this runs. */
@@ -7179,7 +7179,7 @@ function enterMarket(){
 /* THE DRAFT BOARD'S PLAYER CARD, at the size a trade panel can afford.
    Deliberately the same .tile class the draft uses -- same background, border, radius,
    position chip and FPPG treatment -- with a .mini modifier that only touches the type
-   scale. A player who has drafted a roster recognises these on sight, which is the point:
+   scale. A player who has drafted a roster recognizes these on sight, which is the point:
    one card for one player, everywhere in the game. */
 function dealTile(p,mode){
   const head=posChips(p)+'<span class="pr">'+M(p.price_musd)+'</span>';
@@ -7977,7 +7977,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   /* field background */
   ctx.fillStyle='#1a3a1a';ctx.fillRect(fl,ft,fw,fh);
 
-  /* end-zone colour wash */
+  /* end-zone color wash */
   ctx.globalAlpha=0.18;
   ctx.fillStyle=youColor;ctx.fillRect(fl,ft,ezW,fh);
   ctx.fillStyle=themColor;ctx.fillRect(fl+fw-ezW,ft,ezW,fh);
@@ -8145,16 +8145,16 @@ let poTimer=null, poRaf=0, poSkip=null;
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
   const opp=DATA.byTeamSeasonId[r.opponent_id];
-  /* YOUR side of the score bug is the team's colours in One Franchise mode and the game's own
-     blue in free play, where there is no team to take a colour from: you are a roster of six
+  /* YOUR side of the score bug is the team's colors in One Franchise mode and the game's own
+     blue in free play, where there is no team to take a color from: you are a roster of six
      players drawn from thirty years of them. youColors() carries the guard that stops your
-     plate and the opponent's landing on the same colour.
+     plate and the opponent's landing on the same color.
 
-     The OPPONENT's side is still their real club colour, via washColors rather than the raw
+     The OPPONENT's side is still their real club color, via washColors rather than the raw
      primary. The bug sits on #080d17 and 14 of the 32 clubs have a primary within 1.6:1 of
      that, which is a black bar on a black ground: the Raiders, the Steelers, the Saints, the
-     Bears, the Patriots, the Seahawks and eight more had no visible colour on the bug at all.
-     Measured; the wash colours clear it for all 32. */
+     Bears, the Patriots, the Seahawks and eight more had no visible color on the bug at all.
+     Measured; the wash colors clear it for all 32. */
   const them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
   const me=youColors(opp?E.washColors(opp.franchise):null);
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
@@ -8165,8 +8165,8 @@ function playPlayoffGame(r,after){
   youEl.style.setProperty('--tcol',me.a);
   youEl.style.setProperty('--tcol2',me.b);
   themEl.style.setProperty('--tcol',them.a);
-  /* The second colour as the rule along the foot of the plate. Washed like the first,
-     because a club whose second colour is black would otherwise draw no rule at all. */
+  /* The second color as the rule along the foot of the plate. Washed like the first,
+     because a club whose second color is black would otherwise draw no rule at all. */
   themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
   /* Their code is the one they wore that year, so the 1994 Rams read LA and not LAR. */
   youEl.querySelector('.cd').textContent='YOU';
@@ -8208,7 +8208,7 @@ function playPlayoffGame(r,after){
   if(cDist(dcY,dcT)<110){
     dcT=them.b||'#e87461';
     if(!dcT||dcT===dcY||cDist(dcY,dcT)<80)dcT='#e87461';
-    /* grey/silver secondaries wash out on the dark-green field — use coral */
+    /* gray/silver secondaries wash out on the dark-green field — use coral */
     const cParts=(c)=>{const v=parseInt(c.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];};
     const [cr,cg,cb]=cParts(dcT);
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
@@ -8324,12 +8324,12 @@ const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'
 
 /* ---------- CONFETTI ----------
    A self-contained canvas burst: no library, so nothing to load and nothing the CSP can
-   block. Coloured strips rain from above the top of the screen with gravity, drift and
+   block. Colored strips rain from above the top of the screen with gravity, drift and
    spin, fade over the last stretch, and the canvas removes itself when the last one is
    gone. Skipped entirely when the player has asked for reduced motion. */
 const perfNow=()=>(window.performance||Date).now();
 
-/* The palette for a win. Gold for a perfect run, the club's own two colours (plus gold
+/* The palette for a win. Gold for a perfect run, the club's own two colors (plus gold
    and white to lift them) for an ordinary title, and the game's red/blue in free play. */
 function confettiTheme(perfect){
   if(perfect) return {colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200};
@@ -8488,11 +8488,11 @@ function paintOver(){
    *
    * The three placings used to sit on "reading" for a second or more, and the network was not
    * the reason. paintRanks() was called at the END of the heavy afterPaint block, so the
-   * request could not leave until the best-possible optimiser and two 400-season projections
+   * request could not leave until the best-possible optimizer and two 400-season projections
    * had finished: a phone spent all that CPU with the socket idle, then started waiting.
    *
    * The read needs none of that. It is keyed on B.scoreOf(wins, pointDiff), both known the
-   * moment the season ended -- only the SUBMIT needs the optimiser, because the payload
+   * moment the season ended -- only the SUBMIT needs the optimizer, because the payload
    * carries perfectPct. So the read is fired here and the strip paints itself the instant the
    * answer lands, while the solve is still running. The submit stays where it was.
    */
@@ -8519,7 +8519,7 @@ function paintOver(){
   }
 
   /* THE SECOND HEADLINE. Team overall is cheap, a sum and two multipliers, so it paints
-     with everything else. Best possible needs the optimiser and the two season
+     with everything else. Best possible needs the optimizer and the two season
      projections behind the How close tab, which are deferred to after the first paint
      (see the afterPaint block at the end) so the record and every cheap number appear
      at once instead of waiting on them. Its cell shows a brief working state until then. */
@@ -8542,7 +8542,7 @@ function paintOver(){
      did not come from spins: it came from a deliberately mediocre hand and a season of
      trades, so grading its final six against a draft-day optimum measures a bar nobody
      set. The GM's second number is IMPROVEMENT, start rating to final, the same +25 the
-     report gives full marks for. No optimiser behind it, so it paints immediately. */
+     report gives full marks for. No optimizer behind it, so it paints immediately. */
   const impCell=()=>{
     const g=rating-(run.startRating||rating);
     const gc=g>=18.75?'#22c55e':(g>=11.25?'#fbbf24':'#ef4444');
@@ -8594,7 +8594,7 @@ function paintOver(){
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   /* Walks the run's own slot order (QB RB WR WR TE FLEX for most modes; QB RB WR TE
-     FLEX FLEX in the Trade Machine). The flex row is labelled with the position the
+     FLEX FLEX in the Trade Machine). The flex row is labeled with the position the
      player actually plays rather than the word FLEX, because "FLEX" tells you about the
      slot and you want to know about the player; slotTag still marks which rows are flex. */
   $('o-rost').innerHTML=slotsNow().map((slot,i)=>{
@@ -8622,13 +8622,13 @@ function paintOver(){
   setOverTab(defaultTab);
   show('s-over');
 
-  /* The celebration. A perfect run gets the biggest burst, a title a club-coloured one;
+  /* The celebration. A perfect run gets the biggest burst, a title a club-colored one;
      everything else gets nothing. Fired once the screen is up so it rains over the record,
      and on this screen too (not only the whistle) so a player who skipped the broadcast or
      the whole playoff view still gets their moment. */
   if(o.perfect||o.titleWon) afterPaint(()=>fireConfetti(confettiTheme(o.perfect)));
 
-  /* THE HEAVY WORK, ONE FRAME LATER. The optimiser and the two 400-season projections
+  /* THE HEAVY WORK, ONE FRAME LATER. The optimizer and the two 400-season projections
      it feeds are the only expensive part of this screen, and nothing above needs them,
      so they run after the browser has painted everything else. That is what makes the
      record and the numbers appear at once instead of behind a solve. The run is SENT
@@ -8640,7 +8640,7 @@ function paintOver(){
      *
      * Starting the read early (startBoardReads) got the request out at 38ms instead of 557ms
      * on a throttled phone, and the strip still filled at 853ms -- because the answer came
-     * back at ~290ms into a main thread that this block had already seized for the optimiser
+     * back at ~290ms into a main thread that this block had already seized for the optimizer
      * and the two 400-season projections. A promise callback cannot repaint anything while
      * synchronous work is running, so the request was early and the pixels were not.
      *
@@ -8740,7 +8740,7 @@ function teamRating(roster,chemistry){
 function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'%'; }
 
 /* The fit-bonus percentage in the "…points a game" summary is the WHOLE structure
-   multiplier — team shape and the scheme bonus together — so it must not be labelled as
+   multiplier — team shape and the scheme bonus together — so it must not be labeled as
    the scheme alone (that read as if a 1–3% scheme were worth the whole +11%). This is the
    plain description of the total; schemeTail() names the scheme's own small share after it. */
 function fitPhrase(){ return 'for how the six fit together'; }
@@ -8881,20 +8881,20 @@ function drawShareCard(){
   c.width=CARD.W; c.height=CARD.H;
   const x=c.getContext('2d');
   const o=run.outcome;
-  /* THE CARD TAKES THE TEAM'S COLOURS IN ONE FRANCHISE MODE, and the game's own red and blue in
+  /* THE CARD TAKES THE TEAM'S COLORS IN ONE FRANCHISE MODE, and the game's own red and blue in
      free play, where there is no team to take them from. The wash, the keel and the two
      rules all read from this, so one object is the whole difference between a Dolphins card
      and a Steelers one.
 
-     The wash uses the WASH colour rather than the raw primary, for the reason written out in
+     The wash uses the WASH color rather than the raw primary, for the reason written out in
      engine.js: fourteen of the thirty-two clubs have a primary within 1.6:1 of a near-black
      ground, so a raw primary at 30% over #070b13 is invisible for nearly half the league. */
   const tc=run.franchise
     ? {primary:E.washColors(run.franchise).a,secondary:E.teamColors(run.franchise).secondary,
        ink:E.teamInk(run.franchise)}
     : {primary:'#b91c1c',secondary:'#1d4ed8',ink:'#f87171'};
-  /* rgba from a hex, because a canvas cannot take an opacity separately from a colour and
-     every rule and pill on this card is a colour at an alpha. */
+  /* rgba from a hex, because a canvas cannot take an opacity separately from a color and
+     every rule and pill on this card is a color at an alpha. */
   const at=(hex,a)=>{
     const h=hex.replace('#','');
     const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
@@ -8976,7 +8976,7 @@ function drawShareCard(){
     /*
      * THE BLOOM IS AN ELLIPSE, AND IT FADES OUT INSIDE THE AREA IT IS PAINTED INTO.
      *
-     * It used to be a circle of radius 560 centred on the record and painted into
+     * It used to be a circle of radius 560 centerd on the record and painted into
      * fillRect(0,70,W,520), which clipped it at y=70 and y=590 while its alpha was still
      * 0.196 and 0.160. Those are hard horizontal edges in the middle of the card -- the
      * gradient was being cut, not faded, and both cuts were plainly visible against the
@@ -9049,7 +9049,7 @@ function drawShareCard(){
     const p=bySlot[i]; if(!p) return;
     // chip
     /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row
-       reads FLEX, and it is coloured by the PLAYER'S position, so a flex filled by a back is
+       reads FLEX, and it is colored by the PLAYER'S position, so a flex filled by a back is
        green. The card used to print the player's position on both counts, which made the flex
        spot invisible on the one artefact that gets shared. */
     const cw=88,ch=52;
@@ -9061,7 +9061,7 @@ function drawShareCard(){
     // name, shrunk only if it would collide with the right column
     const right=CARD.W-PAD;
     N('500',24);
-    /* THE YEAR AND CITY IN THAT PLAYER'S OWN CLUB COLOUR, which is the whole reason
+    /* THE YEAR AND CITY IN THAT PLAYER'S OWN CLUB COLOR, which is the whole reason
        teamInk exists: it takes the club's primary and lifts its lightness until it clears
        4.5:1 on a near-black ground, so the fourteen clubs whose primary is itself nearly
        black get a legible lifted variant rather than an invisible one. Checked against the
@@ -9110,7 +9110,7 @@ function drawShareCard(){
     chem>0.05?'#4ade80':'#e2e8f0');
   stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
 
-  /* THE DARE, AND THEN THE WAY TO TAKE IT. The card used to end on a grey line of small
+  /* THE DARE, AND THEN THE WAY TO TAKE IT. The card used to end on a gray line of small
      caps that read as a watermark rather than as somewhere to go: an address printed at 34px
      in 85% white, under two statistics, with nothing telling anyone why they would type it.
      A question, then the address inside a bordered pill in the game's own red, which is the
@@ -9127,7 +9127,7 @@ function drawShareCard(){
   x.strokeStyle=at(tc.ink,.62); x.lineWidth=2;
   roundRect(x,pl+1,CARD.LINK_T+1,pw-2,CARD.LINK_H-2,(CARD.LINK_H-2)/2); x.stroke();
   x.fillStyle='#ffffff';
-  /* Optically centred on the pill rather than sitting on a baseline guessed at: cap height
+  /* Optically centerd on the pill rather than sitting on a baseline guessed at: cap height
      for this face is about 0.72 of the size, so half of that below the middle. */
   x.fillText(label,pl+36,CARD.LINK_T+CARD.LINK_H/2+34*0.36);
   x.letterSpacing='0px';
@@ -9595,7 +9595,7 @@ const HERO_SPOTS=[
    than a random one.
 
    Top 20 rather than the whole pool because this is a shop window. A random draw from 9,411
-   player-seasons mostly surfaces people nobody recognises, which makes the game look like it
+   player-seasons mostly surfaces people nobody recognizes, which makes the game look like it
    is about obscure players when it is about the famous ones. */
 const HERO_TOP_N=20;
 let heroPoolCache=null;
@@ -9853,7 +9853,7 @@ function authBoot(){
     const newAccount=st.userId!==authState.userId;
     authState=st;
     paintAvatar();
-    /* The colour and initials belong to the account, so they are re-read whenever the
+    /* The color and initials belong to the account, so they are re-read whenever the
        account changes and cleared when there is none. Not awaited: the circle is already
        drawn from the derived default and this only ever replaces it with something more
        specific. */
@@ -9913,12 +9913,12 @@ async function claimThisRun(){
 /* ---------------- PROFILE CIRCLES ----------------
    WHAT YOU CHOOSE IS A CLUB. Thirty-two of them, filled with the club's primary and ringed
    with its secondary, so the circle beside your name on the board says who you support
-   rather than which swatch you liked. The codes and the colours come from the engine's own
+   rather than which swatch you liked. The codes and the colors come from the engine's own
    TEAM_COLORS, which the team picker, the reel dressing and the score bug already draw
    from, so there is no second copy of sixty-four hex values in this file and no way for a
    club to look like one thing on the field and another on the board.
 
-   The database stores the CODE, never the colours. 54_football_team_colorways.sql owns
+   The database stores the CODE, never the colors. 54_football_team_colorways.sql owns
    which codes are legal and the engine owns what they look like; neither is a copy of the
    other, and nothing a client sends can become a paint value on a public leaderboard.
 
@@ -9935,9 +9935,9 @@ async function claimThisRun(){
 const AVATAR_TEAMS=Object.keys(E.TEAM_COLORS).sort();
 
 /* EVERYBODY GETS A CLUB, chosen or not.
-   The default used to be one of nine abstract colours, on the argument that deriving a club
+   The default used to be one of nine abstract colors, on the argument that deriving a club
    from a username puts words in somebody's mouth. That was the wrong call for the board: a
-   column where some circles are two-tone club colours and the rest are flat pink and teal
+   column where some circles are two-tone club colors and the rest are flat pink and teal
    reads as half-finished, and the derived one is not a claim anybody can see, because there
    is nothing on screen that says "chosen". It is a starting kit, changed in two taps, and
    the alternative was a board that looked broken. */
@@ -9950,8 +9950,8 @@ const AVATAR_TEAMS=Object.keys(E.TEAM_COLORS).sort();
 let myAvatar={color:null,initials:null,loaded:false};
 
 /* THE DEFAULT IS DERIVED, NOT STORED, so a board full of people who have never opened the
-   settings is already a board of different colours rather than a column of identical blue
-   discs. Same name in, same colour out, everywhere and forever, which is what makes it
+   settings is already a board of different colors rather than a column of identical blue
+   discs. Same name in, same color out, everywhere and forever, which is what makes it
    recognisable: this runs in the header, on every board row and on the podium, and all
    three have to agree without asking the server anything.
 
@@ -9977,7 +9977,7 @@ function avatarOf(name,color,initials){
      to know: it must not mark a club nobody picked, and the label above the grid says which
      of the two this is in words.
 
-     The ring is the club's second colour, which is the whole reason two colours are worth
+     The ring is the club's second color, which is the whole reason two colors are worth
      carrying: fourteen of the thirty-two have a primary that vanishes into this page's
      background, and the ring is what keeps their disc a disc. */
   const chosen=!!E.TEAM_COLORS[color];
@@ -10016,7 +10016,7 @@ function paintAvatar(){
   b.setAttribute('aria-label',out?'Sign in or create an account':'Your profile');
   if(out) b.innerHTML='<span class="lbl">Sign in</span>';
   else if(nm){
-    /* Your own circle, in your own colour, drawn by the same function that draws it on
+    /* Your own circle, in your own color, drawn by the same function that draws it on
        every board row. It used to be a fixed blue with the first two letters of the name;
        both of those are now the fallback inside avatarOf rather than a second rule here. */
     const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
@@ -10072,12 +10072,12 @@ function paintPfpEdit(nm){
     const a=avatarOf(nm,pfpPend.color,pfpPend.initials);
     demo.innerHTML=avatarHTML(a,'huge');
     /* The chosen club is marked. Nothing is marked when nothing is chosen: unlike the nine
-       colours this replaced, the derived circle is NOT one of the options, so highlighting
-       the club whose colour happens to be nearest would claim a choice never made. */
+       colors this replaced, the derived circle is NOT one of the options, so highlighting
+       the club whose color happens to be nearest would claim a choice never made. */
     [...swatches.children].forEach(b=>b.classList.toggle('on',b.dataset.c===pfpPend.color));
     if(label){
       /* Which of the two it is, in words, because the grid cannot say it: a marked club and
-         an unmarked one that happens to be the colour on your circle look the same at a
+         an unmarked one that happens to be the color on your circle look the same at a
          glance, and the difference is whether anybody chose it. */
       label.innerHTML=a.chosen
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
@@ -10322,7 +10322,7 @@ function streakBlock(res){
 }
 
 /* Earned first, because a cabinet is for showing what you have. Locked ones stay visible
-   (greyed, with their requirement) because an unearned badge is only interesting if you can
+   (grayed, with their requirement) because an unearned badge is only interesting if you can
    read what it is asking for. */
 /* THE CABINET, AT THREE HUNDRED BADGES.
    The first version of this listed every badge open, which was fine at fifty and is a wall of
@@ -11021,7 +11021,7 @@ function runPayload(){
     respins:run.respinsUsed,
     /* THE CLUB THIS DRAFT WAS LOCKED TO, and null for a free run. The server does not
        infer the mode from it: the column predates One Franchise mode and the oldest rows
-       in the table are free runs carrying somebody's favourite team, so the mode is sent
+       in the table are free runs carrying somebody's favorite team, so the mode is sent
        as its own field and the two are checked against each other server-side. */
     franchise:run.franchise||null,
     era:run.era||null,
@@ -11506,7 +11506,7 @@ async function runDiagnostics(){
      reason: a board that works but is one file behind should say which file, rather than
      reporting "everything is wired up correctly" while a feature quietly does nothing. */
   /* Above the column check, because a missing FUNCTION is the louder of the two symptoms:
-     the columns going missing costs a colour, the function going missing means a player
+     the columns going missing costs a color, the function going missing means a player
      pressed Save and got an error. */
   /* FIRST OF THE MIGRATION BRANCHES, because this one is not a feature quietly doing
      nothing, it is the whole board returning 400 on every read. Nothing below can be true
@@ -11636,7 +11636,7 @@ let lbMyPlace=null;
 
    EVERY WINDOW WORKS ON EVERY AXIS. The rating board used to be all time only, on the
    argument that ordering by rating over a time range is a query no index can answer, so
-   the Today and This week tabs were greyed out on that axis.
+   the Today and This week tabs were grayed out on that axis.
 
    That was wrong, and measurably so. ps_runs_m_rating_idx is
    (mode, team_rating DESC, created_at): created_at is IN the index, so the window is an
@@ -11965,11 +11965,11 @@ function runDetail(row,back){
   const chem=mine?p.chemistryPct:Number(row.chemistry_pct);
   const spend=mine?p.spendMusd:Number(row.spend_musd);
   const perf=mine?p.perfectPct:(row.perfect_pct===null?null:Number(row.perfect_pct));
-  /* THE TEAM THIS SHEET IS COLOURED BY, and what the line under the record says.
+  /* THE TEAM THIS SHEET IS COLORED BY, and what the line under the record says.
      `franchise` means two different things on two vintages of row: on a One Franchise run it is
      the team the whole draft was locked to, and on the oldest rows in the table it was the
-     player's favourite team on an ordinary free run. `mode` is what tells them apart, which
-     is why runKindOf reads that and not this. Both are worth a colour on the sheet; only
+     player's favorite team on an ordinary free run. `mode` is what tells them apart, which
+     is why runKindOf reads that and not this. Both are worth a color on the sheet; only
      the One Franchise ones get the sentence. */
   const club=mine?(run&&run.franchise)||null:row.franchise;
   /* YOUR OWN RUN IS NAMED FROM THE RUN, not from the row, because the row may not be back
@@ -12026,7 +12026,7 @@ function runDetail(row,back){
   if(cols) $('sheet-in').style.borderTop='3px solid '+cols.primary;
   else $('sheet-in').style.borderTop='';
   $('sheet').classList.add('on');
-  /* The coloured top edge is this sheet's, so it has to go whichever way we leave, or the
+  /* The colored top edge is this sheet's, so it has to go whichever way we leave, or the
      profile behind it inherits a club stripe it has nothing to do with. */
   $('sh-x').onclick=()=>{
     $('sheet-in').style.borderTop='';
@@ -12153,8 +12153,8 @@ function gmCell(row){
   const g=(row.gm_rating===null||row.gm_rating===undefined)?null:Number(row.gm_rating);
   /* GOLD IS THE PERFECT SEASON AND NOTHING ELSE. This gilded any GM rating over 90, which
      put gold on a board row that had lost four games while the record and rating boards were
-     spending the same colour on the rarest thing in the game. A score being high is what the
-     number itself says; the colour is reserved. */
+     spending the same color on the rarest thing in the game. A score being high is what the
+     number itself says; the color is reserved. */
   return '<b class="big'+(row.perfect?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
     '<span>'+esc(row.wins+'-'+row.losses)+'</span>';
 }
@@ -12293,7 +12293,7 @@ $('b-how').onclick=howToPlay;
    rendered "[object PointerEvent]" in the error slot on every open. */
 /* THE DRAFT HUD'S FOLD.
    One number, --sq, from 0 to 1, recomputed on every scroll frame: how far the folding block
-   has travelled under the sticky bar. Everything visual is a calc() off it in the stylesheet,
+   has traveled under the sticky bar. Everything visual is a calc() off it in the stylesheet,
    so this only has to produce the number.
 
    rAF-coalesced, because a scroll handler that writes layout-affecting styles on every event

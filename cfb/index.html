@@ -19,12 +19,12 @@
 <!-- THE MARK: ONE PICTURE, EVERYWHERE, AND THE SAME ONE THE NFL GAME USES.
      The puzzle helmet, byte for byte off /football/, on a #111827 plate at every size.
      Deliberately not a college colorway: the two games are the same game in two sports
-     and share a mark, so nobody has to learn a second logo to recognise the second game.
+     and share a mark, so nobody has to learn a second logo to recognize the second game.
      Anything that changes it has to change both, which is why the files are copies here
      rather than a second drawing.
 
      The tradeoff is the one the NFL game already documents: a browser tab draws the
-     favicon at 1x, so at 16px the facemask is a handful of grey pixels and reads as
+     favicon at 1x, so at 16px the facemask is a handful of gray pixels and reads as
      texture. At 32, which is what a retina tab actually uses, it reads properly. -->
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
@@ -114,7 +114,7 @@ window.GA_ID='G-L29P5MRWKE';
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   /* DSEG7 Classic, the open seven-segment face a real scoreboard is built from.
      Self-hosted rather than pulled off a font CDN, so the numbers cannot arrive
-     late or not at all. SIL Open Font License 1.1; the licence sits beside it in
+     late or not at all. SIL Open Font License 1.1; the license sits beside it in
      fonts/DSEG-LICENSE.txt. */
   @font-face{font-family:'DSEG7';src:url('fonts/DSEG7Classic-Bold.woff2') format('woff2');
     font-weight:700;font-style:normal;font-display:swap}
@@ -219,14 +219,14 @@ window.GA_ID='G-L29P5MRWKE';
     text-decoration:none;text-transform:uppercase;color:var(--dim);
     border:1px solid var(--line-2);white-space:nowrap;transition:border-color .15s}
   .pill:hover{border-color:rgba(255,255,255,.22)}
-  /* The ".GG" is the team colour. In the house look it is the green; once a school
-     is themed it takes the school's SECONDARY colour (see the themed block below),
-     so the banner carries both of a team's colours at once: the torn "College" in
+  /* The ".GG" is the team color. In the house look it is the green; once a school
+     is themed it takes the school's SECONDARY color (see the themed block below),
+     so the banner carries both of a team's colors at once: the torn "College" in
      the primary, the ".GG" in the secondary. */
   .pill i{color:var(--green)}
   /* ── profile bubble ─────────────────────────────────────────────
      Your profile, styled like the NFL game's: a neutral head when signed out,
-     and once you are in, your initials on the colours of the school you picked. */
+     and once you are in, your initials on the colors of the school you picked. */
   .avatar{flex:0 0 40px;width:40px;height:40px;border-radius:50%;padding:0;position:relative;
     display:grid;place-items:center;cursor:pointer;background:none;
     border:1px solid var(--line-2);transition:border-color .15s,transform .1s}
@@ -240,7 +240,7 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar:hover{border-color:rgba(255,255,255,.28)}
   .avatar:active{transform:scale(.94)}
   .avatar.signed{border-color:transparent}
-  /* Primary fill, SECONDARY ring, like the NFL bubble: the school's two colours on
+  /* Primary fill, SECONDARY ring, like the NFL bubble: the school's two colors on
      the one element you carry through every screen. Falls back to a white hairline
      when there is no themed school (the house green bubble). */
   .avatar.signed:before{background:var(--pfp,var(--grad-green));inset:2px;
@@ -261,14 +261,14 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   /* ── school theme ───────────────────────────────────────────────
-     A chosen school recolours the front door: the home screen, the draft and
-     the header while you're on them take the team's own two colours in place of
+     A chosen school recolors the front door: the home screen, the draft and
+     the header while you're on them take the team's own two colors in place of
      the house green and gold. Everything past kickoff keeps the CFB palette. */
   body.themed:has(#s-intro.on),
   body.themed:has(#s-draft.on){
     /* --green and --gold are used as TEXT (the wordmark, eyebrows, pills), so they
        take the lifted, readable ink; the gradients that sit BEHIND white text keep
-       the team's true, deeper colours. That stops dark navies and maroons turning
+       the team's true, deeper colors. That stops dark navies and maroons turning
        the banner text invisible on the dark header. */
     --green:var(--th-ink-a);--green-2:var(--th-ink-a);
     --grad-green:linear-gradient(135deg,var(--th-a),var(--th-a2));
@@ -277,9 +277,9 @@ window.GA_ID='G-L29P5MRWKE';
     background-image:radial-gradient(1000px 600px at 50% -8%,var(--th-glowa),transparent 70%),
                      radial-gradient(800px 500px at 100% 100%,var(--th-glowb),transparent 70%);
   }
-  /* THE ".GG" TAKES THE SECOND COLOUR. The torn "College" already carries the
+  /* THE ".GG" TAKES THE SECOND COLOR. The torn "College" already carries the
      primary; putting the ".GG" on the secondary means the banner shows both of a
-     school's colours instead of the primary twice. */
+     school's colors instead of the primary twice. */
   body.themed:has(#s-intro.on) .pill.site i,
   body.themed:has(#s-draft.on) .pill.site i{ color:var(--th-ink-b); }
 
@@ -341,8 +341,8 @@ window.GA_ID='G-L29P5MRWKE';
   .ach-n{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.02em;
     color:var(--ink);line-height:1.2}
   .ach-d{font-size:10px;color:var(--dim);line-height:1.3;margin-top:2px}
-  /* Every earned tier gets its colour in the FILL as well as the border. Border
-     alone is not enough: silver on a dark panel reads as greyed out, so an
+  /* Every earned tier gets its color in the FILL as well as the border. Border
+     alone is not enough: silver on a dark panel reads as grayed out, so an
      earned badge can be taken for a locked one at a glance, which is the one
      thing a trophy case must never do. */
   .ach.bronze{border-color:rgba(180,120,70,.55);
@@ -425,7 +425,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* The bowl / championship title, said once and said loud. It was printed twice,
      a small eyebrow over an identical heading; now it is one heading in the block
-     face, centred, in the house gold, sized to be the thing you read first. */
+     face, centerd, in the house gold, sized to be the thing you read first. */
   .bowltitle{font-family:var(--fd);text-transform:uppercase;text-align:center;
     font-size:clamp(24px,7vw,34px);line-height:1.02;letter-spacing:.02em;
     margin:6px 0 6px;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.55)}
@@ -492,8 +492,8 @@ window.GA_ID='G-L29P5MRWKE';
   .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
   .reel-i.land{font-weight:900}
   /* WHITE WHILE IT IS SPINNING. In motion the reel is neutral; it only takes the
-     team's colour (green for the year, gold for the school) once it has landed,
-     so the colour reads as a result rather than as decoration on a blur. */
+     team's color (green for the year, gold for the school) once it has landed,
+     so the color reads as a result rather than as decoration on a blur. */
   .reelbox.year.spin,.reelbox.team.spin{border-color:rgba(255,255,255,.7)}
   .reelbox.year.spin .reel-win,.reelbox.team.spin .reel-win{border-color:rgba(255,255,255,.65)}
   .reelbox.waiting{opacity:.42}
@@ -936,7 +936,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* ── score bug: the stadium scoreboard ──────────────────────────
      Built to read like the board at the open end of the stadium rather than a
      television graphic: a steel housing bolted at the corners, a painted panel
-     in each team's colours, and the numbers burning out of recessed bulb
+     in each team's colors, and the numbers burning out of recessed bulb
      windows. Every hook the script writes into (.cd .rc .rk .sc .q .ck .rd) is
      unchanged, so only the look moves. */
   .bug{position:relative;border-radius:13px;overflow:hidden;padding:9px 9px 4px;
@@ -953,8 +953,8 @@ window.GA_ID='G-L29P5MRWKE';
     background-size:5px 5px;background-repeat:no-repeat;
     background-position:5px 5px,calc(100% - 5px) 5px,5px calc(100% - 5px),calc(100% - 5px) calc(100% - 5px)}
   .bug .btop{display:flex;align-items:stretch;gap:6px}
-  /* THE PAINTED TEAM PANEL. The school's own colour, bevelled like sheet metal,
-     with its second colour as the stripe down the outside edge. */
+  /* THE PAINTED TEAM PANEL. The school's own color, bevelled like sheet metal,
+     with its second color as the stripe down the outside edge. */
   /* Laid out like the board itself: the rank stencilled outside, the school's
      letters with the record tucked underneath, and the bulb window at the inner
      edge. Stacking the record under the letters is what buys the numbers enough
@@ -1268,8 +1268,8 @@ window.GA_ID='G-L29P5MRWKE';
   .next-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:479px){.next-pair{grid-template-columns:1fr;gap:10px}}
   /* GREEN PRIMARY, SLATE SECONDARY. This game has no gold buttons: green is the
-     one action colour, so the loudest button here is green and the quieter one
-     next to it is a neutral slate rather than a second bright colour competing
+     one action color, so the loudest button here is green and the quieter one
+     next to it is a neutral slate rather than a second bright color competing
      for the eye. (These two used to carry the NFL game's red and navy, then a
      gold that the game used nowhere else.) */
   .next-primary{background:linear-gradient(170deg,#10b981,#047857);padding:14px 12px;
@@ -1384,7 +1384,7 @@ window.GA_ID='G-L29P5MRWKE';
     padding:2px 7px;border-radius:5px;margin-left:auto;white-space:nowrap;flex-shrink:0}
   .scheme-tagline{font-family:var(--fb);font-size:12.5px;line-height:1.4;color:var(--dim-2)}
 
-  /* scheme colours */
+  /* scheme colors */
   .scheme-spread .stripe{background:linear-gradient(90deg,#e53e3e,#f97316)}
   .scheme-spread .scheme-icon{background:rgba(249,115,22,.15);color:#f97316}
   .scheme-spread .scheme-name{color:#f97316}
@@ -1542,7 +1542,7 @@ window.GA_ID='G-L29P5MRWKE';
     background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;
     background-size:6px 6px,6px 6px;background-repeat:no-repeat}
   .lbmode select:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-  /* A conference board wears the mode's colour, so which one you are looking at is
+  /* A conference board wears the mode's color, so which one you are looking at is
      legible without reading the select. */
   .lbmode.isconf select{border-color:rgba(245,158,11,.5);color:#fbbf24}
   .lbcount{margin:12px 0 0;font-family:var(--fn);font-size:11px;font-weight:700;
@@ -1595,7 +1595,7 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:11px;font-weight:700}
 
   /* ── more ways to play ──────────────────────────────────────────
-     The same cards the NFL game uses, in this game's colours. THE MODE IS THE
+     The same cards the NFL game uses, in this game's colors. THE MODE IS THE
      BUTTON: the whole card is tappable with a chevron for the affordance, rather
      than a card with a play button inside it. */
   .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
@@ -1632,8 +1632,8 @@ window.GA_ID='G-L29P5MRWKE';
   .xpromo{margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
   .xpromo .xp-h{font-family:var(--fn);font-size:12.5px;font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin:0 0 10px}
-  /* Red, which is the NFL game's colour on the RunThe.GG home page and on its own
-     pages. Borrowed on purpose: somebody who has seen it before should recognise it. */
+  /* Red, which is the NFL game's color on the RunThe.GG home page and on its own
+     pages. Borrowed on purpose: somebody who has seen it before should recognize it. */
   .modecard.mc-nfl{border-color:rgba(220,60,60,.38)}
   .modecard.mc-nfl .mc-icon{background:linear-gradient(135deg,#ef5350 0%,#c0272b 100%)}
   .modecard.mc-nfl .mc-title{color:#f0918e}
@@ -1677,7 +1677,7 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;color:#6ee7b7}
   .gate .gs{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--dim)}
   .gate .btn{width:100%}
-  /* A strip of real school colours, not clickable. The reward, legible before the
+  /* A strip of real school colors, not clickable. The reward, legible before the
      ask, rather than a padlock that says nothing about what is behind it. */
   .peekrow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;padding:4px 0 2px}
   .peekdot{width:30px;height:30px;border-radius:50%;background:var(--sc1);
@@ -1972,7 +1972,7 @@ or endorsed by the NCAA, the CFP or any school.
   <div class="screen" id="s-intro">
     <!-- THE POLL, running across the top the way a broadcast carries one. The
          rankings are the game's own, worked out from how far each team outscored
-         its year, so it is labelled by season rather than borrowing a real poll's
+         its year, so it is labeled by season rather than borrowing a real poll's
          name. Filled in once the data lands. -->
     <div class="ticker" id="h-ticker" hidden aria-hidden="true">
       <span class="tk-label" id="h-tk-label">Top 25</span>
@@ -2016,7 +2016,7 @@ or endorsed by the NCAA, the CFP or any school.
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
 
-    <!-- The banner, above the legal line. Placeholder slot; the initialiser at the foot of
+    <!-- The banner, above the legal line. Placeholder slot; the initializer at the foot of
          this file refuses to start one, so it renders nothing until a real id is pasted. -->
     <div class="rtp-ad-inline">
       <span class="rtp-ad-label">Advertisement</span>
@@ -2398,7 +2398,7 @@ or endorsed by the NCAA, the CFP or any school.
 
 <!-- ===== AdSense units. Manual, and placed before the overlays so the sheet, the toast
      and the crash banner all paint above them. The slot ids are placeholders until the
-     units are created in the dashboard; the initialiser at the foot of this file refuses
+     units are created in the dashboard; the initializer at the foot of this file refuses
      to start a unit whose slot is still a placeholder, rather than reporting this game's
      traffic against another game's unit. ===== -->
 <div class="rtp-ad-rail rtp-ad-left">
@@ -2643,11 +2643,11 @@ const SPOTS={
   RB: [[], [{ x: 28, y: 64 }], [{ x: 28, y: 64 }, { x: 72, y: 64 }]],
 };
 /* The line of scrimmage, spread by how many are on it (1 through 4). NOTHING SITS
-   IN THE CENTRE COLUMN. The quarterback is at x50 one row down, and this field is
+   IN THE CENTER COLUMN. The quarterback is at x50 one row down, and this field is
    short (aspect 1/0.54), so a receiver at x50 would drop its name-and-team label
    straight onto the quarterback's disc. Every spot here stays clear of the x45-55
    band the quarterback and its label occupy, so a three-receiver set slots the
-   third man off to the side rather than dead centre. */
+   third man off to the side rather than dead center. */
 const REC = [
   [],
   [{ x: 32, y: 24 }],
@@ -2710,11 +2710,11 @@ function bindBoxScore(id){
 }
 bindBoxScore('v-list'); bindBoxScore('o-list');
 
-/* ── school colours (profile bubble) ─────────────────────────────
-   Pick a school and the front door takes its colours. Schools are grouped by
+/* ── school colors (profile bubble) ─────────────────────────────
+   Pick a school and the front door takes its colors. Schools are grouped by
    their current conference, the four power leagues each get their own list and
    everyone else shares one, and each carries the team's real primary and alt
-   colours drawn straight from the data. */
+   colors drawn straight from the data. */
 const POWER_CONFS=['SEC','Big Ten','Big 12','ACC'];
 let schoolGroupsCache=null;
 function schoolGroups(){
@@ -2737,13 +2737,13 @@ function shade(hex,pct){ const [r,g,b]=_hx(hex);
   return '#'+h(f(r))+h(f(g))+h(f(b)); }
 const hexA=(hex,a)=>{const [r,g,b]=_hx(hex);return 'rgba('+r+','+g+','+b+','+a+')';};
 const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;};
-/* A version of a team colour light enough to read as TEXT on the near-black
+/* A version of a team color light enough to read as TEXT on the near-black
    header, dark navies, maroons and blacks get lifted until they stand out. */
 const textSafe=(hex)=>{ let c=hex; for(let i=0;i<12 && lumOf(c)<0.5;i++) c=shade(c,0.15); return c; };
 
 let selectedSchool=null;
 /* remember=false drops the theme from the page WITHOUT forgetting which school it
-   was. That is what signing out does: the colours go back to default because they
+   was. That is what signing out does: the colors go back to default because they
    are an account feature, and signing back in brings the same school back rather
    than making somebody pick it again. Only the Default colors button forgets. */
 function applyTheme(t,remember){
@@ -2762,14 +2762,14 @@ function applyTheme(t,remember){
   root.style.setProperty('--th-a2',shade(a,-0.3));
   root.style.setProperty('--th-b',b);
   root.style.setProperty('--th-b2',shade(b,0.22));
-  // Text uses lifted, readable versions; backgrounds keep the true colours.
+  // Text uses lifted, readable versions; backgrounds keep the true colors.
   root.style.setProperty('--th-ink-a',textSafe(a));
   root.style.setProperty('--th-ink-b',textSafe(b));
   root.style.setProperty('--th-glowa',hexA(a,0.14));
   root.style.setProperty('--th-glowb',hexA(b,0.13));
   root.style.setProperty('--th-edgeb',hexA(textSafe(b),0.38));
   root.style.setProperty('--pfp','linear-gradient(135deg,'+a+','+shade(a,-0.32)+')');
-  /* The ring is the SECOND colour, lifted to stay visible on the primary fill. */
+  /* The ring is the SECOND color, lifted to stay visible on the primary fill. */
   root.style.setProperty('--pfpring',textSafe(b));
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
@@ -2778,7 +2778,7 @@ function applyTheme(t,remember){
   updateAvatar();
 }
 
-/* THE SCHOOL YOU PICKED, WHETHER OR NOT IT IS IN FORCE. Colours are a signed-in
+/* THE SCHOOL YOU PICKED, WHETHER OR NOT IT IS IN FORCE. Colors are a signed-in
    feature, so the pick is remembered here and only painted while there is an
    account behind it. */
 let savedSchool=null;
@@ -2788,9 +2788,9 @@ function syncTheme(){
   else if(selectedSchool) applyTheme(null,false);
   else updateAvatar();
 }
-/* THE BUBBLE IS THE PLAYER, IN THEIR SCHOOL'S COLOURS, the same as the NFL game.
+/* THE BUBBLE IS THE PLAYER, IN THEIR SCHOOL'S COLORS, the same as the NFL game.
    It carries your initials, not the school's letters: picking a school sets the
-   colour the circle fills with (--pfp), the letters are always your account's. A
+   color the circle fills with (--pfp), the letters are always your account's. A
    signed-out player, or one with no readable name yet, gets the neutral head. */
 function updateAvatar(){
   const av=$('b-profile'); if(!av) return;
@@ -2829,7 +2829,7 @@ function openProfile(tab){
   if(profileTab==='account') wireAccount();
   box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
   /* THE GATE IS NOT DECORATION. There are no .swatch buttons in the markup at all
-     while signed out, so a colour cannot be picked by reaching past the panel, and
+     while signed out, so a color cannot be picked by reaching past the panel, and
      these handlers simply find nothing to bind to. */
   box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
     if(!authState.signedIn) return;
@@ -2979,7 +2979,7 @@ function bootAuth(){
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
     if(st.userId!==wasId) careerRows=null;
-    /* Colours follow the account: on when signed in, default when not. */
+    /* Colors follow the account: on when signed in, default when not. */
     syncTheme();
     if($('sheet').classList.contains('on')&&profileTab==='account') openProfile('account');
   });
@@ -3120,8 +3120,8 @@ function gateCard(lines){
 }
 
 function schoolPickerHtml(){
-  /* COLOURS ARE A SIGNED-IN FEATURE. Signed out this shows what it would look like
-     rather than a locked door: a strip of real school colours, dimmed and not
+  /* COLORS ARE A SIGNED-IN FEATURE. Signed out this shows what it would look like
+     rather than a locked door: a strip of real school colors, dimmed and not
      clickable, so the reward is legible before the ask. */
   if(!authState.signedIn){
     const teams=schoolGroups().flatMap(g=>g.teams);
@@ -3153,7 +3153,7 @@ function schoolPickerHtml(){
     '<div style="margin-top:10px"><button class="btn ghost sm" id="sp-default" style="width:100%">Default colors</button></div>';
 }
 /* Earned first, because a case is for showing what you have. Locked ones stay
-   on the shelf, greyed, with what they want, because that is the only part of
+   on the shelf, grayed, with what they want, because that is the only part of
    an unearned badge worth reading. */
 function trophyCaseHtml(){
   const A=window.PS_CFB_ACH;
@@ -3186,7 +3186,7 @@ function trophyCaseHtml(){
      Not a locked door, because a locked door tells you nothing about what is behind
      it. Everything you have actually earned is shown in full, so nothing is being
      taken away from somebody who has been playing; what is held back is the rest of
-     the catalogue, blurred so the shape of it reads without the words. That is the
+     the catalog, blurred so the shape of it reads without the words. That is the
      part an account buys, along with keeping any of it when this browser is cleared. */
   if(!authState.signedIn) return peekCaseHtml(res);
   const s=res.stats;
@@ -3248,7 +3248,7 @@ function peekCaseHtml(res){
     : '';
 
   /* And a blurred taste of the rest. Highest tier first, so what is behind the blur
-     is the interesting end of the catalogue. */
+     is the interesting end of the catalog. */
   const rest=res.locked.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
   const peek=rest.slice(0,PEEK_LOCKED);
   const more=rest.length-peek.length;
@@ -3285,8 +3285,8 @@ function achShelves(res){
 $('b-profile').onclick=()=>openProfile();
 /* NOT APPLIED HERE ANY MORE. The saved school is read at the top of applyTheme's
    block; whether it is painted is decided by syncTheme() once the auth state is
-   known, because school colours are a signed-in feature. Applying it here and
-   removing it a moment later would flash somebody's colours and take them away. */
+   known, because school colors are a signed-in feature. Applying it here and
+   removing it a moment later would flash somebody's colors and take them away. */
 
 /* ── run history ─────────────────────────────────────────────── */
 /* WHAT GETS WRITTEN DOWN IS THE SEASON, NEVER THE TROPHY. Each finished run
@@ -3470,7 +3470,7 @@ function lbRow(r,pos){
   const rec=r.wins+'-'+r.losses;
   /* WHICH bowl, when the row knows. The name is looked up from the slug against
      the game's own bowl table, never read off the row as text, so a season can
-     only ever be labelled with a bowl this build knows about. Rows written before
+     only ever be labeled with a bowl this build knows about. Rows written before
      64_cfb_bowl_key.sql carry no slug and keep the wording they have always had,
      which is why both halves stay here rather than one replacing the other. */
   const bowlNm=E.bowlName(r.bowl_key);
@@ -3906,8 +3906,8 @@ function drawRail(el){
   st.svg.innerHTML=arcs.map((c)=>{
     const d=depth(c.b-c.a);
     const dim=st.focus!==null&&st.focus!==c.a&&st.focus!==c.b;
-    /* Colour, weight AND dash all carry the tier, so the strength of a bond is
-       still legible if the colours are hard to tell apart: a real duo draws a
+    /* Color, weight AND dash all carry the tier, so the strength of a bond is
+       still legible if the colors are hard to tell apart: a real duo draws a
        thick solid gold, a shared school a dashed green, a shared conference a
        thin dotted blue. */
     return '<path d="M '+cx(c.a).toFixed(2)+' 0 Q '+
@@ -5407,7 +5407,7 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
      rating = summed FPPG x chemistry x rosterStructure().multiplier
 
    which is resolveGame's line with the per-opponent term taken off, so it is
-   what a roster is worth against an average defence. The NFL game's rating is
+   what a roster is worth against an average defense. The NFL game's rating is
    the same three terms.
 
    IT LEFT SHAPE OUT FOR A WHILE and the number paid for it. The rating was
@@ -5732,7 +5732,7 @@ function comparison(best){
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
   /* THE OVERALL, not the raw rating. The raw number stopped being points a game
      when the rating stopped being a multiplication the sim also does, and the
-     row was still labelled as points. Showing the overall also makes the right
+     row was still labeled as points. Showing the overall also makes the right
      column mean something: the best possible squad is what a hundred is set
      from, so it lands on about a hundred. */
   const mineRating=overallOf(teamRating(run.roster,best.yourChemistry));
@@ -5788,7 +5788,7 @@ function drawShareCard(){
   c.width=CARD.W;c.height=CARD.H;
   const x=c.getContext('2d');
   const o=run.outcome;
-  /* THE CARD'S OWN THREE COLOURS: the wash behind the record, the keel along the
+  /* THE CARD'S OWN THREE COLORS: the wash behind the record, the keel along the
      bottom edge, and the ink the rules and the link are drawn in. Green and gold,
      because this card had been painting in the NFL game's red and blue. */
   const tc={primary:'#047857',secondary:'#f59e0b',ink:'#34d399'};
@@ -5853,8 +5853,8 @@ function drawShareCard(){
   E.SLOTS.forEach((slot,i)=>{
     const p=bySlot[i];if(!p) return;
     const cw=88,ch=52;const tag=slot||p.position;
-    /* Painted by the SLOT, not the player, so the FLEX chip is the FLEX colour whoever
-       is standing in it. Coloured by position it came out green under a running back
+    /* Painted by the SLOT, not the player, so the FLEX chip is the FLEX color whoever
+       is standing in it. Colored by position it came out green under a running back
        and blue under a receiver, which reads as a second RB rather than a flex. */
     x.fillStyle=COLS[slot]||COLS[p.position]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12);x.fill();

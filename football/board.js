@@ -45,7 +45,7 @@
      in the soccer client. */
   /* `run_mode` is NOT in an optional set the way display_name is, and deliberately. Those
      exist because a board can still be useful with a column missing: no names is a board
-     of Anonymous rows, no avatar pair is a board of derived colours. run_mode is what every
+     of Anonymous rows, no avatar pair is a board of derived colors. run_mode is what every
      board query filters ON, so a project without it cannot answer a board request at all
      and there is nothing to fall back to. 57_football_run_mode.sql is required, and the
      diagnostic names it rather than pretending a retry could help.
@@ -712,7 +712,7 @@
     } catch (e) { return failThrown('mine', e); }
   }
 
-  /* ---------------- your own colour and initials ----------------
+  /* ---------------- your own color and initials ----------------
      Read straight off profiles, which 10_accounts.sql makes world-readable because the
      things on it are what a public leaderboard prints. Only ever read for yourself here,
      because the board rows carry everybody else's already: asking profiles per row would
@@ -737,9 +737,9 @@
     } catch (e) { return failThrown('avatar', e); }
   }
 
-  /* THE ONLY WRITE PATH. ps_set_avatar validates the colour against its own list and strips
+  /* THE ONLY WRITE PATH. ps_set_avatar validates the color against its own list and strips
      the initials to at most two of A-Z0-9, then rewrites every one of the caller's rows in
-     the same transaction, so the board never shows one player in two colours. What it
+     the same transaction, so the board never shows one player in two colors. What it
      returns is what it stored, which is what the caller should then draw: sending 'xyz' and
      rendering 'xyz' while the database holds 'XY' is how a settings screen starts lying. */
   async function setAvatar(color, initials) {
@@ -751,7 +751,7 @@
       if (!res.ok) {
         lastError = { where: 'avatar', status: res.status, code: (body && body.code) || '',
           message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
-        /* NOT offline. A refused colour is the database working exactly as intended, and
+        /* NOT offline. A refused color is the database working exactly as intended, and
            marking the whole board unreachable over it would put a "not reachable" notice on
            a leaderboard that is answering every other call. */
         /* THE FUNCTION IS NOT THERE, which is a different thing from the call being refused,

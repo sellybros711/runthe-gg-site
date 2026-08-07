@@ -26,7 +26,7 @@ const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
 const slotsOf = (run) => (run && run.slots)
   || (run && run.tradeMachine ? TRADE_SLOTS : E.SLOTS);
 
-/* PICK_FRANCHISE is gone. There is no favourite club to choose, so a run opens on the draft:
+/* PICK_FRANCHISE is gone. There is no favorite club to choose, so a run opens on the draft:
    the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
    ladder, neither of which depends on who you support. */
 const PHASES = {
@@ -257,7 +257,7 @@ function canRespin(run, kind, data) {
   }
   if (rest) {
     /* Asked against the SAME constraint the re-spin will apply, or the check approves a
-       re-spin the wheel then cannot honour and it falls back to an unconstrained draw. */
+       re-spin the wheel then cannot honor and it falls back to an unconstrained draw. */
     const ok = kind === 'team'
       ? rest.some((t) => t.season === draw.season)
       : rest.some((t) => t.franchise === draw.franchise && t.season !== draw.season);

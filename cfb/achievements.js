@@ -4,7 +4,7 @@
  * DERIVED, NEVER STORED. No badge is written down. Every one is recomputed from the rows
  * the game keeps for finished runs, which buys two things worth having: a badge cannot
  * drift out of step with the history it claims to describe, and adding a new one to the
- * catalogue lights it up retroactively for seasons already played.
+ * catalog lights it up retroactively for seasons already played.
  *
  * WHERE THE ROWS LIVE, AND THE HONEST LIMIT OF IT. The NFL game derives its cabinet from
  * leaderboard rows tied to an account, so a badge survives a cleared browser or a new
@@ -17,7 +17,7 @@
  * a missing value as "not known" rather than as zero. has() below is the guard, and a test
  * that cannot know its answer returns false rather than guessing.
  *
- * Headless and dependency-free, so the catalogue can be tested in node against real rows.
+ * Headless and dependency-free, so the catalog can be tested in node against real rows.
  * Browser: window.PS_CFB_ACH. Node: require('./achievements.js').
  */
 (function () {
@@ -156,12 +156,12 @@
     };
   }
 
-  /* ---------------- the catalogue ----------------
-     tier drives the colour only: bronze, silver, gold, legend.
+  /* ---------------- the catalog ----------------
+     tier drives the color only: bronze, silver, gold, legend.
      group drives which shelf it sits on in the trophy case. */
   const A = (id, name, desc, tier, group, test) => ({ id, name, desc, tier, group, test });
 
-  const CATALOGUE = [
+  const CATALOG = [
     /* --- getting started --- */
     A('first_run', 'Signing day', 'Finish your first season.', 'bronze', 'Milestones',
       (c) => c.total >= 1),
@@ -437,7 +437,7 @@
     'Roster craft', 'The roster', 'Streaks'];
 
   /*
-   * Evaluate the whole catalogue. A test that throws counts as not earned rather than
+   * Evaluate the whole catalog. A test that throws counts as not earned rather than
    * taking the trophy case down with it: a badge is decoration, and a broken one must not
    * cost somebody the whole panel.
    */
@@ -445,13 +445,13 @@
     const list = Array.isArray(rows) ? rows : [];
     const ctx = buildContext(list, resolve, nowIso);
     const earned = [], locked = [];
-    for (const a of CATALOGUE) {
+    for (const a of CATALOG) {
       let ok = false;
       try { ok = !!a.test(ctx); } catch (e) { ok = false; }
       (ok ? earned : locked).push(a);
     }
     return {
-      earned, locked, total: CATALOGUE.length,
+      earned, locked, total: CATALOG.length,
       play: ctx.play, title: ctx.title,
       stats: {
         runs: ctx.total,
@@ -465,7 +465,7 @@
     };
   }
 
-  const api = { CATALOGUE, GROUPS, TIER_ORDER, evaluate, playStreak, titleStreak, dayKey };
+  const api = { CATALOG, GROUPS, TIER_ORDER, evaluate, playStreak, titleStreak, dayKey };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.PS_CFB_ACH = api;
 })();

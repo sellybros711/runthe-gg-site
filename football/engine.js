@@ -381,7 +381,7 @@ const CONSTANTS = {
    * rosters drafted off the real wheel, a 91 overall averaged 12.6 wins and finished with
    * FIVE OR MORE LOSSES in 48% of its seasons. A 94 did it 39% of the time. These are the
    * best teams anybody can build under the cap and half of them were finishing 12-5, because
-   * the sim samples every week from scratch, so a great roster is only ever a favourite by
+   * the sim samples every week from scratch, so a great roster is only ever a favorite by
    * its mean and never by its class.
    *
    * So above CLASS_FLOOR the opponent's score is divided down, climbing linearly to
@@ -394,7 +394,7 @@ const CONSTANTS = {
    * hands a 91 one twelfth of the effect and therefore does nothing. Measured, that step
    * bought two points of overall (88.9 to 90.9) A FULL WIN AND A SIXTEENTH, while the next
    * SEVEN points bought 0.99 between them. An 89.8 roster and a 90.2 roster are the same
-   * football team and the game was treating them as different species. The defence for it
+   * football team and the game was treating them as different species. The defense for it
    * was that reaching 90 is rare, which is an argument about how hard the DRAFT is, not
    * about how good the TEAM is, and outcomes here answer to the second.
    *
@@ -941,7 +941,7 @@ const nickname = (id) => NICKNAMES[id] || id;
  * tell you which.
  *
  * PRESENT-DAY CITIES, not the city of the season drawn. A One Franchise run spans
- * 1999 to 2025 and the franchise is one thing across all of it; labelling a run
+ * 1999 to 2025 and the franchise is one thing across all of it; labeling a run
  * "Oakland" because one of the six seasons happened to be 2005 would be a claim
  * about a roster rather than about a club.
  *
@@ -1196,7 +1196,7 @@ const STRUCTURE = {
   IDEAL_FLOOR_SHARE: 0.64,
   FLOOR_TOLERANCE: 0.14,        // p10 of real teams, so no real shape is punished
   FLOOR_WEIGHT: 1.30,
-  /* How hard team shape swings the multiplier. The shape terms are centred on 1.0; this
+  /* How hard team shape swings the multiplier. The shape terms are centerd on 1.0; this
      scales their combined distance from 1.0. 1.0 is the original full-strength swing; 0.5
      halves it, so a build worth +12% becomes +6% and its penalties soften to match, with
      the scheme bonus riding on top rather than under it. */
@@ -1443,7 +1443,7 @@ function rosterStructure(roster) {
   const schemeBonus = scheme
     ? SCHEME_MIN_BONUS + (SCHEME_MAX_BONUS - SCHEME_MIN_BONUS) * scheme.fit : 0;
 
-  /* TEAM SHAPE, HALF STRENGTH. The raw product of the four shape terms is centred on 1.0
+  /* TEAM SHAPE, HALF STRENGTH. The raw product of the four shape terms is centerd on 1.0
      (a perfectly average build scores 1.0; a strong QB and a clean shape push it up, the
      balance/concentration/floor penalties pull it down). Left alone it swings the rating
      hard — a great build was worth +12% on its own, which dwarfed the offensive scheme.
@@ -1617,7 +1617,7 @@ const DUAL_POSITIONS = [
   },
   {
     /* Cordarrelle Patterson's Atlanta years, where he was the lead back and a receiver in
-       the same offence. Listed RB, so the second position is the receiver half. */
+       the same offense. Listed RB, so the second position is the receiver half. */
     player_id: '00-0030578', name: 'Cordarrelle Patterson', add: 'WR', seasons: [2021, 2022],
   },
 ];
@@ -1888,7 +1888,7 @@ function pairLinks(a, b, ctx, opts) {
  *
  * The bonus runs through the same saturation curve as everything else rather than sitting
  * outside it, which means it is worth most to a roster that has little else going on and
- * least to one already near the ceiling. That is the behaviour every other link has here.
+ * least to one already near the ceiling. That is the behavior every other link has here.
  */
 function qbHubBonus(roster, links) {
   const V = CHEMISTRY.QB_HUB;
@@ -1996,7 +1996,7 @@ function orderSchedule(games, rng) {
 /**
  * A 17-game schedule of historic team-seasons.
  *
- * In free play there is no favourite club, so the schedule is drawn from the
+ * In free play there is no favorite club, so the schedule is drawn from the
  * whole 1999-2025 pool at random: one season per franchise, no repeats.
  *
  * In ONE FRANCHISE MODE (opts.franchise set) the schedule mirrors a real NFL
@@ -2350,7 +2350,7 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
  * Scoring is in a FIXED order (a then b) so the result is identical for everyone who
  * recomputes it from the same seed — the challenger, the friend, and anyone they show it to
  * — regardless of whose screen it is. Callers always pass a = challenger, b = friend; the
- * UI decides which side is labelled "you".
+ * UI decides which side is labeled "you".
  */
 const BOWL_CONSISTENCY = 0.62;
 
@@ -2410,7 +2410,7 @@ function valueAt(table, p) {
 /*
  * How hard the scoreline is pulled toward the two targets.
  *
- * Both are in points. Tight enough that a good offence visibly outscores a bad one, loose
+ * Both are in points. Tight enough that a good offense visibly outscores a bad one, loose
  * enough that the same roster does not report the same scoreline every week: the real
  * corpus is sampled inside these tolerances by its own frequency, so 23-20 comes up often
  * and 41-38 comes up rarely, exactly as often as football produces them.
@@ -2428,9 +2428,9 @@ const SCORELINE_TOLERANCE = { margin: 4.5, points: 5.0 };
  *
  * The second one is new and it is the point of the exercise. The old version conditioned
  * the total on the margin alone, so the scoreline knew whether the game was close but knew
- * nothing about whether your offence was any good: across the whole cap-legal band, from a
+ * nothing about whether your offense was any good: across the whole cap-legal band, from a
  * 48-FPPG roster to an 87-FPPG one, reported points moved only 18.3 to 25.2, and in
- * one-score games only 20.9 to 23.1. Real NFL offences span about 16 to 30 a game, so a
+ * one-score games only 20.9 to 23.1. Real NFL offenses span about 16 to 30 a game, so a
  * stacked roster and a thin one were being reported almost identically. Win rate reacted
  * properly the whole time; the scoreboard did not, which is what made it feel flat.
  *
@@ -2448,12 +2448,12 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
     percentileIn(cal.internal_margin_q, internalMargin)));
 
   // Older calibration files carry no pair table. Fall back rather than throw.
-  if (!cal.real_pairs || !cal.internal_offence_q) {
+  if (!cal.real_pairs || !cal.internal_offense_q) {
     return legacyFootballScore(yourScore, oppScore, won, rng, cal);
   }
 
   const pointsTarget = valueAt(cal.real_team_pts_q,
-    percentileIn(cal.internal_offence_q, yourScore));
+    percentileIn(cal.internal_offense_q, yourScore));
 
   /*
    * Weight every real scoreline by how well it matches both targets and by how often it
