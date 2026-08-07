@@ -10374,6 +10374,15 @@ function careerBest(rows,n){
     .slice(0,n||5);
 }
 
+/* YOUR BEST FIVE DRAFTS LIVED HERE, and it was the right thing to show when Career was the
+   only page that had ever heard of an individual run. Drafts is that page now: the same
+   rows, twenty-five of them rather than five, ordered three ways rather than one, and one
+   tap from the hub instead of two. Keeping a shorter, fixed-order copy of it on the page
+   above would be two answers to one question, and the shorter one would be the one people
+   found first.
+
+   careerBest() stays. It is still what Drafts sorts its Best rating tab by, so this removes
+   a second presentation of a list and not the list itself. */
 function careerBlock(c){
   if(!c) return '';
   const rows=c.rows;
@@ -10383,23 +10392,10 @@ function careerBlock(c){
       'Finish a season and it lands here.</p>';
   }
   const s=careerStats(rows,c.total);
-  const best=careerBest(rows,5);
-  const day=(iso)=>{ const d=new Date(iso);
-    return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); };
   return '<p class="shsec">Your career</p>'+
     careerTiles(s,rows.length)+
     (c.capped?'<p class="caveat" style="margin:7px 0 0">Runs is your true total. The rest '+
       'is from your most recent '+rows.length.toLocaleString()+'.</p>':'')+
-    (best.length?'<p class="shsec">Your best drafts</p><div class="bestlist">'+
-      best.map((r,i)=>'<button class="bestrow'+(i===0?' top1':'')+'" data-best="'+i+'">'+
-        '<span class="n">'+(i+1)+'</span>'+
-        '<span class="who"><b>'+esc(r.wins+'-'+r.losses+
-          (r.perfect?' perfect season':' '+r.seed_label.toLowerCase()))+'</b>'+
-          '<span>'+esc((rosterLine(r.picks)||runKindOf(r))+
-            (day(r.created_at)?' · '+day(r.created_at):''))+'</span></span>'+
-        '<span class="rt"><b>'+Number(r.team_rating).toFixed(1)+'</b><span>rating</span></span>'+
-        '<span class="go">›</span></button>').join('')+'</div>'
-      :'')+
     '<div class="hr" style="margin:15px 0 0"></div>';
 }
 
@@ -10727,13 +10723,9 @@ async function pfCareerPaint(userId){
   if(!c){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run '+
     'history could not be read just now. Nothing has been lost.</p>'; return; }
   const res=achEvaluate(c.rows);
+  /* No .bestlist to wire up any more. Opening a run from a list is the Drafts page's job,
+     and it has its own handler. */
   slot.innerHTML=careerBlock(c)+(res?streakBlock(res):'');
-  const list=slot.querySelector('.bestlist');
-  if(list) list.onclick=(e)=>{
-    const b=e.target.closest('.bestrow'); if(!b) return;
-    const row=careerBest(c.rows,5)[+b.dataset.best];
-    if(row) runDetail(row,()=>pfCareer());
-  };
 }
 function pfBadges(){
   const box=$('sheet-in'); box.dataset.kind='profile';
