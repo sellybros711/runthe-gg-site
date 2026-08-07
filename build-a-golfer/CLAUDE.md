@@ -14149,6 +14149,42 @@ allows Google Fonts, or self-host Anton.*
   they save a valid new name. The reusable tool is `select public.runtour_force_rename('<name>', '<reason>');`
   (service_role / SQL editor only). No outstanding runtour migrations at this point.
 
+- **Tour Pass LEVEL-UP moment after a season / daily / h2h round (owner: "when you level up on the tour
+  pass I want there to be a pop up... your active xp bar with the previous level on the left and next level
+  on the right... animate, fill up and go to the next level... tell you the rewards you got and give you a
+  chance to go to the tour pass and collect them").** Levelling the Track previously fired only a toast from
+  inside `passAddXp` - mid-play, the worst possible moment, and `S.passFreshTier` was set but never read
+  (dead). Rebuilt as a deferred set piece, same pattern as the welcome gift:
+  • **`passAddXp` now only RECORDS the climb** (`S._passPop={xp0,tier0}`, captured on the FIRST award of a
+    round/season so several awards in one season merge into one moment) and no longer toasts.
+  • **`passLevelPending()`/`flushPassLevel()`** surface it ONLY when a tier was actually gained, never over
+    another overlay (the welcome gift / login bonus still go first) and never on a live-round/draft/off-season
+    screen. Flushed from `render()`'s tail (gated to summary / dailyresult / h2hresult / careerend /
+    circuitend, deferred 520ms so the page paints first) rather than from inside each screen fn, so an early
+    return in one of them can't skip it. Clears itself when no tier was gained.
+  • **`overlayPassLevel`** is the popup: a rail with the level you were ON at the LEFT, the XP bar in the
+    middle, the NEXT level at the RIGHT; it fills to 100%, rolls the numbers over, and repeats for every tier
+    gained, then rests on the real progress into the final tier. Pacing is adaptive
+    (`FILL=max(260, 850/sqrt(gained))`) so one level feels weighty but a 10-tier climb doesn't drag; each
+    roll-over pops the next stop + fires the streak sfx/haptic. Then a `+N XP · Tier a → b` line, an
+    **Unlocked** list (one row per tier, free lane always + the PRO lane when they hold the pass, else a
+    one-line PRO nudge - `passRewardLine` renders packs/cosmetics/shards/coins), and the CTA **"Collect in
+    the Tour Pass ▸"** with the live `passClaimable()` count (opens the pass overlay) + a **Later** button.
+    Every animation step bails if `!ov.isConnected`, so a re-render mid-climb can't touch detached DOM;
+    reduced-motion paints the settled state immediately.
+  Verified in Playwright: no popup without a level-up; one-level and multi-level climbs both fire with the
+  right from/to; it does NOT fire mid-round or over another overlay; the fill really animates (sampled widths
+  0% → 100% → rest) and settles on the final tier at its true partial progress; content correct (title,
+  left/right stops, XP line, free+PRO reward rows, PRO nudge when not pro, claim count); the CTA opens the
+  Tour Pass and clears the state; guests never accrue or see it; reduced-motion paints the final state.
+  Full regression green (18-hole round, gold PRO names, board retry, forced rename), 0 page errors.
+  Deployed to /golf.
+  **Cross-workstream note:** main's `golf/index.html` had picked up an AdSense footer banner + a RunThe.GG
+  home-session mirror from a parallel session editing the DEPLOYED file directly. Both were ADOPTED back into
+  `build-a-golfer.html` before deploying (the source of truth is regenerated over golf/index.html, so they
+  would otherwise have been clobbered). If other sessions keep editing `golf/index.html`, they should either
+  rebase on latest main and regenerate from `build-a-golfer.html`, or not touch the deployed file at all.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
