@@ -14232,12 +14232,19 @@ allows Google Fonts, or self-host Anton.*
   - **Deliberately NOT paid in shards.** One epic shard is worth ~27,500 coins (`RARITY_PRICE/SHARD_COST`),
     i.e. **3.4x a Base pack**, so swapping the removed packs for shards would have made the leak bigger. Every
     weekly still pays its Tour Rep + its epic shard, so the targeted-item path is untouched.
-  - **FLAGGED, NOT CHANGED - shards are the bigger leak.** The same engaged player earns **275,000 coins of
-    shard value per week** (10 rare + 4 epic + 3 common) = **3.3 chosen rare items + 1 chosen epic item every
-    week, free and TARGETED**. Post-trim that is ~80% of all reward value (~$45/wk, ~$2,372/yr). Drivers: daily
-    quests all-done -> +1 RARE shard/day (7/wk) and each weekly -> +1 EPIC shard (4/wk = exactly one free epic
-    item). Left for the owner's call since the shard path is a deliberate design (the "pack-only economy"
-    targeted-unlock lane), and gutting it would strand players with no way to aim at a specific item.
+  - **SHARDS were the bigger leak, and were trimmed too (owner picked "halve the two big drivers").** A shard
+    is worth `RARITY_PRICE/SHARD_COST` in coins - RARE 15,000, EPIC **27,500 (3.4x a Base pack)** - so two
+    innocuous lines were quietly the largest faucet in the game: daily-quests-all-done paid **+1 RARE shard/day**
+    (7/wk = 105,000) and every weekly paid **+1 EPIC shard** (4/wk = 110,000 = exactly one free epic item a
+    week). Total **275,000/wk = 3.3 chosen rare + 1 chosen epic item, free and TARGETED** - ~80% of all reward
+    value even after the pack trim. Halved: the daily bonus now pays a **COMMON** shard (`DAILY_QUEST_SHARD`)
+    and only the first `WEEKLY_PACK_N` weeklies pay an **EPIC**, the rest **RARE** (`WEEKLY_SHARD_TOP`/
+    `WEEKLY_SHARD_REST`). Shards **275,000 -> 180,000/wk**; hand-picked items **3.3 rare + 1 epic -> 1.7 rare +
+    0.5 epic** per week. The targeted-unlock lane survives (you can still aim at an item), it just isn't a
+    weekly certainty. Legendary shards remain duplicates-only, untouched.
+  - **Net effect of the whole pass**: total weekly reward value **393,835 -> 248,835 coins (-37%)**, i.e.
+    ~$52/wk -> ~$33/wk of free value, with the coin faucet UP (3,835 -> 6,835) so the starved currency that
+    anchors the store finally does something.
   Verified in Playwright against the live functions: advent day 7 grants a Tour credit and **0 Champion**,
   login day 7 grants a Base credit, 4 weeklies grant exactly **2** packs + coins, the Challenges panel and the
   advent calendar render the new rewards (no stale "Champ" cell), 0 page errors; `node --check` clean.
