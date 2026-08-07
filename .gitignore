@@ -1,3 +1,7 @@
 node_modules/
 football/build/.cache/
 cfb/build/.cache/
+
+# Fonts cached by scripts/setlist/make_brand.mjs
+.cache/
+node_modules/
