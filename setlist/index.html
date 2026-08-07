@@ -76,9 +76,18 @@
        samples whatever slice of the wheel happens to fall across its strokes
        and two arrows sitting side by side come out different colours, which
        reads as a bug rather than as a brand. The linear version lands the
-       same on every instance at every size. */
-    --dye-line:linear-gradient(120deg, var(--coral) 0%, var(--gold) 25%,
-      var(--green) 50%, var(--teal) 75%, var(--violet) 100%);
+       same on every instance at every size.
+
+       DOWN, and with the ends pulled in. At 120deg the sweep ran corner to
+       corner, which put coral and violet in the empty corners of the box and
+       parked green on the stroke: measured over the arrow's actual painted
+       pixels, it came out coral 4% gold 22% GREEN 53% teal 20% violet 2%.
+       Vertical runs the sweep along the chevron's own height, and starting at
+       8% instead of 0 spends the ends on ink rather than on the corners.
+       Same measurement after: 14 / 24 / 23 / 24 / 15, a spread of 10 against
+       51. */
+    --dye-line:linear-gradient(180deg, var(--coral) 8%, var(--gold) 29%,
+      var(--green) 50%, var(--teal) 71%, var(--violet) 92%);
     /* Two display faces, split by size rather than by taste.
        --hero is the loud one: a 70s slab that belongs next to tie dye, and
        wide enough that the conic gradient sweeps its whole range across a
@@ -1171,8 +1180,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=25';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=25';
+} from './scoring.js?v=26';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=26';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -2143,8 +2152,11 @@ function showNotes(sets){
    the arrow reads as the same tie dye as the mark rather than as a gradient
    that happens to be colourful. */
 function dyeTextGradient(x, gx, gy, w, h){
-  const g = x.createLinearGradient(gx, gy - h, gx + w, gy);
-  DYE_STOPS.slice(0, 5).forEach(([, hex], i) => g.addColorStop(i / 4, hex));
+  /* Vertical, and the ends pulled in, for the same reason the CSS token is:
+     a diagonal sweep across the box spends coral and violet on empty corners
+     and leaves green sitting on the stroke. */
+  const g = x.createLinearGradient(gx, gy - h, gx, gy);
+  DYE_STOPS.slice(0, 5).forEach(([, hex], i) => g.addColorStop(0.08 + (i / 4) * 0.84, hex));
   return g;
 }
 
