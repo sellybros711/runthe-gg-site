@@ -264,6 +264,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   .btn{box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .btn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .btn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== big stage: enlarge + center the board on desktop ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:680px; }
+  }
 </style>
 </head>
 <body>

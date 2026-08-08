@@ -150,6 +150,23 @@
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "mode mode" "prm prm"
+        "clue  run" "sub lbd" "choi lbd" "hint lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .prompt{grid-area:prm;}
+    .pathcard{grid-area:clue;} .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    .runbar{ margin:0; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+  }
 </style>
 </head>
 <body>

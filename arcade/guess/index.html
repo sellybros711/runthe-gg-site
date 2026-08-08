@@ -234,6 +234,22 @@
   .search input{ border-width:2px; border-radius:6px; }
   .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.06em;
     clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%); }
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "lead lead" "mode mode"
+        "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
+    .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
+    .lb{grid-area:lbd;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+  }
 </style>
 </head>
 <body>

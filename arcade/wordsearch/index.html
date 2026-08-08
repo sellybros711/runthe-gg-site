@@ -176,6 +176,16 @@
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== big stage: enlarge + center the grid on desktop; fill height on mobile ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:860px; }
+    .grid{ max-width:min(64vh,600px); }
+    .board{ padding:16px; }
+  }
+  @media (max-width:760px){
+    .grid{ max-width:min(90vw,64vh); }
+  }
 </style>
 </head>
 <body>
