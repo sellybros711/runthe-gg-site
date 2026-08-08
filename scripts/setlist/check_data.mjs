@@ -323,6 +323,34 @@ if (manifest) {
 /* Em dashes are banned from anything a player reads. They are easy to
    reintroduce one string at a time, so this strips the comments (where they
    are fine, and where most of them live) and fails on any that are left. */
+/* Leaving a draft throws the setlist away, so the logo has to ask first. The
+   guard is against the two halves drifting apart: a confirm sheet with no
+   handler asks nothing, and a handler with no sheet throws. */
+console.log('leaving a draft');
+check(/id="askSheet"/.test(game), 'the confirm sheet is in the page');
+check(/id="askInner"/.test(game), 'the confirm sheet has a body to render into');
+check(/function ask\(/.test(game), 'ask() exists');
+check(/\.lockup'\)\.addEventListener\('click'/.test(game),
+  'the logo is wired to the confirm');
+check(/function draftInProgress\(/.test(game),
+  'the confirm is gated on there being something to lose');
+
+/* "You were there". The store is localStorage and nothing else reads it, so
+   the key is load-bearing: renaming it silently forgets every show a player
+   ever marked. */
+console.log('you were there');
+check(/const WERE_THERE_KEY = 'segue_were_there'/.test(game),
+  "the attendance key is still 'segue_were_there'");
+for (const fn of ['attendedAll', 'attendedSet', 'wasThere', 'toggleThere', 'attendedCount'])
+  check(new RegExp(`function ${fn}\\(`).test(game), `${fn}() exists`);
+check(/id="wereThereBtn"/.test(game), 'the show header carries the mark toggle');
+check(/class="werethere"/.test(game), 'a marked show is tagged in the header');
+check(/\.werethere\{/.test(game), 'the tag has styling');
+// The tag is a brand mark, so it wears the dye rather than a flat colour.
+check(/\.werethere\{[^}]*var\(--dye-line\)/.test(game), 'the tag is dyed');
+check(/\.mine\{[^}]*white-space:nowrap/.test(game),
+  'the home count wraps as one phrase');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
