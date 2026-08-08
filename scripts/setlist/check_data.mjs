@@ -287,6 +287,16 @@ check(/\.brand\{[^}]*font-family:var\(--hero\)/.test(game),
 check(/\.hero h1\{[^}]*letter-spacing:\.0[5-9]em/.test(game),
       'the hero wordmark is tracked so the slabs do not collide');
 
+/* The band request goes to the address the rest of the site already uses, and
+   there is no backend behind it, so the mailto is the delivery mechanism and
+   not a decoration. Both fields are encoded: an unencoded ampersand in a band
+   name ends the query parameter and truncates the message there. */
+check(/class="card band soon"/.test(game), 'the more-bands-coming card is on the page');
+check(/mailto:RunTheGames@outlook\.com/.test(game), 'the request goes to RunTheGames@outlook.com');
+check(/subject=\$\{encodeURIComponent/.test(game) && /body=\$\{encodeURIComponent/.test(game),
+      'and both the subject and the body are encoded');
+check(/function toast\(/.test(game), 'toast() exists for the element that has always been there');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle

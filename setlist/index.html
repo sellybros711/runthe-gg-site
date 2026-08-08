@@ -396,6 +396,26 @@
   .steps span{font-size:13.5px; line-height:1.45; color:var(--ink); font-weight:600;
     margin-top:-3.4px;}
 
+  /* The coming-soon card is the same object as a band card with the ink
+     turned down, so it reads as a sibling in the list rather than as an ad
+     dropped underneath it. */
+  .band.soon{border-style:dashed; box-shadow:none;}
+  .band.soon .band-hd h2{font-size:26px; color:var(--mut);}
+  .band.soon .band-meta{margin-bottom:11px;}
+
+  .reqform{display:flex; flex-direction:column; gap:4px;}
+  .reqform label{font-size:11px; font-weight:900; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--dim); margin-top:8px;}
+  .reqform label i{font-style:normal; font-weight:700; letter-spacing:.6px;
+    text-transform:none; opacity:.8;}
+  .reqform input, .reqform textarea{width:100%; font:inherit; font-size:15px;
+    font-weight:600; color:var(--ink); background:var(--card2);
+    border:1px solid var(--line2); border-radius:var(--r-sm); padding:10px 12px;
+    resize:vertical;}
+  .reqform input:focus, .reqform textarea:focus{outline:2px solid var(--teal);
+    outline-offset:1px; border-color:var(--teal);}
+  .reqform .respin-acts{margin-top:14px;}
+
   .tryout{margin:var(--sp-3) 0 0; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
   .tryout span{display:block; margin-top:7px; font-size:11.5px; font-weight:600;
@@ -1271,6 +1291,32 @@ setTimeout(function(){
 <div class="sheet" id="respinSheet" role="dialog" aria-modal="true" aria-label="Confirm respin">
   <div class="inner" id="respinInner"></div>
 </div>
+
+<!-- REQUEST A BAND. There is no backend here: the whole game is a static page
+     reading a CSV, and the rest of the site already sends mail the same way
+     (contact.html links the identical address). The form composes the message
+     and hands it to the mail client, so the sender is a real person's own
+     address and a reply goes back to them rather than into a void. -->
+<div class="sheet" id="bandSheet" role="dialog" aria-modal="true" aria-labelledby="bandSheetHd">
+  <div class="inner">
+    <div class="grab"></div>
+    <div class="respin-hd" id="bandSheetHd">Request a band</div>
+    <div class="respin-why">Segue needs a band with a public archive of real
+      setlists and running times. Tell us who, and where their shows are listed.</div>
+    <form id="bandForm" class="reqform">
+      <label for="reqName">Band</label>
+      <input id="reqName" name="band" type="text" required maxlength="80"
+        placeholder="Who should we add?" autocomplete="off" />
+      <label for="reqWhy">Anything else <i>(optional)</i></label>
+      <textarea id="reqWhy" name="why" rows="3" maxlength="500"
+        placeholder="A link to their setlist archive helps most."></textarea>
+      <div class="respin-acts">
+        <button class="btn primary" type="submit">Send request</button>
+        <button class="btn" type="button" id="reqCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
@@ -1282,8 +1328,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=34';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=34';
+} from './scoring.js?v=35';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=35';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1455,11 +1501,16 @@ function renderHome(){
       <div class="eyebrow">RunThe.GG presents</div>
       <h1><span class="accent">Segue</span></h1>
       <div class="tagline">The Setlist Builder Game</div>
-      <p>Build the night you wish they'd played.</p>
+      <p>Choose a band. Build the show you've always dreamed of.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
-    <div class="bands">${real.map(card).join('')}</div>
+    <div class="bands">${real.map(card).join('')}
+      <section class="card band soon">
+        <div class="band-hd"><h2>More bands coming soon</h2></div>
+        <div class="band-meta">One band is in the game today. Tell us who should be next.</div>
+        <button class="btn big ghost" type="button" id="reqBand">Request a band</button>
+      </section></div>
 
     <section class="how">
       <h3>How it works</h3>
@@ -2143,6 +2194,50 @@ function askRespin(){
   document.getElementById('respinSheet').classList.add('on');
 }
 function closeRespin(){ document.getElementById('respinSheet').classList.remove('on'); }
+/* The toast element and its styles have been in the page since the start with
+   nothing ever calling them. This is the function the markup was waiting for. */
+let toastTimer;
+function toast(msg, ms = 2400){
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+
+/* Opens the form, and hands the finished message to the mail client. No
+   backend exists for this page, and the address is the one the rest of the
+   site already uses. encodeURIComponent on both fields, because a band name
+   with an ampersand in it would otherwise truncate the body at that point. */
+const bandSheet = document.getElementById('bandSheet');
+function openBandForm(){
+  bandSheet.classList.add('on');
+  setTimeout(() => document.getElementById('reqName').focus(), 60);
+}
+function closeBandForm(){ bandSheet.classList.remove('on'); }
+document.addEventListener('click', e => {
+  if (e.target.closest('#reqBand')){ openBandForm(); return; }
+  if (e.target.closest('#reqCancel') || e.target === bandSheet) closeBandForm();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && bandSheet.classList.contains('on')) closeBandForm();
+});
+document.getElementById('bandForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const band = document.getElementById('reqName').value.trim();
+  if (!band) return;
+  const why = document.getElementById('reqWhy').value.trim();
+  const body = `Band: ${band}` + (why ? `\n\n${why}` : '')
+    + '\n\nSent from runthe.gg/setlist';
+  window.location.href = 'mailto:RunTheGames@outlook.com'
+    + `?subject=${encodeURIComponent(`Segue band request: ${band}`)}`
+    + `&body=${encodeURIComponent(body)}`;
+  closeBandForm();
+  document.getElementById('bandForm').reset();
+  toast('Opening your mail app');
+});
+
 document.getElementById('respinSheet').addEventListener('click', e => {
   if (e.target.id === 'respinSheet' || e.target.closest('#respinNo')){ closeRespin(); return; }
   if (e.target.closest('#respinYes')){ closeRespin(); respin(); }
