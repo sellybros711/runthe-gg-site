@@ -79,6 +79,12 @@
     .runbar .rstat{min-width:56px;}
     .runbar .rstat .big{font-size:42px;}
     .runbar .rl .v{font-size:11.5px;}
+    /* trim the play area so prompt + ladder + both cards sit in one screen */
+    .playzone{min-height:calc(100dvh - 250px);}
+    .a-gametitle{margin:0 0 8px;}
+    /* cap the era+teams line to 2 lines so a 5-team career can't make a tall card */
+    .pcard .meta{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+    .pcard{padding:clamp(12px,2vh,20px) 14px;}
   }
 
   .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(8px,1.4vh,14px); letter-spacing:.01em;}
@@ -165,6 +171,30 @@
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
+
+  /* ===== desktop dashboard: play area fills the left, HUD + leaderboard on the right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1240px; display:grid; column-gap:32px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 358px;
+      grid-template-rows:auto auto auto auto 1fr auto;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "play  run"
+        "play  lbd"
+        "play  gap"
+        "foot  foot"; }
+    .topbar{grid-area:top;}
+    .a-gametitle{grid-area:title; margin:2px 0 10px;}
+    .playzone{grid-area:play; min-height:calc(100dvh - 150px);}
+    .runbar{grid-area:run; margin-bottom:0; flex-direction:column; align-items:stretch; gap:12px; text-align:center;}
+    .runbar .rstat{flex-direction:row; align-items:baseline; justify-content:center; gap:12px; min-width:0;}
+    .runbar .rstat.best{order:2;}
+    .runbar .rstat .big{font-size:46px;} .runbar .rstat .lab{margin-top:0;}
+    .runbar .rl{order:3; align-items:center;}
+    .lb{grid-area:lbd; margin:0;}
+    .foot{grid-area:foot; margin-top:18px;}
+  }
 </style>
 </head>
 <body>
