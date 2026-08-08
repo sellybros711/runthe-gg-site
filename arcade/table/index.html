@@ -80,7 +80,8 @@
     .runbar .rstat .big{font-size:42px;}
     .runbar .rl .v{font-size:11.5px;}
     /* trim the play area so prompt + ladder + both cards sit in one screen */
-    .playzone{min-height:calc(100dvh - 250px);}
+    .playzone{min-height:calc(100dvh - 360px);}
+    .prompt{margin:2px 0 6px; font-size:clamp(15px,2.4vh,20px);} .ladder{margin:0 auto 8px;}
     .a-gametitle{margin:0 0 8px;}
     /* cap the era+teams line to 2 lines so a 5-team career can't make a tall card */
     .pcard .meta{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
@@ -176,17 +177,21 @@
   @media (min-width:1000px){
     .wrap{ max-width:1240px; display:grid; column-gap:32px; align-items:start;
       grid-template-columns:minmax(0,1fr) 358px;
-      grid-template-rows:auto auto auto auto 1fr auto;
+      grid-template-rows:auto auto auto auto auto auto 1fr auto;
       grid-template-areas:
         "top   top"
         "title title"
+        "pr    pr"
+        "lad   lad"
         "play  run"
         "play  lbd"
         "play  gap"
         "foot  foot"; }
     .topbar{grid-area:top;}
     .a-gametitle{grid-area:title; margin:2px 0 10px;}
-    .playzone{grid-area:play; min-height:calc(100dvh - 150px);}
+    .prompt{grid-area:pr;}
+    .ladder{grid-area:lad;}
+    .playzone{grid-area:play; min-height:calc(100dvh - 250px);}
     .runbar{grid-area:run; margin-bottom:0; flex-direction:column; align-items:stretch; gap:12px; text-align:center;}
     .runbar .rstat{flex-direction:row; align-items:baseline; justify-content:center; gap:12px; min-width:0;}
     .runbar .rstat.best{order:2;}
@@ -222,9 +227,9 @@
     <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
+  <div class="prompt">Who wore the higher jersey number?</div>
+  <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
   <div class="playzone">
-    <div class="prompt">Who wore the higher jersey number?</div>
-    <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
     <div class="versus" id="versus"></div>
     <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
   </div>
