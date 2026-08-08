@@ -718,7 +718,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE) resumeClear();            // leaving abandons this version's in-progress board
+    if(!ARCHIVE) resumeSave();             // keep this version's progress so switching back resumes it
     if(tick){ clearInterval(tick); tick=null; }
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily

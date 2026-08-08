@@ -749,7 +749,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();
+    if(!ARCHIVE && !done) saveResume();    // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
