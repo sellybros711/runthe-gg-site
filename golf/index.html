@@ -713,6 +713,8 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--bv-bd); box-shadow:0 16px 38px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.07);
     --bv-glow:rgba(53,214,160,.22); --bv-bd:rgba(53,214,160,.55)}
   .dh-bigverdict.miss{--bv-glow:rgba(233,162,59,.13); --bv-bd:rgba(233,162,59,.38)}
+  .dh-bv-round{font:800 10px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:2px}
+  .dh-bv-score{font-family:var(--display); font-weight:400; line-height:.95; font-size:clamp(52px,15vw,74px); letter-spacing:.01em; margin-bottom:6px; font-variant-numeric:tabular-nums}
   .dh-bv-title{font-family:var(--display); font-weight:400; text-transform:uppercase; letter-spacing:.02em; line-height:1.02; font-size:clamp(27px,8.4vw,40px); color:#35d6a0}
   .dh-bigverdict.miss .dh-bv-title{color:#e9a23b; font-size:clamp(20px,6vw,30px)}
   .dh-bv-fig{display:flex; justify-content:center; margin-top:10px}
@@ -21991,8 +21993,10 @@ function scrDailyResult(){
     <div class="dh-course" style="margin-top:5px">${esc(c.v)}</div>
     <div class="dh-meta" style="margin-top:3px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</div>
   </div>`));
-  // The point of Play 18 is to beat the pro, so it is the featured hero (the score lives in the "Your best today" bubble below).
+  // The point of Play 18 is to beat the pro, so it is the featured hero. Owner: feature THIS round's
+  // score-to-par big at the very top (the "Your best today" bubble below still shows the best of the day).
   add($(`<div class="dh-bigverdict${wonDay?'':' miss'}">
+    ${justPlayed?`<div class="dh-bv-round">This round</div><div class="dh-bv-score" style="color:${scoreCol}">${dTot(total, c.par)}</div>`:''}
     <div class="dh-bv-title">${wonDay?'You beat the pro!':'Short of the tour average'}</div>
     <div class="dh-bv-fig">${pxFigureHTML(S.look, 78)}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
@@ -23341,31 +23345,33 @@ function welcomePackPending(){ return !!S._welcomePop; }
 --------------------------------------------------------------------------- */
 function passLevelStyleOnce(){ if(document.getElementById('plcss')) return;
   const st=document.createElement('style'); st.id='plcss'; st.textContent=`
-  .plov{text-align:center}
-  .pl-kick{font:800 10.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#ffd447;margin-bottom:4px}
-  .pl-title{font-family:var(--display);font-size:clamp(26px,7.4vw,36px);line-height:1.05;margin:0 0 2px}
-  .pl-sub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
-  .pl-rail{display:flex;align-items:center;gap:10px;max-width:440px;margin:0 auto}
-  .pl-lv{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  /* owner: bigger, vertically centered in the middle of the screen, purple (not gold) */
+  .plov{text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:100%}
+  .pl-inner{width:100%;max-width:520px;margin:0 auto}
+  .pl-kick{font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#c9a0ff;margin-bottom:5px}
+  .plov .pl-title{font-family:var(--display);font-size:clamp(34px,9vw,50px);line-height:1.05;margin:0 0 3px;color:#e8d9ff}
+  .pl-sub{font-size:14.5px;color:var(--muted);margin:0 0 22px}
+  .pl-rail{display:flex;align-items:center;gap:13px;max-width:500px;margin:0 auto}
+  .pl-lv{flex:0 0 auto;width:66px;height:66px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
     border:2px solid rgba(255,255,255,.16);background:rgba(0,0,0,.3);transition:all .35s ease}
-  .pl-lv b{font:900 19px/1 var(--body);color:#fff}
-  .pl-lv span{font:800 7.5px/1 var(--body);letter-spacing:.12em;color:var(--muted);margin-top:2px}
-  .pl-lv.on{border-color:#ffd447;background:linear-gradient(180deg,rgba(241,208,74,.3),rgba(241,208,74,.1));box-shadow:0 0 18px rgba(241,208,74,.45)}
-  .pl-lv.on b{color:#ffd447}
-  .pl-bar{position:relative;flex:1 1 auto;height:18px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;
+  .pl-lv b{font:900 24px/1 var(--body);color:#fff}
+  .pl-lv span{font:800 8.5px/1 var(--body);letter-spacing:.12em;color:var(--muted);margin-top:3px}
+  .pl-lv.on{border-color:#b085ff;background:linear-gradient(180deg,rgba(162,110,255,.34),rgba(162,110,255,.12));box-shadow:0 0 22px rgba(162,110,255,.5)}
+  .pl-lv.on b{color:#d8c2ff}
+  .pl-bar{position:relative;flex:1 1 auto;height:24px;border-radius:13px;background:rgba(255,255,255,.1);overflow:hidden;
     border:1px solid rgba(255,255,255,.08)}
-  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,#f0a51e,#ffd447,#fff3bd);box-shadow:0 0 12px rgba(241,208,74,.5)}
-  .pl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 10px/1 var(--body);
+  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,#7048d6,#a78bfa,#d9c6ff);box-shadow:0 0 14px rgba(162,110,255,.55)}
+  .pl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 12px/1 var(--body);
     font-style:normal;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-  .pl-gain{margin:12px 0 0;font:900 15px/1.2 var(--body);color:#ffd447;min-height:18px}
-  .pl-rw{margin:14px auto 0;max-width:440px;text-align:left}
-  .pl-rw h4{font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
-  .pl-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.07);margin-bottom:6px}
+  .pl-gain{margin:16px 0 0;font:900 18px/1.2 var(--body);color:#c9a0ff;min-height:20px}
+  .pl-rw{margin:18px auto 0;max-width:500px;text-align:left}
+  .pl-rw h4{font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .pl-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.07);margin-bottom:7px}
   .pl-row.pro{border-color:rgba(162,75,224,.5);background:rgba(162,75,224,.12)}
-  .pl-row .pl-t{flex:0 0 auto;font:900 10px/1 var(--body);color:#ffd447;min-width:34px}
-  .pl-row.pro .pl-t{color:#c9a0ff}
-  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:12.5px;color:var(--oncard)}
+  .pl-row .pl-t{flex:0 0 auto;font:900 11px/1 var(--body);color:#c9a0ff;min-width:38px}
+  .pl-row.pro .pl-t{color:#d8c2ff}
+  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--oncard)}
   .pl-lock{margin-top:8px;font-size:11.5px;color:#c9a0ff}
   @media (prefers-reduced-motion:reduce){ .pl-fill{transition:none!important} .pl-lv{transition:none!important} }`;
   document.head.appendChild(st); }
@@ -23383,6 +23389,7 @@ function overlayPassLevel(screen){
   passLevelStyleOnce();
   const pro=passProActive(), gained=Math.max(0,pl.tier1-pl.tier0), cap=passXpForTier(PASS_TIERS);
   const ov=$(`<div class="ov plov" role="dialog" aria-modal="true" aria-label="Tour Pass level up"></div>`);
+  const inner=$(`<div class="pl-inner"></div>`); const ovAppend=ov.appendChild.bind(ov); ov.appendChild=(n)=>inner.appendChild(n);
   ov.appendChild($(`<div><div class="pl-kick">Tour Pass · Season ${passSeason().n}</div>
     <h3 class="pl-title">Tier ${pl.tier1} reached</h3>
     <p class="pl-sub">${gained>1?gained+' tiers climbed this time':'You levelled up the Track'}</p></div>`));
@@ -23402,12 +23409,13 @@ function overlayPassLevel(screen){
   }
   if(!pro && TOURPASS_ENABLED) rw.appendChild($(`<div class="pl-lock">The PRO rewards on ${gained>1?'these tiers':'this tier'} are waiting too, unlock them with the Tour Pass.</div>`));
   ov.appendChild(rw);
-  const go=$(`<button class="btn goldfill" style="margin-top:16px">Collect in the Tour Pass ▸<span class="sub">${passClaimable()} reward${passClaimable()===1?'':'s'} ready to claim</span></button>`);
+  const go=$(`<button class="btn violet" style="margin-top:18px">Collect in the Tour Pass ▸<span class="sub">${passClaimable()} reward${passClaimable()===1?'':'s'} ready to claim</span></button>`);
   go.onclick=()=>{ S.passLevel=null; S.overlay='tourpass'; track('tourpass_levelup_go'); render(); };
   ov.appendChild(go);
   const later=$(`<button class="btn ghost" style="margin-top:8px">Later</button>`);
   later.onclick=()=>{ S.passLevel=null; S.overlay=null; render(); };
   ov.appendChild(later);
+  ovAppend(inner); ov.appendChild=ovAppend;
   screen.appendChild(ov);
   // ---- animate: fill this tier, roll the numbers over, repeat for every tier gained ----
   const fill=ov.querySelector('#pl-f'), lab=ov.querySelector('#pl-x'),
