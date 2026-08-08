@@ -143,7 +143,12 @@
   /* The gutter is a token so full-bleed blocks can cancel it exactly. The
      poster hero has to reach the screen edge, and a hardcoded 18px here with
      a 14px override below is two numbers to get wrong in three places. */
-  :root{--gut:18px;}
+  :root{--gut:18px;
+    /* Every gap between blocks on the home page was its own number: measured
+       top to bottom it ran 10, 16, 20, 18, 44, 34. Nothing was wrong with any
+       one of them and the page had no rhythm, which is what reads as the
+       spacing being off. Four steps, and blocks pick one. */
+    --sp-1:10px; --sp-2:18px; --sp-3:30px; --sp-4:46px;}
   @media (max-width:640px){ :root{--gut:14px;} }
   .wrap{width:100%; max-width:1080px; margin:0 auto;
     padding:0 var(--gut) calc(24px + env(safe-area-inset-bottom,0));}
@@ -247,7 +252,7 @@
      ::after paints OVER the content and would wash the glyphs along with the
      field, putting the contrast straight back. */
   .hero{position:relative; isolation:isolate; overflow:hidden;
-    margin:10px calc(var(--gut) * -1) 16px; padding:22px var(--gut) 20px;
+    margin:0 calc(var(--gut) * -1) var(--sp-3); padding:24px var(--gut) 22px;
     background:linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
     background-size:auto, 150% 150%; background-position:50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
@@ -312,7 +317,7 @@
      Plain sentences, second person, contractions. The first version wrote
      every line as a bold fragment followed by a supporting fragment, five
      times running, which is a rhythm nobody uses out loud. */
-  .how{margin:20px 0 14px;}
+  .how{margin:var(--sp-4) 0 0;}
   /* A heading with a rule running off the end of it, so the section reads as
      a block on a poster rather than as a label floating above a list. */
   .how h3{font-family:var(--ui); font-size:15px; letter-spacing:3px; text-transform:uppercase;
@@ -324,10 +329,10 @@
      is set in the display face at the size of a track number on a sleeve, and
      the rule between rows does the separating that the circles were doing. */
   .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
-  .steps li{display:flex; gap:13px; align-items:baseline; padding:11px 0;
+  .steps li{display:flex; gap:9px; align-items:baseline; padding:11px 0;
     border-top:1px solid var(--line);}
   .steps li:first-child{border-top:0; padding-top:2px;}
-  .steps b{flex:0 0 auto; width:30px; font-family:var(--ui); font-weight:400;
+  .steps b{flex:0 0 auto; width:22px; font-family:var(--ui); font-weight:400;
     font-size:30px; line-height:.9; color:var(--acc-step, var(--dim)); text-align:left;}
   .steps li:nth-child(1) b{--acc-step:var(--coralT);}
   .steps li:nth-child(2) b{--acc-step:var(--goldT);}
@@ -336,7 +341,7 @@
   .steps li:nth-child(5) b{--acc-step:var(--violetT);}
   .steps span{font-size:13.5px; line-height:1.5; color:var(--ink); font-weight:600;}
 
-  .tryout{margin:18px 0 4px; text-align:center;}
+  .tryout{margin:var(--sp-3) 0 0; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
   .tryout span{display:block; margin-top:7px; font-size:11.5px; font-weight:600;
     color:var(--dim);}
@@ -1061,8 +1066,9 @@
      survives the render and describes the game to both. It is not a stub for the app and it
      is not hidden text -- it sits under the game as an about section, which is what it reads
      as to somebody who has just finished a show. */
-  .about{max-width:760px; margin:44px auto 0; padding-top:26px;
+  .about{max-width:760px; margin:var(--sp-4) auto 0; padding-top:var(--sp-2);
     border-top:1px solid var(--line); color:var(--mut);}
+
   /* Once the game is running it is not a page with an About section on it, it
      is a game. The copy is for whoever landed here cold. */
   body.playing .about{display:none;}
@@ -1079,7 +1085,11 @@
     margin:22px 0 6px;}
   .about p{margin:0 0 12px; font-size:14.5px; line-height:1.62;}
   .about a{color:var(--teal);}
-  .sfoot{max-width:760px; margin:30px auto 0; padding:18px 0 34px;
+  /* Spaced by its own margin, never by a sibling selector off .about: there
+     is an ad slot between the two that is injected and then REMOVED when it
+     has nothing to show, so anything keyed on adjacency matches or does not
+     depending on when the rule is evaluated against the DOM. */
+  .sfoot{max-width:760px; margin:var(--sp-4) auto 0; padding:var(--sp-2) 0 var(--sp-3);
     border-top:1px solid var(--line); color:var(--dim); font-size:13px; text-align:center;}
   .sfoot a{color:inherit; text-decoration:none;}
   .sfoot a:hover{color:var(--ink); text-decoration:underline;}
@@ -1217,8 +1227,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=28';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=28';
+} from './scoring.js?v=29';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=29';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
