@@ -226,8 +226,16 @@ check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the
    The song list was fourteen identical rounded cards and the home page was a
    centred stack with numbered circles; both are the shapes a component
    library hands you, and both are one careless edit away from coming back. */
-check(/\.hero\{[^}]*background:var\(--dye\)/.test(game),
+check(/\.hero\{[^}]*var\(--dye\)/.test(game),
       'the hero is a dye field, not a flat background');
+/* The scrim that makes the hero type legible has to sit UNDER the type. In
+   ::after it paints over the glyphs and washes them along with the field,
+   which puts the contrast straight back where it was while still looking
+   like a fix. */
+check(/\.hero\{[^}]*linear-gradient\(rgba\(255,255,255/.test(game),
+      'the contrast lift is in the hero background, below the content');
+check(!/\.hero:after\{[^}]*rgba\(255,255,255/.test(game),
+      'and not in an ::after that would cover the type');
 check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
 check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
       'how-it-works dropped the numbered circles');

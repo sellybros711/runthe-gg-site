@@ -236,21 +236,38 @@
      Now the dye is the FIELD, at full strength, with the type knocked into it
      in ink. It is the one loud moment on the page: everything below stays
      quiet so this can be loud. */
+  /* THE FIELD IS LIFTED UNDER THE TYPE. Measured on the real page, black ink
+     over the raw dye bottomed out at 3.25:1 where the sweep runs through teal
+     and violet, against the 4.5 that body text needs. The median was a fine
+     6-8:1, which is why it looked acceptable in a screenshot and was hard to
+     read on a phone: the failure is the VARIANCE across the word, not the
+     average.
+     A flat white layer over the dye lifts the floor to 6.08:1 everywhere.
+     It sits in the background stack rather than in a pseudo-element, because
+     ::after paints OVER the content and would wash the glyphs along with the
+     field, putting the contrast straight back. */
   .hero{position:relative; isolation:isolate; overflow:hidden;
     margin:10px calc(var(--gut) * -1) 16px; padding:22px var(--gut) 20px;
-    background:var(--dye); background-size:150% 150%; background-position:50% 50%;
+    background:linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
+    background-size:auto, 150% 150%; background-position:50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
   /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
      makes it look printed. Sized in px so it stays a screen rather than
      scaling into stripes on a wide viewport. */
+  /* Finer and lighter. At 30% black on a 4px grid the dots were themselves
+     the darkest pixels behind the type, so the screen meant to add texture
+     was a third of the contrast problem. */
   .hero:before{content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.30) 1px, transparent 1.7px);
+    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.16) .8px, transparent 1.4px);
     background-size:4px 4px; mix-blend-mode:multiply;}
   .hero > *{position:relative;}
   /* Ink, not --ink. The field underneath is the dye in both themes, so the
      type on it cannot follow the theme or it turns white-on-yellow in light. */
   .hero .eyebrow, .hero .tagline, .hero p{color:#12100E;}
-  .hero .eyebrow{opacity:.72;}
+  /* A solid ink rather than opacity:.72. Translucent type blends with whatever
+     is behind it, so its real contrast changes across the dye and cannot be
+     measured from its declared colour: this one reads the same everywhere. */
+  .hero .eyebrow{color:#2A241E;}
   .hero p{max-width:32ch; font-weight:800;}
   /* No added tracking: the slab carries its own sidebearings, and at 40px on a
      320px screen the extra half-pixel per letter is the difference between
@@ -1200,8 +1217,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=27';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=27';
+} from './scoring.js?v=28';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=28';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
