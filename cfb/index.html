@@ -401,29 +401,8 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:11.5px;font-weight:700;letter-spacing:.04em}
   .achtabs button.on{border-color:var(--green);color:var(--ink);background:rgba(34,197,94,.10)}
 
-  /* ── new badges, called out on the results screen ───────────────
-     Gold enough to be noticed on a screen that is already busy, quiet enough
-     that it does not fight the verdict for the eye. */
-  .newach{margin:12px 0 0;border:1px solid rgba(251,191,36,.4);border-radius:12px;
-    background:linear-gradient(150deg,rgba(251,191,36,.10),rgba(251,191,36,.02));padding:11px 12px}
-  .newach .nh{font-family:var(--fc);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    color:#fbbf24;margin-bottom:7px}
-  .newach .nl{display:flex;flex-wrap:wrap;gap:6px}
-  .newach .na{display:flex;align-items:baseline;gap:6px;padding:5px 9px;border-radius:8px;
-    border:1px solid rgba(251,191,36,.32);background:rgba(0,0,0,.24);
-    animation:achpop .42s cubic-bezier(.2,.7,.3,1) backwards}
-  .newach .na b{font-family:var(--fn);font-size:11.5px;font-weight:800;color:#fbbf24}
-  .newach .na i{font-style:normal;font-size:10.5px;color:var(--dim)}
-  /* Tier reads on the chip too, so a legend badge does not land looking like
-     the bronze one next to it. */
-  .newach .na.bronze{border-color:rgba(201,139,82,.42)} .newach .na.bronze b{color:#c98b52}
-  .newach .na.silver{border-color:rgba(203,213,225,.42)} .newach .na.silver b{color:#e2e8f0}
-  .newach .na.legend{border-color:rgba(168,85,247,.5)} .newach .na.legend b{color:#c084fc}
-  @keyframes achpop{from{opacity:0;transform:translateY(7px) scale(.94)}to{opacity:1;transform:none}}
-  .acase{margin-top:9px;width:100%;padding:8px;border-radius:8px;cursor:pointer;
-    border:1px solid rgba(251,191,36,.3);background:rgba(0,0,0,.2);color:#fbbf24;
-    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.05em}
-  .acase:hover{border-color:rgba(251,191,36,.55)}
+  /* .newach, .acase and @keyframes achpop lived here and drew the results-screen panel that
+     the headline replaced. Nothing else in the game used any of them. */
 
   /* ── hero/intro ─────────────────────────────────────────────────
      The title is sized to sit inside the 600px column, not overrun it: at 70px
@@ -1689,6 +1668,18 @@ window.GA_ID='G-L29P5MRWKE';
   .dots i:nth-child(2){animation-delay:.15s;background:#fff}
   .dots i:nth-child(3){animation-delay:.3s;background:var(--red)}
   @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-7px);opacity:1}}
+  /* ── THE HEADLINE ──────────────────────────────────────────────
+     Top of the screen, not the bottom, because it must not collide with the toast: a run
+     that lands AND earns a badge fires both, and two notices stacked on the same corner
+     read as one flickering notice. Character for character the NFL game's rule set. */
+  .headline{position:fixed;top:60px;left:50%;transform:translateX(-50%);
+    font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;padding:6px 16px;border-radius:8px;
+    background:rgba(19,26,43,.92);color:var(--ink);border:1px solid var(--line-2);
+    opacity:0;pointer-events:none;transition:opacity .3s;z-index:600;white-space:nowrap;
+    text-align:center;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+  .headline.on{opacity:1}
+  .headline.big{color:var(--ink);border-color:rgba(148,163,184,.4)}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);z-index:99;
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
@@ -2694,10 +2685,6 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="resume" id="o-resume"></div>
 
-    <!-- Badges this season earned, and only this season's. Right under the
-         résumé because that is where the season is being read. -->
-    <div id="o-newach"></div>
-
     <!-- Where this season sits on the board. Filled in after the screen has
          painted, and left empty if the board is not reachable. -->
     <div id="o-place"></div>
@@ -2766,6 +2753,10 @@ or endorsed by the NCAA, the CFP or any school.
 
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
+<!-- The banner a badge is announced on, at the top of the screen where the toast is not.
+     Same element and the same job as the NFL game's: the toast is for things you did on
+     purpose and this is for something the game noticed. -->
+<div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <!-- supabase-js, for accounts only. Deferred and OPTIONAL: if the CDN is blocked
@@ -3531,7 +3522,7 @@ function pfCase(){
      itself through openProfile('case') when careerLoad lands, so this runs on that second
      pass and not on the one that has nothing to evaluate. */
   const res=(careerRows||!authState.signedIn)?achState(careerRows||null):null;
-  if(res) achAnnounce(authState.userId,res);
+  if(res) achAnnounce(authState.userId,res,true);
 }
 function pfLook(msg,ok){
   profileTab='school'; pfPaint++;
@@ -4511,19 +4502,46 @@ function achMarkSeen(userId,ids){
     all[userId||'anon']=Array.from(new Set((all[userId||'anon']||[]).concat(ids)));
     localStorage.setItem(ACH_SEEN_KEY,JSON.stringify(all)); }catch(e){}
 }
-function achAnnounce(userId,res){
+function achAnnounce(userId,res,silent){
   if(!res) return [];
   const seen=achSeen(userId);
   const fresh=res.earned.filter(a=>!seen.has(a.id));
   if(!fresh.length) return [];
   const firstSighting=seen.size===0;
   achMarkSeen(userId,res.earned.map(a=>a.id));
-  if(firstSighting) return fresh;
-  /* Three at most, spaced, because the toast is one line and a queue of eleven of them is
-     a wall rather than a reward. */
-  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>toast('Badge: '+a.name),700+i*2000));
+  /* A player whose cabinet was already full before this shipped would otherwise get ninety
+     headlines at once. The first sighting is recorded quietly; only later ones celebrate.
+     `silent` is the cabinet saying the same thing for a different reason: you are looking
+     straight at the badges, so announcing them over the top of themselves is noise. */
+  if(silent||firstSighting) return fresh;
+  /* Three at most, spaced, because the banner is one line and a queue of eleven is a wall
+     rather than a reward. The timings are the NFL game's, so a player who moves between
+     them is not learning a second rhythm. */
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>{
+    showAchHeadline('Achievement: '+a.name);
+  },900+i*2100));
   fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   return fresh;
+}
+function showAchHeadline(text){
+  const el=$('headline'); if(!el) return;
+  el.textContent=text;
+  el.className='headline on big';
+  clearTimeout(el._h);
+  el._h=setTimeout(()=>el.classList.remove('on'),2400);
+}
+
+/* WHAT THE RUN JUST EARNED, announced over the results screen. Called ONCE per run, from
+   the point where the best-possible search has finished and the perfect-draft badge is
+   finally knowable -- announcing before that and again after meant two overlapping runs of
+   banners with the cap applying to each separately.
+   achState falls back to this browser's own history when the board rows are not in, which
+   is what makes this work for a signed-out player too -- the NFL game has no signed-out
+   case to serve here and this one does. Anything already marked seen is skipped, so an
+   extra call can never repeat a badge. */
+function announceRunBadges(){
+  const res=achState(careerRows||null);
+  if(res) achAnnounce(authState.userId,res,false);
 }
 $('b-profile').onclick=()=>openProfile();
 /* NOT APPLIED HERE ANY MORE. The saved school is read at the top of applyTheme's
@@ -4624,25 +4642,21 @@ function achState(rows){
   return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString());
 }
 
-/* Badges the season just finished is responsible for, held for the results
-   screen. Worked out by evaluating the cabinet on either side of the new row,
-   so a badge already earned in some earlier season is not announced twice. */
-let lastEarned=[], lastBefore=new Set();
+/* Badges the season just finished is responsible for, worked out by evaluating the cabinet
+   on either side of the new row. What ANNOUNCES them is achAnnounce, off achSeen; this set
+   exists so the analytics event fires for the season that earned each one rather than for
+   whichever screen happened to read the cabinet. */
+let lastEarned=[];
 function recordRun(row){
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
-  lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
   lastEarned=A
     ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
     : [];
   return lastEarned;
 }
-/* Badges the season just finished put in the case, called out on the results
-   screen. Only what this season earned: a badge won three seasons ago is in the
-   case already and saying so again would make every one of them feel routine.
-   Capped, because a first season can trip a dozen at once and a wall of them
-   reads as a bug rather than a reward. */
 /* ── the leaderboard ──────────────────────────────────────────────
    THE BOARD IS NEVER IN THE WAY OF A FINISHED SEASON. The results screen paints
    first and asks the board afterwards, every board call resolves to null rather
@@ -4929,19 +4943,14 @@ async function paintRanksTab(){
     (authState.signedIn?'':'<p class="rankfoot"><b>Sign in</b> to put your name on it.</p>');
 }
 
-function paintNewBadges(){
-  const el=$('o-newach'); if(!el) return;
-  const list=(run&&run.newBadges)||[];
-  if(!list.length){ el.innerHTML=''; return; }
-  const show=list.slice(0,6), more=list.length-show.length;
-  el.innerHTML='<div class="newach"><div class="nh">'+
-    (list.length===1?'Badge earned':list.length+' badges earned')+'</div><div class="nl">'+
-    show.map((a,i)=>'<div class="na '+a.tier+'" style="animation-delay:'+(i*70)+'ms">'+
-      '<b>'+esc(a.name)+'</b><i>'+esc(a.desc)+'</i></div>').join('')+
-    (more?'<div class="na" style="animation-delay:'+(show.length*70)+'ms"><b>and '+more+' more</b></div>':'')+
-    '</div><button class="acase" id="o-case">See your trophy case</button></div>';
-  $('o-case').onclick=()=>openProfile('case');
-}
+/* paintNewBadges() PAINTED A PANEL HERE, listing what the season had just earned with a
+   button through to the case. It has gone, and not because it was bad: it was a SECOND
+   announcement of the same badges on the same screen as the headlines, and two notices
+   about one thing read as a bug rather than as generosity. The NFL game announces with the
+   banner alone and this game now does the same. announceRunBadges() is what took its place.
+
+   The way to the trophy case is not lost with it -- it is a row on the profile hub, one tap
+   from the avatar in the header, on every screen including this one. */
 
 /* The best-possible share is not known until the search behind the results
    screen finishes, a moment after the row is written. Patch it in rather than
@@ -6951,8 +6960,6 @@ function paintOver(){
       sig_wins:sig.length, best_win_rank:sig.length?sig[0].rk:null,
       picks:run.roster.map(p=>p.player_id+'|'+p.season),
     });
-    run.newBadges=lastEarned.slice();
-    run.hadBadges=lastBefore;
 
     /* THE BOARD IS ASKED AFTER THE SCREEN IS PAINTED, never before. Everything
        above has already been written to the page; this is the one part that can
@@ -6973,7 +6980,6 @@ function paintOver(){
   }else if(run.boardStats){ paintPlace(); }
   paintModeTag();
   paintRanksTab();
-  paintNewBadges();
 
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
   const forPG=pts(s.results,r=>r.shownYou??r.yourScore);
@@ -7031,20 +7037,15 @@ function paintOver(){
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
     if(share!==null&&kept<E.SLOTS.length) share=Math.min(share,99);
-    /* The perfect-draft badge cannot be known until this moment, so the row is
-       patched and the case re-read. Anything that turns up now joins the list
-       the results screen is already showing rather than replacing it. */
-    if(share!==null){
-      patchLastRun({perfect_pct:share});
-      const A=window.PS_CFB_ACH;
-      if(A&&run.newBadges){
-        const have=new Set(run.newBadges.map(a=>a.id));
-        const had=run.hadBadges||new Set();
-        const fresh=A.evaluate(loadHistory(),achResolve,new Date().toISOString()).earned
-          .filter(a=>!have.has(a.id)&&!had.has(a.id));
-        if(fresh.length){ run.newBadges=run.newBadges.concat(fresh); paintNewBadges(); }
-      }
-    }
+    /* The perfect-draft badge cannot be known until this moment, so the row is patched
+       before anything is announced, and THEN the whole season is announced at once. Doing
+       it in two goes -- once on the paint and once again here -- meant two runs of banners
+       overlapping on the same screen with the cap applying separately to each, so a season
+       could put four up. One announcement, three at most, exactly as the NFL game does it.
+       The hand-rolled fresh-set arithmetic that used to live here is gone: achSeen does the
+       same job, from one place, for every path that announces. */
+    if(share!==null) patchLastRun({perfect_pct:share});
+    announceRunBadges();
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
       bigcell('Team overall',overall.toFixed(1),Math.max(2,Math.min(100,overall)),rband)+
