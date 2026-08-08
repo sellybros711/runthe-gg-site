@@ -369,17 +369,24 @@
      is set in the display face at the size of a track number on a sleeve, and
      the rule between rows does the separating that the circles were doing. */
   .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
-  .steps li{display:flex; gap:9px; align-items:baseline; padding:11px 0;
+  .steps li{display:flex; gap:10px; align-items:baseline; padding:8px 0;
     border-top:1px solid var(--line);}
   .steps li:first-child{border-top:0; padding-top:2px;}
-  .steps b{flex:0 0 auto; width:22px; font-family:var(--ui); font-weight:400;
-    font-size:30px; line-height:.9; color:var(--acc-step, var(--dim)); text-align:left;}
+  /* The numerals were baseline aligned and still read as floating: measured,
+     the numeral's box sat 11px above the first text line's top while their
+     bottoms matched to the pixel. Baselines were never the problem, the size
+     gap was. A 30px numeral beside 13.5px copy towers over the line it is
+     supposed to belong to.
+     21px keeps the numeral clearly the loudest thing in the row and cuts the
+     overhang to about 4px, which reads as a lead-in rather than as a mistake. */
+  .steps b{flex:0 0 auto; width:17px; font-family:var(--ui); font-weight:400;
+    font-size:21px; line-height:1; color:var(--acc-step, var(--dim)); text-align:left;}
   .steps li:nth-child(1) b{--acc-step:var(--coralT);}
   .steps li:nth-child(2) b{--acc-step:var(--goldT);}
   .steps li:nth-child(3) b{--acc-step:var(--greenT);}
   .steps li:nth-child(4) b{--acc-step:var(--tealT);}
   .steps li:nth-child(5) b{--acc-step:var(--violetT);}
-  .steps span{font-size:13.5px; line-height:1.5; color:var(--ink); font-weight:600;}
+  .steps span{font-size:13.5px; line-height:1.45; color:var(--ink); font-weight:600;}
 
   .tryout{margin:var(--sp-3) 0 0; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
@@ -1267,8 +1274,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=32';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=32';
+} from './scoring.js?v=33';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=33';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
