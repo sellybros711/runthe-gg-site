@@ -14328,6 +14328,21 @@ allows Google Fonts, or self-host Anton.*
   `PASS_TIERS`, `PASS_XP_RATE` (how fast play feeds the track), and the `PASS_FREE_MILE`/`PASS_PREM_MILE`
   milestone tables; bump `PASS_CURVE_V` + add a `PASS_CURVES` entry to re-map everyone onto any future curve.
 
+- **CS460 — one-time 500,000-coin grant to SophKill (owner request; nobody else).** Reused the CS459
+  grant mechanism (coins are derived + a cloud-synced `bonus` accumulator, so a grant is a targeted,
+  idempotent client credit rather than a server table edit): `COIN_GRANTS` REPLACED with
+  `{'sophkill':500000}` and `COIN_GRANT_V` bumped 2 -> 3. Replacing the map rather than adding to it is the
+  point: `maybeCoinGrant()` early-returns for any username not in the map, so bumping the version does NOT
+  re-pay CSel8/RunnyJ (whose stored `grantV` is 2 < 3) - only SophKill is credited, exactly once, on any
+  device (the version flag rides in `bag_coins` and `mergeCoins` carries it with a max, so a two-device race
+  still nets +500,000 once). Credited via `s.bonus`, which bypasses the CS186 reset baseline, so it always
+  accrues. Lands on SophKill's next sign-in / app open (iOS may need a full close-and-reopen to load the new
+  code). Verified in Playwright against the live file: SophKill 0 -> 500,000 and idempotent on re-run,
+  case-insensitive (SOPHKILL also +500,000), CSel8 and RunnyJ both +0 with their grantV left at 2, any other
+  username +0, a signed-out guest +0, and `mergeCoins` carries grantV 3 + the bonus in both merge directions;
+  full regression (18-hole practice round + shop sections) green with 0 page errors. Re-grant later by
+  bumping `COIN_GRANT_V` and setting the amounts.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
