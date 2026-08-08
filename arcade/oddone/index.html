@@ -436,11 +436,11 @@
     var opts = shuffle([trueLab].concat(decoys));
     choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked? <span>+5 🪙</span></div>' +
       opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
-    var answered=false;
-    function go(){ if(answered) return; answered=true; busy=false; renderRound(); }
+    var tapped=false, advanced=false;
+    function go(){ if(advanced) return; advanced=true; busy=false; renderRound(); }
     [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(b){
       b.addEventListener('click', function(){
-        if(answered) return; answered=true;
+        if(tapped) return; tapped=true;
         var ok=b.dataset.l===trueLab;
         [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(x){
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
