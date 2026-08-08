@@ -14343,6 +14343,27 @@ allows Google Fonts, or self-host Anton.*
   full regression (18-hole practice round + shop sections) green with 0 page errors. Re-grant later by
   bumping `COIN_GRANT_V` and setting the amounts.
 
+- **Buy Daily Tokens from the Play 18 RESULTS page (owner: "when someone uses all of their daily plays,
+  there should be a button on the results page to buy more daily tokens. That button should take them to the
+  store").** The out-of-attempts branch of `scrDailyResult` only offered "Course Records ▸" - the paid ways to
+  keep playing were reachable ONLY from the "done for today" overlay (`overlayDailyDone`), which a player who
+  finishes a round never sees (they land on the result). Rebuilt that branch to mirror the overlay, best option
+  first: **Tour Pass active** -> "Play again · unlimited plays" (a real gap: pass holders already CAN play at
+  left<=0 per `startDailyChallenge`/`beginDailyAttempt`, but the result screen only checked `left>0`, so they
+  were dead-ended); **holds tokens** -> "Play again · use a token (N left)" (`beginDailyTokenPlay`) PLUS a teal
+  "Buy more Daily Tokens ▸" under the button row; **no tokens** -> the requested **"Buy Daily Tokens ▸"** as the
+  gold primary next to Share. All the store routes go to `S.overlay='shop'; S.shopSec='buckets'` - the same
+  target `#dd-buytok` uses, and the section that actually renders the Daily Tokens purchase grid (`bucketShopNode`,
+  gated by `TOKENS_ENABLED`). Also sets `cr` in the new branches so the secondary Records+Passport row appears
+  (previously only Passport showed here). Guests (their own sign-in branch) and practice mode are untouched, and
+  the whole block is `TOKENS_ENABLED`-gated so it falls back to the old Course Records primary if tokens are ever
+  turned off. New `track` events: `daily_result_buytok` (primary/secondary) + `daily_result_token_play`.
+  Verified in Playwright across all states: 0 tokens -> the gold Buy button (no play button); 2 tokens -> the
+  token play button + the teal buy button; pass active -> the unlimited play button and NO buy button; both buy
+  buttons route to shop/buckets with the Daily Tokens block present; attempts-left and guest states unchanged;
+  the scorecard + Records/Passport render clean. Regression: an 18-hole practice daily completes to the result
+  and all 9 shop sections render - 0 page errors; inline scripts parse clean. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
