@@ -351,6 +351,77 @@ check(/\.werethere\{[^}]*var\(--dye-line\)/.test(game), 'the tag is dyed');
 check(/\.mine\{[^}]*white-space:nowrap/.test(game),
   'the home count wraps as one phrase');
 
+/* THE LEADERBOARD, AND THE ONE PROPERTY THAT MATTERS MOST: it is optional. The
+   game is a static page reading a CSV, and a blocked CDN or an unrun migration
+   has to leave that page exactly as playable as it was. Everything below guards
+   a way that could quietly stop being true. */
+console.log('the board');
+const board = read('setlist/board.js');
+const authjs = read('setlist/auth.js');
+const sql   = read('supabase/67_setlist_leaderboard.sql');
+
+check(/<script src="\/setlist\/auth\.js\?v=\d+" defer><\/script>/.test(game),
+  'auth.js is loaded, deferred and cache-versioned');
+check(/<script src="\/setlist\/board\.js\?v=\d+" defer><\/script>/.test(game),
+  'board.js is loaded, deferred and cache-versioned');
+// The module and the two plain scripts have to move together or the page can be
+// served against a stale board.
+{
+  const vs = [...game.matchAll(/(?:scoring|dataLoader)\.js\?v=(\d+)|setlist\/(?:auth|board)\.js\?v=(\d+)/g)]
+    .map(m => m[1] || m[2]);
+  check(new Set(vs).size === 1, 'every versioned script is on the same version',
+    [...new Set(vs)].join(', '));
+}
+
+// The name is never sent by the client. This is the check that stays true only
+// as long as nobody adds a convenience parameter for it.
+check(!/p_display_name|p_username|p_name\b/.test(board),
+  'board.js never sends a display name');
+check(/select username::text into v_name from profiles/.test(sql),
+  'the server reads the name out of profiles');
+
+// Both axes exist and the percentage one is the one the draw cannot inflate.
+check(/SORTS = \{ score: 'total', pct: 'pct_of_best' \}/.test(board),
+  'the board has both axes');
+check(/pct_of_best\s+numeric/.test(sql), 'the percentage is a stored column');
+check(/v_pct := round\(100\.0 \* p_total/.test(sql),
+  'and the server computes it rather than taking it from the client');
+
+// The coherence checks the whole design rests on.
+for (const [what, re] of [
+  ['the parts have to sum to the total', /is not the sum of its parts/],
+  ['breadth is valued server-side', /but those cards are worth/],
+  ['the ceiling cannot be below the score', /a ceiling of % below a score of/],
+  ['respins come out of the stage time', /plus %s of respins is more than/],
+  ['segues cannot exceed the adjacent pairs', /which has at most % adjacent pairs/],
+  ['a double submit is swallowed', /created_at > now\(\) - interval '1 minute'/],
+]) check(re.test(sql), what);
+
+// Attendance is the one private thing here, and it must stay private.
+check(/create policy segue_attended_own[\s\S]{0,200}user_id = auth\.uid\(\)/.test(sql),
+  'attendance is readable only by its owner');
+check(!/segue_attended/.test(board.replace(/segue_(sync|forget)_attended/g, '')),
+  'the client only ever reaches attendance through its two RPCs');
+// The merge is the whole design of the sync: an absence is not a removal.
+check(/on conflict do nothing/.test(sql), 'a sync merges rather than replaces');
+check(/segue_forget_attended/.test(sql), 'and unmarking is its own call');
+
+// Failing soft. Each of these is a way the board could start throwing into a
+// finished show instead of quietly reporting itself unreachable.
+check(/get offline\(\) \{ return offline; \}/.test(board), 'board.js reports being offline');
+check((board.match(/failThrown\(/g) || []).length >= 6,
+  'every network call has a catch that fails soft');
+check(/const AUTH  = \(\) => window\.SEGUE_AUTH \|\| null/.test(game),
+  'the page treats accounts as optional');
+check(/if \(!a \|\| !a\.boot\(\)\) return;/.test(game),
+  'and does nothing at all when the library is absent');
+check(/API_VERSION/.test(authjs) && /API_VERSION/.test(board),
+  'both modules carry an API version');
+
+// The submit is not on the path to a finished show.
+check(/recordShow\(\);\s*\/\/ fire and forget/.test(game),
+  'recording a show is never awaited');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
