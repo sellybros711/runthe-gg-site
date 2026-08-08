@@ -422,6 +422,50 @@ check(/API_VERSION/.test(authjs) && /API_VERSION/.test(board),
 check(/recordShow\(\);\s*\/\/ fire and forget/.test(game),
   'recording a show is never awaited');
 
+/* THE LAST TWO SCREENS. Both used to be stacks of rounded cards with the song
+   titles coloured by tag, which is the pattern the rest of the game moved off
+   and the one thing that competes with the dye. These guard the way back. */
+console.log('the show and the scorecard');
+// The scorecard's setlist is a sheet row with the accent as a bar, not a card
+// with the accent as the title colour.
+check(/class="rrow"/.test(game), 'the scorecard setlist uses sheet rows');
+check(/\.rrow:before\{[^}]*background:var\(--acc/.test(game),
+  'the accent is a bar on the row');
+check(/\.rr-t\{[^}]*color:var\(--ink\)/.test(game),
+  'and the song title is ink, not the accent');
+// MID is the default role and eleven of them is not information.
+check(/\/\^mid\$\/i\.test\(name\)/.test(game),
+  'the default role is not printed');
+// The playback feed is the same sheet, not seventeen stacked cards.
+check(/\.sim-song\{[^}]*position:relative/.test(game)
+  && !/\.sim-song\{[^}]*box-shadow:var\(--shadow\)/.test(game),
+  'the playback feed is a sheet, not cards');
+check(/\.sim-song:before\{[^}]*background:var\(--acc/.test(game),
+  'and carries the same accent bar');
+// Both score numbers are the full-bleed band, and neither is a card.
+for (const [sel, what] of [['scorebox', 'the final score'], ['sim-head', 'the running score']]) {
+  check(new RegExp(`\\.${sel}\\{[^}]*margin:0 calc\\(var\\(--gut\\) \\* -1\\)`).test(game),
+    `${what} is full bleed`);
+  check(new RegExp(`<div class="${sel}"`).test(game), `${what} is not a card`);
+  check(new RegExp(`\\.${sel}:after\\{[^}]*linear-gradient\\(90deg`).test(game),
+    `${what} closes on a dye rule`);
+}
+// The sticky one has to hide what scrolls under it.
+check(/\.sim-head\{[^}]*background:var\(--bg\)/.test(game),
+  'the sticky running score is opaque');
+/* THE GRADE COLOURS ARE MEASURED, and the measurement is the comment above
+   them. Both scores now sit on --bg rather than on --card, where the old green
+   fell to 2.93:1: below even the 3:1 large-text floor, on the largest thing in
+   the game. */
+check(/--gradeHot:#127F3A/.test(game) && /--gradeWarm:#926607/.test(game),
+  'the light-theme grades are the measured ones');
+check(/\.grade-hot\{color:var\(--gradeHot\)/.test(game),
+  'and the grade classes use them');
+// Drawn, never typed. A caret glyph is 6px of ink in a 16px box.
+check(!/content:'›'/.test(game), 'no typed chevrons are left');
+check(/class="segout"/.test(game) && /class="segmark"/.test(game),
+  'both screens use the drawn chevron');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
