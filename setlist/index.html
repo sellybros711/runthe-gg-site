@@ -317,12 +317,25 @@
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
 
-  /* The condensed face, not the slab. The slab filled the line at 40px and had
-     no room left to get bigger; Anton at the same width runs half again the
-     height, which is what makes it read as a poster rather than as a heading.
-     The dye moved to the field behind it, so the word itself is solid ink. */
-  .hero h1{font-family:var(--ui); font-size:clamp(58px,17vw,104px); line-height:.84;
-    letter-spacing:-1px; margin:2px 0 4px; text-transform:uppercase; color:#12100E;}
+  /* THE SLAB, the same face the top bar sets SEGUE in, so the wordmark is one
+     thing in two places rather than two fonts saying the same word.
+     It is 1.67x wider than the condensed face at a given size, so the size
+     comes down to pay for it: measured in the browser at 100px, SEGUE runs
+     366px in the slab against 219px in Anton. 25vw fills about 91% of the
+     line at every width from 320 up, with the cap stopping it growing past
+     the point where it would outrun a tablet.
+     TRACKING IS NOT OPTIONAL AT THIS SIZE. The old note here said the slab
+     carries its own sidebearings and needs none, and that held at the 38 to
+     68px it used to be set at. At 90px the slabs collide: rendered in
+     isolation at zero tracking, the S's terminal fuses into the E and the U's
+     stems close up against their neighbours, so the word reads as one black
+     mass with hairline scratches in it. .045em separated most of the pairs but
+     left the G and the U a single pixel apart, which still reads as a scratch
+     rather than as a gap; .06em is the first value where every pair is clear.
+     It is paid for in size, since tracking adds about 0.3em of width across
+     five letters. */
+  .hero h1{font-family:var(--hero); font-size:clamp(56px,22.5vw,98px); line-height:.92;
+    letter-spacing:.06em; margin:2px 0 6px; text-transform:uppercase; color:#12100E;}
   .hero h1 .accent{color:inherit;}
   @keyframes dyeDrift{
     0%,100%{ background-position:44% 46%; }
@@ -1254,8 +1267,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=30';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=30';
+} from './scoring.js?v=32';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=32';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see

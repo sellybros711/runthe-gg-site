@@ -277,6 +277,16 @@ check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
 check(/linear-gradient\(to bottom, transparent 7\d%, var\(--bg\)/.test(game),
       'the hero fade begins below the last line of type');
 
+/* The hero wordmark is the same face as the top bar's, and it needs tracking:
+   Alfa Slab One's slabs collide at zero letter-spacing above about 80px, so
+   the word renders as one black mass with hairlines in it. */
+check(/\.hero h1\{[^}]*font-family:var\(--hero\)/.test(game),
+      'the hero wordmark uses the same face as the top bar');
+check(/\.brand\{[^}]*font-family:var\(--hero\)/.test(game),
+      'and the top bar still uses it too');
+check(/\.hero h1\{[^}]*letter-spacing:\.0[5-9]em/.test(game),
+      'the hero wordmark is tracked so the slabs do not collide');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
