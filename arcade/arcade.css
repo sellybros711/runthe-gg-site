@@ -160,10 +160,13 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 }
 /* uniform treatment across the whole title, so <b> just matches its surroundings */
 .a-gametitle__plate b{font-weight:400; color:inherit; -webkit-text-stroke:inherit; text-shadow:inherit;}
-/* dark = hollow accent outline; light = solid accent fill with a soft shadow */
+/* dark = hollow accent outline; light = solid accent fill with a soft shadow.
+   Light fill is darkened toward near-black so every accent clears WCAG large-text
+   contrast on the light page bg (raw gold/teal/etc. were far too light). */
 :root[data-theme="light"] .a-gametitle__plate{
-  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
-  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 20%, transparent);}
+  color:color-mix(in srgb, var(--a-tc, #F2B632) 55%, #140d02); -webkit-text-stroke:0;
+  border-bottom-color:color-mix(in srgb, var(--a-tc, #F2B632) 64%, #140d02);
+  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 22%, transparent);}
 @media (max-width:760px){
   body:has(.a-gametitle) .brand.logo img{height:60px;}
   .a-gametitle{margin:3px 0 14px;}
