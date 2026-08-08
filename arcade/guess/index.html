@@ -114,7 +114,7 @@
   @keyframes gin{from{opacity:0; transform:translateY(-6px);}to{opacity:1; transform:none;}}
   .guess .nm{font-weight:900; font-size:13.5px; margin:0 1px 5px; color:var(--ink); min-height:18px;}
   .guess .row{display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
-  .tile{aspect-ratio:1/1.02; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
+  .tile{aspect-ratio:1/1.24; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px 3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
   .tile.hit{background:var(--hit);} .tile.close{background:var(--close);}
   /* An empty square reads as somewhere to write, not as a miss, so it is an
      outline rather than the grey a wrong answer earns. */
@@ -249,6 +249,8 @@
     .foot{ grid-column:1 / -1; margin-top:18px; }
     .a-gametitle{ margin:2px 0 8px; }
     .lb{ margin:0; }
+    /* desktop tiles are already width-driven and tall; keep them from ballooning */
+    .tile{ aspect-ratio:1/1.02; }
   }
 </style>
 </head>
@@ -908,7 +910,7 @@
     if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
     el.classList.remove('hidden');
     el.innerHTML = RTGMode.MODES.map(function(m){
-      var lab = m.k==='all' ? 'All' : m.label;
+      var lab = m.k==='all' ? 'Random' : m.label;   // "Random" reads clearer than "All" for the mystery-player game
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
     }).join('');
     [].forEach.call(el.querySelectorAll('button'), function(b){ b.addEventListener('click', function(){ switchMode(b.dataset.m); }); });
@@ -922,7 +924,7 @@
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderSwitcher();
     bootCurrentMode();
-    toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
+    toast((mode==='all'?'Random':(RTGMode.sportOf(mode)||mode))+' version');
   }
   function bootCurrentMode(){
     var saved=load();
