@@ -466,6 +466,40 @@ check(!/content:'›'/.test(game), 'no typed chevrons are left');
 check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   'both screens use the drawn chevron');
 
+/* Two things that looked fine in the CSS and were wrong on the screen. */
+console.log('the header');
+/* THE BLURB IS CENTRED BY AUTO SIDE MARGINS, and it is capped at 32ch, so the
+   two have to be in ONE declaration. They were in two, two hundred lines apart,
+   and the later `margin:0` shorthand reset both sides to zero: the sentence sat
+   10px left of the wordmark above it while text-align still reported `center`,
+   because the text was centred inside a box that was not. */
+check(/\.hero p\{margin:0 auto;/.test(game), 'the hero blurb is centred');
+{
+  /* Comments stripped first: the explanation above the rule QUOTES the old
+     broken declaration, and a guard that counts its own documentation as the
+     bug is a guard nobody will keep. */
+  const bare = game.replace(/\/\*[\s\S]*?\*\//g, '');
+  const withMargin = [...bare.matchAll(/\.hero p\{([^}]*)\}/g)]
+    .filter(m => /margin/.test(m[1]));
+  check(withMargin.length === 1, 'and its margin is set in exactly one rule',
+    `${withMargin.length} rules set it`);
+}
+check(!/\.hero p\{margin:0;/.test(game), 'no bare margin:0 on the blurb');
+
+/* THE ACCOUNT CHIP HAS NO BASE RULE TO INHERIT. There is no `.pill` in this
+   file: every shared property lives on `.pill.site`, so `.pill.me` has to
+   declare its own or it renders as a sharp-cornered box. */
+for (const prop of ['border-radius:99px', 'padding:', 'border:1px solid'])
+  check(new RegExp(`\\.pill\\.me\\{[^}]*${prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(game),
+    `the account chip declares its own ${prop.replace(/:.*/, '')}`);
+/* A gradient's axis has to match the shape's long axis. --dye-line is 180deg,
+   built for a tall thin arrow; on a chip four times wider than tall it is a red
+   box with a purple underline. Third time this has been the lesson. */
+check(!/\.pill\.me\.in\{[^}]*var\(--dye-line\)/.test(game),
+  'and does not wear the vertical dye');
+check(/\.pill\.me\.in\{[^}]*linear-gradient\(90deg/.test(game),
+  'its sweep runs the long way');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
