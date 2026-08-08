@@ -856,16 +856,59 @@
 
   /* ---------------- result ---------------- */
   .result{max-width:600px; margin:0 auto;}
-  .scorebox{text-align:center; padding:26px 20px 22px; margin-bottom:16px;}
-  .scorebox .n{font-family:var(--hero); font-size:clamp(64px,17vw,104px); line-height:.9;
-    font-variant-numeric:tabular-nums;}
+  /* THE SCORE IS THE POSTER, and the poster is not a card.
+     It was a white rounded box with a shadow, floating above two more of them,
+     which made the last screen of a night look like a receipt. It is now the
+     same full-bleed band the top bar is: edge to edge, no border, and a dye
+     rule under it.
+
+     NO DYE FIELD BEHIND IT, and that is the note below about grading rather
+     than an oversight. The number is green, gold or red because those mean
+     something, and a five-colour field behind a colour-coded number destroys
+     both: the dye stops meaning identity and the grade stops being legible.
+     The dye appears here the one way it can, as the rule, which is exactly how
+     it appears in the header. */
+  .scorebox{position:relative; text-align:center; border:0; border-radius:0;
+    box-shadow:none; background:transparent;
+    margin:0 calc(var(--gut) * -1) var(--sp-2);
+    padding:var(--sp-2) var(--gut) var(--sp-3);}
+  /* ONE STATIC CYCLE, not the header's two moving ones. The header's rule
+     animates because it is chrome you look past; this one closes a screen you
+     are reading, and a crawling rainbow under a final score is a distraction
+     with nothing to say. --dye-line is a 180deg gradient, so the sweep is
+     written out here at 90deg rather than reused. */
+  .scorebox:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+      var(--teal) 75%, var(--violet) 100%);}
+  .scorebox .n{font-family:var(--hero); font-size:clamp(76px,23vw,124px); line-height:.86;
+    letter-spacing:.01em; font-variant-numeric:tabular-nums;}
 
   /* A score's colour is a rating and nothing else — green good, yellow middling,
      red weak — so no tie dye goes anywhere near one. The dye stays on identity
      (the wordmark, the top rule), where it has no number to contradict. */
-  .grade-hot{color:var(--greenT);}
-  .grade-warm{color:var(--goldT);}
-  .grade-cold{color:var(--redT);}
+  /* THEIR OWN TOKENS, because a grade is the only thing on the page that is
+     read against the PAGE and not against a card. Both score numbers now sit on
+     a full-bleed band, and --bg in the light theme is lighter than --card is
+     dark, so the same green that is comfortable on a chip is not comfortable
+     here. Measured by compositing the glyph over the real ground:
+
+               was (on --card)   on --bg    now
+       green      3.33:1          2.93:1    4.53:1
+       gold       4.07:1          3.58:1    4.53:1
+       red        5.40:1          4.75:1    4.75:1
+
+     2.93 fails even the 3:1 large-text floor, on the largest thing in the game.
+     Red already cleared 4.5 and is left alone, so the three stay a set.
+     The dark theme needs none of this: it measures 9.4, 10.1 and 6.3. */
+  :root{ --gradeHot:var(--greenT); --gradeWarm:var(--goldT); --gradeCold:var(--redT); }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --gradeHot:#127F3A; --gradeWarm:#926607; }
+  }
+  :root[data-theme="light"]{ --gradeHot:#127F3A; --gradeWarm:#926607; }
+  .grade-hot{color:var(--gradeHot);}
+  .grade-warm{color:var(--gradeWarm);}
+  .grade-cold{color:var(--gradeCold);}
   /* Four categories, two rows on a phone rather than four squeezed columns. */
   /* The ceiling. Deliberately below the score and above the breakdown: it is
      the second thing you look at, not the first. */
@@ -919,11 +962,6 @@
   .sheet-hd .x{font-size:12px; font-weight:800; color:var(--dim); background:none; border:0;
     padding:4px 2px;}
 
-  .slot.tappable{width:100%; text-align:left; border:0; background:transparent;
-    font-family:inherit; cursor:pointer;}
-  .slot.tappable:hover{background:var(--card2);}
-  .slot.tappable:after{content:'›'; color:var(--dim); font-size:17px; margin-left:2px;}
-
 
   /* ---------------- set clocks ---------------- */
   .setblk{padding:10px 0 4px; border-bottom:1px solid var(--line);}
@@ -958,6 +996,54 @@
   .rs-note{font-size:11.5px; font-weight:700; color:var(--mut); margin:5px 0 3px;}
   .rs-note b{color:var(--ink);}
   .rs-empty{font-size:12px; color:var(--dim); font-weight:700; padding:6px 0;}
+
+  /* ---------------- the scorecard's setlist ----------------
+     THE SAME SHEET ROW THE DRAFT USES, and getting here took undoing two
+     things that were actively fighting the rest of the game.
+
+     THE TITLES WERE COLOURED. accentOf() returns a hue per tag, and it was
+     being spent on the song name, so a seventeen-song scorecard printed its
+     titles in six saturated colours at once: purple, red, green, blue,
+     magenta. Nothing about a colour there is readable as meaning, and it
+     competes with the one thing on this page that IS colour with a meaning,
+     which is the dye. The draft list already had the answer: the accent is a
+     3px bar on the left edge and the title is ink.
+
+     THE ROLE WAS A COLUMN. A fixed 60px gutter down the left, and eleven of
+     seventeen rows filled it with the word MID. That is the default and it is
+     not a fact worth a column, let alone eleven repetitions of one; it also
+     pushed every long title onto a second line. The role is now a chip beside
+     the title and only when it says something. */
+  .rrow{display:flex; align-items:baseline; gap:9px; width:100%; text-align:left;
+    padding:9px 4px 9px 11px; border:0; border-bottom:1px solid var(--line);
+    background:transparent; font-family:inherit; position:relative; cursor:pointer;
+    transition:background var(--t-fast) var(--ease);}
+  .rrow:before{content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px;
+    background:var(--acc, transparent); border-radius:2px;}
+  .rrow:last-child{border-bottom:0;}
+  .rrow:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
+  .rr-main{flex:1; min-width:0;}
+  .rr-t{font-size:15px; font-weight:800; line-height:1.25; color:var(--ink);}
+  /* The role, when it is one worth naming. Same chip the draft list uses for a
+     song's tags, so the two lists read as one vocabulary. */
+  .rr-role{display:inline-block; margin-left:7px; vertical-align:1px;
+    font-size:9.5px; font-weight:900; letter-spacing:1.1px; text-transform:uppercase;
+    color:var(--dim); border:1px solid var(--line2); border-radius:99px;
+    padding:2px 6px;}
+  .rr-len{font-size:12px; font-weight:700; color:var(--dim);
+    font-variant-numeric:tabular-nums; flex:0 0 auto;}
+  .rr-pts{font-family:var(--hero); font-size:17px; color:var(--ink);
+    font-variant-numeric:tabular-nums; flex:0 0 auto; min-width:2.2em; text-align:right;}
+  /* WHAT THE SEGUE WAS WORTH, and nothing else.
+     It started as a second line reading "> Echo of a Rose +32" under the title,
+     which is how the DRAFT list has to say it, because there the next song does
+     not exist yet. Here it does: it is the very next row. So the line spent a
+     whole row of vertical space restating the row beneath it.
+     The chevron after the title is already the notation every setlist uses for
+     this, so all that is left to say is the number. */
+  .rr-seg{display:inline-block; margin-left:5px; vertical-align:1px;
+    font-size:10.5px; font-weight:900; letter-spacing:.3px;
+    color:var(--violetT); font-variant-numeric:tabular-nums;}
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
   .hud-btns{display:flex; gap:6px; align-items:center; flex:0 0 auto;}
@@ -1038,30 +1124,59 @@
     color:var(--mut); font-style:italic;}
 
   /* ---------------- the show playback ---------------- */
-  .showsim{padding-top:6px;}
-  .sim-head{position:sticky; top:52px; z-index:20; padding:12px 16px; text-align:center;
-    margin-bottom:12px;}
-  .sim-score{font-family:var(--hero); font-size:44px; line-height:1;
+  .showsim{padding-top:2px;}
+  /* THE RUNNING SCORE IS THE SAME BAND THE FINAL ONE IS, and for the same
+     reason: it was a floating rounded card pinned under the header, so two
+     stacked cards followed you down the page while the night played. Full
+     bleed, opaque, with the dye rule closing it, so it reads as a second row
+     of chrome rather than as content that will not scroll away.
+
+     OPAQUE, not translucent. It is sticky over a list that scrolls under it,
+     and anything less than a solid ground puts song titles through the score. */
+  .sim-head{position:sticky; top:52px; z-index:20; text-align:center;
+    border:0; border-radius:0; box-shadow:none; background:var(--bg);
+    margin:0 calc(var(--gut) * -1) var(--sp-2);
+    padding:10px var(--gut) 11px;}
+  .sim-head:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+      var(--teal) 75%, var(--violet) 100%);}
+  .sim-score{font-family:var(--hero); font-size:42px; line-height:1;
     font-variant-numeric:tabular-nums; transition:color var(--t-slow) var(--ease);}
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .sim-feed{display:flex; flex-direction:column; gap:8px;}
-  .sim-set{font-family:var(--ui); font-size:15px; letter-spacing:2px; text-transform:uppercase;
-    color:var(--dim); padding:10px 0 2px; border-top:1px solid var(--line);}
-  .sim-song{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
-    padding:10px 13px; box-shadow:var(--shadow);
+  /* THE FEED IS A SETLIST BEING WRITTEN, so it is the same sheet the draft and
+     the scorecard use. It was seventeen rounded, shadowed cards stacked down
+     the page: the one card pattern the rest of the game had already stopped
+     using, and at this length it reads as a list of receipts rather than as a
+     night. The rows keep their entrance animation, which is the whole point of
+     the screen. */
+  .sim-feed{display:flex; flex-direction:column;}
+  .sim-set{font-size:11px; font-weight:900; letter-spacing:1.9px; text-transform:uppercase;
+    color:var(--dim); padding:16px 0 6px; margin-top:4px;
+    border-top:1px solid var(--line);}
+  .sim-feed > .sim-set:first-child{border-top:0; margin-top:0; padding-top:4px;}
+  .sim-song{position:relative; padding:10px 4px 10px 11px;
+    border-bottom:1px solid var(--line);
     animation:simIn var(--t-base) var(--ease) both;}
+  .sim-song:before{content:''; position:absolute; left:0; top:12px; bottom:12px; width:3px;
+    background:var(--acc, transparent); border-radius:2px;}
   @keyframes simIn{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
   .sim-row{display:flex; align-items:baseline; gap:9px;}
-  .sim-nm{font-size:15.5px; font-weight:800; min-width:0; flex:1;}
+  .sim-nm{font-size:15px; font-weight:800; min-width:0; flex:1;}
   /* How long the song ran is half of every decision the player just made, so
      it belongs on the row that reports what the decision was worth. */
-  .sim-len{font-size:12.5px; font-weight:700; color:var(--dim); flex:0 0 auto;
+  .sim-len{font-size:12px; font-weight:700; color:var(--dim); flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
-  .sim-pts{font-family:var(--hero); font-size:19px; color:var(--ink); flex:0 0 auto;}
+  .sim-pts{font-family:var(--hero); font-size:18px; color:var(--ink); flex:0 0 auto;
+    font-variant-numeric:tabular-nums;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
   .sim-badge{margin-top:6px;}
-  .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;}
+  /* The segue line keeps its violet, because it is a SENTENCE and the dye is
+     unreadable run through one. The mark in front of it is the drawn chevron,
+     same as everywhere else. */
+  .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;
+    display:flex; align-items:baseline; gap:3px;}
   .sim-seg b{color:var(--ink);}
   .sim-time{font-size:12px; font-weight:700; color:var(--mut); padding:2px 2px 6px;}
   .sim-time b{color:var(--ink);}
@@ -2191,6 +2306,18 @@ function renderResult(){
   r.perSet.forEach(set => set.forEach(x => idx.set(n++, x)));
   S._flat = idx;
 
+  /* WHICH ROWS ACTUALLY SEGUED, keyed "<set>:<index>". scoreShow() already
+     worked this out and the scoresheet already prints the list; this puts the
+     same fact back into the running order, which is the shape a setlist is
+     read in. */
+  const segFrom = new Map(r.segues.map(s => [`${s.set}:${s.from}`, s]));
+
+  /* MID IS NOT WORTH SAYING. roleAt() calls everything between the opener and
+     the closer "Mid", and on a seventeen-song night that is eleven identical
+     chips. The roles that earned their place are the ones a player aimed at. */
+  const roleChip = name => (/^mid$/i.test(name) ? '' :
+    `<span class="rr-role">${esc(name)}</span>`);
+
   const setBlocks = r.perSet.map((set, i) => {
     const t = r.time[i];
     let k = 0;
@@ -2204,21 +2331,27 @@ function renderResult(){
         <div class="bar ${t.ratio >= 0.93 ? 'good' : t.ratio < 0.8 ? 'bad' : ''}">
           <span style="width:${Math.min(100, t.ratio * 100)}%"></span></div>
         <div class="rs-note">${esc(t.note)} <b>+${t.points}</b></div>
-        ${set.length ? set.map((x, j) => `
-          <button class="slot filled tappable" type="button" data-peek="${k + j}"
+        ${set.length ? set.map((x, j) => {
+          const seg = segFrom.get(`${i}:${j}`);
+          return `
+          <button class="rrow" type="button" data-peek="${k + j}"
             style="--acc:${accentOf(x.perf).v}">
-            <span class="nm">${esc(x.role.name)}</span>
-            <span class="val">${esc(x.perf.song)}</span>
-            <span class="len">${fmtClock(lenOf(x.perf))}</span>
-            <span class="pts">${x.score.subtotal}</span>
-          </button>`).join('')
+            <span class="rr-main">
+              <span class="rr-t">${esc(x.perf.song)}${
+                seg ? `<i class="segout"></i><span class="rr-seg">+${seg.points}</span>` : ''}${
+                roleChip(x.role.name)}</span>
+            </span>
+            <span class="rr-len">${fmtClock(lenOf(x.perf))}</span>
+            <span class="rr-pts">${x.score.subtotal}</span>
+          </button>`;
+        }).join('')
           : '<div class="rs-empty">Nothing played.</div>'}
       </div>`;
   }).join('');
 
   app.innerHTML = `
     <div class="result">
-      <div class="card scorebox">
+      <div class="scorebox">
         <div class="eyebrow">Final score</div>
         <div class="n" id="scoreN">0</div>
         <div class="headline">&ldquo;${esc(r.headline)}&rdquo;</div>
@@ -3395,7 +3528,7 @@ function renderShow(){
   const beats = showBeats();
   app.innerHTML = `
     <div class="showsim" id="showSim">
-      <div class="card sim-head">
+      <div class="sim-head">
         <div class="eyebrow">The show</div>
         <div class="sim-score" id="simScore">0</div>
         <div class="sim-sub" id="simSub">Lights down.</div>
@@ -3417,8 +3550,8 @@ function renderShow(){
       subEl.textContent = setOpenLine(SETS.findIndex(x => x.label === b.label));
     } else if (b.kind === 'song'){
       feed.insertAdjacentHTML('beforeend', `
-        <div class="sim-song">
-          ${b.event ? `<div class="sim-seg">&rsaquo; ${esc(b.event)}${
+        <div class="sim-song" style="--acc:${accentOf(b.perf).v}">
+          ${b.event ? `<div class="sim-seg"><i class="segmark"></i>${esc(b.event)}${
             b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
           <div class="sim-row">
             <span class="sim-nm">${esc(b.perf.song)}</span>
