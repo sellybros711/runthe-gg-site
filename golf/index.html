@@ -22135,7 +22135,7 @@ function scrDailyResult(){
   const shareR=best||r;
   const shr=$(`<button class="btn blue" style="flex:1;margin:0">↗ Share<span class="sub">Emoji scorecard</span></button>`);
   shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); };
-  let primary=null, cr=null;
+  let primary=null, cr=null, buyTok=false;
   if(practice){
     // practice: play as many rounds as you like, nothing is consumed or recorded
     primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Play again ▸<span class="sub">Unlimited practice</span></button>`);
@@ -22151,10 +22151,33 @@ function scrDailyResult(){
     primary.onclick=beginDailyAttempt;
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else {
-    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
+    // Out of free attempts for today. Offer the ways to keep playing, best first: the Tour Pass (unlimited),
+    // a Daily Token you already own, then the store to buy more tokens. Mirrors the "done for today" overlay.
+    const tok=TOKENS_ENABLED?dailyTokens():0;
+    const ghostRecs=()=>{ const b=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); b.onclick=()=>{S.overlay='courserecords';render();}; return b; };
+    if(dailyPassActive()){
+      primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Play again ▸<span class="sub">Tour Pass · unlimited plays</span></button>`);
+      primary.onclick=beginDailyAttempt; cr=ghostRecs();
+    } else if(tok>0){
+      primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Play again ▸<span class="sub">Use a token · ${tok} left</span></button>`);
+      primary.onclick=()=>{ track('daily_result_token_play'); beginDailyTokenPlay(); }; cr=ghostRecs();
+      buyTok=true;   // they can still stock up on more
+    } else if(TOKENS_ENABLED){
+      // token blue (#5bcfe8), the same colour Daily Tokens wear in the store
+      primary=$(`<button class="btn" style="flex:1;margin:0;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Daily Tokens ▸<span class="sub">Play more rounds today</span></button>`);
+      primary.onclick=()=>{ track('daily_result_buytok',{from:'primary'}); S.overlay='shop'; S.shopSec='buckets'; render(); }; cr=ghostRecs();
+    } else {
+      primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
+    }
   }
   const btnrow=$(`<div style="display:flex;gap:10px;max-width:520px;margin:14px auto 0"></div>`);
   btnrow.appendChild(shr); btnrow.appendChild(primary); add(btnrow);
+  // A second, explicit route to the store when the primary above spends a token you already own.
+  if(buyTok){
+    const bt=$(`<button class="btn" style="max-width:520px;margin:10px auto 0;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy more Daily Tokens ▸<span class="sub">Extra rounds at today's course</span></button>`);
+    bt.onclick=()=>{ track('daily_result_buytok',{from:'secondary'}); S.overlay='shop'; S.shopSec='buckets'; render(); };
+    add(bt);
+  }
   // ✨ Share Highlights — a looping GIF reel of every birdie-or-better hole's tracer from this round.
   // Uses the just-played round's holes (S.dailyHoles carries the shot data); disabled with a hint if none.
   const reelHoles=(S.dailyHoles&&S.dailyHoles.length)?S.dailyHoles:((shareR&&shareR.holes)||[]);
