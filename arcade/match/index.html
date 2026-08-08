@@ -685,6 +685,7 @@
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
     var charged = false, attemptFirst = false;   // play-token economy: one token per attempt, first===ranked
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
+    var dealingLane = -1;              // lane currently receiving the auto-dealt final group (suppresses its Check/Clear during the deal)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
 
@@ -845,7 +846,7 @@
 
         // explicit submit: a full, unlocked group grows a Check button right
         // in its header block (where the group name sits)
-        if (!isLocked && laneFillCount(i) === GROUP && !done) {
+        if (!isLocked && i !== dealingLane && laneFillCount(i) === GROUP && !done) {
           var cb = document.createElement('button');
           cb.className = 'checkbtn';
           cb.type = 'button';
@@ -858,7 +859,7 @@
           head.appendChild(cb);
         }
         // per-rack Clear: dump this rack's names back to the pool in one tap
-        if (!isLocked && laneFillCount(i) > 0 && !done) {
+        if (!isLocked && i !== dealingLane && laneFillCount(i) > 0 && !done) {
           var clr = document.createElement('button');
           clr.className = 'clearbtn';
           clr.type = 'button';
@@ -1046,22 +1047,67 @@
       }
     }
 
-    // four groups locked -> the last is a gimme; auto-place, lock, and win.
+    // four groups locked -> the last is a gimme. Instead of snapping the four
+    // remaining names into place, DEAL them in one at a time, each gliding from
+    // the pool into its slot (solitaire-style), then lock and win.
     function autoSolveLast() {
       var freeIdx = -1;
       for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
       var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
       var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
       if (freeIdx < 0 || !remId) { finish(true); return; }
-      // clear anything in the free lane, drop in the true four
+
+      function lockAndWin() {
+        dealingLane = -1;
+        locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
+        delete lastMissIds[freeIdx];
+        render();
+        playLockAnim(freeIdx);
+        popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
+        setTimeout(function () { finish(true); }, 620);
+      }
+
+      // clear the free lane back to the pool so all four true names start there
       day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
-      day.solution[remId].forEach(function (tid) { place[tid] = freeIdx; });
-      locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
-      delete lastMissIds[freeIdx];
+      var order = day.solution[remId].slice();   // the true four, in solution order
+
+      var reduce = false;
+      try { reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) {}
+      if (reduce) {
+        order.forEach(function (tid) { place[tid] = freeIdx; });
+        lockAndWin();
+        return;
+      }
+
+      laneCat[freeIdx] = remId;   // label the empty lane now so it reads right during the deal
+      dealingLane = freeIdx;      // hide this lane's Check/Clear while the four glide in
       render();
-      playLockAnim(freeIdx);
-      popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
-      setTimeout(function () { finish(true); }, 620);
+
+      var STEP = 340, GLIDE = 300;
+      order.forEach(function (tid, k) {
+        setTimeout(function () {
+          if (done) return;
+          // FLIP: measure the name where it sits in the pool, place it, then
+          // glide it home from that spot into the freshly-filled slot.
+          var src = poolEl.querySelector('.tile[data-tid="' + tid + '"]') || boardEl.querySelector('.tile[data-tid="' + tid + '"]');
+          var sr = src ? src.getBoundingClientRect() : null;
+          place[tid] = freeIdx; render();
+          var dst = boardEl.querySelector('.lane[data-idx="' + freeIdx + '"] .tile[data-tid="' + tid + '"]');
+          if (dst && sr) {
+            var dr = dst.getBoundingClientRect();
+            var dx = sr.left - dr.left, dy = sr.top - dr.top;
+            dst.style.transition = 'none';
+            dst.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.05)';
+            dst.style.zIndex = '6';
+            void dst.offsetWidth;   // commit the start frame
+            dst.style.transition = 'transform ' + GLIDE + 'ms cubic-bezier(.22,.61,.36,1)';
+            dst.style.transform = 'translate(0,0) scale(1)';
+          }
+          if (window.RTGSound) { (RTGSound.place || RTGSound.soft || function () {}).call(RTGSound); }
+        }, k * STEP);
+      });
+
+      setTimeout(lockAndWin, (order.length - 1) * STEP + GLIDE + 120);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
