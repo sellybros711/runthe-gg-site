@@ -12370,7 +12370,10 @@ function radarSVG(){
 // tints the outline + centre by the overall tier, pulses the just-changed vertex, counts the OVR up, and
 // has a slow rotating sheen. Layout-stable (fixed viewBox) so it never shifts the grid below it.
 var _radarPrev=null, _radarN=0;   // var (not let) - reset() references it before this line executes at load
-function ratColor(v){ return v>=90?'#f2c94c' : v>=82?'#41dea6' : v>=74?'#5fd0e0' : v>=66?'#7f9bd6' : '#9098a8'; }
+// Rating quality bands (owner): 97-99 · 94-96 · 88-93 · 83-87 · 77-82 · 76 and lower.
+// One continuous grey -> blue -> cyan -> green -> lime -> gold ramp, so a rating's colour alone
+// tells you the tier. Single source of truth: the radar dots, the tile meters AND the numbers.
+function ratColor(v){ return v>=97?'#f7d14a' : v>=94?'#a8e05f' : v>=88?'#41dea6' : v>=83?'#5fd0e0' : v>=77?'#7f9bd6' : '#8d95a3'; }
 const RAD_CX=125, RAD_CY=124, RAD_R=88;
 function radAng(i){ return (-Math.PI/2)+i*(2*Math.PI/CATS.length); }
 function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAng(i))*r]; }
@@ -12519,7 +12522,7 @@ function scrDraft(){
       track+=`<span class="dt-mk" style="left:${mine}%;background:${qc}"></span></div>`;
       const cap=`<div class="dt-cap"><span>via ${esc(cardDispName(f.golfer))}</span>${cur!=null?`<span class="dt-miss" title="This golfer offered ${cur} here"><i class="dt-ringmini"></i>${cur}</span>`:''}</div>`;
       grid.appendChild($(`<div class="dtile filled${isKey?' fav':''}" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}${cur!=null?'. This golfer offered '+cur:''}">
-        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val">${f.value}</span><span class="dt-lock" aria-hidden="true">✓</span></div>
+        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val" style="color:${qc}">${f.value}</span><span class="dt-lock" aria-hidden="true">✓</span></div>
         <div class="dt-bot"><div class="dt-meter">${track}${cap}</div></div></div>`));
       return;
     }
@@ -12527,7 +12530,7 @@ function scrDraft(){
       const rv=S.current[cat.k], qc=ratColor(rv);
       const b=$(`<button class="dtile open${isKey?' fav':''}" aria-label="Draft ${cat.short}, rated ${rv}${isKey?', a key skill for today\'s course':''}">
         <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span></div>
-        <div class="dt-bot"><div class="dt-meter"><div class="dt-track"><span class="dt-mk" style="left:${Math.min(100,rv)}%;background:${qc}"></span></div></div><span class="dt-val">${rv}</span><span class="dt-draft" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.6v8.8M2.6 7h8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div></div>`);
+        <div class="dt-bot"><div class="dt-meter"><div class="dt-track"><span class="dt-mk" style="left:${Math.min(100,rv)}%;background:${qc}"></span></div></div><span class="dt-val" style="color:${qc}">${rv}</span><span class="dt-draft" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.6v8.8M2.6 7h8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div></div>`);
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
     }
@@ -26677,13 +26680,13 @@ function scrH2HDraft(){
     const f=S.h2h.slots[cat.k];
     if(f){
       grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(cardDispName(f.golfer))}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(cardDispName(f.golfer))}</span></span><span class="val" style="color:${ratColor(f.value)}">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
       return;
     }
     if(spun){
       const rv=S.h2h.current[cat.k];
       const b=$(`<button class="attr dtake" aria-label="Draft ${cat.short}, rated ${rv}">
-        <span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${ratColor(rv)}"></i></span></button>`);
+        <span class="lab">${cat.short}</span><span class="val" style="color:${ratColor(rv)}">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${ratColor(rv)}"></i></span></button>`);
       b.onclick=()=>h2hTake(cat.k);
       grid.appendChild(b); return;
     }
