@@ -399,6 +399,9 @@
   /* The coming-soon card is the same object as a band card with the ink
      turned down, so it reads as a sibling in the list rather than as an ad
      dropped underneath it. */
+  /* The count wraps as one unit, so it never breaks mid-phrase into a
+     dangling "were at" on its own line. */
+  .band-meta .mine{color:var(--tealT); font-weight:900; white-space:nowrap;}
   .band.soon{border-style:dashed; box-shadow:none;}
   .band.soon .band-hd h2{font-size:26px; color:var(--mut);}
   .band.soon .band-meta{margin-bottom:11px;}
@@ -555,6 +558,17 @@
     letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
     padding:1px 5px; border-radius:4px;
     background:color-mix(in srgb,var(--gold) 18%, transparent);}
+  /* The mark a fan put on this show themselves. Dyed, because it is the one
+     thing on the screen that came from them rather than from the archive. */
+  .werethere{display:inline-block; vertical-align:middle; margin-left:9px;
+    font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.3px;
+    text-transform:uppercase; color:#071426; padding:3px 7px; border-radius:99px;
+    background:var(--dye-line);}
+  .wtbtn{margin-top:7px; padding:0; background:none; border:0; font:inherit;
+    font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--dim);
+    text-decoration:underline; text-underline-offset:3px; cursor:pointer;}
+  .wtbtn:hover{color:var(--ink);}
+  .wtbtn[aria-pressed="true"]{color:var(--mut);}
   .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
   .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
 
@@ -1297,6 +1311,13 @@ setTimeout(function(){
      (contact.html links the identical address). The form composes the message
      and hands it to the mail client, so the sender is a real person's own
      address and a reply goes back to them rather than into a void. -->
+<!-- A generic confirm, so a destructive tap always asks. The respin sheet
+     already did this for one action; the logo needed the same and there was
+     no shared thing to reach for. -->
+<div class="sheet" id="askSheet" role="dialog" aria-modal="true" aria-labelledby="askHd">
+  <div class="inner" id="askInner"></div>
+</div>
+
 <div class="sheet" id="bandSheet" role="dialog" aria-modal="true" aria-labelledby="bandSheetHd">
   <div class="inner">
     <div class="grab"></div>
@@ -1328,8 +1349,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=35';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=35';
+} from './scoring.js?v=37';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=37';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1486,12 +1507,19 @@ function renderHome(){
   const real = BANDS.filter(b => !b.sample);
   const test = BANDS.filter(b => b.sample);
 
-  const card = b => `
+  /* Your own shows, counted on the band you marked them against. It only
+     appears once there is one, so a first visit is not asked to care about a
+     feature it has not met yet. */
+  const card = b => {
+    const mine = attendedCount(b.id);
+    return `
       <section class="card band">
         <div class="band-hd"><h2>${esc(b.label)}</h2></div>
-        <div class="band-meta">${esc(b.note)}</div>
+        <div class="band-meta">${esc(b.note)}${mine
+          ? ` <b class="mine">&middot; ${mine} you were at</b>` : ''}</div>
         <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
       </section>`;
+  };
 
   /* The button comes before the how-it-works, not after. A returning player
      wants the button; a new one gets a single sentence above it and the rules
@@ -1898,10 +1926,16 @@ function renderDraft(){
     <div class="board">
       <div>
         <div class="card showcard">
-          <div class="d">${esc(fmtDate(show.show_date))}</div>
+          <div class="d">${esc(fmtDate(show.show_date))}${
+            wasThere(S.band.id, show.show_id)
+              ? '<span class="werethere" title="You marked this show as one you were at">I was here</span>' : ''}</div>
           <div class="v">${esc(show.venue || '')}${show.run
             ? `<span class="night">Night ${show.run.night} of ${show.run.of}</span>` : ''}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
+          <button class="wtbtn" type="button" id="wereThereBtn"
+            aria-pressed="${wasThere(S.band.id, show.show_id)}"
+            data-show="${esc(String(show.show_id))}">${
+              wasThere(S.band.id, show.show_id) ? 'Remove from your shows' : 'I was at this show'}</button>
         </div>
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
@@ -2194,6 +2228,98 @@ function askRespin(){
   document.getElementById('respinSheet').classList.add('on');
 }
 function closeRespin(){ document.getElementById('respinSheet').classList.remove('on'); }
+/* WERE YOU THERE.
+ *
+ * A fan's own shows are the most interesting thing they could bring to this
+ * game, and the archive already keys every show by an id, so marking one is a
+ * set of ids and nothing more.
+ *
+ * Local only, on purpose and for now. It works signed out, on first visit,
+ * with no round trip, and the shape is a plain array of show ids, which is
+ * exactly what a `segue_attended` row would carry when this grows an account
+ * behind it. Nothing here needs migrating later, only syncing.
+ *
+ * Keyed per band, because show ids are only unique inside one archive.
+ */
+const WERE_THERE_KEY = 'segue_were_there';
+function attendedAll(){
+  try { return JSON.parse(localStorage.getItem(WERE_THERE_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+function attendedSet(bandId){
+  return new Set(attendedAll()[bandId] || []);
+}
+function wasThere(bandId, showId){
+  return attendedSet(bandId).has(String(showId));
+}
+/** Returns the new state, so a caller can repaint without re-reading. */
+function toggleThere(bandId, showId){
+  const all = attendedAll();
+  const list = new Set(all[bandId] || []);
+  const id = String(showId);
+  const now = !list.has(id);
+  if (now) list.add(id); else list.delete(id);
+  all[bandId] = [...list];
+  try { localStorage.setItem(WERE_THERE_KEY, JSON.stringify(all)); } catch {}
+  return now;
+}
+function attendedCount(bandId){ return attendedSet(bandId).size; }
+
+/* ASK BEFORE ANYTHING DESTRUCTIVE.
+   The logo is a link home sitting in the header on every screen, right where
+   a thumb reaches. Mid draft that silently threw away a show somebody was six
+   picks into, with no undo and nothing recorded. Now it asks. */
+const askSheet = document.getElementById('askSheet');
+let askOnYes = null;
+function ask({ title, body, confirm, cancel, onYes }){
+  askOnYes = onYes;
+  document.getElementById('askInner').innerHTML = `
+    <div class="grab"></div>
+    <div class="respin-hd" id="askHd">${esc(title)}</div>
+    <div class="respin-cost">${esc(body)}</div>
+    <div class="respin-acts">
+      <button class="btn danger" type="button" id="askYes">${esc(confirm)}</button>
+      <button class="btn" type="button" id="askNo">${esc(cancel)}</button>
+    </div>`;
+  askSheet.classList.add('on');
+}
+function closeAsk(){ askSheet.classList.remove('on'); askOnYes = null; }
+askSheet.addEventListener('click', e => {
+  if (e.target === askSheet || e.target.closest('#askNo')){ closeAsk(); return; }
+  if (e.target.closest('#askYes')){ const fn = askOnYes; closeAsk(); if (fn) fn(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && askSheet.classList.contains('on')) closeAsk();
+});
+
+/* A draft is only "in progress" once something has been played or the board is
+   open: landing on the draft screen and immediately leaving costs nothing, and
+   asking then would be noise. */
+function draftInProgress(){
+  return (S.screen === 'draft' || S.screen === 'reveal')
+    && (S.round > 0 || S.sets.some(x => x.length));
+}
+document.addEventListener('click', e => {
+  const wt = e.target.closest('#wereThereBtn');
+  if (!wt) return;
+  const now = toggleThere(S.band.id, wt.dataset.show);
+  toast(now ? 'Added to your shows' : 'Removed from your shows');
+  render();   // the tag and the button label both follow the state
+});
+
+document.querySelector('.lockup').addEventListener('click', e => {
+  if (!draftInProgress()) return;      // home already, or nothing to lose
+  e.preventDefault();
+  ask({
+    title: 'Leave this show?',
+    body: 'The setlist you have built so far goes with it. Nothing is scored '
+      + 'until the encore closes and the night plays back.',
+    confirm: 'Leave the show',
+    cancel: 'Keep building',
+    onYes: () => { window.location.href = '/setlist/'; },
+  });
+});
+
 /* The toast element and its styles have been in the page since the start with
    nothing ever calling them. This is the function the markup was waiting for. */
 let toastTimer;
