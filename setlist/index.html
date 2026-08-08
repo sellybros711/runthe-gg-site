@@ -282,7 +282,6 @@
     background-size:auto, auto, 150% 150%;
     background-position:50% 50%, 50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
-  .hero p{margin-left:auto; margin-right:auto;}
   /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
      makes it look printed. Sized in px so it stays a screen rather than
      scaling into stripes on a wide viewport. */
@@ -344,7 +343,17 @@
   .tagline{font-family:var(--ui); font-size:19px; letter-spacing:.5px; text-transform:uppercase;
     line-height:1.05; margin:0 0 8px;}
   @media (max-width:420px){ .tagline{font-size:17px;} }
-  .hero p{margin:0; font-size:14px; line-height:1.45;}
+  /* THE SHORTHAND IS WHY THIS HAS TO BE ONE RULE.
+     The blurb is capped at 32ch and centred by auto side margins, and that
+     was declared in its own `.hero p{margin-left:auto; margin-right:auto}`
+     two hundred lines up. This rule then said `margin:0`, same specificity
+     and later in the file, so the shorthand quietly reset both sides to zero
+     and the sentence sat 10px left of the wordmark above it. Nothing errors,
+     nothing looks broken in isolation, and text-align:center still reported
+     `center` because the TEXT was centred inside a box that was not.
+     Both declarations now live here, so a future `margin:` cannot land
+     between them. */
+  .hero p{margin:0 auto; font-size:14px; line-height:1.45;}
 
   /* Three columns even on a phone: the copy is short, and stacked they cost
      three times the height for the same three sentences. */
@@ -1314,12 +1323,32 @@
      All of this is OPTIONAL. Nothing below is on the path between opening the
      page and finishing a show: if supabase never loads, #meBtn stays hidden,
      the board says it is offline, and the game is exactly what it was. */
-  .pill.me{border-color:var(--line2); background:var(--card2); cursor:pointer;
-    max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* THERE IS NO BARE `.pill` RULE, which is what this was written against.
+     Every shared property lives on `.pill.site`, so `.pill.me` inherited no
+     radius, no padding and no border at all: the account chip rendered as a
+     sharp-cornered box, which next to two real pills reads as a validation
+     error rather than as a control. Declared in full here rather than by
+     inventing a base rule, because `.pill.site` shrinks its own padding under
+     380px and this one does not want to.
+     125px, not 120: measured, a 16-character name ellipsised one character
+     early at 120 and the extra 5px buys the whole word back on the names that
+     were only just missing. */
+  .pill.me{flex:0 0 auto; font-size:11px; font-weight:800; letter-spacing:.04em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:var(--mut); background:var(--card2); cursor:pointer; max-width:125px;
+    border:1px solid var(--line2); border-radius:99px; padding:7px 11px;}
   .pill.me:hover{border-color:var(--teal); color:var(--tealT);}
-  .pill.me.in{border-color:transparent; color:var(--ink);
+  .pill.me:focus-visible{outline:2px solid var(--teal); outline-offset:3px;}
+  /* THE SWEEP RUNS ALONG THE SHAPE, and this is the third time that has been
+     the lesson. --dye-line is a 180deg gradient, built for a tall thin arrow;
+     on a chip four times wider than it is tall it put coral across the top
+     edge and violet across the bottom, which is not a dye, it is a red box
+     with a purple underline. Written out at 90deg so the five colours run the
+     long way, the way the header rule does. */
+  .pill.me.in{color:var(--ink); border-color:transparent;
     background:linear-gradient(var(--card2),var(--card2)) padding-box,
-      var(--dye-line) border-box; border:1px solid transparent;}
+      linear-gradient(90deg, var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+        var(--teal) 75%, var(--violet) 100%) border-box;}
 
   /* The two ways into the account, side by side under the bands. Not in the
      hero: a first visit is here to press one button and it is not this one. */
