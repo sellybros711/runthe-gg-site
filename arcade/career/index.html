@@ -279,8 +279,8 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
-  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.t && e.t.length>=2 && (e.f||0)>=3; });
-  var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0)>=3){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
+  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.t && e.t.length>=2 && (e.f||0) >= (e.sport==='NFL'?4:3); });
+  var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0) >= (e.sport==='NFL'?4:3)){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
 
   function poolForMode(){ return SPORTFILTER ? POOL.filter(function(e){ return e.sport===SPORTFILTER; }) : POOL; }
   function buildRounds(){

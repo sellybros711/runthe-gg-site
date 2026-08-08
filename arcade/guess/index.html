@@ -433,7 +433,7 @@
     if(TARGETS.length<60) TARGETS = GUESSABLE.slice();
   } else {
     // ---- curated-corpus fallback (thin/absent roster file) -----------------
-    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
+    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0) >= (e.sport==='NFL'?4:3); });
     if(ROSTERS){ var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); }); if(live.length>=20) GUESSABLE=live; else ROSTERS=null; }
     var targetsFor = function(fMin, requireAct){ return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; }); };
     TARGETS = targetsFor(4,true);
