@@ -22163,7 +22163,8 @@ function scrDailyResult(){
       primary.onclick=()=>{ track('daily_result_token_play'); beginDailyTokenPlay(); }; cr=ghostRecs();
       buyTok=true;   // they can still stock up on more
     } else if(TOKENS_ENABLED){
-      primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Buy Daily Tokens ▸<span class="sub">Play more rounds today</span></button>`);
+      // token blue (#5bcfe8), the same colour Daily Tokens wear in the store
+      primary=$(`<button class="btn" style="flex:1;margin:0;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Daily Tokens ▸<span class="sub">Play more rounds today</span></button>`);
       primary.onclick=()=>{ track('daily_result_buytok',{from:'primary'}); S.overlay='shop'; S.shopSec='buckets'; render(); }; cr=ghostRecs();
     } else {
       primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
