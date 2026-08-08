@@ -404,11 +404,6 @@
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* marquee banner over the lead */
-  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
-  .lead::before{ content:"🧢 LOCKER ROOM"; position:absolute; top:0; left:0; right:0;
-    background:var(--teal); color:#071426; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.18em; padding:7px 15px; }
 
   /* scoreboard section-header bars */
   .pool-h{ align-items:center; background:color-mix(in srgb, var(--ink) 9%, var(--card));
@@ -742,6 +737,7 @@
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
+      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has 20 tiles, so the count-based guard in render() wouldn't catch it)
       // free foothold: reveal the easiest group's name to start (no guess cost)
       if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
     }

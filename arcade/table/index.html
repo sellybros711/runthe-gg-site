@@ -83,8 +83,6 @@
     .playzone{min-height:calc(100dvh - 360px);}
     .prompt{margin:2px 0 6px; font-size:clamp(15px,2.4vh,20px);} .ladder{margin:0 auto 8px;}
     .a-gametitle{margin:0 0 8px;}
-    /* cap the era+teams line to 2 lines so a 5-team career can't make a tall card */
-    .pcard .meta{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
     .pcard{padding:clamp(12px,2vh,20px) 14px;}
   }
 
@@ -114,7 +112,10 @@
   .pcard.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 15%, var(--card));}
   .pcard.dim{opacity:.55;}
   .pcard .nm{font-weight:900; font-size:clamp(19px,3.4vh,32px); line-height:1.1; color:var(--ink);}
-  .pcard .meta{font-size:clamp(11.5px,1.8vh,15px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
+  .pcard .meta{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:clamp(11px,1.7vh,14px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
+  .pcard .meta .era{color:var(--goldT); font-weight:900; letter-spacing:.09em;}
+  .pcard .meta .tm{color:var(--mut); font-weight:800;}
+  .pcard .meta .tm.more{color:var(--dim); font-weight:700;}
   .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
   .pcard.revealed .num{height:auto; opacity:1; margin-top:2px;}
   .pcard .tap{font-size:clamp(10.5px,1.6vh,13px); font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
@@ -308,7 +309,8 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   // pool: recognisable team-sport athletes with a jersey number
-  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.j && e.j.length && (e.f||0)>=3; });
+  // NFL floor lifted to f>=4: its f=3 tier is the "who is this?" flood; NBA/MLB stay at 3
+  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.j && e.j.length && (e.f||0) >= (e.sport==='NFL'?4:3); });
   function jn(e){ return e.j[0]; }
 
   // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
@@ -342,6 +344,10 @@
   // clues the player actually reasons from. Sport is implied by the teams.
   function eraStr(e){ var d=e.decade; if(!d||!d.length) return ''; var a=d[0], b=d[d.length-1]; return a===b ? (a+'s') : (a+'s–'+b+'s'); }
   function metaLine(e){ return [eraStr(e)].concat(e.t||[]).filter(Boolean).join(' · '); }
+  // era on its own line, then the teams stacked beneath (cleaner than one long list)
+  function metaHTML(e){ var er=eraStr(e), ts=(e.t||[]); var o=''; if(er) o+='<span class="era">'+esc(er)+'</span>';
+    ts.slice(0,3).forEach(function(t){ o+='<span class="tm">'+esc(t)+'</span>'; });
+    if(ts.length>3) o+='<span class="tm more">+'+(ts.length-3)+' more</span>'; return o; }
   // team-color accent: look up the player's team in the shared palette
   function teamStyle(e){
     var tm=e.t&&e.t[0], c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);   // matches the team shown on the card
@@ -362,9 +368,9 @@
     var pair=SEQ[idx];
     renderLadder();
     vs.innerHTML =
-      '<div class="pcard" data-s="0"'+teamStyle(pair[0])+'><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+esc(metaLine(pair[0]))+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></div>'+
+      '<div class="pcard" data-s="0"'+teamStyle(pair[0])+'><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+metaHTML(pair[0])+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></div>'+
       '<div class="vs">VS</div>'+
-      '<div class="pcard" data-s="1"'+teamStyle(pair[1])+'><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+esc(metaLine(pair[1]))+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></div>';
+      '<div class="pcard" data-s="1"'+teamStyle(pair[1])+'><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+metaHTML(pair[1])+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></div>';
     [].forEach.call(vs.querySelectorAll('.pcard'), function(c){ c.addEventListener('click', function(){ pick(+c.dataset.s); }); });
   }
   function pick(side){
