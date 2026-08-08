@@ -261,6 +261,22 @@ check(/--sp-1:/.test(game) && /--sp-4:/.test(game), 'the page spacing is a scale
 check(!/\.about\s*\+\s*\.sfoot/.test(game),
       'nothing keys spacing off .about being next to the footer');
 
+/* The top bar is full bleed, and its dye rule is a HORIZONTAL sweep. It ran
+   on the conic for months: a conic radiates from its own centre, so on a 3px
+   tall strip only two hues are ever on screen and it read as a yellow bar
+   that turned blue. Same geometry bug the segue arrow had. */
+check(/\.topbar\{[^}]*margin:0 calc\(var\(--gut\) \* -1\)/.test(game),
+      'the top bar reaches the screen edges');
+check(/\.topbar:after\{[^}]*linear-gradient\(90deg/.test(game),
+      'the top rule sweeps horizontally, not out of a conic');
+check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
+      'and does not use the conic on a 3px strip');
+/* The hero fade resolves to --bg, which is near-black on the dark theme, and
+   the hero ink is pinned dark. Any type inside the faded zone is dark on
+   dark: at 58% the blurb measured 2.55:1. It must start below the copy. */
+check(/linear-gradient\(to bottom, transparent 7\d%, var\(--bg\)/.test(game),
+      'the hero fade begins below the last line of type');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
