@@ -143,24 +143,44 @@
   /* The gutter is a token so full-bleed blocks can cancel it exactly. The
      poster hero has to reach the screen edge, and a hardcoded 18px here with
      a 14px override below is two numbers to get wrong in three places. */
-  :root{--gut:18px;}
+  :root{--gut:18px;
+    /* Every gap between blocks on the home page was its own number: measured
+       top to bottom it ran 10, 16, 20, 18, 44, 34. Nothing was wrong with any
+       one of them and the page had no rhythm, which is what reads as the
+       spacing being off. Four steps, and blocks pick one. */
+    --sp-1:10px; --sp-2:18px; --sp-3:30px; --sp-4:46px;}
   @media (max-width:640px){ :root{--gut:14px;} }
   .wrap{width:100%; max-width:1080px; margin:0 auto;
     padding:0 var(--gut) calc(24px + env(safe-area-inset-bottom,0));}
 
   /* Sticky and short. The draft screen is the one a player sits on eight times
      a game, so every fixed pixel here is a pixel of song list they lose. */
+  /* Full bleed. It sat inside the wrap's gutter, so the bar's background and
+     its rule stopped short of the screen edge and the sticky header read as a
+     floating strip with page showing either side of it. The negative margin
+     is cancelled by matching padding, so the content stays on the gutter. */
   .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:10px;
-    padding:calc(8px + env(safe-area-inset-top,0)) 0 8px; background:var(--bg);
+    margin:0 calc(var(--gut) * -1);
+    padding:calc(8px + env(safe-area-inset-top,0)) var(--gut) 8px; background:var(--bg);
     border-bottom:1px solid var(--line);}
-  /* The top rule is the page's one continuous piece of tie dye. It was set to
-     300% wide, which zoomed so far into the gradient that only a single colour
-     was ever on screen — the same mistake the jamchart chip made. At 140% the
-     whole wheel crosses the bar and the slide actually reads as a sweep. */
+  /* The top rule is the page's one continuous piece of tie dye, and it spent a
+     long time not looking like any such thing: it used the CONIC gradient on a
+     3px tall strip. A conic radiates from its own centre, so across a 390 by 3
+     box you only ever see two hues, one either side of the middle. It rendered
+     as a yellow bar that turned blue, which reads as a progress meter nobody
+     asked for rather than as tie dye. Same geometry bug the segue arrow had.
+     A horizontal sweep instead, carrying TWO full cycles across a tile twice
+     the bar's width, so travelling one bar-width is exactly one cycle and the
+     loop has no seam. */
   .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px;
-    background:var(--dye); background-size:140% 100%; opacity:.85;
+    opacity:.9;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 10%, var(--green) 20%, var(--teal) 30%,
+      var(--violet) 40%, var(--coral) 50%, var(--gold) 60%, var(--green) 70%,
+      var(--teal) 80%, var(--violet) 90%, var(--coral) 100%);
+    background-size:200% 100%;
     animation:dyeSlide 26s linear infinite;}
-  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:140% 50%;} }
+  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:100% 50%;} }
   body.playing .topbar{padding-bottom:6px;}
   /* THE BAR IS THE GAME'S, not the platform's.
      It used to be a back arrow, the R-GAMES badge and a theme toggle, which
@@ -236,21 +256,50 @@
      Now the dye is the FIELD, at full strength, with the type knocked into it
      in ink. It is the one loud moment on the page: everything below stays
      quiet so this can be loud. */
-  .hero{position:relative; isolation:isolate; overflow:hidden;
-    margin:10px calc(var(--gut) * -1) 16px; padding:22px var(--gut) 20px;
-    background:var(--dye); background-size:150% 150%; background-position:50% 50%;
+  /* THE FIELD IS LIFTED UNDER THE TYPE. Measured on the real page, black ink
+     over the raw dye bottomed out at 3.25:1 where the sweep runs through teal
+     and violet, against the 4.5 that body text needs. The median was a fine
+     6-8:1, which is why it looked acceptable in a screenshot and was hard to
+     read on a phone: the failure is the VARIANCE across the word, not the
+     average.
+     A flat white layer over the dye lifts the floor to 6.08:1 everywhere.
+     It sits in the background stack rather than in a pseudo-element, because
+     ::after paints OVER the content and would wash the glyphs along with the
+     field, putting the contrast straight back. */
+  .hero{position:relative; isolation:isolate; overflow:hidden; text-align:center;
+    margin:0 calc(var(--gut) * -1) var(--sp-1); padding:24px var(--gut) 64px;
+    /* The bottom edge dissolves into the page instead of stopping dead against
+       it. The fade is the FIRST layer of the background stack, under the type
+       and over the dye, so it softens the field without touching the glyphs.
+       It has to begin BELOW the last line of type, not near it. The fade
+       resolves to --bg, which is near-black on the dark theme, and the hero's
+       ink is pinned dark: any type sitting in the faded zone is dark on dark.
+       Measured, the blurb ends at 69% of the hero, so the fade starts at 74%
+       and the extra bottom padding gives it somewhere to happen. Started at
+       58% it put the blurb at 2.55:1 on the dark theme. */
+    background:linear-gradient(to bottom, transparent 74%, var(--bg) 100%),
+      linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
+    background-size:auto, auto, 150% 150%;
+    background-position:50% 50%, 50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
+  .hero p{margin-left:auto; margin-right:auto;}
   /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
      makes it look printed. Sized in px so it stays a screen rather than
      scaling into stripes on a wide viewport. */
+  /* Finer and lighter. At 30% black on a 4px grid the dots were themselves
+     the darkest pixels behind the type, so the screen meant to add texture
+     was a third of the contrast problem. */
   .hero:before{content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.30) 1px, transparent 1.7px);
+    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.16) .8px, transparent 1.4px);
     background-size:4px 4px; mix-blend-mode:multiply;}
   .hero > *{position:relative;}
   /* Ink, not --ink. The field underneath is the dye in both themes, so the
      type on it cannot follow the theme or it turns white-on-yellow in light. */
   .hero .eyebrow, .hero .tagline, .hero p{color:#12100E;}
-  .hero .eyebrow{opacity:.72;}
+  /* A solid ink rather than opacity:.72. Translucent type blends with whatever
+     is behind it, so its real contrast changes across the dye and cannot be
+     measured from its declared colour: this one reads the same everywhere. */
+  .hero .eyebrow{color:#2A241E;}
   .hero p{max-width:32ch; font-weight:800;}
   /* No added tracking: the slab carries its own sidebearings, and at 40px on a
      320px screen the extra half-pixel per letter is the difference between
@@ -268,12 +317,25 @@
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
 
-  /* The condensed face, not the slab. The slab filled the line at 40px and had
-     no room left to get bigger; Anton at the same width runs half again the
-     height, which is what makes it read as a poster rather than as a heading.
-     The dye moved to the field behind it, so the word itself is solid ink. */
-  .hero h1{font-family:var(--ui); font-size:clamp(58px,17vw,104px); line-height:.84;
-    letter-spacing:-1px; margin:2px 0 4px; text-transform:uppercase; color:#12100E;}
+  /* THE SLAB, the same face the top bar sets SEGUE in, so the wordmark is one
+     thing in two places rather than two fonts saying the same word.
+     It is 1.67x wider than the condensed face at a given size, so the size
+     comes down to pay for it: measured in the browser at 100px, SEGUE runs
+     366px in the slab against 219px in Anton. 25vw fills about 91% of the
+     line at every width from 320 up, with the cap stopping it growing past
+     the point where it would outrun a tablet.
+     TRACKING IS NOT OPTIONAL AT THIS SIZE. The old note here said the slab
+     carries its own sidebearings and needs none, and that held at the 38 to
+     68px it used to be set at. At 90px the slabs collide: rendered in
+     isolation at zero tracking, the S's terminal fuses into the E and the U's
+     stems close up against their neighbours, so the word reads as one black
+     mass with hairline scratches in it. .045em separated most of the pairs but
+     left the G and the U a single pixel apart, which still reads as a scratch
+     rather than as a gap; .06em is the first value where every pair is clear.
+     It is paid for in size, since tracking adds about 0.3em of width across
+     five letters. */
+  .hero h1{font-family:var(--hero); font-size:clamp(56px,22.5vw,98px); line-height:.92;
+    letter-spacing:.06em; margin:2px 0 6px; text-transform:uppercase; color:#12100E;}
   .hero h1 .accent{color:inherit;}
   @keyframes dyeDrift{
     0%,100%{ background-position:44% 46%; }
@@ -295,7 +357,7 @@
      Plain sentences, second person, contractions. The first version wrote
      every line as a bold fragment followed by a supporting fragment, five
      times running, which is a rhythm nobody uses out loud. */
-  .how{margin:20px 0 14px;}
+  .how{margin:var(--sp-4) 0 0;}
   /* A heading with a rule running off the end of it, so the section reads as
      a block on a poster rather than as a label floating above a list. */
   .how h3{font-family:var(--ui); font-size:15px; letter-spacing:3px; text-transform:uppercase;
@@ -307,19 +369,26 @@
      is set in the display face at the size of a track number on a sleeve, and
      the rule between rows does the separating that the circles were doing. */
   .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
-  .steps li{display:flex; gap:13px; align-items:baseline; padding:11px 0;
+  .steps li{display:flex; gap:10px; align-items:baseline; padding:8px 0;
     border-top:1px solid var(--line);}
   .steps li:first-child{border-top:0; padding-top:2px;}
-  .steps b{flex:0 0 auto; width:30px; font-family:var(--ui); font-weight:400;
-    font-size:30px; line-height:.9; color:var(--acc-step, var(--dim)); text-align:left;}
+  /* The numerals were baseline aligned and still read as floating: measured,
+     the numeral's box sat 11px above the first text line's top while their
+     bottoms matched to the pixel. Baselines were never the problem, the size
+     gap was. A 30px numeral beside 13.5px copy towers over the line it is
+     supposed to belong to.
+     21px keeps the numeral clearly the loudest thing in the row and cuts the
+     overhang to about 4px, which reads as a lead-in rather than as a mistake. */
+  .steps b{flex:0 0 auto; width:17px; font-family:var(--ui); font-weight:400;
+    font-size:21px; line-height:1; color:var(--acc-step, var(--dim)); text-align:left;}
   .steps li:nth-child(1) b{--acc-step:var(--coralT);}
   .steps li:nth-child(2) b{--acc-step:var(--goldT);}
   .steps li:nth-child(3) b{--acc-step:var(--greenT);}
   .steps li:nth-child(4) b{--acc-step:var(--tealT);}
   .steps li:nth-child(5) b{--acc-step:var(--violetT);}
-  .steps span{font-size:13.5px; line-height:1.5; color:var(--ink); font-weight:600;}
+  .steps span{font-size:13.5px; line-height:1.45; color:var(--ink); font-weight:600;}
 
-  .tryout{margin:18px 0 4px; text-align:center;}
+  .tryout{margin:var(--sp-3) 0 0; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
   .tryout span{display:block; margin-top:7px; font-size:11.5px; font-weight:600;
     color:var(--dim);}
@@ -370,32 +439,52 @@
     color:var(--mut);}
 
   /* ---------------- draft ---------------- */
-  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:9px 14px; margin-bottom:10px;}
-  /* wrap + a full-width bar row: the clock reads better as one line across the
-     whole card than as a stub under the set name. */
-  .hud{gap:8px 8px; flex-wrap:wrap;}
-  .hud > div:first-child{min-width:0; flex:1;}
-  .hud .rd{font-family:var(--ui); font-size:18px; line-height:1.05;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .hud .rd-left{font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.4px;
-    text-transform:uppercase; color:var(--dim); margin-left:1px;}
-  .hud .rd-left.clk-low{color:var(--goldT);} .hud .rd-left.clk-out{color:var(--redT);}
-  /* A bar so the clock can be read at a glance instead of parsed. Green while
-     there is room, gold when the set is nearly spent, red at the curfew. */
-  .timebar{width:100%; height:5px; border-radius:99px; background:var(--card3);
-    overflow:hidden; margin:1px 0 0;}
+  /* THE CLOCK IS THE GAME. Everything here exists to say one thing: this is
+     draining and you are spending it. */
+  .hud{display:block; padding:10px 14px 11px; margin-bottom:10px;}
+  .hud-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .hud-where{font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+    color:var(--dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  .hud-clock{display:flex; align-items:baseline; gap:9px; margin:5px 0 7px;}
+  /* The number, at the size of the thing you are actually playing against.
+     It was 18px and sharing that size with the set name. */
+  .hc-n{font-family:var(--ui); font-size:42px; line-height:.9; letter-spacing:-.5px;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+    transition:color var(--t-base) var(--ease);}
+  .hc-l{font-size:10.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim); line-height:1.15;}
+  /* What the night has already cost, opposite the number, so the pair reads
+     as spent-against-remaining rather than as a lone figure. */
+  .hc-used{margin-left:auto; text-align:right; font-family:var(--ui); font-size:17px;
+    color:var(--dim); font-variant-numeric:tabular-nums; line-height:1;}
+  .hc-used i{display:block; font-family:var(--body); font-style:normal; font-size:9.5px;
+    font-weight:900; letter-spacing:1.4px; text-transform:uppercase; margin-top:3px;}
+  .hud.clk-low .hc-n, .hud.clk-low .hc-l{color:var(--goldT);}
+  .hud.clk-out .hc-n, .hud.clk-out .hc-l{color:var(--redT);}
+  .hud.clk-out .hc-n{animation:clockPulse 1.6s ease-in-out infinite;}
+  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+
+  /* Thicker, and the track is dark so the spent part of the set is visible
+     rather than implied. At 5px on a light card the bar was a hairline. */
+  .timebar{width:100%; height:9px; border-radius:99px; overflow:hidden; margin:0;
+    background:color-mix(in srgb, var(--ink) 13%, transparent);}
   .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
     transition:width var(--t-slow) var(--ease), background-color var(--t-slow) var(--ease);}
-  .timebar.clk-low > span{background:var(--goldT);}
-  .timebar.clk-out > span{background:var(--redT);}
-  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
-    transition:color var(--t-base) var(--ease);}
-  .hud .rd-clock.clk-low{color:var(--goldT);}
-  .hud .rd-clock.clk-out{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
-  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
-  .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-    color:var(--dim); margin-top:3px;}
+  .hud.clk-low .timebar > span{background:var(--goldT);}
+  .hud.clk-out .timebar > span{background:var(--redT);}
+
+  /* The night, to scale. Two sets and an encore, each block as wide as its own
+     budget, so where you are is a place in the evening and not just a label. */
+  .nightstrip{display:flex; gap:3px; margin-top:7px;}
+  .ns-seg{height:16px; border-radius:3px; display:flex; align-items:center;
+    justify-content:center; overflow:hidden; background:color-mix(in srgb, var(--ink) 8%, transparent);}
+  .ns-seg i{font-style:normal; font-size:8.5px; font-weight:900; letter-spacing:1.2px;
+    text-transform:uppercase; color:var(--dim); white-space:nowrap;}
+  .ns-seg.done{background:color-mix(in srgb, var(--ink) 22%, transparent);}
+  .ns-seg.done i{color:var(--mut);}
+  .ns-seg.now{background:var(--teal);}
+  .ns-seg.now i{color:var(--bg);}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
   .pip.done{background:var(--mut);} .pip.now{background:var(--teal); transform:scale(1.25);}
@@ -1024,8 +1113,9 @@
      survives the render and describes the game to both. It is not a stub for the app and it
      is not hidden text -- it sits under the game as an about section, which is what it reads
      as to somebody who has just finished a show. */
-  .about{max-width:760px; margin:44px auto 0; padding-top:26px;
+  .about{max-width:760px; margin:var(--sp-4) auto 0; padding-top:var(--sp-2);
     border-top:1px solid var(--line); color:var(--mut);}
+
   /* Once the game is running it is not a page with an About section on it, it
      is a game. The copy is for whoever landed here cold. */
   body.playing .about{display:none;}
@@ -1042,7 +1132,11 @@
     margin:22px 0 6px;}
   .about p{margin:0 0 12px; font-size:14.5px; line-height:1.62;}
   .about a{color:var(--teal);}
-  .sfoot{max-width:760px; margin:30px auto 0; padding:18px 0 34px;
+  /* Spaced by its own margin, never by a sibling selector off .about: there
+     is an ad slot between the two that is injected and then REMOVED when it
+     has nothing to show, so anything keyed on adjacency matches or does not
+     depending on when the rule is evaluated against the DOM. */
+  .sfoot{max-width:760px; margin:var(--sp-4) auto 0; padding:var(--sp-2) 0 var(--sp-3);
     border-top:1px solid var(--line); color:var(--dim); font-size:13px; text-align:center;}
   .sfoot a{color:inherit; text-decoration:none;}
   .sfoot a:hover{color:var(--ink); text-decoration:underline;}
@@ -1180,8 +1274,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=26';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=26';
+} from './scoring.js?v=33';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=33';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1696,30 +1790,51 @@ function renderDraft(){
     </button>` : '');
 
   app.innerHTML = `
-    <div class="card hud">
-      <div>
-        <div class="rd">${esc(cfg.label)}
-          <span class="rd-clock ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
-            >${fmtClock(Math.max(0, left))}</span>
-          <span class="rd-left ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}">left</span></div>
-        <div class="md">pick ${S.round + 1}${
-          S.respins ? ` · ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
+    ${(() => {
+      /* THE CLOCK IS THE GAME, so it is the biggest thing on the screen.
+         It used to read "Set I 75:00 left" with the set name and the time at
+         the same size and "left" at 10px, over a full green bar. Nothing
+         about that said a countdown: green and full reads as healthy
+         progress, and the number you are actually playing against was one
+         word among four. */
+      const state = left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : '';
+      const used = Math.max(0, budget - left);
+      const cost = respinCost(S.respins);
+      const can = canRespin(S.sets, si, S.respins, S.closed, S.spent);
+      /* The whole night, so the set you are in is a place rather than a
+         label. Each block is sized by its own budget, so the encore reads as
+         the ten minutes it is. */
+      const strip = SETS.map((cfg2, i) => {
+        const st = S.closed[i] ? 'done' : i === si ? 'now' : 'todo';
+        /* The encore is 600 seconds of a 9300 second night, so its block is
+           6.5% wide: about 23px, which clipped "Encore" to "CO". */
+        const nm = i === ENCORE_INDEX ? 'E' : cfg2.label;
+        return `<span class="ns-seg ${st}" style="flex:${cfg2.seconds}"
+          title="${esc(cfg2.label)}"><i>${esc(nm)}</i></span>`;
+      }).join('');
+      return `<div class="card hud ${state}">
+      <div class="hud-row">
+        <div class="hud-where">${esc(cfg.label)} &middot; pick ${S.round + 1}${
+          S.respins ? ` &middot; ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
+        <div class="hud-btns">
+          ${cost === null ? '<span class="nospin">No spins left</span>'
+            : `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
+                title="${can ? 'Trade stage time for a different show' : 'Not enough time left in this set'}"
+                >Respin</button>`}
+          <button class="btn tiny" type="button" id="openSets">Time</button>
+        </div>
       </div>
-      <div class="hud-btns">
-        ${(() => {
-          const cost = respinCost(S.respins);
-          const can = canRespin(S.sets, si, S.respins, S.closed, S.spent);
-          if (cost === null) return '<span class="nospin">No spins left</span>';
-          return `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
-            title="${can ? '' : 'Not enough time left in this set'}">
-            Respin &middot; ${fmtClock(cost)}</button>`;
-        })()}
-        <button class="btn tiny" type="button" id="openSets">Clock</button>
+      <div class="hud-clock" role="img"
+        aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
+        <span class="hc-n">${fmtClock(Math.max(0, left))}</span>
+        <span class="hc-l">left in<br>${esc(cfg.label)}</span>
+        <span class="hc-used">${fmtClock(used)}<i>on stage</i></span>
       </div>
-      <div class="timebar ${left < 5 * 60 ? 'clk-out' : left < 15 * 60 ? 'clk-low' : ''}"
-        role="img" aria-label="${fmtClock(Math.max(0, left))} left in ${esc(cfg.label)}">
+      <div class="timebar">
         <span style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget)))}%"></span></div>
-    </div>
+      <div class="nightstrip">${strip}</div>
+    </div>`;
+    })()}
 
     <div class="board">
       <div>

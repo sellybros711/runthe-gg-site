@@ -226,14 +226,66 @@ check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the
    The song list was fourteen identical rounded cards and the home page was a
    centred stack with numbered circles; both are the shapes a component
    library hands you, and both are one careless edit away from coming back. */
-check(/\.hero\{[^}]*background:var\(--dye\)/.test(game),
+check(/\.hero\{[^}]*var\(--dye\)/.test(game),
       'the hero is a dye field, not a flat background');
+/* The scrim that makes the hero type legible has to sit UNDER the type. In
+   ::after it paints over the glyphs and washes them along with the field,
+   which puts the contrast straight back where it was while still looking
+   like a fix. */
+check(/\.hero\{[^}]*linear-gradient\(rgba\(255,255,255/.test(game),
+      'the contrast lift is in the hero background, below the content');
+check(!/\.hero:after\{[^}]*rgba\(255,255,255/.test(game),
+      'and not in an ::after that would cover the type');
 check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
 check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
       'how-it-works dropped the numbered circles');
 check(/<details class="about"/.test(game), 'the about wall is folded away');
 check(/body\.playing \.about\{display:none/.test(game),
       'and gone entirely once you are playing');
+
+/* The HUD's whole job is to make the clock feel like the thing you are
+   playing against. It shipped once with the set name and the countdown at the
+   same size over a full green bar, which reads as healthy progress. */
+check(/\.hc-n\{[^}]*font-size:4\dpx/.test(game), 'the countdown is the biggest thing in the HUD');
+check(/>Respin<\/button>/.test(game), 'the respin button just says Respin');
+check(!/Respin\s*&middot;\s*\$\{fmtClock\(cost\)\}/.test(game),
+      'and does not carry its price in the label');
+check(/class="respin-cost"/.test(game), 'the price is on the confirm instead');
+check(/class="nightstrip"/.test(game), 'the HUD shows the shape of the night');
+
+/* The home page's block gaps were six different numbers before they were put
+   on a scale. And nothing may key its spacing off .about being adjacent to
+   the footer: an ad slot sits between them and is removed when unfilled, so
+   such a rule silently applies or does not depending on timing. */
+check(/--sp-1:/.test(game) && /--sp-4:/.test(game), 'the page spacing is a scale, not six numbers');
+check(!/\.about\s*\+\s*\.sfoot/.test(game),
+      'nothing keys spacing off .about being next to the footer');
+
+/* The top bar is full bleed, and its dye rule is a HORIZONTAL sweep. It ran
+   on the conic for months: a conic radiates from its own centre, so on a 3px
+   tall strip only two hues are ever on screen and it read as a yellow bar
+   that turned blue. Same geometry bug the segue arrow had. */
+check(/\.topbar\{[^}]*margin:0 calc\(var\(--gut\) \* -1\)/.test(game),
+      'the top bar reaches the screen edges');
+check(/\.topbar:after\{[^}]*linear-gradient\(90deg/.test(game),
+      'the top rule sweeps horizontally, not out of a conic');
+check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
+      'and does not use the conic on a 3px strip');
+/* The hero fade resolves to --bg, which is near-black on the dark theme, and
+   the hero ink is pinned dark. Any type inside the faded zone is dark on
+   dark: at 58% the blurb measured 2.55:1. It must start below the copy. */
+check(/linear-gradient\(to bottom, transparent 7\d%, var\(--bg\)/.test(game),
+      'the hero fade begins below the last line of type');
+
+/* The hero wordmark is the same face as the top bar's, and it needs tracking:
+   Alfa Slab One's slabs collide at zero letter-spacing above about 80px, so
+   the word renders as one black mass with hairlines in it. */
+check(/\.hero h1\{[^}]*font-family:var\(--hero\)/.test(game),
+      'the hero wordmark uses the same face as the top bar');
+check(/\.brand\{[^}]*font-family:var\(--hero\)/.test(game),
+      'and the top bar still uses it too');
+check(/\.hero h1\{[^}]*letter-spacing:\.0[5-9]em/.test(game),
+      'the hero wordmark is tracked so the slabs do not collide');
 
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
