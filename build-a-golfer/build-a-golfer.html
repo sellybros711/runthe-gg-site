@@ -713,6 +713,8 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--bv-bd); box-shadow:0 16px 38px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.07);
     --bv-glow:rgba(53,214,160,.22); --bv-bd:rgba(53,214,160,.55)}
   .dh-bigverdict.miss{--bv-glow:rgba(233,162,59,.13); --bv-bd:rgba(233,162,59,.38)}
+  .dh-bv-round{font:800 10px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:2px}
+  .dh-bv-score{font-family:var(--display); font-weight:400; line-height:.95; font-size:clamp(52px,15vw,74px); letter-spacing:.01em; margin-bottom:6px; font-variant-numeric:tabular-nums}
   .dh-bv-title{font-family:var(--display); font-weight:400; text-transform:uppercase; letter-spacing:.02em; line-height:1.02; font-size:clamp(27px,8.4vw,40px); color:#35d6a0}
   .dh-bigverdict.miss .dh-bv-title{color:#e9a23b; font-size:clamp(20px,6vw,30px)}
   .dh-bv-fig{display:flex; justify-content:center; margin-top:10px}
@@ -21991,8 +21993,10 @@ function scrDailyResult(){
     <div class="dh-course" style="margin-top:5px">${esc(c.v)}</div>
     <div class="dh-meta" style="margin-top:3px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</div>
   </div>`));
-  // The point of Play 18 is to beat the pro, so it is the featured hero (the score lives in the "Your best today" bubble below).
+  // The point of Play 18 is to beat the pro, so it is the featured hero. Owner: feature THIS round's
+  // score-to-par big at the very top (the "Your best today" bubble below still shows the best of the day).
   add($(`<div class="dh-bigverdict${wonDay?'':' miss'}">
+    ${justPlayed?`<div class="dh-bv-round">This round</div><div class="dh-bv-score" style="color:${scoreCol}">${dTot(total, c.par)}</div>`:''}
     <div class="dh-bv-title">${wonDay?'You beat the pro!':'Short of the tour average'}</div>
     <div class="dh-bv-fig">${pxFigureHTML(S.look, 78)}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
