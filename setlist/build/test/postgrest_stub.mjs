@@ -130,6 +130,37 @@ createServer(async (req, res) => {
         asUser(`select segue_forget_attended(${lit(p.p_band)}, ${lit(p.p_show)})`) === 't');
     }
 
+    /* The per-game name (68_setlist_username.sql). */
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/segue_set_name') {
+      const p = await readBody();
+      const v = asUser(`select coalesce(segue_set_name(${p.p_name == null ? 'null' : lit(p.p_name)}), '')`);
+      /* JSON.stringify BEFORE send(), and this is not belt and braces.
+         send() passes a string straight through, because every other caller
+         here hands it a body that is ALREADY JSON (jsonb_agg gives back a
+         serialised array). A `returns text` RPC does not: sending the bare word
+         ProbeName emits invalid JSON, and a client calling res.json() on it
+         gets a parse error rather than a name. Real PostgREST answers "ProbeName"
+         with the quotes. Caught by the end-to-end suite reading null out of a
+         call that had plainly worked, which is the whole reason this stub is a
+         server and not a mock. */
+      return send(200, JSON.stringify(v === '' ? null : v));
+    }
+    if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/segue_name_free') {
+      const p = await readBody();
+      return send(200, asUser(`select segue_name_free(${lit(p.p_name)})`) === 't');
+    }
+
+    /* profiles, read by auth.js for the two names. Only the shapes it asks
+       for; anything else is a 400 so a new one has to be understood here. */
+    if (req.method === 'GET' && url.pathname === '/rest/v1/profiles') {
+      const sel = url.searchParams.get('select') || '*';
+      if (!/^[a-z_,]+$/.test(sel)) throw new Error('bad select');
+      const w = where([...url.searchParams.entries()]);
+      const rows = JSON.parse(asUser(
+        `select coalesce(jsonb_agg(t)::text,'[]') from (select ${sel} from profiles${w} limit 2) t`));
+      return send(200, rows);
+    }
+
     if (req.method === 'GET' && url.pathname === '/rest/v1/segue_runs') {
       const params = [...url.searchParams.entries()];
       const sel = url.searchParams.get('select') || '*';

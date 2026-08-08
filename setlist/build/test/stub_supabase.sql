@@ -40,5 +40,15 @@ insert into profiles (id, username) values
   ('22222222-2222-2222-2222-222222222222', 'peterframpton')
 on conflict (id) do nothing;
 
-create role anon;
-create role authenticated;
+/* ROLES ARE CLUSTER-WIDE, not per database, so a second test database in the
+   same cluster finds these already there and a bare `create role` aborts the
+   whole file under ON_ERROR_STOP. Guarded, so setting up another database is
+   not a step somebody has to know about. */
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated;
+  end if;
+end $$;

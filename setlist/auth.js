@@ -28,8 +28,16 @@
 
   let sb = null;
   let session = null;
-  let profile = null;          // { username }
+  let profile = null;          // { username, segue_name }
   const listeners = [];
+
+  /* A NAME FOR THIS GAME, and a project may be one migration behind.
+     supabase/68_setlist_username.sql adds profiles.segue_name, and PostgREST
+     answers a select naming a column the table does not have with a 400 -- which
+     would take the WHOLE profile read down, so a signed-in player would look
+     signed out. Same hazard, and the same shape of fix, as the optional column
+     sets in board.js: drop it once, remember, carry on with the site username. */
+  let segueColumn = true;
 
   const url = () => window.SEGUE_BOARD_URL || SB_URL;
 
@@ -58,7 +66,15 @@
     signedIn: !!session,
     email: session && session.user && session.user.email,
     userId: session && session.user && session.user.id,
-    name: profile && profile.username,
+    /* WHAT THE BOARD WILL PRINT, which is the only name most of the UI cares
+       about. segue_display_name() computes the same coalesce server-side; this
+       is the client's copy of it so a header chip does not need a round trip. */
+    name: profile && (profile.segue_name || profile.username),
+    /* And the two halves, for the account sheet, which is the one place that
+       has to tell them apart. */
+    siteName: profile && profile.username,
+    segueName: profile && profile.segue_name,
+    canRename: segueColumn,
   });
 
   /* The profile row is created by the handle_new_user trigger at sign-up, so this
@@ -66,9 +82,17 @@
      sign-in, which is why the UI has a "choose a name" step. */
   async function loadProfile() {
     if (!session) { profile = null; return; }
+    const cols = () => segueColumn ? 'username,segue_name' : 'username';
     try {
-      const { data } = await sb.from('profiles').select('username')
+      let { data, error } = await sb.from('profiles').select(cols())
         .eq('id', session.user.id).maybeSingle();
+      /* Remembered, not retried forever: one fallback, then this project is
+         known to be pre-68 for the rest of the session. */
+      if (error && segueColumn && /segue_name/.test(error.message || '')) {
+        segueColumn = false;
+        ({ data } = await sb.from('profiles').select(cols())
+          .eq('id', session.user.id).maybeSingle());
+      }
       profile = data || null;
     } catch (e) { profile = null; }
   }
@@ -136,6 +160,44 @@
     return { error: null };
   }
 
+  /* ---------------- the name for THIS game ----------------
+     Separate from setName() above, and deliberately so. That one changes the
+     RunThe.GG account: the football and college boards follow it. This one
+     changes nothing outside Segue.
+
+     segue_set_name() validates the format, enforces uniqueness across BOTH
+     namespaces, and renames every show already on the board in the same
+     transaction, so the client's own availability check is a courtesy and not
+     the rule. What comes back is what was stored, which is what the caller
+     should then draw. */
+  async function setSegueName(name) {
+    if (!sb) return { error: 'Accounts are not available right now.' };
+    try {
+      const { data, error } = await sb.rpc('segue_set_name', { p_name: name || null });
+      if (error) {
+        /* The function is missing, which is 68 not having been run rather than
+           anything the player did. Say which, so the UI can offer the truth
+           instead of "try again". */
+        if (error.code === 'PGRST202') { segueColumn = false; fire();
+          return { error: 'Renaming is not switched on yet.', missing: true }; }
+        return { error: error.message || String(error) };
+      }
+      await loadProfile();
+      fire();
+      return { name: data || null };
+    } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
+  }
+
+  /* Null when the question could not be asked, which the form shows as nothing
+     rather than as "taken": a check that failed is not a refusal. */
+  async function segueNameFree(name) {
+    if (!sb) return null;
+    try {
+      const { data, error } = await sb.rpc('segue_name_free', { p_name: name });
+      return error ? null : !!data;
+    } catch (e) { return null; }
+  }
+
   /* board.js signs its requests with the anon key. Once somebody is signed in the
      RPC has to see their JWT instead, or auth.uid() is null and the show records as
      a guest, so this hands the live access token over. */
@@ -145,6 +207,6 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, token,
+    available, setName, setSegueName, segueNameFree, token,
   };
 })();
