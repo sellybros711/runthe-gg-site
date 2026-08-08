@@ -155,17 +155,32 @@
 
   /* Sticky and short. The draft screen is the one a player sits on eight times
      a game, so every fixed pixel here is a pixel of song list they lose. */
+  /* Full bleed. It sat inside the wrap's gutter, so the bar's background and
+     its rule stopped short of the screen edge and the sticky header read as a
+     floating strip with page showing either side of it. The negative margin
+     is cancelled by matching padding, so the content stays on the gutter. */
   .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:10px;
-    padding:calc(8px + env(safe-area-inset-top,0)) 0 8px; background:var(--bg);
+    margin:0 calc(var(--gut) * -1);
+    padding:calc(8px + env(safe-area-inset-top,0)) var(--gut) 8px; background:var(--bg);
     border-bottom:1px solid var(--line);}
-  /* The top rule is the page's one continuous piece of tie dye. It was set to
-     300% wide, which zoomed so far into the gradient that only a single colour
-     was ever on screen — the same mistake the jamchart chip made. At 140% the
-     whole wheel crosses the bar and the slide actually reads as a sweep. */
+  /* The top rule is the page's one continuous piece of tie dye, and it spent a
+     long time not looking like any such thing: it used the CONIC gradient on a
+     3px tall strip. A conic radiates from its own centre, so across a 390 by 3
+     box you only ever see two hues, one either side of the middle. It rendered
+     as a yellow bar that turned blue, which reads as a progress meter nobody
+     asked for rather than as tie dye. Same geometry bug the segue arrow had.
+     A horizontal sweep instead, carrying TWO full cycles across a tile twice
+     the bar's width, so travelling one bar-width is exactly one cycle and the
+     loop has no seam. */
   .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px;
-    background:var(--dye); background-size:140% 100%; opacity:.85;
+    opacity:.9;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 10%, var(--green) 20%, var(--teal) 30%,
+      var(--violet) 40%, var(--coral) 50%, var(--gold) 60%, var(--green) 70%,
+      var(--teal) 80%, var(--violet) 90%, var(--coral) 100%);
+    background-size:200% 100%;
     animation:dyeSlide 26s linear infinite;}
-  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:140% 50%;} }
+  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:100% 50%;} }
   body.playing .topbar{padding-bottom:6px;}
   /* THE BAR IS THE GAME'S, not the platform's.
      It used to be a back arrow, the R-GAMES badge and a theme toggle, which
@@ -251,11 +266,23 @@
      It sits in the background stack rather than in a pseudo-element, because
      ::after paints OVER the content and would wash the glyphs along with the
      field, putting the contrast straight back. */
-  .hero{position:relative; isolation:isolate; overflow:hidden;
-    margin:0 calc(var(--gut) * -1) var(--sp-3); padding:24px var(--gut) 22px;
-    background:linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
-    background-size:auto, 150% 150%; background-position:50% 50%, 50% 50%;
+  .hero{position:relative; isolation:isolate; overflow:hidden; text-align:center;
+    margin:0 calc(var(--gut) * -1) var(--sp-1); padding:24px var(--gut) 64px;
+    /* The bottom edge dissolves into the page instead of stopping dead against
+       it. The fade is the FIRST layer of the background stack, under the type
+       and over the dye, so it softens the field without touching the glyphs.
+       It has to begin BELOW the last line of type, not near it. The fade
+       resolves to --bg, which is near-black on the dark theme, and the hero's
+       ink is pinned dark: any type sitting in the faded zone is dark on dark.
+       Measured, the blurb ends at 69% of the hero, so the fade starts at 74%
+       and the extra bottom padding gives it somewhere to happen. Started at
+       58% it put the blurb at 2.55:1 on the dark theme. */
+    background:linear-gradient(to bottom, transparent 74%, var(--bg) 100%),
+      linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
+    background-size:auto, auto, 150% 150%;
+    background-position:50% 50%, 50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
+  .hero p{margin-left:auto; margin-right:auto;}
   /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
      makes it look printed. Sized in px so it stays a screen rather than
      scaling into stripes on a wide viewport. */
@@ -1227,8 +1254,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=29';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=29';
+} from './scoring.js?v=30';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=30';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
