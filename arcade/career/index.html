@@ -515,7 +515,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();   // leaving mid-run abandons this version's run
+    if(!ARCHIVE && !done) saveResume();   // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
