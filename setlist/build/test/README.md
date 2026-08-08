@@ -6,6 +6,7 @@ proves less than it looks like it does.
 | | what it proves |
 |---|---|
 | `test_leaderboard.sql` | the SQL **refuses** what it claims to refuse |
+| `test_username.sql` | one account, two display names, and the two namespaces cannot collide |
 | `test_board_e2e.mjs` | `board.js` and the SQL **agree** about the wire between them |
 | `scripts/setlist/check_data.mjs` | the page still treats all of it as **optional** |
 
@@ -21,7 +22,9 @@ by `supabase/10_accounts.sql`, so that file is **not** part of a deploy.
 createdb seguetest
 psql -d seguetest -f setlist/build/test/stub_supabase.sql
 psql -d seguetest -f supabase/67_setlist_leaderboard.sql
+psql -d seguetest -f supabase/68_setlist_username.sql
 psql -d seguetest -f setlist/build/test/test_leaderboard.sql       # 93 assertions
+psql -d seguetest -f setlist/build/test/test_username.sql          # 40 assertions
 
 node setlist/build/test/postgrest_stub.mjs 5556 seguetest &
 node setlist/build/test/test_board_e2e.mjs http://localhost:5556
@@ -29,7 +32,7 @@ node setlist/build/test/test_board_e2e.mjs http://localhost:5556
 node scripts/setlist/check_data.mjs
 ```
 
-Both suites are **re-runnable against the same database**, and that took a
+All three suites are **re-runnable against the same database**, and that took a
 deliberate fix in each. The SQL one resets the two usernames at the top, because
 its own rename case changes one of them and a second run would otherwise fail
 five assertions that have nothing to do with renaming. The end-to-end one stamps
@@ -53,6 +56,13 @@ should break the test until it is understood, rather than being served wrong.
 It passes arguments to the RPC **positionally**, which PostgREST does not.
 That is on purpose: a parameter added to the function has to be added here too,
 where PostgREST would silently let it take its default.
+
+It has already earned its keep once. `segue_set_name()` returns `text`, and the
+stub's `send()` passes a string straight through because every other caller
+hands it a body that is *already* JSON. So the route emitted the bare word
+`ProbeName` — invalid JSON — and the client read `null` out of a call that had
+plainly worked. Real PostgREST answers `"ProbeName"`. A mocked `fetch` written
+to match the client would never have shown that.
 
 ## What none of this proves
 

@@ -377,7 +377,11 @@ check(/<script src="\/setlist\/board\.js\?v=\d+" defer><\/script>/.test(game),
 // as long as nobody adds a convenience parameter for it.
 check(!/p_display_name|p_username|p_name\b/.test(board),
   'board.js never sends a display name');
-check(/select username::text into v_name from profiles/.test(sql),
+/* The name is read SERVER-SIDE and never taken from the client. Since
+   68_setlist_username.sql that read goes through segue_display_name() rather
+   than an inline select, so the guard follows it there; the property it
+   protects is unchanged. */
+check(/from profiles where id = p_user/.test(sql),
   'the server reads the name out of profiles');
 
 // Both axes exist and the percentage one is the one the draw cannot inflate.
@@ -499,6 +503,60 @@ check(!/\.pill\.me\.in\{[^}]*var\(--dye-line\)/.test(game),
   'and does not wear the vertical dye');
 check(/\.pill\.me\.in\{[^}]*linear-gradient\(90deg/.test(game),
   'its sweep runs the long way');
+
+/* A NAME FOR THIS GAME ONLY. One account, two display names, and the whole
+   feature rests on three things staying true. */
+console.log('the Segue name');
+const sql68 = read('supabase/68_setlist_username.sql');
+
+// 1. It is a DISPLAY name. Nothing here may touch the login or the site name.
+check(/alter table profiles add column if not exists segue_name citext/.test(sql68),
+  'the Segue name is its own nullable column');
+check(!/update profiles set username/.test(sql68),
+  'and nothing in it rewrites the site username');
+check(/coalesce\(segue_name, username\)/.test(sql68),
+  'an unset name falls back to the site username');
+
+/* 2. UNIQUENESS SPANS BOTH NAMESPACES. The board renders
+   coalesce(segue_name, username) into one column, so a Segue name that could
+   equal somebody else's site username is an impersonation, not a collision. */
+check(/username = p_name or segue_name = p_name/.test(sql68),
+  'availability checks both namespaces');
+check(/username = v_name or segue_name = v_name/.test(sql68),
+  'and so does the setter');
+check(/id is distinct from auth\.uid\(\)/.test(sql68) && /id <> v_user/.test(sql68),
+  'while leaving you your own names');
+
+/* 3. THE SWITCH IS ONE FUNCTION. 67 routes every name read through
+   segue_display_name() so 68 can change the answer without restating
+   segue_submit_run()'s validation. If a caller goes back to reading profiles
+   directly, that caller silently keeps using the site name. */
+check(/create or replace function segue_display_name/.test(sql),
+  '67 defines the one name lookup');
+check((sql.match(/segue_display_name\(v_user\)/g) || []).length === 3,
+  'and all three writers go through it',
+  `${(sql.match(/segue_display_name\(v_user\)/g) || []).length} call sites`);
+check(!/select username::text into v_name/.test(sql),
+  'none of them reads profiles directly');
+check(/create or replace function segue_display_name/.test(sql68),
+  '68 changes the answer by replacing it');
+
+// The client, and the one-migration-behind fallback.
+check(/setSegueName/.test(authjs) && /segueNameFree/.test(authjs),
+  'auth.js exposes the setter and the check');
+check(/let segueColumn = true/.test(authjs),
+  'and survives a project that has not run 68');
+check(/segueColumn \? 'username,segue_name' : 'username'/.test(authjs),
+  'by dropping the column from the profile read');
+check(/id="segueNameForm"/.test(game), 'the account sheet has the name form');
+check(/ME\.canRename \?/.test(game),
+  'which is hidden when the migration has not run');
+// The sheet is the one place both names are shown, so the field cannot read as
+// "rename my whole account".
+check(/Your RunThe\.GG account is still/.test(game),
+  'and says plainly that the site account is unchanged');
+check(/e\.target\.id === 'segueNameForm'/.test(game),
+  'the name form is handled before the sign-in branch');
 
 console.log('copy');
 const stripComments = src => src

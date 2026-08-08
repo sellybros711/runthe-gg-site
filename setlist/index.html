@@ -1436,6 +1436,19 @@
     margin:0 0 12px;}
   .linkbtn{background:none; border:0; padding:0; font:inherit; font-weight:800;
     color:var(--tealT); cursor:pointer; text-decoration:underline;}
+
+  /* The name for this game, inside the signed-in panel. Set off by a rule
+     rather than a box: it is one field, and a card inside a sheet is a third
+     level of container for a single input. */
+  /* The bottom margin keeps the form's own actions off the navigation buttons
+     under them: without it "Save name" sits flush against "Your shows" and the
+     three read as one stack of four. */
+  .namebox{margin:14px 0 16px; padding-top:14px; border-top:1px solid var(--line);}
+  .namebox .eyebrow{margin-bottom:8px;}
+  .namehint{font-size:11.5px; font-weight:600; color:var(--dim); line-height:1.55;}
+  .namehint b{color:var(--mut); font-weight:800;}
+  .nameacts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;}
+  .nameacts .btn{width:auto;}
 </style>
 </head>
 <body>
@@ -2616,7 +2629,8 @@ const BOARD = () => window.SEGUE_BOARD || null;
 const meBtn = document.getElementById('meBtn');
 
 // Who we are, kept here so a render does not have to ask across the boundary.
-let ME = { ready: false, signedIn: false, name: null, userId: null, email: null };
+let ME = { ready: false, signedIn: false, name: null, userId: null, email: null,
+           siteName: null, segueName: null, canRename: true };
 
 function paintMe(){
   if (!ME.ready) { meBtn.hidden = true; return; }
@@ -2656,7 +2670,9 @@ function bootAccounts(){
   a.onChange(st => {
     const wasIn = ME.signedIn;
     ME = { ready: true, signedIn: st.signedIn, name: st.name,
-           userId: st.userId, email: st.email };
+           userId: st.userId, email: st.email,
+           siteName: st.siteName, segueName: st.segueName,
+           canRename: st.canRename !== false };
     paintMe();
     if (authSheet.classList.contains('on')) renderAuth();
     if (ME.signedIn && !wasIn){
@@ -2694,10 +2710,38 @@ function renderAuth(){
   else if (!ME.signedIn && (authMode === 'me' || authMode === 'name')) authMode = 'in';
 
   if (authMode === 'me'){
+    /* TWO NAMES, AND THE SHEET IS THE ONE PLACE THAT SHOWS BOTH.
+       Everywhere else in the game prints the one the board prints. Here a
+       player needs to see that the RunThe.GG account is unchanged and that
+       only Segue follows the name they are setting, or the field reads as
+       "rename my whole account" and nobody touches it. */
+    const seg = ME.segueName;
     inner.innerHTML = `
       <div class="grab"></div>
       <div class="respin-hd" id="authHd">${esc(ME.name || 'Your account')}</div>
       <div class="authwhy">${esc(ME.email || '')}</div>
+      ${ME.canRename ? `
+        <div class="namebox">
+          <div class="eyebrow">Your name on Segue</div>
+          <form class="authf" id="segueNameForm">
+            <input name="segname" autocomplete="off" spellcheck="false"
+              placeholder="${esc(ME.siteName || 'Pick a name')}"
+              value="${esc(seg || '')}" maxlength="20"
+              aria-describedby="segnameWhy">
+            <div class="namehint" id="segnameWhy">${seg
+              ? `Your RunThe.GG account is still <b>${esc(ME.siteName || '')}</b>, and the
+                 other games still show that.`
+              : `You are on the board as <b>${esc(ME.siteName || 'Anonymous')}</b>, your
+                 RunThe.GG name. Set a different one here and it applies to Segue only.`}
+              3 to 20 letters, numbers or underscores.</div>
+            <div class="nameacts">
+              <button class="btn tiny" type="submit" ${authBusy ? 'disabled' : ''}
+                >${authBusy ? 'Saving...' : 'Save name'}</button>
+              ${seg ? `<button class="btn tiny ghost" type="button" id="segClear"
+                >Use ${esc(ME.siteName || 'my account name')}</button>` : ''}
+            </div>
+          </form>
+        </div>` : ''}
       <div class="respin-acts">
         <button class="btn" type="button" id="authProfile">Your shows</button>
         <button class="btn ghost" type="button" id="authOut">Sign out</button>
@@ -2762,6 +2806,16 @@ authSheet.addEventListener('click', async e => {
     authMode = authMode === 'up' ? 'in' : 'up'; authMsg = null; renderAuth(); return;
   }
   if (e.target.closest('#authOut')){ closeAuth(); await AUTH().signOut(); return; }
+  /* Clearing it is the same call with nothing in it: the server treats an empty
+     name as "go back to the site username" rather than needing its own RPC. */
+  if (e.target.closest('#segClear')){
+    authBusy = true; authMsg = null; renderAuth();
+    const r = await AUTH().setSegueName('');
+    authBusy = false;
+    authMsg = r.error ? { err: r.error } : { ok: `You are ${r.name} on Segue.` };
+    renderAuth();
+    return;
+  }
   if (e.target.closest('#authProfile')){ closeAuth(); setScreen('profile'); return; }
   if (e.target.closest('#authGoogle')){
     authBusy = true; renderAuth();
@@ -2773,6 +2827,21 @@ authSheet.addEventListener('click', async e => {
 authSheet.addEventListener('submit', async e => {
   e.preventDefault();
   if (authBusy) return;
+  /* THE SEGUE NAME IS ITS OWN FORM inside the signed-in panel, so it has to be
+     handled before the sign-in branch below: falling through would read an
+     email field that is not there and try to sign in an account already
+     signed in. */
+  if (e.target.id === 'segueNameForm'){
+    const want = String(new FormData(e.target).get('segname') || '').trim();
+    if (want === (ME.segueName || '')){ closeAuth(); return; }
+    authBusy = true; authMsg = null; renderAuth();
+    const r = await AUTH().setSegueName(want);
+    authBusy = false;
+    authMsg = r.error ? { err: r.error }
+      : { ok: r.name ? `You are ${r.name} on Segue.` : 'Name saved.' };
+    renderAuth();
+    return;
+  }
   const f = new FormData(e.target);
   authBusy = true; authMsg = null; renderAuth();
   let r;

@@ -235,6 +235,23 @@ revoke all on segue_attended from anon, authenticated;
 grant select, insert, delete on segue_attended to authenticated;
 
 -- ---------------------------------------------------------------------------
+-- segue_display_name(): the one place that answers "what name goes on a row"
+-- ---------------------------------------------------------------------------
+-- Three lines, and its own function on purpose. Three callers below need this
+-- answer, and a later migration needs to CHANGE it: 68_setlist_username.sql
+-- gives players a name for this game specifically, and does it by replacing
+-- this function and nothing else. The alternative was restating
+-- segue_submit_run()'s three hundred lines of validation to edit one lookup in
+-- the middle of it, which is how two copies of the rules start drifting apart.
+create or replace function segue_display_name(p_user uuid)
+returns text
+language sql security definer set search_path = public stable as $$
+  select username::text from profiles where id = p_user;
+$$;
+revoke all on function segue_display_name(uuid) from public;
+grant execute on function segue_display_name(uuid) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
 -- segue_submit_run()
 -- ---------------------------------------------------------------------------
 -- Returns the new row id. Raises with a readable message on anything incoherent,
@@ -444,7 +461,7 @@ begin
 
   -- The name is read here and never accepted from the client.
   if v_user is not null then
-    select username::text into v_name from profiles where id = v_user;
+    v_name := segue_display_name(v_user);
   end if;
 
   insert into segue_runs (
@@ -487,7 +504,7 @@ declare
   v_rows int;
 begin
   if v_user is null then return false; end if;
-  select username::text into v_name from profiles where id = v_user;
+  v_name := segue_display_name(v_user);
   update segue_runs set user_id = v_user, display_name = v_name
    where id = p_id and user_id is null;
   get diagnostics v_rows = row_count;
@@ -510,7 +527,7 @@ declare
   v_rows int;
 begin
   if v_user is null then return 0; end if;
-  select username::text into v_name from profiles where id = v_user;
+  v_name := segue_display_name(v_user);
   update segue_runs set display_name = v_name where user_id = v_user;
   get diagnostics v_rows = row_count;
   return v_rows;
