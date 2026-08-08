@@ -308,12 +308,18 @@
     if(opts.length<4){ var comm=shuffle(COMMON); for(var j=0;j<comm.length && opts.length<4;j++){ var c2=comm[j], n2=normCol(c2); if(!used[n2]){ used[n2]=1; opts.push(c2); } } }
     return { name:p.name, sport:p.sport, team:p.team, col:p.col, opts:shuffle(opts) };
   }
-  // Progressive difficulty: household names (fame >=4) early, then solid names
-  // (fame 3), then role players / deep-cut former players. Each athlete appears
-  // at most once per day.
+  // Progressive difficulty among RECOGNISABLE names only. Fame Rule A: NFL is a
+  // deep, noisy pool, so it needs a higher bar (f>=4) than NBA/MLB (f>=3); every
+  // name below that is a coin-flip nobody knows, so it's dropped entirely. Within
+  // the survivors the run eases from icons (f5) to stars (f4) to solid (f3).
+  // Each athlete appears at most once per day.
   function buildRounds(){
     var easy=[], med=[], hard=[];
-    POOL.forEach(function(p){ if(SPORTFILTER && p.sport!==SPORTFILTER) return; (p.f>=4?easy:(p.f>=3?med:hard)).push(p); });
+    POOL.forEach(function(p){
+      if(SPORTFILTER && p.sport!==SPORTFILTER) return;
+      if((p.f||0) < (p.sport==='NFL'?4:3)) return;
+      (p.f>=5?easy:(p.f>=4?med:hard)).push(p);
+    });
     easy=shuffle(easy); med=shuffle(med); hard=shuffle(hard);
     var seq=[], picked={};
     function take(list,n){ var c=0; for(var i=0;i<list.length && c<n;i++){ var p=list[i], k=p.name+'|'+p.sport; if(picked[k]) continue; picked[k]=1; seq.push(p); c++; } }

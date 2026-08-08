@@ -90,12 +90,15 @@
   .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
   .ritem.dragging .rrow{box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); opacity:.98;}
   .rrow .ctrl button{cursor:pointer;}
-  .rmeta{flex:1; min-width:0; text-align:center;}
+  /* name spans the full card and centres on its true midpoint; the arrows and
+     the (hidden until reveal) value sit in reserved right-side gutters so the
+     name is always dead-centre regardless of them. */
+  .rmeta{flex:1; min-width:0; text-align:center; padding:0 46px;}
   .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis;}
   .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
-  .rrow .era{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; margin-right:2px;}
+  .rrow .era{position:absolute; right:50px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; text-align:right; max-width:64px;}
   .rrow.show-era .era{opacity:1;}
-  .rrow .ctrl{flex:0 0 auto; display:flex; flex-direction:column; gap:3px;}
+  .rrow .ctrl{position:absolute; right:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:3px;}
   .rrow .ctrl button{width:30px; height:22px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
   .rrow .ctrl button:hover{color:var(--ink); border-color:var(--pink);}
   .rrow .ctrl button:disabled{opacity:.3; cursor:default;}
@@ -107,6 +110,14 @@
   .checkbtn{width:100%; appearance:none; border:0; background:var(--pink); color:#20101a; font-weight:900; font-size:16px; border-radius:13px; padding:15px; min-height:52px; cursor:pointer; box-shadow:var(--shadow);}
   .checkbtn:hover{filter:brightness(1.06);} .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default;}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:12px 0 2px; font-weight:700;}
+  /* big, blind first-try feedback pinned above the lineup */
+  .rkfb{display:none; text-align:center; margin:11px 0 3px; padding:15px 16px 13px; border-radius:12px;
+    background:color-mix(in srgb, var(--pink) 13%, var(--card)); border:2px solid color-mix(in srgb, var(--pink) 55%, var(--line2));
+    box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22));}
+  .rkfb.on{display:block; animation:rkfbpop .28s ease;}
+  @keyframes rkfbpop{from{transform:scale(.92); opacity:0;}to{transform:none; opacity:1;}}
+  .rkfb .big{font-family:var(--hero); font-weight:400; font-size:44px; line-height:.95; color:var(--pinkT); font-variant-numeric:tabular-nums;}
+  .rkfb .cap{display:block; font-size:12px; font-weight:800; letter-spacing:.03em; color:var(--mut); margin-top:7px;}
 
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -157,6 +168,9 @@
   .pod-m{flex:0 0 24px; text-align:center; font-weight:900; color:var(--mut);}
   .pod-n{flex:1; min-width:0; font-weight:900; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pod-v{flex:0 0 auto; font-weight:900; font-size:12px; color:var(--pinkT);}
+  .pod-next{width:100%; margin-top:14px; appearance:none; border:0; background:var(--green); color:#071426; font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:16px; border-radius:8px; padding:14px; min-height:50px; cursor:pointer; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
+  .pod-next:hover{filter:brightness(1.05);}
+  .pod-next:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -226,9 +240,9 @@
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
         "top   top" "title title" "mode mode" "lead lead"
-        "axis run" "rows lbd" "act lbd" "hint lbd" "foot foot";
+        "axis run" "fb lbd" "rows lbd" "act lbd" "hint lbd" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .lead{grid-area:lead;}
-    .axis{grid-area:axis;} .rows{grid-area:rows;} .actions{grid-area:act;} .hintline{grid-area:hint;}
+    .axis{grid-area:axis;} .rkfb{grid-area:fb;} .rows{grid-area:rows;} .actions{grid-area:act;} .hintline{grid-area:hint;}
     .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
       }
     .foot{ grid-column:1 / -1; margin-top:18px; }
@@ -267,6 +281,7 @@
   <div class="lead"><span class="k" id="axisLabel">Set 1</span><span class="v" id="prompt">Rank by the era they starred in, <b>earliest</b> era at the top.</span></div>
 
   <div class="axis"><span id="axTop">↑ Earliest</span><span id="axBot">Most recent ↓</span></div>
+  <div class="rkfb" id="rkFeedback" aria-live="polite"></div>
   <div class="rows" id="rows"></div>
 
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
@@ -496,7 +511,9 @@
     order=shuffle(S.answer);
     for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
     lastCheck=null; reveal=false; setTries=0;
-    var cb0=document.getElementById('checkBtn'); if(cb0) cb0.textContent='Check order';
+    var fb0=document.getElementById('rkFeedback'); if(fb0){ fb0.className='rkfb'; fb0.innerHTML=''; }
+    var hl0=document.getElementById('hintline'); if(hl0) hl0.innerHTML='Drag a row or use the arrows to reorder, then check. You get two tries per set.';
+    var cb0=document.getElementById('checkBtn'); if(cb0){ cb0.textContent='Check order'; cb0.disabled=false; }
     document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1)+' of '+SETS.length;
     document.getElementById('prompt').innerHTML=S.lead;
     document.getElementById('axTop').textContent='↑ '+S.axisTop;
@@ -505,16 +522,20 @@
   }
 
   document.getElementById('checkBtn').addEventListener('click', check);
-  // quick podium flash when a set clears: 1st-to-5th with their values
-  function showPodium(o, S){
+  // podium when a set clears: the full 1st-to-5th ranking with values, held on
+  // screen until the player taps NEXT PUZZLE (no auto-dismiss, no auto-advance).
+  function showPodium(o, S, onNext, isFinal){
     var MED=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4','5'];
     var el=document.createElement('div'); el.className='podium';
     el.innerHTML='<div class="pod-in"><div class="pod-h">SET CLEARED</div>'+o.map(function(e,i){
       return '<div class="pod-row" style="animation-delay:'+(i*90)+'ms"><span class="pod-m">'+MED[i]+'</span><span class="pod-n">'+esc(e.name)+'</span><span class="pod-v">'+esc(S.val(e))+'</span></div>';
-    }).join('')+'</div>';
+    }).join('')+'<button class="pod-next" type="button">'+(isFinal?'See results \u2192':'Next Puzzle \u2192')+'</button></div>';
     document.body.appendChild(el);
-    setTimeout(function(){ el.classList.add('out'); }, 1650);
-    setTimeout(function(){ el.remove(); }, 1950);
+    el.querySelector('.pod-next').addEventListener('click', function(){
+      el.classList.add('out');
+      setTimeout(function(){ el.remove(); }, 220);
+      if(typeof onNext==='function') onNext();
+    });
   }
   function check(){
     if(done||busy) return; startIfNeeded();
@@ -527,22 +548,26 @@
     var nRight=correct.filter(Boolean).length, allRight=nRight===order.length;
 
     if(allRight){
-      // cleared — reveal, count it, serve the next set
+      // cleared — reveal, count it, hold the podium until they tap NEXT PUZZLE
       lastCheck=correct; reveal=true; busy=true; render();
       run++; document.getElementById('runN').textContent=run; saveResume();
       if(window.RTGSound) RTGSound.lock();
-      showPodium(order, S);
-      setTimeout(function(){ busy=false; if(run>=SETS.length){ finish(); return; } startSet(); }, 2050);
+      var isFinal=run>=SETS.length;
+      showPodium(order, S, function(){ busy=false; if(isFinal){ finish(); return; } startSet(); }, isFinal);
       return;
     }
 
     setTries++;
     if(setTries<2){
-      // FIRST try: tell them ONLY how many are in the right spot — no colours,
-      // no values revealed — then let them fix it. The run does NOT end.
+      // FIRST try: tell them ONLY how many are in the right spot — big, at the
+      // top, and blind (no colours, no values). Then let them fix it; the run
+      // does NOT end.
       if(window.RTGSound){ (RTGSound.soft||RTGSound.wrong).call(RTGSound); }
+      var fb=document.getElementById('rkFeedback');
+      if(fb){ fb.className='rkfb on'; fb.innerHTML='<span class="big">'+nRight+' / '+order.length+'</span><span class="cap">in the right spot — one more try. Which ones? That’s for you to figure out.</span>';
+        try{ fb.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }
       var h=document.getElementById('hintline');
-      if(h) h.innerHTML='<b>'+nRight+' / '+order.length+'</b> in the right spot — one more try. (Which ones? That’s for you to figure out.)';
+      if(h) h.innerHTML='Last try — reorder and check again.';
       var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check — last try';
       var rowsWrap=document.getElementById('rows'); if(rowsWrap){ rowsWrap.classList.remove('rk-nudge'); void rowsWrap.offsetWidth; rowsWrap.classList.add('rk-nudge'); }
       return;
