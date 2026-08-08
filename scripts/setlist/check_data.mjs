@@ -253,6 +253,14 @@ check(!/Respin\s*&middot;\s*\$\{fmtClock\(cost\)\}/.test(game),
 check(/class="respin-cost"/.test(game), 'the price is on the confirm instead');
 check(/class="nightstrip"/.test(game), 'the HUD shows the shape of the night');
 
+/* The home page's block gaps were six different numbers before they were put
+   on a scale. And nothing may key its spacing off .about being adjacent to
+   the footer: an ad slot sits between them and is removed when unfilled, so
+   such a rule silently applies or does not depending on timing. */
+check(/--sp-1:/.test(game) && /--sp-4:/.test(game), 'the page spacing is a scale, not six numbers');
+check(!/\.about\s*\+\s*\.sfoot/.test(game),
+      'nothing keys spacing off .about being next to the footer');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
