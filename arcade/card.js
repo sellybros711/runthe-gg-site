@@ -240,7 +240,29 @@
     return Promise.resolve({ok:true});
   }
 
-  function init(){ injectStyles(); watchAuth();
+  // Reconcile the client wallet against the server on load: a signed-in user who
+  // cleared localStorage (or is on a new device) gets their real used-count from
+  // the server, so they can't reset their way past the daily cap. Card members
+  // get the entitlement flag set. Runs when the session becomes available.
+  function reconcile(){
+    if(!(window.RTG_BOARD && RTG_BOARD.tokenStatus)) return;
+    RTG_BOARD.tokenStatus().then(function(s){
+      if(!s || !s.signed_in) return;
+      if(s.unlimited){ try{ localStorage.setItem('runthegrid_pro','1'); }catch(e){} }
+      else if(typeof s.used==='number' && window.RTGTokens && RTGTokens.setServerUsed){
+        RTGTokens.setServerUsed(s.used);
+        try{ document.dispatchEvent(new Event('rtg:tokens')); }catch(e){}
+      }
+    }).catch(function(){});
+  }
+  function watchTokens(){
+    if(!window.RTG_BOARD) return;
+    var done=false;
+    RTG_BOARD.onChange(function(st){ if(st && st.signedIn && !done){ done=true; reconcile(); } });
+    try{ RTG_BOARD.boot(); }catch(e){}
+  }
+
+  function init(){ injectStyles(); watchAuth(); watchTokens();
     window.RTGCard = { paywall: paywall, guestConvert: guestConvert, wall: wall, checkout: startCheckout, portal: portal, authorizePlay: authorizePlay, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
