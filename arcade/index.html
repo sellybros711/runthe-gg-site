@@ -270,6 +270,9 @@
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
   .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px; text-shadow:none;}
   .tile.spent .play .arw{display:none;}
+  /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
+  .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
+  .tile.archive.cross .play{color:var(--ink); border-color:var(--line2);}   /* crossword accent is near-white; keep it readable */
   /* mobile: 2-up compact cards (cap + title + PLAY) */
   @media (max-width:640px){
     .tile{border-radius:14px;}
