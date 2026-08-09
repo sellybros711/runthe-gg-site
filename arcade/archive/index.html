@@ -206,7 +206,19 @@
     });
   }
 
-  if(isPro()) renderList(); else renderGate();
+  // First paint from whatever we know synchronously (localStorage). The Stripe
+  // entitlement is mirrored asynchronously by board.js (reads the subscriptions
+  // row → localStorage 'runthegrid_pro'), so when a player lands here straight
+  // back from Checkout the flag may not be set yet. Re-check on every board
+  // change and flip the gate to the list the moment the card is confirmed — no
+  // manual refresh required.
+  var proShown=false, gateShown=false;
+  function paint(){
+    if(isPro()){ if(!proShown){ proShown=true; renderList(); } return; }
+    if(!proShown && !gateShown){ gateShown=true; renderGate(); }
+  }
+  paint();
+  if(window.RTG_BOARD && RTG_BOARD.onChange){ RTG_BOARD.onChange(paint); }
 
   // theme toggle
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
