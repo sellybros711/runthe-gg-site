@@ -105,11 +105,15 @@
   #clues .clue{font-style:italic; font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.45; margin-top:4px; animation:gin .25s ease;}
 
   /* the board.
-     All eight rows are on the page from the first moment, empty, the way a
-     crossword shows you its squares before you write in any. You can see how
-     many guesses the game is worth without having to spend one to find out. */
+     All eight rows live in the DOM from the first moment (guesses fill them
+     top-down, resume repaints them), but only the ACTIVE blank row plus a
+     faded peek at the next stays visible — a wall of eight empty dashed rows
+     made the pre-game board read as a giant blank form. The "8 guesses left"
+     counter already says how much rope you have. */
   .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:12px 12px 6px; box-shadow:var(--shadow);}
+  .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
+  .guess:not(.filled) ~ .guess:not(.filled) ~ .guess:not(.filled){display:none;}
   .collab{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
   .collab span{font-size:8.5px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; color:var(--mut); text-align:center;}
   .guess{margin-bottom:9px;}
