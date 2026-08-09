@@ -154,8 +154,13 @@ console.log('\n=== a signed-in player finishes a season ===');
     row ? String(row.display_name) : '');
 
   console.log('\n=== the trophy case comes off the board when signed in ===');
-  await page.click('#b-profile'); await page.waitForTimeout(600);
-  await page.click('.achtabs button[data-tab="case"]'); await page.waitForTimeout(2500);
+  /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip across
+     the top. The route is the avatar, then the Trophy case row on the hub. The old
+     `.achtabs button[data-tab="case"]` no longer exists, and a click on a selector
+     that is not there is a thirty-second timeout that kills the run rather than a
+     failed assertion, which is why this suite looked broken instead of red. */
+  await page.click('#b-profile'); await page.waitForTimeout(900);
+  await page.click('#pf-go-case'); await page.waitForTimeout(2500);
   const caseText = (await page.textContent('#sheet-in')).replace(/\s+/g, ' ');
   ok('the case is populated', /Achievements \d+ of \d+/.test(caseText),
     (caseText.match(/Achievements \d+ of \d+/) || [''])[0]);

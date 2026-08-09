@@ -232,8 +232,14 @@ window.PS_CFB_BOARD_URL = 'http://localhost:5555';`;
      history, which is what made it invisible. */
   await p.evaluate(() => { const x = document.getElementById('lb-x'); if (x) x.click(); });
   await p.waitForTimeout(700);
-  await p.click('#b-profile'); await p.waitForTimeout(700);
-  await p.click('.achtabs button[data-tab="case"]'); await p.waitForTimeout(3000);
+  /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip. The
+     route a player takes is the avatar, then the Trophy case row on the hub, and
+     that is what this drives. Not openProfile('case') from evaluate(): the whole
+     game is inside an IIFE, so none of its functions are reachable from the page
+     context and a test that reaches for one gets a ReferenceError rather than a
+     failed assertion. */
+  await p.click('#b-profile'); await p.waitForTimeout(900);
+  await p.click('#pf-go-case'); await p.waitForTimeout(3000);
   const caseText = (await p.textContent('#sheet-in')).replace(/\s+/g, ' ');
   const tally = (caseText.match(/Achievements (\d+) of (\d+)/) || [])[1];
   ok('the case is built from the board', Number(tally) > 0,
