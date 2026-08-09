@@ -210,7 +210,7 @@
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .tile.match{--c:var(--blue);}
-  .tile.cross{--c:#AAB6C4;}   /* black-and-white / newsprint, distinct from violet Odd One Out */
+  .tile.cross{--c:var(--coral);}   /* black-and-white / newsprint, distinct from violet Odd One Out */
   .tile.word{--c:var(--teal);}
   .tile.guess{--c:var(--coral);}
   .tile.table{--c:var(--gold);}
@@ -220,7 +220,7 @@
   .tile.alma{--c:var(--gold);}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
-  .tile.cross .nm{color:var(--ink);}
+  .tile.cross .nm{color:var(--coralT);}
   .tile.word .nm{color:var(--tealT);}
   .tile.guess .nm{color:var(--coralT);}
   .tile.table .nm{color:var(--goldT);}
@@ -248,7 +248,7 @@
   .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
     text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY, shadow keeps it legible on light accents */
-  .tile.cross .play{color:#16273B; text-shadow:none;}   /* neutral silver pill reads better with dark text */
+  .tile.cross .play{color:#fff;}   /* neutral silver pill reads better with dark text */
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
@@ -259,7 +259,7 @@
   .tile.spent .play .arw{display:none;}
   /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
   .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
-  .tile.archive.cross .play{color:var(--ink); border-color:var(--line2);}   /* crossword accent is near-white; keep it readable */
+  .tile.archive.cross .play{color:var(--coralT); border-color:var(--coral);}   /* crossword accent is near-white; keep it readable */
   /* mobile: 2-up compact cards (cap + title + PLAY) */
   @media (max-width:640px){
     .tile{border-radius:14px;}
@@ -785,7 +785,7 @@
     var GAMES=[
       ['Table',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--ink)']
+      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--coralT)']
     ];
     var doneN=GAMES.filter(function(x){return x[1];}).length;
     var perfect=doneN===GAMES.length;
