@@ -485,6 +485,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS454: balanced 2-col grid (Invite spans full-width so nothing floats orphaned); each tile carries
      its own accent color (--acc, set inline) + a pixel icon so it stands out on its own. */
   .home-nav{display:grid; grid-template-columns:repeat(2,1fr); gap:11px; max-width:470px; margin:18px auto 0}
+  /* Home destinations as one compact icon row (owner: less scrolling) - icon + short label, no sub-line. */
+  .home-nav.compact{grid-template-columns:repeat(5,1fr); gap:6px; margin:14px auto 0; max-width:480px}
+  .home-nav.compact .navtile{padding:9px 3px 8px; gap:5px; border-radius:13px}
+  .home-nav.compact .nichip{width:34px; height:34px; border-radius:9px}
+  .home-nav.compact .nichip svg{width:24px; height:24px}
+  .home-nav.compact .nl{font-size:10px; letter-spacing:0; line-height:1.05}
+  .home-nav.compact .ndot{top:5px; right:5px; width:9px; height:9px; border-width:1.5px}
   .navtile{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:8px;
     padding:14px 8px 12px; border-radius:14px; color:var(--oncard); font-family:var(--body); cursor:pointer;
     box-shadow:0 6px 14px -9px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease}
@@ -520,6 +527,23 @@ window.GA_ID='G-L29P5MRWKE';
   @media(prefers-reduced-motion:reduce){.dil-rv{opacity:1;animation:none;transform:none}}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  /* Prize Wheel: a compact pill in the hero row instead of a full mode card (owner). The little wheel
+     spins and the pill glows only when a spin is actually waiting, so it reads as "there's something
+     here for you" without eating a screenful. */
+  .wheelbtn{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body);
+    letter-spacing:.06em; text-transform:uppercase; color:#ffb8d8; padding:7px 15px 7px 8px; border-radius:999px;
+    border:1px solid rgba(255,122,184,.5); background:rgba(255,122,184,.1); box-shadow:0 4px 11px -3px rgba(0,0,0,.5)}
+  .wheelbtn .wbi{width:24px; height:24px; flex:0 0 auto; display:block}
+  .wheelbtn.ready{color:#fff2f8; border-color:#ff7ab8; background:rgba(255,122,184,.2); animation:wbGlow 2.2s ease-in-out infinite}
+  .wheelbtn.ready .wbi{animation:wbSpin 5.5s linear infinite; transform-origin:50% 50%}
+  .wheelbtn:not(.ready){opacity:.72}
+  .wheelbtn:hover{background:rgba(255,122,184,.26)}
+  .wheelbtn:active{transform:translateY(1px)}
+  .wheelbtn:focus-visible{outline:2px solid #ff7ab8; outline-offset:2px}
+  .wbn{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ff7ab8;color:#3d0722;font:800 10.5px/1 var(--body);letter-spacing:0}
+  @keyframes wbGlow{0%,100%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5),0 0 0 0 rgba(255,122,184,.55)}50%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5),0 0 0 8px rgba(255,122,184,0)}}
+  @keyframes wbSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.wheelbtn.ready{animation:none} .wheelbtn.ready .wbi{animation:none}}
   /* CS304: persistent bottom tab nav - hub navigation from any page (Home / Career / Daily / Online / Leaderboard) */
   /* CS472: NO transform on the shown bar. A transform (even translateZ(0)) on a position:fixed element makes
      iOS Safari anchor it to the document instead of the viewport, so it scrolls up into the screen mid-scroll
@@ -609,7 +633,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(4,12,30,.34); border-radius:9px; padding:8px 13px}
   /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
   .gcard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; border:0; border-radius:18px;
-    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 6px 15px -6px rgba(0,0,0,.6), 0 24px 48px -12px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14)}
+    padding:12px 15px; position:relative; overflow:hidden; box-shadow:0 6px 15px -6px rgba(0,0,0,.6), 0 24px 48px -12px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14)}
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
@@ -623,16 +647,16 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .gc-wheel.ready{animation:none} }
   .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
   .gc-kick{font:800 10.5px/1.3 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.82; display:flex; align-items:center; gap:6px}
-  .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:5px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
+  .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:3px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
   .gc-badge{flex:0 0 auto; font:900 12px/1 var(--mono); letter-spacing:.04em; border-radius:9px; padding:7px 10px; background:var(--chip); white-space:nowrap}
-  .gc-mid{font:700 12px/1.35 var(--body); margin-top:9px; opacity:.92}
-  .gc-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
+  .gc-mid{font:700 12px/1.35 var(--body); margin-top:6px; opacity:.92}
+  .gc-row{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap}
   .gc-chip{display:inline-flex; align-items:center; gap:5px; font:800 11.5px/1 var(--body); border-radius:8px; padding:6px 9px; background:var(--chip)}
   .gc-chip.hot{background:rgba(241,208,74,.92); color:#20160a}
   .gc-gold .gc-chip.hot{background:#c0392b; color:#fff}
   .gc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; border-radius:9px; padding:8px 13px; background:var(--chip)}
   /* CS258: a clear gap so the stacked hero cards never look like they're touching */
-  .stack>.gcard, .stack>.resumecard{margin-top:16px}
+  .stack>.gcard, .stack>.resumecard{margin-top:11px}
   .stack>.gcard:first-child, .stack>.resumecard:first-child{margin-top:0}
   /* Monthly Spotlight - neon purple + glowing when playable, translucent when done */
   .gc-purple.spot-neon{background:linear-gradient(158deg,#c98cff,#8b3cf5 55%,#7a1fe0)}
@@ -1972,7 +1996,7 @@ window.GA_ID='G-L29P5MRWKE';
 .tag,.online-tag,h2,.gc-kick,.stack-sep b,.navtile .nl,.setlab,.eyebrow,.retro-title{font-family:var(--pixel);letter-spacing:.01em}
 .retro-title{font-size:15px;letter-spacing:.02em}
 .gc-badge,.gc-chip,.gc-go,.navtile .ns{font-family:var(--pixel);letter-spacing:0}
-.gc-title{font-family:var(--display)!important;font-weight:400;font-style:normal;font-size:30px;line-height:1.06;letter-spacing:.01em}
+.gc-title{font-family:var(--display)!important;font-weight:400;font-style:normal;font-size:25px;line-height:1.06;letter-spacing:.01em}
 .hero{font-family:var(--display)!important;font-weight:400;font-size:1em;line-height:1.02;letter-spacing:.01em}
 .ovr .num,.rollval{font-family:var(--mono)!important}
 /* CS356o: bolder + slightly bigger button text on ALL buttons (owner); a locked-in/selected button
@@ -2193,6 +2217,7 @@ const ICONS={
   cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 8H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const PXICONS={
+"ticket":["..................","..................","..................","..mmmmmmmmmmmmmm..","..m............m..","..m........m...m..","..m.mmmmm......m..","..m........m...m..","...m..........m...","...m..........m...","..m............m..","..m........m...m..","..m.mmmmm......m..","..m........m...m..","..mmmmmmmmmmmmmm..","..................","..................",".................."],
 "skip":["..................","..................","..................","..................","..m....m.....mm...","..mm...mm....mm...","..mmm..mmm...mm...","..mmmm.mmmm..mm...","..mmmmmmmmmm.mm...","..mmmmmmmmmm.mm...","..mmmm.mmmm..mm...","..mmm..mmm...mm...","..mm...mm....mm...","..m....m.....mm...","..................","..................","..................",".................."],
 "clock":["..................","........mm........","........mm........",".....mmmmmmmm.....","....mm......mm....","...mm........mm...","..mm..........mm..","..m............m..","..m.....m......m..","..m.....m......m..","..m.....mmmm...m..","..m............m..","..mm..........mm..","...mm........mm...","....mm......mm....",".....mmmmmmmm.....","..................",".................."],
 "arrowLeft":["..................","..................","..................","..................",".......mm.........","......mmm.........",".....mmm..........","....mmm...........","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmm...........",".....mmm..........","......mmm.........",".......mm.........","..................","..................","..................",".................."],
@@ -6425,8 +6450,10 @@ function wheelStep(steps, idx){ for(const [at,v] of steps) if(idx>=at) return v;
 // A wedge is narrow, so coin values read as a tight 580 / 2.7k / 12k rather than a comma'd number.
 function wheelNum(n){ n=Math.round(n||0); if(n<1000) return String(n);
   const k=n/1000; return (k<10?k.toFixed(1).replace(/\.0$/,''):String(Math.round(k)))+'k'; }
-// The 8 segments, in wheel order (the two boosts sit opposite each other). Values and weights are a
+// The 10 segments, in wheel order (the two boosts sit opposite each other). Values and weights are a
 // function of the rank, so a promotion is always a strictly better wheel.
+// Coins are the bulk of the wheel by design (5 of the 10 wedges, ~74% of the weight), so packs and the
+// XP boosts stay genuinely rare - they read as a hit rather than a routine payout.
 function wheelPrizesFor(idx){
   idx=Math.max(0,Math.min(REP_ORDER.length-1, idx|0));
   const f=idx/(REP_ORDER.length-1);                                  // 0 at Amateur, 1 at G.O.A.T.
@@ -6435,16 +6462,19 @@ function wheelPrizesFor(idx){
   const shCol={common:'#9fdcff', rare:'#4aa3ff', epic:'#a24be0'}[shR]||'#9fdcff';
   const shLab={common:'Common', rare:'Rare', epic:'Epic'}[shR]||'Common';
   const pk=(typeof packType==='function')?packType(pkT):{name:'Base Pack', col:'#3fbf7a'};
-  const cSm=sc(200,1.9), cMd=sc(600,3.5), cBg=sc(2000,5);
+  const cXs=sc(100,1.6), cSm=sc(250,1.9), cMd=sc(600,3.5), cLg=sc(1200,4), cBg=sc(2500,5);
+  const cn=(id,w,amt)=>({id, w, kind:'coins', amt, label:coinFmt(amt)+' Coins', short:wheelNum(amt), col:'#ffd45e'});
   return [
-    {id:'cSm',  w:30-8*f,   kind:'coins', amt:cSm,          label:coinFmt(cSm)+' Coins',  short:wheelNum(cSm), col:'#ffd45e'},
-    {id:'xp30', w:16+4*f,   kind:'boost', mins:30,          label:'2× XP · 30 min',       short:'2× XP',        col:'#a78bfa'},
-    {id:'cMd',  w:18,       kind:'coins', amt:cMd,          label:coinFmt(cMd)+' Coins',  short:wheelNum(cMd), col:'#ffd45e'},
-    {id:'sh',   w:8+2*f,    kind:'shard', r:shR, n:1,       label:shLab+' Shard',         short:'◆',            col:shCol},
-    {id:'pack', w:5+3.5*f,  kind:'pack',  tier:pkT, n:1,    label:pk.name,                short:'PACK',         col:pk.col||'#3fbf7a'},
-    {id:'xp60', w:6+3*f,    kind:'boost', mins:60,          label:'2× XP · 1 hour',       short:'2× XP',        col:'#c9a0ff'},
-    {id:'cBg',  w:10-2*f,   kind:'coins', amt:cBg,          label:coinFmt(cBg)+' Coins',  short:wheelNum(cBg), col:'#ffd45e'},
-    {id:'spin', w:7-1*f,    kind:'spin',  n:1,              label:'Bonus Spin',           short:'+1',           col:'#ff7ab8'},
+    cn('cXs', 18-3*f, cXs),
+    {id:'xp30', w:8,        kind:'boost', mins:30,       label:'2× XP · 30 min', short:'2× XP', col:'#a78bfa'},
+    cn('cSm', 20-2*f, cSm),
+    {id:'sh',   w:6+1*f,    kind:'shard', r:shR, n:1,    label:shLab+' Shard',   short:'◆',     col:shCol},
+    cn('cMd', 18,     cMd),
+    {id:'pack', w:3+1.5*f,  kind:'pack',  tier:pkT, n:1, label:pk.name,          short:'PACK',  col:pk.col||'#3fbf7a'},
+    {id:'xp60', w:4+1*f,    kind:'boost', mins:60,       label:'2× XP · 1 hour', short:'2× XP', col:'#c9a0ff'},
+    cn('cLg', 12+2*f, cLg),
+    {id:'spin', w:4-0.5*f,  kind:'spin',  n:1,           label:'Bonus Spin',     short:'+1',    col:'#ff7ab8'},
+    cn('cBg', 6+2*f,  cBg),
   ];
 }
 var _wheelPzCache={};
@@ -6454,9 +6484,11 @@ function wheelPrizes(idx){ if(idx==null) idx=wheelRepIdx();
 function wheelNextUpgrade(){
   const i=wheelRepIdx(), max=REP_ORDER.length-1; if(i>=max) return null;
   const now=wheelPrizes(i), nxt=wheelPrizes(i+1), bits=[];
-  if(wheelStep(WHEEL_PACK_STEPS,i+1)!==wheelStep(WHEEL_PACK_STEPS,i)) bits.push(nxt[4].label+'s');
-  if(wheelStep(WHEEL_SHARD_STEPS,i+1)!==wheelStep(WHEEL_SHARD_STEPS,i)) bits.push(nxt[3].label+'s');
-  const c0=now[0].amt+now[2].amt+now[6].amt, c1=nxt[0].amt+nxt[2].amt+nxt[6].amt;
+  const of=(a,k)=>a.find(p=>p.kind===k)||{label:''};
+  const coins=(a)=>a.filter(p=>p.kind==='coins').reduce((s,p)=>s+p.amt,0);
+  if(wheelStep(WHEEL_PACK_STEPS,i+1)!==wheelStep(WHEEL_PACK_STEPS,i)) bits.push(of(nxt,'pack').label+'s');
+  if(wheelStep(WHEEL_SHARD_STEPS,i+1)!==wheelStep(WHEEL_SHARD_STEPS,i)) bits.push(of(nxt,'shard').label+'s');
+  const c0=coins(now), c1=coins(nxt);
   if(c1>c0) bits.push('+'+Math.round(100*(c1-c0)/c0)+'% coin prizes');
   return {name:REP_ORDER[i+1], bits};
 }
@@ -6554,29 +6586,31 @@ function wheelStyleOnce(){ if(_pwvcss) return; _pwvcss=true; const st=document.c
 `; document.head.appendChild(st); }
 // The wheel face: 8 radial segments, each tinted with its prize colour, labelled radially like a real
 // prize wheel. Segment i is centred at i*45 degrees clockwise from 12 o'clock (the pointer).
+function wheelSeg(pz){ return 360/((pz&&pz.length)||8); }      // degrees per wedge
 function wheelFaceSVG(pz){
   pz=pz||wheelPrizes();
-  const cx=120, cy=120, r=112;
+  const cx=120, cy=120, r=112, step=wheelSeg(pz), half=step/2;
   const pt=(deg)=>{ const a=deg*Math.PI/180; return [(cx+r*Math.sin(a)).toFixed(2),(cy-r*Math.cos(a)).toFixed(2)]; };
   let out=`<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="117" fill="#0d1f16" stroke="#ff7ab8" stroke-width="3"/>`;
   pz.forEach((p,i)=>{
-    const a0=i*45-22.5, a1=i*45+22.5, s0=pt(a0), s1=pt(a1);
+    const s0=pt(i*step-half), s1=pt(i*step+half);
     const fill=hexRgba(p.col, i%2?0.34:0.17);
     out+=`<path d="M${cx},${cy} L${s0[0]},${s0[1]} A${r},${r} 0 0 1 ${s1[0]},${s1[1]} Z" fill="${fill}" stroke="rgba(255,255,255,.16)" stroke-width="1"/>`;
   });
   pz.forEach((p,i)=>{
-    const sub = p.kind==='boost' ? (p.mins>=60?'1 HOUR':'30 MIN')
+    const sub = p.kind==='boost' ? (p.mins>=60?'1 HR':'30 MIN')
               : p.kind==='shard' ? String(p.r||'').toUpperCase()
-              : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMPION':(p.tier||'base')).toUpperCase()
+              : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMP':(p.tier||'base')).toUpperCase()
               : p.kind==='spin'  ? 'SPIN' : 'COINS';
     // Bottom-half wedges would read upside down, so flip them 180 and mirror the radii about the
     // centre - the label lands in the same wedge, the right way up.
-    const flip=(i*45>90 && i*45<270), rot=i*45+(flip?180:0);
-    const yMain=flip?(p.kind==='boost'?180:178):(p.kind==='boost'?46:48);
-    const ySub =flip?(p.kind==='boost'?194:192):(p.kind==='boost'?60:62);
+    // Both halves put the value on the OUTER radius (where the wedge is widest) and the small caption
+    // inboard, so a long label like "PACK" never has to fit the narrow inner end.
+    const deg=i*step, flip=(deg>90 && deg<270), rot=deg+(flip?180:0);
+    const yMain=flip?200:40, ySub=flip?183:57;
     out+=`<g transform="rotate(${rot},120,120)">
-      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${p.short.length>4?13:16}px var(--body)">${esc(p.short)}</text>
-      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 8px var(--body);letter-spacing:.08em">${sub}</text></g>`;
+      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${p.short.length>4?12:15}px var(--body)">${esc(p.short)}</text>
+      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 7.5px var(--body);letter-spacing:.06em">${sub}</text></g>`;
   });
   return out+`</svg>`;
 }
@@ -6655,8 +6689,8 @@ function overlayWheel(app){
       b.onclick=()=>{
         const idx=wheelConsume(); if(idx<0){ toast('No spins left'); render(); return; }
         grantWheelPrize(pz[idx]);                    // granted up front, so closing mid-spin can't lose it
-        const jit=(Math.random()*2-1)*16;
-        S.wheelSpin={idx, rep, spun:true, done:false, rot: 360*6 - idx*45 + jit};
+        const step=wheelSeg(pz), jit=(Math.random()*2-1)*step*0.34;   // land off-centre, but never in the next wedge
+        S.wheelSpin={idx, rep, spun:true, done:false, rot: 360*6 - idx*step + jit};
         try{ track('wheel_spin',{id:pz[idx].id, rep:repNm}); }catch(e){}
         render();
       };
@@ -7962,7 +7996,9 @@ function bottomNav(){
     {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
     {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
-    {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
+    // Tour Pass replaces Online here (owner): the pass is the daily-progress + season surface every
+    // player touches, while online is a niche mode still reachable from the home strip and the menu.
+    {id:'pass',    ico:'ticket', label:'Pass',      go:()=>{ S.overlay='tourpass'; render(); }},
     {id:'shop',    ico:'cart',   label:'Pro Shop', go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
   ];
   const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
@@ -8007,11 +8043,12 @@ function navActiveTab(){
   const scr=S.screen, ov=S.overlay;
   if(ov==='record') return 'profile';   // CS455
   if(ov==='shop') return 'shop';
+  if(ov==='tourpass') return 'pass';
   if(ov) return '';
   if(scr==='title') return 'home';
   if(NAV_CAREER_SCR.includes(scr)) return 'career';
   if(NAV_DAILY_SCR.includes(scr)) return 'daily';
-  if(NAV_H2H_SCR.includes(scr)) return 'online';
+
   return '';
 }
 function navSetActive(nav){
@@ -9196,6 +9233,9 @@ function overlayMenu(screen){
   play.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Play</div>`));
   play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
+  // Online moved off the bottom bar (Tour Pass took its slot), so it lives here + on the home strip.
+  play.appendChild(menuRow(ic('globe'),'Play Online','1v1 & foursomes head-to-head',()=>{ S.overlay=null; render(); openH2H(); }));
+  if(wheelEnabled()) play.appendChild(menuRow('🎡','Prize Wheel',(()=>{ if(!signedIn) return 'Sign in to spin'; const a=wheelAvail(); return a>0?(a+' spin'+(a>1?'s':'')+' ready'):'Next free spin at midnight ET'; })(),()=>{ S.overlay=null; render(); openWheel(); }));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
   play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
   if(passEnabled()) play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
@@ -9478,6 +9518,25 @@ function dailyHeroCard(){
 }
 // Prize Wheel home card. Glows when a spin is ready (the daily hook); shows a live 2x-XP boost timer
 // when one is running, so the urgency is visible from the home screen.
+// A tiny spinning wheel graphic for the home button (10 wedges, matching the real face's colours).
+function wheelMiniSVG(){
+  const cols=['#ffd45e','#a78bfa','#ffd45e','#9fdcff','#ffd45e','#3fbf7a','#c9a0ff','#ffd45e','#ff7ab8','#ffd45e'];
+  const pt=(d)=>{ const a=d*Math.PI/180; return [(12+11*Math.sin(a)).toFixed(2),(12-11*Math.cos(a)).toFixed(2)]; };
+  let s=`<svg class="wbi" viewBox="0 0 24 24" aria-hidden="true">`;
+  cols.forEach((c,i)=>{ const a=pt(i*36-18), b=pt(i*36+18);
+    s+=`<path d="M12,12 L${a[0]},${a[1]} A11,11 0 0 1 ${b[0]},${b[1]} Z" fill="${c}" opacity="${i%2?.95:.65}"/>`; });
+  return s+`<circle cx="12" cy="12" r="11" fill="none" stroke="#ff7ab8" stroke-width="1.6"/><circle cx="12" cy="12" r="3.1" fill="#2b0a1a" stroke="#ff7ab8" stroke-width="1.2"/></svg>`;
+}
+// The home entry point: a compact pill (in the hero button row), glowing + spinning when a spin is ready.
+function wheelMiniBtn(){
+  const avail=wheelAvail(), free=wheelFreeReady(), on=sbSignedIn();
+  const lab = !on ? 'Prize Wheel' : avail>0 ? (free&&avail===1?'Free Spin':'Spin') : 'Wheel';
+  const badge = (on && avail>1) ? `<span class="wbn">${avail}</span>` : '';
+  const b=$(`<button type="button" class="wheelbtn${avail>0?' ready':''}" aria-label="Prize Wheel${avail>0?', '+avail+' spin'+(avail>1?'s':'')+' ready':', next free spin tomorrow'}">${wheelMiniSVG()}${lab}${badge}</button>`);
+  b.onclick=openWheel;
+  return b;
+}
+// (superseded by wheelMiniBtn above - the home screen uses the compact pill, not a full mode card)
 function wheelHomeCard(){
   const avail=wheelAvail(), free=wheelFreeReady(), on=xpBoostActive();
   let badge='', mid;
@@ -9695,18 +9754,12 @@ function scrTitle(){
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
   // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
-  if(!firstRun){ const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
+  if(!firstRun){ const hw=$(`<div class="center" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
+    // Prize Wheel lives here as a compact glowing pill (owner: no full-size tile for it)
+    if(wheelEnabled()) hw.appendChild(wheelMiniBtn());
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
     hb.onclick=openRules; hw.appendChild(hb);
-    // CS375: badge the button with how many daily quests are still to do (signed-in only) so the
-    // player knows there's something to click and complete.
-    const dqObj=(sbSignedIn() && typeof dailyQuests==='function')?dailyQuests():null;
-    const dqLeft=dqObj?DAILY_QUEST_DEFS.filter(d=>!dqObj[d.k]).length:0;
-    // CS443: signed-in + every quest done today → a green "DONE" state (owner: show something on completion)
-    const dqAllDone=!!dqObj && dailyQuestsAllDone(dqObj);
-    const qb=$(`<button type="button" class="howtop${dqAllDone?' done':(dqLeft?' hasnew':'')}" aria-label="Daily Quests${dqAllDone?', all done today':(dqLeft?', '+dqLeft+' still to do':'')}">🎯 Daily Quests${dqAllDone?`<span class="qdone">✓ DONE</span>`:(dqLeft?`<span class="qbadge">${dqLeft}</span>`:'')}</button>`);
-    qb.onclick=()=>{ S.overlay='challenges'; render(); }; hw.appendChild(qb);
-    w.appendChild(hw); }
+    w.appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
@@ -9763,7 +9816,6 @@ function scrTitle(){
   }
   // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent.
   // Gated to dev accounts (or the TOURPASS_LIVE launch flag) so we can live-test before public.
-  if(wheelEnabled()) stack.appendChild(wheelHomeCard());
   if(passEnabled()) stack.appendChild(tourPassCard());
   // 4) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
@@ -9786,7 +9838,7 @@ function scrTitle(){
       db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
       w.appendChild(db); } }catch(e){}
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
-  const sec=$(`<div class="home-nav"></div>`);
+  const sec=$(`<div class="home-nav compact"></div>`);
   const signedIn=sbSignedIn();
   // CS454: each tile carries its own accent + a pixel icon (pxMedalSVG tints the 18x18 sprite to the accent).
   const navRgba=(hex,a)=>{ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; };
@@ -9801,13 +9853,17 @@ function scrTitle(){
     b.onclick=fn; sec.appendChild(b); };
   // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
   // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
-  mkTile(PXI.target,'#16b5a6','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();});
-  mkTile(PXI.podium,'#4aa3ff','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();});
-  mkTile(PXI.cup,'#F1D04A','Profile', signedIn?'Trophies & stats':'Sign in', ()=>{S.overlay='record';render();});
+  // Compact icon row (owner: reduce home scrolling) - short labels, no sub-lines; the dots still flag
+  // anything waiting (new gear / a free pack), and every one of these also lives in the bottom nav or menu.
+  const _dq=(signedIn && typeof dailyQuests==='function')?dailyQuests():null;
+  const _dqLeft=_dq?DAILY_QUEST_DEFS.filter(d=>!_dq[d.k]).length:0;
+  mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
+  mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
+  mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
   if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
-    const shopNew=(typeof cosNewTotal==='function')&&cosNewTotal()>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
-    mkTile(PXI.cart,'#3fbf7a','Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):(nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts')), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
-  mkTile(PXI.gift,'#b06be0','Invite a friend','Share your link — you both get a free pack', ()=>{ referralShare(); }, {wide:true});   // CS403: refer a friend → free packs (full-width featured tile)
+    const shopNew=((typeof cosNewTotal==='function')&&cosNewTotal()>0)||nFree>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
+    mkTile(PXI.cart,'#3fbf7a','Shop','', ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
+  mkTile(PXI.gift,'#b06be0','Invite','', ()=>{ referralShare(); });   // CS403: refer a friend -> free packs
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
