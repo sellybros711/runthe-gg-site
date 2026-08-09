@@ -90,7 +90,7 @@
   function benefitsHTML(){
     return '<ul class="rtgc-perks">' +
       '<li><span>♾️</span> Unlimited Arcade plays, every day</li>' +
-      '<li><span>🗂️</span> Full Arcade Archive — play past days</li>' +
+      '<li><span>🗂️</span> Full Arcade Archive: play past days</li>' +
       '<li><span>🆕</span> New games &amp; challenges as they drop</li>' +
       '<li><span>📊</span> Your full history &amp; stats</li>' +
     '</ul>';
@@ -108,8 +108,8 @@
     } else {
       kicker='Out of plays'; head='You’re out of plays today';
       sub = signedIn()
-        ? 'You’ve used today’s 3 free Arcade plays. Come back tomorrow for 3 more — or unlock the entire Arcade now.'
-        : 'Come back tomorrow for another free play — or unlock the entire Arcade now.';
+        ? 'You’ve used today’s 3 free Arcade plays. Come back tomorrow for 3 more, or unlock the entire Arcade now.'
+        : 'Come back tomorrow for another free play, or unlock the entire Arcade now.';
     }
     function render(){
       var b=$('rtgcardBody');
@@ -157,7 +157,7 @@
     b.innerHTML =
       '<div class="rtgc-kick">Keep playing</div>'+
       '<h2 class="rtgc-h">Create a free account</h2>'+
-      '<p class="rtgc-sub">You’ve used today’s free play. A free RunThe.GG account gets you <b>3 Arcade plays every day</b> — and saves your streaks, stats and leaderboard rank across every game.</p>'+
+      '<p class="rtgc-sub">You’ve used today’s free play. A free RunThe.GG account gets you <b>3 Arcade plays every day</b>, and saves your streaks, stats and leaderboard rank across every game.</p>'+
       '<button class="rtgc-go" id="rtgcardCreate" type="button">Create free account</button>'+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
       '<div class="rtgc-fine">Free forever. No card required.</div>';
