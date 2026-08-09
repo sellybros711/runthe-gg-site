@@ -107,6 +107,9 @@
     if(reason==='archive'){
       kicker='Arcade Archive'; head='Unlock the full Archive';
       sub='Play any past day’s puzzles across every game with an Arcade Card.';
+    } else if(reason==='upsell'){
+      kicker='Arcade Card'; head='Go unlimited';
+      sub='Unlimited plays across every game, every day — plus the full archive.';
     } else {
       kicker='Out of plays'; head='You’re out of plays today';
       sub = signedIn()
@@ -183,11 +186,13 @@
     b.innerHTML =
       '<div class="rtgc-kick">Keep playing</div>'+
       '<h2 class="rtgc-h">Create a free account</h2>'+
-      '<p class="rtgc-sub">You’ve used today’s free play. A free RunThe.GG account gets you <b>3 Arcade plays every day</b>, and saves your streaks, stats and leaderboard rank across every game.</p>'+
+      '<p class="rtgc-sub">A free RunThe.GG account gets you <b>3 Arcade plays every day</b>, and saves your streaks, stats and leaderboard rank across every game. Or get an Arcade Card for unlimited play.</p>'+
       '<button class="rtgc-go" id="rtgcardCreate" type="button">Create free account</button>'+
+      '<button class="rtgc-ghost" id="rtgcardCard" type="button">Get an Arcade Card for unlimited play</button>'+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
-      '<div class="rtgc-fine">Free forever. No card required.</div>';
+      '<div class="rtgc-fine">No card required for account.</div>';
     $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup'); };
+    $('rtgcardCard').onclick=function(){ paywall({ reason:'upsell' }); };
     $('rtgcardSignin').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signin'); };
     open();
   }
@@ -255,6 +260,16 @@
   // create-account conversion; a signed-in free user gets the Arcade Card paywall.
   function wall(){ if(signedIn()) paywall({ reason:'out' }); else guestConvert(); }
 
+  // Turn a game's out-of-plays "Play again" button into an inviting upsell (the
+  // button's existing click handler already calls wall(), which shows the right
+  // offer: guests -> create account / Arcade Card, free users -> Arcade Card).
+  function wallButton(btn){
+    if(!btn) return false;
+    btn.disabled=false; btn.classList.remove('spent');
+    btn.textContent = signedIn() ? 'Get an Arcade Card' : 'Get more plays';
+    return true;
+  }
+
   // Server-side authorization for a ranked play (anti-bypass). For a signed-in
   // free user it spends one server token (the source of truth); resolves
   // {ok:false} only when the server says they're genuinely out (e.g. localStorage
@@ -296,7 +311,7 @@
   }
 
   function init(){ injectStyles(); watchAuth(); watchTokens();
-    window.RTGCard = { paywall: paywall, guestConvert: guestConvert, wall: wall, checkout: startCheckout, portal: portal, authorizePlay: authorizePlay, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
+    window.RTGCard = { paywall: paywall, guestConvert: guestConvert, wall: wall, wallButton: wallButton, checkout: startCheckout, portal: portal, authorizePlay: authorizePlay, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

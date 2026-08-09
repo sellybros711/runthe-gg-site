@@ -77,8 +77,13 @@
         var active = !!row && (row.status === 'active' || row.status === 'trialing') &&
           (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now() - 86400000);
         try {
+          // On a SUCCESSFUL read (still fail-open on error/offline above), the
+          // subscriptions row is authoritative: grant when active, otherwise
+          // clear the flag — including when there is NO row (free user). This
+          // stops a stale flag (e.g. a browser that was once a cardholder) from
+          // granting unlimited plays to a free account.
           if (active) localStorage.setItem('runthegrid_pro', '1');
-          else if (row) localStorage.removeItem('runthegrid_pro');   // known-lapsed only
+          else localStorage.removeItem('runthegrid_pro');
         } catch (e) {}
         fire();
       })
