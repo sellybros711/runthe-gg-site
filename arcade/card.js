@@ -185,7 +185,12 @@
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){
         if(d && d.url){ location.href=d.url; return; }
-        showErr(d && d.error==='stripe_not_configured' ? 'Checkout isn’t available yet. Please try again soon.' : 'Could not start checkout. Please try again.');
+        var msg = (d && d.detail) ? ('Checkout error: '+d.detail)
+          : (d && d.error==='stripe_not_configured') ? 'Checkout isn’t configured yet (missing keys/prices).'
+          : (d && d.error==='missing_user_id') ? 'Please sign in, then try again.'
+          : (d && d.error) ? ('Checkout error: '+d.error)
+          : 'Could not start checkout. Please try again.';
+        showErr(msg);
       })
       .catch(function(){ showErr('Could not start checkout. Please try again.'); });
   }
