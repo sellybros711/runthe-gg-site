@@ -186,6 +186,19 @@
     );
   }
 
+  // ---- server-side Arcade token wallet (signed-in users). spendToken() is the
+  // source of truth for a ranked play; tokenStatus() reads remaining without
+  // spending. Both resolve null when signed-out / offline (caller falls back to
+  // the client wallet). See supabase/69_arcade_card.sql. ----
+  function spendToken() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_spend_token').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+  function tokenStatus() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_tokens_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
@@ -194,6 +207,8 @@
     leaderboard: leaderboard,
     rank: rank,
     streakOf: streakOf,
+    spendToken: spendToken,
+    tokenStatus: tokenStatus,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   };
 })();

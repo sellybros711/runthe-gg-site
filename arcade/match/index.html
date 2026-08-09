@@ -1584,7 +1584,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
