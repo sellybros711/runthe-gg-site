@@ -32,6 +32,7 @@
     return null;
   }
   function signedIn(){ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()) || !!userId(); }
+  function hasCard(){ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }
   function returnPath(){ try{ return location.pathname + location.search; }catch(e){ return '/arcade/'; } }
 
   // ---------- styles ----------
@@ -100,6 +101,7 @@
   function paywall(opts){
     opts=opts||{}; var reason=opts.reason||'out';
     ensureScrim();
+    if(hasCard()){ renderMember(); open(); return; }   // already a member: manage, never sell a second card
     var chosen = 'annual';   // steer to best value by default
     var kicker, head, sub;
     if(reason==='archive'){
@@ -139,6 +141,30 @@
     }
     render(); open();
   }
+  // Already a member — manage/cancel instead of buying a second card (mirrors
+  // how the golf Tour Pass won't sell you a pass you already own).
+  function renderMember(){
+    var b=$('rtgcardBody');
+    b.innerHTML =
+      '<div class="rtgc-kick">Arcade Card</div>'+
+      '<h2 class="rtgc-h">You’re a member</h2>'+
+      '<p class="rtgc-sub">You’ve got unlimited plays and the full archive. Thanks for supporting Run The Arcade.</p>'+
+      '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+      '<button class="rtgc-go" id="rtgcardManage" type="button">Manage subscription</button>'+
+      '<div id="rtgcardErr"></div>'+
+      '<button class="rtgc-ghost" id="rtgcardLater" type="button">Close</button>';
+    $('rtgcardLater').onclick=close;
+    $('rtgcardManage').onclick=function(){
+      var go=$('rtgcardManage'); if(go){ go.disabled=true; go.textContent='Opening…'; }
+      Promise.resolve(portal()).then(function(d){
+        if(d && d.url) return;                          // redirecting to Stripe portal
+        if(go){ go.disabled=false; go.textContent='Manage subscription'; }
+        showErr((d && d.error==='no_customer')
+          ? 'This membership is complimentary — there’s nothing to bill or manage.'
+          : 'Could not open the billing portal. Please try again.');
+      });
+    };
+  }
   function planHTML(plan, on){
     var p = plan==='annual'?ANNUAL:MONTHLY;
     return '<div class="rtgc-plan'+(on?' on':'')+'" data-plan="'+plan+'">'+
@@ -169,6 +195,7 @@
   // Begin checkout. If not signed in, open sign-in first and resume after auth.
   function startCheckout(plan){
     plan = plan==='annual'?'annual':'monthly';
+    if(hasCard()){ renderMember(); return; }   // already a member: never start a second checkout
     if(!signedIn()){
       // preserve intent, ask them to sign in / create an account, then resume
       pending = plan;
@@ -185,6 +212,7 @@
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){
         if(d && d.url){ location.href=d.url; return; }
+        if(d && d.error==='already_active'){ renderMember(); return; }   // server says: you already have a card
         var msg = (d && d.detail) ? ('Checkout error: '+d.detail)
           : (d && d.error==='stripe_not_configured') ? 'Checkout isn’t configured yet (missing keys/prices).'
           : (d && d.error==='missing_user_id') ? 'Please sign in, then try again.'

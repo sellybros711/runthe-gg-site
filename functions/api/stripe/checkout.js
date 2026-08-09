@@ -30,6 +30,14 @@ export async function onRequestPost(context) {
   const userId = (body.user_id || '').trim();
   if (!userId) return json({ error: 'missing_user_id' }, 400);
 
+  // Never sell a second card to an existing member (mirrors the golf Tour Pass).
+  // This is the authoritative guard — the client hides the buy button too, but a
+  // stale client or direct POST still can't create a duplicate subscription.
+  const sub = await lookupSub(env, userId);
+  if (sub && (sub.status === 'active' || sub.status === 'trialing')) {
+    return json({ error: 'already_active' }, 409);
+  }
+
   const site = env.SITE_URL || new URL(request.url).origin;
   // return the player to where they were (defends against open-redirect: must be a local /arcade path)
   let ret = typeof body.return_path === 'string' ? body.return_path : '/arcade/';
@@ -52,7 +60,7 @@ export async function onRequestPost(context) {
 
   // Reuse the customer we already recorded for this user (no duplicates). If we
   // can't look one up, fall back to prefilling the email and letting Stripe match.
-  const customer = await lookupCustomer(env, userId);
+  const customer = sub && sub.stripe_customer_id;
   if (customer) {
     form.set('customer', customer);
     form.set('customer_update[address]', 'auto');   // let Checkout collect/refresh address for tax
@@ -73,17 +81,17 @@ export async function onRequestPost(context) {
   return json({ url: data.url });
 }
 
-// Best-effort: read this user's stored Stripe customer id from subscriptions.
-async function lookupCustomer(env, userId) {
+// Best-effort: read this user's subscription row (status + Stripe customer id).
+async function lookupSub(env, userId) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return null;
   try {
     const r = await fetch(
-      env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(userId) + '&select=stripe_customer_id&limit=1',
+      env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(userId) + '&select=status,stripe_customer_id&limit=1',
       { headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE } }
     );
     if (!r.ok) return null;
     const rows = await r.json();
-    return (rows && rows[0] && rows[0].stripe_customer_id) || null;
+    return (rows && rows[0]) || null;
   } catch (e) { return null; }
 }
 

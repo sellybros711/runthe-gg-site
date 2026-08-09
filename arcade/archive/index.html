@@ -183,7 +183,6 @@
         '</ul>'+
         '<button class="btn" id="goPro">Get Arcade Card</button>'+
         '<p class="fine" id="gateFine">$5.99/mo or $49.99/yr. Cancel anytime.</p>'+
-        '<p class="fine"><a href="#" id="unlock" style="color:var(--dim); text-decoration:underline;">Preview unlock (testing)</a></p>'+
       '</div>';
     // Open the shared Arcade Card paywall (handles plan choice and
     // sign-in-first if needed). Falls back to the old inline checkout only if
@@ -196,11 +195,6 @@
         body:JSON.stringify({ user_id: st.userId, plan:'annual' }) })
         .then(function(r){ return r.json(); }).then(function(d){ if(d && d.url) location.href=d.url; });
     });
-    document.getElementById('unlock').addEventListener('click', function(ev){
-      ev.preventDefault();
-      try{ LS.setItem('runthegrid_pro','1'); }catch(e){}
-      location.reload();
-    });
   }
 
   // Home-page-style grid: one tile per game. Clicking a tile opens that game's
@@ -208,7 +202,7 @@
   function renderList(){
     document.getElementById('proPill').hidden=false;
     var list=(window.RTGCalendar && RTGCalendar.GAMES) || [];
-    var html='<div class="probar"><b>PRO</b><span>Unlimited plays + past days unlocked</span><button class="off" id="proOff">Turn off preview</button></div>';
+    var html='<div class="probar"><b>Arcade Card</b><span>Unlimited plays · every past day unlocked</span></div>';
     html+='<div class="tiles">';
     for(var i=0;i<list.length;i++){ var g=list[i];
       html+='<button class="tile '+g.cls+'" type="button" data-k="'+esc(g.key)+'">'+
@@ -228,10 +222,6 @@
         var k=btn.getAttribute('data-k');
         if(window.RTGCalendar) RTGCalendar.open(k);
       });
-    });
-    document.getElementById('proOff').addEventListener('click', function(){
-      try{ LS.removeItem('runthegrid_pro'); }catch(e){}
-      location.reload();
     });
   }
 
