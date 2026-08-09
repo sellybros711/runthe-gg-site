@@ -75,6 +75,12 @@
       localStorage.removeItem('rtt_remember');
       localStorage.removeItem('rtt_oauth_pending');
       localStorage.removeItem('rtp_oauth_pending');
+      // Shared-device hygiene: the previous account's remaining token count
+      // and Pro flag would otherwise carry over to the next signer on this
+      // browser until the next reconcile / syncPro (a ~1s window on Pro,
+      // longer on the token counter). Clear them at sign-out.
+      localStorage.removeItem('runthegrid_tokens_v3');
+      localStorage.removeItem('runthegrid_pro');
     } catch (e) {}
   }
   function bridgeInbound() {
