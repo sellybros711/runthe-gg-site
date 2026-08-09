@@ -826,6 +826,7 @@
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
+    if(ARCHIVE && w && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, guesses.length, { higherIsBetter:false, label:'guesses' });
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
     // modal

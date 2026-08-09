@@ -643,6 +643,7 @@
       s.best=Math.min(s.best||1e9, Math.round(elapsed));
       s.solves=(s.solves||0)+1; save(s);
     }
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, Math.round(elapsed), { higherIsBetter:false, label:'sec' });
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mHints').textContent=hints;
