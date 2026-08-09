@@ -617,6 +617,10 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
   .gc-pass{background:linear-gradient(158deg,#8b6cf5,#5a34c8 50%,#c79a1e); color:#f7f1ff; --chip:rgba(18,8,40,.34)}
+  .gc-wheel{background:linear-gradient(158deg,#ff7ab8,#d43c86 56%,#a52468); color:#fff2f8; --chip:rgba(40,6,24,.3)}
+  .gc-wheel.ready{box-shadow:0 12px 26px rgba(0,0,0,.42),0 0 0 2px rgba(255,214,236,.55),0 0 22px rgba(255,122,184,.5);animation:gcWheelPulse 2.3s ease-in-out infinite}
+  @keyframes gcWheelPulse{0%,100%{box-shadow:0 12px 26px rgba(0,0,0,.42),0 0 0 2px rgba(255,214,236,.5),0 0 18px rgba(255,122,184,.42)}50%{box-shadow:0 12px 30px rgba(0,0,0,.46),0 0 0 2px rgba(255,235,246,.85),0 0 30px rgba(255,122,184,.75)}}
+  @media (prefers-reduced-motion:reduce){ .gc-wheel.ready{animation:none} }
   .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
   .gc-kick{font:800 10.5px/1.3 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.82; display:flex; align-items:center; gap:6px}
   .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:5px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
@@ -3346,8 +3350,17 @@ function wNextResetMs(){ try{ return Math.max(0, (weekKey()+1)*7*86400000 - Date
 // an inline, live-ticking countdown span (updated once a second by tickCountdowns); style: 'clock' | 'hm' | 'week'
 function dCd(style){ const wk=style==='week'; const ms=wk?wNextResetMs():dNextResetMs();
   return `<span class="dc-val" data-cd="${wk?'week':(style==='hm'?'hm':'clock')}" style="font-variant-numeric:tabular-nums;font-weight:800">${wk?fmtCdDHM(ms):(style==='hm'?fmtCdHM(ms):fmtCdClock(ms))}</span>`; }
-function tickCountdowns(){ const els=document.querySelectorAll('.dc-val'); if(!els.length) return; const dms=dNextResetMs(), wms=wNextResetMs();
+function tickCountdowns(){ tickXpBoost();
+  const els=document.querySelectorAll('.dc-val'); if(!els.length) return; const dms=dNextResetMs(), wms=wNextResetMs();
   els.forEach(e=>{ const m=e.getAttribute('data-cd'); e.textContent = m==='week'?fmtCdDHM(wms):(m==='hm'?fmtCdHM(dms):fmtCdClock(dms)); }); }
+// Live 2x-XP boost timer: ticks every on-screen .xpb-val down, and re-renders ONCE the moment it runs
+// out so the chip disappears instead of sitting at 0:00.
+var _xpbShown=false;
+function tickXpBoost(){ try{
+  const els=document.querySelectorAll('.xpb-val'); const ms=(typeof xpBoostMs==='function')?xpBoostMs():0;
+  if(els.length){ _xpbShown=true; els.forEach(e=>{ e.textContent=fmtBoost(ms); }); }
+  if(_xpbShown && ms<=0){ _xpbShown=false; try{ render(); }catch(e){} }
+}catch(e){} }
 const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
 function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
 function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{},days:{}})||{current:0,longest:0,last:null,freezes:0,miles:{},days:{}}; const t=todayKey();
@@ -6299,7 +6312,11 @@ function passConvertCurve(s){
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
   if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
-  s.xp+=Math.round(n); passSave(s); }
+  // Prize-Wheel 2x XP boost: the one chokepoint every XP faucet funnels through, so a boost doubles
+  // the daily, a finished season, an online win and a played Moment alike.
+  const mult=(typeof passXpMult==='function')?passXpMult():1;
+  if(mult>1) S._passPop.boost=true;                      // the level-up popup calls it out
+  s.xp+=Math.round(n*mult); passSave(s); }
 // Owner: a proper level-up moment after a season / daily / h2h round, not a toast mid-play. Deferred the
 // same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
 // they're safely on screen. Only fires when a TIER was actually gained.
@@ -6311,15 +6328,15 @@ function flushPassLevel(){
   var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','setup'];
   if(busy.indexOf(S.screen)>=0) return;                   // never interrupt a live round / draft
   const s=passState(), p=S._passPop;
-  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierAt(s.xp)};
+  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierAt(s.xp), boost:!!p.boost};
   S._passPop=null; S.overlay='passlevel'; try{ track('tourpass_levelup',{from:p.tier0,to:S.passLevel.tier1}); }catch(e){}
   try{ render(); }catch(e){} }
 // Reward tables - milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
 // FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
 // Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
 // with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
-const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 45:{shard:{r:'rare',n:1}}, 50:{pack:{tier:'base',n:1}, coins:1500}, 55:{shard:{r:'rare',n:2}}, 60:{pack:{tier:'tour',n:1}, coins:3000} };
-const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{pack:{tier:'champ',n:1}, coins:2500}, 53:{pack:{tier:'tour',n:1}}, 56:{shard:{r:'legendary',n:1}}, 58:{pack:{tier:'champ',n:1}}, 60:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 25:{spin:{n:1}, shard:{r:'common',n:1}, coins:525}, 45:{spin:{n:1}, shard:{r:'rare',n:1}}, 50:{pack:{tier:'base',n:1}, coins:1500}, 55:{shard:{r:'rare',n:2}}, 60:{pack:{tier:'tour',n:1}, coins:3000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 8:{spin:{n:1}, shard:{r:'common',n:1}, coins:500}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 18:{spin:{n:1}, coins:1310}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 28:{spin:{n:1}, shard:{r:'rare',n:1}, coins:1000}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 38:{spin:{n:1}, coins:2210}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{spin:{n:1}, pack:{tier:'champ',n:1}}, 50:{pack:{tier:'champ',n:1}, coins:2500}, 53:{pack:{tier:'tour',n:1}}, 56:{shard:{r:'legendary',n:1}}, 58:{spin:{n:1}, pack:{tier:'champ',n:1}}, 60:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
 function passTierReward(t, lane){
   const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
   if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
@@ -6336,17 +6353,19 @@ function passClaim(tier, lane){
   if(r.shard) shardEarn(r.shard.r, r.shard.n);
   if(r.pack)  grantFreePack(r.pack.n||1, {tier:r.pack.tier, silent:true});
   if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
+  if(r.spin)  grantWheelSpin(r.spin.n||1, {silent:true});
   arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
 }
 // Returns the list of rewards actually granted, so the caller can break them down in a summary.
 function passClaimAll(){ if(!sbSignedIn()) return []; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); const got=[];
   for(let i=1;i<=t;i++){ const rf=passClaim(i,'free'); if(rf.ok) got.push(rf.reward); if(pro){ const rp=passClaim(i,'prem'); if(rp.ok) got.push(rp.reward); } } return got; }
 // Roll a list of claimed rewards up into totals: coins, packs by tier, shards by rarity, cosmetics.
-function passClaimAgg(list){ const agg={n:list.length, coins:0, packs:{}, shards:{}, cos:[]};
+function passClaimAgg(list){ const agg={n:list.length, coins:0, packs:{}, shards:{}, cos:[], spins:0};
   list.forEach(r=>{ if(!r) return;
     if(r.coins) agg.coins+=r.coins;
     if(r.pack){ agg.packs[r.pack.tier]=(agg.packs[r.pack.tier]||0)+(r.pack.n||1); }
     if(r.shard){ agg.shards[r.shard.r]=(agg.shards[r.shard.r]||0)+(r.shard.n||1); }
+    if(r.spin) agg.spins+=(r.spin.n||1);
     if(r.cos) agg.cos.push(r.cos); });
   return agg; }
 function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
@@ -6373,6 +6392,255 @@ function mergeTourPass(local, server){
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
               prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
 }
+/* ═══════════════ DAILY PRIZE WHEEL ═══════════════════════════════════════════════════════════
+   One free spin a day (resets at ET midnight with the daily challenge), plus BANKED spins earned
+   from Tour Pass tiers and a player's first purchase. The headline prizes are the two TIMED
+   2× Tour Pass XP boosts (30 min / 1 hour) — they activate THE SECOND they're won and tick down in
+   real time, so winning one is a nudge to go play right now. Everything else is drawn from the
+   EXISTING pools (coins / shards / packs), so the wheel adds no new currency.
+
+   Economy: the free daily spin is worth ~2,560 coins on average (see the weights) + a ~29% shot at
+   a boost. That's a meaningful daily habit hook without moving the needle much against the weekly
+   reward stack. Signed-in only (every prize needs an account). Cloud-synced grow-only, so the free
+   spin can't be re-rolled on a second device. */
+const WHEEL_ENABLED=true;
+const WHEEL_XP_MULT=2;                       // the boost multiplier ("2× Tour Pass XP")
+// Segment order = wheel order (the two boosts sit opposite each other). w = pick weight, sums to 100.
+const WHEEL_PRIZES=[
+  {id:'c500',  w:26, kind:'coins', amt:500,               label:'500 Coins',      short:'500',    col:'#ffd45e'},
+  {id:'xp30',  w:20, kind:'boost', mins:30,               label:'2× XP · 30 min', short:'2× XP',  col:'#a78bfa'},
+  {id:'c1500', w:16, kind:'coins', amt:1500,              label:'1,500 Coins',    short:'1.5K',   col:'#ffd45e'},
+  {id:'shc',   w:13, kind:'shard', r:'common', n:1,       label:'Common Shard',   short:'◆',      col:'#9fdcff'},
+  {id:'pack',  w:8,  kind:'pack',  tier:'base', n:1,      label:'Base Pack',      short:'PACK',   col:'#3fbf7a'},
+  {id:'xp60',  w:9,  kind:'boost', mins:60,               label:'2× XP · 1 hour', short:'2× XP',  col:'#c9a0ff'},
+  {id:'shr',   w:5,  kind:'shard', r:'rare', n:1,         label:'Rare Shard',     short:'◆',      col:'#4aa3ff'},
+  {id:'c5000', w:3,  kind:'coins', amt:5000,              label:'5,000 Coins',    short:'5K',     col:'#ffd45e'},
+];
+function wheelEnabled(){ return WHEEL_ENABLED; }
+function wheelPrize(id){ return WHEEL_PRIZES.find(p=>p.id===id)||WHEEL_PRIZES[0]; }
+// spinE/spinS are MONOTONIC counters (earned/spent) so a cross-device merge can take a max of each and
+// can never resurrect a spent spin — the same shape the pack-credit bank uses.
+function wheelState(){ let s=LS.get(acctKey('bag_wheel'),null);
+  if(!s||typeof s!=='object') s={day:null, spinE:0, spinS:0, n:0, firstBuy:false, boostUntil:0};
+  s.spinE=Math.max(0,+s.spinE||0); s.spinS=Math.max(0,+s.spinS||0); s.n=Math.max(0,+s.n||0);
+  s.boostUntil=Math.max(0,+s.boostUntil||0); s.firstBuy=!!s.firstBuy; return s; }
+function wheelSave(s){ try{ LS.set(acctKey('bag_wheel'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
+function wheelBanked(){ const s=wheelState(); return Math.max(0, s.spinE - s.spinS); }
+function wheelFreeReady(){ return !!(wheelEnabled() && sbSignedIn() && wheelState().day!==todayKey()); }
+function wheelAvail(){ if(!wheelEnabled()||!sbSignedIn()) return 0; return (wheelFreeReady()?1:0)+wheelBanked(); }
+// Bank a spin (Tour Pass tier, first purchase, or any future faucet). Grow-only + cloud-synced.
+function grantWheelSpin(n, opts){ opts=opts||{}; n=Math.max(0,Math.round(n||0)); if(!sbSignedIn()||n<=0) return 0;
+  const s=wheelState(); s.spinE+=n; wheelSave(s);
+  if(!opts.silent){ try{ toast('<b style="color:#ff7ab8">🎡 +'+n+' Prize Wheel spin'+(n>1?'s':'')+'!</b><br><span class="small">Spin it on the home screen.</span>', 4200); }catch(e){} }
+  return n; }
+// ── the timed 2× Tour Pass XP boost ────────────────────────────────────────────────────────────
+// Stored as an absolute expiry so it keeps ticking while the game is closed (a real-time window, which
+// is what makes it urgent). Winning while one is already running EXTENDS it rather than overwriting.
+function xpBoostMs(){ if(!sbSignedIn()) return 0; return Math.max(0, wheelState().boostUntil - Date.now()); }
+function xpBoostActive(){ return xpBoostMs()>0; }
+function passXpMult(){ return xpBoostActive()?WHEEL_XP_MULT:1; }
+function grantXpBoost(mins){ mins=Math.max(1,Math.round(mins||0)); if(!sbSignedIn()) return 0;
+  const s=wheelState(); const base=Math.max(Date.now(), s.boostUntil);   // stack by extending, never rob time
+  s.boostUntil=base+mins*60000; wheelSave(s);
+  try{ track('xp_boost',{mins:mins}); }catch(e){}
+  return s.boostUntil; }
+function fmtBoost(ms){ ms=Math.max(0,ms|0); const t=Math.ceil(ms/1000), m=Math.floor(t/60), sec=t%60;
+  return m+':'+String(sec).padStart(2,'0'); }
+// A live-ticking boost timer. tickCountdowns updates every .xpb-val on screen each second.
+function xpBoostChip(cls){ if(!xpBoostActive()) return '';
+  return '<span class="'+(cls||'gc-chip')+'">⚡ 2× XP · <span class="xpb-val" style="font-variant-numeric:tabular-nums">'+fmtBoost(xpBoostMs())+'</span></span>'; }
+// ── the spin itself ────────────────────────────────────────────────────────────────────────────
+function wheelPick(){ const tot=WHEEL_PRIZES.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot;
+  for(let i=0;i<WHEEL_PRIZES.length;i++){ r-=WHEEL_PRIZES[i].w; if(r<=0) return i; }
+  return WHEEL_PRIZES.length-1; }
+// Consume a spin (free one first, then the bank) and roll. Returns the prize index, or -1 if none left.
+function wheelConsume(){ if(!wheelEnabled()||!sbSignedIn()) return -1;
+  const s=wheelState(), t=todayKey();
+  if(s.day!==t){ s.day=t; }                       // the free daily spin
+  else if(s.spinE-s.spinS>0){ s.spinS+=1; }       // a banked spin
+  else return -1;
+  s.n+=1; wheelSave(s); return wheelPick(); }
+// Apply a prize. Boosts start immediately; everything else lands in the account silently (the reveal
+// card is the celebration, so the usual grant toasts would just double up).
+function grantWheelPrize(p){ if(!p) return;
+  if(p.kind==='coins') addBonusCoins(p.amt,{silent:true,label:'Prize Wheel'});
+  else if(p.kind==='shard'){ try{ shardEarn(p.r,p.n||1); }catch(e){} }
+  else if(p.kind==='pack'){ if(typeof grantFreePack==='function') grantFreePack(p.n||1,{tier:p.tier,silent:true}); }
+  else if(p.kind==='boost') grantXpBoost(p.mins);
+  try{ track('wheel_prize',{id:p.id,kind:p.kind}); }catch(e){} }
+// grow-only: max every monotonic counter, keep the LATER used-day, the LONGER boost, and OR the
+// first-purchase flag, so no device can re-roll a used free spin or re-earn the purchase spin.
+function mergeWheel(local, server){
+  if(!server) return local; if(!local) return server;
+  const day=(+server.day||0)>(+local.day||0)?server.day:local.day;
+  return { day: day,
+    spinE: Math.max(+local.spinE||0, +server.spinE||0),
+    spinS: Math.max(+local.spinS||0, +server.spinS||0),
+    n:     Math.max(+local.n||0,     +server.n||0),
+    firstBuy: !!(local.firstBuy||server.firstBuy),
+    boostUntil: Math.max(+local.boostUntil||0, +server.boostUntil||0) };
+}
+// One free spin on a player's FIRST purchase, ever (any package). Server-truthed off the coin_purchase
+// rows the client can already read, so it also lands retroactively for anyone who bought before the
+// wheel shipped; the synced firstBuy flag makes it exactly once per account.
+// ── the wheel UI ───────────────────────────────────────────────────────────────────────────────
+let _pwvcss=false;
+function wheelStyleOnce(){ if(_pwvcss) return; _pwvcss=true; const st=document.createElement('style'); st.textContent=`
+  .pwv-wrap{position:relative;width:min(78vw,300px);margin:6px auto 0;aspect-ratio:1/1}
+  .pwv-rot{width:100%;height:100%;will-change:transform}
+  .pwv-rot svg{width:100%;height:100%;display:block;filter:drop-shadow(0 8px 22px rgba(0,0,0,.5))}
+  .pwv-ptr{position:absolute;left:50%;top:-8px;transform:translateX(-50%);z-index:3;width:0;height:0;
+    border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid #ff7ab8;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+  .pwv-hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:19%;height:19%;
+    border-radius:50%;background:radial-gradient(circle at 34% 30%,#3a2136,#160d15);border:2px solid #ff7ab8;
+    box-shadow:0 0 16px rgba(255,122,184,.5);display:flex;align-items:center;justify-content:center;
+    font:900 15px/1 var(--body);color:#ff7ab8}
+  .pwv-spinning .pwv-hub{animation:pwvHub .9s ease-in-out infinite}
+  @keyframes pwvHub{0%,100%{box-shadow:0 0 14px rgba(255,122,184,.45)}50%{box-shadow:0 0 26px rgba(255,122,184,.9)}}
+  .pwv-card{max-width:340px;margin:14px auto 0;border-radius:14px;padding:14px 12px;text-align:center;
+    background:linear-gradient(165deg,rgba(255,122,184,.16),rgba(6,18,12,.5));border:1.5px solid #ff7ab8;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);animation:pwvPop .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes pwvPop{0%{opacity:0;transform:scale(.82)}100%{opacity:1;transform:scale(1)}}
+  .pwv-card .pwv-k{font:900 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#8ea9bb}
+  .pwv-card .pwv-n{font-family:var(--display);font-size:27px;margin:5px 0 3px;line-height:1.05}
+  .pwv-sub{font:800 11px/1.35 var(--body);color:#cfe3d6;opacity:.9}
+  .pwv-boostbig{margin-top:8px;font:900 15px/1 var(--body);color:#c9a0ff;font-variant-numeric:tabular-nums}
+  @media (prefers-reduced-motion:reduce){ .pwv-rot{transition:none!important} .pwv-card{animation:none} .pwv-spinning .pwv-hub{animation:none} }
+`; document.head.appendChild(st); }
+// The wheel face: 8 radial segments, each tinted with its prize colour, labelled radially like a real
+// prize wheel. Segment i is centred at i*45 degrees clockwise from 12 o'clock (the pointer).
+function wheelFaceSVG(){
+  const cx=120, cy=120, r=112;
+  const pt=(deg)=>{ const a=deg*Math.PI/180; return [(cx+r*Math.sin(a)).toFixed(2),(cy-r*Math.cos(a)).toFixed(2)]; };
+  let out=`<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="117" fill="#0d1f16" stroke="#ff7ab8" stroke-width="3"/>`;
+  WHEEL_PRIZES.forEach((p,i)=>{
+    const a0=i*45-22.5, a1=i*45+22.5, s0=pt(a0), s1=pt(a1);
+    const fill=hexRgba(p.col, i%2?0.34:0.17);
+    out+=`<path d="M${cx},${cy} L${s0[0]},${s0[1]} A${r},${r} 0 0 1 ${s1[0]},${s1[1]} Z" fill="${fill}" stroke="rgba(255,255,255,.16)" stroke-width="1"/>`;
+  });
+  WHEEL_PRIZES.forEach((p,i)=>{
+    const sub = p.kind==='boost' ? (p.mins>=60?'1 HOUR':'30 MIN')
+              : p.kind==='shard' ? (p.r==='rare'?'RARE':'COMMON')
+              : p.kind==='pack'  ? 'BASE' : 'COINS';
+    // Bottom-half wedges would read upside down, so flip them 180 and mirror the radii about the
+    // centre - the label lands in the same wedge, the right way up.
+    const flip=(i*45>90 && i*45<270), rot=i*45+(flip?180:0);
+    const yMain=flip?(p.kind==='boost'?180:178):(p.kind==='boost'?46:48);
+    const ySub =flip?(p.kind==='boost'?194:192):(p.kind==='boost'?60:62);
+    out+=`<g transform="rotate(${rot},120,120)">
+      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${p.short.length>4?13:16}px var(--body)">${esc(p.short)}</text>
+      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 8px var(--body);letter-spacing:.08em">${sub}</text></g>`;
+  });
+  return out+`</svg>`;
+}
+function openWheel(){
+  if(!wheelEnabled()) return;
+  if(!sbSignedIn()){ toast('Create a free account to spin the Prize Wheel'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
+  S.wheelSpin=null; S.overlay='wheel'; try{ track('wheel_open'); }catch(e){} render();
+}
+function overlayWheel(app){
+  wheelStyleOnce();
+  const w=S.wheelSpin, avail=wheelAvail(), free=wheelFreeReady(), banked=wheelBanked();
+  const spinning=!!(w&&w.spun&&!w.done), done=!!(w&&w.done);
+  const ov=$(`<div class="ov pwvov" role="dialog" aria-modal="true" style="text-align:center"></div>`);
+  if(!spinning) ov.appendChild($(`<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>`));
+  ov.appendChild($(`<div class="tag" style="color:#ff7ab8;border-color:#ff7ab8;margin:0 auto">🎡 Daily Spin</div>`));
+  ov.appendChild($(`<h3 style="margin:12px 0 2px">Prize Wheel</h3>`));
+  const sub = done ? 'Your prize is in your account.'
+    : spinning ? 'Good luck…'
+    : avail>0 ? `${avail} spin${avail>1?'s':''} ready${free?' · today’s free spin':''}${(free&&banked)?` + ${banked} banked`:''}`
+    : 'Come back tomorrow for a free spin.';
+  ov.appendChild($(`<p class="lede" style="margin:0 0 8px">${sub}</p>`));
+  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG()}</div><div class="pwv-hub">SPIN</div></div>`);
+  ov.appendChild(wrap);
+  const rot=wrap.querySelector('.pwv-rot');
+  const foot=$(`<div style="margin-top:14px"></div>`); ov.appendChild(foot);
+
+  // the reveal card for a finished spin
+  function reveal(){
+    const p=WHEEL_PRIZES[w.idx];
+    const boost = p.kind==='boost';
+    const card=$(`<div class="pwv-card">
+      <div class="pwv-k">You won</div>
+      <div class="pwv-n" style="color:${p.col}">${esc(p.label)}</div>
+      <div class="pwv-sub">${boost
+        ? 'Active right now. Every mode pays double Tour Pass XP.'
+        : (p.kind==='pack'?'Open it in the Pro Shop → Packs.':'Added to your account.')}</div>
+      ${boost?`<div class="pwv-boostbig">⚡ 2× XP · <span class="xpb-val">${fmtBoost(xpBoostMs())}</span> left</div>`:''}
+    </div>`);
+    foot.appendChild(card);
+    const again=wheelAvail();
+    if(again>0){ const b=$(`<button class="btn goldfill" style="max-width:340px;margin:12px auto 0">Spin again<span class="sub">${again} spin${again>1?'s':''} left</span></button>`);
+      b.onclick=()=>{ S.wheelSpin=null; render(); }; foot.appendChild(b); }
+    const d=$(`<button class="btn ${again>0?'ghost':'goldfill'}" style="max-width:340px;margin:10px auto 0">Done</button>`);
+    d.onclick=close; foot.appendChild(d);
+  }
+  function close(){ S.overlay=null; S.wheelSpin=null; render(); }
+  const xb=ov.querySelector('.x'); if(xb) xb.onclick=close;
+
+  if(done){ rot.style.transform=`rotate(${w.rot}deg)`; reveal(); }
+  else if(spinning){
+    foot.appendChild($(`<div class="small" style="color:#8ea9bb;margin-top:4px">Spinning…</div>`));
+    // land on the already-decided prize: rotate so segment idx sits under the top pointer
+    const reduce=_reduceMo(), DUR=5200;
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+      if(!rot.isConnected) return;
+      if(reduce){ rot.style.transform=`rotate(${w.rot}deg)`; land(); return; }
+      rot.style.transition=`transform ${DUR}ms cubic-bezier(.09,.74,.10,1)`;
+      rot.style.transform=`rotate(${w.rot}deg)`;
+    }); });
+    if(!reduce){
+      let landed=false;
+      const fin=()=>{ if(landed) return; landed=true; land(); };
+      rot.addEventListener('transitionend', fin);
+      setTimeout(fin, DUR+420);                                   // safety net
+      // decelerating ticks as segments cross the pointer
+      try{ for(let t=1;t<=24;t++){ const e=1-Math.pow(1-t/24,3.4);
+        setTimeout(()=>{ try{ if(sfxOn()){ const ac=_sfxCtx(); if(ac) _tone(ac,1150,ac.currentTime,0.03,0.045,'square'); } }catch(_){} }, Math.round(e*DUR)); } }catch(e){}
+    }
+  } else {
+    if(avail>0){
+      const b=$(`<button class="btn goldfill" style="max-width:340px;margin:0 auto">SPIN<span class="sub">${free?'Free daily spin':'Uses 1 banked spin'}</span></button>`);
+      b.onclick=()=>{
+        const idx=wheelConsume(); if(idx<0){ toast('No spins left'); render(); return; }
+        grantWheelPrize(WHEEL_PRIZES[idx]);          // granted up front, so closing mid-spin can't lose it
+        const jit=(Math.random()*2-1)*16;
+        S.wheelSpin={idx, spun:true, done:false, rot: 360*6 - idx*45 + jit};
+        try{ track('wheel_spin',{id:WHEEL_PRIZES[idx].id}); }catch(e){}
+        render();
+      };
+      foot.appendChild(b);
+    } else {
+      foot.appendChild($(`<div class="scout" style="max-width:340px;margin:0 auto">Next free spin in <b style="color:#ff7ab8">${dCd('hm')}</b></div>`));
+      foot.appendChild($(`<div class="small muted" style="margin-top:8px;max-width:340px;margin-left:auto;margin-right:auto">Earn more spins on the Tour Pass track.</div>`));
+    }
+    if(xpBoostActive()) foot.appendChild($(`<div class="small" style="margin-top:10px;color:#c9a0ff;font-weight:800">⚡ 2× Tour Pass XP active · <span class="xpb-val">${fmtBoost(xpBoostMs())}</span> left</div>`));
+  }
+  function land(){
+    if(!S.wheelSpin||S.wheelSpin.done) return;
+    S.wheelSpin.done=true;
+    const p=WHEEL_PRIZES[S.wheelSpin.idx];
+    try{ sfx(p.kind==='boost'||p.kind==='pack'?'win':'streak'); }catch(e){}
+    try{ buzz([14,60,14]); }catch(e){}
+    try{ render(); }catch(e){}
+  }
+  app.appendChild(ov);
+}
+var _firstBuyBusy=false;
+function maybeFirstBuySpin(){ try{
+  if(_firstBuyBusy || !sb || !sbSignedIn() || !wheelEnabled()) return;
+  if(wheelState().firstBuy) return;
+  _firstBuyBusy=true;
+  sb.from('coin_purchase').select('status').eq('status','paid').limit(1).then(function(res){
+    _firstBuyBusy=false;
+    const rows=(res&&res.data)||[]; if(!rows.length) return;
+    const s=wheelState(); if(s.firstBuy) return;            // re-read: another path may have granted it
+    s.firstBuy=true; s.spinE+=1; wheelSave(s);
+    try{ track('wheel_firstbuy'); }catch(e){}
+    try{ toast('<b style="color:#ff7ab8">🎡 Thanks for the support!</b><br><span class="small">Your first purchase earned a free Prize Wheel spin.</span>', 5200); render(); }catch(e){}
+  }).catch(function(){ _firstBuyBusy=false; });
+}catch(e){ _firstBuyBusy=false; } }
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
 function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; try{ if(cs.req(m)){ if(!s.owned['sh:'+cs.id]) s.owned['sh:'+cs.id]=1; if(!s.owned['ht:'+cs.id]) s.owned['ht:'+cs.id]=1; } }catch(e){} }); }   // an earned colorway unlocks for shirt AND hat
@@ -7536,6 +7804,7 @@ function render(){
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='confirmSkip') overlayConfirmSkip(app);
     if(S.overlay==='challenges') overlayChallenges(app);
+    if(S.overlay==='wheel') overlayWheel(app);
     if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='s1launch') overlayS1Launch(app);
     if(S.overlay==='purchased') overlayPurchased(app);
@@ -9153,6 +9422,25 @@ function dailyHeroCard(){
   card.onclick=startDailyChallenge;
   return card;
 }
+// Prize Wheel home card. Glows when a spin is ready (the daily hook); shows a live 2x-XP boost timer
+// when one is running, so the urgency is visible from the home screen.
+function wheelHomeCard(){
+  const avail=wheelAvail(), free=wheelFreeReady(), on=xpBoostActive();
+  let badge='', mid;
+  if(!sbSignedIn()){ mid='Spin daily for coins, packs and 2× Tour Pass XP boosts'; }
+  else if(avail>0){ badge=free?'FREE SPIN':`${avail} SPIN${avail>1?'S':''}`; mid='Coins, packs, shards and 2× Tour Pass XP boosts'; }
+  else { mid='Spun today · next free spin at midnight ET'; }
+  const chips=[];
+  if(on) chips.push(xpBoostChip());
+  if(sbSignedIn() && avail<=0) chips.push(`<span class="gc-chip">Next in ${dCd('hm')}</span>`);
+  const card=$(`<button class="gcard gc-wheel${avail>0?' ready':''}" aria-label="Daily Prize Wheel">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎡 Daily Spin</div><div class="gc-title">Prize Wheel</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
+    <div class="gc-mid">${mid}</div>
+    <div class="gc-row">${chips.join('')}<span class="gc-go">${avail>0?'Spin ▸':'View ▸'}</span></div>
+  </button>`);
+  card.onclick=openWheel;
+  return card;
+}
 // CS256: Monthly Spotlight hero card (amber, pulsing).
 function spotlightHeroCard(){
   const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
@@ -9420,6 +9708,7 @@ function scrTitle(){
   }
   // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent.
   // Gated to dev accounts (or the TOURPASS_LIVE launch flag) so we can live-test before public.
+  if(wheelEnabled()) stack.appendChild(wheelHomeCard());
   if(passEnabled()) stack.appendChild(tourPassCard());
   // 4) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
@@ -22246,8 +22535,10 @@ function passRewardCell(r){
   if(r.cos){ const co=(r.cos.cat==='fx'&&PXFX_BY[r.cos.id])?PXFX_BY[r.cos.id].col:null; inner=`<div class="prc-thumb">${cosThumbHTML(r.cos.cat,{id:r.cos.id,col:co})}</div><span class="prc-lab">${esc(r.cos.name)}</span>`; }
   else if(r.pack){ inner=`<img class="prc-pack" src="${pxPackURL(r.pack.tier)}" alt=""><span class="prc-lab">${esc(packType(r.pack.tier).name)}${r.pack.n>1?' ×'+r.pack.n:''}</span>`; }
   else if(r.shard){ const rr=ACC_RARITY[r.shard.r]; inner=`<span class="prc-ic" style="color:${rr.c}">◆${r.shard.n}</span><span class="prc-lab" style="color:${rr.c}">${rr.label} shard${r.shard.n>1?'s':''}</span>`; }
+  else if(r.spin){ inner=`<span class="prc-ic" style="color:#ff7ab8;font-size:22px">🎡</span><span class="prc-lab" style="color:#ff7ab8">${r.spin.n>1?r.spin.n+'× ':''}Wheel spin${r.spin.n>1?'s':''}</span>`; }
   else if(r.coins){ inner=`<span class="prc-ic" style="width:24px;height:24px">${ic('coin',{size:'24px'})}</span><span class="prc-lab" style="color:#ffd45e">${coinFmt(r.coins)}</span>`; }
-  if(r.coins && (r.cos||r.pack||r.shard)) inner+=`<span class="prc-extra"><span style="width:11px;height:11px">${ic('coin',{size:'11px'})}</span>${coinFmt(r.coins)}</span>`;
+  if(r.spin && (r.cos||r.pack||r.shard)) inner+=`<span class="prc-extra" style="color:#ff7ab8">🎡 ${r.spin.n>1?'×'+r.spin.n:'spin'}</span>`;
+  if(r.coins && (r.cos||r.pack||r.shard||r.spin)) inner+=`<span class="prc-extra"><span style="width:11px;height:11px">${ic('coin',{size:'11px'})}</span>${coinFmt(r.coins)}</span>`;
   return inner;
 }
 let _tpcss=false;
@@ -22369,11 +22660,12 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
    exclusive cosmetics, the golfer wearing the tier-50 aura. Everything below is DERIVED from the
    real reward tables (passTierReward), so the pitch can never drift from what the track pays out. */
 function passLootSummary(lane){
-  const a={coins:0, packs:{}, shards:{}, cos:[]};
+  const a={coins:0, packs:{}, shards:{}, cos:[], spins:0};
   for(let t=1;t<=PASS_TIERS;t++){ const r=passTierReward(t,lane);
     if(r.coins) a.coins+=r.coins;
     if(r.pack)  a.packs[r.pack.tier]=(a.packs[r.pack.tier]||0)+(r.pack.n||1);
     if(r.shard) a.shards[r.shard.r]=(a.shards[r.shard.r]||0)+(r.shard.n||1);
+    if(r.spin)  a.spins+=(r.spin.n||1);
     if(r.cos)   a.cos.push(r.cos); }
   return a;
 }
@@ -22389,6 +22681,8 @@ function passLootTilesHTML(lane){
   ['legendary','epic','rare','common'].forEach(r=>{ const n=a.shards[r]; if(!n) return; const rr=ACC_RARITY[r];
     out.push(`<div class="tps-item${r==='legendary'?' ex':''}"><span style="font:900 30px/1 var(--body);color:${rr.c};text-shadow:0 0 14px ${rr.c}">◆</span>
       <span class="tps-n" style="color:${rr.c}">${rr.label} shard${n>1?'s':''}</span><span class="tps-q" style="color:${rr.c}">×${n}</span></div>`); });
+  if(a.spins>0) out.push(`<div class="tps-item"><span style="font:900 34px/1 var(--body)">🎡</span>
+    <span class="tps-n" style="color:#ff7ab8">Prize Wheel spins</span><span class="tps-q" style="color:#ff7ab8">×${a.spins}</span></div>`);
   if(a.coins>0) out.push(`<div class="tps-item"><span style="width:38px;height:38px;display:block">${ic('coin',{size:'38px'})}</span>
     <span class="tps-n" style="color:#ffd45e">Coins</span><span class="tps-q">${coinFmt(a.coins)}</span></div>`);
   return out.join('');
@@ -22540,10 +22834,11 @@ function tourPassCard(){
     mid=`Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
     if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
   } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
+  const boostChip=xpBoostActive()?xpBoostChip():'';
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season Pass</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
     <div class="gc-mid">${mid}</div>
-    <div class="gc-row"><span class="gc-go">${sbSignedIn()?'View the Track ▸':'Play ▸'}</span></div>
+    <div class="gc-row">${boostChip}<span class="gc-go">${sbSignedIn()?'View the Track ▸':'Play ▸'}</span></div>
   </button>`);
   card.onclick=()=>{ S.overlay='tourpass'; render(); };
   return card;
@@ -22558,6 +22853,7 @@ function overlayPassClaim(screen){
   Object.keys(a.packs).forEach(tier=>cells.push(passRewardCell({pack:{tier:tier, n:a.packs[tier]}})));
   (a.cos||[]).forEach(c=>cells.push(passRewardCell({cos:c})));
   Object.keys(a.shards).forEach(r=>cells.push(passRewardCell({shard:{r:r, n:a.shards[r]}})));
+  if(a.spins>0) cells.push(passRewardCell({spin:{n:a.spins}}));
   if(a.coins>0) cells.push(passRewardCell({coins:a.coins}));
   const grid=cells.map(c=>`<div class="tp-cell claimed" style="border-color:rgba(241,208,74,.35)">${c}</div>`).join('');
   const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" style="text-align:center">
@@ -23382,6 +23678,7 @@ function passRewardLine(r){
   if(r.pack) bits.push((r.pack.n>1?r.pack.n+'× ':'')+packType(r.pack.tier).name);
   if(r.cos)  bits.push(r.cos.name);
   if(r.shard) bits.push((r.shard.n||1)+'× '+r.shard.r+' shard');
+  if(r.spin)  bits.push((r.spin.n||1)+'× Prize Wheel spin');
   if(r.coins) bits.push(coinFmt(r.coins)+' coins');
   return bits.join(' · ')||'Rewards';
 }
@@ -23428,7 +23725,7 @@ function overlayPassLevel(screen){
     const b=passXpForTier(t), n=passXpForTier(t+1); return Math.round(Math.min(xp,cap)-b)+' / '+(n-b)+' XP'; };
   const setStop=(t)=>{ lv.querySelector('b').textContent=t; nx.querySelector('b').textContent=Math.min(PASS_TIERS,t+1); };
   const rest=()=>{ setStop(pl.tier1); fill.style.transition='width .6s ease'; fill.style.width=pctInto(pl.xp1,pl.tier1)+'%';
-    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.textContent='+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP · Tier '+pl.tier0+' → '+pl.tier1; };
+    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.innerHTML='+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP'+(pl.boost?' <span style="color:#c9a0ff">(2× boost ⚡)</span>':'')+' · Tier '+pl.tier0+' → '+pl.tier1; };
   // pace it so one level feels weighty but a big climb doesn't drag (the whole run stays ~4s)
   const FILL=Math.max(260, Math.round(850/Math.max(1,Math.sqrt(gained)))), HOLD=Math.max(120, Math.round(FILL*0.29));
   if(reduce){ rest(); return; }
@@ -25003,7 +25300,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -25208,6 +25505,7 @@ function cloudBundle(){
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
     pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
+    wheel: LS.get(acctKey('bag_wheel'), null),                   // Prize Wheel: free-spin day, banked spins, 2x XP boost expiry
   };
 }
 // Tour Pass claim flag: the LATER claimed period wins (so a device that already granted this season's
@@ -25452,6 +25750,7 @@ async function cloudPull(){
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
+    { const mw=mergeWheel(LS.get(acctKey('bag_wheel'),null), server.wheel); if(mw) LS.set(acctKey('bag_wheel'), mw); }   // Prize Wheel: used free spin / banked spins / boost cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
@@ -26008,6 +26307,7 @@ function purchaseCheck(){
   function say(){ if(doneMsg) return; doneMsg=true;
     try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
     try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega) — granted from the server purchase rows
+    try{ maybeFirstBuySpin(); }catch(e){}   // a player's FIRST purchase (any package) banks one Prize Wheel spin
     try{ _bucketBuysCache=null; loadBucketBuys(true); }catch(e){}  // refresh the per-size first-purchase 2× display
     // #6 post-purchase celebration: figure out WHAT landed (from the wallet deltas — the webhook is the
     // only thing that credits, so a delta means the goods are genuinely in the account) and celebrate it
