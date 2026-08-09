@@ -141,12 +141,24 @@ async function buildMLB() {
   for (const [id, e] of acc) if (e.ns >= 2) candidates.push(id);
 
   // Batch-fetch people detail (position, jersey, birth country, debut).
+  // hydrate=education adds high-school/college history -> college for Alma
+  // Mater. Players with no US college (common for international signings)
+  // simply come back without one and Alma's pool filter skips them.
   const detail = new Map();
   for (let i = 0; i < candidates.length; i += 100) {
     const ids = candidates.slice(i, i + 100).join(',');
-    const d = await j(`${MLB_BASE}/people?personIds=${ids}`);
+    const d = await j(`${MLB_BASE}/people?personIds=${ids}&hydrate=education`);
     (d && d.people ? d.people : []).forEach((p) => detail.set(p.id, p));
     await sleep(120);
+  }
+  // most recent college on record (the school a player is known for); the
+  // education shape has drifted before, so accept the common name keys.
+  function colMLB(p) {
+    const ed = p && p.education;
+    const cs = ed && (ed.colleges || ed.college);
+    if (!Array.isArray(cs) || !cs.length) return null;
+    const c = cs[cs.length - 1];
+    return (c && (c.schoolName || c.name || c.school)) || null;
   }
 
   const players = [];
@@ -175,6 +187,7 @@ async function buildMLB() {
       pos: posMLB((p.primaryPosition && p.primaryPosition.name) || null),
       decade,
       nat: normNat(p.birthCountry),
+      col: colMLB(p),
       ns, hp: hp ? 1 : 0
     });
   }
@@ -284,6 +297,20 @@ async function buildNBA() {
     }
     return null;
   }
+  // ESPN's core API serves `college` as a bare $ref (never an inline name), so
+  // the old inline read always produced null -> zero retired NBA players in
+  // Alma Mater. Resolve and cache it like teams/positions (~350 unique refs).
+  const colNameNBA = new Map();
+  async function resolveCollege(a) {
+    const c = a && a.college; if (!c) return null;
+    if (c.name || c.shortName) return c.name || c.shortName;
+    if (c.$ref) {
+      if (colNameNBA.has(c.$ref)) return colNameNBA.get(c.$ref);
+      const d = await j(c.$ref); const nm = (d && (d.name || d.shortName || d.displayName)) || null;
+      colNameNBA.set(c.$ref, nm); await sleep(30); return nm;
+    }
+    return null;
+  }
 
   for (let y = NBA_START; y <= NOW_YEAR; y++) {
     const d = await j(`${NBA_BASE}/seasons/${y}/types/2/leaders`);
@@ -321,7 +348,7 @@ async function buildNBA() {
       j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
       decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
       nat: normNat(a.birthPlace && a.birthPlace.country),
-      col: (a.college && (a.college.name || a.college.shortName)) || null, ns: e.ns, hp: 0
+      col: await resolveCollege(a), ns: e.ns, hp: 0
     });
   }
   console.log('NBA former:', players.length, 'from', acc.size, 'leader athletes');
