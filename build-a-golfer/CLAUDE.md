@@ -14538,3 +14538,32 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   opens it, and a full 18-hole practice daily round + the shop sweep regress clean - **0 page errors**
   throughout; `node --check` clean. Tunable: the `.tp-*` block in `passStyleOnce` (bar gradient, spine,
   pulse), the jump target in `jumpRow()`.
+
+- **Pro Shop: nothing spends coins or shards on a single tap (owner: "the tour shop should ALWAYS ask for
+  confirmation before buying anything. I don't want people accidentally buying packs they don't want").**
+  Audited every purchase path in the shop. Item tiles (apparel / accessories / effects / clubs) already went
+  through the preview + Buy card (CS209), but three paths charged instantly on one tap: **opening a pack**
+  (the "Open · 8,000" button on each tier card AND the "Open another" button in the pack-reveal footer, which
+  is the riskiest one — you tap through a reveal and the very next tap spends up to 45,000 coins), the
+  **5-Pack Bundle** (up to 180,000), and the **shard exchange** (5 shards, both the normal and the Legendary
+  branch). All three now confirm first.
+  - Gated at the SOURCE (`startPackDeal` / `startPackBundle` / `startShardExchange` / `startLegendaryExchange`
+    take a `confirmed` flag and re-enter themselves after the confirm) rather than patching each button, so
+    every current and future entry point is covered automatically — including the wheel footer, which is a
+    separate render path.
+  - New shared `confirmSpend({name, art, cost|costHTML, balHTML, note, label, accent, onYes})` +
+    `packArtHTML(tier)`: a modal showing the pack art / shard glyph, the item name in the tier colour, the
+    **cost** and your **balance before → after**, and a one-line note, with a big Confirm and an equally big
+    Cancel. Appended to `<body>` (not `#app`) so a background re-render can't strand it, and **cancelling is
+    the safe default** — Cancel, tapping the backdrop, and Escape all just close it, spending nothing.
+  - **Free opens skip the confirm** (there is nothing to lose): the one-time first-pack-free, an earned
+    pack credit, and each prepaid sub-open of a bundle go straight to the wheel as before.
+  - Real-money buttons (Buy Coins buckets, the $14.99 Tour Pass) were deliberately left alone: they open
+    Stripe Checkout, which is itself a confirmation page and charges nothing until the card form is
+    submitted — flagged to the owner in case they want a pre-checkout confirm too.
+  Verified in Playwright: tapping a pack / bundle / shard exchange shows the modal with the right cost +
+  before→after balance and spends NOTHING; Cancel, backdrop and Escape all leave the balance untouched;
+  Confirm charges exactly the price once and opens the wheel; the wheel's "Open another" confirms too; a
+  free pack and a bundle sub-open still go straight through; the existing item preview+Buy path is
+  unchanged; a full pack flow (confirm → wheel → 8s spin → land → Equip footer), all 9 shop sections, and
+  an 18-hole practice daily round all regress clean — **0 page errors**; `node --check` clean.

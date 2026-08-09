@@ -24138,13 +24138,20 @@ function grantExchangeItem(item){ var dupe=packOwns(item), refund=0;
 function buildExchangeReel(winItem, target){ var TOTAL=54, WIN=48, reel=[];
   for(var i=0;i<TOTAL;i++){ reel.push(i===WIN?winItem:(pickRarityItem(target,false)||winItem)); }
   return {reel:reel, winIdx:WIN}; }
-function startShardExchange(fromRarity){
+function startShardExchange(fromRarity,confirmed){
   if(!packsOn()){ toast('Packs are off'); return; }
   if(!sbSignedIn()){ toast('Sign in to exchange shards'); return; }
   if(shardBal(fromRarity) < EXCHANGE_COST){ toast('Need '+EXCHANGE_COST+' '+ACC_RARITY[fromRarity].label+' shards'); return; }
-  if(fromRarity==='legendary'){ startLegendaryExchange(); return; }
+  if(fromRarity==='legendary'){ startLegendaryExchange(confirmed); return; }
   var target=NEXT_RARITY[fromRarity]; if(!target){ toast('Cannot exchange those'); return; }
   if(!poolByRarity(target).length){ toast('No '+ACC_RARITY[target].label+' items available'); return; }
+  if(!confirmed){ var fr=ACC_RARITY[fromRarity], tr=ACC_RARITY[target];
+    confirmSpend({name:'Exchange for '+(/^[AEIOU]/.test(tr.label)?'an ':'a ')+tr.label+' item', accent:tr.c,
+      art:'<div class="csp-shard" style="color:'+fr.c+'">◆</div>',
+      costHTML:'<span style="color:'+fr.c+'">'+EXCHANGE_COST+' '+fr.label+' shard'+(EXCHANGE_COST===1?'':'s')+'</span>',
+      balLabel:'Your shards', balHTML:shardBal(fromRarity)+' → <b style="color:var(--oncard)">'+(shardBal(fromRarity)-EXCHANGE_COST)+'</b>',
+      note:'Spends your shards for a random '+tr.label+' item.', label:'Exchange ▸',
+      onYes:function(){ startShardExchange(fromRarity,true); }}); return; }
   if(!shardSpend(fromRarity, EXCHANGE_COST)){ toast('Not enough shards'); return; }
   var win=grantExchangeItem(pickRarityItem(target,true));
   var wheel=buildExchangeReel(win.item, target);
@@ -24156,9 +24163,15 @@ function startShardExchange(fromRarity){
 function themedPackTier(){ var ld=(typeof liveThemedDrop==='function')&&liveThemedDrop();
   if(ld){ var k=Object.keys(PACK_TYPES).find(function(t){ return PACK_TYPES[t].seasonal && PACK_TYPES[t].dropId===ld.id && packTierLive(t); }); if(k) return k; }
   return 'champ'; }
-function startLegendaryExchange(){
+function startLegendaryExchange(confirmed){
   if(shardBal('legendary') < EXCHANGE_COST){ toast('Need '+EXCHANGE_COST+' Legendary shards'); return; }
   if(!poolByRarity('legendary').length){ toast('No Legendary items available'); return; }
+  if(!confirmed){ var lr=ACC_RARITY.legendary;
+    confirmSpend({name:'Legendary exchange', accent:lr.c, art:'<div class="csp-shard" style="color:'+lr.c+'">◆</div>',
+      costHTML:'<span style="color:'+lr.c+'">'+EXCHANGE_COST+' Legendary shard'+(EXCHANGE_COST===1?'':'s')+'</span>',
+      balLabel:'Your shards', balHTML:shardBal('legendary')+' → <b style="color:var(--oncard)">'+(shardBal('legendary')-EXCHANGE_COST)+'</b>',
+      note:'Pick 1 of 3 Legendary items, plus '+coinFmt(LEG_EXCHANGE_COINS)+' coins and a pack.', label:'Exchange ▸',
+      onYes:function(){ startLegendaryExchange(true); }}); return; }
   if(!shardSpend('legendary', EXCHANGE_COST)){ toast('Not enough shards'); return; }
   // pick 3 distinct legendaries to CHOOSE from (prefer unowned, top up with owned if fewer than 3 are unowned)
   var pool=poolByRarity('legendary'), un=pool.filter(function(e){ return !packOwns(e); });
@@ -24577,6 +24590,56 @@ function pickPackCard(idx){
 // opts.free = don't charge (marks the first-pack-free used); opts.bundle = prepaid bundle pack (don't charge);
 // opts.pack = tier id ('base'|'tour'|'champ'). CS406: free first-pack + earned credits apply to the BASE tier
 // only (higher tiers are coins-only); a bundle sub-open reads its tier from S.packBundle.pack.
+function packArtHTML(tier){ return '<img src="'+pxPackURL(tier)+'" alt="" class="csp-pack">'; }
+// ---- One confirmation gate for every coin/shard spend that isn't already behind the shop's
+// preview+Buy card. Appended to <body> (not #app) so a background re-render can't strand it, and
+// cancelling is the safe default: backdrop tap, Escape and Cancel all just close it. ----
+let _cspStyle=false, _cspOpen=null;
+function confirmSpend(o){
+  o=o||{}; if(typeof o.onYes!=='function') return;
+  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
+  if(!_cspStyle){ _cspStyle=true; const st=document.createElement('style'); st.textContent=`
+    .cspov{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px;
+      background:rgba(3,12,7,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:cspFade .16s ease-out}
+    @keyframes cspFade{from{opacity:0}to{opacity:1}}
+    .cspcard{width:100%;max-width:340px;border-radius:18px;padding:18px 16px 16px;text-align:center;
+      background:linear-gradient(180deg,#123425,#0a2115);border:1.5px solid rgba(255,255,255,.14);
+      box-shadow:0 26px 60px -20px rgba(0,0,0,.9);animation:cspPop .2s cubic-bezier(.2,1.2,.4,1)}
+    @keyframes cspPop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+    .csp-kick{font:900 10px/1 var(--body);letter-spacing:.2em;color:rgba(255,255,255,.5)}
+    .csp-art{margin:12px auto 8px;height:96px;display:flex;align-items:center;justify-content:center}
+    .csp-pack{width:76px;height:95px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 8px 16px rgba(0,0,0,.6))}
+    .csp-shard{font:900 62px/1 var(--body);text-shadow:0 6px 20px rgba(0,0,0,.6)}
+    .csp-name{font-family:var(--display);font-size:23px;line-height:1.1;margin:0 0 10px}
+    .csp-rows{border-top:1px solid rgba(255,255,255,.1);padding-top:11px;margin-top:2px}
+    .csp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:800 12.5px/1.2 var(--body);margin:6px 0}
+    .csp-row span:first-child{color:rgba(255,255,255,.5);font-weight:700}
+    .csp-cost{display:inline-flex;align-items:center;gap:5px;color:var(--gold)}
+    .csp-note{font:700 10.5px/1.4 var(--body);color:rgba(255,255,255,.45);margin:10px 0 0}
+    .cspcard .btn{margin-top:11px}`; document.head.appendChild(st); }
+  const bal=coinBalance();
+  const costHTML=o.costHTML||('<span class="csp-cost">'+ic('coin',{size:'14px'})+coinFmt(o.cost||0)+'</span>');
+  const balHTML=o.balHTML||(coinFmt(bal)+' → <b style="color:var(--oncard)">'+coinFmt(Math.max(0,bal-(o.cost||0)))+'</b>');
+  const ov=$(`<div class="cspov" role="dialog" aria-modal="true" aria-label="Confirm purchase"><div class="cspcard">
+    <div class="csp-kick">${esc(o.kicker||'CONFIRM PURCHASE')}</div>
+    ${o.art?`<div class="csp-art">${o.art}</div>`:''}
+    <h3 class="csp-name" style="color:${o.accent||'var(--gold)'}">${esc(o.name||'')}</h3>
+    <div class="csp-rows">
+      <div class="csp-row"><span>Cost</span><span>${costHTML}</span></div>
+      <div class="csp-row"><span>${o.balLabel||'Balance'}</span><span>${balHTML}</span></div>
+    </div>
+    ${o.note?`<p class="csp-note">${esc(o.note)}</p>`:''}
+    <button class="btn goldfill yes">${esc(o.label||'Confirm ▸')}</button>
+    <button class="btn ghost no">Cancel</button>
+  </div></div>`);
+  const close=()=>{ if(_cspOpen===ov){ _cspOpen=null; } try{ov.remove();}catch(e){} document.removeEventListener('keydown',key,true); };
+  const key=e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+  ov.querySelector('.no').onclick=close;
+  ov.onclick=e=>{ if(e.target===ov) close(); };            // tapping outside cancels
+  ov.querySelector('.yes').onclick=()=>{ close(); try{ o.onYes(); }catch(e){ console.error('confirmSpend',e); } };
+  document.addEventListener('keydown',key,true);
+  document.body.appendChild(ov); _cspOpen=ov;
+}
 function startPackDeal(opts){ opts=opts||{};
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
@@ -24590,7 +24653,15 @@ function startPackDeal(opts){ opts=opts||{};
     // gate above still blocks out-of-season opens.
     var freeCredit=!freeFirst && packCredits(tier)>0;
     free=freeFirst||freeCredit;
-    if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } coinCharge(pt.price); }
+    if(!free){
+      if(coinBalance()<pt.price){ toast(packErr('coins')); return; }
+      // Nothing spends coins on a single tap: confirm first. (A free pack or a prepaid bundle
+      // open costs nothing, so those go straight through.)
+      if(!opts.confirmed){ confirmSpend({name:pt.name, art:packArtHTML(tier), cost:pt.price, accent:pt.col,
+        note:'One pack, one item. Duplicates pay you back in coins and shards.', label:'Buy & open ▸',
+        onYes:function(){ var o={}; for(var k in opts) o[k]=opts[k]; o.confirmed=true; startPackDeal(o); }}); return; }
+      coinCharge(pt.price);
+    }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
   }
   // CS404 — wheel spin: roll the winner up front (tier odds), build the reel, land on it.
@@ -24600,11 +24671,14 @@ function startPackDeal(opts){ opts=opts||{};
   S.packDeal=null; S.overlay='packwheel'; render();
 }
 // bundle: pay for PACK_BUNDLE_PAY, get PACK_BUNDLE_N packs of the SAME tier, opened one-by-one (prepaid).
-function startPackBundle(tier){
+function startPackBundle(tier,confirmed){
   tier=tier||'base'; var pt=packType(tier), bprice=packBundlePriceFor(tier);
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
   if(coinBalance()<bprice){ toast(packErr('coins')); return; }
+  if(!confirmed){ confirmSpend({name:PACK_BUNDLE_N+'× '+pt.name, art:packArtHTML(tier), cost:bprice, accent:pt.col,
+    note:PACK_BUNDLE_N+' packs for the price of '+PACK_BUNDLE_PAY+', opened one at a time.', label:'Buy '+PACK_BUNDLE_N+' packs ▸',
+    onYes:function(){ startPackBundle(tier,true); }}); return; }
   coinCharge(bprice);
   try{ track('pack_bundle',{n:PACK_BUNDLE_N,pack:pt.id}); }catch(e){}
   S.packBundle={total:PACK_BUNDLE_N,done:0,results:[],pack:tier};
