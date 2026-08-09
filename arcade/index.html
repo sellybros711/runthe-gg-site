@@ -347,78 +347,15 @@
           <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
         </div>
 
-        <!-- 3 · NEXT GOAL panel -->
-        <div class="hud-goal" id="mile" hidden>
-          <span class="g-lab">Next goal</span>
-          <div class="g-row">
-            <span class="g-main"><b id="mileLab">3 Day Streak</b><span id="mileTo">3 more days to unlock</span></span>
-            <span class="g-gift" aria-hidden="true"></span>
-          </div>
-          <div class="g-barrow">
-            <div class="bar"><i id="mileBar"></i></div>
-            <span class="g-cnt" id="mileCnt">0 / 3</span>
-          </div>
-        </div>
-
-        <!-- 4 · milestone path -->
-        <div class="hud-path" id="milePath">
-          <div class="mp-row">
-            <span class="mp-node" data-days="3">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">3 days</span>
-            </span>
-            <span class="mp-node" data-days="5">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">5 days</span>
-            </span>
-            <span class="mp-node" data-days="7">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">7 days</span>
-            </span>
-            <span class="mp-node" data-days="14">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">14 days</span>
-            </span>
-          </div>
-          <p class="mp-cap">Keep your streak alive to reach the next milestone.</p>
-        </div>
-
-        <!-- 5 · next drop -->
+        <!-- next drop -->
         <div class="hud-drop">
           <span class="cal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
           <span class="dcol"><span class="lbl">Next drop</span><span class="sub">New puzzles arrive every day.</span></span>
           <span class="t" id="cdT">--:--:--</span>
         </div>
 
-        <!-- 6 · gold note -->
-        <div class="hud-notewrap">
-          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily, build your streak, and climb the leaderboards.</div>
-        </div>
-
-        <!-- 7 · CTA stack -->
-        <div class="hud-cta">
-          <a class="btn" id="ctaKeep" href="/arcade/table/">Keep streak alive</a>
-          <a class="btn ghost" href="#puzzles">Play more puzzles</a>
-          <button class="btn signin" type="button" data-rtg-signin data-rtg-when="out">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-            Sign in to save your streak
-          </button>
-          <div class="cta-links">
-            <a href="/arcade/archive/">Play past days →</a>
-          </div>
-        </div>
+        <!-- tier CTA: exactly one action, chosen by tier in JS -->
+        <div class="hud-cta" id="hudCta"></div>
       </aside>
 
       <!-- RIGHT: today's puzzles -->
@@ -787,37 +724,28 @@
   }
   var mSt = document.getElementById('mStreakVal'); if (mSt) mSt.textContent = cur;
 
-  // NEXT GOAL panel: progress toward the next streak milestone
-  var MILES = [3, 5, 7, 14, 30];
-  var next = null;
-  for (var i = 0; i < MILES.length; i++) { if (cur < MILES[i]) { next = MILES[i]; break; } }
-  var mile = document.getElementById('mile');
-  var mileCnt = document.getElementById('mileCnt');
-  mile.hidden = false;
-  if (next) {
-    var togo = next - cur;
-    document.getElementById('mileLab').textContent = next + ' Day Streak';
-    document.getElementById('mileTo').textContent = togo + ' more day' + (togo === 1 ? '' : 's') + ' to unlock';
-    if (mileCnt) mileCnt.textContent = cur + ' / ' + next;
-    var frac = Math.max(cur > 0 ? 0.06 : 0.02, cur / next);
-    setTimeout(function () { document.getElementById('mileBar').style.width = Math.min(100, Math.round(frac * 100)) + '%'; }, 120);
-  } else {
-    document.getElementById('mileLab').textContent = 'Every goal unlocked';
-    document.getElementById('mileTo').textContent = 'You passed every streak milestone!';
-    if (mileCnt) mileCnt.textContent = cur + ' days';
-    setTimeout(function () { document.getElementById('mileBar').style.width = '100%'; }, 120);
-  }
-
-  // milestone path stepper: reached / next / future from the same streak
-  (function () {
-    var nodes = document.querySelectorAll('#milePath .mp-node');
-    var tagged = false;
-    for (var p = 0; p < nodes.length; p++) {
-      var d = parseInt(nodes[p].getAttribute('data-days'), 10) || 0;
-      if (cur >= d) { nodes[p].classList.add('reached'); }
-      else if (!tagged) { nodes[p].classList.add('next'); tagged = true; }
+  // HUD tier CTA: exactly one action.
+  //   Arcade Card  → Play archived puzzles
+  //   free account → Buy Arcade Card
+  //   guest        → Sign in
+  function renderHudCta(){
+    var cta = document.getElementById('hudCta'); if(!cta) return;
+    var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
+    if (hasCard()) {
+      cta.innerHTML = '<a class="btn" href="/arcade/archive/">Play Archived Puzzles</a>';
+    } else if (signed) {
+      cta.innerHTML = '<button class="btn" type="button" id="hudBuy">Buy Arcade Card</button>';
+      var buy = document.getElementById('hudBuy');
+      if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
+    } else {
+      cta.innerHTML = '<button class="btn signin" type="button" id="hudSignin">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Sign in</button>';
+      var si = document.getElementById('hudSignin');
+      if (si) si.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
     }
-  })();
+  }
+  renderHudCta();
+  if (window.RTG_BOARD && RTG_BOARD.onChange) { RTG_BOARD.onChange(renderHudCta); }
 
   // ---- today's play states -> card status + pips ----
   function todayStr() {

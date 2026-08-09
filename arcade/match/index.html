@@ -1557,7 +1557,7 @@
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent'); }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {

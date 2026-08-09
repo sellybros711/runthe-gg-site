@@ -55,6 +55,7 @@
   function remaining(){ return T && T.remaining ? T.remaining() : Infinity; }
   function signedIn(){ return !!(T && T.signedIn && T.signedIn()); }
   function openSignin(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signin'); }
+  function openCard(){ if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason:'upsell' }); }
   function meta(){ return (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(GAME) : null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function $(id){ return document.getElementById(id); }
@@ -95,7 +96,9 @@
       '.rtgpg-lb .empty{font-size:12px;color:var(--dim,#7C8DA3);padding:8px 2px;font-weight:600;}',
       '.rtgpg-go{appearance:none;border:0;cursor:pointer;font-family:var(--f,inherit);font-weight:900;font-style:italic;font-size:16px;letter-spacing:.02em;border-radius:13px;padding:15px 20px;min-height:52px;width:100%;color:#fff;background:var(--c,var(--blue,#2F6BFF));box-shadow:var(--shadow,0 6px 18px -10px rgba(0,0,0,.55));text-shadow:0 1px 2px rgba(0,0,0,.28);}',
       '.rtgpg-go:hover{filter:brightness(1.07);}',
-      '.rtgpg-note{font-size:12px;color:var(--mut,#A9B8CB);font-weight:700;margin:0 0 14px;}',
+      '.rtgpg-note{font-size:12px;color:var(--mut,#A9B8CB);font-weight:700;margin:0 0 6px;}',
+      '.rtgpg-note2{font-size:12px;color:var(--mut,#A9B8CB);font-weight:600;line-height:1.5;margin:0 0 14px;}',
+      '.rtgpg-link{color:var(--c,var(--blue,#2F6BFF));font-weight:800;cursor:pointer;text-decoration:underline;}',
       '.rtgpg-ghost{appearance:none;border:0;background:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:12.5px;color:var(--mut,#A9B8CB);margin-top:12px;padding:6px;text-decoration:underline;}',
       '.rtgpg-ghost:hover{color:var(--ink,#F4F7FB);}'
     ].join('');
@@ -138,22 +141,28 @@
     }
 
     if(canPlay()){
-      // FREE with plays left: rules + plays remaining + Start
+      // FREE with plays left: rules + plays remaining + upsell + Start
       var left=remaining();
-      var note = left===Infinity ? 'Unlimited plays' : (left+' play'+(left===1?'':'s')+' left today');
+      var unlimited = left===Infinity;
+      var note = unlimited ? 'Unlimited plays' : (left+' play'+(left===1?'':'s')+' left today');
+      // Offer both ways to get more: sign in for 3/day (guests) and the Arcade
+      // Card for unlimited (everyone on the free tier).
+      var upsell = unlimited ? '' :
+        (signedIn()
+          ? '<div class="rtgpg-note2">Want more? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for unlimited plays.</div>'
+          : '<div class="rtgpg-note2"><a class="rtgpg-link" id="rtgpgSignin">Sign in</a> for 3 a day, or <a class="rtgpg-link" id="rtgpgCard">get an Arcade Card</a> for unlimited.</div>');
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         '<div class="rtgpg-tag">How to play</div>'+
         '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>'+
-        '<div class="rtgpg-note">'+esc(note)+(signedIn()?'':' · sign in for 3 a day')+'</div>'+
+        '<div class="rtgpg-note">'+esc(note)+'</div>'+
+        upsell+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Start</button>'+
-        '<div>'+
-          (signedIn()?'':'<button class="rtgpg-ghost" id="rtgpgSignin" type="button">Have an account? Sign in</button> · ')+
-          '<button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button>'+
-        '</div>';
+        '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
       $('rtgpgGo').onclick=done;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
       if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
+      if($('rtgpgCard')) $('rtgpgCard').onclick=openCard;
       return;
     }
 

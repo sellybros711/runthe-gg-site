@@ -1085,7 +1085,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
     if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
-      b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent');
+      if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');}
     } else {
       b.textContent='Play again'; b.disabled=false; b.classList.remove('spent');
     }
