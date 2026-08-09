@@ -184,6 +184,12 @@
   .hud-cta .btn:hover{filter:brightness(1.06);}
   .hud-cta .btn.ghost{margin-top:9px; font-style:normal; color:var(--ink); background:transparent; border:1.5px solid var(--line2); box-shadow:none;}
   .hud-cta .btn.ghost:hover{border-color:var(--coral); color:var(--coralT);}
+  /* account CTA: a real, obvious button (blue) distinct from the orange primary */
+  .hud-cta .btn.signin{margin-top:9px; font-style:normal; color:var(--ink);
+    background:color-mix(in srgb, #2F6BFF 16%, var(--card)); border:1.5px solid #2F6BFF;
+    box-shadow:0 6px 16px -10px color-mix(in srgb, #2F6BFF 70%, transparent);}
+  .hud-cta .btn.signin svg{color:#5b93ff;}
+  .hud-cta .btn.signin:hover{filter:none; background:color-mix(in srgb, #2F6BFF 28%, var(--card)); border-color:#4c86ff;}
   .cta-links{display:flex; flex-direction:column; gap:6px; margin-top:12px; text-align:center;}
   .cta-links a{font-size:12px; font-weight:800; color:var(--mut);}
   .cta-links a:hover{color:var(--ink);}
@@ -383,7 +389,7 @@
               <span class="mp-tag">14 days</span>
             </span>
           </div>
-          <p class="mp-cap">Keep playing daily to earn bigger rewards!</p>
+          <p class="mp-cap">Keep your streak alive to reach the next milestone.</p>
         </div>
 
         <!-- 5 · next drop -->
@@ -395,15 +401,18 @@
 
         <!-- 6 · gold note -->
         <div class="hud-notewrap">
-          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily. Build streaks. Earn rewards.</div>
+          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily, build your streak, and climb the leaderboards.</div>
         </div>
 
         <!-- 7 · CTA stack -->
         <div class="hud-cta">
           <a class="btn" id="ctaKeep" href="/arcade/table/">Keep streak alive</a>
           <a class="btn ghost" href="#puzzles">Play more puzzles</a>
+          <button class="btn signin" type="button" data-rtg-signin data-rtg-when="out">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            Sign in to save your streak
+          </button>
           <div class="cta-links">
-            <a href="/">Sign in to save your streak →</a>
             <a href="/arcade/archive/">Play past days →</a>
           </div>
         </div>
