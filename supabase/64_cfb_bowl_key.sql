@@ -118,7 +118,7 @@ declare
   -- stops being survivable now the row also carries WHICH bowl, because the tier
   -- and the slug come from different rules and would contradict each other on the
   -- same row: "win all six New Year's Six bowls" could be completed with six
-  -- small-bowl trophies sitting on rows the server had labelled ny6.
+  -- small-bowl trophies sitting on rows the server had labeled ny6.
   --
   -- The ranking is already validated and is already the number the seed identity
   -- is checked against, so deriving from it is no more trusting than before. It is

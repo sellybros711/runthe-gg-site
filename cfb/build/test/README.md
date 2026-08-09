@@ -40,6 +40,7 @@ before the day rather than during it.
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
 | `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
 | `test_bowl_key.mjs` | Which bowl a season played, as the row records it. Sweeps every reachable (wins, rank) and demands the database and `seedFromRanking()` agree on the tier, round-trips all 37 bowl names through the slug and back, and proves the named-bowl badges are earnable signed in, which they were not before `64_cfb_bowl_key.sql`. |
+| `test_ticker.mjs` | The poll ticker pinned along the bottom of the front page: that its RECTANGLE lands on screen rather than merely reporting `position:fixed`, that it clears whatever the mobile ad strip owns, that nothing on the page ends up behind it with the page scrolled to the bottom, and that it disappears the moment another screen takes over. |
 | `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
 | `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
 | `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
@@ -58,11 +59,12 @@ node cfb/build/test/test_challenge.mjs
 node cfb/build/test/test_ranks_tab.mjs
 node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
+node cfb/build/test/test_ticker.mjs
 node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Nine bugs these caught, so far
+## Ten bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -118,3 +120,12 @@ survivable once the row also carried which bowl, because then the tier and the s
 from different rules and "win all six New Year's Six bowls" could be completed with six
 small-bowl trophies. The fix is in 64, and the test now sweeps all 143 reachable
 (wins, rank) pairs against `seedFromRanking()` instead of spot-checking four of them.
+
+**A `position:fixed` bar pinned itself to the wrong thing.** The poll ticker was moved to the
+bottom edge of the front page and landed 916px down an 844px phone, which is to say off it.
+`.screen.on` animates in with `animation-fill-mode:both`, which keeps the last keyframe
+applied after the run, and Chromium resolves that frame's `transform:none` to an identity
+matrix rather than to no transform at all. An identity matrix is still a transform, and a
+transform on an ancestor makes it the containing block for every fixed descendant. Nothing
+about the CSS that placed the bar looked wrong, and `getComputedStyle` still said `fixed`.
+Only the rectangle gave it away, which is why `test_ticker.mjs` measures one.

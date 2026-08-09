@@ -187,6 +187,18 @@ window.GA_ID='G-L29P5MRWKE';
   .screen{display:none}
   .screen.on{display:block;animation:in .34s var(--ez) both}
   @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  /* THE FRONT PAGE FADES INSTEAD OF RISING, and it has to.
+     `animation-fill-mode:both` keeps the last keyframe applied after the run, and
+     Chromium resolves that `transform:none` to an identity matrix rather than to
+     no transform at all. An identity matrix is still a transform, and any
+     transform on an ancestor makes it the containing block for a `position:fixed`
+     descendant. The poll ticker lives in here and is pinned to the bottom of the
+     VIEWPORT, so under the shared animation it pinned itself to the bottom of the
+     intro screen instead and sat well below the fold: 916px down a 844px phone.
+     Dropping the 10px rise on this one screen is the whole fix. Every other
+     screen keeps it, because none of them contains anything fixed. */
+  #s-intro.on{animation-name:fade-in}
+  @keyframes fade-in{from{opacity:0}to{opacity:1}}
   .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
   .eyebrow.green{color:var(--green)}
@@ -444,11 +456,37 @@ window.GA_ID='G-L29P5MRWKE';
     margin:6px 0 6px;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.55)}
 
   /* ── the poll ticker ────────────────────────────────────────────
-     The strip a college broadcast runs the rankings along. Quiet enough to read
-     as furniture rather than something you have to stop and read, and it only
-     lives on the front page. */
-  .ticker{display:flex;align-items:stretch;margin:0 0 14px;border-radius:8px;overflow:hidden;
-    background:linear-gradient(180deg,#141b28,#0b1019);border:1px solid var(--line)}
+     The strip a college broadcast runs the rankings along, pinned along the
+     bottom edge the way a lower third is. Quiet enough to read as furniture
+     rather than something you have to stop and read.
+
+     ONLY ON THE FRONT PAGE, WITH NO SCRIPT KEEPING IT THAT WAY. The element
+     lives inside #s-intro, and a screen that is not showing is display:none,
+     which takes its fixed children with it. So "only on the home screen" stays
+     the rule that was already there rather than becoming a class somebody has to
+     remember to toggle on four other screens.
+
+     IT SITS ABOVE THE MOBILE AD STRIP, NEVER UNDER IT. --adstrip is what that
+     strip owns at the bottom edge, safe area included, and .lbfoot already pins
+     itself with the same variable, so the two cannot drift apart. z-index 30 is
+     under the strip (40), the rails (50) and the sheets (60), which is the order
+     these want: the poll is the least important thing on the screen.
+
+     Full bleed rather than boxed, because a bar with rounded corners floating a
+     few pixels off the bottom edge reads as a dialog. The radius and the side
+     borders go; a single top border is what separates it from the page. */
+  .ticker{position:fixed;left:0;right:0;bottom:var(--adstrip,0px);z-index:30;
+    display:flex;align-items:stretch;overflow:hidden;
+    background:linear-gradient(180deg,#141b28,#0b1019);border-top:1px solid var(--line)}
+  /* Without this the attribute loses to the display rule above, and an empty bar
+     sits along the bottom edge for as long as the player data takes to land. */
+  .ticker[hidden]{display:none}
+  /* On a phone --adstrip already carries the home-indicator inset. Above 1200px it
+     is zero, and a tablet in a desktop layout still has one. */
+  @media(min-width:1200px){ .ticker{padding-bottom:env(safe-area-inset-bottom,0px)} }
+  /* The last thing on the front page has to clear a bar that is no longer in the
+     flow. Measured, not guessed: see test_ticker.mjs. */
+  #s-intro{padding-bottom:var(--tickerh,33px)}
   .tk-label{flex:0 0 auto;display:flex;align-items:center;padding:7px 11px 6px;white-space:nowrap;
     font-family:var(--fc);font-weight:400;font-size:10.5px;letter-spacing:.13em;
     color:#140d02;background:var(--grad-gold)}
@@ -2291,10 +2329,15 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-intro -->
   <div class="screen" id="s-intro">
-    <!-- THE POLL, running across the top the way a broadcast carries one. The
-         rankings are the game's own, worked out from how far each team outscored
-         its year, so it is labeled by season rather than borrowing a real poll's
-         name. Filled in once the data lands. -->
+    <!-- THE POLL, running along the bottom edge the way a broadcast carries one.
+         The rankings are the game's own, worked out from how far each team
+         outscored its year, so it is labeled by season rather than borrowing a
+         real poll's name. Filled in once the data lands.
+
+         It stays declared here, first inside #s-intro, even though it is drawn at
+         the bottom: being a child of this screen is what confines it to this
+         screen. Moving it out to the body would mean writing code to show and
+         hide it. -->
     <div class="ticker" id="h-ticker" hidden aria-hidden="true">
       <span class="tk-label" id="h-tk-label">Top 25</span>
       <div class="tk-win"><div class="tk-track" id="h-tk-track"></div></div>
