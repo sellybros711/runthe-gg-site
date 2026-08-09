@@ -31,6 +31,29 @@
   }
 
   /* ------------------------------------------------------------------
+   * Elite-awards overlay from awards.js (window.RTG_AWARDS). Merges
+   * award tags (MVP, All-Star, Cy Young, Gold Glove, HOF, Pro Bowl, …)
+   * onto matching corpus entities so any auto-detected credentials gate
+   * finds real evidence. Same normalization as the star overlay.
+   * ---------------------------------------------------------------- */
+  function normName(n){ return String(n||'').toLowerCase().replace(/[\.']/g,'').replace(/\s+/g,' ').trim(); }
+  var A = root.RTG_AWARDS;
+  if (A && A.players){
+    var awMap = {};
+    ENT.forEach(function(e){ if(e && e.name && e.sport){ awMap[e.sport+'|'+normName(e.name)] = e; } });
+    var awHit = 0;
+    Object.keys(A.players).forEach(function(k){
+      var e = awMap[k]; if (!e) return;
+      var tags = (A.players[k] && A.players[k].aw) || [];
+      if (!e.aw) e.aw = [];
+      var have = {}; e.aw.forEach(function(t){ have[t]=1; });
+      tags.forEach(function(t){ if(!have[t]) e.aw.push(t); });
+      awHit++;
+    });
+    A.matched = awHit;
+  }
+
+  /* ------------------------------------------------------------------
    * Star / icon overlay from stars.js (window.RTG_STARS). Marks
    * matching corpus entities with `.star=true`, and for the ICONS tier
    * bumps `.f` to 5 so any legacy fame-5 gate lights up too. This is
@@ -40,7 +63,6 @@
    * ---------------------------------------------------------------- */
   var S = root.RTG_STARS;
   if (S){
-    function normName(n){ return String(n||'').toLowerCase().replace(/[\.']/g,'').replace(/\s+/g,' ').trim(); }
     var byKey = {};
     ENT.forEach(function(e){ if(e && e.name && e.sport){ byKey[e.sport+'|'+normName(e.name)] = e; } });
     function apply(sport, names, iconTier){
