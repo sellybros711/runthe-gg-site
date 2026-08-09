@@ -44,7 +44,11 @@
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
-  function hasCard(){ try{ return LS.getItem('runthegrid_pro')==='1'; }catch(e){ return false; } }
+  // An Arcade Card is tied to an account, so it only counts when signed in. This
+  // also means a stale 'runthegrid_pro' flag (e.g. a browser that was once a
+  // cardholder, now browsing signed-out) can't masquerade as a member. board.js
+  // reconciles the flag against the server once signed in.
+  function hasCard(){ try{ return signedIn() && LS.getItem('runthegrid_pro')==='1'; }catch(e){ return false; } }
 
   // Synchronous "is there a signed-in session?" — read the Supabase token blob
   // straight from localStorage (no client boot, no network), scanning any
