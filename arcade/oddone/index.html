@@ -453,7 +453,8 @@
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
     ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
     var opts = shuffle([trueLab].concat(decoys));
-    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked? <span>+5 🪙</span></div>' +
+    var rewardable = attemptFirst && !ARCHIVE;   // coins only on the ranked first attempt
+    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked?' + (rewardable ? ' <span>+5 🪙</span>' : '') + '</div>' +
       opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
     var tapped=false, advanced=false;
     function go(){ if(advanced) return; advanced=true; busy=false; renderRound(); }
@@ -465,7 +466,11 @@
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
           if(x===b && !ok) x.classList.add('wrong');
         });
-        if(ok){ coinAdd(5); toast('🪙 +5 — you knew why!'); if(window.RTGSound) RTGSound.lock(); }
+        if(ok){
+          if(rewardable){ coinAdd(5); toast('🪙 +5 — you knew why!'); }
+          else { toast('Right — you knew why!'); }
+          if(window.RTGSound) RTGSound.lock();
+        }
         else { toast('The link: '+trueLab); }
         setTimeout(go, 1150);
       });
