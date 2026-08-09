@@ -92,6 +92,7 @@
     background:color-mix(in srgb,var(--coral) 16%, var(--card)); border:1px solid color-mix(in srgb,var(--coral) 38%, transparent); color:var(--coralT);}
   .hud-hd .who{min-width:0; line-height:1.2;}
   .hud-hd .who b{display:block; font-weight:900; font-style:italic; font-size:15px; color:var(--ink);}
+  .hud-hd .who:hover b{text-decoration:underline;} .hud-hd .av:hover{filter:brightness(1.12);}
   .hud-hd .who span{display:block; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
   .hud-hd .coins{margin-left:auto; box-shadow:none; padding:6px 11px; font-size:13px;}
   @media (max-width:640px){ .hud-hd{display:none;} }
@@ -641,14 +642,30 @@
   document.getElementById('dateShort').textContent =
     now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // ---- HUD name: reflect the signed-in user (was hardcoded "Guest") ----
+  // ---- HUD name: reflect the signed-in user + tap to open account ----
   (function(){
-    var whoB = document.querySelector('.hud-hd .who b');
+    var who = document.querySelector('.hud-hd .who');
+    var av  = document.querySelector('.hud-hd .av');
+    var whoB = who ? who.querySelector('b') : null;
     if(!whoB) return;
     function setName(s){
       s = s || {};
       whoB.textContent = s.name ? s.name : (s.signedIn ? 'Player' : 'Guest');
     }
+    // Clicking your name/avatar opens the account panel (Change username / Sign
+    // out / Delete). Guests get the sign-in modal instead.
+    function openAccount(){
+      if(!window.RTGAuthUI) return;
+      var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
+      RTGAuthUI.open(signed ? 'account' : 'signin');
+    }
+    [who, av].forEach(function(el){
+      if(!el) return;
+      el.style.cursor='pointer'; el.setAttribute('role','button'); el.setAttribute('tabindex','0');
+      el.setAttribute('title','Account & settings');
+      el.addEventListener('click', openAccount);
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openAccount(); } });
+    });
     if(window.RTG_BOARD && RTG_BOARD.onChange){ RTG_BOARD.onChange(setName); }
     else if(window.RTG_AUTH && RTG_AUTH.state){ var a=RTG_AUTH.state()||{}; setName({ signedIn:!!a.userId, name:a.name }); }
   })();
