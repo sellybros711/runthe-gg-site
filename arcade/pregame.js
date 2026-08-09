@@ -53,6 +53,8 @@
   function hasCard(){ return !!(T && T.hasCard && T.hasCard()); }
   function canPlay(){ return T && T.canPlay ? T.canPlay() : true; }
   function remaining(){ return T && T.remaining ? T.remaining() : Infinity; }
+  function signedIn(){ return !!(T && T.signedIn && T.signedIn()); }
+  function openSignin(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signin'); }
   function meta(){ return (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(GAME) : null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function $(id){ return document.getElementById(id); }
@@ -143,23 +145,33 @@
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         '<div class="rtgpg-tag">How to play</div>'+
         '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>'+
-        '<div class="rtgpg-note">'+esc(note)+'</div>'+
+        '<div class="rtgpg-note">'+esc(note)+(signedIn()?'':' · sign in for 3 a day')+'</div>'+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Start</button>'+
-        '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+        '<div>'+
+          (signedIn()?'':'<button class="rtgpg-ghost" id="rtgpgSignin" type="button">Have an account? Sign in</button> · ')+
+          '<button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button>'+
+        '</div>';
       $('rtgpgGo').onclick=done;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+      if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
       return;
     }
 
-    // FREE out of plays: upsell
+    // FREE out of plays: upsell (or, for a signed-out guest, sign in for 3/day)
     b.innerHTML=
       '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
       '<div class="rtgpg-tag">Out of plays</div>'+
-      '<div class="rtgpg-note">You’ve used today’s free plays. Come back tomorrow, or get an Arcade Card for unlimited plays across every game.</div>'+
-      '<button class="rtgpg-go" id="rtgpgGo" type="button">Get Arcade Card</button>'+
-      '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+      '<div class="rtgpg-note">'+(signedIn()
+        ? 'You’ve used today’s free plays. Come back tomorrow, or get an Arcade Card for unlimited plays across every game.'
+        : 'You’ve used today’s free play. Sign in for 3 free plays a day, or get an Arcade Card for unlimited plays.')+'</div>'+
+      '<button class="rtgpg-go" id="rtgpgGo" type="button">'+(signedIn()?'Get Arcade Card':'Create free account')+'</button>'+
+      '<div>'+
+        (signedIn()?'':'<button class="rtgpg-ghost" id="rtgpgSignin" type="button">Have an account? Sign in</button> · ')+
+        '<button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button>'+
+      '</div>';
     $('rtgpgGo').onclick=function(){ if(window.RTGCard && RTGCard.wall) RTGCard.wall(); else if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({reason:'out'}); };
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+    if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
   }
 
   function fillBoard(){
