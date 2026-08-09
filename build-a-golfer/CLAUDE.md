@@ -14493,3 +14493,48 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   Also ADOPTED the parallel workstream's UTM share links (main `dfcc9bd` edited `golf/index.html`
   directly) into `build-a-golfer.html` first, so this deploy preserves them instead of clobbering them.
   Tunable: the hole-out padding constants + the `HV_W*0.6` bail in `hvCamFor2`, the zoomed `bodyGH` curve.
+
+- **TOUR PASS TRACK REVAMP: full-bleed season bar, bolder track, no unprompted auto-scroll, floating
+  "scroll to last reward" cue (owner, from a phone screenshot of the tier list).** Four asks, all on the
+  signed-in Tour Pass track page (`overlayTourPass` + `passStyleOnce`):
+  1. **The banner "doesn't fill the width and is weirdly shaped."** `.tp-head` lived inside the overlay's
+     padded column (`.ov` pads `max(18px,(100% - 600px)/2)` each side), so the sticky bar was inset from
+     both screen edges with its border stopping short - and its 34px top margin left a gap of page
+     background above it before it stuck. Rebuilt as a genuine full-bleed app bar: `margin-left/right:
+     calc(50% - 50vw)` (with `.tpov{overflow-x:hidden}` so a desktop scrollbar can never make that
+     over-extension scroll sideways) + `.tpov.tp-track-page{padding-top:0}` so it sits flush at the very
+     top, and its own `padding-top:calc(10px + safe-area)` fills the notch band. Measured 0..vw at
+     320/360/390/430/1280 with no horizontal overflow. Content re-laid-out as one unit: a kicker row
+     (TOUR PASS · SEASON N · PRO badge), then a big gold **TIER 49/60** beside the XP bar with the
+     "120 / 429 XP to Tier 50" line under it, then the days-left meta - inside a 560px centered `.tp-hin`,
+     with `padding-right:104px` on the kicker row so it clears the floating Close button (which needed
+     `.tpov .x{z-index:8}` to sit above the now-z-6 bar; verified tappable via `elementFromPoint`).
+  2. **"Revamp the design so everything stands out more."** The track now reads as a progression, not a
+     list: a **gold spine** runs down the tier column (`.tp-tnum::before`), filled through every tier you
+     have REACHED (new `.tp-row.reached`) and grey beyond it; the **current tier is a solid gold pill**
+     with dark digits so the frontier is unmissable; claimable cells get a gold (free) / violet (PRO)
+     ring with a slow breathing pulse (`tpReady`/`tpReadyP`, killed under reduced-motion), locked cells
+     dim + desaturate, claimed cells go green-bordered and quiet; bigger cells (92px), bigger reward
+     art/labels (`.prc-thumb` 34→38, `.prc-lab` 10.5→11px), bigger Claim buttons with a gold/violet glow,
+     and the whole track widened 520→560 with more breathing room.
+  3. **"It auto-scrolls to your last reward unprompted."** Deleted the `requestAnimationFrame`
+     auto-`scrollIntoView` that fired for Pro holders on open - the page now ALWAYS opens at the top
+     (verified `scrollTop===0` on both the Pro and non-Pro paths). The jump is behind an explicit
+     **"▾ Scroll to last reward"** button rendered for EVERYONE (previously the only jump button existed
+     in the non-Pro sales branch, so a Pro holder had no manual control at all); it smooth-scrolls the
+     current tier row to centre and flashes it (`.tp-flash`), and respects reduced-motion.
+  4. **A bottom scroll indicator "like we have on the results page."** Reused the results page's
+     `.scrollcue` pill verbatim (same gold pill, bobbing ▾, `--botnav-space` aware): new
+     `setupPassScrollCue(ov,target,jump)` + `clearPassScrollCue()` append it INSIDE the overlay (a child
+     of `.ov`, since the overlay is z-40 and the cue is z-25 - appending to `app` like the summary does
+     would hide it behind the overlay) and an IntersectionObserver shows it only while your tier row is
+     off screen. Tapping it runs the same jump. The observer is disconnected on close, on re-entry, and
+     self-disconnects if its cue is detached by a re-render.
+  Verified in Playwright across Pro / non-Pro / narrow-phone / desktop / reduced-motion: no auto-scroll on
+  open, the banner spans the viewport at every width with no h-overflow and no Close-button collision, the
+  cue shows at the top → hides after the jump → returns when you scroll back, both the button and the cue
+  land the tier row in view, claim + claim-all still work (claim-all → the `passclaim` overlay), the
+  signed-out sales page is untouched (keeps its own padding, no `.tp-head`), the home Tour Pass card still
+  opens it, and a full 18-hole practice daily round + the shop sweep regress clean - **0 page errors**
+  throughout; `node --check` clean. Tunable: the `.tp-*` block in `passStyleOnce` (bar gradient, spine,
+  pulse), the jump target in `jumpRow()`.
