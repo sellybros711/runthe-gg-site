@@ -22,7 +22,8 @@ back-compat; consumer-facing name is "Arcade Card").
    `checkout.session.completed`, `customer.subscription.updated`,
    `customer.subscription.deleted`. Copy the `whsec_...` secret. Enable the
    **Customer Portal** (Settings → Billing → Customer portal) with cancel +
-   update-payment. Stripe Tax: leave on (checkout sends `automatic_tax`).
+   update-payment. Tax is OFF for launch (checkout no longer sends
+   `automatic_tax`); to enable later, restore it and configure Stripe Tax.
 3. **Cloudflare Pages → Settings → Environment variables** (Production):
    - `STRIPE_SECRET_KEY`            = sk_live_... (sk_test_ while testing)
    - `STRIPE_PRICE_ARCADE_MONTHLY`  = price_... (Monthly)
@@ -37,7 +38,7 @@ back-compat; consumer-facing name is "Arcade Card").
 
 - Paywall / archive → **Get Arcade Card** (monthly or annual) → POST
   `/api/stripe/checkout` `{ user_id, plan, return_path }` → Stripe Checkout
-  (tax, existing customer reused) → `checkout.session.completed`
+  (existing customer reused) → `checkout.session.completed`
   webhook upserts `subscriptions` (status `active`) → `board.js` mirrors the
   active/trialing row into `localStorage.runthegrid_pro` → tokens.js (unlimited)
   and archive.js (past days) honor it. active, past_due, canceled all flow
