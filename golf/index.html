@@ -571,6 +571,19 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav button.on{color:var(--gold)}
   .botnav button:active{transform:translateY(1px)}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
+  /* Raised gold centre button: the Tour Pass. Lifted with `top`, never a transform on the fixed bar's
+     own layer (see the CS472/CS516 note above); the disc overflows upward out of the bar. */
+  .botnav{overflow:visible}
+  .navfab{flex:0 0 auto; width:68px; padding:0!important; gap:2px!important; position:relative; top:-14px; color:#cbb46a!important}
+  .navfab .nf-disc{width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--gold-grad-d); color:#241706; border:2.5px solid #04160b;
+    box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 1px rgba(241,208,74,.5), 0 0 16px -2px rgba(241,208,74,.45)}
+  .navfab .nf-disc .ic{width:26px; height:26px}
+  .navfab .nf-lab{font:800 10px/1 var(--body); letter-spacing:.03em; text-transform:uppercase}
+  .navfab.on{color:var(--gold)!important}
+  .navfab.on .nf-disc{box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 2px var(--gold), 0 0 22px -1px rgba(241,208,74,.75)}
+  .navfab .navdot{top:-1px!important; left:auto!important; right:6px; transform:none!important}
+  @media (max-width:359px){ .navfab{width:58px} .navfab .nf-disc{width:44px;height:44px} .navfab .nf-disc .ic{width:23px;height:23px} }
   #app.has-botnav{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
   /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
      pop-up, sign-in/error pills) above it via this cascading var so nothing hides behind the nav. */
@@ -7996,18 +8009,25 @@ function bottomNav(){
     {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
     {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
-    // Tour Pass replaces Online here (owner): the pass is the daily-progress + season surface every
-    // player touches, while online is a niche mode still reachable from the home strip and the menu.
-    {id:'pass',    ico:'ticket', label:'Pass',      go:()=>{ S.overlay='tourpass'; render(); }},
-    {id:'shop',    ico:'cart',   label:'Pro Shop', go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
+    {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
+    {id:'shop',    ico:'cart',   label:'Shop',     go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
   ];
   const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
-  tabs.forEach(t=>{
+  const mk=(t)=>{
     const b=$(`<button type="button" data-nav="${t.id}" aria-label="${t.label}">${ic(t.ico)}<span>${t.label}</span></button>`);
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
-  });
+  };
+  tabs.slice(0,3).forEach(mk);
+  // The Tour Pass is the raised gold centre button (owner) - the six tabs keep their slots, and the
+  // season track gets the one spot the thumb naturally lands on.
+  if(passEnabled()){
+    const fab=$(`<button type="button" class="navfab" data-nav="pass" aria-label="Tour Pass"><span class="nf-disc">${ic('ticket')}</span><span class="nf-lab">Pass</span></button>`);
+    fab.onclick=()=>{ try{ track('botnav',{tab:'pass'}); }catch(e){} S.overlay='tourpass'; render(); };
+    inner.appendChild(fab);
+  }
+  tabs.slice(3).forEach(mk);
   return nav;
 }
 // CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
@@ -8048,6 +8068,7 @@ function navActiveTab(){
   if(scr==='title') return 'home';
   if(NAV_CAREER_SCR.includes(scr)) return 'career';
   if(NAV_DAILY_SCR.includes(scr)) return 'daily';
+  if(NAV_H2H_SCR.includes(scr)) return 'online';
 
   return '';
 }
@@ -8058,9 +8079,10 @@ function navSetActive(nav){
   const si=sbSignedIn();
   const nFree = si ? (((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0)) : 0;
   const newN = (typeof cosNewTotal==='function') ? cosNewTotal() : 0;
+  let passClaim=0; try{ if(si && typeof passClaimable==='function' && passEnabled()) passClaim=passClaimable(); }catch(e){}
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
-    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0);
+    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='pass' && passClaim>0);
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
     else if(!want && dot){ dot.remove(); } });
