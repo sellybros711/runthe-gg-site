@@ -334,13 +334,14 @@
   // corpus entities sharing the surname, any fame — ambiguity is checked
   // against everyone)}. Only surnames whose chosen player is fame>=4 and
   // provably disambiguable make the pool.
-  // Only truly recognizable players can be crossword ANSWERS — a long snapper
-  // named ___SANBORN isn't fillable from "Bills long snapper Garrison ___".
-  // Modern era, plus one of: fame 5, NFL award/high pick, or NBA/MLB
-  // longevity (8+ notable seasons). Same shape as Odd One Out's warmup gate.
+  // Only truly recognizable players can be crossword ANSWERS. .star (from the
+  // stars.js overlay) is the primary signal — hand-curated list of ~700 NBA /
+  // NFL / MLB names any casual sports fan would know. Auto-detected fallback
+  // for anyone not on the curated list, so a rising legend still qualifies.
   function isCwIcon(e) {
     var T = { NBA: 1, NFL: 1, MLB: 1 };
     if (!T[e.sport]) return false;
+    if (e.star) return true;
     var d = e.decade;
     if (!d || !d.length || d[d.length - 1] < 1990) return false;
     var f = e.f || 0;

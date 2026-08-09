@@ -235,6 +235,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
@@ -288,6 +289,8 @@
   var corpF={}; ENT.forEach(function(e){ if(e&&TEAM_SPORTS[e.sport]){ var k=e.name+'|'+e.sport; corpF[k]=Math.max(corpF[k]||0, e.f||0); } });
 
   var POOL=[], seen={}, colFreq={}, collegesBySport={NBA:[],NFL:[],MLB:[]}, sportSeen={NBA:{},NFL:{},MLB:{}};
+  // corp cache: also carry star / ns / hp so the pool can gate on recognizability
+  var corpMeta={}; ENT.forEach(function(e){ if(e && TEAM_SPORTS[e.sport]){ corpMeta[e.name+'|'+e.sport]={ star:!!e.star, ns:e.ns||0, hp:e.hp||0 }; } });
   function addPlayer(name, sport, col, team, f, act){
     if(!name || !TEAM_SPORTS[sport] || badCol(col)) return;
     // Some upstream roster feeds already HTML-encode ampersands ("Texas A&amp;M"),
@@ -296,7 +299,8 @@
     var cc=String(col).replace(/&amp;/gi,'&').trim();
     var k=name+'|'+sport; if(seen[k]) return; seen[k]=1;
     var fame=Math.max(f||0, corpF[k]||0);
-    POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame });
+    var m=corpMeta[k]||{};
+    POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame, star:!!m.star, ns:m.ns||0, hp:m.hp||0, act:!!act });
     colFreq[cc]=(colFreq[cc]||0)+1;
     var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
@@ -327,9 +331,17 @@
   // name below that is a coin-flip nobody knows, so it's dropped entirely.
   function eligiblePool(){
     var out=[];
+    // .star (from stars.js) is the primary "recognizable" signal. Falls back
+    // to fame + career-length for uncurated names so no obvious icon slips
+    // out and no journeyman OL sneaks in.
     POOL.forEach(function(p){
       if(SPORTFILTER && p.sport!==SPORTFILTER) return;
-      if((p.f||0) < (p.sport==='NFL'?4:3)) return;
+      if(p.act) { out.push(p); return; }   // current-roster player (all still active)
+      if(p.star){ out.push(p); return; }
+      var f=p.f||0;
+      if(f<4) return;
+      if(p.sport==='NFL' && !(p.hp && (p.ns||0)>=8)) return;
+      if(p.sport!=='NFL' && (p.ns||0)<8) return;
       out.push(p);
     });
     return out;
