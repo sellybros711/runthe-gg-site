@@ -199,6 +199,16 @@
     return withTimeout(sb.rpc('arcade_tokens_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
 
+  // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or
+  // null (offline). Works without a session (anon-granted RPC). ----
+  function streakBoard(game, limit) {
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(
+      sb.rpc('grid_streak_board', { p_game: game, p_limit: limit || 10 })
+        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? r.data : null; })
+    );
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
