@@ -290,7 +290,10 @@
   var POOL=[], seen={}, colFreq={}, collegesBySport={NBA:[],NFL:[],MLB:[]}, sportSeen={NBA:{},NFL:{},MLB:{}};
   function addPlayer(name, sport, col, team, f, act){
     if(!name || !TEAM_SPORTS[sport] || badCol(col)) return;
-    var cc=String(col).trim();
+    // Some upstream roster feeds already HTML-encode ampersands ("Texas A&amp;M"),
+    // which the display then escapes a second time. Decode the common entity
+    // (only ampersand appears in real US school names) before we store it.
+    var cc=String(col).replace(/&amp;/gi,'&').trim();
     var k=name+'|'+sport; if(seen[k]) return; seen[k]=1;
     var fame=Math.max(f||0, corpF[k]||0);
     POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame });
@@ -411,7 +414,7 @@
     started=true; startTs=performance.now(); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the school they played for. · Archive practice'; return; }
+    if(ARCHIVE){ h.textContent='Tap the school they played for. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the school they played for.'+lbl; }
   function beginAttempt(){

@@ -435,7 +435,7 @@ window.RTG_PUZZLES = {
         "r": 4,
         "c": 2,
         "answer": "SET",
-        "clue": "Tennis-match division"
+        "clue": "Pitcher's ready position"
       }
     ],
     "difficulty": 2.29,
