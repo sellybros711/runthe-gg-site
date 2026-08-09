@@ -304,7 +304,9 @@
   if(window.RTGHowto) RTGHowto.init('table');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=40;
+  // Unlimited streak: soft cap; the pair generator's guard bails when it
+  // can't find enough valid pairs at the current gap.
+  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=200;
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -389,10 +391,13 @@
     var rd=document.getElementById('ladderRd'), bar=document.getElementById('ladderBar'), zn=document.getElementById('ladderZone');
     if(!rd) return;
     var n=Math.min(idx+1, SEQ.length);
-    rd.textContent='Round '+n+' / '+SEQ.length;
-    bar.style.width=Math.round(idx/SEQ.length*100)+'%';
+    rd.textContent='Round '+n;
+    // Unlimited streak — the progress bar now shows "how deep are you into
+    // the difficulty escalation" (0 to round 40 = the last threshold); after
+    // that it stays full and the zone label carries the pressure.
+    bar.style.width=Math.round(Math.min(idx,40)/40*100)+'%';
     // zones mirror the generator's gap breakpoints: pairs get closer as you climb
-    var z = idx>=32 ? ['GUT CHECK','hot'] : idx>=24 ? ['TIGHT CALLS',''] : idx>=16 ? ['HEATING UP',''] : ['',''];
+    var z = idx>=40 ? ['ENDLESS','hot'] : idx>=32 ? ['GUT CHECK','hot'] : idx>=24 ? ['TIGHT CALLS',''] : idx>=16 ? ['HEATING UP',''] : ['',''];
     zn.textContent=z[0]; zn.className='zone'+(z[1]?' '+z[1]:'');
   }
   function renderRound(){

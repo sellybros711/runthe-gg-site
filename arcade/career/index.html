@@ -276,7 +276,8 @@
   if(window.RTGHowto) RTGHowto.init('career');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var GAME_BASE='career', ROUNDS=30;
+  // Unlimited streak: soft cap; generator's guard bails earlier if pool exhausts.
+  var GAME_BASE='career', ROUNDS=200;
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them (career_nba) for its own seed/board/streak/resume.
   var MODE='all', SPORTFILTER=null, GAME='career', SAVE_KEY='rtg:career:v1', RESUME_KEY='rtg:resume:career';

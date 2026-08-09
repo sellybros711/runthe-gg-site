@@ -258,7 +258,11 @@
   if(window.RTGHowto) RTGHowto.init('almamater');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var GAME_BASE='almamater', ROUNDS=25;
+  // Unlimited streak: each day serves the ENTIRE eligible pool in a per-day
+  // shuffled order. Practically nobody reaches the end (~800 correct answers
+  // in a row); the run just terminates on the first miss. "How far can you
+  // go" becomes real again — the ceiling is your knowledge, not our cap.
+  var GAME_BASE='almamater', ROUNDS=1000;   // soft cap; hits pool length first
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them so each version has its own seed, board, streak,
   // save and resume. configureMode() sets these once the version is chosen.
@@ -354,10 +358,20 @@
   // (~two months at today's pool size) and every archived day is a distinct
   // hand. Replays deal only cards not yet seen today (tracked per date), so
   // "Play again" can't re-serve this morning's names either.
-  function deckFor(){
+  // Per-date shuffle of the full eligible pool. Each date reorders — icons
+  // still float to the top (warmup effect) but the SPECIFIC icon at position
+  // 1 differs day-to-day, and the deep-cut tail differs too. The seed
+  // includes DATE so every player sees the identical ordering for a given
+  // day (leaderboard-safe).
+  function deckFor(dateSeed){
     var a=eligiblePool();
-    var dr=mulberry32(xmur3('alma-deck-v1-'+MODE)());
+    var seed=dateSeed || ('alma-deck-'+MODE+'-'+DATE);
+    var dr=mulberry32(xmur3(seed)());
     for(var i=a.length-1;i>0;i--){ var j=Math.floor(dr()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    // stable sort by fame desc keeps warmup icons first; the fresh shuffle
+    // above randomizes WITHIN each fame tier so day-to-day the first few
+    // pulls are different icons in a different order.
+    a.sort(function(x,y){ return (y.f||0)-(x.f||0); });
     return a;
   }
   function dayIndex(){
@@ -377,11 +391,11 @@
     if(!deck.length) return [];
     var seq=[];
     if(daily){
-      var start=(dayIndex()*ROUNDS)%deck.length;
-      for(var i=0;i<ROUNDS && i<deck.length;i++) seq.push(deck[(start+i)%deck.length]);
-      // ease in: icons (f5) before stars (f4) before solid (f3); order within a
-      // tier keeps the deck's day-to-day variety
-      seq.sort(function(a,b){ return (b.f||0)-(a.f||0); });
+      // Unlimited streak: serve the ENTIRE pool in today's shuffled order.
+      // Deck already has icons floating to the top (fame sort) with per-day
+      // shuffle inside each fame tier, so early rounds are always icons.
+      // The run ends on your first miss — no artificial cap.
+      seq = deck.slice(0, ROUNDS);
     } else {
       var seen={}; getSeen().forEach(function(k){ seen[k]=1; });
       var fresh=deck.filter(function(p){ return !seen[p.name+'|'+p.sport]; });

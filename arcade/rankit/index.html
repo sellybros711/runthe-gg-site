@@ -355,7 +355,9 @@
   var ENT = window.GRID_ENTITIES || [];
   var STATS = window.RTG_STATS || {};
   var LS = window.localStorage;
-  var GAME_BASE='rankit', COUNT=5, TOTAL_SETS=20;
+  // Unlimited streak: soft cap; the category cycle keeps generating new sets
+  // until the stat pool can't produce a valid 5-player set with distinct spread.
+  var GAME_BASE='rankit', COUNT=5, TOTAL_SETS=200;
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them (rankit_nba) for its own seed/board/streak/resume.
   var MODE='all', SPORTFILTER=null, GAME='rankit', SAVE_KEY='rtg:rankit:v2', RESUME_KEY='rtg:resume:rankit';
@@ -543,7 +545,7 @@
     var fb0=document.getElementById('rkFeedback'); if(fb0){ fb0.className='rkfb'; fb0.innerHTML=''; }
     var hl0=document.getElementById('hintline'); if(hl0) hl0.innerHTML='Drag a row or use the arrows to reorder, then check. You get two tries per set.';
     var cb0=document.getElementById('checkBtn'); if(cb0){ cb0.textContent='Check order'; cb0.disabled=false; }
-    document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1)+' of '+SETS.length;
+    document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1);
     document.getElementById('prompt').innerHTML=S.lead;
     document.getElementById('axTop').textContent='↑ '+S.axisTop;
     document.getElementById('axBot').textContent=S.axisBot+' ↓';
