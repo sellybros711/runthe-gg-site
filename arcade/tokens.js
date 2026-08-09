@@ -67,35 +67,57 @@
   function tier(){ return hasCard() ? 'card' : (signedIn() ? 'account' : 'guest'); }
   function cap(){ if(unlimited()) return Infinity; return signedIn() ? USER_DAILY : GUEST_DAILY; }
 
-  function fresh(){ return { date:todayStr(), plays:{} }; }
+  function fresh(){ return { date:todayStr(), plays:{}, sf:0 }; }
   function read(){
     var s;
     try{ s=JSON.parse(LS.getItem(KEY)); }catch(e){ s=null; }
     if(!s || typeof s!=='object') s=fresh();
     if(s.date!==todayStr()) s=fresh();           // new day → refill (local midnight)
     if(!s.plays || typeof s.plays!=='object') s.plays={};
+    if(typeof s.sf!=='number') s.sf=0;           // server-synced used floor (anti-bypass)
     return s;
   }
   function write(s){ try{ LS.setItem(KEY, JSON.stringify(s)); }catch(e){} return s; }
 
   function totalPlays(s){ var n=0; for(var k in s.plays){ if(s.plays.hasOwnProperty(k)) n+=s.plays[k]||0; } return n; }
-  function used(){ return totalPlays(read()); }
+  // Plays consumed today = the greater of what this device recorded and what the
+  // server says (card.js reconciles the floor on load), so clearing localStorage
+  // can't hand a signed-in user extra plays.
+  function used(){ var s=read(); return Math.max(totalPlays(s), s.sf||0); }
   function playsOf(game){ return read().plays[game]||0; }
   function remaining(){ var c=cap(); return c===Infinity?Infinity:Math.max(0, c - used()); }
+  // Raise the server-used floor (never lowers it within a day).
+  function setServerUsed(n){ var s=read(); var v=Math.max(0, n|0); if(v>(s.sf||0)){ s.sf=v; write(s); } }
   function triesLeft(){ return remaining(); }                // wallet-wide now (arg ignored)
   function canPlay(){ return remaining()>0; }                // any token left (arg ignored)
 
   // Spend one token from the shared wallet for `game`.
   // { ok, tryNo, first, bonus, left } — first=true marks the ranked daily attempt
   // (the day's first play of THIS game); replays are practice.
+  // Spend on the server too (signed-in, non-card): keeps the server's per-day
+  // count authoritative so the client wallet can be reconciled against it. Fire-
+  // and-forget; the client stays the fast path, the server is the source of truth.
+  function serverSpend(){
+    try{
+      if(TESTING || hasCard() || !signedIn()) return;
+      if(!(window.RTG_BOARD && RTG_BOARD.spendToken)) return;
+      RTG_BOARD.spendToken().then(function(res){
+        if(!res) return;
+        if(res.ok===false) setServerUsed(USER_DAILY);                         // server says out → lock
+        else if(typeof res.remaining==='number') setServerUsed(USER_DAILY - res.remaining);
+      }).catch(function(){});
+    }catch(e){}
+  }
+
   function startAttempt(game){
     var s=read(), before=s.plays[game]||0;
     if(unlimited()){
       s.plays[game]=before+1; write(s);
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
-    if(totalPlays(s) >= cap()) return { ok:false, tryNo:before, first:false, bonus:false, left:0 };
+    if(used() >= cap()) return { ok:false, tryNo:before, first:false, bonus:false, left:0 };
     s.plays[game]=before+1; write(s);
+    serverSpend();
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remaining() };
   }
 
@@ -113,6 +135,7 @@
     cap: cap,
     used: used,
     remaining: remaining,
+    setServerUsed: setServerUsed,
     playsOf: playsOf,
     triesLeft: triesLeft,
     canPlay: canPlay,
