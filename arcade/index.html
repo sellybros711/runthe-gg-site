@@ -700,6 +700,18 @@
   var now = new Date();
   document.getElementById('dateShort').textContent =
     now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // ---- HUD name: reflect the signed-in user (was hardcoded "Guest") ----
+  (function(){
+    var whoB = document.querySelector('.hud-hd .who b');
+    if(!whoB) return;
+    function setName(s){
+      s = s || {};
+      whoB.textContent = s.name ? s.name : (s.signedIn ? 'Player' : 'Guest');
+    }
+    if(window.RTG_BOARD && RTG_BOARD.onChange){ RTG_BOARD.onChange(setName); }
+    else if(window.RTG_AUTH && RTG_AUTH.state){ var a=RTG_AUTH.state()||{}; setName({ signedIn:!!a.userId, name:a.name }); }
+  })();
   function pad(n) { return String(n).padStart(2, '0'); }
   function tickCd() {
     var n = new Date();

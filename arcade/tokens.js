@@ -37,9 +37,10 @@
   var SB_SESSION_KEY = 'sb-jcrrxqfpdelrmvjuihnm-auth-token';
 
   // TESTING: unlimited plays for everyone while we run through the games.
-  // FLIP TO false before public launch to enforce the guest/account/card tiers.
+  // LAUNCH: false — the guest (1/day) / account (3/day) / card (unlimited) tiers
+  // are now enforced. Flip back to true only to demo without limits.
   // Nothing else references this.
-  var TESTING = true;
+  var TESTING = false;
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
