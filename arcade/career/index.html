@@ -90,6 +90,9 @@
   .stop .steptag.last{color:var(--greenT); border-color:color-mix(in srgb, var(--green) 45%, transparent);}
   .stopgap{height:16px; width:26px; display:flex; justify-content:center;}
   .stopgap:before{content:""; width:2px; background:var(--line2);}
+  .pathera{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); text-align:center;
+    font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--mut);}
+  .pathera b{color:var(--greenT); font-weight:900; letter-spacing:.09em;}
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s;}
@@ -169,6 +172,11 @@
     .a-gametitle{ margin:2px 0 8px; }
     .lb{ margin:0; }
     .runbar{ margin:0; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+    /* the path + answers own the desktop column (match Odd One's scale) */
+    .pathcard{ padding:22px 20px; }
+    .stop .tm{ font-size:17px; }
+    .choices{ gap:12px; }
+    .choice{ min-height:60px; font-size:18px; padding:16px 20px; display:flex; align-items:center; }
   }
 </style>
 </head>
@@ -343,7 +351,15 @@
       var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
       var st=tc?(' style="--pc:'+tc.p+'"'):'';
       return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"'+st+'><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
-    }).join('');
+    }).join('') + eraLine(target);
+    function eraLine(t){
+      // era clue: a short path (two recorded stints) can be almost anyone, so
+      // anchor it in time — narrows the guess to contemporaries without naming
+      // anything the decoy logic depends on (decoys share sport, not era).
+      var d=t.decade||[]; if(!d.length) return '';
+      var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s–'+d[d.length-1]+'s');
+      return '<div class="pathera">Played in the <b>'+era+'</b></div>';
+    }
     choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
   }
