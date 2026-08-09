@@ -581,23 +581,38 @@
     if(c.length<2) c.push("A name that comes up when fans argue about the greats.");
     return c;
   }
-  /* Roster-mode clues: vague hints built from the current player's live data
-     (nationality, experience, division, side of the ball, age, number). Never
-     names a team/position/number value — earning those is the board's job. */
+  /* Roster-mode clues: atmospheric riddles built from the current player's
+     live data. Never names a team / position / number VALUE — earning those
+     is the board's job — and never names a division either (a division name
+     leaks the sport and narrows to 4-5 teams in one line). Clues read as
+     lateral hints, not fact-cards. */
   function buildCluesRoster(t){
     var c=[], div=divisionOf(t), side=(t.sport==='NFL')?sideOf(t.pos):null, jn=jerseyOf(t);
-    if(t.nat && !/^(usa|united states)$/i.test(t.nat)) c.push("This player was born outside the United States.");
-    if(t.exp!=null && t.exp>=12) c.push("A grizzled veteran, well over a decade in the league.");
-    else if(t.exp!=null && t.exp<=1) c.push("One of the newer arrivals in the league.");
-    if(div) c.push("Suits up in the "+div+".");
-    if(side==='Defense') c.push("Earns a living on the defensive side of the ball.");
-    else if(side==='Special') c.push("A special-teams specialist.");
-    if(t.age!=null && t.age<=23) c.push("Still one of the younger faces around.");
-    else if(t.age!=null && t.age>=35) c.push("On the wrong side of 35 and still going.");
-    if(jn!=null && jn<=9) c.push("Wears a single-digit number.");
-    else if(jn!=null && jn>=90) c.push("The number on the jersey is way up in the 90s.");
-    if(c.length<2) c.push("A current "+t.sport+" player you'll find on an active roster.");
-    if(c.length<2) c.push("Check today's box scores and you might spot this one.");
+    if(t.nat){
+      var n=t.nat.toLowerCase();
+      if(/canada/.test(n)) c.push("Grew up further north than most of the league.");
+      else if(/mexico|dominic|venezu|colomb|cuba|puerto|panam|nicar/.test(n)) c.push("Learned the game far south of any of this league's markets.");
+      else if(/japan|korea|china|taiwan/.test(n)) c.push("A flight home from All-Star break crosses an ocean.");
+      else if(/australia|new zealand/.test(n)) c.push("Would need most of a day just to walk into their childhood gym.");
+      else if(!/^(usa|united states)$/.test(n)) c.push("The national anthem this player grew up hearing isn’t ours.");
+    }
+    if(t.exp!=null && t.exp>=12) c.push("Has outlasted more head coaches than most fans have season tickets.");
+    else if(t.exp!=null && t.exp<=1) c.push("Still learning which airport to sprint through on road trips.");
+    // atmospheric take on the division — no league or place named
+    if(div){
+      if(/east|atlantic/i.test(div)) c.push("Home tip-off shows up early on the coast-to-coast TV grid.");
+      else if(/west|pacific|northwest|southwest/i.test(div)) c.push("Home games run late enough that half the country is asleep.");
+      else if(/north|central/i.test(div)) c.push("Home crowds have wiped snow off their car more than once this year.");
+      else if(/south/i.test(div)) c.push("Home fans rarely need a jacket at kickoff.");
+    }
+    if(side==='Defense') c.push("Paid to spoil someone else’s highlight reel.");
+    else if(side==='Special') c.push("Only hits the field when possession is about to flip.");
+    if(t.age!=null && t.age<=23) c.push("Younger than most of the assistant coaches.");
+    else if(t.age!=null && t.age>=35) c.push("Older than the average bat boy’s dad.");
+    if(jn!=null && jn<=9) c.push("Wears a number a soccer captain would recognize.");
+    else if(jn!=null && jn>=90) c.push("Wears the kind of number linemen tend to hoard.");
+    if(c.length<2) c.push("Not the flashiest name — just the one you should’ve thought of first.");
+    if(c.length<2) c.push("Their name showed up in a recent box score if you were paying attention.");
     return c;
   }
   function cluesFor(t){ return (ROSTER_MODE?buildCluesRoster:buildClues)(t); }
