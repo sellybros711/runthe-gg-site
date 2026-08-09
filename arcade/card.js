@@ -1,0 +1,225 @@
+/*
+ * card.js — the Arcade Card surface for Run The Arcade.
+ *
+ * One shared, self-mounting module (like auth-ui.js) that every arcade page can
+ * use for the consumer monetization UI:
+ *   RTGCard.paywall(opts)   — "Out of plays" → Arcade Card upsell (monthly/annual,
+ *                             3-day trial, + tax, and a friendly "Come back tomorrow")
+ *   RTGCard.guestConvert()  — after a guest spends their 1 free play: "create a free
+ *                             account for 3 plays a day" conversion
+ *   RTGCard.checkout(plan)  — start Arcade Card checkout ($5.99/mo or $49.99/yr). If
+ *                             the visitor isn't signed in, we open sign-in first and
+ *                             resume checkout after, preserving the chosen plan.
+ *   RTGCard.portal()        — open the Stripe Customer Portal (manage/cancel)
+ *
+ * Entitlement + token truth are elsewhere (tokens.js / board.js / the server RPCs);
+ * this file is presentation + the checkout/portal calls. Fails soft: with the
+ * network or supabase blocked the modals still render and explain what's up.
+ */
+(function () {
+  'use strict';
+
+  var MONTHLY = { plan: 'monthly', price: '$5.99', per: 'month', bill: '$5.99/month' };
+  var ANNUAL  = { plan: 'annual',  price: '$49.99', per: 'year', bill: '$49.99/year', permo: '$4.17/mo', save: 'Save $21.89' };
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function $(id){ return document.getElementById(id); }
+  function userId(){
+    try{
+      if(window.RTG_AUTH && RTG_AUTH.state().userId) return RTG_AUTH.state().userId;
+      if(window.RTG_BOARD && RTG_BOARD.state().userId) return RTG_BOARD.state().userId;
+    }catch(e){}
+    return null;
+  }
+  function signedIn(){ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()) || !!userId(); }
+  function returnPath(){ try{ return location.pathname + location.search; }catch(e){ return '/arcade/'; } }
+
+  // ---------- styles ----------
+  function injectStyles(){
+    if($('rtgcard-style')) return;
+    var s=document.createElement('style'); s.id='rtgcard-style';
+    s.textContent=[
+      '.rtgc-scrim{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:max(20px,env(safe-area-inset-top)) 15px 24px;background:rgba(3,9,18,.7);backdrop-filter:blur(5px);overflow:auto;}',
+      '.rtgc-scrim[hidden]{display:none;}',
+      '.rtgc-sheet{width:100%;max-width:400px;margin:auto 0;background:var(--card,#0f1a2b);color:var(--ink,#eaf0f7);border:1px solid var(--line2,#22304a);border-radius:18px;padding:22px 20px 20px;position:relative;box-shadow:0 30px 90px -20px rgba(0,0,0,.75);text-align:center;}',
+      '.rtgc-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-size:14px;cursor:pointer;}',
+      '.rtgc-kick{font-family:var(--hero,inherit);font-weight:800;letter-spacing:.02em;text-transform:uppercase;font-size:12px;color:var(--gold,#F2B632);margin-bottom:6px;}',
+      '.rtgc-h{font-family:var(--hero,inherit);font-weight:800;font-size:23px;line-height:1.05;margin:0 0 8px;}',
+      '.rtgc-sub{font-size:13px;color:var(--mut,#93a4bd);line-height:1.45;margin:0 auto 16px;max-width:320px;}',
+      '.rtgc-card{background:color-mix(in srgb, var(--gold,#F2B632) 8%, var(--card2,#16233a));border:1px solid color-mix(in srgb, var(--gold,#F2B632) 45%, var(--line2,#22304a));border-radius:14px;padding:15px 15px 16px;margin:0 0 15px;text-align:left;}',
+      '.rtgc-card .name{font-family:var(--hero,inherit);font-weight:800;letter-spacing:.03em;text-transform:uppercase;font-size:15px;color:var(--gold,#F2B632);display:flex;align-items:center;gap:8px;margin-bottom:10px;}',
+      '.rtgc-perks{list-style:none;margin:0;padding:0;display:grid;gap:7px;}',
+      '.rtgc-perks li{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink,#eaf0f7);}',
+      '.rtgc-perks li span{flex:0 0 20px;text-align:center;}',
+      // plan toggle
+      '.rtgc-plans{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 6px;}',
+      '.rtgc-plan{position:relative;border:2px solid var(--line2,#22304a);background:var(--card2,#16233a);border-radius:12px;padding:13px 10px 11px;cursor:pointer;text-align:center;transition:border-color .12s, background .12s;}',
+      '.rtgc-plan.on{border-color:var(--gold,#F2B632);background:color-mix(in srgb, var(--gold,#F2B632) 12%, var(--card2,#16233a));}',
+      '.rtgc-plan .pt{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#93a4bd);}',
+      '.rtgc-plan .pp{font-family:var(--hero,inherit);font-weight:800;font-size:22px;line-height:1.1;margin-top:3px;}',
+      '.rtgc-plan .pm{font-size:11px;color:var(--mut,#93a4bd);margin-top:2px;}',
+      '.rtgc-plan .badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--gold,#F2B632);color:#20160a;font-size:8.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap;}',
+      '.rtgc-plan .save{display:inline-block;margin-top:4px;font-size:10px;font-weight:800;color:var(--greenT,#48D17A);}',
+      '.rtgc-go{width:100%;box-sizing:border-box;appearance:none;border:0;border-radius:12px;padding:15px;min-height:52px;font-family:var(--hero,inherit);font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:16px;background:var(--gold,#F2B632);color:#20160a;cursor:pointer;margin-top:10px;}',
+      '.rtgc-go:hover{filter:brightness(1.05);} .rtgc-go:disabled{opacity:.6;cursor:default;}',
+      '.rtgc-terms{font-size:11.5px;color:var(--mut,#93a4bd);margin-top:9px;font-weight:600;}',
+      '.rtgc-ghost{width:100%;box-sizing:border-box;appearance:none;border:1px solid var(--line2,#22304a);background:transparent;color:var(--ink,#eaf0f7);border-radius:12px;padding:12px;min-height:46px;font-weight:800;font-size:13px;cursor:pointer;margin-top:10px;}',
+      '.rtgc-ghost:hover{border-color:var(--mut,#93a4bd);}',
+      '.rtgc-err{background:color-mix(in srgb,var(--red,#F0653A) 15%,transparent);color:var(--redT,#ff8a72);border-radius:8px;padding:9px 11px;font-size:12.5px;font-weight:600;margin:10px 0 0;}',
+      '.rtgc-fine{font-size:11px;color:var(--dim,#6b7d97);margin-top:11px;line-height:1.4;}'
+    ].join('');
+    (document.head||document.documentElement).appendChild(s);
+  }
+
+  function ensureScrim(){
+    injectStyles();
+    var el=$('rtgcardScrim');
+    if(el) return el;
+    el=document.createElement('div'); el.className='rtgc-scrim'; el.id='rtgcardScrim'; el.hidden=true;
+    el.innerHTML='<div class="rtgc-sheet"><button class="rtgc-x" id="rtgcardX" type="button" aria-label="Close">✕</button><div id="rtgcardBody"></div></div>';
+    document.body.appendChild(el);
+    $('rtgcardX').onclick=close;
+    el.addEventListener('click',function(e){ if(e.target===el) close(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !el.hidden) close(); });
+    return el;
+  }
+  function open(){ ensureScrim().hidden=false; }
+  function close(){ var el=$('rtgcardScrim'); if(el) el.hidden=true; }
+
+  var CHECK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  function benefitsHTML(){
+    return '<ul class="rtgc-perks">' +
+      '<li><span>♾️</span> Unlimited Arcade plays, every day</li>' +
+      '<li><span>🗂️</span> Full Arcade Archive — play past days</li>' +
+      '<li><span>🆕</span> New games &amp; challenges as they drop</li>' +
+      '<li><span>📊</span> Your full history &amp; stats</li>' +
+    '</ul>';
+  }
+
+  // The Arcade Card upsell. reason: 'out' (out of daily plays) | 'archive' | undefined.
+  function paywall(opts){
+    opts=opts||{}; var reason=opts.reason||'out';
+    ensureScrim();
+    var chosen = 'annual';   // steer to best value by default
+    var kicker, head, sub;
+    if(reason==='archive'){
+      kicker='Arcade Archive'; head='Unlock the full Archive';
+      sub='Play any past day’s puzzles across every game with an Arcade Card.';
+    } else {
+      kicker='Out of plays'; head='You’re out of plays today';
+      sub = signedIn()
+        ? 'You’ve used today’s 3 free Arcade plays. Come back tomorrow for 3 more — or unlock the entire Arcade now.'
+        : 'Come back tomorrow for another free play — or unlock the entire Arcade now.';
+    }
+    function render(){
+      var b=$('rtgcardBody');
+      b.innerHTML =
+        '<div class="rtgc-kick">'+esc(kicker)+'</div>'+
+        '<h2 class="rtgc-h">'+esc(head)+'</h2>'+
+        '<p class="rtgc-sub">'+esc(sub)+'</p>'+
+        '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+        '<div class="rtgc-plans">'+
+          planHTML('monthly', chosen==='monthly')+
+          planHTML('annual', chosen==='annual')+
+        '</div>'+
+        '<button class="rtgc-go" id="rtgcardGo" type="button">Start 3 days free</button>'+
+        '<div class="rtgc-terms" id="rtgcardTerms"></div>'+
+        '<div id="rtgcardErr"></div>'+
+        '<button class="rtgc-ghost" id="rtgcardLater" type="button">Come back tomorrow</button>'+
+        '<div class="rtgc-fine">Cancel anytime. Renews automatically after the trial. Manage or cancel from your account.</div>';
+      [].forEach.call(b.querySelectorAll('.rtgc-plan'),function(p){ p.onclick=function(){ chosen=p.dataset.plan; render(); }; });
+      $('rtgcardGo').onclick=function(){ startCheckout(chosen); };
+      $('rtgcardLater').onclick=close;
+      updTerms();
+    }
+    function updTerms(){
+      var t=$('rtgcardTerms'); if(!t) return;
+      var p = chosen==='annual'?ANNUAL:MONTHLY;
+      t.textContent = '3 days free, then '+p.bill+' + applicable tax';
+    }
+    render(); open();
+  }
+  function planHTML(plan, on){
+    var p = plan==='annual'?ANNUAL:MONTHLY;
+    return '<div class="rtgc-plan'+(on?' on':'')+'" data-plan="'+plan+'">'+
+      (plan==='annual'?'<span class="badge">Best value</span>':'')+
+      '<div class="pt">'+(plan==='annual'?'Annual':'Monthly')+'</div>'+
+      '<div class="pp">'+p.price+'</div>'+
+      '<div class="pm">'+(plan==='annual'?('/year · '+p.permo):'/month')+'</div>'+
+      (plan==='annual'?'<span class="save">'+p.save+'</span>':'')+
+    '</div>';
+  }
+
+  // Guest used their one free play → convert to a free account (3/day).
+  function guestConvert(){
+    ensureScrim();
+    var b=$('rtgcardBody');
+    b.innerHTML =
+      '<div class="rtgc-kick">Keep playing</div>'+
+      '<h2 class="rtgc-h">Create a free account</h2>'+
+      '<p class="rtgc-sub">You’ve used today’s free play. A free RunThe.GG account gets you <b>3 Arcade plays every day</b> — and saves your streaks, stats and leaderboard rank across every game.</p>'+
+      '<button class="rtgc-go" id="rtgcardCreate" type="button">Create free account</button>'+
+      '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
+      '<div class="rtgc-fine">Free forever. No card required.</div>';
+    $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup'); };
+    $('rtgcardSignin').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signin'); };
+    open();
+  }
+
+  // Begin checkout. If not signed in, open sign-in first and resume after auth.
+  function startCheckout(plan){
+    plan = plan==='annual'?'annual':'monthly';
+    if(!signedIn()){
+      // preserve intent, ask them to sign in / create an account, then resume
+      pending = plan;
+      close();
+      if(window.RTGAuthUI){ RTGAuthUI.open('signup'); }
+      return;
+    }
+    var go=$('rtgcardGo'); if(go){ go.disabled=true; go.textContent='Starting…'; }
+    var uid=userId();
+    if(!uid){ showErr('Please sign in and try again.'); return; }
+    fetch('/api/stripe/checkout', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: uid, plan: plan, return_path: returnPath() })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        if(d && d.url){ location.href=d.url; return; }
+        showErr(d && d.error==='stripe_not_configured' ? 'Checkout isn’t available yet. Please try again soon.' : 'Could not start checkout. Please try again.');
+      })
+      .catch(function(){ showErr('Could not start checkout. Please try again.'); });
+  }
+  function showErr(msg){
+    var e=$('rtgcardErr'); if(e) e.innerHTML='<div class="rtgc-err">'+esc(msg)+'</div>';
+    var go=$('rtgcardGo'); if(go){ go.disabled=false; go.textContent='Start 3 days free'; }
+  }
+
+  // Manage / cancel via Stripe Customer Portal.
+  function portal(){
+    var uid=userId(); if(!uid){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return; }
+    return fetch('/api/stripe/portal', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: uid, return_path: returnPath() })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){ if(d && d.url) location.href=d.url; return d; })
+      .catch(function(){});
+  }
+
+  // Resume a checkout the visitor started before signing in.
+  var pending = null;
+  function watchAuth(){
+    if(!window.RTG_AUTH) return;
+    RTG_AUTH.onChange(function(st){
+      if(pending && st && st.signedIn){
+        var plan=pending; pending=null;
+        // small delay so the session/token settle before we POST
+        setTimeout(function(){ paywall({ reason:'out' }); startCheckout(plan); }, 150);
+      }
+    });
+  }
+
+  function init(){ injectStyles(); watchAuth();
+    window.RTGCard = { paywall: paywall, guestConvert: guestConvert, checkout: startCheckout, portal: portal, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
