@@ -556,7 +556,10 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.03em; text-transform:uppercase; position:relative; white-space:nowrap}
   .botnav button .ic{width:22px; height:22px}
   /* unclaimed-reward indicator: a red dot at the top-right of a nav tab's icon (free pack → Pro Shop, new items → Profile) */
-  .botnav button .navdot{position:absolute; top:4px; left:50%; transform:translateX(6px); width:9px; height:9px;
+  /* positioned with `left`, NOT transform:translateX - see the CS472/CS516 note below: nothing in the
+     fixed bar's subtree may carry a transform in any state, and these dots are added/removed on every
+     render, so a transform here was a live compositing change inside the bar on every navigation. */
+  .botnav button .navdot{position:absolute; top:4px; left:calc(50% + 6px); width:9px; height:9px;
     border-radius:50%; background:#e2554e; border:1.5px solid #04160b; box-shadow:0 0 5px rgba(226,85,78,.9)}
   .botnav button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   /* CS439: hide by sliding OFF-SCREEN (+ visibility/pointer-events) instead of display:none. display:none
@@ -569,7 +572,9 @@ window.GA_ID='G-L29P5MRWKE';
      transform from the shown state; this removes the last one so NO state ever transforms the fixed bar. */
   .botnav.navhide{bottom:-140px; visibility:hidden; pointer-events:none}
   .botnav button.on{color:var(--gold)}
-  .botnav button:active{transform:translateY(1px)}
+  /* press feedback WITHOUT a transform (see the note above) - a transform anywhere in the fixed
+     bar's subtree is what has repeatedly detached it from the viewport on iOS. */
+  .botnav button:active{opacity:.58}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
   /* Raised gold centre button: the Tour Pass. Lifted with `top`, never a transform on the fixed bar's
      own layer (see the CS472/CS516 note above); the disc overflows upward out of the bar. */
@@ -582,7 +587,7 @@ window.GA_ID='G-L29P5MRWKE';
   .navfab .nf-lab{font:800 10px/1 var(--body); letter-spacing:.03em; text-transform:uppercase}
   .navfab.on{color:var(--gold)!important}
   .navfab.on .nf-disc{box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 2px var(--gold), 0 0 22px -1px rgba(241,208,74,.75)}
-  .navfab .navdot{top:-1px!important; left:auto!important; right:6px; transform:none!important}
+  .navfab .navdot{top:-1px!important; left:auto!important; right:6px}
   @media (max-width:359px){ .navfab{width:58px} .navfab .nf-disc{width:44px;height:44px} .navfab .nf-disc .ic{width:23px;height:23px} }
   #app.has-botnav{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
   /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
@@ -641,7 +646,8 @@ window.GA_ID='G-L29P5MRWKE';
   .rc-status{font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.75}
   .rc-prog-bar{height:7px; border-radius:4px; background:rgba(4,12,30,.34); overflow:hidden}
   .rc-prog-bar i{display:block; height:100%; background:#cfe0ff; border-radius:4px}
-  .rc-stats{display:flex; align-items:center; gap:16px; margin-top:12px}
+  .rc-stats{display:flex; align-items:center; gap:8px 13px; margin-top:12px; flex-wrap:wrap}
+  .rc-stat{white-space:nowrap}   /* a big net worth used to wrap "net worth" onto its own line, mid-row */
   .rc-stat b{font:900 16px/1 var(--mono)} .rc-stat span{font:700 10px/1 var(--body); opacity:.66; margin-left:3px}
   .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(4,12,30,.34); border-radius:9px; padding:8px 13px}
   /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
@@ -689,6 +695,40 @@ window.GA_ID='G-L29P5MRWKE';
   .om-btn{flex:0 0 auto; background:rgba(32,189,169,.2); border:1px solid rgba(53,214,160,.5); border-radius:9px;
     padding:7px 11px; color:#eafff9; font:800 12px/1 var(--body); cursor:pointer}
   .om-btn:active{transform:translateY(1px)}
+  /* ══ HOME ENHANCEMENTS (owner picks 1,2,3,4,5,7,8,9 off the layout-options doc) ══ */
+  /* 4+5: a returning player gets their own golfer + name instead of the marketing hero */
+  .homehdr{display:flex; align-items:center; gap:13px; max-width:520px; margin:0 auto; text-align:left}
+  .hh-fig{flex:0 0 auto; width:52px; height:66px; display:flex; align-items:flex-end; justify-content:center}
+  .hh-fig img{max-width:100%; max-height:100%; image-rendering:pixelated}
+  .hh-txt{min-width:0; flex:1}
+  .hh-hi{font:800 10px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--teal); opacity:.95}
+  .hh-name{font-family:var(--display); font-size:clamp(23px,6.8vw,31px); line-height:1.04; margin-top:5px;
+    color:var(--pageink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:5px; text-shadow:0 2px 14px rgba(0,0,0,.5)}
+  .hh-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px}
+  .hh-chip{font:800 10.5px/1 var(--body); border-radius:7px; padding:5px 8px; color:var(--pagemut);
+    background:rgba(0,0,0,.26); border:1px solid rgba(244,227,201,.16)}
+  .hh-chip b{color:var(--pageink)}
+  /* 3: a strip of TODAY'S actual hole, bled to the Play 18 card's edges */
+  .gc-strip{position:relative; margin:9px -15px -12px; height:52px; overflow:hidden; background:#12281c}
+  .gc-strip img{width:100%; height:100%; object-fit:cover; object-position:50% 30%; display:block; image-rendering:pixelated}
+  .gc-strip::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(4,14,9,.02),rgba(4,14,9,.66))}
+  .gc-striplab{position:absolute; left:14px; right:14px; bottom:8px; z-index:1; display:flex; align-items:center; gap:7px;
+    font:800 11px/1 var(--body); color:#eef6ef; text-shadow:0 1px 5px rgba(0,0,0,.95)}
+  .gc-striplab .sl-par{margin-left:auto; font-weight:700; opacity:.86; white-space:nowrap}
+  /* 2: an unclaimed reward should be impossible to miss */
+  .gc-badge.claim{background:rgba(241,208,74,.95); color:#20160a; animation:gcClaim 1.9s ease-in-out infinite}
+  @keyframes gcClaim{0%,100%{box-shadow:0 0 0 0 rgba(241,208,74,.55)}50%{box-shadow:0 0 0 5px rgba(241,208,74,0)}}
+  .botnav button .navdot.num{width:auto; min-width:17px; height:17px; border-radius:9px; padding:0 4px;
+    font:900 10px/17px var(--mono); color:#fff; text-align:center; letter-spacing:0}
+  .navfab .navdot.num{top:-3px!important; right:2px}
+  /* 8: real tap targets + pressed states on the small home controls */
+  .om-btn,.howtop,.wheelbtn{min-height:44px}
+  .navtile{min-height:62px}
+  .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn{touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+  .gcard:active,.resumecard:active{transform:translateY(1px); filter:brightness(.95)}
+  .navtile:active,.homedrop:active{transform:translateY(1px); filter:brightness(1.1)}
+  .howtop:active,.wheelbtn:active{transform:translateY(1px)}
+  @media (prefers-reduced-motion:reduce){ .gc-badge.claim{animation:none} }
   /* online card's two mode buttons */
   .oc-row{display:flex; gap:8px; margin-top:12px}
   .oc-btn{flex:1; min-width:0; background:rgba(2,20,16,.3); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:9px 8px; color:inherit; cursor:pointer; text-align:center}
@@ -1995,9 +2035,60 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em; text-transform:uppercase; color:var(--pagemut);
     margin:0 0 6px; padding-top:14px; border-top:1px solid rgba(255,255,255,.10)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
-  .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
-  .footlinks span{display:inline-block; margin:0 2px; padding:8px 6px}
-  .footlinks span:empty{padding:0}
+  /* enhancement 9: one compact line instead of two loose rows of big-padded links */
+  /* enhancement 9: one compact line instead of two loose rows of big-padded links. Separators are drawn
+     by CSS, not by literal "·" nodes, so a wrap can never leave a dangling dot at the start of a line. */
+  .footlinks{margin-top:8px; color:var(--pagemut); font-size:12px; display:flex; flex-wrap:wrap;
+    align-items:center; justify-content:center; gap:1px 4px; line-height:1.5}
+  .footlinks>*{padding:5px 2px}
+  .footlinks>*+*::before{content:'·'; margin-right:6px; opacity:.45}
+
+  /* ══ MOTION ═══════════════════════════════════════════════════════════════════════════════════
+     Every interaction rebuilds #app, which used to land as a hard cut (and, because the document
+     height collapses to nothing mid-rebuild, a scroll jump). render() now holds the page height
+     across the swap and flags a REAL navigation with #app.vnew, so these run on a screen change or
+     a tab switch but NEVER on the many same-view re-renders (the live season sim, async board
+     loads, the daily shot reveal) where an animation would be strobing.
+     Deliberately OPACITY-ONLY on .screen and .ov: both are ancestors of position:fixed children
+     (the round + team-cup control bars) and of the player card's preserve-3d flip, and a transform
+     on either would re-break those for the length of the animation. The rise is applied to menu
+     CONTAINERS that hold neither. */
+  @keyframes rttFade{from{opacity:0}to{opacity:1}}
+  @keyframes rttRise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  #app.vnew .screen{animation:rttFade .19s ease-out both}
+  #app.vnew .ov{animation:rttFade .17s ease-out both}
+  #app.vnew .stack>*{animation:rttRise .3s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .stack>*:nth-child(2){animation-delay:.045s}
+  #app.vnew .stack>*:nth-child(3){animation-delay:.09s}
+  #app.vnew .stack>*:nth-child(4){animation-delay:.13s}
+  #app.vnew .stack>*:nth-child(5){animation-delay:.165s}
+  #app.vnew .stack>*:nth-child(n+6){animation-delay:.19s}
+  #app.vnew .homehdr,#app.vnew .titlewrap>.hero,#app.vnew .titlewrap>.herotag{animation:rttRise .28s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini{animation:rttRise .3s .12s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .sgrid>*{animation:rttRise .26s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .sgrid>*:nth-child(n+4){animation-delay:.04s}
+  #app.vnew .sgrid>*:nth-child(n+7){animation-delay:.08s}
+  #app.vnew .ov h3,#app.vnew .ov>.tag{animation:rttRise .3s .04s cubic-bezier(.22,.85,.3,1) both}
+  /* press + hover feedback: without a transition every tap reads as a hard snap */
+  .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn,.stile,.catchip,.segrow button,
+  .hschip,.pill,.lbtab,.lbwin,.lbsort,.lbdir,.accchip,.navtile,.sp-opt{
+    transition:transform .11s cubic-bezier(.22,.85,.3,1), filter .15s ease, background-color .17s ease,
+      border-color .17s ease, box-shadow .2s ease, opacity .17s ease}
+  .btn:active{transform:translateY(1px)}
+  .stile:active,.catchip:active,.segrow button:active,.hschip:active,.pill:active{transform:translateY(1px)}
+  @media (hover:hover){
+    .gcard:hover,.resumecard:hover{transform:translateY(-2px); filter:brightness(1.04)}
+    .navtile:hover,.homedrop:hover{transform:translateY(-2px)}
+    .stile:hover{transform:translateY(-1px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #app.vnew .screen,#app.vnew .ov,#app.vnew .stack>*,#app.vnew .homehdr,#app.vnew .titlewrap>.hero,
+    #app.vnew .titlewrap>.herotag,#app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini,
+    #app.vnew .sgrid>*,#app.vnew .ov h3,#app.vnew .ov>.tag{animation:none}
+    .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn,.stile,.catchip,.segrow button,
+    .hschip,.pill,.sp-opt{transition:none}
+    @media (hover:hover){ .gcard:hover,.resumecard:hover,.navtile:hover,.homedrop:hover,.stile:hover{transform:none} }
+  }
 
   @media (max-width:480px){ .wordmark{font-size:32px} .crest{width:52px;height:62px} .crestrow{gap:12px} }
   @media (max-width:380px){ .wordmark{font-size:27px} }
@@ -7776,13 +7867,8 @@ function footer(){
   // repeating on EVERY screen. Show it only on the title/home (where a first-time visitor sees it); every
   // other screen gets just the compact link row (Feedback still reachable there + in the menu).
   if(S.screen==='title'){
-    const fp=$(`<div class="footpills"></div>`);
-    const fbPill=$(`<button type="button" class="pill" style="cursor:pointer;border-color:var(--gold);color:var(--gold)">${ic('chat')} Send Feedback</button>`);
-    fbPill.onclick=()=>openFeedback();
-    fp.appendChild(fbPill);
-    const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
-    fp.appendChild(a2h);
-    f.appendChild(fp);
+    // Enhancement 9 (trim the page foot): the Send Feedback / Add to Home PILL ROW is gone - both live in
+    // the compact link line below (and in the ≡ menu), which saves ~60px of a foot that was a third of the page.
     // Owner: the old "Love soccer? Try RunThePitch" pill becomes a proper little RunThe.GG ad that
     // promotes the whole platform (more games, one account) and sends people to the hub.
     f.appendChild($(`<a class="ggad" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
@@ -7815,27 +7901,26 @@ function footer(){
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<button type="button" style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer">${t}</button>`); s.onclick=fn; return s;};
   links.appendChild($(`<a href="/" style="color:inherit;text-decoration:none;cursor:pointer">Home</a>`));
-  links.appendChild($(`<span>·</span>`));
   // Real anchors, not overlay buttons: a crawler (and an ad-network reviewer) has to be able to
   // reach the guide and the policy pages from the page itself, which an in-app overlay never gives them.
   links.appendChild($(`<a href="/golf/how-to-play.html" style="color:inherit;text-decoration:none;cursor:pointer">How to play</a>`));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('About',()=>{S.overlay='about';render();}));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('Terms',()=>{S.overlay='terms';render();}));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild($(`<a href="/disclaimer.html" style="color:inherit;text-decoration:none;cursor:pointer">Disclaimer</a>`));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild($(`<a href="/contact.html" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
-  links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('Feedback',()=>openFeedback()));
+  // the two title-only pills fold into this same line (enhancement 9), so nothing is lost, it just
+  // stops being its own 60px block
+  if(S.screen==='title'){
+      links.appendChild(mk('Add to Home',installApp));
+  }
   f.appendChild(links);
   return f;
 }
 
 let _lastView=null;
+let _lastAnim=null, _vnewT=null, _ovBgY=0;   // like _lastView but also tracks in-screen tab state, so a tab switch animates too
 let _rendering=false;
 function render(){
   // Re-entrancy guard: some async loaders (lbLoad/crLoad/dbLoad) call render() to refresh, and when
@@ -7855,6 +7940,35 @@ function render(){
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
   const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent)+'|'+(S.recapYear==null?'':S.recapYear);
   const sameView=(view===_lastView);
+  // Opening an overlay is a view change, so the page behind it was being scrolled to the top - which you
+  // only saw on the way OUT, as a jump back to the top of the screen you had been reading. Remember where
+  // the background was and put it back when the overlay closes onto the same screen.
+  const _pv=(_lastView||'').split('|');
+  if(!_pv[1] && S.overlay) _ovBgY=savedY;                                   // opening: stash the background scroll
+  const closingOv = !!_pv[1] && !S.overlay && _pv[0]===S.screen;            // closing back onto the same screen
+  // ── the "jumping" fix ────────────────────────────────────────────────────────────────────────
+  // Rebuilding #app empties it, so for one frame the document has no height, the browser CLAMPS the
+  // scroll position to the (now tiny) maximum, and the scrollTo() at the bottom of this function
+  // pulls it back - that clamp-then-restore is the jump you see on every tap. Hold the page's
+  // current height across the swap so the scroll position is never clamped, then release it on the
+  // next frame (once the new content has laid out and the scroll is restored).
+  // Only on a same-view rebuild: a real navigation scrolls to top anyway, and holding a tall old
+  // page there would just delay the new (shorter) one settling. Skipped while the draft-spin
+  // reservation owns min-height (reveal() sets it for its own reason).
+  let heldH=0;
+  if(sameView && !app.style.minHeight){
+    const h=app.offsetHeight;
+    if(h>0){ heldH=h; app.style.minHeight=h+'px'; }
+  }
+  // Animate on a REAL navigation (screen/overlay) or a tab switch inside a screen, never on the
+  // many same-view re-renders (live season sim, async leaderboard loads, the daily shot reveal).
+  const animKey=view+'|'+[S.shopSec,S.shopCat,S.shopDrop,S.summaryTab,S.statsTab,S.lbTab,S.lbSort,S.lbWindow,
+    S.profileTab,S.crTab,S.setupCat,S.setupSec,S.h2hTab].map(v=>v==null?'':v).join('~');
+  const newView=(animKey!==_lastAnim); _lastAnim=animKey;
+  // Held on a timer rather than cleared by the next render: several overlays (leaderboard, course
+  // records) kick an async loader that re-renders the SAME view a beat later, which would otherwise
+  // strip the flag and kill the animation before it was ever seen.
+  if(newView){ app.classList.add('vnew'); clearTimeout(_vnewT); _vnewT=setTimeout(()=>{ try{ app.classList.remove('vnew'); }catch(e){} }, 420); }
   app.innerHTML='';
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
@@ -7992,7 +8106,12 @@ function render(){
   // leaderboard loads); only jump to top when the view actually changes.
   const nowOv=app.querySelector('.ov');
   if(nowOv && sameView) nowOv.scrollTop=savedOvY;   // restore the overlay's own scroll position
-  window.scrollTo({top: sameView ? savedY : 0});
+  window.scrollTo({top: sameView ? savedY : (closingOv ? _ovBgY : 0)});
+  // release the height hold once the new content has laid out and the scroll is back where it was
+  if(heldH){ const want=heldH+'px'; requestAnimationFrame(()=>{ if(app.style.minHeight===want) app.style.minHeight=''; }); }
+  // re-apply once the new content has laid out (an avatar/course image landing can shift the page a
+  // little after the first scrollTo), so closing an overlay puts you back exactly where you were
+  if(closingOv){ const y=_ovBgY; requestAnimationFrame(()=>{ if(Math.abs(window.scrollY-y)>2) window.scrollTo({top:y}); }); }
   } finally { _rendering=false; }
 }
 // CS304: persistent bottom tab nav (Home / Career / Daily / Online / Leaderboard) for one-tap hub
@@ -8037,26 +8156,53 @@ function bottomNav(){
 // we WATCH the shown bar's real on-screen position while the page scrolls and, if it sits away from the
 // viewport bottom on two consecutive checks, force a re-anchor (detach the layer for one frame - the same
 // thing the user's hard refresh was doing, automatically and invisibly).
-let _navBadN=0, _navPingRAF=null, _navSettleT=null;
+let _navBadN=0, _navPingRAF=null, _navSettleT=null, _navPoll=null;
 function navReanchor(nav){
   _navBadN=0;
+  // detach the fixed layer for one frame - exactly what a hard refresh was doing, automatically
   nav.style.display='none'; void nav.offsetHeight; nav.style.display='';
 }
+// The bar MUST sit on the bottom of the visible viewport. Rather than trust any one theory about
+// which viewport iOS anchors position:fixed to (it has differed across the versions this bug has
+// recurred on), measure the bar's REAL on-screen position every time anything could have moved it
+// and correct it. Ground truth, no guessing.
 function navWatchdog(nav){
   const check=()=>{ _navPingRAF=null;
     try{
       if(!nav.isConnected || nav.classList.contains('navhide')){ _navBadN=0; return; }
+      if(document.hidden) return;
       const vv=window.visualViewport;
       if(vv && vv.scale && Math.abs(vv.scale-1)>0.05){ _navBadN=0; return; }   // pinch-zoomed: rects lie, skip
-      const drift=Math.abs(nav.getBoundingClientRect().bottom - window.innerHeight);
-      if(drift>30){ if(++_navBadN>=2) navReanchor(nav); }
+      // the bottom of what the user can actually see (visualViewport when the URL bar / keyboard
+      // is eating part of the window, else the window itself)
+      const seenBottom = (vv ? (vv.offsetTop + vv.height) : window.innerHeight);
+      const drift = nav.getBoundingClientRect().bottom - seenBottom;
+      const off = Math.abs(drift);
+      // a big jump is unambiguous - fix it on the first look; a small one waits for a second
+      // reading so a mid-rubber-band measurement can't cause a needless reflow
+      if(off>10){ _navBadN++; if(off>40 || _navBadN>=2) navReanchor(nav); }
       else _navBadN=0;
     }catch(e){}
   };
   const ping=()=>{ if(_navPingRAF==null) _navPingRAF=requestAnimationFrame(check);
-    clearTimeout(_navSettleT); _navSettleT=setTimeout(check, 240); };   // late check catches post-momentum stuck state
+    clearTimeout(_navSettleT); _navSettleT=setTimeout(check, 220); };   // late check catches the post-momentum stuck state
+  // every way the bar has ever been observed to come loose: scrolling + momentum, the URL bar
+  // collapsing, the keyboard, rotation, returning from the background / bfcache, and an overlay
+  // releasing the body scroll lock
   addEventListener('scroll', ping, {passive:true});
   addEventListener('touchmove', ping, {passive:true});
+  addEventListener('touchend', ping, {passive:true});
+  addEventListener('orientationchange', ping);
+  addEventListener('resize', ping, {passive:true});
+  addEventListener('pageshow', ping);
+  addEventListener('focusin', ping); addEventListener('focusout', ping);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) ping(); });
+  try{ const vv=window.visualViewport;
+    if(vv){ vv.addEventListener('resize', ping); vv.addEventListener('scroll', ping); } }catch(e){}
+  // ...and a cheap safety net, so even a cause we have not seen yet self-corrects within a second
+  // instead of needing the hard refresh the owner has been doing.
+  clearInterval(_navPoll);
+  _navPoll=setInterval(()=>{ if(!document.hidden) check(); }, 900);
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
@@ -8080,12 +8226,17 @@ function navSetActive(nav){
   const nFree = si ? (((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0)) : 0;
   const newN = (typeof cosNewTotal==='function') ? cosNewTotal() : 0;
   let passClaim=0; try{ if(si && typeof passClaimable==='function' && passEnabled()) passClaim=passClaimable(); }catch(e){}
+  // enhancement 2: an unclaimed thing should be impossible to miss - the pass carries a NUMBER, and the
+  // Daily tab lights up on a day you haven't played yet (the one action that expires at midnight).
+  let dailyTodo=false; try{ dailyTodo=!PRACTICE && dailyAttempts()===0 && dailyAttemptsLeft()>0; }catch(e){}
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
-    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='pass' && passClaim>0);
+    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='pass' && passClaim>0) || (id==='daily' && dailyTodo);
+    const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
-    else if(!want && dot){ dot.remove(); } });
+    else if(!want && dot){ dot.remove(); dot=null; }
+    if(dot){ dot.classList.toggle('num', !!num); dot.textContent=num; } });
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
@@ -9513,29 +9664,71 @@ function resumeCareerCard(cs){
   card.onclick=resumeCareer;
   return card;
 }
+// Today's course art for the Play 18 card (enhancement 3). Uses the SAME pixel terrain the round itself
+// renders (default camera + grid), so it's the same cache entry, not a second render, and it's built
+// lazily off the paint path because the first build of a tile costs ~100ms.
+let _dArt={};
+function dailyCourseArt(courseKey){
+  if(_dArt[courseKey]!==undefined) return _dArt[courseKey];
+  _dArt[courseKey]=null;
+  try{
+    const c=DAILY_COURSES[courseKey];
+    if(c && c.holes && c.holes.length){
+      // the course's marquee (signature) hole if it has one, else the opener
+      let idx=0; try{ if(c.sig && c.sig.length) idx=Math.max(0,Math.min(17,(c.sig[0][0]|0)-1)); }catch(e){}
+      const h=c.holes[idx]||c.holes[0];
+      const seedN=(dHash(courseKey)^Math.imul(idx+1,0x9e3779b1))>>>0;
+      const g=hvGeom(seedN, h[0], h[1], courseKey, idx);
+      _dArt[courseKey]=pxTerrainURL(g, seedN, hvBiome(courseKey))||null;
+    }
+  }catch(e){ _dArt[courseKey]=null; }
+  return _dArt[courseKey];
+}
 // CS256: Daily Challenge hero card - combines the streak + attempts + countdown into one rich card.
+// Enhancements 1/3/7: it now leads with LIVE state (today's course, the number to beat, tries left)
+// instead of a sales line, carries a strip of today's actual hole, and flips the streak/countdown copy
+// depending on whether you've already played.
 function dailyHeroCard(){
   const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
   const dwon=dbest&&dbest.avg!=null&&dbest.total<dbest.avg;
+  const dk=todayKey(), ck=dailyCourseKey(dk), c=DAILY_COURSES[ck]||{};
+  const av=dTourAvg(c), beat=(c.par!=null)?(c.par+av).toFixed(1):'';
   const bestTxt=dbest?`Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}`:'';
+  const tries=(n)=>`${n} ${n===1?'try':'tries'}`;
   let badge,mid;
   if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
   else if(dailyUnlimited()){ badge='DEV ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited attempts · first ${DAILY_MAX_ATTEMPTS} count for records`; }   // dev accounts
-  else if(datt===0){ badge=''; mid='Beat the tour average at a new famous course every day'; }   // no "PLAY" badge, the "Play ▸" CTA covers it
-  else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':' · came up short'} · new course at midnight ET`; }
-  else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':'beat the tour average to win'}`; }
+  else if(datt===0){ badge=`${dleft} ${dleft===1?'TRY':'TRIES'}`; mid=beat?`Shoot better than <b>${beat}</b> to beat the pro`:'Beat the tour average to win the day'; }
+  else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':` · ${beat} was the number`}`; }
+  else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':(beat?`beat <b>${beat}</b>`:'beat the tour average')}`; }
+  // 7: the countdown only creates tension when you HAVEN'T played. Once you have, it's a "come back" cue.
   const st=streakDisplay(), fz=streakFreezes();
-  const playedToday=((LS.get(acctKey('bag_streak'),{})||{}).last===todayKey());
-  const atRisk=st>0 && !playedToday && !PRACTICE;
-  const streakChip = PRACTICE ? '' : (st>0
-    ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':''}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
-    : `<span class="gc-chip">🔥 Start your streak</span>`);
-  const card=$(`<button class="gcard gc-gold" aria-label="Play 18, the daily round">
+  const played=datt>0;
+  const atRisk=st>0 && !played && !PRACTICE;
+  let chips='';
+  if(!PRACTICE){
+    chips = st>0
+      ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':' safe'}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
+      : `<span class="gc-chip">🔥 Start your streak</span>`;
+    chips += played
+      ? `<span class="gc-chip">Back in ${dCd('hm')}</span>`
+      : `<span class="gc-chip">${dCd('hm')} left</span>`;
+  }
+  const cname=c.v?dShort(c.v):'';
+  const card=$(`<button class="gcard gc-gold${cname?' hasart':''}" aria-label="Play 18, today's round${cname?' at '+esc(cname):''}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
-    <div class="gc-row">${streakChip}<span class="gc-chip">New in ${dCd('hm')}</span><span class="gc-go">Play ▸</span></div>
+    <div class="gc-row">${chips}<span class="gc-go">${played?(dleft>0?'Go lower ▸':'View ▸'):'Play ▸'}</span></div>
+    ${cname?`<div class="gc-strip"><div class="gc-striplab">📍 ${esc(cname)}<span class="sl-par">Par ${c.par} · ${esc(dCondLabel(dailyConditions(dk,ck)))}</span></div></div>`:''}
   </button>`);
   card.onclick=startDailyChallenge;
+  // fill the course art in after paint (first build of a terrain tile is ~100ms)
+  if(cname) setTimeout(()=>{ try{
+    const strip=card.querySelector('.gc-strip'); if(!strip||!strip.isConnected) return;
+    const url=dailyCourseArt(ck); if(!url) return;
+    const img=new Image(); img.alt=''; img.setAttribute('aria-hidden','true'); img.src=url;
+    strip.insertBefore(img, strip.firstChild);
+  }catch(e){} }, 60);
   return card;
 }
 // Prize Wheel home card. Glows when a spin is ready (the daily hook); shows a live 2x-XP boost timer
@@ -9605,9 +9798,14 @@ function careerHeroCard(fresh){
   const best=(c&&c.builds>0)
     ? `<div class="gc-row" style="margin-top:10px"><span class="gc-chip">Best ${fmt(c.bestMoney)}</span><span class="gc-chip">OVR ${c.bestOvr}</span><span class="gc-chip">${c.builds} build${c.builds>1?'s':''}</span></div>`
     : '';
+  // enhancement 1: a player who has built before gets their record here, not the pitch they've read 200 times
+  const lt=(c&&c.lt)||{};
+  const mid=(c&&c.builds>0)
+    ? `${c.builds} golfer${c.builds>1?'s':''} built · ${lt.wins||0} career win${(lt.wins||0)===1?'':'s'} · ${lt.majors||0} major${(lt.majors||0)===1?'':'s'}`
+    : 'Draft 8 skills from real pros, then live a 42-year career.';
   const card=$(`<button class="gcard gc-blue" aria-label="Career Mode, build your golfer">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${fresh?'Start Your Journey':'New Career'}</div><div class="gc-title">${fresh?'Career Mode':'New Golfer'}</div></div><span class="gc-badge">UP TO 42 YRS</span></div>
-    <div class="gc-mid">Build your golfer and play a 30-year tour career, then join the Legend Circuit for up to 42 years in all. Retire whenever you choose.</div>
+    <div class="gc-mid">${mid}</div>
     ${best}
     <div class="gc-row"><span class="gc-go">Build ▸</span></div>
   </button>`);
@@ -9757,6 +9955,37 @@ function onboardPanel(){
   box.appendChild(skip);
   return box;
 }
+// Enhancements 4+5: the "A RunThe.GG Game / Build the Perfect Golfer" hero is ~90px of pitch aimed at
+// someone who's already bought in, and the pixel golfer (the best thing in the game) was nowhere on the
+// home page. Anyone with history gets their golfer + their name instead; first-run keeps the full hero.
+function homeReturning(){
+  try{
+    if(sbSignedIn()) return true;
+    if(careerSaveInfo()) return true;
+    const c=(typeof career==='function')?career():null;
+    if(c && c.builds>0) return true;
+    if(typeof dailyStats==='function' && dailyStats().played>0) return true;
+  }catch(e){}
+  return false;
+}
+function homePlayerHeader(){
+  const nm=(S.name&&String(S.name).trim())||'Your Golfer';
+  const chips=[];
+  try{ const t=repTier(); if(t&&t.tier) chips.push(`<span class="hh-chip">🏅 <b>${esc(t.tier.name)}</b></span>`); }catch(e){}
+  try{ const c=career(), lt=(c&&c.lt)||{};
+    if((lt.wins||0)>0) chips.push(`<span class="hh-chip"><b>${lt.wins}</b> career win${lt.wins===1?'':'s'}</span>`);
+    if((lt.majors||0)>0) chips.push(`<span class="hh-chip"><b>${lt.majors}</b> major${lt.majors===1?'':'s'}</span>`);
+  }catch(e){}
+  const box=$(`<div class="homehdr">
+    <div class="hh-fig">${pxFigureHTML(S.look,66)}</div>
+    <div class="hh-txt">
+      <div class="hh-hi">Welcome back</div>
+      <div class="hh-name">${esc(nm)}</div>
+      ${chips.length?`<div class="hh-chips">${chips.join('')}</div>`:''}
+    </div>
+  </div>`);
+  return box;
+}
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // self-heal: a Legend round swaps S.look/S.name to the legend's frozen identity; any path back to the title must show (and never later persist) anything but the PROFILE look
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
@@ -9765,12 +9994,20 @@ function scrTitle(){
   const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
-  w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
-  w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build the </span><span class="hr2">Perfect Golfer</span></h1>`));
+  // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
+  const returning=homeReturning();
+  if(returning){
+    w.appendChild(homePlayerHeader());
+  } else {
+    w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
+    w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build the </span><span class="hr2">Perfect Golfer</span></h1>`));
+  }
   // CS374: one big single-line headline - fit the text to fill the width so it reads large on any device
   // (Anton loads async / may fall back, so measure & scale rather than trust a fixed clamp).
-  scheduleFitHero();
-  w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
+  if(!returning){
+    scheduleFitHero();
+    w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
+  }
   // CS473: brand-new player (guest, no history, no auto sign-in) → a focused first-run path.
   const firstRun = isNewPlayer() && !LS.get('bag_onboard_done',false);
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
@@ -9889,7 +10126,7 @@ function scrTitle(){
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
-  const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
+  const credit=$(`<div class="small muted center" style="margin-top:11px;line-height:1.5;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
   add(w);
 }
@@ -22964,8 +23201,11 @@ function overlayTourPass(screen){
 function tourPassCard(){
   const ssn=passSeason(); let mid, badge=`<span class="gc-badge">S${ssn.n}</span>`;
   if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
-    mid=`Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
-    if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
+    // enhancement 1/2: lead with what's WAITING, and make the badge impossible to miss when it is
+    mid=cl>0
+      ? `Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · <b>${cl} reward${cl>1?'s':''} waiting</b>`
+      : `Tier ${tier}/${PASS_TIERS}${passProActive()?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left in the season`;
+    if(cl>0) badge=`<span class="gc-badge claim">${cl} to claim</span>`;
   } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
   const boostChip=xpBoostActive()?xpBoostChip():'';
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
