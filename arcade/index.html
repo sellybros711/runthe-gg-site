@@ -194,6 +194,34 @@
   .cta-links{display:flex; flex-direction:column; gap:6px; margin-top:12px; text-align:center;}
   .cta-links a{font-size:12px; font-weight:800; color:var(--mut);}
   .cta-links a:hover{color:var(--ink);}
+
+  /* Buy Arcade Card — arcade-cabinet banner: dark cabinet (screen + joystick +
+     sports balls) on the left, orange->red gradient with the pitch on the right */
+  .arcade-buy{display:block; width:100%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent;}
+  .ab-card{display:flex; align-items:stretch; overflow:hidden; border-radius:16px; min-height:96px;
+    background:linear-gradient(105deg,#FF9A2E 0%, #FF6A3D 48%, #F0384E 100%);
+    box-shadow:0 12px 28px -12px rgba(240,56,78,.65); transition:transform .12s ease, box-shadow .12s ease;}
+  .arcade-buy:hover .ab-card{transform:translateY(-2px); box-shadow:0 18px 36px -12px rgba(240,56,78,.85);}
+  .arcade-buy:active .ab-card{transform:translateY(0);}
+  /* left: cabinet (angled right edge juts into the gradient) */
+  .ab-cab{flex:0 0 90px; position:relative; padding:11px 10px 11px 9px; display:flex; flex-direction:column; gap:8px; justify-content:center;
+    background:linear-gradient(180deg,#16203a,#080d18); clip-path:polygon(0 0, 100% 0, 82% 50%, 100% 100%, 0 100%);}
+  .ab-screen{height:30px; border-radius:5px; background:#060a14; margin-right:12px;
+    background-image:radial-gradient(rgba(55,197,213,.85) 1px, transparent 1.5px); background-size:6px 6px;
+    border:1px solid #1f2c44; box-shadow:inset 0 0 8px rgba(0,0,0,.7);}
+  .ab-deck{display:flex; align-items:center; gap:5px; margin-right:12px;}
+  .ab-joy{position:relative; width:15px; height:26px; flex:0 0 auto;}
+  .ab-joy .shaft{position:absolute; left:50%; bottom:2px; width:4px; height:14px; transform:translateX(-50%); border-radius:2px; background:linear-gradient(#e7ecf3,#8b94a6);}
+  .ab-joy .ball{position:absolute; left:50%; bottom:14px; width:12px; height:12px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle at 35% 28%, #ff9a9a, #e11d2a 60%, #8f0e17); box-shadow:0 2px 4px rgba(0,0,0,.5);}
+  .ab-balls{font-size:14px; line-height:1; letter-spacing:1px;}
+  /* right: pitch + arrow */
+  .ab-body{flex:1; min-width:0; display:flex; align-items:center; gap:8px; padding:10px 12px 10px 4px;}
+  .ab-txt{flex:1; min-width:0; text-align:left;}
+  .ab-txt b{display:block; font-family:var(--f); font-weight:900; font-style:italic; font-size:20px; line-height:1; color:#1a1206; white-space:nowrap;}
+  .ab-txt small{display:block; font-size:11px; font-weight:800; color:rgba(26,18,6,.82); margin-top:5px; line-height:1.3;}
+  .ab-arrow{flex:0 0 auto; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:19px; color:#fff; background:#12161f; box-shadow:0 3px 8px rgba(0,0,0,.4); transition:background .12s;}
+  .arcade-buy:hover .ab-arrow{background:#0a0d14;}
+  @media (max-width:640px){ .ab-cab{flex-basis:84px;} .ab-txt b{font-size:19px;} .ab-txt small{font-size:10px;} }
   @media (max-width:640px){
     .hud-drop{border-bottom:0;}
     .hud-cta{padding-top:0; background:var(--card2);}
@@ -751,7 +779,19 @@
     if (hasCard()) {
       cta.innerHTML = '<a class="btn" href="/arcade/archive/">Play Archived Puzzles</a>';
     } else if (signed) {
-      cta.innerHTML = '<button class="btn" type="button" id="hudBuy">Buy Arcade Card</button>';
+      cta.innerHTML =
+        '<button class="arcade-buy" type="button" id="hudBuy" aria-label="Buy Arcade Card — unlimited plays, every past day unlocked">' +
+          '<span class="ab-card">' +
+            '<span class="ab-cab" aria-hidden="true">' +
+              '<span class="ab-screen"></span>' +
+              '<span class="ab-deck"><span class="ab-joy"><span class="ball"></span><span class="shaft"></span></span>' +
+              '<span class="ab-balls">🏀⚾🏈</span></span>' +
+            '</span>' +
+            '<span class="ab-body"><span class="ab-txt"><b>Arcade Card</b>' +
+              '<small>Unlimited plays. Every past day unlocked.</small></span>' +
+              '<span class="ab-arrow" aria-hidden="true">→</span></span>' +
+          '</span>' +
+        '</button>';
       var buy = document.getElementById('hudBuy');
       if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
     } else {
