@@ -270,14 +270,37 @@
   // RECOGNIZABILITY GATE: icons (f5) always qualify — Babe Ruth belongs in a
   // trivia game regardless of era. The auto-scraped fame-4 tier only qualifies
   // from 1960 onward: its pre-1960 names ("2 notable seasons" in the 1930s) are
-  // the "who is this?" pulls players kept running into. ~600 antiques drop;
-  // every pool stays deep (145 team buckets of 4+).
+  // the "who is this?" pulls players kept running into.
   function recog(e){ var f=e.f||0; if(f>=5) return true; if(f<4) return false;
     var d=e.decade; return !d || !d.length || d[0]>=1960; }
-  // teams -> recognisable members
+  // GRADUATED DIFFICULTY: rounds 1-3 draw from an icon-only warmup pool so the
+  // very first pull is always a softball; round 4+ opens up to the full
+  // recognizable pool. An "icon" is fame-5 always, plus fame-4 with real
+  // career credentials — a high-round draft pick or a listed award for NFL
+  // (raw fame-4 NFL is huge and noisy), and 8+ notable seasons for NBA/MLB.
+  function icon(e){
+    if(!TEAM_SPORTS[e.sport]) return false;
+    // Modern-era only — even f=5 pulls include Negro League HOFs (Oscar
+    // Charleston, Josh Gibson, Mule Suttles) whose team pools sit next to no
+    // one you'd recognize. Warmup should be names anyone active today knows.
+    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+    var f=e.f||0;
+    if(f>=5) return true;
+    if(f<4) return false;
+    if(e.sport==='NFL') return (e.hp===1) || (e.aw && e.aw.length>0);   // stars = high pick or awarded
+    return (e.ns||0)>=8;                                                 // 8+ notable seasons for NBA/MLB
+  }
+  // teams -> recognisable members (recog tier: for rounds 4+)
   var teams={}; ENT.forEach(function(e){ if(!TEAM_SPORTS[e.sport]||!recog(e)) return; (e.t||[]).forEach(function(t){ (teams[t]=teams[t]||[]).push(e); }); });
   var teamKeys=Object.keys(teams).filter(function(t){ return teams[t].length>=4; });
   var oddPool=ENT.filter(function(e){ return recog(e) && TEAM_SPORTS[e.sport]; });
+  // WARMUP tier — icon-gated. Team member arrays are sorted by fame desc so
+  // buildT(warmup) can pick the TOP FOUR from a team ("the four you know") vs
+  // any four the team ever rostered.
+  var teamsW={}; ENT.forEach(function(e){ if(!icon(e)) return; (e.t||[]).forEach(function(t){ (teamsW[t]=teamsW[t]||[]).push(e); }); });
+  Object.keys(teamsW).forEach(function(t){ teamsW[t].sort(function(a,b){ return (b.f||0)-(a.f||0) || (b.ns||0)-(a.ns||0); }); });
+  var teamKeysW=Object.keys(teamsW).filter(function(t){ return teamsW[t].length>=4; });
+  var oddPoolW=ENT.filter(icon);
 
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
   function famPlural(f){ return /man$/i.test(f) ? f.slice(0,-3)+'men' : f+'s'; }
@@ -339,12 +362,17 @@
   }
   // 't': four share a team. Prefer a SAME-SPORT odd (a real roster test — you
   // can't just spot the different sport); fall back to cross-sport if needed.
-  function buildT(){
-    var tk=teamKeys[ri(teamKeys.length)];
-    var four=shuffle(teams[tk]).slice(0,4);
+  // The warmup flag restricts to modern-star pools so round 1 stays a softball.
+  function buildT(warmup){
+    var TK=warmup?teamKeysW:teamKeys, TB=warmup?teamsW:teams, OP=warmup?oddPoolW:oddPool;
+    if(!TK.length) return null;
+    var tk=TK[ri(TK.length)];
+    // Warmup: take the top-fame four from the team (already sorted). Otherwise
+    // any four from the team pool, shuffled for variety.
+    var four = warmup ? TB[tk].slice(0,4) : shuffle(TB[tk]).slice(0,4);
     if(four.length<4) return null;
     var sport4=four[0].sport, odd=null;
-    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+    for(var tries=0;tries<90;tries++){ var cand=OP[ri(OP.length)];
       if((cand.t||[]).indexOf(tk)>=0) continue;
       if(four.some(function(f){return f.id===cand.id;})) continue;
       if(tries<55 && cand.sport!==sport4) continue;   // first pass: same sport only
@@ -391,13 +419,24 @@
     // Deterministic type schedule from the daily rng: every block of six is
     // t,?,t,?,t,? with p/d/h shuffled into the gaps — team rounds stay most
     // common (15 of 30) and two special rounds are never adjacent.
+    // Round 1 is always a TEAM round (biggest / most-recognizable pool of the
+    // four types) so the very first pull is always a softball for the player.
     var plan=[];
     while(plan.length<ROUNDS){ var sp3=shuffle(['p','d','h']); plan.push('t',sp3[0],'t',sp3[1],'t',sp3[2]); }
     plan=plan.slice(0,ROUNDS);
+    plan[0]='t';
+    // GRADUATED DIFFICULTY: the first three rounds draw from the warmup pool
+    // (modern-era stars only). p/d/h round-builders don't have a warmup pool
+    // yet — they only apply the warmup flag through buildT — so the schedule
+    // forces team rounds during the warmup window to keep the promise honest.
+    for(var w=0; w<3 && w<plan.length; w++) plan[w]='t';
+    function warmupFor(i){ return i<3; }                              // rounds 1-3
     var out=[], guard=0, slotTries=0;
     while(out.length<ROUNDS && guard<24000){ guard++;
-      var type=slotTries>200?'t':plan[out.length];   // if a slot's type keeps failing, fall back to a team round
-      var r = type==='p'?buildP() : type==='d'?buildD() : type==='h'?buildH() : buildT();
+      var i=out.length;
+      var type=slotTries>200?'t':plan[i];   // if a slot's type keeps failing, fall back to a team round
+      var wu=warmupFor(i);
+      var r = type==='p'?buildP() : type==='d'?buildD() : type==='h'?buildH() : buildT(wu);
       if(!r){ slotTries++; continue; }
       // never the same connection VALUE twice in a row (same team, same
       // position family, same decade, back-to-back HOF rounds, ...)
