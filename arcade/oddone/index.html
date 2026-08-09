@@ -251,7 +251,9 @@
   if(window.RTGHowto) RTGHowto.init('oddone');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var SAVE_KEY='rtg:oddone:v1', GAME='oddone', ROUNDS=30;
+  // Unlimited streak: soft cap of 200 rounds. Generator's own fairness /
+  // dedup guards yield gracefully long before that in practice.
+  var SAVE_KEY='rtg:oddone:v1', GAME='oddone', ROUNDS=200;
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
