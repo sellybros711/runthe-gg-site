@@ -78,7 +78,7 @@
   }
   button{font-family:inherit; color:inherit; cursor:pointer;}
   .hidden{display:none !important;}
-  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  :focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:4px;}
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
 
   /* ---------------- topbar (uniform across RunTheGrid games) ---------------- */
@@ -92,13 +92,13 @@
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
-  .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
+  .themeBtn:hover{color:var(--ink); border-color:var(--blue);}
   /* show the icon of the theme you'd switch TO */
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
   .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
-  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on{color:var(--blueT); border-color:var(--blue);}
   .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
   .helpBtn{font-weight:900; font-size:15px; line-height:1;}
   .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px;
@@ -140,7 +140,7 @@
   .dot.used{background:var(--red); border-color:var(--red);}
   .dot.pop{transform:scale(1.3);}
   .progress{margin-top:14px; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-  .progress b{color:var(--tealT); font-weight:900;}
+  .progress b{color:var(--blueT); font-weight:900;}
 
   /* ---------------- sidebar: actions ---------------- */
   .actionsCard{padding:14px; display:flex; flex-direction:column; gap:10px;}
@@ -155,7 +155,7 @@
   .abtn.gold .cost{color:rgba(255,255,255,.8);}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
-  .abtn.ghost:hover{border-color:var(--teal);}
+  .abtn.ghost:hover{border-color:var(--blue);}
   .abtn.arm{background:var(--red); color:#071426; border-color:transparent;}
   .abtn.arm .cost{color:rgba(7,20,38,.7);}
 
@@ -200,8 +200,8 @@
   .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
     border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
     box-shadow:var(--shadow); padding:9px 12px; transition:border-color .2s, background .3s;}
-  .lane.drop{border-color:var(--teal); background:var(--dropbg);}
-  .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
+  .lane.drop{border-color:var(--blue); background:var(--dropbg);}
+  .lane.drop .slot:not(.filled){border-color:var(--blue); background:rgba(47,107,255,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
@@ -225,8 +225,8 @@
     padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
   .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
   .pool-h .shufbtn{margin-left:auto; display:inline-flex; align-items:center; gap:5px;}
-  .pool-h .shufbtn:hover{color:var(--tealT); border-color:var(--teal);}
-  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
+  .pool-h .shufbtn:hover{color:var(--blueT); border-color:var(--blue);}
+  .checkbtn{appearance:none; border:0; background:var(--blue); color:#071426; font-weight:900; font-size:12.5px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
@@ -243,9 +243,9 @@
     overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
     user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
   .tile .tn{display:block; width:100%;}
-  .tile:hover{border-color:rgba(55,197,213,.55);}
+  .tile:hover{border-color:rgba(47,107,255,.55);}
   .tile:active{cursor:grabbing;}
-  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
+  .tile.sel{border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,107,255,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}
   .tile.solvefill{background:transparent; color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
@@ -256,11 +256,11 @@
   /* ---------------- pool ---------------- */
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
-  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--blueT);}
   .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
   .pool .tile{min-height:62px; font-size:12.5px;}
   .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
-  .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
+  .pool.drop{outline:2px dashed var(--blue); outline-offset:4px; border-radius:var(--r-md);}
 
   /* ---------------- modals ---------------- */
   .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center;
@@ -288,7 +288,7 @@
     font-weight:800; font-size:13px; border-radius:var(--r-md); padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
     gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
   .btn:active{transform:translateY(1px);}
-  .btn:hover{border-color:var(--teal);}
+  .btn:hover{border-color:var(--blue);}
   .btn.primary{background:var(--blue); color:#fff; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
   .btn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
@@ -372,7 +372,7 @@
     .mstatus .mdots .dots{margin-top:4px;}
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
-    .mstatus .mprog b{color:var(--tealT);}
+    .mstatus .mprog b{color:var(--blueT);}
     .lane{display:block;}
     .lane-head{margin-bottom:8px;}
     .lane-note{margin-top:9px;}
@@ -409,7 +409,7 @@
 
   /* scoreboard section-header bars */
   .pool-h{ align-items:center; background:color-mix(in srgb, var(--ink) 9%, var(--card));
-    border:2px solid var(--line2); border-left:6px solid var(--teal); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
+    border:2px solid var(--line2); border-left:6px solid var(--blue); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
   .pool-h.groups-h{ border-left-color:var(--gold); }
   .pool-h .t{ font-size:16px; letter-spacing:.05em; }
 
@@ -453,7 +453,7 @@
     </div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--teal)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--blue)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
 
   <div class="app">
     <main class="gameCol">
