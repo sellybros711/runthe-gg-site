@@ -878,7 +878,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });

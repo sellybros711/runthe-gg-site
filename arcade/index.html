@@ -654,6 +654,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -712,11 +713,36 @@
   (function(){
     var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH'), mx=document.getElementById('coinMax');
     if(!TOK){ return; }
-    if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; if(mx) mx.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
-    var rem=TOK.remaining();
+    var card = TOK.isPro && TOK.isPro(), testing = TOK.testing && TOK.testing();
+    if(card || testing){ val.textContent='∞'; if(mx) mx.remove(); chip.setAttribute('title', card?'Arcade Card · unlimited plays':'Testing · unlimited plays'); return; }
+    var rem=TOK.remaining(), cap=(TOK.cap?TOK.cap():TOK.DAILY);
+    var signedIn = TOK.signedIn && TOK.signedIn();
     val.textContent = rem;
-    if(mx) mx.textContent = '/'+TOK.DAILY;
+    if(mx) mx.textContent = '/'+cap;
+    chip.setAttribute('title', signedIn ? (rem+' of '+cap+' daily plays left') : (rem===1?'1 free play today':(rem+' free plays left today')));
     if(rem<=0){ chip.style.color='var(--mut)'; }
+  })();
+
+  // Gate entry to a game when out of plays. Intent to play another game is the
+  // primary paywall/conversion trigger: a guest with 0 left -> "create account",
+  // a signed-in free user with 0 left -> Arcade Card paywall. Card/testing =
+  // unlimited. A game already started today stays enterable (resume/finish it).
+  (function(){
+    if(!TOK) return;
+    function unlimited(){ return (TOK.isPro&&TOK.isPro()) || (TOK.testing&&TOK.testing()); }
+    var links = [].slice.call(document.querySelectorAll('a.tile[href^="/arcade/"]'));
+    var keep = document.getElementById('ctaKeep'); if(keep) links.push(keep);
+    links.forEach(function(a){
+      a.addEventListener('click', function(e){
+        if(unlimited()) return;
+        var m=(a.getAttribute('href')||'').match(/\/arcade\/([a-z]+)\//); var game=m&&m[1];
+        var already = game && TOK.playsOf && TOK.playsOf(game)>0;   // resume/replay their own started game
+        if((TOK.remaining&&TOK.remaining()>0) || already) return;
+        e.preventDefault();
+        if(window.RTGCard) RTGCard.wall();
+        else if(window.RTGAuthUI) RTGAuthUI.open('signup');
+      });
+    });
   })();
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
   var best = parseInt(g('grid_best_streak', '0'), 10) || 0;

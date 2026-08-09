@@ -218,8 +218,30 @@
     });
   }
 
+  // The right "you can't play" surface for the current tier: a guest gets the
+  // create-account conversion; a signed-in free user gets the Arcade Card paywall.
+  function wall(){ if(signedIn()) paywall({ reason:'out' }); else guestConvert(); }
+
+  // Server-side authorization for a ranked play (anti-bypass). For a signed-in
+  // free user it spends one server token (the source of truth); resolves
+  // {ok:false} only when the server says they're genuinely out (e.g. localStorage
+  // was cleared to fake more plays). Guests, Arcade Card members, offline, and
+  // testing all resolve {ok:true} (the client wallet / entitlement governs those).
+  function authorizePlay(){
+    try{
+      if(window.RTGTokens && (RTGTokens.testing && RTGTokens.testing() || RTGTokens.hasCard && RTGTokens.hasCard())) return Promise.resolve({ok:true});
+      if(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn() && window.RTG_BOARD && RTG_BOARD.spendToken){
+        return RTG_BOARD.spendToken().then(function(res){
+          if(res && res.ok===false) return { ok:false, remaining:(res.remaining||0) };
+          return { ok:true, remaining:(res && res.remaining) };
+        }).catch(function(){ return { ok:true }; });   // fail-open: client wallet still enforces
+      }
+    }catch(e){}
+    return Promise.resolve({ok:true});
+  }
+
   function init(){ injectStyles(); watchAuth();
-    window.RTGCard = { paywall: paywall, guestConvert: guestConvert, checkout: startCheckout, portal: portal, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
+    window.RTGCard = { paywall: paywall, guestConvert: guestConvert, wall: wall, checkout: startCheckout, portal: portal, authorizePlay: authorizePlay, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
