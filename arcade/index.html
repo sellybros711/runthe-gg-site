@@ -875,17 +875,14 @@
       card.classList.add('unplayed');
       st.className = 'status ready';
     }
-    var left = triesLeft(key);
-    if (!done) {
-      play.innerHTML = 'PLAY' + ARW;
-    } else if (hasCard()) {
+    if (done && hasCard()) {
       // Cardholder: a finished game becomes the entry to its archive calendar.
       play.innerHTML = 'ARCHIVE' + ARW;
       card.classList.add('archive'); card.setAttribute('data-arch', key);
-    } else if (TOK && left > 0) {
-      play.innerHTML = 'PLAY AGAIN' + ARW;   // free with plays left: replay today
     } else {
-      play.innerHTML = '✓ DONE';             // free: come back tomorrow
+      // Free users always see PLAY (the game page's intro handles tokens /
+      // out-of-plays); cardholders who haven't played yet see PLAY too.
+      play.innerHTML = 'PLAY' + ARW;
     }
   }
   function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }
