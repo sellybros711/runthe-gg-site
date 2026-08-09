@@ -28,9 +28,10 @@ homepage — same as `/touchdown/` while it's in development.
 | **Daily Match** | `/arcade/match/` | Playable prototype |
 | **Daily Crossword** | `/arcade/crossword/` | Planned |
 
-Coins are a shared RunTheGrid wallet (`runthegrid_coins`); each game keeps its
-own streak (`grid_match_streak`, etc.). In the prototype these live in
-localStorage; the real build reads the shared RunThe.GG account.
+There is no coin economy — the arcade is about building the longest daily
+streak (NYT-style). Each game keeps its own streak (`grid_match_streak`, etc.);
+in the prototype these live in localStorage, and the real build reads the
+shared RunThe.GG account.
 
 ---
 
