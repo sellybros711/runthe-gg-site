@@ -475,15 +475,26 @@ window.GA_ID='G-L29P5MRWKE';
      Full bleed rather than boxed, because a bar with rounded corners floating a
      few pixels off the bottom edge reads as a dialog. The radius and the side
      borders go; a single top border is what separates it from the page. */
-  .ticker{position:fixed;left:0;right:0;bottom:var(--adstrip,0px);z-index:30;
+  .ticker{position:fixed;left:0;right:0;bottom:0;z-index:30;
     display:flex;align-items:stretch;overflow:hidden;
-    background:linear-gradient(180deg,#141b28,#0b1019);border-top:1px solid var(--line)}
+    background:linear-gradient(180deg,#141b28,#0b1019);border-top:1px solid var(--line);
+    /* The BAR reaches the true bottom edge; its CONTENTS stop above the home
+       indicator. Insetting the whole element instead would leave a strip of page
+       showing under it, which is the floating look this is avoiding. */
+    padding-bottom:env(safe-area-inset-bottom,0px)}
   /* Without this the attribute loses to the display rule above, and an empty bar
      sits along the bottom edge for as long as the player data takes to land. */
   .ticker[hidden]{display:none}
-  /* On a phone --adstrip already carries the home-indicator inset. Above 1200px it
-     is zero, and a tablet in a desktop layout still has one. */
-  @media(min-width:1200px){ .ticker{padding-bottom:env(safe-area-inset-bottom,0px)} }
+  /* ONLY STEP UP FOR AN AD THAT IS ACTUALLY THERE.
+     --adstrip is reserved space, and reserved is not the same as occupied: the
+     units still carry placeholder slot ids, and an ad blocker is the common case
+     besides, so on nearly every phone today that 54px is empty. Sitting on top of
+     it left the bar hovering a finger's width off the bottom of the screen with
+     nothing underneath, which reads as a mistake rather than as a lower third.
+     The strip already tells us when it is genuinely serving, because it uses the
+     same test to decide whether to paint its own background. */
+  body:has(.rtp-ad-mobile-bottom ins[data-ad-status="filled"]) .ticker{
+    bottom:var(--adstrip,0px);padding-bottom:0}
   /* The last thing on the front page has to clear a bar that is no longer in the
      flow. Measured, not guessed: see test_ticker.mjs. */
   #s-intro{padding-bottom:var(--tickerh,33px)}

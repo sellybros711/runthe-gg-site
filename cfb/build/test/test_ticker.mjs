@@ -77,9 +77,13 @@ for (const [label, vp] of [['phone 390', { width: 390, height: 844 }],
      still reports position:fixed; only the rectangle gives it away. */
   ok('and its rectangle is actually on screen', m.top >= 0 && m.bottom <= m.vh + 1,
     'top ' + m.top.toFixed(1) + ', bottom ' + m.bottom.toFixed(1) + ' of ' + m.vh);
-  ok('it sits directly above whatever the ad strip owns',
-    Math.abs((m.vh - m.adPx) - m.bottom) <= 1,
-    'bottom ' + m.bottom.toFixed(1) + ', expected ' + (m.vh - m.adPx) + ' (--adstrip ' + m.strip + ')');
+  /* FLUSH TO THE EDGE WHILE THE AD SLOT IS EMPTY, which is nearly always: the
+     units still carry placeholder slot ids and an ad blocker is the common case.
+     --adstrip is space RESERVED for an ad, and sitting on top of reserved-but-empty
+     space left the bar hovering a finger's width off the bottom of the screen. */
+  ok('it is flush with the bottom edge while no ad is serving',
+    Math.abs(m.vh - m.bottom) <= 1,
+    'bottom ' + m.bottom.toFixed(1) + ' of ' + m.vh + ' (--adstrip ' + m.strip + ' reserved but empty)');
   ok('it spans the full width', m.left <= 0.5 && m.right >= m.vw - 0.5,
     m.left.toFixed(1) + '..' + m.right.toFixed(1) + ' of ' + m.vw);
   ok('it is under the ad strip, the rails and the sheets', m.z < 40, 'z ' + m.z);
@@ -101,6 +105,32 @@ for (const [label, vp] of [['phone 390', { width: 390, height: 844 }],
     return out;
   });
   ok('nothing on the page ends up behind it', clear.length === 0, clear.join('; '));
+
+  /* AND IT GETS OUT OF THE WAY OF AN AD THAT IS GENUINELY THERE. Nothing serves in
+     a test, so the state is staged the way AdSense stages it: the strip stamps
+     data-ad-status="filled" on its <ins>, which is the same signal the strip uses
+     to decide whether to paint its own background. Below 1200px only, because
+     that is the only width where the strip exists at all. */
+  const stepped = await p.evaluate(() => {
+    const ins = document.querySelector('.rtp-ad-mobile-bottom ins');
+    if (!ins) return null;
+    ins.setAttribute('data-ad-status', 'filled');
+    const t = document.getElementById('h-ticker').getBoundingClientRect();
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;height:var(--adstrip,0px);visibility:hidden';
+    document.body.appendChild(probe);
+    const adPx = probe.getBoundingClientRect().height;
+    probe.remove();
+    ins.removeAttribute('data-ad-status');
+    return { bottom: t.bottom, want: innerHeight - adPx, adPx };
+  });
+  if (stepped === null) {
+    ok('no mobile ad strip at this width, so nothing to step over', m.adPx === 0, 'adstrip ' + m.adPx);
+  } else {
+    ok('it steps up over an ad that is actually serving',
+      Math.abs(stepped.want - stepped.bottom) <= 1,
+      'bottom ' + stepped.bottom.toFixed(1) + ', expected ' + stepped.want + ' (ad ' + stepped.adPx + 'px)');
+  }
 
   ok('nothing logged', p.errs.length === 0, p.errs.slice(0, 3).join(' | '));
   await p.screenshot({ path: SS + 'ticker_' + label.split(' ')[0] + '.png' });
