@@ -556,7 +556,10 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.03em; text-transform:uppercase; position:relative; white-space:nowrap}
   .botnav button .ic{width:22px; height:22px}
   /* unclaimed-reward indicator: a red dot at the top-right of a nav tab's icon (free pack → Pro Shop, new items → Profile) */
-  .botnav button .navdot{position:absolute; top:4px; left:50%; transform:translateX(6px); width:9px; height:9px;
+  /* positioned with `left`, NOT transform:translateX - see the CS472/CS516 note below: nothing in the
+     fixed bar's subtree may carry a transform in any state, and these dots are added/removed on every
+     render, so a transform here was a live compositing change inside the bar on every navigation. */
+  .botnav button .navdot{position:absolute; top:4px; left:calc(50% + 6px); width:9px; height:9px;
     border-radius:50%; background:#e2554e; border:1.5px solid #04160b; box-shadow:0 0 5px rgba(226,85,78,.9)}
   .botnav button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   /* CS439: hide by sliding OFF-SCREEN (+ visibility/pointer-events) instead of display:none. display:none
@@ -569,7 +572,9 @@ window.GA_ID='G-L29P5MRWKE';
      transform from the shown state; this removes the last one so NO state ever transforms the fixed bar. */
   .botnav.navhide{bottom:-140px; visibility:hidden; pointer-events:none}
   .botnav button.on{color:var(--gold)}
-  .botnav button:active{transform:translateY(1px)}
+  /* press feedback WITHOUT a transform (see the note above) - a transform anywhere in the fixed
+     bar's subtree is what has repeatedly detached it from the viewport on iOS. */
+  .botnav button:active{opacity:.58}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
   /* Raised gold centre button: the Tour Pass. Lifted with `top`, never a transform on the fixed bar's
      own layer (see the CS472/CS516 note above); the disc overflows upward out of the bar. */
@@ -582,7 +587,7 @@ window.GA_ID='G-L29P5MRWKE';
   .navfab .nf-lab{font:800 10px/1 var(--body); letter-spacing:.03em; text-transform:uppercase}
   .navfab.on{color:var(--gold)!important}
   .navfab.on .nf-disc{box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 2px var(--gold), 0 0 22px -1px rgba(241,208,74,.75)}
-  .navfab .navdot{top:-1px!important; left:auto!important; right:6px; transform:none!important}
+  .navfab .navdot{top:-1px!important; left:auto!important; right:6px}
   @media (max-width:359px){ .navfab{width:58px} .navfab .nf-disc{width:44px;height:44px} .navfab .nf-disc .ic{width:23px;height:23px} }
   #app.has-botnav{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
   /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
@@ -2037,6 +2042,53 @@ window.GA_ID='G-L29P5MRWKE';
     align-items:center; justify-content:center; gap:1px 4px; line-height:1.5}
   .footlinks>*{padding:5px 2px}
   .footlinks>*+*::before{content:'·'; margin-right:6px; opacity:.45}
+
+  /* ══ MOTION ═══════════════════════════════════════════════════════════════════════════════════
+     Every interaction rebuilds #app, which used to land as a hard cut (and, because the document
+     height collapses to nothing mid-rebuild, a scroll jump). render() now holds the page height
+     across the swap and flags a REAL navigation with #app.vnew, so these run on a screen change or
+     a tab switch but NEVER on the many same-view re-renders (the live season sim, async board
+     loads, the daily shot reveal) where an animation would be strobing.
+     Deliberately OPACITY-ONLY on .screen and .ov: both are ancestors of position:fixed children
+     (the round + team-cup control bars) and of the player card's preserve-3d flip, and a transform
+     on either would re-break those for the length of the animation. The rise is applied to menu
+     CONTAINERS that hold neither. */
+  @keyframes rttFade{from{opacity:0}to{opacity:1}}
+  @keyframes rttRise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  #app.vnew .screen{animation:rttFade .19s ease-out both}
+  #app.vnew .ov{animation:rttFade .17s ease-out both}
+  #app.vnew .stack>*{animation:rttRise .3s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .stack>*:nth-child(2){animation-delay:.045s}
+  #app.vnew .stack>*:nth-child(3){animation-delay:.09s}
+  #app.vnew .stack>*:nth-child(4){animation-delay:.13s}
+  #app.vnew .stack>*:nth-child(5){animation-delay:.165s}
+  #app.vnew .stack>*:nth-child(n+6){animation-delay:.19s}
+  #app.vnew .homehdr,#app.vnew .titlewrap>.hero,#app.vnew .titlewrap>.herotag{animation:rttRise .28s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini{animation:rttRise .3s .12s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .sgrid>*{animation:rttRise .26s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .sgrid>*:nth-child(n+4){animation-delay:.04s}
+  #app.vnew .sgrid>*:nth-child(n+7){animation-delay:.08s}
+  #app.vnew .ov h3,#app.vnew .ov>.tag{animation:rttRise .3s .04s cubic-bezier(.22,.85,.3,1) both}
+  /* press + hover feedback: without a transition every tap reads as a hard snap */
+  .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn,.stile,.catchip,.segrow button,
+  .hschip,.pill,.lbtab,.lbwin,.lbsort,.lbdir,.accchip,.navtile,.sp-opt{
+    transition:transform .11s cubic-bezier(.22,.85,.3,1), filter .15s ease, background-color .17s ease,
+      border-color .17s ease, box-shadow .2s ease, opacity .17s ease}
+  .btn:active{transform:translateY(1px)}
+  .stile:active,.catchip:active,.segrow button:active,.hschip:active,.pill:active{transform:translateY(1px)}
+  @media (hover:hover){
+    .gcard:hover,.resumecard:hover{transform:translateY(-2px); filter:brightness(1.04)}
+    .navtile:hover,.homedrop:hover{transform:translateY(-2px)}
+    .stile:hover{transform:translateY(-1px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #app.vnew .screen,#app.vnew .ov,#app.vnew .stack>*,#app.vnew .homehdr,#app.vnew .titlewrap>.hero,
+    #app.vnew .titlewrap>.herotag,#app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini,
+    #app.vnew .sgrid>*,#app.vnew .ov h3,#app.vnew .ov>.tag{animation:none}
+    .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn,.stile,.catchip,.segrow button,
+    .hschip,.pill,.sp-opt{transition:none}
+    @media (hover:hover){ .gcard:hover,.resumecard:hover,.navtile:hover,.homedrop:hover,.stile:hover{transform:none} }
+  }
 
   @media (max-width:480px){ .wordmark{font-size:32px} .crest{width:52px;height:62px} .crestrow{gap:12px} }
   @media (max-width:380px){ .wordmark{font-size:27px} }
@@ -7868,6 +7920,7 @@ function footer(){
 }
 
 let _lastView=null;
+let _lastAnim=null, _vnewT=null, _ovBgY=0;   // like _lastView but also tracks in-screen tab state, so a tab switch animates too
 let _rendering=false;
 function render(){
   // Re-entrancy guard: some async loaders (lbLoad/crLoad/dbLoad) call render() to refresh, and when
@@ -7887,6 +7940,35 @@ function render(){
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
   const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent)+'|'+(S.recapYear==null?'':S.recapYear);
   const sameView=(view===_lastView);
+  // Opening an overlay is a view change, so the page behind it was being scrolled to the top - which you
+  // only saw on the way OUT, as a jump back to the top of the screen you had been reading. Remember where
+  // the background was and put it back when the overlay closes onto the same screen.
+  const _pv=(_lastView||'').split('|');
+  if(!_pv[1] && S.overlay) _ovBgY=savedY;                                   // opening: stash the background scroll
+  const closingOv = !!_pv[1] && !S.overlay && _pv[0]===S.screen;            // closing back onto the same screen
+  // ── the "jumping" fix ────────────────────────────────────────────────────────────────────────
+  // Rebuilding #app empties it, so for one frame the document has no height, the browser CLAMPS the
+  // scroll position to the (now tiny) maximum, and the scrollTo() at the bottom of this function
+  // pulls it back - that clamp-then-restore is the jump you see on every tap. Hold the page's
+  // current height across the swap so the scroll position is never clamped, then release it on the
+  // next frame (once the new content has laid out and the scroll is restored).
+  // Only on a same-view rebuild: a real navigation scrolls to top anyway, and holding a tall old
+  // page there would just delay the new (shorter) one settling. Skipped while the draft-spin
+  // reservation owns min-height (reveal() sets it for its own reason).
+  let heldH=0;
+  if(sameView && !app.style.minHeight){
+    const h=app.offsetHeight;
+    if(h>0){ heldH=h; app.style.minHeight=h+'px'; }
+  }
+  // Animate on a REAL navigation (screen/overlay) or a tab switch inside a screen, never on the
+  // many same-view re-renders (live season sim, async leaderboard loads, the daily shot reveal).
+  const animKey=view+'|'+[S.shopSec,S.shopCat,S.shopDrop,S.summaryTab,S.statsTab,S.lbTab,S.lbSort,S.lbWindow,
+    S.profileTab,S.crTab,S.setupCat,S.setupSec,S.h2hTab].map(v=>v==null?'':v).join('~');
+  const newView=(animKey!==_lastAnim); _lastAnim=animKey;
+  // Held on a timer rather than cleared by the next render: several overlays (leaderboard, course
+  // records) kick an async loader that re-renders the SAME view a beat later, which would otherwise
+  // strip the flag and kill the animation before it was ever seen.
+  if(newView){ app.classList.add('vnew'); clearTimeout(_vnewT); _vnewT=setTimeout(()=>{ try{ app.classList.remove('vnew'); }catch(e){} }, 420); }
   app.innerHTML='';
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
@@ -8024,7 +8106,12 @@ function render(){
   // leaderboard loads); only jump to top when the view actually changes.
   const nowOv=app.querySelector('.ov');
   if(nowOv && sameView) nowOv.scrollTop=savedOvY;   // restore the overlay's own scroll position
-  window.scrollTo({top: sameView ? savedY : 0});
+  window.scrollTo({top: sameView ? savedY : (closingOv ? _ovBgY : 0)});
+  // release the height hold once the new content has laid out and the scroll is back where it was
+  if(heldH){ const want=heldH+'px'; requestAnimationFrame(()=>{ if(app.style.minHeight===want) app.style.minHeight=''; }); }
+  // re-apply once the new content has laid out (an avatar/course image landing can shift the page a
+  // little after the first scrollTo), so closing an overlay puts you back exactly where you were
+  if(closingOv){ const y=_ovBgY; requestAnimationFrame(()=>{ if(Math.abs(window.scrollY-y)>2) window.scrollTo({top:y}); }); }
   } finally { _rendering=false; }
 }
 // CS304: persistent bottom tab nav (Home / Career / Daily / Online / Leaderboard) for one-tap hub
@@ -8069,26 +8156,53 @@ function bottomNav(){
 // we WATCH the shown bar's real on-screen position while the page scrolls and, if it sits away from the
 // viewport bottom on two consecutive checks, force a re-anchor (detach the layer for one frame - the same
 // thing the user's hard refresh was doing, automatically and invisibly).
-let _navBadN=0, _navPingRAF=null, _navSettleT=null;
+let _navBadN=0, _navPingRAF=null, _navSettleT=null, _navPoll=null;
 function navReanchor(nav){
   _navBadN=0;
+  // detach the fixed layer for one frame - exactly what a hard refresh was doing, automatically
   nav.style.display='none'; void nav.offsetHeight; nav.style.display='';
 }
+// The bar MUST sit on the bottom of the visible viewport. Rather than trust any one theory about
+// which viewport iOS anchors position:fixed to (it has differed across the versions this bug has
+// recurred on), measure the bar's REAL on-screen position every time anything could have moved it
+// and correct it. Ground truth, no guessing.
 function navWatchdog(nav){
   const check=()=>{ _navPingRAF=null;
     try{
       if(!nav.isConnected || nav.classList.contains('navhide')){ _navBadN=0; return; }
+      if(document.hidden) return;
       const vv=window.visualViewport;
       if(vv && vv.scale && Math.abs(vv.scale-1)>0.05){ _navBadN=0; return; }   // pinch-zoomed: rects lie, skip
-      const drift=Math.abs(nav.getBoundingClientRect().bottom - window.innerHeight);
-      if(drift>30){ if(++_navBadN>=2) navReanchor(nav); }
+      // the bottom of what the user can actually see (visualViewport when the URL bar / keyboard
+      // is eating part of the window, else the window itself)
+      const seenBottom = (vv ? (vv.offsetTop + vv.height) : window.innerHeight);
+      const drift = nav.getBoundingClientRect().bottom - seenBottom;
+      const off = Math.abs(drift);
+      // a big jump is unambiguous - fix it on the first look; a small one waits for a second
+      // reading so a mid-rubber-band measurement can't cause a needless reflow
+      if(off>10){ _navBadN++; if(off>40 || _navBadN>=2) navReanchor(nav); }
       else _navBadN=0;
     }catch(e){}
   };
   const ping=()=>{ if(_navPingRAF==null) _navPingRAF=requestAnimationFrame(check);
-    clearTimeout(_navSettleT); _navSettleT=setTimeout(check, 240); };   // late check catches post-momentum stuck state
+    clearTimeout(_navSettleT); _navSettleT=setTimeout(check, 220); };   // late check catches the post-momentum stuck state
+  // every way the bar has ever been observed to come loose: scrolling + momentum, the URL bar
+  // collapsing, the keyboard, rotation, returning from the background / bfcache, and an overlay
+  // releasing the body scroll lock
   addEventListener('scroll', ping, {passive:true});
   addEventListener('touchmove', ping, {passive:true});
+  addEventListener('touchend', ping, {passive:true});
+  addEventListener('orientationchange', ping);
+  addEventListener('resize', ping, {passive:true});
+  addEventListener('pageshow', ping);
+  addEventListener('focusin', ping); addEventListener('focusout', ping);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) ping(); });
+  try{ const vv=window.visualViewport;
+    if(vv){ vv.addEventListener('resize', ping); vv.addEventListener('scroll', ping); } }catch(e){}
+  // ...and a cheap safety net, so even a cause we have not seen yet self-corrects within a second
+  // instead of needing the hard refresh the owner has been doing.
+  clearInterval(_navPoll);
+  _navPoll=setInterval(()=>{ if(!document.hidden) check(); }, 900);
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
