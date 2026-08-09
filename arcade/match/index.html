@@ -631,20 +631,13 @@
     var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
     var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
 
-    // ---- tester mode: unlimited plays + fresh boards (for RunnyJ / CSel8) ----
-    // Enable with ?test=1 (persists); disable with ?test=0. Site is hidden, so
-    // only people with the link get it. Tester plays don't touch streak/coins.
-    var TESTER = (function () {
-      try {
-        var q = new URLSearchParams(location.search);
-        if (q.has('test') || q.has('tester')) {
-          var on = (q.get('test') || q.get('tester') || '1') !== '0';
-          LS.setItem('grid_tester', on ? '1' : '');
-        }
-        return LS.getItem('grid_tester') === '1';
-      } catch (e) { return false; }
-    })();
-    var boardNo = 0;                                   // which tester board we're on
+    // ---- tester mode: removed for public launch ----
+    // The old ?test=1 backdoor gave unlimited plays + fresh boards. It's now
+    // permanently off (entitlement is the real Arcade Card). Any stale flag from
+    // a prior tester session is cleared so nobody keeps unlimited access.
+    var TESTER = false;
+    try { LS.removeItem('grid_tester'); } catch (e) {}
+    var boardNo = 0;                                   // (unused now TESTER is off)
     // First (ranked) play uses the deterministic daily seed so everyone gets the
     // same board for the leaderboard. Replays reseed randomly for a fresh board.
     var servedDaily = false;                           // true once the daily board has been served this session
