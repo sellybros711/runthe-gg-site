@@ -175,7 +175,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--gold)"><span class="a-gametitle__plate">Alma <b>Mater</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--goldT)"><span class="a-gametitle__plate">Alma <b>Mater</b></span></div>
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
@@ -318,22 +318,60 @@
   }
   // Progressive difficulty among RECOGNISABLE names only. Fame Rule A: NFL is a
   // deep, noisy pool, so it needs a higher bar (f>=4) than NBA/MLB (f>=3); every
-  // name below that is a coin-flip nobody knows, so it's dropped entirely. Within
-  // the survivors the run eases from icons (f5) to stars (f4) to solid (f3).
-  // Each athlete appears at most once per day.
-  function buildRounds(){
-    var easy=[], med=[], hard=[];
+  // name below that is a coin-flip nobody knows, so it's dropped entirely.
+  function eligiblePool(){
+    var out=[];
     POOL.forEach(function(p){
       if(SPORTFILTER && p.sport!==SPORTFILTER) return;
       if((p.f||0) < (p.sport==='NFL'?4:3)) return;
-      (p.f>=5?easy:(p.f>=4?med:hard)).push(p);
+      out.push(p);
     });
-    easy=shuffle(easy); med=shuffle(med); hard=shuffle(hard);
-    var seq=[], picked={};
-    function take(list,n){ var c=0; for(var i=0;i<list.length && c<n;i++){ var p=list[i], k=p.name+'|'+p.sport; if(picked[k]) continue; picked[k]=1; seq.push(p); c++; } }
-    take(easy,10); take(med,8); take(hard,ROUNDS);
-    if(seq.length<ROUNDS) take(shuffle(easy.concat(med, hard)), ROUNDS);
-    return seq.slice(0,ROUNDS).map(makeRound);
+    return out;
+  }
+  // DECK-WALK: an independent shuffle every day kept re-rolling the same
+  // familiar names. Instead the whole eligible pool is laid out once as a
+  // fixed shuffled deck (seed has no date in it) and each date deals the NEXT
+  // 25 cards, so consecutive days can't share a player until the deck wraps
+  // (~two months at today's pool size) and every archived day is a distinct
+  // hand. Replays deal only cards not yet seen today (tracked per date), so
+  // "Play again" can't re-serve this morning's names either.
+  function deckFor(){
+    var a=eligiblePool();
+    var dr=mulberry32(xmur3('alma-deck-v1-'+MODE)());
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(dr()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function dayIndex(){
+    var launch=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-07-22';
+    var n=Math.floor((Date.parse(DATE)-Date.parse(launch))/864e5);
+    return isNaN(n)?0:Math.max(0,n);
+  }
+  function seenKey(){ return 'rtg:alma:seen:'+MODE+':'+DATE; }
+  function getSeen(){ try{ return JSON.parse(LS.getItem(seenKey())||'[]')||[]; }catch(e){ return []; } }
+  function addSeen(list){ try{ var s=getSeen(), h={}; s.forEach(function(k){ h[k]=1; });
+    list.forEach(function(p){ var k=p.name+'|'+p.sport; if(!h[k]){ h[k]=1; s.push(k); } });
+    LS.setItem(seenKey(), JSON.stringify(s)); }catch(e){} }
+  // daily=true deals today's deterministic hand (same for everyone; resume-safe);
+  // daily=false is a practice replay drawn from the cards not yet seen today.
+  function buildRounds(daily){
+    var deck=deckFor();
+    if(!deck.length) return [];
+    var seq=[];
+    if(daily){
+      var start=(dayIndex()*ROUNDS)%deck.length;
+      for(var i=0;i<ROUNDS && i<deck.length;i++) seq.push(deck[(start+i)%deck.length]);
+      // ease in: icons (f5) before stars (f4) before solid (f3); order within a
+      // tier keeps the deck's day-to-day variety
+      seq.sort(function(a,b){ return (b.f||0)-(a.f||0); });
+    } else {
+      var seen={}; getSeen().forEach(function(k){ seen[k]=1; });
+      var fresh=deck.filter(function(p){ return !seen[p.name+'|'+p.sport]; });
+      if(fresh.length<ROUNDS){ fresh=deck; try{ LS.removeItem(seenKey()); }catch(e){} }   // whole deck seen today — start the cycle over
+      fresh=shuffle(fresh);   // replay rng: a fresh random order each time
+      seq=fresh.slice(0,ROUNDS);
+    }
+    addSeen(seq);
+    return seq.map(makeRound);
   }
   var SEQ = [];   // built per-mode in startWith()/beginAttempt()
 
@@ -376,7 +414,7 @@
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
-    if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
+    if(isReplay){ seedRandom(); SEQ=buildRounds(false); } else { seedDaily(); SEQ=buildRounds(true); servedDaily=true; }
     idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     document.getElementById('runN').textContent='0';
     document.getElementById('subprompt').textContent='';
@@ -388,7 +426,7 @@
   // fast-forward to the saved position without re-charging a token or replaying
   // animations. Rounds before idx are skipped — SEQ is deterministic.
   function resumeAttempt(r){
-    seedDaily(); SEQ=buildRounds(); servedDaily=true;
+    seedDaily(); SEQ=buildRounds(true); servedDaily=true;
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
     run=Math.max(0, r.run|0);
     done=false; busy=false; charged=true; attemptFirst=true; started=true;
@@ -561,7 +599,7 @@
       return;
     }
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';   // re-enable if a prior mode was locked
-    seedDaily(); SEQ=buildRounds();   // deterministic board for locked/resume preview
+    seedDaily(); SEQ=buildRounds(true);   // deterministic board for locked/resume preview
     // A mid-run snapshot from TODAY, token already spent (playsOf>0) but the run
     // never finished (lastDone!==DATE) → resume instead of lockout/replay.
     var RES=loadResume();

@@ -195,7 +195,10 @@
     .a-gametitle{grid-area:title; margin:2px 0 10px;}
     .prompt{grid-area:pr;}
     .ladder{grid-area:lad;}
-    .playzone{grid-area:play; min-height:calc(100dvh - 250px);}
+    /* don't stretch the cards to the full viewport — a pair of ~“trading card”
+       panels reads far better than two near-empty walls on a tall monitor */
+    .playzone{grid-area:play; min-height:0;}
+    .versus{flex:0 0 auto; grid-auto-rows:clamp(340px, 50vh, 500px); align-content:start;}
     .runbar{grid-area:run; margin-bottom:0; flex-direction:column; align-items:stretch; gap:12px; text-align:center;}
     .runbar .rstat{flex-direction:row; align-items:baseline; justify-content:center; gap:12px; min-width:0;}
     .runbar .rstat.best{order:2;}
@@ -223,7 +226,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:#F2B632"><span class="a-gametitle__plate">Run The <b>Table</b></span></div>
+  <div class="a-gametitle" style="--a-tc:#F2B632"><span class="a-gametitle__plate">Hi<b>Q</b></span></div>
 
   <div class="runbar">
     <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
