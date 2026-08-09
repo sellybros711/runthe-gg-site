@@ -52,7 +52,9 @@ export async function onRequestPost(context) {
   } catch (e) {
     // release the claim so Stripe's retry can reprocess this event
     if (claim === 'new') await unclaimEvent(env, event.id);
-    return new Response('handler error', { status: 500 });
+    // surface the real reason in the response body — this is only visible to the
+    // account owner in the Stripe dashboard's delivery log, never to end users.
+    return new Response('handler error: ' + ((e && e.message) ? e.message : String(e)), { status: 500 });
   }
   return new Response('ok');
 }
@@ -106,14 +108,22 @@ async function upsertSub(env, userId, customerId, sub) {
     },
     body: JSON.stringify(row)
   });
-  if (!res.ok) throw new Error('supabase upsert failed ' + res.status);
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('supabase upsert ' + res.status + ' ' + detail);
+  }
 }
 
 async function stripeGet(env, path) {
   const res = await fetch('https://api.stripe.com' + path, {
     headers: { Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY }
   });
-  if (!res.ok) throw new Error('stripe get failed');
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('stripe get ' + res.status + ' ' + path + ' ' + detail);
+  }
   return res.json();
 }
 
