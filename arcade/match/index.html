@@ -448,7 +448,6 @@
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
       </button>
       <div class="chip tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats"><span class="n" id="streakVal">0</span><span class="l">Streak</span></div>
-      <div class="chip coins" id="coinStat" aria-label="Coins"><span class="n" id="coinVal">0</span><span class="l">Coins</span></div>
     </div>
   </div>
 
@@ -559,7 +558,7 @@
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
-      <div class="coinline" id="resCoins">+0 coins</div>
+      <div class="coinline" id="resCoins"></div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
@@ -649,12 +648,9 @@
     var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
     function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
 
-    // ---- wallet / streak ----
-    // Coins are the RunTheGrid suite wallet (shared with the Daily Crossword);
-    // streak is per-game (this Daily Match). Prototype uses localStorage; the real
-    // build reads the shared RunThe.GG account wallet.
-    function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
-    function walletSet(v) { LS.setItem('runthegrid_coins', String(Math.max(0, v))); renderWallet(); }
+    // ---- streak ----
+    // The arcade has no coin economy; the game is about building the longest
+    // daily streak. Streak is per-game (this Daily Match).
     function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
@@ -670,7 +666,6 @@
     }
     function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
     function renderWallet() {
-      document.getElementById('coinVal').textContent = walletGet();
       document.getElementById('streakVal').textContent = streakGet();
     }
 
@@ -1258,14 +1253,10 @@
       }
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
-      // Coins are earned once per day, on the ranked first attempt only. Replays
-      // and archive practice pay nothing, so unlimited (Arcade Card) plays can't
-      // farm currency.
-      var coins = (attemptFirst && !ARCHIVE) ? coinsFor(won, finalTime, par, mistakes) : 0;
+      // Save the day's result (for the "played today" screen) on the ranked
+      // first attempt only. No coins — the arcade has no currency.
       if (attemptFirst && !ARCHIVE) {
-        walletSet(walletGet() + coins);
-        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
-        renderWallet();
+        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, order: solveOrder.slice() }));
       }
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
@@ -1277,7 +1268,7 @@
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
@@ -1313,14 +1304,6 @@
       if (time <= 1.4 * par && m <= 3) return 'C';
       return 'D';
     }
-    function coinsFor(won, time, par, m) {
-      var mult = 1;
-      if (!won) return 10 * mult;
-      var speed = Math.max(0.5, Math.min(2.0, par / Math.max(1, time)));
-      var mfac = 1 - m * 0.10;
-      var c = Math.round(100 * speed * mfac * mult);
-      return Math.max(c, 20 * mult);
-    }
     var VERDICTS = { 'A+': 'First-round lock.', 'A': 'Franchise pick.', 'B': 'Solid starter.', 'C': 'Made the roster.', 'D': 'Practice squad.', 'F': 'Cut in camp.' };
 
     // ---- result modal ----
@@ -1342,7 +1325,7 @@
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : ('+' + r.coins + ' coins'));
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : (r.practice ? 'Practice, not counted' : ''));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {

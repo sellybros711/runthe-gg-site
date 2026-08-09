@@ -428,10 +428,9 @@
     }
   }
 
-  // Bonus after a correct spot: name WHY the four are linked for +5 coins.
-  // Decoys are verified false against the four (a decoy can never be secretly
-  // true), and this never affects the run or streak — pure upside.
-  function coinAdd(n){ try{ var v=parseInt(LS.getItem('runthegrid_coins')||'0',10)||0; LS.setItem('runthegrid_coins', String(Math.max(0,v+n))); }catch(e){} }
+  // Bonus after a correct spot: name WHY the four are linked. No points — it's a
+  // quick insight beat that reinforces the connection. Decoys are verified false
+  // against the four, and this never affects the run or streak.
   function whyTrueLabel(r){
     if(r.type==='t') return 'All played for '+r.team;
     if(r.type==='p') return 'All '+r.conn;
@@ -453,8 +452,7 @@
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
     ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
     var opts = shuffle([trueLab].concat(decoys));
-    var rewardable = attemptFirst && !ARCHIVE;   // coins only on the ranked first attempt
-    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked?' + (rewardable ? ' <span>+5 🪙</span>' : '') + '</div>' +
+    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked?</div>' +
       opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
     var tapped=false, advanced=false;
     function go(){ if(advanced) return; advanced=true; busy=false; renderRound(); }
@@ -466,11 +464,7 @@
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
           if(x===b && !ok) x.classList.add('wrong');
         });
-        if(ok){
-          if(rewardable){ coinAdd(5); toast('🪙 +5 — you knew why!'); }
-          else { toast('Right — you knew why!'); }
-          if(window.RTGSound) RTGSound.lock();
-        }
+        if(ok){ toast('Right — you knew why!'); if(window.RTGSound) RTGSound.lock(); }
         else { toast('The link: '+trueLab); }
         setTimeout(go, 1150);
       });
