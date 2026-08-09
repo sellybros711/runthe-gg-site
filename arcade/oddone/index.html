@@ -261,10 +261,17 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
+  // RECOGNIZABILITY GATE: icons (f5) always qualify — Babe Ruth belongs in a
+  // trivia game regardless of era. The auto-scraped fame-4 tier only qualifies
+  // from 1960 onward: its pre-1960 names ("2 notable seasons" in the 1930s) are
+  // the "who is this?" pulls players kept running into. ~600 antiques drop;
+  // every pool stays deep (145 team buckets of 4+).
+  function recog(e){ var f=e.f||0; if(f>=5) return true; if(f<4) return false;
+    var d=e.decade; return !d || !d.length || d[0]>=1960; }
   // teams -> recognisable members
-  var teams={}; ENT.forEach(function(e){ if(!TEAM_SPORTS[e.sport]||(e.f||0)<3) return; (e.t||[]).forEach(function(t){ (teams[t]=teams[t]||[]).push(e); }); });
+  var teams={}; ENT.forEach(function(e){ if(!TEAM_SPORTS[e.sport]||!recog(e)) return; (e.t||[]).forEach(function(t){ (teams[t]=teams[t]||[]).push(e); }); });
   var teamKeys=Object.keys(teams).filter(function(t){ return teams[t].length>=4; });
-  var oddPool=ENT.filter(function(e){ return (e.f||0)>=4 && TEAM_SPORTS[e.sport]; });
+  var oddPool=ENT.filter(function(e){ return recog(e) && TEAM_SPORTS[e.sport]; });
 
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
   function famPlural(f){ return /man$/i.test(f) ? f.slice(0,-3)+'men' : f+'s'; }

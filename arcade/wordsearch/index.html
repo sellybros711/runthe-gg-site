@@ -327,7 +327,24 @@
   function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,''); }
 
   // ---- build a themed word list from the shared corpus ----
-  function buildDay(){
+  // DECK-WALK for the daily theme: a per-date random pick from ~200 themes
+  // birthday-collides within a couple of weeks (a paid archive would visibly
+  // re-serve "Los Angeles Lakers" days apart). Instead the theme list is laid
+  // out once as a fixed shuffled deck (no date in the seed) and each date
+  // takes the NEXT theme, so no theme can repeat until every other theme has
+  // run (~7 months). Replays still draw a random theme for variety.
+  function themeDeck(elig){
+    var a=elig.slice().sort(function(x,y){ return x.key<y.key?-1:(x.key>y.key?1:0); });   // stable base order however the corpus grows
+    var dr=mulberry32(xmur3('ws-deck-v1-'+MODE)());
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(dr()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function dayIndex(){
+    var launch=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-07-22';
+    var n=Math.floor((Date.parse(DATE)-Date.parse(launch))/864e5);
+    return isNaN(n)?0:Math.max(0,n);
+  }
+  function buildDay(daily){
     var cats={};   // key -> {name, words:{surname:fame}, sports:{sport:count}}
     function add(key,name,word,fame,sport){ if(!word) return; var c=cats[key]||(cats[key]={name:name,words:{},sports:{}}); if(!c.words[word]||fame>c.words[word]) c.words[word]=fame; if(sport) c.sports[sport]=(c.sports[sport]||0)+1; }
     ENT.forEach(function(e){
@@ -347,8 +364,8 @@
       var only=elig.filter(function(c){ var ks=Object.keys(c.sports||{}); return ks.length===1 && ks[0]===SPORTFILTER; });
       if(only.length) elig=only;
     }
-    // seeded theme pick
-    var pick=elig[ri(elig.length)];
+    // daily = deterministic deck-walk (unique day-to-day); replay = seeded random
+    var pick = daily ? themeDeck(elig)[dayIndex()%elig.length] : elig[ri(elig.length)];
     // take the most recognisable (highest-fame) words, then a seeded subset, then cap
     var byFame=pick.words.slice().sort(function(a,b){ return pick.fames[b]-pick.fames[a]; });
     var pool=byFame.slice(0, Math.min(byFame.length, 16));
@@ -382,13 +399,13 @@
   }
 
   var P, built, GRID, PLACED;
-  function buildBoard(){
-    P=buildDay();
+  function buildBoard(daily){
+    P=buildDay(daily);
     built=placeAll(P.words);
     P.words=built.placed.map(function(p){ return p.word; });  // only words that actually placed
     GRID=built.grid; PLACED=built.placed;
   }
-  buildBoard();
+  buildBoard(true);
   var foundSet={}, foundCount=0, colorFor={};
   var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
   var hintsUsed=0;   // free players get 1 hint per play; Pro is unlimited
@@ -592,7 +609,7 @@
   // ---- first/ranked play = the daily grid; every replay = a fresh random grid ----
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
-    if(isReplay){ resumeClear(); seedRandom(); buildBoard(); } else { seedDaily(); buildBoard(); servedDaily=true; }
+    if(isReplay){ resumeClear(); seedRandom(); buildBoard(false); } else { seedDaily(); buildBoard(true); servedDaily=true; }
     if(tick){ clearInterval(tick); tick=null; }
     foundSet={}; foundCount=0; colorFor={};
     done=false; hints=0; hintsUsed=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
@@ -743,7 +760,7 @@
     if(resume && !ARCHIVE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0){
       // refresh landed mid-way through the charged ranked attempt: rebuild the
       // deterministic daily board and pick up exactly where the player left off.
-      seedDaily(); buildBoard(); servedDaily=true;
+      seedDaily(); buildBoard(true); servedDaily=true;
       renderGrid();
       document.getElementById('themeName').textContent=P.theme;
       applySkin();
@@ -765,7 +782,7 @@
     } else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
       done=true;
       gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
-      seedDaily(); buildBoard(); renderGrid(); document.getElementById('themeName').textContent=P.theme; applySkin();
+      seedDaily(); buildBoard(true); renderGrid(); document.getElementById('themeName').textContent=P.theme; applySkin();
       renderWords();
       var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left. Back tomorrow.';
     } else {
