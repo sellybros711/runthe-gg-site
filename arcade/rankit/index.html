@@ -273,7 +273,7 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place — then one more try.</span></div>
+    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place, then one more try.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -564,11 +564,11 @@
       // does NOT end.
       if(window.RTGSound){ (RTGSound.soft||RTGSound.wrong).call(RTGSound); }
       var fb=document.getElementById('rkFeedback');
-      if(fb){ fb.className='rkfb on'; fb.innerHTML='<span class="big">'+nRight+' / '+order.length+'</span><span class="cap">in the right spot — one more try. Which ones? That’s for you to figure out.</span>';
+      if(fb){ fb.className='rkfb on'; fb.innerHTML='<span class="big">'+nRight+' / '+order.length+'</span><span class="cap">in the right spot. One more try. Which ones? That’s for you to figure out.</span>';
         try{ fb.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }
       var h=document.getElementById('hintline');
-      if(h) h.innerHTML='Last try — reorder and check again.';
-      var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check — last try';
+      if(h) h.innerHTML='Last try. Reorder and check again.';
+      var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check (last try)';
       var rowsWrap=document.getElementById('rows'); if(rowsWrap){ rowsWrap.classList.remove('rk-nudge'); void rowsWrap.offsetWidth; rowsWrap.classList.add('rk-nudge'); }
       return;
     }
