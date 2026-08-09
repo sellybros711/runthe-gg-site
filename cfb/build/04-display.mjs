@@ -81,11 +81,28 @@ function sampleGamma(mu, sd, rng) {
 
 /* These mirror cfb/engine.js. They are duplicated because this stage runs
    before the engine is loadable, so when a constant moves there it has to move
-   here too or the scorelines drift away from the games that produce them. */
+   here too or the scorelines drift away from the games that produce them.
+
+   THAT IS EXACTLY WHAT HAPPENED, three times over, and it is worth naming
+   because the warning above was already there and did not save anybody. The
+   roster went to six slots with two flexes on 2026-08-03 and this still said
+   five with a dedicated tight end. SCALE went to 2.3 with the season re-tune and
+   this still said 2.0. And the engine has damped both sides of a scoreline since
+   long before either, while the simulation below drew raw gamma and produced
+   margins far wider than any game the engine can now play.
+
+   A drifted table is invisible in a way a drifted constant is not: nothing
+   throws, the scorelines just stop matching the games they are printed under.
+   Re-run this stage after ANY move to the constants below. */
 const CAP_MUSD = 11;
-const SCALE = 2.0;
+const SCALE = 2.3;
 const DEFENCE_WEIGHT = 0.65;
-const SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
+/* The two that decide how wide the margin distribution is. Omitting them was the
+   worst of the three drifts: undamped, a simulated margin is roughly twice the
+   spread of a real one. */
+const CONSISTENCY = 0.80;
+const OPP_CONSISTENCY = 0.85;
+const SLOTS = ['QB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
 };
@@ -160,9 +177,15 @@ async function main() {
 
     let raw = 0;
     for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+    /* Damped both sides, the way resolveGame does. Without this the table is
+       built from games the engine cannot play. */
+    const expected = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+    raw = raw * (1 - CONSISTENCY) + expected * CONSISTENCY;
     const defMod = 1 + (opp.pts_allowed_mean / (lc[opp.season] ?? 25) - 1) * DEFENCE_WEIGHT;
     const yourScore = raw * chem * defMod;
-    const oppScore = sampleGamma(opp.pts_scored_mean, opp.pts_scored_sd, rng) * SCALE;
+    let oppRaw = sampleGamma(opp.pts_scored_mean, opp.pts_scored_sd, rng);
+    oppRaw = oppRaw * (1 - OPP_CONSISTENCY) + opp.pts_scored_mean * OPP_CONSISTENCY;
+    const oppScore = oppRaw * SCALE;
 
     internalMargins.push(Math.abs(yourScore - oppScore));
     internalOffence.push(yourScore);

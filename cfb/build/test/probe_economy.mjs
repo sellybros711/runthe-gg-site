@@ -14,6 +14,7 @@
  *   record   what each regular-season record is worth
  *   rounds   the per-game win rate, regular season and each playoff round
  *   nfl      the same headline numbers for the NFL game, as a yardstick
+ *   margin   MARGIN_GAIN, refitted: the player's z against a real team's
  *   bands    what each overall band is rare enough to be, and worth
  *   curve    the same thing two points at a time, to show it scales
  *   far      how far a season gets, by overall: where it ends
@@ -192,6 +193,82 @@ if (want('record') || want('rounds')) {
     }
     console.log('');
   }
+}
+
+/* MARGIN_GAIN, re-measured rather than remembered.
+ *
+ * A player's margin is not a real point differential. It is a fantasy total
+ * against an opponent's real points, so the two sides of the subtraction are in
+ * different units and the z that falls out is flatter than a real team's.
+ * MARGIN_GAIN is the slope that puts the player's season on the same scale as
+ * the teams it is ranked against, and engine.js says in as many words to
+ * re-measure it if SCALE, the cap or DEFENSE_WEIGHT move.
+ *
+ * It said that with no tool to do it: the 1.30 in the file was fitted once by
+ * hand and never again, so the instruction was unfollowable. This is that tool.
+ * Match on RECORD, because that is the thing both sides have in common: for
+ * every win total, what does a real team of that record score on strength_z, and
+ * what does a player of that record score on the raw z? The ratio of those two,
+ * regressed through the origin, is the gain.
+ */
+if (want('margin')) {
+  const { E, data, league } = CFB;
+  const GAMES = E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const prepared = data.prepared;
+
+  /* Real teams, bucketed by wins. Their strength_z is the target scale. */
+  const realByWins = {};
+  for (const t of CFB.teams) {
+    const w = Number(String(t.record).split('-')[0]);
+    if (!Number.isFinite(w)) continue;
+    (realByWins[w] ??= []).push(t.strength_z);
+  }
+
+  /* Player seasons, bucketed the same way, carrying the RAW z: the margin
+     standardised, before any gain is applied. Undoing the constant rather than
+     recomputing it keeps this honest if the formula around it changes. */
+  const mineByWins = {};
+  for (let d = 0; d < 40; d++) {
+    const run = draft(CFB, STRATS.greedy);
+    if (!run) continue;
+    const schedule = run.schedule.map((id) => data.byTeamSeasonId[id]);
+    const playoffs = run.playoffs.map((id) => data.byTeamSeasonId[id]);
+    for (let i = 0; i < 250; i++) {
+      const rng = E.createSeededRNG(E.hashSeed('margin|' + run.seed + '|' + i));
+      const out = E.playRun(run.roster, run.season.chemistry, schedule, playoffs,
+        league, rng, prepared);
+      (mineByWins[out.regularWins] ??= []).push(out.ranking.z / E.MARGIN_GAIN);
+    }
+  }
+
+  console.log('=== MARGIN_GAIN, measured ===');
+  console.log('  record      real z    yours (raw)     ratio       n real   n yours');
+  const pts = [];
+  for (const w of Object.keys(mineByWins).map(Number).sort((a, b) => a - b)) {
+    const mine = mineByWins[w], real = realByWins[w];
+    /* Records a real team cannot have in this data are no use as a reference. */
+    if (!real || real.length < 20 || mine.length < 40) continue;
+    const my = mean(mine), rl = mean(real);
+    pts.push([my, rl]);
+    console.log('  ' + (w + '-' + (GAMES - w)).padEnd(11)
+      + rl.toFixed(3).padStart(8) + my.toFixed(3).padStart(15)
+      + (my !== 0 ? (rl / my).toFixed(3) : '  -').padStart(11)
+      + String(real.length).padStart(12) + String(mine.length).padStart(10));
+  }
+  /* Through the origin: a season with no margin is an average season on either
+     scale, so the line has no business having an intercept. */
+  const num = pts.reduce((s, [x, y]) => s + x * y, 0);
+  const den = pts.reduce((s, [x]) => s + x * x, 0);
+  const slope = den ? num / den : 0;
+  const ybar = pts.reduce((s, [, y]) => s + y, 0) / Math.max(1, pts.length);
+  const ssTot = pts.reduce((s, [, y]) => s + (y - ybar) ** 2, 0);
+  const ssRes = pts.reduce((s, [x, y]) => s + (y - slope * x) ** 2, 0);
+  console.log('\n  fitted MARGIN_GAIN = ' + slope.toFixed(3)
+    + '   (R2 ' + (ssTot ? (1 - ssRes / ssTot).toFixed(3) : 'n/a')
+    + ', ' + pts.length + ' records)');
+  console.log('  engine.js currently says ' + E.MARGIN_GAIN
+    + (Math.abs(slope - E.MARGIN_GAIN) > 0.05 ? '   <-- STALE, update it' : '   (in line)'));
+  console.log('');
 }
 
 if (want('nfl')) {
