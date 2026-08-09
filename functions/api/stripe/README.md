@@ -15,8 +15,8 @@ back-compat; consumer-facing name is "Arcade Card").
      server token counter `arcade_plays`, and the RPCs `arcade_spend_token`,
      `arcade_tokens_status`, `arcade_card_active`)
 2. **Stripe** — create ONE Product **"Run The Arcade Card"** with TWO recurring
-   Prices: Monthly $5.99 and Annual $49.99. (The 3-day free trial is applied by
-   our checkout code, not on the Price.) Set **Monthly** as the product's default
+   Prices: Monthly $5.99 and Annual $49.99. (No free trial — the free tier is the
+   try-before-you-buy.) Set **Monthly** as the product's default
    price. Copy both `price_...` ids. Point a webhook endpoint at
    `https://runthe.gg/api/stripe/webhook` with events:
    `checkout.session.completed`, `customer.subscription.updated`,
@@ -35,12 +35,12 @@ back-compat; consumer-facing name is "Arcade Card").
 
 ## Flow
 
-- Paywall / archive → **Start 3 days free** (monthly or annual) → POST
+- Paywall / archive → **Get Arcade Card** (monthly or annual) → POST
   `/api/stripe/checkout` `{ user_id, plan, return_path }` → Stripe Checkout
-  (3-day trial, tax, existing customer reused) → `checkout.session.completed`
-  webhook upserts `subscriptions` (status `trialing`) → `board.js` mirrors the
+  (tax, existing customer reused) → `checkout.session.completed`
+  webhook upserts `subscriptions` (status `active`) → `board.js` mirrors the
   active/trialing row into `localStorage.runthegrid_pro` → tokens.js (unlimited)
-  and archive.js (past days) honor it. Trial→active, past_due, canceled all flow
+  and archive.js (past days) honor it. active, past_due, canceled all flow
   through `customer.subscription.updated/deleted`. Duplicate deliveries are
   ignored via `stripe_events`.
 - Manage/cancel → POST `/api/stripe/portal` `{ user_id, return_path }` → Stripe
