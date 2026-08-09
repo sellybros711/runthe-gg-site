@@ -272,6 +272,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
@@ -352,6 +353,14 @@
     function add(key,name,word,fame,sport){ if(!word) return; var c=cats[key]||(cats[key]={name:name,words:{},sports:{}}); if(!c.words[word]||fame>c.words[word]) c.words[word]=fame; if(sport) c.sports[sport]=(c.sports[sport]||0)+1; }
     ENT.forEach(function(e){
       if(!BIG3[e.sport]) return;
+      // Only include recognizable names in themes — .star (from stars.js
+      // overlay) is the primary signal; auto-detected credentials cover
+      // uncurated players so a fresh legend still shines through.
+      if(!e.star){
+        var ff=e.f||0; if(ff<4) return;
+        if(e.sport==='NFL' && !(e.hp===1 && (e.ns||0)>=8)) return;
+        if(e.sport!=='NFL' && (e.ns||0)<8) return;
+      }
       var sn=norm(surnameOf(e.name)); if(sn.length<3||sn.length>N) return; var f=e.f||1;
       (e.t||[]).forEach(function(tm){ add('t:'+tm, tm, sn, f, e.sport); });
       if(e.pos) add('pos:'+e.sport+':'+e.pos, e.sport+' '+(POS_LABEL[e.pos]||e.pos+'s'), sn, f, e.sport);

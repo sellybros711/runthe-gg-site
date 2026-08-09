@@ -346,6 +346,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
+<script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
@@ -447,12 +450,21 @@
     if(TARGETS.length<60) TARGETS = GUESSABLE.slice();
   } else {
     // ---- curated-corpus fallback (thin/absent roster file) -----------------
+    // Guessable = anything the corpus knows enough about to build a readout.
+    // Target (the mystery player) has to be recognizable — .star from stars.js
+    // is the primary signal; fall through to auto-detected fame for uncurated
+    // names so a fresh corpus player can still shine through.
     GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0) >= (e.sport==='NFL'?4:3); });
     if(ROSTERS){ var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); }); if(live.length>=20) GUESSABLE=live; else ROSTERS=null; }
-    var targetsFor = function(fMin, requireAct){ return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; }); };
-    TARGETS = targetsFor(4,true);
-    if(TARGETS.length<20) TARGETS = targetsFor(3,true);
-    if(!TARGETS.length) TARGETS = targetsFor(3,false);
+    function starOK(e){
+      if(!TARGET_SPORTS[e.sport]) return false;
+      if(e.star) return true;
+      var f=e.f||0; if(f<4) return false;
+      if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
+      return (e.ns||0)>=8;
+    }
+    TARGETS = GUESSABLE.filter(starOK);
+    if(TARGETS.length<20) TARGETS = GUESSABLE.filter(function(e){ return TARGET_SPORTS[e.sport] && (e.f||0)>=4; });
     if(!TARGETS.length) TARGETS = GUESSABLE;
   }
   var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);

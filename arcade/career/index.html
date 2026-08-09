@@ -254,6 +254,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
@@ -295,7 +296,19 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
-  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.t && e.t.length>=2 && (e.f||0) >= (e.sport==='NFL'?4:3); });
+  // .star (from stars.js overlay) is the primary "recognizable" signal;
+  // otherwise fall back to modern-era + career credentials so an uncurated
+  // journeyman never sneaks in.
+  function careerStar(e){
+    if(!TEAM_SPORTS[e.sport] || !e.t || e.t.length<2) return false;
+    if(e.star) return true;
+    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+    var f=e.f||0;
+    if(f<4) return false;
+    if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
+    return (e.ns||0)>=8;
+  }
+  var POOL = ENT.filter(careerStar);
   var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0) >= (e.sport==='NFL'?4:3)){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
 
   function poolForMode(){ return SPORTFILTER ? POOL.filter(function(e){ return e.sport===SPORTFILTER; }) : POOL; }
