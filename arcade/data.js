@@ -16,18 +16,41 @@
   if (!ENT || typeof ENT.push !== 'function') return;
   var F = root.RTG_FORMER;
   if (F && F.players && F.players.length){
-    var have = {};
-    ENT.forEach(function (e) { if (e && e.name && e.sport) have[e.name + '|' + e.sport] = 1; });
-    var added = 0;
+    // Fields where former.js's auto-scrape is authoritative when the curated
+    // entity lacks them. col (college), hs (high school), hp (high-draft-pick
+    // bool), ns (notable seasons), dp (draft position) unlock recognizability
+    // gates and Alma Mater's college pool; without this backfill, ~450 curated
+    // stars (Jordan, Curry, Brady, Judge, Ohtani…) are absent from Alma
+    // because entities.js never carried college data.
+    var ENRICH = ['col','hs','hp','ns','dp'];
+    var byKey = {};
+    ENT.forEach(function (e) {
+      if (e && e.name && e.sport) byKey[e.name + '|' + e.sport] = e;
+    });
+    var added = 0, enriched = 0;
     F.players.forEach(function (p) {
       if (!p || !p.name || !p.sport) return;
       var k = p.name + '|' + p.sport;
-      if (have[k]) return;                 // corpus already covers this player
-      have[k] = 1;
+      var cur = byKey[k];
+      if (cur){
+        // Curated entry wins on identity, but backfill the enrichment fields
+        // it lacks so gates that key on col / ns / hp all light up.
+        var touched = false;
+        ENRICH.forEach(function(f){
+          if ((cur[f] === undefined || cur[f] === null || cur[f] === '') && p[f] !== undefined && p[f] !== null && p[f] !== ''){
+            cur[f] = p[f];
+            touched = true;
+          }
+        });
+        if (touched) enriched++;
+        return;
+      }
+      byKey[k] = p;
       ENT.push(p);
       added++;
     });
-    F.merged = added;   // for debugging: how many former players were folded in
+    F.merged = added;
+    F.enriched = enriched;
   }
 
   /* ------------------------------------------------------------------
