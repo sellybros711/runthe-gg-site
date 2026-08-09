@@ -206,6 +206,9 @@
   /* left: cabinet (angled right edge juts into the gradient) */
   .ab-cab{flex:0 0 90px; position:relative; padding:11px 10px 11px 9px; display:flex; flex-direction:column; gap:8px; justify-content:center;
     background:linear-gradient(180deg,#16203a,#080d18); clip-path:polygon(0 0, 100% 0, 82% 50%, 100% 100%, 0 100%);}
+  /* polished controller art (arcade/assets/arcade-controller.png). If it 404s,
+     JS removes it and the CSS cabinet below shows instead. */
+  .ab-cab .ab-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:left center; z-index:2; display:block;}
   .ab-screen{height:30px; border-radius:5px; background:#060a14; margin-right:12px;
     background-image:radial-gradient(rgba(55,197,213,.85) 1px, transparent 1.5px); background-size:6px 6px;
     border:1px solid #1f2c44; box-shadow:inset 0 0 8px rgba(0,0,0,.7);}
@@ -783,6 +786,7 @@
         '<button class="arcade-buy" type="button" id="hudBuy" aria-label="Buy Arcade Card — unlimited plays, every past day unlocked">' +
           '<span class="ab-card">' +
             '<span class="ab-cab" aria-hidden="true">' +
+              '<img class="ab-img" src="/arcade/assets/arcade-controller.png?v=1" alt="">' +
               '<span class="ab-screen"></span>' +
               '<span class="ab-deck"><span class="ab-joy"><span class="ball"></span><span class="shaft"></span></span>' +
               '<span class="ab-balls">🏀⚾🏈</span></span>' +
@@ -794,6 +798,10 @@
         '</button>';
       var buy = document.getElementById('hudBuy');
       if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
+      // Use the polished controller art when it's present; otherwise the CSS
+      // cabinet behind it stays as the fallback (no broken image).
+      var abImg = cta.querySelector('.ab-img');
+      if (abImg) { abImg.onerror = function () { this.remove(); }; abImg.onload = function () { this.classList.add('ok'); }; }
     } else {
       cta.innerHTML = '<button class="btn signin" type="button" id="hudSignin">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Sign in</button>';
