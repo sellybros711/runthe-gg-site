@@ -1258,8 +1258,11 @@
       }
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
-      var coins = coinsFor(won, finalTime, par, mistakes);
-      if (!ARCHIVE) {
+      // Coins are earned once per day, on the ranked first attempt only. Replays
+      // and archive practice pay nothing, so unlimited (Arcade Card) plays can't
+      // farm currency.
+      var coins = (attemptFirst && !ARCHIVE) ? coinsFor(won, finalTime, par, mistakes) : 0;
+      if (attemptFirst && !ARCHIVE) {
         walletSet(walletGet() + coins);
         LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
         renderWallet();
