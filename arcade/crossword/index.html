@@ -410,17 +410,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   "use strict";
   if(window.RTGHowto) RTGHowto.init('crossword');
 
-  // ---- tester mode: unlimited plays across all puzzles (for RunnyJ / CSel8) --
-  // Enable with ?test=1 (persists); ?test=0 to disable. Site is hidden, so only
-  // people with the link get it. New puzzle cycles the generated bank.
+  // ---- tester mode: removed for public launch ----
+  // The old ?test=1 backdoor gave unlimited plays across the whole bank. It's
+  // now permanently off (entitlement is the real Arcade Card). Any stale flag
+  // from a prior tester session is cleared.
   var QS = new URLSearchParams(location.search);
   var TESTER = false;
-  try {
-    if (QS.has('test') || QS.has('tester')) {
-      TESTER = (QS.get('test') || QS.get('tester') || '1') !== '0';
-      localStorage.setItem('grid_tester', TESTER ? '1' : '');
-    } else { TESTER = localStorage.getItem('grid_tester') === '1'; }
-  } catch(e){}
+  try { localStorage.removeItem('grid_tester'); } catch(e){}
   var LIST = (window.RTG_PUZZLES && window.RTG_PUZZLES.puzzles) || [];
   var PZI = parseInt(QS.get('pz') || '-1', 10);
 
