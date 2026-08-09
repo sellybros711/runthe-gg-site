@@ -4,7 +4,7 @@
  * One shared, self-mounting module (like auth-ui.js) that every arcade page can
  * use for the consumer monetization UI:
  *   RTGCard.paywall(opts)   — "Out of plays" → Arcade Card upsell (monthly/annual,
- *                             3-day trial, + tax, and a friendly "Come back tomorrow")
+ *                             + tax, and a friendly "Come back tomorrow")
  *   RTGCard.guestConvert()  — after a guest spends their 1 free play: "create a free
  *                             account for 3 plays a day" conversion
  *   RTGCard.checkout(plan)  — start Arcade Card checkout ($5.99/mo or $49.99/yr). If
@@ -122,11 +122,11 @@
           planHTML('monthly', chosen==='monthly')+
           planHTML('annual', chosen==='annual')+
         '</div>'+
-        '<button class="rtgc-go" id="rtgcardGo" type="button">Start 3 days free</button>'+
+        '<button class="rtgc-go" id="rtgcardGo" type="button">Get Arcade Card</button>'+
         '<div class="rtgc-terms" id="rtgcardTerms"></div>'+
         '<div id="rtgcardErr"></div>'+
         '<button class="rtgc-ghost" id="rtgcardLater" type="button">Come back tomorrow</button>'+
-        '<div class="rtgc-fine">Cancel anytime. Renews automatically after the trial. Manage or cancel from your account.</div>';
+        '<div class="rtgc-fine">Cancel anytime. Renews automatically. Manage or cancel from your account.</div>';
       [].forEach.call(b.querySelectorAll('.rtgc-plan'),function(p){ p.onclick=function(){ chosen=p.dataset.plan; render(); }; });
       $('rtgcardGo').onclick=function(){ startCheckout(chosen); };
       $('rtgcardLater').onclick=close;
@@ -135,7 +135,7 @@
     function updTerms(){
       var t=$('rtgcardTerms'); if(!t) return;
       var p = chosen==='annual'?ANNUAL:MONTHLY;
-      t.textContent = '3 days free, then '+p.bill+' + applicable tax';
+      t.textContent = p.bill+' + applicable tax';
     }
     render(); open();
   }
@@ -196,7 +196,7 @@
   }
   function showErr(msg){
     var e=$('rtgcardErr'); if(e) e.innerHTML='<div class="rtgc-err">'+esc(msg)+'</div>';
-    var go=$('rtgcardGo'); if(go){ go.disabled=false; go.textContent='Start 3 days free'; }
+    var go=$('rtgcardGo'); if(go){ go.disabled=false; go.textContent='Get Arcade Card'; }
   }
 
   // Manage / cancel via Stripe Customer Portal.

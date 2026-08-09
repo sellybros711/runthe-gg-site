@@ -13,9 +13,9 @@
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *
  * The Supabase user id rides in as client_reference_id + metadata so the webhook
- * grants the Arcade Card entitlement with no extra lookup. A 3-day free trial is
- * applied here (not on the Price) so both plans are trial-eligible. Stripe Tax is
- * enabled so consumer pricing reads "+ applicable tax".
+ * grants the Arcade Card entitlement with no extra lookup. No free trial — the
+ * generous free tier (guest 1/day, free account 3/day) is the try-before-you-buy.
+ * Stripe Tax is enabled so consumer pricing reads "+ applicable tax".
  */
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -44,7 +44,6 @@ export async function onRequestPost(context) {
     'metadata[supabase_user_id]': userId,
     'metadata[plan]': plan,
     'subscription_data[metadata][supabase_user_id]': userId,
-    'subscription_data[trial_period_days]': '3',
     'automatic_tax[enabled]': 'true',
     success_url: site + ret + sep + 'checkout=success',
     cancel_url: site + ret + sep + 'checkout=cancelled',
