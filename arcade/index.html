@@ -94,14 +94,29 @@
      how many plays they have without scrolling (the old top-bar chips are gone) */
   @media (max-width:640px){ .hud-hd{padding:12px 16px;} .hud-hd .av{width:34px; height:34px;} }
 
-  /* 2 · streak block */
+  /* 2 · streak block — the flame + cap take a color TIER that earns its heat
+     as the run grows. At zero the flame is unlit (dashed ember), not a false
+     enthusiasm-cue; each tier picks up more color as the streak climbs. */
   .hud-streak{padding:18px 18px 14px;}
   .hud-streak .srow{display:flex; align-items:center; gap:14px;}
   .hud-streak .flame{flex:0 0 auto; width:52px; height:52px; border-radius:14px; display:grid; place-items:center;
-    background:color-mix(in srgb, var(--coral) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--coral) 40%, transparent); color:var(--coralT);}
+    background:color-mix(in srgb, var(--tone,var(--coral)) 14%, var(--card));
+    border:1px solid color-mix(in srgb, var(--tone,var(--coral)) 40%, transparent);
+    color:var(--toneT,var(--coralT)); transition:background .3s ease, border-color .3s ease, color .3s ease;}
   .hud-streak .big{line-height:.9;}
   .hud-streak .big .n{font-family:var(--hero); font-weight:400; font-size:48px; color:var(--ink); font-variant-numeric:tabular-nums;}
-  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--coralT); margin-top:4px;}
+  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--toneT,var(--coralT)); margin-top:4px; transition:color .3s ease;}
+  /* cold: no fire on day zero — just a dashed ember waiting to catch */
+  .hud-streak[data-tier="cold"]{ --tone:var(--dim); --toneT:var(--mut); }
+  .hud-streak[data-tier="cold"] .flame{ background:var(--card2); border-style:dashed; border-color:var(--line2); }
+  .hud-streak[data-tier="cold"] .big .n{ color:var(--mut); }
+  .hud-streak[data-tier="warm"]{ --tone:var(--coral); --toneT:var(--coralT); }
+  .hud-streak[data-tier="hot"]{ --tone:var(--gold);  --toneT:var(--goldT); }
+  .hud-streak[data-tier="blaze"]{ --tone:var(--red);   --toneT:var(--red); }
+  .hud-streak[data-tier="blaze"] .flame{ animation:hs-blaze 1.6s ease-in-out infinite; }
+  @keyframes hs-blaze{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06); filter:brightness(1.12);} }
+  .hud-streak[data-tier="icon"]{ --tone:var(--gold); --toneT:var(--goldT); }
+  .hud-streak[data-tier="icon"] .flame{ box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 24%, transparent), 0 0 22px -4px color-mix(in srgb, var(--gold) 55%, transparent); border-color:var(--gold); }
   .hud-streak .best{margin-left:auto; text-align:right;}
   .hud-streak .best .n{font-family:var(--hero); font-weight:400; font-size:24px; color:var(--mut); line-height:1;}
   .hud-streak .best .cap{display:block; font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
@@ -711,6 +726,20 @@
   best = Math.max(best, cur, cw.bestStreak | 0);
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
+  // Streak tier: the flame's color earns itself as the run grows. Zero swaps
+  // the fire for an unlit dashed ember — no false enthusiasm on day one.
+  (function(){
+    var host=document.querySelector('.hud-streak'); if(!host) return;
+    var tier = cur<=0 ? 'cold' : cur<=2 ? 'warm' : cur<=6 ? 'hot' : cur<30 ? 'blaze' : 'icon';
+    host.setAttribute('data-tier', tier);
+    var flame=host.querySelector('.flame'); if(!flame) return;
+    if (tier==='cold') {
+      // dashed ember with an inner spark, visually related to the empty
+      // punches on the ticket so the pre-streak state has one language
+      flame.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>';
+    }
+    // Non-cold tiers keep the built-in flame path; no swap needed.
+  })();
 
   // motivational line under the streak number + mobile header streak chip
   var streakMsg = document.getElementById('streakMsg');
