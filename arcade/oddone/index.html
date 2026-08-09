@@ -71,7 +71,8 @@
   .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   .prompt{text-align:center; font-weight:900; font-size:16px; color:var(--ink); margin:2px 0 4px;}
-  .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:0 0 12px; min-height:16px; transition:font-size .15s;}
+  .subprompt{text-align:center; font-size:16px; font-weight:800; color:var(--ink); margin:0 0 14px; min-height:20px; line-height:1.35;}
+  .subprompt b{color:var(--violetT); font-weight:900;}
   .subprompt.big{font-size:16px; font-weight:800; color:var(--ink); min-height:24px; margin:2px 0 14px;}
   .subprompt .ok{color:var(--greenT);} .subprompt .no{color:var(--red);} .subprompt .team{color:var(--violetT);}
   .choice.mypick{box-shadow:0 0 0 2px var(--red) inset;}
@@ -496,7 +497,7 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the name that doesn’t belong. · Archive practice'; return; }
+    if(ARCHIVE){ h.textContent='Tap the name that doesn’t belong. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the name that doesn’t belong.'+lbl; }
   function beginAttempt(){

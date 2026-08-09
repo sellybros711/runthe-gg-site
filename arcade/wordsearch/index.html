@@ -327,6 +327,9 @@
   function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,''); }
 
   // ---- build a themed word list from the shared corpus ----
+  // Themes stick to the big three (NBA / NFL / MLB) so an "All" day can't
+  // deal a niche pool like "NHL Right Wings" that most players can't fill.
+  var BIG3={NBA:1,NFL:1,MLB:1};
   // DECK-WALK for the daily theme: a per-date random pick from ~200 themes
   // birthday-collides within a couple of weeks (a paid archive would visibly
   // re-serve "Los Angeles Lakers" days apart). Instead the theme list is laid
@@ -348,6 +351,7 @@
     var cats={};   // key -> {name, words:{surname:fame}, sports:{sport:count}}
     function add(key,name,word,fame,sport){ if(!word) return; var c=cats[key]||(cats[key]={name:name,words:{},sports:{}}); if(!c.words[word]||fame>c.words[word]) c.words[word]=fame; if(sport) c.sports[sport]=(c.sports[sport]||0)+1; }
     ENT.forEach(function(e){
+      if(!BIG3[e.sport]) return;
       var sn=norm(surnameOf(e.name)); if(sn.length<3||sn.length>N) return; var f=e.f||1;
       (e.t||[]).forEach(function(tm){ add('t:'+tm, tm, sn, f, e.sport); });
       if(e.pos) add('pos:'+e.sport+':'+e.pos, e.sport+' '+(POS_LABEL[e.pos]||e.pos+'s'), sn, f, e.sport);
@@ -468,7 +472,7 @@
     else if(kind==='pos') phrase=n+' '+name;
     else if(kind==='aw') phrase=n+' '+name;
     else phrase=n+' '+name;
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
     var el=document.getElementById('wordsLab'); if(el) el.textContent='Find '+phrase+'. Names reveal as you spot them.'+lbl;
   }
   updWordsLab();

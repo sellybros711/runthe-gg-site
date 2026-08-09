@@ -241,12 +241,16 @@
   @media (min-width:1000px){
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
+      /* pin the four short left rows to their content and let the leaderboard
+         rail overflow naturally — otherwise the tall rail forces empty gaps
+         between the axis, ranked rows and check button */
+      grid-template-rows:auto auto auto auto auto min-content min-content min-content min-content auto;
       grid-template-areas:
         "top   top" "title title" "mode mode" "lead lead"
         "axis run" "fb lbd" "rows lbd" "act lbd" "hint lbd" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .lead{grid-area:lead;}
     .axis{grid-area:axis;} .rkfb{grid-area:fb;} .rows{grid-area:rows;} .actions{grid-area:act;} .hintline{grid-area:hint;}
-    .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd; align-self:start;} .foot{grid-area:foot;}
       }
     .foot{ grid-column:1 / -1; margin-top:18px; }
     .a-gametitle{ margin:2px 0 8px; }

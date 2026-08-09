@@ -112,8 +112,12 @@
      counter already says how much rope you have. */
   .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:12px 12px 6px; box-shadow:var(--shadow);}
-  .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
-  .guess:not(.filled) ~ .guess:not(.filled) ~ .guess:not(.filled){display:none;}
+  /* pre-guess: hide the whole readout board (header labels + eight empty rows)
+     — before any guess exists it teaches nothing and just makes the game feel
+     enormous. It appears the moment you submit your first name. */
+  .board:not(.hasfilled){display:none;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled) ~ .guess:not(.filled){display:none;}
   .collab{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
   .collab span{font-size:8.5px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; color:var(--mut); text-align:center;}
   .guess{margin-bottom:9px;}
@@ -701,6 +705,7 @@
     html+='</div>';
     slot.innerHTML=html;
     slot.classList.add('filled');
+    var b=document.querySelector('.board'); if(b) b.classList.add('hasfilled');
   }
 
   // ---- timer ----
@@ -712,7 +717,7 @@
   function updateLead(){
     var b=document.getElementById('sportBadge'); if(b) b.textContent=SPORT;
     var v=document.querySelector('.lead .v'); if(!v) return;
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
     var traits = ROSTER_MODE
       ? (SPORT==='NFL'

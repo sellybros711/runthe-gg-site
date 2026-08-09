@@ -1082,7 +1082,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function updateHint(){
     var seg=document.getElementById('dateSeg'); if(!seg) return;
     // archive practice shows its own label (the archive.js banner carries the date); no token label
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
     seg.innerHTML = fmtDate(DATE)+' <small>Daily'+lbl+'</small>';
   }
   function updateAgainBtn(){

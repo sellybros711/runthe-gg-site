@@ -1554,7 +1554,7 @@
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
       var base = 'Sort 20 sports names into five hidden groups of four.';
-      if (ARCHIVE) { ex.textContent = base + ' · Archive practice'; return; }
+      if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
       ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
     }
     function updateAgainBtn() {
