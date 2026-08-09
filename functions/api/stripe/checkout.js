@@ -15,7 +15,8 @@
  * The Supabase user id rides in as client_reference_id + metadata so the webhook
  * grants the Arcade Card entitlement with no extra lookup. No free trial — the
  * generous free tier (guest 1/day, free account 3/day) is the try-before-you-buy.
- * Stripe Tax is enabled so consumer pricing reads "+ applicable tax".
+ * Tax is off for launch (no automatic_tax); to enable later, add
+ * 'automatic_tax[enabled]':'true' back and configure Stripe Tax in the Dashboard.
  */
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -52,7 +53,6 @@ export async function onRequestPost(context) {
     'metadata[supabase_user_id]': userId,
     'metadata[plan]': plan,
     'subscription_data[metadata][supabase_user_id]': userId,
-    'automatic_tax[enabled]': 'true',
     success_url: site + ret + sep + 'checkout=success',
     cancel_url: site + ret + sep + 'checkout=cancelled',
     allow_promotion_codes: 'true'
@@ -63,7 +63,6 @@ export async function onRequestPost(context) {
   const customer = sub && sub.stripe_customer_id;
   if (customer) {
     form.set('customer', customer);
-    form.set('customer_update[address]', 'auto');   // let Checkout collect/refresh address for tax
   } else if (body.email) {
     form.set('customer_email', String(body.email));
   }

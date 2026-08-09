@@ -137,7 +137,7 @@
     function updTerms(){
       var t=$('rtgcardTerms'); if(!t) return;
       var p = chosen==='annual'?ANNUAL:MONTHLY;
-      t.textContent = p.bill+' + applicable tax';
+      t.textContent = p.bill;
     }
     render(); open();
   }
