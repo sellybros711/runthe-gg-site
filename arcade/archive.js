@@ -29,6 +29,50 @@
     catch(e){ return s; }
   }
 
+  // Per-date personal best. Every archive attempt is untracked by streak /
+  // leaderboard for integrity, but the paying member's own high score on a
+  // given day is worth persisting — this is the "chase your personal best"
+  // hook the banner is promising. Games call recordBest(game, score) on
+  // finish (archive only); the banner reads it back on the next visit.
+  function pbKey(game){ return 'rtg:'+game+':pb:'+raw; }
+  function readBest(game){
+    if(!active) return null;
+    try{ var v=localStorage.getItem(pbKey(game)); return v===null?null:Number(v); }catch(e){ return null; }
+  }
+  function recordBest(game, score, opts){
+    if(!active) return null;
+    opts=opts||{};
+    var higher=opts.higherIsBetter!==false;
+    try{
+      var cur=readBest(game), curN=cur===null?null:cur;
+      var isNew=curN===null || (higher?score>curN:score<curN);
+      if(isNew) localStorage.setItem(pbKey(game), String(score));
+      // when a new PB is set mid-play, refresh the banner without a reload
+      if(isNew) updateBannerBest(game, score, opts.label);
+      return { pb:isNew?score:curN, isNew:isNew };
+    }catch(e){ return null; }
+  }
+  // Best-known score across all archive game keys for THIS date; the banner
+  // shows the most recently touched one so a fresh session sees any prior PB.
+  function bestForBanner(){
+    var out=null;
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i); if(!k) continue;
+        var m=k.match(/^rtg:([a-z]+):pb:(.+)$/);
+        if(!m || m[2]!==raw) continue;
+        var v=Number(localStorage.getItem(k)); if(isNaN(v)) continue;
+        if(!out || v>out.v) out={ game:m[1], v:v };
+      }
+    }catch(e){}
+    return out;
+  }
+  function updateBannerBest(game, score, label){
+    var b=document.getElementById('rtgArchiveBar'); if(!b) return;
+    var slot=b.querySelector('[data-rtga-best]'); if(!slot) return;
+    slot.innerHTML=' · <b>your best today: '+score+(label?(' '+label):'')+'</b>';
+  }
+
   function injectBanner(){
     if(!active) return;
     if(document.getElementById('rtgArchiveBar')) return;
@@ -39,7 +83,11 @@
       +'padding:7px 14px; font-family:var(--f,system-ui); font-weight:800; font-size:12px; letter-spacing:.01em; '
       +'color:#20140a; background:linear-gradient(90deg,var(--gold,#F2B632),color-mix(in srgb,var(--gold,#F2B632) 78%, #fff)); '
       +'box-shadow:0 2px 10px -4px rgba(0,0,0,.5);';
-    bar.innerHTML='<span>Archive · '+pretty(raw)+' · <b>chase your personal best</b></span>'
+    var seen=bestForBanner();
+    var bestSlot = seen
+      ? ' · <b data-rtga-best>your best today: '+seen.v+'</b>'
+      : '<span data-rtga-best></span>';
+    bar.innerHTML='<span>Archive · '+pretty(raw)+' · <b>chase your personal best</b>'+bestSlot+'</span>'
       +'<a href="/arcade/archive/" style="color:#20140a; text-decoration:underline; font-weight:900;">Back to archive</a>';
     var host=document.body;
     if(host){ host.insertBefore(bar, host.firstChild); }
@@ -55,6 +103,9 @@
     requested:function(){ return raw; },                  // the raw ?date= param (may be null/invalid)
     wantsPast:function(){ return wantsPast; },            // a valid past date was requested (pro or not)
     isPro:isPro,
-    pretty:pretty
+    pretty:pretty,
+    // per-date personal-best helpers — safe no-ops when not in archive mode
+    recordBest:recordBest,
+    readBest:readBest
   };
 })();

@@ -1266,6 +1266,9 @@
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
+      if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
+        RTGArchive.recordBest('match', Math.round(finalTime), { higherIsBetter:false, label:'sec' });
+      }
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 

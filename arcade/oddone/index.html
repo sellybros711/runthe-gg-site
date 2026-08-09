@@ -590,6 +590,7 @@
     if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; }
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     save(s);
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){

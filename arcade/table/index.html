@@ -491,6 +491,7 @@
     }
     var score=Math.max(run, peak);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, score); s.last={ run:score, seconds:Math.round(elapsed) };
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && score>0) RTGArchive.recordBest(GAME, score, { label:'in a row' });
     save(s);
     showEnd(s, false);
     if(score>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
