@@ -385,23 +385,40 @@
   // yards, receptions, sacks, hits/RBI/SB/wins/K/saves). A category is kept
   // only where at least COUNT ids resolve to a non-active corpus entity.
   var STAT_CATS=Object.keys(STATS).filter(function(c){ return STATS[c] && STATS[c].vals; });
-  var statPool={};
+  var statPool={}, statPoolW={};
   STAT_CATS=STAT_CATS.filter(function(c){
     var ids=Object.keys(STATS[c].vals).filter(function(id){ var e=byId[id]; return e && e.act!==1; });
-    statPool[c]=ids; return ids.length>=COUNT;
+    statPool[c]=ids;
+    // WARMUP pool: mega-icons (f>=5) OR very-notable retired players (f>=4 with
+    // 10+ notable seasons) — always from the modern era so warmup names are
+    // recognizable to anyone active today. Sets 1-3 draw from this so the very
+    // first sort is always five names anyone knows with wide, obvious stat
+    // gaps. Falls back to the full pool when a category can't fill 5 warmup ids.
+    statPoolW[c]=ids.filter(function(id){
+      var e=byId[id]; if(!e) return false;
+      var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+      return (e.f||0)>=5 || ((e.f||0)>=4 && (e.ns||0)>=10);
+    });
+    return ids.length>=COUNT;
   });
 
   // ---- set builders ----
   // Stat set: five retired players from one category, ordered lowest -> highest.
   // Adjacent totals must differ by >=5% so the ordering is never ambiguous.
-  function buildStatSet(cat){
-    var cfg=STATS[cat], pool=statPool[cat];
+  function buildStatSet(cat, warmup){
+    var cfg=STATS[cat];
+    // Warmup uses the icons-only subset AND widens the adjacent-gap rule so
+    // the five picks are always spread far apart on the stat — no tight
+    // sub-1000-point clusters on set 1. Falls back to full pool if the warmup
+    // subset can't fill five picks in this category.
+    var pool = (warmup && statPoolW[cat] && statPoolW[cat].length>=COUNT) ? statPoolW[cat] : statPool[cat];
     if(!cfg || !pool || pool.length<COUNT) return null;
+    var minGap = warmup ? 1.35 : 1.05;   // 35% adjacent gap for warmup, 5% otherwise
     for(var g=0; g<250; g++){
       var picked=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
         .sort(function(a,b){ return a.v-b.v; });
       var ok=true;
-      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*1.05){ ok=false; break; } }
+      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*minGap){ ok=false; break; } }
       if(!ok) continue;
       var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
       return {
@@ -428,7 +445,8 @@
     while(sets.length<TOTAL_SETS && guard++<TOTAL_SETS*20){
       var bag=shuffle(cats);
       for(var i=0;i<bag.length && sets.length<TOTAL_SETS;i++){
-        var S=buildStatSet(bag[i]);
+        // Sets 1-3 are warmup: pool restricted to mega-icons, gaps widened.
+        var S=buildStatSet(bag[i], sets.length<3);
         if(S) sets.push(S);
       }
     }
