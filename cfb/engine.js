@@ -39,7 +39,7 @@ const CONSTANTS = {
 
      RAISING THIS ALONE MAKES A WORSE GAME, and so does damping alone. See
      CONSISTENCY below: the two are one change. */
-  SCALE: 2.3,
+  SCALE: 2.7,
   /* THE BUDGET HAS TO SAY NO, or there is no decision in the draft. At $14M it
      almost never did: drafting the highest scorer on every board spent 90% of it
      and ran into the price on 9% of picks. The NFL game, which is the same six
@@ -167,6 +167,10 @@ const CONSTANTS = {
      that happens to them. */
   CONSISTENCY: 0.80,
   OPP_CONSISTENCY: 0.85,
+  /* See resolveGame. 1 is the real spread of college scoring offences and it is
+     far wider than a draft can move a roster, which is why every draft used to
+     end in one of three records. */
+  OPP_SPREAD: 0.55,
   PLAYOFF_HOME_FIELD: 0.35,
   // How much of an opponent's defense is applied to your offense. See resolveGame.
   DEFENSE_WEIGHT: 0.65,
@@ -1426,9 +1430,28 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
     (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENSE_WEIGHT ?? 1);
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
-  let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);
+  /* HOW FAR APART THE TEAMS YOU PLAY ARE, which is what decides whether your
+     draft shows up in your record.
+
+     Real scoring offences span 18 to 43 points a game, which is 41 to 99 engine
+     points once SCALE is applied: a field 58 points wide. A roster range of 75 to
+     100 overall spans 25. So moving your team twenty-five points, which is most
+     of what a draft can do, crossed under half the field, and after in-game noise
+     that came to about two wins. Meanwhile one roster's win count wanders 1.05
+     season to season. The signal was the size of the noise, so a 78-overall
+     roster and a 95 produced the same record and the draft stopped showing.
+
+     This pulls every opponent toward the league average for its season, tightening
+     the field so a point of overall is worth more of a game. It compresses the
+     MEAN only: how much a team varies week to week is OPP_CONSISTENCY's job, and
+     how good it was is still what strength_z says, so beating a ranked team is
+     still worth what it was on the ranking even though the scoreboard is closer. */
+  const spread = constants.OPP_SPREAD ?? 1;
+  const oppMean = leagueAvgAllowed
+    + (opponent.pts_scored_mean - leagueAvgAllowed) * spread;
+  let oppRaw = sampleGamma(oppMean, opponent.pts_scored_sd, rng);
   const OC = constants.OPP_CONSISTENCY || 0;
-  if (OC > 0) oppRaw = oppRaw * (1 - OC) + opponent.pts_scored_mean * OC;
+  if (OC > 0) oppRaw = oppRaw * (1 - OC) + oppMean * OC;
   const oppScore = oppRaw * constants.SCALE / advantage;
 
   let won;

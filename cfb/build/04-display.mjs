@@ -95,13 +95,17 @@ function sampleGamma(mu, sd, rng) {
    throws, the scorelines just stop matching the games they are printed under.
    Re-run this stage after ANY move to the constants below. */
 const CAP_MUSD = 11;
-const SCALE = 2.3;
+const SCALE = 2.7;
 const DEFENCE_WEIGHT = 0.65;
 /* The two that decide how wide the margin distribution is. Omitting them was the
    worst of the three drifts: undamped, a simulated margin is roughly twice the
    spread of a real one. */
 const CONSISTENCY = 0.80;
 const OPP_CONSISTENCY = 0.85;
+/* How far apart the teams you play are. See resolveGame: the real field is far
+   wider than a draft can move a roster, so it is compressed toward the league
+   average and the margins here have to be compressed the same way. */
+const OPP_SPREAD = 0.55;
 const SLOTS = ['QB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
@@ -181,10 +185,12 @@ async function main() {
        built from games the engine cannot play. */
     const expected = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
     raw = raw * (1 - CONSISTENCY) + expected * CONSISTENCY;
-    const defMod = 1 + (opp.pts_allowed_mean / (lc[opp.season] ?? 25) - 1) * DEFENCE_WEIGHT;
+    const leagueAvg = lc[opp.season] ?? 25;
+    const defMod = 1 + (opp.pts_allowed_mean / leagueAvg - 1) * DEFENCE_WEIGHT;
     const yourScore = raw * chem * defMod;
-    let oppRaw = sampleGamma(opp.pts_scored_mean, opp.pts_scored_sd, rng);
-    oppRaw = oppRaw * (1 - OPP_CONSISTENCY) + opp.pts_scored_mean * OPP_CONSISTENCY;
+    const oppMean = leagueAvg + (opp.pts_scored_mean - leagueAvg) * OPP_SPREAD;
+    let oppRaw = sampleGamma(oppMean, opp.pts_scored_sd, rng);
+    oppRaw = oppRaw * (1 - OPP_CONSISTENCY) + oppMean * OPP_CONSISTENCY;
     const oppScore = oppRaw * SCALE;
 
     internalMargins.push(Math.abs(yourScore - oppScore));
