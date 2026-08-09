@@ -140,12 +140,17 @@
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
-        "top   top" "title title" "prm prm"
-        "sub  run" "choi lbd" "hint lbd" "foot foot";
+        "top   top" "title title" "prm prm" "sub sub"
+        "choi run" "choi lbd" "hint lbd" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .prompt{grid-area:prm;}
     .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
     .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
       }
+    /* the five answer rows are the whole game — let them own the column
+       instead of floating in it (the old grid tied the empty subprompt row to
+       the tall streak rail, dropping the choices ~170px down the page) */
+    .choices{ gap:12px; }
+    .choice{ min-height:64px; font-size:19px; padding:18px 22px; display:flex; align-items:center; }
     .foot{ grid-column:1 / -1; margin-top:18px; }
     .a-gametitle{ margin:2px 0 8px; }
     .lb{ margin:0; }

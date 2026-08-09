@@ -145,13 +145,14 @@
     triesLeft: triesLeft,
     canPlay: canPlay,
     startAttempt: startAttempt,
-    // a compact, tier-aware status string for hints/tiles
+    // a compact, tier-aware status string for hints/tiles. Callers append
+    // " today" (every game's hint line does), so no string here may end in it.
     label: function(){
       if(hasCard()) return 'Arcade Card · unlimited';
       if(TESTING)   return 'Testing · unlimited';
       var left=remaining(), c=cap();
-      if(left<=0) return signedIn() ? 'No plays left today' : 'No free play left today';
-      if(!signedIn()) return left+' free play today';
+      if(left<=0) return signedIn() ? 'No plays left' : 'No free play left';
+      if(!signedIn()) return left+' free play';
       return left+' of '+c+' plays left';
     }
   };
