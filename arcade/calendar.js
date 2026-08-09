@@ -19,7 +19,7 @@
   // Game registry — icons/accents mirror the hub tiles so the archive reads as
   // the same product. `cls` matches the hub's .tile.<cls> accent rules.
   var GAMES = [
-    { key:'table',      path:'table',      cls:'table',  name:'Run The Table',    accent:'var(--gold)',
+    { key:'table',      path:'table',      cls:'table',  name:'HiQ',    accent:'var(--gold)',
       desc:'Higher or lower? Tap the bigger number and run as many as you can.',
       icon:'<svg viewBox="0 0 56 56"><rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/><rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/><g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g></svg>' },
     { key:'match',      path:'match',      cls:'match',  name:'Daily Match',      accent:'var(--blue)',

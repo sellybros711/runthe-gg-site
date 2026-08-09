@@ -14,7 +14,7 @@
   'use strict';
   // inner markup only (shared <svg> wrapper added by get())
   var P = {
-    // Run The Table — two opposing score panels
+    // HiQ — two opposing score panels
     table: '<rect x="3.5" y="6" width="7" height="12"/><rect x="13.5" y="6" width="7" height="12"/><path d="M12 8.5v7"/>',
     // Daily Match — grouped tiles (2x2)
     match: '<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/>',
