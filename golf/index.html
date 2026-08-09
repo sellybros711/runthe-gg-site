@@ -735,6 +735,109 @@ window.GA_ID='G-L29P5MRWKE';
   .oc-btn:active{transform:translateY(1px)}
   .oc-btn .ol-l{display:block; font:900 15px/1 var(--body)}
   .oc-btn .ol-s{display:block; font:700 10px/1.2 var(--body); opacity:.74; margin-top:3px}
+  /* ══ HOME: one HERO (the mode you were last in) + a rail of the other modes ══
+     Same DOM on every size. Phone: hero on top, the rail scrolls sideways under it.
+     Desktop: the rail becomes the right-hand column and the whole thing spreads
+     across the width instead of sitting in a 520px strip. */
+  .homehead{max-width:520px; margin:0 auto}
+  .homemain{margin-top:2px}
+  .homehero{max-width:520px; margin:0 auto}
+  .homehero>.gcard, .homehero>.resumecard{max-width:none; margin:0}
+  .rail-lab{max-width:520px; margin:15px auto 8px; font:800 10px/1 var(--body); letter-spacing:.18em;
+    text-transform:uppercase; color:var(--pagemut); opacity:.85; display:flex; align-items:center; gap:9px}
+  .rail-lab i{flex:1; height:1px; background:linear-gradient(90deg,rgba(244,227,201,.2),transparent)}
+  .homerail{display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; scrollbar-width:thin;
+    max-width:520px; margin:0 auto; padding:2px 0 9px}
+  .homerail>*{flex:0 0 min(64vw,224px); max-width:none; margin:0!important; scroll-snap-align:start}
+  .homerail::-webkit-scrollbar{height:6px}
+  .homerail::-webkit-scrollbar-thumb{background:rgba(244,227,201,.22); border-radius:3px}
+  .homerail::-webkit-scrollbar-track{background:transparent}
+  /* let the rail run to the screen edges on a phone so it reads as scrollable */
+  @media(max-width:919px){
+    .homerail{margin-left:-16px; margin-right:-16px; padding-left:16px; padding-right:16px; max-width:none}
+  }
+  /* the HERO: the same card, scaled up */
+  .gcard.heroc{padding:17px 20px; border-radius:22px}
+  .gcard.heroc .gc-title{font-size:36px}
+  .gcard.heroc .gc-kick{font-size:11px}
+  .gcard.heroc .gc-mid{font-size:13.5px; margin-top:8px}
+  .gcard.heroc .gc-badge{font-size:13px; padding:8px 12px}
+  .gcard.heroc .gc-strip{margin:14px -20px -17px; height:70px}
+  .resumecard.heroc{padding:18px 20px 16px; border-radius:22px}
+  .resumecard.heroc .rc-name{font-size:33px}
+  .resumecard.heroc .rc-ovr b{font-size:25px}
+  /* the RAIL cards: the same card, compacted (no art strip, no chips, tighter type) */
+  .gcard.railc, .resumecard.railc{padding:11px 12px 10px; border-radius:15px;
+    box-shadow:0 4px 12px -6px rgba(0,0,0,.6), 0 14px 30px -14px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.13)}
+  .gcard.railc .gc-title{font-size:20px}
+  .gcard.railc .gc-kick{font-size:9px; letter-spacing:.13em}
+  .gcard.railc .gc-badge{font-size:10px; padding:5px 7px; border-radius:7px}
+  .gcard.railc .gc-mid{font-size:11px; margin-top:5px; display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; overflow:hidden}
+  .gcard.railc .gc-strip, .gcard.railc .gc-chip, .resumecard.railc .rc-prog{display:none}
+  .gcard.railc .gc-row{margin-top:8px}
+  .gcard.railc .gc-go{font-size:11.5px; padding:6px 10px}
+  .resumecard.railc .rc-name{font-size:20px}
+  .resumecard.railc .rc-kick{font-size:9px}
+  .resumecard.railc .rc-ovr{padding:4px 8px} .resumecard.railc .rc-ovr b{font-size:16px}
+  .resumecard.railc .rc-stats{margin-top:9px; gap:6px 9px}
+  .resumecard.railc .rc-stat b{font-size:13px} .resumecard.railc .rc-stat span{font-size:9px}
+  .resumecard.railc .rc-go{font-size:11.5px; padding:6px 10px}
+  .railc .oc-row{display:none}
+  /* ── DESKTOP: use the whole width ── */
+  @media(min-width:920px){
+    .titlewrap{max-width:1180px}
+    .homehead{max-width:none; display:flex; align-items:center; justify-content:space-between; gap:22px}
+    .homehead .homehdr{max-width:none; margin:0; flex:1 1 auto}
+    .homehead .homehead-act{margin:0!important; flex:0 0 auto}
+    .homehead .hh-fig{width:74px; height:94px}
+    .homehead .hh-name{font-size:38px}
+    /* columns size to their own content - a stretched hero would just be a big empty box.
+       Explicit placement so the extras (spotlight tease, live-drop promo) fill the space under the
+       hero instead of leaving a hole, while the rail column runs the full height beside them. */
+    .homemain{display:grid; grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);
+      grid-template-rows:auto auto; gap:26px; align-items:start; margin-top:18px}
+    .homehero{grid-column:1; grid-row:1}
+    .homeside{grid-column:2; grid-row:1/span 2}
+    .homeextras{grid-column:1; grid-row:2; margin:0}
+    .homeextras .homedrop{margin-left:0; margin-right:0}
+    /* margin:0 auto from the phone rule would make this grid item shrink-to-fit and centre itself */
+    .homehero{max-width:none; margin:0; width:100%; display:flex}
+    .homehero>*{width:100%}
+    .gcard.heroc{padding:22px 26px}
+    .gcard.heroc .gc-title{font-size:44px}
+    .gcard.heroc .gc-mid{font-size:15px}
+    .gcard.heroc .gc-strip{margin:18px -26px -22px; height:104px}
+    .gcard.heroc .gc-go, .resumecard.heroc .rc-go{font-size:14px; padding:10px 16px}
+    /* the career hero earns its size by showing the golfer big, not by stretching */
+    .resumecard.heroc{padding:24px 26px 20px}
+    .resumecard.heroc .rc-name{font-size:40px}
+    .resumecard.heroc .pxfigsm{height:132px!important}
+    .resumecard.heroc .rc-prog{margin-top:20px}
+    .resumecard.heroc .rc-stats{margin-top:20px}
+    .homeside{display:flex; flex-direction:column; min-width:0}
+    .rail-lab{max-width:none; margin:0 0 10px}
+    .homerail{flex-direction:column; overflow:visible; max-width:none; gap:12px; padding:0; flex:1 1 auto}
+    .homerail>*{flex:0 0 auto; width:100%}
+    /* on desktop the rail cards have room, so give them their full detail back */
+    .gcard.railc{padding:13px 16px; border-radius:17px}
+    .gcard.railc .gc-title{font-size:25px}
+    .gcard.railc .gc-mid{font-size:12px; -webkit-line-clamp:3}
+    .gcard.railc .gc-chip{display:inline-flex; font-size:10.5px; padding:5px 8px}
+    .resumecard.railc{padding:13px 16px}
+    .resumecard.railc .rc-name{font-size:25px}
+    .railc .oc-row{display:flex}
+    .home-nav.compact{max-width:760px; gap:12px; margin-top:24px}
+    .home-nav.compact .navtile{padding:13px 6px 11px; border-radius:15px}
+    .home-nav.compact .nichip{width:42px; height:42px; border-radius:12px}
+    .home-nav.compact .nichip svg{width:30px; height:30px}
+    .home-nav.compact .nl{font-size:12.5px}
+    .homedrop{max-width:640px}
+    /* the dusk-course motifs are sized for a phone; on a wide screen they'd sprawl behind the cards */
+    .sc-bunker{width:190px; left:1%; filter:drop-shadow(0 7px 13px rgba(0,0,0,.3)) brightness(.6) saturate(.75)}
+    .sc-green{width:400px; right:-3%; filter:drop-shadow(0 8px 15px rgba(0,0,0,.3)) brightness(.66) saturate(.8)}
+  }
   .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(241,208,74,.4))}
   .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
     border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
@@ -2065,6 +2168,13 @@ window.GA_ID='G-L29P5MRWKE';
   #app.vnew .stack>*:nth-child(n+6){animation-delay:.19s}
   #app.vnew .homehdr,#app.vnew .titlewrap>.hero,#app.vnew .titlewrap>.herotag{animation:rttRise .28s cubic-bezier(.22,.85,.3,1) both}
   #app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini{animation:rttRise .3s .12s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .homehero>*{animation:rttRise .3s .04s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .homerail>*{animation:rttRise .28s cubic-bezier(.22,.85,.3,1) both}
+  #app.vnew .homerail>*:nth-child(1){animation-delay:.1s}
+  #app.vnew .homerail>*:nth-child(2){animation-delay:.14s}
+  #app.vnew .homerail>*:nth-child(3){animation-delay:.18s}
+  #app.vnew .homerail>*:nth-child(n+4){animation-delay:.21s}
+  #app.vnew .rail-lab{animation:rttFade .3s .08s ease-out both}
   #app.vnew .sgrid>*{animation:rttRise .26s cubic-bezier(.22,.85,.3,1) both}
   #app.vnew .sgrid>*:nth-child(n+4){animation-delay:.04s}
   #app.vnew .sgrid>*:nth-child(n+7){animation-delay:.08s}
@@ -2084,7 +2194,8 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){
     #app.vnew .screen,#app.vnew .ov,#app.vnew .stack>*,#app.vnew .homehdr,#app.vnew .titlewrap>.hero,
     #app.vnew .titlewrap>.herotag,#app.vnew .home-nav,#app.vnew .homedrop,#app.vnew .online-mini,
-    #app.vnew .sgrid>*,#app.vnew .ov h3,#app.vnew .ov>.tag{animation:none}
+    #app.vnew .sgrid>*,#app.vnew .ov h3,#app.vnew .ov>.tag,
+    #app.vnew .homehero>*,#app.vnew .homerail>*,#app.vnew .rail-lab{animation:none}
     .gcard,.resumecard,.navtile,.homedrop,.om-btn,.howtop,.wheelbtn,.stile,.catchip,.segrow button,
     .hschip,.pill,.sp-opt{transition:none}
     @media (hover:hover){ .gcard:hover,.resumecard:hover,.navtile:hover,.homedrop:hover,.stile:hover{transform:none} }
@@ -4141,7 +4252,8 @@ function saveMidSeasonAndExit(){
   clearTimeout(seasonTimer); reset(); render();
   toast(saved?'Career saved. Resume from the home screen':'Sign in to save & resume your career');
 }
-function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   // an ended career is never resumable, see viewEndedCareer()
+function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;
+  homeSetLastMode('career');   // an ended career is never resumable, see viewEndedCareer()
   reset();
   S.career=normalizeCareerNames(r.career); S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
@@ -9809,7 +9921,7 @@ function careerHeroCard(fresh){
     ${best}
     <div class="gc-row"><span class="gc-go">Build ▸</span></div>
   </button>`);
-  card.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
+  card.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
   return card;
 }
 // Play Online - a COMPACT teal strip (owner: much smaller / less invasive than a full hero card).
@@ -9824,6 +9936,82 @@ function onlineHeroCard(){
   if(ob1) ob1.onclick=()=>openH2H('1v1');
   if(ob4) ob4.onclick=()=>openH2H('bestball');
   return card;
+}
+// ══ HOME: the mode you were last in becomes the hero; everything else rides a rail ══
+// Which mode was last opened (device-local UI hint, not progress - never worth syncing).
+function homeLastMode(){ try{ return LS.get('bag_lastmode',null); }catch(e){ return null; } }
+function homeSetLastMode(id){ try{ LS.set('bag_lastmode',id); }catch(e){} }
+// Play Online as a full mode CARD (the compact .online-mini strip is too small to be a hero).
+// As the hero it carries both entry buttons; in the rail it's one tap into the online home.
+function onlineModeCard(opt){
+  const rail=opt&&opt.rail;
+  const mid='Draft against real players, then watch both rounds play out shot by shot.';
+  if(rail){
+    const c=$(`<button class="gcard gc-teal" aria-label="Play Online, head to head">
+      <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🌐 Play Online</div><div class="gc-title">Head to Head</div></div><span class="gc-badge">LIVE</span></div>
+      <div class="gc-mid">${mid}</div>
+      <div class="gc-row"><span class="gc-go">Play ▸</span></div>
+    </button>`);
+    c.onclick=()=>openH2H();
+    return c;
+  }
+  const card=$(`<div class="gcard gc-teal" role="group" aria-label="Play Online">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🌐 Play Online</div><div class="gc-title">Head to Head</div></div><span class="gc-badge">LIVE</span></div>
+    <div class="gc-mid">${mid}</div>
+    <div class="oc-row">
+      <button type="button" class="oc-btn" data-h2h="1v1"><span class="ol-l">1v1</span><span class="ol-s">Head to head</span></button>
+      <button type="button" class="oc-btn" data-h2h="bestball"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
+    </div>
+  </div>`);
+  card.querySelectorAll('[data-h2h]').forEach(b=>{ b.onclick=()=>openH2H(b.getAttribute('data-h2h')); });
+  return card;
+}
+// A half-built golfer that never made it into a season (no career save yet).
+function resumeDraftCard(ri){
+  const c=$(`<button class="gcard gc-blue" aria-label="Resume your golfer">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Career</div><div class="gc-title">Resume Your Golfer</div></div><span class="gc-badge">${ri.n}/8</span></div>
+    <div class="gc-mid">${ri.n} of 8 skills drafted. Finish the bag and take it into a season.</div>
+    <div class="gc-row"><span class="gc-go">Resume ▸</span></div>
+  </button>`);
+  c.onclick=restoreResume;
+  return c;
+}
+// A retired/completed career: never resumable, just revisits the ceremony.
+function endedCareerCard(cs){
+  const circuit=!!cs.circuitEnded;
+  const yrs=circuit?((cs.circuitEnd&&cs.circuitEnd.years)||0):((cs.careerEnd&&cs.careerEnd.years)||cs.year);
+  const c=$(`<button class="gcard gc-teal" aria-label="View ${circuit?'Legend Circuit':'career'} ceremony">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${circuit?'Legend Circuit':'Career'} complete</div><div class="gc-title">${esc(cs.name||'Your Golfer')}</div></div><span class="gc-badge">${yrs} YR${yrs===1?'':'S'}</span></div>
+    <div class="gc-mid">Your ${circuit?'circuit':'career'} is in the books. Start a new golfer from the ceremony.</div>
+    <div class="gc-row"><span class="gc-go">View ceremony ▸</span></div>
+  </button>`);
+  c.onclick=viewEndedCareer;
+  return c;
+}
+// Every mode the home screen offers, in display order, with whether it's actionable right now
+// (an exhausted daily should never be the hero) and how strongly it wants the hero slot.
+function homeModeList(){
+  const list=[], cs=careerSaveInfo(), ri=resumeInfo();
+  let dact=true; try{ dact = PRACTICE || dailyUnlimited() || dailyAttemptsLeft()>0 || hasFreeLegends(); }catch(e){}
+  list.push({id:'daily', act:dact, pri:2, make:()=>dailyHeroCard()});
+  if(cs && cs.ended)      list.push({id:'career', act:false, pri:9, make:()=>endedCareerCard(cs)});
+  else if(cs)             list.push({id:'career', act:true,  pri:1, make:()=>resumeCareerCard(cs)});
+  else if(ri)             list.push({id:'career', act:true,  pri:1, make:()=>resumeDraftCard(ri)});
+  else                    list.push({id:'career', act:true,  pri:3, make:()=>careerHeroCard(true)});
+  list.push({id:'online', act:true, pri:4, make:(o)=>onlineModeCard(o)});
+  if(passEnabled())       list.push({id:'pass', act:true, pri:9, hero:false, make:()=>tourPassCard()});
+  if(spotlightLiveToday()){ let sact=true; try{ sact=spotAttemptsLeft(monthlySpotlight(todayKey()).mk)>0; }catch(e){}
+    list.push({id:'spot', act:sact, pri:5, make:()=>spotlightHeroCard()}); }
+  return list;
+}
+// The hero is whatever you were last doing, as long as it's still worth doing. Otherwise the most
+// pressing thing that is (a career in progress, then today's round, then online).
+function homeHeroPick(list){
+  const able=list.filter(m=>m.hero!==false);
+  if(!able.length) return null;
+  const last=homeLastMode(), byLast=able.find(m=>m.id===last);
+  if(byLast && byLast.act) return byLast;
+  return able.filter(m=>m.act).sort((a,b)=>a.pri-b.pri)[0] || able[0];
 }
 // CS447: home-screen backdrop = a clean crisp dusk-course scene (smooth SVG layout: sky, hazy distant
 // treeline, far + near ground planes for depth, warm horizon glow) with crisp PIXEL motifs (a greenside
@@ -9996,8 +10184,12 @@ function scrTitle(){
   const w=$(`<div class="titlewrap center"></div>`);
   // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
   const returning=homeReturning();
+  // returning players get a header ROW (golfer + name on the left, the quick pills on the right on
+  // desktop); the first-run marketing hero keeps its own centred stack, untouched.
+  const head=returning?$(`<div class="homehead"></div>`):null;
   if(returning){
-    w.appendChild(homePlayerHeader());
+    head.appendChild(homePlayerHeader());
+    w.appendChild(head);
   } else {
     w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
     w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build the </span><span class="hr2">Perfect Golfer</span></h1>`));
@@ -10013,12 +10205,12 @@ function scrTitle(){
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
   // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
-  if(!firstRun){ const hw=$(`<div class="center" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
+  if(!firstRun){ const hw=$(`<div class="center homehead-act" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
     // Prize Wheel lives here as a compact glowing pill (owner: no full-size tile for it)
     if(wheelEnabled()) hw.appendChild(wheelMiniBtn());
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
     hb.onclick=openRules; hw.appendChild(hb);
-    w.appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
+    (head||w).appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
@@ -10035,57 +10227,42 @@ function scrTitle(){
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
   setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
-  // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
-  // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
-  // calendar, weekly goals, free-Legend hook) moved into the Play-18 (daily)
-  // flow (daily preview) so they don't clutter the homepage.
+  // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
+  // card (mid-career it's "Resume Year 12", first thing in the morning it's
+  // "Play 18"); every other mode rides a rail under it - which scrolls
+  // sideways on a phone and becomes the right-hand column on a desktop, so
+  // the page fills the width instead of sitting in a 520px strip.
+  // The daily companions (streak calendar, weekly goals, free-Legend hook)
+  // live in the Play-18 flow, not here.
   // ════════════════════════════════════════════════════════════════════
-  // 1) Play 18 / daily (folds in the streak chip + attempts + countdown)
-  stack.appendChild(dailyHeroCard());
-  // 2) CAREER - right below Play 18. Resume card if in progress, else Career Mode. Color stays gold.
-  if(cs && cs.ended){
-    // a retired/completed career, never resumable, just lets them revisit the ceremony they just saw
-    const circuit=!!cs.circuitEnded;
-    const yrs=circuit?((cs.circuitEnd&&cs.circuitEnd.years)||0):((cs.careerEnd&&cs.careerEnd.years)||cs.year);
-    const cb=$(`<button class="btn teal">View ${circuit?'Legend Circuit':'Career'} Ceremony<span class="sub">${yrs} season${yrs===1?'':'s'} · ${esc(cs.name||'Your Golfer')} · ${circuit?'circuit':'career'} complete</span></button>`);
-    cb.onclick=viewEndedCareer; stack.appendChild(cb);
-  } else if(cs){
-    stack.appendChild(resumeCareerCard(cs));   // CS254 richer "continue" card
+  const modes=homeModeList();
+  const hero=homeHeroPick(modes);
+  const main=$(`<div class="homemain"></div>`);
+  const heroSlot=$(`<div class="homehero"></div>`);
+  if(hero){ const hc=hero.make({hero:true}); hc.classList.add('heroc'); heroSlot.appendChild(hc); }
+  main.appendChild(heroSlot);
+  const rest=modes.filter(m=>m!==hero);
+  if(rest.length){
+    const side=$(`<div class="homeside"><div class="rail-lab">Also today<i></i></div><div class="homerail"></div></div>`);
+    const rail=side.querySelector('.homerail');
+    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); rail.appendChild(c); });
+    main.appendChild(side);
   }
-  // "Resume Your Golfer" is a stale in-progress BUILD snapshot (a half-built golfer never taken into a
-  // season). If you already have a career to resume, it's redundant, so only show it with no career save.
+  w.appendChild(main);
+  // extras that aren't modes: a stale build draft still wants a way to start over, and a dormant
+  // Spotlight gets a one-line tease so the month's event isn't invisible. On desktop these sit under
+  // the hero (filling the left column); on a phone they just follow the rail.
+  const extras=$(`<div class="homeextras"></div>`);
   if(ri && !cs){
-    const rb=$(`<button class="btn goldfill">Resume Your Golfer<span class="sub">${ri.n}/8 skills built</span></button>`);
-    rb.onclick=restoreResume; stack.appendChild(rb);
+    const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
+    go.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
+    stack.appendChild(go);
   }
-  // Career is one of the 4 home modes. With a saved career, that slot is the Continue Career card above,
-  // so NO separate "New Career" button here - you start a fresh career from inside your current one
-  // (Continue → off-season → Retire → start a new golfer). Only show a Career-Mode start button when
-  // there's no career to continue (fresh player, or a stale build draft to turn into a career).
-  if(!cs){
-    if(ri){
-      // stale build draft is being resumed above (gold "Resume Your Golfer"); offer a quiet ghost new-career button
-      const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
-      go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
-      stack.appendChild(go);
-    } else {
-      // fresh player: Career Mode reads as a gold mode CARD (left-aligned, matching the other cards)
-      stack.appendChild(careerHeroCard(true));
-    }
-  }
-  // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent.
-  // Gated to dev accounts (or the TOURPASS_LIVE launch flag) so we can live-test before public.
-  if(passEnabled()) stack.appendChild(tourPassCard());
-  // 4) Play Online (teal card)
-  stack.appendChild(onlineHeroCard());
-  // 4) Monthly Spotlight (purple card while live, else a small "next" tease)
-  if(spotlightLiveToday()){
-    stack.appendChild(spotlightHeroCard());
-  } else {
+  if(!spotlightLiveToday()){
     const ns=nextSpotlight();
-    stack.appendChild($(`<div class="small center" style="color:var(--muted)">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
+    stack.appendChild($(`<div class="small center" style="color:var(--muted);margin-top:6px">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
-  w.appendChild(stack);
+  if(stack.children.length) extras.appendChild(stack);
   // ── LIVE THEMED DROP promo: shows whenever a windowed drop is live (Summer Smash now, Spooky in Oct...),
   // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
   try{ const ld=liveThemedDrop();
@@ -10095,7 +10272,8 @@ function scrTitle(){
         <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
         <span class="hd-go">▸</span>`);
       db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
-      w.appendChild(db); } }catch(e){}
+      extras.appendChild(db); } }catch(e){}
+  if(extras.children.length) main.appendChild(extras);
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
   const sec=$(`<div class="home-nav compact"></div>`);
   const signedIn=sbSignedIn();
@@ -20628,6 +20806,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   return node;
 }
 function startDailyChallenge(){
+  homeSetLastMode('daily');   // the home hero follows whatever you were last playing
   S.special=false;   // entering the regular daily, never treat it as a Spotlight
   if(PRACTICE){ beginDailyAttempt(); return; }   // practice: straight into a fresh round, always
   const r=dailyBest();
@@ -21731,6 +21910,7 @@ function hvShareShot(holeIdx){
    only branching at start, finish, and the result screen via the S.special flag. ---- */
 function startSpotlight(){
   if(!spotlightLiveToday()) return;
+  homeSetLastMode('spot');
   const sp=monthlySpotlight(todayKey());
   if(spotAttempts(sp.mk)>0){ S.special=true; S.spotCfg=sp; S.spotResult=null; S.screen='dailyresult'; render(); return; }  // already played → show best + replay
   beginSpotlightAttempt();
@@ -26770,6 +26950,7 @@ function openH2H(mode){
   if(!sb){ toast('Online play needs a connection'); return; }
   if(!sbSignedIn()){ S.overlay='account'; render(); toast('Sign in to play online'); return; }
   const preset=(typeof mode==='string' && H2H_MODES.some(m=>m.id===mode))?mode:null;   // guard: also used as an onclick handler
+  homeSetLastMode('online');
   h2hClearTimers(); S.h2h={mode:preset||(S.h2h&&S.h2h.mode)||'1v1', holes:(S.h2h&&S.h2h.holes)||18}; S.screen='h2hhome'; render();
 }
 function h2hLeave(){ h2hClearTimers(); const keep=S.h2h?{mode:S.h2h.mode,holes:S.h2h.holes}:null; S.h2h=keep; S.screen='title'; render(); }
