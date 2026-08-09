@@ -23,6 +23,7 @@
  *   links      every internal href, src and sitemap loc on the four public pages
  *   cold       what a first visit costs and how fast it becomes playable
  *   head       title, description, canonical, og, manifest, robots, a11y, overflow
+ *   fold       every front-page button reachable on five real phones, address bar included
  *   play       a whole season with every screen opened and nothing allowed to log
  *   home       the card on the site's front page, and where it sits
  */
@@ -177,6 +178,52 @@ if (want('head')) {
       ok(n + ': no sideways scroll at ' + w, over <= 1, over + 'px');
     }
     ok(n + ': nothing logged', p.errs.length === 0, p.errs.slice(0, 3).join(' | '));
+    await p.close();
+  }
+}
+
+/* ── the front page fits a phone ───────────────────────────────────────────────
+   Every button on the front page has to be reachable without scrolling, and the
+   trap is that innerHeight is NOT what a player can see. iOS Safari's address bar
+   takes about ninety pixels that the viewport never mentions, so a layout can
+   measure as fitting and still be cut off on the device: that is exactly how
+   Leaderboard and How to play went out below the fold, sixteen pixels clear of
+   the poll bar by the numbers and under it in a real hand.
+
+   So the bar is not the viewport, it is the viewport minus a chrome allowance,
+   and the ceiling is the poll bar rather than the bottom edge, because a button
+   behind the poll is as unreachable as one off the screen.
+
+   Real CSS viewports, not invented ones. The SE is the hard case and the reason
+   the field is dropped under 760px: there is no arrangement of a top bar, two
+   reels, a headline, four buttons and the poll that fits 667px once the address
+   bar has taken its share. */
+if (want('fold')) {
+  console.log('\n=== every front-page button is above the fold ===');
+  const CHROME = 90;
+  const PHONES = [['iPhone SE', 375, 667], ['13 mini', 375, 812], ['iPhone 14', 390, 844],
+    ['15 Pro Max', 430, 932], ['Pixel 7', 412, 915]];
+  for (const [name, w, h] of PHONES) {
+    const p = await newPage({ width: w, height: h });
+    await p.goto(HOST + '/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await p.waitForSelector('#s-intro.on', { timeout: 20000 });
+    await p.waitForFunction(() => { const t = document.getElementById('h-ticker'); return t && !t.hidden; },
+      { timeout: 30000 }).catch(() => {});
+    await p.waitForTimeout(900);
+    const m = await p.evaluate(() => {
+      const tick = document.getElementById('h-ticker').getBoundingClientRect();
+      const out = { ceiling: tick.height > 0 ? tick.top : innerHeight, buttons: {} };
+      for (const id of ['b-play-intro', 'b-modes', 'b-lb-intro', 'b-how']) {
+        const e = document.getElementById(id);
+        out.buttons[id] = e ? e.getBoundingClientRect().bottom : null;
+      }
+      return out;
+    });
+    const last = Math.max(...Object.values(m.buttons).filter((v) => v !== null));
+    const slack = m.ceiling - last;
+    ok(name + ' (' + w + 'x' + h + '): all four buttons clear the poll bar and the address bar',
+      slack >= CHROME, 'slack ' + slack.toFixed(0) + 'px, need ' + CHROME);
+    ok(name + ':   and nothing logged', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
     await p.close();
   }
 }
