@@ -656,6 +656,7 @@
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -860,6 +861,7 @@
   // One free ranked play per game per day. Unplayed → PLAY. Played:
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
+  function hasCard() { return !!(TOK && TOK.hasCard && TOK.hasCard()); }
   var ARW = ' <span class="arw">→</span>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
@@ -876,8 +878,12 @@
     var left = triesLeft(key);
     if (!done) {
       play.innerHTML = 'PLAY' + ARW;
+    } else if (hasCard()) {
+      // Cardholder: a finished game becomes the entry to its archive calendar.
+      play.innerHTML = 'ARCHIVE' + ARW;
+      card.classList.add('archive'); card.setAttribute('data-arch', key);
     } else if (TOK && left > 0) {
-      play.innerHTML = 'PLAY AGAIN' + ARW;   // Pro: unlimited practice
+      play.innerHTML = 'PLAY AGAIN' + ARW;   // free with plays left: replay today
     } else {
       play.innerHTML = '✓ DONE';             // free: come back tomorrow
     }
@@ -893,6 +899,19 @@
   mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
   mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
+
+  // Cardholders: a played tile is an "Archive" entry. Clicking it opens that
+  // game's past-days calendar (RTGCalendar) instead of replaying today.
+  (function(){
+    [].forEach.call(document.querySelectorAll('a.tile[href^="/arcade/"]'), function(a){
+      a.addEventListener('click', function(e){
+        if(!a.classList.contains('archive')) return;
+        var k=a.getAttribute('data-arch'); if(!k || !window.RTGCalendar) return;
+        e.preventDefault();
+        RTGCalendar.open(k);
+      });
+    });
+  })();
 
   // "Keep streak alive" CTA → first unplayed game today (display order)
   (function () {

@@ -24,7 +24,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C; --gray:#AAB6C4;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
@@ -78,17 +78,38 @@
   .probar .off{margin-left:auto; font-size:11px; font-weight:800; color:var(--mut); border:1px solid var(--line2); border-radius:999px; padding:5px 11px; cursor:pointer; background:var(--card2);}
   .probar .off:hover{color:var(--ink);}
 
-  /* day cards */
-  .day{background:var(--card); border:1px solid var(--line2); border-radius:14px; box-shadow:var(--shadow); padding:13px 15px; margin-bottom:11px;}
-  .day .dh{display:flex; align-items:baseline; gap:9px; margin-bottom:11px;}
-  .day .dh .d{font-family:var(--hero); font-weight:400; font-size:17px; color:var(--ink); letter-spacing:.01em;}
-  .day .dh .ago{font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--dim);}
-  .games{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
-  @media(min-width:560px){ .games{grid-template-columns:repeat(4,1fr);} }
-  .gm{display:flex; align-items:center; gap:8px; border:1px solid var(--line2); border-left:4px solid var(--c,var(--mut)); border-radius:10px; background:var(--card2); padding:9px 11px; font-weight:800; font-size:12.5px; color:var(--ink); transition:transform .08s, border-color .15s;}
-  .gm:hover{border-color:var(--c,var(--mut)); transform:translateY(-1px);}
-  .gm .dot{width:9px; height:9px; border-radius:3px; background:var(--c,var(--mut)); flex:0 0 auto;}
-  .arch-note{text-align:center; color:var(--dim); font-size:11.5px; margin:18px 0 4px;}
+  /* game tiles — mirror the home-page grid so the archive reads as the same product */
+  .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;}
+  @media (min-width:640px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
+  @media (max-width:640px){ .tiles{gap:11px;} }
+  button.tile{font:inherit; text-align:left; padding:0; width:100%; color:inherit;}
+  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; cursor:pointer;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
+  .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
+  .tile.table{--c:var(--gold);} .tile.match{--c:var(--blue);} .tile.career{--c:var(--green);} .tile.oddone{--c:var(--violet);}
+  .tile.rankit{--c:var(--pink);} .tile.alma{--c:var(--gold);} .tile.guess{--c:var(--coral);} .tile.cross{--c:#AAB6C4;} .tile.word{--c:var(--teal);}
+  .tile.match .nm{color:var(--blueT);} .tile.cross .nm{color:var(--ink);} .tile.word .nm{color:var(--tealT);}
+  .tile.guess .nm{color:var(--coralT);} .tile.table .nm{color:var(--goldT);} .tile.oddone .nm{color:var(--violetT);}
+  .tile.career .nm{color:var(--greenT);} .tile.rankit .nm{color:var(--pinkT);} .tile.alma .nm{color:var(--goldT);}
+  .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
+    background:color-mix(in srgb, var(--c) 14%, var(--card)); border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);}
+  .tile .cap svg{width:60px; height:60px; position:relative; z-index:1; filter:drop-shadow(0 4px 10px rgba(0,0,0,.18));}
+  .tile .body{display:flex; flex-direction:column; flex:1; padding:15px;}
+  .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
+  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
+  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s; text-shadow:0 1px 2px rgba(0,0,0,.28);}
+  .tile.cross .play{color:#16273B; text-shadow:none;}
+  .tile:hover .play{filter:brightness(1.08);}
+  .tile .play .arw{font-size:19px; transition:transform .16s;}
+  .tile:hover .play .arw{transform:translateX(4px);}
+  @media (max-width:640px){
+    .tile{border-radius:14px;}
+    .tile .cap{height:76px;} .tile .cap svg{width:42px; height:42px;}
+    .tile .body{padding:11px;} .tile .nm{font-size:15px;} .tile .desc{display:none;}
+    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
+  }
+  .arch-note{text-align:center; color:var(--dim); font-size:11.5px; margin:18px 0 4px; line-height:1.5;}
   .foot{text-align:center; color:var(--dim); font-size:11.5px; padding:14px 0 2px;}
   .foot a{color:var(--coralT);}
 </style>
@@ -123,6 +144,7 @@
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -181,25 +203,32 @@
     });
   }
 
+  // Home-page-style grid: one tile per game. Clicking a tile opens that game's
+  // archive calendar (past playable days) via the shared RTGCalendar module.
   function renderList(){
     document.getElementById('proPill').hidden=false;
-    var today=iso(new Date());
+    var list=(window.RTGCalendar && RTGCalendar.GAMES) || [];
     var html='<div class="probar"><b>PRO</b><span>Unlimited plays + past days unlocked</span><button class="off" id="proOff">Turn off preview</button></div>';
-    // yesterday back to LAUNCH, capped
-    var d=new Date(today+'T00:00:00'); d.setDate(d.getDate()-1);
-    var count=0;
-    while(count<MAX_DAYS){
-      var ds=iso(d);
-      if(ds<LAUNCH) break;
-      html+='<div class="day"><div class="dh"><span class="d">'+esc(pretty(ds))+'</span><span class="ago">'+esc(daysAgo(ds))+'</span></div><div class="games">';
-      for(var i=0;i<GAMES.length;i++){ var g=GAMES[i];
-        html+='<a class="gm" style="--c:'+g.c+'" href="/arcade/'+g.path+'/?date='+ds+'"><span class="dot"></span>'+esc(g.name)+'</a>';
-      }
-      html+='</div></div>';
-      d.setDate(d.getDate()-1); count++;
+    html+='<div class="tiles">';
+    for(var i=0;i<list.length;i++){ var g=list[i];
+      html+='<button class="tile '+g.cls+'" type="button" data-k="'+esc(g.key)+'">'+
+        '<span class="cap" aria-hidden="true">'+g.icon+'</span>'+
+        '<span class="body">'+
+          '<span class="nm">'+esc(g.name)+'</span>'+
+          '<span class="desc">'+esc(g.desc)+'</span>'+
+          '<span class="play">Pick a day <span class="arw">→</span></span>'+
+        '</span>'+
+      '</button>';
     }
-    html+='<div class="arch-note">Showing the last '+count+' days, back to launch.</div>';
+    html+='</div>';
+    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Archive runs are just for fun. They don’t touch your streak or the daily leaderboard.</div>';
     content.innerHTML=html;
+    [].forEach.call(content.querySelectorAll('button.tile'), function(btn){
+      btn.addEventListener('click', function(){
+        var k=btn.getAttribute('data-k');
+        if(window.RTGCalendar) RTGCalendar.open(k);
+      });
+    });
     document.getElementById('proOff').addEventListener('click', function(){
       try{ LS.removeItem('runthegrid_pro'); }catch(e){}
       location.reload();
