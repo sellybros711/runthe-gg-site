@@ -54,7 +54,7 @@
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
 
   .stage{position:relative; min-height:100dvh; padding-bottom:86px;}
-  .wrap{width:100%; max-width:1120px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
+  .wrap{width:100%; max-width:1280px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
   @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
 
   /* ---- top bar ---- */
@@ -70,17 +70,10 @@
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
-  /* mobile-only: compact streak chip + profile bubble */
-  .mStreak{display:none; align-items:center; gap:5px; border:1px solid var(--line2); border-radius:999px; padding:6px 11px;
-    font-weight:900; font-size:13px; background:var(--card); color:var(--coralT); box-shadow:var(--shadow); font-variant-numeric:tabular-nums;}
-  .mProf{display:none; width:36px; height:36px; border-radius:50%; border:1px solid var(--line2); background:var(--card);
-    color:var(--mut); place-items:center; box-shadow:var(--shadow);}
-  @media (max-width:640px){ .mStreak{display:inline-flex;} .mProf{display:grid;} }
-
   /* ============================================================
      DASHBOARD LAYOUT · left sticky HUD rail, right puzzle cards.
      ============================================================ */
-  .board{display:grid; grid-template-columns:332px minmax(0,1fr); gap:22px; align-items:start; margin-top:4px;}
+  .board{display:grid; grid-template-columns:304px minmax(0,1fr); gap:24px; align-items:start; margin-top:4px;}
   @media (max-width:880px){ .board{grid-template-columns:minmax(0,1fr); gap:16px;} }
 
   /* ---- player HUD rail ---- */
@@ -97,7 +90,9 @@
   .hud-hd .who:hover b{text-decoration:underline;} .hud-hd .av:hover{filter:brightness(1.12);}
   .hud-hd .who span{display:block; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
   .hud-hd .coins{margin-left:auto; box-shadow:none; padding:6px 11px; font-size:13px;}
-  @media (max-width:640px){ .hud-hd{display:none;} }
+  /* mobile keeps the identity row — a phone player should see who they are and
+     how many plays they have without scrolling (the old top-bar chips are gone) */
+  @media (max-width:640px){ .hud-hd{padding:12px 16px;} .hud-hd .av{width:34px; height:34px;} }
 
   /* 2 · streak block */
   .hud-streak{padding:18px 18px 14px;}
@@ -110,56 +105,14 @@
   .hud-streak .best{margin-left:auto; text-align:right;}
   .hud-streak .best .n{font-family:var(--hero); font-weight:400; font-size:24px; color:var(--mut); line-height:1;}
   .hud-streak .best .cap{display:block; font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
-  .hud-streak .m-gift{display:none; font-size:24px; margin-left:auto;}
   .hud-streak .smsg{margin:11px 0 0; font-size:13px; font-weight:800; color:var(--ink); line-height:1.4;}
   .hud-streak .smsg .fy{margin-right:4px;}
   @media (max-width:640px){
     .hud-streak{padding:15px 16px 12px;}
-    .hud-streak .best{display:none;}
-    .hud-streak .m-gift{display:block;}
     .hud-streak .big .n{font-size:36px;}
+    .hud-streak .best .n{font-size:20px;}
     .hud-streak .flame{width:44px; height:44px; border-radius:12px;}
     .hud-streak .smsg{margin-top:8px; font-size:12.5px;}
-  }
-
-  /* 3 · NEXT GOAL panel */
-  .hud-goal{padding:14px 18px 16px; border-top:1px solid var(--line);}
-  .hud-goal .g-lab{display:block; font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:6px;}
-  .hud-goal .g-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
-  .hud-goal .g-main{min-width:0; line-height:1.25;}
-  .hud-goal .g-main b{display:block; font-size:16px; font-weight:900; font-style:italic; letter-spacing:.02em; text-transform:uppercase; color:var(--ink);}
-  .hud-goal .g-main span{display:block; font-size:11.5px; font-weight:700; color:var(--mut); margin-top:2px;}
-  .hud-goal .g-gift{margin-left:auto; font-size:24px; flex:0 0 auto;}
-  .hud-goal .g-barrow{display:flex; align-items:center; gap:10px;}
-  .hud-goal .bar{flex:1; height:9px; border-radius:999px; background:var(--card2); border:1px solid var(--line); overflow:hidden; min-width:0;}
-  .hud-goal .bar i{display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--coral),var(--gold)); transition:width .8s cubic-bezier(.2,.8,.2,1);}
-  .hud-goal .g-cnt{flex:0 0 auto; font-size:11px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums;}
-  @media (max-width:640px){ .hud-goal{padding:12px 16px 14px;} }
-
-  /* 4 · milestone path stepper */
-  .hud-path{padding:14px 14px 14px; border-top:1px solid var(--line);}
-  .mp-row{display:flex; align-items:flex-start; justify-content:space-between; position:relative; padding:0 6px;}
-  .mp-row:before{content:""; position:absolute; left:34px; right:34px; top:18px; height:2px; background:var(--line2);}
-  .mp-node{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; width:62px;}
-  .mp-dot{width:37px; height:37px; border-radius:50%; display:grid; place-items:center; position:relative;
-    background:var(--card2); border:2px solid var(--line2); color:var(--dim);}
-  .mp-dot .ic-f{display:none;}
-  .mp-node.reached .mp-dot{border-color:var(--coral); color:var(--coralT); background:color-mix(in srgb,var(--coral) 12%, var(--card));}
-  .mp-node.reached .mp-dot .ic-f{display:block;}
-  .mp-node.reached .mp-dot .ic-l{display:none;}
-  .mp-node.reached .mp-dot:after{content:"✓"; position:absolute; right:-5px; top:-5px; width:16px; height:16px; border-radius:50%;
-    background:var(--green); color:#06250F; font-size:10px; font-weight:900; display:grid; place-items:center; line-height:1;}
-  .mp-node.next .mp-dot{border-color:var(--gold); color:var(--goldT); background:color-mix(in srgb,var(--gold) 16%, var(--card));
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 20%, transparent);}
-  .mp-tag{font-size:8.5px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; color:var(--dim); line-height:1; padding:3px 0; text-align:center; white-space:nowrap;}
-  .mp-node.reached .mp-tag{color:var(--coralT);}
-  .mp-node.next .mp-tag{color:var(--goldT); background:color-mix(in srgb,var(--gold) 18%, var(--card)); border:1px solid color-mix(in srgb,var(--gold) 40%, transparent); padding:3px 7px; border-radius:6px;}
-  .mp-cap{margin:11px 4px 0; font-size:11px; font-weight:700; color:var(--mut); text-align:center;}
-  @media (max-width:640px){
-    .hud-path{padding:12px 12px;}
-    .mp-dot{width:32px; height:32px;}
-    .mp-row:before{top:16px; left:30px; right:30px;}
-    .mp-cap{font-size:10.5px; margin-top:9px;}
   }
 
   /* 5 · next-drop row */
@@ -172,17 +125,10 @@
   .hud-drop .sub{display:block; font-size:11px; font-weight:700; color:var(--dim); margin-top:2px;}
   .hud-drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
 
-  /* 6 · gold note card */
-  .hud-notewrap{padding:14px 18px 0;}
-  .hud-note{border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.5; color:var(--ink);
-    background:color-mix(in srgb, var(--gold) 13%, var(--card)); border:1px solid color-mix(in srgb, var(--gold) 38%, transparent);}
-  .hud-note b{font-weight:900;}
-  @media (max-width:640px){ .hud-notewrap{display:none;} }
-
   /* 7 · CTA stack */
   .hud-cta{padding:14px 18px 16px;}
-  .hud-cta .btn{display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
-    min-height:48px; padding:12px 14px; border-radius:999px; color:#fff;
+  .hud-cta .btn{display:flex; width:100%; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
+    min-height:48px; padding:12px 14px; border-radius:999px; color:#fff; border:0; cursor:pointer; font-family:inherit;
     background:linear-gradient(90deg, var(--coral), #F0913C); box-shadow:0 8px 18px -10px color-mix(in srgb, var(--coral) 70%, transparent);}
   .hud-cta .btn:hover{filter:brightness(1.06);}
   .hud-cta .btn.ghost{margin-top:9px; font-style:normal; color:var(--ink); background:transparent; border:1.5px solid var(--line2); box-shadow:none;}
@@ -357,8 +303,6 @@
   <div class="wrap">
     <div class="top">
       <span class="topR">
-        <span class="mStreak" title="Day streak" aria-label="Day streak"> <b id="mStreakVal">0</b></span>
-        <a class="mProf" href="/" aria-label="Sign in"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -382,7 +326,6 @@
             <span class="flame"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg></span>
             <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
             <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
-            <span class="m-gift" aria-hidden="true"></span>
           </div>
           <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
         </div>
@@ -408,7 +351,7 @@
         <div class="tiles">
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stM">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stM">Ready</span>
               <svg viewBox="0 0 56 56"><g>
                 <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
                 <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
@@ -424,7 +367,7 @@
 
           <a class="tile cross" id="cardCross" href="/arcade/crossword/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stC">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stC">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#cwico)">
@@ -463,7 +406,7 @@
 
           <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stW">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stW">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#wsico)">
@@ -496,7 +439,7 @@
 
           <a class="tile guess" id="cardGuess" href="/arcade/guess/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stG">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stG">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g>
                   <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
@@ -514,7 +457,7 @@
 
           <a class="tile table" id="cardTable" href="/arcade/table/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stT">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stT">Ready</span>
               <svg viewBox="0 0 56 56">
                 <rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/>
                 <rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/>
@@ -530,7 +473,7 @@
 
           <a class="tile oddone" id="cardOdd" href="/arcade/oddone/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stO">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stO">Ready</span>
               <svg viewBox="0 0 56 56">
                 <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
                 <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
@@ -545,7 +488,7 @@
 
           <a class="tile career" id="cardCareer" href="/arcade/career/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stR">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stR">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
                 <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
@@ -560,7 +503,7 @@
 
           <a class="tile rankit" id="cardRank" href="/arcade/rankit/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stK">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stK">Ready</span>
               <svg viewBox="0 0 56 56">
                 <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
                 <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
@@ -576,7 +519,7 @@
 
           <a class="tile alma" id="cardAlma" href="/arcade/almamater/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stA">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stA">Ready</span>
               <svg viewBox="0 0 56 56">
                 <path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/>
                 <path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/>
@@ -778,7 +721,6 @@
       cur <= 6 ? "You're on a heater!" :
                  'Untouchable. Keep the run alive!';
   }
-  var mSt = document.getElementById('mStreakVal'); if (mSt) mSt.textContent = cur;
 
   // HUD tier CTA: exactly one action.
   //   Arcade Card  → Play archived puzzles
@@ -838,15 +780,23 @@
 
   // ---- ARCADE TICKET: one daily punch-card across all nine games ----
   (function(){
+    // [label, done, accent] \u2014 a punched hole takes its game's color, so the
+    // filling ticket doubles as a map of the nine game identities.
     var GAMES=[
-      ['Table',tDone],['Match',mDone],['Career',rDone],['Odd One',oDone],['Rank It',kDone],
-      ['Guess',gDone],['Alma',aDone],['Search',wDone],['Crossword',cDone]
+      ['Table',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
+      ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
+      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--ink)']
     ];
     var doneN=GAMES.filter(function(x){return x[1];}).length;
     var perfect=doneN===GAMES.length;
     var css=document.createElement('style');
     css.textContent=
-      '.aticket{background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      // ticket body: dashed rim + a notched "torn edge" on each side, like a
+      // stub ripped off the roll. The notches are just two masked circles.
+      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      '.aticket:before,.aticket:after{content:""; position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+';}'+
+      '.aticket:before{left:-9px; transform:translateY(-50%);}'+
+      '.aticket:after{right:-9px; transform:translateY(-50%);}'+
       '.aticket .tk-top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}'+
       '.aticket .tk-h{font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:15px; color:var(--ink);}'+
       '.aticket .tk-n{font-size:11px; font-weight:900; letter-spacing:.08em; color:'+(perfect?'var(--goldT)':'var(--mut)')+';}'+
@@ -855,13 +805,13 @@
       '.aticket .tk-g{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:var(--mut);}'+
       '.aticket .tk-g i{width:16px; height:16px; border-radius:50%; border:2px dashed var(--line2); display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:9px;}'+
       '.aticket .tk-g.on{color:var(--ink);}'+
-      '.aticket .tk-g.on i{border:2px solid var(--green); background:color-mix(in srgb, var(--green) 22%, var(--card)); color:var(--greenT);}'+
+      '.aticket .tk-g.on i{border:2px solid var(--tc); background:color-mix(in srgb, var(--tc) 24%, var(--card)); color:var(--tc);}'+
       '.aticket .tk-perf{font-family:var(--hero); font-weight:400; letter-spacing:.14em; color:var(--goldT); font-size:13px; margin-top:9px; text-align:center; animation:tkpop .5s ease;}'+
       '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}';
     document.head.appendChild(css);
     var el=document.createElement('div'); el.className='aticket';
     el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / 9 punched</span><button class="tk-share" type="button">Share</button></div>'+
-      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
+      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
       (perfect?'<div class="tk-perf">\u2605 PERFECT DAY \u2014 ALL 9 CLEARED \u2605</div>':'');
     var host=document.getElementById('puzzles');
     if(host) host.insertBefore(el, host.firstChild);
