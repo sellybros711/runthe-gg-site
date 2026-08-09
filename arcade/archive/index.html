@@ -132,7 +132,7 @@
 
   <div class="hero">
     <h1>The Archive</h1>
-    <p>Missed a day? Replay any past Run The Arcade puzzle. Archive runs are just for fun. They don't touch your streak or the daily leaderboard.</p>
+    <p>Missed a day? Replay any past Run The Arcade puzzle and chase your personal best. Today’s streak and leaderboard belong to today’s game — archive days are yours.</p>
   </div>
 
   <div id="content"></div>
@@ -218,7 +218,7 @@
       '</button>';
     }
     html+='</div>';
-    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Archive runs are just for fun. They don’t touch your streak or the daily leaderboard.</div>';
+    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Chase your personal best on each date — today’s streak and leaderboard belong to today’s game.</div>';
     content.innerHTML=html;
     [].forEach.call(content.querySelectorAll('button.tile'), function(btn){
       btn.addEventListener('click', function(){
