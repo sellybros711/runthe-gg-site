@@ -21,6 +21,30 @@
  */
 import { writeFileSync } from 'fs';
 
+
+/* Whitelist of hand-curated names we always keep even if auto-scraped fame
+ * comes back as 3. Ensures Bob Pettit / Jim Kelly / Rod Carew / Christy
+ * Mathewson etc. survive the "drop fame-3 for wire size" cull below. */
+import { readFileSync as _rfs } from 'fs';
+const WHITELIST = (() => {
+  try {
+    const src = _rfs('arcade/stars.js', 'utf8');
+    const grab = (name) => {
+      const m = src.match(new RegExp(name + '\\s*=\\s*\\[([^\\]]*)\\]'));
+      if (!m) return [];
+      return [...m[1].matchAll(/'([^']*)'/g)].map((x) => x[1]);
+    };
+    const norm = (s) => s.toLowerCase().replace(/[\\.\\']/g, '').trim();
+    const out = { NBA: new Set(), NFL: new Set(), MLB: new Set() };
+    for (const sp of ['NBA', 'NFL', 'MLB']) {
+      [...grab(sp + '_ICONS'), ...grab(sp + '_STARS')].forEach((n) => out[sp].add(norm(n)));
+    }
+    return out;
+  } catch (e) { return { NBA: new Set(), NFL: new Set(), MLB: new Set() }; }
+})();
+const _wnorm = (s) => String(s || '').toLowerCase().replace(/[\.\']/g, '').trim();
+const isWhitelisted = (sport, name) => (WHITELIST[sport] || new Set()).has(_wnorm(name));
+
 const NOW_YEAR = new Date().getFullYear();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -177,6 +201,7 @@ async function buildMLB() {
     // high picks toward 4 so they surface in the fame>=4 games too.
     let f = 3;
     if (ns >= 6 || (hp && pick && pick <= 10)) f = 4;
+    if (f < 4 && !isWhitelisted('MLB', name)) continue;   // recognizable-tier or curated star
     players.push({
       id: 'former:mlb:' + id,
       name,
@@ -260,6 +285,7 @@ async function buildNFL() {
     if (nseason < 3 && !hp) continue;            // notable: 3+ seasons OR high pick
     const teams = Object.keys(e.teams).sort((a, b) => e.teams[a] - e.teams[b]);
     let f = 3; if (nseason >= 8 || (hp && pick && pick <= 15)) f = 4;
+    if (f < 4 && !isWhitelisted('NFL', e.name)) continue;
     players.push({
       id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams, col: e.col || null,
       j: Object.keys(e.jerseys).map(Number).sort((a, b) => a - b).slice(0, 4),
@@ -343,6 +369,7 @@ async function buildNBA() {
     for (const tr of teamRefs) { const nm = await resolveTeam(tr); if (nm && teams.indexOf(nm) < 0) teams.push(nm); }
     const jn = (a.jersey != null && a.jersey !== '') ? Number(a.jersey) : null;
     let f = 3; if (e.ns >= 6) f = 4;
+    if (f < 4 && !isWhitelisted('NBA', name)) continue;
     players.push({
       id: 'former:nba:' + aid, name, sport: 'NBA', f, t: teams,
       j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
