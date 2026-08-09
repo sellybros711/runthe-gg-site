@@ -6399,25 +6399,68 @@ function mergeTourPass(local, server){
    real time, so winning one is a nudge to go play right now. Everything else is drawn from the
    EXISTING pools (coins / shards / packs), so the wheel adds no new currency.
 
-   Economy: the free daily spin is worth ~2,560 coins on average (see the weights) + a ~29% shot at
-   a boost. That's a meaningful daily habit hook without moving the needle much against the weekly
-   reward stack. Signed-in only (every prize needs an account). Cloud-synced grow-only, so the free
-   spin can't be re-rolled on a second device. */
+   YOUR WHEEL SCALES WITH TOUR REP (owner). Every one of the 20 rep ranks spins a better wheel: the
+   coin prizes grow with every single promotion, and four milestone ranks upgrade a segment outright
+   (shard common->rare at Contender, pack base->tour at Star, pack tour->champion at Superstar,
+   shard rare->epic at Legend). So Amateur averages ~1,250 coins a spin and the very top ~8,500, a
+   ~7x prestige spread that makes rep worth climbing.
+
+   NO free items (owner): the wheel pays coins, packs, shards, the XP boosts and bonus spins. No
+   accessories or cosmetics, ever - those stay bought or pulled from packs. Everything here comes
+   from an EXISTING pool, so the wheel adds no new currency.
+
+   Signed-in only (every prize needs an account). Cloud-synced grow-only, so the free spin can't be
+   re-rolled on a second device. */
 const WHEEL_ENABLED=true;
 const WHEEL_XP_MULT=2;                       // the boost multiplier ("2× Tour Pass XP")
-// Segment order = wheel order (the two boosts sit opposite each other). w = pick weight, sums to 100.
-const WHEEL_PRIZES=[
-  {id:'c500',  w:26, kind:'coins', amt:500,               label:'500 Coins',      short:'500',    col:'#ffd45e'},
-  {id:'xp30',  w:20, kind:'boost', mins:30,               label:'2× XP · 30 min', short:'2× XP',  col:'#a78bfa'},
-  {id:'c1500', w:16, kind:'coins', amt:1500,              label:'1,500 Coins',    short:'1.5K',   col:'#ffd45e'},
-  {id:'shc',   w:13, kind:'shard', r:'common', n:1,       label:'Common Shard',   short:'◆',      col:'#9fdcff'},
-  {id:'pack',  w:8,  kind:'pack',  tier:'base', n:1,      label:'Base Pack',      short:'PACK',   col:'#3fbf7a'},
-  {id:'xp60',  w:9,  kind:'boost', mins:60,               label:'2× XP · 1 hour', short:'2× XP',  col:'#c9a0ff'},
-  {id:'shr',   w:5,  kind:'shard', r:'rare', n:1,         label:'Rare Shard',     short:'◆',      col:'#4aa3ff'},
-  {id:'c5000', w:3,  kind:'coins', amt:5000,              label:'5,000 Coins',    short:'5K',     col:'#ffd45e'},
-];
+// Rank ladder position, 0 (Amateur) .. 19 (G.O.A.T.). Guests and any lookup failure read as 0.
+function wheelRepIdx(){ if(!sbSignedIn()) return 0;
+  try{ const i=repRankIndex(repTier().tier.name); return i<0?0:Math.min(REP_ORDER.length-1,i); }catch(e){ return 0; } }
+function wheelRepName(){ if(!sbSignedIn()) return REP_ORDER[0];
+  try{ return repTier().tier.name; }catch(e){ return REP_ORDER[0]; } }
+// Milestone ranks where a segment's KIND upgrades (the visible "my wheel got better" moments).
+const WHEEL_SHARD_STEPS=[[17,'epic'],[7,'rare'],[0,'common']];      // rank -> shard rarity (highest match wins)
+const WHEEL_PACK_STEPS =[[16,'champ'],[10,'tour'],[0,'base']];      // rank -> pack tier
+function wheelStep(steps, idx){ for(const [at,v] of steps) if(idx>=at) return v; return steps[steps.length-1][1]; }
+// A wedge is narrow, so coin values read as a tight 580 / 2.7k / 12k rather than a comma'd number.
+function wheelNum(n){ n=Math.round(n||0); if(n<1000) return String(n);
+  const k=n/1000; return (k<10?k.toFixed(1).replace(/\.0$/,''):String(Math.round(k)))+'k'; }
+// The 8 segments, in wheel order (the two boosts sit opposite each other). Values and weights are a
+// function of the rank, so a promotion is always a strictly better wheel.
+function wheelPrizesFor(idx){
+  idx=Math.max(0,Math.min(REP_ORDER.length-1, idx|0));
+  const f=idx/(REP_ORDER.length-1);                                  // 0 at Amateur, 1 at G.O.A.T.
+  const sc=(base,mult)=>Math.round(base*(1+mult*f)/10)*10;           // coin ladder, rounded to a clean 10
+  const shR=wheelStep(WHEEL_SHARD_STEPS, idx), pkT=wheelStep(WHEEL_PACK_STEPS, idx);
+  const shCol={common:'#9fdcff', rare:'#4aa3ff', epic:'#a24be0'}[shR]||'#9fdcff';
+  const shLab={common:'Common', rare:'Rare', epic:'Epic'}[shR]||'Common';
+  const pk=(typeof packType==='function')?packType(pkT):{name:'Base Pack', col:'#3fbf7a'};
+  const cSm=sc(200,1.9), cMd=sc(600,3.5), cBg=sc(2000,5);
+  return [
+    {id:'cSm',  w:30-8*f,   kind:'coins', amt:cSm,          label:coinFmt(cSm)+' Coins',  short:wheelNum(cSm), col:'#ffd45e'},
+    {id:'xp30', w:16+4*f,   kind:'boost', mins:30,          label:'2× XP · 30 min',       short:'2× XP',        col:'#a78bfa'},
+    {id:'cMd',  w:18,       kind:'coins', amt:cMd,          label:coinFmt(cMd)+' Coins',  short:wheelNum(cMd), col:'#ffd45e'},
+    {id:'sh',   w:8+2*f,    kind:'shard', r:shR, n:1,       label:shLab+' Shard',         short:'◆',            col:shCol},
+    {id:'pack', w:5+3.5*f,  kind:'pack',  tier:pkT, n:1,    label:pk.name,                short:'PACK',         col:pk.col||'#3fbf7a'},
+    {id:'xp60', w:6+3*f,    kind:'boost', mins:60,          label:'2× XP · 1 hour',       short:'2× XP',        col:'#c9a0ff'},
+    {id:'cBg',  w:10-2*f,   kind:'coins', amt:cBg,          label:coinFmt(cBg)+' Coins',  short:wheelNum(cBg), col:'#ffd45e'},
+    {id:'spin', w:7-1*f,    kind:'spin',  n:1,              label:'Bonus Spin',           short:'+1',           col:'#ff7ab8'},
+  ];
+}
+var _wheelPzCache={};
+function wheelPrizes(idx){ if(idx==null) idx=wheelRepIdx();
+  if(!_wheelPzCache[idx]) _wheelPzCache[idx]=wheelPrizesFor(idx); return _wheelPzCache[idx]; }
+// What the NEXT rank improves, for the chase line on the wheel screen.
+function wheelNextUpgrade(){
+  const i=wheelRepIdx(), max=REP_ORDER.length-1; if(i>=max) return null;
+  const now=wheelPrizes(i), nxt=wheelPrizes(i+1), bits=[];
+  if(wheelStep(WHEEL_PACK_STEPS,i+1)!==wheelStep(WHEEL_PACK_STEPS,i)) bits.push(nxt[4].label+'s');
+  if(wheelStep(WHEEL_SHARD_STEPS,i+1)!==wheelStep(WHEEL_SHARD_STEPS,i)) bits.push(nxt[3].label+'s');
+  const c0=now[0].amt+now[2].amt+now[6].amt, c1=nxt[0].amt+nxt[2].amt+nxt[6].amt;
+  if(c1>c0) bits.push('+'+Math.round(100*(c1-c0)/c0)+'% coin prizes');
+  return {name:REP_ORDER[i+1], bits};
+}
 function wheelEnabled(){ return WHEEL_ENABLED; }
-function wheelPrize(id){ return WHEEL_PRIZES.find(p=>p.id===id)||WHEEL_PRIZES[0]; }
 // spinE/spinS are MONOTONIC counters (earned/spent) so a cross-device merge can take a max of each and
 // can never resurrect a spent spin — the same shape the pack-credit bank uses.
 function wheelState(){ let s=LS.get(acctKey('bag_wheel'),null);
@@ -6450,9 +6493,9 @@ function fmtBoost(ms){ ms=Math.max(0,ms|0); const t=Math.ceil(ms/1000), m=Math.f
 function xpBoostChip(cls){ if(!xpBoostActive()) return '';
   return '<span class="'+(cls||'gc-chip')+'">⚡ 2× XP · <span class="xpb-val" style="font-variant-numeric:tabular-nums">'+fmtBoost(xpBoostMs())+'</span></span>'; }
 // ── the spin itself ────────────────────────────────────────────────────────────────────────────
-function wheelPick(){ const tot=WHEEL_PRIZES.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot;
-  for(let i=0;i<WHEEL_PRIZES.length;i++){ r-=WHEEL_PRIZES[i].w; if(r<=0) return i; }
-  return WHEEL_PRIZES.length-1; }
+function wheelPick(pz){ pz=pz||wheelPrizes(); const tot=pz.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot;
+  for(let i=0;i<pz.length;i++){ r-=pz[i].w; if(r<=0) return i; }
+  return pz.length-1; }
 // Consume a spin (free one first, then the bank) and roll. Returns the prize index, or -1 if none left.
 function wheelConsume(){ if(!wheelEnabled()||!sbSignedIn()) return -1;
   const s=wheelState(), t=todayKey();
@@ -6467,6 +6510,7 @@ function grantWheelPrize(p){ if(!p) return;
   else if(p.kind==='shard'){ try{ shardEarn(p.r,p.n||1); }catch(e){} }
   else if(p.kind==='pack'){ if(typeof grantFreePack==='function') grantFreePack(p.n||1,{tier:p.tier,silent:true}); }
   else if(p.kind==='boost') grantXpBoost(p.mins);
+  else if(p.kind==='spin') grantWheelSpin(p.n||1,{silent:true});
   try{ track('wheel_prize',{id:p.id,kind:p.kind}); }catch(e){} }
 // grow-only: max every monotonic counter, keep the LATER used-day, the LONGER boost, and OR the
 // first-purchase flag, so no device can re-roll a used free spin or re-earn the purchase spin.
@@ -6510,19 +6554,21 @@ function wheelStyleOnce(){ if(_pwvcss) return; _pwvcss=true; const st=document.c
 `; document.head.appendChild(st); }
 // The wheel face: 8 radial segments, each tinted with its prize colour, labelled radially like a real
 // prize wheel. Segment i is centred at i*45 degrees clockwise from 12 o'clock (the pointer).
-function wheelFaceSVG(){
+function wheelFaceSVG(pz){
+  pz=pz||wheelPrizes();
   const cx=120, cy=120, r=112;
   const pt=(deg)=>{ const a=deg*Math.PI/180; return [(cx+r*Math.sin(a)).toFixed(2),(cy-r*Math.cos(a)).toFixed(2)]; };
   let out=`<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="117" fill="#0d1f16" stroke="#ff7ab8" stroke-width="3"/>`;
-  WHEEL_PRIZES.forEach((p,i)=>{
+  pz.forEach((p,i)=>{
     const a0=i*45-22.5, a1=i*45+22.5, s0=pt(a0), s1=pt(a1);
     const fill=hexRgba(p.col, i%2?0.34:0.17);
     out+=`<path d="M${cx},${cy} L${s0[0]},${s0[1]} A${r},${r} 0 0 1 ${s1[0]},${s1[1]} Z" fill="${fill}" stroke="rgba(255,255,255,.16)" stroke-width="1"/>`;
   });
-  WHEEL_PRIZES.forEach((p,i)=>{
+  pz.forEach((p,i)=>{
     const sub = p.kind==='boost' ? (p.mins>=60?'1 HOUR':'30 MIN')
-              : p.kind==='shard' ? (p.r==='rare'?'RARE':'COMMON')
-              : p.kind==='pack'  ? 'BASE' : 'COINS';
+              : p.kind==='shard' ? String(p.r||'').toUpperCase()
+              : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMPION':(p.tier||'base')).toUpperCase()
+              : p.kind==='spin'  ? 'SPIN' : 'COINS';
     // Bottom-half wedges would read upside down, so flip them 180 and mirror the radii about the
     // centre - the label lands in the same wedge, the right way up.
     const flip=(i*45>90 && i*45<270), rot=i*45+(flip?180:0);
@@ -6543,23 +6589,27 @@ function overlayWheel(app){
   wheelStyleOnce();
   const w=S.wheelSpin, avail=wheelAvail(), free=wheelFreeReady(), banked=wheelBanked();
   const spinning=!!(w&&w.spun&&!w.done), done=!!(w&&w.done);
+  // A spin in flight keeps the table it was rolled against, so a rank-up mid-spin can't reshuffle the face.
+  const rep=(w&&w.rep!=null)?w.rep:wheelRepIdx(), pz=wheelPrizes(rep);
+  const repNm=REP_ORDER[rep]||REP_ORDER[0];
   const ov=$(`<div class="ov pwvov" role="dialog" aria-modal="true" style="text-align:center"></div>`);
   if(!spinning) ov.appendChild($(`<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>`));
   ov.appendChild($(`<div class="tag" style="color:#ff7ab8;border-color:#ff7ab8;margin:0 auto">🎡 Daily Spin</div>`));
   ov.appendChild($(`<h3 style="margin:12px 0 2px">Prize Wheel</h3>`));
+  ov.appendChild($(`<div class="small" style="margin:2px 0 4px;font-weight:800;color:${repTierColor(repNm)}">${esc(repNm)} wheel</div>`));
   const sub = done ? 'Your prize is in your account.'
     : spinning ? 'Good luck…'
     : avail>0 ? `${avail} spin${avail>1?'s':''} ready${free?' · today’s free spin':''}${(free&&banked)?` + ${banked} banked`:''}`
     : 'Come back tomorrow for a free spin.';
   ov.appendChild($(`<p class="lede" style="margin:0 0 8px">${sub}</p>`));
-  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG()}</div><div class="pwv-hub">SPIN</div></div>`);
+  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG(pz)}</div><div class="pwv-hub">SPIN</div></div>`);
   ov.appendChild(wrap);
   const rot=wrap.querySelector('.pwv-rot');
   const foot=$(`<div style="margin-top:14px"></div>`); ov.appendChild(foot);
 
   // the reveal card for a finished spin
   function reveal(){
-    const p=WHEEL_PRIZES[w.idx];
+    const p=pz[w.idx];
     const boost = p.kind==='boost';
     const card=$(`<div class="pwv-card">
       <div class="pwv-k">You won</div>
@@ -6604,10 +6654,10 @@ function overlayWheel(app){
       const b=$(`<button class="btn goldfill" style="max-width:340px;margin:0 auto">SPIN<span class="sub">${free?'Free daily spin':'Uses 1 banked spin'}</span></button>`);
       b.onclick=()=>{
         const idx=wheelConsume(); if(idx<0){ toast('No spins left'); render(); return; }
-        grantWheelPrize(WHEEL_PRIZES[idx]);          // granted up front, so closing mid-spin can't lose it
+        grantWheelPrize(pz[idx]);                    // granted up front, so closing mid-spin can't lose it
         const jit=(Math.random()*2-1)*16;
-        S.wheelSpin={idx, spun:true, done:false, rot: 360*6 - idx*45 + jit};
-        try{ track('wheel_spin',{id:WHEEL_PRIZES[idx].id}); }catch(e){}
+        S.wheelSpin={idx, rep, spun:true, done:false, rot: 360*6 - idx*45 + jit};
+        try{ track('wheel_spin',{id:pz[idx].id, rep:repNm}); }catch(e){}
         render();
       };
       foot.appendChild(b);
@@ -6616,11 +6666,15 @@ function overlayWheel(app){
       foot.appendChild($(`<div class="small muted" style="margin-top:8px;max-width:340px;margin-left:auto;margin-right:auto">Earn more spins on the Tour Pass track.</div>`));
     }
     if(xpBoostActive()) foot.appendChild($(`<div class="small" style="margin-top:10px;color:#c9a0ff;font-weight:800">⚡ 2× Tour Pass XP active · <span class="xpb-val">${fmtBoost(xpBoostMs())}</span> left</div>`));
+    // the chase: what the next Tour Rep rank turns this wheel into
+    const up=wheelNextUpgrade();
+    if(up) foot.appendChild($(`<div class="scout" style="max-width:340px;margin:12px auto 0;text-align:left">
+      <b style="color:${repTierColor(up.name)}">Reach ${esc(up.name)}</b> for a better wheel${up.bits.length?`: ${esc(up.bits.join(' · '))}`:''}.</div>`));
   }
   function land(){
     if(!S.wheelSpin||S.wheelSpin.done) return;
     S.wheelSpin.done=true;
-    const p=WHEEL_PRIZES[S.wheelSpin.idx];
+    const p=pz[S.wheelSpin.idx];
     try{ sfx(p.kind==='boost'||p.kind==='pack'?'win':'streak'); }catch(e){}
     try{ buzz([14,60,14]); }catch(e){}
     try{ render(); }catch(e){}
@@ -9431,6 +9485,7 @@ function wheelHomeCard(){
   else if(avail>0){ badge=free?'FREE SPIN':`${avail} SPIN${avail>1?'S':''}`; mid='Coins, packs, shards and 2× Tour Pass XP boosts'; }
   else { mid='Spun today · next free spin at midnight ET'; }
   const chips=[];
+  if(sbSignedIn()) chips.push(`<span class="gc-chip" style="color:${repTierColor(wheelRepName())}">${esc(wheelRepName())} wheel</span>`);
   if(on) chips.push(xpBoostChip());
   if(sbSignedIn() && avail<=0) chips.push(`<span class="gc-chip">Next in ${dCd('hm')}</span>`);
   const card=$(`<button class="gcard gc-wheel${avail>0?' ready':''}" aria-label="Daily Prize Wheel">
