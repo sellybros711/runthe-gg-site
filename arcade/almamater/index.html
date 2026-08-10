@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Alma Mater | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -14,8 +13,19 @@
 <meta name="description" content="Alma Mater: a daily sports streak game. Name the college each NBA, NFL or MLB player came from. Four choices, one right. Easy to start, tougher as your run grows." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Alma Mater: Daily College Sports Game" />
+<meta property="og:description" content="Name the college every player came from. How long can your streak last?" />
+<meta property="og:url" content="https://runthe.gg/arcade/almamater/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Alma Mater: Daily College Sports Game" />
+<meta name="twitter:description" content="Name the college every player came from. How long can your streak last?" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/almamater/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -45,7 +55,7 @@
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:540px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -72,7 +82,10 @@
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 14px;}
-  .modesw.hidden{display:none;}
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
   .modesw button:hover{color:var(--ink); border-color:var(--gold);}
   .modesw button.on{background:var(--gold); color:var(--onAccent,#20180a); border-color:transparent;}
@@ -561,7 +574,7 @@
   });
   document.getElementById('mShare').addEventListener('click', function(){
     var bar=run>0?('🟩'.repeat(Math.min(run,10))+(run>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Alma Mater\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade · Alma Mater\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/almamater';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -631,8 +644,8 @@
   // In-game version switcher (Pro/testing only): change sport without leaving.
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
       var lab = m.k==='all' ? 'All' : m.label;
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';

@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: HiQ | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -14,8 +13,19 @@
 <meta name="description" content="HiQ: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="HiQ: Daily Sports Streak Game" />
+<meta property="og:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta property="og:url" content="https://runthe.gg/arcade/table/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="HiQ: Daily Sports Streak Game" />
+<meta name="twitter:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/table/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -48,7 +58,7 @@
   /* the play area fills the screen; the leaderboard sits below the fold */
   .playzone{display:flex; flex-direction:column; min-height:calc(100dvh - 150px);}
 
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -99,7 +109,7 @@
   .ladder .bar::after{content:""; position:absolute; inset:0;
     background:repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), var(--line2) calc(20% - 1px) 20%);}
   .ladder .zone{flex:0 0 auto; color:var(--goldT);}
-  .ladder .zone.hot{color:var(--red); animation:zonepulse 1.1s ease infinite;}
+  .ladder .zone.hot{color:var(--red); animation:zonepulse 1.1s ease 3;}
   @keyframes zonepulse{50%{opacity:.55;}}
   /* team-color identity: each card's top strip is the player's real team */
   .pcard{border-top-color:var(--tp,var(--gold));}
@@ -108,7 +118,7 @@
 
   /* versus cards - fill the tall playzone */
   .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
-  .pcard{position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
+  .pcard{appearance:none; font:inherit; color:inherit; text-align:center; width:100%; position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
   .pcard:hover{border-color:var(--gold); border-top-color:var(--gold); transform:translate(-1px,-1px); box-shadow:6px 6px 0 rgba(7,20,38,.30);}
   .pcard:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.28);}
   .pcard.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 16%, var(--card));}
@@ -119,8 +129,10 @@
   .pcard .meta .era{color:var(--goldT); font-weight:900; letter-spacing:.09em;}
   .pcard .meta .tm{color:var(--mut); font-weight:800;}
   .pcard .meta .tm.more{color:var(--dim); font-weight:700;}
-  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
-  .pcard.revealed .num{height:auto; opacity:1; margin-top:2px;}
+  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT);
+    height:0; opacity:0; transform:translateY(6px) scale(.92); transform-origin:center top;
+    transition:opacity .22s ease, transform .28s cubic-bezier(.2,.9,.3,1.3), height .22s ease;}
+  .pcard.revealed .num{height:1em; opacity:1; transform:none; margin-top:2px;}
   .pcard .tap{font-size:clamp(10.5px,1.6vh,13px); font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
   .pcard.revealed .tap{display:none;}
   .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:clamp(40px,6vh,54px); height:clamp(40px,6vh,54px); border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:clamp(16px,2.4vh,20px); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
@@ -414,9 +426,11 @@
     var pair=SEQ[idx];
     renderLadder();
     vs.innerHTML =
-      '<div class="pcard" data-s="0"'+teamStyle(pair[0])+'><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+metaHTML(pair[0])+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></div>'+
-      '<div class="vs">VS</div>'+
-      '<div class="pcard" data-s="1"'+teamStyle(pair[1])+'><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+metaHTML(pair[1])+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></div>';
+      // real <button>s: the game's only action has to be keyboard-reachable,
+      // and :focus-visible never applied to the old click-handler divs
+      '<button type="button" class="pcard" data-s="0"'+teamStyle(pair[0])+' aria-label="Pick '+esc(pair[0].name)+' as the higher jersey number"><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+metaHTML(pair[0])+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></button>'+
+      '<div class="vs" aria-hidden="true">VS</div>'+
+      '<button type="button" class="pcard" data-s="1"'+teamStyle(pair[1])+' aria-label="Pick '+esc(pair[1].name)+' as the higher jersey number"><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+metaHTML(pair[1])+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></button>';
     [].forEach.call(vs.querySelectorAll('.pcard'), function(c){ c.addEventListener('click', function(){ pick(+c.dataset.s); }); });
   }
   function pick(side){
@@ -579,7 +593,7 @@
   document.getElementById('mShare').addEventListener('click', function(){
     var score=Math.max(run, peak);
     var bar=score>0?('🟩'.repeat(Math.min(score,10))+(score>10?'+':'')):'⬜';
-    var txt='Run The Arcade · HiQ\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade · HiQ\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/table';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');

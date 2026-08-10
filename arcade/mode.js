@@ -101,10 +101,15 @@
   function mountLockedSwitcher() {
     try {
       if (eligible()) return;
-      if (window.RTGArchive && window.RTGArchive.active && window.RTGArchive.active()) return;
+      // Archive practice never gets a switcher, so collapse the reserved row
+      // rather than leaving the held space empty forever.
+      if (window.RTGArchive && window.RTGArchive.active && window.RTGArchive.active()) {
+        var ael = document.getElementById('modesw'); if (ael) ael.classList.add('gone');
+        return;
+      }
       var el = document.getElementById('modesw'); if (!el || el.dataset.rtgmLocked) return;
       el.dataset.rtgmLocked = '1';
-      el.classList.remove('hidden');
+      el.classList.remove('hidden'); el.classList.remove('gone');
       el.innerHTML = MODES.map(function (m) {
         return '<button type="button" data-k="' + m.k + '" class="' + (m.k === 'all' ? 'on' : '') + '"' +
           (m.k === 'all' ? '' : ' aria-label="' + esc(m.label) + ' version, Pro feature" style="opacity:.55"') + '>' +

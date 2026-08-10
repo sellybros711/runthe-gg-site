@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -21,8 +20,19 @@
 <meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Daily Match: Sports Connections" />
+<meta property="og:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta property="og:url" content="https://runthe.gg/arcade/match/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Daily Match: Sports Connections" />
+<meta name="twitter:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -83,7 +93,7 @@
 
   /* ---------------- topbar (uniform across RunTheGrid games) ---------------- */
   .topwrap{max-width:1160px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 20px 0;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
   .icon-btn:hover{color:var(--ink);}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
@@ -387,7 +397,7 @@
   @media (max-width:480px){
     .chip.coins{display:none;}
   }
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
   /* arcade tactile polish */
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
@@ -1370,7 +1380,7 @@
         : (solveOrder.length + '/5 groups');
       return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
         '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
-        (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
+        (strip ? strip + '\n' : '') + '\nrunthe.gg/arcade/match';
     }
 
     // ---- visual share card: render the result to a PNG (canvas) -------------
@@ -1438,7 +1448,7 @@
         g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
       });
 
-      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
+      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/arcade', W / 2, H - 72); ls('0px');
       return cv;
     }
     function cvToBlob(cv) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); }); }

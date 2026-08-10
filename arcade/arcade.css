@@ -1,3 +1,9 @@
+
+/* Reserve the scrollbar gutter. pregame.js / modals lock body overflow to
+   stop background scroll; without a stable gutter that removes the
+   scrollbar, re-widths the viewport and shifts the whole page (this was
+   the dominant layout-shift source across the arcade). */
+html{scrollbar-gutter:stable;}
 /* ============================================================================
    Run The Arcade — shared design layer ("Sports Arcade Control Room")
    ----------------------------------------------------------------------------

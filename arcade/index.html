@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Daily Sports Puzzles | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: manual choice persists in runthegrid_theme (shared across the
@@ -21,8 +20,19 @@
 <meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Run The Arcade: Daily Sports Puzzles" />
+<meta property="og:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta property="og:url" content="https://runthe.gg/arcade/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Run The Arcade: Daily Sports Puzzles" />
+<meta name="twitter:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
@@ -114,7 +124,7 @@
   .hud-streak[data-tier="hot"]{ --tone:var(--gold);  --toneT:var(--goldT); }
   .hud-streak[data-tier="blaze"]{ --tone:var(--red);   --toneT:var(--red); }
   .hud-streak[data-tier="blaze"] .flame{ animation:hs-blaze 1.6s ease-in-out infinite; }
-  @keyframes hs-blaze{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06); filter:brightness(1.12);} }
+  @keyframes hs-blaze{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
   .hud-streak[data-tier="icon"]{ --tone:var(--gold); --toneT:var(--goldT); }
   .hud-streak[data-tier="icon"] .flame{ box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 24%, transparent), 0 0 22px -4px color-mix(in srgb, var(--gold) 55%, transparent); border-color:var(--gold); }
   .hud-streak .best{margin-left:auto; text-align:right;}
@@ -294,8 +304,12 @@
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
-  .tile.unplayed .play{animation:playpulse 2.2s ease-in-out infinite;}
-  @keyframes playpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}55%{box-shadow:0 0 0 9px transparent;}}
+  .tile.unplayed .play{position:relative;}
+  /* the ring is a pseudo-element scaling on the compositor, not an
+     ever-repainting box-shadow spread on the button itself */
+  .tile.unplayed .play::after{content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); opacity:0; animation:playpulse 2.2s ease-in-out infinite;}
+  @keyframes playpulse{0%,100%{opacity:0; transform:scale(1);}55%{opacity:.55; transform:scale(1.045);}}
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
   .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px; text-shadow:none;}
   .tile.spent .play .arw{display:none;}
@@ -704,7 +718,13 @@
     document.getElementById('cdT').textContent = str;
     var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
   }
-  tickCd(); setInterval(tickCd, 1000);
+  // Pause the countdown when the tab is hidden: it was writing to two nodes
+  // every second forever in background tabs.
+  var cdTimer=null;
+  function startCd(){ if(cdTimer) return; tickCd(); cdTimer=setInterval(tickCd,1000); }
+  function stopCd(){ if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } }
+  startCd();
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stopCd() : startCd(); });
 
   // ---- daily plays wallet + streaks ----
   // Text states instead of a "1/1" fraction, and re-rendered when the Pro
