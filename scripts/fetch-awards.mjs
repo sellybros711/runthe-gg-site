@@ -125,52 +125,77 @@ async function catMembers(category) {
   return out;
 }
 
-// [category title, award tag]. A category that has been renamed upstream
-// yields 0 and says so in the log instead of vanishing into a silent total.
+// Wikipedia renames categories, and guessing their exact titles is how the
+// first live run lost every NBA and NFL award except the halls of fame - the
+// enumeration worked, the title just didn't exist. So don't guess: search the
+// Category namespace, then accept a hit only if it contains every word that
+// identifies the award and none that would make it the wrong league or the
+// wrong sport. A resolution that fails prints its candidates, so a rename is a
+// one-line diff next time rather than another silent zero.
+//
+// { q: search phrase, must: [required substrings], not: [disqualifiers], tag }
+const NO_WOMEN = ['wnba', 'women', "women's", 'girls'];
+const NO_AMATEUR = ['college', 'ncaa', 'high school', 'euroleague', 'canadian football'];
 const NBA_CATS = [
-  ['National Basketball Association Most Valuable Player Award winners', 'NBA MVP'],
-  ['National Basketball Association Finals Most Valuable Player Award winners', 'Finals MVP'],
-  ['National Basketball Association All-Star Game Most Valuable Player Award winners', 'All-Star Game MVP'],
-  ['National Basketball Association Defensive Player of the Year Award winners', 'Defensive Player of the Year'],
-  ['National Basketball Association Rookie of the Year Award winners', 'Rookie of the Year'],
-  ['National Basketball Association Sixth Man of the Year Award winners', 'Sixth Man of the Year'],
-  ['National Basketball Association All-Stars', 'NBA All-Star'],
-  ['Naismith Memorial Basketball Hall of Fame inductees', 'Hall of Fame']
+  { q: 'NBA Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['finals', 'all-star game']), tag: 'NBA MVP' },
+  { q: 'NBA Finals Most Valuable Player Award winners', must: ['finals', 'most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Finals MVP' },
+  { q: 'NBA All-Star Game Most Valuable Player Award winners', must: ['all-star', 'most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'All-Star Game MVP' },
+  { q: 'NBA Defensive Player of the Year Award winners', must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football']), tag: 'Defensive Player of the Year' },
+  { q: 'NBA Rookie of the Year Award winners', must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'baseball']), tag: 'Rookie of the Year' },
+  { q: 'NBA Sixth Man of the Year Award winners', must: ['sixth man'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Sixth Man of the Year' },
+  { q: 'National Basketball Association All-Stars', must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'NBA All-Star' },
+  { q: 'Naismith Memorial Basketball Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Hall of Fame' }
 ];
 const NFL_CATS = [
-  ['Associated Press NFL Most Valuable Player Award winners', 'NFL MVP'],
-  ['Super Bowl Most Valuable Player Award winners', 'Super Bowl MVP'],
-  ['Associated Press NFL Offensive Player of the Year Award winners', 'Offensive Player of the Year'],
-  ['Associated Press NFL Defensive Player of the Year Award winners', 'Defensive Player of the Year'],
-  ['Associated Press NFL Offensive Rookie of the Year Award winners', 'Offensive Rookie of the Year'],
-  ['Associated Press NFL Defensive Rookie of the Year Award winners', 'Defensive Rookie of the Year'],
-  ['National Conference Pro Bowl players', 'Pro Bowl'],
-  ['American Conference Pro Bowl players', 'Pro Bowl'],
-  ['Pro Football Hall of Fame inductees', 'Hall of Fame']
+  { q: 'National Football League Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['super bowl', 'pro bowl', 'basketball', 'baseball']), tag: 'NFL MVP' },
+  { q: 'Super Bowl Most Valuable Player Award winners', must: ['super bowl', 'most valuable player'], not: NO_WOMEN, tag: 'Super Bowl MVP' },
+  { q: 'NFL Offensive Player of the Year Award winners', must: ['offensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie']), tag: 'Offensive Player of the Year' },
+  { q: 'NFL Defensive Player of the Year Award winners', must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie', 'basketball']), tag: 'Defensive Player of the Year' },
+  { q: 'NFL Offensive Rookie of the Year Award winners', must: ['offensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Offensive Rookie of the Year' },
+  { q: 'NFL Defensive Rookie of the Year Award winners', must: ['defensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Defensive Rookie of the Year' },
+  { q: 'National Conference Pro Bowl players', must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
+  { q: 'American Conference Pro Bowl players', must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
+  { q: 'Pro Football Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' }
 ];
-// Backstop for MLB: used only if statsapi comes back empty, so a bad day at
-// statsapi doesn't wipe the sport out of the dataset.
 const MLB_CATS = [
-  ['Major League Baseball Most Valuable Player Award winners', 'MLB MVP'],
-  ['Cy Young Award winners', 'Cy Young'],
-  ['Major League Baseball Rookie of the Year Award winners', 'Rookie of the Year'],
-  ['Gold Glove Award winners', 'Gold Glove'],
-  ['Silver Slugger Award winners', 'Silver Slugger'],
-  ['Major League Baseball All-Stars', 'MLB All-Star'],
-  ['National Baseball Hall of Fame inductees', 'Hall of Fame']
+  { q: 'Major League Baseball Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['world series', 'all-star game', 'league championship']), tag: 'MLB MVP' },
+  { q: 'Cy Young Award winners', must: ['cy young'], not: [], tag: 'Cy Young' },
+  { q: 'Major League Baseball Rookie of the Year Award winners', must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'basketball']), tag: 'Rookie of the Year' },
+  { q: 'Gold Glove Award winners', must: ['gold glove'], not: [], tag: 'Gold Glove' },
+  { q: 'Silver Slugger Award winners', must: ['silver slugger'], not: [], tag: 'Silver Slugger' },
+  { q: 'Major League Baseball All-Stars', must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'MLB All-Star' },
+  { q: 'National Baseball Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' },
+  { q: 'World Series Most Valuable Player Award winners', must: ['world series', 'most valuable player'], not: NO_WOMEN, tag: 'World Series MVP' }
 ];
 
-async function buildFromCats(sport, cats) {
+const RESOLVED = new Map();
+async function resolveCategory(spec) {
+  if (RESOLVED.has(spec.q)) return RESOLVED.get(spec.q);
+  const d = await req(WIKI + '?action=query&format=json&formatversion=2&list=search' +
+    '&srnamespace=14&srlimit=12&srsearch=' + encodeURIComponent(spec.q));
+  const hits = ((d && d.query && d.query.search) || []).map((h) => String(h.title).replace(/^Category:/, ''));
+  const ok = hits.find((t) => {
+    const l = t.toLowerCase();
+    return spec.must.every((m) => l.includes(m)) && !spec.not.some((n) => l.includes(n));
+  }) || null;
+  if (!ok) console.log('  ??   nothing matched "' + spec.q + '"; candidates: ' + (hits.join(' | ') || '(none)'));
+  RESOLVED.set(spec.q, ok);
+  return ok;
+}
+
+async function buildFromCats(sport, specs) {
   let total = 0;
-  const got = await mapPool(cats, 3, async ([cat]) => catMembers(cat));
-  cats.forEach(([cat, tag], i) => {
+  const titles = await mapPool(specs, 3, (spec) => resolveCategory(spec));
+  const got = await mapPool(specs, 3, (spec, i) => (titles[i] ? catMembers(titles[i]) : []));
+  specs.forEach((spec, i) => {
     const names = got[i] || [];
-    names.forEach((n) => { if (add(sport, n, tag)) total++; });
-    console.log('  ' + sport + '  ' + String(names.length).padStart(5) + '  ' + cat +
-      (names.length ? '' : '   <-- EMPTY, check the category title'));
+    names.forEach((n) => { if (add(sport, n, spec.tag)) total++; });
+    console.log('  ' + sport + '  ' + String(names.length).padStart(5) + '  ' + spec.tag +
+      '  <- ' + (titles[i] || 'UNRESOLVED'));
   });
   return total;
 }
+
 
 /* -------------------------------- MLB ----------------------------------- */
 // The endpoint publishes its own award catalogue; take the ids from there so
@@ -257,11 +282,19 @@ function want(sport) { return !ONLY.length || ONLY.includes(sport); }
 
 const report = {};
 if (want('MLB')) {
-  try { report.MLB = await buildMLB(); } catch (e) { console.error('MLB failed:', e.message); report.MLB = 0; }
-  if (!report.MLB) {
-    console.error('MLB via statsapi produced nothing - falling back to Wikipedia categories');
-    try { report.MLB = await buildFromCats('MLB', MLB_CATS); } catch (e) { console.error('MLB fallback failed:', e.message); }
+  // statsapi is opt-in. Its /awards/{id}/recipients endpoint returned zero rows
+  // for every award on two live runs - first with hardcoded ids, then with ids
+  // discovered from its own catalogue and probed - while answering 500 for most
+  // of them. Wikipedia carries MLB completely (MVP, Cy Young, ROY, Gold Glove,
+  // Silver Slugger, All-Star, World Series MVP, Hall of Fame), so the default
+  // path is the one that actually produces data. --statsapi re-enables the
+  // other, for the day it starts serving again.
+  if (ARGV.includes('--statsapi')) {
+    try { report.MLB = await buildMLB(); } catch (e) { console.error('MLB statsapi failed:', e.message); report.MLB = 0; }
+    if (!report.MLB) console.error('MLB via statsapi produced nothing - Wikipedia categories follow');
   }
+  try { report.MLB = (report.MLB || 0) + await buildFromCats('MLB', MLB_CATS); }
+  catch (e) { console.error('MLB failed:', e.message); }
 }
 if (want('NBA')) {
   try { report.NBA = await buildFromCats('NBA', NBA_CATS); } catch (e) { console.error('NBA failed:', e.message); report.NBA = 0; }
