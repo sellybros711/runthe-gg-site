@@ -106,7 +106,23 @@ const CONSTANTS = {
      agree with the one on the trophy. */
   PERFECT_FLOOR: 84,
   ROUND_EDGE_MAX: 3.20,
-  ROUND_EDGE_MIN: 0.86,
+  /* THE FLOOR UNDER THE BRACKET, AND THE ONLY DIAL THAT REACHES THE VERY BEST
+     ROSTERS. roundEdge clamps here, so ANY pivot more than about two points
+     below your overall lands on this number and the pivot stops mattering. At
+     0.86 that was true of nearly every playoff team: moving the first two pivots
+     eight points measured as literally no change, 96% and 69% won either way,
+     because both were already clamped. Two things followed. The bracket had
+     nothing left to decide early, so all of the difficulty piled onto the last
+     game, which came out won 4% of the time by 36 points: you cruised to the
+     title game and were annihilated in it, every time. And a 105-overall roster,
+     which is exactly the kind that goes unbeaten, got the floor's advantage in
+     the FINAL, so hardening the pivots barely touched the perfect-season rate
+     no matter how far they moved.
+     0.97 fixes both. It gives the ladder its range back and it bites at the top
+     of the scale, which is where a perfect season comes from. Measured on the
+     solver: 85% / 42% / 21% / 12% won by round, at +12 / -3 / -13 / -19. 1.00
+     overshoots, at 80% / 35% / 18% / 8% and a fifth of the titles. */
+  ROUND_EDGE_MIN: 0.97,
   ROUND_EDGE_SLOPE: 0.075,
   /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
      round is an even game. A first-round opponent is beatable by a team that
@@ -133,13 +149,62 @@ const CONSTANTS = {
      titles came out at 0.0%. Re-anchored on the probe's greedy drafts. Lowered
      two more points each when PRICE_K came down, for the same reason as the two
      floors above: these are overalls, and the drafts that have to clear them all
-     moved down together. Left where they were, the greedy drafter fell to 0.7%
-     titles and 0.04% perfects. */
+     moved down together.
+
+     THEN THE LAST TWO WENT BACK UP, A LONG WAY, BECAUSE GREEDY WAS THE WRONG
+     YARDSTICK. Every number above was anchored on best-available drafting, which
+     takes the highest scorer on every spin and never thinks about what it is
+     leaving itself. That is not a person trying to win. Measured against the
+     solver instead, on the same ladder as the NFL game (probe_economy policies),
+     84 and 89 gave perfect play a 7.9% title and a 0.37% perfect season against
+     the NFL's 0.4% and 0.04%: about twenty times easier to win it all, in a game
+     whose name is the outcome. Somebody who merely tapped the best player every
+     time was taking more titles here than optimal play takes there.
+
+     THE FIRST ATTEMPT MOVED ONLY THE LAST TWO, to 92 and 101, and hit the target
+     rate exactly while making a bad game: with ROUND_EDGE_MIN still at 0.86 the
+     first two rounds were a formality, so all of the difficulty landed on the
+     final, which came out won 4% of the time by 36 points. Right number, wrong
+     season. The floor moved to 0.93 in the same change and all four pivots came
+     back down to sit near the top of the scale, which puts the difficulty across
+     the bracket instead of in one game.
+
+     THE PIVOTS ALONE COULD NOT GET THERE, and the reason is ROUND_EDGE_MIN: see
+     that constant. While the floor sat at 0.86 the whole bracket was clamped for
+     any strong roster, so pushing the last two pivots as far as 96 and 101 still
+     left perfect seasons at twice the NFL rate while turning the final into a
+     3%-win, 25-point blowout. The floor and the pivots had to move together, the
+     floor up so the bracket reaches the top of the scale at all, the pivots down
+     so it does not swallow everyone else.
+
+     82/88/94/97 at a 0.97 floor, measured against the NFL game on the same
+     harness, the same solver and the SAME 110 draft seeds, 99,000 seasons each:
+
+       perfect play        title    perfect season
+       NFL                 0.54%       0.046%
+       CFB                 0.45%       0.053%
+
+     and a bracket that reads 85% / 42% / 21% / 12% won by round, at +12 / -3 /
+     -13 / -19. The gaps between the four narrow on the way up (6, 6, 3) because
+     the last two are already near the top of the scale and a wider step there
+     just turns the final into a formality. 97 still sits about ten under the
+     best overall the wheel can hand you, so the final stays reachable rather
+     than mathematically impossible.
+
+     MEASURE PAIRED, ON THE SAME SEEDS, AND AT N ABOVE 100. This rate is heavy
+     tailed: it is carried by the handful of draft pools that can produce a
+     105-overall roster, so the same settings measured 0.050% at 80 seeds and
+     0.110% at 110. Two of the readings taken while tuning this were sampling
+     noise, and both of them looked like a result.
+     Re-measure with `policies` after ANY change to prices, the cap, chemistry or
+     the season, and compare rung to rung against the NFL rather than reading the
+     CFB column alone. Greedy drafting is NOT a yardstick: it was the yardstick
+     that let this drift twenty times off. */
   ROUND_EDGE_PIVOT: {
-    'CFP First Round': 74,
-    'CFP Quarterfinal': 80,
-    'CFP Semifinal': 84,
-    'CFP Championship': 89,
+    'CFP First Round': 82,
+    'CFP Quarterfinal': 88,
+    'CFP Semifinal': 94,
+    'CFP Championship': 97,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
