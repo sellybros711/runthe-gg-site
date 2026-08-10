@@ -304,6 +304,7 @@
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/jerseys.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
@@ -358,8 +359,25 @@
     if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
     return (e.ns||0)>=8;
   }
-  var POOL = ENT.filter(hiqStar);
-  function jn(e){ return e.j[0]; }
+  // Each CARD is a jersey STINT: one (team, year-range, number) span, so the
+  // number the round asks about is never ambiguous (a player who wore two
+  // numbers - Telfair 3 & 31, LeBron 23 in Cleveland / 6 in Miami - shows up as
+  // separate cards). Stints come from jerseys.js (generated: NFL nflverse, NBA
+  // Basketball-Reference, MLB statsapi) and are joined to the same recognizable
+  // players the game used before, so the quality bar is unchanged. Players with
+  // no stint data yet simply don't appear.
+  var _stintsById = {};
+  ((window.RTG_JERSEYS && RTG_JERSEYS.stints) || []).forEach(function(s){
+    (_stintsById[s.id] || (_stintsById[s.id] = [])).push(s);
+  });
+  var POOL = [];
+  ENT.filter(hiqStar).forEach(function(e){
+    var ss = _stintsById[e.id]; if(!ss) return;
+    ss.forEach(function(s){
+      POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num });
+    });
+  });
+  function jn(e){ return e.num; }
 
   // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
   function buildRounds(){
@@ -388,25 +406,18 @@
     if(shield){ p.textContent='Save ready'; p.classList.remove('used'); }
     else { p.textContent='Save used'; p.classList.add('used'); } }
 
-  // years (from the decade span) + the teams they suited up for - the two
-  // clues the player actually reasons from. Sport is implied by the teams.
-  function eraStr(e){ var d=e.decade; if(!d||!d.length) return ''; var a=d[0], b=d[d.length-1]; return a===b ? (a+'s') : (a+'s–'+b+'s'); }
-  // The revealed number belongs to ONE stint, so the clue must too: a player who
-  // wore different numbers on different teams can't be shown with a team list +
-  // era range or you can't tell which number the card is asking about. We pin the
-  // card to a single team + single decade - the primary stint. The corpus lists
-  // the primary team, number and debut decade first, so t[0] / j[0] / decade[0]
-  // all describe the same stint (e.g. Jordan → Bulls, #23, 1980s).
-  function eraOne(e){ var d=e.decade; if(!d||!d.length) return ''; return d[0]+'s'; }
-  function metaLine(e){ return [eraOne(e), (e.t&&e.t[0])].filter(Boolean).join(' · '); }
-  // one team on top, the single decade beneath it
-  function metaHTML(e){ var tm=(e.t&&e.t[0])||'', er=eraOne(e), o='';
-    if(tm) o+='<span class="tm">'+esc(tm)+'</span>';
-    if(er) o+='<span class="era">'+esc(er)+'</span>';
+  // Each card is one jersey stint: the exact team + the exact years he wore the
+  // revealed number there. An en-dash range (2003–2010), or a single year when
+  // the stint was one season. This is what makes the number unambiguous.
+  function yearRange(e){ return (e.y0 && e.y1 && e.y0!==e.y1) ? (e.y0+'–'+e.y1) : ('' + (e.y0||e.y1||'')); }
+  // one team on top, the exact year-range beneath it
+  function metaHTML(e){ var o='';
+    if(e.team) o+='<span class="tm">'+esc(e.team)+'</span>';
+    var yr=yearRange(e); if(yr) o+='<span class="era">'+esc(yr)+'</span>';
     return o; }
-  // team-color accent: look up the player's team in the shared palette
+  // team-color accent: look up the stint's team in the shared palette
   function teamStyle(e){
-    var tm=e.t&&e.t[0], c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);   // matches the team shown on the card
+    var c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(e.team);   // matches the team shown on the card
     return c ? ' style="--tp:'+c.p+'"' : '';
   }
   function renderLadder(){
