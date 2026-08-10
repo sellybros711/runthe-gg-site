@@ -696,7 +696,7 @@
       14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
     return map[n]||'';
   }
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('wordsearch', DATE);
     if(done) return; done=true; if(tick) clearInterval(tick);
     resumeClear();   // attempt is over - nothing left to resume
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

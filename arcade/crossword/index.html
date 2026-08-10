@@ -817,7 +817,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(cwToastT) clearTimeout(cwToastT); cwToastT=setTimeout(function(){ el.classList.remove('on'); }, 2800);
   }
 
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
     done=true; if(tick) clearInterval(tick);
     clearResume();   // attempt is over - nothing left to restore
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;

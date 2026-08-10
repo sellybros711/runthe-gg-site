@@ -106,6 +106,21 @@
     pretty:pretty,
     // per-date personal-best helpers - safe no-ops when not in archive mode
     recordBest:recordBest,
-    readBest:readBest
+    readBest:readBest,
+    // completion log (any mode): mark a (game,date) done, and read back the set
+    // of completed dates for a game - the archive calendar uses this for checks.
+    markDone:function(game, date){ try{ if(game&&date) localStorage.setItem('rtg:'+game+':done:'+date, '1'); }catch(e){} },
+    doneDates:function(game){
+      var out={}, pre='rtg:'+game+':';
+      try{
+        // matches rtg:<game>:done:<date> and rtg:<game>:pb:<date>, tolerating a
+        // sport-mode segment in between (rtg:wordsearch:nba:pb:<date>). A PB
+        // implies that day was completed.
+        var tail=/:(?:done|pb):(\d{4}-\d{2}-\d{2})$/;
+        for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(!k||k.indexOf(pre)!==0) continue;
+          var m=k.match(tail); if(m) out[m[1]]=1; }
+      }catch(e){}
+      return out;
+    }
   };
 })();

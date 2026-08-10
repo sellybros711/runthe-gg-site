@@ -1248,7 +1248,7 @@
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
 
     // ---- finish (win or 6th-miss fail) ----
-    function finish(won) {
+    function finish(won) { if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('match', DATE);
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
       resumeClear();   // attempt is over - nothing left to resume
