@@ -8,7 +8,13 @@
  * (Settings → Billing → Customer portal).
  *
  * Env: STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE.
+ *
+ * SECURITY: the user is identified from the verified Supabase session token
+ * (Authorization: Bearer <access_token>), NOT from the request body — a body
+ * user_id would let anyone open another member's billing portal.
  */
+import { verifyUser } from './_verify.js';
+
 export async function onRequestPost(context) {
   const { env, request } = context;
   if (!env.STRIPE_SECRET_KEY || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) {
@@ -16,8 +22,10 @@ export async function onRequestPost(context) {
   }
   let body = {};
   try { body = await request.json(); } catch (e) {}
-  const userId = (body.user_id || '').trim();
-  if (!userId) return json({ error: 'missing_user_id' }, 400);
+
+  // Authenticated user only, derived from the session token — never the body.
+  const userId = await verifyUser(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
 
   // find this user's Stripe customer
   let customer = null;
