@@ -252,12 +252,15 @@ async function buildNBA(want, byName) {
 async function buildMLB(want, byName) {
   const obs = new Map();  // personId -> [{y, team, num}]
   // Walk every team's full-season roster for each year; jerseyNumber is on the
-  // roster entry. personId matches the former:mlb:<personId> ids directly.
-  const teamsResp = await j('https://statsapi.mlb.com/api/v1/teams?sportId=1');
-  const teams = (teamsResp && teamsResp.teams ? teamsResp.teams : []).filter((t) => t && t.id);
-  if (!teams.length) { console.log('MLB: no teams (statsapi unreachable) - skipping'); return []; }
+  // roster entry. personId matches the former:mlb:<personId> ids directly. We
+  // pull the team list PER SEASON so relocations/renames get an era-accurate
+  // name (2003 -> "Florida Marlins", not "Miami Marlins").
+  const probe = await j('https://statsapi.mlb.com/api/v1/teams?sportId=1');
+  if (!probe || !probe.teams || !probe.teams.length) { console.log('MLB: statsapi unreachable - skipping'); return []; }
   const MLB_START = 1995;
   for (let y = MLB_START; y <= NOW_YEAR; y++) {
+    const tResp = await j(`https://statsapi.mlb.com/api/v1/teams?sportId=1&season=${y}`);
+    const teams = (tResp && tResp.teams ? tResp.teams : []).filter((t) => t && t.id);
     for (const t of teams) {
       const d = await j(`https://statsapi.mlb.com/api/v1/teams/${t.id}/roster?rosterType=fullSeason&season=${y}`);
       const roster = d && d.roster ? d.roster : [];
