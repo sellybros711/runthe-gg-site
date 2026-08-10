@@ -317,18 +317,24 @@
   // {ok:false} only when the server says they're genuinely out (e.g. localStorage
   // was cleared to fake more plays). Guests, Arcade Card members, offline, and
   // testing all resolve {ok:true} (the client wallet / entitlement governs those).
+  // NB: this no longer spends a token of its own. RTGTokens.startAttempt already
+  // fires the spend RPC for every ranked play, so calling the RPC again here
+  // would charge a signed-in player twice for one puzzle. It now just reports
+  // the verdict tokens.js recorded for the attempt in progress.
   function authorizePlay(){
     try{
-      if(window.RTGTokens && (RTGTokens.testing && RTGTokens.testing() || RTGTokens.hasCard && RTGTokens.hasCard())) return Promise.resolve({ok:true});
-      if(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn() && window.RTG_BOARD && RTG_BOARD.spendToken){
-        return RTG_BOARD.spendToken().then(function(res){
-          if(res && res.ok===false) return { ok:false, remaining:(res.remaining||0) };
-          return { ok:true, remaining:(res && res.remaining) };
-        }).catch(function(){ return { ok:true }; });   // fail-open: client wallet still enforces
-      }
+      if(window.RTGTokens && RTGTokens.rankAuthorized) return Promise.resolve({ ok: RTGTokens.rankAuthorized() });
     }catch(e){}
     return Promise.resolve({ok:true});
   }
+  // A refusal means the local wallet was out of step with the server - usually
+  // storage cleared to mint extra plays. Say so once, and show the tier's offer
+  // rather than letting the play run on toward a score that will not post.
+  var deniedShown=false;
+  document.addEventListener('rtg:denied', function(){
+    if(deniedShown) return; deniedShown=true;      // once per page, not once per game
+    try{ setTimeout(wall, 400); }catch(e){}
+  });
 
   // Reconcile the client wallet against the server on load: a signed-in user who
   // cleared localStorage (or is on a new device) gets their real used-count from

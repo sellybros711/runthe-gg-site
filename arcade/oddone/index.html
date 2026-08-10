@@ -87,6 +87,10 @@
   .subprompt .ok{color:var(--greenT);} .subprompt .no{color:var(--red);} .subprompt .team{color:var(--violetT);}
   .choice.mypick{box-shadow:0 0 0 2px var(--red) inset;}
   .choices{display:flex; flex-direction:column; gap:9px;}
+  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
+     page a second after first paint - a fixed-count list, so its height is
+     knowable, and :empty drops the reservation the moment it's built. */
+  .choices:empty{min-height:356px;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s; min-height:64px;}
   .choice:hover{border-color:var(--violet);}
   .choice:active{transform:scale(.995);}
@@ -96,6 +100,15 @@
   .whyq{text-align:center; font-weight:900; font-size:13px; color:var(--ink); margin:2px 0 4px;}
   .whyq span{color:var(--goldT); font-size:11px; letter-spacing:.04em;}
   .choice.why{text-align:center;}
+  /* The bonus is a detour off a streak run, so it wears its own clock: a bar
+     that drains to the auto-advance and a skip that gets you out immediately.
+     Waiting on an invisible timer is what made this beat feel like a penalty. */
+  .whybar{height:3px; border-radius:2px; background:var(--line2); overflow:hidden; margin:0 2px 8px;}
+  .whybar i{display:block; height:100%; width:100%; background:var(--violet); transform-origin:left center; animation:whydrain var(--whyms,3600ms) linear forwards;}
+  @keyframes whydrain{ to{ transform:scaleX(0); } }
+  .whyskip{display:block; margin:9px auto 0; background:none; border:0; font:800 12px var(--f); color:var(--mut); cursor:pointer; text-decoration:underline; text-underline-offset:3px; padding:6px;}
+  .whyskip:hover{color:var(--ink);}
+  @media (prefers-reduced-motion:reduce){ .whybar i{animation:none;} }
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -254,6 +267,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -506,7 +520,13 @@
       ANSLOG.push('c');
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ askWhy(r); }, 1250);   // bonus round, then advance
+      // The bonus used to fire after EVERY correct answer, which put 2.4s of
+      // forced waiting between you and the next round, twenty rounds deep. It
+      // reads as a reward the first time and as a toll the fifth. Now it shows
+      // up on your first spot (so it's discovered) and every fourth after that;
+      // the rest of the time you get the connection line and go.
+      if(run===1 || run%4===0) setTimeout(function(){ askWhy(r); }, 1000);
+      else setTimeout(function(){ busy=false; renderRound(); }, 1100);
     } else {
       ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
@@ -538,13 +558,18 @@
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
     ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
     var opts = shuffle([trueLab].concat(decoys));
+    var WAIT=3600;
     choicesEl.innerHTML = '<div class="whyq">Bonus: why are they linked?</div>' +
-      opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
-    var tapped=false, advanced=false;
-    function go(){ if(advanced) return; advanced=true; busy=false; renderRound(); }
+      '<div class="whybar" aria-hidden="true" style="--whyms:'+WAIT+'ms"><i></i></div>' +
+      opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('') +
+      '<button class="whyskip" type="button" id="whySkip">Skip →</button>';
+    var tapped=false, advanced=false, timer=0;
+    function go(){ if(advanced) return; advanced=true; clearTimeout(timer); busy=false; renderRound(); }
     [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(b){
       b.addEventListener('click', function(){
         if(tapped) return; tapped=true;
+        clearTimeout(timer);
+        var bar=choicesEl.querySelector('.whybar'); if(bar) bar.remove();
         var ok=b.dataset.l===trueLab;
         [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(x){
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
@@ -552,10 +577,11 @@
         });
         if(ok){ toast('Right! You knew why!'); if(window.RTGSound) RTGSound.lock(); }
         else { toast('The link: '+trueLab); }
-        setTimeout(go, 1150);
+        timer=setTimeout(go, 850);
       });
     });
-    setTimeout(go, 6000);   // ignored → just move on
+    var sk=document.getElementById('whySkip'); if(sk) sk.addEventListener('click', go);
+    timer=setTimeout(go, WAIT);   // ignored → just move on
   }
 
   function startIfNeeded(){ if(started||done) return;

@@ -102,13 +102,21 @@
   // Spend on the server too (signed-in, non-card): keeps the server's per-day
   // count authoritative so the client wallet can be reconciled against it. Fire-
   // and-forget; the client stays the fast path, the server is the source of truth.
+  // DENIED is the server's verdict on the attempt currently in progress. It was
+  // the missing half of this handshake: the spend went out, and a refusal only
+  // ever raised the local floor - the play kept going and could still post a
+  // ranked score. Now a refusal is remembered for the life of the attempt,
+  // board.js refuses to submit while it stands, and card.js turns it into the
+  // right offer. Cleared at the top of every startAttempt.
+  var DENIED=false;
+  function emit(name){ try{ document.dispatchEvent(new Event(name)); }catch(e){} }
   function serverSpend(){
     try{
       if(TESTING || hasCard() || !signedIn()) return;
       if(!(window.RTG_BOARD && RTG_BOARD.spendToken)) return;
       RTG_BOARD.spendToken().then(function(res){
-        if(!res) return;
-        if(res.ok===false) setServerUsed(USER_DAILY);                         // server says out → lock
+        if(!res) return;                                                      // offline → client wallet governs
+        if(res.ok===false){ setServerUsed(USER_DAILY); DENIED=true; emit('rtg:tokens'); emit('rtg:denied'); }
         else if(typeof res.remaining==='number') setServerUsed(USER_DAILY - res.remaining);
       }).catch(function(){});
     }catch(e){}
@@ -116,6 +124,7 @@
 
   function startAttempt(game){
     var s=read(), before=s.plays[game]||0;
+    DENIED=false;
     if(unlimited()){
       s.plays[game]=before+1; write(s);
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
@@ -125,6 +134,9 @@
     serverSpend();
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remaining() };
   }
+  // May this attempt's result count? False only after the server has explicitly
+  // refused the token - offline, guest and card plays all stay true.
+  function rankAuthorized(){ return !DENIED; }
 
   window.RTGTokens = {
     GAMES: GAMES.slice(),
@@ -145,6 +157,7 @@
     triesLeft: triesLeft,
     canPlay: canPlay,
     startAttempt: startAttempt,
+    rankAuthorized: rankAuthorized,
     // a compact, tier-aware status string for hints/tiles. Callers append
     // " today" (every game's hint line does), so no string here may end in it.
     label: function(){

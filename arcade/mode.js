@@ -35,6 +35,10 @@
   function remember(base, mode) { try { LS.setItem(lastKey(base), mode); } catch (e) {} }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  // NB: the switcher row's height is reserved by each game's own inline CSS
+  // (`.modesw:empty{min-height:...}`), not from here. mode.js loads behind a
+  // megabyte of corpus data, so anything it injects lands well after the first
+  // paint - far too late to stop the fill from shoving the board down a row.
   function ensureStyle() {
     if (document.getElementById('rtg-mode-css')) return;
     var s = document.createElement('style'); s.id = 'rtg-mode-css';

@@ -99,7 +99,13 @@
    * onto matching corpus entities so any auto-detected credentials gate
    * finds real evidence. Same normalization as the star overlay.
    * ---------------------------------------------------------------- */
-  function normName(n){ return String(n||'').toLowerCase().replace(/[\.']/g,'').replace(/\s+/g,' ').trim(); }
+  // Accent-stripping matters: the corpus spells Jokic and Jokić both ways
+  // depending on the feed, and awards.js keys are built with exactly this
+  // normalization. Change one side and every accented name stops matching.
+  function normName(n){
+    return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .toLowerCase().replace(/[\.']/g,'').replace(/\s+/g,' ').trim();
+  }
   var A = root.RTG_AWARDS;
   if (A && A.players){
     var awMap = {};

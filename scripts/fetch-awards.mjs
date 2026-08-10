@@ -2,125 +2,246 @@
  *
  * Enriches the corpus with real recognizability signals so the games no
  * longer have to guess who's famous from career length alone. Emits a
- * small map {sport|name: {aw:['MVP','ProBowl',...]}} that data.js merges
- * onto matching entities alongside the hand-curated stars overlay.
+ * small map {SPORT|normalized name: {aw:['MVP','Pro Bowl',...]}} that
+ * data.js merges onto matching entities alongside the star overlay.
  *
- * Sources (all keyless, publicly cacheable HTML/JSON):
- *   MLB — statsapi.mlb.com/api/v1/awards + awardRecipients (MVP, Cy Young,
- *         All-Star, Rookie of the Year, Silver Slugger)
- *   NBA — data.nba.net awards feed + basketball-reference honors pages
- *         (MVP, DPOY, All-Star, All-NBA, ROY, Finals MVP)
- *   NFL — pro-football-reference.com honors + Pro Bowl summary pages
- *         (MVP, OPOY, DPOY, Pro Bowl, All-Pro, Super Bowl MVP, ROY)
+ * SOURCES
+ *   MLB  statsapi.mlb.com — the award list is DISCOVERED from /api/v1/awards
+ *        rather than hardcoded, then recipients are hydrated per season.
+ *        (The previous hardcoded id list is why this shipped 0 rows: those
+ *        ids are not what the endpoint actually serves.)
+ *   NBA  en.wikipedia.org category membership.
+ *   NFL  en.wikipedia.org category membership.
+ *
+ * Wikipedia categories rather than sports-reference HTML: the reference
+ * sites rate-limit and block CI runners, and their honors tables live
+ * inside HTML comments, so a scraper against them is both fragile and
+ * likely to be refused. A category listing is a keyless paginated JSON
+ * API whose members are exactly the article titles we want - the player
+ * names - with no table parsing at all.
+ *
+ * SAFETY. Every source reports its own count, and the run FAILS loudly if
+ * a sport contributes nothing or if the new dataset is drastically smaller
+ * than the one already committed. Silently overwriting awards.js with an
+ * empty file is what let the last breakage sit unnoticed. Override with
+ * --force when a shrink is genuinely intended.
  *
  * Called by .github/workflows/awards.yml (monthly cron). Local run:
- *   node scripts/fetch-awards.mjs
- *
- * Fail-safe: if any source blocks or errors, the script still emits what
- * it did fetch. Missing awards is silent — the star overlay is the fallback.
- *
- * NOTE (2026-08-09): first version ships only the MLB path (statsapi is
- * the most reliable). NBA and NFL scrapers are stubbed with the shape
- * they should return so the workflow schema stays stable across shipments.
+ *   node scripts/fetch-awards.mjs [--force] [--only=NBA,NFL]
  */
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 
+const ARGV = process.argv.slice(2);
+const FORCE = ARGV.includes('--force');
+const ONLY = (ARGV.find((a) => a.startsWith('--only=')) || '').slice(7)
+  .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
 const NOW_YEAR = new Date().getFullYear();
+const UA = 'runthe-arcade-awards/2.0 (+https://runthe.gg; contact RunTheGames@outlook.com)';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function j(url, tries = 3) {
+async function req(url, tries = 3) {
+  let last = '';
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetch(url, { headers: { 'User-Agent': 'runthe-arcade/awards 1.0' } });
+      const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
       if (r.ok) return await r.json();
       if (r.status === 404) return null;
-    } catch (e) { /* retry */ }
-    await sleep(400 * (i + 1));
+      last = 'HTTP ' + r.status;
+    } catch (e) { last = e.message; }
+    await sleep(500 * (i + 1));
   }
+  if (last) process.stderr.write('  ! ' + last + '  ' + url + '\n');
   return null;
 }
 
-// Aggregate awards into a name-keyed map. Keys are 'SPORT|Full Name' (lowered
-// & entity-normalized so upstream spelling variance doesn't split entries).
+/* Must stay byte-identical in effect to data.js's normName, or every key
+ * misses. data.js strips accents too; keep the two in step. */
 function norm(s) {
   return String(s || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase().replace(/[\.']/g, '').replace(/\s+/g, ' ').trim();
 }
-const AWARDS = new Map();   // 'SPORT|normName' -> Set of award tags
+
+const AWARDS = new Map();            // 'SPORT|normName' -> Set of tags
 function add(sport, name, tag) {
-  if (!name || !tag) return;
+  if (!name || !tag) return false;
   const k = sport + '|' + norm(name);
-  let s = AWARDS.get(k); if (!s) { s = new Set(); AWARDS.set(k, s); }
+  let s = AWARDS.get(k);
+  if (!s) { s = new Set(); AWARDS.set(k, s); }
   s.add(tag);
+  return true;
 }
 
-/* ----------------------------- MLB (statsapi) --------------------------- */
-// Award IDs come from /api/v1/awards. We hydrate the recipients for each
-// season back to 1980 for a big-enough historical sweep, then tag each
-// recipient with a short readable label the games can use.
-const MLB_AWARDS = {
-  MLBMVP:        'MLB MVP',
-  ALMVP:         'AL MVP',
-  NLMVP:         'NL MVP',
-  MLBCY:         'Cy Young',
-  ALCY:          'AL Cy Young',
-  NLCY:          'NL Cy Young',
-  MLBROY:        'Rookie of the Year',
-  ALROY:         'AL Rookie of the Year',
-  NLROY:         'NL Rookie of the Year',
-  ALAS:          'AL All-Star',
-  NLAS:          'NL All-Star',
-  MLBAS:         'MLB All-Star',
-  ALSS:          'Silver Slugger',
-  NLSS:          'Silver Slugger',
-  MLBSS:         'Silver Slugger',
-  ALGG:          'Gold Glove',
-  NLGG:          'Gold Glove',
-  MLBGG:         'Gold Glove',
-  MLBHOF:        'Hall of Fame'
-};
-async function buildMLB() {
-  for (const [id, label] of Object.entries(MLB_AWARDS)) {
-    for (let y = 1980; y <= NOW_YEAR; y++) {
-      const d = await j(`https://statsapi.mlb.com/api/v1/awards/${id}/recipients?season=${y}`);
-      const recs = d && d.awards;
-      if (recs) recs.forEach((r) => {
-        const p = r.player; if (p && p.fullName) add('MLB', p.fullName, label);
-      });
-      await sleep(80);
-    }
+/* ---------------------------- Wikipedia categories ---------------------- */
+const WIKI = 'https://en.wikipedia.org/w/api.php';
+
+// Article titles carry disambiguators the corpus never has:
+//   "Chris Johnson (running back)" -> "Chris Johnson"
+// Anything that isn't a person's article (lists, seasons, templates) is
+// dropped rather than guessed at.
+function titleToName(t) {
+  const bare = String(t).replace(/\s*\([^)]*\)\s*$/, '').trim();
+  if (!bare || bare.length > 48) return null;
+  if (/^(List|Category|Template|Portal|Index|Timeline|History|Comparison)\b/i.test(bare)) return null;
+  if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.\- ]+$/.test(bare)) return null;
+  if (bare.split(/\s+/).length < 2) return null;      // a person has at least two words
+  return bare;
+}
+
+async function catMembers(category) {
+  const out = [];
+  let cont = '';
+  for (let page = 0; page < 20; page++) {
+    const url = WIKI + '?action=query&format=json&formatversion=2&list=categorymembers' +
+      '&cmtitle=' + encodeURIComponent('Category:' + category) +
+      '&cmnamespace=0&cmlimit=500' + (cont ? '&cmcontinue=' + encodeURIComponent(cont) : '');
+    const d = await req(url);
+    const rows = d && d.query && d.query.categorymembers;
+    if (!rows) break;
+    rows.forEach((r) => { const n = titleToName(r.title); if (n) out.push(n); });
+    cont = d.continue && d.continue.cmcontinue;
+    if (!cont) break;
+    await sleep(120);
   }
-  console.log('MLB awards: distinct recipients so far ->', AWARDS.size);
+  return out;
 }
 
-/* ----------------------------- NBA (stub) ------------------------------- */
-// TODO(2026-08-09): implement. Candidate sources:
-//   - https://data.nba.net/data/10s/prod/v1/history/awards.json (unofficial)
-//   - basketball-reference.com/awards/mvp.html + /all-star + /all-nba
-//     (HTML; needs a table parser)
-async function buildNBA() {
-  // No-op stub — leaves awards.js light on NBA until the scraper is wired.
-  return 0;
+// [category title, award tag]. A category that has been renamed upstream
+// yields 0 and says so in the log instead of vanishing into a silent total.
+const NBA_CATS = [
+  ['National Basketball Association Most Valuable Player Award winners', 'NBA MVP'],
+  ['National Basketball Association Finals Most Valuable Player Award winners', 'Finals MVP'],
+  ['National Basketball Association All-Star Game Most Valuable Player Award winners', 'All-Star Game MVP'],
+  ['National Basketball Association Defensive Player of the Year Award winners', 'Defensive Player of the Year'],
+  ['National Basketball Association Rookie of the Year Award winners', 'Rookie of the Year'],
+  ['National Basketball Association Sixth Man of the Year Award winners', 'Sixth Man of the Year'],
+  ['National Basketball Association All-Stars', 'NBA All-Star'],
+  ['Naismith Memorial Basketball Hall of Fame inductees', 'Hall of Fame']
+];
+const NFL_CATS = [
+  ['Associated Press NFL Most Valuable Player Award winners', 'NFL MVP'],
+  ['Super Bowl Most Valuable Player Award winners', 'Super Bowl MVP'],
+  ['Associated Press NFL Offensive Player of the Year Award winners', 'Offensive Player of the Year'],
+  ['Associated Press NFL Defensive Player of the Year Award winners', 'Defensive Player of the Year'],
+  ['Associated Press NFL Offensive Rookie of the Year Award winners', 'Offensive Rookie of the Year'],
+  ['Associated Press NFL Defensive Rookie of the Year Award winners', 'Defensive Rookie of the Year'],
+  ['National Conference Pro Bowl players', 'Pro Bowl'],
+  ['American Conference Pro Bowl players', 'Pro Bowl'],
+  ['Pro Football Hall of Fame inductees', 'Hall of Fame']
+];
+// Backstop for MLB: used only if statsapi comes back empty, so a bad day at
+// statsapi doesn't wipe the sport out of the dataset.
+const MLB_CATS = [
+  ['Major League Baseball Most Valuable Player Award winners', 'MLB MVP'],
+  ['Cy Young Award winners', 'Cy Young'],
+  ['Major League Baseball Rookie of the Year Award winners', 'Rookie of the Year'],
+  ['Gold Glove Award winners', 'Gold Glove'],
+  ['Silver Slugger Award winners', 'Silver Slugger'],
+  ['Major League Baseball All-Stars', 'MLB All-Star'],
+  ['National Baseball Hall of Fame inductees', 'Hall of Fame']
+];
+
+async function buildFromCats(sport, cats) {
+  let total = 0;
+  for (const [cat, tag] of cats) {
+    const names = await catMembers(cat);
+    names.forEach((n) => { if (add(sport, n, tag)) total++; });
+    console.log('  ' + sport + '  ' + String(names.length).padStart(5) + '  ' + cat +
+      (names.length ? '' : '   <-- EMPTY, check the category title'));
+    await sleep(150);
+  }
+  return total;
 }
 
-/* ----------------------------- NFL (stub) ------------------------------- */
-// TODO(2026-08-09): implement. Candidate source:
-//   - pro-football-reference.com/awards/awards_YYYY.htm per season
-//     (HTML tables; scraping is straightforward with cheerio or a small
-//     regex-based parser).
-//   - Pro Bowl rosters: pro-football-reference.com/years/YYYY/probowl.htm
-async function buildNFL() {
-  return 0;
+/* -------------------------------- MLB ----------------------------------- */
+// The endpoint publishes its own award catalogue; take the ids from there so
+// a renamed or added award is picked up instead of quietly missed.
+const MLB_WANT = /(most valuable player|cy young|rookie of the year|all-star|silver slugger|gold glove|hall of fame|world series most valuable)/i;
+function mlbLabel(name) {
+  const n = String(name);
+  if (/hall of fame/i.test(n)) return 'Hall of Fame';
+  if (/world series most valuable/i.test(n)) return 'World Series MVP';
+  if (/most valuable player/i.test(n)) return 'MLB MVP';
+  if (/cy young/i.test(n)) return 'Cy Young';
+  if (/rookie of the year/i.test(n)) return 'Rookie of the Year';
+  if (/silver slugger/i.test(n)) return 'Silver Slugger';
+  if (/gold glove/i.test(n)) return 'Gold Glove';
+  if (/all-star/i.test(n)) return 'MLB All-Star';
+  return null;
+}
+async function buildMLB() {
+  const cat = await req('https://statsapi.mlb.com/api/v1/awards');
+  const all = (cat && cat.awards) || [];
+  console.log('  MLB  statsapi published ' + all.length + ' awards');
+  const wanted = all.filter((a) => a && a.id && MLB_WANT.test(a.name || '') && mlbLabel(a.name));
+  console.log('  MLB  hydrating ' + wanted.length + ' of them back to 1980');
+  let total = 0;
+  for (const a of wanted) {
+    const label = mlbLabel(a.name);
+    let got = 0;
+    for (let y = 1980; y <= NOW_YEAR; y++) {
+      const d = await req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) +
+        '/recipients?season=' + y, 2);
+      const recs = (d && d.awards) || [];
+      recs.forEach((r) => {
+        const p = r && r.player;
+        if (p && p.fullName && add('MLB', p.fullName, label)) { got++; total++; }
+      });
+      await sleep(60);
+    }
+    console.log('  MLB  ' + String(got).padStart(5) + '  ' + a.id + '  ' + label);
+  }
+  return total;
 }
 
-/* --------------------------------- main -------------------------------- */
-try { await buildMLB(); } catch (e) { console.error('MLB awards failed:', e.message); }
-try { await buildNBA(); } catch (e) { console.error('NBA awards failed:', e.message); }
-try { await buildNFL(); } catch (e) { console.error('NFL awards failed:', e.message); }
+/* --------------------------------- main --------------------------------- */
+function want(sport) { return !ONLY.length || ONLY.includes(sport); }
+
+const report = {};
+if (want('MLB')) {
+  try { report.MLB = await buildMLB(); } catch (e) { console.error('MLB failed:', e.message); report.MLB = 0; }
+  if (!report.MLB) {
+    console.error('MLB via statsapi produced nothing - falling back to Wikipedia categories');
+    try { report.MLB = await buildFromCats('MLB', MLB_CATS); } catch (e) { console.error('MLB fallback failed:', e.message); }
+  }
+}
+if (want('NBA')) {
+  try { report.NBA = await buildFromCats('NBA', NBA_CATS); } catch (e) { console.error('NBA failed:', e.message); report.NBA = 0; }
+}
+if (want('NFL')) {
+  try { report.NFL = await buildFromCats('NFL', NFL_CATS); } catch (e) { console.error('NFL failed:', e.message); report.NFL = 0; }
+}
 
 const out = {};
-for (const [k, v] of AWARDS) { out[k] = { aw: Array.from(v).sort() }; }
+const perSport = {};
+for (const [k, v] of AWARDS) {
+  out[k] = { aw: Array.from(v).sort() };
+  const s = k.split('|')[0];
+  perSport[s] = (perSport[s] || 0) + 1;
+}
+console.log('\ndistinct award-decorated players by sport:', perSport);
+
+// Refuse to shrink the committed dataset into nothing by accident.
+let prev = 0;
+try {
+  if (existsSync('arcade/awards.js')) {
+    const m = /"count":(\d+)/.exec(readFileSync('arcade/awards.js', 'utf8'));
+    if (m) prev = parseInt(m[1], 10);
+  }
+} catch (e) {}
+
+const total = Object.keys(out).length;
+const missing = ['MLB', 'NBA', 'NFL'].filter((s) => want(s) && !perSport[s]);
+if (!FORCE && missing.length) {
+  console.error('\nFAIL: no rows for ' + missing.join(', ') + '. Refusing to write a dataset ' +
+    'that would silently drop a whole sport. Fix the source, or pass --force.');
+  process.exit(1);
+}
+if (!FORCE && prev && total < prev * 0.5) {
+  console.error('\nFAIL: ' + total + ' rows is less than half the committed ' + prev +
+    '. Refusing to overwrite. Pass --force if the shrink is intended.');
+  process.exit(1);
+}
 
 const file =
   '/* GENERATED by scripts/fetch-awards.mjs. Do not edit. Elite awards\n' +
@@ -128,9 +249,10 @@ const file =
   ' * corpus entities so game gates can surface real credentials. */\n' +
   'window.RTG_AWARDS = ' + JSON.stringify({
     updated: new Date().toISOString().slice(0, 10),
-    count: Object.keys(out).length,
+    count: total,
+    bySport: perSport,
     players: out
   }) + ';\n';
 
 writeFileSync('arcade/awards.js', file);
-console.log('wrote arcade/awards.js:', Object.keys(out).length, 'award-decorated players');
+console.log('wrote arcade/awards.js:', total, 'award-decorated players (was ' + prev + ')');

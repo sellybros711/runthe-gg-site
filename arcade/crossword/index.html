@@ -170,6 +170,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- clue lists ---------- */
 .lists{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+/* The two clue columns are built by JS, so the leaderboard under them used to
+   jump 150px once the puzzle mounted. Hold the taller (phone) height and let
+   :empty drop the reservation the moment the real clues arrive. */
+.list ol:empty{min-height:138px;}
+@media (min-width:521px){ .list ol:empty{min-height:121px;} }
 .list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--newsT);
   margin:0 0 6px; text-transform:uppercase;}
 .list ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
@@ -414,6 +419,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

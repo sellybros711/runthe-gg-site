@@ -96,6 +96,14 @@
   .board{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:10px; box-shadow:var(--shadow); margin-bottom:14px;}
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
   /* keep the row's space while hidden: mode.js may reveal a locked
      switcher after boot, and display:none made the page jump */
   .modesw.hidden{visibility:hidden;}
@@ -104,6 +112,13 @@
   .modesw button:hover{color:var(--ink); border-color:var(--teal);}
   .modesw button.on{background:var(--teal); color:#052a30; border-color:transparent;}
   .grid{display:grid; gap:3px; touch-action:none; user-select:none; -webkit-user-select:none; margin:0 auto; max-width:520px;}
+  /* The letter grid is always square (N x N of aspect-ratio:1 cells), so an
+     empty one can hold exactly the space the filled one will take. Without
+     this the board popped in at full height and pushed the word list, hint
+     button and leaderboard down the page - the single biggest layout shift
+     on this screen. :empty means the reservation retires the moment the real
+     cells land, so it can never fight the true height. */
+  .grid:empty{aspect-ratio:1/1; width:100%;}
   .cell{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
     background:var(--cellbg); border-radius:5px; color:var(--cellink); font-weight:800;
     font-size:clamp(12px,3.4vw,20px); text-transform:uppercase; transition:background .1s, color .1s, transform .05s;}
@@ -113,8 +128,11 @@
   @keyframes hintflash{0%,100%{box-shadow:0 0 0 0 transparent;}50%{box-shadow:0 0 0 3px var(--gold);}}
 
   /* word list */
-  .wordslab{text-align:center; font-size:12.5px; font-weight:800; color:var(--ink); margin:2px 0 10px;}
+  .wordslab{text-align:center; font-size:12.5px; font-weight:800; color:var(--ink); margin:2px 0 10px; min-height:18px;}
   .words{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; justify-content:center; min-height:32px;}
+  /* The word chips wrap to two rows on a phone and one on a desktop; reserve
+     what each will actually need so the fill doesn't move the page. */
+  @media (max-width:520px){ .words{min-height:65px;} .wordslab{min-height:33px;} }
   .word{font-size:12.5px; font-weight:800; letter-spacing:.02em; padding:6px 11px; border-radius:999px;
     border:1px solid var(--line2); background:var(--card); color:var(--ink); transition:background-color .15s, color .15s, border-color .15s, opacity .15s;}
   .word.done{color:#071426; border-color:transparent; text-decoration:line-through; opacity:.92; animation:wpop .3s ease;}
@@ -298,6 +316,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -445,6 +464,10 @@
   var foundSet={}, foundCount=0, colorFor={};
   var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
   var hintsUsed=0;   // free players get 1 hint per play; Pro is unlimited
+  // Per-word share record. FINDLOG is the order words fell ('c' clean, 'h' the
+  // square was pointed at first); hintedWords remembers which word a hint was
+  // spent on so the credit is honest even if it takes another minute to spot.
+  var FINDLOG=[], hintedWords={};
 
   // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
   // Snapshot only during the charged first (ranked) play; never in archive practice. ----
@@ -453,6 +476,8 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({
       d:DATE,
       found:Object.keys(foundSet),
+      flog:FINDLOG,
+      hinted:Object.keys(hintedWords),
       hints:hints,
       hintsUsed:hintsUsed,
       elapsed: started ? (performance.now()-startTs)/1000 : 0
@@ -584,6 +609,7 @@
     for(var i=0;i<PLACED.length;i++){ var w=PLACED[i].word; if(foundSet[w]) continue; if(w===s||w===sr){ hit=PLACED[i]; break; } }
     if(hit){
       foundSet[hit.word]=true; foundCount++;
+      FINDLOG.push(hintedWords[hit.word] ? 'h' : 'c');
       var pal=(SKIN&&SKIN_PAL)?SKIN_PAL:FOUND_COLORS; // team skin recolors found words in team shades
       colorFor[hit.word]=pal[(foundCount-1)%pal.length];
       clearSel(); paintFound(); renderWords();
@@ -629,7 +655,7 @@
     // FREE players are capped at 1 hint per play; PRO is never blocked
     if(!isProHints() && hintsUsed>=1){ toast('1 hint per play. Pro gets unlimited'); updateHintBtn(); return; }
     var rem=PLACED.filter(function(p){ return !foundSet[p.word]; }); if(!rem.length) return;
-    var p=rem[ri(rem.length)]; hints++; hintsUsed++;
+    var p=rem[ri(rem.length)]; hints++; hintsUsed++; hintedWords[p.word]=1;
     var el=cellEls[p.cells[0]]; el.classList.remove('hintflash'); void el.offsetWidth; el.classList.add('hintflash');
     if(window.RTGSound) RTGSound.key();
     toast('Hint: a name starting with “' + p.word.charAt(0) + '”. Its square is highlighted');
@@ -647,7 +673,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay){ resumeClear(); seedRandom(); buildBoard(false); } else { seedDaily(); buildBoard(true); servedDaily=true; }
     if(tick){ clearInterval(tick); tick=null; }
-    foundSet={}; foundCount=0; colorFor={};
+    foundSet={}; foundCount=0; colorFor={}; FINDLOG=[]; hintedWords={};
     done=false; hints=0; hintsUsed=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     selStart=null; selPath=[];
     renderGrid();   // draw the (possibly brand-new) letter grid from the current GRID
@@ -721,9 +747,23 @@
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', shareResult);
+  // One square per word, in the order you actually found them: green for a
+  // clean spot, amber where you burned a hint on it first, and a hollow square
+  // for anything still hiding. Five to a line, so eight-to-ten words read as a
+  // tidy two-row block. The old share was a bare time - this is the run.
+  function shareGrid(){
+    var out='', n=0;
+    for(var i=0;i<FINDLOG.length;i++){
+      out += (FINDLOG[i]==='h' ? '🟨' : '🟩');
+      if(++n%5===0 && i<FINDLOG.length-1) out += '\n';
+    }
+    var missed=PLACED.length-FINDLOG.length;
+    for(var m=0;m<missed;m++){ out += '⬜'; if(++n%5===0 && m<missed-1) out += '\n'; }
+    return out || '⬜';
+  }
   function shareResult(){
     var mark=hints?('🔎 '+hints+' hint'+(hints>1?'s':'')):'✅ flawless';
-    var txt='Run The Arcade · Word Search · '+P.theme+'\n⏱ '+fmt(elapsed)+' · '+mark+'\nrunthe.gg/arcade/wordsearch';
+    var txt='Run The Arcade · Word Search · '+P.theme+'\n'+shareGrid()+'\n⏱ '+fmt(elapsed)+' · '+mark+'\nrunthe.gg/arcade/wordsearch';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }).catch(function(){ toast('Copy failed'); }); }
     else toast('Sharing not supported');
@@ -824,6 +864,8 @@
         }
       });
       paintFound(); renderWords(); updWordsLab();
+      FINDLOG=Array.isArray(resume.flog)?resume.flog.slice():[];
+      hintedWords={}; (Array.isArray(resume.hinted)?resume.hinted:[]).forEach(function(w){ hintedWords[w]=1; });
       hints=resume.hints||0; hintsUsed=resume.hintsUsed||0; updateHintBtn();
       charged=true; attemptFirst=true; done=false;
       elapsed=Math.max(0,(+resume.elapsed||0));
