@@ -203,8 +203,11 @@
     plan = plan==='annual'?'annual':'monthly';
     if(hasCard()){ renderMember(); return; }   // already a member: never start a second checkout
     if(!signedIn()){
-      // preserve intent, ask them to sign in / create an account, then resume
+      // preserve intent, ask them to sign in / create an account, then resume.
+      // Persisted (not just in memory): Google sign-up leaves the page and
+      // comes back, and the chosen plan must survive that round trip.
       pending = plan;
+      try{ localStorage.setItem('rtg:pendingplan', JSON.stringify({ p: plan, t: Date.now() })); }catch(e){}
       close();
       if(window.RTGAuthUI){ RTGAuthUI.open('signup'); }
       return;
@@ -244,13 +247,32 @@
       .catch(function(){});
   }
 
-  // Resume a checkout the visitor started before signing in.
+  // Resume a checkout the visitor started before signing in. The plan also
+  // lives in localStorage so an OAuth redirect (full page reload) can't lose
+  // it; whichever copy exists wins, then both are cleared.
   var pending = null;
+  function takePending(){
+    var p = pending; pending = null;
+    try{
+      if(!p){
+        var raw = localStorage.getItem('rtg:pendingplan');
+        if(raw){
+          var o = JSON.parse(raw);
+          // 15-minute window: fresh enough to be the same purchase intent,
+          // stale enough that a later unrelated sign-in isn't yanked to Stripe.
+          if(o && o.p && (Date.now() - (o.t||0)) < 15*60*1000) p = o.p;
+        }
+      }
+      localStorage.removeItem('rtg:pendingplan');
+    }catch(e){}
+    return (p==='annual'||p==='monthly') ? p : null;
+  }
   function watchAuth(){
     if(!window.RTG_AUTH) return;
     RTG_AUTH.onChange(function(st){
-      if(pending && st && st.signedIn){
-        var plan=pending; pending=null;
+      if(!(st && st.signedIn)) return;
+      var plan = takePending();
+      if(plan){
         // small delay so the session/token settle before we POST
         setTimeout(function(){ paywall({ reason:'out' }); startCheckout(plan); }, 150);
       }
