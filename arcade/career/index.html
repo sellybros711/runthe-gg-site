@@ -637,7 +637,7 @@
     }
   document.getElementById('mShare').addEventListener('click', function(){
     var stat=(run>0?'🔥 ':'')+run+' in a row';
-    RTGShare.fire(RTGShare.card('career', DATE, { grid:shareGrid(), stat:stat }), run);
+    RTGShare.send({ key:'career', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
   });
 
   var cdT=null;

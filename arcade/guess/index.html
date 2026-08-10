@@ -922,7 +922,7 @@
   document.getElementById('mShare').addEventListener('click', function(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
     var stat=(won?('🎯 '+guesses.length+'/'+MAX):('❌ X/'+MAX))+' · '+fmt(elapsed);
-    RTGShare.fire(RTGShare.card('guess', DATE, { grid:grid, stat:stat }), won?guesses.length:null);
+    RTGShare.send({ key:'guess', date:DATE, grid:grid, stat:stat, statInt:(won?guesses.length:null) });
   });
 
   var cdT=null;

@@ -767,7 +767,7 @@
     // The theme is part of this game's identity, so it rides just under the
     // numbered header as its own line.
     var stat='📆 '+P.theme+'\n⏱ '+fmt(elapsed)+' · '+mark;
-    RTGShare.fire(RTGShare.card('wordsearch', DATE, { grid:shareGrid(), stat:stat }), Math.round(elapsed));
+    RTGShare.send({ key:'wordsearch', date:DATE, grid:shareGrid(), stat:stat, statInt:Math.round(elapsed) });
   }
 
   // ---- countdown to tomorrow ----
