@@ -299,6 +299,90 @@
   svg.jrot .jz.c{animation-delay:7s;}
   @keyframes jzcyc{0%{opacity:1} 28%{opacity:1} 34%{opacity:0} 94%{opacity:0} 100%{opacity:1}}
   @media (prefers-reduced-motion:reduce){ svg.jrot .jz{animation:none; opacity:0;} svg.jrot .jz.a{opacity:1;} }
+
+  /* ---- ambient card-icon animations (same calm, looping spirit as the jersey) ----
+     Each game's icon gets a slow, staggered signature loop. Kept subtle and given
+     different periods so the grid feels alive, not synchronized. All disabled under
+     prefers-reduced-motion (override at the bottom). SVG transforms need
+     transform-box:fill-box so the origin is the element, not the SVG viewport. */
+  .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
+  .tile.guess .cap svg rect, .tile.word .cap svg .wsdiag, .tile.career .cap svg circle{
+    transform-box:fill-box; transform-origin:center;}
+
+  /* Daily Match: the tiles settle in a diagonal wave */
+  .tile.match .cap svg rect{animation:capPop 5.6s ease-in-out infinite;}
+  .tile.match .cap svg rect:nth-of-type(1){animation-delay:0s}
+  .tile.match .cap svg rect:nth-of-type(2){animation-delay:.11s}
+  .tile.match .cap svg rect:nth-of-type(3){animation-delay:.22s}
+  .tile.match .cap svg rect:nth-of-type(4){animation-delay:.11s}
+  .tile.match .cap svg rect:nth-of-type(5){animation-delay:.22s}
+  .tile.match .cap svg rect:nth-of-type(6){animation-delay:.33s}
+  .tile.match .cap svg rect:nth-of-type(7){animation-delay:.22s}
+  .tile.match .cap svg rect:nth-of-type(8){animation-delay:.33s}
+  .tile.match .cap svg rect:nth-of-type(9){animation-delay:.44s}
+  @keyframes capPop{0%,66%,100%{transform:scale(1)}10%{transform:scale(1.16)}}
+
+  /* Odd One Out: the odd shape can't sit still */
+  .tile.oddone .cap svg rect{animation:capOdd 4.2s ease-in-out infinite;}
+  @keyframes capOdd{0%,52%,100%{transform:scale(1) rotate(0)}66%{transform:scale(1.22) rotate(-7deg)}82%{transform:scale(1.22) rotate(7deg)}}
+
+  /* Rank It: bars grow into order, left to right */
+  .tile.rankit .cap svg rect{transform-origin:left center; animation:capRank 5s ease-in-out infinite;}
+  .tile.rankit .cap svg rect:nth-of-type(1){animation-delay:0s}
+  .tile.rankit .cap svg rect:nth-of-type(2){animation-delay:.18s}
+  .tile.rankit .cap svg rect:nth-of-type(3){animation-delay:.36s}
+  @keyframes capRank{0%{transform:scaleX(.16)}20%,72%{transform:scaleX(1)}100%{transform:scaleX(.16)}}
+
+  /* Guess the Player: the row flips to reveal */
+  .tile.guess .cap svg rect{animation:capFlip 5.4s ease-in-out infinite;}
+  .tile.guess .cap svg rect:nth-of-type(1){animation-delay:0s}
+  .tile.guess .cap svg rect:nth-of-type(2){animation-delay:.07s}
+  .tile.guess .cap svg rect:nth-of-type(3){animation-delay:.14s}
+  .tile.guess .cap svg rect:nth-of-type(4){animation-delay:.21s}
+  .tile.guess .cap svg rect:nth-of-type(5){animation-delay:.28s}
+  .tile.guess .cap svg rect:nth-of-type(6){animation-delay:.35s}
+  .tile.guess .cap svg rect:nth-of-type(7){animation-delay:.42s}
+  .tile.guess .cap svg rect:nth-of-type(8){animation-delay:.49s}
+  .tile.guess .cap svg rect:nth-of-type(9){animation-delay:.56s}
+  .tile.guess .cap svg rect:nth-of-type(10){animation-delay:.63s}
+  .tile.guess .cap svg rect:nth-of-type(11){animation-delay:.70s}
+  .tile.guess .cap svg rect:nth-of-type(12){animation-delay:.77s}
+  @keyframes capFlip{0%,42%,100%{transform:scaleX(1)}50%{transform:scaleX(.08)}58%{transform:scaleX(1)}}
+
+  /* Word Search: the winning diagonal lights up in sequence */
+  .tile.word .cap svg .wsdiag{animation:capDiag 4.8s ease-in-out infinite;}   /* per-cell delay set inline */
+  @keyframes capDiag{0%,58%,100%{transform:scale(1)}70%{transform:scale(1.18)}}
+
+  /* Career Path: the trend line draws, then the nodes pop along it */
+  .tile.career .cap svg path{stroke-dasharray:1; animation:capDraw 6s ease-in-out infinite;}
+  @keyframes capDraw{0%{stroke-dashoffset:1}28%,74%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
+  .tile.career .cap svg circle{animation:capNode 6s ease-in-out infinite;}
+  .tile.career .cap svg circle:nth-of-type(1){animation-delay:.2s}
+  .tile.career .cap svg circle:nth-of-type(2){animation-delay:.8s}
+  .tile.career .cap svg circle:nth-of-type(3){animation-delay:1.3s}
+  .tile.career .cap svg circle:nth-of-type(4){animation-delay:1.8s}
+  @keyframes capNode{0%,4%{transform:scale(0)}12%{transform:scale(1.3)}20%,80%{transform:scale(1)}100%{transform:scale(0)}}
+
+  /* Crossword: the answer types itself in */
+  .tile.cross .cap svg .cwletters text{animation:capType 6s ease-in-out infinite;}
+  .tile.cross .cap svg .cwletters text:nth-of-type(1){animation-delay:0s}
+  .tile.cross .cap svg .cwletters text:nth-of-type(2){animation-delay:.4s}
+  .tile.cross .cap svg .cwletters text:nth-of-type(3){animation-delay:.8s}
+  .tile.cross .cap svg .cwletters text:nth-of-type(4){animation-delay:1.2s}
+  .tile.cross .cap svg .cwletters text:nth-of-type(5){animation-delay:1.6s}
+  .tile.cross .cap svg .cwletters text:nth-of-type(6){animation-delay:2s}
+  @keyframes capType{0%,5%{opacity:.1}13%{opacity:1}90%{opacity:1}97%,100%{opacity:.1}}
+
+  /* Alma Mater: the mortarboard tips its cap */
+  .tile.alma .cap svg{transform-box:fill-box; transform-origin:50% 60%; animation:capBob 5.5s ease-in-out infinite;}
+  @keyframes capBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5px) rotate(-4deg)}}
+
+  @media (prefers-reduced-motion:reduce){
+    .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
+    .tile.guess .cap svg rect, .tile.word .cap svg .wsdiag, .tile.career .cap svg path,
+    .tile.career .cap svg circle, .tile.cross .cap svg .cwletters text, .tile.alma .cap svg{
+      animation:none !important; transform:none !important; opacity:1 !important; stroke-dashoffset:0 !important;}
+  }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#071426; background:var(--c);}
   .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
@@ -464,7 +548,7 @@
                     <text x="42.2" y="21.4">2</text>
                   </g>
                   <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
-                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
+                  <g class="cwletters" font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
                     <text x="10" y="13.2">R</text>
                     <text x="22" y="13.2">U</text>
                     <text x="34" y="13.2">N</text>
@@ -492,9 +576,9 @@
                   <rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/>
                   <g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
                   <!-- teal diagonal 'found word' WIN -->
-                  <rect x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5"/>
+                  <rect class="wsdiag" x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
+                  <rect class="wsdiag" x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.22s"/>
+                  <rect class="wsdiag" x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.44s"/>
                   <g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle">
                     <text x="10" y="13" fill="#06333A">W</text>
                     <text x="22" y="25" fill="#06333A">I</text>
@@ -585,7 +669,7 @@
             <span class="cap" aria-hidden="true">
               <span class="badge">Daily</span><span class="status" id="stR">Ready</span>
               <svg viewBox="0 0 56 56">
-                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
+                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M12 44 L22 24 L34 34 L46 12"/></g>
                 <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
               </svg>
             </span>
