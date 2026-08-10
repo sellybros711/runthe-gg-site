@@ -1,4 +1,4 @@
-/* RunTheGrid team colors — powers the word search "team skin".
+/* RunTheGrid team colors - powers the word search "team skin".
    window.RTG_TEAMCOLORS maps full team display names (as used in the corpus)
    to {p: primary hex, s: secondary hex}. Unknown names -> get() returns null. */
 (function(){

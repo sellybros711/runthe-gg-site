@@ -1,10 +1,10 @@
-/* RunThe.GG — favorite college team color scheme (shared).
+/* RunThe.GG - favorite college team color scheme (shared).
  *
  * The College Football game lets a signed-in user pick their favorite team and
  * stores its colors. Alma Mater (and any future game) reads that here to skin
  * itself in the user's team colors, falling back to a collegiate MAROON.
  *
- * Data contract — the College Football game writes ONE of:
+ * Data contract - the College Football game writes ONE of:
  *   1. Account (preferred): profiles.fav_cfb_team (jsonb) =
  *        { "name": "Texas A&M", "primary": "#500000", "secondary": "#FFFFFF" }
  *      board.js reads it for the signed-in user and mirrors it into the cache
@@ -14,7 +14,7 @@
  *      as the account mirror. Alma Mater reads THIS key on every page.
  *
  * Only { name, primary, secondary } is needed; primary/secondary are hex.
- * Everything is guarded — no favorite set → resolved() returns the maroon
+ * Everything is guarded - no favorite set → resolved() returns the maroon
  * DEFAULT, so the games look intentional out of the box.
  */
 (function () {

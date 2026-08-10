@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Career Path | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -12,7 +11,21 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Career Path: a daily sports streak game. Guess the athlete from their team-by-team journey and see how many you can name in a row." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Career Path: Daily Sports Streak Game" />
+<meta property="og:description" content="Name the athlete from their team-by-team journey. One miss ends the run." />
+<meta property="og:url" content="https://runthe.gg/arcade/career/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Career Path: Daily Sports Streak Game" />
+<meta name="twitter:description" content="Name the athlete from their team-by-team journey. One miss ends the run." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/career/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -42,7 +55,7 @@
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:560px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -69,7 +82,18 @@
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 14px;}
-  .modesw.hidden{display:none;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
   .modesw button:hover{color:var(--ink); border-color:var(--green);}
   .modesw button.on{background:var(--green); color:#071426; border-color:transparent;}
@@ -77,6 +101,10 @@
   .pathcard{background:var(--card); border:1px solid var(--line2); border-radius:16px; box-shadow:var(--shadow); padding:18px 16px; margin-bottom:16px;}
   .pathcard .plab{text-align:center; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-bottom:12px;}
   .path{display:flex; flex-direction:column; gap:0;}
+  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
+     page a second after first paint - a fixed-count list, so its height is
+     knowable, and :empty drops the reservation the moment it's built. */
+  .path:empty{min-height:234px;}
   .stop{display:flex; align-items:center; gap:12px;}
   .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:#fff; font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
@@ -87,9 +115,16 @@
   .stop .steptag.last{color:var(--greenT); border-color:color-mix(in srgb, var(--green) 45%, transparent);}
   .stopgap{height:16px; width:26px; display:flex; justify-content:center;}
   .stopgap:before{content:""; width:2px; background:var(--line2);}
+  .pathera{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); text-align:center;
+    font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--mut);}
+  .pathera b{color:var(--greenT); font-weight:900; letter-spacing:.09em;}
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
-  .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s;}
+  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
+     page a second after first paint - a fixed-count list, so its height is
+     knowable, and :empty drops the reservation the moment it's built. */
+  .choices:empty{min-height:283px;}
+  .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s; min-height:64px;}
   .choice:hover{border-color:var(--green);}
   .choice:active{transform:scale(.995);}
   .choice.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 15%, var(--card));}
@@ -122,6 +157,10 @@
   .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--greenT); margin:4px 0 0;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -150,13 +189,35 @@
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "mode mode" "prm prm"
+        "clue  run" "sub lbd" "choi lbd" "hint lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .prompt{grid-area:prm;}
+    .pathcard{grid-area:clue;} .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    .runbar{ margin:0; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+    /* the path + answers own the desktop column (match Odd One's scale) */
+    .pathcard{ padding:22px 20px; }
+    .stop .tm{ font-size:17px; }
+    .choices{ gap:12px; }
+    .choice{ min-height:60px; font-size:18px; padding:16px 20px; display:flex; align-items:center; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">CAREER PATH</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">CAREER PATH</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -208,10 +269,12 @@
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
     <h2>IN A ROW</h2>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -226,14 +289,25 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
@@ -241,7 +315,8 @@
   if(window.RTGHowto) RTGHowto.init('career');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var GAME_BASE='career', ROUNDS=30;
+  // Unlimited streak: soft cap; generator's guard bails earlier if pool exhausts.
+  var GAME_BASE='career', ROUNDS=200;
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them (career_nba) for its own seed/board/streak/resume.
   var MODE='all', SPORTFILTER=null, GAME='career', SAVE_KEY='rtg:career:v1', RESUME_KEY='rtg:resume:career';
@@ -262,22 +337,81 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
-  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.t && e.t.length>=2 && (e.f||0)>=3; });
-  var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0)>=3){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
+  // .star (from stars.js overlay) is the primary "recognizable" signal;
+  // otherwise fall back to modern-era + career credentials so an uncurated
+  // journeyman never sneaks in.
+  function careerStar(e){
+    if(!TEAM_SPORTS[e.sport] || !e.t || e.t.length<2) return false;
+    if(e.star) return true;
+    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+    var f=e.f||0;
+    if(f<4) return false;
+    if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
+    return (e.ns||0)>=8;
+  }
+  var POOL = ENT.filter(careerStar);
+  var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0) >= (e.sport==='NFL'?4:3)){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
 
   function poolForMode(){ return SPORTFILTER ? POOL.filter(function(e){ return e.sport===SPORTFILTER; }) : POOL; }
-  function buildRounds(){
+
+  // ---- generator caches -------------------------------------------------
+  // Team paths and per-team membership are computed once. buildRounds used to
+  // re-derive both inside its loop, which is what made this page block the
+  // main thread for ~430ms on load (the worst boot cost in the arcade).
+  var pathCache={};
+  function pathOf(e){ var p=pathCache[e.id]; if(p===undefined){ p=(e.t||[]).join('>'); pathCache[e.id]=p; } return p; }
+  // sport -> team -> [entities], so "who else played for the Lakers" is a
+  // lookup instead of a full-bucket scan.
+  var byTeam={};
+  Object.keys(bySport).forEach(function(sp){
+    var m=byTeam[sp]={};
+    bySport[sp].forEach(function(e){ (e.t||[]).forEach(function(tm){ (m[tm]=m[tm]||[]).push(e); }); });
+  });
+  // Same-sport candidates minus the target and anyone sharing its exact path.
+  // Cached per (sport|path) because consecutive rounds often reuse a bucket.
+  var othersCache={};
+  function sameSportExcept(t, tpath){
+    var k=t.sport+'|'+tpath;
+    var hit=othersCache[k];
+    if(!hit){
+      hit=othersCache[k]=(bySport[t.sport]||[]).filter(function(e){ return pathOf(e)!==tpath; });
+    }
+    // the target itself shares its own path, so it is already excluded
+    return hit;
+  }
+  // Everyone in the sport who shares >=1 team with the target, via byTeam.
+  function overlapWith(t, tpath){
+    var m=byTeam[t.sport]||{}, out=[], hit={};
+    (t.t||[]).forEach(function(tm){
+      (m[tm]||[]).forEach(function(e){
+        if(e.id===t.id || hit[e.id]) return;
+        if(pathOf(e)===tpath) return;      // same exact path = second right answer
+        hit[e.id]=1; out.push(e);
+      });
+    });
+    return out;
+  }
+  // Lazy: build a small batch now, top up as the run advances. Generating all
+  // 200 rounds up front cost ~370ms of blocked main thread for rounds almost
+  // nobody reaches (same fix Rank It got).
+  var BATCH=12;
+  function buildRounds(want, preSeen){
+    want = Math.min(want || BATCH, ROUNDS);
     var pool=poolForMode();
     var out=[], guard=0, seen={};
-    while(out.length<ROUNDS && guard<8000){ guard++;
+    if(preSeen) Object.keys(preSeen).forEach(function(k){ seen[k]=1; });
+    while(out.length<want && guard<8000){ guard++;
       var t=pool[ri(pool.length)];
       if(seen[t.id]) continue;   // each athlete stars at most once per day
-      var tpath=(t.t||[]).join('>');
+      var tpath=pathOf(t);
       var tteams=(t.t||[]);
-      // distractors: same sport, and NOT the same exact team path (no second correct answer)
-      var others=(bySport[t.sport]||[]).filter(function(e){ return e.id!==t.id && (e.t||[]).join('>')!==tpath; });
+      // Distractors: same sport, and NOT the same exact team path (no second
+      // correct answer). The sport bucket is filtered ONCE per candidate using
+      // a precomputed path index; rebuilding it per iteration meant ~500k array
+      // scans and ~430ms of blocked main thread before first paint.
+      var others=sameSportExcept(t, tpath);
       if(others.length<3) continue;
-      // Prefer decoys that SHARE at least one team with the target — "he also
+      // Prefer decoys that SHARE at least one team with the target - "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
       // name. Still fair: only the target has the exact full chronological path.
       // Progressive difficulty by round number (out.length = rounds built so far):
@@ -290,25 +424,38 @@
       function sharedCount(e){ var n=0,ts=e.t||[]; for(var k=0;k<ts.length;k++){ if(tteams.indexOf(ts[k])>=0) n++; } return n; }
       var pickIds={}, distract=[];
       function takeFrom(list){ list.forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
+      // The overlap set comes from the team index, so neither branch scans the
+      // whole sport bucket. Late rounds still rank by shared-team count, but
+      // only across the (small) overlap set before falling back.
+      var overlap=overlapWith(t, tpath);
       if(out.length>=19){
-        // shuffle first, then stable-sort by shared count desc: equals stay shuffled
-        takeFrom(shuffle(others).sort(function(a,b){ return sharedCount(b)-sharedCount(a); }));
+        takeFrom(shuffle(overlap).sort(function(a,b){ return sharedCount(b)-sharedCount(a); }));
+        if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       } else {
-        var overlap=others.filter(function(e){ return sharedCount(e)>0; });
         takeFrom(shuffle(overlap));
-        if(distract.length<3){ takeFrom(shuffle(others)); }
+        if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
       out.push({ target:t.id, opts:opts }); seen[t.id]=1;
     }
     return out;
   }
-  var SEQ=buildRounds();
+  var SEQ=buildRounds(BATCH);
+  // Top up before the player can run off the end. The RNG stream continues
+  // from where the last batch stopped, so a given seed still yields a given
+  // sequence - just built in slices.
+  function ensureRounds(upto){
+    if(SEQ.length>=ROUNDS || SEQ.length>=upto) return;
+    var seen={}; SEQ.forEach(function(r){ seen[r.target]=1; });
+    var add=buildRounds(Math.min(ROUNDS, upto+BATCH)-SEQ.length, seen);
+    for(var i=0;i<add.length;i++) SEQ.push(add[i]);
+  }
 
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices'), pathEl=document.getElementById('path');
 
   function renderRound(){
+    ensureRounds(idx+6);
     if(idx>=SEQ.length){ finish(); return; }
     document.getElementById('subprompt').textContent='';
     var r=SEQ[idx], target=byId[r.target];
@@ -318,7 +465,15 @@
       var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
       var st=tc?(' style="--pc:'+tc.p+'"'):'';
       return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"'+st+'><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
-    }).join('');
+    }).join('') + eraLine(target);
+    function eraLine(t){
+      // era clue: a short path (two recorded stints) can be almost anyone, so
+      // anchor it in time - narrows the guess to contemporaries without naming
+      // anything the decoy logic depends on (decoys share sport, not era).
+      var d=t.decade||[]; if(!d.length) return '';
+      var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s–'+d[d.length-1]+'s');
+      return '<div class="pathera">Played in the <b>'+era+'</b></div>';
+    }
     choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
   }
@@ -332,10 +487,12 @@
     bt.classList.add('you');
     if(!right){ document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
     if(right){
+      ANSLOG.push('c');
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 1050);
     } else {
+      ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 1300);
     }
@@ -347,14 +504,14 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the athlete who took this path. · Archive practice'; return; }
+    if(ARCHIVE){ h.textContent='Tap the athlete who took this path. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the athlete who took this path.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
-    if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
-    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    if(isReplay){ seedRandom(); SEQ=buildRounds(BATCH); } else { seedDaily(); SEQ=buildRounds(BATCH); servedDaily=true; }
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     document.getElementById('runN').textContent='0';
     document.getElementById('subprompt').textContent='';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -363,10 +520,11 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token, replaying
-  // animations or sounds. Rounds before idx are simply skipped — SEQ is
+  // animations or sounds. Rounds before idx are simply skipped - SEQ is
   // deterministic, so the board is consistent with what was already played.
   function resumeAttempt(r){
-    seedDaily(); SEQ=buildRounds(); servedDaily=true;
+    seedDaily(); SEQ=buildRounds(BATCH); servedDaily=true;
+    ensureRounds((r.idx|0)+6);
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
     run=Math.max(0, r.run|0);
     done=false; busy=false; charged=true; attemptFirst=true; started=true;
@@ -378,7 +536,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -394,14 +552,33 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
+  var NEWBEST=false, PREVBEST=0, MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
+  // Per-answer log for the share grid. A run of all green tells no story;
+  // the square where it ended is the whole point (this is the shape that
+  // made Wordle spread).
+  var ANSLOG=[];
   function finish(){
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
-    if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; }
+    MSTONE='';
+    if(s.lastDone!==today){
+      s.streak=(s.lastDone===y)?(s.streak||0)+1:1;
+      if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak);
+    }
+    PREVBEST=s.bestRun||0;
+    NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('career', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -417,21 +594,49 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (run>=SEQ.length?'You named them all!':'Your run ended'));
+    // Emotional copy ladder: new best > tied best > near miss > generic.
+    var sub;
+    if(locked) sub='Your run today';
+    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(run>=ROUNDS) sub='You named them all!';
+    else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
+    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
+    else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
+    else sub='Your run ended';
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = sub;
+    subEl.classList.toggle('newbest', !locked && NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'career');
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
+    // Render the run as it actually happened: a green square per clear, the
+    // square that ended it, and (Number Game) an amber square where the save absorbed
+    // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
+    function shareGrid(){
+      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      if(!ANSLOG.length) return '\u2b1c';
+      var out='', n=0;
+      for(var i=0;i<ANSLOG.length && i<60;i++){
+        out += MAP[ANSLOG[i]]||'\u2b1c';
+        if(++n%10===0 && i<ANSLOG.length-1) out += '\n';
+      }
+      if(ANSLOG.length>60) out += '\u2026';
+      return out;
+    }
   document.getElementById('mShare').addEventListener('click', function(){
-    var bar=run>0?('🟩'.repeat(Math.min(run,10))+(run>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Career Path\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var bar=shareGrid();
+    var txt='Run The Arcade · Career Path\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/career';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -440,7 +645,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New paths in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New paths in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
@@ -487,8 +692,8 @@
   // In-game version switcher (Pro/testing only): change sport without leaving.
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
       var lab = m.k==='all' ? 'All' : m.label;
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
@@ -498,7 +703,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();   // leaving mid-run abandons this version's run
+    if(!ARCHIVE && !done) saveResume();   // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -514,7 +719,7 @@
     document.getElementById('bestRun').textContent=saved.bestRun||0;
     document.getElementById('yourBest').textContent=saved.bestRun||0;
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';   // re-enable if a prior mode was locked
-    seedDaily(); SEQ=buildRounds();   // deterministic rounds for this version (locked/resume preview)
+    seedDaily(); SEQ=buildRounds(BATCH);   // deterministic rounds for this version (locked/resume preview)
     var RES=loadResume();
     var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
     if(!ARCHIVE && RES && !canResume) clearResume();   // stale or invalid snapshot

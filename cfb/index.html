@@ -187,6 +187,18 @@ window.GA_ID='G-L29P5MRWKE';
   .screen{display:none}
   .screen.on{display:block;animation:in .34s var(--ez) both}
   @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  /* THE FRONT PAGE FADES INSTEAD OF RISING, and it has to.
+     `animation-fill-mode:both` keeps the last keyframe applied after the run, and
+     Chromium resolves that `transform:none` to an identity matrix rather than to
+     no transform at all. An identity matrix is still a transform, and any
+     transform on an ancestor makes it the containing block for a `position:fixed`
+     descendant. The poll ticker lives in here and is pinned to the bottom of the
+     VIEWPORT, so under the shared animation it pinned itself to the bottom of the
+     intro screen instead and sat well below the fold: 916px down a 844px phone.
+     Dropping the 10px rise on this one screen is the whole fix. Every other
+     screen keeps it, because none of them contains anything fixed. */
+  #s-intro.on{animation-name:fade-in}
+  @keyframes fade-in{from{opacity:0}to{opacity:1}}
   .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
   .eyebrow.green{color:var(--green)}
@@ -444,11 +456,96 @@ window.GA_ID='G-L29P5MRWKE';
     margin:6px 0 6px;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.55)}
 
   /* ── the poll ticker ────────────────────────────────────────────
-     The strip a college broadcast runs the rankings along. Quiet enough to read
-     as furniture rather than something you have to stop and read, and it only
-     lives on the front page. */
-  .ticker{display:flex;align-items:stretch;margin:0 0 14px;border-radius:8px;overflow:hidden;
-    background:linear-gradient(180deg,#141b28,#0b1019);border:1px solid var(--line)}
+     The strip a college broadcast runs the rankings along, pinned along the
+     bottom edge the way a lower third is. Quiet enough to read as furniture
+     rather than something you have to stop and read.
+
+     ONLY ON THE FRONT PAGE, WITH NO SCRIPT KEEPING IT THAT WAY. The element
+     lives inside #s-intro, and a screen that is not showing is display:none,
+     which takes its fixed children with it. So "only on the home screen" stays
+     the rule that was already there rather than becoming a class somebody has to
+     remember to toggle on four other screens.
+
+     IT SITS ABOVE THE MOBILE AD STRIP, NEVER UNDER IT. --adstrip is what that
+     strip owns at the bottom edge, safe area included, and .lbfoot already pins
+     itself with the same variable, so the two cannot drift apart. z-index 30 is
+     under the strip (40), the rails (50) and the sheets (60), which is the order
+     these want: the poll is the least important thing on the screen.
+
+     Full bleed rather than boxed, because a bar with rounded corners floating a
+     few pixels off the bottom edge reads as a dialog. The radius and the side
+     borders go; a single top border is what separates it from the page. */
+  .ticker{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    display:flex;align-items:stretch;overflow:hidden;
+    background:linear-gradient(180deg,#141b28,#0b1019);border-top:1px solid var(--line);
+    /* The BAR reaches the true bottom edge; its CONTENTS stop above the home
+       indicator. Insetting the whole element instead would leave a strip of page
+       showing under it, which is the floating look this is avoiding. */
+    padding-bottom:env(safe-area-inset-bottom,0px)}
+  /* Without this the attribute loses to the display rule above, and an empty bar
+     sits along the bottom edge for as long as the player data takes to land. */
+  .ticker[hidden]{display:none}
+  /* ONLY STEP UP FOR AN AD THAT IS ACTUALLY THERE.
+     --adstrip is reserved space, and reserved is not the same as occupied: the
+     units still carry placeholder slot ids, and an ad blocker is the common case
+     besides, so on nearly every phone today that 54px is empty. Sitting on top of
+     it left the bar hovering a finger's width off the bottom of the screen with
+     nothing underneath, which reads as a mistake rather than as a lower third.
+     The strip already tells us when it is genuinely serving, because it uses the
+     same test to decide whether to paint its own background. */
+  body:has(.rtp-ad-mobile-bottom ins[data-ad-status="filled"]) .ticker{
+    bottom:var(--adstrip,0px);padding-bottom:0}
+  /* The last thing on the front page has to clear a bar that is no longer in the
+     flow. Measured, not guessed: see test_ticker.mjs. */
+  #s-intro{padding-bottom:var(--tickerh,33px)}
+
+  /* ── THE FRONT PAGE HAS TO FIT A PHONE, AND A PHONE HAS TWO DIMENSIONS ──
+     Everything up here was sized by WIDTH alone: the headline scales on vw and
+     the field is a vw-driven aspect ratio. So a wide-but-short phone got a
+     headline and a field sized for a tall one, and Leaderboard and How to play
+     were pushed under the fold. On a 390x844 the last button ended sixteen
+     pixels above the poll bar, and iOS Safari's address bar eats far more than
+     sixteen pixels, so it was cut off on a real phone at a size the numbers
+     called a fit. That gap between innerHeight and what a player can see is why
+     this is measured against a browser-chrome allowance, not against the
+     viewport: see the fold section of test_launch.mjs.
+
+     Capping the field by height is most of the fix, and it is the block that
+     loses least by being shorter: the formation is laid out in percentages, so
+     it compresses rather than crops. */
+  .ctas{display:grid;gap:9px}
+  .cta2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  @media(max-width:700px){
+    .hero h1{font-size:min(clamp(26px,14.5vw,84px),5.6vh)}
+    .field{max-height:15vh}
+    .stage{margin-bottom:12px}
+    .stage .field{margin-top:8px}
+    .hnote{margin-top:8px}
+    /* Two pixels between four buttons is six pixels, and six pixels is a third
+       of what the bottom row was short by. */
+    .ctas,.cta2{gap:7px}
+    .wrap{padding-top:10px}
+  }
+  /* Shorter than an iPhone 12. This stops short of contorting the design for a
+     667px screen, because once the address bar takes its share there is not a
+     layout that fits one: the headline gives up a little and the field a little
+     more, and the bottom row still wants a nudge of scroll. */
+  @media(max-width:700px) and (max-height:760px){
+    .hero h1{font-size:min(clamp(26px,14.5vw,84px),6.6vh)}
+    /* THE FIELD GOES, rather than being squeezed into a strip it cannot draw in.
+       A 667px phone gives up about ninety pixels to the address bar and there is
+       no arrangement of a top bar, two reels, a headline, four buttons and the
+       poll that fits what is left. Something had to go, and between a decorative
+       formation and the two buttons a player cannot reach, it is the formation:
+       the reels above it already say what the game does, and shrinking it far
+       enough to fit would have put 40px discs in a 60px box, which looks broken
+       rather than small. */
+    .stage .field{display:none}
+    .stage{margin-bottom:10px}
+    .hnote{margin-top:6px}
+    .ctas,.cta2{gap:6px}
+    .wrap{padding-top:6px}
+  }
   .tk-label{flex:0 0 auto;display:flex;align-items:center;padding:7px 11px 6px;white-space:nowrap;
     font-family:var(--fc);font-weight:400;font-size:10.5px;letter-spacing:.13em;
     color:#140d02;background:var(--grad-gold)}
@@ -2492,10 +2589,15 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-intro -->
   <div class="screen" id="s-intro">
-    <!-- THE POLL, running across the top the way a broadcast carries one. The
-         rankings are the game's own, worked out from how far each team outscored
-         its year, so it is labeled by season rather than borrowing a real poll's
-         name. Filled in once the data lands. -->
+    <!-- THE POLL, running along the bottom edge the way a broadcast carries one.
+         The rankings are the game's own, worked out from how far each team
+         outscored its year, so it is labeled by season rather than borrowing a
+         real poll's name. Filled in once the data lands.
+
+         It stays declared here, first inside #s-intro, even though it is drawn at
+         the bottom: being a child of this screen is what confines it to this
+         screen. Moving it out to the body would mean writing code to show and
+         hide it. -->
     <div class="ticker" id="h-ticker" hidden aria-hidden="true">
       <span class="tk-label" id="h-tk-label">Top 25</span>
       <div class="tk-win"><div class="tk-track" id="h-tk-track"></div></div>
@@ -2527,15 +2629,17 @@ or endorsed by the NCAA, the CFP or any school.
       <p class="hnote">Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
 
-    <div>
+    <!-- One grid rather than three divs carrying inline margins, so the rhythm
+         between the four is a single number a media query can tighten on a short
+         phone. An inline margin cannot be overridden by a stylesheet, which is
+         the only reason this is markup and not CSS. -->
+    <div class="ctas">
       <button class="btn" id="b-play-intro">Draft your team</button>
-    </div>
-    <div style="margin-top:9px">
       <button class="btn ghost" id="b-modes">More ways to play</button>
-    </div>
-    <div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
-      <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
-      <button class="btn ghost sm" id="b-how">How to play</button>
+      <div class="cta2">
+        <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
+        <button class="btn ghost sm" id="b-how">How to play</button>
+      </div>
     </div>
 
     <!-- The banner, above the legal line. Placeholder slot; the initializer at the foot of
@@ -3000,7 +3104,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=20"></script>
+<script src="engine.js?v=24"></script>
 <script src="run.js?v=11"></script>
 <script src="achievements.js?v=9"></script>
 <script src="auth.js?v=2"></script>
@@ -5509,7 +5613,7 @@ async function boot(){
        is large enough that the JSON parse is a real part of the wait, and a bar that
        jumped to full while the main thread was still busy would be lying at the one
        moment it matters. */
-    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/cfb_player_seasons.json'),j('data/cfb_team_seasons.json'),
@@ -7414,8 +7518,9 @@ function paintOver(){
   const rating=teamRating(run.roster,run.season.chemistry);
   const overall=overallOf(rating);
   /* Green at 90, amber at 80, measured against what the number is worth on the
-     scale it is now on: 90 makes the playoff more than half the time, 84 about
-     three times in ten, 80 about one in six, and below that it is a bowl season. */
+     scale it is now on: the nineties make the playoff about half the time, the
+     high eighties one season in nine, the low eighties one in seventy, and below
+     that the bracket is out of reach and a bowl is the season. */
   const rband=overall>=90?'#22c55e':(overall>=80?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+

@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Alma Mater | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -12,7 +11,21 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Alma Mater: a daily sports streak game. Name the college each NBA, NFL or MLB player came from. Four choices, one right. Easy to start, tougher as your run grows." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Alma Mater: Daily College Sports Game" />
+<meta property="og:description" content="Name the college every player came from. How long can your streak last?" />
+<meta property="og:url" content="https://runthe.gg/arcade/almamater/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Alma Mater: Daily College Sports Game" />
+<meta name="twitter:description" content="Name the college every player came from. How long can your streak last?" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/almamater/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -42,7 +55,7 @@
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:540px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -69,7 +82,18 @@
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 14px;}
-  .modesw.hidden{display:none;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
   .modesw button:hover{color:var(--ink); border-color:var(--gold);}
   .modesw button.on{background:var(--gold); color:var(--onAccent,#20180a); border-color:transparent;}
@@ -81,6 +105,10 @@
   @media (max-width:400px){ .pcard .pname{font-size:30px;} }
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
+     page a second after first paint - a fixed-count list, so its height is
+     knowable, and :empty drops the reservation the moment it's built. */
+  .choices:empty{min-height:196px;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:26px 18px; font-weight:900; font-size:18.5px; color:var(--ink); cursor:pointer; text-align:center; min-height:92px; display:flex; align-items:center; justify-content:center; line-height:1.2; transition:transform .08s, border-color .15s, background .15s;}
   .choice:hover{border-color:var(--gold);}
   .choice:active{transform:scale(.99);}
@@ -114,6 +142,10 @@
   .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--goldT); margin:4px 0 0;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -129,20 +161,40 @@
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
-  /* arcade tactile polish — top-accent uses --gold, which applyFav() recolors to the favorite team */
+  /* arcade tactile polish - top-accent uses --gold, which applyFav() recolors to the favorite team */
   .choice{border-width:2px; border-top:4px solid var(--gold); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .1s, border-color .15s, background .15s, box-shadow .1s;}
   .choice:hover{transform:translate(-1px,-1px);}
   .choice:active{transform:translate(2px,2px);}
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "mode mode" "prm prm"
+        "pc   run" "sub lbd" "choi lbd" "hint lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .prompt{grid-area:prm;}
+    .pcard{grid-area:pc;} .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    .runbar{ margin:0; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+    /* four big answer targets should own the desktop column, not float in it */
+    .choices{ gap:14px; }
+    .choice{ min-height:112px; font-size:20px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">ALMA MATER</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">ALMA MATER</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -155,7 +207,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--gold)"><span class="a-gametitle__plate">Alma <b>Mater</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--goldT)"><span class="a-gametitle__plate">Alma <b>Mater</b></span></div>
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
@@ -194,6 +246,7 @@
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
     <h2>IN A ROW</h2>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
@@ -205,6 +258,7 @@
       <button class="abtn" id="mShare" type="button">Share</button>
       <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
     </div>
+    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
   </div>
 </div>
@@ -212,15 +266,26 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="/arcade/favteam.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
@@ -228,7 +293,11 @@
   if(window.RTGHowto) RTGHowto.init('almamater');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var GAME_BASE='almamater', ROUNDS=25;
+  // Unlimited streak: each day serves the ENTIRE eligible pool in a per-day
+  // shuffled order. Practically nobody reaches the end (~800 correct answers
+  // in a row); the run just terminates on the first miss. "How far can you
+  // go" becomes real again - the ceiling is your knowledge, not our cap.
+  var GAME_BASE='almamater', ROUNDS=1000;   // soft cap; hits pool length first
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them so each version has its own seed, board, streak,
   // save and resume. configureMode() sets these once the version is chosen.
@@ -260,12 +329,18 @@
   var corpF={}; ENT.forEach(function(e){ if(e&&TEAM_SPORTS[e.sport]){ var k=e.name+'|'+e.sport; corpF[k]=Math.max(corpF[k]||0, e.f||0); } });
 
   var POOL=[], seen={}, colFreq={}, collegesBySport={NBA:[],NFL:[],MLB:[]}, sportSeen={NBA:{},NFL:{},MLB:{}};
+  // corp cache: also carry star / ns / hp so the pool can gate on recognizability
+  var corpMeta={}; ENT.forEach(function(e){ if(e && TEAM_SPORTS[e.sport]){ corpMeta[e.name+'|'+e.sport]={ star:!!e.star, ns:e.ns||0, hp:e.hp||0 }; } });
   function addPlayer(name, sport, col, team, f, act){
     if(!name || !TEAM_SPORTS[sport] || badCol(col)) return;
-    var cc=String(col).trim();
+    // Some upstream roster feeds already HTML-encode ampersands ("Texas A&amp;M"),
+    // which the display then escapes a second time. Decode the common entity
+    // (only ampersand appears in real US school names) before we store it.
+    var cc=String(col).replace(/&amp;/gi,'&').trim();
     var k=name+'|'+sport; if(seen[k]) return; seen[k]=1;
     var fame=Math.max(f||0, corpF[k]||0);
-    POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame });
+    var m=corpMeta[k]||{};
+    POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame, star:!!m.star, ns:m.ns||0, hp:m.hp||0, act:!!act });
     colFreq[cc]=(colFreq[cc]||0)+1;
     var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
@@ -291,18 +366,80 @@
     if(opts.length<4){ var comm=shuffle(COMMON); for(var j=0;j<comm.length && opts.length<4;j++){ var c2=comm[j], n2=normCol(c2); if(!used[n2]){ used[n2]=1; opts.push(c2); } } }
     return { name:p.name, sport:p.sport, team:p.team, col:p.col, opts:shuffle(opts) };
   }
-  // Progressive difficulty: household names (fame >=4) early, then solid names
-  // (fame 3), then role players / deep-cut former players. Each athlete appears
-  // at most once per day.
-  function buildRounds(){
-    var easy=[], med=[], hard=[];
-    POOL.forEach(function(p){ if(SPORTFILTER && p.sport!==SPORTFILTER) return; (p.f>=4?easy:(p.f>=3?med:hard)).push(p); });
-    easy=shuffle(easy); med=shuffle(med); hard=shuffle(hard);
-    var seq=[], picked={};
-    function take(list,n){ var c=0; for(var i=0;i<list.length && c<n;i++){ var p=list[i], k=p.name+'|'+p.sport; if(picked[k]) continue; picked[k]=1; seq.push(p); c++; } }
-    take(easy,10); take(med,8); take(hard,ROUNDS);
-    if(seq.length<ROUNDS) take(shuffle(easy.concat(med, hard)), ROUNDS);
-    return seq.slice(0,ROUNDS).map(makeRound);
+  // Progressive difficulty among RECOGNISABLE names only. Fame Rule A: NFL is a
+  // deep, noisy pool, so it needs a higher bar (f>=4) than NBA/MLB (f>=3); every
+  // name below that is a coin-flip nobody knows, so it's dropped entirely.
+  function eligiblePool(){
+    var out=[];
+    // .star (from stars.js) is the primary "recognizable" signal. Falls back
+    // to fame + career-length for uncurated names so no obvious icon slips
+    // out and no journeyman OL sneaks in.
+    POOL.forEach(function(p){
+      if(SPORTFILTER && p.sport!==SPORTFILTER) return;
+      if(p.act) { out.push(p); return; }   // current-roster player (all still active)
+      if(p.star){ out.push(p); return; }
+      var f=p.f||0;
+      if(f<4) return;
+      if(p.sport==='NFL' && !(p.hp && (p.ns||0)>=8)) return;
+      if(p.sport!=='NFL' && (p.ns||0)<8) return;
+      out.push(p);
+    });
+    return out;
+  }
+  // DECK-WALK: an independent shuffle every day kept re-rolling the same
+  // familiar names. Instead the whole eligible pool is laid out once as a
+  // fixed shuffled deck (seed has no date in it) and each date deals the NEXT
+  // 25 cards, so consecutive days can't share a player until the deck wraps
+  // (~two months at today's pool size) and every archived day is a distinct
+  // hand. Replays deal only cards not yet seen today (tracked per date), so
+  // "Play again" can't re-serve this morning's names either.
+  // Per-date shuffle of the full eligible pool. Each date reorders - icons
+  // still float to the top (warmup effect) but the SPECIFIC icon at position
+  // 1 differs day-to-day, and the deep-cut tail differs too. The seed
+  // includes DATE so every player sees the identical ordering for a given
+  // day (leaderboard-safe).
+  function deckFor(dateSeed){
+    var a=eligiblePool();
+    var seed=dateSeed || ('alma-deck-'+MODE+'-'+DATE);
+    var dr=mulberry32(xmur3(seed)());
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(dr()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    // stable sort by fame desc keeps warmup icons first; the fresh shuffle
+    // above randomizes WITHIN each fame tier so day-to-day the first few
+    // pulls are different icons in a different order.
+    a.sort(function(x,y){ return (y.f||0)-(x.f||0); });
+    return a;
+  }
+  function dayIndex(){
+    var launch=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-07-22';
+    var n=Math.floor((Date.parse(DATE)-Date.parse(launch))/864e5);
+    return isNaN(n)?0:Math.max(0,n);
+  }
+  function seenKey(){ return 'rtg:alma:seen:'+MODE+':'+DATE; }
+  function getSeen(){ try{ return JSON.parse(LS.getItem(seenKey())||'[]')||[]; }catch(e){ return []; } }
+  function addSeen(list){ try{ var s=getSeen(), h={}; s.forEach(function(k){ h[k]=1; });
+    list.forEach(function(p){ var k=p.name+'|'+p.sport; if(!h[k]){ h[k]=1; s.push(k); } });
+    LS.setItem(seenKey(), JSON.stringify(s)); }catch(e){} }
+  // daily=true deals today's deterministic hand (same for everyone; resume-safe);
+  // daily=false is a practice replay drawn from the cards not yet seen today.
+  function buildRounds(daily){
+    var deck=deckFor();
+    if(!deck.length) return [];
+    var seq=[];
+    if(daily){
+      // Unlimited streak: serve the ENTIRE pool in today's shuffled order.
+      // Deck already has icons floating to the top (fame sort) with per-day
+      // shuffle inside each fame tier, so early rounds are always icons.
+      // The run ends on your first miss - no artificial cap.
+      seq = deck.slice(0, ROUNDS);
+    } else {
+      var seen={}; getSeen().forEach(function(k){ seen[k]=1; });
+      var fresh=deck.filter(function(p){ return !seen[p.name+'|'+p.sport]; });
+      if(fresh.length<ROUNDS){ fresh=deck; try{ LS.removeItem(seenKey()); }catch(e){} }   // whole deck seen today - start the cycle over
+      fresh=shuffle(fresh);   // replay rng: a fresh random order each time
+      seq=fresh.slice(0,ROUNDS);
+    }
+    addSeen(seq);
+    return seq.map(makeRound);
   }
   var SEQ = [];   // built per-mode in startWith()/beginAttempt()
 
@@ -325,10 +462,12 @@
     [].forEach.call(btns, function(b){ if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim'); });
     if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); document.getElementById('subprompt').textContent='It was '+r.col+'.'; }
     if(right){
+      ANSLOG.push('c');
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 820);
     } else {
+      ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 1100);
     }
@@ -339,14 +478,14 @@
     started=true; startTs=performance.now(); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the school they played for. · Archive practice'; return; }
+    if(ARCHIVE){ h.textContent='Tap the school they played for. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the school they played for.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
-    if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
-    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    if(isReplay){ seedRandom(); SEQ=buildRounds(false); } else { seedDaily(); SEQ=buildRounds(true); servedDaily=true; }
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     document.getElementById('runN').textContent='0';
     document.getElementById('subprompt').textContent='';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -355,9 +494,9 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token or replaying
-  // animations. Rounds before idx are skipped — SEQ is deterministic.
+  // animations. Rounds before idx are skipped - SEQ is deterministic.
   function resumeAttempt(r){
-    seedDaily(); SEQ=buildRounds(); servedDaily=true;
+    seedDaily(); SEQ=buildRounds(true); servedDaily=true;
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
     run=Math.max(0, r.run|0);
     done=false; busy=false; charged=true; attemptFirst=true; started=true;
@@ -369,7 +508,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -384,14 +523,33 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
+  var NEWBEST=false, PREVBEST=0, MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
+  // Per-answer log for the share grid. A run of all green tells no story;
+  // the square where it ended is the whole point (this is the shape that
+  // made Wordle spread).
+  var ANSLOG=[];
   function finish(){
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
-    if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; }
+    MSTONE='';
+    if(s.lastDone!==today){
+      s.streak=(s.lastDone===y)?(s.streak||0)+1:1;
+      if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak);
+    }
+    PREVBEST=s.bestRun||0;
+    NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('almamater', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -407,21 +565,49 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (run>=SEQ.length?'You named them all!':'Your run ended'));
+    // Emotional copy ladder: new best > tied best > near miss > generic.
+    var sub;
+    if(locked) sub='Your run today';
+    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(run>=SEQ.length) sub='You named them all!';
+    else if(NEWBEST) sub='\ud83c\udfc6 NEW PERSONAL BEST';
+    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
+    else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
+    else sub='Your run ended';
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = sub;
+    subEl.classList.toggle('newbest', !locked && NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(!locked && MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'almamater');
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
+    // Render the run as it actually happened: a green square per clear, the
+    // square that ended it, and (Number Game) an amber square where the save absorbed
+    // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
+    function shareGrid(){
+      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      if(!ANSLOG.length) return '\u2b1c';
+      var out='', n=0;
+      for(var i=0;i<ANSLOG.length && i<60;i++){
+        out += MAP[ANSLOG[i]]||'\u2b1c';
+        if(++n%10===0 && i<ANSLOG.length-1) out += '\n';
+      }
+      if(ANSLOG.length>60) out += '\u2026';
+      return out;
+    }
   document.getElementById('mShare').addEventListener('click', function(){
-    var bar=run>0?('🟩'.repeat(Math.min(run,10))+(run>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Alma Mater\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var bar=shareGrid();
+    var txt='Run The Arcade · Alma Mater\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/almamater';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -430,7 +616,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New players in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New players in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F2B632','#37C5D5','#F06A5F','#A982F3','#48D17A','#2F6BFF'];
   function goldPalette(){ var t=window.RTGFavTeam?RTGFavTeam.resolved():null;
@@ -491,8 +677,8 @@
   // In-game version switcher (Pro/testing only): change sport without leaving.
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
       var lab = m.k==='all' ? 'All' : m.label;
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
@@ -504,7 +690,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}   // remember choice for next load
-    if(!ARCHIVE && !done) clearResume();   // leaving mid-run abandons this version's run
+    if(!ARCHIVE && !done) saveResume();   // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -530,7 +716,7 @@
       return;
     }
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';   // re-enable if a prior mode was locked
-    seedDaily(); SEQ=buildRounds();   // deterministic board for locked/resume preview
+    seedDaily(); SEQ=buildRounds(true);   // deterministic board for locked/resume preview
     // A mid-run snapshot from TODAY, token already spent (playsOf>0) but the run
     // never finished (lastDone!==DATE) → resume instead of lockout/replay.
     var RES=loadResume();

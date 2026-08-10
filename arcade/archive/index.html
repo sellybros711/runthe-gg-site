@@ -12,7 +12,21 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Play any past day's Run The Arcade puzzles, a Pro feature." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Run The Arcade Archive" />
+<meta property="og:description" content="Replay any past day across all nine games and chase your personal best." />
+<meta property="og:url" content="https://runthe.gg/arcade/archive/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Run The Arcade Archive" />
+<meta name="twitter:description" content="Replay any past day across all nine games and chase your personal best." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/archive/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -24,7 +38,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C; --gray:#AAB6C4;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
@@ -78,17 +92,38 @@
   .probar .off{margin-left:auto; font-size:11px; font-weight:800; color:var(--mut); border:1px solid var(--line2); border-radius:999px; padding:5px 11px; cursor:pointer; background:var(--card2);}
   .probar .off:hover{color:var(--ink);}
 
-  /* day cards */
-  .day{background:var(--card); border:1px solid var(--line2); border-radius:14px; box-shadow:var(--shadow); padding:13px 15px; margin-bottom:11px;}
-  .day .dh{display:flex; align-items:baseline; gap:9px; margin-bottom:11px;}
-  .day .dh .d{font-family:var(--hero); font-weight:400; font-size:17px; color:var(--ink); letter-spacing:.01em;}
-  .day .dh .ago{font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--dim);}
-  .games{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
-  @media(min-width:560px){ .games{grid-template-columns:repeat(4,1fr);} }
-  .gm{display:flex; align-items:center; gap:8px; border:1px solid var(--line2); border-left:4px solid var(--c,var(--mut)); border-radius:10px; background:var(--card2); padding:9px 11px; font-weight:800; font-size:12.5px; color:var(--ink); transition:transform .08s, border-color .15s;}
-  .gm:hover{border-color:var(--c,var(--mut)); transform:translateY(-1px);}
-  .gm .dot{width:9px; height:9px; border-radius:3px; background:var(--c,var(--mut)); flex:0 0 auto;}
-  .arch-note{text-align:center; color:var(--dim); font-size:11.5px; margin:18px 0 4px;}
+  /* game tiles - mirror the home-page grid so the archive reads as the same product */
+  .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;}
+  @media (min-width:640px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
+  @media (max-width:640px){ .tiles{gap:11px;} }
+  button.tile{font:inherit; text-align:left; padding:0; width:100%; color:inherit;}
+  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; cursor:pointer;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
+  .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
+  .tile.table{--c:var(--gold);} .tile.match{--c:var(--blue);} .tile.career{--c:var(--green);} .tile.oddone{--c:var(--violet);}
+  .tile.rankit{--c:var(--pink);} .tile.alma{--c:var(--gold);} .tile.guess{--c:var(--coral);} .tile.cross{--c:#AAB6C4;} .tile.word{--c:var(--teal);}
+  .tile.match .nm{color:var(--blueT);} .tile.cross .nm{color:var(--ink);} .tile.word .nm{color:var(--tealT);}
+  .tile.guess .nm{color:var(--coralT);} .tile.table .nm{color:var(--goldT);} .tile.oddone .nm{color:var(--violetT);}
+  .tile.career .nm{color:var(--greenT);} .tile.rankit .nm{color:var(--pinkT);} .tile.alma .nm{color:var(--goldT);}
+  .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
+    background:color-mix(in srgb, var(--c) 14%, var(--card)); border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);}
+  .tile .cap svg{width:60px; height:60px; position:relative; z-index:1; filter:drop-shadow(0 4px 10px rgba(0,0,0,.18));}
+  .tile .body{display:flex; flex-direction:column; flex:1; padding:15px;}
+  .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
+  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
+  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s; text-shadow:0 1px 2px rgba(0,0,0,.28);}
+  .tile.cross .play{color:#16273B; text-shadow:none;}
+  .tile:hover .play{filter:brightness(1.08);}
+  .tile .play .arw{font-size:19px; transition:transform .16s;}
+  .tile:hover .play .arw{transform:translateX(4px);}
+  @media (max-width:640px){
+    .tile{border-radius:14px;}
+    .tile .cap{height:76px;} .tile .cap svg{width:42px; height:42px;}
+    .tile .body{padding:11px;} .tile .nm{font-size:15px;} .tile .desc{display:none;}
+    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
+  }
+  .arch-note{text-align:center; color:var(--dim); font-size:11.5px; margin:18px 0 4px; line-height:1.5;}
   .foot{text-align:center; color:var(--dim); font-size:11.5px; padding:14px 0 2px;}
   .foot a{color:var(--coralT);}
 </style>
@@ -97,7 +132,7 @@
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">ARCHIVE</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">ARCHIVE</span></a>
     <div class="spacer"></div>
     <span class="pill" id="proPill" hidden>PRO</span>
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
@@ -108,7 +143,7 @@
 
   <div class="hero">
     <h1>The Archive</h1>
-    <p>Missed a day? Replay any past Run The Arcade puzzle. Archive runs are just for fun. They don't touch your streak or the daily leaderboard.</p>
+    <p>Missed a day? Replay any past Run The Arcade puzzle and chase your personal best. Today’s streak and leaderboard belong to today’s game. Archive days are yours.</p>
   </div>
 
   <div id="content"></div>
@@ -120,15 +155,22 @@
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function(){
+  // days of archive since launch; drives the gate's concrete pitch
+  var VAULTD = (function(){ try{ var L=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-07-22';
+    return Math.max(0, Math.floor((Date.now()-Date.parse(L))/864e5)); }catch(e){ return 0; } })();
   'use strict';
   var LS=window.localStorage;
   var content=document.getElementById('content');
   var LAUNCH=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-06-01';
   var MAX_DAYS=45;
   var GAMES=[
-    {k:'table', path:'table', name:'Run The Table', c:'var(--gold)'},
+    {k:'table', path:'table', name:'Number Game', c:'var(--gold)'},
     {k:'match', path:'match', name:'Daily Match', c:'var(--blue)'},
     {k:'career', path:'career', name:'Career Path', c:'var(--green)'},
     {k:'oddone', path:'oddone', name:'Odd One Out', c:'var(--violet)'},
@@ -149,74 +191,73 @@
     content.innerHTML =
       '<div class="gate">'+
         '<div class="crown"><svg width="28" height="28" viewBox="0 0 24 24" fill="#20140a" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7z"/></svg></div>'+
-        '<h2>Past days are a Pro perk</h2>'+
-        '<p>Go back and play any puzzle you missed, from any of the eight games.</p>'+
+        // the day count is live: an abstract perk becomes a specific pile
+        '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Archive is an Arcade Card perk') + '</h2>'+
+        '<p>' + (VAULTD > 0
+          ? ('That’s ' + (VAULTD * 9) + ' puzzles you can still play, across all nine games.')
+          : 'Go back and play any puzzle you missed, from any game.') + '</p>'+
         '<ul>'+
-          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, all eight games</span></li>'+
+          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, every game</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays, no daily token limit</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Your streak and today’s leaderboard stay untouched</span></li>'+
         '</ul>'+
-        '<button class="btn" id="goPro">Get Pro</button>'+
-        '<p class="fine" id="gateFine">Unlimited plays + every past day. Cancel anytime.</p>'+
-        '<p class="fine"><a href="#" id="unlock" style="color:var(--dim); text-decoration:underline;">Preview unlock (testing)</a></p>'+
+        '<button class="btn" id="goPro">Get Arcade Card</button>'+
+        '<p class="fine" id="gateFine">$5.99/mo or $49.99/yr. Cancel anytime.</p>'+
       '</div>';
-    // Stripe checkout — needs a signed-in RunThe.GG account so the
-    // subscription can be tied to it. Falls back gracefully pre-config.
+    // Open the shared Arcade Card paywall (handles plan choice and
+    // sign-in-first if needed). Falls back to the old inline checkout only if
+    // card.js somehow isn't present.
     document.getElementById('goPro').addEventListener('click', function(){
-      var btn=this; btn.disabled=true; btn.textContent='Opening checkout…';
+      if(window.RTGCard){ RTGCard.paywall({ reason:'archive' }); return; }
       var st=(window.RTG_BOARD && RTG_BOARD.state()) || {};
-      if(!st.signedIn){
-        document.getElementById('gateFine').textContent='Sign in with your RunThe.GG account first, then tap Get Pro.';
-        btn.disabled=false; btn.textContent='Get Pro';
-        return;
-      }
-      fetch('/api/stripe/checkout', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ user_id: st.userId })
-      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
-        .then(function(res){
-          if(res.ok && res.d && res.d.url){ location.href=res.d.url; return; }
-          document.getElementById('gateFine').textContent='Checkout isn’t live yet. Use the preview unlock below for now.';
-          btn.disabled=false; btn.textContent='Get Pro';
-        })
-        .catch(function(){
-          document.getElementById('gateFine').textContent='Checkout isn’t live yet. Use the preview unlock below for now.';
-          btn.disabled=false; btn.textContent='Get Pro';
-        });
-    });
-    document.getElementById('unlock').addEventListener('click', function(ev){
-      ev.preventDefault();
-      try{ LS.setItem('runthegrid_pro','1'); }catch(e){}
-      location.reload();
+      if(!st.signedIn){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return; }
+      fetch('/api/stripe/checkout', { method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ user_id: st.userId, plan:'annual' }) })
+        .then(function(r){ return r.json(); }).then(function(d){ if(d && d.url) location.href=d.url; });
     });
   }
 
+  // Home-page-style grid: one tile per game. Clicking a tile opens that game's
+  // archive calendar (past playable days) via the shared RTGCalendar module.
   function renderList(){
     document.getElementById('proPill').hidden=false;
-    var today=iso(new Date());
-    var html='<div class="probar"><b>PRO</b><span>Unlimited plays + past days unlocked</span><button class="off" id="proOff">Turn off preview</button></div>';
-    // yesterday back to LAUNCH, capped
-    var d=new Date(today+'T00:00:00'); d.setDate(d.getDate()-1);
-    var count=0;
-    while(count<MAX_DAYS){
-      var ds=iso(d);
-      if(ds<LAUNCH) break;
-      html+='<div class="day"><div class="dh"><span class="d">'+esc(pretty(ds))+'</span><span class="ago">'+esc(daysAgo(ds))+'</span></div><div class="games">';
-      for(var i=0;i<GAMES.length;i++){ var g=GAMES[i];
-        html+='<a class="gm" style="--c:'+g.c+'" href="/arcade/'+g.path+'/?date='+ds+'"><span class="dot"></span>'+esc(g.name)+'</a>';
-      }
-      html+='</div></div>';
-      d.setDate(d.getDate()-1); count++;
+    var list=(window.RTGCalendar && RTGCalendar.GAMES) || [];
+    var html='<div class="probar"><b>Arcade Card</b><span>Unlimited plays · every past day unlocked</span></div>';
+    html+='<div class="tiles">';
+    for(var i=0;i<list.length;i++){ var g=list[i];
+      html+='<button class="tile '+g.cls+'" type="button" data-k="'+esc(g.key)+'">'+
+        '<span class="cap" aria-hidden="true">'+g.icon+'</span>'+
+        '<span class="body">'+
+          '<span class="nm">'+esc(g.name)+'</span>'+
+          '<span class="desc">'+esc(g.desc)+'</span>'+
+          '<span class="play">Pick a day <span class="arw">→</span></span>'+
+        '</span>'+
+      '</button>';
     }
-    html+='<div class="arch-note">Showing the last '+count+' days, back to launch.</div>';
+    html+='</div>';
+    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Chase your personal best on each date. Today’s streak and leaderboard belong to today’s game.</div>';
     content.innerHTML=html;
-    document.getElementById('proOff').addEventListener('click', function(){
-      try{ LS.removeItem('runthegrid_pro'); }catch(e){}
-      location.reload();
+    [].forEach.call(content.querySelectorAll('button.tile'), function(btn){
+      btn.addEventListener('click', function(){
+        var k=btn.getAttribute('data-k');
+        if(window.RTGCalendar) RTGCalendar.open(k);
+      });
     });
   }
 
-  if(isPro()) renderList(); else renderGate();
+  // First paint from whatever we know synchronously (localStorage). The Stripe
+  // entitlement is mirrored asynchronously by board.js (reads the subscriptions
+  // row → localStorage 'runthegrid_pro'), so when a player lands here straight
+  // back from Checkout the flag may not be set yet. Re-check on every board
+  // change and flip the gate to the list the moment the card is confirmed - no
+  // manual refresh required.
+  var proShown=false, gateShown=false;
+  function paint(){
+    if(isPro()){ if(!proShown){ proShown=true; renderList(); } return; }
+    if(!proShown && !gateShown){ gateShown=true; renderGate(); }
+  }
+  paint();
+  if(window.RTG_BOARD && RTG_BOARD.onChange){ RTG_BOARD.onChange(paint); }
 
   // theme toggle
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }

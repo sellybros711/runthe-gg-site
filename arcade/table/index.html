@@ -3,16 +3,29 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Run The Arcade: Run The Table | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
+<title>Run The Arcade: Number Game | RunThe.GG</title>
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Run The Table: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<meta name="description" content="Number Game: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Number Game: Daily Sports Streak Game" />
+<meta property="og:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta property="og:url" content="https://runthe.gg/arcade/table/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Number Game: Daily Sports Streak Game" />
+<meta name="twitter:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/table/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -45,7 +58,7 @@
   /* the play area fills the screen; the leaderboard sits below the fold */
   .playzone{display:flex; flex-direction:column; min-height:calc(100dvh - 150px);}
 
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -63,7 +76,7 @@
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
 
-  /* run banner: two hero stats — current run + all-time best — flank the note */
+  /* run banner: two hero stats - current run + all-time best - flank the note */
   .runbar{display:flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--gold); border-radius:14px; padding:12px 18px; box-shadow:var(--shadow); margin-bottom:14px;}
   .runbar .rstat{flex:0 0 auto; text-align:center; min-width:70px;}
   .runbar .rstat .big{display:block; font-family:var(--hero); font-weight:400; font-size:52px; line-height:.85; font-variant-numeric:tabular-nums;}
@@ -79,10 +92,15 @@
     .runbar .rstat{min-width:56px;}
     .runbar .rstat .big{font-size:42px;}
     .runbar .rl .v{font-size:11.5px;}
+    /* trim the play area so prompt + ladder + both cards sit in one screen */
+    .playzone{min-height:calc(100dvh - 360px);}
+    .prompt{margin:2px 0 6px; font-size:clamp(15px,2.4vh,20px);} .ladder{margin:0 auto 8px;}
+    .a-gametitle{margin:0 0 8px;}
+    .pcard{padding:clamp(12px,2vh,20px) 14px;}
   }
 
   .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(8px,1.4vh,14px); letter-spacing:.01em;}
-  /* the ladder: the run is a finite 40-round table — show the finish line */
+  /* the ladder: the run is a finite 40-round table - show the finish line */
   .ladder{display:flex; align-items:center; gap:10px; max-width:460px; margin:0 auto clamp(12px,2vh,20px); font-size:10.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
   .ladder .rd{flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .ladder .bar{flex:1; height:7px; border-radius:4px; background:var(--card2); border:1px solid var(--line2); overflow:hidden; position:relative;}
@@ -91,25 +109,30 @@
   .ladder .bar::after{content:""; position:absolute; inset:0;
     background:repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), var(--line2) calc(20% - 1px) 20%);}
   .ladder .zone{flex:0 0 auto; color:var(--goldT);}
-  .ladder .zone.hot{color:var(--red); animation:zonepulse 1.1s ease infinite;}
+  .ladder .zone.hot{color:var(--red); animation:zonepulse 1.1s ease 3;}
   @keyframes zonepulse{50%{opacity:.55;}}
   /* team-color identity: each card's top strip is the player's real team */
   .pcard{border-top-color:var(--tp,var(--gold));}
   .pcard:hover{border-top-color:var(--tp,var(--gold));}
   .pcard .nm{text-shadow:0 2px 0 color-mix(in srgb, var(--tp,transparent) 30%, transparent);}
 
-  /* versus cards — fill the tall playzone */
+  /* versus cards - fill the tall playzone */
   .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
-  .pcard{position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
+  .pcard{appearance:none; font:inherit; color:inherit; text-align:center; width:100%; position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
   .pcard:hover{border-color:var(--gold); border-top-color:var(--gold); transform:translate(-1px,-1px); box-shadow:6px 6px 0 rgba(7,20,38,.30);}
   .pcard:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.28);}
   .pcard.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 16%, var(--card));}
   .pcard.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 15%, var(--card));}
   .pcard.dim{opacity:.55;}
   .pcard .nm{font-weight:900; font-size:clamp(19px,3.4vh,32px); line-height:1.1; color:var(--ink);}
-  .pcard .meta{font-size:clamp(11.5px,1.8vh,15px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
-  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
-  .pcard.revealed .num{height:auto; opacity:1; margin-top:2px;}
+  .pcard .meta{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:clamp(11px,1.7vh,14px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
+  .pcard .meta .era{color:var(--goldT); font-weight:900; letter-spacing:.09em;}
+  .pcard .meta .tm{color:var(--mut); font-weight:800;}
+  .pcard .meta .tm.more{color:var(--dim); font-weight:700;}
+  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT);
+    height:0; opacity:0; transform:translateY(6px) scale(.92); transform-origin:center top;
+    transition:opacity .22s ease, transform .28s cubic-bezier(.2,.9,.3,1.3), height .22s ease;}
+  .pcard.revealed .num{height:1em; opacity:1; transform:none; margin-top:2px;}
   .pcard .tap{font-size:clamp(10.5px,1.6vh,13px); font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
   .pcard.revealed .tap{display:none;}
   .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:clamp(40px,6vh,54px); height:clamp(40px,6vh,54px); border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:clamp(16px,2.4vh,20px); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
@@ -147,6 +170,10 @@
   .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--goldT); margin:4px 0 0;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -165,13 +192,44 @@
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
+
+  /* ===== desktop dashboard: play area fills the left, HUD + leaderboard on the right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1240px; display:grid; column-gap:32px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 358px;
+      grid-template-rows:auto auto auto auto auto auto 1fr auto;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "pr    pr"
+        "lad   lad"
+        "play  run"
+        "play  lbd"
+        "play  gap"
+        "foot  foot"; }
+    .topbar{grid-area:top;}
+    .a-gametitle{grid-area:title; margin:2px 0 10px;}
+    .prompt{grid-area:pr;}
+    .ladder{grid-area:lad;}
+    /* don't stretch the cards to the full viewport - a pair of ~“trading card”
+       panels reads far better than two near-empty walls on a tall monitor */
+    .playzone{grid-area:play; min-height:0;}
+    .versus{flex:0 0 auto; grid-auto-rows:clamp(340px, 50vh, 500px); align-content:start;}
+    .runbar{grid-area:run; margin-bottom:0; flex-direction:column; align-items:stretch; gap:12px; text-align:center;}
+    .runbar .rstat{flex-direction:row; align-items:baseline; justify-content:center; gap:12px; min-width:0;}
+    .runbar .rstat.best{order:2;}
+    .runbar .rstat .big{font-size:46px;} .runbar .rstat .lab{margin-top:0;}
+    .runbar .rl{order:3; align-items:center;}
+    .lb{grid-area:lbd; margin:0;}
+    .foot{grid-area:foot; margin-top:18px;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">RUN THE TABLE</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">NUMBER GAME</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -184,7 +242,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:#F2B632"><span class="a-gametitle__plate">Run The <b>Table</b></span></div>
+  <div class="a-gametitle" style="--a-tc:#F2B632"><span class="a-gametitle__plate">Number <b>Game</b></span></div>
 
   <div class="runbar">
     <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
@@ -192,9 +250,9 @@
     <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
+  <div class="prompt">Who wore the higher jersey number?</div>
+  <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
   <div class="playzone">
-    <div class="prompt">Who wore the higher jersey number?</div>
-    <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
     <div class="versus" id="versus"></div>
     <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
   </div>
@@ -223,10 +281,12 @@
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">IN A ROW</h2>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -241,13 +301,24 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
@@ -255,7 +326,9 @@
   if(window.RTGHowto) RTGHowto.init('table');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=40;
+  // Unlimited streak: soft cap; the pair generator's guard bails when it
+  // can't find enough valid pairs at the current gap.
+  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=200;
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -273,7 +346,19 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   // pool: recognisable team-sport athletes with a jersey number
-  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.j && e.j.length && (e.f||0)>=3; });
+  // NFL floor lifted to f>=4: its f=3 tier is the "who is this?" flood; NBA/MLB stay at 3
+  // .star (from stars.js overlay) is the primary "recognizable" signal;
+  // otherwise fall back to modern-era + career credentials.
+  function hiqStar(e){
+    if(!TEAM_SPORTS[e.sport] || !e.j || !e.j.length) return false;
+    if(e.star) return true;
+    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+    var f=e.f||0;
+    if(f<4) return false;
+    if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
+    return (e.ns||0)>=8;
+  }
+  var POOL = ENT.filter(hiqStar);
   function jn(e){ return e.j[0]; }
 
   // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
@@ -303,10 +388,22 @@
     if(shield){ p.textContent='Save ready'; p.classList.remove('used'); }
     else { p.textContent='Save used'; p.classList.add('used'); } }
 
-  // years (from the decade span) + the teams they suited up for — the two
+  // years (from the decade span) + the teams they suited up for - the two
   // clues the player actually reasons from. Sport is implied by the teams.
   function eraStr(e){ var d=e.decade; if(!d||!d.length) return ''; var a=d[0], b=d[d.length-1]; return a===b ? (a+'s') : (a+'s–'+b+'s'); }
-  function metaLine(e){ return [eraStr(e)].concat(e.t||[]).filter(Boolean).join(' · '); }
+  // The revealed number belongs to ONE stint, so the clue must too: a player who
+  // wore different numbers on different teams can't be shown with a team list +
+  // era range or you can't tell which number the card is asking about. We pin the
+  // card to a single team + single decade - the primary stint. The corpus lists
+  // the primary team, number and debut decade first, so t[0] / j[0] / decade[0]
+  // all describe the same stint (e.g. Jordan → Bulls, #23, 1980s).
+  function eraOne(e){ var d=e.decade; if(!d||!d.length) return ''; return d[0]+'s'; }
+  function metaLine(e){ return [eraOne(e), (e.t&&e.t[0])].filter(Boolean).join(' · '); }
+  // one team on top, the single decade beneath it
+  function metaHTML(e){ var tm=(e.t&&e.t[0])||'', er=eraOne(e), o='';
+    if(tm) o+='<span class="tm">'+esc(tm)+'</span>';
+    if(er) o+='<span class="era">'+esc(er)+'</span>';
+    return o; }
   // team-color accent: look up the player's team in the shared palette
   function teamStyle(e){
     var tm=e.t&&e.t[0], c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);   // matches the team shown on the card
@@ -316,10 +413,13 @@
     var rd=document.getElementById('ladderRd'), bar=document.getElementById('ladderBar'), zn=document.getElementById('ladderZone');
     if(!rd) return;
     var n=Math.min(idx+1, SEQ.length);
-    rd.textContent='Round '+n+' / '+SEQ.length;
-    bar.style.width=Math.round(idx/SEQ.length*100)+'%';
+    rd.textContent='Round '+n;
+    // Unlimited streak - the progress bar now shows "how deep are you into
+    // the difficulty escalation" (0 to round 40 = the last threshold); after
+    // that it stays full and the zone label carries the pressure.
+    bar.style.width=Math.round(Math.min(idx,40)/40*100)+'%';
     // zones mirror the generator's gap breakpoints: pairs get closer as you climb
-    var z = idx>=32 ? ['GUT CHECK','hot'] : idx>=24 ? ['TIGHT CALLS',''] : idx>=16 ? ['HEATING UP',''] : ['',''];
+    var z = idx>=40 ? ['ENDLESS','hot'] : idx>=32 ? ['GUT CHECK','hot'] : idx>=24 ? ['TIGHT CALLS',''] : idx>=16 ? ['HEATING UP',''] : ['',''];
     zn.textContent=z[0]; zn.className='zone'+(z[1]?' '+z[1]:'');
   }
   function renderRound(){
@@ -327,9 +427,11 @@
     var pair=SEQ[idx];
     renderLadder();
     vs.innerHTML =
-      '<div class="pcard" data-s="0"'+teamStyle(pair[0])+'><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+esc(metaLine(pair[0]))+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></div>'+
-      '<div class="vs">VS</div>'+
-      '<div class="pcard" data-s="1"'+teamStyle(pair[1])+'><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+esc(metaLine(pair[1]))+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></div>';
+      // real <button>s: the game's only action has to be keyboard-reachable,
+      // and :focus-visible never applied to the old click-handler divs
+      '<button type="button" class="pcard" data-s="0"'+teamStyle(pair[0])+' aria-label="Pick '+esc(pair[0].name)+' as the higher jersey number"><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+metaHTML(pair[0])+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></button>'+
+      '<div class="vs" aria-hidden="true">VS</div>'+
+      '<button type="button" class="pcard" data-s="1"'+teamStyle(pair[1])+' aria-label="Pick '+esc(pair[1].name)+' as the higher jersey number"><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+metaHTML(pair[1])+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></button>';
     [].forEach.call(vs.querySelectorAll('.pcard'), function(c){ c.addEventListener('click', function(){ pick(+c.dataset.s); }); });
   }
   function pick(side){
@@ -342,23 +444,26 @@
     var right = side===correct;
     cards[correct].classList.add('correct'); if(!right) cards[side].classList.add('wrong'); else cards[side===0?1:0].classList.add('dim');
     if(right){
+      ANSLOG.push('c');
       run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.lock();
       idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 720);
     } else if(shield){
+      ANSLOG.push('s');   // saved: the shield ate this miss
       // Your one save: this miss doesn't end the run, but it resets your in-a-row
-      // back to 0 — your best (the peak you reached) is banked and keeps standing.
+      // back to 0 - your best (the peak you reached) is banked and keeps standing.
       // Numbers stay revealed so you can read them, then play continues.
       shield=false; updateShieldPill();
       run=0; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.soft();
-      toast('Saved — back to 0, keep going');
+      toast('Saved. Back to 0, keep going');
       idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 1400);
     } else {
+      ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 950);
     }
@@ -370,7 +475,7 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the player you think wore the higher number. · Archive practice'; return; }
+    if(ARCHIVE){ h.textContent='Tap the player you think wore the higher number. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the player you think wore the higher number.'+lbl; }
   function beginAttempt(){
@@ -378,7 +483,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
-    idx=0; run=0; peak=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    idx=0; run=0; peak=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     shield=true; updateShieldPill();
     document.getElementById('runN').textContent='0';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -387,7 +492,7 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic board and
   // fast-forward to the saved position without re-charging a token, replaying
-  // animations or sounds. Pairs before idx are simply skipped — SEQ is
+  // animations or sounds. Pairs before idx are simply skipped - SEQ is
   // deterministic, so the board is consistent with what was already played.
   function resumeAttempt(r){
     seedDaily(); SEQ=buildRounds(); servedDaily=true;
@@ -404,7 +509,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -421,17 +526,34 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, peak:peak, shield:shield })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
+  var NEWBEST=false, PREVBEST=0, MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
+  // Per-answer log for the share grid. A run of all green tells no story;
+  // the square where it ended is the whole point (this is the shape that
+  // made Wordle spread).
+  var ANSLOG=[];
   function finish(){
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
+      if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak);
     }
     var score=Math.max(run, peak);
+    PREVBEST=s.bestRun||0;
+    NEWBEST=(!ARCHIVE && attemptFirst && score>0 && score>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, score); s.last={ run:score, seconds:Math.round(elapsed) };
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && score>0) RTGArchive.recordBest(GAME, score, { label:'in a row' });
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('table', score, score>0);
     showEnd(s, false);
     if(score>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:score }).then(function(res){
@@ -448,25 +570,52 @@
     document.getElementById('mRun').textContent=score;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (score>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    // Emotional copy ladder: new best > tied best > near miss > generic.
+    var sub;
+    if(locked) sub='Your run today';
+    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(score>=SEQ.length) sub='You cleared the whole table!';
+    else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
+    else if(PREVBEST>0 && score===PREVBEST) sub='Tied your best. One more tomorrow!';
+    else if(PREVBEST>0 && score>0 && PREVBEST-score<=2) sub=(PREVBEST-score)+' off your best. So close!';
+    else sub='Your run ended';
     if(!locked && !shield) sub += ' · used your save';
-    document.getElementById('mSub').textContent = sub;
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = sub;
+    subEl.classList.toggle('newbest', !locked && NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('mTitle').textContent = 'IN A ROW';
     document.getElementById('yourTm').textContent = score+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'table');
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && score>=5){ confetti(score>=15?120:70, score>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (score>=5 || NEWBEST)){ confetti(NEWBEST?140:(score>=15?120:70), NEWBEST || score>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
+    // Render the run as it actually happened: a green square per clear, the
+    // square that ended it, and (Number Game) an amber square where the save absorbed
+    // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
+    function shareGrid(){
+      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      if(!ANSLOG.length) return '\u2b1c';
+      var out='', n=0;
+      for(var i=0;i<ANSLOG.length && i<60;i++){
+        out += MAP[ANSLOG[i]]||'\u2b1c';
+        if(++n%10===0 && i<ANSLOG.length-1) out += '\n';
+      }
+      if(ANSLOG.length>60) out += '\u2026';
+      return out;
+    }
   document.getElementById('mShare').addEventListener('click', function(){
     var score=Math.max(run, peak);
-    var bar=score>0?('🟩'.repeat(Math.min(score,10))+(score>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Run The Table\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var bar=shareGrid();
+    var txt='Run The Arcade · Number Game\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/table';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -475,7 +624,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New table in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New table in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}

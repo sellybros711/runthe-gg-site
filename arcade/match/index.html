@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -19,8 +18,21 @@
 })();
 </script>
 <meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Daily Match: Sports Connections" />
+<meta property="og:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta property="og:url" content="https://runthe.gg/arcade/match/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Daily Match: Sports Connections" />
+<meta name="twitter:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -76,12 +88,12 @@
   }
   button{font-family:inherit; color:inherit; cursor:pointer;}
   .hidden{display:none !important;}
-  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  :focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:4px;}
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
 
   /* ---------------- topbar (uniform across RunTheGrid games) ---------------- */
   .topwrap{max-width:1160px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 20px 0;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
   .icon-btn:hover{color:var(--ink);}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
@@ -90,13 +102,13 @@
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
-  .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
+  .themeBtn:hover{color:var(--ink); border-color:var(--blue);}
   /* show the icon of the theme you'd switch TO */
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
   .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
-  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on{color:var(--blueT); border-color:var(--blue);}
   .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
   .helpBtn{font-weight:900; font-size:15px; line-height:1;}
   .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px;
@@ -138,7 +150,7 @@
   .dot.used{background:var(--red); border-color:var(--red);}
   .dot.pop{transform:scale(1.3);}
   .progress{margin-top:14px; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-  .progress b{color:var(--tealT); font-weight:900;}
+  .progress b{color:var(--blueT); font-weight:900;}
 
   /* ---------------- sidebar: actions ---------------- */
   .actionsCard{padding:14px; display:flex; flex-direction:column; gap:10px;}
@@ -153,7 +165,7 @@
   .abtn.gold .cost{color:rgba(255,255,255,.8);}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
-  .abtn.ghost:hover{border-color:var(--teal);}
+  .abtn.ghost:hover{border-color:var(--blue);}
   .abtn.arm{background:var(--red); color:#071426; border-color:transparent;}
   .abtn.arm .cost{color:rgba(7,20,38,.7);}
 
@@ -194,12 +206,21 @@
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
+  /* The pool (20 name tiles) and the board (5 racks) are both built by JS, so
+     for the first second of every visit they were zero-height and everything
+     under them - the group header, the whole sidebar - sat near the top of the
+     page and then got thrown 800px down when the puzzle mounted. That single
+     reflow was the arcade's worst layout shift. Both are fixed-count grids, so
+     their filled height is knowable per breakpoint; hold it until the real
+     children arrive and :empty retires the reservation. */
+  .board:empty{min-height:389px;}
+  .pool.pool-hold{min-height:303px;}
   /* compact "rack" rows: header block left, four slim slots right */
   .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
     border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
     box-shadow:var(--shadow); padding:9px 12px; transition:border-color .2s, background .3s;}
-  .lane.drop{border-color:var(--teal); background:var(--dropbg);}
-  .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
+  .lane.drop{border-color:var(--blue); background:var(--dropbg);}
+  .lane.drop .slot:not(.filled){border-color:var(--blue); background:rgba(47,107,255,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
@@ -208,8 +229,8 @@
   .lane.locked .lane-chip{box-shadow:0 1px 2px rgba(0,0,0,.28);}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
-  .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
+  .lane-sport{font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--ink);
+    border:1.5px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
   .slots{flex:1 1 320px; display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
@@ -223,8 +244,8 @@
     padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
   .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
   .pool-h .shufbtn{margin-left:auto; display:inline-flex; align-items:center; gap:5px;}
-  .pool-h .shufbtn:hover{color:var(--tealT); border-color:var(--teal);}
-  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
+  .pool-h .shufbtn:hover{color:var(--blueT); border-color:var(--blue);}
+  .checkbtn{appearance:none; border:0; background:var(--blue); color:#071426; font-weight:900; font-size:12.5px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
@@ -241,9 +262,9 @@
     overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
     user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
   .tile .tn{display:block; width:100%;}
-  .tile:hover{border-color:rgba(55,197,213,.55);}
+  .tile:hover{border-color:rgba(47,107,255,.55);}
   .tile:active{cursor:grabbing;}
-  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
+  .tile.sel{border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,107,255,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}
   .tile.solvefill{background:transparent; color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
@@ -254,11 +275,11 @@
   /* ---------------- pool ---------------- */
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
-  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--blueT);}
   .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
   .pool .tile{min-height:62px; font-size:12.5px;}
   .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
-  .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
+  .pool.drop{outline:2px dashed var(--blue); outline-offset:4px; border-radius:var(--r-md);}
 
   /* ---------------- modals ---------------- */
   .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center;
@@ -286,7 +307,7 @@
     font-weight:800; font-size:13px; border-radius:var(--r-md); padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
     gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
   .btn:active{transform:translateY(1px);}
-  .btn:hover{border-color:var(--teal);}
+  .btn:hover{border-color:var(--blue);}
   .btn.primary{background:var(--blue); color:#fff; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
   .btn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
@@ -356,6 +377,7 @@
   @media (max-width:1000px){
     .app{grid-template-columns:minmax(0,1fr) 280px; gap:var(--sp-2);}
     .pool{grid-template-columns:repeat(4,1fr);}
+    .board:empty{min-height:637px;} .pool.pool-hold{min-height:374px;}
   }
   @media (max-width:760px){
     .app{display:block; padding:var(--sp-2) 14px 40px;}
@@ -370,7 +392,7 @@
     .mstatus .mdots .dots{margin-top:4px;}
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
-    .mstatus .mprog b{color:var(--tealT);}
+    .mstatus .mprog b{color:var(--blueT);}
     .lane{display:block;}
     .lane-head{margin-bottom:8px;}
     .lane-note{margin-top:9px;}
@@ -378,14 +400,15 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
+    .board:empty{min-height:805px;} .pool.pool-hold{min-height:669px;}
     .statgrid .rstat .v{font-size:20px;}
   }
-  /* very narrow phones: the coins chip is the one non-uniform extra — drop it
+  /* very narrow phones: the coins chip is the one non-uniform extra - drop it
      before the topbar can overflow (coins still show in the result modal) */
   @media (max-width:480px){
     .chip.coins{display:none;}
   }
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
   /* arcade tactile polish */
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
@@ -394,25 +417,20 @@
   .checkbtn:active, .btn:active{transform:translate(2px,2px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Match "Locker Room Board"
+     BOLD SPORTS-MACHINE - Match "Locker Room Board"
      Marquee banner, caged roster cabinet, scoreboard section bars,
      nameplate tiles + chunky lineup racks. Solved groups keep their
-     solid team-colour jerseys. Visual only — no DOM / logic / key changes.
+     solid team-colour jerseys. Visual only - no DOM / logic / key changes.
      ================================================================= */
   :root{ --r-lg:6px; --r-md:5px; --r-sm:4px; }
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* marquee banner over the lead */
-  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
-  .lead::before{ content:"🧢 LOCKER ROOM"; position:absolute; top:0; left:0; right:0;
-    background:var(--teal); color:#071426; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.18em; padding:7px 15px; }
 
   /* scoreboard section-header bars */
   .pool-h{ align-items:center; background:color-mix(in srgb, var(--ink) 9%, var(--card));
-    border:2px solid var(--line2); border-left:6px solid var(--teal); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
+    border:2px solid var(--line2); border-left:6px solid var(--blue); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
   .pool-h.groups-h{ border-left-color:var(--gold); }
   .pool-h .t{ font-size:16px; letter-spacing:.05em; }
 
@@ -422,7 +440,7 @@
     box-shadow:inset 0 3px 16px -9px rgba(0,0,0,.7); }
 
   /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour).
-     Names keep the original readable title-case font — only the frame is nameplated. */
+     Names keep the original readable title-case font - only the frame is nameplated. */
   .tile{ border-width:2px; border-radius:4px;
     box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
   .tile:active{ box-shadow:var(--a-shadow-press,1px 1px 0 rgba(7,20,38,.16)); }
@@ -441,7 +459,7 @@
   <div class="topwrap">
     <div class="topbar">
       <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">DAILY MATCH</span></a>
+      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">DAILY MATCH</span></a>
       <div class="spacer"></div>
       <button class="themeBtn helpBtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
       <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
@@ -453,11 +471,10 @@
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
       </button>
       <div class="chip tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats"><span class="n" id="streakVal">0</span><span class="l">Streak</span></div>
-      <div class="chip coins" id="coinStat" aria-label="Coins"><span class="n" id="coinVal">0</span><span class="l">Coins</span></div>
     </div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--teal)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--blue)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
 
   <div class="app">
     <main class="gameCol">
@@ -486,7 +503,7 @@
           Shuffle
         </button>
       </div>
-      <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Unplaced names"></div>
 
       <div class="pool-h groups-h">
         <span class="t">Build your groups</span>
@@ -564,7 +581,8 @@
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
-      <div class="coinline" id="resCoins">+0 coins</div>
+      <div id="rtgHist"></div>
+      <div class="coinline" id="resCoins"></div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
@@ -605,16 +623,29 @@
        browser caches will pair fresh HTML with old boards/engine -->
   <script src="entities.js?v=12"></script>
   <script src="/arcade/former.js?v=1"></script>
-  <script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+  <script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/data.js?v=1"></script>
   <script src="generator.js?v=12"></script>
   <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
   <script src="/arcade/tokens.js?v=1"></script>
   <script src="/arcade/archive.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
+<script src="/arcade/howto.js?v=1"></script>
   <script>
   (function () {
     'use strict';
+    if (window.RTGHowto) RTGHowto.init('match');
     var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
@@ -632,32 +663,22 @@
     var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
     var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
 
-    // ---- tester mode: unlimited plays + fresh boards (for RunnyJ / CSel8) ----
-    // Enable with ?test=1 (persists); disable with ?test=0. Site is hidden, so
-    // only people with the link get it. Tester plays don't touch streak/coins.
-    var TESTER = (function () {
-      try {
-        var q = new URLSearchParams(location.search);
-        if (q.has('test') || q.has('tester')) {
-          var on = (q.get('test') || q.get('tester') || '1') !== '0';
-          LS.setItem('grid_tester', on ? '1' : '');
-        }
-        return LS.getItem('grid_tester') === '1';
-      } catch (e) { return false; }
-    })();
-    var boardNo = 0;                                   // which tester board we're on
+    // ---- tester mode: removed for public launch ----
+    // The old ?test=1 backdoor gave unlimited plays + fresh boards. It's now
+    // permanently off (entitlement is the real Arcade Card). Any stale flag from
+    // a prior tester session is cleared so nobody keeps unlimited access.
+    var TESTER = false;
+    try { LS.removeItem('grid_tester'); } catch (e) {}
+    var boardNo = 0;                                   // (unused now TESTER is off)
     // First (ranked) play uses the deterministic daily seed so everyone gets the
     // same board for the leaderboard. Replays reseed randomly for a fresh board.
     var servedDaily = false;                           // true once the daily board has been served this session
     var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
     function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
 
-    // ---- wallet / streak ----
-    // Coins are the RunTheGrid suite wallet (shared with the Daily Crossword);
-    // streak is per-game (this Daily Match). Prototype uses localStorage; the real
-    // build reads the shared RunThe.GG account wallet.
-    function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
-    function walletSet(v) { LS.setItem('runthegrid_coins', String(Math.max(0, v))); renderWallet(); }
+    // ---- streak ----
+    // The arcade has no coin economy; the game is about building the longest
+    // daily streak. Streak is per-game (this Daily Match).
     function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
@@ -673,7 +694,6 @@
     }
     function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
     function renderWallet() {
-      document.getElementById('coinVal').textContent = walletGet();
       document.getElementById('streakVal').textContent = streakGet();
     }
 
@@ -690,6 +710,7 @@
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
     var charged = false, attemptFirst = false;   // play-token economy: one token per attempt, first===ranked
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
+    var dealingLane = -1;              // lane currently receiving the auto-dealt final group (suppresses its Check/Clear during the deal)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
 
@@ -742,6 +763,7 @@
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
+      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has 20 tiles, so the count-based guard in render() wouldn't catch it)
       // free foothold: reveal the easiest group's name to start (no guess cost)
       if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
     }
@@ -849,7 +871,7 @@
 
         // explicit submit: a full, unlocked group grows a Check button right
         // in its header block (where the group name sits)
-        if (!isLocked && laneFillCount(i) === GROUP && !done) {
+        if (!isLocked && i !== dealingLane && laneFillCount(i) === GROUP && !done) {
           var cb = document.createElement('button');
           cb.className = 'checkbtn';
           cb.type = 'button';
@@ -862,7 +884,7 @@
           head.appendChild(cb);
         }
         // per-rack Clear: dump this rack's names back to the pool in one tap
-        if (!isLocked && laneFillCount(i) > 0 && !done) {
+        if (!isLocked && i !== dealingLane && laneFillCount(i) > 0 && !done) {
           var clr = document.createElement('button');
           clr.className = 'clearbtn';
           clr.type = 'button';
@@ -898,6 +920,11 @@
       if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
       var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
       poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
+      // The boot reservation that stops the pool popping in at full height has
+      // to be dropped the first time it's filled - the pool is legitimately
+      // empty once all twenty names are placed, and holding 669px there would
+      // punch a hole in the page at the most triumphant moment of the puzzle.
+      poolEl.classList.remove('pool-hold');
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
@@ -1050,22 +1077,67 @@
       }
     }
 
-    // four groups locked -> the last is a gimme; auto-place, lock, and win.
+    // four groups locked -> the last is a gimme. Instead of snapping the four
+    // remaining names into place, DEAL them in one at a time, each gliding from
+    // the pool into its slot (solitaire-style), then lock and win.
     function autoSolveLast() {
       var freeIdx = -1;
       for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
       var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
       var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
       if (freeIdx < 0 || !remId) { finish(true); return; }
-      // clear anything in the free lane, drop in the true four
+
+      function lockAndWin() {
+        dealingLane = -1;
+        locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
+        delete lastMissIds[freeIdx];
+        render();
+        playLockAnim(freeIdx);
+        popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
+        setTimeout(function () { finish(true); }, 620);
+      }
+
+      // clear the free lane back to the pool so all four true names start there
       day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
-      day.solution[remId].forEach(function (tid) { place[tid] = freeIdx; });
-      locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
-      delete lastMissIds[freeIdx];
+      var order = day.solution[remId].slice();   // the true four, in solution order
+
+      var reduce = false;
+      try { reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) {}
+      if (reduce) {
+        order.forEach(function (tid) { place[tid] = freeIdx; });
+        lockAndWin();
+        return;
+      }
+
+      laneCat[freeIdx] = remId;   // label the empty lane now so it reads right during the deal
+      dealingLane = freeIdx;      // hide this lane's Check/Clear while the four glide in
       render();
-      playLockAnim(freeIdx);
-      popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
-      setTimeout(function () { finish(true); }, 620);
+
+      var STEP = 340, GLIDE = 300;
+      order.forEach(function (tid, k) {
+        setTimeout(function () {
+          if (done) return;
+          // FLIP: measure the name where it sits in the pool, place it, then
+          // glide it home from that spot into the freshly-filled slot.
+          var src = poolEl.querySelector('.tile[data-tid="' + tid + '"]') || boardEl.querySelector('.tile[data-tid="' + tid + '"]');
+          var sr = src ? src.getBoundingClientRect() : null;
+          place[tid] = freeIdx; render();
+          var dst = boardEl.querySelector('.lane[data-idx="' + freeIdx + '"] .tile[data-tid="' + tid + '"]');
+          if (dst && sr) {
+            var dr = dst.getBoundingClientRect();
+            var dx = sr.left - dr.left, dy = sr.top - dr.top;
+            dst.style.transition = 'none';
+            dst.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.05)';
+            dst.style.zIndex = '6';
+            void dst.offsetWidth;   // commit the start frame
+            dst.style.transition = 'transform ' + GLIDE + 'ms cubic-bezier(.22,.61,.36,1)';
+            dst.style.transform = 'translate(0,0) scale(1)';
+          }
+          if (window.RTGSound) { (RTGSound.place || RTGSound.soft || function () {}).call(RTGSound); }
+        }, k * STEP);
+      });
+
+      setTimeout(lockAndWin, (order.length - 1) * STEP + GLIDE + 120);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
@@ -1178,7 +1250,7 @@
     function finish(won) {
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
-      resumeClear();   // attempt is over — nothing left to resume
+      resumeClear();   // attempt is over - nothing left to resume
       var finalTime = elapsedSec();
 
       if (!won) autoSolveReveal();
@@ -1214,11 +1286,10 @@
       }
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
-      var coins = coinsFor(won, finalTime, par, mistakes);
-      if (!ARCHIVE) {
-        walletSet(walletGet() + coins);
-        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
-        renderWallet();
+      // Save the day's result (for the "played today" screen) on the ranked
+      // first attempt only. No coins - the arcade has no currency.
+      if (attemptFirst && !ARCHIVE) {
+        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, order: solveOrder.slice() }));
       }
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
@@ -1230,7 +1301,11 @@
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
+      if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
+        RTGArchive.recordBest('match', Math.round(finalTime), { higherIsBetter:false, label:'sec' });
+      }
+      if (attemptFirst && !ARCHIVE && window.RTGHistory) RTGHistory.push('match', won ? Math.round(finalTime) : null, won);
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
@@ -1266,14 +1341,6 @@
       if (time <= 1.4 * par && m <= 3) return 'C';
       return 'D';
     }
-    function coinsFor(won, time, par, m) {
-      var mult = 1;
-      if (!won) return 10 * mult;
-      var speed = Math.max(0.5, Math.min(2.0, par / Math.max(1, time)));
-      var mfac = 1 - m * 0.10;
-      var c = Math.round(100 * speed * mfac * mult);
-      return Math.max(c, 20 * mult);
-    }
     var VERDICTS = { 'A+': 'First-round lock.', 'A': 'Franchise pick.', 'B': 'Solid starter.', 'C': 'Made the roster.', 'D': 'Practice squad.', 'F': 'Cut in camp.' };
 
     // ---- result modal ----
@@ -1295,7 +1362,7 @@
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : ('+' + r.coins + ' coins'));
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : (r.practice ? 'Practice, not counted' : ''));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -1304,8 +1371,9 @@
       });
       // flawless ribbon (win with zero misses)
       document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
-      // streak milestone banner (or a "practice — not ranked" note on bonus replays)
+      // streak milestone banner (or a "practice - not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
+      if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
       else if (r.practice) { ms.textContent = 'Practice, not ranked'; ms.classList.add('on'); }
       else { ms.textContent = ''; ms.classList.remove('on'); }
@@ -1329,7 +1397,7 @@
         : (solveOrder.length + '/5 groups');
       return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
         '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
-        (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
+        (strip ? strip + '\n' : '') + '\nrunthe.gg/arcade/match';
     }
 
     // ---- visual share card: render the result to a PNG (canvas) -------------
@@ -1369,7 +1437,7 @@
         cy += 96;
       } else { cy += 20; }
 
-      // HERO: you finished. (grade removed — the accomplishment + the solve
+      // HERO: you finished. (grade removed - the accomplishment + the solve
       // order are the story now.)
       var heroWord = r.won ? 'SOLVED' : 'FINAL';
       var heroCol = r.won ? '#17A34A' : '#5c6b7a';
@@ -1397,7 +1465,7 @@
         g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
       });
 
-      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
+      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/arcade', W / 2, H - 72); ls('0px');
       return cv;
     }
     function cvToBlob(cv) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); }); }
@@ -1526,12 +1594,12 @@
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
       var base = 'Sort 20 sports names into five hidden groups of four.';
-      if (ARCHIVE) { ex.textContent = base + ' · Archive practice'; return; }
+      if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
       ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent'); }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
@@ -1553,7 +1621,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
@@ -1566,7 +1634,7 @@
     streakChip.addEventListener('click', openStats);
     streakChip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
 
-    // ---- tester: load a fresh board (with confirm — it abandons the current board) ----
+    // ---- tester: load a fresh board (with confirm - it abandons the current board) ----
     var newBtn = document.getElementById('btnNew');
     var newArmed = false, newArmT = null;
     function disarmNew() {
@@ -1676,7 +1744,7 @@
           var v = pl[t.id];
           place[t.id] = (typeof v === 'number' && v >= 0 && v < CATS) ? v : null;
         });
-        // a solved lane must hold exactly its true four — repair from the solution if not
+        // a solved lane must hold exactly its true four - repair from the solution if not
         for (var li = 0; li < CATS; li++) {
           if (!locked[li]) continue;
           var ids = day.tiles.filter(function (t) { return place[t.id] === li; }).map(function (t) { return t.id; }).sort();

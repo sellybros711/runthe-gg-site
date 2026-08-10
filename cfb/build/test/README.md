@@ -15,7 +15,14 @@ psql -d cfbtest -f cfb/build/test/stub_supabase.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
 psql -d cfbtest -f supabase/63_cfb_run_mode.sql
 psql -d cfbtest -f supabase/64_cfb_bowl_key.sql
+node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &
+python3 -m http.server 8080 &
 ```
+
+The database name has to be the SAME one the PostgREST stand-in is serving. The browser
+suites seed rows with `psql` and read them back through `board.js`, so if the two point at
+different databases every seeded assertion still passes and only the ones that cross the
+seam fail. That reads like a code regression in the leaderboard and is not one.
 
 `stub_supabase.sql` is the slice of Supabase the migration leans on: the `profiles`
 table from `10_accounts.sql`, the `anon` and `authenticated` roles, and an `auth.uid()`
@@ -37,9 +44,10 @@ before the day rather than during it.
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
-| `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
+| `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. **Currently broken**, and not by anything it tests: the profile sheet became a hub and five pages, and this suite still drives the old tab strip. Its signed-out cases assert an information architecture that no longer exists, so fixing it is a product decision rather than a selector swap. |
 | `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
 | `test_bowl_key.mjs` | Which bowl a season played, as the row records it. Sweeps every reachable (wins, rank) and demands the database and `seedFromRanking()` agree on the tier, round-trips all 37 bowl names through the slug and back, and proves the named-bowl badges are earnable signed in, which they were not before `64_cfb_bowl_key.sql`. |
+| `test_ticker.mjs` | The poll ticker pinned along the bottom of the front page: that its RECTANGLE lands on screen rather than merely reporting `position:fixed`, that it clears whatever the mobile ad strip owns, that nothing on the page ends up behind it with the page scrolled to the bottom, and that it disappears the moment another screen takes over. |
 | `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
 | `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
 | `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
@@ -58,11 +66,12 @@ node cfb/build/test/test_challenge.mjs
 node cfb/build/test/test_ranks_tab.mjs
 node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
+node cfb/build/test/test_ticker.mjs
 node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Nine bugs these caught, so far
+## Eleven bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -118,3 +127,23 @@ survivable once the row also carried which bowl, because then the tier and the s
 from different rules and "win all six New Year's Six bowls" could be completed with six
 small-bowl trophies. The fix is in 64, and the test now sweeps all 143 reachable
 (wins, rank) pairs against `seedFromRanking()` instead of spot-checking four of them.
+
+**A `position:fixed` bar pinned itself to the wrong thing.** The poll ticker was moved to the
+bottom edge of the front page and landed 916px down an 844px phone, which is to say off it.
+`.screen.on` animates in with `animation-fill-mode:both`, which keeps the last keyframe
+applied after the run, and Chromium resolves that frame's `transform:none` to an identity
+matrix rather than to no transform at all. An identity matrix is still a transform, and a
+transform on an ancestor makes it the containing block for every fixed descendant. Nothing
+about the CSS that placed the bar looked wrong, and `getComputedStyle` still said `fixed`.
+Only the rectangle gave it away, which is why `test_ticker.mjs` measures one.
+
+**Four suites shared one flake, and it was theirs, not the game's.** Signing a player who
+can fill two slots opens a sheet asking which one, and the sheet covers the wheel and
+swallows every click until it is answered. Every browser suite drafted by clicking the
+first live tile in a loop that knew nothing about the sheet, so once one of those players
+came up the loop retried the same blocked click until Playwright's 30s timeout and the
+whole run died on a screen that was working correctly. It looked intermittent because
+which players the wheel offers depends on the run, and re-running usually "fixed" it,
+which is the worst way for a harness bug to present. All four loops now answer the sheet
+before looking for the next tile. If a suite here fails on `intercepts pointer events`,
+suspect the harness before the page.

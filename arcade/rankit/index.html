@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Rank It | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -12,7 +11,21 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Rank It: a daily sports ranking streak game. Put five athletes in the right order by era or career stats. Clear the set, get a new one. One wrong order ends your run." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Rank It: Daily Sports Ordering Game" />
+<meta property="og:description" content="Five athletes. One right order. A new set every day." />
+<meta property="og:url" content="https://runthe.gg/arcade/rankit/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Rank It: Daily Sports Ordering Game" />
+<meta name="twitter:description" content="Five athletes. One right order. A new set every day." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/rankit/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -42,7 +55,7 @@
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:540px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -72,7 +85,18 @@
 
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
-  .modesw.hidden{display:none;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
   .modesw button:hover{color:var(--ink); border-color:var(--pink);}
   .modesw button.on{background:var(--pink); color:#20101a; border-color:transparent;}
@@ -83,6 +107,10 @@
 
   .axis{display:flex; align-items:center; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 4px 8px;}
   .rows{display:flex; flex-direction:column; gap:9px;}
+  /* Five fixed-height rank slots, always. Holding their space before the JS
+     builds them stops the Check-order button and the leaderboard from being
+     shoved 400px down the page a second after first paint. */
+  .rows:empty{min-height:412px;}
   /* a rank slot = a detached number block on the left + the draggable card */
   .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:none; transition:transform .12s;}
   .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
@@ -90,12 +118,20 @@
   .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
   .ritem.dragging .rrow{box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); opacity:.98;}
   .rrow .ctrl button{cursor:pointer;}
-  .rmeta{flex:1; min-width:0; text-align:center;}
-  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis;}
+  /* name spans the full card and centres on its true midpoint; the arrows and
+     the (hidden until reveal) value sit in reserved right-side gutters so the
+     name is always dead-centre regardless of them. */
+  .rmeta{flex:1; min-width:0; text-align:center; padding:0 46px;}
+  /* white-space:nowrap is what makes the ellipsis actually fire - without it a
+     long name wrapped to a second line instead of truncating, which both broke
+     the intended truncation and made every row's height depend on the viewport
+     width. Rows are now a fixed height, which is also what lets .rows reserve
+     its space below. */
+  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
-  .rrow .era{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; margin-right:2px;}
+  .rrow .era{position:absolute; right:50px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; text-align:right; max-width:64px;}
   .rrow.show-era .era{opacity:1;}
-  .rrow .ctrl{flex:0 0 auto; display:flex; flex-direction:column; gap:3px;}
+  .rrow .ctrl{position:absolute; right:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:3px;}
   .rrow .ctrl button{width:30px; height:22px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
   .rrow .ctrl button:hover{color:var(--ink); border-color:var(--pink);}
   .rrow .ctrl button:disabled{opacity:.3; cursor:default;}
@@ -107,6 +143,14 @@
   .checkbtn{width:100%; appearance:none; border:0; background:var(--pink); color:#20101a; font-weight:900; font-size:16px; border-radius:13px; padding:15px; min-height:52px; cursor:pointer; box-shadow:var(--shadow);}
   .checkbtn:hover{filter:brightness(1.06);} .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default;}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:12px 0 2px; font-weight:700;}
+  /* big, blind first-try feedback pinned above the lineup */
+  .rkfb{display:none; text-align:center; margin:11px 0 3px; padding:15px 16px 13px; border-radius:12px;
+    background:color-mix(in srgb, var(--pink) 13%, var(--card)); border:2px solid color-mix(in srgb, var(--pink) 55%, var(--line2));
+    box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22));}
+  .rkfb.on{display:block; animation:rkfbpop .28s ease;}
+  @keyframes rkfbpop{from{transform:scale(.92); opacity:0;}to{transform:none; opacity:1;}}
+  .rkfb .big{font-family:var(--hero); font-weight:400; font-size:44px; line-height:.95; color:var(--pinkT); font-variant-numeric:tabular-nums;}
+  .rkfb .cap{display:block; font-size:12px; font-weight:800; letter-spacing:.03em; color:var(--mut); margin-top:7px;}
 
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -134,6 +178,10 @@
   .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--pinkT); margin:4px 0 0;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -157,6 +205,9 @@
   .pod-m{flex:0 0 24px; text-align:center; font-weight:900; color:var(--mut);}
   .pod-n{flex:1; min-width:0; font-weight:900; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pod-v{flex:0 0 auto; font-weight:900; font-size:12px; color:var(--pinkT);}
+  .pod-next{width:100%; margin-top:14px; appearance:none; border:0; background:var(--green); color:#071426; font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:16px; border-radius:8px; padding:14px; min-height:50px; cursor:pointer; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
+  .pod-next:hover{filter:brightness(1.05);}
+  .pod-next:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -171,20 +222,15 @@
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Rank It "Depth Chart"
+     BOLD SPORTS-MACHINE - Rank It "Depth Chart"
      Marquee banner + caged lineup rack with a spine rail and notched
-     jersey number-plates. Visual only — drag / logic / keys untouched.
+     jersey number-plates. Visual only - drag / logic / keys untouched.
      ================================================================= */
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* marquee title plate over the prompt card */
-  .lead{ position:relative; overflow:hidden; border:2px solid var(--line2); border-left-width:2px;
-    border-radius:8px; padding-top:36px; box-shadow:var(--a-shadow,5px 5px 0 rgba(7,20,38,.26)); }
-  .lead::before{ content:"⚡ STARTING LINEUP"; position:absolute; top:0; left:0; right:0;
-    background:var(--pink); color:#20101a; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.18em; padding:7px 15px; }
+  .lead{ position:relative; overflow:hidden; border:2px solid var(--line2); border-radius:8px; box-shadow:var(--a-shadow,5px 5px 0 rgba(7,20,38,.26)); }
   .lead .v{ font-size:16px; }
 
   /* scoreboard axis strip */
@@ -219,13 +265,34 @@
   /* arcade CTA with a cut corner */
   .checkbtn{ border-radius:6px; text-transform:uppercase; letter-spacing:.09em;
     clip-path:polygon(0 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%); }
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      /* pin the four short left rows to their content and let the leaderboard
+         rail overflow naturally - otherwise the tall rail forces empty gaps
+         between the axis, ranked rows and check button */
+      grid-template-rows:auto auto auto auto auto min-content min-content min-content min-content auto;
+      grid-template-areas:
+        "top   top" "title title" "mode mode" "lead lead"
+        "axis run" "fb lbd" "rows lbd" "act lbd" "hint lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .lead{grid-area:lead;}
+    .axis{grid-area:axis;} .rkfb{grid-area:fb;} .rows{grid-area:rows;} .actions{grid-area:act;} .hintline{grid-area:hint;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd; align-self:start;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    .runbar{ margin:0; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">RANK IT</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">RANK IT</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -242,7 +309,7 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place — then one more try.</span></div>
+    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place, then one more try.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -250,6 +317,7 @@
   <div class="lead"><span class="k" id="axisLabel">Set 1</span><span class="v" id="prompt">Rank by the era they starred in, <b>earliest</b> era at the top.</span></div>
 
   <div class="axis"><span id="axTop">↑ Earliest</span><span id="axBot">Most recent ↓</span></div>
+  <div class="rkfb" id="rkFeedback" aria-live="polite"></div>
   <div class="rows" id="rows"></div>
 
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
@@ -279,10 +347,12 @@
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">SETS CLEARED</h2>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -296,14 +366,27 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
+<script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/stats.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
@@ -312,7 +395,9 @@
   var ENT = window.GRID_ENTITIES || [];
   var STATS = window.RTG_STATS || {};
   var LS = window.localStorage;
-  var GAME_BASE='rankit', COUNT=5, TOTAL_SETS=20;
+  // Unlimited streak: soft cap; the category cycle keeps generating new sets
+  // until the stat pool can't produce a valid 5-player set with distinct spread.
+  var GAME_BASE='rankit', COUNT=5, TOTAL_SETS=200;
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them (rankit_nba) for its own seed/board/streak/resume.
   var MODE='all', SPORTFILTER=null, GAME='rankit', SAVE_KEY='rtg:rankit:v2', RESUME_KEY='rtg:resume:rankit';
@@ -341,23 +426,50 @@
   // yards, receptions, sacks, hits/RBI/SB/wins/K/saves). A category is kept
   // only where at least COUNT ids resolve to a non-active corpus entity.
   var STAT_CATS=Object.keys(STATS).filter(function(c){ return STATS[c] && STATS[c].vals; });
-  var statPool={};
+  var statPool={}, statPoolW={};
   STAT_CATS=STAT_CATS.filter(function(c){
     var ids=Object.keys(STATS[c].vals).filter(function(id){ var e=byId[id]; return e && e.act!==1; });
-    statPool[c]=ids; return ids.length>=COUNT;
+    statPool[c]=ids;
+    // WARMUP pool: mega-icons (f>=5) OR very-notable retired players (f>=4 with
+    // 10+ notable seasons) - always from the modern era so warmup names are
+    // recognizable to anyone active today. Sets 1-3 draw from this so the very
+    // first sort is always five names anyone knows with wide, obvious stat
+    // gaps. Falls back to the full pool when a category can't fill 5 warmup ids.
+    statPoolW[c]=ids.filter(function(id){
+      var e=byId[id]; if(!e) return false;
+      var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
+      return (e.f||0)>=5 || ((e.f||0)>=4 && (e.ns||0)>=10);
+    });
+    return ids.length>=COUNT;
   });
 
   // ---- set builders ----
   // Stat set: five retired players from one category, ordered lowest -> highest.
   // Adjacent totals must differ by >=5% so the ordering is never ambiguous.
-  function buildStatSet(cat){
-    var cfg=STATS[cat], pool=statPool[cat];
+  function buildStatSet(cat, warmup){
+    var cfg=STATS[cat];
+    // Warmup pool: icons-only subset (recognizable names) when it can fill
+    // five slots; else fall back to the full pool.
+    var pool = (warmup && statPoolW[cat] && statPoolW[cat].length>=COUNT) ? statPoolW[cat] : statPool[cat];
     if(!cfg || !pool || pool.length<COUNT) return null;
-    for(var g=0; g<250; g++){
+    // Adjacent-gap rule: warmup wants wide spread (35%) so the very first
+    // sort is obvious; regular sets need 5%. A small pool (e.g. NBA blocks)
+    // may not have any five names 35% apart - after a few dozen attempts we
+    // relax the warmup gap step-by-step instead of failing outright, so the
+    // set builder never returns null on a real stat pool.
+    var attempts = warmup ? 400 : 200;
+    var minGap = warmup ? 1.35 : 1.05;
+    var relaxAt = warmup ? [120, 240, 340] : [];   // relax the gap if warmup can't find one
+    for(var g=0; g<attempts; g++){
+      if(warmup){
+        if(g===relaxAt[0]) minGap = 1.20;
+        else if(g===relaxAt[1]) minGap = 1.10;
+        else if(g===relaxAt[2]) minGap = 1.05;
+      }
       var picked=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
         .sort(function(a,b){ return a.v-b.v; });
       var ok=true;
-      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*1.05){ ok=false; break; } }
+      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*minGap){ ok=false; break; } }
       if(!ok) continue;
       var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
       return {
@@ -376,21 +488,32 @@
   // stat categories are league-prefixed (nba_/nfl_/mlb_); a sport version keeps
   // only its league's categories, the 'all' version keeps them all.
   function catsForMode(){ return SPORTFILTER ? STAT_CATS.filter(function(c){ return c.indexOf(SPORTFILTER.toLowerCase()+'_')===0; }) : STAT_CATS; }
-  function buildRun(){
-    var sets=[];
+  // Lazy set builder. Eagerly generating 200 sets on load meant 200 × up to
+  // 250 shuffles of a ~2k-name pool - a ~50s freeze at load. Now we prime the
+  // first BATCH sets synchronously (so the first render has SETS[0]) and top
+  // up on demand as `run` climbs. Whole run remains deterministic - each set
+  // is built from the same seeded shuffle order - but idle work isn't paid up
+  // front for a run 99% of players won't reach.
+  var SETS=[], _catsBag=[], _runGuard=0, BATCH=8;
+  function fillSets(target){
     var cats=catsForMode();
-    if(!cats.length) return sets;
-    var guard=0;
-    while(sets.length<TOTAL_SETS && guard++<TOTAL_SETS*20){
-      var bag=shuffle(cats);
-      for(var i=0;i<bag.length && sets.length<TOTAL_SETS;i++){
-        var S=buildStatSet(bag[i]);
-        if(S) sets.push(S);
-      }
+    if(!cats.length) return;
+    var need=Math.min(target, TOTAL_SETS);
+    // Bounded by BOTH attempts and successes: bail after N misses (a stat
+    // pool that genuinely can't fill 5 slots gracefully falls through to
+    // the next category, and we never re-try more than a category's worth
+    // of category rotations).
+    var missBudget = need * cats.length * 4;
+    while(SETS.length<need && _runGuard++<missBudget){
+      if(!_catsBag.length) _catsBag=shuffle(cats);
+      var c=_catsBag.shift();
+      var S=buildStatSet(c, SETS.length<3);
+      if(S) SETS.push(S);
     }
-    return sets;
   }
-  var SETS=buildRun();
+  // NOTE: we do NOT eagerly fill at module load. beginAttempt() / resumeAttempt()
+  // are the first callers and they reset SETS + call fillSets; running here is
+  // duplicated work on a page load that will re-enter it anyway.
 
   var run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, lastCheck=null, reveal=false, charged=false, attemptFirst=false;
   var order=[], setTries=0;   // two tries per set: first blind (count only), second decisive
@@ -400,7 +523,11 @@
 
   function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
-  function curSet(){ return SETS[Math.min(run, SETS.length-1)]; }
+  function curSet(){
+    // Top up lazily as we climb - keep a 10-set buffer ahead of the runner.
+    if(run+10 > SETS.length && SETS.length < TOTAL_SETS) fillSets(SETS.length + BATCH);
+    return SETS[Math.min(run, SETS.length-1)];
+  }
   function render(){
     var S=CUR||curSet();
     rowsEl.innerHTML = order.map(function(e,i){
@@ -479,8 +606,10 @@
     order=shuffle(S.answer);
     for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
     lastCheck=null; reveal=false; setTries=0;
-    var cb0=document.getElementById('checkBtn'); if(cb0) cb0.textContent='Check order';
-    document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1)+' of '+SETS.length;
+    var fb0=document.getElementById('rkFeedback'); if(fb0){ fb0.className='rkfb'; fb0.innerHTML=''; }
+    var hl0=document.getElementById('hintline'); if(hl0) hl0.innerHTML='Drag a row or use the arrows to reorder, then check. You get two tries per set.';
+    var cb0=document.getElementById('checkBtn'); if(cb0){ cb0.textContent='Check order'; cb0.disabled=false; }
+    document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1);
     document.getElementById('prompt').innerHTML=S.lead;
     document.getElementById('axTop').textContent='↑ '+S.axisTop;
     document.getElementById('axBot').textContent=S.axisBot+' ↓';
@@ -488,16 +617,20 @@
   }
 
   document.getElementById('checkBtn').addEventListener('click', check);
-  // quick podium flash when a set clears: 1st-to-5th with their values
-  function showPodium(o, S){
+  // podium when a set clears: the full 1st-to-5th ranking with values, held on
+  // screen until the player taps NEXT PUZZLE (no auto-dismiss, no auto-advance).
+  function showPodium(o, S, onNext, isFinal){
     var MED=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4','5'];
     var el=document.createElement('div'); el.className='podium';
     el.innerHTML='<div class="pod-in"><div class="pod-h">SET CLEARED</div>'+o.map(function(e,i){
       return '<div class="pod-row" style="animation-delay:'+(i*90)+'ms"><span class="pod-m">'+MED[i]+'</span><span class="pod-n">'+esc(e.name)+'</span><span class="pod-v">'+esc(S.val(e))+'</span></div>';
-    }).join('')+'</div>';
+    }).join('')+'<button class="pod-next" type="button">'+(isFinal?'See results \u2192':'Next Puzzle \u2192')+'</button></div>';
     document.body.appendChild(el);
-    setTimeout(function(){ el.classList.add('out'); }, 1650);
-    setTimeout(function(){ el.remove(); }, 1950);
+    el.querySelector('.pod-next').addEventListener('click', function(){
+      el.classList.add('out');
+      setTimeout(function(){ el.remove(); }, 220);
+      if(typeof onNext==='function') onNext();
+    });
   }
   function check(){
     if(done||busy) return; startIfNeeded();
@@ -510,28 +643,35 @@
     var nRight=correct.filter(Boolean).length, allRight=nRight===order.length;
 
     if(allRight){
-      // cleared — reveal, count it, serve the next set
+      // cleared - reveal, count it, hold the podium until they tap NEXT PUZZLE
       lastCheck=correct; reveal=true; busy=true; render();
+      ANSLOG.push(setTries===0?'c':'h');   // first-try clear vs. needed both tries
       run++; document.getElementById('runN').textContent=run; saveResume();
       if(window.RTGSound) RTGSound.lock();
-      showPodium(order, S);
-      setTimeout(function(){ busy=false; if(run>=SETS.length){ finish(); return; } startSet(); }, 2050);
+      var isFinal=run>=SETS.length;
+      showPodium(order, S, function(){ busy=false; if(isFinal){ finish(); return; } startSet(); }, isFinal);
       return;
     }
 
     setTries++;
     if(setTries<2){
-      // FIRST try: tell them ONLY how many are in the right spot — no colours,
-      // no values revealed — then let them fix it. The run does NOT end.
+      // FIRST try: tell them ONLY how many are in the right spot - big, at the
+      // top, and blind (no colours, no values). Then let them fix it; the run
+      // does NOT end.
       if(window.RTGSound){ (RTGSound.soft||RTGSound.wrong).call(RTGSound); }
+      var fb=document.getElementById('rkFeedback');
+      if(fb){ fb.className='rkfb on'; fb.innerHTML='<span class="big">'+nRight+' / '+order.length+'</span><span class="cap">in the right spot. One more try. Which ones? That’s for you to figure out.</span>';
+        try{ fb.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }
       var h=document.getElementById('hintline');
-      if(h) h.innerHTML='<b>'+nRight+' / '+order.length+'</b> in the right spot — one more try. (Which ones? That’s for you to figure out.)';
-      var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check — last try';
+      if(h) h.innerHTML='Last try. Reorder and check again.';
+      var cb=document.getElementById('checkBtn'); if(cb) cb.textContent='Check (last try)';
       var rowsWrap=document.getElementById('rows'); if(rowsWrap){ rowsWrap.classList.remove('rk-nudge'); void rowsWrap.offsetWidth; rowsWrap.classList.add('rk-nudge'); }
       return;
     }
 
     // SECOND try failed: reveal per-slot, then the correct order, then end.
+    ANSLOG.push('x');
+    ENDSLOTS=correct.slice();   // how close the losing board was, for the share
     lastCheck=correct; reveal=true; busy=true; render();
     if(window.RTGSound) RTGSound.wrong();
     setTimeout(function(){
@@ -569,8 +709,8 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
-    SETS=buildRun();
-    run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false;
+    SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
+    run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false; ANSLOG=[]; ENDSLOTS=null;
     document.getElementById('runN').textContent='0';
     document.getElementById('checkBtn').disabled=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -578,10 +718,10 @@
   }
   // Resume an interrupted ranked run at a set boundary: rebuild today's
   // deterministic run of sets, restore the cleared-set count and re-deal the
-  // current set — no re-charge, no replayed animations or sounds.
+  // current set - no re-charge, no replayed animations or sounds.
   function resumeAttempt(r){
     seedDaily(); servedDaily=true;
-    SETS=buildRun();
+    SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
     run=Math.max(0, Math.min(SETS.length, r.run|0));
     done=false; busy=false; lastCheck=null; reveal=false;
     charged=true; attemptFirst=true; started=true;
@@ -595,21 +735,42 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
+  // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
+  var NEWBEST=false, PREVBEST=0, MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
+  // Per-answer log for the share grid. A run of all green tells no story;
+  // the square where it ended is the whole point (this is the shape that
+  // made Wordle spread).
+  var ANSLOG=[];
+  // The per-slot verdict on the board that ended the run. "I had three of five
+  // in the right spot" is the near-miss that makes somebody tap Play again -
+  // the run line alone can't say it.
+  var ENDSLOTS=null;
   function finish(){
     if(done) return; done=true; busy=false;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     document.getElementById('checkBtn').disabled=true;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
+      if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak);
     }
+    PREVBEST=s.bestRun||0;
+    NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'sets' });
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('rankit', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -627,24 +788,61 @@
     document.getElementById('mRun').textContent=r;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (r>=SETS.length ? 'You cleared every set!' : 'Your run ended'));
+    // Emotional copy ladder: new best > tied best > near miss > generic.
+    var sub;
+    if(locked) sub='Your run today';
+    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(r>=SETS.length && r>=TOTAL_SETS) sub='You cleared every set!';
+    else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
+    else if(PREVBEST>0 && r===PREVBEST) sub='Tied your best. One more tomorrow!';
+    else if(PREVBEST>0 && r>0 && PREVBEST-r<=2) sub=(PREVBEST-r)+' off your best. So close!';
+    else sub='Your run ended';
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = sub;
+    subEl.classList.toggle('newbest', !locked && NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('mTitle').textContent = 'SETS CLEARED';
     document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.' : 'Run over. '+r+' set'+(r===1?'':'s')+' cleared.';
     document.getElementById('yourTm').textContent = r+' set'+(r===1?'':'s');
     document.getElementById('yourBest').textContent = (s.bestRun||0)+' sets';
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'rankit');
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && r>=3){ confetti(r>=8?120:70, r>=8); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (r>=3 || NEWBEST)){ confetti(NEWBEST?140:(r>=8?120:70), NEWBEST || r>=8); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
+    // Render the run as it actually happened: a green square per clear, the
+    // square that ended it, and (Number Game) an amber square where the save absorbed
+    // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
+    function shareGrid(){
+      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      if(!ANSLOG.length) return '\u2b1c';
+      var out='', n=0;
+      for(var i=0;i<ANSLOG.length && i<60;i++){
+        out += MAP[ANSLOG[i]]||'\u2b1c';
+        if(++n%10===0 && i<ANSLOG.length-1) out += '\n';
+      }
+      if(ANSLOG.length>60) out += '\u2026';
+      return out;
+    }
+    // Second line: the board that ended it, slot by slot. Only worth printing
+    // when at least one slot was right - an all-red row says nothing a red
+    // square on the run line didn't already say.
+    function endLine(){
+      if(!ENDSLOTS || !ENDSLOTS.length) return '';
+      var n=0, s='';
+      for(var i=0;i<ENDSLOTS.length;i++){ if(ENDSLOTS[i]) n++; s += ENDSLOTS[i]?'🟩':'🟥'; }
+      return n ? ('\n' + s + '  ' + n + '/' + ENDSLOTS.length + ' in place') : '';
+    }
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
-    var bar=r>0?('🟩'.repeat(Math.min(r,10))+(r>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Rank It\n'+bar+'\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/';
+    var bar=shareGrid();
+    var txt='Run The Arcade · Rank It\n'+bar+endLine()+'\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/rankit';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -653,7 +851,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New run in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New run in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F65C9C','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
@@ -696,8 +894,8 @@
   }
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
       var lab = m.k==='all' ? 'All' : m.label;
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
@@ -707,7 +905,7 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();
+    if(!ARCHIVE && !done) saveResume();    // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -728,7 +926,7 @@
       done=true;
       document.getElementById('checkBtn').disabled=true;
       document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
-      seedDaily(); SETS=buildRun(); startSet();     // show today's first set, locked
+      seedDaily(); SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH); startSet();     // show today's first set, locked
       if(saved.last){ showEnd(saved, true); }
     } else { beginAttempt(); }
     if(window.RTG_BOARD){

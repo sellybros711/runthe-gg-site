@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Guess the Player | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -12,7 +11,21 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Guess the mystery athlete in Run The Arcade. Each guess reveals how close you are on team, position, era, number and more." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Guess the Player: Daily Sports Puzzle" />
+<meta property="og:description" content="One mystery athlete a day. Crack it in eight guesses." />
+<meta property="og:url" content="https://runthe.gg/arcade/guess/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Guess the Player: Daily Sports Puzzle" />
+<meta name="twitter:description" content="One mystery athlete a day. Crack it in eight guesses." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/guess/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -45,7 +58,7 @@
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:600px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
 
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -63,27 +76,42 @@
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
 
-  .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px; padding:11px 15px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--coral); border-radius:14px; padding:11px 15px; box-shadow:var(--shadow); margin-bottom:14px;}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
   .lead .v{display:block; font-size:13.5px; line-height:1.45; color:var(--ink); margin-top:4px;}
-  .lead .v b{color:var(--blue);}
+  .lead .v b{color:var(--coral);}
   /* The sport is a given, not a guess. It rides on the label so it reads as a
      fact about today's puzzle rather than another thing to work out. */
-  .lead .sportbadge{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
-    letter-spacing:.1em; color:#fff; background:var(--blue); border-radius:999px; padding:2px 8px;}
+  /* min-width holds the badge's footprint through the "–" -> "NBA" repaint.
+     Without it the placeholder was narrow enough that the lead's first line
+     fit, and widening it rewrapped the sentence - a 39px jolt that pushed the
+     search box, the guess counter and the clue panel down after first paint. */
+  .lead .sportbadge{display:inline-block; min-width:43px; text-align:center; margin-left:7px; font-size:10px; font-weight:900;
+    letter-spacing:.1em; color:#fff; background:var(--coral); border-radius:999px; padding:2px 8px;}
 
   /* guess input */
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
-  .modesw.hidden{display:none;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
-  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
-  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
+  .modesw button:hover{color:var(--ink); border-color:var(--coral);}
+  .modesw button.on{background:var(--coral); color:#fff; border-color:transparent;}
   .searchwrap{position:relative; margin-bottom:8px;}
   .search{display:flex; gap:8px;}
-  .search input{flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
+  .search input{font-size:16px; flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
   .search input::placeholder{color:var(--dim); font-weight:600;}
-  .search .go{flex:0 0 auto; border:0; background:var(--blue); color:#fff; font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
+  .search .go{flex:0 0 auto; border:0; background:var(--coral); color:#fff; font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
   .search .go:disabled{background:var(--card2); color:var(--mut); cursor:default;}
   .ac{position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:20; background:var(--card); border:1px solid var(--line2); border-radius:11px; box-shadow:0 20px 50px -18px rgba(0,0,0,.7); overflow:hidden; display:none;}
   .ac.on{display:block;}
@@ -102,11 +130,19 @@
   #clues .clue{font-style:italic; font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.45; margin-top:4px; animation:gin .25s ease;}
 
   /* the board.
-     All eight rows are on the page from the first moment, empty, the way a
-     crossword shows you its squares before you write in any. You can see how
-     many guesses the game is worth without having to spend one to find out. */
+     All eight rows live in the DOM from the first moment (guesses fill them
+     top-down, resume repaints them), but only the ACTIVE blank row plus a
+     faded peek at the next stays visible - a wall of eight empty dashed rows
+     made the pre-game board read as a giant blank form. The "8 guesses left"
+     counter already says how much rope you have. */
   .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:12px 12px 6px; box-shadow:var(--shadow);}
+  /* pre-guess: hide the whole readout board (header labels + eight empty rows)
+     - before any guess exists it teaches nothing and just makes the game feel
+     enormous. It appears the moment you submit your first name. */
+  .board:not(.hasfilled){display:none;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled) ~ .guess:not(.filled){display:none;}
   .collab{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
   .collab span{font-size:8.5px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; color:var(--mut); text-align:center;}
   .guess{margin-bottom:9px;}
@@ -114,7 +150,7 @@
   @keyframes gin{from{opacity:0; transform:translateY(-6px);}to{opacity:1; transform:none;}}
   .guess .nm{font-weight:900; font-size:13.5px; margin:0 1px 5px; color:var(--ink); min-height:18px;}
   .guess .row{display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
-  .tile{aspect-ratio:1/1.02; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
+  .tile{aspect-ratio:1/1.24; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px 3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
   .tile.hit{background:var(--hit);} .tile.close{background:var(--close);}
   /* An empty square reads as somewhere to write, not as a miss, so it is an
      outline rather than the grey a wrong answer earns. */
@@ -164,6 +200,9 @@
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px;}
   .sheet h2.win{color:var(--greenT);} .sheet h2.lose{color:var(--coralT);}
+  .milestone{display:none; margin:2px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .revcard{display:flex; align-items:center; gap:12px; text-align:left; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:12px 0;}
   .revcard .rn{font-weight:900; font-size:17px; color:var(--ink);} .revcard .rs{font-size:12px; color:var(--mut); margin-top:2px;}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0 4px;}
@@ -172,7 +211,7 @@
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
+  .abtn.gold{background:var(--coral); color:#fff; border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
 
@@ -190,20 +229,16 @@
   .search .go:active, .cluebtn:active{transform:translate(1px,1px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Guess "Scouting Terminal"
+     BOLD SPORTS-MACHINE - Guess "Scouting Terminal"
      A caged terminal console: titled header bar, console column strip,
      record-style name bars, bordered readout cells with status LEDs.
-     Visual only — no logic changes.
+     Visual only - no logic changes.
      ================================================================= */
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* the lead becomes a marquee dossier header */
-  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
-  .lead::before{ content:"📡 SCOUTING TERMINAL"; position:absolute; top:0; left:0; right:0;
-    background:var(--blue); color:#fff; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.16em; padding:7px 15px; }
+  .lead{ position:relative; overflow:hidden; border-radius:8px; }
 
   /* terminal cabinet */
   .board{ position:relative; border:2px solid var(--line2); border-radius:9px; padding:14px 12px 10px;
@@ -234,13 +269,31 @@
   .search input{ border-width:2px; border-radius:6px; }
   .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.06em;
     clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%); }
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "lead lead" "mode mode"
+        "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
+    .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
+    .lb{grid-area:lbd;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    /* desktop tiles are already width-driven and tall; keep them from ballooning */
+    .tile{ aspect-ratio:1/1.02; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">GUESS THE PLAYER</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">GUESS THE PLAYER</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -253,7 +306,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--blue)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--coralT)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
 
   <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
@@ -302,12 +355,14 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle" class="win">SOLVED</h2>
     <div class="sub-h" id="mSub"></div>
+    <div class="milestone" id="mMilestone"></div>
     <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -321,14 +376,27 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
+<script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
@@ -380,7 +448,7 @@
   /* pools: GUESSABLE is what you can type; TARGETS is what the game answers
      with. In ROSTER MODE both are built from the live, self-updating roster
      feed (every current NBA/NFL/MLB player), so the pool is ~1,500 names and
-     grows with each roster refresh — rookies included. Without an enriched
+     grows with each roster refresh - rookies included. Without an enriched
      feed we fall back to the curated corpus behavior. */
   var GUESSABLE, TARGETS, ROSTER_MODE = false, byId = {};
   if(ROS_RICH){
@@ -417,12 +485,21 @@
     if(TARGETS.length<60) TARGETS = GUESSABLE.slice();
   } else {
     // ---- curated-corpus fallback (thin/absent roster file) -----------------
-    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
+    // Guessable = anything the corpus knows enough about to build a readout.
+    // Target (the mystery player) has to be recognizable - .star from stars.js
+    // is the primary signal; fall through to auto-detected fame for uncurated
+    // names so a fresh corpus player can still shine through.
+    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0) >= (e.sport==='NFL'?4:3); });
     if(ROSTERS){ var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); }); if(live.length>=20) GUESSABLE=live; else ROSTERS=null; }
-    var targetsFor = function(fMin, requireAct){ return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; }); };
-    TARGETS = targetsFor(4,true);
-    if(TARGETS.length<20) TARGETS = targetsFor(3,true);
-    if(!TARGETS.length) TARGETS = targetsFor(3,false);
+    function starOK(e){
+      if(!TARGET_SPORTS[e.sport]) return false;
+      if(e.star) return true;
+      var f=e.f||0; if(f<4) return false;
+      if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
+      return (e.ns||0)>=8;
+    }
+    TARGETS = GUESSABLE.filter(starOK);
+    if(TARGETS.length<20) TARGETS = GUESSABLE.filter(function(e){ return TARGET_SPORTS[e.sport] && (e.f||0)>=4; });
     if(!TARGETS.length) TARGETS = GUESSABLE;
   }
   var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);
@@ -448,7 +525,7 @@
   function intersect(a,b){ var s={}; a.forEach(function(x){s[x]=1;}); return b.some(function(x){return s[x];}); }
   /* Which side of the ball an NFL position plays. Derived by keyword because
      the pos strings are prose ("Defensive Lineman", "Cornerback"): defensive
-     keywords first, then special teams, and everything left is offense —
+     keywords first, then special teams, and everything left is offense -
      quarterback, running back, receiver, tight end, linemen, fullback all
      land there without needing their own list. */
   function sideOf(pos){
@@ -515,7 +592,7 @@
   function activeCols(){
     if(ROSTER_MODE){
       // current-player board: Team, [Div], Pos, Side (NFL) / Nat (NBA·MLB),
-      // Age, No. — every column carries signal for active players.
+      // Age, No. - every column carries signal for active players.
       var cols=[colTeam]; if(HAS_DIV) cols.push(colDiv);
       cols.push(colPos, SPORT==='NFL'?colSide:colNat, colAge, colNo);
       return cols;
@@ -528,7 +605,7 @@
   }
 
   /* ---- Clues: Masked-Singer-vague hints built from the target's own data.
-     Deliberately foggy — a clue never names a team, position or number value,
+     Deliberately foggy - a clue never names a team, position or number value,
      because earning those is what the five columns are for. Ordered vaguest
      first; each press reveals the next one down. FREE players get 1 clue per
      play; PRO is unlimited (same gating pattern as wordsearch's hint). */
@@ -551,23 +628,38 @@
     if(c.length<2) c.push("A name that comes up when fans argue about the greats.");
     return c;
   }
-  /* Roster-mode clues: vague hints built from the current player's live data
-     (nationality, experience, division, side of the ball, age, number). Never
-     names a team/position/number value — earning those is the board's job. */
+  /* Roster-mode clues: atmospheric riddles built from the current player's
+     live data. Never names a team / position / number VALUE - earning those
+     is the board's job - and never names a division either (a division name
+     leaks the sport and narrows to 4-5 teams in one line). Clues read as
+     lateral hints, not fact-cards. */
   function buildCluesRoster(t){
     var c=[], div=divisionOf(t), side=(t.sport==='NFL')?sideOf(t.pos):null, jn=jerseyOf(t);
-    if(t.nat && !/^(usa|united states)$/i.test(t.nat)) c.push("This player was born outside the United States.");
-    if(t.exp!=null && t.exp>=12) c.push("A grizzled veteran, well over a decade in the league.");
-    else if(t.exp!=null && t.exp<=1) c.push("One of the newer arrivals in the league.");
-    if(div) c.push("Suits up in the "+div+".");
-    if(side==='Defense') c.push("Earns a living on the defensive side of the ball.");
-    else if(side==='Special') c.push("A special-teams specialist.");
-    if(t.age!=null && t.age<=23) c.push("Still one of the younger faces around.");
-    else if(t.age!=null && t.age>=35) c.push("On the wrong side of 35 and still going.");
-    if(jn!=null && jn<=9) c.push("Wears a single-digit number.");
-    else if(jn!=null && jn>=90) c.push("The number on the jersey is way up in the 90s.");
-    if(c.length<2) c.push("A current "+t.sport+" player you'll find on an active roster.");
-    if(c.length<2) c.push("Check today's box scores and you might spot this one.");
+    if(t.nat){
+      var n=t.nat.toLowerCase();
+      if(/canada/.test(n)) c.push("Grew up further north than most of the league.");
+      else if(/mexico|dominic|venezu|colomb|cuba|puerto|panam|nicar/.test(n)) c.push("Learned the game far south of any of this league's markets.");
+      else if(/japan|korea|china|taiwan/.test(n)) c.push("A flight home from All-Star break crosses an ocean.");
+      else if(/australia|new zealand/.test(n)) c.push("Would need most of a day just to walk into their childhood gym.");
+      else if(!/^(usa|united states)$/.test(n)) c.push("The national anthem this player grew up hearing isn’t ours.");
+    }
+    if(t.exp!=null && t.exp>=12) c.push("Has outlasted more head coaches than most fans have season tickets.");
+    else if(t.exp!=null && t.exp<=1) c.push("Still learning which airport to sprint through on road trips.");
+    // atmospheric take on the division - no league or place named
+    if(div){
+      if(/east|atlantic/i.test(div)) c.push("Home tip-off shows up early on the coast-to-coast TV grid.");
+      else if(/west|pacific|northwest|southwest/i.test(div)) c.push("Home games run late enough that half the country is asleep.");
+      else if(/north|central/i.test(div)) c.push("Home crowds have wiped snow off their car more than once this year.");
+      else if(/south/i.test(div)) c.push("Home fans rarely need a jacket at kickoff.");
+    }
+    if(side==='Defense') c.push("Paid to spoil someone else’s highlight reel.");
+    else if(side==='Special') c.push("Only hits the field when possession is about to flip.");
+    if(t.age!=null && t.age<=23) c.push("Younger than most of the assistant coaches.");
+    else if(t.age!=null && t.age>=35) c.push("Older than the average bat boy’s dad.");
+    if(jn!=null && jn<=9) c.push("Wears a number a soccer captain would recognize.");
+    else if(jn!=null && jn>=90) c.push("Wears the kind of number linemen tend to hoard.");
+    if(c.length<2) c.push("Not the flashiest name, just the one you should’ve thought of first.");
+    if(c.length<2) c.push("Their name showed up in a recent box score if you were paying attention.");
     return c;
   }
   function cluesFor(t){ return (ROSTER_MODE?buildCluesRoster:buildClues)(t); }
@@ -671,6 +763,7 @@
     html+='</div>';
     slot.innerHTML=html;
     slot.classList.add('filled');
+    var b=document.querySelector('.board'); if(b) b.classList.add('hasfilled');
   }
 
   // ---- timer ----
@@ -682,7 +775,7 @@
   function updateLead(){
     var b=document.getElementById('sportBadge'); if(b) b.textContent=SPORT;
     var v=document.querySelector('.lead .v'); if(!v) return;
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
     var traits = ROSTER_MODE
       ? (SPORT==='NFL'
@@ -714,7 +807,7 @@
     updateLead();
   }
   // Resume an interrupted ranked attempt: rebuild today's deterministic target,
-  // then re-render the stored guesses and clues against it — no re-charge, no
+  // then re-render the stored guesses and clues against it - no re-charge, no
   // sounds, no animations. If the stored guesses already decided the game
   // (a hit, or all eight spent), finish immediately so the result is recorded.
   function resumeAttempt(r){
@@ -749,7 +842,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -767,26 +860,35 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), g:guesses.map(function(e){ return e.id; }), c:cluesUsed })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  var MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
   function finish(w){
     if(done) return; done=true; won=w; if(tick) clearInterval(tick);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       // streak counts a day you SOLVED it; a loss breaks the streak
       s.streak = w ? ((s.lastDone===y)?(s.streak||0)+1:1) : 0;
       s.bestStreak=Math.max(s.bestStreak||0, s.streak);
-      if(w){ s.wins=(s.wins||0)+1; }
+      if(w){ s.wins=(s.wins||0)+1; if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak); }
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('guess', w?guesses.length:null, w);
+    if(ARCHIVE && w && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, guesses.length, { higherIsBetter:false, label:'guesses' });
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    // skill tier by guesses used — instant dopamine on a win (becomes a live
+    // skill tier by guesses used - instant dopamine on a win (becomes a live
     // percentile once the leaderboard has a real distribution to rank against)
-    var TIER=['','Bullseye — first try! 🎯','Sniper — 2 guesses 🎯','Scout-level — 3 guesses 🔭','Sharp — 4 guesses','Solid — 5 guesses','Clutch — 6 guesses','Down to the wire — 7','Buzzer-beater — 8 ⏱'];
+    var TIER=['','Bullseye: first try! 🎯','Sniper: 2 guesses 🎯','Scout-level: 3 guesses 🔭','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8 ⏱'];
     document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
     (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');
@@ -797,6 +899,9 @@
     document.getElementById('mStreak').textContent=s.streak||0;
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
     document.getElementById('yourBest').textContent = s.bestStreak||0;
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
 
     if(w && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
@@ -810,13 +915,13 @@
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', function(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
     var head='Run The Arcade · Guess the Player\n'+(won?(guesses.length+'/'+MAX):'X/'+MAX)+' · '+fmt(elapsed)+'\n';
-    var txt=head+grid+'\nrunthe.gg/arcade/';
+    var txt=head+grid+'\nrunthe.gg/arcade/guess';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -825,7 +930,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
@@ -889,10 +994,10 @@
   }
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
-      var lab = m.k==='all' ? 'All' : m.label;
+      var lab = m.k==='all' ? 'Random' : m.label;   // "Random" reads clearer than "All" for the mystery-player game
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
     }).join('');
     [].forEach.call(el.querySelectorAll('button'), function(b){ b.addEventListener('click', function(){ switchMode(b.dataset.m); }); });
@@ -900,13 +1005,13 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();   // leaving mid-game abandons this version's attempt
+    if(!ARCHIVE && !done) saveResume();   // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderSwitcher();
     bootCurrentMode();
-    toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
+    toast((mode==='all'?'Random':(RTGMode.sportOf(mode)||mode))+' version');
   }
   function bootCurrentMode(){
     var saved=load();

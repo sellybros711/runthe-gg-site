@@ -282,7 +282,6 @@
     background-size:auto, auto, 150% 150%;
     background-position:50% 50%, 50% 50%, 50% 50%;
     animation:dyeDrift 22s ease-in-out infinite;}
-  .hero p{margin-left:auto; margin-right:auto;}
   /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
      makes it look printed. Sized in px so it stays a screen rather than
      scaling into stripes on a wide viewport. */
@@ -344,7 +343,17 @@
   .tagline{font-family:var(--ui); font-size:19px; letter-spacing:.5px; text-transform:uppercase;
     line-height:1.05; margin:0 0 8px;}
   @media (max-width:420px){ .tagline{font-size:17px;} }
-  .hero p{margin:0; font-size:14px; line-height:1.45;}
+  /* THE SHORTHAND IS WHY THIS HAS TO BE ONE RULE.
+     The blurb is capped at 32ch and centred by auto side margins, and that
+     was declared in its own `.hero p{margin-left:auto; margin-right:auto}`
+     two hundred lines up. This rule then said `margin:0`, same specificity
+     and later in the file, so the shorthand quietly reset both sides to zero
+     and the sentence sat 10px left of the wordmark above it. Nothing errors,
+     nothing looks broken in isolation, and text-align:center still reported
+     `center` because the TEXT was centred inside a box that was not.
+     Both declarations now live here, so a future `margin:` cannot land
+     between them. */
+  .hero p{margin:0 auto; font-size:14px; line-height:1.45;}
 
   /* Three columns even on a phone: the copy is short, and stacked they cost
      three times the height for the same three sentences. */
@@ -395,6 +404,29 @@
      font metrics, because the metrics are what disagree. */
   .steps span{font-size:13.5px; line-height:1.45; color:var(--ink); font-weight:600;
     margin-top:-3.4px;}
+
+  /* The coming-soon card is the same object as a band card with the ink
+     turned down, so it reads as a sibling in the list rather than as an ad
+     dropped underneath it. */
+  /* The count wraps as one unit, so it never breaks mid-phrase into a
+     dangling "were at" on its own line. */
+  .band-meta .mine{color:var(--tealT); font-weight:900; white-space:nowrap;}
+  .band.soon{border-style:dashed; box-shadow:none;}
+  .band.soon .band-hd h2{font-size:26px; color:var(--mut);}
+  .band.soon .band-meta{margin-bottom:11px;}
+
+  .reqform{display:flex; flex-direction:column; gap:4px;}
+  .reqform label{font-size:11px; font-weight:900; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--dim); margin-top:8px;}
+  .reqform label i{font-style:normal; font-weight:700; letter-spacing:.6px;
+    text-transform:none; opacity:.8;}
+  .reqform input, .reqform textarea{width:100%; font:inherit; font-size:15px;
+    font-weight:600; color:var(--ink); background:var(--card2);
+    border:1px solid var(--line2); border-radius:var(--r-sm); padding:10px 12px;
+    resize:vertical;}
+  .reqform input:focus, .reqform textarea:focus{outline:2px solid var(--teal);
+    outline-offset:1px; border-color:var(--teal);}
+  .reqform .respin-acts{margin-top:14px;}
 
   .tryout{margin:var(--sp-3) 0 0; text-align:center;}
   .tryout .btn{width:auto; padding:8px 14px; font-size:12.5px;}
@@ -535,6 +567,17 @@
     letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
     padding:1px 5px; border-radius:4px;
     background:color-mix(in srgb,var(--gold) 18%, transparent);}
+  /* The mark a fan put on this show themselves. Dyed, because it is the one
+     thing on the screen that came from them rather than from the archive. */
+  .werethere{display:inline-block; vertical-align:middle; margin-left:9px;
+    font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.3px;
+    text-transform:uppercase; color:#071426; padding:3px 7px; border-radius:99px;
+    background:var(--dye-line);}
+  .wtbtn{margin-top:7px; padding:0; background:none; border:0; font:inherit;
+    font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--dim);
+    text-decoration:underline; text-underline-offset:3px; cursor:pointer;}
+  .wtbtn:hover{color:var(--ink);}
+  .wtbtn[aria-pressed="true"]{color:var(--mut);}
   .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
   .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
 
@@ -822,16 +865,59 @@
 
   /* ---------------- result ---------------- */
   .result{max-width:600px; margin:0 auto;}
-  .scorebox{text-align:center; padding:26px 20px 22px; margin-bottom:16px;}
-  .scorebox .n{font-family:var(--hero); font-size:clamp(64px,17vw,104px); line-height:.9;
-    font-variant-numeric:tabular-nums;}
+  /* THE SCORE IS THE POSTER, and the poster is not a card.
+     It was a white rounded box with a shadow, floating above two more of them,
+     which made the last screen of a night look like a receipt. It is now the
+     same full-bleed band the top bar is: edge to edge, no border, and a dye
+     rule under it.
+
+     NO DYE FIELD BEHIND IT, and that is the note below about grading rather
+     than an oversight. The number is green, gold or red because those mean
+     something, and a five-colour field behind a colour-coded number destroys
+     both: the dye stops meaning identity and the grade stops being legible.
+     The dye appears here the one way it can, as the rule, which is exactly how
+     it appears in the header. */
+  .scorebox{position:relative; text-align:center; border:0; border-radius:0;
+    box-shadow:none; background:transparent;
+    margin:0 calc(var(--gut) * -1) var(--sp-2);
+    padding:var(--sp-2) var(--gut) var(--sp-3);}
+  /* ONE STATIC CYCLE, not the header's two moving ones. The header's rule
+     animates because it is chrome you look past; this one closes a screen you
+     are reading, and a crawling rainbow under a final score is a distraction
+     with nothing to say. --dye-line is a 180deg gradient, so the sweep is
+     written out here at 90deg rather than reused. */
+  .scorebox:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+      var(--teal) 75%, var(--violet) 100%);}
+  .scorebox .n{font-family:var(--hero); font-size:clamp(76px,23vw,124px); line-height:.86;
+    letter-spacing:.01em; font-variant-numeric:tabular-nums;}
 
   /* A score's colour is a rating and nothing else — green good, yellow middling,
      red weak — so no tie dye goes anywhere near one. The dye stays on identity
      (the wordmark, the top rule), where it has no number to contradict. */
-  .grade-hot{color:var(--greenT);}
-  .grade-warm{color:var(--goldT);}
-  .grade-cold{color:var(--redT);}
+  /* THEIR OWN TOKENS, because a grade is the only thing on the page that is
+     read against the PAGE and not against a card. Both score numbers now sit on
+     a full-bleed band, and --bg in the light theme is lighter than --card is
+     dark, so the same green that is comfortable on a chip is not comfortable
+     here. Measured by compositing the glyph over the real ground:
+
+               was (on --card)   on --bg    now
+       green      3.33:1          2.93:1    4.53:1
+       gold       4.07:1          3.58:1    4.53:1
+       red        5.40:1          4.75:1    4.75:1
+
+     2.93 fails even the 3:1 large-text floor, on the largest thing in the game.
+     Red already cleared 4.5 and is left alone, so the three stay a set.
+     The dark theme needs none of this: it measures 9.4, 10.1 and 6.3. */
+  :root{ --gradeHot:var(--greenT); --gradeWarm:var(--goldT); --gradeCold:var(--redT); }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --gradeHot:#127F3A; --gradeWarm:#926607; }
+  }
+  :root[data-theme="light"]{ --gradeHot:#127F3A; --gradeWarm:#926607; }
+  .grade-hot{color:var(--gradeHot);}
+  .grade-warm{color:var(--gradeWarm);}
+  .grade-cold{color:var(--gradeCold);}
   /* Four categories, two rows on a phone rather than four squeezed columns. */
   /* The ceiling. Deliberately below the score and above the breakdown: it is
      the second thing you look at, not the first. */
@@ -885,11 +971,6 @@
   .sheet-hd .x{font-size:12px; font-weight:800; color:var(--dim); background:none; border:0;
     padding:4px 2px;}
 
-  .slot.tappable{width:100%; text-align:left; border:0; background:transparent;
-    font-family:inherit; cursor:pointer;}
-  .slot.tappable:hover{background:var(--card2);}
-  .slot.tappable:after{content:'›'; color:var(--dim); font-size:17px; margin-left:2px;}
-
 
   /* ---------------- set clocks ---------------- */
   .setblk{padding:10px 0 4px; border-bottom:1px solid var(--line);}
@@ -924,6 +1005,54 @@
   .rs-note{font-size:11.5px; font-weight:700; color:var(--mut); margin:5px 0 3px;}
   .rs-note b{color:var(--ink);}
   .rs-empty{font-size:12px; color:var(--dim); font-weight:700; padding:6px 0;}
+
+  /* ---------------- the scorecard's setlist ----------------
+     THE SAME SHEET ROW THE DRAFT USES, and getting here took undoing two
+     things that were actively fighting the rest of the game.
+
+     THE TITLES WERE COLOURED. accentOf() returns a hue per tag, and it was
+     being spent on the song name, so a seventeen-song scorecard printed its
+     titles in six saturated colours at once: purple, red, green, blue,
+     magenta. Nothing about a colour there is readable as meaning, and it
+     competes with the one thing on this page that IS colour with a meaning,
+     which is the dye. The draft list already had the answer: the accent is a
+     3px bar on the left edge and the title is ink.
+
+     THE ROLE WAS A COLUMN. A fixed 60px gutter down the left, and eleven of
+     seventeen rows filled it with the word MID. That is the default and it is
+     not a fact worth a column, let alone eleven repetitions of one; it also
+     pushed every long title onto a second line. The role is now a chip beside
+     the title and only when it says something. */
+  .rrow{display:flex; align-items:baseline; gap:9px; width:100%; text-align:left;
+    padding:9px 4px 9px 11px; border:0; border-bottom:1px solid var(--line);
+    background:transparent; font-family:inherit; position:relative; cursor:pointer;
+    transition:background var(--t-fast) var(--ease);}
+  .rrow:before{content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px;
+    background:var(--acc, transparent); border-radius:2px;}
+  .rrow:last-child{border-bottom:0;}
+  .rrow:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
+  .rr-main{flex:1; min-width:0;}
+  .rr-t{font-size:15px; font-weight:800; line-height:1.25; color:var(--ink);}
+  /* The role, when it is one worth naming. Same chip the draft list uses for a
+     song's tags, so the two lists read as one vocabulary. */
+  .rr-role{display:inline-block; margin-left:7px; vertical-align:1px;
+    font-size:9.5px; font-weight:900; letter-spacing:1.1px; text-transform:uppercase;
+    color:var(--dim); border:1px solid var(--line2); border-radius:99px;
+    padding:2px 6px;}
+  .rr-len{font-size:12px; font-weight:700; color:var(--dim);
+    font-variant-numeric:tabular-nums; flex:0 0 auto;}
+  .rr-pts{font-family:var(--hero); font-size:17px; color:var(--ink);
+    font-variant-numeric:tabular-nums; flex:0 0 auto; min-width:2.2em; text-align:right;}
+  /* WHAT THE SEGUE WAS WORTH, and nothing else.
+     It started as a second line reading "> Echo of a Rose +32" under the title,
+     which is how the DRAFT list has to say it, because there the next song does
+     not exist yet. Here it does: it is the very next row. So the line spent a
+     whole row of vertical space restating the row beneath it.
+     The chevron after the title is already the notation every setlist uses for
+     this, so all that is left to say is the number. */
+  .rr-seg{display:inline-block; margin-left:5px; vertical-align:1px;
+    font-size:10.5px; font-weight:900; letter-spacing:.3px;
+    color:var(--violetT); font-variant-numeric:tabular-nums;}
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
   .hud-btns{display:flex; gap:6px; align-items:center; flex:0 0 auto;}
@@ -1004,30 +1133,59 @@
     color:var(--mut); font-style:italic;}
 
   /* ---------------- the show playback ---------------- */
-  .showsim{padding-top:6px;}
-  .sim-head{position:sticky; top:52px; z-index:20; padding:12px 16px; text-align:center;
-    margin-bottom:12px;}
-  .sim-score{font-family:var(--hero); font-size:44px; line-height:1;
+  .showsim{padding-top:2px;}
+  /* THE RUNNING SCORE IS THE SAME BAND THE FINAL ONE IS, and for the same
+     reason: it was a floating rounded card pinned under the header, so two
+     stacked cards followed you down the page while the night played. Full
+     bleed, opaque, with the dye rule closing it, so it reads as a second row
+     of chrome rather than as content that will not scroll away.
+
+     OPAQUE, not translucent. It is sticky over a list that scrolls under it,
+     and anything less than a solid ground puts song titles through the score. */
+  .sim-head{position:sticky; top:52px; z-index:20; text-align:center;
+    border:0; border-radius:0; box-shadow:none; background:var(--bg);
+    margin:0 calc(var(--gut) * -1) var(--sp-2);
+    padding:10px var(--gut) 11px;}
+  .sim-head:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
+    background-image:linear-gradient(90deg,
+      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+      var(--teal) 75%, var(--violet) 100%);}
+  .sim-score{font-family:var(--hero); font-size:42px; line-height:1;
     font-variant-numeric:tabular-nums; transition:color var(--t-slow) var(--ease);}
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .sim-feed{display:flex; flex-direction:column; gap:8px;}
-  .sim-set{font-family:var(--ui); font-size:15px; letter-spacing:2px; text-transform:uppercase;
-    color:var(--dim); padding:10px 0 2px; border-top:1px solid var(--line);}
-  .sim-song{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
-    padding:10px 13px; box-shadow:var(--shadow);
+  /* THE FEED IS A SETLIST BEING WRITTEN, so it is the same sheet the draft and
+     the scorecard use. It was seventeen rounded, shadowed cards stacked down
+     the page: the one card pattern the rest of the game had already stopped
+     using, and at this length it reads as a list of receipts rather than as a
+     night. The rows keep their entrance animation, which is the whole point of
+     the screen. */
+  .sim-feed{display:flex; flex-direction:column;}
+  .sim-set{font-size:11px; font-weight:900; letter-spacing:1.9px; text-transform:uppercase;
+    color:var(--dim); padding:16px 0 6px; margin-top:4px;
+    border-top:1px solid var(--line);}
+  .sim-feed > .sim-set:first-child{border-top:0; margin-top:0; padding-top:4px;}
+  .sim-song{position:relative; padding:10px 4px 10px 11px;
+    border-bottom:1px solid var(--line);
     animation:simIn var(--t-base) var(--ease) both;}
+  .sim-song:before{content:''; position:absolute; left:0; top:12px; bottom:12px; width:3px;
+    background:var(--acc, transparent); border-radius:2px;}
   @keyframes simIn{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
   .sim-row{display:flex; align-items:baseline; gap:9px;}
-  .sim-nm{font-size:15.5px; font-weight:800; min-width:0; flex:1;}
+  .sim-nm{font-size:15px; font-weight:800; min-width:0; flex:1;}
   /* How long the song ran is half of every decision the player just made, so
      it belongs on the row that reports what the decision was worth. */
-  .sim-len{font-size:12.5px; font-weight:700; color:var(--dim); flex:0 0 auto;
+  .sim-len{font-size:12px; font-weight:700; color:var(--dim); flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
-  .sim-pts{font-family:var(--hero); font-size:19px; color:var(--ink); flex:0 0 auto;}
+  .sim-pts{font-family:var(--hero); font-size:18px; color:var(--ink); flex:0 0 auto;
+    font-variant-numeric:tabular-nums;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
   .sim-badge{margin-top:6px;}
-  .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;}
+  /* The segue line keeps its violet, because it is a SENTENCE and the dye is
+     unreadable run through one. The mark in front of it is the drawn chevron,
+     same as everywhere else. */
+  .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;
+    display:flex; align-items:baseline; gap:3px;}
   .sim-seg b{color:var(--ink);}
   .sim-time{font-size:12px; font-weight:700; color:var(--mut); padding:2px 2px 6px;}
   .sim-time b{color:var(--ink);}
@@ -1160,6 +1318,137 @@
     font-weight:800; letter-spacing:2.2px; text-transform:uppercase; color:var(--dim);
     margin:0 0 6px; padding-top:16px; border-top:1px solid var(--line);}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
+
+  /* ---------------- accounts, the board and the profile ----------------
+     All of this is OPTIONAL. Nothing below is on the path between opening the
+     page and finishing a show: if supabase never loads, #meBtn stays hidden,
+     the board says it is offline, and the game is exactly what it was. */
+  /* THERE IS NO BARE `.pill` RULE, which is what this was written against.
+     Every shared property lives on `.pill.site`, so `.pill.me` inherited no
+     radius, no padding and no border at all: the account chip rendered as a
+     sharp-cornered box, which next to two real pills reads as a validation
+     error rather than as a control. Declared in full here rather than by
+     inventing a base rule, because `.pill.site` shrinks its own padding under
+     380px and this one does not want to.
+     125px, not 120: measured, a 16-character name ellipsised one character
+     early at 120 and the extra 5px buys the whole word back on the names that
+     were only just missing. */
+  .pill.me{flex:0 0 auto; font-size:11px; font-weight:800; letter-spacing:.04em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:var(--mut); background:var(--card2); cursor:pointer; max-width:125px;
+    border:1px solid var(--line2); border-radius:99px; padding:7px 11px;}
+  .pill.me:hover{border-color:var(--teal); color:var(--tealT);}
+  .pill.me:focus-visible{outline:2px solid var(--teal); outline-offset:3px;}
+  /* THE SWEEP RUNS ALONG THE SHAPE, and this is the third time that has been
+     the lesson. --dye-line is a 180deg gradient, built for a tall thin arrow;
+     on a chip four times wider than it is tall it put coral across the top
+     edge and violet across the bottom, which is not a dye, it is a red box
+     with a purple underline. Written out at 90deg so the five colours run the
+     long way, the way the header rule does. */
+  .pill.me.in{color:var(--ink); border-color:transparent;
+    background:linear-gradient(var(--card2),var(--card2)) padding-box,
+      linear-gradient(90deg, var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
+        var(--teal) 75%, var(--violet) 100%) border-box;}
+
+  /* The two ways into the account, side by side under the bands. Not in the
+     hero: a first visit is here to press one button and it is not this one. */
+  .homelinks{display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin:var(--sp-2) 0 0;}
+  .homelinks .btn{font-size:13.5px; padding:11px 12px;}
+
+  /* ---- the board ---- */
+  /* Off the top bar. Every other screen opens with a hero or a card that
+     carries its own space; these two open with the heading itself. */
+  .bhd{display:flex; align-items:flex-end; justify-content:space-between;
+    gap:12px; margin:var(--sp-2) 0 var(--sp-1);}
+  .bhd h2{font-family:var(--hero); font-size:clamp(30px,9vw,42px); margin:0;
+    text-transform:uppercase; letter-spacing:.02em; line-height:.94;}
+  /* Two axes and three windows, as two rows of segmented control. Buttons and
+     not a <select>, because the whole point of the percentage axis is that a
+     player has to SEE it to know it is there. */
+  .segbar{display:flex; gap:4px; padding:4px; margin:0 0 var(--sp-1);
+    background:var(--card2); border:1px solid var(--line); border-radius:var(--r-md);}
+  .segbar button{flex:1; padding:8px 6px; border:0; border-radius:calc(var(--r-md) - 4px);
+    background:transparent; color:var(--dim); font-weight:800; font-size:12px;
+    letter-spacing:.4px; cursor:pointer; white-space:nowrap;
+    transition:background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);}
+  .segbar button:hover{color:var(--ink);}
+  .segbar button[aria-pressed="true"]{background:var(--card); color:var(--ink);
+    box-shadow:0 1px 3px rgba(0,0,0,.14);}
+  .axnote{font-size:12px; color:var(--dim); font-weight:600; line-height:1.5;
+    margin:0 0 var(--sp-2);}
+
+  .brow{display:grid; grid-template-columns:34px 1fr auto; gap:10px;
+    align-items:center; padding:11px 2px; border-bottom:1px solid var(--line);}
+  .brow:last-child{border-bottom:0;}
+  .brow .pl{font-family:var(--hero); font-size:17px; color:var(--dim);
+    text-align:right; font-variant-numeric:tabular-nums;}
+  .brow.top1 .pl, .brow.top2 .pl, .brow.top3 .pl{color:var(--ink);}
+  .brow .who{min-width:0;}
+  .brow .nm{font-weight:900; font-size:14.5px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;}
+  .brow .sub{font-size:11.5px; color:var(--dim); font-weight:600; margin-top:2px;}
+  .brow .val{font-family:var(--hero); font-size:20px; text-align:right;
+    font-variant-numeric:tabular-nums; line-height:1;}
+  .brow .val i{display:block; font-family:var(--ui); font-style:normal;
+    font-size:10.5px; letter-spacing:1.4px; color:var(--dim); font-weight:800;
+    text-transform:uppercase; margin-top:3px;}
+  /* YOUR OWN ROW, wherever it lands. Dyed rather than tinted, because the dye is
+     the one thing on this page that means "this is you and this is the brand". */
+  /* NO RANK COLUMN, for a list that has no ranking. The attendance rows are one
+     per band, not a table of places, and an empty first cell reads as a missing
+     number rather than as a column that does not apply. */
+  .brow.plain{grid-template-columns:1fr auto;}
+  .brow.you{border-left:3px solid transparent; padding-left:8px; margin-left:-11px;
+    background:linear-gradient(var(--card),var(--card)) padding-box, var(--dye-line) border-box;}
+  .bempty{padding:26px 4px; text-align:center; color:var(--dim);
+    font-weight:600; font-size:13.5px; line-height:1.6;}
+
+  /* ---- the profile ---- */
+  .pstats{display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--line); border-radius:var(--r-md); overflow:hidden;
+    margin:0 0 var(--sp-2);}
+  .pstat{background:var(--card); padding:13px 8px; text-align:center;}
+  .pstat b{display:block; font-family:var(--hero); font-size:23px; line-height:1;
+    font-variant-numeric:tabular-nums;}
+  .pstat span{display:block; font-size:10px; font-weight:800; letter-spacing:1.3px;
+    text-transform:uppercase; color:var(--dim); margin-top:5px;}
+  .plist{margin:0;}
+  .pcards{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 0;}
+  .pcard{font-size:10.5px; font-weight:900; letter-spacing:1.1px; text-transform:uppercase;
+    padding:4px 8px; border-radius:99px; border:1px solid var(--line2); color:var(--dim);}
+  .pcard.got{border-color:transparent; color:#0B1220;
+    background:var(--dye-line); background-size:100% 100%;}
+
+  /* ---- the account sheet ---- */
+  .authf{display:grid; gap:9px; margin:2px 0 0;}
+  .authf input{width:100%; padding:12px 13px; font:inherit; font-size:15px;
+    color:var(--ink); background:var(--card2); border:1px solid var(--line2);
+    border-radius:var(--r-md);}
+  .authf input:focus{outline:none; border-color:var(--teal);}
+  .authswap{margin:12px 0 0; font-size:12.5px; color:var(--dim); font-weight:600;
+    text-align:center;}
+  .authswap button{background:none; border:0; padding:0; font:inherit;
+    font-weight:800; color:var(--tealT); cursor:pointer; text-decoration:underline;}
+  .autherr{font-size:12.5px; font-weight:700; color:var(--red); margin:2px 0 0;}
+  .authok{font-size:12.5px; font-weight:700; color:var(--tealT); margin:2px 0 0;}
+  .authwhy{font-size:12px; color:var(--dim); font-weight:600; line-height:1.55;
+    margin:0 0 12px;}
+  .linkbtn{background:none; border:0; padding:0; font:inherit; font-weight:800;
+    color:var(--tealT); cursor:pointer; text-decoration:underline;}
+
+  /* The name for this game, inside the signed-in panel. Set off by a rule
+     rather than a box: it is one field, and a card inside a sheet is a third
+     level of container for a single input. */
+  /* The bottom margin keeps the form's own actions off the navigation buttons
+     under them: without it "Save name" sits flush against "Your shows" and the
+     three read as one stack of four. */
+  .namebox{margin:14px 0 16px; padding-top:14px; border-top:1px solid var(--line);}
+  .namebox .eyebrow{margin-bottom:8px;}
+  .namehint{font-size:11.5px; font-weight:600; color:var(--dim); line-height:1.55;}
+  .namehint b{color:var(--mut); font-weight:800;}
+  .nameacts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;}
+  .nameacts .btn{width:auto;}
 </style>
 </head>
 <body>
@@ -1171,6 +1460,10 @@
     </a>
     <div class="hdr-r">
     <a class="pill site" href="/">RunThe<i>.GG</i></a>
+    <!-- WHO YOU ARE, and the one control that opens everything the account is for.
+         Hidden until auth.js has booted, because a button that opens a sheet
+         saying accounts are unavailable is worse than no button. -->
+    <button class="pill me" id="meBtn" type="button" hidden>Sign in</button>
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light and dark theme">
       <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.1 5.1l1.4 1.4M17.5 17.5l1.4 1.4M18.9 5.1l-1.4 1.4M6.5 17.5l-1.4 1.4"/></svg>
       <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.3 8.3 0 1 0 10.5 10.5z"/></svg>
@@ -1271,7 +1564,61 @@ setTimeout(function(){
 <div class="sheet" id="respinSheet" role="dialog" aria-modal="true" aria-label="Confirm respin">
   <div class="inner" id="respinInner"></div>
 </div>
+
+<!-- REQUEST A BAND. There is no backend here: the whole game is a static page
+     reading a CSV, and the rest of the site already sends mail the same way
+     (contact.html links the identical address). The form composes the message
+     and hands it to the mail client, so the sender is a real person's own
+     address and a reply goes back to them rather than into a void. -->
+<!-- A generic confirm, so a destructive tap always asks. The respin sheet
+     already did this for one action; the logo needed the same and there was
+     no shared thing to reach for. -->
+<div class="sheet" id="askSheet" role="dialog" aria-modal="true" aria-labelledby="askHd">
+  <div class="inner" id="askInner"></div>
+</div>
+
+<!-- THE ACCOUNT. Rendered by JS rather than written out here, because it is four
+     different panels (sign in, sign up, choose a name, signed in) and one of them
+     is chosen by a state this page does not know until supabase answers. -->
+<div class="sheet" id="authSheet" role="dialog" aria-modal="true" aria-labelledby="authHd">
+  <div class="inner" id="authInner"></div>
+</div>
+
+<div class="sheet" id="bandSheet" role="dialog" aria-modal="true" aria-labelledby="bandSheetHd">
+  <div class="inner">
+    <div class="grab"></div>
+    <div class="respin-hd" id="bandSheetHd">Request a band</div>
+    <div class="respin-why">Segue needs a band with a public archive of real
+      setlists and running times. Tell us who, and where their shows are listed.</div>
+    <form id="bandForm" class="reqform">
+      <label for="reqName">Band</label>
+      <input id="reqName" name="band" type="text" required maxlength="80"
+        placeholder="Who should we add?" autocomplete="off" />
+      <label for="reqWhy">Anything else <i>(optional)</i></label>
+      <textarea id="reqWhy" name="why" rows="3" maxlength="500"
+        placeholder="A link to their setlist archive helps most."></textarea>
+      <div class="respin-acts">
+        <button class="btn primary" type="submit">Send request</button>
+        <button class="btn" type="button" id="reqCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
+
+<!-- ACCOUNTS AND THE BOARD, AND ALL THREE ARE OPTIONAL.
+     Loaded after the page rather than in the head, and never awaited by anything on
+     the way to a finished show. If the CDN is blocked, supabase-js never defines
+     window.supabase, SEGUE_AUTH.boot() answers false, the account button stays
+     hidden and the board reports itself offline. The game is a static page reading a
+     CSV and that has to stay true when the network is not there.
+
+     The two local files are cache-versioned like every other module here, so an
+     HTML change can never be served against a stale script. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
+  crossorigin="anonymous" defer></script>
+<script src="/setlist/auth.js?v=38" defer></script>
+<script src="/setlist/board.js?v=38" defer></script>
 
 <script type="module">
 import {
@@ -1282,8 +1629,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=34';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=34';
+} from './scoring.js?v=38';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=38';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1422,6 +1769,10 @@ const S = {
   error: '',
   result: null,
   revealTimer: null,
+  // Set by recordShow() once the night is over. Null until then, and null
+  // forever if there is no board to talk to.
+  posted: null,
+  ranks: null,
 };
 
 const app = document.getElementById('app');
@@ -1440,12 +1791,19 @@ function renderHome(){
   const real = BANDS.filter(b => !b.sample);
   const test = BANDS.filter(b => b.sample);
 
-  const card = b => `
+  /* Your own shows, counted on the band you marked them against. It only
+     appears once there is one, so a first visit is not asked to care about a
+     feature it has not met yet. */
+  const card = b => {
+    const mine = attendedCount(b.id);
+    return `
       <section class="card band">
         <div class="band-hd"><h2>${esc(b.label)}</h2></div>
-        <div class="band-meta">${esc(b.note)}</div>
+        <div class="band-meta">${esc(b.note)}${mine
+          ? ` <b class="mine">&middot; ${mine} you were at</b>` : ''}</div>
         <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
       </section>`;
+  };
 
   /* The button comes before the how-it-works, not after. A returning player
      wants the button; a new one gets a single sentence above it and the rules
@@ -1455,11 +1813,23 @@ function renderHome(){
       <div class="eyebrow">RunThe.GG presents</div>
       <h1><span class="accent">Segue</span></h1>
       <div class="tagline">The Setlist Builder Game</div>
-      <p>Build the night you wish they'd played.</p>
+      <p>Choose a band. Build the show you've always dreamed of.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
-    <div class="bands">${real.map(card).join('')}</div>
+    <div class="bands">${real.map(card).join('')}
+      <section class="card band soon">
+        <div class="band-hd"><h2>More bands coming soon</h2></div>
+        <div class="band-meta">One band is in the game today. Tell us who should be next.</div>
+        <button class="btn big ghost" type="button" id="reqBand">Request a band</button>
+      </section></div>
+
+    <!-- UNDER THE BANDS, not in the hero. A first visit is here to press one
+         button and it is not either of these. -->
+    <div class="homelinks">
+      <button class="btn ghost" type="button" data-go="board">Leaderboard</button>
+      <button class="btn ghost" type="button" data-go="profile">Your shows</button>
+    </div>
 
     <section class="how">
       <h3>How it works</h3>
@@ -1847,10 +2217,16 @@ function renderDraft(){
     <div class="board">
       <div>
         <div class="card showcard">
-          <div class="d">${esc(fmtDate(show.show_date))}</div>
+          <div class="d">${esc(fmtDate(show.show_date))}${
+            wasThere(S.band.id, show.show_id)
+              ? '<span class="werethere" title="You marked this show as one you were at">I was here</span>' : ''}</div>
           <div class="v">${esc(show.venue || '')}${show.run
             ? `<span class="night">Night ${show.run.night} of ${show.run.of}</span>` : ''}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
+          <button class="wtbtn" type="button" id="wereThereBtn"
+            aria-pressed="${wasThere(S.band.id, show.show_id)}"
+            data-show="${esc(String(show.show_id))}">${
+              wasThere(S.band.id, show.show_id) ? 'Remove from your shows' : 'I was at this show'}</button>
         </div>
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
@@ -1932,12 +2308,57 @@ function songBreakdownHTML(perf, sc, opts = {}){
     </div>`;
 }
 
+/* WHERE THIS SHOW LANDED, or nothing at all.
+ *
+ * Silent when there is no board to ask. An offline leaderboard is not news to
+ * somebody who just finished a show, and a card reading "could not reach the
+ * board" under their score is a worse ending than no card. The one thing worth
+ * saying out loud is the thing they can act on: a guest run is on the board but
+ * not on the LIST, and signing in fixes that. */
+function rankCardHTML(){
+  const rk = S.ranks && S.ranks.all;
+  if (!rk && !S.posted) return '';
+  const line = rk
+    ? `<div class="ceil-row">
+        <div class="ceil-n">#${rk.rank}</div>
+        <!-- ON THE BOARD, not "drafted". ranks() counts named shows only, which
+             is the same set the list shows, so saying "drafted" would put this
+             show's own total against a number that does not include the guest
+             shows or, until it is claimed, this one. -->
+        <div class="ceil-say">of ${rk.total} show${rk.total === 1 ? '' : 's'}
+          on the ${esc(S.band.label)} board${
+          S.ranks.day ? `. <b>#${S.ranks.day.rank}</b> today.` : '.'}</div>
+      </div>`
+    : '<div class="ceil-fine">Recorded.</div>';
+  return `<div class="card ceiling">
+    <div class="ceil-lbl">On the board</div>
+    ${line}
+    ${ME.signedIn
+      ? '<div class="ceil-fine">Under your name.</div>'
+      : `<div class="ceil-fine">This one went up as Anonymous. The list only
+          shows named shows. <button class="linkbtn" type="button"
+          id="rankSignIn">Sign in</button> and it is yours.</div>`}
+  </div>`;
+}
+
 function renderResult(){
   const r = S.result;
   let n = 0;
   const idx = new Map();   // flat index -> {perf, score} for the detail sheet
   r.perSet.forEach(set => set.forEach(x => idx.set(n++, x)));
   S._flat = idx;
+
+  /* WHICH ROWS ACTUALLY SEGUED, keyed "<set>:<index>". scoreShow() already
+     worked this out and the scoresheet already prints the list; this puts the
+     same fact back into the running order, which is the shape a setlist is
+     read in. */
+  const segFrom = new Map(r.segues.map(s => [`${s.set}:${s.from}`, s]));
+
+  /* MID IS NOT WORTH SAYING. roleAt() calls everything between the opener and
+     the closer "Mid", and on a seventeen-song night that is eleven identical
+     chips. The roles that earned their place are the ones a player aimed at. */
+  const roleChip = name => (/^mid$/i.test(name) ? '' :
+    `<span class="rr-role">${esc(name)}</span>`);
 
   const setBlocks = r.perSet.map((set, i) => {
     const t = r.time[i];
@@ -1952,21 +2373,27 @@ function renderResult(){
         <div class="bar ${t.ratio >= 0.93 ? 'good' : t.ratio < 0.8 ? 'bad' : ''}">
           <span style="width:${Math.min(100, t.ratio * 100)}%"></span></div>
         <div class="rs-note">${esc(t.note)} <b>+${t.points}</b></div>
-        ${set.length ? set.map((x, j) => `
-          <button class="slot filled tappable" type="button" data-peek="${k + j}"
+        ${set.length ? set.map((x, j) => {
+          const seg = segFrom.get(`${i}:${j}`);
+          return `
+          <button class="rrow" type="button" data-peek="${k + j}"
             style="--acc:${accentOf(x.perf).v}">
-            <span class="nm">${esc(x.role.name)}</span>
-            <span class="val">${esc(x.perf.song)}</span>
-            <span class="len">${fmtClock(lenOf(x.perf))}</span>
-            <span class="pts">${x.score.subtotal}</span>
-          </button>`).join('')
+            <span class="rr-main">
+              <span class="rr-t">${esc(x.perf.song)}${
+                seg ? `<i class="segout"></i><span class="rr-seg">+${seg.points}</span>` : ''}${
+                roleChip(x.role.name)}</span>
+            </span>
+            <span class="rr-len">${fmtClock(lenOf(x.perf))}</span>
+            <span class="rr-pts">${x.score.subtotal}</span>
+          </button>`;
+        }).join('')
           : '<div class="rs-empty">Nothing played.</div>'}
       </div>`;
   }).join('');
 
   app.innerHTML = `
     <div class="result">
-      <div class="card scorebox">
+      <div class="scorebox">
         <div class="eyebrow">Final score</div>
         <div class="n" id="scoreN">0</div>
         <div class="headline">&ldquo;${esc(r.headline)}&rdquo;</div>
@@ -2005,6 +2432,8 @@ function renderResult(){
               ? ': ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
               : ''}.</div>
       </div>` : ''}
+
+      ${rankCardHTML()}
 
       <div class="breakdown">
         <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
@@ -2143,6 +2572,405 @@ function askRespin(){
   document.getElementById('respinSheet').classList.add('on');
 }
 function closeRespin(){ document.getElementById('respinSheet').classList.remove('on'); }
+/* WERE YOU THERE.
+ *
+ * A fan's own shows are the most interesting thing they could bring to this
+ * game, and the archive already keys every show by an id, so marking one is a
+ * set of ids and nothing more.
+ *
+ * LOCAL FIRST, AND LOCAL IS THE SOURCE OF TRUTH ON THIS DEVICE. It works signed
+ * out, on first visit, with no round trip. An account does not take the list
+ * over, it carries it: signing in MERGES this list with the one on the server
+ * (segue_sync_attended) and writes the union back here. Both sides are shows a
+ * real person marked, and there is no version of "resolving" a conflict that
+ * should lose one of them.
+ *
+ * Keyed per band, because show ids are only unique inside one archive.
+ */
+const WERE_THERE_KEY = 'segue_were_there';
+function attendedAll(){
+  try { return JSON.parse(localStorage.getItem(WERE_THERE_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+function attendedSet(bandId){
+  return new Set(attendedAll()[bandId] || []);
+}
+function wasThere(bandId, showId){
+  return attendedSet(bandId).has(String(showId));
+}
+/** Returns the new state, so a caller can repaint without re-reading. */
+function toggleThere(bandId, showId){
+  const all = attendedAll();
+  const list = new Set(all[bandId] || []);
+  const id = String(showId);
+  const now = !list.has(id);
+  if (now) list.add(id); else list.delete(id);
+  all[bandId] = [...list];
+  try { localStorage.setItem(WERE_THERE_KEY, JSON.stringify(all)); } catch {}
+  return now;
+}
+function attendedCount(bandId){ return attendedSet(bandId).size; }
+/** Replace one band's list wholesale. Only the sync calls this. */
+function attendedReplace(bandId, ids){
+  const all = attendedAll();
+  all[bandId] = [...new Set(ids.map(String))];
+  try { localStorage.setItem(WERE_THERE_KEY, JSON.stringify(all)); } catch {}
+}
+
+/* ── accounts ────────────────────────────────────────────────────────────────
+ *
+ * EVERYTHING BELOW IS OPTIONAL AND NOTHING ABOVE DEPENDS ON IT. auth.js and
+ * board.js are loaded with defer after the page and may never arrive; every
+ * function here checks for them and does nothing useful rather than throwing.
+ * A blocked CDN has to leave a playable game, not a broken one.
+ */
+const AUTH  = () => window.SEGUE_AUTH || null;
+const BOARD = () => window.SEGUE_BOARD || null;
+const meBtn = document.getElementById('meBtn');
+
+// Who we are, kept here so a render does not have to ask across the boundary.
+let ME = { ready: false, signedIn: false, name: null, userId: null, email: null,
+           siteName: null, segueName: null, canRename: true };
+
+function paintMe(){
+  if (!ME.ready) { meBtn.hidden = true; return; }
+  meBtn.hidden = false;
+  meBtn.textContent = ME.signedIn ? (ME.name || 'Pick a name') : 'Sign in';
+  meBtn.classList.toggle('in', !!ME.signedIn);
+}
+
+/* THE MERGE, run once each time somebody signs in. It sends this browser's list
+   and takes back the union, so a phone that marked ten shows before signing in
+   keeps all ten and gains whatever the laptop had. Fails silently: an
+   unreachable server leaves the local list exactly as it was, which is the
+   behaviour the whole feature had before accounts existed. */
+async function syncAttendance(){
+  const b = BOARD();
+  if (!b || !ME.signedIn) return;
+  for (const band of BANDS){
+    const local = [...attendedSet(band.id)];
+    const merged = await b.syncAttended(band.id, local);
+    if (Array.isArray(merged)) attendedReplace(band.id, merged);
+  }
+  if (S.screen === 'home' || S.screen === 'profile') render();
+}
+
+async function claimPosted(){
+  const b = BOARD();
+  if (!b || !S.posted) return;
+  if (await b.claim(S.posted)){
+    S.posted = null;                 // claimed once, and only once
+    if (S.screen === 'result') render();
+  }
+}
+
+function bootAccounts(){
+  const a = AUTH();
+  if (!a || !a.boot()) return;      // no library, no accounts, no button
+  a.onChange(st => {
+    const wasIn = ME.signedIn;
+    ME = { ready: true, signedIn: st.signedIn, name: st.name,
+           userId: st.userId, email: st.email,
+           siteName: st.siteName, segueName: st.segueName,
+           canRename: st.canRename !== false };
+    paintMe();
+    if (authSheet.classList.contains('on')) renderAuth();
+    if (ME.signedIn && !wasIn){
+      syncAttendance();
+      /* THE SHOW YOU JUST FINISHED, taken over now that you have a name. Only
+         ever stamps a row that is still unowned, so an id in a browser is not
+         enough to claim somebody else's. */
+      if (S.posted) claimPosted();
+    }
+    if (S.screen === 'board' || S.screen === 'profile') render();
+  });
+  ME.ready = true;
+  paintMe();
+}
+/* auth.js is deferred, so it may not have run yet when this module does. Both
+   orders have to work, hence the retry rather than a straight call. */
+if (AUTH()) bootAccounts();
+else window.addEventListener('DOMContentLoaded', () => setTimeout(bootAccounts, 0));
+
+// ── the account sheet ────────────────────────────────────────────────────────
+const authSheet = document.getElementById('authSheet');
+// 'in' | 'up' | 'name' | 'me' — 'name' is the state right after a Google
+// sign-in, where there is an account but no username on it yet.
+let authMode = 'in';
+let authMsg = null;      // { err } or { ok }
+let authBusy = false;
+
+function renderAuth(){
+  const inner = document.getElementById('authInner');
+  const note = authMsg && authMsg.err ? `<div class="autherr">${esc(authMsg.err)}</div>`
+    : authMsg && authMsg.ok ? `<div class="authok">${esc(authMsg.ok)}</div>` : '';
+
+  if (ME.signedIn && !ME.name) authMode = 'name';
+  else if (ME.signedIn && authMode !== 'me') authMode = 'me';
+  else if (!ME.signedIn && (authMode === 'me' || authMode === 'name')) authMode = 'in';
+
+  if (authMode === 'me'){
+    /* TWO NAMES, AND THE SHEET IS THE ONE PLACE THAT SHOWS BOTH.
+       Everywhere else in the game prints the one the board prints. Here a
+       player needs to see that the RunThe.GG account is unchanged and that
+       only Segue follows the name they are setting, or the field reads as
+       "rename my whole account" and nobody touches it. */
+    const seg = ME.segueName;
+    inner.innerHTML = `
+      <div class="grab"></div>
+      <div class="respin-hd" id="authHd">${esc(ME.name || 'Your account')}</div>
+      <div class="authwhy">${esc(ME.email || '')}</div>
+      ${ME.canRename ? `
+        <div class="namebox">
+          <div class="eyebrow">Your name on Segue</div>
+          <form class="authf" id="segueNameForm">
+            <input name="segname" autocomplete="off" spellcheck="false"
+              placeholder="${esc(ME.siteName || 'Pick a name')}"
+              value="${esc(seg || '')}" maxlength="20"
+              aria-describedby="segnameWhy">
+            <div class="namehint" id="segnameWhy">${seg
+              ? `Your RunThe.GG account is still <b>${esc(ME.siteName || '')}</b>, and the
+                 other games still show that.`
+              : `You are on the board as <b>${esc(ME.siteName || 'Anonymous')}</b>, your
+                 RunThe.GG name. Set a different one here and it applies to Segue only.`}
+              3 to 20 letters, numbers or underscores.</div>
+            <div class="nameacts">
+              <button class="btn tiny" type="submit" ${authBusy ? 'disabled' : ''}
+                >${authBusy ? 'Saving...' : 'Save name'}</button>
+              ${seg ? `<button class="btn tiny ghost" type="button" id="segClear"
+                >Use ${esc(ME.siteName || 'my account name')}</button>` : ''}
+            </div>
+          </form>
+        </div>` : ''}
+      <div class="respin-acts">
+        <button class="btn" type="button" id="authProfile">Your shows</button>
+        <button class="btn ghost" type="button" id="authOut">Sign out</button>
+      </div>${note}`;
+    authSheet.classList.add('on');
+    return;
+  }
+
+  if (authMode === 'name'){
+    inner.innerHTML = `
+      <div class="grab"></div>
+      <div class="respin-hd" id="authHd">Pick a name</div>
+      <div class="authwhy">This is the name that goes on the board. Nothing else
+        about your account is public.</div>
+      <form class="authf" id="authForm">
+        <input name="username" autocomplete="username" placeholder="Name"
+          maxlength="20" required>
+        <button class="btn primary" type="submit" ${authBusy ? 'disabled' : ''}>
+          ${authBusy ? 'Saving...' : 'Save'}</button>
+      </form>${note}`;
+    authSheet.classList.add('on');
+    return;
+  }
+
+  const up = authMode === 'up';
+  inner.innerHTML = `
+    <div class="grab"></div>
+    <div class="respin-hd" id="authHd">${up ? 'Create an account' : 'Sign in'}</div>
+    <!-- WHAT IT IS FOR, said plainly, because the honest answer is short and a
+         player who does not want any of it should be able to tell immediately. -->
+    <div class="authwhy">One RunThe.GG account, the same one the other games use.
+      It puts your name on the leaderboard and carries the shows you were at to
+      your other devices. You can play everything without one.</div>
+    <form class="authf" id="authForm">
+      ${up ? `<input name="username" autocomplete="username" placeholder="Name"
+        maxlength="20" required>` : ''}
+      <input name="email" type="email" autocomplete="email" placeholder="Email" required>
+      <input name="password" type="password" placeholder="Password"
+        autocomplete="${up ? 'new-password' : 'current-password'}" minlength="6" required>
+      <button class="btn primary" type="submit" ${authBusy ? 'disabled' : ''}>
+        ${authBusy ? 'Working...' : (up ? 'Create account' : 'Sign in')}</button>
+      <button class="btn ghost" type="button" id="authGoogle">Continue with Google</button>
+    </form>${note}
+    <div class="authswap">${up ? 'Already have one?' : 'No account yet?'}
+      <button type="button" id="authSwap">${up ? 'Sign in' : 'Create one'}</button></div>`;
+  authSheet.classList.add('on');
+}
+
+function openAuth(mode){
+  if (!ME.ready){ toast('Accounts are not available right now'); return; }
+  authMode = mode || (ME.signedIn ? 'me' : 'in');
+  authMsg = null; authBusy = false;
+  renderAuth();
+}
+function closeAuth(){ authSheet.classList.remove('on'); authMsg = null; }
+
+meBtn.addEventListener('click', () => openAuth());
+
+authSheet.addEventListener('click', async e => {
+  if (e.target === authSheet){ closeAuth(); return; }
+  if (e.target.closest('#authSwap')){
+    authMode = authMode === 'up' ? 'in' : 'up'; authMsg = null; renderAuth(); return;
+  }
+  if (e.target.closest('#authOut')){ closeAuth(); await AUTH().signOut(); return; }
+  /* Clearing it is the same call with nothing in it: the server treats an empty
+     name as "go back to the site username" rather than needing its own RPC. */
+  if (e.target.closest('#segClear')){
+    authBusy = true; authMsg = null; renderAuth();
+    const r = await AUTH().setSegueName('');
+    authBusy = false;
+    authMsg = r.error ? { err: r.error } : { ok: `You are ${r.name} on Segue.` };
+    renderAuth();
+    return;
+  }
+  if (e.target.closest('#authProfile')){ closeAuth(); setScreen('profile'); return; }
+  if (e.target.closest('#authGoogle')){
+    authBusy = true; renderAuth();
+    const r = await AUTH().signInGoogle();
+    authBusy = false; authMsg = r.error ? { err: r.error } : null; renderAuth();
+  }
+});
+
+authSheet.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (authBusy) return;
+  /* THE SEGUE NAME IS ITS OWN FORM inside the signed-in panel, so it has to be
+     handled before the sign-in branch below: falling through would read an
+     email field that is not there and try to sign in an account already
+     signed in. */
+  if (e.target.id === 'segueNameForm'){
+    const want = String(new FormData(e.target).get('segname') || '').trim();
+    if (want === (ME.segueName || '')){ closeAuth(); return; }
+    authBusy = true; authMsg = null; renderAuth();
+    const r = await AUTH().setSegueName(want);
+    authBusy = false;
+    authMsg = r.error ? { err: r.error }
+      : { ok: r.name ? `You are ${r.name} on Segue.` : 'Name saved.' };
+    renderAuth();
+    return;
+  }
+  const f = new FormData(e.target);
+  authBusy = true; authMsg = null; renderAuth();
+  let r;
+  if (authMode === 'name') r = await AUTH().setName(String(f.get('username') || '').trim());
+  else if (authMode === 'up') r = await AUTH().signUp(String(f.get('email')),
+    String(f.get('password')), String(f.get('username') || '').trim());
+  else r = await AUTH().signIn(String(f.get('email')), String(f.get('password')));
+  authBusy = false;
+  if (r.error){ authMsg = { err: r.error }; renderAuth(); return; }
+  /* Sign-up does not sign you in until the email is confirmed, so saying
+     "you're in" here would be a lie the player finds out about later. */
+  if (authMode === 'up'){
+    authMsg = { ok: 'Check your email to confirm the account.' };
+    renderAuth(); return;
+  }
+  closeAuth();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && authSheet.classList.contains('on')) closeAuth();
+});
+
+/* ASK BEFORE ANYTHING DESTRUCTIVE.
+   The logo is a link home sitting in the header on every screen, right where
+   a thumb reaches. Mid draft that silently threw away a show somebody was six
+   picks into, with no undo and nothing recorded. Now it asks. */
+const askSheet = document.getElementById('askSheet');
+let askOnYes = null;
+function ask({ title, body, confirm, cancel, onYes }){
+  askOnYes = onYes;
+  document.getElementById('askInner').innerHTML = `
+    <div class="grab"></div>
+    <div class="respin-hd" id="askHd">${esc(title)}</div>
+    <div class="respin-cost">${esc(body)}</div>
+    <div class="respin-acts">
+      <button class="btn danger" type="button" id="askYes">${esc(confirm)}</button>
+      <button class="btn" type="button" id="askNo">${esc(cancel)}</button>
+    </div>`;
+  askSheet.classList.add('on');
+}
+function closeAsk(){ askSheet.classList.remove('on'); askOnYes = null; }
+askSheet.addEventListener('click', e => {
+  if (e.target === askSheet || e.target.closest('#askNo')){ closeAsk(); return; }
+  if (e.target.closest('#askYes')){ const fn = askOnYes; closeAsk(); if (fn) fn(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && askSheet.classList.contains('on')) closeAsk();
+});
+
+/* A draft is only "in progress" once something has been played or the board is
+   open: landing on the draft screen and immediately leaving costs nothing, and
+   asking then would be noise. */
+function draftInProgress(){
+  return (S.screen === 'draft' || S.screen === 'reveal')
+    && (S.round > 0 || S.sets.some(x => x.length));
+}
+document.addEventListener('click', e => {
+  const wt = e.target.closest('#wereThereBtn');
+  if (!wt) return;
+  const now = toggleThere(S.band.id, wt.dataset.show);
+  toast(now ? 'Added to your shows' : 'Removed from your shows');
+  render();   // the tag and the button label both follow the state
+  /* LOCAL FIRST AND THEN THE SERVER, never the other way round. The tag is on
+     the screen before the request leaves, and a failed request leaves the local
+     list exactly as the player set it. Marking is a merge; unmarking has to be
+     its own call, because an absence from a synced list is not a removal. */
+  const b = BOARD();
+  if (b && ME.signedIn){
+    if (now) b.syncAttended(S.band.id, [String(wt.dataset.show)]);
+    else b.forgetAttended(S.band.id, wt.dataset.show);
+  }
+});
+
+document.querySelector('.lockup').addEventListener('click', e => {
+  if (!draftInProgress()) return;      // home already, or nothing to lose
+  e.preventDefault();
+  ask({
+    title: 'Leave this show?',
+    body: 'The setlist you have built so far goes with it. Nothing is scored '
+      + 'until the encore closes and the night plays back.',
+    confirm: 'Leave the show',
+    cancel: 'Keep building',
+    onYes: () => { window.location.href = '/setlist/'; },
+  });
+});
+
+/* The toast element and its styles have been in the page since the start with
+   nothing ever calling them. This is the function the markup was waiting for. */
+let toastTimer;
+function toast(msg, ms = 2400){
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+
+/* Opens the form, and hands the finished message to the mail client. No
+   backend exists for this page, and the address is the one the rest of the
+   site already uses. encodeURIComponent on both fields, because a band name
+   with an ampersand in it would otherwise truncate the body at that point. */
+const bandSheet = document.getElementById('bandSheet');
+function openBandForm(){
+  bandSheet.classList.add('on');
+  setTimeout(() => document.getElementById('reqName').focus(), 60);
+}
+function closeBandForm(){ bandSheet.classList.remove('on'); }
+document.addEventListener('click', e => {
+  if (e.target.closest('#reqBand')){ openBandForm(); return; }
+  if (e.target.closest('#reqCancel') || e.target === bandSheet) closeBandForm();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && bandSheet.classList.contains('on')) closeBandForm();
+});
+document.getElementById('bandForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const band = document.getElementById('reqName').value.trim();
+  if (!band) return;
+  const why = document.getElementById('reqWhy').value.trim();
+  const body = `Band: ${band}` + (why ? `\n\n${why}` : '')
+    + '\n\nSent from runthe.gg/setlist';
+  window.location.href = 'mailto:RunTheGames@outlook.com'
+    + `?subject=${encodeURIComponent(`Segue band request: ${band}`)}`
+    + `&body=${encodeURIComponent(body)}`;
+  closeBandForm();
+  document.getElementById('bandForm').reset();
+  toast('Opening your mail app');
+});
+
 document.getElementById('respinSheet').addEventListener('click', e => {
   if (e.target.id === 'respinSheet' || e.target.closest('#respinNo')){ closeRespin(); return; }
   if (e.target.closest('#respinYes')){ closeRespin(); respin(); }
@@ -2682,7 +3510,50 @@ function finishShow(){
     S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent);
   } catch (err) { S.best = null; }
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
+  S.posted = null;
+  recordShow();       // fire and forget; the playback does not wait on a network
   setScreen('show');
+}
+
+/* ── recording the show ──────────────────────────────────────────────────────
+ *
+ * NOT AWAITED BY ANYTHING. The playback starts immediately and the scorecard
+ * renders whether or not this lands. A show that happened is a show that
+ * happened; the board is a place to put it, not permission to have played it.
+ *
+ * Sends the four component totals and lets segue_submit_run() insist they add
+ * up, sends which breadth cards were won and lets the server say what they were
+ * worth, and sends nothing at all it could work out for itself. See the header
+ * of supabase/67_setlist_leaderboard.sql for what that does and does not buy.
+ */
+async function recordShow(){
+  const b = BOARD();
+  if (!b || !S.result || !S.band) return;
+  const r = S.result;
+  // S.drafted is one entry per PICK, so it lines up with the songs played.
+  const picks = S.drafted.map(d => `${d.show.show_id}:${d.perf.song_id}`);
+  const shows = [...new Set(S.drafted.map(d => String(d.show.show_id)))];
+  const id = await b.submit({
+    band: S.band.id,
+    total: r.total,
+    songPts: r.songTotal, timePts: r.timeTotal,
+    flowPts: r.flowTotal, breadthPts: r.breadthTotal,
+    cards: [...r.stats.cards],
+    bestTotal: S.best ? S.best.total : null,
+    songs: r.stats.songs,
+    segues: r.stats.segues, sandwiches: r.stats.sandwiches,
+    covers: r.stats.covers, jamcharts: r.stats.jamcharts,
+    bustouts: r.stats.bustouts, cooldowns: r.stats.cooldowns,
+    longestSec: Math.round(r.stats.longest),
+    respins: S.respins,
+    secondsUsed: Math.round(r.totalUsed),
+    shows, picks,
+  });
+  S.posted = id;
+  // The rank is read from the board rather than from this insert, so a submit
+  // that failed still shows a true number instead of collapsing to "1 of 1".
+  S.ranks = await b.ranks(S.band.id, 'score', r.total);
+  if (S.screen === 'result') render();
 }
 
 /* THE SHOW.
@@ -2755,7 +3626,7 @@ function renderShow(){
   const beats = showBeats();
   app.innerHTML = `
     <div class="showsim" id="showSim">
-      <div class="card sim-head">
+      <div class="sim-head">
         <div class="eyebrow">The show</div>
         <div class="sim-score" id="simScore">0</div>
         <div class="sim-sub" id="simSub">Lights down.</div>
@@ -2777,8 +3648,8 @@ function renderShow(){
       subEl.textContent = setOpenLine(SETS.findIndex(x => x.label === b.label));
     } else if (b.kind === 'song'){
       feed.insertAdjacentHTML('beforeend', `
-        <div class="sim-song">
-          ${b.event ? `<div class="sim-seg">&rsaquo; ${esc(b.event)}${
+        <div class="sim-song" style="--acc:${accentOf(b.perf).v}">
+          ${b.event ? `<div class="sim-seg"><i class="segmark"></i>${esc(b.event)}${
             b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
           <div class="sim-row">
             <span class="sim-nm">${esc(b.perf.song)}</span>
@@ -2846,6 +3717,178 @@ function render(){
   if (S.screen === 'draft')   return renderDraft();
   if (S.screen === 'show')    return renderShow();
   if (S.screen === 'result')  return renderResult();
+  if (S.screen === 'board')   return renderBoard();
+  if (S.screen === 'profile') return renderProfile();
+}
+
+/* ── the leaderboard ─────────────────────────────────────────────────────────
+ *
+ * TWO AXES, and the second one is the point. The shows are DRAWN AT RANDOM, so
+ * a raw total is partly a measure of the draw: three nights of jamcharts and
+ * twenty-minute versions will out-total three thin ones in anybody's hands.
+ *
+ * The percentage board is the one that is not. bestPossible() replays the exact
+ * shows a player drew, in the order they came up, and searches for the best line
+ * through them; the share of that they actually took asks how well they played
+ * the night they were given. A thin night played perfectly beats a great night
+ * played badly. Both ship, and the axis note says which is which, because a
+ * board whose ranking nobody understands is a board nobody trusts.
+ */
+const BOARD_STATE = { band: 'goose', sort: 'score', win: 'all', rows: null, busy: false };
+
+async function loadBoard(){
+  const b = BOARD();
+  BOARD_STATE.busy = true; render();
+  BOARD_STATE.rows = b
+    ? await b.top({ band: BOARD_STATE.band, win: BOARD_STATE.win, named: true },
+                  50, BOARD_STATE.sort, 'desc')
+    : null;
+  BOARD_STATE.busy = false;
+  if (S.screen === 'board') render();
+}
+
+const AX_NOTE = {
+  score: 'Every point the night was worth. The shows are drawn at random, so a '
+       + 'big total is a great draw played well.',
+  pct: 'How much of your own night you actually took. Same shows, same order, '
+     + 'played as well as we could find. This one the draw cannot inflate.',
+};
+
+function renderBoard(){
+  const rows = BOARD_STATE.rows;
+  const pct = BOARD_STATE.sort === 'pct';
+  const seg = (id, group, opts) => `<div class="segbar" role="group" aria-label="${esc(id)}">${
+    opts.map(([v, label]) => `<button type="button" data-${group}="${v}"
+      aria-pressed="${BOARD_STATE[group] === v}">${esc(label)}</button>`).join('')}</div>`;
+
+  const body = BOARD_STATE.busy
+    ? '<div class="bempty">Reading the board...</div>'
+    : rows === null
+      ? `<div class="bempty">The board is not reachable right now.<br>
+          Your shows are still yours. Nothing was lost.</div>`
+      : !rows.length
+        ? `<div class="bempty">Nobody has put a show up here yet.<br>
+            Draft one and it will be the first.</div>`
+        : rows.map((row, i) => {
+            const mine = ME.signedIn && row.display_name === ME.name;
+            return `<div class="brow ${i < 3 ? 'top' + (i + 1) : ''} ${mine ? 'you' : ''}">
+              <div class="pl">${i + 1}</div>
+              <div class="who">
+                <div class="nm">${esc(row.display_name || 'Anonymous')}</div>
+                <div class="sub">${row.songs} songs &middot; ${fmtClock(row.seconds_used)}
+                  &middot; ${row.segues} segue${row.segues === 1 ? '' : 's'}${
+                  row.cards_got ? ` &middot; ${row.cards_got}/5 cards` : ''}</div>
+              </div>
+              <div class="val">${pct
+                ? `${Math.round(Number(row.pct_of_best))}%<i>of best</i>`
+                : `${row.total}<i>points</i>`}</div>
+            </div>`;
+          }).join('');
+
+  app.innerHTML = `
+    <div class="bhd"><h2>Leaderboard</h2></div>
+    ${seg('Ranked by', 'sort', [['score', 'Score'], ['pct', 'Percent of best']])}
+    ${seg('When', 'win', [['day', 'Today'], ['week', 'This week'], ['all', 'All time']])}
+    <p class="axnote">${esc(AX_NOTE[BOARD_STATE.sort])}</p>
+    <section class="card">${body}</section>
+    ${!ME.signedIn ? `<p class="axnote" style="margin-top:14px">Shows you draft
+      signed out still count, but they go up as Anonymous and the board only
+      lists named ones.</p>` : ''}
+    <button class="btn ghost" type="button" id="backHome"
+      style="margin-top:18px">Back</button>`;
+
+  app.querySelectorAll('[data-sort],[data-win]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      BOARD_STATE.sort = btn.dataset.sort || BOARD_STATE.sort;
+      BOARD_STATE.win  = btn.dataset.win  || BOARD_STATE.win;
+      loadBoard();
+    });
+  });
+  document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+}
+
+/* ── the profile ─────────────────────────────────────────────────────────────
+ *
+ * Everything here is the player's OWN. The career panel comes from
+ * segue_runs filtered to their user id; the shows they were at come from
+ * localStorage, which the sync keeps level with the server.
+ *
+ * The attendance count is deliberately shown to its owner only and appears
+ * nowhere on the leaderboard. Which nights somebody was physically at is a
+ * different kind of fact from a score, and nothing public needs it.
+ */
+const PROFILE = { rows: null, total: 0, busy: false, loadedFor: null };
+
+async function loadProfile(){
+  const b = BOARD();
+  if (!b || !ME.signedIn){ PROFILE.rows = null; return; }
+  PROFILE.busy = true; PROFILE.loadedFor = ME.userId; render();
+  const got = await b.mine(ME.userId, 500);
+  PROFILE.rows = got ? got.rows : null;
+  PROFILE.total = got ? got.total : 0;
+  PROFILE.busy = false;
+  if (S.screen === 'profile') render();
+}
+
+function renderProfile(){
+  if (ME.signedIn && PROFILE.loadedFor !== ME.userId && !PROFILE.busy) loadProfile();
+
+  const rows = PROFILE.rows || [];
+  const best = rows.reduce((m, r) => Math.max(m, r.total || 0), 0);
+  const bestPct = rows.reduce((m, r) => Math.max(m, Number(r.pct_of_best) || 0), 0);
+  const avg = rows.length
+    ? Math.round(rows.reduce((a, r) => a + (r.total || 0), 0) / rows.length) : 0;
+  // Every card ever won, across every show. The chase is a collection.
+  const won = new Set(rows.flatMap(r => r.cards || []));
+  const CARD_LABEL = { cover: 'A cover', bustout: 'A bustout', jamchart: 'A jamchart',
+    bigjam: 'A 20-minute jam', roles: 'Every kind of song' };
+
+  const career = !ME.signedIn
+    ? `<div class="bempty">Sign in to keep a record of the shows you draft.<br>
+        Everything you play without one still counts, it just is not saved.</div>`
+    : PROFILE.busy
+      ? '<div class="bempty">Reading your shows...</div>'
+      : PROFILE.rows === null
+        ? '<div class="bempty">Could not reach your history right now.</div>'
+        : !rows.length
+          ? '<div class="bempty">No shows drafted yet.</div>'
+          : `<div class="pstats">
+              <div class="pstat"><b>${PROFILE.total}</b><span>Shows</span></div>
+              <div class="pstat"><b>${best}</b><span>Best</span></div>
+              <div class="pstat"><b>${avg}</b><span>Average</span></div>
+            </div>
+            <div class="eyebrow">Your best line</div>
+            <div class="pstats" style="grid-template-columns:1fr 1fr">
+              <div class="pstat"><b>${Math.round(bestPct)}%</b><span>Of the best line</span></div>
+              <div class="pstat"><b>${won.size}/5</b><span>Cards collected</span></div>
+            </div>
+            <div class="pcards">${Object.entries(CARD_LABEL).map(([id, label]) =>
+              `<span class="pcard ${won.has(id) ? 'got' : ''}">${esc(label)}</span>`).join('')}</div>`;
+
+  const were = BANDS.filter(b => !b.sample).map(b => {
+    const n = attendedCount(b.id);
+    return `<div class="brow plain">
+      <div class="who"><div class="nm">${esc(b.label)}</div>
+        <div class="sub">${n ? `${n} show${n === 1 ? '' : 's'} you were at`
+          : 'No shows marked yet'}</div></div>
+      <div class="val">${n}<i>marked</i></div>
+    </div>`;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="bhd"><h2>${esc(ME.name || 'Your shows')}</h2></div>
+    <section class="card" style="margin-bottom:var(--sp-2)">${career}</section>
+
+    <div class="eyebrow">You were there</div>
+    <section class="card">${were}</section>
+    <p class="axnote" style="margin-top:12px">Mark a show while you are drafting and
+      it comes back with a tag every time that night comes up again. This list is
+      yours alone, and never appears on the leaderboard.${ME.signedIn ? ''
+      : '<br>Signed out, it lives in this browser only.'}</p>
+
+    <button class="btn ghost" type="button" id="backHome"
+      style="margin-top:18px">Back</button>`;
+  document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
 }
 
 // ── events ───────────────────────────────────────────────────────────────────
@@ -2853,6 +3896,17 @@ app.addEventListener('click', e => {
   const startBtn = e.target.closest('[data-start]');
   if (startBtn && !startBtn.disabled){
     start(startBtn.dataset.start);
+    return;
+  }
+
+  if (e.target.closest('#rankSignIn')){ openAuth('in'); return; }
+
+  const go = e.target.closest('[data-go]');
+  if (go){
+    // The board reads on the way in rather than on a timer: it is one request
+    // and it should be fresh every time somebody opens it.
+    if (go.dataset.go === 'board'){ setScreen('board'); loadBoard(); }
+    else setScreen(go.dataset.go);
     return;
   }
 

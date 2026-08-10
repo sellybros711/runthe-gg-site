@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Daily Sports Crossword</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: manual choice persists in runthegrid_theme (shared across the
@@ -19,7 +18,21 @@
 })();
 </script>
 <meta name="description" content="One sports crossword a day. Fill the grid, beat the clock, keep your streak alive, a daily crossword inside Run The Arcade on RunThe.GG." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffffff'/%3E%3Crect x='7' y='7' width='6' height='6' fill='%23F5A623'/%3E%3Crect x='14' y='7' width='6' height='6' fill='%23182430'/%3E%3Crect x='7' y='14' width='6' height='6' fill='%23182430'/%3E%3Crect x='21' y='14' width='4' height='4' fill='%23FF5A3C'/%3E%3Crect x='14' y='14' width='6' height='6' fill='%23F5A623'/%3E%3Crect x='7' y='21' width='6' height='6' fill='%23FF5A3C'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Daily Sports Crossword" />
+<meta property="og:description" content="A sports mini crossword, fresh every day. Beat the clock for a flawless solve." />
+<meta property="og:url" content="https://runthe.gg/arcade/crossword/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Daily Sports Crossword" />
+<meta name="twitter:description" content="A sports mini crossword, fresh every day. Beat the clock for a flawless solve." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/crossword/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -34,7 +47,7 @@
   --coral:#F06A5F; --coral-d:#D8452F; --gold:#F2B632; --violet:#A982F3;
   --green:#48D17A; --red:#FF625F; --amber:#F2B632; --blue:#2F6BFF;
   /* text-safe accent variants (meet contrast on the current surface) */
-  --coralT:#F06A5F; --goldT:#F2B632; --redT:#FF625F;
+  --coralT:#F06A5F; --goldT:#F2B632; --redT:#FF625F; --news:#64748B; --newsT:#9CADC0;
   /* inverse chrome (toast) */
   --inv-bg:#F4F7FB; --inv-ink:#071426;
   /* primary modal button: steel accent (theme-aware) */
@@ -56,7 +69,7 @@
   --bg:#EEF2F7; --card:#FFFFFF; --panel:#FFFFFF; --panel2:#F1F5FA;
   --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
   --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
-  --coralT:#D8452F; --goldT:#A87508; --redT:#C4372C;
+  --coralT:#D8452F; --goldT:#A87508; --redT:#C4372C; --newsT:#46586C;
   --inv-bg:#0D1B2C; --inv-ink:#F4F7FB;
   --btnP:#33475C; --btnP-ink:#FFFFFF;
   --cream:#0D1B2C; --cream-dim:#51637A; --gold-bright:#D8452F;
@@ -64,7 +77,7 @@
 }
 /* touch-action:manipulation kills the mobile double-tap-to-zoom gesture (which
    fires constantly when tapping keys/cells fast) while keeping single taps,
-   scrolling and pinch-zoom intact — so fast typing no longer zooms the board. */
+   scrolling and pinch-zoom intact - so fast typing no longer zooms the board. */
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0; padding:0;}
 body{
@@ -82,7 +95,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
 .icon-btn{background:transparent; border:0; padding:5px; font-size:22px; line-height:1; color:var(--ink); text-decoration:none; flex:0 0 auto;}
 .brand{font-family:var(--brandf); font-size:17px; font-style:italic; letter-spacing:-.01em; font-weight:900; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.brand .b2{color:var(--coralT);}
+.brand .b2{color:var(--newsT);}
 .brand .sub{display:block; font-family:var(--pix); font-size:8px; font-style:normal; letter-spacing:2px; color:var(--mut); margin-top:3px; font-weight:800;}
 .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; text-decoration:none;}
 .brand.logo img{height:54px; width:auto; display:block;}
@@ -92,8 +105,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   border:1px solid var(--line2); border-radius:10px; padding:5px 10px; box-shadow:var(--shadow); min-width:54px;}
 .chip .n{font-family:var(--pix); font-size:13px; font-weight:800; color:var(--ink);}
 .chip .l{font-family:var(--pix); font-size:7px; color:var(--mut); letter-spacing:.5px; font-weight:700;}
-.chip.streak .n{color:var(--coralT);}
-.chip.timer .n{color:var(--coralT); font-variant-numeric:tabular-nums;}
+.chip.streak .n{color:var(--newsT);}
+.chip.timer .n{color:var(--newsT); font-variant-numeric:tabular-nums;}
 
 /* ---------- info bar ---------- */
 .inforow{display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -102,7 +115,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink);}
 .inforow .seg small{color:var(--mut); font-weight:700;}
 .inforow .sep{width:1px; height:18px; background:var(--line2);}
-.inforow .size{color:var(--coralT);}
+.inforow .size{color:var(--newsT);}
 
 /* ---------- grid ---------- */
 .board-wrap{position:relative; margin-bottom:12px;}
@@ -111,7 +124,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   box-shadow:var(--shadow); overflow:hidden;}
 .cell{position:relative; background:var(--cell); border-radius:2px; display:flex; align-items:center; justify-content:center;
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
-  color:var(--ink); transition:background .06s ease;}
+  color:var(--ink); transition:background .12s ease;}
 .cell.block{background:#0b1522; cursor:default;}
 .cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
 .cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--ink);}
@@ -135,7 +148,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:var(--inv-bg); color:var(--inv-ink); font-weight:700; font-size:13px; line-height:1.35; padding:11px 16px; border-radius:11px;
   z-index:70; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.6); max-width:86%; text-align:center;}
 .cw-toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
-@media (prefers-reduced-motion: reduce){ .cell.wordpop{animation:none;} .board.shake{animation:none;} .confetti{display:none;} }
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
 
 /* ---------- active clue ---------- */
 .cluebar{display:flex; align-items:stretch; gap:0; margin-bottom:12px;
@@ -144,7 +157,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   display:flex; align-items:center; justify-content:center;}
 .cluebar .arw:active{background:var(--line2);}
 .cluebar .body{flex:1; min-width:0; padding:9px 12px; display:flex; flex-direction:column; justify-content:center;}
-.cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--coralT); text-transform:uppercase;}
+.cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--newsT); text-transform:uppercase;}
 .cluebar .txt{font-size:15px; font-weight:600; line-height:1.3; color:var(--ink);}
 
 /* ---------- controls ---------- */
@@ -152,12 +165,17 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .controls button{flex:1; background:var(--card); border:1px solid var(--line2); border-radius:10px;
   padding:10px 4px; font-size:12px; font-weight:800; color:var(--ink); box-shadow:var(--shadow);
   display:flex; align-items:center; justify-content:center; gap:6px;}
-.controls button:active{transform:translateY(1px); box-shadow:0 2px 8px -4px rgba(24,36,48,.4); border-color:var(--coralT); color:var(--coralT);}
+.controls button:active{transform:translateY(1px); box-shadow:0 2px 8px -4px rgba(24,36,48,.4); border-color:var(--newsT); color:var(--newsT);}
 .controls button .em{font-size:14px;}
 
 /* ---------- clue lists ---------- */
 .lists{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
-.list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coralT);
+/* The two clue columns are built by JS, so the leaderboard under them used to
+   jump 150px once the puzzle mounted. Hold the taller (phone) height and let
+   :empty drop the reservation the moment the real clues arrive. */
+.list ol:empty{min-height:138px;}
+@media (min-width:521px){ .list ol:empty{min-height:121px;} }
+.list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--newsT);
   margin:0 0 6px; text-transform:uppercase;}
 .list ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
 .list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:13px; line-height:1.25; cursor:pointer; color:var(--ink);}
@@ -187,7 +205,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal p{color:var(--mut); font-size:14px; margin:0 0 16px;}
 .statgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px;}
 .statgrid .box{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 4px;}
-.statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--coralT);}
+.statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--newsT);}
 .statgrid .k{font-size:9px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; margin-top:4px; font-weight:700;}
 .modal .btn{width:100%; border:0; border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
   letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink);}
@@ -204,11 +222,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .flawless{display:none; margin:0 0 8px;}
 .flawless.on{display:block; animation:flpop .5s ease;}
 .flawless .rib{display:inline-flex; align-items:center; gap:7px; font-family:var(--pix); font-weight:800; font-size:10.5px;
-  letter-spacing:1.2px; text-transform:uppercase; color:#071426; background:linear-gradient(90deg,var(--coral),var(--gold));
+  letter-spacing:1.2px; text-transform:uppercase; color:#071426; background:linear-gradient(90deg,var(--news),var(--gold));
   padding:6px 14px; border-radius:999px;}
 @keyframes flpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
 /* streak milestone banner */
-.milestone{display:none; margin:2px 0 14px; font-family:var(--pix); font-weight:800; font-size:12.5px; color:var(--coralT);}
+.milestone{display:none; margin:2px 0 14px; font-family:var(--pix); font-weight:800; font-size:12.5px; color:var(--newsT);}
 .milestone.on{display:block; animation:flpop .5s ease;}
 /* live countdown */
 .countdown{margin:0 0 14px; font-size:12px; font-weight:700; color:var(--mut);}
@@ -235,21 +253,21 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- leaderboard teaser ---------- */
 .lb{background:var(--card); border:1px solid var(--line2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px;}
-.lb h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coralT); margin:0 0 8px; text-transform:uppercase;}
+.lb h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--newsT); margin:0 0 8px; text-transform:uppercase;}
 .lb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
 .lb .row:first-of-type{border-top:0;}
 .lb .rk{font-family:var(--pix); font-weight:800; color:var(--mut); width:20px;}
 .lb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.lb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
-.lb .row.you{color:var(--coralT);} .lb .row.you .rk,.lb .row.you .tm{color:var(--coralT);}
+.lb .tm{font-variant-numeric:tabular-nums; color:var(--newsT); font-weight:700;}
+.lb .row.you{color:var(--newsT);} .lb .row.you .rk,.lb .row.you .tm{color:var(--newsT);}
 .lb .note{font-size:11px; color:var(--mut); margin-top:8px;}
 /* "You" hero: your own time is the real, honest number on this card */
 .lb-you{display:flex; align-items:stretch; gap:10px; margin-bottom:12px;}
 .lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
-.lb-you .box.me{border-color:var(--coralT); background:color-mix(in srgb, var(--coralT) 12%, var(--card2));}
+.lb-you .box.me{border-color:var(--newsT); background:color-mix(in srgb, var(--newsT) 12%, var(--card2));}
 .lb-you .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
 .lb-you .big{display:block; font-family:var(--pix); font-size:20px; line-height:1.2; margin-top:5px; color:var(--ink); font-variant-numeric:tabular-nums;}
-.lb-you .box.me .big{color:var(--coralT);}
+.lb-you .box.me .big{color:var(--newsT);}
 /* sample rows: clearly illustrative, visually dialled back */
 .lb-sample{opacity:.62;}
 .lb-samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
@@ -257,13 +275,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .reportline{text-align:center; margin:10px 0 0; font-size:11px;}
 .reportline a{color:var(--mut); text-decoration:underline; text-underline-offset:2px;}
 .foot{text-align:center; color:var(--mut); font-size:11px; padding:8px 0 2px;}
-.foot a{color:var(--coralT);}
+.foot a{color:var(--newsT);}
 .pill{display:inline-block; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
-  color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px; margin-left:6px;}
+  color:var(--newsT); border:1px solid var(--newsT); border-radius:999px; padding:2px 8px; margin-left:6px;}
   /* arcade tactile polish */
   .btn{box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .btn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .btn.gold:hover{filter:brightness(1.06);}
+
+  /* ===== big stage: enlarge + center the board on desktop ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:680px; }
+  }
 </style>
 </head>
 <body>
@@ -271,7 +294,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">DAILY CROSSWORD</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">DAILY CROSSWORD</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -285,7 +308,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="chip timer"><span class="n" id="timerN">0:00</span><span class="l">TIME</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--coral)"><span class="a-gametitle__plate">Daily <b>Crossword</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--news)"><span class="a-gametitle__plate">Daily <b>Crossword</b></span></div>
 
   <div class="inforow">
     <span class="seg" id="dateSeg">– <small>Daily</small></span>
@@ -354,6 +377,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     </div>
     <div class="share-grid" id="mShareGrid"></div>
     <div class="milestone" id="mMilestone"></div>
+    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mAgain">Play again</button>
     <button class="btn gold" id="mShare">Share result</button>
@@ -381,36 +405,43 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 </div>
 
 <!-- cache-busted: bump ?v= whenever the puzzle bank changes -->
-<script src="puzzles.js?v=8"></script>
+<script src="puzzles.js?v=9"></script>
 <!-- entities corpus + daily generator: entities.js MUST come first (gen.js
      reads window.GRID_ENTITIES). Together they make the crossword infinitely
      daily; the authored bank above still wins on exact launch-week dates. -->
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
-<script src="gen.js?v=1"></script>
+<script src="gen.js?v=2"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
 (function(){
   "use strict";
   if(window.RTGHowto) RTGHowto.init('crossword');
 
-  // ---- tester mode: unlimited plays across all puzzles (for RunnyJ / CSel8) --
-  // Enable with ?test=1 (persists); ?test=0 to disable. Site is hidden, so only
-  // people with the link get it. New puzzle cycles the generated bank.
+  // ---- tester mode: removed for public launch ----
+  // The old ?test=1 backdoor gave unlimited plays across the whole bank. It's
+  // now permanently off (entitlement is the real Arcade Card). Any stale flag
+  // from a prior tester session is cleared.
   var QS = new URLSearchParams(location.search);
   var TESTER = false;
-  try {
-    if (QS.has('test') || QS.has('tester')) {
-      TESTER = (QS.get('test') || QS.get('tester') || '1') !== '0';
-      localStorage.setItem('grid_tester', TESTER ? '1' : '');
-    } else { TESTER = localStorage.getItem('grid_tester') === '1'; }
-  } catch(e){}
+  try { localStorage.removeItem('grid_tester'); } catch(e){}
   var LIST = (window.RTG_PUZZLES && window.RTG_PUZZLES.puzzles) || [];
   var PZI = parseInt(QS.get('pz') || '-1', 10);
 
@@ -418,13 +449,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // When ?date=YYYY-MM-DD names a valid past day and the user is Pro, RTGArchive
   // is active. Archive plays are PRACTICE: no daily save, no streak, no token
   // charge, no board submit. DATE is the effective date this page runs (the
-  // archive day when active, else today) — used to pick the SAME daily puzzle
+  // archive day when active, else today) - used to pick the SAME daily puzzle
   // that was/will be shown on that date.
   var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
   var DATE = (window.RTGArchive ? RTGArchive.date() : new Date().toISOString().slice(0,10));
   // daily pick: exact id match first (preserves the hand-authored launch
   // week), else the deterministic per-date GENERATOR (gen.js, seeded from the
-  // date — infinitely daily), else the bank's date rotation as a fallback.
+  // date - infinitely daily), else the bank's date rotation as a fallback.
   // NOTE: with generator/rotation P.id is the puzzle's own id, NOT the served
   // date; anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
@@ -616,7 +647,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     saveResume();
   }
   // micro-animation: pulse a word's cells the moment it becomes fully filled
-  // (fill only — not correctness — so the no-autocheck design is preserved)
+  // (fill only - not correctness - so the no-autocheck design is preserved)
   var filledEntries={};
   function entryFilled(e){ return entryCells(e).every(function(p){ return cells[p[0]][p[1]].val!==''; }); }
   function maybeWordFill(r,c){
@@ -640,7 +671,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var cell=cells[sel.r][sel.c];
     if(cell.val){ cell.val=''; cell.checked=false; }
     else { retreat(); cells[sel.r][sel.c].val=''; cells[sel.r][sel.c].checked=false; }
-    announcedFull=false;   // grid no longer full — allow a fresh announce on refill
+    announcedFull=false;   // grid no longer full - allow a fresh announce on refill
     render();
     saveResume();
   }
@@ -767,7 +798,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function wrongCount(){ var w=0; for(var r=0;r<N;r++) for(var c=0;c<N;c++){ var cell=cells[r][c]; if(!cell.block && cell.val!==cell.ans) w++; } return w; }
   function checkSolved(){
     if(done) return;
-    if(!gridFull()){ announcedFull=false; return; }   // still blanks — nothing to announce yet
+    if(!gridFull()){ announcedFull=false; return; }   // still blanks - nothing to announce yet
     if(wrongCount()===0){ finish(); return; }          // full + all correct -> win
     if(!announcedFull){                                // full but wrong -> tell them once
       announcedFull=true;
@@ -788,7 +819,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   function finish(){
     done=true; if(tick) clearInterval(tick);
-    clearResume();   // attempt is over — nothing left to restore
+    clearResume();   // attempt is over - nothing left to restore
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
@@ -805,6 +836,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(!already && !TESTER){
       s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
       s.lastDone = today;
+      var prevBestT=s.best||0;
+      var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && Math.round(elapsed)<prevBestT);
       s.best = Math.min(s.best||1e9, Math.round(elapsed));
       s.bestStreak = Math.max(s.bestStreak||0, s.streak);
       // lifetime stats
@@ -813,6 +846,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(flawless) s.perfects=(s.perfects||0)+1;
       save(s);
       milestone = streakMilestone(s.streak);
+      if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('crossword', Math.round(elapsed), true);
+      if(newBestT && !milestone) milestone = '\ud83c\udfc6 New best time!';
+    }
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest){
+      RTGArchive.recordBest('crossword', Math.round(elapsed), { higherIsBetter:false, label:'sec' });
     }
     document.getElementById('streakN').textContent = s.streak||0;
 
@@ -826,6 +864,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mFlawless').classList.toggle('on', flawless);
     // ranked = the day's first (ranked) attempt; extra plays are practice only
     document.getElementById('mSub').textContent = attemptFirst ? 'Nice grid. Your streak lives another day.' : 'Practice, not ranked';
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
     updateAgainBtn();
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
@@ -858,7 +897,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  // emoji share grid — 🟨 revealed, 🟩 solved cleanly, ⬛ black
+  // emoji share grid - 🟨 revealed, 🟩 solved cleanly, ⬛ black
   function buildShareGrid(){
     var out=[];
     for(var r=0;r<N;r++){ var line='';
@@ -870,7 +909,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
@@ -1073,20 +1112,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function updateHint(){
     var seg=document.getElementById('dateSeg'); if(!seg) return;
     // archive practice shows its own label (the archive.js banner carries the date); no token label
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
     seg.innerHTML = fmtDate(DATE)+' <small>Daily'+lbl+'</small>';
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
     if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
-      b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent');
+      if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');}
     } else {
       b.textContent='Play again'; b.disabled=false; b.classList.remove('spent');
     }
   }
   // clear this puzzle's entries and start a fresh attempt on the SAME daily grid
   function beginAttempt(){
-    clearResume();   // a fresh (practice) attempt begins — drop any mid-solve state
+    clearResume();   // a fresh (practice) attempt begins - drop any mid-solve state
     for(var br=0;br<N;br++) for(var bc=0;bc<N;bc++){
       var cl=cells[br][bc]; if(cl.block) continue;
       cl.val=''; cl.checked=false; cl.revealed=false;
@@ -1110,7 +1149,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // resume the interrupted RANKED attempt after a reload: restore letters,
   // reveals, hint count and the running clock. The play was already charged on
   // the original load, so charged=true / attemptFirst=true WITHOUT calling
-  // RTGTokens.startAttempt again — no re-charge.
+  // RTGTokens.startAttempt again - no re-charge.
   function restoreAttempt(rs){
     done=false; filledEntries={}; announcedFull=false;
     charged=true; attemptFirst=true;
@@ -1195,7 +1234,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   buildLists();
   // resume check BEFORE the token gate: a mid-solve reload of the ranked
-  // attempt has playsOf>0 (charged) but nothing finished — without this a
+  // attempt has playsOf>0 (charged) but nothing finished - without this a
   // free player who reloads would land on the "no plays left" lock screen.
   var RES = null;
   if(!TESTER && !ARCHIVE){
@@ -1206,7 +1245,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // token gate: out of plays -> locked review (streak bookkeeping already
   // advances only once/day via the `already` flag); else a fresh playable
-  // puzzle. beginAttempt does NOT charge — the charge lands on first entry.
+  // puzzle. beginAttempt does NOT charge - the charge lands on first entry.
   if(RES){
     restoreAttempt(RES);
   } else if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){

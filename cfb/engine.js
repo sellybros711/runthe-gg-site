@@ -23,14 +23,23 @@ const ENGINE_API_VERSION = 1;
 const CONSTANTS = {
   /* SCALE turns an opponent's real points a game into engine points, which is
      the only place the two sides of a scoreline meet. It is therefore the whole
-     difficulty dial: raise it and every opponent is harder. It was 2.2, and came
-     down when the cap did, so that a smaller budget did not quietly turn into a
-     losing season. At 2.0, with two marquee games on the schedule, a squad
-     drafted best-available wins 68% of its games, goes 12-0 in 2.2% of seasons
-     and reaches the playoff in a quarter of them. It was 76%, 7% and 33% before
-     the marquee games went in; that difficulty is the price of an unbeaten
-     season being rare, and the two move together. */
-  SCALE: 2.0,
+     difficulty dial: raise it and every opponent is harder.
+
+     IT IS ALSO WHERE THE CROSSOVER SITS, which is the thing that decides whether
+     drafting well matters. Win probability is a sigmoid in (your mean minus
+     theirs), and at 2.0 the crossover sat BELOW the entire roster range: a
+     75-overall roster already outscored the average opponent, so 75 and 100
+     both lived on the flat top of the curve and were worth 8.7 and 10.4 wins.
+     Twenty points of overall, which is most of what a draft is, bought under two
+     wins, and a roster at 85 or better went 12-0 in 12% of its seasons.
+
+     At 2.3 the crossover lands inside the range instead, so the ladder is a
+     ladder: about 4-8 for a bad draft, 8-4 in the middle, 10-2 at the top, 12-0
+     in 5% of seasons rather than 12%.
+
+     RAISING THIS ALONE MAKES A WORSE GAME, and so does damping alone. See
+     CONSISTENCY below: the two are one change. */
+  SCALE: 2.7,
   /* THE BUDGET HAS TO SAY NO, or there is no decision in the draft. At $14M it
      almost never did: drafting the highest scorer on every board spent 90% of it
      and ran into the price on 9% of picks. The NFL game, which is the same six
@@ -61,7 +70,7 @@ const CONSTANTS = {
      seasons rank inside the top twelve and more drafts reach the bracket. Making
      the field is meant to be common; winning it is not, and that half is the
      round pivots below, not this. */
-  POOL_GAMMA: 1.35,
+  POOL_GAMMA: 1.55,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
   /* OFF, AND LEFT IN PLACE. Two of the twelve used to come from the eleven-win
@@ -74,10 +83,46 @@ const CONSTANTS = {
   /* THE TWO FLOORS UNDER THE TITLE. See teamRating() and titleEdge(). They are
      in rating points, which is what the screens show, because there is no scale
      factor any more: see teamOverall(). */
-  TITLE_FLOOR: 89,
-  PERFECT_FLOOR: 92,
+  /* Lowered with the season. These gate the last game on the roster, and they
+     were set when the RECORD gated nothing: a 9-3 team could rank into the field,
+     so something had to stop it winning the title. Now the field itself is the
+     filter, and getting in means 11-1 or better. Best-available drafting lands
+     around 90 overall, so a floor at 89 was barring half of the teams that had
+     just gone unbeaten from finishing the job: going 12-0 converted to a title
+     2.2% of the time, which is the wrong shape for an undefeated No. 1 seed.
+     86 to 84 when PRICE_K came down and made a high overall dearer to assemble:
+     the floor is a point on the overall scale, so squeezing the scale without
+     moving the floor raises the bar by exactly as much as the prices did. Both
+     floors follow the distribution rather than standing still in front of it. */
+  TITLE_FLOOR: 84,
+  /* THE SAME BAR AS THE TITLE, not a higher one. This used to sit above the title
+     floor on the argument that the game's own name is on the outcome, and that
+     was right when a mediocre roster could luck into 12-0 against a soft season.
+     It cannot now: going unbeaten means winning twelve against a real schedule
+     with the crossover inside the roster range, and then winning the bracket. At
+     89 the floor was quietly disqualifying half of the undefeated champions the
+     game produced, which is a strange thing to tell somebody who just went 12-0
+     and won the national title. The record is the proof; the floor only has to
+     agree with the one on the trophy. */
+  PERFECT_FLOOR: 84,
   ROUND_EDGE_MAX: 3.20,
-  ROUND_EDGE_MIN: 0.86,
+  /* THE FLOOR UNDER THE BRACKET, AND THE ONLY DIAL THAT REACHES THE VERY BEST
+     ROSTERS. roundEdge clamps here, so ANY pivot more than about two points
+     below your overall lands on this number and the pivot stops mattering. At
+     0.86 that was true of nearly every playoff team: moving the first two pivots
+     eight points measured as literally no change, 96% and 69% won either way,
+     because both were already clamped. Two things followed. The bracket had
+     nothing left to decide early, so all of the difficulty piled onto the last
+     game, which came out won 4% of the time by 36 points: you cruised to the
+     title game and were annihilated in it, every time. And a 105-overall roster,
+     which is exactly the kind that goes unbeaten, got the floor's advantage in
+     the FINAL, so hardening the pivots barely touched the perfect-season rate
+     no matter how far they moved.
+     0.97 fixes both. It gives the ladder its range back and it bites at the top
+     of the scale, which is where a perfect season comes from. Measured on the
+     solver: 85% / 42% / 21% / 12% won by round, at +12 / -3 / -13 / -19. 1.00
+     overshoots, at 80% / 35% / 18% / 8% and a fifth of the titles. */
+  ROUND_EDGE_MIN: 0.97,
   ROUND_EDGE_SLOPE: 0.075,
   /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
      round is an even game. A first-round opponent is beatable by a team that
@@ -96,11 +141,70 @@ const CONSTANTS = {
      factor rewards, so the average roster got stronger and titles crept up
      again. Both still sit a clear eight-plus points under the 111 max, so a
      perfect season stays reachable rather than mathematically impossible. */
+  /* The overall each round is played AGAINST. Lowered together when the season
+     was re-tuned: they were set when a 90-overall roster reached the playoff 39%
+     of the time and the rounds were the filter. Now the RECORD is the filter, and
+     a team that gets in has already proved something, so the door it arrives at
+     was gating almost nobody. Measured at the old numbers against the new season,
+     titles came out at 0.0%. Re-anchored on the probe's greedy drafts. Lowered
+     two more points each when PRICE_K came down, for the same reason as the two
+     floors above: these are overalls, and the drafts that have to clear them all
+     moved down together.
+
+     THEN THE LAST TWO WENT BACK UP, A LONG WAY, BECAUSE GREEDY WAS THE WRONG
+     YARDSTICK. Every number above was anchored on best-available drafting, which
+     takes the highest scorer on every spin and never thinks about what it is
+     leaving itself. That is not a person trying to win. Measured against the
+     solver instead, on the same ladder as the NFL game (probe_economy policies),
+     84 and 89 gave perfect play a 7.9% title and a 0.37% perfect season against
+     the NFL's 0.4% and 0.04%: about twenty times easier to win it all, in a game
+     whose name is the outcome. Somebody who merely tapped the best player every
+     time was taking more titles here than optimal play takes there.
+
+     THE FIRST ATTEMPT MOVED ONLY THE LAST TWO, to 92 and 101, and hit the target
+     rate exactly while making a bad game: with ROUND_EDGE_MIN still at 0.86 the
+     first two rounds were a formality, so all of the difficulty landed on the
+     final, which came out won 4% of the time by 36 points. Right number, wrong
+     season. The floor moved to 0.93 in the same change and all four pivots came
+     back down to sit near the top of the scale, which puts the difficulty across
+     the bracket instead of in one game.
+
+     THE PIVOTS ALONE COULD NOT GET THERE, and the reason is ROUND_EDGE_MIN: see
+     that constant. While the floor sat at 0.86 the whole bracket was clamped for
+     any strong roster, so pushing the last two pivots as far as 96 and 101 still
+     left perfect seasons at twice the NFL rate while turning the final into a
+     3%-win, 25-point blowout. The floor and the pivots had to move together, the
+     floor up so the bracket reaches the top of the scale at all, the pivots down
+     so it does not swallow everyone else.
+
+     82/88/94/97 at a 0.97 floor, measured against the NFL game on the same
+     harness, the same solver and the SAME 110 draft seeds, 99,000 seasons each:
+
+       perfect play        title    perfect season
+       NFL                 0.54%       0.046%
+       CFB                 0.45%       0.053%
+
+     and a bracket that reads 85% / 42% / 21% / 12% won by round, at +12 / -3 /
+     -13 / -19. The gaps between the four narrow on the way up (6, 6, 3) because
+     the last two are already near the top of the scale and a wider step there
+     just turns the final into a formality. 97 still sits about ten under the
+     best overall the wheel can hand you, so the final stays reachable rather
+     than mathematically impossible.
+
+     MEASURE PAIRED, ON THE SAME SEEDS, AND AT N ABOVE 100. This rate is heavy
+     tailed: it is carried by the handful of draft pools that can produce a
+     105-overall roster, so the same settings measured 0.050% at 80 seeds and
+     0.110% at 110. Two of the readings taken while tuning this were sampling
+     noise, and both of them looked like a result.
+     Re-measure with `policies` after ANY change to prices, the cap, chemistry or
+     the season, and compare rung to rung against the NFL rather than reading the
+     CFB column alone. Greedy drafting is NOT a yardstick: it was the yardstick
+     that let this drift twenty times off. */
   ROUND_EDGE_PIVOT: {
     'CFP First Round': 82,
-    'CFP Quarterfinal': 90,
-    'CFP Semifinal': 100,
-    'CFP Championship': 102,
+    'CFP Quarterfinal': 88,
+    'CFP Semifinal': 94,
+    'CFP Championship': 97,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
@@ -116,13 +220,30 @@ const CONSTANTS = {
   BOWL_MAJOR_RANK: 40,
   // How often, out of every bowl, the assignment is the house's own RunThe.GG Bowl.
   RUNTHE_BOWL_CHANCE: 0.05,
-  // How much each side's score is pulled toward its true mean each game. Higher
-  // means less week-to-week noise, so roster strength wins out and better teams go
-  // farther. The opponent used to be fully random (OPP_CONSISTENCY effectively 0),
-  // which let weak opponents get hot and upset strong rosters regardless of talent;
-  // damping both sides makes the playoff and a title track real quality.
-  CONSISTENCY: 0.40,
-  OPP_CONSISTENCY: 0.40,
+  /* How much each side's score is pulled toward its true mean each game. Higher
+     means less week-to-week noise, so roster strength wins out.
+
+     THESE ONLY WORK WITH SCALE, AND THE MEASUREMENT IS COUNTERINTUITIVE. Damping
+     variance on its own made EVERY band win MORE, not just the good ones: at
+     SCALE 2.0 your mean beat the average opponent's at essentially any roster
+     quality, so variance was the only thing causing losses, and removing it just
+     let the favourite always win. Raising both to 0.85 moved a 75-80 roster from
+     8.7 wins to 9.3 and left the spread across the whole range unchanged.
+
+     They are the steepness, not the level. SCALE puts the crossover inside the
+     roster range; these sharpen the curve through it so landing on the right
+     side of it is decided by the roster rather than by a hot week. Set together
+     with SCALE 2.3, measured on real drafts with cfb/build/test/probe_economy.mjs.
+
+     Your side is damped less than the opponent's on purpose: your six players
+     having an off week is the drama the player owns, and theirs is the drama
+     that happens to them. */
+  CONSISTENCY: 0.80,
+  OPP_CONSISTENCY: 0.85,
+  /* See resolveGame. 1 is the real spread of college scoring offences and it is
+     far wider than a draft can move a roster, which is why every draft used to
+     end in one of three records. */
+  OPP_SPREAD: 0.55,
   PLAYOFF_HOME_FIELD: 0.35,
   // How much of an opponent's defense is applied to your offense. See resolveGame.
   DEFENSE_WEIGHT: 0.65,
@@ -361,13 +482,25 @@ function nationalRank(resume, prepared) {
    MARGIN_GAIN finishes that standardisation. Your margin is not a real point
    differential: it is your fantasy total against an opponent's real points, so
    the units on the two sides of the subtraction do not match and the z that
-   falls out is flatter than a real team's. Measured over 17,000 seasons at every
-   record from 6-6 to 12-0, a real team's strength_z is 1.30 times yours, with an
-   intercept of 0.008 and an R2 of 0.974. Multiplying by that puts your season on
-   the same scale as the teams it is being ranked against, which it was not
-   before: without it you look better than a real team at 6-6 and worse at 12-0.
-   Re-measure it with cfb/build/test/probe_economy.mjs if SCALE, the cap or
-   DEFENSE_WEIGHT move, because all three change what a margin looks like. */
+   falls out is flatter than a real team's.
+
+   IT IS NO LONGER A CLEAN REGRESSION SLOPE, and the honest version of that is
+   worth writing down. It was fitted once, at 1.30, against a five-slot roster
+   and SCALE 2.0. `probe_economy.mjs margin` now refits it on demand, which the
+   old comment told you to do without providing the tool. Two things it reports:
+   at SCALE 2.0 with six slots the fit had already drifted to 1.15, so the
+   constant was over-crediting every season by about 13% and quietly making the
+   playoff easier than intended. And under the re-tuned season the relationship
+   is not linear any more: damping the opponent flattened the margin at the top,
+   so an unbeaten player wins by less than an unbeaten real team does and the
+   per-record ratio runs from 0.6 to 2.4 (R2 0.90 against 0.99 before).
+
+   So this is held at the value where the RANK LADDER comes out right, which is
+   the thing it exists to serve, rather than at the raw slope of a fit that no
+   longer describes a line. Check it against `probe_economy.mjs record`: 12-0
+   should rank about 1st, 11-1 about 4th, 10-2 about 10th, 9-3 outside the field.
+   Re-check after any move to SCALE, the cap, DEFENSE_WEIGHT or the consistency
+   pair, because all of them change what a margin looks like. */
 const MARGIN_GAIN = 1.30;
 
 function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
@@ -1370,9 +1503,28 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
     (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENSE_WEIGHT ?? 1);
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
-  let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);
+  /* HOW FAR APART THE TEAMS YOU PLAY ARE, which is what decides whether your
+     draft shows up in your record.
+
+     Real scoring offences span 18 to 43 points a game, which is 41 to 99 engine
+     points once SCALE is applied: a field 58 points wide. A roster range of 75 to
+     100 overall spans 25. So moving your team twenty-five points, which is most
+     of what a draft can do, crossed under half the field, and after in-game noise
+     that came to about two wins. Meanwhile one roster's win count wanders 1.05
+     season to season. The signal was the size of the noise, so a 78-overall
+     roster and a 95 produced the same record and the draft stopped showing.
+
+     This pulls every opponent toward the league average for its season, tightening
+     the field so a point of overall is worth more of a game. It compresses the
+     MEAN only: how much a team varies week to week is OPP_CONSISTENCY's job, and
+     how good it was is still what strength_z says, so beating a ranked team is
+     still worth what it was on the ranking even though the scoreboard is closer. */
+  const spread = constants.OPP_SPREAD ?? 1;
+  const oppMean = leagueAvgAllowed
+    + (opponent.pts_scored_mean - leagueAvgAllowed) * spread;
+  let oppRaw = sampleGamma(oppMean, opponent.pts_scored_sd, rng);
   const OC = constants.OPP_CONSISTENCY || 0;
-  if (OC > 0) oppRaw = oppRaw * (1 - OC) + opponent.pts_scored_mean * OC;
+  if (OC > 0) oppRaw = oppRaw * (1 - OC) + oppMean * OC;
   const oppScore = oppRaw * constants.SCALE / advantage;
 
   let won;
@@ -1578,8 +1730,11 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     bowlResult,
     /* A perfect season is unbeaten AND champion AND a roster that belongs in the
        conversation. The first two are played out; the third is PERFECT_FLOOR,
-       which sits two points above the title floor because the game's own name is
-       on this outcome. */
+       which is the SAME bar as the title floor, not a higher one. See the
+       constant. Measured against the current season it blocks nobody: every
+       roster that goes unbeaten and then wins four playoff games is already
+       above it, which is the shape it is supposed to have. It stays because it
+       is the backstop if the season is ever loosened again. */
     perfect: losses === 0 && titleWon
       && teamOverall(roster, chemistryMultiplier, constants) >= constants.PERFECT_FLOOR,
     undefeatedRegular: regularLosses === 0,
@@ -1677,7 +1832,7 @@ const publicAPI = {
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport,
-  selectBowl, BOWLS, bowlKey, bowlName,
+  selectBowl, BOWLS, bowlKey, bowlName, MARGIN_GAIN,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
     const cut = s.strength.indexOf('. ');

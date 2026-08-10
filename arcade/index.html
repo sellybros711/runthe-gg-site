@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Daily Sports Puzzles | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: manual choice persists in runthegrid_theme (shared across the
@@ -19,8 +18,21 @@
 })();
 </script>
 <meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Run The Arcade: Daily Sports Puzzles" />
+<meta property="og:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta property="og:url" content="https://runthe.gg/arcade/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Run The Arcade: Daily Sports Puzzles" />
+<meta name="twitter:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<link rel="canonical" href="https://runthe.gg/arcade/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
@@ -32,7 +44,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
@@ -41,7 +53,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0;
+    --coralT:#D8452F; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -52,11 +64,11 @@
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
 
   .stage{position:relative; min-height:100dvh; padding-bottom:86px;}
-  .wrap{width:100%; max-width:1120px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
+  .wrap{width:100%; max-width:1280px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
   @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
 
   /* ---- top bar ---- */
-  .top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:20px;}
+  .top{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:20px;}
   .top .gg{display:inline-flex; align-items:center; line-height:0;}
   .top .gg img{height:64px; width:auto; display:block;}
   @media (max-width:640px){ .top .gg img{height:44px;} }
@@ -68,17 +80,10 @@
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
-  /* mobile-only: compact streak chip + profile bubble */
-  .mStreak{display:none; align-items:center; gap:5px; border:1px solid var(--line2); border-radius:999px; padding:6px 11px;
-    font-weight:900; font-size:13px; background:var(--card); color:var(--coralT); box-shadow:var(--shadow); font-variant-numeric:tabular-nums;}
-  .mProf{display:none; width:36px; height:36px; border-radius:50%; border:1px solid var(--line2); background:var(--card);
-    color:var(--mut); place-items:center; box-shadow:var(--shadow);}
-  @media (max-width:640px){ .mStreak{display:inline-flex;} .mProf{display:grid;} }
-
   /* ============================================================
      DASHBOARD LAYOUT · left sticky HUD rail, right puzzle cards.
      ============================================================ */
-  .board{display:grid; grid-template-columns:332px minmax(0,1fr); gap:22px; align-items:start; margin-top:4px;}
+  .board{display:grid; grid-template-columns:304px minmax(0,1fr); gap:24px; align-items:start; margin-top:4px;}
   @media (max-width:880px){ .board{grid-template-columns:minmax(0,1fr); gap:16px;} }
 
   /* ---- player HUD rail ---- */
@@ -92,71 +97,69 @@
     background:color-mix(in srgb,var(--coral) 16%, var(--card)); border:1px solid color-mix(in srgb,var(--coral) 38%, transparent); color:var(--coralT);}
   .hud-hd .who{min-width:0; line-height:1.2;}
   .hud-hd .who b{display:block; font-weight:900; font-style:italic; font-size:15px; color:var(--ink);}
+  .hud-hd .who:hover b{text-decoration:underline;} .hud-hd .av:hover{filter:brightness(1.12);}
   .hud-hd .who span{display:block; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
   .hud-hd .coins{margin-left:auto; box-shadow:none; padding:6px 11px; font-size:13px;}
-  @media (max-width:640px){ .hud-hd{display:none;} }
+  /* mobile keeps the identity row - a phone player should see who they are and
+     how many plays they have without scrolling (the old top-bar chips are gone) */
+  @media (max-width:640px){ .hud-hd{padding:12px 16px;} .hud-hd .av{width:34px; height:34px;} }
 
-  /* 2 · streak block */
+  /* 2 · streak block - the flame + cap take a color TIER that earns its heat
+     as the run grows. At zero the flame is unlit (dashed ember), not a false
+     enthusiasm-cue; each tier picks up more color as the streak climbs. */
   .hud-streak{padding:18px 18px 14px;}
   .hud-streak .srow{display:flex; align-items:center; gap:14px;}
   .hud-streak .flame{flex:0 0 auto; width:52px; height:52px; border-radius:14px; display:grid; place-items:center;
-    background:color-mix(in srgb, var(--coral) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--coral) 40%, transparent); color:var(--coralT);}
+    background:color-mix(in srgb, var(--tone,var(--coral)) 14%, var(--card));
+    border:1px solid color-mix(in srgb, var(--tone,var(--coral)) 40%, transparent);
+    color:var(--toneT,var(--coralT)); transition:background .3s ease, border-color .3s ease, color .3s ease;}
   .hud-streak .big{line-height:.9;}
   .hud-streak .big .n{font-family:var(--hero); font-weight:400; font-size:48px; color:var(--ink); font-variant-numeric:tabular-nums;}
-  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--coralT); margin-top:4px;}
+  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--toneT,var(--coralT)); margin-top:4px; transition:color .3s ease;}
+  /* cold: no fire on day zero - just a dashed ember waiting to catch */
+  .hud-streak[data-tier="cold"]{ --tone:var(--dim); --toneT:var(--mut); }
+  .hud-streak[data-tier="cold"] .flame{ background:var(--card2); border-style:dashed; border-color:var(--line2); }
+  .hud-streak[data-tier="cold"] .big .n{ color:var(--mut); }
+  .hud-streak[data-tier="warm"]{ --tone:var(--coral); --toneT:var(--coralT); }
+  .hud-streak[data-tier="hot"]{ --tone:var(--gold);  --toneT:var(--goldT); }
+  .hud-streak[data-tier="blaze"]{ --tone:var(--red);   --toneT:var(--red); }
+  .hud-streak[data-tier="blaze"] .flame{ animation:hs-blaze 1.6s ease-in-out infinite; }
+  @keyframes hs-blaze{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+  .hud-streak[data-tier="icon"]{ --tone:var(--gold); --toneT:var(--goldT); }
+  .hud-streak[data-tier="icon"] .flame{ box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 24%, transparent), 0 0 22px -4px color-mix(in srgb, var(--gold) 55%, transparent); border-color:var(--gold); }
   .hud-streak .best{margin-left:auto; text-align:right;}
   .hud-streak .best .n{font-family:var(--hero); font-weight:400; font-size:24px; color:var(--mut); line-height:1;}
   .hud-streak .best .cap{display:block; font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
-  .hud-streak .m-gift{display:none; font-size:24px; margin-left:auto;}
   .hud-streak .smsg{margin:11px 0 0; font-size:13px; font-weight:800; color:var(--ink); line-height:1.4;}
+  .hud-streak .keepcta{display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 14px; border:1.5px solid var(--gold); border-radius:10px; font-size:12px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--goldT); transition:background .12s, transform .08s;}
+  .hud-streak .keepcta:hover{background:color-mix(in srgb, var(--gold) 12%, transparent); transform:translateY(-1px);}
+  .hud-streak .keepcta.hidden{display:none;}
+  /* next-milestone progress: thin track under the streak number, label at right */
+  .hud-streak .sbar{position:relative; height:6px; margin:10px 44px 0 0; border-radius:999px; background:var(--line2); overflow:visible;}
+  .hud-streak .sbar i{position:absolute; inset:0 auto 0 0; width:0; border-radius:999px; background:linear-gradient(90deg, var(--coral), var(--gold)); transition:width .6s ease;}
+  .hud-streak .sbar .lab{position:absolute; right:-44px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  /* streak-up micro-celebration: quick pop on the number, one-time glow on the flame */
+  @keyframes streakpop{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .hud-streak .big .n.pop{display:inline-block; animation:streakpop .55s ease;}
+  @keyframes flameglow{0%,100%{filter:none;}50%{filter:drop-shadow(0 0 10px color-mix(in srgb, var(--coral) 75%, transparent));}}
+  .hud-streak .flame.glow svg{animation:flameglow 1.1s ease 2;}
+  /* member status: ticket beside the name + a whisper of gold on the card edge */
+  .hud-hd .who b{display:inline-flex; align-items:center; gap:6px;}
+  .hud-hd .who #nameBadge{display:inline; font-size:14px; line-height:1; margin:0;}
+  .hud-hd .who #nameBadge[hidden]{display:none;}
+  aside.hud.member{border:1px solid color-mix(in srgb, var(--gold) 40%, var(--line2)); box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 8%, transparent), var(--shadow);}
+  /* member vault: a secondary possession card under the primary play CTA */
+  .hud-cta .btn.vault{margin-top:9px; font-style:normal; background:transparent; border:1.5px solid var(--line2); color:var(--ink); box-shadow:none;}
+  .hud-cta .btn.vault:hover{border-color:var(--gold); filter:none;}
+  .hud-cta .btn.vault b{color:var(--goldT);}
+  .hud-cta .ladderhead{margin:13px 0 6px; text-align:center; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
   .hud-streak .smsg .fy{margin-right:4px;}
   @media (max-width:640px){
     .hud-streak{padding:15px 16px 12px;}
-    .hud-streak .best{display:none;}
-    .hud-streak .m-gift{display:block;}
     .hud-streak .big .n{font-size:36px;}
+    .hud-streak .best .n{font-size:20px;}
     .hud-streak .flame{width:44px; height:44px; border-radius:12px;}
     .hud-streak .smsg{margin-top:8px; font-size:12.5px;}
-  }
-
-  /* 3 · NEXT GOAL panel */
-  .hud-goal{padding:14px 18px 16px; border-top:1px solid var(--line);}
-  .hud-goal .g-lab{display:block; font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:6px;}
-  .hud-goal .g-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
-  .hud-goal .g-main{min-width:0; line-height:1.25;}
-  .hud-goal .g-main b{display:block; font-size:16px; font-weight:900; font-style:italic; letter-spacing:.02em; text-transform:uppercase; color:var(--ink);}
-  .hud-goal .g-main span{display:block; font-size:11.5px; font-weight:700; color:var(--mut); margin-top:2px;}
-  .hud-goal .g-gift{margin-left:auto; font-size:24px; flex:0 0 auto;}
-  .hud-goal .g-barrow{display:flex; align-items:center; gap:10px;}
-  .hud-goal .bar{flex:1; height:9px; border-radius:999px; background:var(--card2); border:1px solid var(--line); overflow:hidden; min-width:0;}
-  .hud-goal .bar i{display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--coral),var(--gold)); transition:width .8s cubic-bezier(.2,.8,.2,1);}
-  .hud-goal .g-cnt{flex:0 0 auto; font-size:11px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums;}
-  @media (max-width:640px){ .hud-goal{padding:12px 16px 14px;} }
-
-  /* 4 · milestone path stepper */
-  .hud-path{padding:14px 14px 14px; border-top:1px solid var(--line);}
-  .mp-row{display:flex; align-items:flex-start; justify-content:space-between; position:relative; padding:0 6px;}
-  .mp-row:before{content:""; position:absolute; left:34px; right:34px; top:18px; height:2px; background:var(--line2);}
-  .mp-node{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; width:62px;}
-  .mp-dot{width:37px; height:37px; border-radius:50%; display:grid; place-items:center; position:relative;
-    background:var(--card2); border:2px solid var(--line2); color:var(--dim);}
-  .mp-dot .ic-f{display:none;}
-  .mp-node.reached .mp-dot{border-color:var(--coral); color:var(--coralT); background:color-mix(in srgb,var(--coral) 12%, var(--card));}
-  .mp-node.reached .mp-dot .ic-f{display:block;}
-  .mp-node.reached .mp-dot .ic-l{display:none;}
-  .mp-node.reached .mp-dot:after{content:"✓"; position:absolute; right:-5px; top:-5px; width:16px; height:16px; border-radius:50%;
-    background:var(--green); color:#06250F; font-size:10px; font-weight:900; display:grid; place-items:center; line-height:1;}
-  .mp-node.next .mp-dot{border-color:var(--gold); color:var(--goldT); background:color-mix(in srgb,var(--gold) 16%, var(--card));
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 20%, transparent);}
-  .mp-tag{font-size:8.5px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; color:var(--dim); line-height:1; padding:3px 0; text-align:center; white-space:nowrap;}
-  .mp-node.reached .mp-tag{color:var(--coralT);}
-  .mp-node.next .mp-tag{color:var(--goldT); background:color-mix(in srgb,var(--gold) 18%, var(--card)); border:1px solid color-mix(in srgb,var(--gold) 40%, transparent); padding:3px 7px; border-radius:6px;}
-  .mp-cap{margin:11px 4px 0; font-size:11px; font-weight:700; color:var(--mut); text-align:center;}
-  @media (max-width:640px){
-    .hud-path{padding:12px 12px;}
-    .mp-dot{width:32px; height:32px;}
-    .mp-row:before{top:16px; left:30px; right:30px;}
-    .mp-cap{font-size:10.5px; margin-top:9px;}
   }
 
   /* 5 · next-drop row */
@@ -169,24 +172,66 @@
   .hud-drop .sub{display:block; font-size:11px; font-weight:700; color:var(--dim); margin-top:2px;}
   .hud-drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
 
-  /* 6 · gold note card */
-  .hud-notewrap{padding:14px 18px 0;}
-  .hud-note{border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.5; color:var(--ink);
-    background:color-mix(in srgb, var(--gold) 13%, var(--card)); border:1px solid color-mix(in srgb, var(--gold) 38%, transparent);}
-  .hud-note b{font-weight:900;}
-  @media (max-width:640px){ .hud-notewrap{display:none;} }
-
   /* 7 · CTA stack */
+  /* small membership/plays status line: quiet, its own row above the CTA.
+     Members get a ticket badge: ink pill, inverts with the theme. */
+  .tierline{padding:12px 18px 0; text-align:center; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .tierline.member span{display:inline-flex; align-items:center; gap:7px; background:var(--ink); color:var(--bg); border-radius:999px; padding:6px 14px; font-size:10.5px; letter-spacing:.14em; box-shadow:var(--shadow);}
   .hud-cta{padding:14px 18px 16px;}
-  .hud-cta .btn{display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
-    min-height:48px; padding:12px 14px; border-radius:999px; color:#fff;
+  .hud-cta .btn{display:flex; flex-wrap:wrap; width:100%; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
+    min-height:48px; padding:12px 14px; border-radius:999px; color:#fff; border:0; cursor:pointer; font-family:inherit;
     background:linear-gradient(90deg, var(--coral), #F0913C); box-shadow:0 8px 18px -10px color-mix(in srgb, var(--coral) 70%, transparent);}
+  .hud-cta .btn small{flex-basis:100%;}
   .hud-cta .btn:hover{filter:brightness(1.06);}
   .hud-cta .btn.ghost{margin-top:9px; font-style:normal; color:var(--ink); background:transparent; border:1.5px solid var(--line2); box-shadow:none;}
   .hud-cta .btn.ghost:hover{border-color:var(--coral); color:var(--coralT);}
+  /* account CTA: a real, obvious button (blue) distinct from the orange primary */
+  .hud-cta .btn.signin{margin-top:9px; font-style:normal; color:var(--ink);
+    background:color-mix(in srgb, #2F6BFF 16%, var(--card)); border:1.5px solid #2F6BFF;
+    box-shadow:0 6px 16px -10px color-mix(in srgb, #2F6BFF 70%, transparent);}
+  .hud-cta .btn.signin svg{color:#5b93ff;}
+  .hud-cta .btn.signin:hover{filter:none; background:color-mix(in srgb, #2F6BFF 28%, var(--card)); border-color:#4c86ff;}
   .cta-links{display:flex; flex-direction:column; gap:6px; margin-top:12px; text-align:center;}
   .cta-links a{font-size:12px; font-weight:800; color:var(--mut);}
   .cta-links a:hover{color:var(--ink);}
+
+  /* Buy Arcade Card - arcade-cabinet banner: dark cabinet (screen + joystick +
+     sports balls) on the left, orange->red gradient with the pitch on the right */
+  .arcade-buy{display:block; width:100%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent;}
+  .ab-card{display:flex; align-items:stretch; overflow:hidden; border-radius:16px; min-height:96px;
+    background:linear-gradient(105deg,#FF9A2E 0%, #FF6A3D 48%, #F0384E 100%);
+    box-shadow:0 12px 28px -12px rgba(240,56,78,.65); transition:transform .12s ease, box-shadow .12s ease;}
+  .arcade-buy:hover .ab-card{transform:translateY(-2px); box-shadow:0 18px 36px -12px rgba(240,56,78,.85);}
+  .arcade-buy:active .ab-card{transform:translateY(0);}
+  /* left: dark panel with a tilted "membership card + crown" icon, sparkles and
+     speed lines; its angled right edge juts into the gradient */
+  .ab-cab{flex:0 0 92px; position:relative; padding:8px; display:grid; place-items:center;
+    background:linear-gradient(180deg,#141d33,#080d18); clip-path:polygon(0 0, 100% 0, 82% 50%, 100% 100%, 0 100%);}
+  .ac-icon{position:relative; width:72px; height:64px;}
+  .ac-card{position:absolute; left:50%; top:50%; width:40px; height:50px; transform:translate(-50%,-50%) rotate(-7deg);
+    border-radius:9px; border:2px solid transparent;
+    background:linear-gradient(#0e1832,#0a1226) padding-box, linear-gradient(155deg,#FF8A3D,#F0384E) border-box;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+    box-shadow:0 6px 14px -6px rgba(240,56,78,.55);}
+  .ac-crown{width:22px; height:15px; display:block; filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}
+  .ac-bar{border-radius:2px; height:3px;}
+  .ac-bar.b1{width:20px; background:#F0384E;}
+  .ac-bar.b2{width:13px; background:#2ee6cf;}
+  .ac-spark{position:absolute; display:block;}
+  .ac-spark.s1{width:11px; height:11px; top:2px; right:6px;}
+  .ac-spark.s2{width:8px; height:8px; bottom:4px; left:4px; opacity:.9;}
+  .ac-line{position:absolute; height:3px; border-radius:2px;}
+  .ac-line.l1{width:13px; top:30%; left:-2px; background:#F0384E;}
+  .ac-line.l2{width:9px;  top:46%; left:-4px; background:#2ee6cf;}
+  .ac-line.l3{width:12px; top:64%; right:-2px; background:#3a4a66;}
+  /* right: pitch + arrow */
+  .ab-body{flex:1; min-width:0; display:flex; align-items:center; gap:8px; padding:10px 12px 10px 4px;}
+  .ab-txt{flex:1; min-width:0; text-align:left;}
+  .ab-txt b{display:block; font-family:var(--f); font-weight:900; font-style:italic; font-size:20px; line-height:1; color:#1a1206; white-space:nowrap;}
+  .ab-txt small{display:block; font-size:11px; font-weight:800; color:rgba(26,18,6,.82); margin-top:5px; line-height:1.3;}
+  .ab-arrow{flex:0 0 auto; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:19px; color:#fff; background:#12161f; box-shadow:0 3px 8px rgba(0,0,0,.4); transition:background .12s;}
+  .arcade-buy:hover .ab-arrow{background:#0a0d14;}
+  @media (max-width:640px){ .ab-cab{flex-basis:84px;} .ab-txt b{font-size:19px;} .ab-txt small{font-size:10px;} }
   @media (max-width:640px){
     .hud-drop{border-bottom:0;}
     .hud-cta{padding-top:0; background:var(--card2);}
@@ -217,7 +262,7 @@
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .tile.match{--c:var(--blue);}
-  .tile.cross{--c:#AAB6C4;}   /* black-and-white / newsprint, distinct from violet Odd One Out */
+  .tile.cross{--c:var(--news);}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
   .tile.word{--c:var(--teal);}
   .tile.guess{--c:var(--coral);}
   .tile.table{--c:var(--gold);}
@@ -227,7 +272,7 @@
   .tile.alma{--c:var(--gold);}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
-  .tile.cross .nm{color:var(--ink);}
+  .tile.cross .nm{color:var(--newsT);}
   .tile.word .nm{color:var(--tealT);}
   .tile.guess .nm{color:var(--coralT);}
   .tile.table .nm{color:var(--goldT);}
@@ -255,15 +300,22 @@
   .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
     text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY, shadow keeps it legible on light accents */
-  .tile.cross .play{color:#16273B; text-shadow:none;}   /* neutral silver pill reads better with dark text */
+  .tile.cross .play{color:#fff;}   /* neutral silver pill reads better with dark text */
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
-  .tile.unplayed .play{animation:playpulse 2.2s ease-in-out infinite;}
-  @keyframes playpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}55%{box-shadow:0 0 0 9px transparent;}}
+  .tile.unplayed .play{position:relative;}
+  /* the ring is a pseudo-element scaling on the compositor, not an
+     ever-repainting box-shadow spread on the button itself */
+  .tile.unplayed .play::after{content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); opacity:0; animation:playpulse 2.2s ease-in-out infinite;}
+  @keyframes playpulse{0%,100%{opacity:0; transform:scale(1);}55%{opacity:.55; transform:scale(1.045);}}
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
   .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px; text-shadow:none;}
   .tile.spent .play .arw{display:none;}
+  /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
+  .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
+  .tile.archive.cross .play{color:var(--coralT); border-color:var(--coral);}   /* crossword accent is near-white; keep it readable */
   /* mobile: 2-up compact cards (cap + title + PLAY) */
   @media (max-width:640px){
     .tile{border-radius:14px;}
@@ -306,10 +358,7 @@
 <div class="stage">
   <div class="wrap">
     <div class="top">
-      <a class="gg" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /></a>
       <span class="topR">
-        <span class="mStreak" title="Day streak" aria-label="Day streak"> <b id="mStreakVal">0</b></span>
-        <a class="mProf" href="/" aria-label="Sign in"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -323,8 +372,7 @@
         <!-- 1 · guest row -->
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-          <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">9</span><span id="coinMax" style="font-weight:700;opacity:.7;margin-left:1px">/9</span></span>
+          <span class="who"><b><span id="whoName">Guest</span><span id="nameBadge" hidden title="Arcade Card active">🎟</span></b><span id="dateShort">Today</span></span>
         </div>
 
         <!-- 2 · streak block -->
@@ -333,80 +381,22 @@
             <span class="flame"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg></span>
             <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
             <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
-            <span class="m-gift" aria-hidden="true"></span>
           </div>
+          <div class="sbar" aria-hidden="true"><i id="sbarFill"></i><span class="lab" id="sbarLab"></span></div>
           <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
+          <a class="keepcta" id="ctaKeep" href="/arcade/table/">Play your next game <span aria-hidden="true">→</span></a>
         </div>
 
-        <!-- 3 · NEXT GOAL panel -->
-        <div class="hud-goal" id="mile" hidden>
-          <span class="g-lab">Next goal</span>
-          <div class="g-row">
-            <span class="g-main"><b id="mileLab">3 Day Streak</b><span id="mileTo">3 more days to unlock</span></span>
-            <span class="g-gift" aria-hidden="true"></span>
-          </div>
-          <div class="g-barrow">
-            <div class="bar"><i id="mileBar"></i></div>
-            <span class="g-cnt" id="mileCnt">0 / 3</span>
-          </div>
-        </div>
-
-        <!-- 4 · milestone path -->
-        <div class="hud-path" id="milePath">
-          <div class="mp-row">
-            <span class="mp-node" data-days="3">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">3 days</span>
-            </span>
-            <span class="mp-node" data-days="5">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">5 days</span>
-            </span>
-            <span class="mp-node" data-days="7">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">7 days</span>
-            </span>
-            <span class="mp-node" data-days="14">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">14 days</span>
-            </span>
-          </div>
-          <p class="mp-cap">Keep playing daily to earn bigger rewards!</p>
-        </div>
-
-        <!-- 5 · next drop -->
+        <!-- next drop -->
         <div class="hud-drop">
           <span class="cal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
           <span class="dcol"><span class="lbl">Next drop</span><span class="sub">New puzzles arrive every day.</span></span>
           <span class="t" id="cdT">--:--:--</span>
         </div>
 
-        <!-- 6 · gold note -->
-        <div class="hud-notewrap">
-          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily. Build streaks. Earn rewards.</div>
-        </div>
-
-        <!-- 7 · CTA stack -->
-        <div class="hud-cta">
-          <a class="btn" id="ctaKeep" href="/arcade/table/">Keep streak alive</a>
-          <a class="btn ghost" href="#puzzles">Play more puzzles</a>
-          <div class="cta-links">
-            <a href="/">Sign in to save your streak →</a>
-            <a href="/arcade/archive/">Play past days →</a>
-          </div>
-        </div>
+        <!-- tier CTA: exactly one action, chosen by tier in JS -->
+        <div class="tierline" id="playsChip"><span id="playsLbl">1 PLAY LEFT TODAY</span></div>
+        <div class="hud-cta" id="hudCta"></div>
       </aside>
 
       <!-- RIGHT: today's puzzles -->
@@ -419,7 +409,7 @@
         <div class="tiles">
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stM">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stM">Ready</span>
               <svg viewBox="0 0 56 56"><g>
                 <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
                 <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
@@ -435,7 +425,7 @@
 
           <a class="tile cross" id="cardCross" href="/arcade/crossword/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stC">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stC">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#cwico)">
@@ -474,7 +464,7 @@
 
           <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stW">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stW">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#wsico)">
@@ -507,7 +497,7 @@
 
           <a class="tile guess" id="cardGuess" href="/arcade/guess/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stG">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stG">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g>
                   <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
@@ -525,15 +515,18 @@
 
           <a class="tile table" id="cardTable" href="/arcade/table/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stT">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stT">Ready</span>
               <svg viewBox="0 0 56 56">
-                <rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/>
-                <rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/>
-                <g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g>
+                <path d="M20.5 9 12 13.4 8.8 22.4 15 24.6 15 47 41 47 41 24.6 47.2 22.4 44 13.4 35.5 9"
+                      fill="#F2B632" fill-opacity=".18" stroke="#F2B632" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M20.5 9c1.6 4.3 4.4 6.5 7.5 6.5s5.9-2.2 7.5-6.5"
+                      fill="none" stroke="#F2B632" stroke-width="3" stroke-linecap="round"/>
+                <text x="28" y="40" text-anchor="middle" font-size="19" font-weight="900"
+                      font-family="Archivo, system-ui, sans-serif" fill="#F2B632">26</text>
               </svg>
             </span>
             <span class="body">
-              <span class="nm">Run The Table</span>
+              <span class="nm">Number Game</span>
               <span class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</span>
               <span class="play" id="playT">PLAY <span class="arw">→</span></span>
             </span>
@@ -541,7 +534,7 @@
 
           <a class="tile oddone" id="cardOdd" href="/arcade/oddone/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stO">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stO">Ready</span>
               <svg viewBox="0 0 56 56">
                 <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
                 <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
@@ -556,7 +549,7 @@
 
           <a class="tile career" id="cardCareer" href="/arcade/career/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stR">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stR">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
                 <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
@@ -571,7 +564,7 @@
 
           <a class="tile rankit" id="cardRank" href="/arcade/rankit/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stK">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stK">Ready</span>
               <svg viewBox="0 0 56 56">
                 <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
                 <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
@@ -580,14 +573,14 @@
             </span>
             <span class="body">
               <span class="nm">Rank It</span>
-              <span class="desc">Put five athletes in order by the era they starred in. Fewest checks wins.</span>
+              <span class="desc">Put five athletes in the right order by a career stat or era. Two tries per set; clear it and get another.</span>
               <span class="play" id="playK">PLAY <span class="arw">→</span></span>
             </span>
           </a>
 
           <a class="tile alma" id="cardAlma" href="/arcade/almamater/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stA">Ready</span>
+              <span class="badge">Daily</span><span class="status" id="stA">Ready</span>
               <svg viewBox="0 0 56 56">
                 <path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/>
                 <path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/>
@@ -627,7 +620,7 @@
 
   <nav class="nav">
     <a class="on" href="/arcade/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
-    <a href="/arcade/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="6" height="8" rx="1"/><rect x="14" y="6" width="6" height="14" rx="1"/></svg>Table</a>
+    <a href="/arcade/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8.6 3.4 4.6 5.4 3.1 9.6 6 10.6 6 20.6 18 20.6 18 10.6 20.9 9.6 19.4 5.4 15.4 3.4"/><path d="M8.6 3.4c.7 2 2 3 3.4 3s2.7-1 3.4-3"/><text x="12" y="17.2" text-anchor="middle" font-size="7" font-weight="900" font-family="Archivo, system-ui, sans-serif" fill="currentColor" stroke="none">26</text></svg>Number</a>
     <a href="/arcade/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Match</a>
     <a href="/arcade/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
     <a href="/arcade/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
@@ -642,6 +635,12 @@
 
 <script src="/arcade/favteam.js"></script>
 <script src="/arcade/tokens.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=1"></script>
+<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -685,6 +684,34 @@
   var now = new Date();
   document.getElementById('dateShort').textContent =
     now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // ---- HUD name: reflect the signed-in user + tap to open account ----
+  (function(){
+    var who = document.querySelector('.hud-hd .who');
+    var av  = document.querySelector('.hud-hd .av');
+    var whoB = document.getElementById('whoName');
+    if(!whoB) return;
+    function setName(s){
+      s = s || {};
+      whoB.textContent = s.name ? s.name : (s.signedIn ? 'Player' : 'Guest');
+    }
+    // Clicking your name/avatar opens the account panel (Change username / Sign
+    // out / Delete). Guests get the sign-in modal instead.
+    function openAccount(){
+      if(!window.RTGAuthUI) return;
+      var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
+      RTGAuthUI.open(signed ? 'account' : 'signin');
+    }
+    [who, av].forEach(function(el){
+      if(!el) return;
+      el.style.cursor='pointer'; el.setAttribute('role','button'); el.setAttribute('tabindex','0');
+      el.setAttribute('title','Account & settings');
+      el.addEventListener('click', openAccount);
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openAccount(); } });
+    });
+    if(window.RTG_BOARD && RTG_BOARD.onChange){ RTG_BOARD.onChange(setName); }
+    else if(window.RTG_AUTH && RTG_AUTH.state){ var a=RTG_AUTH.state()||{}; setName({ signedIn:!!a.userId, name:a.name }); }
+  })();
   function pad(n) { return String(n).padStart(2, '0'); }
   function tickCd() {
     var n = new Date();
@@ -694,17 +721,69 @@
     document.getElementById('cdT').textContent = str;
     var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
   }
-  tickCd(); setInterval(tickCd, 1000);
+  // Pause the countdown when the tab is hidden: it was writing to two nodes
+  // every second forever in background tabs.
+  var cdTimer=null;
+  function startCd(){ if(cdTimer) return; tickCd(); cdTimer=setInterval(tickCd,1000); }
+  function stopCd(){ if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } }
+  startCd();
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stopCd() : startCd(); });
 
   // ---- daily plays wallet + streaks ----
-  (function(){
-    var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH'), mx=document.getElementById('coinMax');
-    if(!TOK){ return; }
-    if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; if(mx) mx.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
-    var rem=TOK.remaining();
-    val.textContent = rem;
-    if(mx) mx.textContent = '/'+TOK.DAILY;
+  // Text states instead of a "1/1" fraction, and re-rendered when the Pro
+  // flag lands (board.js syncs it asynchronously, so a member's first paint
+  // used to show the guest view until reload).
+  // Membership reads as status, not signage: the ticket sits beside the
+  // username and the card gets a whisper of gold. The tierline row only
+  // works for the free tier's plays count; members and guests don't need a
+  // label restating what the rest of the card already shows.
+  function renderPlaysChip(){
+    var chip=document.getElementById('playsChip'), lbl=document.getElementById('playsLbl');
+    var badge=document.getElementById('nameBadge'), card0=document.querySelector('aside.hud');
+    if(!TOK || !chip || !lbl){ return; }
+    chip.style.color='';
+    var isMember = !!((TOK.isPro && TOK.isPro()) || (TOK.testing && TOK.testing()));
+    if(badge) badge.hidden = !isMember;
+    if(card0) card0.classList.toggle('member', isMember);
+    if(isMember){
+      chip.style.display='none';
+      return;
+    }
+    var signedIn = TOK.signedIn && TOK.signedIn();
+    if(!signedIn){
+      chip.style.display='none';   // the guest ladder in the CTA carries the story
+      return;
+    }
+    chip.style.display='';
+    var rem=TOK.remaining(), cap=(TOK.cap?TOK.cap():TOK.DAILY);
+    lbl.textContent = rem+' PLAY'+(rem===1?'':'S')+' LEFT TODAY';
+    chip.setAttribute('title', rem+' of '+cap+' daily plays left');
     if(rem<=0){ chip.style.color='var(--mut)'; }
+  }
+  renderPlaysChip();
+  if(window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(renderPlaysChip);
+  document.addEventListener('rtg:tokens', renderPlaysChip);
+
+  // Gate entry to a game when out of plays. Intent to play another game is the
+  // primary paywall/conversion trigger: a guest with 0 left -> "create account",
+  // a signed-in free user with 0 left -> Arcade Card paywall. Card/testing =
+  // unlimited. A game already started today stays enterable (resume/finish it).
+  (function(){
+    if(!TOK) return;
+    function unlimited(){ return (TOK.isPro&&TOK.isPro()) || (TOK.testing&&TOK.testing()); }
+    var links = [].slice.call(document.querySelectorAll('a.tile[href^="/arcade/"]'));
+    var keep = document.getElementById('ctaKeep'); if(keep) links.push(keep);
+    links.forEach(function(a){
+      a.addEventListener('click', function(e){
+        if(unlimited()) return;
+        var m=(a.getAttribute('href')||'').match(/\/arcade\/([a-z]+)\//); var game=m&&m[1];
+        var already = game && TOK.playsOf && TOK.playsOf(game)>0;   // resume/replay their own started game
+        if((TOK.remaining&&TOK.remaining()>0) || already) return;
+        e.preventDefault();
+        if(window.RTGCard) RTGCard.wall();
+        else if(window.RTGAuthUI) RTGAuthUI.open('signup');
+      });
+    });
   })();
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
   var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
@@ -717,52 +796,177 @@
   var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v2', '{}')) || {}; } catch (e) {}
   var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
   cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
-  best = Math.max(best, cur, cw.bestStreak | 0);
+  // High-water mark: most games only persist their CURRENT day-streak, so the
+  // hub is the one place that remembers your all-time best. Fold in the games
+  // that do track their own best, then write the mark back so a broken streak
+  // never erases the record.
+  best = Math.max(best, cur, cw.bestStreak | 0, gs.bestStreak | 0);
+  try { localStorage.setItem('grid_best_streak', String(best)); } catch (e) {}
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
+  // Streak tier: the flame's color earns itself as the run grows. Zero swaps
+  // the fire for an unlit dashed ember - no false enthusiasm on day one.
+  (function(){
+    var host=document.querySelector('.hud-streak'); if(!host) return;
+    var tier = cur<=0 ? 'cold' : cur<=2 ? 'warm' : cur<=6 ? 'hot' : cur<30 ? 'blaze' : 'icon';
+    host.setAttribute('data-tier', tier);
+    var flame=host.querySelector('.flame'); if(!flame) return;
+    if (tier==='cold') {
+      // dashed ember with an inner spark, visually related to the empty
+      // punches on the ticket so the pre-streak state has one language
+      flame.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>';
+    }
+    // Non-cold tiers keep the built-in flame path; no swap needed.
+  })();
 
-  // motivational line under the streak number + mobile header streak chip
+  // Streak line: a concrete nearby objective beats a cheer. "One more day
+  // gets me to 3" is something to accomplish; "keep it going" is noise.
+  // The thin bar tracks progress from the last milestone to the next.
+  var MILESTONES = [3, 5, 7, 14, 30, 50, 100];
+  var nextM = null, prevM = 0;
+  for (var mi = 0; mi < MILESTONES.length; mi++) {
+    if (MILESTONES[mi] > cur) { nextM = MILESTONES[mi]; prevM = mi > 0 ? MILESTONES[mi - 1] : 0; break; }
+  }
   var streakMsg = document.getElementById('streakMsg');
   if (streakMsg) {
     streakMsg.textContent =
-      cur <= 0 ? 'Play a game to start your streak!' :
-      cur <= 2 ? 'Great start! Keep it going!' :
-      cur <= 6 ? "You're on a heater!" :
-                 'Untouchable. Keep the run alive!';
+      cur <= 0 ? 'Your streak starts today.' :
+      !nextM   ? '100+ days. Legendary.' :
+      (nextM - cur === 1) ? ('One more day → ' + nextM + '-day streak!') :
+                 ((nextM - cur) + ' days to a ' + nextM + '-day streak');
   }
-  var mSt = document.getElementById('mStreakVal'); if (mSt) mSt.textContent = cur;
-
-  // NEXT GOAL panel: progress toward the next streak milestone
-  var MILES = [3, 5, 7, 14, 30];
-  var next = null;
-  for (var i = 0; i < MILES.length; i++) { if (cur < MILES[i]) { next = MILES[i]; break; } }
-  var mile = document.getElementById('mile');
-  var mileCnt = document.getElementById('mileCnt');
-  mile.hidden = false;
-  if (next) {
-    var togo = next - cur;
-    document.getElementById('mileLab').textContent = next + ' Day Streak';
-    document.getElementById('mileTo').textContent = togo + ' more day' + (togo === 1 ? '' : 's') + ' to unlock';
-    if (mileCnt) mileCnt.textContent = cur + ' / ' + next;
-    var frac = Math.max(cur > 0 ? 0.06 : 0.02, cur / next);
-    setTimeout(function () { document.getElementById('mileBar').style.width = Math.min(100, Math.round(frac * 100)) + '%'; }, 120);
-  } else {
-    document.getElementById('mileLab').textContent = 'Every goal unlocked';
-    document.getElementById('mileTo').textContent = 'You passed every streak milestone!';
-    if (mileCnt) mileCnt.textContent = cur + ' days';
-    setTimeout(function () { document.getElementById('mileBar').style.width = '100%'; }, 120);
-  }
-
-  // milestone path stepper: reached / next / future from the same streak
   (function () {
-    var nodes = document.querySelectorAll('#milePath .mp-node');
-    var tagged = false;
-    for (var p = 0; p < nodes.length; p++) {
-      var d = parseInt(nodes[p].getAttribute('data-days'), 10) || 0;
-      if (cur >= d) { nodes[p].classList.add('reached'); }
-      else if (!tagged) { nodes[p].classList.add('next'); tagged = true; }
-    }
+    var fill = document.getElementById('sbarFill'), lab = document.getElementById('sbarLab');
+    var bar = document.querySelector('.hud-streak .sbar');
+    if (!fill || !bar) return;
+    if (!nextM) { fill.style.width = '100%'; if (lab) lab.textContent = cur; return; }
+    var pct = Math.max(0, Math.min(1, (cur - prevM) / (nextM - prevM)));
+    fill.style.width = Math.round(pct * 100) + '%';
+    if (lab) lab.textContent = cur + ' / ' + nextM;
   })();
+  // Micro-celebration when the streak has grown since the hub last looked:
+  // the number pops and the flame glows twice. Saved bests and milestones
+  // get their fanfare in the games; here it stays a wink, not confetti.
+  (function () {
+    var seen = 0; try { seen = parseInt(localStorage.getItem('rtg:hub:seenStreak') || '0', 10) || 0; } catch (e) {}
+    if (cur > seen && cur > 0) {
+      var n = document.getElementById('curStreak');
+      var fl = document.querySelector('.hud-streak .flame');
+      if (n) n.classList.add('pop');
+      if (fl) fl.classList.add('glow');
+      setTimeout(function () { if (n) n.classList.remove('pop'); if (fl) fl.classList.remove('glow'); }, 2600);
+    }
+    try { localStorage.setItem('rtg:hub:seenStreak', String(cur)); } catch (e) {}
+  })();
+
+  // HUD tier CTA: exactly one action.
+  //   Arcade Card  → Play archived puzzles
+  //   free account → Buy Arcade Card
+  //   guest        → Sign in
+  // Today's play state, readable before the flags further down are built:
+  // which games are done, how many, and the first unplayed one in display
+  // order. The CTA hierarchy hangs off this - come back every day is the
+  // product; everything else on the card is a perk.
+  function dayState(){
+    var d = new Date();
+    var td = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var mr = null; try { mr = JSON.parse(g('grid_match_result_' + td, 'null')); } catch (e) {}
+    var q = [
+      [(ts.lastDone === td), '/arcade/table/', 'Number Game'],
+      [!!mr, '/arcade/match/', 'Daily Match'],
+      [(rs.lastDone === td), '/arcade/career/', 'Career Path'],
+      [(os.lastDone === td), '/arcade/oddone/', 'Odd One Out'],
+      [(ks.lastDone === td), '/arcade/rankit/', 'Rank It'],
+      [(as.lastDone === td), '/arcade/almamater/', 'Alma Mater'],
+      [(gs.lastDone === td), '/arcade/guess/', 'Guess the Player'],
+      [(cw.lastDone === td), '/arcade/crossword/', 'Daily Crossword'],
+      [(ws.lastDone === td), '/arcade/wordsearch/', 'Word Search']
+    ];
+    var played = 0, next = null;
+    for (var x = 0; x < q.length; x++) { if (q[x][0]) played++; else if (!next) next = q[x]; }
+    return { played: played, next: next, all: !next };
+  }
+  function vaultCount(){
+    try {
+      var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
+      return Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
+    } catch (e) { return 0; }
+  }
+  function renderHudCta(){
+    var cta = document.getElementById('hudCta'); if(!cta) return;
+    var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
+    var day = dayState(), vault = vaultCount();
+    // Drop copy follows the day: waiting games are an invitation, a cleared
+    // slate points at the countdown.
+    var dropSub = document.querySelector('.hud-drop .sub');
+    if (dropSub) dropSub.textContent = day.all ? 'Clean sweep! Fresh games at midnight.'
+      : (day.played === 0 ? "Today's games are waiting." : 'New puzzles arrive every day.');
+    // The keep-streak CTA in the streak block duplicates the hero for tiers
+    // whose hero IS today's game (members, guests) - hide it there.
+    var keepEl = document.getElementById('ctaKeep');
+    if (keepEl) keepEl.classList.toggle('hidden', hasCard() || !signed || day.all);
+    if (hasCard()) {
+      // MEMBER: today's game is the giant button; the vault is a possession
+      // you've accumulated, one line below. When today is swept, the card
+      // transforms: the vault steps up and tomorrow gets the headline.
+      var vaultBtn = '<a class="btn vault" href="/arcade/archive/">🎟️ <b>YOUR VAULT · ' + vault + '</b>' +
+        '<small style="font-weight:800;font-size:10.5px;letter-spacing:.06em;color:var(--mut);">Play any day you missed &rarr;</small></a>';
+      if (!day.all && day.next) {
+        cta.innerHTML = '<a class="btn" href="' + day.next[1] + '">🔥 Play ' + day.next[2] +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">' +
+          (cur > 0 ? ('Keep your ' + cur + '-day streak alive') : 'Start your streak today') + '</small>' +
+          '</a>' + vaultBtn;
+      } else {
+        cta.innerHTML = '<a class="btn" href="/arcade/archive/">🎟️ Enter your Vault · ' + vault +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">Clean sweep today. New games at midnight.</small></a>';
+      }
+    } else if (signed) {
+      cta.innerHTML =
+        '<button class="arcade-buy" type="button" id="hudBuy" aria-label="Buy Arcade Card: unlimited plays, every past day unlocked">' +
+          '<span class="ab-card">' +
+            '<span class="ab-cab" aria-hidden="true"><span class="ac-icon">' +
+              '<i class="ac-line l1"></i><i class="ac-line l2"></i><i class="ac-line l3"></i>' +
+              '<span class="ac-card">' +
+                '<svg class="ac-crown" viewBox="0 0 24 18"><defs><linearGradient id="acCrownG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A3D"/><stop offset="1" stop-color="#F0384E"/></linearGradient></defs><path d="M2 15V6l5 3.6L12 3l5 6.6L22 6v9z" fill="url(#acCrownG)"/></svg>' +
+                '<i class="ac-bar b1"></i><i class="ac-bar b2"></i>' +
+              '</span>' +
+              '<svg class="ac-spark s1" viewBox="0 0 24 24"><path d="M12 0c1.2 6.4 5.4 10.6 12 12-6.6 1.4-10.8 5.6-12 12-1.2-6.4-5.4-10.6-12-12 6.6-1.4 10.8-5.6 12-12z" fill="#2ee6cf"/></svg>' +
+              '<svg class="ac-spark s2" viewBox="0 0 24 24"><path d="M12 0c1.2 6.4 5.4 10.6 12 12-6.6 1.4-10.8 5.6-12 12-1.2-6.4-5.4-10.6-12-12 6.6-1.4 10.8-5.6 12-12z" fill="#2ee6cf"/></svg>' +
+            '</span></span>' +
+            '<span class="ab-body"><span class="ab-txt"><b>Arcade Card</b>' +
+              '<small>Unlimited plays. Every past day unlocked.</small></span>' +
+              '<span class="ab-arrow" aria-hidden="true">→</span></span>' +
+          '</span>' +
+        '</button>';
+      var buy = document.getElementById('hudBuy');
+      if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
+    } else {
+      // GUEST: play comes first - the product sells itself better than any
+      // pitch. The account ladder sits underneath as an upgrade, not a wall.
+      // If the free play is already spent, the account ask takes the lead.
+      var rem = (TOK && TOK.remaining) ? TOK.remaining() : 1;
+      var playBtn = (day.next && rem > 0)
+        ? '<a class="btn" href="' + day.next[1] + '">Play ' + day.next[2] +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">1 free play today</small></a>'
+        : '';
+      cta.innerHTML = playBtn +
+        '<div class="ladderhead">Save your progress</div>' +
+        '<button class="btn ' + (playBtn ? 'vault' : 'signin') + '" type="button" id="hudSignin" style="margin-top:0;">' +
+        'Create free account' +
+        '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--mut);">3 plays every day &middot; streaks &amp; stats saved</small>' +
+        '</button>' +
+        '<button type="button" id="hudSigninLink" style="display:block;width:100%;margin-top:8px;background:none;border:0;color:var(--mut);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Already have an account? Sign in</button>' +
+        '<button type="button" id="hudCardAd" style="display:block;width:100%;margin-top:4px;background:none;border:0;color:var(--goldT);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;">🎟️ Arcade Card &middot; Unlimited plays &middot; Full archive &rarr;</button>';
+      var si = document.getElementById('hudSignin');
+      if (si) si.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signup'); };
+      var sl = document.getElementById('hudSigninLink');
+      if (sl) sl.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
+      var ca = document.getElementById('hudCardAd');
+      if (ca) ca.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
+    }
+  }
+  renderHudCta();
+  if (window.RTG_BOARD && RTG_BOARD.onChange) { RTG_BOARD.onChange(renderHudCta); }
 
   // ---- today's play states -> card status + pips ----
   function todayStr() {
@@ -783,15 +987,23 @@
 
   // ---- ARCADE TICKET: one daily punch-card across all nine games ----
   (function(){
+    // [label, done, accent] - a punched hole takes its game's color, so the
+    // filling ticket doubles as a map of the nine game identities.
     var GAMES=[
-      ['Table',tDone],['Match',mDone],['Career',rDone],['Odd One',oDone],['Rank It',kDone],
-      ['Guess',gDone],['Alma',aDone],['Search',wDone],['Crossword',cDone]
+      ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
+      ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
+      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
     ];
     var doneN=GAMES.filter(function(x){return x[1];}).length;
     var perfect=doneN===GAMES.length;
     var css=document.createElement('style');
     css.textContent=
-      '.aticket{background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      // ticket body: dashed rim + a notched "torn edge" on each side, like a
+      // stub ripped off the roll. The notches are just two masked circles.
+      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      '.aticket:before,.aticket:after{content:""; position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+';}'+
+      '.aticket:before{left:-9px; transform:translateY(-50%);}'+
+      '.aticket:after{right:-9px; transform:translateY(-50%);}'+
       '.aticket .tk-top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}'+
       '.aticket .tk-h{font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:15px; color:var(--ink);}'+
       '.aticket .tk-n{font-size:11px; font-weight:900; letter-spacing:.08em; color:'+(perfect?'var(--goldT)':'var(--mut)')+';}'+
@@ -800,14 +1012,14 @@
       '.aticket .tk-g{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:var(--mut);}'+
       '.aticket .tk-g i{width:16px; height:16px; border-radius:50%; border:2px dashed var(--line2); display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:9px;}'+
       '.aticket .tk-g.on{color:var(--ink);}'+
-      '.aticket .tk-g.on i{border:2px solid var(--green); background:color-mix(in srgb, var(--green) 22%, var(--card)); color:var(--greenT);}'+
+      '.aticket .tk-g.on i{border:2px solid var(--tc); background:color-mix(in srgb, var(--tc) 24%, var(--card)); color:var(--tc);}'+
       '.aticket .tk-perf{font-family:var(--hero); font-weight:400; letter-spacing:.14em; color:var(--goldT); font-size:13px; margin-top:9px; text-align:center; animation:tkpop .5s ease;}'+
       '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}';
     document.head.appendChild(css);
     var el=document.createElement('div'); el.className='aticket';
     el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / 9 punched</span><button class="tk-share" type="button">Share</button></div>'+
-      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
-      (perfect?'<div class="tk-perf">\u2605 PERFECT DAY \u2014 ALL 9 CLEARED \u2605</div>':'');
+      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
+      (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL 9 CLEARED \u2605</div>':'');
     var host=document.getElementById('puzzles');
     if(host) host.insertBefore(el, host.firstChild);
     el.querySelector('.tk-share').addEventListener('click', function(){
@@ -821,6 +1033,7 @@
   // One free ranked play per game per day. Unplayed → PLAY. Played:
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
+  function hasCard() { return !!(TOK && TOK.hasCard && TOK.hasCard()); }
   var ARW = ' <span class="arw">→</span>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
@@ -834,13 +1047,14 @@
       card.classList.add('unplayed');
       st.className = 'status ready';
     }
-    var left = triesLeft(key);
-    if (!done) {
-      play.innerHTML = 'PLAY' + ARW;
-    } else if (TOK && left > 0) {
-      play.innerHTML = 'PLAY AGAIN' + ARW;   // Pro: unlimited practice
+    if (done && hasCard()) {
+      // Cardholder: a finished game becomes the entry to its archive calendar.
+      play.innerHTML = 'ARCHIVE' + ARW;
+      card.classList.add('archive'); card.setAttribute('data-arch', key);
     } else {
-      play.innerHTML = '✓ DONE';             // free: come back tomorrow
+      // Free users always see PLAY (the game page's intro handles tokens /
+      // out-of-plays); cardholders who haven't played yet see PLAY too.
+      play.innerHTML = 'PLAY' + ARW;
     }
   }
   function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }
@@ -855,24 +1069,41 @@
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
   mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
 
-  // "Keep streak alive" CTA → first unplayed game today (display order)
+  // Cardholders: a played tile is an "Archive" entry. Clicking it opens that
+  // game's past-days calendar (RTGCalendar) instead of replaying today.
+  (function(){
+    [].forEach.call(document.querySelectorAll('a.tile[href^="/arcade/"]'), function(a){
+      a.addEventListener('click', function(e){
+        if(!a.classList.contains('archive')) return;
+        var k=a.getAttribute('data-arch'); if(!k || !window.RTGCalendar) return;
+        e.preventDefault();
+        RTGCalendar.open(k);
+      });
+    });
+  })();
+
+  // "Keep streak alive" CTA → first unplayed game today (display order).
+  // Label follows the moment: nothing played yet = start, mid-day = keep it
+  // alive, clean sweep = the CTA bows out (the sweep banner takes the stage).
   (function () {
     var keep = document.getElementById('ctaKeep');
     if (!keep) return;
     var q = [
-      [tDone, '/arcade/table/'],
-      [mDone, '/arcade/match/'],
-      [rDone, '/arcade/career/'],
-      [oDone, '/arcade/oddone/'],
-      [kDone, '/arcade/rankit/'],
-      [aDone, '/arcade/almamater/'],
-      [gDone, '/arcade/guess/'],
-      [cDone, '/arcade/crossword/'],
-      [wDone, '/arcade/wordsearch/']
+      [tDone, '/arcade/table/', 'Number Game'],
+      [mDone, '/arcade/match/', 'Daily Match'],
+      [rDone, '/arcade/career/', 'Career Path'],
+      [oDone, '/arcade/oddone/', 'Odd One Out'],
+      [kDone, '/arcade/rankit/', 'Rank It'],
+      [aDone, '/arcade/almamater/', 'Alma Mater'],
+      [gDone, '/arcade/guess/', 'Guess the Player'],
+      [cDone, '/arcade/crossword/', 'Daily Crossword'],
+      [wDone, '/arcade/wordsearch/', 'Word Search']
     ];
-    var href = '/arcade/table/';
-    for (var x = 0; x < q.length; x++) { if (!q[x][0]) { href = q[x][1]; break; } }
-    keep.setAttribute('href', href);
+    var pick = null, played = 0;
+    for (var x = 0; x < q.length; x++) { if (q[x][0]) played++; else if (!pick) pick = q[x]; }
+    if (!pick) { keep.classList.add('hidden'); return; }
+    keep.setAttribute('href', pick[1]);
+    keep.innerHTML = (played === 0 ? 'Start with ' : (cur > 0 ? 'Keep the streak: play ' : 'Next up: ')) + pick[2] + ' <span aria-hidden="true">→</span>';
   })();
 
   var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0);

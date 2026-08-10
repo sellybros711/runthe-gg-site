@@ -177,15 +177,185 @@
     return null;
   }
 
+  /* ---- team-nickname + sport-vocab pools ---------------------------------
+   * Every crossword used to be eight rows of "<Team> great <First> ___" —
+   * fine mechanics, one-note read. These two secondary pools mix in team
+   * nicknames (CUBS/JETS/HEAT) and sport vocabulary (MVP/HOF/RBI/TDS) with
+   * their own clue templates so a solved puzzle has real variety.
+   * A pool item carries an optional `staticClue`; finalize() prefers it and
+   * only falls back to the surname clue generator for player entries. */
+  var VOCAB = [
+    { w:'MVP',  clue:'Award you don’t share' },
+    { w:'HOF',  clue:'Cooperstown or Canton, briefly' },
+    { w:'ERA',  clue:'Pitcher’s earned mark' },
+    { w:'RBI',  clue:'Rally payoff, briefly' },
+    { w:'RBIS', clue:'Batter’s productivity, in the box score' },
+    { w:'TDS',  clue:'End-zone tallies' },
+    { w:'PPG',  clue:'Per-game scoring measure' },
+    { w:'RPG',  clue:'Rebounding rate, in a box score' },
+    { w:'APG',  clue:'Assists average, briefly' },
+    { w:'NBA',  clue:'Silver’s league' },
+    { w:'NFL',  clue:'Goodell’s league' },
+    { w:'MLB',  clue:'Manfred’s league' },
+    { w:'FGA',  clue:'Shot count, in an NBA game log' },
+    { w:'FGS',  clue:'Made buckets, briefly' },
+    { w:'OPS',  clue:'Batter’s slash-line kicker' },
+    { w:'INT',  clue:'Cornerback’s takeaway, briefly' },
+    { w:'INTS', clue:'Picks in an NFL box score' },
+    { w:'AVG',  clue:'Batter’s three-digit calling card' },
+    { w:'OTS',  clue:'Extra frames on the scoreboard, briefly' },
+    { w:'REBS', clue:'Boards, briefly' },
+    { w:'YARDS',clue:'Rusher’s currency' },
+    { w:'BUNT', clue:'Small-ball tap' },
+    { w:'DUNK', clue:'Rim-rocking finish' },
+    { w:'ASSIST',clue:'Set-up credit, on hardwood or ice' },
+    { w:'BLOCK',clue:'Denied shot' },
+    { w:'STEAL',clue:'Interception, on the hardwood' },
+    { w:'REBOUND',clue:'Board, spelled out' },
+    { w:'PICK', clue:'A defensive back’s dream, or a set play under the hoop' },
+    { w:'HOOK', clue:'Kareem’s signature shot, for short' },
+    { w:'CURVE',clue:'Ball that breaks, for a pitcher' },
+    { w:'SLIDER',clue:'A pitcher’s bending offering' },
+    { w:'BALK', clue:'Illegal pitcher move that scores runners' },
+    { w:'HITS', clue:'Batter’s basic count' },
+    { w:'RUNS', clue:'What you score in baseball' },
+    { w:'INNING',clue:'A ninth of a baseball game' },
+    { w:'BASES',clue:'There are three of them to round' },
+    { w:'FIELD',clue:'Playing surface, or a wide-open receiver’s space' },
+    { w:'GOAL', clue:'What splits the uprights for three points' },
+    { w:'YARD', clue:'Football’s basic distance unit' },
+    { w:'FADE', clue:'Corner-of-the-endzone route' },
+    { w:'POST', clue:'A receiver’s cut over the middle, or a hoops position' },
+    { w:'REF',  clue:'Whistle-blower on the court' },
+    { w:'UMP',  clue:'Home-plate authority' },
+    { w:'TIED', clue:'Deadlocked, on the scoreboard' },
+    { w:'WIN',  clue:'A W in the standings' },
+    { w:'LOSS', clue:'An L in the standings' }
+  ].map(function(v){ v.w=v.w.toUpperCase(); return v; });
+
+  var TEAM_CLUE = {
+    // City / regional flavor per nickname; no ambiguity across big-3 leagues.
+    LIONS:['NFL','Detroit’s NFL team'],
+    RAMS:['NFL','Sean McVay’s Los Angeles NFL team'],
+    GIANTS:['NFL','Meadowlands NFL team, in a blue G helmet'],
+    PANTHERS:['NFL','Carolina’s NFL team'],
+    LAKERS:['NBA','Purple-and-gold LA hoopers'],
+    SUNS:['NBA','Phoenix’s NBA team'],
+    TEXANS:['NFL','Houston’s NFL team (est. 2002)'],
+    JAGUARS:['NFL','Jacksonville’s NFL team'],
+    BRONCOS:['NFL','Denver’s NFL team'],
+    TITANS:['NFL','Tennessee’s NFL team'],
+    RAIDERS:['NFL','Las Vegas NFL squad, formerly of Oakland'],
+    PATRIOTS:['NFL','Foxborough’s NFL dynasty of the 2000s'],
+    STEELERS:['NFL','Pittsburgh’s NFL team'],
+    CHIEFS:['NFL','Kansas City’s NFL squad, with the arrowhead helmet'],
+    CHARGERS:['NFL','LA’s AFC West team, with lightning bolts'],
+    COWBOYS:['NFL','Big-D NFL team with a lone-star helmet'],
+    EAGLES:['NFL','Philadelphia’s NFL team'],
+    CARDINALS:['MLB','St. Louis’s NL club, with a bird on the bat'],
+    CUBS:['MLB','Wrigley Field’s home nine'],
+    METS:['MLB','Citi Field’s NL club, in blue and orange'],
+    YANKEES:['MLB','27-time World Series champs, in pinstripes'],
+    DODGERS:['MLB','LA’s NL team, formerly of Brooklyn'],
+    GIANTSS:['MLB','San Francisco’s NL team (yes, that spelling)'],   // unused; nickname collides with NFL
+    ORIOLES:['MLB','Baltimore’s AL bird-team'],
+    ROYALS:['MLB','Kansas City’s AL team'],
+    RANGERS:['MLB','Arlington-based AL team'],
+    MARLINS:['MLB','Miami’s NL team, in teal'],
+    BRAVES:['MLB','Atlanta’s NL team with the tomahawk'],
+    PIRATES:['MLB','PNC Park’s home team'],
+    PHILLIES:['MLB','Philadelphia’s NL team'],
+    REDS:['MLB','Cincinnati’s NL club'],
+    NATIONALS:['MLB','Washington’s NL team, 2019 champs'],
+    ROCKIES:['MLB','Denver’s mile-high NL team'],
+    PADRES:['MLB','San Diego’s NL team, in brown-and-gold'],
+    MARINERS:['MLB','Seattle’s AL team'],
+    ATHLETICS:['MLB','Oakland’s AL team, in green-and-gold'],
+    ASTROS:['MLB','Houston’s AL team'],
+    ANGELS:['MLB','Anaheim-based AL team'],
+    GUARDIANS:['MLB','Cleveland’s AL team (post-2022 name)'],
+    TIGERS:['MLB','Detroit’s AL team'],
+    TWINS:['MLB','Minnesota’s AL team'],
+    CELTICS:['NBA','Green-and-white Boston hoopers, TD Garden tenants'],
+    KNICKS:['NBA','Madison Square Garden’s NBA team'],
+    NETS:['NBA','Brooklyn’s NBA team'],
+    BUCKS:['NBA','Milwaukee’s NBA team, 2021 champs'],
+    HEAT:['NBA','South Beach NBA team'],
+    HAWKS:['NBA','Atlanta’s NBA team'],
+    HORNETS:['NBA','Charlotte’s NBA team, in teal-and-purple'],
+    WIZARDS:['NBA','Washington’s NBA team'],
+    THUNDER:['NBA','Oklahoma City’s NBA team'],
+    JAZZ:['NBA','Salt Lake City’s NBA team, formerly of New Orleans'],
+    PACERS:['NBA','Indianapolis’s NBA team'],
+    NUGGETS:['NBA','Denver’s NBA team, 2023 champs'],
+    KINGS:['NBA','Sacramento’s NBA team'],
+    CLIPPERS:['NBA','LA’s other NBA team'],
+    SPURS:['NBA','San Antonio’s NBA dynasty'],
+    ROCKETS:['NBA','Houston’s NBA team'],
+    GRIZZLIES:['NBA','Memphis’s NBA team'],
+    MAGIC:['NBA','Orlando’s NBA team'],
+    RAPTORS:['NBA','Toronto’s NBA team, 2019 champs'],
+    PISTONS:['NBA','Detroit’s NBA team'],
+    WARRIORS:['NBA','Bay Area NBA dynasty of the 2010s'],
+    BILLS:['NFL','Buffalo’s NFL team, in the AFC East'],
+    JETS:['NFL','NY gang, in the AFC East'],
+    DOLPHINS:['NFL','Miami’s NFL team, in aqua-and-orange'],
+    RAVENS:['NFL','Baltimore’s NFL team (nevermore!)'],
+    BENGALS:['NFL','Cincinnati’s NFL team, in tiger stripes'],
+    BROWNS:['NFL','Cleveland’s NFL team'],
+    COLTS:['NFL','Indianapolis’s NFL team'],
+    PACKERS:['NFL','Green Bay’s title-town NFL team'],
+    VIKINGS:['NFL','Minnesota’s NFL team (Skol!)'],
+    BEARS:['NFL','Chicago’s NFL team'],
+    SAINTS:['NFL','New Orleans’s NFL team (Who Dat!)'],
+    FALCONS:['NFL','Atlanta’s NFL team'],
+    SEAHAWKS:['NFL','Seattle’s NFL team'],
+    NINERS:['NFL','San Francisco’s NFL team, informally'],
+    COMMANDERS:['NFL','Washington’s NFL team (post-2022 name)']
+  };
+  delete TEAM_CLUE.GIANTSS;   // helper only
+
+  function buildTeamPool(){
+    var out=[];
+    Object.keys(TEAM_CLUE).forEach(function(w){
+      if (w.length < 3 || w.length > 9) return;
+      var d=TEAM_CLUE[w];
+      out.push({ w:w, staticClue:{ text:d[1], facts:{ team:w, sport:d[0] } } });
+    });
+    return out;
+  }
+  function buildVocabPool(){
+    return VOCAB.filter(function(v){ return v.w.length>=3 && v.w.length<=9; })
+      .map(function(v){ return { w:v.w, staticClue:{ text:v.clue, facts:{} } }; });
+  }
+
   /* ---- word pool ----------------------------------------------------------- */
   // one word per surname: {w, e (chosen — most famous), rivals (ALL other
   // corpus entities sharing the surname, any fame — ambiguity is checked
   // against everyone)}. Only surnames whose chosen player is fame>=4 and
   // provably disambiguable make the pool.
+  // Only truly recognizable players can be crossword ANSWERS. .star (from the
+  // stars.js overlay) is the primary signal — hand-curated list of ~700 NBA /
+  // NFL / MLB names any casual sports fan would know. Auto-detected fallback
+  // for anyone not on the curated list, so a rising legend still qualifies.
+  function isCwIcon(e) {
+    var T = { NBA: 1, NFL: 1, MLB: 1 };
+    if (!T[e.sport]) return false;
+    if (e.star) return true;
+    var d = e.decade;
+    if (!d || !d.length || d[d.length - 1] < 1990) return false;
+    var f = e.f || 0;
+    if (f >= 5) return true;
+    if (f < 4) return false;
+    if (e.sport === 'NFL') return (e.hp === 1) || (e.aw && e.aw.length > 0);
+    return (e.ns || 0) >= 8;
+  }
   function buildPool(corpus) {
     var by = {};
     (corpus || []).forEach(function (e) {
       if (!e || !e.name || !e.sport) return;
+      if (e.pos && /unknown/i.test(e.pos)) return;
+      if (!isCwIcon(e)) return;
       var s = surnameOf(e.name);
       if (!s || s.length < 3 || s.length > 9) return;
       (by[s] = by[s] || []).push(e);
@@ -195,7 +365,6 @@
       var list = by[s].slice().sort(function (a, b) {
         return (b.f || 0) - (a.f || 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
       });
-      if ((list[0].f || 0) < 4) return;               // prefer names people know
       var w = { w: s, e: list[0], rivals: list.slice(1) };
       if (!clueFor(w, null)) return;                  // must clue + disambiguate
       pool.push(w);
@@ -204,7 +373,23 @@
   }
   var _poolSrc = null, _poolCache = null;
   function getPool(corpus) {
-    if (_poolSrc !== corpus) { _poolSrc = corpus; _poolCache = buildPool(corpus); }
+    if (_poolSrc !== corpus) {
+      _poolSrc = corpus;
+      // Mixed pool: player surnames (deep pool + generated clues) plus static
+      // team-nickname and sport-vocab entries. Non-surname items carry a
+      // `staticClue` so finalize skips the surname clue generator for them.
+      // Surnames outnumber team+vocab 100:1 in the corpus, so uniform random
+      // sampling would rarely mix them in. Repeat the static entries enough
+      // times that they become ~25% of pick weight — a typical 8-entry mini
+      // averages 2 non-surname answers, breaking up the surname monotone.
+      var surnames = buildPool(corpus);
+      var team = buildTeamPool();
+      var vocab = buildVocabPool();
+      var mult = Math.max(6, Math.floor(surnames.length / ((team.length + vocab.length) * 3)));
+      var boost = [];
+      for (var m = 0; m < mult; m++) boost = boost.concat(team, vocab);
+      _poolCache = surnames.concat(boost);
+    }
     return _poolCache;
   }
 
@@ -319,14 +504,16 @@
     var entries = [];
     for (var j = 0; j < placements.length; j++) {
       var p = placements[j];
-      var cl = clueFor(p.w, rng);
+      // team + vocab entries carry their clue directly; surnames go through
+      // the disambiguating clue builder.
+      var cl = p.w.staticClue || clueFor(p.w, rng);
       if (!cl) return null;
       entries.push({
         num: numAt[p.r + ',' + p.c], dir: p.dir, r: p.r, c: p.c,
         answer: p.w.w, clue: cl.text,
         // extra fields (engine ignores them): who the clue points at + the
         // facts it states, so tests can re-prove disambiguation.
-        pid: p.w.e.id, facts: cl.facts
+        pid: p.w.e ? p.w.e.id : null, facts: cl.facts
       });
     }
     entries.sort(function (a, b2) { return a.dir === b2.dir ? a.num - b2.num : (a.dir === 'A' ? -1 : 1); });

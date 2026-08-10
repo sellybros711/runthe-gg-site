@@ -29,7 +29,15 @@ const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefi
 async function playToResults(page){
   await page.evaluate(()=>document.getElementById('b-play-intro').click());
   await page.waitForTimeout(1400);
-  for(let i=0;i<14;i++){
+  for(let i=0;i<20;i++){
+    /* A DUAL-POSITION PLAYER STOPS THE DRAFT AND ASKS. Taking one opens the slot
+       sheet over the wheel, and the sheet swallows every click until it is
+       answered, so a loop that only knows about tiles sits there retrying until
+       the whole suite times out. It is not rare and it is not deterministic:
+       which players the wheel offers depends on the run, which is why this used
+       to look like a flake. Answer it with the first slot and carry on. */
+    const slot=await page.$('#sheet.on .slotopt');
+    if(slot){await slot.click();await page.waitForTimeout(900);continue;}
     const t=await page.$('#opts .tile:not(.off)');
     if(!t){await page.waitForTimeout(1300);continue;}
     await t.click();

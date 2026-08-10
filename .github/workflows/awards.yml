@@ -1,0 +1,30 @@
+name: Refresh elite awards
+on:
+  schedule:
+    - cron: '30 11 5 * *'   # 5th of each month, 11:30 UTC (offset from former.yml)
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/fetch-awards.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "awards-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arcade/awards.js
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Refresh elite-awards dataset"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing onto latest main (attempt $i)"
+              git pull --rebase origin main || exit 1
+            done
+          }

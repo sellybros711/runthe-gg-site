@@ -77,8 +77,13 @@
         var active = !!row && (row.status === 'active' || row.status === 'trialing') &&
           (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now() - 86400000);
         try {
+          // On a SUCCESSFUL read (still fail-open on error/offline above), the
+          // subscriptions row is authoritative: grant when active, otherwise
+          // clear the flag - including when there is NO row (free user). This
+          // stops a stale flag (e.g. a browser that was once a cardholder) from
+          // granting unlimited plays to a free account.
           if (active) localStorage.setItem('runthegrid_pro', '1');
-          else if (row) localStorage.removeItem('runthegrid_pro');   // known-lapsed only
+          else localStorage.removeItem('runthegrid_pro');
         } catch (e) {}
         fire();
       })
@@ -132,6 +137,11 @@
   // ---- submit a completed run. Returns {streak, best_streak} or null. ----
   function submit(game, dateStr, opts) {
     if (!session) return Promise.resolve(null);   // signed-in only; guests keep local
+    // Every game funnels its ranked result through here, so this is the one
+    // place the server's token verdict has to be honoured. If the wallet was
+    // faked (localStorage cleared to mint plays) the spend RPC refused, and
+    // the run that refusal covers must not reach the leaderboard.
+    try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
     opts = opts || {};
     var body = JSON.stringify({
       p_game: game, p_date: dateStr,
@@ -186,6 +196,29 @@
     );
   }
 
+  // ---- server-side Arcade token wallet (signed-in users). spendToken() is the
+  // source of truth for a ranked play; tokenStatus() reads remaining without
+  // spending. Both resolve null when signed-out / offline (caller falls back to
+  // the client wallet). See supabase/69_arcade_card.sql. ----
+  function spendToken() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_spend_token').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+  function tokenStatus() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_tokens_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+
+  // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or
+  // null (offline). Works without a session (anon-granted RPC). ----
+  function streakBoard(game, limit) {
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(
+      sb.rpc('grid_streak_board', { p_game: game, p_limit: limit || 10 })
+        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? r.data : null; })
+    );
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
@@ -194,6 +227,8 @@
     leaderboard: leaderboard,
     rank: rank,
     streakOf: streakOf,
+    spendToken: spendToken,
+    tokenStatus: tokenStatus,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   };
 })();

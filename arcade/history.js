@@ -1,4 +1,4 @@
-/* Run The Arcade — per-game results history + "your last 5" bar chart (shared)
+/* Run The Arcade - per-game results history + "your last 5" bar chart (shared)
  * Records each completed play and renders a compact bar graph in the end modal.
  * Metric per game: runs (streak games), time (timed games), guesses (Guess).
  * Bars are relative to the best value in the shown set; the newest is accented;
@@ -15,6 +15,7 @@
   var idv=function(v){ return v; };
   var CFG={
     table:     { unit:'in a row', fmt:idv,     accent:'var(--goldT,#F2B632)' },
+    almamater: { unit:'in a row', fmt:idv,     accent:'var(--goldT,#F2B632)' },
     oddone:    { unit:'in a row', fmt:idv,     accent:'var(--violetT,#A982F3)' },
     career:    { unit:'in a row', fmt:idv,     accent:'var(--greenT,#48D17A)' },
     rankit:    { unit:'sets',     fmt:idv,     accent:'var(--pinkT,#F65C9C)' },
@@ -67,7 +68,7 @@
     var bars=arr.map(function(e,i){
       var cur=(i===arr.length-1);
       if(e.w===false || e.v==null){
-        return '<div class="bar miss'+(cur?' cur':'')+'"><span class="v">—</span><i style="height:100%"></i></div>';
+        return '<div class="bar miss'+(cur?' cur':'')+'"><span class="v">-</span><i style="height:100%"></i></div>';
       }
       var h=Math.max(8, Math.round(e.v/max*100));
       return '<div class="bar'+(cur?' cur':'')+'"><span class="v">'+cfg.fmt(e.v)+'</span><i style="height:'+h+'%"></i></div>';

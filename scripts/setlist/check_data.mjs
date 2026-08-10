@@ -287,6 +287,16 @@ check(/\.brand\{[^}]*font-family:var\(--hero\)/.test(game),
 check(/\.hero h1\{[^}]*letter-spacing:\.0[5-9]em/.test(game),
       'the hero wordmark is tracked so the slabs do not collide');
 
+/* The band request goes to the address the rest of the site already uses, and
+   there is no backend behind it, so the mailto is the delivery mechanism and
+   not a decoration. Both fields are encoded: an unencoded ampersand in a band
+   name ends the query parameter and truncates the message there. */
+check(/class="card band soon"/.test(game), 'the more-bands-coming card is on the page');
+check(/mailto:RunTheGames@outlook\.com/.test(game), 'the request goes to RunTheGames@outlook.com');
+check(/subject=\$\{encodeURIComponent/.test(game) && /body=\$\{encodeURIComponent/.test(game),
+      'and both the subject and the body are encoded');
+check(/function toast\(/.test(game), 'toast() exists for the element that has always been there');
+
 /* The manifest is what makes it installable. A launcher crops a MASKABLE icon
    to whatever shape it likes and keeps only the middle, so shipping the
    rounded tile for that role gets its corners sliced off and the squircle
@@ -313,6 +323,241 @@ if (manifest) {
 /* Em dashes are banned from anything a player reads. They are easy to
    reintroduce one string at a time, so this strips the comments (where they
    are fine, and where most of them live) and fails on any that are left. */
+/* Leaving a draft throws the setlist away, so the logo has to ask first. The
+   guard is against the two halves drifting apart: a confirm sheet with no
+   handler asks nothing, and a handler with no sheet throws. */
+console.log('leaving a draft');
+check(/id="askSheet"/.test(game), 'the confirm sheet is in the page');
+check(/id="askInner"/.test(game), 'the confirm sheet has a body to render into');
+check(/function ask\(/.test(game), 'ask() exists');
+check(/\.lockup'\)\.addEventListener\('click'/.test(game),
+  'the logo is wired to the confirm');
+check(/function draftInProgress\(/.test(game),
+  'the confirm is gated on there being something to lose');
+
+/* "You were there". The store is localStorage and nothing else reads it, so
+   the key is load-bearing: renaming it silently forgets every show a player
+   ever marked. */
+console.log('you were there');
+check(/const WERE_THERE_KEY = 'segue_were_there'/.test(game),
+  "the attendance key is still 'segue_were_there'");
+for (const fn of ['attendedAll', 'attendedSet', 'wasThere', 'toggleThere', 'attendedCount'])
+  check(new RegExp(`function ${fn}\\(`).test(game), `${fn}() exists`);
+check(/id="wereThereBtn"/.test(game), 'the show header carries the mark toggle');
+check(/class="werethere"/.test(game), 'a marked show is tagged in the header');
+check(/\.werethere\{/.test(game), 'the tag has styling');
+// The tag is a brand mark, so it wears the dye rather than a flat colour.
+check(/\.werethere\{[^}]*var\(--dye-line\)/.test(game), 'the tag is dyed');
+check(/\.mine\{[^}]*white-space:nowrap/.test(game),
+  'the home count wraps as one phrase');
+
+/* THE LEADERBOARD, AND THE ONE PROPERTY THAT MATTERS MOST: it is optional. The
+   game is a static page reading a CSV, and a blocked CDN or an unrun migration
+   has to leave that page exactly as playable as it was. Everything below guards
+   a way that could quietly stop being true. */
+console.log('the board');
+const board = read('setlist/board.js');
+const authjs = read('setlist/auth.js');
+const sql   = read('supabase/67_setlist_leaderboard.sql');
+
+check(/<script src="\/setlist\/auth\.js\?v=\d+" defer><\/script>/.test(game),
+  'auth.js is loaded, deferred and cache-versioned');
+check(/<script src="\/setlist\/board\.js\?v=\d+" defer><\/script>/.test(game),
+  'board.js is loaded, deferred and cache-versioned');
+// The module and the two plain scripts have to move together or the page can be
+// served against a stale board.
+{
+  const vs = [...game.matchAll(/(?:scoring|dataLoader)\.js\?v=(\d+)|setlist\/(?:auth|board)\.js\?v=(\d+)/g)]
+    .map(m => m[1] || m[2]);
+  check(new Set(vs).size === 1, 'every versioned script is on the same version',
+    [...new Set(vs)].join(', '));
+}
+
+// The name is never sent by the client. This is the check that stays true only
+// as long as nobody adds a convenience parameter for it.
+check(!/p_display_name|p_username|p_name\b/.test(board),
+  'board.js never sends a display name');
+/* The name is read SERVER-SIDE and never taken from the client. Since
+   68_setlist_username.sql that read goes through segue_display_name() rather
+   than an inline select, so the guard follows it there; the property it
+   protects is unchanged. */
+check(/from profiles where id = p_user/.test(sql),
+  'the server reads the name out of profiles');
+
+// Both axes exist and the percentage one is the one the draw cannot inflate.
+check(/SORTS = \{ score: 'total', pct: 'pct_of_best' \}/.test(board),
+  'the board has both axes');
+check(/pct_of_best\s+numeric/.test(sql), 'the percentage is a stored column');
+check(/v_pct := round\(100\.0 \* p_total/.test(sql),
+  'and the server computes it rather than taking it from the client');
+
+// The coherence checks the whole design rests on.
+for (const [what, re] of [
+  ['the parts have to sum to the total', /is not the sum of its parts/],
+  ['breadth is valued server-side', /but those cards are worth/],
+  ['the ceiling cannot be below the score', /a ceiling of % below a score of/],
+  ['respins come out of the stage time', /plus %s of respins is more than/],
+  ['segues cannot exceed the adjacent pairs', /which has at most % adjacent pairs/],
+  ['a double submit is swallowed', /created_at > now\(\) - interval '1 minute'/],
+]) check(re.test(sql), what);
+
+// Attendance is the one private thing here, and it must stay private.
+check(/create policy segue_attended_own[\s\S]{0,200}user_id = auth\.uid\(\)/.test(sql),
+  'attendance is readable only by its owner');
+check(!/segue_attended/.test(board.replace(/segue_(sync|forget)_attended/g, '')),
+  'the client only ever reaches attendance through its two RPCs');
+// The merge is the whole design of the sync: an absence is not a removal.
+check(/on conflict do nothing/.test(sql), 'a sync merges rather than replaces');
+check(/segue_forget_attended/.test(sql), 'and unmarking is its own call');
+
+// Failing soft. Each of these is a way the board could start throwing into a
+// finished show instead of quietly reporting itself unreachable.
+check(/get offline\(\) \{ return offline; \}/.test(board), 'board.js reports being offline');
+check((board.match(/failThrown\(/g) || []).length >= 6,
+  'every network call has a catch that fails soft');
+check(/const AUTH  = \(\) => window\.SEGUE_AUTH \|\| null/.test(game),
+  'the page treats accounts as optional');
+check(/if \(!a \|\| !a\.boot\(\)\) return;/.test(game),
+  'and does nothing at all when the library is absent');
+check(/API_VERSION/.test(authjs) && /API_VERSION/.test(board),
+  'both modules carry an API version');
+
+// The submit is not on the path to a finished show.
+check(/recordShow\(\);\s*\/\/ fire and forget/.test(game),
+  'recording a show is never awaited');
+
+/* THE LAST TWO SCREENS. Both used to be stacks of rounded cards with the song
+   titles coloured by tag, which is the pattern the rest of the game moved off
+   and the one thing that competes with the dye. These guard the way back. */
+console.log('the show and the scorecard');
+// The scorecard's setlist is a sheet row with the accent as a bar, not a card
+// with the accent as the title colour.
+check(/class="rrow"/.test(game), 'the scorecard setlist uses sheet rows');
+check(/\.rrow:before\{[^}]*background:var\(--acc/.test(game),
+  'the accent is a bar on the row');
+check(/\.rr-t\{[^}]*color:var\(--ink\)/.test(game),
+  'and the song title is ink, not the accent');
+// MID is the default role and eleven of them is not information.
+check(/\/\^mid\$\/i\.test\(name\)/.test(game),
+  'the default role is not printed');
+// The playback feed is the same sheet, not seventeen stacked cards.
+check(/\.sim-song\{[^}]*position:relative/.test(game)
+  && !/\.sim-song\{[^}]*box-shadow:var\(--shadow\)/.test(game),
+  'the playback feed is a sheet, not cards');
+check(/\.sim-song:before\{[^}]*background:var\(--acc/.test(game),
+  'and carries the same accent bar');
+// Both score numbers are the full-bleed band, and neither is a card.
+for (const [sel, what] of [['scorebox', 'the final score'], ['sim-head', 'the running score']]) {
+  check(new RegExp(`\\.${sel}\\{[^}]*margin:0 calc\\(var\\(--gut\\) \\* -1\\)`).test(game),
+    `${what} is full bleed`);
+  check(new RegExp(`<div class="${sel}"`).test(game), `${what} is not a card`);
+  check(new RegExp(`\\.${sel}:after\\{[^}]*linear-gradient\\(90deg`).test(game),
+    `${what} closes on a dye rule`);
+}
+// The sticky one has to hide what scrolls under it.
+check(/\.sim-head\{[^}]*background:var\(--bg\)/.test(game),
+  'the sticky running score is opaque');
+/* THE GRADE COLOURS ARE MEASURED, and the measurement is the comment above
+   them. Both scores now sit on --bg rather than on --card, where the old green
+   fell to 2.93:1: below even the 3:1 large-text floor, on the largest thing in
+   the game. */
+check(/--gradeHot:#127F3A/.test(game) && /--gradeWarm:#926607/.test(game),
+  'the light-theme grades are the measured ones');
+check(/\.grade-hot\{color:var\(--gradeHot\)/.test(game),
+  'and the grade classes use them');
+// Drawn, never typed. A caret glyph is 6px of ink in a 16px box.
+check(!/content:'›'/.test(game), 'no typed chevrons are left');
+check(/class="segout"/.test(game) && /class="segmark"/.test(game),
+  'both screens use the drawn chevron');
+
+/* Two things that looked fine in the CSS and were wrong on the screen. */
+console.log('the header');
+/* THE BLURB IS CENTRED BY AUTO SIDE MARGINS, and it is capped at 32ch, so the
+   two have to be in ONE declaration. They were in two, two hundred lines apart,
+   and the later `margin:0` shorthand reset both sides to zero: the sentence sat
+   10px left of the wordmark above it while text-align still reported `center`,
+   because the text was centred inside a box that was not. */
+check(/\.hero p\{margin:0 auto;/.test(game), 'the hero blurb is centred');
+{
+  /* Comments stripped first: the explanation above the rule QUOTES the old
+     broken declaration, and a guard that counts its own documentation as the
+     bug is a guard nobody will keep. */
+  const bare = game.replace(/\/\*[\s\S]*?\*\//g, '');
+  const withMargin = [...bare.matchAll(/\.hero p\{([^}]*)\}/g)]
+    .filter(m => /margin/.test(m[1]));
+  check(withMargin.length === 1, 'and its margin is set in exactly one rule',
+    `${withMargin.length} rules set it`);
+}
+check(!/\.hero p\{margin:0;/.test(game), 'no bare margin:0 on the blurb');
+
+/* THE ACCOUNT CHIP HAS NO BASE RULE TO INHERIT. There is no `.pill` in this
+   file: every shared property lives on `.pill.site`, so `.pill.me` has to
+   declare its own or it renders as a sharp-cornered box. */
+for (const prop of ['border-radius:99px', 'padding:', 'border:1px solid'])
+  check(new RegExp(`\\.pill\\.me\\{[^}]*${prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(game),
+    `the account chip declares its own ${prop.replace(/:.*/, '')}`);
+/* A gradient's axis has to match the shape's long axis. --dye-line is 180deg,
+   built for a tall thin arrow; on a chip four times wider than tall it is a red
+   box with a purple underline. Third time this has been the lesson. */
+check(!/\.pill\.me\.in\{[^}]*var\(--dye-line\)/.test(game),
+  'and does not wear the vertical dye');
+check(/\.pill\.me\.in\{[^}]*linear-gradient\(90deg/.test(game),
+  'its sweep runs the long way');
+
+/* A NAME FOR THIS GAME ONLY. One account, two display names, and the whole
+   feature rests on three things staying true. */
+console.log('the Segue name');
+const sql68 = read('supabase/68_setlist_username.sql');
+
+// 1. It is a DISPLAY name. Nothing here may touch the login or the site name.
+check(/alter table profiles add column if not exists segue_name citext/.test(sql68),
+  'the Segue name is its own nullable column');
+check(!/update profiles set username/.test(sql68),
+  'and nothing in it rewrites the site username');
+check(/coalesce\(segue_name, username\)/.test(sql68),
+  'an unset name falls back to the site username');
+
+/* 2. UNIQUENESS SPANS BOTH NAMESPACES. The board renders
+   coalesce(segue_name, username) into one column, so a Segue name that could
+   equal somebody else's site username is an impersonation, not a collision. */
+check(/username = p_name or segue_name = p_name/.test(sql68),
+  'availability checks both namespaces');
+check(/username = v_name or segue_name = v_name/.test(sql68),
+  'and so does the setter');
+check(/id is distinct from auth\.uid\(\)/.test(sql68) && /id <> v_user/.test(sql68),
+  'while leaving you your own names');
+
+/* 3. THE SWITCH IS ONE FUNCTION. 67 routes every name read through
+   segue_display_name() so 68 can change the answer without restating
+   segue_submit_run()'s validation. If a caller goes back to reading profiles
+   directly, that caller silently keeps using the site name. */
+check(/create or replace function segue_display_name/.test(sql),
+  '67 defines the one name lookup');
+check((sql.match(/segue_display_name\(v_user\)/g) || []).length === 3,
+  'and all three writers go through it',
+  `${(sql.match(/segue_display_name\(v_user\)/g) || []).length} call sites`);
+check(!/select username::text into v_name/.test(sql),
+  'none of them reads profiles directly');
+check(/create or replace function segue_display_name/.test(sql68),
+  '68 changes the answer by replacing it');
+
+// The client, and the one-migration-behind fallback.
+check(/setSegueName/.test(authjs) && /segueNameFree/.test(authjs),
+  'auth.js exposes the setter and the check');
+check(/let segueColumn = true/.test(authjs),
+  'and survives a project that has not run 68');
+check(/segueColumn \? 'username,segue_name' : 'username'/.test(authjs),
+  'by dropping the column from the profile read');
+check(/id="segueNameForm"/.test(game), 'the account sheet has the name form');
+check(/ME\.canRename \?/.test(game),
+  'which is hidden when the migration has not run');
+// The sheet is the one place both names are shown, so the field cannot read as
+// "rename my whole account".
+check(/Your RunThe\.GG account is still/.test(game),
+  'and says plainly that the site account is unchanged');
+check(/e\.target\.id === 'segueNameForm'/.test(game),
+  'the name form is handled before the sign-in branch');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments

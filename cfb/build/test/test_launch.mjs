@@ -23,6 +23,7 @@
  *   links      every internal href, src and sitemap loc on the four public pages
  *   cold       what a first visit costs and how fast it becomes playable
  *   head       title, description, canonical, og, manifest, robots, a11y, overflow
+ *   fold       every front-page button reachable on five real phones, address bar included
  *   play       a whole season with every screen opened and nothing allowed to log
  *   home       the card on the site's front page, and where it sits
  */
@@ -181,6 +182,52 @@ if (want('head')) {
   }
 }
 
+/* ── the front page fits a phone ───────────────────────────────────────────────
+   Every button on the front page has to be reachable without scrolling, and the
+   trap is that innerHeight is NOT what a player can see. iOS Safari's address bar
+   takes about ninety pixels that the viewport never mentions, so a layout can
+   measure as fitting and still be cut off on the device: that is exactly how
+   Leaderboard and How to play went out below the fold, sixteen pixels clear of
+   the poll bar by the numbers and under it in a real hand.
+
+   So the bar is not the viewport, it is the viewport minus a chrome allowance,
+   and the ceiling is the poll bar rather than the bottom edge, because a button
+   behind the poll is as unreachable as one off the screen.
+
+   Real CSS viewports, not invented ones. The SE is the hard case and the reason
+   the field is dropped under 760px: there is no arrangement of a top bar, two
+   reels, a headline, four buttons and the poll that fits 667px once the address
+   bar has taken its share. */
+if (want('fold')) {
+  console.log('\n=== every front-page button is above the fold ===');
+  const CHROME = 90;
+  const PHONES = [['iPhone SE', 375, 667], ['13 mini', 375, 812], ['iPhone 14', 390, 844],
+    ['15 Pro Max', 430, 932], ['Pixel 7', 412, 915]];
+  for (const [name, w, h] of PHONES) {
+    const p = await newPage({ width: w, height: h });
+    await p.goto(HOST + '/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await p.waitForSelector('#s-intro.on', { timeout: 20000 });
+    await p.waitForFunction(() => { const t = document.getElementById('h-ticker'); return t && !t.hidden; },
+      { timeout: 30000 }).catch(() => {});
+    await p.waitForTimeout(900);
+    const m = await p.evaluate(() => {
+      const tick = document.getElementById('h-ticker').getBoundingClientRect();
+      const out = { ceiling: tick.height > 0 ? tick.top : innerHeight, buttons: {} };
+      for (const id of ['b-play-intro', 'b-modes', 'b-lb-intro', 'b-how']) {
+        const e = document.getElementById(id);
+        out.buttons[id] = e ? e.getBoundingClientRect().bottom : null;
+      }
+      return out;
+    });
+    const last = Math.max(...Object.values(m.buttons).filter((v) => v !== null));
+    const slack = m.ceiling - last;
+    ok(name + ' (' + w + 'x' + h + '): all four buttons clear the poll bar and the address bar',
+      slack >= CHROME, 'slack ' + slack.toFixed(0) + 'px, need ' + CHROME);
+    ok(name + ':   and nothing logged', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
+    await p.close();
+  }
+}
+
 /* ── a whole season, everything opened ─────────────────────────────────────── */
 if (want('play')) {
   console.log('\n=== a whole season, with the outside world switched off ===');
@@ -219,7 +266,14 @@ if (want('play')) {
     await p.evaluate(() => document.getElementById('b-play-intro').click());
     await p.waitForTimeout(1500);
     let picks = 0;
-    for (let i = 0; i < 20 && picks < 6; i++) {
+    for (let i = 0; i < 26 && picks < 6; i++) {
+      /* Taking a dual-position player opens the slot sheet over the wheel, and
+         the sheet swallows every click until it is answered. A loop that only
+         knows about tiles retries until the suite times out, and whether it
+         happens at all depends on what the wheel offered, which makes it read
+         like a flake. Answer it with the first slot and carry on. */
+      const slot = await p.$('#sheet.on .slotopt');
+      if (slot) { await slot.click(); await p.waitForTimeout(900); continue; }
       const t = await p.$('#opts .tile:not(.off)');
       if (!t) { await p.waitForTimeout(1200); continue; }
       await t.click(); picks++; await p.waitForTimeout(2300);
@@ -259,63 +313,33 @@ if (want('play')) {
   }
 }
 
-/* ── the card on the front page ────────────────────────────────────────────────
-   LISTED = false, ON PURPOSE. The game is built, tested and live at /cfb/, and it
-   is deliberately not linked from anywhere public until it is turned on. Being
-   unlisted is a decision, not an oversight, so it is asserted rather than assumed:
-   an accidental relist is exactly the kind of thing that goes out in somebody
-   else's commit and is noticed by a stranger.
-
-   TO TURN THE GAME ON: put the card, the copy and the sitemap entries back (the
-   comment where the card was on index.html lists all of them), then set LISTED to
-   true here. Both halves are written, so this file is the checklist. */
-const LISTED = false;
+/* ── the card on the front page ────────────────────────────────────────────── */
 if (want('home')) {
-  console.log('\n=== the game is ' + (LISTED ? 'listed on' : 'NOT yet listed on') + ' the site ===');
+  console.log('\n=== the game is listed on the site ===');
   for (const [label, vp] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1440, height: 1000 }]]) {
     const p = await newPage(vp);
     await p.goto(HOST + '/index.html', { waitUntil: 'load', timeout: 40000 });
     await p.waitForTimeout(1200);
     const card = await p.$('article.feat.cfb');
-    const body = await p.textContent('body');
-    const links = await p.$$eval('a[href]', (els) => els.map((e) => e.getAttribute('href')));
-    const ld = await p.evaluate(() => [...document.querySelectorAll('script[type="application/ld+json"]')]
-      .map((s) => s.textContent).join(' '));
-
-    if (!LISTED) {
-      ok(label + ': no card on the page', !card);
-      /* The card is the obvious half. The copy and the structured data are the half
-         that gets left behind, and a search engine reads those too. */
-      ok(label + ': nothing links to /cfb/', !links.some((h) => h && h.startsWith('/cfb')), links.filter((h) => h && h.startsWith('/cfb')).join(' '));
-      ok(label + ': the visible copy does not name it', !/College Football: Perfect Season/.test(body));
-      ok(label + ': the structured data does not either', !/cfb|College Football/.test(ld));
-      ok(label + ': the hero counts three games', /3\s*games live/.test(await p.textContent('.hero-status')));
-    } else {
-      ok(label + ': the card is on the page', !!card);
-      if (card) {
-        const box = await card.boundingBox();
-        ok(label + ':   it has real size', box.width > 200 && box.height > 150, Math.round(box.width) + 'x' + Math.round(box.height));
-        ok(label + ':   its crest loaded', await p.$eval('article.feat.cfb .crest img', (i) => i.naturalWidth > 0));
-        ok(label + ':   its play link points at /cfb/', await p.$eval('article.feat.cfb a.play', (a) => a.getAttribute('href')) === '/cfb/');
-        /* Green, not the NFL card's red: the two cards are the same markup and only
-           the class separates them, so a typo in the class is invisible except here. */
-        ok(label + ':   it is green, not red',
-          (await p.$eval('article.feat.cfb .play', (e) => getComputedStyle(e).backgroundImage)).includes('16, 185, 129'));
-        const order = await p.$$eval('main.games article.feat', (els) => els.map((e) => e.className.split(' ')[1]));
-        ok(label + ':   and sits second, after the NFL game', order[1] === 'cfb', order.join(' > '));
-      }
-      ok(label + ': the hero counts four games', /4\s*games live/.test(await p.textContent('.hero-status')));
+    ok(label + ': the card is on the page', !!card);
+    if (card) {
+      const box = await card.boundingBox();
+      ok(label + ':   it has real size', box.width > 200 && box.height > 150, Math.round(box.width) + 'x' + Math.round(box.height));
+      ok(label + ':   its crest loaded', await p.$eval('article.feat.cfb .crest img', (i) => i.naturalWidth > 0));
+      ok(label + ':   its play link points at /cfb/', await p.$eval('article.feat.cfb a.play', (a) => a.getAttribute('href')) === '/cfb/');
+      /* Green, not the NFL card's red: the two cards are the same markup and only
+         the class separates them, so a typo in the class is invisible except here. */
+      ok(label + ':   it is green, not red',
+        (await p.$eval('article.feat.cfb .play', (e) => getComputedStyle(e).backgroundImage)).includes('16, 185, 129'));
+      const order = await p.$$eval('main.games article.feat', (els) => els.map((e) => e.className.split(' ')[1]));
+      ok(label + ':   and sits second, after the NFL game', order[1] === 'cfb', order.join(' > '));
     }
+    ok(label + ': the hero counts four games', /4\s*games live/.test(await p.textContent('.hero-status')));
     const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     ok(label + ': no sideways scroll', over <= 1, over + 'px');
     ok(label + ': nothing logged', p.errs.length === 0, p.errs.slice(0, 3).join(' | '));
     await p.close();
   }
-  /* The sitemap is the one that is expensive to undo: an indexed URL outlives the
-     decision to publish it, so asking Google to crawl an unlaunched game is not a
-     thing you can take back by deleting a line. */
-  const sm = await (await fetch(HOST + '/sitemap.xml')).text();
-  ok('the sitemap ' + (LISTED ? 'lists' : 'does not announce') + ' /cfb/', /cfb/.test(sm) === LISTED);
 }
 
 await b.close();

@@ -1,3 +1,9 @@
+
+/* Reserve the scrollbar gutter. pregame.js / modals lock body overflow to
+   stop background scroll; without a stable gutter that removes the
+   scrollbar, re-widths the viewport and shifts the whole page (this was
+   the dominant layout-shift source across the arcade). */
+html{scrollbar-gutter:stable;}
 /* ============================================================================
    Run The Arcade — shared design layer ("Sports Arcade Control Room")
    ----------------------------------------------------------------------------
@@ -155,19 +161,24 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   display:inline-block; max-width:100%;
   font-family:'Anton', Impact, sans-serif; font-weight:400; text-transform:uppercase;
   font-size:clamp(30px, 8vw, 58px); letter-spacing:.035em; line-height:.92;
-  color:transparent; -webkit-text-stroke:2px var(--a-tc, #F2B632); text-shadow:none;
+  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
+  text-shadow:0 0 26px color-mix(in srgb, var(--a-tc, #F2B632) 30%, transparent), 0 2px 0 rgba(0,0,0,.35);
   padding-bottom:9px; border-bottom:5px solid var(--a-tc, #F2B632);
 }
 /* uniform treatment across the whole title, so <b> just matches its surroundings */
 .a-gametitle__plate b{font-weight:400; color:inherit; -webkit-text-stroke:inherit; text-shadow:inherit;}
-/* dark = hollow accent outline; light = solid accent fill with a soft shadow */
+/* dark = solid accent fill with a restrained neon glow (a lit marquee sign, and
+   far more legible than the old hollow outline — dark accents like a maroon
+   fav-team red were unreadable as strokes). light = solid accent fill darkened
+   toward near-black so every accent clears WCAG large-text contrast. */
 :root[data-theme="light"] .a-gametitle__plate{
-  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
-  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 20%, transparent);}
+  color:color-mix(in srgb, var(--a-tc, #F2B632) 55%, #140d02); -webkit-text-stroke:0;
+  border-bottom-color:color-mix(in srgb, var(--a-tc, #F2B632) 64%, #140d02);
+  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 22%, transparent);}
 @media (max-width:760px){
   body:has(.a-gametitle) .brand.logo img{height:60px;}
   .a-gametitle{margin:3px 0 14px;}
-  .a-gametitle__plate{-webkit-text-stroke-width:1.6px; padding-bottom:7px; border-bottom-width:4px;}
+  .a-gametitle__plate{padding-bottom:7px; border-bottom-width:4px;}
 }
 
 /* ---- shared focus + reduced motion (scoped to a- components only) --------- */
