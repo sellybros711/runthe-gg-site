@@ -616,7 +616,7 @@
   document.getElementById('mShare').addEventListener('click', function(){
     var score=Math.max(run, peak);
     var stat=(score>0?'🔥 ':'')+score+' in a row';
-    RTGShare.fire(RTGShare.card('table', DATE, { grid:shareGrid(), stat:stat }), score);
+    RTGShare.send({ key:'table', date:DATE, grid:shareGrid(), stat:stat, statInt:score });
   });
 
   var cdT=null;
