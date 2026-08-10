@@ -239,7 +239,11 @@
         blob = b;
         var file = (b && window.File) ? new File([b], 'runthe-arcade-' + spec.key + '.png', { type: 'image/png' }) : null;
         if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          navigator.share({ files: [file], text: text, title: 'Run The Arcade' })
+          // No `title`: iMessage and others print the share title as its own
+          // line ABOVE the text, which already opens with "Run The Arcade —
+          // <game> #N" - so a title just repeats the brand. The text carries
+          // everything, so the title is pure duplication.
+          navigator.share({ files: [file], text: text })
             .catch(function (e) { if (e && e.name === 'AbortError') return; if (blob) { download(blob, spec.key); copyText(text); } else fire(text, spec.statInt); });
           return;
         }
