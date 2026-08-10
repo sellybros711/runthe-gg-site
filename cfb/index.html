@@ -7957,14 +7957,29 @@ function drawShareCard(){
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{bySlot[run.slotIndex[i]]=p;});
   const COLS=posColors();
+
+  /* THE CARD IS SORTED BY POSITION, NOT BY SLOT, and the chip is painted by the
+     player rather than by the spot he fills. A team sheet reads as a depth chart:
+     quarterback, then the backs, then the receivers, then the tight ends. Slot
+     order scattered them, so a flex running back sat two rows below the other
+     running back with a purple chip between them and the eye had to do the sorting.
+
+     THIS REVERSES AN EARLIER DECISION, deliberately. The chip used to be painted by
+     the slot on the grounds that a green FLEX reads as a second running back. That
+     was true while the rows were in slot order and is not true now: grouped, the
+     colour says what he plays and the word FLEX still says how he got on the field,
+     so the two carry different information instead of competing. The label is
+     still the slot for exactly that reason. */
+  const POS_RANK={QB:0,RB:1,WR:2,TE:3};
+  const rows=[];
+  E.SLOTS.forEach((slot,i)=>{ const p=bySlot[i]; if(p) rows.push({slot,p}); });
+  /* Stable, so two players of the same position keep the order they were drafted. */
+  rows.sort((a,b)=>(POS_RANK[a.p.position]??9)-(POS_RANK[b.p.position]??9));
+
   let y=CARD.ROWS;const ROW=CARD.ROW;
-  E.SLOTS.forEach((slot,i)=>{
-    const p=bySlot[i];if(!p) return;
+  rows.forEach(({slot,p})=>{
     const cw=88,ch=52;const tag=slot||p.position;
-    /* Painted by the SLOT, not the player, so the FLEX chip is the FLEX color whoever
-       is standing in it. Colored by position it came out green under a running back
-       and blue under a receiver, which reads as a second RB rather than a flex. */
-    x.fillStyle=COLS[slot]||COLS[p.position]||'#64748b';
+    x.fillStyle=COLS[p.position]||COLS[slot]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12);x.fill();
     N('700',26);x.fillStyle='#ffffff';
     x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
