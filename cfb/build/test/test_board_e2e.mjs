@@ -70,7 +70,14 @@ async function playSeason(page) {
     b.click();
   });
   await page.waitForTimeout(1400);
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 20; i++) {
+    /* Taking a dual-position player opens the slot sheet over the wheel, and the
+       sheet swallows every click until it is answered. A loop that only knows
+       about tiles retries until the suite times out, and whether it happens at
+       all depends on what the wheel offered, which makes it read like a flake.
+       Answer it with the first slot and carry on. */
+    const slot = await page.$('#sheet.on .slotopt');
+    if (slot) { await slot.click(); await page.waitForTimeout(900); continue; }
     const t = await page.$('#opts .tile:not(.off)');
     if (!t) { await page.waitForTimeout(1300); continue; }
     await t.click();

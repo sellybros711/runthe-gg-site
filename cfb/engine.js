@@ -89,8 +89,12 @@ const CONSTANTS = {
      filter, and getting in means 11-1 or better. Best-available drafting lands
      around 90 overall, so a floor at 89 was barring half of the teams that had
      just gone unbeaten from finishing the job: going 12-0 converted to a title
-     2.2% of the time, which is the wrong shape for an undefeated No. 1 seed. */
-  TITLE_FLOOR: 86,
+     2.2% of the time, which is the wrong shape for an undefeated No. 1 seed.
+     86 to 84 when PRICE_K came down and made a high overall dearer to assemble:
+     the floor is a point on the overall scale, so squeezing the scale without
+     moving the floor raises the bar by exactly as much as the prices did. Both
+     floors follow the distribution rather than standing still in front of it. */
+  TITLE_FLOOR: 84,
   /* THE SAME BAR AS THE TITLE, not a higher one. This used to sit above the title
      floor on the argument that the game's own name is on the outcome, and that
      was right when a mediocre roster could luck into 12-0 against a soft season.
@@ -100,7 +104,7 @@ const CONSTANTS = {
      game produced, which is a strange thing to tell somebody who just went 12-0
      and won the national title. The record is the proof; the floor only has to
      agree with the one on the trophy. */
-  PERFECT_FLOOR: 86,
+  PERFECT_FLOOR: 84,
   ROUND_EDGE_MAX: 3.20,
   ROUND_EDGE_MIN: 0.86,
   ROUND_EDGE_SLOPE: 0.075,
@@ -126,12 +130,16 @@ const CONSTANTS = {
      of the time and the rounds were the filter. Now the RECORD is the filter, and
      a team that gets in has already proved something, so the door it arrives at
      was gating almost nobody. Measured at the old numbers against the new season,
-     titles came out at 0.0%. Re-anchored on the probe's greedy drafts. */
+     titles came out at 0.0%. Re-anchored on the probe's greedy drafts. Lowered
+     two more points each when PRICE_K came down, for the same reason as the two
+     floors above: these are overalls, and the drafts that have to clear them all
+     moved down together. Left where they were, the greedy drafter fell to 0.7%
+     titles and 0.04% perfects. */
   ROUND_EDGE_PIVOT: {
-    'CFP First Round': 76,
-    'CFP Quarterfinal': 83,
-    'CFP Semifinal': 87,
-    'CFP Championship': 92,
+    'CFP First Round': 74,
+    'CFP Quarterfinal': 80,
+    'CFP Semifinal': 84,
+    'CFP Championship': 89,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
@@ -1657,8 +1665,11 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     bowlResult,
     /* A perfect season is unbeaten AND champion AND a roster that belongs in the
        conversation. The first two are played out; the third is PERFECT_FLOOR,
-       which sits two points above the title floor because the game's own name is
-       on this outcome. */
+       which is the SAME bar as the title floor, not a higher one. See the
+       constant. Measured against the current season it blocks nobody: every
+       roster that goes unbeaten and then wins four playoff games is already
+       above it, which is the shape it is supposed to have. It stays because it
+       is the backstop if the season is ever loosened again. */
     perfect: losses === 0 && titleWon
       && teamOverall(roster, chemistryMultiplier, constants) >= constants.PERFECT_FLOOR,
     undefeatedRegular: regularLosses === 0,

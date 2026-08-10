@@ -266,7 +266,14 @@ if (want('play')) {
     await p.evaluate(() => document.getElementById('b-play-intro').click());
     await p.waitForTimeout(1500);
     let picks = 0;
-    for (let i = 0; i < 20 && picks < 6; i++) {
+    for (let i = 0; i < 26 && picks < 6; i++) {
+      /* Taking a dual-position player opens the slot sheet over the wheel, and
+         the sheet swallows every click until it is answered. A loop that only
+         knows about tiles retries until the suite times out, and whether it
+         happens at all depends on what the wheel offered, which makes it read
+         like a flake. Answer it with the first slot and carry on. */
+      const slot = await p.$('#sheet.on .slotopt');
+      if (slot) { await slot.click(); await p.waitForTimeout(900); continue; }
       const t = await p.$('#opts .tile:not(.off)');
       if (!t) { await p.waitForTimeout(1200); continue; }
       await t.click(); picks++; await p.waitForTimeout(2300);

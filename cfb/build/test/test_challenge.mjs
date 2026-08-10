@@ -36,7 +36,11 @@ async function newPage(signedIn){
 }
 async function draftSix(page){
   await page.waitForTimeout(1400);
-  for(let i=0;i<14;i++){
+  for(let i=0;i<20;i++){
+    /* Taking a dual-position player opens the slot sheet over the wheel, and the
+       sheet swallows every click until it is answered. See test_ranks_tab. */
+    const slot=await page.$('#sheet.on .slotopt');
+    if(slot){await slot.click();await page.waitForTimeout(900);continue;}
     const t=await page.$('#opts .tile:not(.off)');
     if(!t){await page.waitForTimeout(1300);continue;}
     await t.click();

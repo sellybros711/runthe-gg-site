@@ -26,7 +26,23 @@ import { secondPosition } from './dual-positions.mjs';
 
 export const BASE_PRICE = 0.3;
 export const MAX_PRICE = 4.8;
-export const PRICE_K = 1.8;
+/* THE CURVE THROUGH THE MIDDLE. price = BASE + (MAX-BASE) * t^K, and both ends
+   are pinned: the cheapest player costs BASE and the best costs MAX whatever K
+   is. So K only moves what the MIDDLE costs, which is exactly where six slots on
+   an $11M budget shop, and lowering it makes a good-but-not-elite player dearer.
+
+   1.80 to 1.74 to make a high overall a little harder to assemble. Measured over
+   520 drafts, paired: reaching 90 fell from 24% of drafts to 19%, 95 from 11% to
+   7%, and 100 stayed reachable at 1%. Keeping that last number alive is the point
+   of the small step, because the title now concentrates above 95 and squeezing
+   the curve harder empties the band that wins it: at 1.72, 95+ halves again and
+   at 1.65 it is gone.
+
+   Chosen over lowering the cap, which does the same arithmetic from the other
+   side. The cap is $11M in the rules, the copy, the how-to-play and the server's
+   own bound, and it is the number a player is told they are spending. Moving what
+   the money buys leaves all of that true. */
+export const PRICE_K = 1.74;
 export const BASELINE_RANK = 120;
 
 export const SLOT_ELIGIBILITY = {

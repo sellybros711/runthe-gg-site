@@ -54,7 +54,11 @@ const whoIsUp = (page) => page.evaluate(() => {
 /* Signs six players, returning the "<year> <school>" of each team the wheel gave. */
 async function draftSix(page) {
   const seen = [];
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 20; i++) {
+    /* Taking a dual-position player opens the slot sheet over the wheel, and the
+       sheet swallows every click until it is answered. See test_ranks_tab. */
+    const slot = await page.$('#sheet.on .slotopt');
+    if (slot) { await slot.click(); await page.waitForTimeout(900); continue; }
     const t = await page.$('#opts .tile:not(.off)');
     if (!t) { await page.waitForTimeout(1200); continue; }
     const who = await whoIsUp(page);

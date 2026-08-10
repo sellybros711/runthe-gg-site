@@ -2,6 +2,12 @@
  *
  *   node cfb/build/test/test_bowl_key.mjs [dbname]
  *
+ * DBNAME MUST BE THE DATABASE THE POSTGREST STUB IS SERVING. The browser half
+ * seeds rows with psql and then reads them back through board.js, so if psql and
+ * the stub point at different databases every seeded assertion still passes and
+ * only the ones that cross the seam fail, which reads like a code regression and
+ * is not one. Start the stub and run this with the same name.
+ *
  * Two things, and the second is why this file exists.
  *
  * WHICH BOWL. cfb_runs stores a slug and the client resolves it to a name against
