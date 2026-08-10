@@ -955,7 +955,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return h+'h '+String(m).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s'; }
   function startCountdown(id){
     if(cdTargets.indexOf(id)===-1) cdTargets.push(id);
-    function upd(){ var html='Next crossword in <b>'+fmtCountdown(msToTomorrow())+'</b>';
+    function upd(){ var html='New boards in <b>'+fmtCountdown(msToTomorrow())+'</b>';
       cdTargets.forEach(function(t){ var el=document.getElementById(t); if(el && el.offsetParent!==null) el.innerHTML=html; }); }
     upd(); if(cdTick) clearInterval(cdTick); cdTick=setInterval(upd,1000);
   }
