@@ -754,7 +754,7 @@
   // in the right spot" is the near-miss that makes somebody tap Play again -
   // the run line alone can't say it.
   var ENDSLOTS=null;
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('rankit', DATE);
     if(done) return; done=true; busy=false;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

@@ -866,7 +866,7 @@
       14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
     return map[n]||'';
   }
-  function finish(w){
+  function finish(w){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('guess', DATE);
     if(done) return; done=true; won=w; if(tick) clearInterval(tick);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

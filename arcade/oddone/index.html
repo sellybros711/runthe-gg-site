@@ -654,7 +654,7 @@
   // the square where it ended is the whole point (this is the shape that
   // made Wordle spread).
   var ANSLOG=[];
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('oddone', DATE);
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
