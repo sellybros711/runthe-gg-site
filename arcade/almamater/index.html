@@ -449,10 +449,12 @@
     [].forEach.call(btns, function(b){ if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim'); });
     if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); document.getElementById('subprompt').textContent='It was '+r.col+'.'; }
     if(right){
+      ANSLOG.push('c');
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 820);
     } else {
+      ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 1100);
     }
@@ -470,7 +472,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(false); } else { seedDaily(); SEQ=buildRounds(true); servedDaily=true; }
-    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     document.getElementById('runN').textContent='0';
     document.getElementById('subprompt').textContent='';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -515,6 +517,10 @@
       14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
     return map[n]||'';
   }
+  // Per-answer log for the share grid. A run of all green tells no story;
+  // the square where it ended is the whole point (this is the shape that
+  // made Wordle spread).
+  var ANSLOG=[];
   function finish(){
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
@@ -572,8 +578,22 @@
     if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
+    // Render the run as it actually happened: a green square per clear, the
+    // square that ended it, and (HiQ) an amber square where the save absorbed
+    // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
+    function shareGrid(){
+      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      if(!ANSLOG.length) return '\u2b1c';
+      var out='', n=0;
+      for(var i=0;i<ANSLOG.length && i<60;i++){
+        out += MAP[ANSLOG[i]]||'\u2b1c';
+        if(++n%10===0 && i<ANSLOG.length-1) out += '\n';
+      }
+      if(ANSLOG.length>60) out += '\u2026';
+      return out;
+    }
   document.getElementById('mShare').addEventListener('click', function(){
-    var bar=run>0?('🟩'.repeat(Math.min(run,10))+(run>10?'+':'')):'⬜';
+    var bar=shareGrid();
     var txt='Run The Arcade · Alma Mater\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/almamater';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
