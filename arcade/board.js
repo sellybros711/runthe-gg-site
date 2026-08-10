@@ -219,6 +219,18 @@
     );
   }
 
+  // ---- all-time board for one game: each player's BEST result ever, ranked,
+  // with the date it happened. Run games return run_len (higher = better); the
+  // timed games return base_seconds/flawless. One RPC serves both via the shared
+  // `score` key. Array (maybe empty) or null (offline). Anon-granted RPC. ----
+  function allTimeBoard(game, limit) {
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(
+      sb.rpc('grid_alltime_board', { p_game: game, p_limit: limit || 10 })
+        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? r.data : null; })
+    );
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
@@ -227,6 +239,8 @@
     leaderboard: leaderboard,
     rank: rank,
     streakOf: streakOf,
+    streakBoard: streakBoard,
+    allTimeBoard: allTimeBoard,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
