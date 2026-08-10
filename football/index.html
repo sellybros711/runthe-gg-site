@@ -1037,6 +1037,17 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(90deg,rgba(16,185,129,.09),transparent 62%)}
   .xp-pop .mc-new{margin-left:0}
   .xp-pop h2{color:#5eead4}
+  /* THE BUTTON IS THE COLLEGE GAME'S GREEN, NOT THIS GAME'S RED.
+     Every other primary button in here starts something in THIS game, and red is what
+     says so. This one leaves for a different game, and dressing it as one of ours made
+     the panel argue with itself: an emerald rail, an emerald heading, and then the same
+     red button that starts a draft. The green is the last thing read before the tap and
+     it is the first thing seen on the page it lands on.
+     Written against the id rather than a new class because there is exactly one of these
+     and a class would imply otherwise. */
+  #b-xp-go{background:linear-gradient(180deg,#34d399,#059669);color:#04241c;
+    box-shadow:0 10px 26px -14px rgba(16,185,129,.9), inset 0 1px 0 rgba(255,255,255,.22)}
+  #b-xp-go:hover{background:linear-gradient(180deg,#4ade80,#10b981)}
 
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
@@ -1074,6 +1085,26 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg,#f87171,#dc2626); border-radius:8px; padding:8px 11px; white-space:nowrap}
   .ggad-short{display:none}
   @media (max-width:460px){ .ggad-long{display:none} .ggad-short{display:block} .ggad-txt b{font-size:12.5px} .ggad-txt span{font-size:10.5px} }
+  /* ---- AND THE SAME BANNER, WEARING THE COLLEGE GAME ----
+     The note above says a green banner on an NFL screen would look like it wandered in
+     from another site, and that is exactly right for a link to the hub -- which is this
+     game's own furniture. It is exactly WRONG for a link to a different game: the whole
+     job of this variant is to say "somewhere else", and the emerald is what says it before
+     a word is read. It is also the color that game wears on its own pages and on the
+     site's front page, so it is recognition rather than decoration.
+     Every red in the base rule is overridden here and none is left to show through. */
+  .ggad.ggad-cfb{border-color:rgba(16,185,129,.40);
+    background:linear-gradient(140deg,#132a26,#0b1220 62%,#0d2320)}
+  .ggad.ggad-cfb:hover{border-color:#10b981;
+    background:linear-gradient(140deg,#17362f,#0d1626 62%,#102c26)}
+  .ggad.ggad-cfb .ggad-logo{border-color:rgba(16,185,129,.4)}
+  .ggad.ggad-cfb .ggad-tm{border-color:rgba(16,185,129,.3)}
+  .ggad.ggad-cfb .ggad-tm i{color:#34d399;text-shadow:0 0 10px rgba(16,185,129,.5)}
+  .ggad.ggad-cfb .ggad-txt b{color:#5eead4}
+  .ggad.ggad-cfb .ggad-go{background:linear-gradient(180deg,#34d399,#059669);color:#04241c}
+  /* The chip rides inside the heading here, so it needs the gap back that .xp-pop and
+     .mc-flag both take away. */
+  .ggad.ggad-cfb .ggad-txt b .mc-new{margin-left:7px;vertical-align:1px}
 
   .cc-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line-2);
@@ -3867,8 +3898,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <a class="ggad" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
       <span class="ggad-mark"><img class="ggad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="46" height="46" loading="lazy" onerror="this.closest('.ggad-mark').classList.add('nologo')"><span class="ggad-tm"><b>RUN<br>THE</b><i>.GG</i></span></span>
       <span class="ggad-txt"><b>More games at RunThe.GG</b>
-        <span class="ggad-long">One free account, every game. RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
-        <span class="ggad-short">RunThePitch, RunTheTour &amp; more, one free account</span></span>
+        <span class="ggad-long">One free account, every game. College Football, RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
+        <span class="ggad-short">College Football, RunThePitch &amp; more, one free account</span></span>
       <span class="ggad-go">Play &#8599;</span></a>
   </div>
 
@@ -4373,11 +4404,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
     <!-- The RunThe.GG house ad, at the very bottom of the results screen under the replay buttons. -->
-    <a class="ggad" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
+    <a class="ggad" id="gg-over" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
       <span class="ggad-mark"><img class="ggad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="46" height="46" loading="lazy" onerror="this.closest('.ggad-mark').classList.add('nologo')"><span class="ggad-tm"><b>RUN<br>THE</b><i>.GG</i></span></span>
       <span class="ggad-txt"><b>More games at RunThe.GG</b>
-        <span class="ggad-long">One free account, every game. RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
-        <span class="ggad-short">RunThePitch, RunTheTour &amp; more, one free account</span></span>
+        <span class="ggad-long">One free account, every game. College Football, RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
+        <span class="ggad-short">College Football, RunThePitch &amp; more, one free account</span></span>
       <span class="ggad-go">Play &#8599;</span></a>
   </div>
 
@@ -5649,6 +5680,66 @@ let wantModes=false;
 
    IT EXPIRES WITH THE CHIP. Same window, same constant: when the announcement stops being
    news the popup stops with it, without anybody having to remember to remove it. */
+/* ---- THE RESULTS SCREEN, WHICH IS THE BEST MOMENT THERE IS ----
+   Somebody who has just finished a season is the single likeliest person on this site to
+   want another one, and the card sitting there was a generic link to the hub. So while the
+   college game is the news, that card becomes the college game; when the window closes it
+   goes back to being the hub link on its own, with nobody having to remember to change it.
+
+   THE SAME WINDOW AS EVERYTHING ELSE. One constant runs the chip, the badge on the mode
+   card, the sign-in popup and this, so the whole campaign starts and stops together.
+
+   THE MARKUP IS EDITED RATHER THAN REPLACED, so the generic card survives in the page
+   exactly as authored and comes back by simply not being touched. Restoring is what the
+   `else` branch does, because paintOver runs on every finished season and the window can
+   close between two of them in the same sitting. */
+function paintResultsPromo(){
+  const a=$('gg-over'); if(!a) return;
+  const t=a.querySelector('.ggad-txt');
+  const head=t&&t.querySelector('b');
+  const long=t&&t.querySelector('.ggad-long');
+  const short=t&&t.querySelector('.ggad-short');
+  if(!head||!long||!short) return;
+  /* Stashed on first paint so the restore is the page's own words rather than a second
+     copy of them kept in this file and free to drift. */
+  if(!a.dataset.ggHead){
+    a.dataset.ggHead=head.textContent;
+    a.dataset.ggLong=long.textContent;
+    a.dataset.ggShort=short.innerHTML;
+    a.dataset.ggHref=a.getAttribute('href');
+    a.dataset.ggLabel=a.getAttribute('aria-label')||'';
+  }
+  if(CFB_LIVE&&modesNewLive()){
+    a.classList.add('ggad-cfb');
+    a.setAttribute('href',CFB_URL);
+    /* SAME TAB, unlike the hub link. That one goes to a different site section and is
+       deliberately a new tab so a finished season is not thrown away; this is our own
+       game, it carries the same account, and opening a second tab of the same site is
+       the sort of thing that leaves people with two of everything. */
+    a.removeAttribute('target');
+    a.setAttribute('aria-label','Play College Football: Perfect Season');
+    /* NO "NEW" CHIP HERE, and it is the one place that goes without one. The text column
+       on this banner is 132px at 320 wide, so the chip cannot share the title's line and
+       takes one of its own -- which makes the card a whole line taller than the hub card
+       it is standing in for, on the screen where vertical space is scarcest. The emerald,
+       the name and the words "Just out" already say new; the chip's job is done by the
+       button on the front page and the badge on the mode card, both of which have room
+       for it. */
+    head.textContent='College Football: Perfect Season';
+    long.textContent='Just out. Spin for a year and a school, sign six under an NIL budget, '+
+      'and chase a perfect twelve-game season. Same account.';
+    short.textContent='Just out. Six players, an NIL budget, a perfect season.';
+  }else{
+    a.classList.remove('ggad-cfb');
+    a.setAttribute('href',a.dataset.ggHref);
+    a.setAttribute('target','_blank');
+    a.setAttribute('aria-label',a.dataset.ggLabel);
+    head.textContent=a.dataset.ggHead;
+    long.textContent=a.dataset.ggLong;
+    short.innerHTML=a.dataset.ggShort;
+  }
+}
+
 const CFB_SEEN_KEY='ps_cfb_promo_seen';
 function cfbPromoSeen(userId){
   if(!userId) return true;
@@ -8785,6 +8876,10 @@ const champBadge=(b)=>b?'<span class="champbadge" title="'+(b==='crown'?'Perfect
 
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
+  /* Asked on every finished season rather than once at boot, because the promo window can
+     close between two seasons played in the same sitting and the card has to go back to
+     being the hub link when it does. */
+  paintResultsPromo();
   c.className='verdict';
   $('o-mode').textContent=runModeLabel();
   $('o-rec').textContent=o.record;
