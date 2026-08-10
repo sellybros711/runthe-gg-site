@@ -14465,6 +14465,45 @@ allows Google Fonts, or self-host Anton.*
   season is worth), `PASS_XP_RATE` (global climb speed), `PASS_TIERS`; bump `PASS_CURVE_V` + add a
   `PASS_CURVES` entry (with LITERAL constants) to re-map everyone onto any future curve.
 
+- **LOADING SCREEN — the game no longer assembles itself in the open (owner: "add a loading screen instead
+  of showing everything loading in. The screen looks like it glitches when things are loading in. Model the
+  loading screen after the NFL one we already built but restyle it for this game").** The "glitch" was the
+  boot sequence being visible: the ~3MB inline game script has to parse before `render()` can run, so the
+  page painted a bare green screen, then the whole layout popped in at once, then the web fonts swapped
+  under it, then the avatars/pixel art painted late. Measured on a fast local load: first paint 68ms,
+  domInteractive 197ms, FCP 236ms — on a phone over mobile data that gap is seconds of watching the page
+  build itself.
+  Modelled on `football/index.html`'s boot screen (`.boot` / `.bootmark` / `.bootbar` / `bootStep()`),
+  restyled for Run The Tour: the shield crest (inlined in the markup, NOT the game's `crestSVG()` which
+  lives inside the script it's waiting on), the RUN THE / TOUR wordmark in the CS354 lemon-gold foil, a gold
+  progress bar with the sweep, and an uppercase status line, over the game's own `--pagebg` green so the
+  hand-off to the app has no background flash.
+  Same philosophy as the football one, carried over deliberately:
+  - **Static markup at the top of `<body>`**, so the loading screen is part of the FIRST PAINT rather than
+    something the app draws once it's already running (verified: it's on screen while `#app` is still empty).
+  - **The bar is not a timer.** Five steps, each one something that genuinely finished: the document landing
+    (8% painted in the markup), the game script parsing, the fonts settling, the account layer starting, the
+    first render, and the first painted frame two `requestAnimationFrame`s later. Its position is the truth
+    about how much is done.
+  - **Never held open to show itself off**: off a warm cache the boot is over in a blink and it just goes
+    (measured: `done()` at 190ms, element removed at 691ms). Only past ~380ms does it let the bar visibly
+    land (260ms) first.
+  - **Its own tiny script ABOVE the game**, so a syntax error down there can't take the exit with it, plus a
+    **9s safety timeout** so nobody is ever stranded behind it; every call site inside the game is
+    `try{ window.rttBoot && rttBoot.step(...) }catch(e){}`-guarded. Reduced motion: no float, sweep or fade.
+  Verified in Playwright: the boot paints while `#app` is still empty; the bar steps 8 → 60 → 100 with the
+  right status lines ("Loading the course" → "Setting the pins" → "Ready"); the screen removes itself and
+  the title renders; reduced-motion still clears it; a DOM-mutation trace confirms the exact removal path +
+  timing; full regression (tour-pass sweep, 18-hole practice daily round, the pass-v4 suite) green with
+  **0 page errors**; `node --check` clean. Phone + desktop screenshots. **A screenshot caught a real bug**
+  the functional tests couldn't: `document.fonts.ready.then(step)` handed `step()` the resolved FontFaceSet
+  as its `say` argument, so the status line read "[object FontFaceSet]" on screen — fixed and re-shot.
+  (Also worth knowing for future harnesses: photographing this screen needs BOTH `rttBoot.done` neutered AND
+  the internal 9s safety timer pushed out, because Playwright's screenshot of a 3MB page can itself take
+  long enough for that timer to fire.) Deployed to /golf (byte-identical). Tunable: the `#rtt-boot` block in
+  the stylesheet, `STEPS`/the hold threshold/the safety timeout in the boot driver, and the status copy at
+  the three in-game milestones.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
