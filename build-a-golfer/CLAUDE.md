@@ -14364,6 +14364,25 @@ allows Google Fonts, or self-host Anton.*
   the scorecard + Records/Passport render clean. Regression: an 18-hole practice daily completes to the result
   and all 9 shop sections render - 0 page errors; inline scripts parse clean. Deployed to /golf.
 
+- **Closet copy: category names pluralize in the Pro Shop sentences (owner, from a closet screenshot:
+  "fix the wording of the 'get more shirt' sentence. It should say shirts").** The closet's "Get more X in
+  the Pro Shop" link and its "You don't own any X yet" empty state both interpolated the raw category label
+  lowercased, and the labels are SINGULAR ("Shirt", "Aura", "Pattern"), so the copy read "get more shirt".
+  A naive `+ 's'` would have broken the rest of the list, since the same labels include already-plural ones
+  (Clubs, Balls, Cleats, Shoes, Trousers) and -wear mass nouns (Headwear, Eyewear, Outerwear, Legwear). New
+  `catPlural(label)`: lowercase, return as-is when it ends in `s` or `wear`, else add `s`. Applied to BOTH
+  sentences. Also dropped an em dash that had crept into the empty state ("yet — grab some" -> "yet, grab
+  some"), per the house no-em-dash rule.
+  Verified in Playwright: the helper maps all 15 labels correctly (shirt->shirts, aura->auras,
+  nameplate->nameplates, headwear/eyewear/outerwear/legwear/clubs/balls/cleats/shoes/trousers unchanged);
+  walking every closet category in a signed-in render shows the correct "Get more {shirts|patterns|hats|
+  headwear|eyewear|trousers|shoes|outerwear|legwear|balls|cleats|auras} in the Pro Shop" with zero singular
+  leaks and no em dash; forcing the empty state reads "You don't own any shirts yet, grab some in the Pro
+  Shop." / "...any headwear yet..."; the full regression (shop sections + an 18-hole practice daily round to
+  the result) stays green with **0 page errors**; `node --check` clean. Deployed to /golf (verified
+  byte-identical to the source afterward). Tunable: `catPlural`'s irregular-suffix rule if a future category
+  label needs a special case.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
