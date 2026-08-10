@@ -45,6 +45,40 @@ const WHITELIST = (() => {
 const _wnorm = (s) => String(s || '').toLowerCase().replace(/[\.\']/g, '').trim();
 const isWhitelisted = (sport, name) => (WHITELIST[sport] || new Set()).has(_wnorm(name));
 
+// ESPN's core API serves display strings HTML-encoded ("Texas A&amp;M",
+// "William &amp; Mary"), while the MLB Stats API returns them plain. Left as-is
+// they render literally as "TEXAS A&AMP;M" in-game and split one school into two
+// pool entries. Decode every string field once at generation so the data is
+// always clean regardless of source. Handles the entities ESPN actually emits
+// plus numeric refs; safe to run on already-plain text (no entities -> no-op).
+const _NAMED_ENTS = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'", '#039': "'" };
+function decodeEntities(s) {
+  if (typeof s !== 'string' || s.indexOf('&') < 0) return s;
+  let prev;
+  do { // loop to collapse double-encoding ("&amp;amp;" -> "&amp;" -> "&")
+    prev = s;
+    s = s.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (m, ent) => {
+      if (ent[0] === '#') {
+        const code = ent[1] === 'x' || ent[1] === 'X'
+          ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10);
+        return isFinite(code) ? String.fromCodePoint(code) : m;
+      }
+      const k = ent.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(_NAMED_ENTS, k) ? _NAMED_ENTS[k] : m;
+    });
+  } while (s !== prev);
+  return s;
+}
+// Recursively decode string leaves of a player record (name, col, pos, teams[]).
+function decodeRecord(p) {
+  for (const k in p) {
+    const v = p[k];
+    if (typeof v === 'string') p[k] = decodeEntities(v);
+    else if (Array.isArray(v)) p[k] = v.map((x) => (typeof x === 'string' ? decodeEntities(x) : x));
+  }
+  return p;
+}
+
 const NOW_YEAR = new Date().getFullYear();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -387,6 +421,10 @@ const players = [];
 try { players.push(...await buildMLB()); } catch (e) { console.error('MLB build failed:', e.message); }
 try { players.push(...await buildNFL()); } catch (e) { console.error('NFL build failed:', e.message); }
 try { players.push(...await buildNBA()); } catch (e) { console.error('NBA build failed:', e.message); }
+
+// Normalize away any HTML entities from the source APIs before de-duping, so a
+// school like "Texas A&M" can't survive as two distinct spellings.
+players.forEach(decodeRecord);
 
 // De-dupe by name+sport, keeping the entry with more team history.
 const byKey = new Map();
