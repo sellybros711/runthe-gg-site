@@ -297,6 +297,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
@@ -635,11 +636,9 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var bar=shareGrid();
-    var txt='Run The Arcade · Career Path\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/career';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
-    else toast('Sharing not supported');
+    var best=load().bestRun||0;
+    var stat=(run>0?'🔥 ':'')+run+' in a row'+(best?(' · best '+best):'');
+    RTGShare.fire(RTGShare.card('career', DATE, { grid:shareGrid(), stat:stat }), run);
   });
 
   var cdT=null;

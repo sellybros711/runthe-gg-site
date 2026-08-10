@@ -316,6 +316,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
@@ -763,10 +764,10 @@
   }
   function shareResult(){
     var mark=hints?('🔎 '+hints+' hint'+(hints>1?'s':'')):'✅ flawless';
-    var txt='Run The Arcade · Word Search · '+P.theme+'\n'+shareGrid()+'\n⏱ '+fmt(elapsed)+' · '+mark+'\nrunthe.gg/arcade/wordsearch';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }).catch(function(){ toast('Copy failed'); }); }
-    else toast('Sharing not supported');
+    // The theme is part of this game's identity, so it rides just under the
+    // numbered header as its own line.
+    var stat='📆 '+P.theme+'\n⏱ '+fmt(elapsed)+' · '+mark;
+    RTGShare.fire(RTGShare.card('wordsearch', DATE, { grid:shareGrid(), stat:stat }), Math.round(elapsed));
   }
 
   // ---- countdown to tomorrow ----

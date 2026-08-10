@@ -631,6 +631,7 @@
   <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
   <script src="/arcade/tokens.js?v=1"></script>
   <script src="/arcade/archive.js?v=1"></script>
@@ -1391,13 +1392,13 @@
     }
     function shareText(r) {
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
-      var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       var resLine = r.won
-        ? ('5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : (solveOrder.length + '/5 groups');
-      return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
-        '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
-        (strip ? strip + '\n' : '') + '\nrunthe.gg/arcade/match';
+        ? ('🧩 5/5 · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('🧩 ' + solveOrder.length + '/5 groups');
+      if (r.streak) resLine += ' · streak ' + r.streak;
+      // stat rides the challenge link when solved: solve time, lower is better.
+      try { window.RTGShareStat = r.won ? Math.round(r.time) : null; } catch (e) {}
+      return RTGShare.card('match', DATE, { grid: strip || null, stat: resLine });
     }
 
     // ---- visual share card: render the result to a PNG (canvas) -------------
