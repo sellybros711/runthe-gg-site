@@ -151,6 +151,33 @@
       return;
     }
 
+    if (m === 'reset') {
+      t.textContent = 'Reset your password';
+      l.textContent = 'Enter your account email and we’ll send a link to set a new password.';
+      b.innerHTML =
+        '<input type="email" id="rtgauthRe" placeholder="Email" autocomplete="email">' +
+        (st.note ? '<div class="rtgauth-note">' + esc(st.note) + '</div>' : '') +
+        (st.err ? '<div class="rtgauth-err">' + esc(st.err) + '</div>' : '') +
+        '<button class="rtgauth-go" id="rtgauthReGo" type="button"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Sending…' : 'Send reset link') + '</button>' +
+        '<div style="height:9px"></div>' +
+        '<button class="rtgauth-ghost" id="rtgauthReBack" type="button">Back to sign in</button>';
+      $('rtgauthReGo').onclick = onReset;
+      $('rtgauthReBack').onclick = function () { st.mode = 'signin'; st.err = ''; st.note = ''; renderModal(); };
+      return;
+    }
+
+    if (m === 'newpass') {
+      t.textContent = 'Set a new password';
+      l.textContent = 'Choose a new password for your account. You’ll stay signed in on this device.';
+      b.innerHTML =
+        '<input type="password" id="rtgauthNp" placeholder="New password" autocomplete="new-password">' +
+        '<input type="password" id="rtgauthNp2" placeholder="Confirm new password" autocomplete="new-password">' +
+        (st.err ? '<div class="rtgauth-err">' + esc(st.err) + '</div>' : '') +
+        '<button class="rtgauth-go" id="rtgauthNpGo" type="button"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : 'Update password') + '</button>';
+      $('rtgauthNpGo').onclick = onNewPass;
+      return;
+    }
+
     // sign in / sign up
     var isUp = m === 'signup';
     t.textContent = isUp ? 'Create your account' : 'Welcome back';
@@ -166,10 +193,12 @@
       (st.note ? '<div class="rtgauth-note">' + esc(st.note) + '</div>' : '') +
       (st.err ? '<div class="rtgauth-err">' + esc(st.err) + '</div>' : '') +
       '<button class="rtgauth-go" id="rtgauthGo" type="button"' + (busy ? ' disabled' : '') + '>' + (busy ? '…' : (isUp ? 'Create free account' : 'Sign in')) + '</button>' +
+      (isUp ? '' : '<div class="rtgauth-swap" style="margin-top:9px"><a id="rtgauthForgot">Forgot password?</a></div>') +
       '<div class="rtgauth-swap">' + (isUp ? 'Already have an account? <a id="rtgauthSwap">Sign in</a>' : 'New here? <a id="rtgauthSwap">Create one</a>') + '</div>' +
       '<div class="rtgauth-fine">By continuing you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.</div>';
     $('rtgauthG').onclick = function () { run(function () { return A.signInGoogle(); }, true); };
     $('rtgauthSwap').onclick = function (e) { e.preventDefault(); st.mode = isUp ? 'signin' : 'signup'; st.err = ''; st.note = ''; renderModal(); };
+    if (!isUp) { var f = $('rtgauthForgot'); if (f) f.onclick = function (e) { e.preventDefault(); st.mode = 'reset'; st.err = ''; st.note = ''; renderModal(); }; }
     $('rtgauthGo').onclick = onSubmit;
   }
 
@@ -191,6 +220,30 @@
       if (!id || !pw) { st.err = 'Enter your login and password.'; renderModal(); return; }
       run(function () { return A.signIn(id, pw); });
     }
+  }
+
+  // password reset: request the email. We show the same "check your inbox" note
+  // whether or not the address has an account (never confirm an email exists).
+  function onReset() {
+    var em = $('rtgauthRe').value.trim();
+    if (!em || em.indexOf('@') < 0) { st.err = 'Enter your account email.'; renderModal(); return; }
+    if (st.busy) return;
+    st.err = ''; st.note = ''; st.busy = true; renderModal();
+    Promise.resolve(A.resetPassword(em)).then(function (r) {
+      st.busy = false;
+      if (r && r.error) { st.err = r.error; renderModal(); return; }
+      st.note = 'If an account uses that email, a reset link is on its way. Check your inbox.';
+      renderModal();
+    }).catch(function () { st.busy = false; st.err = 'Could not send the email. Try again.'; renderModal(); });
+  }
+
+  // password reset: set the new password inside the recovery session (run() handles
+  // the busy state and, on success, closes since you're already signed in).
+  function onNewPass() {
+    var p1 = $('rtgauthNp').value, p2 = $('rtgauthNp2').value;
+    if (!p1 || p1.length < 6) { st.err = 'Password must be at least 6 characters.'; renderModal(); return; }
+    if (p1 !== p2) { st.err = 'Those passwords don’t match.'; renderModal(); return; }
+    run(function () { return A.updatePassword(p1); });
   }
 
   function onDelete() {
@@ -308,7 +361,12 @@
     mountChips();
     wireTriggers();
     paintControls();
-    A.onChange(function (s) { cur = s; paintControls(); });
+    A.onChange(function (s) {
+      cur = s;
+      paintControls();
+      // Arrived via a reset link → jump straight to the "set a new password" step.
+      if (s.recovery && st.mode !== 'newpass') open('newpass');
+    });
     A.boot();
     window.RTGAuthUI = { open: open, close: close, state: function () { return cur; } };
   }
