@@ -615,3 +615,107 @@ if (want('far')) {
     + ':   missed ' + dips(0, false) + '   won it ' + dips(6, true));
   console.log('');
 }
+
+/* ── does the best team win the most, and finish first ──────────────────────
+ *
+ * WHY THIS EXISTS SEPARATELY FROM `bands`. That section lets every team play its
+ * OWN run's schedule. Across twenty teams a band the draw outweighs the rating,
+ * and it shows: measured that way the 100+ band came out WORSE at going
+ * undefeated than 95-100, which is not a real effect and is not a close call
+ * either. Any tuning argued from those two columns was arguing partly with noise.
+ *
+ * Here the schedule is held still. Every band plays the SAME set of schedules and
+ * the same seeds, so the only thing that differs between rows is the roster, and
+ * the head-to-head goes further: two teams, one schedule, one seed, and the only
+ * difference between the two seasons is which players are in them.
+ */
+if (want('top')) {
+  const { E, R, data, league } = CFB;
+  const CTX = { league };
+  const GAMES = E.CONSTANTS.REGULAR_SEASON_GAMES;
+
+  const pool = [];
+  const picks = [STRATS.greedy, STRATS.value, STRATS.random];
+  for (let i = 0; i < 900 && pool.length < 500; i++) {
+    const run = draft(CFB, picks[i % 3]);
+    if (!run) continue;
+    pool.push({ roster: run.roster, chem: run.season.chemistry,
+      ov: E.teamOverall(run.roster, run.season.chemistry) });
+    /* bestPossibleSquad is the only thing that reaches the top of the range, so
+       without it the bands this section exists to measure hold three teams. */
+    try {
+      const bp = R.bestPossibleSquad(run, data, CTX);
+      if (bp && bp.squad) pool.push({ roster: bp.squad, chem: bp.chemistry,
+        ov: E.teamOverall(bp.squad, bp.chemistry) });
+    } catch (e) { /* not always computable */ }
+  }
+
+  const SCHEDULES = [];
+  for (let i = 0; i < 24; i++) {
+    const rng = E.createSeededRNG(E.hashSeed('sched|' + i));
+    SCHEDULES.push({
+      sch: E.generateSchedule(data.prepared, rng).games.map((g) => data.byTeamSeasonId[g.team_season_id]),
+      pl: E.generatePlayoffs(data.prepared, rng).map((g) => data.byTeamSeasonId[g.team_season_id]),
+    });
+  }
+
+  const BANDS = [[75, 80], [80, 85], [85, 90], [90, 95], [95, 100], [100, 999]];
+  const lab = ([lo, hi]) => (hi === 999 ? '100+' : lo + '-' + hi);
+  console.log('=== what a rating is worth, every band on the SAME '
+    + SCHEDULES.length + ' schedules ===');
+  console.log('  band     teams  seasons   wins   undefeated    No. 1    top 4   mean rank');
+  for (const b of BANDS) {
+    const inb = pool.filter((t) => t.ov >= b[0] && t.ov < b[1]);
+    const take = [];
+    for (let i = 0; i < inb.length && take.length < 20; i += Math.max(1, Math.floor(inb.length / 20))) take.push(inb[i]);
+    if (take.length < 3) continue;
+    let n = 0, w = 0, un = 0, one = 0, t4 = 0, rs = 0;
+    for (const t of take) for (const [si, S] of SCHEDULES.entries()) {
+      for (let i = 0; i < 12; i++) {
+        const rng = E.createSeededRNG(E.hashSeed('fix|' + si + '|' + i));
+        const o = E.playRun(t.roster, t.chem, S.sch, S.pl, league, rng, data.prepared);
+        n++; w += o.regularWins;
+        if (o.regularWins === GAMES) un++;
+        const rk = o.seed && o.seed.rank;
+        if (rk === 1) one++;
+        if (rk && rk <= 4) t4++;
+        if (rk) rs += rk;
+      }
+    }
+    const pc = (x) => (100 * x / n).toFixed(2).padStart(9) + '%';
+    console.log('  ' + lab(b).padEnd(8) + String(take.length).padStart(5) + String(n).padStart(9)
+      + (w / n).toFixed(2).padStart(7) + pc(un) + pc(one) + pc(t4) + (rs / n).toFixed(1).padStart(11));
+  }
+
+  /* Two rosters, one schedule, one seed. A tie is the honest third column: in a
+     twelve-game season two close teams landing on the same record is the common
+     case, not a failure of the rating. */
+  const strong = pool.filter((t) => t.ov >= 82).sort((a, b) => a.ov - b.ov);
+  const S0 = SCHEDULES[0];
+  console.log('\n=== the better roster, same schedule, same seed ===');
+  console.log('  rating edge   pairs   better record   same   worse   mean win gap');
+  for (const [glo, ghi] of [[2, 4], [4, 7], [7, 12], [12, 20]]) {
+    let pairs = 0, better = 0, tie = 0, worse = 0, gap = 0, n = 0;
+    for (let a = 0; a < strong.length && pairs < 30; a += 4) {
+      const A = strong[a];
+      const c = strong.filter((t) => t.ov - A.ov >= glo && t.ov - A.ov < ghi);
+      if (!c.length) continue;
+      const B = c[Math.floor(c.length / 2)];
+      pairs++;
+      for (let i = 0; i < 120; i++) {
+        const s = 'h2h|' + glo + '|' + pairs + '|' + i;
+        const oa = E.playRun(A.roster, A.chem, S0.sch, S0.pl, league, E.createSeededRNG(E.hashSeed(s)), data.prepared);
+        const ob = E.playRun(B.roster, B.chem, S0.sch, S0.pl, league, E.createSeededRNG(E.hashSeed(s)), data.prepared);
+        n++; gap += ob.regularWins - oa.regularWins;
+        if (ob.regularWins > oa.regularWins) better++;
+        else if (ob.regularWins === oa.regularWins) tie++; else worse++;
+      }
+    }
+    if (!n) continue;
+    const p = (x) => (100 * x / n).toFixed(1).padStart(8) + '%';
+    console.log('  +' + String(glo).padStart(2) + ' to ' + String(ghi).padEnd(4)
+      + String(pairs).padStart(7) + p(better) + p(tie) + p(worse)
+      + (gap / n).toFixed(2).padStart(13));
+  }
+  console.log('');
+}
