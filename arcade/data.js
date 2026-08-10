@@ -54,6 +54,46 @@
   }
 
   /* ------------------------------------------------------------------
+   * Hand-curated supplement (supplement.js -> window.RTG_SUPPLEMENT).
+   * Same shape as former.js: add if unseen, enrich if seen. This is
+   * where recognizable role players and cultural figures land that the
+   * auto-scrape doesn't rank (Tebow, Manziel, Tyree, El Duque, etc.).
+   * ---------------------------------------------------------------- */
+  var SUP = root.RTG_SUPPLEMENT;
+  if (SUP && SUP.players && SUP.players.length){
+    var ENRICH2 = ['col','hs','hp','ns','dp','pos','decade'];
+    var byKey2 = {};
+    ENT.forEach(function(e){ if (e && e.name && e.sport) byKey2[e.name + '|' + e.sport] = e; });
+    var supAdded = 0, supEnriched = 0;
+    SUP.players.forEach(function (p) {
+      if (!p || !p.name || !p.sport) return;
+      var k = p.name + '|' + p.sport;
+      var cur = byKey2[k];
+      if (cur){
+        var touched2 = false;
+        ENRICH2.forEach(function(f){
+          if ((cur[f] === undefined || cur[f] === null || cur[f] === '') && p[f] !== undefined && p[f] !== null && p[f] !== ''){
+            cur[f] = p[f];
+            touched2 = true;
+          }
+        });
+        // teams: union rather than backfill — supplement can add stints
+        if (Array.isArray(p.t) && p.t.length){
+          if (!Array.isArray(cur.t)) cur.t = [];
+          p.t.forEach(function(tm){ if (cur.t.indexOf(tm) === -1){ cur.t.push(tm); touched2 = true; } });
+        }
+        if (touched2) supEnriched++;
+        return;
+      }
+      byKey2[k] = p;
+      ENT.push(p);
+      supAdded++;
+    });
+    SUP.added = supAdded;
+    SUP.enriched = supEnriched;
+  }
+
+  /* ------------------------------------------------------------------
    * Elite-awards overlay from awards.js (window.RTG_AWARDS). Merges
    * award tags (MVP, All-Star, Cy Young, Gold Glove, HOF, Pro Bowl, …)
    * onto matching corpus entities so any auto-detected credentials gate
