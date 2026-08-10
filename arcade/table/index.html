@@ -614,8 +614,8 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var score=Math.max(run, peak), best=load().bestRun||0;
-    var stat=(score>0?'🔥 ':'')+score+' in a row'+(best?(' · best '+best):'');
+    var score=Math.max(run, peak);
+    var stat=(score>0?'🔥 ':'')+score+' in a row';
     RTGShare.fire(RTGShare.card('table', DATE, { grid:shareGrid(), stat:stat }), score);
   });
 

@@ -607,8 +607,7 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var best=load().bestRun||0;
-    var stat=(run>0?'🔥 ':'')+run+' in a row'+(best?(' · best '+best):'');
+    var stat=(run>0?'🔥 ':'')+run+' in a row';
     RTGShare.fire(RTGShare.card('almamater', DATE, { grid:shareGrid(), stat:stat }), run);
   });
 

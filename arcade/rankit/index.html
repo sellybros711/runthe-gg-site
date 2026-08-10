@@ -842,7 +842,7 @@
     }
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
-    var stat='🏅 '+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'');
+    var stat='🏅 '+r+' set'+(r===1?'':'s')+' cleared';
     RTGShare.fire(RTGShare.card('rankit', DATE, { grid:shareGrid()+endLine(), stat:stat }), r);
   });
 
