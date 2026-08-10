@@ -92,7 +92,7 @@
      one axis where a board read could not be served from its index.
      Keyed on whether the index is being read backwards instead, which is true for all
      three and stays true for any axis added later, whichever way its own index runs.
-     Every created_at in 63_cfb_run_mode.sql and 67_cfb_board_named_indexes.sql is ASC, so
+     Every created_at in 63_cfb_run_mode.sql and 72_cfb_board_named_indexes.sql is ASC, so
      forward is asc and backward is desc. */
   const tiebreakFor = (key, way) => (way === DIR[key] ? 'asc' : 'desc');
 
@@ -265,7 +265,7 @@
        this table and the board should not have to pick one -- how many seasons were
        played is activity, and a guest season is a season; how many are ON the board is
        who signed in for one. The list and every placing are the second, so they pass
-       named and the activity count does not. 67_cfb_board_named_indexes.sql carries a
+       named and the activity count does not. 72_cfb_board_named_indexes.sql carries a
        partial index per axis so this stays an index scan rather than becoming a filter
        that reads the guest rows and throws them away. */
     return '&run_mode=eq.' + encodeURIComponent(modeOf(opts && opts.mode)) +

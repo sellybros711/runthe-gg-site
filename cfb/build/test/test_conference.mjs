@@ -154,7 +154,12 @@ console.log('\n=== a conference season, all the way through ===');
   await page.click('#o-lb'); await page.waitForTimeout(2600);
   ok('the board opens on the competition just played',
     (await page.$eval('#lb-comp', (e) => e.value)) === 'conf:Pac-12');
-  ok('and the season is on it', (await page.$$eval('.lbr', (e) => e.length)) >= 1);
+  /* THIS PAGE IS SIGNED OUT, so the season it just played is a guest season, and the
+     board lists only the seasons somebody signed in for. What proves the competition
+     landed is therefore the COUNT rather than the list: the Pac-12 board counts it as
+     played, and the free-play board below does not count it at all. */
+  const cCount = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  ok('and the season is counted on it', /^[1-9]/.test(cCount), cCount);
   ok('the blurb says why it is its own board',
     /not the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });
@@ -165,8 +170,10 @@ console.log('\n=== a conference season, all the way through ===');
      went red the moment another test left a free-play row behind. */
   const onFree = await page.evaluate((id) => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free&id=eq.' + id)
     .then((r) => r.json()).then((a) => a.length), row.id);
+  /* `.lbr.me` was the class before both games settled on `.mine`, so this half of the
+     assertion had stopped selecting anything and had been passing on an empty set. */
   ok('and it is not on the free-play board', onFree === 0 &&
-    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
+    (await page.$$eval('.lbr.mine, .pod.mine', (e) => e.length)) === 0);
   ok('every competition is selectable',
     (await page.$$eval('#lb-comp option', (e) => e.length)) === 6);
   await page.close();

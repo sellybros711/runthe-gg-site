@@ -5181,9 +5181,14 @@ function paintPodium(rows){
     const r=rows[i], place=i+1;
     const just=!!(myRunId&&r.id===myRunId);
     const mine=just||isMyRow(r);
-    /* THE STEPS SHOW WHAT THE BOARD IS RANKED ON, whichever axis that is. Printing the
-       record on a board sorted by team overall would put three figures on the steps that
-       have nothing to do with the order they are standing in. */
+    /* THE BIG FIGURE IS WHAT THE BOARD IS RANKED ON, whichever axis that is. Printing
+       the record on a board sorted by team overall would put three figures on the steps
+       that have nothing to do with the order they are standing in.
+       UNDER IT, THE FATE. The step has one line spare and the fate is what to spend it
+       on: "Lost the Neon Bowl" is a fact nothing else on this screen reports, and the
+       three seasons on the podium are the ones most worth reading it about. It is also
+       what the rows below say, so the steps and the list read the same way. The second
+       figure the list carries in its value column is one tap away in the season. */
     const c=lbCell(r);
     const pf=avatarOf(r.display_name,r.display_school,r.display_initials);
     return '<div class="pod p'+place+(mine?' mine':'')+(just?' just':'')+
@@ -5192,7 +5197,7 @@ function paintPodium(rows){
       avatarHTML(pf,'big')+
       '<span class="pn">'+seasonBadge(r)+esc(lbName(r,mine))+'</span>'+
       '<span class="pr">'+esc(c.v)+'</span>'+
-      '<span class="ps">'+esc(c.k)+'</span></div>';
+      '<span class="ps">'+seasonFate(r)+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
   return true;
 }
@@ -5249,17 +5254,24 @@ function lbCell(r){
   return {v:rec,k:diff||'record',gold:!!r.perfect};
 }
 
-/* THE LINE UNDER THE NAME. Three things about the season, chosen because between them
-   they answer "was this a good draft" from directions the value column cannot: how
-   strong the roster was, how close it came to the best the same six spins allowed, and
-   who the best man on it was.
-   It used to carry the record and the fate, which on the record board was the same
-   record already printed in large type on the right of the same row. A row's one line of
-   small text is worth more than an echo. The fate stays where the value column is not
-   already the record -- it is the most college thing on the row -- and drops where it
-   would crowd out all three. */
+/* THE LINE UNDER THE NAME. What the season DID, and then how good the draft behind it
+   was, from directions the value column cannot answer: how strong the roster was, how
+   close it came to the best the same six spins allowed, and who the best man on it was.
+
+   IT USED TO CARRY THE RECORD AND THE FATE, and the record was the same record already
+   printed in large type on the right of the same row. The record is the echo and it is
+   what went; the fate is not, and it is the most college thing on the row. "Lost the
+   Neon Bowl" and "Out in the Quarterfinal" are facts nothing else here reports, and the
+   NFL game's version of this line has no equivalent because that game has no bowls.
+
+   EXCEPT ON A ROW THE BADGE HAS ALREADY SPOKEN FOR. A perfect season wears a crown and a
+   champion a trophy, so spending the line's first and widest field on "Perfect season"
+   would be saying it twice on one row -- and those are exactly the rows where the three
+   numbers are most worth reading. So the badge covers the top and the fate covers
+   everything under it. */
 function lbSub(r){
   const bits=[];
+  if(!r.perfect&&!r.title_won) bits.push(seasonFate(r));
   /* Not on the overall board, where the rating is already the big number on the right of
      this same row. Printing it twice in two sizes is not emphasis. */
   if(lbSort!=='overall'&&r.overall!==null&&r.overall!==undefined){
@@ -5271,8 +5283,10 @@ function lbSub(r){
   if(r.perfect_pct!==null&&r.perfect_pct!==undefined){ bits.push(r.perfect_pct+'% perfect'); }
   const best=lbBestMan(r.picks);
   if(best) bits.push(best);
-  /* Nothing resolved -- an old row, or player data this browser has not loaded -- so say
-     what the season DID rather than leaving the line blank. */
+  /* Nothing resolved. Only reachable on a perfect or title row -- every other row got
+     its fate first -- where an old season carries neither an overall nor a perfect share
+     and this browser cannot name a single player on it. Say what it did rather than
+     leaving the line blank, even though the badge beside it says the same. */
   if(!bits.length) return seasonFate(r);
   return bits.join(' · ');
 }

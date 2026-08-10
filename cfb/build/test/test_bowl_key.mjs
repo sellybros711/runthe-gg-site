@@ -217,9 +217,14 @@ window.PS_CFB_BOARD_URL = 'http://localhost:5555';`;
   console.log('\n=== the leaderboard says which bowl ===');
   await p.click('#b-lb-intro');
   await p.waitForTimeout(3000);
-  const rows = await p.$$eval('#lb-rows .lbr', (els) => els.map((e) => e.textContent));
-  /* Four: the three seeded above plus the one board.js just submitted. */
-  ok('the board lists every season', rows.length === 4, rows.length + '');
+  /* PODIUM AND LIST TOGETHER. The top three are now steps above the list rather than
+     the first three rows of it, so counting only #lb-rows counts everything except the
+     seasons this suite most wants to read. Both carry the fate, which is the text under
+     test here. */
+  const rows = await p.$$eval('#lb-podium .pod, #lb-rows .lbr', (els) => els.map((e) => e.textContent));
+  /* At least four: the three seeded above plus the one board.js just submitted. More if
+     this database has been used before, which it is allowed to have been. */
+  ok('the board lists every season', rows.length >= 4, rows.length + '');
   ok('a named win says which bowl', rows.some((r) => /Garland Bowl champions/.test(r)),
     rows.join(' | ').slice(0, 110));
   ok('including the one board.js sent', rows.some((r) => /Mesa Bowl champions/.test(r)));

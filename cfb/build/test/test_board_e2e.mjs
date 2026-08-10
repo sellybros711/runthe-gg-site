@@ -114,6 +114,16 @@ console.log('\n=== a guest finishes a season ===');
   const page = await newPage(false);
   ok('accounts report themselves offline, not broken',
     (await page.evaluate(() => !!window.PS_CFB_AUTH)) === true);
+  /* What the day window held BEFORE this season, so every count below is a delta. */
+  const [beforeTotal, beforeNamed] = await page.evaluate(async () => {
+    const cut = new Date(Date.now() - 36e5 * 12).toISOString();
+    const n = async (extra) => {
+      const r = await fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free'
+        + '&created_at=gte.' + encodeURIComponent(cut) + extra);
+      return (await r.json()).length;
+    };
+    return [await n(''), await n('&display_name=not.is.null')];
+  });
   ok('reached the results screen', await playSeason(page));
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ').trim();
   ok('the results screen shows a place on the board', /of \d/.test(place), place.slice(0, 80));
@@ -124,22 +134,69 @@ console.log('\n=== a guest finishes a season ===');
   ok('six picks stored as id:season', !!row && row.picks.length === 6 && /^[^:]+:\d{4}$/.test(row.picks[0]));
   await page.screenshot({ path: SS + 'e2e_guest_results.png', fullPage: true });
 
+  /* THE BOARD LISTS THE SEASONS SOMEBODY SIGNED IN FOR, and a guest is not one of
+     them. This block used to play a guest season and demand to find it in the list,
+     which was the contract before the board was brought level with the NFL game's:
+     that one has listed only named rows since it shipped, for the reason a wall of
+     rows all reading Anonymous is not a leaderboard of anybody.
+     What a guest gets instead is BOTH counts -- their season is in "played today"
+     and not in "on the board" -- and a pinned row saying where the season WOULD sit,
+     which is the honest version of a place on a board you are not on. */
   console.log('\n=== the board screen ===');
   await page.click('#o-lb'); await page.waitForTimeout(2500);
   ok('the board opened', !!(await page.$('#s-board.on')));
-  const rows = await page.$$eval('.lbr', (e) => e.length);
-  ok('it lists the season just played', rows >= 1, rows + ' rows');
-  ok('and marks it as yours', (await page.$$eval('.lbr.me', (e) => e.length)) === 1);
-  ok('the count labels the board', /season/.test(await page.textContent('#lb-count')),
-    await page.textContent('#lb-count'));
+  /* COUNTED AGAINST WHAT THE TABLE HELD A MOMENT AGO, not against zero. This database
+     is not necessarily fresh -- a second run of this suite finds the first run's
+     seasons still in it -- and an assertion that only holds on an empty table is one
+     that reports a dirty database as a code regression. */
+  const listed = await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length);
+  ok('the guest season did not join the list', listed === beforeNamed,
+    listed + ' listed, ' + beforeNamed + ' named before this season');
+  const count = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  const played = +((count.match(/^([\d,]+)/) || [])[1] || '').replace(/,/g, '');
+  const onBoard = +((count.match(/([\d,]+) on the board/) || [])[1] || '').replace(/,/g, '');
+  ok('but it is counted as played', played === beforeTotal + 1,
+    count + ' (table held ' + beforeTotal + ')');
+  ok('and counted as not on the board', onBoard === beforeNamed,
+    count + ' (' + beforeNamed + ' named before)');
+  /* THE PINNED PREVIEW ONLY EXISTS OVER A LIST. On a board with nothing on it there
+     is nothing to preview a place among, and "where this season would sit: 1st" sitting
+     on top of "no seasons yet" contradicts itself. So when the board is empty the panel
+     that invites you to be first is the whole answer, and the pin stays down -- which is
+     what the NFL game does with the same case. The pin over a POPULATED board is covered
+     by the leaderboard suite in the scratchpad.
+     Both branches are checked here so that whichever one this database is in, the other
+     is not silently skipped. */
+  const empty = await page.$('.lbempty');
+  const pin = await page.$('#lb-mine:not([hidden]) .pinlab');
+  if (empty) {
+    ok('an empty board invites you instead of pinning a place',
+      !pin && /could be the first/.test(await empty.textContent()),
+      (await empty.textContent()).trim().slice(0, 50));
+  } else {
+    ok('and shown where it would sit',
+      !!pin && /Where this season would sit/.test(await pin.textContent()),
+      pin ? (await pin.textContent()) : 'no pin');
+  }
+  ok('nothing is marked as an account of yours',
+    (await page.$$eval('#lb-rows .lbr.mine, #lb-podium .pod.mine', (e) => e.length)) === 0);
   await page.screenshot({ path: SS + 'e2e_board.png', fullPage: true });
 
+  /* Every axis and every direction must ANSWER: a note that does not say unreachable,
+     and either rows or the panel that says there are none. Those are different facts
+     from a board that did not reply, and only one of them can be true at a time. */
   for (const sort of ['overall', 'rank', 'record']) {
     await page.click('#lb-sort button[data-sort="' + sort + '"]');
     await page.waitForTimeout(1600);
-    const n = await page.$$eval('.lbr', (e) => e.length);
-    ok('sorting by ' + sort + ' returns rows', n >= 1, n + ' rows');
+    const note = await page.textContent('#lb-note');
+    const rows = await page.$$eval('#lb-rows .lbr, #lb-podium .pod, .lbempty', (e) => e.length);
+    ok('sorting by ' + sort + ' answers', !/not reachable/.test(note) && rows >= 1,
+      rows + ' entries, note: ' + note.slice(0, 40));
   }
+  await page.click('#b-lb-dir'); await page.waitForTimeout(1600);
+  ok('reversing answers too', /Worst first/.test(await page.textContent('#lb-dir-label')),
+    await page.textContent('#lb-dir-label'));
+  await page.click('#b-lb-dir'); await page.waitForTimeout(1600);
   for (const win of ['week', 'all', 'day']) {
     await page.click('#lb-tabs .tab[data-lb="' + win + '"]');
     await page.waitForTimeout(1500);
@@ -160,7 +217,40 @@ console.log('\n=== a signed-in player finishes a season ===');
   ok('under the name from profiles, never the client', !!row && row.display_name === NAME,
     row ? String(row.display_name) : '');
 
+  /* THE OTHER HALF OF THE CONTRACT the guest block above only proves one side of: a
+     named season IS on the board, under its name, marked as yours, and openable. */
+  console.log('\n=== a named season is on the board ===');
+  await page.click('#o-lb'); await page.waitForTimeout(2600);
+  ok('the board opened', !!(await page.$('#s-board.on')));
+  const n = await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length);
+  ok('it lists the season just played', n >= 1, n + ' entries');
+  /* EVERY row this account owns is marked, which on a re-run of this suite is more
+     than one; exactly one of them is the season just posted. Both are the contract. */
+  const mine = await page.$$eval('#lb-rows .lbr.mine, #lb-podium .pod.mine', (e) => e.length);
+  ok('and marks every season of yours', mine >= 1, mine + ' marked');
+  const just = await page.$$eval('#lb-rows .lbr.just, #lb-podium .pod.just', (e) => e.length);
+  ok('exactly one is the one just posted', just === 1, just + ' just');
+  const shown = (await page.textContent('#lb-podium')) + (await page.textContent('#lb-rows'));
+  ok('your own rows say You rather than your name',
+    /You/.test(shown) && !new RegExp(NAME).test(shown), shown.replace(/\s+/g, ' ').slice(0, 80));
+  /* Tapping it opens the season behind it, which is new and is the whole reason the
+     rows carry a chevron. */
+  /* .just, not .mine. On a database this suite has run against before, this account
+     owns several seasons and some were seeded straight into the table with synthetic
+     picks that do not resolve to six players -- so clicking "the first row of mine"
+     opens whichever of them sorted highest and counts its roster. .just is the season
+     THIS run played, and there is exactly one of it. */
+  await page.click('#lb-podium .pod.just, #lb-rows .lbr.just');
+  await page.waitForTimeout(900);
+  const sheet = (await page.textContent('#sheet-in')).replace(/\s+/g, ' ');
+  ok('tapping it opens the season', /Your season/.test(sheet), sheet.slice(0, 60));
+  ok('with the six who played it', (await page.$$eval('#sheet-in .rrow', (e) => e.length)) === 6);
+  await page.click('#sp-x'); await page.waitForTimeout(600);
+  ok('and closing comes back to the board', !!(await page.$('#s-board.on')));
+  await page.screenshot({ path: SS + 'e2e_board_named.png', fullPage: true });
+
   console.log('\n=== the trophy case comes off the board when signed in ===');
+  await page.click('#b-board-back'); await page.waitForTimeout(700);
   /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip across
      the top. The route is the avatar, then the Trophy case row on the hub. The old
      `.achtabs button[data-tab="case"]` no longer exists, and a click on a selector

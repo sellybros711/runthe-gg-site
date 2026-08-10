@@ -1,5 +1,5 @@
 -- ===========================================================================
--- 67_cfb_board_named_indexes.sql
+-- 72_cfb_board_named_indexes.sql
 --
 -- THE BOARD LISTS THE NAMED ROWS, SO THE BOARD NEEDS INDEXES OVER THE NAMED ROWS.
 --
@@ -39,9 +39,9 @@
 -- from inside the index rather than as a heap fetch per candidate row.
 --
 -- No separate index for a REVERSED board. Postgres reads an index backwards as
--- happily as forwards, and ORDER_TIEBREAK in cfb/board.js flips the tiebreak
--- along with the sort key so that a reversed board is a clean backward scan
--- rather than a backward scan plus an Incremental Sort.
+-- happily as forwards, and tiebreakFor() in cfb/board.js flips created_at along
+-- with the sort key so that a reversed board is a clean backward scan rather
+-- than a backward scan plus an Incremental Sort.
 -- ---------------------------------------------------------------------------
 
 -- Record. `score` is the derived column cfb_submit_run() writes; see
@@ -78,7 +78,7 @@ create index if not exists cfb_runs_mode_named_created_idx
   where display_name is not null;
 
 -- ---------------------------------------------------------------------------
--- The four from 63 STAY. They are not redundant with the three above: the
+-- The four from 63 STAY. They are not redundant with the four above: the
 -- activity count ("224 seasons played today") deliberately includes guests, and
 -- a partial index cannot answer a query that does not carry its predicate.
 -- ---------------------------------------------------------------------------
