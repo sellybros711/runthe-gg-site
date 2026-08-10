@@ -6,10 +6,8 @@
  *   arcade joystick base — as a SQUARE, TRANSPARENT-background PNG, >=1024px.
  *
  * OUTPUT (regenerated, safe to overwrite):
- *   arcade/assets/arcade-icon.png       512  app/favicon icon (logo on dark tile)
- *   arcade/assets/arcade-apple-180.png  180  iOS home-screen icon (opaque tile)
- *   arcade/assets/arcade-icon-192.png   192  PWA icon
- *   arcade/assets/arcade-icon-512.png   512  PWA icon
+ *   arcade/assets/arcade-icon.png       512  favicon / browser tab (logo on dark tile)
+ *   arcade/assets/arcade-apple-180.png  180  iOS home-screen icon
  *   arcade/assets/arcade-share.png     1200x630  link-share (OG) card
  *
  * Run:  node scripts/make-arcade-brand.mjs
@@ -43,10 +41,8 @@ function iconHTML(size, pad) {
 }
 
 const OUT = [
-  { file: 'arcade/assets/arcade-icon.png',     w: 512,  h: 512,  html: iconHTML(512, 9) },
-  { file: 'arcade/assets/arcade-apple-180.png', w: 180, h: 180,  html: iconHTML(180, 8) },
-  { file: 'arcade/assets/arcade-icon-192.png', w: 192,  h: 192,  html: iconHTML(192, 9) },
-  { file: 'arcade/assets/arcade-icon-512.png', w: 512,  h: 512,  html: iconHTML(512, 9) }
+  { file: 'arcade/assets/arcade-icon.png',      w: 512, h: 512, html: iconHTML(512, 9) },
+  { file: 'arcade/assets/arcade-apple-180.png', w: 180, h: 180, html: iconHTML(180, 8) }
 ];
 
 // The OG card: render arcade/og-source.html with the logo inlined as a data URI
