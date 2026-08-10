@@ -39,6 +39,23 @@ const NOW_YEAR = new Date().getFullYear();
 const UA = 'runthe-arcade-awards/2.0 (+https://runthe.gg; contact RunTheGames@outlook.com)';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* Fixed-size worker pool. The first version of this walked ~4,600 statsapi
+ * season endpoints one at a time with a sleep between each, which spent
+ * twenty-odd minutes doing nothing but waiting on round trips and blew the
+ * workflow's timeout. Latency-bound work wants concurrency, not patience. */
+async function mapPool(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  }));
+  return out;
+}
+
 async function req(url, tries = 3) {
   let last = '';
   for (let i = 0; i < tries; i++) {
@@ -143,13 +160,13 @@ const MLB_CATS = [
 
 async function buildFromCats(sport, cats) {
   let total = 0;
-  for (const [cat, tag] of cats) {
-    const names = await catMembers(cat);
+  const got = await mapPool(cats, 3, async ([cat]) => catMembers(cat));
+  cats.forEach(([cat, tag], i) => {
+    const names = got[i] || [];
     names.forEach((n) => { if (add(sport, n, tag)) total++; });
     console.log('  ' + sport + '  ' + String(names.length).padStart(5) + '  ' + cat +
       (names.length ? '' : '   <-- EMPTY, check the category title'));
-    await sleep(150);
-  }
+  });
   return total;
 }
 
@@ -169,26 +186,37 @@ function mlbLabel(name) {
   if (/all-star/i.test(n)) return 'MLB All-Star';
   return null;
 }
+// statsapi publishes hundreds of awards, including minor-league and per-club
+// ones. Hydrating every match back to 1980 is thousands of round trips, so the
+// list is capped - and what the cap drops is printed, because a silent
+// truncation reads as "covered everything" when it isn't.
+const MLB_MAX_AWARDS = 40;
 async function buildMLB() {
   const cat = await req('https://statsapi.mlb.com/api/v1/awards');
   const all = (cat && cat.awards) || [];
   console.log('  MLB  statsapi published ' + all.length + ' awards');
-  const wanted = all.filter((a) => a && a.id && MLB_WANT.test(a.name || '') && mlbLabel(a.name));
-  console.log('  MLB  hydrating ' + wanted.length + ' of them back to 1980');
+  let wanted = all.filter((a) => a && a.id && MLB_WANT.test(a.name || '') && mlbLabel(a.name));
+  if (wanted.length > MLB_MAX_AWARDS) {
+    console.log('  MLB  ' + wanted.length + ' matched; hydrating the first ' + MLB_MAX_AWARDS +
+      ' and SKIPPING: ' + wanted.slice(MLB_MAX_AWARDS).map((a) => a.id).join(', '));
+    wanted = wanted.slice(0, MLB_MAX_AWARDS);
+  }
+  const years = [];
+  for (let y = 1980; y <= NOW_YEAR; y++) years.push(y);
+  console.log('  MLB  hydrating ' + wanted.length + ' awards x ' + years.length + ' seasons');
+
   let total = 0;
   for (const a of wanted) {
     const label = mlbLabel(a.name);
     let got = 0;
-    for (let y = 1980; y <= NOW_YEAR; y++) {
-      const d = await req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) +
-        '/recipients?season=' + y, 2);
-      const recs = (d && d.awards) || [];
-      recs.forEach((r) => {
+    const pages = await mapPool(years, 8, (y) =>
+      req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) + '/recipients?season=' + y, 2));
+    pages.forEach((d) => {
+      ((d && d.awards) || []).forEach((r) => {
         const p = r && r.player;
         if (p && p.fullName && add('MLB', p.fullName, label)) { got++; total++; }
       });
-      await sleep(60);
-    }
+    });
     console.log('  MLB  ' + String(got).padStart(5) + '  ' + a.id + '  ' + label);
   }
   return total;
