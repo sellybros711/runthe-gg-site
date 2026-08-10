@@ -3227,10 +3227,11 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     onAccount:(typeof sbSignedIn==='function'&&sbSignedIn())?1:0,
     titleSet:(S.look&&S.look.title&&S.look.title!=='none')?1:0,
     distinctDailyCourses:Object.keys(f.dcourses||{}).length,
-    // live Legend Circuit stats merged with the persisted flags, so circuit feats count during AND after
-    circuitWins:Math.max(f.circuitWins||0, (S.circuitCareer&&S.circuitCareer.wins)||0),
-    circuitMajors:Math.max(f.circuitMajors||0, (S.circuitCareer&&S.circuitCareer.majors)||0),
-    circuitSeasons:Math.max(f.circuitSeasons||0, (S.circuitCareer&&S.circuitCareer.seasons&&S.circuitCareer.seasons.length)||0),
+    // Legend Circuit stats ACCUMULATE across every circuit career (banked lifetime + this circuit's
+    // unbanked feats), so a second circuit adds to the first instead of only counting the best one.
+    circuitWins:circuitLifeMetric(f,'circuitWinsLife','circuitWins','wins','_bankW'),
+    circuitMajors:circuitLifeMetric(f,'circuitMajorsLife','circuitMajors','majors','_bankM'),
+    circuitSeasons:circuitLifeMetric(f,'circuitSeasonsLife','circuitSeasons','seasons','_bankS'),
     // online: how many of the 4 modes you've won at least once (for the "win in every mode" feat)
     h2hModesWon:(f.h2h1v1Wins>0?1:0)+(f.h2hBbWins>0?1:0)+(f.h2hScWins>0?1:0)+(f.h2hFfaWins>0?1:0),
     // 0-defaults for the new flag metrics (so progress bars read 0/goal before the first capture)
@@ -3366,6 +3367,31 @@ function repPerk2(name){ return repPerkFor(name); }   // for the next-rank tease
 // see them (the Trophy Room / leaderboard are already gated too). Both entry points below no-op for a
 // guest, so every downstream surface (season summary, daily result, career-end, toasts) naturally shows
 // nothing without each having to check sign-in itself.
+// ---- Legend Circuit lifetime accumulation ----------------------------------------------------
+// The circuit's wins/majors/seasons used to be captured as a MAX of a single circuit career, so a
+// player who finished one circuit and started another saw the counter freeze until the new circuit
+// BEAT the old one's total ("Circuit Immortal · win 100 events" was effectively unreachable). They
+// now bank into lifetime flags that accumulate across every circuit, exactly like the tour-career
+// counters. Banking is incremental (each circuit season, plus a final bank at endCircuit) so an
+// abandoned circuit keeps its progress, and it's delta-based so a repeat call can never double-count.
+function seedCircuitLife(){ if(!sbSignedIn()) return; const s=achState(), f=s.flags; if(f.circuitLifeSeed) return;
+  // the legacy per-circuit MAX is always <= the true lifetime total, so seeding from it can only credit
+  f.circuitWinsLife=Math.max(f.circuitWinsLife||0, f.circuitWins||0);
+  f.circuitMajorsLife=Math.max(f.circuitMajorsLife||0, f.circuitMajors||0);
+  f.circuitSeasonsLife=Math.max(f.circuitSeasonsLife||0, f.circuitSeasons||0);
+  f.circuitLifeSeed=1; LS.set(acctKey('bag_ach'),s); }
+function bankCircuitAch(cc){ if(!cc || !sbSignedIn()) return; seedCircuitLife();
+  const w=cc.wins||0, m=cc.majors||0, sn=(cc.seasons||[]).length;
+  const dw=Math.max(0,w-(cc._bankW||0)), dm=Math.max(0,m-(cc._bankM||0)), ds=Math.max(0,sn-(cc._bankS||0));
+  if(dw||dm||ds) recordAchEvent({inc:{circuitWinsLife:dw, circuitMajorsLife:dm, circuitSeasonsLife:ds}});
+  cc._bankW=w; cc._bankM=m; cc._bankS=sn; }
+// banked lifetime + whatever this circuit has earned since its last bank (so an in-progress circuit counts live)
+function circuitLifeMetric(f, lifeKey, oldKey, ccKey, bankKey){
+  const base=Math.max(f[lifeKey]||0, f.circuitLifeSeed?0:(f[oldKey]||0));
+  const cc=S.circuitCareer; if(!cc) return base;
+  const cur=(ccKey==='seasons')?((cc.seasons&&cc.seasons.length)||0):(cc[ccKey]||0);
+  return base + Math.max(0, cur-(cc[bankKey]||0));
+}
 function recordAchEvent(ev){ if(!sbSignedIn()) return; const s=achState(); const f=s.flags;
   if(ev.inc) for(const k in ev.inc) f[k]=(f[k]||0)+ev.inc[k];
   if(ev.max) for(const k in ev.max) f[k]=Math.max(f[k]||0, ev.max[k]);
@@ -18030,6 +18056,10 @@ function scrSummary(){
       cc.skillSeasons=cc.skillSeasons||[];
       cc.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
       track('circuit_season_finished',{ovr,net:Math.round(ec.net),wins:t.wins,majors:t.majors,year:S.year||1});
+      // bank this season's circuit feats into the lifetime achievement flags + evaluate, so circuit
+      // achievements unlock DURING the circuit and survive an abandoned run (not only at endCircuit).
+      bankCircuitAch(cc);
+      const cfresh=evaluateAch(); if(cfresh.length) S.freshAch=(S.freshAch||[]).concat(cfresh);
       // CS504 (owner: "The Legend Circuit should be included in career stats"): post circuit seasons to the
       // public board under the SAME career_id as the tour career (String(S.careerSeed)), so they group into
       // that career — its seasons count (up to 30 tour + 12 circuit = 42), wins, majors and earnings all
@@ -18770,6 +18800,7 @@ function endCircuit(){
   S.circuitEnd={years:cc.seasons.length, money:cc.money, net:cc.net, wins:cc.wins, majors:cc.majors, top10:cc.top10,
     best: cc.seasons.reduce((m,s)=>Math.max(m,s.money),0), bestFin: cc.best, age:playerAge()};
   track('circuit_ended',{years:S.circuitEnd.years,wins:cc.wins,majors:cc.majors,net:Math.round(cc.net)});
+  bankCircuitAch(cc);   // final bank: lifetime circuit wins/majors/seasons accumulate across every circuit
   recordAchEvent({inc:{circuitDone:1}, max:{circuitWins:cc.wins||0, circuitMajors:cc.majors||0, circuitSeasons:(cc.seasons||[]).length}});
   S.circuitMode=false; S.careerOver=true; S.screen='circuitend';
   saveCareer({ended:true, circuitEnded:true, circuitEnd:S.circuitEnd, circuitCareer:cc, freshLegendToken:S.freshLegendToken});
