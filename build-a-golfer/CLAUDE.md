@@ -14424,6 +14424,47 @@ allows Google Fonts, or self-host Anton.*
   adds on top; under true lifetime accumulation 100 circuit wins is roughly 4-8 full careers, i.e. a genuine
   long-haul goal in line with the other 250/500-win tiers rather than an impossible one.
 
+- **TOUR PASS v4 — much steeper curve + seasons feed the Track at 40% (owner: "I just got 950 xp from a
+  single season, and the last level only costs 600xp. These levels need to be much harder and the grind needs
+  to be way bigger").** Measured the live faucets before touching a constant — Pass XP comes ONLY from
+  `awardPlayCoins(base)*PASS_XP_RATE` (daily / spotlight / online win / finished season; Moments use
+  `addBonusCoins` directly and give none). Two problems, and the second was the bigger one:
+  1. **The back half was too cheap.** A dominant season paid **1,226 XP** while tier 60 cost **556** — one
+     season bought 4 tiers at tier 30, 2 at tier 50, and 8 at tier 10. Exactly the owner's report.
+  2. **The season faucet is unbounded.** A career season is repeatable at will (skip-to-end sims one in
+     moments) while the daily is server-capped at 3/day, so season-farming WAS the track: a season a day
+     maxed all 60 tiers in **12 days**, three a day in **5** — vs 96 days for a daily-only player. A
+     repeatable faucet paying 4-7× the capped one dominates everything.
+  Fixed both:
+  - **Curve v4** (`PASS_C0=95, PASS_C1=2, PASS_C2=0.38`, `PASS_CURVE_V=4`): **35,920 XP total (2.25× v3)**
+    with a far steeper back half — tier 1 = 95, tier 15 = 197, tier 30 = 473, tier 45 = 919, tier 60 =
+    **1,536** (**16.2× tier 1**, vs 6.2×). The opening still pays fast; the last stretch is a real grind.
+  - **`PASS_XP_SEASON=0.4`**, applied via a new optional `xpMult` third arg on `awardPlayCoins` (COINS are
+    untouched — only the Track contribution scales). Only the season award passes it; the hard-capped daily /
+    spotlight / online faucets stay at full rate, so consistent daily play is now the reliable way to climb
+    and season-farming can't run away with it.
+  Net (verified against the live functions): a dominant season buys **0.32 of the final tier** instead of 2,
+  and **0 tiers from tier 30 up**; a committed player (daily + a season a day) still finishes around **day
+  55** of the 60-day season, so the $14.99 track's tier-60 capstone stays completable; a daily-only player
+  lands **tier 35** by day 60 (was 47); the 3-seasons-a-day grinder needs **22 days** (was 5).
+  **Nobody loses progress:** `passConvertCurve` re-maps from v1/v2/v3 preserving the exact TIER and the
+  fractional progress into the next one. Caught a live trap while doing it — `PASS_CURVES[3]` pointed at
+  `passTierCost()`, which always means the CURRENT curve, so changing the constants would have made every v3
+  player silently "convert" to themselves and keep a v3-sized XP number stamped v4; every past curve is now
+  frozen with its own literal constants (with a comment so the next bump doesn't repeat it). The
+  cross-version `mergeTourPass` already takes the higher-`curveV` side wholesale, so a stale device can't
+  regress a converted state.
+  Verified in Playwright against the live file: the curve is strictly rising, round-trips at every tier
+  boundary, caps at 60, and totals 35,920; migrations from v1/v2/v3 at tiers 1/10/20/35/48/50/60 (including
+  half-way states) all preserve tier + fraction; a v4 state is never re-converted; the cross-version merge
+  keeps the v4 XP + unions the claims + ORs pro; the SAME 1,000-coin award gives 600 XP as a daily and 240 as
+  a season with coins unchanged at 1,000; the level-up popup still fires and animates on the new curve; the
+  pass page renders all 60 tiers with "TIER 35 / 60". Full regression (tour-pass overlay sweep, 18-hole
+  practice daily round to the result, the Legend Circuit suite) green with **0 page errors**; `node --check`
+  clean. Deployed to /golf (byte-identical). Tunable: `PASS_C0/C1/C2` (shape), `PASS_XP_SEASON` (how much a
+  season is worth), `PASS_XP_RATE` (global climb speed), `PASS_TIERS`; bump `PASS_CURVE_V` + add a
+  `PASS_CURVES` entry (with LITERAL constants) to re-map everyone onto any future curve.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
