@@ -5765,58 +5765,87 @@ function paintResultsPromo(){
    launch week is the week it is worth spending, and one telling reaches only the people
    who happened to open the game that day.
 
-   "EVERY SIGN-IN" MEANS ONCE PER PAGE LOAD, PER ACCOUNT, and that is the honest reading
-   rather than a softening of it: the auth state changes more than once on a normal load
-   -- the session lands, then the username -- and treating each as a fresh sign-in would
-   put the panel back up on top of somebody who had just closed it. Loading the page again,
-   or coming back tomorrow, shows it again. That is what was asked for.
+   ONCE EVERY FOUR HOURS, PER ACCOUNT. Not once per page load: a page load is not a
+   visit, and the two come apart exactly where it matters. Somebody who refreshes, or
+   taps back from the college game, or loses the tab to the phone's memory and reopens
+   it, has done nothing that deserves a second telling -- and being shown the same panel
+   five times in five minutes reads as a bug in the game rather than as an advert.
+   Four hours means at most six in a day for somebody who really does come back that
+   often, and once for everybody else.
 
    AFTER THE WEEK it falls back to once per account for the rest of the campaign rather
    than stopping dead, so somebody whose first visit is day nine still gets told once.
-   The seen-list is written throughout the week, which is what makes that fallback quiet
-   for everybody who has already had it seven times.
+   The timestamp is written throughout the week, which is what makes that fallback quiet
+   for everybody who has already had it several times.
 
    Its own date, not MODES_NEW_UNTIL's, because they are two different lengths of thing:
    the chip and the badge can sit there for a fortnight without being in the way, and a
-   popup on every load cannot. */
+   popup that returns cannot. */
 const CFB_PROMO_EVERY_UNTIL='2026-08-17T00:00:00Z';
+const CFB_PROMO_GAP_MS=4*60*60*1000;
 const promoEveryLogin=()=>{
   if(!CFB_PROMO_EVERY_UNTIL) return false;
   const until=Date.parse(CFB_PROMO_EVERY_UNTIL);
-  /* An unparseable date falls back to once per account rather than to every load: the
+  /* An unparseable date falls back to once per account rather than to every visit: the
      quieter of the two is the safer thing to fail into. */
   return isFinite(until)&&Date.now()<until;
 };
-/* Which account has already been shown it on THIS page load. Held rather than a boolean
-   so signing out and back in as somebody else still tells the new account. */
+/* Which account has already been shown it on THIS page load. Belt to the timestamp's
+   braces, and the thing that stops the SECOND auth change of a normal load reopening a
+   panel somebody has just closed -- the session lands, then the username, and both are
+   inside the same millisecond as far as a four-hour gap is concerned. Held as a user id
+   rather than a boolean so signing out and in as somebody else still tells them. */
 let cfbPromoShownFor=null;
 
+/* WHEN each account last saw it, as {userId: epochMs}.
+   This used to be a list of ids, which could answer "ever?" and not "how long ago?".
+   A list left behind by that version is still read: an id in it means seen at a time
+   nobody wrote down, which is treated as long ago -- so during the push week they are
+   told again, and after it the once-per-account rule still counts them as told. */
 const CFB_SEEN_KEY='ps_cfb_promo_seen';
-function cfbPromoSeen(userId){
-  if(!userId) return true;
-  try{ const a=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'[]');
-    return Array.isArray(a)&&a.indexOf(userId)>=0; }catch(e){ return false; }
+function cfbPromoStore(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'{}');
+    if(Array.isArray(raw)){ const o={}; raw.forEach(id=>{ o[id]=0; }); return o; }
+    return (raw&&typeof raw==='object')?raw:{};
+  }catch(e){ return {}; }
+}
+function cfbPromoLastAt(userId){
+  if(!userId) return null;
+  const v=cfbPromoStore()[userId];
+  return typeof v==='number'&&isFinite(v)?v:(v===undefined?null:0);
 }
 function markCfbPromoSeen(userId){
   if(!userId) return;
-  try{ const a=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'[]');
-    const list=Array.isArray(a)?a:[];
-    if(list.indexOf(userId)<0) list.push(userId);
-    /* Trimmed from the front. A shared browser could otherwise grow this forever, and the
-       oldest account is the one least likely to come back and be shown it twice. */
-    localStorage.setItem(CFB_SEEN_KEY,JSON.stringify(list.slice(-20)));
+  try{
+    const o=cfbPromoStore();
+    o[userId]=Date.now();
+    /* A shared browser could otherwise grow this forever. The twenty most recent are
+       kept, because the account least likely to come back is the one longest unseen. */
+    const keys=Object.keys(o).sort((a,b)=>(o[b]||0)-(o[a]||0)).slice(0,20);
+    const out={}; keys.forEach(k=>{ out[k]=o[k]; });
+    localStorage.setItem(CFB_SEEN_KEY,JSON.stringify(out));
   }catch(e){}
+}
+/* Long enough ago to say again. A stored time in the FUTURE means the clock moved
+   backwards between visits, and the honest answer there is yes: showing a promo once more
+   is a smaller wrong than never showing it again on a machine whose clock is out. */
+function cfbPromoGapPassed(userId){
+  const at=cfbPromoLastAt(userId);
+  if(at===null) return true;
+  const since=Date.now()-at;
+  return since>=CFB_PROMO_GAP_MS||since<0;
 }
 /* Every condition in one place, so the answer to "why did it not show" is one function. */
 function cfbPromoDue(){
   if(!CFB_LIVE||!modesNewLive()) return false;
   if(!authState.ready||!authState.signedIn||!authState.userId) return false;
-  /* Once per load whatever week it is. Inside the push week this is the ONLY thing
-     stopping a second auth change re-opening a panel somebody has just closed. */
+  /* Once per load whatever week it is, on top of everything below. */
   if(cfbPromoShownFor===authState.userId) return false;
-  /* Outside the push week, once per account. Inside it, the seen-list is still written
-     but not consulted. */
-  if(!promoEveryLogin()&&cfbPromoSeen(authState.userId)) return false;
+  /* Inside the push week, once every four hours. Outside it, once per account ever --
+     which is the same question with an infinite gap, so it is asked as one. */
+  if(promoEveryLogin()){ if(!cfbPromoGapPassed(authState.userId)) return false; }
+  else if(cfbPromoLastAt(authState.userId)!==null) return false;
   /* The front page, and nothing on top of it. A sheet is already open when somebody is
      mid sign-up or has just been sent to the club picker, and stacking this on top would
      replace the thing they asked for with a thing they did not. */
