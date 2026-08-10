@@ -183,7 +183,8 @@
     var handledStat = false;
     var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
     var ART = { table:artLadder, oddone:artStreak, career:artPath, almamater:artPennant,
-                rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artClock };
+                rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artCross,
+                match:artMatch };
     if (tl) { drawTimeline(tl, spec.total, top, boxH); }
     else if (ART[spec.key]) { ART[spec.key](spec, top, boxH); handledStat = true; }
     else { drawGrid(spec, top, boxH); }
@@ -277,7 +278,40 @@
       // stem + crown so it reads as a stopwatch
       g.fillStyle = accent; rr(cx - 22, cy - R - 34, 44, 22, 6); g.fill(); rr(cx - 6, cy - R - 46, 12, 16, 4); g.fill();
       cbig(fmtT(secs), cy + 22, 108, '#F4F7FB');
-      clabel(spec.key === 'crossword' ? 'to solve' : 'to clear the board', 780);
+      clabel('to clear the board', 780);
+    }
+    // ---- Crossword: a mini crossword grid hero + the solve time (distinct from
+    // Word Search's stopwatch so the two timed games never share a card) ----
+    function artCross(spec) {
+      var secs = Math.max(0, spec.statInt | 0);
+      clabel('mini crossword', 420);
+      var N = 5, cell = 58, gap = 8, tw = N * cell + (N - 1) * gap, sx = (W - tw) / 2, sy = 452;
+      var blocks = { '0,4':1, '2,2':1, '4,0':1 };                 // classic blocked cells
+      var letters = { '0,0':'R', '0,1':'T', '0,2':'G', '2,0':'G', '4,4':'G' };
+      for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
+        var x = sx + c * (cell + gap), y = sy + r * (cell + gap), k = r + ',' + c;
+        if (blocks[k]) { g.fillStyle = 'rgba(255,255,255,.10)'; rr(x, y, cell, cell, 9); g.fill(); continue; }
+        g.fillStyle = '#F4F7FB'; rr(x, y, cell, cell, 9); g.fill();
+        if (letters[k]) { g.fillStyle = '#10233A'; g.textAlign = 'center'; g.font = '400 40px Anton, Impact, sans-serif'; g.fillText(letters[k], x + cell / 2, y + cell / 2 + 15); }
+      }
+      cbig(fmtT(secs), 850, 96, accent); clabel('to solve', 908);
+    }
+    // ---- Daily Match, no-timeline case (a loss or a resumed board): groups
+    // solved out of five, so the losing/partial share still gets a bespoke card
+    // instead of the generic emoji grid. ----
+    function artMatch(spec) {
+      var m = /(\d)\s*\/\s*5/.exec(spec.stat || '');
+      var solved = m ? (+m[1]) : (spec.statInt != null ? 5 : 0);
+      var won = solved >= 5;
+      clabel('daily match', 430);
+      cbig(solved + '/5', 600, 200, won ? accent : '#E5484D');
+      clabel(won ? 'board cleared' : 'groups found', 668, won ? '#8AA0B8' : '#E5A5A5');
+      var n = 5, cw = 128, gap = 20, tw = n * cw + (n - 1) * gap, sx = (W - tw) / 2, y = 770, ch = 74;
+      for (var i = 0; i < n; i++) {
+        var x = sx + i * (cw + gap), lit = i < solved;
+        if (lit) { g.fillStyle = accent; rr(x, y, cw, ch, 16); g.fill(); }
+        else { g.fillStyle = 'rgba(255,255,255,.06)'; rr(x, y, cw, ch, 16); g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.18)'; rr(x, y, cw, ch, 16); g.stroke(); }
+      }
     }
     function drawTimeline(items, total, top, boxH) {
       total = total || items[items.length - 1].t || 1; if (total <= 0) total = 1;
@@ -295,20 +329,22 @@
         g.fillStyle = s.color; g.beginPath(); g.arc(x, by, 26, 0, 7); g.fill();
         g.lineWidth = 5; g.strokeStyle = '#F4F7FB'; g.beginPath(); g.arc(x, by, 26, 0, 7); g.stroke();
       });
-      // end labels
+      // end labels (a touch below the dots so they never kiss the halos)
       g.font = '800 30px Archivo, sans-serif'; g.fillStyle = '#8AA0B8';
-      g.textAlign = 'left'; g.fillText('0:00', bx0, by + 74);
-      g.textAlign = 'right'; g.fillText(fmtT(total), bx1, by + 74);
+      g.textAlign = 'left'; g.fillText('0:00', bx0, by + 78);
+      g.textAlign = 'right'; g.fillText(fmtT(total), bx1, by + 78);
       g.textAlign = 'center';
-      // splits list: rank · color chip · cumulative time · (+split), in solve order
-      var lx = W / 2 - 200, listTop = by + 150, rowH = 70;
+      // splits list: rank · color chip · cumulative time · (+split), in solve order.
+      // Vertically centered in the gap between the timeline and the stat pill so
+      // the five rows breathe evenly instead of crowding the pill below.
+      var lx = W / 2 - 210, listTop = by + 128, rowH = 62;
       items.forEach(function (s, i) {
         var cy = listTop + i * rowH, prev = i ? items[i - 1].t : 0;
         g.textAlign = 'left';
-        g.font = '900 32px Archivo, sans-serif'; g.fillStyle = accent; g.fillText(String(i + 1), lx, cy + 40);
-        g.fillStyle = s.color; rr(lx + 44, cy + 4, 48, 48, 13); g.fill();
-        g.font = '400 56px Anton, Impact, sans-serif'; g.fillStyle = '#F4F7FB'; g.fillText(fmtT(s.t), lx + 118, cy + 46);
-        g.font = '800 30px Archivo, sans-serif'; g.fillStyle = '#6E8298'; g.fillText('+' + fmtT(s.t - prev), lx + 300, cy + 42);
+        g.font = '900 30px Archivo, sans-serif'; g.fillStyle = accent; g.fillText(String(i + 1), lx, cy + 38);
+        g.fillStyle = s.color; rr(lx + 42, cy + 4, 46, 46, 12); g.fill();
+        g.font = '400 52px Anton, Impact, sans-serif'; g.fillStyle = '#F4F7FB'; g.fillText(fmtT(s.t), lx + 116, cy + 44);
+        g.font = '800 29px Archivo, sans-serif'; g.fillStyle = '#6E8298'; g.fillText('+' + fmtT(s.t - prev), lx + 296, cy + 40);
         g.textAlign = 'center';
       });
     }
