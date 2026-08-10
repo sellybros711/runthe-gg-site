@@ -352,7 +352,6 @@
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
-    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -374,7 +373,6 @@
 <script src="/arcade/stats.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -771,7 +769,6 @@
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'sets' });
     save(s);
-    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('rankit', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -807,7 +804,6 @@
     document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.' : 'Run over. '+r+' set'+(r===1?'':'s')+' cleared.';
     document.getElementById('yourTm').textContent = r+' set'+(r===1?'':'s');
     document.getElementById('yourBest').textContent = (s.bestRun||0)+' sets';
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'rankit');
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (r>=3 || NEWBEST)){ confetti(NEWBEST?140:(r>=8?120:70), NEWBEST || r>=8); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
