@@ -232,11 +232,20 @@
   }
   function markMile(g, n) { try { LS.setItem('rtg:mile:' + g + ':' + n, '1'); } catch (e) {} }
 
+  // The end modal is a "#scrim > .sheet" in seven games, but Daily Match uses
+  // "#resultModal > .sheet" and Crossword "#scrim > .modal". Resolve whichever
+  // exists so the challenge/milestone decoration reaches all nine.
+  function findSheet() {
+    return document.querySelector('#scrim .sheet') ||
+           document.querySelector('#scrim .modal') ||
+           document.querySelector('#resultModal .sheet') ||
+           document.querySelector('#resultModal .modal');
+  }
   function decorateModal() {
-    var sheet = document.querySelector('#scrim .sheet');
+    var sheet = findSheet();
     if (!sheet) return;
     injectCSS();
-    var share = document.getElementById('mShare');
+    var share = sheet.querySelector('#mShare, #resShare');
     if (!share) return;
     // Share sits inside a flex CTA row, so anything inserted next to it lands
     // BESIDE the buttons. Insert above that whole row instead - and fall back
@@ -276,12 +285,16 @@
   }
 
   function watchModal() {
-    var scrim = document.getElementById('scrim');
-    if (!scrim || !window.MutationObserver) return;
-    new MutationObserver(function () {
-      if (!scrim.classList.contains('hidden')) decorateModal();
-    }).observe(scrim, { attributes: true, attributeFilter: ['class'] });
-    if (!scrim.classList.contains('hidden')) decorateModal();
+    if (!window.MutationObserver) return;
+    var scrim = document.getElementById('scrim');        // 8 games: toggles .hidden
+    var rm = document.getElementById('resultModal');     // Daily Match: toggles [hidden]
+    var check = function () {
+      if (scrim && !scrim.classList.contains('hidden')) decorateModal();
+      if (rm && !rm.hasAttribute('hidden')) decorateModal();
+    };
+    if (scrim) new MutationObserver(check).observe(scrim, { attributes: true, attributeFilter: ['class'] });
+    if (rm) new MutationObserver(check).observe(rm, { attributes: true, attributeFilter: ['hidden'] });
+    check();
   }
 
   function init() {
