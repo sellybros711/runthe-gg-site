@@ -131,6 +131,67 @@ window.GA_ID='G-L29P5MRWKE';
   body{background:#06200f; color:var(--pageink);
     font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4}
   body::before{content:""; position:fixed; inset:0; z-index:-1; background:var(--pagebg); pointer-events:none}
+  /* ── THE LOADING SCREEN ────────────────────────────────────────────────────────────
+     Painted from STATIC markup at the top of <body>, so the very first frame is this
+     screen rather than a bare green page that then assembles itself in pieces: the ~3MB
+     inline game script has to parse before render() can run, the web fonts swap in under
+     whatever is already on screen, and the avatars/pixel art paint late. That sequence is
+     what read as a glitch.
+
+     THE BAR IS NOT A TIMER. It steps on things that genuinely finished - the game code
+     parsing, the fonts settling, the account layer starting, the first render, the first
+     painted frame - so its position is the truth about how much is done. A bar that always
+     takes the same two seconds is a worse lie than a spinner, because it looks like
+     information. Same reason it is never held open to show itself off: off a warm cache
+     the whole boot is over in a blink and the screen just goes. */
+  #rtt-boot{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(28px + env(safe-area-inset-bottom,0px));
+    background:#06200f; background-image:var(--pagebg);
+    opacity:1; transition:opacity .42s ease}
+  #rtt-boot.gone{opacity:0; pointer-events:none}
+  .boot-in{display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; max-width:340px}
+  .boot-crest{width:86px; height:102px; display:block;
+    filter:drop-shadow(0 0 14px rgba(241,208,74,.20)) drop-shadow(0 8px 20px rgba(0,0,0,.5));
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) both,
+              bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite}
+  .boot-wm{margin-top:16px; line-height:1;
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .06s both}
+  .boot-wm b{display:block; font-family:var(--display); font-weight:400; font-size:15px;
+    letter-spacing:.30em; text-indent:.30em; color:var(--cream); opacity:.9}
+  .boot-wm i{display:block; margin-top:3px; font-family:var(--display); font-style:normal; font-weight:400;
+    font-size:clamp(38px,12vw,50px); letter-spacing:.06em; text-indent:.06em;
+    background:var(--gold-grad); -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent}
+  .boot-bar{position:relative; width:min(228px,64vw); height:5px; margin-top:24px; border-radius:99px;
+    background:rgba(244,227,201,.10); overflow:hidden;
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .12s both}
+  .boot-bar > i{position:relative; display:block; height:100%; width:0; border-radius:99px; overflow:hidden;
+    background:var(--gold-grad-d);
+    box-shadow:0 0 10px rgba(241,208,74,.55), 0 0 24px rgba(241,208,74,.28);
+    transition:width .55s cubic-bezier(.22,.9,.26,1)}
+  /* A sweep across the FILLED part, clipped to it. The bar advances in steps, so between two
+     of them it is a still image; the sweep is what says the game is working, not wedged. */
+  .boot-bar > i::after{content:""; position:absolute; inset:0; transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+    animation:bootSweep 1.5s linear infinite}
+  .boot-say{margin:14px 0 0; font-family:var(--body); font-size:11.5px; font-weight:700;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--pagemut); opacity:.85;
+    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .18s both}
+  @keyframes bootRise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  @keyframes bootFloat{
+    0%,100%{transform:translateY(0);
+      filter:drop-shadow(0 0 14px rgba(241,208,74,.20)) drop-shadow(0 8px 20px rgba(0,0,0,.5))}
+    50%{transform:translateY(-5px);
+      filter:drop-shadow(0 0 24px rgba(241,208,74,.42)) drop-shadow(0 10px 24px rgba(0,0,0,.5))}
+  }
+  @keyframes bootSweep{from{transform:translateX(-100%)} to{transform:translateX(100%)}}
+  @media (prefers-reduced-motion:reduce){
+    .boot-crest,.boot-bar,.boot-say,.boot-wm{animation:none}
+    .boot-bar > i::after{animation:none; opacity:0}
+    .boot-bar > i{transition:none}
+    #rtt-boot{transition:none}
+    .boot-wm{transition:none}
+  }
   #app{max-width:none; margin:0; padding:0 env(safe-area-inset-right, 0px) calc(36px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px)}
 
   /* ---- top bar + header (cream Masters-style band) ---- */
@@ -2268,6 +2329,66 @@ h2{font-size:11px;letter-spacing:.04em}
 </head>
 <body>
 
+<!-- THE LOADING SCREEN. Static markup so it is part of the first paint, ahead of the big inline
+     game script - see the #rtt-boot block in the stylesheet for why. The crest is inlined (rather
+     than the game's crestSVG(), which lives inside that script) so it needs nothing to be ready. -->
+<div id="rtt-boot" role="status" aria-live="polite">
+  <div class="boot-in">
+    <svg class="boot-crest" viewBox="0 0 64 76" fill="none" aria-hidden="true">
+      <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#d3bd53" stroke-width="2.6"/>
+      <path d="M32 5 L57 14 V40 C57 56 45.5 65 32 70.5 C18.5 65 7 56 7 40 V14 Z" fill="none" stroke="#cda54a" stroke-width="0.8" opacity="0.55"/>
+      <path d="M26 17 v36" stroke="#e9d8ac" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#F1D04A"/>
+      <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
+      <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
+      <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/>
+    </svg>
+    <div class="boot-wm" id="boot-wm"><b>RUN THE</b><i>TOUR</i></div>
+    <div class="boot-bar" id="boot-bar" role="progressbar" aria-label="Loading Run The Tour"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i id="boot-fill" style="width:8%"></i></div>
+    <p class="boot-say" id="boot-say">Loading the course</p>
+  </div>
+</div>
+<script>
+/* Boot driver. Deliberately its own tiny script ABOVE the game, so it is running long before the
+   3MB one has finished parsing, and so a syntax error down there could never take the loading
+   screen's own exit with it (the safety timeout below still clears the screen either way). */
+(function(){
+  var STEPS=5, at=0, fin=false, t0=Date.now();
+  function id(x){ return document.getElementById(x); }
+  function paint(pct,say){
+    var f=id('boot-fill'); if(f) f.style.width=pct+'%';
+    var b=id('boot-bar');  if(b) b.setAttribute('aria-valuenow',String(Math.round(pct)));
+    var s=id('boot-say');  if(s&&say) s.textContent=say;
+  }
+  function step(say){ if(fin) return; at++; paint(Math.min(100,Math.round(100*at/STEPS)), say); }
+  function done(){
+    if(fin) return; fin=true;
+    paint(100,'Ready');
+    /* Let the bar visibly land, but ONLY when there was a wait to finish. Off a warm cache this
+       is all over in a blink and holding it would mean adding a delay to show off a loading
+       screen, which is the opposite of the point. */
+    var hold=(Date.now()-t0)>380?260:0;
+    setTimeout(function(){
+      var b=id('rtt-boot'); if(!b) return;
+      b.classList.add('gone');
+      setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 500);
+    }, hold);
+  }
+  window.rttBoot={step:step, done:done};
+  /* The fonts settling is a real milestone, so it moves the bar - but the wordmark is NOT gated on
+     it. Waiting would mean that on a quick load (where this screen is gone inside half a second)
+     the wordmark never appeared at all, and the fallback stack is close enough that the upgrade,
+     when it lands, is a far smaller thing than the app assembling itself in the open. */
+  try{
+    // NB: .then(step) would hand step() the resolved FontFaceSet as its `say` argument and print it.
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ step(); });
+    else step();
+  }catch(e){ step(); }
+  setTimeout(done, 9000);                      // hard safety: never strand anyone behind this screen
+})();
+</script>
+
 <!-- Static, crawlable fallback for no-JS clients + non-rendering crawlers (Bing, social/LLM scrapers).
      Hidden the moment the app hydrates; JS clients never see it. Gives the marquee page a real H1 +
      keyword-bearing body copy instead of an empty shell. -->
@@ -2294,6 +2415,9 @@ h2{font-size:11px;letter-spacing:.04em}
 <div id="app"></div>
 
 <script>
+// Loading-screen milestone 1: this script has finished parsing (the longest single wait on a cold
+// load). Guarded everywhere it's called - the boot screen must never be able to break the game.
+try{ window.rttBoot && rttBoot.step('Reading the course'); }catch(e){}
 const $=(h)=>{const t=document.createElement('template'); t.innerHTML=emojifyIcons(h.trim()); return t.content.firstChild;};
 const app=document.getElementById('app');
 /* block pull-to-refresh so a stray downward swipe can't reload & wipe an in-progress round (CSS alone isn't
@@ -28132,6 +28256,7 @@ async function h2hLoadBoard(mode){
 // just a few ms later. Nothing else depends on `sb` synchronously (the initial render() below is offline-safe).
 if(window.supabase && window.supabase.createClient){ sbInit(); }
 else { window.addEventListener('DOMContentLoaded', sbInit); }
+try{ window.rttBoot && rttBoot.step('Checking in at the clubhouse'); }catch(e){}   // milestone 2: the account layer is under way
 try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
 // CS356c: global Escape-to-close for any open overlay (belt-and-suspenders alongside the Close buttons,
 // which can be scrolled out of reach on long overlays like the Trophy Room).
@@ -28173,6 +28298,13 @@ try{ document.addEventListener('visibilitychange',()=>{ if(document.visibilitySt
 // h2h link goes straight to h2h (never a title/onboard flash) and the intro guard sees the pending join.
 try{ h2hCheckLink(); }catch(e){}
 render();
+// Milestones 3 & 4: the first screen is built, then the browser has actually PAINTED it (two frames
+// out, so the canvases/pixel art on it have drawn). Only then does the loading screen step aside -
+// so the player never watches the page assemble itself.
+try{
+  window.rttBoot && rttBoot.step('Setting the pins');
+  if(window.rttBoot) requestAnimationFrame(()=>requestAnimationFrame(()=>{ try{ rttBoot.done(); }catch(e){} }));
+}catch(e){ try{ window.rttBoot && rttBoot.done(); }catch(e2){} }
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 </script>
 </body>
