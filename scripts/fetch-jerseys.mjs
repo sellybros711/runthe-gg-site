@@ -146,6 +146,25 @@ function loadPool() {
   }
   fold(former); fold(supp);
 
+  // Collapse same-person duplicates the SAME way data.js does, so a stint is
+  // always emitted under the spelling the game keeps (else e.g. Odell Beckham's
+  // #13 years, scraped as "Odell Beckham", would orphan against the kept
+  // "Odell Beckham Jr."). Accent/punctuation variants merge; suffixes are kept
+  // so father/son pairs stay distinct; ALIAS handles verified suffix mismatches.
+  const ALIAS = {
+    'NBA|Jimmy Butler III': 'Jimmy Butler', 'NFL|Robert Griffin': 'Robert Griffin III',
+    'NFL|Odell Beckham': 'Odell Beckham Jr.', 'MLB|Nolan Ryan Jr.': 'Nolan Ryan'
+  };
+  const dnorm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.']/g, '').replace(/\s+/g, ' ').trim();
+  const dseen = {}, deduped = [];
+  for (const e of ent) {
+    const nm = ALIAS[e.sport + '|' + e.name] || e.name;
+    const dk = e.sport + '|' + dnorm(nm), prev = dseen[dk];
+    if (prev) { if (Array.isArray(e.t)) { if (!Array.isArray(prev.t)) prev.t = []; e.t.forEach((tm) => { if (prev.t.indexOf(tm) < 0) prev.t.push(tm); }); } continue; }
+    dseen[dk] = e; deduped.push(e);
+  }
+  ent.length = 0; ent.push(...deduped);
+
   // stars overlay: mark .star and bump fame (icons->5, stars->4)
   const starBy = {};
   ent.forEach((e) => { if (e && e.name && e.sport) starBy[e.sport + '|' + nkey(e.name)] = e; });
