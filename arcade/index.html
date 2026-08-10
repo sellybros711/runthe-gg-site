@@ -288,6 +288,15 @@
     background:color-mix(in srgb, var(--c) 14%, var(--card));
     border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);}
   .tile .cap svg{width:60px; height:60px; position:relative; z-index:1; filter:drop-shadow(0 4px 10px rgba(0,0,0,.18));}
+  /* Number Game icon: a jersey that slowly cycles basketball -> football ->
+     baseball, with the daily puzzle number held constant inside it. */
+  .tile .cap svg.jrot{width:72px; height:72px;}
+  svg.jrot .jz{opacity:0; animation:jzcyc 10.5s linear infinite;}
+  svg.jrot .jz.a{opacity:1;}
+  svg.jrot .jz.b{animation-delay:3.5s;}
+  svg.jrot .jz.c{animation-delay:7s;}
+  @keyframes jzcyc{0%{opacity:1} 28%{opacity:1} 34%{opacity:0} 94%{opacity:0} 100%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){ svg.jrot .jz{animation:none; opacity:0;} svg.jrot .jz.a{opacity:1;} }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#071426; background:var(--c);}
   .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
@@ -316,6 +325,14 @@
   /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
   .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
   .tile.archive.cross .play{color:var(--coralT); border-color:var(--coral);}   /* crossword accent is near-white; keep it readable */
+  /* played + cardholder: the bottom pill splits into Archive | Leaderboard */
+  .tile .play.split{padding:0; gap:0; overflow:hidden;}
+  .tile .play.split .half{flex:1 1 0; display:flex; align-items:center; justify-content:center; gap:6px;
+    min-height:44px; padding:11px 6px; font-weight:900; font-size:12px; letter-spacing:.03em; color:var(--c); transition:background .12s;}
+  .tile .play.split .half:first-child{border-right:1.5px solid color-mix(in srgb, var(--c) 45%, transparent);}
+  .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, transparent);}
+  .tile .play.split .half svg{width:15px; height:15px; flex:0 0 auto;}
+  .tile.archive.cross .play.split .half{color:var(--coralT);}
   /* mobile: 2-up compact cards (cap + title + PLAY) */
   @media (max-width:640px){
     .tile{border-radius:14px;}
@@ -516,12 +533,25 @@
           <a class="tile table" id="cardTable" href="/arcade/table/">
             <span class="cap" aria-hidden="true">
               <span class="badge">Daily</span><span class="status" id="stT">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <path d="M20.5 9 12 13.4 8.8 22.4 15 24.6 15 47 41 47 41 24.6 47.2 22.4 44 13.4 35.5 9"
-                      fill="#F2B632" fill-opacity=".18" stroke="#F2B632" stroke-width="3" stroke-linejoin="round"/>
-                <path d="M20.5 9c1.6 4.3 4.4 6.5 7.5 6.5s5.9-2.2 7.5-6.5"
-                      fill="none" stroke="#F2B632" stroke-width="3" stroke-linecap="round"/>
-                <text x="28" y="40" text-anchor="middle" font-size="19" font-weight="900"
+              <svg viewBox="0 0 56 56" class="jrot">
+                <!-- basketball tank: sleeveless, scoop neck -->
+                <g class="jz a">
+                  <path d="M20 9 C21.6 13.3 24.4 15.5 28 15.5 C31.6 15.5 34.4 13.3 36 9 L42 11.5 L42 49 L14 49 L14 11.5 Z"
+                        fill="#F2B632" fill-opacity=".18" stroke="#F2B632" stroke-width="3" stroke-linejoin="round"/>
+                </g>
+                <!-- football: broad shoulders, flared short sleeves -->
+                <g class="jz b">
+                  <path d="M20.5 9 8.8 14 5.6 23 12 25.4 12 49 44 49 44 25.4 50.4 23 47.2 14 35.5 9 C33.9 13.3 31.1 15.5 28 15.5 C24.9 15.5 22.1 13.3 20.5 9 Z"
+                        fill="#F2B632" fill-opacity=".18" stroke="#F2B632" stroke-width="3" stroke-linejoin="round"/>
+                </g>
+                <!-- baseball: short sleeves + button placket + collar -->
+                <g class="jz c">
+                  <path d="M21 9 11 13.4 8.2 21.6 14 24 14 49 42 49 42 24 47.8 21.6 45 13.4 35 9"
+                        fill="#F2B632" fill-opacity=".18" stroke="#F2B632" stroke-width="3" stroke-linejoin="round"/>
+                  <path d="M21 9 L28 14 L35 9" fill="none" stroke="#F2B632" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M28 15 L28 49" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/>
+                </g>
+                <text x="28" y="41" text-anchor="middle" font-size="20" font-weight="900"
                       font-family="Archivo, system-ui, sans-serif" fill="#F2B632">26</text>
               </svg>
             </span>
@@ -1035,6 +1065,8 @@
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
   function hasCard() { return !!(TOK && TOK.hasCard && TOK.hasCard()); }
   var ARW = ' <span class="arw">→</span>';
+  var CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
+  var TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
     var st = document.getElementById(stId);
@@ -1048,9 +1080,14 @@
       st.className = 'status ready';
     }
     if (done && hasCard()) {
-      // Cardholder: a finished game becomes the entry to its archive calendar.
-      play.innerHTML = 'ARCHIVE' + ARW;
-      card.classList.add('archive'); card.setAttribute('data-arch', key);
+      // Cardholder who's finished today: the bottom pill splits into the two
+      // things left to do on this game - open its past-days Archive, or check
+      // today's Leaderboard.
+      play.classList.add('split');
+      play.innerHTML =
+        '<span class="half archh" role="button" tabindex="0">' + CAL_SVG + 'Archive</span>' +
+        '<span class="half lbh" role="button" tabindex="0">' + TROPHY_SVG + 'Leaderboard</span>';
+      card.classList.add('archive'); card.setAttribute('data-arch', key); card.setAttribute('data-lb', key);
     } else {
       // Free users always see PLAY (the game page's intro handles tokens /
       // out-of-plays); cardholders who haven't played yet see PLAY too.
@@ -1073,12 +1110,17 @@
   // game's past-days calendar (RTGCalendar) instead of replaying today.
   (function(){
     [].forEach.call(document.querySelectorAll('a.tile[href^="/arcade/"]'), function(a){
-      a.addEventListener('click', function(e){
+      function route(e){
         if(!a.classList.contains('archive')) return;
-        var k=a.getAttribute('data-arch'); if(!k || !window.RTGCalendar) return;
+        var k=a.getAttribute('data-arch') || a.getAttribute('data-lb');
+        var lbHalf = e.target && e.target.closest && e.target.closest('.half.lbh');
+        if(lbHalf){ e.preventDefault(); if(k) location.href='/arcade/'+k+'/#lb'; return; }
+        // the Archive half, or a tap on the played card body -> that game's calendar
         e.preventDefault();
-        RTGCalendar.open(k);
-      });
+        if(k && window.RTGCalendar) RTGCalendar.open(k); else if(k) location.href='/arcade/'+k+'/';
+      }
+      a.addEventListener('click', route);
+      a.addEventListener('keydown', function(e){ if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('half')){ route(e); } });
     });
   })();
 
