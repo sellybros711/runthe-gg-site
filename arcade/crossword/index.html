@@ -419,6 +419,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -913,7 +914,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
-  function shareTextCW(){ return 'Run The Arcade Daily Crossword '+DATE+'\n'+N+'×'+N+' in '+fmt(elapsed)+'\n\n'+buildShareGrid()+'\n\nrunthe.gg/arcade/crossword'; }
+  function shareTextCW(){
+    try { window.RTGShareStat = Math.round(elapsed); } catch(e){}   // solve time, lower is better
+    return RTGShare.card('crossword', DATE, { grid: buildShareGrid(), stat: '⏱ '+N+'×'+N+' in '+fmt(elapsed) });
+  }
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
   function flashShare(){ var b=document.getElementById('mShare'); var t=b.textContent; b.textContent='Copied to clipboard ✓'; setTimeout(function(){ b.textContent=t; }, 1400); }
 

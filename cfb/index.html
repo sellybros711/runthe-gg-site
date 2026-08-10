@@ -5101,8 +5101,7 @@ async function paintBoard(){
   const [rows,total,onBoard,place]=await Promise.all([
     B.top(named,LB_LIMIT,lbSort,lbDirNow()),
     B.total(opts), B.total(named),
-    want===null?null:B.placeIn(named,lbSort,lbDirNow(),want)]);
-  lbBusy=false;
+    want===null?null:B.placeIn(named,lbSort,lbDirNow(),want)]);  lbBusy=false;
   /* The question moved while this was in the air, so this answer is to a question nobody
      is asking any more. Drop it and ask the new one rather than painting a board with the
      wrong axis on it and the right axis lit up above. */
@@ -5132,8 +5131,7 @@ async function paintBoard(){
       ? ' · <b>'+onBoard.toLocaleString()+'</b> on the board' : '';
     $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
       (total===1?'season ':'seasons ')+label+on+capped;
-  }
-  $('lb-blurb').textContent=(lbMode==='free'
+  }  $('lb-blurb').textContent=(lbMode==='free'
       ? 'Every free-play season lands here. '
       : 'Only '+lbMode.replace(/^conf:/,'')+' drafts land here, because six spins from one '+
         'conference and six from the whole country are not the same competition. ')+
@@ -5229,7 +5227,14 @@ function isMyRow(r){
 
 /* Who played it. A signed-in season carries the name cfb_submit_run() copied out of
    profiles, never anything a client sent. Your own season says so, because "Anonymous"
-   sitting where you know your own row is reads as the board having lost you. */
+   sitting where you know your own row is reads as the board having lost you.
+
+   'ANONYMOUS' IS UNREACHABLE FROM THE BOARD and is kept as a backstop rather than as a
+   case that happens: every list query sends display_name=not.is.null, so a nameless
+   season never reaches a row. It stays because a null name would otherwise render as
+   "undefined" if that filter were ever dropped, which is a worse way to find out. The
+   pinned place row is the one caller that can still hit it, and it does so on purpose:
+   a guest's own season has no name and is not on the board. */
 function lbName(r,mine){
   if(mine) return 'You';
   return (r&&r.display_name)||'Anonymous';
@@ -5493,7 +5498,10 @@ async function paintPlace(){
   /* NAMED, the same as the board's own list. Counting against every row in the window,
      guests included, meant this screen could say 40th and the board -- which lists only
      the named ones -- would seat the same season at 31st. Two numbers for one question,
-     and the one you could check was the one that was wrong. */
+     and the one you could check was the one that was wrong.
+     A guest's own season is still PLACED here: placeIn counts how many NAMED seasons
+     beat it, which is a real answer to "where would this have finished", and the board
+     explains that signing in is what puts it on the list. */
   const opts={window:'week',mode:runMode(run),named:true};
   const [place,count]=await Promise.all([
     B.placeIn(opts,'record','desc',score), B.total(opts),
@@ -5508,16 +5516,32 @@ async function paintPlace(){
       : 'The leaderboard is not reachable right now. This season is still yours; it '+
         'just is not ranked yet.')+'</div>'+
       '<button id="o-lb">Board</button></div>';
+  }else if(count===0){
+    /* AN EMPTY BOARD IS NOT A FIRST PLACE. The board lists named seasons only, so
+       until somebody signs in the field this place is quoted against is empty, and
+       "1st of 0 seasons" is what the arithmetic says rather than what is true. A
+       guest sees the invitation instead, which is the honest version of the same
+       fact and the one that tells them what to do about it. */
+    const which=run.conference?' '+esc(run.conference)+' draft':'';
+    el.innerHTML='<div class="placebox"><div class="pl">'+
+      'No signed-in season has been put on the'+which+' board this week yet. '+
+      '<b>Sign in</b> and yours is the first.</div>'+
+      '<button id="o-lb">Board</button></div>';
   }else{
     myPlace=place;
     const ord=(n)=>{const t=n%100;if(t>=11&&t<=13)return n+'th';
       return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
+    /* A guest is placed against the named field but is not IN it, so the ordinal can
+       come out one past the end: beat all four named seasons and you are 1st, lose to
+       all four and you are 5th of 4. Counting yourself in fixes the arithmetic and is
+       also what actually happens the moment you sign in and claim the run. */
+    const field=(!authState.signedIn&&count!==null&&place>count)?place:count;
     const nameLine=authState.signedIn
       ? '' : ' <b>Sign in</b> to put your name on it.';
     const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox">'+
       '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
-      '<div class="pl">of '+(count===null?'the':count.toLocaleString())+which+
+      '<div class="pl">of '+(field===null?'the':field.toLocaleString())+which+
         ' seasons this week.'+nameLine+'</div>'+
       '<button id="o-lb">Board</button></div>';
   }
@@ -5548,10 +5572,19 @@ function rankCell(label,w,dash){
   if(!w||w.place==null) return '<div class="rcell dead"><span class="rw">'+label+
     '</span><span class="rn">--</span><span class="rof">'+(dash||'not available')+
     '</span></div>';
+  /* An empty field is not a first place. These windows count NAMED seasons, so a
+     window nobody has signed in for is empty and "#1 of 0" is the arithmetic rather
+     than the truth. Drawn dead with the reason instead. */
+  if(w.total===0) return '<div class="rcell dead"><span class="rw">'+label+
+    '</span><span class="rn">--</span><span class="rof">nobody yet</span></div>';
   const cls=w.place===1?' top1':(w.place<=10?' top10':'');
+  /* Same off-by-one as the place line: a guest is measured against the named field
+     without being counted in it, so a season behind all of them places one past the
+     end. See paintPlace(). */
+  const field=(w.total!=null&&w.place>w.total)?w.place:w.total;
   return '<div class="rcell'+cls+'"><span class="rw">'+label+'</span>'+
     '<span class="rn">#'+w.place.toLocaleString()+'</span>'+
-    '<span class="rof">of '+(w.total==null?'?':w.total.toLocaleString())+'</span></div>';
+    '<span class="rof">of '+(field==null?'?':field.toLocaleString())+'</span></div>';
 }
 async function paintRanksTab(){
   const el=$('o-ranks'); if(!el||!run||!run.outcome) return;

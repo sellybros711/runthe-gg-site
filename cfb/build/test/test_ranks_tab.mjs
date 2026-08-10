@@ -21,7 +21,14 @@
  */
 import { chromium } from 'playwright';
 import http from 'node:http';
+import { execFileSync } from 'node:child_process';
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
+/* Same database the stub is serving. See the header of test_bowl_key.mjs for why
+   getting this wrong fails in a way that reads like a code regression. */
+const DB=process.argv[2]||'cfbe2e';
+const psql=(sql)=>execFileSync('psql',['-X','-A','-t','-d',DB,'-c',sql],
+  { encoding:'utf8', env:{ ...process.env, PGHOST:process.env.PGHOST||'/tmp',
+    PGPORT:process.env.PGPORT||'5433', PGUSER:process.env.PGUSER||'postgres' } }).trim();
 const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
@@ -127,6 +134,21 @@ console.log('\n=== nothing pinned, table not there: the same placeholder ===');
 
 console.log('\n=== nothing pinned, the board answering: live with no flag flipped ===');
 {
+  /* SEEDS ITS OWN FIELD, because these windows count NAMED seasons only and this test
+     plays signed out. Against an empty board the honest answer is "nobody yet" and the
+     placings below would rightly not appear. This passed for a while on whatever named
+     row test_board_e2e happened to leave behind, which is a pass that depends on run
+     order and would have gone red the first time somebody ran this file on its own. */
+  psql("delete from cfb_runs where display_name = 'rankfield'");
+  for (let i = 0; i < 3; i++) {
+    psql(`insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games,
+      national_rank, made_playoffs, title_won, perfect, bowl_won, seed_label,
+      point_diff, chemistry_pct, spend_musd, overall, picks, run_mode, display_name)
+      values (${8 + i}, 0, ${8 + i}, ${4 - i}, 12, ${20 - i * 5}, false, false, false,
+      false, 'Bowl Game', ${3.0 + i}, 2.0, 10.0, ${88 + i},
+      array['rf${i}a:2016','rf${i}b:2007','rf${i}c:2014','rf${i}d:2011','rf${i}e:2009','rf${i}f:2017'],
+      'free', 'rankfield')`);
+  }
   const p=await newPage(null);
   ok('reached the results screen', await playToResults(p));
   await p.click('.overtab[data-t="ranks"]');
@@ -134,7 +156,36 @@ console.log('\n=== nothing pinned, the board answering: live with no flag flippe
   const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.textContent));
   ok('three windows come back', cells.length===3, cells.length+' cells');
   ok('with real placings', cells.every(c=>/#\d/.test(c)&&/of \d/.test(c)), cells.join('  '));
+  /* The field a guest is placed against is the NAMED one, so the "of" can never be
+     smaller than the place: the off-by-one that would read "4th of 3" is corrected in
+     rankCell(). */
+  const bad3=cells.filter((c)=>{
+    const m=c.match(/#([\d,]+)of ([\d,]+)/);
+    if(!m) return false;
+    return Number(m[1].replace(/,/g,'')) > Number(m[2].replace(/,/g,''));
+  });
+  ok('and never a place past the end of the field', bad3.length===0, bad3.join('  '));
   await p.screenshot({path:SS+'ranks_live.png'});
+  await p.close();
+  psql("delete from cfb_runs where display_name = 'rankfield'");
+}
+
+console.log('\n=== a window nobody has signed in for says so ===');
+{
+  /* THE OTHER SIDE OF THE NAMED BOARD, and the bug this change would otherwise have
+     shipped: with no named season in the window, place is 1 and the field is 0, and the
+     arithmetic says "#1 of 0". A brand new board is in exactly that state, so this is
+     what most players would have seen on launch day. */
+  psql('truncate cfb_runs');
+  const p=await newPage(null);
+  ok('reached the results screen', await playToResults(p));
+  await p.click('.overtab[data-t="ranks"]');
+  await p.waitForTimeout(2500);
+  const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.textContent));
+  ok('no window claims a first place on an empty field',
+    cells.every((c)=>!/#1/.test(c)), cells.join('  '));
+  ok('they say nobody yet instead', cells.some((c)=>/nobody yet/.test(c)), cells.join('  '));
+  await p.screenshot({path:SS+'ranks_empty.png'});
   await p.close();
 }
 

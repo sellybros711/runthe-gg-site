@@ -92,8 +92,10 @@
      one axis where a board read could not be served from its index.
      Keyed on whether the index is being read backwards instead, which is true for all
      three and stays true for any axis added later, whichever way its own index runs.
-     Every created_at in 63_cfb_run_mode.sql and 72_cfb_board_named_indexes.sql is ASC, so
-     forward is asc and backward is desc. */
+     Every created_at in the three AXIS indexes -- in 63_cfb_run_mode.sql and again as
+     partials in 67_cfb_named_board.sql -- is ASC, so forward is asc and backward is
+     desc. (The fourth in each file leads with created_at and serves a COUNT, which has
+     no order at all, so it is not one of these.) */
   const tiebreakFor = (key, way) => (way === DIR[key] ? 'asc' : 'desc');
 
   let offline = false;
@@ -261,16 +263,21 @@
     /* The mode is an equality and leads every index, so it goes on every query
        including the counts: a place counted against the wrong competition is worse
        than no place at all. */
-    /* NAMED: only seasons somebody signed in for. Two different questions get asked of
-       this table and the board should not have to pick one -- how many seasons were
-       played is activity, and a guest season is a season; how many are ON the board is
-       who signed in for one. The list and every placing are the second, so they pass
-       named and the activity count does not. 72_cfb_board_named_indexes.sql carries a
-       partial index per axis so this stays an index scan rather than becoming a filter
-       that reads the guest rows and throws them away. */
     return '&run_mode=eq.' + encodeURIComponent(modeOf(opts && opts.mode)) +
-      (cut ? '&created_at=gte.' + encodeURIComponent(cut) : '') +
-      (opts && opts.named ? '&display_name=not.is.null' : '');
+      /* NAMED RUNS ONLY, when asked for, exactly as the NFL board does it. A guest
+         season is a real season and counts towards how many have been played, but it
+         carries no name, so listing it puts a row of Anonymous on a board whose whole
+         job is to say who did what. Every ranking call asks for this; the activity
+         count deliberately does not, which is the difference between "how many
+         seasons happened" and "who is on the board".
+
+         cfb_runs_named_* in 67_cfb_named_board.sql are partial indexes over exactly
+         these rows, which is what keeps this free: they hold only the named seasons,
+         so they grow with the number of people who signed in rather than with the
+         number of seasons played. Without them this is a filter applied after the
+         scan, and on a board where most rows are guests that is most of the table. */
+      ((opts && opts.named) ? '&display_name=not.is.null' : '') +
+      (cut ? '&created_at=gte.' + encodeURIComponent(cut) : '');
   }
 
   /* ---------------- submit ----------------
@@ -400,6 +407,9 @@
   async function ranks(score, mode) {
     const wins = ['today', 'week', 'all'];
     const out = await Promise.all(wins.map(async (w) => {
+      /* Named on both halves, so the place and the field it is out of describe the
+         same population as the list. "#4 of 900" against a board showing nine rows
+         is not a placing, it is two unrelated numbers next to each other. */
       const opts = { window: w === 'today' ? 'day' : w, mode, named: true };
       const [place, count] = await Promise.all([
         placeIn(opts, 'record', 'desc', score), total(opts),

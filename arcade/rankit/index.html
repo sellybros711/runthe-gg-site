@@ -376,6 +376,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
@@ -841,11 +842,8 @@
     }
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
-    var bar=shareGrid();
-    var txt='Run The Arcade · Rank It\n'+bar+endLine()+'\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/rankit';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
-    else toast('Sharing not supported');
+    var stat='🏅 '+r+' set'+(r===1?'':'s')+' cleared';
+    RTGShare.fire(RTGShare.card('rankit', DATE, { grid:shareGrid()+endLine(), stat:stat }), r);
   });
 
   var cdT=null;

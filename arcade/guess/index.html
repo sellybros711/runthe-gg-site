@@ -386,6 +386,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
@@ -920,11 +921,8 @@
   });
   document.getElementById('mShare').addEventListener('click', function(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
-    var head='Run The Arcade · Guess the Player\n'+(won?(guesses.length+'/'+MAX):'X/'+MAX)+' · '+fmt(elapsed)+'\n';
-    var txt=head+grid+'\nrunthe.gg/arcade/guess';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
-    else toast('Sharing not supported');
+    var stat=(won?('🎯 '+guesses.length+'/'+MAX):('❌ X/'+MAX))+' · '+fmt(elapsed);
+    RTGShare.fire(RTGShare.card('guess', DATE, { grid:grid, stat:stat }), won?guesses.length:null);
   });
 
   var cdT=null;
