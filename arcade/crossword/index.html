@@ -914,115 +914,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
-  function shareTextCW(){
-    try { window.RTGShareStat = Math.round(elapsed); } catch(e){}   // solve time, lower is better
-    return RTGShare.card('crossword', DATE, { grid: buildShareGrid(), stat: '⏱ '+N+'×'+N+' in '+fmt(elapsed) });
-  }
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
-  function flashShare(){ var b=document.getElementById('mShare'); var t=b.textContent; b.textContent='Copied to clipboard ✓'; setTimeout(function(){ b.textContent=t; }, 1400); }
 
-  // ---- visual share card: render the solved grid to a PNG (canvas) ---------
-  function drawCrosswordCard(card){
-    var W=1080,H=1350,cv=document.createElement('canvas'); cv.width=W; cv.height=H; var g=cv.getContext('2d');
-    function rr(x,y,w,h,rad){ g.beginPath(); g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad); g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath(); }
-    function ls(v){ try{ g.letterSpacing=v; }catch(e){} }
-    var bg=g.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#faf8f5'); bg.addColorStop(1,'#f2f0ec');
-    g.fillStyle=bg; g.fillRect(0,0,W,H);
-    var gl=g.createRadialGradient(130,70,0,130,70,560); gl.addColorStop(0,'rgba(255,90,60,.13)'); gl.addColorStop(1,'rgba(255,90,60,0)'); g.fillStyle=gl; g.fillRect(0,0,W,H);
-    var gl2=g.createRadialGradient(W-90,50,0,W-90,50,560); gl2.addColorStop(0,'rgba(124,92,240,.13)'); gl2.addColorStop(1,'rgba(124,92,240,0)'); g.fillStyle=gl2; g.fillRect(0,0,W,H);
-
-    g.textBaseline='alphabetic';
-    // wordmark: Run(ink) The(coral) Grid(ink)
-    g.font='900 italic 66px Archivo, sans-serif'; ls('0px');
-    var a='Run',b2='The',cc='Grid', wa=g.measureText(a).width, wb=g.measureText(b2).width, wc=g.measureText(cc).width, sx=W/2-(wa+wb+wc)/2;
-    g.textAlign='left';
-    g.fillStyle='#182430'; g.fillText(a,sx,132);
-    g.fillStyle='#FF5A3C'; g.fillText(b2,sx+wa,132);
-    g.fillStyle='#182430'; g.fillText(cc,sx+wa+wb,132);
-    g.textAlign='center';
-    g.font='800 30px Archivo, sans-serif'; ls('6px'); g.fillStyle='#FF5A3C'; g.fillText('DAILY CROSSWORD',W/2,184); ls('0px');
-    g.font='700 34px Archivo, sans-serif'; g.fillStyle='#5c6b7a'; g.fillText(card.dateStr,W/2,248);
-
-    // white card panel
-    g.fillStyle='#ffffff'; rr(70,300,W-140,770,44); g.fill();
-    g.strokeStyle='rgba(24,36,48,.10)'; g.lineWidth=2; rr(70,300,W-140,770,44); g.stroke();
-
-    var cy=372;
-    if(card.flawless){
-      var rw=500,rh=66,rx=W/2-rw/2;
-      var rg=g.createLinearGradient(rx,0,rx+rw,0); rg.addColorStop(0,'#FF5A3C'); rg.addColorStop(1,'#F5A623');
-      g.fillStyle=rg; rr(rx,cy,rw,rh,33); g.fill();
-      g.fillStyle='#fff'; g.font='900 26px Rubik, sans-serif'; ls('2px'); g.fillText('FLAWLESS: NO REVEALS',W/2,cy+43); ls('0px');
-      cy+=104;
-    } else { cy+=18; }
-
-    // hero: SOLVED
-    g.font='900 76px Rubik, sans-serif'; g.fillStyle='#FF5A3C'; g.fillText('SOLVED',W/2,cy+64);
-    cy+=110;
-
-    // the grid, centered
-    var N2=card.rows.length, gap=6, gridSz=430, cs=(gridSz-(N2+1)*gap)/N2, gx=W/2-gridSz/2, gy=cy;
-    g.fillStyle='#2b3a4d'; rr(gx,gy,gridSz,gridSz,14); g.fill();
-    for(var r=0;r<N2;r++) for(var c=0;c<N2;c++){
-      var st=card.rows[r][c];
-      var cx=gx+gap+c*(cs+gap), ccy=gy+gap+r*(cs+gap);
-      g.fillStyle = st==='block' ? '#0b1522' : (st==='revealed' ? '#F5A623' : '#1f8b39');
-      rr(cx,ccy,cs,cs,6); g.fill();
-    }
-    cy=gy+gridSz+46;
-
-    // pills TIME / STREAK / BEST
-    var pills=[['TIME',card.timeStr],['STREAK',String(card.streak)],['BEST',card.bestStr]];
-    var pw=252,ph=132,pg=28,tot=pw*3+pg*2,px0=W/2-tot/2,py=cy;
-    pills.forEach(function(p,i){
-      var px=px0+i*(pw+pg);
-      g.fillStyle='#faf8f5'; rr(px,py,pw,ph,26); g.fill();
-      g.strokeStyle='rgba(24,36,48,.10)'; g.lineWidth=2; rr(px,py,pw,ph,26); g.stroke();
-      g.fillStyle='#182430'; g.font='800 58px Rubik, sans-serif'; g.fillText(p[1],px+pw/2,py+74);
-      g.fillStyle='#5c6b7a'; g.font='900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0],px+pw/2,py+110); ls('0px');
-    });
-
-    g.fillStyle='#FF5A3C'; g.font='900 34px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/arcade/crossword',W/2,H-72); ls('0px');
-    return cv;
-  }
-  function cvToBlob(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },'image/png'); }); }
+  // Share the invite card every game shares (RTGShare.send): the solved grid
+  // becomes the picture, size + time the stat, solve time (lower is better) the
+  // challenge integer. Replaces the old bespoke canvas so Crossword matches the
+  // other eight.
   function shareCrosswordImage(){
-    var s=load();
-    var flawless=true, rows=[];
-    for(var r=0;r<N;r++){ var row=[]; for(var c=0;c<N;c++){ var cell=cells[r][c];
-      if(cell.block){ row.push('block'); } else if(cell.revealed){ row.push('revealed'); flawless=false; } else { row.push('solved'); }
-    } rows.push(row); }
-    var card={
-      dateStr:(function(){ try{ return new Date(DATE+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return DATE; } })(),
-      timeStr:fmt(elapsed), streak:(s.streak||1), bestStr:fmt(s.best && s.best<1e9 ? s.best : Math.round(elapsed)),
-      flawless:flawless, rows:rows
-    };
-    var txt=shareTextCW();
-    function go(){
-      var cv; try{ cv=drawCrosswordCard(card); }catch(e){ cv=null; }
-      if(!cv){ textShareFallbackCW(txt); return; }
-      cvToBlob(cv).then(function(blob){
-        if(!blob){ textShareFallbackCW(txt); return; }
-        var file=new File([blob],'runthegrid-crossword.png',{type:'image/png'});
-        if(navigator.canShare && navigator.canShare({files:[file]})){
-          navigator.share({files:[file],text:txt,title:'Run The Arcade Daily Crossword'})
-            .catch(function(e){ if(e && e.name==='AbortError') return; downloadBlobCW(blob,txt); });
-        } else { downloadBlobCW(blob,txt); }
-      });
-    }
-    if(document.fonts && document.fonts.ready && document.fonts.ready.then){ document.fonts.ready.then(go,go); } else { go(); }
-  }
-  function downloadBlobCW(blob,txt){
-    var url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download='runthegrid-crossword.png'; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
-    if(txt && navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){});
-    flashShare();
-  }
-  function textShareFallbackCW(txt){
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt); flashShare(); }
-    else { flashShare(); }
+    RTGShare.send({ key:'crossword', date:DATE, grid:buildShareGrid(),
+      stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) });
   }
 
   // ---- dopamine: confetti burst --------------------------------------------
