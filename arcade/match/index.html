@@ -1725,7 +1725,7 @@
     function startCountdown(elId) {
       if (cdTargets.indexOf(elId) === -1) cdTargets.push(elId);
       function upd() {
-        var html = 'Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
+        var html = 'New boards in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
         cdTargets.forEach(function (id) { var el = document.getElementById(id); if (el && el.offsetParent !== null) el.innerHTML = html; });
       }
       upd(); if (cdTick) clearInterval(cdTick); cdTick = setInterval(upd, 1000);
