@@ -12,7 +12,7 @@
  * no game code changes, no double spend. Skipped entirely in archive practice.
  *
  * Reads tier from RTGTokens, name/icon/accent from RTGCalendar, the all-time
- * board from RTG_BOARD.streakBoard, and the paywall from RTGCard. All optional:
+ * board from RTG_BOARD.allTimeBoard, and the paywall from RTGCard. All optional:
  * with any of them missing the overlay degrades gracefully (and never blocks).
  */
 (function () {
@@ -92,7 +92,8 @@
       '.rtgpg-lb li{display:flex;align-items:center;gap:9px;font-size:13px;background:var(--card2,#162B44);border:1px solid var(--line,rgba(244,247,251,.08));border-radius:9px;padding:7px 11px;}',
       '.rtgpg-lb li .r{font-weight:900;color:var(--mut,#A9B8CB);width:18px;flex:0 0 auto;}',
       '.rtgpg-lb li .n{flex:1;min-width:0;font-weight:700;color:var(--ink,#F4F7FB);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-      '.rtgpg-lb li .s{font-weight:900;color:var(--c,var(--blue,#2F6BFF));}',
+      '.rtgpg-lb li .d{font-size:11px;font-weight:700;color:var(--dim,#7C8DA3);flex:0 0 auto;white-space:nowrap;}',
+      '.rtgpg-lb li .s{font-weight:900;color:var(--c,var(--blue,#2F6BFF));flex:0 0 auto;min-width:34px;text-align:right;}',
       '.rtgpg-lb .empty{font-size:12px;color:var(--dim,#7C8DA3);padding:8px 2px;font-weight:600;}',
       '.rtgpg-go{appearance:none;border:0;cursor:pointer;font-family:var(--f,inherit);font-weight:900;font-style:italic;font-size:16px;letter-spacing:.02em;border-radius:13px;padding:15px 20px;min-height:52px;width:100%;color:#fff;background:var(--c,var(--blue,#2F6BFF));box-shadow:var(--shadow,0 6px 18px -10px rgba(0,0,0,.55));text-shadow:0 1px 2px rgba(0,0,0,.28);}',
       '.rtgpg-go:hover{filter:brightness(1.07);}',
@@ -200,14 +201,32 @@
     if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
   }
 
+  // Games whose all-time record is a TIME (lower = better); everything else is a
+  // RUN length (higher = better). These are exactly the games that submit with no
+  // run_len (grid_runs scores them by time): match, guess, crossword, wordsearch.
+  var TIMED = { match:1, guess:1, crossword:1, wordsearch:1 };
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function fmtDate(s){
+    if(!s) return '';
+    var m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return '';
+    return MON[(+m[2])-1]+' '+(+m[3]);       // e.g. "Aug 10"
+  }
+  function fmtTime(s){ s=Math.max(0,Math.round(+s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
   function fillBoard(){
     var ol=$('rtgpgLb'); if(!ol) return;
-    if(!(window.RTG_BOARD && RTG_BOARD.streakBoard)){ ol.innerHTML='<li class="empty">Leaderboard unavailable.</li>'; return; }
-    RTG_BOARD.streakBoard(GAME, 5).then(function(rows){
+    if(!(window.RTG_BOARD && RTG_BOARD.allTimeBoard)){ ol.innerHTML='<li class="empty">Leaderboard unavailable.</li>'; return; }
+    var timed=!!TIMED[GAME];
+    RTG_BOARD.allTimeBoard(GAME, 5).then(function(rows){
       if(!ol) return;
-      if(!rows || !rows.length){ ol.innerHTML='<li class="empty">Be the first to set a streak!</li>'; return; }
+      if(!rows || !rows.length){ ol.innerHTML='<li class="empty">Be the first on the board!</li>'; return; }
       ol.innerHTML=rows.map(function(r,i){
-        return '<li><span class="r">'+(i+1)+'</span><span class="n">'+esc(r.display_name||'Player')+'</span><span class="s">'+(r.best_streak||0)+'</span></li>';
+        var amt = timed ? fmtTime(r.base_seconds) : String(r.run_len||0);
+        var dt  = fmtDate(r.played_on);
+        return '<li><span class="r">'+(i+1)+'</span>'+
+          '<span class="n">'+esc(r.display_name||'Player')+'</span>'+
+          (dt?'<span class="d">'+esc(dt)+'</span>':'')+
+          '<span class="s">'+esc(amt)+'</span></li>';
       }).join('');
     }).catch(function(){ if(ol) ol.innerHTML='<li class="empty">Leaderboard unavailable.</li>'; });
   }
