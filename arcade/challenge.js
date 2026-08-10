@@ -173,9 +173,11 @@
       var i = lines.length - 1;
       while (i >= 0 && !lines[i].trim()) i--;
       if (i < 0) return txt;
-      var m = /^runthe\.gg\/arcade\/([a-z]+)$/.exec(lines[i].trim());
+      // Matches the canonical footer https://runthe.gg/arcade/<game>/ (and the
+      // older bare/no-slash forms, so a card built before this still decorates).
+      var m = /^(?:https:\/\/)?runthe\.gg\/arcade\/([a-z]+)\/?$/.exec(lines[i].trim());
       if (!m) return txt;   // already decorated, or not our footer
-      lines[i] = 'runthe.gg/arcade/' + m[1] + '?vs=' + encodeURIComponent(me) + '&s=' + (stat | 0);
+      lines[i] = 'https://runthe.gg/arcade/' + m[1] + '/?vs=' + encodeURIComponent(me) + '&s=' + (stat | 0);
       return lines.join('\n');
     } catch (e) { return txt; }
   }
