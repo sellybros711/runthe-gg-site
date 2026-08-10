@@ -147,6 +147,10 @@
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px; color:var(--greenT);}
   .sheet .sub-h{font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--mut); margin-bottom:14px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -252,6 +256,7 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle">SOLVED</h2>
     <div class="sub-h" id="mSub">You found every name</div>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mHints">0</div><div class="l">Hints</div></div>
@@ -264,6 +269,7 @@
       <button class="abtn" id="mShare" type="button">Share</button>
       <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
     </div>
+    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
   </div>
 </div>
@@ -277,6 +283,8 @@
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -643,16 +651,26 @@
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
+  var MSTONE='', NEWBEST=false;
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
   function finish(){
     if(done) return; done=true; if(tick) clearInterval(tick);
     resumeClear();   // attempt is over — nothing left to resume
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     document.getElementById('timerN').textContent=fmt(elapsed);
     var s=load(), today=P.id, y=shiftDay(today,-1);
+    MSTONE=''; NEWBEST=false;
     if(s.lastDone!==today){
       s.streak=(s.lastDone===y)?(s.streak||0)+1:1; s.lastDone=today;
+      var prevBest=s.best||0;
+      NEWBEST=(!ARCHIVE && attemptFirst && prevBest>0 && Math.round(elapsed)<prevBest);
       s.best=Math.min(s.best||1e9, Math.round(elapsed));
       s.solves=(s.solves||0)+1; save(s);
+      if(!ARCHIVE && attemptFirst){ MSTONE=streakMilestone(s.streak); if(window.RTGHistory) RTGHistory.push('wordsearch', Math.round(elapsed), true); }
     }
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, Math.round(elapsed), { higherIsBetter:false, label:'sec' });
     document.getElementById('streakN').textContent=s.streak||0;
@@ -662,7 +680,12 @@
     document.getElementById('yourTm').textContent=fmt(elapsed);
     document.getElementById('yourBest').textContent=fmt(s.best||elapsed);
 
-    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice, not ranked';
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = !attemptFirst ? 'Practice, not ranked' : (NEWBEST ? '\ud83c\udfc6 NEW BEST TIME' : 'You found every name');
+    subEl.classList.toggle('newbest', NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'wordsearch');
     updateAgainBtn();
 
     if(attemptFirst && window.RTG_BOARD){
@@ -697,7 +720,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n; var s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next word search in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n; var s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next word search in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   // ---- confetti ----
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];

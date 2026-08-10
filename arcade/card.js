@@ -91,6 +91,7 @@
   function benefitsHTML(){
     return '<ul class="rtgc-perks">' +
       '<li><span>♾️</span> Unlimited Arcade plays, every day</li>' +
+      '<li><span>🏀</span> NBA, NFL &amp; MLB versions of every game</li>' +
       '<li><span>🗂️</span> Full Arcade Archive: play past days</li>' +
       '<li><span>🆕</span> New games &amp; challenges as they drop</li>' +
       '<li><span>📊</span> Your full history &amp; stats</li>' +
@@ -310,7 +311,35 @@
     try{ RTG_BOARD.boot(); }catch(e){}
   }
 
-  function init(){ injectStyles(); watchAuth(); watchTokens();
+  // Post-checkout return: Stripe bounces back with ?checkout=success|cancelled.
+  // Success gets a real welcome moment — optimistic Pro flag (the webhook is
+  // the durable truth and lands within seconds), a celebration modal, and a
+  // clean URL so refresh/share doesn't re-trigger it. Silence here was the #1
+  // conversion-audit finding: people who just paid saw... nothing.
+  function checkoutReturn(){
+    var q; try{ q=new URLSearchParams(location.search); }catch(e){ return; }
+    var st=q.get('checkout'); if(!st) return;
+    try{
+      q.delete('checkout');
+      var clean=location.pathname+(q.toString()?'?'+q.toString():'')+location.hash;
+      history.replaceState(null,'',clean);
+    }catch(e){}
+    if(st!=='success') return;   // cancelled: no guilt trip, just back to the game
+    try{ localStorage.setItem('runthegrid_pro','1'); }catch(e){}
+    ensureScrim();
+    var b=$('rtgcardBody');
+    b.innerHTML =
+      '<div class="rtgc-kick">Welcome aboard</div>'+
+      '<h2 class="rtgc-h">🎟️ You’ve got the Arcade Card</h2>'+
+      '<p class="rtgc-sub">Unlimited plays are live right now. Every past day is open in the Archive, and the NBA, NFL and MLB versions of every game are yours.</p>'+
+      '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+      '<button class="rtgc-go" id="rtgcardStart" type="button">Start playing</button>'+
+      '<div class="rtgc-fine">Manage or cancel anytime from this menu.</div>';
+    $('rtgcardStart').onclick=close;
+    open();
+    try{ document.dispatchEvent(new Event('rtg:tokens')); }catch(e){}
+  }
+  function init(){ injectStyles(); watchAuth(); watchTokens(); checkoutReturn();
     window.RTGCard = { paywall: paywall, guestConvert: guestConvert, wall: wall, wallButton: wallButton, checkout: startCheckout, portal: portal, authorizePlay: authorizePlay, MONTHLY: MONTHLY, ANNUAL: ANNUAL };
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();

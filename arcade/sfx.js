@@ -56,9 +56,22 @@
     lock:  function () { tone(523, 0.10, 'triangle', 0.13); tone(784, 0.14, 'triangle', 0.11, 0.06); vibe(18); },
     soft:  function () { tone(340, 0.14, 'sine', 0.10); },            // "true, but not the answer" — gentle, not punishing
     wrong: function () { tone(180, 0.20, 'sawtooth', 0.11); tone(120, 0.24, 'sawtooth', 0.10, 0.02); vibe(55); },
-    win:   function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.20, 'triangle', 0.16, i * 0.11); }); vibe([25, 40, 25, 40, 70]); },
+    win:   function () { nudge(); [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.20, 'triangle', 0.16, i * 0.11); }); vibe([25, 40, 25, 40, 70]); },
     haptic: vibe
   };
+
+  // One-time nudge: sound ships muted, so the very first win fires silently
+  // for everyone. Point at the speaker button once, then never again.
+  function nudge() {
+    if (on) return;
+    try { if (localStorage.getItem('runthegrid_sound_nudged')) return; localStorage.setItem('runthegrid_sound_nudged', '1'); } catch (e) { return; }
+    var el = document.createElement('div');
+    el.setAttribute('role', 'status');
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:10001;background:var(--card,#10233A);color:var(--ink,#F4F7FB);border:1px solid var(--line2,rgba(255,255,255,.2));border-radius:12px;padding:11px 16px;font:800 12.5px/1.4 system-ui,sans-serif;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);max-width:88vw;text-align:center;';
+    el.textContent = '🔇 Sound is off — tap the speaker up top to feel the wins';
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 5000);
+  }
 
   function wire() {
     var list = document.querySelectorAll('[data-sound-toggle]');

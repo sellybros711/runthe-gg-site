@@ -158,6 +158,10 @@
   .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--goldT); margin:4px 0 0;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--goldT); font-weight:900; letter-spacing:.04em;}
+  .milestone{display:none; margin:4px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
@@ -265,10 +269,12 @@
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">IN A ROW</h2>
+    <div class="milestone" id="mMilestone"></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -289,6 +295,8 @@
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -500,18 +508,30 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, peak:peak, shield:shield })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
+  var NEWBEST=false, PREVBEST=0, MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
   function finish(){
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
+      if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak);
     }
     var score=Math.max(run, peak);
+    PREVBEST=s.bestRun||0;
+    NEWBEST=(!ARCHIVE && attemptFirst && score>0 && score>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, score); s.last={ run:score, seconds:Math.round(elapsed) };
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && score>0) RTGArchive.recordBest(GAME, score, { label:'in a row' });
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('table', score, score>0);
     showEnd(s, false);
     if(score>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:score }).then(function(res){
@@ -528,14 +548,27 @@
     document.getElementById('mRun').textContent=score;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (score>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    // Emotional copy ladder: new best > tied best > near miss > generic.
+    var sub;
+    if(locked) sub='Your run today';
+    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(score>=SEQ.length) sub='You cleared the whole table!';
+    else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
+    else if(PREVBEST>0 && score===PREVBEST) sub='Tied your best — one more tomorrow!';
+    else if(PREVBEST>0 && score>0 && PREVBEST-score<=2) sub=(PREVBEST-score)+' off your best. So close!';
+    else sub='Your run ended';
     if(!locked && !shield) sub += ' · used your save';
-    document.getElementById('mSub').textContent = sub;
+    var subEl=document.getElementById('mSub');
+    subEl.textContent = sub;
+    subEl.classList.toggle('newbest', !locked && NEWBEST);
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('mTitle').textContent = 'IN A ROW';
     document.getElementById('yourTm').textContent = score+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'table');
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && score>=5){ confetti(score>=15?120:70, score>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (score>=5 || NEWBEST)){ confetti(NEWBEST?140:(score>=15?120:70), NEWBEST || score>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
@@ -555,7 +588,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New table in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New table in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
