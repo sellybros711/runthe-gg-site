@@ -517,7 +517,14 @@ window.GA_ID='G-L29P5MRWKE';
   .cta2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   @media(max-width:700px){
     .hero h1{font-size:min(clamp(26px,14.5vw,84px),5.6vh)}
-    .field{max-height:15vh}
+    /* #h-field, NOT .field. This cap is the front page's fold fix and it belongs to
+       the front page's decorative formation, which carries no names and loses
+       nothing by being short. Written as .field it also hit the three fields that
+       are the actual lineup, squashing them to 15vh, and a chip with a name and a
+       team under it is 63px tall however short the box is. Three rows of those in
+       135px cannot avoid each other: every width measured had five overlapping
+       pairs, which is the running back sitting on the receiver. */
+    #h-field{max-height:15vh}
     .stage{margin-bottom:12px}
     .stage .field{margin-top:8px}
     .hnote{margin-top:8px}
@@ -637,6 +644,13 @@ window.GA_ID='G-L29P5MRWKE';
   .field{position:relative;width:100%;aspect-ratio:1/0.54;border-radius:14px;overflow:hidden;
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line);margin:12px 0;contain:layout}
+  /* A LINEUP NEEDS A FLOOR IN PIXELS, NOT A RATIO. A chip is 63px tall whatever the
+     screen: a 34px disc, the surname, and the school-and-year plate. Three rows of
+     them plus breathing room is 197px, and an aspect ratio does not know that, so a
+     narrow phone computed a box far shorter than its own contents. 210px is the
+     floor; wider screens still take the ratio, which is larger. The front page's
+     field is not in this list and keeps its 15vh cap: it has no chips to fit. */
+  #field,#field2,#field3{min-height:210px}
   .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
     rgba(255,255,255,.020) 0 25%,transparent 25% 50%)}
   .field .lit{position:absolute;inset:0;
@@ -1026,7 +1040,7 @@ window.GA_ID='G-L29P5MRWKE';
     border-bottom:1px solid var(--line)}
   .boxscore tbody th{text-align:left;font-family:var(--fd);font-size:17px;letter-spacing:.02em;
     color:var(--ink);width:36%}
-  .boxscore tr.you th{color:#6ee7b7}
+  .boxscore tr.you th{color:var(--youink,#6ee7b7)}
   .boxscore tbody td{color:var(--dim)}
   .boxscore td.tot{font-family:var(--fd);font-size:20px}
   .boxscore tr.win td.tot{color:#fff}
@@ -1039,7 +1053,7 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:13px;border-top:1px solid rgba(255,255,255,.04)}
   .bsp .bsc{color:var(--dim-2);font-size:12px;font-variant-numeric:tabular-nums}
   .bsp .bsw{font-family:var(--fn);font-size:12px;font-weight:800}
-  .bsp.you .bsw{color:#6ee7b7} .bsp.them .bsw{color:#cbd5e1}
+  .bsp.you .bsw{color:var(--youink,#6ee7b7)} .bsp.them .bsw{color:#cbd5e1}
   .bsp .bsk{color:var(--ink)}
   .bsp .bss{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
   .bsnone{font-size:13px;color:var(--dim);text-align:center;padding:14px 0}
@@ -1274,7 +1288,7 @@ window.GA_ID='G-L29P5MRWKE';
     animation:callin .36s var(--ezs) both}
   .pocap .call b{display:block;font-family:var(--fd);font-size:26px;letter-spacing:.03em;line-height:1}
   .pocap .call span{display:block;font-size:11.5px;color:var(--dim);margin-top:3px}
-  .pocap .call.you b{color:#4ade80} .pocap .call.them b{color:#fca5a5}
+  .pocap .call.you b{color:var(--youink,#4ade80)} .pocap .call.them b{color:#fca5a5}
   .pocap .call.big{border-color:rgba(251,191,36,.45)}
   .pocap .call.big b{color:#fcd34d}
   @keyframes callin{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
@@ -1285,7 +1299,7 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .t{flex:0 0 58px;font-family:var(--fn);font-size:11px;color:var(--dim-2)}
   .polog .pl .w{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
-  .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
+  .polog .pl.you .w{color:var(--youink,#86efac)} .polog .pl.them .w{color:#fca5a5}
 
   /* ── drive chart ────────────────────────────────────────────── */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
@@ -3339,24 +3353,43 @@ window.addEventListener('error',(ev)=>{
    fill the backfield, and EVERYONE ELSE (receivers, tight ends, and whatever
    flex is still open) shares the line of scrimmage, laid out together by how
    many there are, so no two chips can ever be handed the same coordinate. */
+/* THREE ROWS, SPACED FOR A 63px CHIP. The rows used to sit at 24, 44 and 64, which
+   is 20 percent apart, and 20 percent of a box that a phone computed as 135px is
+   27px. The chips are 63px. Every row overlapped both of its neighbours and the
+   layout could not have worked at any x. The box now has a 210px floor and the rows
+   are spread across it, so a row clears the next one instead of landing in it.
+
+   THAT ALSO FREES THE X AXIS. Two chips clash only if they overlap on BOTH axes, so
+   once the rows are genuinely apart, being in the same column as something on
+   another row is harmless. The old note here forbade the centre column because a
+   receiver's label fell onto the quarterback's disc; that was a symptom of the rows
+   touching, and with them apart the centre is the natural place for a lone back or
+   a lone receiver. Only same-row neighbours still need spacing, and that is set by
+   the widest a chip gets, 78px, which is 21.5% of a 362px field. */
 const SPOTS={
-  QB: [{ x: 50, y: 44 }],
-  RB: [[], [{ x: 28, y: 64 }], [{ x: 28, y: 64 }, { x: 72, y: 64 }]],
+  QB: [{ x: 50, y: 42 }],
+  /* Up to THREE, because both flex spots can take a back. The table stopped at two
+     and row() clamps past the end, so a third back was handed the second one's
+     coordinate exactly and the two chips sat perfectly on top of each other. */
+  RB: [[],
+    [{ x: 50, y: 74 }],
+    [{ x: 28, y: 74 }, { x: 72, y: 74 }],
+    [{ x: 17, y: 74 }, { x: 50, y: 74 }, { x: 83, y: 74 }]],
 };
-/* The line of scrimmage, spread by how many are on it (1 through 4). NOTHING SITS
-   IN THE CENTER COLUMN. The quarterback is at x50 one row down, and this field is
-   short (aspect 1/0.54), so a receiver at x50 would drop its name-and-team label
-   straight onto the quarterback's disc. Every spot here stays clear of the x45-55
-   band the quarterback and its label occupy, so a three-receiver set slots the
-   third man off to the side rather than dead center. */
+/* The line of scrimmage, spread by how many are on it, 1 through 4: receivers,
+   tight ends, and whatever flex is still open. Spacing is set by the widest a chip
+   gets rather than by eye. At the tightest width that still shows a full-size label
+   a chip is 78px against a 362px field, so neighbours need 21.5% between centres;
+   the narrowest gap below is 26%. The old table put two of a three-receiver set at
+   12 and 32, which is 20%, and they overlapped by 2px at every width measured. */
 const REC = [
   [],
-  [{ x: 32, y: 24 }],
-  [{ x: 16, y: 24 }, { x: 84, y: 24 }],
-  [{ x: 12, y: 24 }, { x: 88, y: 24 }, { x: 32, y: 24 }],
-  [{ x: 9, y: 23 }, { x: 33, y: 26 }, { x: 67, y: 26 }, { x: 91, y: 23 }],
+  [{ x: 50, y: 10 }],
+  [{ x: 27, y: 10 }, { x: 73, y: 10 }],
+  [{ x: 11, y: 10 }, { x: 50, y: 10 }, { x: 89, y: 10 }],
+  [{ x: 9, y: 10 }, { x: 36, y: 10 }, { x: 64, y: 10 }, { x: 91, y: 10 }],
 ];
-const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:37,y:27},{x:63,y:27}];
+const SPOT_FALLBACK=[{x:50,y:42},{x:50,y:74},{x:11,y:10},{x:89,y:10},{x:36,y:10},{x:64,y:10}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
@@ -3521,7 +3554,7 @@ function applyTheme(t,remember){
   if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-ink-a','--th-ink-b',
       '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink','--pfpring']
       .forEach(v=>root.style.removeProperty(v));
-    body.classList.remove('themed'); selectedSchool=null;
+    body.classList.remove('themed'); selectedSchool=null; syncYouInk();
     if(remember){ savedSchool=null; try{localStorage.removeItem('cfb_school');}catch(e){} }
     updateAvatar(); return; }
   const a=t.color;
@@ -3543,6 +3576,7 @@ function applyTheme(t,remember){
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
   selectedSchool=t;
+  syncYouInk();
   if(remember){ savedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){} }
   updateAvatar();
 }
@@ -6603,8 +6637,28 @@ function paintCalendar(justPlayed){
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
 }
 
+/* YOUR SIDE WEARS THE SCHOOL YOU PICKED. Every opponent on the scorebug is washed
+   through E.washColors, and running your own colours through the SAME function is
+   the point: both sides are then treated identically, so a school whose real
+   primary is nearly black or nearly white gets the same lift its opponent would,
+   and no pairing can come out as two panels of the same colour.
+
+   selectedSchool, not savedSchool. Colours are a signed-in feature and
+   selectedSchool is only set while the theme is actually in force, so a guest, or
+   somebody signed out with a school still remembered, keeps the green. This is one
+   function on purpose: the scorebug, the three box scores and the drive charts all
+   read it, so they cannot disagree about what colour you are. */
 const YOU_GREEN={bg:'#0e7a4f',accent:'#6ee7b7'};
-function youColors(){return YOU_GREEN;}
+function youColors(){
+  const t=selectedSchool;
+  if(t&&t.color){ try{ return E.washColors(t.color,t.alt); }catch(e){} }
+  return YOU_GREEN;
+}
+/* The same colour as a CSS variable, for the "YOU" labels that are text rather
+   than a painted panel. Set wherever the theme changes, so the two never drift. */
+function syncYouInk(){
+  try{ document.documentElement.style.setProperty('--youink',youColors().accent); }catch(e){}
+}
 
 /* The broadcast ribbon reads the stakes: a ranked opponent is a showdown, the
    final regular-season week is rivalry week, everything else is just gameday. */
