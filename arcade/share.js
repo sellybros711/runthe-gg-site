@@ -173,20 +173,64 @@
     var no = puzzleNo(spec.date);
     if (no) { g.font = '900 34px Archivo, sans-serif'; g.fillStyle = accent; g.fillText('#' + no, W / 2, 262); }
 
-    // the grid, drawn as rounded squares and auto-fit to a comfortable box
-    var rows = String(spec.grid || '').split('\n').map(emojiCells).filter(function (r) { return r.length; });
-    var top = 320, boxH = 620, boxW = 860, bx0 = (W - boxW) / 2;
-    if (rows.length) {
-      var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 1);
-      var gap, cell = Math.min(150, Math.floor(boxW / cols) - 16, Math.floor(boxH / rows.length) - 16);
-      cell = Math.max(28, cell); gap = Math.max(8, Math.round(cell * 0.14));
-      var gw = cols * cell + (cols - 1) * gap, gh = rows.length * cell + (rows.length - 1) * gap;
-      var oy = top + (boxH - gh) / 2;
-      rows.forEach(function (r, ri) {
-        var ox = (W - (r.length * cell + (r.length - 1) * gap)) / 2;
-        r.forEach(function (col, ci) {
-          g.fillStyle = col; rr(ox + ci * (cell + gap), oy + ri * (cell + gap), cell, cell, Math.round(cell * 0.2)); g.fill();
+    var top = 320, boxH = 620, boxW = 860;
+    // A game may hand us a solve TIMELINE (Daily Match): each entry {color,t} is a
+    // group locked at t seconds. We draw it as a time bar with a dot per group at
+    // its moment, and a splits list below - "how long the whole thing took, and
+    // when each color fell". Otherwise, the standard emoji grid.
+    var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
+    if (tl) {
+      drawTimeline(tl, spec.total, top, boxH);
+    } else {
+      var rows = String(spec.grid || '').split('\n').map(emojiCells).filter(function (r) { return r.length; });
+      var boxW2 = 860, bx0 = (W - boxW2) / 2;
+      if (rows.length) {
+        var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 1);
+        var gap, cell = Math.min(150, Math.floor(boxW2 / cols) - 16, Math.floor(boxH / rows.length) - 16);
+        cell = Math.max(28, cell); gap = Math.max(8, Math.round(cell * 0.14));
+        var gh = rows.length * cell + (rows.length - 1) * gap;
+        var oy = top + (boxH - gh) / 2;
+        rows.forEach(function (r, ri) {
+          var ox = (W - (r.length * cell + (r.length - 1) * gap)) / 2;
+          r.forEach(function (col, ci) {
+            g.fillStyle = col; rr(ox + ci * (cell + gap), oy + ri * (cell + gap), cell, cell, Math.round(cell * 0.2)); g.fill();
+          });
         });
+      }
+    }
+
+    function fmtT(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+    function drawTimeline(items, total, top, boxH) {
+      total = total || items[items.length - 1].t || 1; if (total <= 0) total = 1;
+      var bx0 = 130, bx1 = W - 130, bw = bx1 - bx0, by = top + 120, th = 24;
+      // track
+      g.fillStyle = 'rgba(255,255,255,.09)'; rr(bx0, by - th / 2, bw, th, th / 2); g.fill();
+      // progress fill up to the last group
+      var lastX = bx0 + Math.min(1, items[items.length - 1].t / total) * bw;
+      var fg = g.createLinearGradient(bx0, 0, lastX, 0); fg.addColorStop(0, accent + 'AA'); fg.addColorStop(1, accent);
+      g.fillStyle = fg; rr(bx0, by - th / 2, Math.max(th, lastX - bx0), th, th / 2); g.fill();
+      // a dot per group at its lock time (dark halo so light dots read on the bar)
+      items.forEach(function (s) {
+        var x = bx0 + Math.min(1, s.t / total) * bw;
+        g.fillStyle = '#0B1B30'; g.beginPath(); g.arc(x, by, 34, 0, 7); g.fill();
+        g.fillStyle = s.color; g.beginPath(); g.arc(x, by, 26, 0, 7); g.fill();
+        g.lineWidth = 5; g.strokeStyle = '#F4F7FB'; g.beginPath(); g.arc(x, by, 26, 0, 7); g.stroke();
+      });
+      // end labels
+      g.font = '800 30px Archivo, sans-serif'; g.fillStyle = '#8AA0B8';
+      g.textAlign = 'left'; g.fillText('0:00', bx0, by + 74);
+      g.textAlign = 'right'; g.fillText(fmtT(total), bx1, by + 74);
+      g.textAlign = 'center';
+      // splits list: rank · color chip · cumulative time · (+split), in solve order
+      var lx = W / 2 - 200, listTop = by + 150, rowH = 70;
+      items.forEach(function (s, i) {
+        var cy = listTop + i * rowH, prev = i ? items[i - 1].t : 0;
+        g.textAlign = 'left';
+        g.font = '900 32px Archivo, sans-serif'; g.fillStyle = accent; g.fillText(String(i + 1), lx, cy + 40);
+        g.fillStyle = s.color; rr(lx + 44, cy + 4, 48, 48, 13); g.fill();
+        g.font = '400 56px Anton, Impact, sans-serif'; g.fillStyle = '#F4F7FB'; g.fillText(fmtT(s.t), lx + 118, cy + 46);
+        g.font = '800 30px Archivo, sans-serif'; g.fillStyle = '#6E8298'; g.fillText('+' + fmtT(s.t - prev), lx + 300, cy + 42);
+        g.textAlign = 'center';
       });
     }
 

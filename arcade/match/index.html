@@ -705,6 +705,7 @@
     var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
+    var solveTimes = [];               // elapsed seconds at each solve (parallel to solveOrder) - for the share timeline
     var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
@@ -759,7 +760,7 @@
 
     // ---- reset play state ----
     function resetState() {
-      place = {}; laneCat = {}; locked = {}; solveOrder = []; lastMissIds = {};
+      place = {}; laneCat = {}; locked = {}; solveOrder = []; solveTimes = []; lastMissIds = {};
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
@@ -1049,7 +1050,7 @@
       }
 
       if (matchCat) {
-        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
+        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx); solveTimes.push(elapsedSec());
         delete lastMissIds[laneIdx];
         render();
         resumeSave();
@@ -1089,7 +1090,7 @@
 
       function lockAndWin() {
         dealingLane = -1;
-        locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
+        locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx); solveTimes.push(elapsedSec());
         delete lastMissIds[freeIdx];
         render();
         playLockAnim(freeIdx);
@@ -1397,7 +1398,15 @@
         ? ('\uD83E\uDDE9 5/5 \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
         : ('\uD83E\uDDE9 ' + solveOrder.length + '/5 groups');
       if (r.streak) stat += ' \u00B7 streak ' + r.streak;
-      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null });
+      // Solve timeline for the image card: each group as a dot on a time bar at
+      // the second it locked, plus a splits list below. Colors only - no category
+      // names - so the invite never spoils the puzzle. Only when we have a live
+      // time per solve (a resumed board has none -> falls back to the grid card).
+      var timeline = (r.won && solveTimes.length === solveOrder.length && solveOrder.length)
+        ? solveOrder.map(function (idx, i) { return { color: laneById[laneCat[idx]].color, t: solveTimes[i] }; })
+        : null;
+      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null,
+                      timeline: timeline, total: r.won ? r.time : null });
     }
 
     // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
