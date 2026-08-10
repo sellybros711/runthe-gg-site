@@ -144,10 +144,13 @@
   .hud-drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
 
   /* 7 · CTA stack */
+  /* small membership/plays status line: quiet, its own row above the CTA */
+  .tierline{padding:12px 18px 0; text-align:center; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
   .hud-cta{padding:14px 18px 16px;}
-  .hud-cta .btn{display:flex; width:100%; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
+  .hud-cta .btn{display:flex; flex-wrap:wrap; width:100%; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
     min-height:48px; padding:12px 14px; border-radius:999px; color:#fff; border:0; cursor:pointer; font-family:inherit;
     background:linear-gradient(90deg, var(--coral), #F0913C); box-shadow:0 8px 18px -10px color-mix(in srgb, var(--coral) 70%, transparent);}
+  .hud-cta .btn small{flex-basis:100%;}
   .hud-cta .btn:hover{filter:brightness(1.06);}
   .hud-cta .btn.ghost{margin-top:9px; font-style:normal; color:var(--ink); background:transparent; border:1.5px solid var(--line2); box-shadow:none;}
   .hud-cta .btn.ghost:hover{border-color:var(--coral); color:var(--coralT);}
@@ -335,7 +338,6 @@
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
           <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="playsLbl" style="font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;">1 PLAY LEFT TODAY</span></span>
         </div>
 
         <!-- 2 · streak block -->
@@ -357,6 +359,7 @@
         </div>
 
         <!-- tier CTA: exactly one action, chosen by tier in JS -->
+        <div class="tierline" id="playsChip"><span id="playsLbl">1 PLAY LEFT TODAY</span></div>
         <div class="hud-cta" id="hudCta"></div>
       </aside>
 
