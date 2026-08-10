@@ -23,15 +23,22 @@
     guess: 'Guess the Player', crossword: 'Daily Crossword', wordsearch: 'Word Search'
   };
 
-  // Days since launch, 1-indexed, computed in UTC so it can't drift by a day
-  // across time zones. The games have run one board per calendar day since
-  // launch; this is that day's ordinal. Kept as a plain date-diff so a puzzle's
-  // number is stable forever and identical for everyone who plays that date.
-  var EPOCH = Date.UTC(2025, 0, 1);   // 2025-01-01 = puzzle #1
+  // Days since the first archived puzzle, 1-indexed, computed in UTC so it
+  // can't drift by a day across time zones. The archive's earliest day is
+  // puzzle #1 - the same first board an Arcade Card unlocks - so the number a
+  // card shows lines up with the vault. Sourced from RTGArchive.LAUNCH (the one
+  // place that date lives) with a literal fallback for pages that load us
+  // without the archive module.
+  var EPOCH_ISO = '2026-07-22';
+  function epoch() {
+    try { if (window.RTGArchive && RTGArchive.LAUNCH) return RTGArchive.LAUNCH; } catch (e) {}
+    return EPOCH_ISO;
+  }
   function puzzleNo(dateIso) {
     var t = dateIso ? Date.parse(dateIso + 'T00:00:00Z') : NaN;
-    if (isNaN(t)) return null;
-    var n = Math.floor((t - EPOCH) / 86400000) + 1;
+    var e = Date.parse(epoch() + 'T00:00:00Z');
+    if (isNaN(t) || isNaN(e)) return null;
+    var n = Math.floor((t - e) / 86400000) + 1;
     return n > 0 ? n : null;
   }
 
