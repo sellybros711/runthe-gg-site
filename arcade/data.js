@@ -135,6 +135,9 @@
     for (var i = 0; i < ENT.length; i++){
       var e = ENT[i];
       if (!e || !e.name || !e.sport){ kept.push(e); continue; }
+      // Long snappers are unrecognizable to even avid fans - drop them from
+      // every game (they were slipping into Daily Match groups).
+      if (e.pos === 'Long Snapper') continue;
       var k = dkey(e), prev = seen[k];
       if (prev){
         if (Array.isArray(e.t) && e.t.length){
