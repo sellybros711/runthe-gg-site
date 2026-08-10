@@ -14,8 +14,8 @@
   'use strict';
   // inner markup only (shared <svg> wrapper added by get())
   var P = {
-    // HiQ - two opposing score panels
-    table: '<rect x="3.5" y="6" width="7" height="12"/><rect x="13.5" y="6" width="7" height="12"/><path d="M12 8.5v7"/>',
+    // Number Game - a jersey wearing the number
+    table: '<path d="M8.6 3.4 4.6 5.4 3.1 9.6 6 10.6 6 20.6 18 20.6 18 10.6 20.9 9.6 19.4 5.4 15.4 3.4"/><path d="M8.6 3.4c.7 2 2 3 3.4 3s2.7-1 3.4-3"/><text x="12" y="17.2" text-anchor="middle" font-size="7" font-weight="900" font-family="Archivo, system-ui, sans-serif" fill="currentColor" stroke="none">26</text>',
     // Daily Match - grouped tiles (2x2)
     match: '<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/>',
     // Career Path - connected team stops on a route

@@ -14,7 +14,7 @@
 (function () {
   'use strict';
   var GAMES = [
-    ['table', 'HiQ'],
+    ['table', 'Number Game'],
     ['match', 'Daily Match'],
     ['career', 'Career Path'],
     ['oddone', 'Odd One Out'],
