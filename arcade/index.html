@@ -349,9 +349,9 @@
   .tile.guess .cap svg rect:nth-of-type(12){animation-delay:.77s}
   @keyframes capFlip{0%,42%,100%{transform:scaleX(1)}50%{transform:scaleX(.08)}58%{transform:scaleX(1)}}
 
-  /* Word Search: the winning diagonal lights up in sequence */
-  .tile.word .cap svg .wsdiag{animation:capDiag 4.8s ease-in-out infinite;}   /* per-cell delay set inline */
-  @keyframes capDiag{0%,58%,100%{transform:scale(1)}70%{transform:scale(1.18)}}
+  /* Word Search: the hidden word is found — cells light up down the diagonal */
+  .tile.word .cap svg .wsdiag{opacity:.38; animation:capDiag 4.2s ease-in-out infinite;}   /* per-cell delay set inline */
+  @keyframes capDiag{0%,100%{opacity:.38;transform:scale(.88)}20%{opacity:1;transform:scale(1.16)}52%{opacity:1;transform:scale(1)}80%{opacity:.38;transform:scale(.88)}}
 
   /* Career Path: the trend line draws, then the nodes pop along it */
   .tile.career .cap svg path{stroke-dasharray:1; animation:capDraw 6s ease-in-out infinite;}
@@ -373,9 +373,9 @@
   .tile.cross .cap svg .cwletters text:nth-of-type(6){animation-delay:2s}
   @keyframes capType{0%,5%{opacity:.1}13%{opacity:1}90%{opacity:1}97%,100%{opacity:.1}}
 
-  /* Alma Mater: the mortarboard tips its cap */
-  .tile.alma .cap svg{transform-box:fill-box; transform-origin:50% 60%; animation:capBob 5.5s ease-in-out infinite;}
-  @keyframes capBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5px) rotate(-4deg)}}
+  /* Alma Mater: the mortarboard spins a full turn, then rests */
+  .tile.alma .cap svg{transform-box:fill-box; transform-origin:center; animation:capSpin 4.6s ease-in-out infinite;}
+  @keyframes capSpin{0%,26%{transform:rotate(0)}74%,100%{transform:rotate(360deg)}}
 
   @media (prefers-reduced-motion:reduce){
     .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
