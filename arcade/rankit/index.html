@@ -333,6 +333,7 @@
 <script src="/arcade/former.js?v=1"></script>
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/stats.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
@@ -408,14 +409,24 @@
   // Adjacent totals must differ by >=5% so the ordering is never ambiguous.
   function buildStatSet(cat, warmup){
     var cfg=STATS[cat];
-    // Warmup uses the icons-only subset AND widens the adjacent-gap rule so
-    // the five picks are always spread far apart on the stat — no tight
-    // sub-1000-point clusters on set 1. Falls back to full pool if the warmup
-    // subset can't fill five picks in this category.
+    // Warmup pool: icons-only subset (recognizable names) when it can fill
+    // five slots; else fall back to the full pool.
     var pool = (warmup && statPoolW[cat] && statPoolW[cat].length>=COUNT) ? statPoolW[cat] : statPool[cat];
     if(!cfg || !pool || pool.length<COUNT) return null;
-    var minGap = warmup ? 1.35 : 1.05;   // 35% adjacent gap for warmup, 5% otherwise
-    for(var g=0; g<250; g++){
+    // Adjacent-gap rule: warmup wants wide spread (35%) so the very first
+    // sort is obvious; regular sets need 5%. A small pool (e.g. NBA blocks)
+    // may not have any five names 35% apart — after a few dozen attempts we
+    // relax the warmup gap step-by-step instead of failing outright, so the
+    // set builder never returns null on a real stat pool.
+    var attempts = warmup ? 400 : 200;
+    var minGap = warmup ? 1.35 : 1.05;
+    var relaxAt = warmup ? [120, 240, 340] : [];   // relax the gap if warmup can't find one
+    for(var g=0; g<attempts; g++){
+      if(warmup){
+        if(g===relaxAt[0]) minGap = 1.20;
+        else if(g===relaxAt[1]) minGap = 1.10;
+        else if(g===relaxAt[2]) minGap = 1.05;
+      }
       var picked=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
         .sort(function(a,b){ return a.v-b.v; });
       var ok=true;
@@ -438,22 +449,32 @@
   // stat categories are league-prefixed (nba_/nfl_/mlb_); a sport version keeps
   // only its league's categories, the 'all' version keeps them all.
   function catsForMode(){ return SPORTFILTER ? STAT_CATS.filter(function(c){ return c.indexOf(SPORTFILTER.toLowerCase()+'_')===0; }) : STAT_CATS; }
-  function buildRun(){
-    var sets=[];
+  // Lazy set builder. Eagerly generating 200 sets on load meant 200 × up to
+  // 250 shuffles of a ~2k-name pool — a ~50s freeze at load. Now we prime the
+  // first BATCH sets synchronously (so the first render has SETS[0]) and top
+  // up on demand as `run` climbs. Whole run remains deterministic — each set
+  // is built from the same seeded shuffle order — but idle work isn't paid up
+  // front for a run 99% of players won't reach.
+  var SETS=[], _catsBag=[], _runGuard=0, BATCH=8;
+  function fillSets(target){
     var cats=catsForMode();
-    if(!cats.length) return sets;
-    var guard=0;
-    while(sets.length<TOTAL_SETS && guard++<TOTAL_SETS*20){
-      var bag=shuffle(cats);
-      for(var i=0;i<bag.length && sets.length<TOTAL_SETS;i++){
-        // Sets 1-3 are warmup: pool restricted to mega-icons, gaps widened.
-        var S=buildStatSet(bag[i], sets.length<3);
-        if(S) sets.push(S);
-      }
+    if(!cats.length) return;
+    var need=Math.min(target, TOTAL_SETS);
+    // Bounded by BOTH attempts and successes: bail after N misses (a stat
+    // pool that genuinely can't fill 5 slots gracefully falls through to
+    // the next category, and we never re-try more than a category's worth
+    // of category rotations).
+    var missBudget = need * cats.length * 4;
+    while(SETS.length<need && _runGuard++<missBudget){
+      if(!_catsBag.length) _catsBag=shuffle(cats);
+      var c=_catsBag.shift();
+      var S=buildStatSet(c, SETS.length<3);
+      if(S) SETS.push(S);
     }
-    return sets;
   }
-  var SETS=buildRun();
+  // NOTE: we do NOT eagerly fill at module load. beginAttempt() / resumeAttempt()
+  // are the first callers and they reset SETS + call fillSets; running here is
+  // duplicated work on a page load that will re-enter it anyway.
 
   var run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, lastCheck=null, reveal=false, charged=false, attemptFirst=false;
   var order=[], setTries=0;   // two tries per set: first blind (count only), second decisive
@@ -463,7 +484,11 @@
 
   function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
-  function curSet(){ return SETS[Math.min(run, SETS.length-1)]; }
+  function curSet(){
+    // Top up lazily as we climb — keep a 10-set buffer ahead of the runner.
+    if(run+10 > SETS.length && SETS.length < TOTAL_SETS) fillSets(SETS.length + BATCH);
+    return SETS[Math.min(run, SETS.length-1)];
+  }
   function render(){
     var S=CUR||curSet();
     rowsEl.innerHTML = order.map(function(e,i){
@@ -642,7 +667,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
-    SETS=buildRun();
+    SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
     run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false;
     document.getElementById('runN').textContent='0';
     document.getElementById('checkBtn').disabled=false;
@@ -654,7 +679,7 @@
   // current set — no re-charge, no replayed animations or sounds.
   function resumeAttempt(r){
     seedDaily(); servedDaily=true;
-    SETS=buildRun();
+    SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
     run=Math.max(0, Math.min(SETS.length, r.run|0));
     done=false; busy=false; lastCheck=null; reveal=false;
     charged=true; attemptFirst=true; started=true;
@@ -802,7 +827,7 @@
       done=true;
       document.getElementById('checkBtn').disabled=true;
       document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
-      seedDaily(); SETS=buildRun(); startSet();     // show today's first set, locked
+      seedDaily(); SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH); startSet();     // show today's first set, locked
       if(saved.last){ showEnd(saved, true); }
     } else { beginAttempt(); }
     if(window.RTG_BOARD){

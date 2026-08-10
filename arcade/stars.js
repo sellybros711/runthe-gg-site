@@ -92,7 +92,12 @@
     'De\'Aaron Fox','Domantas Sabonis','Kevin Huerter','Malik Monk','Keegan Murray','Kevin Porter Jr.',
     'Devin Booker','Kevin Durant','Bradley Beal','Grayson Allen','Jusuf Nurkic','Anfernee Simons',
     'Deandre Ayton','Scoot Henderson','Toumani Camara','Shai Gilgeous-Alexander','Josh Giddey',
-    'Chet Holmgren','Jalen Williams','Isaiah Joe','Lu Dort','Tre Mann','Aaron Wiggins','Cason Wallace'
+    'Chet Holmgren','Jalen Williams','Isaiah Joe','Lu Dort','Tre Mann','Aaron Wiggins','Cason Wallace',
+    // Barometer bumps — recognizable role players / cult heroes friends flagged
+    'Nate Robinson','Steve Novak','Kris Humphries','Sebastian Telfair','Hakim Warrick','Norris Cole',
+    'Earl Boykins','Pat Garrity','Rafer Alston','Nazr Mohammed','Darrell Armstrong','Mike Miller',
+    'Raymond Felton','Devin Harris','Drew Gooden','Ricky Davis','Darren Collison','Damon Jones',
+    'Shabazz Napier','Marshon Brooks'
   ];
 
   /* ============================================================
@@ -183,7 +188,15 @@
     'Stephon Gilmore','Xavien Howard','Kendall Fuller','Josh Norman','A.J. Bouye','Chris Harris Jr.',
     'Ronnie Harrison','Landon Collins','Harrison Smith','Micah Hyde','Jordan Poyer','Justin Reid',
     'Marcus Williams','Budda Baker','Kevin Byard','Antoine Winfield Jr.','Jevon Holland','Kyle Hamilton',
-    'Talanoa Hufanga','Jordan Battle','Jamaree Salyer'
+    'Talanoa Hufanga','Jordan Battle','Jamaree Salyer',
+    // Barometer bumps — recognizable role players / cult heroes friends flagged
+    'Wes Welker','Trent Dilfer','Reggie Bush','Matt Leinart','Tim Tebow','Johnny Manziel','David Tyree',
+    'Joseph Addai','Ed McCaffrey','Kordell Stewart','Mark Brunell','Chad Pennington','Brian Griese',
+    'Brad Johnson','Joey Harrington','David Carr','Drew Bledsoe','Peter Warrick','Ben Coates',
+    'Simeon Rice','Albert Haynesworth','John Henderson','Aqib Talib','Antrel Rolle','Roddy White',
+    'Duce Staley','Sam Madison','Quentin Jammer','Matt Light','Sage Rosenfels','Pat McAfee',
+    'Alfred Morris','Doug Martin','Latavius Murray','C.J. Anderson','Terrelle Pryor','Chad Henne',
+    'Percy Harvin','Phillip Lindsay','Phillip Dorsett'
   ];
 
   /* ============================================================
@@ -250,7 +263,13 @@
     'Ke\'Bryan Hayes','Christian Yelich','Ronald Acuna Jr.','Ozzie Albies','Matt Olson','Austin Riley',
     'Michael Harris II','Spencer Strider','Kyle Wright','Charlie Morton','Max Fried','Chris Sale',
     'Aaron Nola','Zack Wheeler','Trea Turner','Bryce Harper','J.T. Realmuto','Kyle Schwarber',
-    'Nick Castellanos','Alec Bohm','Bryson Stott','Brandon Marsh','Ranger Suarez','Cristopher Sanchez'
+    'Nick Castellanos','Alec Bohm','Bryson Stott','Brandon Marsh','Ranger Suarez','Cristopher Sanchez',
+    // Barometer bumps — recognizable role players / cult heroes friends flagged
+    'Jim Thome','Curtis Granderson','Coco Crisp','Julio Franco','Nomar Garciaparra','Magglio Ordonez',
+    'Cliff Floyd','Mike Cameron','Bronson Arroyo','John Olerud','Bartolo Colon','Nick Markakis',
+    'Juan Pierre','Luis Castillo','Mike Lowell','J.D. Drew','Denard Span','Grady Sizemore','Cody Ross',
+    'Matt Garza','James Shields','Daisuke Matsuzaka','Orlando Hernandez','Keith Foulke','Armando Benitez',
+    'Rey Ordonez','Mark Bellhorn','Bill Mueller','Jeff Francoeur'
   ];
 
   root.RTG_STARS = {
