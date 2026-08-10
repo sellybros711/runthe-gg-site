@@ -366,13 +366,17 @@
   // Basketball-Reference, MLB statsapi) and are joined to the same recognizable
   // players the game used before, so the quality bar is unchanged. Players with
   // no stint data yet simply don't appear.
-  var _stintsById = {};
+  // Join by NAME+sport, not id: curated stars live in entities.js with ids like
+  // "nba_lebron-james" while the scraped feeds key on gsis/personId, so only a
+  // name join reaches everyone. Same key the generator emits stints under.
+  function _nkey(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,''); }
+  var _stintsByName = {};
   ((window.RTG_JERSEYS && RTG_JERSEYS.stints) || []).forEach(function(s){
-    (_stintsById[s.id] || (_stintsById[s.id] = [])).push(s);
+    var k = s.sport+'|'+_nkey(s.name); (_stintsByName[k] || (_stintsByName[k] = [])).push(s);
   });
   var POOL = [];
   ENT.filter(hiqStar).forEach(function(e){
-    var ss = _stintsById[e.id]; if(!ss) return;
+    var ss = _stintsByName[e.sport+'|'+_nkey(e.name)]; if(!ss) return;
     ss.forEach(function(s){
       POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num });
     });
