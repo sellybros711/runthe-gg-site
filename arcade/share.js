@@ -43,7 +43,11 @@
   }
 
   function name(key) { return NAMES[key] || 'Run The Arcade'; }
-  function url(key) { return 'runthe.gg/arcade/' + key; }
+  // Full https:// with a trailing slash on purpose: a bare "runthe.gg/..."
+  // only auto-links in some apps and rarely triggers the rich link preview,
+  // and the trailing slash is the canonical page (no redirect hop before the
+  // OG card unfurls). This is the tappable link that carries the whole share.
+  function url(key) { return 'https://runthe.gg/arcade/' + key + '/'; }
 
   // "Run The Arcade — Number Game #142". The em-dash reads as brand→game; the
   // number is dropped only if the date can't be parsed (never, in practice).
