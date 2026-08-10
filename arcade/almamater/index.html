@@ -82,6 +82,14 @@
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 14px;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
   /* keep the row's space while hidden: mode.js may reveal a locked
      switcher after boot, and display:none made the page jump */
   .modesw.hidden{visibility:hidden;}
@@ -97,6 +105,10 @@
   @media (max-width:400px){ .pcard .pname{font-size:30px;} }
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
+     page a second after first paint - a fixed-count list, so its height is
+     knowable, and :empty drops the reservation the moment it's built. */
+  .choices:empty{min-height:196px;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:26px 18px; font-weight:900; font-size:18.5px; color:var(--ink); cursor:pointer; text-align:center; min-height:92px; display:flex; align-items:center; justify-content:center; line-height:1.2; transition:transform .08s, border-color .15s, background .15s;}
   .choice:hover{border-color:var(--gold);}
   .choice:active{transform:scale(.99);}
@@ -262,6 +274,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>

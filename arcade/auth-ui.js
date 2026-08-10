@@ -96,6 +96,7 @@
     if (mode === 'account' || (cur.signedIn && cur.name && !mode)) st.mode = 'account';
     else st.mode = mode || 'signin';
     st.err = ''; st.note = ''; st.busy = false;
+    injectModal();   // the chip can be clicked before init() runs; build on demand
     $('rtgauthScrim').hidden = false;
     renderModal();
   }
@@ -229,6 +230,7 @@
     btn.className = 'rtgauth-chip';
     btn.setAttribute('aria-label', 'Account');
     btn.onclick = function () { open(cur.signedIn ? 'account' : 'signin'); };
+    paintChip(btn);   // never mount empty - it repaints when auth resolves
     return btn;
   }
   function paintChip(btn) {
@@ -310,6 +312,13 @@
     A.boot();
     window.RTGAuthUI = { open: open, close: close, state: function () { return cur; } };
   }
+  // The account chip lands in a right-aligned button row, so mounting it on
+  // DOMContentLoaded shoved every other topbar control sideways after first
+  // paint. This script is loaded at the end of <body>, below the topbar, so
+  // the markup it needs already exists: claim the slot during parse, before
+  // anything has been painted. mountChips is idempotent, and the full init
+  // still runs on DOMContentLoaded for any page that loads us from <head>.
+  try { if (document.querySelector('.topbar')) { injectStyles(); mountChips(); } } catch (e) {}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

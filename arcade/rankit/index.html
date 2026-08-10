@@ -85,6 +85,14 @@
 
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
   /* keep the row's space while hidden: mode.js may reveal a locked
      switcher after boot, and display:none made the page jump */
   .modesw.hidden{visibility:hidden;}
@@ -99,6 +107,10 @@
 
   .axis{display:flex; align-items:center; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 4px 8px;}
   .rows{display:flex; flex-direction:column; gap:9px;}
+  /* Five fixed-height rank slots, always. Holding their space before the JS
+     builds them stops the Check-order button and the leaderboard from being
+     shoved 400px down the page a second after first paint. */
+  .rows:empty{min-height:412px;}
   /* a rank slot = a detached number block on the left + the draggable card */
   .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:none; transition:transform .12s;}
   .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
@@ -110,7 +122,12 @@
      the (hidden until reveal) value sit in reserved right-side gutters so the
      name is always dead-centre regardless of them. */
   .rmeta{flex:1; min-width:0; text-align:center; padding:0 46px;}
-  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis;}
+  /* white-space:nowrap is what makes the ellipsis actually fire - without it a
+     long name wrapped to a second line instead of truncating, which both broke
+     the intended truncation and made every row's height depend on the viewport
+     width. Rows are now a fixed height, which is also what lets .rows reserve
+     its space below. */
+  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
   .rrow .era{position:absolute; right:50px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; text-align:right; max-width:64px;}
   .rrow.show-era .era{opacity:1;}
@@ -359,6 +376,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -653,6 +671,7 @@
 
     // SECOND try failed: reveal per-slot, then the correct order, then end.
     ANSLOG.push('x');
+    ENDSLOTS=correct.slice();   // how close the losing board was, for the share
     lastCheck=correct; reveal=true; busy=true; render();
     if(window.RTGSound) RTGSound.wrong();
     setTimeout(function(){
@@ -691,7 +710,7 @@
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
     SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
-    run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false; ANSLOG=[];
+    run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false; ANSLOG=[]; ENDSLOTS=null;
     document.getElementById('runN').textContent='0';
     document.getElementById('checkBtn').disabled=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -731,6 +750,10 @@
   // the square where it ended is the whole point (this is the shape that
   // made Wordle spread).
   var ANSLOG=[];
+  // The per-slot verdict on the board that ended the run. "I had three of five
+  // in the right spot" is the near-miss that makes somebody tap Play again -
+  // the run line alone can't say it.
+  var ENDSLOTS=null;
   function finish(){
     if(done) return; done=true; busy=false;
     if(!ARCHIVE) clearResume();
@@ -807,10 +830,19 @@
       if(ANSLOG.length>60) out += '\u2026';
       return out;
     }
+    // Second line: the board that ended it, slot by slot. Only worth printing
+    // when at least one slot was right - an all-red row says nothing a red
+    // square on the run line didn't already say.
+    function endLine(){
+      if(!ENDSLOTS || !ENDSLOTS.length) return '';
+      var n=0, s='';
+      for(var i=0;i<ENDSLOTS.length;i++){ if(ENDSLOTS[i]) n++; s += ENDSLOTS[i]?'🟩':'🟥'; }
+      return n ? ('\n' + s + '  ' + n + '/' + ENDSLOTS.length + ' in place') : '';
+    }
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
     var bar=shareGrid();
-    var txt='Run The Arcade · Rank It\n'+bar+'\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/rankit';
+    var txt='Run The Arcade · Rank It\n'+bar+endLine()+'\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/rankit';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');

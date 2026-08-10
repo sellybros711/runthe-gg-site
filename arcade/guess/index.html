@@ -82,12 +82,24 @@
   .lead .v b{color:var(--coral);}
   /* The sport is a given, not a guess. It rides on the label so it reads as a
      fact about today's puzzle rather than another thing to work out. */
-  .lead .sportbadge{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
+  /* min-width holds the badge's footprint through the "–" -> "NBA" repaint.
+     Without it the placeholder was narrow enough that the lead's first line
+     fit, and widening it rewrapped the sentence - a 39px jolt that pushed the
+     search box, the guess counter and the clue panel down after first paint. */
+  .lead .sportbadge{display:inline-block; min-width:43px; text-align:center; margin-left:7px; font-size:10px; font-weight:900;
     letter-spacing:.1em; color:#fff; background:var(--coral); border-radius:999px; padding:2px 8px;}
 
   /* guess input */
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
   /* keep the row's space while hidden: mode.js may reveal a locked
      switcher after boot, and display:none made the page jump */
   .modesw.hidden{visibility:hidden;}
@@ -374,6 +386,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>

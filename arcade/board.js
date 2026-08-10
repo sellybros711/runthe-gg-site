@@ -137,6 +137,11 @@
   // ---- submit a completed run. Returns {streak, best_streak} or null. ----
   function submit(game, dateStr, opts) {
     if (!session) return Promise.resolve(null);   // signed-in only; guests keep local
+    // Every game funnels its ranked result through here, so this is the one
+    // place the server's token verdict has to be honoured. If the wallet was
+    // faked (localStorage cleared to mint plays) the spend RPC refused, and
+    // the run that refusal covers must not reach the leaderboard.
+    try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
     opts = opts || {};
     var body = JSON.stringify({
       p_game: game, p_date: dateStr,

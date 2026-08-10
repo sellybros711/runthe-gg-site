@@ -206,6 +206,15 @@
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
+  /* The pool (20 name tiles) and the board (5 racks) are both built by JS, so
+     for the first second of every visit they were zero-height and everything
+     under them - the group header, the whole sidebar - sat near the top of the
+     page and then got thrown 800px down when the puzzle mounted. That single
+     reflow was the arcade's worst layout shift. Both are fixed-count grids, so
+     their filled height is knowable per breakpoint; hold it until the real
+     children arrive and :empty retires the reservation. */
+  .board:empty{min-height:389px;}
+  .pool:empty{min-height:303px;}
   /* compact "rack" rows: header block left, four slim slots right */
   .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
     border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
@@ -368,6 +377,7 @@
   @media (max-width:1000px){
     .app{grid-template-columns:minmax(0,1fr) 280px; gap:var(--sp-2);}
     .pool{grid-template-columns:repeat(4,1fr);}
+    .board:empty{min-height:637px;} .pool:empty{min-height:374px;}
   }
   @media (max-width:760px){
     .app{display:block; padding:var(--sp-2) 14px 40px;}
@@ -390,6 +400,7 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
+    .board:empty{min-height:805px;} .pool:empty{min-height:669px;}
     .statgrid .rstat .v{font-size:20px;}
   }
   /* very narrow phones: the coins chip is the one non-uniform extra - drop it
@@ -620,6 +631,7 @@
   <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/challenge.js?v=1"></script>
   <script src="/arcade/tokens.js?v=1"></script>
   <script src="/arcade/archive.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
