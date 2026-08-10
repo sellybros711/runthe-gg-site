@@ -325,14 +325,14 @@
   /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
   .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
   .tile.archive.cross .play{color:var(--coralT); border-color:var(--coral);}   /* crossword accent is near-white; keep it readable */
-  /* played + cardholder: the bottom pill splits into Archive | Leaderboard */
-  .tile .play.split{padding:0; gap:0; overflow:hidden;}
-  .tile .play.split .half{flex:1 1 0; display:flex; align-items:center; justify-content:center; gap:6px;
-    min-height:44px; padding:11px 6px; font-weight:900; font-size:12px; letter-spacing:.03em; color:var(--c); transition:background .12s;}
-  .tile .play.split .half:first-child{border-right:1.5px solid color-mix(in srgb, var(--c) 45%, transparent);}
-  .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, transparent);}
+  /* played + cardholder: two equal-size buttons - Archive and Leaderboard */
+  .tile .play.split{background:transparent; border:0; box-shadow:none; padding:0; gap:8px; min-height:0; overflow:visible;}
+  .tile .play.split .half{flex:1 1 0; width:0; display:flex; align-items:center; justify-content:center; gap:6px;
+    min-height:44px; padding:11px 6px; border-radius:999px; font-weight:900; font-size:12px; letter-spacing:.03em;
+    color:var(--c); background:var(--card2); border:1.5px solid var(--c); transition:background .12s, filter .12s;}
+  .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, var(--card2));}
   .tile .play.split .half svg{width:15px; height:15px; flex:0 0 auto;}
-  .tile.archive.cross .play.split .half{color:var(--coralT);}
+  .tile.archive.cross .play.split .half{color:var(--coralT); border-color:var(--coral);}
   /* mobile: 2-up compact cards (cap + title + PLAY) */
   @media (max-width:640px){
     .tile{border-radius:14px;}
