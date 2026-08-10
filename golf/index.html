@@ -10504,6 +10504,15 @@ function closetBestOutfit(){
   track('closet_best'); render();
   try{ toast('\u2728 Best boosts equipped \u00b7 +'+accBoostTotal()+' total'); }catch(e){ toast('Best boosts equipped'); }
 }
+// Category labels are singular ("Shirt", "Aura"), but the closet copy talks about a whole category
+// ("get more shirts"), so pluralize for those sentences. Already-plural labels (Clubs, Balls, Cleats,
+// Shoes, Trousers) and the -wear mass nouns (Headwear, Eyewear, Outerwear, Legwear) stay as they are.
+function catPlural(label){
+  const s=String(label||'').toLowerCase();
+  if(!s) return s;
+  if(s.endsWith('s') || s.endsWith('wear')) return s;
+  return s+'s';
+}
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
@@ -10580,7 +10589,7 @@ function scrSetup(){
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
     grid.innerHTML=tiles.length?tiles.join('')
-      :`<div class="shop-empty">You don't own any ${esc(String(catLabel).toLowerCase())} yet — grab some in the Pro Shop.</div>`;
+      :`<div class="shop-empty">You don't own any ${esc(catPlural(catLabel))} yet, grab some in the Pro Shop.</div>`;
     wrap.appendChild(grid);
     if((cat==='plate'||cat==='cardbg') && !guest){
       const pv=$(`<button class="setup-shopbtn" style="margin-top:11px"><span>★ Preview my Player Card</span> <span class="ssb-go">▸</span></button>`);
@@ -10593,7 +10602,7 @@ function scrSetup(){
     grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
     // a link to the STORE for anything you don't own in this category (buying lives in the Pro Shop, not here)
     if(!isLook && !guest && SHOP_ENABLED && cat!=='plate' && cat!=='cardbg' && cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))){
-      const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Get more ${esc(String(catLabel).toLowerCase())} in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
+      const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Get more ${esc(catPlural(catLabel))} in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
       more.onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec=cosShopSec(cat); S.shopCat=cat; render(); };
       wrap.appendChild(more);
     }
