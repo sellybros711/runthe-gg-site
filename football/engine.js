@@ -2447,13 +2447,33 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
     percentileIn(cal.internal_margin_q, internalMargin)));
 
-  // Older calibration files carry no pair table. Fall back rather than throw.
-  if (!cal.real_pairs || !cal.internal_offense_q) {
+  /* internal_offenCe_q, WITH A C, because that is the key build/04-display.mjs
+     writes. Both reads below said `internal_offense_q` and no such key has ever
+     existed in display_calibration.json, so the guard was true on every call and
+     every scoreline this game has ever shown came out of legacyFootballScore
+     rather than the pair sampler the comment above describes.
+
+     The comment was not wrong about the design, only about what ran. Measured over
+     40,000 games before the fix, against the 7,276 real games the same file is
+     built from: 14.35% of finals were scorelines the NFL has never produced, 0.588%
+     of teams scored 4 (real: zero, ever) and 1.035% scored 2 (real: 0.014%). The
+     4-point score the note below calls impossible by construction was still
+     happening, because construction was being skipped.
+
+     Nothing threw and no number looked absurd on its own, which is how a dead good
+     path survives: legacyFootballScore returns a plausible-looking score. The fall
+     back below is still correct for genuinely old calibration files.
+
+     The college game had the identical typo and was fixed first; this is the same
+     one-word change. The calibration file itself was always fine, because
+     04-display.mjs measures internal scores straight off resolveGame and never
+     went through this function. */
+  if (!cal.real_pairs || !cal.internal_offence_q) {
     return legacyFootballScore(yourScore, oppScore, won, rng, cal);
   }
 
   const pointsTarget = valueAt(cal.real_team_pts_q,
-    percentileIn(cal.internal_offense_q, yourScore));
+    percentileIn(cal.internal_offence_q, yourScore));
 
   /*
    * Weight every real scoreline by how well it matches both targets and by how often it
