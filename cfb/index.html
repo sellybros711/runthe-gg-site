@@ -2878,7 +2878,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=24"></script>
+<script src="engine.js?v=25"></script>
 <script src="run.js?v=11"></script>
 <script src="achievements.js?v=9"></script>
 <script src="auth.js?v=2"></script>
@@ -2954,24 +2954,47 @@ function dressInTeamColors(teamSeasonId){
   };
 }
 
-/* ── AP-style rankings ─────────────────────────────────────────
-   College football lives and dies by the poll. Every team-season is ranked
-   within its own year by team strength, top 25, so an opponent carries a real
-   "#4" the way a broadcast would call it. Built once, lazily, from the data. */
-let RANKS=null;
-function buildRanks(){
-  RANKS={};
+/* ── the poll ──────────────────────────────────────────────────
+   College football lives and dies by the poll, so an opponent carries a "#4"
+   the way a broadcast would call it. The number has to be the real one.
+
+   THE POLL IS LOOKED UP, NEVER COMPUTED.
+   This used to sort each season's teams by strength_z and call the top 25 the
+   rankings. strength_z is a fine measure of how a team played and it is not a
+   poll, so the two disagreed in ways a fan spots instantly. The 2015 board it
+   produced had 13-0 Clemson seventh, 9-3 Baylor third and San Diego State
+   eleventh, with Michigan State and Iowa, who really finished third and fifth,
+   nowhere at all. Beating "No. 3 Baylor" is not a signature win.
+   cfb_rankings.json is the last poll of each real season: the CFP committee's
+   final rankings from 2014 on, the final AP poll before that. See
+   build/07-rankings.mjs.
+   THE OLD GUESS SURVIVES AS A FALLBACK, and only until cfb_rankings.json is on
+   the server. Not because it is acceptable, but because five badges key off
+   beating ranked teams (see sig_wins and best_win_rank in achievements.js) and a
+   league where nobody is ranked makes all five unearnable. This project has
+   shipped nine impossible badges once already; it is not doing it again to make
+   a point. The moment the file is deployed the fallback stops being reached, with
+   no code change: that is the whole reason it is shaped this way.
+   COMPUTED IS FLAGGED. ranksAreReal() is reported by "Check the connection" on the
+   leaderboard, next to whether the board answers, because which poll a player is
+   being shown is the same kind of deployment fact and is otherwise invisible. */
+let REAL_RANKS=null, GUESSED_RANKS=null;
+function guessRanks(){
+  GUESSED_RANKS={};
   const bySeason={};
   for(const t of DATA.teamSeasons)(bySeason[t.season]??=[]).push(t);
   for(const yr in bySeason){
     bySeason[yr].sort((a,b)=>(b.strength_z||0)-(a.strength_z||0));
-    bySeason[yr].slice(0,25).forEach((t,i)=>{ RANKS[t.team_season_id]=i+1; });
+    bySeason[yr].slice(0,25).forEach((t,i)=>{ GUESSED_RANKS[t.team_season_id]=i+1; });
   }
 }
+function ranksAreReal(){ return !!REAL_RANKS; }
 function teamRank(id){
-  if(!id||!DATA) return 0;
-  if(!RANKS) buildRanks();
-  return RANKS[id]||0;
+  if(!id) return 0;
+  if(REAL_RANKS) return REAL_RANKS[id]||0;
+  if(!DATA) return 0;
+  if(!GUESSED_RANKS) guessRanks();
+  return GUESSED_RANKS[id]||0;
 }
 const rankStr=(id)=>{ const r=teamRank(id); return r?'#'+r:''; };
 
@@ -3447,7 +3470,7 @@ async function pfHubStats(){
   let top=null;
   rows.forEach(r=>{ if(r.overall==null) return;
     const v=Number(r.overall); if(isFinite(v)&&(top===null||v>top)) top=v; });
-  best.textContent=top===null?'—':top.toFixed(1);
+  best.textContent=top===null?'--':top.toFixed(1);
 }
 
 /* ── your seasons ──────────────────────────────────────────────────
@@ -3506,7 +3529,7 @@ async function pfSeasonsPaint(tab){
       '<span class="n">'+(i+1)+'</span>'+
       '<span class="who"><b>'+esc(r.wins+'-'+r.losses)+' &middot; '+seasonFate(r)+'</b>'+
         '<span>'+esc(modeLabel(r.run_mode||'free')+(when?' · '+when:''))+'</span></span>'+
-      '<span class="rt"><b>'+(r.overall==null?'—':Number(r.overall).toFixed(1))+
+      '<span class="rt"><b>'+(r.overall==null?'--':Number(r.overall).toFixed(1))+
         '</b><span>overall</span></span>'+
       '<span class="go">&rsaquo;</span></button>';
   }).join('')+'</div>'+
@@ -5136,14 +5159,29 @@ async function boot(){
        is large enough that the JSON parse is a real part of the wait, and a bar that
        jumped to full while the main thread was still busy would be lying at the one
        moment it matters. */
-    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=7').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
+    /* The poll is fetched alongside the rest but is allowed to be absent: it is the
+       only file the game can run without, and a project that has not run
+       build/07-rankings.mjs yet should show an unranked league rather than a boot
+       failure. It does NOT go through j(), because a missing file must not fail the
+       Promise.all and must not advance the loading bar past a step that did not
+       happen. */
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/cfb_player_seasons.json'),j('data/cfb_team_seasons.json'),
       j('data/cfb_battery.json'),j('data/cfb_coaches.json'),
       j('data/cfb_curated.json'),j('data/cfb_league_context.json'),
       j('data/cfb_display_calibration.json'),
     ]);
+    /* A POLL IS ONLY ACCEPTED IF IT RANKS SOMEBODY. An empty or truncated file is
+       the dangerous case, not a missing one: {} is valid JSON and an object, so a
+       plain truthiness check would take it over the fallback and leave the whole
+       league unranked, which quietly makes five badges unearnable. A missing file
+       is loud by comparison. 400 is well under a real poll, which carries about
+       twenty seasons of top 25, and well over anything a broken write produces. */
+    fetch('data/cfb_rankings.json?v=7').then(r=>r.ok?r.json():null)
+      .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
+      .catch(()=>{});
     DATA=R.indexData(pl,tm);
     CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
@@ -8050,12 +8088,20 @@ $('b-diag').onclick=async()=>{
   el.textContent='Checking...';
   const ok=await B.probe();
   const e=B.lastError;
-  el.textContent=ok
+  /* The poll is reported here too. Which poll a player is being shown is a
+     deployment fact exactly like whether the board answers: both depend on a file
+     being on the server and neither is visible from the game itself. Without this
+     line the only way to tell the real rankings from the computed stand-in is to
+     recognise a wrong number, which is the failure this was written to end. */
+  el.textContent=(ok
     ? 'The leaderboard is reachable.'
     : (B.needsMigration
         ? 'The leaderboard table is not there. Run supabase/62_cfb_leaderboard.sql.'
         : 'Could not reach the leaderboard.')+
-      (e?' ('+e.where+' '+(e.status||e.code)+': '+e.message+')':'');
+      (e?' ('+e.where+' '+(e.status||e.code)+': '+e.message+')':''))+
+    ' '+(ranksAreReal()
+      ? 'Rankings: the real final polls.'
+      : 'Rankings: computed stand-in. data/cfb_rankings.json is not on the server; run build/07-rankings.mjs.');
 };
 $('b-again').onclick=()=>beginDraft();
 /* Home is where a competition is chosen, so going there clears the one you were

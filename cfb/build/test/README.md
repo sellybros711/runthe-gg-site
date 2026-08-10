@@ -12,6 +12,7 @@ initdb -D /tmp/pg && pg_ctl -D /tmp/pg -o '-p 5433 -k /tmp' start
 createdb -h /tmp -p 5433 cfbtest
 export PGHOST=/tmp PGPORT=5433
 psql -d cfbtest -f cfb/build/test/stub_supabase.sql
+psql -d cfbtest -f supabase/53_football_profile_avatars.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
 psql -d cfbtest -f supabase/63_cfb_run_mode.sql
 psql -d cfbtest -f supabase/64_cfb_bowl_key.sql
@@ -20,6 +21,15 @@ psql -d cfbtest -f supabase/67_cfb_named_board.sql
 node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &
 python3 -m http.server 8080 &
 ```
+
+`53_football_profile_avatars.sql` is in that list only for the `profiles.avatar_initials`
+column, which `66_cfb_profile_avatars.sql` backfills from. It is the NFL game's migration
+and its own statements against `ps_runs` will error on a database that has no NFL tables.
+Those errors are expected here and harmless: the column is added before them.
+
+Every FAIL in `test_leaderboard.sql` this setup has ever produced on working code came
+from running it against a database that was missing one of these files rather than from
+the code it tests, so check the schema before you read a red line as a regression.
 
 The database name has to be the SAME one the PostgREST stand-in is serving. The browser
 suites seed rows with `psql` and read them back through `board.js`, so if the two point at
@@ -44,6 +54,7 @@ before the day rather than during it.
 |---|---|
 | `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
+| `test_scorelines.mjs` | That the scores on screen are scores college football has actually produced. Names every calibration key the engine reads one at a time, then demands each final be a hi/lo pair that appears in `real_pairs`, that across a few thousand real seasons nobody ever scores 1 or 4, that 2 and 5 stay near their real rates, and that the mean lands within three points of the real one. The pair check is the load-bearing one: it is what noticed that the sampler was switched off. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. **Currently broken**, and not by anything it tests: the profile sheet became a hub and five pages, and this suite still drives the old tab strip. Its signed-out cases assert an information architecture that no longer exists, so fixing it is a product decision rather than a selector swap. |
@@ -59,6 +70,7 @@ before the day rather than during it.
 ```
 psql -d cfbtest -f cfb/build/test/test_leaderboard.sql          # look for FAIL
 node cfb/build/test/test_score_parity.mjs cfbtest
+node cfb/build/test/test_scorelines.mjs                         # no database, no browser
 (nohup python3 -m http.server 8080 &)
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs

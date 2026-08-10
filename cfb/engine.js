@@ -1609,12 +1609,27 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
     percentileIn(cal.internal_margin_q, internalMargin)));
 
-  if (!cal.real_pairs || !cal.internal_offense_q) {
+  /* internal_offenCe_q, WITH A C, because that is the key 04-display.mjs writes.
+     This read said `internal_offense_q` and no such key has ever existed in the
+     file, so the guard below was true on every call and EVERY scoreline this game
+     has ever shown came out of legacyFootballScore instead of the sampler. That is
+     why teams were scoring 1 and 4: the fallback builds a scoreline arithmetically
+     from a total and a margin, and half of one odd number is a point total real
+     football cannot produce. Measured over 58,928 games before the fix, 0.32% of
+     teams scored 1 and 0.48% scored 4, against 0.000% and 0.000% in the 16,820
+     real games this same file is built from.
+
+     The one-word typo is not the interesting part. The interesting part is that a
+     silent fallback hid it: the good path was dead for the entire life of the game
+     and nothing failed, because the bad path returns a plausible-looking number.
+     test_scorelines.mjs now asserts the sampler is the path that runs. */
+  const offenceQ = cal.internal_offence_q;
+  if (!cal.real_pairs || !offenceQ) {
     return legacyFootballScore(marginTarget, won, rng, cal);
   }
 
   const pointsTarget = valueAt(cal.real_team_pts_q,
-    percentileIn(cal.internal_offense_q, yourScore));
+    percentileIn(offenceQ, yourScore));
 
   const TM = SCORELINE_TOLERANCE.margin, TP = SCORELINE_TOLERANCE.points;
   const pairs = cal.real_pairs;
