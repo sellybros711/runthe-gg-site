@@ -214,7 +214,7 @@
      their filled height is knowable per breakpoint; hold it until the real
      children arrive and :empty retires the reservation. */
   .board:empty{min-height:389px;}
-  .pool:empty{min-height:303px;}
+  .pool.pool-hold{min-height:303px;}
   /* compact "rack" rows: header block left, four slim slots right */
   .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
     border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
@@ -377,7 +377,7 @@
   @media (max-width:1000px){
     .app{grid-template-columns:minmax(0,1fr) 280px; gap:var(--sp-2);}
     .pool{grid-template-columns:repeat(4,1fr);}
-    .board:empty{min-height:637px;} .pool:empty{min-height:374px;}
+    .board:empty{min-height:637px;} .pool.pool-hold{min-height:374px;}
   }
   @media (max-width:760px){
     .app{display:block; padding:var(--sp-2) 14px 40px;}
@@ -400,7 +400,7 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
-    .board:empty{min-height:805px;} .pool:empty{min-height:669px;}
+    .board:empty{min-height:805px;} .pool.pool-hold{min-height:669px;}
     .statgrid .rstat .v{font-size:20px;}
   }
   /* very narrow phones: the coins chip is the one non-uniform extra - drop it
@@ -503,7 +503,7 @@
           Shuffle
         </button>
       </div>
-      <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Unplaced names"></div>
 
       <div class="pool-h groups-h">
         <span class="t">Build your groups</span>
@@ -920,6 +920,11 @@
       if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
       var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
       poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
+      // The boot reservation that stops the pool popping in at full height has
+      // to be dropped the first time it's filled - the pool is legitimately
+      // empty once all twenty names are placed, and holding 669px there would
+      // punch a hole in the page at the most triumphant moment of the puzzle.
+      poolEl.classList.remove('pool-hold');
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
