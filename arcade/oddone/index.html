@@ -397,6 +397,13 @@
   // no-repeat guard), conn (display text for the reveal), team (t-rounds only).
   function finishRound(type, four, odd, ckey, conn, team){
     var five=four.concat([odd]);
+    // No player may appear twice on a board (same id OR same name) - a repeated
+    // name is both a giveaway and just broken.
+    var seenId={}, seenNm={};
+    for(var i=0;i<five.length;i++){ var e=five[i]; if(!e) return null;
+      var nm=String(e.name||'').toLowerCase();
+      if(seenId[e.id] || seenNm[nm]) return null;        // duplicate -> reject the round
+      seenId[e.id]=1; seenNm[nm]=1; }
     if(!fairOdd(five, odd.id)) return null;              // reject ambiguous rounds
     return { type:type, team:team||'', conn:conn, ckey:ckey, odd:odd.id, five:shuffle(five).map(function(e){return e.id;}) };
   }
