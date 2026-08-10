@@ -1,5 +1,5 @@
-/* Run The Arcade — hand-curated career stat totals for Rank It stat categories.
- * RETIRED players ONLY (totals are settled — never add a player whose numbers
+/* Run The Arcade - hand-curated career stat totals for Rank It stat categories.
+ * RETIRED players ONLY (totals are settled - never add a player whose numbers
  * still move). Keys are grid/match/entities.js entity ids; every id here has
  * been verified to exist in the corpus with act !== 1.
  * Values are official career regular-season totals. NBA totals are NBA-only

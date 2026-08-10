@@ -1,16 +1,16 @@
 /*
- * card.js — the Arcade Card surface for Run The Arcade.
+ * card.js - the Arcade Card surface for Run The Arcade.
  *
  * One shared, self-mounting module (like auth-ui.js) that every arcade page can
  * use for the consumer monetization UI:
- *   RTGCard.paywall(opts)   — "Out of plays" → Arcade Card upsell (monthly/annual,
+ *   RTGCard.paywall(opts)   - "Out of plays" → Arcade Card upsell (monthly/annual,
  *                             + tax, and a friendly "Come back tomorrow")
- *   RTGCard.guestConvert()  — after a guest spends their 1 free play: "create a free
+ *   RTGCard.guestConvert()  - after a guest spends their 1 free play: "create a free
  *                             account for 3 plays a day" conversion
- *   RTGCard.checkout(plan)  — start Arcade Card checkout ($5.99/mo or $49.99/yr). If
+ *   RTGCard.checkout(plan)  - start Arcade Card checkout ($5.99/mo or $49.99/yr). If
  *                             the visitor isn't signed in, we open sign-in first and
  *                             resume checkout after, preserving the chosen plan.
- *   RTGCard.portal()        — open the Stripe Customer Portal (manage/cancel)
+ *   RTGCard.portal()        - open the Stripe Customer Portal (manage/cancel)
  *
  * Entitlement + token truth are elsewhere (tokens.js / board.js / the server RPCs);
  * this file is presentation + the checkout/portal calls. Fails soft: with the
@@ -110,7 +110,7 @@
       sub='Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='upsell'){
       kicker='Arcade Card'; head='Go unlimited';
-      sub='Unlimited plays across every game, every day — plus the full archive.';
+      sub='Unlimited plays across every game, every day, plus the full archive.';
     } else {
       kicker='Out of plays'; head='You’re out of plays today';
       sub = signedIn()
@@ -145,7 +145,7 @@
     }
     render(); open();
   }
-  // Already a member — manage/cancel instead of buying a second card (mirrors
+  // Already a member - manage/cancel instead of buying a second card (mirrors
   // how the golf Tour Pass won't sell you a pass you already own).
   function renderMember(){
     var b=$('rtgcardBody');
@@ -164,7 +164,7 @@
         if(d && d.url) return;                          // redirecting to Stripe portal
         if(go){ go.disabled=false; go.textContent='Manage subscription'; }
         showErr((d && d.error==='no_customer')
-          ? 'This membership is complimentary — there’s nothing to bill or manage.'
+          ? 'This membership is complimentary. There’s nothing to bill or manage.'
           : 'Could not open the billing portal. Please try again.');
       });
     };
@@ -312,7 +312,7 @@
   }
 
   // Post-checkout return: Stripe bounces back with ?checkout=success|cancelled.
-  // Success gets a real welcome moment — optimistic Pro flag (the webhook is
+  // Success gets a real welcome moment - optimistic Pro flag (the webhook is
   // the durable truth and lands within seconds), a celebration modal, and a
   // clean URL so refresh/share doesn't re-trigger it. Silence here was the #1
   // conversion-audit finding: people who just paid saw... nothing.

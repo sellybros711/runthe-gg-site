@@ -66,7 +66,7 @@
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
 
-  /* run banner: two hero stats — current run + all-time best — flank the note */
+  /* run banner: two hero stats - current run + all-time best - flank the note */
   .runbar{display:flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--gold); border-radius:14px; padding:12px 18px; box-shadow:var(--shadow); margin-bottom:14px;}
   .runbar .rstat{flex:0 0 auto; text-align:center; min-width:70px;}
   .runbar .rstat .big{display:block; font-family:var(--hero); font-weight:400; font-size:52px; line-height:.85; font-variant-numeric:tabular-nums;}
@@ -90,7 +90,7 @@
   }
 
   .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(8px,1.4vh,14px); letter-spacing:.01em;}
-  /* the ladder: the run is a finite 40-round table — show the finish line */
+  /* the ladder: the run is a finite 40-round table - show the finish line */
   .ladder{display:flex; align-items:center; gap:10px; max-width:460px; margin:0 auto clamp(12px,2vh,20px); font-size:10.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
   .ladder .rd{flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .ladder .bar{flex:1; height:7px; border-radius:4px; background:var(--card2); border:1px solid var(--line2); overflow:hidden; position:relative;}
@@ -106,7 +106,7 @@
   .pcard:hover{border-top-color:var(--tp,var(--gold));}
   .pcard .nm{text-shadow:0 2px 0 color-mix(in srgb, var(--tp,transparent) 30%, transparent);}
 
-  /* versus cards — fill the tall playzone */
+  /* versus cards - fill the tall playzone */
   .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
   .pcard{position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
   .pcard:hover{border-color:var(--gold); border-top-color:var(--gold); transform:translate(-1px,-1px); box-shadow:6px 6px 0 rgba(7,20,38,.30);}
@@ -199,7 +199,7 @@
     .a-gametitle{grid-area:title; margin:2px 0 10px;}
     .prompt{grid-area:pr;}
     .ladder{grid-area:lad;}
-    /* don't stretch the cards to the full viewport — a pair of ~“trading card”
+    /* don't stretch the cards to the full viewport - a pair of ~“trading card”
        panels reads far better than two near-empty walls on a tall monitor */
     .playzone{grid-area:play; min-height:0;}
     .versus{flex:0 0 auto; grid-auto-rows:clamp(340px, 50vh, 500px); align-content:start;}
@@ -375,13 +375,13 @@
     if(shield){ p.textContent='Save ready'; p.classList.remove('used'); }
     else { p.textContent='Save used'; p.classList.add('used'); } }
 
-  // years (from the decade span) + the teams they suited up for — the two
+  // years (from the decade span) + the teams they suited up for - the two
   // clues the player actually reasons from. Sport is implied by the teams.
   function eraStr(e){ var d=e.decade; if(!d||!d.length) return ''; var a=d[0], b=d[d.length-1]; return a===b ? (a+'s') : (a+'s–'+b+'s'); }
   // The revealed number belongs to ONE stint, so the clue must too: a player who
   // wore different numbers on different teams can't be shown with a team list +
   // era range or you can't tell which number the card is asking about. We pin the
-  // card to a single team + single decade — the primary stint. The corpus lists
+  // card to a single team + single decade - the primary stint. The corpus lists
   // the primary team, number and debut decade first, so t[0] / j[0] / decade[0]
   // all describe the same stint (e.g. Jordan → Bulls, #23, 1980s).
   function eraOne(e){ var d=e.decade; if(!d||!d.length) return ''; return d[0]+'s'; }
@@ -401,7 +401,7 @@
     if(!rd) return;
     var n=Math.min(idx+1, SEQ.length);
     rd.textContent='Round '+n;
-    // Unlimited streak — the progress bar now shows "how deep are you into
+    // Unlimited streak - the progress bar now shows "how deep are you into
     // the difficulty escalation" (0 to round 40 = the last threshold); after
     // that it stays full and the zone label carries the pressure.
     bar.style.width=Math.round(Math.min(idx,40)/40*100)+'%';
@@ -436,12 +436,12 @@
       setTimeout(function(){ busy=false; renderRound(); }, 720);
     } else if(shield){
       // Your one save: this miss doesn't end the run, but it resets your in-a-row
-      // back to 0 — your best (the peak you reached) is banked and keeps standing.
+      // back to 0 - your best (the peak you reached) is banked and keeps standing.
       // Numbers stay revealed so you can read them, then play continues.
       shield=false; updateShieldPill();
       run=0; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.soft();
-      toast('Saved — back to 0, keep going');
+      toast('Saved. Back to 0, keep going');
       idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 1400);
@@ -474,7 +474,7 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic board and
   // fast-forward to the saved position without re-charging a token, replaying
-  // animations or sounds. Pairs before idx are simply skipped — SEQ is
+  // animations or sounds. Pairs before idx are simply skipped - SEQ is
   // deterministic, so the board is consistent with what was already played.
   function resumeAttempt(r){
     seedDaily(); SEQ=buildRounds(); servedDaily=true;
@@ -554,7 +554,7 @@
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(score>=SEQ.length) sub='You cleared the whole table!';
     else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
-    else if(PREVBEST>0 && score===PREVBEST) sub='Tied your best — one more tomorrow!';
+    else if(PREVBEST>0 && score===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && score>0 && PREVBEST-score<=2) sub=(PREVBEST-score)+' off your best. So close!';
     else sub='Your run ended';
     if(!locked && !shield) sub += ' · used your save';

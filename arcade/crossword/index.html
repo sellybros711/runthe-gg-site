@@ -67,7 +67,7 @@
 }
 /* touch-action:manipulation kills the mobile double-tap-to-zoom gesture (which
    fires constantly when tapping keys/cells fast) while keeping single taps,
-   scrolling and pinch-zoom intact — so fast typing no longer zooms the board. */
+   scrolling and pinch-zoom intact - so fast typing no longer zooms the board. */
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0; padding:0;}
 body{
@@ -433,13 +433,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // When ?date=YYYY-MM-DD names a valid past day and the user is Pro, RTGArchive
   // is active. Archive plays are PRACTICE: no daily save, no streak, no token
   // charge, no board submit. DATE is the effective date this page runs (the
-  // archive day when active, else today) — used to pick the SAME daily puzzle
+  // archive day when active, else today) - used to pick the SAME daily puzzle
   // that was/will be shown on that date.
   var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
   var DATE = (window.RTGArchive ? RTGArchive.date() : new Date().toISOString().slice(0,10));
   // daily pick: exact id match first (preserves the hand-authored launch
   // week), else the deterministic per-date GENERATOR (gen.js, seeded from the
-  // date — infinitely daily), else the bank's date rotation as a fallback.
+  // date - infinitely daily), else the bank's date rotation as a fallback.
   // NOTE: with generator/rotation P.id is the puzzle's own id, NOT the served
   // date; anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
@@ -631,7 +631,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     saveResume();
   }
   // micro-animation: pulse a word's cells the moment it becomes fully filled
-  // (fill only — not correctness — so the no-autocheck design is preserved)
+  // (fill only - not correctness - so the no-autocheck design is preserved)
   var filledEntries={};
   function entryFilled(e){ return entryCells(e).every(function(p){ return cells[p[0]][p[1]].val!==''; }); }
   function maybeWordFill(r,c){
@@ -655,7 +655,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var cell=cells[sel.r][sel.c];
     if(cell.val){ cell.val=''; cell.checked=false; }
     else { retreat(); cells[sel.r][sel.c].val=''; cells[sel.r][sel.c].checked=false; }
-    announcedFull=false;   // grid no longer full — allow a fresh announce on refill
+    announcedFull=false;   // grid no longer full - allow a fresh announce on refill
     render();
     saveResume();
   }
@@ -782,7 +782,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function wrongCount(){ var w=0; for(var r=0;r<N;r++) for(var c=0;c<N;c++){ var cell=cells[r][c]; if(!cell.block && cell.val!==cell.ans) w++; } return w; }
   function checkSolved(){
     if(done) return;
-    if(!gridFull()){ announcedFull=false; return; }   // still blanks — nothing to announce yet
+    if(!gridFull()){ announcedFull=false; return; }   // still blanks - nothing to announce yet
     if(wrongCount()===0){ finish(); return; }          // full + all correct -> win
     if(!announcedFull){                                // full but wrong -> tell them once
       announcedFull=true;
@@ -803,7 +803,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   function finish(){
     done=true; if(tick) clearInterval(tick);
-    clearResume();   // attempt is over — nothing left to restore
+    clearResume();   // attempt is over - nothing left to restore
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
@@ -881,7 +881,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  // emoji share grid — 🟨 revealed, 🟩 solved cleanly, ⬛ black
+  // emoji share grid - 🟨 revealed, 🟩 solved cleanly, ⬛ black
   function buildShareGrid(){
     var out=[];
     for(var r=0;r<N;r++){ var line='';
@@ -1109,7 +1109,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // clear this puzzle's entries and start a fresh attempt on the SAME daily grid
   function beginAttempt(){
-    clearResume();   // a fresh (practice) attempt begins — drop any mid-solve state
+    clearResume();   // a fresh (practice) attempt begins - drop any mid-solve state
     for(var br=0;br<N;br++) for(var bc=0;bc<N;bc++){
       var cl=cells[br][bc]; if(cl.block) continue;
       cl.val=''; cl.checked=false; cl.revealed=false;
@@ -1133,7 +1133,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // resume the interrupted RANKED attempt after a reload: restore letters,
   // reveals, hint count and the running clock. The play was already charged on
   // the original load, so charged=true / attemptFirst=true WITHOUT calling
-  // RTGTokens.startAttempt again — no re-charge.
+  // RTGTokens.startAttempt again - no re-charge.
   function restoreAttempt(rs){
     done=false; filledEntries={}; announcedFull=false;
     charged=true; attemptFirst=true;
@@ -1218,7 +1218,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   buildLists();
   // resume check BEFORE the token gate: a mid-solve reload of the ranked
-  // attempt has playsOf>0 (charged) but nothing finished — without this a
+  // attempt has playsOf>0 (charged) but nothing finished - without this a
   // free player who reloads would land on the "no plays left" lock screen.
   var RES = null;
   if(!TESTER && !ARCHIVE){
@@ -1229,7 +1229,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // token gate: out of plays -> locked review (streak bookkeeping already
   // advances only once/day via the `already` flag); else a fresh playable
-  // puzzle. beginAttempt does NOT charge — the charge lands on first entry.
+  // puzzle. beginAttempt does NOT charge - the charge lands on first entry.
   if(RES){
     restoreAttempt(RES);
   } else if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){

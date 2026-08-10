@@ -5,7 +5,7 @@
  * figures that a common fan will nod at ("oh yeah, that guy") but that no
  * automated source ranks highly enough to promote.
  *
- * Loaded like former.js — before data.js merges it into GRID_ENTITIES.
+ * Loaded like former.js - before data.js merges it into GRID_ENTITIES.
  * data.js dedupes on (name+sport) and backfills enrichment fields; a name
  * that lands in both the curated corpus AND here is enriched, not duplicated.
  *

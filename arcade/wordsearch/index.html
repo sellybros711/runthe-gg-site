@@ -363,7 +363,7 @@
     function add(key,name,word,fame,sport){ if(!word) return; var c=cats[key]||(cats[key]={name:name,words:{},sports:{}}); if(!c.words[word]||fame>c.words[word]) c.words[word]=fame; if(sport) c.sports[sport]=(c.sports[sport]||0)+1; }
     ENT.forEach(function(e){
       if(!BIG3[e.sport]) return;
-      // Only include recognizable names in themes — .star (from stars.js
+      // Only include recognizable names in themes - .star (from stars.js
       // overlay) is the primary signal; auto-detected credentials cover
       // uncurated players so a fresh legend still shines through.
       if(!e.star){
@@ -470,7 +470,7 @@
       p.cells.forEach(function(ci){ var el=cellEls[ci]; el.classList.add('found'); el.style.background=colorFor[p.word]; });
     });
   }
-  // names stay hidden until found — you're told the theme and how many, not who
+  // names stay hidden until found - you're told the theme and how many, not who
   function renderWords(){
     var wl=document.getElementById('wordList'); wl.innerHTML='';
     var found=PLACED.filter(function(p){ return foundSet[p.word]; }).sort(function(a,b){ return a.word<b.word?-1:1; });
@@ -509,7 +509,7 @@
     var A=px(a), B=px(b), o=A.map(function(v,i){ return Math.round(v+(B[i]-v)*t); });
     return '#'+o.map(function(v){ return ('0'+v.toString(16)).slice(-2); }).join('').toUpperCase();
   }
-  function readable(c){ // found cells/chips use dark #071426 text — lighten dark team shades
+  function readable(c){ // found cells/chips use dark #071426 text - lighten dark team shades
     return hexLum(c)<0.35 ? mixHex(c,'#FFFFFF',0.5) : c;
   }
   function applySkin(){
@@ -641,7 +641,7 @@
     gridEl.style.pointerEvents=''; gridEl.style.opacity='';
     document.getElementById('timerN').textContent='0:00';
     document.getElementById('themeName').textContent=P.theme;
-    applySkin();   // replays can land on a different theme — re-skin (or un-skin) to match
+    applySkin();   // replays can land on a different theme - re-skin (or un-skin) to match
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderWords(); updWordsLab(); updateHintBtn();
   }
@@ -659,7 +659,7 @@
   }
   function finish(){
     if(done) return; done=true; if(tick) clearInterval(tick);
-    resumeClear();   // attempt is over — nothing left to resume
+    resumeClear();   // attempt is over - nothing left to resume
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     document.getElementById('timerN').textContent=fmt(elapsed);
     var s=load(), today=P.id, y=shiftDay(today,-1);

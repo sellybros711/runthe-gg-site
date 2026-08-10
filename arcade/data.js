@@ -77,7 +77,7 @@
             touched2 = true;
           }
         });
-        // teams: union rather than backfill — supplement can add stints
+        // teams: union rather than backfill - supplement can add stints
         if (Array.isArray(p.t) && p.t.length){
           if (!Array.isArray(cur.t)) cur.t = [];
           p.t.forEach(function(tm){ if (cur.t.indexOf(tm) === -1){ cur.t.push(tm); touched2 = true; } });
@@ -120,7 +120,7 @@
    * Star / icon overlay from stars.js (window.RTG_STARS). Marks
    * matching corpus entities with `.star=true`, and for the ICONS tier
    * bumps `.f` to 5 so any legacy fame-5 gate lights up too. This is
-   * the source of truth for "recognizable" — game gates check .star
+   * the source of truth for "recognizable" - game gates check .star
    * first, and only fall back to auto-detected credentials for names
    * not on the curated list.
    * ---------------------------------------------------------------- */

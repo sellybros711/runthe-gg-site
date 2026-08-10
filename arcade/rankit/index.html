@@ -192,9 +192,9 @@
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Rank It "Depth Chart"
+     BOLD SPORTS-MACHINE - Rank It "Depth Chart"
      Marquee banner + caged lineup rack with a spine rail and notched
-     jersey number-plates. Visual only — drag / logic / keys untouched.
+     jersey number-plates. Visual only - drag / logic / keys untouched.
      ================================================================= */
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
@@ -241,7 +241,7 @@
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
       /* pin the four short left rows to their content and let the leaderboard
-         rail overflow naturally — otherwise the tall rail forces empty gaps
+         rail overflow naturally - otherwise the tall rail forces empty gaps
          between the axis, ranked rows and check button */
       grid-template-rows:auto auto auto auto auto min-content min-content min-content min-content auto;
       grid-template-areas:
@@ -400,7 +400,7 @@
     var ids=Object.keys(STATS[c].vals).filter(function(id){ var e=byId[id]; return e && e.act!==1; });
     statPool[c]=ids;
     // WARMUP pool: mega-icons (f>=5) OR very-notable retired players (f>=4 with
-    // 10+ notable seasons) — always from the modern era so warmup names are
+    // 10+ notable seasons) - always from the modern era so warmup names are
     // recognizable to anyone active today. Sets 1-3 draw from this so the very
     // first sort is always five names anyone knows with wide, obvious stat
     // gaps. Falls back to the full pool when a category can't fill 5 warmup ids.
@@ -423,7 +423,7 @@
     if(!cfg || !pool || pool.length<COUNT) return null;
     // Adjacent-gap rule: warmup wants wide spread (35%) so the very first
     // sort is obvious; regular sets need 5%. A small pool (e.g. NBA blocks)
-    // may not have any five names 35% apart — after a few dozen attempts we
+    // may not have any five names 35% apart - after a few dozen attempts we
     // relax the warmup gap step-by-step instead of failing outright, so the
     // set builder never returns null on a real stat pool.
     var attempts = warmup ? 400 : 200;
@@ -458,10 +458,10 @@
   // only its league's categories, the 'all' version keeps them all.
   function catsForMode(){ return SPORTFILTER ? STAT_CATS.filter(function(c){ return c.indexOf(SPORTFILTER.toLowerCase()+'_')===0; }) : STAT_CATS; }
   // Lazy set builder. Eagerly generating 200 sets on load meant 200 × up to
-  // 250 shuffles of a ~2k-name pool — a ~50s freeze at load. Now we prime the
+  // 250 shuffles of a ~2k-name pool - a ~50s freeze at load. Now we prime the
   // first BATCH sets synchronously (so the first render has SETS[0]) and top
-  // up on demand as `run` climbs. Whole run remains deterministic — each set
-  // is built from the same seeded shuffle order — but idle work isn't paid up
+  // up on demand as `run` climbs. Whole run remains deterministic - each set
+  // is built from the same seeded shuffle order - but idle work isn't paid up
   // front for a run 99% of players won't reach.
   var SETS=[], _catsBag=[], _runGuard=0, BATCH=8;
   function fillSets(target){
@@ -493,7 +493,7 @@
   function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
   function curSet(){
-    // Top up lazily as we climb — keep a 10-set buffer ahead of the runner.
+    // Top up lazily as we climb - keep a 10-set buffer ahead of the runner.
     if(run+10 > SETS.length && SETS.length < TOTAL_SETS) fillSets(SETS.length + BATCH);
     return SETS[Math.min(run, SETS.length-1)];
   }
@@ -612,7 +612,7 @@
     var nRight=correct.filter(Boolean).length, allRight=nRight===order.length;
 
     if(allRight){
-      // cleared — reveal, count it, hold the podium until they tap NEXT PUZZLE
+      // cleared - reveal, count it, hold the podium until they tap NEXT PUZZLE
       lastCheck=correct; reveal=true; busy=true; render();
       run++; document.getElementById('runN').textContent=run; saveResume();
       if(window.RTGSound) RTGSound.lock();
@@ -623,7 +623,7 @@
 
     setTries++;
     if(setTries<2){
-      // FIRST try: tell them ONLY how many are in the right spot — big, at the
+      // FIRST try: tell them ONLY how many are in the right spot - big, at the
       // top, and blind (no colours, no values). Then let them fix it; the run
       // does NOT end.
       if(window.RTGSound){ (RTGSound.soft||RTGSound.wrong).call(RTGSound); }
@@ -684,7 +684,7 @@
   }
   // Resume an interrupted ranked run at a set boundary: rebuild today's
   // deterministic run of sets, restore the cleared-set count and re-deal the
-  // current set — no re-charge, no replayed animations or sounds.
+  // current set - no re-charge, no replayed animations or sounds.
   function resumeAttempt(r){
     seedDaily(); servedDaily=true;
     SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
@@ -752,7 +752,7 @@
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(r>=SETS.length && r>=TOTAL_SETS) sub='You cleared every set!';
     else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
-    else if(PREVBEST>0 && r===PREVBEST) sub='Tied your best — one more tomorrow!';
+    else if(PREVBEST>0 && r===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && r>0 && PREVBEST-r<=2) sub=(PREVBEST-r)+' off your best. So close!';
     else sub='Your run ended';
     var subEl=document.getElementById('mSub');

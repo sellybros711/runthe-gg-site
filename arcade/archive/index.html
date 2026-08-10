@@ -81,7 +81,7 @@
   .probar .off{margin-left:auto; font-size:11px; font-weight:800; color:var(--mut); border:1px solid var(--line2); border-radius:999px; padding:5px 11px; cursor:pointer; background:var(--card2);}
   .probar .off:hover{color:var(--ink);}
 
-  /* game tiles — mirror the home-page grid so the archive reads as the same product */
+  /* game tiles - mirror the home-page grid so the archive reads as the same product */
   .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;}
   @media (min-width:640px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
   @media (max-width:640px){ .tiles{gap:11px;} }
@@ -132,7 +132,7 @@
 
   <div class="hero">
     <h1>The Archive</h1>
-    <p>Missed a day? Replay any past Run The Arcade puzzle and chase your personal best. Today’s streak and leaderboard belong to today’s game — archive days are yours.</p>
+    <p>Missed a day? Replay any past Run The Arcade puzzle and chase your personal best. Today’s streak and leaderboard belong to today’s game. Archive days are yours.</p>
   </div>
 
   <div id="content"></div>
@@ -218,7 +218,7 @@
       '</button>';
     }
     html+='</div>';
-    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Chase your personal best on each date — today’s streak and leaderboard belong to today’s game.</div>';
+    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Chase your personal best on each date. Today’s streak and leaderboard belong to today’s game.</div>';
     content.innerHTML=html;
     [].forEach.call(content.querySelectorAll('button.tile'), function(btn){
       btn.addEventListener('click', function(){
@@ -232,7 +232,7 @@
   // entitlement is mirrored asynchronously by board.js (reads the subscriptions
   // row → localStorage 'runthegrid_pro'), so when a player lands here straight
   // back from Checkout the flag may not be set yet. Re-check on every board
-  // change and flip the gate to the list the moment the card is confirmed — no
+  // change and flip the gate to the list the moment the card is confirmed - no
   // manual refresh required.
   var proShown=false, gateShown=false;
   function paint(){
