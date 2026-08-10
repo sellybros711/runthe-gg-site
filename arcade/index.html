@@ -124,6 +124,25 @@
   .hud-streak .keepcta{display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 14px; border:1.5px solid var(--gold); border-radius:10px; font-size:12px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--goldT); transition:background .12s, transform .08s;}
   .hud-streak .keepcta:hover{background:color-mix(in srgb, var(--gold) 12%, transparent); transform:translateY(-1px);}
   .hud-streak .keepcta.hidden{display:none;}
+  /* next-milestone progress: thin track under the streak number, label at right */
+  .hud-streak .sbar{position:relative; height:6px; margin:10px 44px 0 0; border-radius:999px; background:var(--line2); overflow:visible;}
+  .hud-streak .sbar i{position:absolute; inset:0 auto 0 0; width:0; border-radius:999px; background:linear-gradient(90deg, var(--coral), var(--gold)); transition:width .6s ease;}
+  .hud-streak .sbar .lab{position:absolute; right:-44px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  /* streak-up micro-celebration: quick pop on the number, one-time glow on the flame */
+  @keyframes streakpop{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .hud-streak .big .n.pop{display:inline-block; animation:streakpop .55s ease;}
+  @keyframes flameglow{0%,100%{filter:none;}50%{filter:drop-shadow(0 0 10px color-mix(in srgb, var(--coral) 75%, transparent));}}
+  .hud-streak .flame.glow svg{animation:flameglow 1.1s ease 2;}
+  /* member status: ticket beside the name + a whisper of gold on the card edge */
+  .hud-hd .who b{display:inline-flex; align-items:center; gap:6px;}
+  .hud-hd .who #nameBadge{display:inline; font-size:14px; line-height:1; margin:0;}
+  .hud-hd .who #nameBadge[hidden]{display:none;}
+  aside.hud.member{border:1px solid color-mix(in srgb, var(--gold) 40%, var(--line2)); box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 8%, transparent), var(--shadow);}
+  /* member vault: a secondary possession card under the primary play CTA */
+  .hud-cta .btn.vault{margin-top:9px; font-style:normal; background:transparent; border:1.5px solid var(--line2); color:var(--ink); box-shadow:none;}
+  .hud-cta .btn.vault:hover{border-color:var(--gold); filter:none;}
+  .hud-cta .btn.vault b{color:var(--goldT);}
+  .hud-cta .ladderhead{margin:13px 0 6px; text-align:center; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
   .hud-streak .smsg .fy{margin-right:4px;}
   @media (max-width:640px){
     .hud-streak{padding:15px 16px 12px;}
@@ -339,7 +358,7 @@
         <!-- 1 · guest row -->
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-          <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
+          <span class="who"><b><span id="whoName">Guest</span><span id="nameBadge" hidden title="Arcade Card active">🎟</span></b><span id="dateShort">Today</span></span>
         </div>
 
         <!-- 2 · streak block -->
@@ -349,6 +368,7 @@
             <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
             <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
           </div>
+          <div class="sbar" aria-hidden="true"><i id="sbarFill"></i><span class="lab" id="sbarLab"></span></div>
           <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
           <a class="keepcta" id="ctaKeep" href="/arcade/table/">Play your next game <span aria-hidden="true">→</span></a>
         </div>
@@ -652,7 +672,7 @@
   (function(){
     var who = document.querySelector('.hud-hd .who');
     var av  = document.querySelector('.hud-hd .av');
-    var whoB = who ? who.querySelector('b') : null;
+    var whoB = document.getElementById('whoName');
     if(!whoB) return;
     function setName(s){
       s = s || {};
@@ -690,23 +710,28 @@
   // Text states instead of a "1/1" fraction, and re-rendered when the Pro
   // flag lands (board.js syncs it asynchronously, so a member's first paint
   // used to show the guest view until reload).
+  // Membership reads as status, not signage: the ticket sits beside the
+  // username and the card gets a whisper of gold. The tierline row only
+  // works for the free tier's plays count; members and guests don't need a
+  // label restating what the rest of the card already shows.
   function renderPlaysChip(){
     var chip=document.getElementById('playsChip'), lbl=document.getElementById('playsLbl');
+    var badge=document.getElementById('nameBadge'), card0=document.querySelector('aside.hud');
     if(!TOK || !chip || !lbl){ return; }
     chip.style.color='';
-    var card = TOK.isPro && TOK.isPro(), testing = TOK.testing && TOK.testing();
-    chip.classList.toggle('member', !!(card || testing));
-    if(card || testing){
-      lbl.textContent='🎟️ ARCADE CARD MEMBER';
-      chip.setAttribute('title', card?'Arcade Card · unlimited plays':'Testing · unlimited plays');
+    var isMember = !!((TOK.isPro && TOK.isPro()) || (TOK.testing && TOK.testing()));
+    if(badge) badge.hidden = !isMember;
+    if(card0) card0.classList.toggle('member', isMember);
+    if(isMember){
+      chip.style.display='none';
       return;
     }
     var signedIn = TOK.signedIn && TOK.signedIn();
     if(!signedIn){
-      lbl.textContent='GUEST';
-      chip.setAttribute('title','1 free play today. Create a free account for 3.');
+      chip.style.display='none';   // the guest ladder in the CTA carries the story
       return;
     }
+    chip.style.display='';
     var rem=TOK.remaining(), cap=(TOK.cap?TOK.cap():TOK.DAILY);
     lbl.textContent = rem+' PLAY'+(rem===1?'':'S')+' LEFT TODAY';
     chip.setAttribute('title', rem+' of '+cap+' daily plays left');
@@ -771,35 +796,107 @@
     // Non-cold tiers keep the built-in flame path; no swap needed.
   })();
 
-  // motivational line under the streak number + mobile header streak chip
+  // Streak line: a concrete nearby objective beats a cheer. "One more day
+  // gets me to 3" is something to accomplish; "keep it going" is noise.
+  // The thin bar tracks progress from the last milestone to the next.
+  var MILESTONES = [3, 5, 7, 14, 30, 50, 100];
+  var nextM = null, prevM = 0;
+  for (var mi = 0; mi < MILESTONES.length; mi++) {
+    if (MILESTONES[mi] > cur) { nextM = MILESTONES[mi]; prevM = mi > 0 ? MILESTONES[mi - 1] : 0; break; }
+  }
   var streakMsg = document.getElementById('streakMsg');
   if (streakMsg) {
     streakMsg.textContent =
-      cur <= 0 ? 'Play a game to start your streak!' :
-      cur <= 2 ? 'Great start! Keep it going!' :
-      cur <= 6 ? "You're on a heater!" :
-                 'Untouchable. Keep the run alive!';
+      cur <= 0 ? 'Your streak starts today.' :
+      !nextM   ? '100+ days. Legendary.' :
+      (nextM - cur === 1) ? ('One more day → ' + nextM + '-day streak!') :
+                 ((nextM - cur) + ' days to a ' + nextM + '-day streak');
   }
+  (function () {
+    var fill = document.getElementById('sbarFill'), lab = document.getElementById('sbarLab');
+    var bar = document.querySelector('.hud-streak .sbar');
+    if (!fill || !bar) return;
+    if (!nextM) { fill.style.width = '100%'; if (lab) lab.textContent = cur; return; }
+    var pct = Math.max(0, Math.min(1, (cur - prevM) / (nextM - prevM)));
+    fill.style.width = Math.round(pct * 100) + '%';
+    if (lab) lab.textContent = cur + ' / ' + nextM;
+  })();
+  // Micro-celebration when the streak has grown since the hub last looked:
+  // the number pops and the flame glows twice. Saved bests and milestones
+  // get their fanfare in the games; here it stays a wink, not confetti.
+  (function () {
+    var seen = 0; try { seen = parseInt(localStorage.getItem('rtg:hub:seenStreak') || '0', 10) || 0; } catch (e) {}
+    if (cur > seen && cur > 0) {
+      var n = document.getElementById('curStreak');
+      var fl = document.querySelector('.hud-streak .flame');
+      if (n) n.classList.add('pop');
+      if (fl) fl.classList.add('glow');
+      setTimeout(function () { if (n) n.classList.remove('pop'); if (fl) fl.classList.remove('glow'); }, 2600);
+    }
+    try { localStorage.setItem('rtg:hub:seenStreak', String(cur)); } catch (e) {}
+  })();
 
   // HUD tier CTA: exactly one action.
   //   Arcade Card  → Play archived puzzles
   //   free account → Buy Arcade Card
   //   guest        → Sign in
+  // Today's play state, readable before the flags further down are built:
+  // which games are done, how many, and the first unplayed one in display
+  // order. The CTA hierarchy hangs off this - come back every day is the
+  // product; everything else on the card is a perk.
+  function dayState(){
+    var d = new Date();
+    var td = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var mr = null; try { mr = JSON.parse(g('grid_match_result_' + td, 'null')); } catch (e) {}
+    var q = [
+      [(ts.lastDone === td), '/arcade/table/', 'HiQ'],
+      [!!mr, '/arcade/match/', 'Daily Match'],
+      [(rs.lastDone === td), '/arcade/career/', 'Career Path'],
+      [(os.lastDone === td), '/arcade/oddone/', 'Odd One Out'],
+      [(ks.lastDone === td), '/arcade/rankit/', 'Rank It'],
+      [(as.lastDone === td), '/arcade/almamater/', 'Alma Mater'],
+      [(gs.lastDone === td), '/arcade/guess/', 'Guess the Player'],
+      [(cw.lastDone === td), '/arcade/crossword/', 'Daily Crossword'],
+      [(ws.lastDone === td), '/arcade/wordsearch/', 'Word Search']
+    ];
+    var played = 0, next = null;
+    for (var x = 0; x < q.length; x++) { if (q[x][0]) played++; else if (!next) next = q[x]; }
+    return { played: played, next: next, all: !next };
+  }
+  function vaultCount(){
+    try {
+      var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
+      return Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
+    } catch (e) { return 0; }
+  }
   function renderHudCta(){
     var cta = document.getElementById('hudCta'); if(!cta) return;
     var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
+    var day = dayState(), vault = vaultCount();
+    // Drop copy follows the day: waiting games are an invitation, a cleared
+    // slate points at the countdown.
+    var dropSub = document.querySelector('.hud-drop .sub');
+    if (dropSub) dropSub.textContent = day.all ? 'Clean sweep! Fresh games at midnight.'
+      : (day.played === 0 ? "Today's games are waiting." : 'New puzzles arrive every day.');
+    // The keep-streak CTA in the streak block duplicates the hero for tiers
+    // whose hero IS today's game (members, guests) - hide it there.
+    var keepEl = document.getElementById('ctaKeep');
+    if (keepEl) keepEl.classList.toggle('hidden', hasCard() || !signed || day.all);
     if (hasCard()) {
-      // Cardholders: the archive is a collection that grows by one every
-      // night - say so. The vault count is the pull; a static label is
-      // furniture. (Manage subscription lives in the account modal.)
-      var vaultDays = 0;
-      try {
-        var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
-        vaultDays = Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
-      } catch (e) {}
-      cta.innerHTML = '<a class="btn" href="/arcade/archive/">Play Archived Puzzles' +
-        (vaultDays > 0 ? '<small style="display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.85;margin-top:2px;">' + vaultDays + ' day' + (vaultDays === 1 ? '' : 's') + ' in the vault</small>' : '') +
-        '</a>';
+      // MEMBER: today's game is the giant button; the vault is a possession
+      // you've accumulated, one line below. When today is swept, the card
+      // transforms: the vault steps up and tomorrow gets the headline.
+      var vaultBtn = '<a class="btn vault" href="/arcade/archive/">🎟️ <b>YOUR VAULT · ' + vault + '</b>' +
+        '<small style="font-weight:800;font-size:10.5px;letter-spacing:.06em;color:var(--mut);">Play any day you missed &rarr;</small></a>';
+      if (!day.all && day.next) {
+        cta.innerHTML = '<a class="btn" href="' + day.next[1] + '">🔥 Play ' + day.next[2] +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">' +
+          (cur > 0 ? ('Keep your ' + cur + '-day streak alive') : 'Start your streak today') + '</small>' +
+          '</a>' + vaultBtn;
+      } else {
+        cta.innerHTML = '<a class="btn" href="/arcade/archive/">🎟️ Enter your Vault · ' + vault +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">Clean sweep today. New games at midnight.</small></a>';
+      }
     } else if (signed) {
       cta.innerHTML =
         '<button class="arcade-buy" type="button" id="hudBuy" aria-label="Buy Arcade Card: unlimited plays, every past day unlocked">' +
@@ -821,14 +918,22 @@
       var buy = document.getElementById('hudBuy');
       if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
     } else {
-      // Guests: the hero slot SELLS the free account (3× the plays, streaks
-      // that survive) instead of a bare "Sign in" that pitches nothing.
-      cta.innerHTML = '<button class="btn signin" type="button" id="hudSignin">' +
+      // GUEST: play comes first - the product sells itself better than any
+      // pitch. The account ladder sits underneath as an upgrade, not a wall.
+      // If the free play is already spent, the account ask takes the lead.
+      var rem = (TOK && TOK.remaining) ? TOK.remaining() : 1;
+      var playBtn = (day.next && rem > 0)
+        ? '<a class="btn" href="' + day.next[1] + '">Play ' + day.next[2] +
+          '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.9;">1 free play today</small></a>'
+        : '';
+      cta.innerHTML = playBtn +
+        '<div class="ladderhead">Save your progress</div>' +
+        '<button class="btn ' + (playBtn ? 'vault' : 'signin') + '" type="button" id="hudSignin" style="margin-top:0;">' +
         'Create free account' +
-        '<small style="display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.85;margin-top:2px;">3 plays a day &middot; streaks saved</small>' +
+        '<small style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--mut);">3 plays every day &middot; streaks &amp; stats saved</small>' +
         '</button>' +
         '<button type="button" id="hudSigninLink" style="display:block;width:100%;margin-top:8px;background:none;border:0;color:var(--mut);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Already have an account? Sign in</button>' +
-        '<button type="button" id="hudCardAd" style="display:block;width:100%;margin-top:4px;background:none;border:0;color:var(--goldT);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;">🎟️ Or go unlimited with an Arcade Card &rarr;</button>';
+        '<button type="button" id="hudCardAd" style="display:block;width:100%;margin-top:4px;background:none;border:0;color:var(--goldT);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;">🎟️ Arcade Card &middot; Unlimited plays &middot; Full archive &rarr;</button>';
       var si = document.getElementById('hudSignin');
       if (si) si.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signup'); };
       var sl = document.getElementById('hudSigninLink');
