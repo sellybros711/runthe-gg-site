@@ -6481,13 +6481,17 @@ function seasonBonusCoins(){
   return {total, parts};
 }
 // award + a "spend it" nudge toward the Pro Shop (owner: tell players to spend / buy packs)
-function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0;
+// xpMult scales this source's Tour Pass contribution (coins are unaffected). A career season is
+// REPEATABLE at will - skip-to-end sims one in moments - so it pays the Track at a reduced rate
+// (PASS_XP_SEASON), while the hard-capped daily/spotlight/online faucets pay in full. Without that,
+// season-farming was worth several tiers a run and dwarfed every other way of climbing.
+function awardPlayCoins(n, label, xpMult){ if(!sbSignedIn()||!(n>0)) return 0;
   var base=n;   // Tour Pass XP is earned from the BASE (pre-mult) amount, so the Pro coin mult never double-dips XP
   var mult=passRewardMult(), passBonus=mult>1;   // Tour Pass holders earn bigger & better
   if(passBonus){ n=Math.round(n*mult); }
   addBonusCoins(n,{silent:true,nolog:true});
   coinLog(n, label?String(label).replace(/<[^>]*>/g,''):'Played & earned');
-  passAddXp(base*PASS_XP_RATE);   // Tour Pass: every play faucet feeds the Track
+  passAddXp(base*PASS_XP_RATE*(xpMult==null?1:xpMult));   // Tour Pass: every play faucet feeds the Track
   try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+(passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
@@ -6526,6 +6530,7 @@ const TOURPASS_LEN=60;                                        // days per season
 const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
 const PASS_TIERS=60;
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
+const PASS_XP_SEASON=0.4;                                    // a career season feeds the Track at 40% (it's repeatable at will; the daily is capped)
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
 function passSeason(){ let el=passDayNum()-TOURPASS_EPOCH; if(el<0) el=0; const n=Math.floor(el/TOURPASS_LEN)+1, day=(el%TOURPASS_LEN)+1; return {n, day, len:TOURPASS_LEN, daysLeft:TOURPASS_LEN-day+1}; }
@@ -6549,13 +6554,19 @@ function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()
 // 48,415 total needed ~289 days of a 60-DAY season: the track was literally impossible to finish. The v2
 // comment claiming "~41-45 days" was computed against the pre-re-anchor faucet and was simply wrong.
 //
-// v3 is sized to the REAL rate: 60 tiers totalling ~15,960 XP, so a committed player (daily + a season every
-// week or so, ~290 XP/day) tops out around day 55 of the 60-day season and a daily-only player lands around
-// tier 48 by day 60 — the top tiers stay aspirational without being impossible. The climb also STEEPENS
-// as you go: tier 1 costs 90, tier 30 costs 232, tier 60 costs 556 (6.2× tier 1), so the back half is a real
-// grind while the opening still pays out fast.
-const PASS_CURVE_V=3;                                        // bump to re-convert everyone's XP onto a new curve
-const PASS_C0=90, PASS_C1=2, PASS_C2=0.10;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
+// v4 (owner: "I got 950 XP from a single season and the last level only costs 600. These levels need to be
+// much harder and the grind way bigger."). Measured against the live faucets, v3 had TWO problems:
+//   1. the back half was too cheap — a dominant season (1,226 XP) bought 4 tiers at tier 30 and 2 tiers at
+//      tier 50, i.e. one season was worth more than the entire final level (556);
+//   2. a career season is REPEATABLE at will while the daily is capped at 3/day, so season-farming was the
+//      whole game — a player simming a season a day maxed all 60 tiers in 12 days, three a day in 5.
+// v4 fixes both: the curve is 2.25× bigger and far steeper (tier 1 = 95, tier 30 = 472, tier 60 = 1,535 =
+// 16.2× tier 1, vs 6.2× before; 35,920 XP total), and seasons feed the Track at PASS_XP_SEASON (40%). Now a
+// dominant season buys ~1/3 of a tier at the top instead of 2, a committed player (daily + a season a day)
+// finishes around day 55 of the 60-day season so the paid track stays completable, a daily-only player lands
+// around tier 35 by day 60, and the 3-seasons-a-day grinder needs 22 days instead of 5.
+const PASS_CURVE_V=4;                                        // bump to re-convert everyone's XP onto a new curve
+const PASS_C0=95, PASS_C1=2, PASS_C2=0.38;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
 function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
 var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
 function passXpForTier(t){
@@ -6563,9 +6574,12 @@ function passXpForTier(t){
   return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
 }
 // Every curve the game has ever shipped, so a player on ANY old version converts correctly.
-const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,               tiers:50},
-                    2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1), tiers:50},
-                    3:{cost:t=>passTierCost(t),             tiers:60} };
+// Each past curve is frozen with its OWN literal constants — never passTierCost(), which always means the
+// CURRENT curve, so pointing an old version at it would make that version silently convert to itself.
+const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,                 tiers:50},
+                    2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1),  tiers:50},
+                    3:{cost:t=>90+2*(t-1)+0.10*(t-1)*(t-1),  tiers:60},
+                    4:{cost:t=>passTierCost(t),              tiers:60} };
 // One-time migration onto the current curve. Preserves the player's exact TIER and their fractional progress
 // into the next one, so nobody loses visible progress or re-locks a reward — only the shape of what's AHEAD
 // changes. Converting from v2 LOWERS the raw XP number (v3 is a much smaller scale); the tier is what matters.
@@ -18088,7 +18102,7 @@ function scrSummary(){
       if(amt>0){ _coinsSuppressToast=false;
         let label = skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''));
         if(bonus.parts.length) label += ' · ' + bonus.parts.join(' · ');
-        credited=awardPlayCoins(amt, label)||0; }
+        credited=awardPlayCoins(amt, label, PASS_XP_SEASON)||0; }   // seasons feed the Tour Pass at a reduced rate (repeatable faucet)
       if(S.season) S.season.coinsEarned=credited;   // shown on the Earnings recap tab (owner)
       track('season_coins',{year:S.year||1,amt,base,bonus:bonus.total,skipped,wins:t.wins,majors:t.majors,moneyRank});
     }
