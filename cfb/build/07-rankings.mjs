@@ -9,29 +9,46 @@
  * WHY THIS EXISTS. The game used to work out its own top 25 by sorting each
  * season's teams on strength_z, a number derived from points scored and allowed.
  * It is a reasonable measure of how a team played and it is not a poll, so the
- * two disagreed loudly and in public. The 2015 board it produced had 13-0 Clemson
- * seventh, 9-3 Baylor third, San Diego State eleventh, and no Michigan State or
- * Iowa at all, when those two finished third and fifth in the country. Beating
- * "No. 3 Baylor" is not a signature win and a fan knows it on sight.
+ * two disagreed loudly and in public. Its 2015 board, against the final AP poll
+ * this file now writes:
+ *
+ *                      computed    real
+ *   Alabama                   5      1     national champion
+ *   Clemson                   7      2     played for the title
+ *   Stanford                 12      3
+ *   Baylor                    3     13     9-3
+ *   San Diego State          11      unranked
+ *   Michigan State           21      6     playoff semifinalist
+ *   Iowa                     14      9
+ *
+ * Beating "No. 3 Baylor" is not a signature win and a fan knows it on sight.
  *
  * So the ranking a player sees is now the ranking that actually happened. It is
  * looked up, never computed, and a team that was never ranked shows no number
  * rather than a made-up one.
  *
- * WHICH POLL, AND FROM WHEN. The last poll of each season, which is the one
- * people mean by "they finished 8th":
+ * WHICH POLL, AND FROM WHEN. The rule is one line: the LAST poll of each season,
+ * which is what people mean by "they finished 8th". Everything below is what that
+ * works out to in practice, because the practice is not what you would guess from
+ * the preference list in the code.
  *
- *   2014 onward   the final College Football Playoff rankings where they exist,
- *                 falling back to the final AP poll. CFP is the selection
- *                 authority in the playoff era and is what the bracket in this
- *                 game imitates.
- *   2005 to 2013  the final AP poll. There was no CFP, and AP is the poll with
+ * The postseason poll wins wherever CFBD has one, because a team's final ranking is
+ * the one written after the bowls. The CFP committee stops at selection and never
+ * publishes a post-bowl poll, so in every season that HAS a postseason entry the
+ * winner is the final AP poll, and the CFP preference below only decides seasons
+ * where CFBD carries no postseason week at all. In practice that means mostly final
+ * AP, with CFP filling 2014, 2020 and 2023. The run log names the poll it used for
+ * every season; read it rather than assuming.
+ *
+ * This is why 2015 ships Michigan State 6th and not 3rd. Third was their CFP
+ * SELECTION ranking, before Alabama beat them 38-0 in the semifinal. Sixth is where
+ * the season actually ended, which is the number this game wants.
+ *
+ * The preference order, used only when a season has no postseason poll:
+ *
+ *   2014 onward   Playoff Committee Rankings, then AP, then Coaches.
+ *   2005 to 2013  AP, then Coaches. There was no CFP, and AP is the poll with
  *                 unbroken coverage across the whole range this game draws from.
- *
- * The postseason poll is used where CFBD has one, because a team's final ranking
- * is the one written after the bowls. Where a season has no postseason entry the
- * last regular-season week is used instead, which is what the CFP rankings are
- * anyway: they stop at selection.
  *
  * THE KEY IS NEVER STORED. It is read from CFBD_KEY at run time, the same as
  * every other stage, and the responses land in build/.cache which is not
@@ -135,10 +152,36 @@ async function main() {
   const kb = (fs.statSync(path.join(DATA_DIR, 'cfb_rankings.json')).size / 1024).toFixed(1);
   console.log(`cfb_rankings.json written (${kb} KB)`);
   console.log(`  ${ranked} ranked team-seasons across ${SEASONS.length} seasons`);
+  /* MOST UNMATCHED ENTRIES ARE CORRECT, which is the opposite of what a list of
+     sixty real schools looks like at first glance. The game carries 83 schools and
+     not all of them every year, so a poll entry for a team-season the game does not
+     have has nothing to attach to and nothing is lost by dropping it. West Virginia
+     ranked in 2007 is the ordinary case: the game only carries them from 2012.
+
+     A NAMING MISMATCH IS THE REAL FAILURE and looks identical in a plain list, so
+     the two are separated here rather than left to the reader. Anything printed
+     under "the game HAS this team" is a school the poll and the data set spell
+     differently, and only those belong in ALIASES. Every entry was in the second
+     list once; the count is zero now and should stay there. */
   if (unmatched.size) {
-    console.log(`  ${unmatched.size} poll entries did not join to a team-season:`);
-    [...unmatched.keys()].slice(0, 25).forEach((k) => console.log('    ' + k));
-    console.log('  Add any real school above to ALIASES at the top of this file.');
+    const suspect = [], absent = [];
+    for (const k of unmatched.keys()) {
+      const season = Number(k.slice(-4));
+      const school = k.slice(0, -5);
+      const norm = (s) => s.toLowerCase().replace(/[^a-z]/g, '');
+      const near = teamSeasons.find((t) => t.season === season && norm(t.school) === norm(school));
+      (near ? suspect : absent).push(k + (near ? ' -> game has "' + near.school + '"' : ''));
+    }
+    console.log(`  ${absent.length} poll entries name a team-season the game does not carry.`);
+    console.log('    That is expected and nothing is lost. First few: ' +
+      absent.slice(0, 5).join('; '));
+    if (suspect.length) {
+      console.log(`  ${suspect.length} LOOK LIKE A SPELLING MISMATCH and need an alias:`);
+      suspect.forEach((s) => console.log('    ' + s));
+      console.log('  Add each to ALIASES at the top of this file and run again.');
+    } else {
+      console.log('  0 look like a spelling mismatch, so ALIASES needs no changes.');
+    }
   }
   /* A spot check a human can read, because a silent join failure is the whole
      risk here and a count does not show it. */
