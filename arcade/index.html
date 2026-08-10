@@ -768,12 +768,17 @@
     var cta = document.getElementById('hudCta'); if(!cta) return;
     var signed = !!(TOK && TOK.signedIn && TOK.signedIn());
     if (hasCard()) {
-      // Cardholders: archive is the play CTA; the manage link keeps the
-      // "cancel anytime from your account" promise honest and visible.
-      cta.innerHTML = '<a class="btn" href="/arcade/archive/">Play Archived Puzzles</a>' +
-        '<button class="btn ghost" type="button" id="hudManage" style="margin-top:8px;background:transparent;border:1px solid var(--line2);color:var(--mut);">Manage subscription</button>';
-      var mg = document.getElementById('hudManage');
-      if (mg) mg.onclick = function () { if (window.RTGCard) RTGCard.paywall({}); };
+      // Cardholders: the archive is a collection that grows by one every
+      // night — say so. The vault count is the pull; a static label is
+      // furniture. (Manage subscription lives in the account modal.)
+      var vaultDays = 0;
+      try {
+        var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
+        vaultDays = Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
+      } catch (e) {}
+      cta.innerHTML = '<a class="btn" href="/arcade/archive/">Play Archived Puzzles' +
+        (vaultDays > 0 ? '<small style="display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.85;margin-top:2px;">' + vaultDays + ' day' + (vaultDays === 1 ? '' : 's') + ' in the vault</small>' : '') +
+        '</a>';
     } else if (signed) {
       cta.innerHTML =
         '<button class="arcade-buy" type="button" id="hudBuy" aria-label="Buy Arcade Card — unlimited plays, every past day unlocked">' +
@@ -795,10 +800,17 @@
       var buy = document.getElementById('hudBuy');
       if (buy) buy.onclick = function () { if (window.RTGCard) RTGCard.paywall({ reason: 'upsell' }); };
     } else {
+      // Guests: the hero slot SELLS the free account (3× the plays, streaks
+      // that survive) instead of a bare "Sign in" that pitches nothing.
       cta.innerHTML = '<button class="btn signin" type="button" id="hudSignin">' +
-        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Sign in</button>';
+        'Create free account' +
+        '<small style="display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;opacity:.85;margin-top:2px;">3 plays a day &middot; streaks saved</small>' +
+        '</button>' +
+        '<button type="button" id="hudSigninLink" style="display:block;width:100%;margin-top:8px;background:none;border:0;color:var(--mut);font:800 11.5px var(--f);letter-spacing:.04em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Already have an account? Sign in</button>';
       var si = document.getElementById('hudSignin');
-      if (si) si.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
+      if (si) si.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signup'); };
+      var sl = document.getElementById('hudSigninLink');
+      if (sl) sl.onclick = function () { if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
     }
   }
   renderHudCta();
