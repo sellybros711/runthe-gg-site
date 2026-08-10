@@ -1686,9 +1686,12 @@ window.GA_ID='G-L29P5MRWKE';
   .toast.on{transform:translateX(-50%);opacity:1}
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:58}
   /* ── the leaderboard ────────────────────────────────────────────
-     One list, three windows and three axes. Deliberately plainer than the football
-     game's board, which carries thirty-three competitions and a podium: this game
-     has one competition, so the screen is the list and the two questions above it. */
+     A podium over a list, three windows, three axes and a direction. Built to the same
+     rules as the football game's board, because one account plays both and a board that
+     works differently in the second game is a board you have to learn twice. Where the
+     two differ it is because the games differ -- six competitions here against
+     thirty-three there, a national ranking axis that runs low-to-best -- and not because
+     one screen got more attention than the other. */
   .lbtop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
     margin-bottom:10px}
   .closex{flex:0 0 auto;width:36px;height:36px;margin-top:2px;border-radius:50%;
@@ -1697,14 +1700,41 @@ window.GA_ID='G-L29P5MRWKE';
   .closex svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.2;
     stroke-linecap:round}
   .closex:hover,.closex:focus-visible{color:var(--ink);background:var(--panel-2)}
-  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px}
-  .seg{display:flex;flex:1;min-width:0;border-radius:10px;overflow:hidden;
+  /* SORT CONTROLS. Three axes and a direction. The axes are a segmented control
+     because they are exclusive; the direction is a button because it is a toggle.
+     Three axes plus the button do not fit one line on a phone -- the segment starts
+     truncating the labels, and a control that names a quantity must never do that --
+     so .sortbar wraps and the button takes its own line under the segment. */
+  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .sortbar.three .seg{flex:1 0 100%}
+  .sortbar.three .dirbtn{margin-left:auto}
+  .seg{display:flex;flex:1 1 240px;min-width:0;border-radius:10px;overflow:hidden;
     border:1px solid var(--line);background:var(--panel)}
   .seg button{flex:1;min-width:0;padding:11px 6px;font-family:var(--fn);font-size:12px;
     font-weight:700;letter-spacing:.02em;color:var(--dim);background:none;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .seg button+button{border-left:1px solid var(--line)}
   .seg button.on{color:var(--ink);background:rgba(16,185,129,.14)}
+  /* 320px leaves about 100px an axis and "Team overall" wants more. One step down in
+     size and letter-spacing rather than an abbreviation, because these labels name
+     quantities and a shortened quantity is a guess. */
+  @media(max-width:365px){
+    .sortbar.three .seg button{font-size:10.5px;letter-spacing:0;padding:11px 3px}
+  }
+  /* THE DIRECTION. Its label says what the board is doing rather than what the button
+     will do, because a toggle that names its own action reads as a statement of the
+     current state to about half of everybody. The natural direction of each axis is
+     "best first" whichever way round that axis runs, which is exactly why the label is
+     worded that way and not "high to low": on the ranking axis best IS low. */
+  .dirbtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:11px 10px;
+    border-radius:10px;border:1px solid var(--line);background:var(--panel);
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim)}
+  .dirbtn:hover,.dirbtn:focus-visible{color:var(--ink);border-color:var(--line-2)}
+  .dirbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round;transition:transform .22s ease}
+  .dirbtn.up svg{transform:rotate(180deg)}
+  @media (prefers-reduced-motion:reduce){ .dirbtn svg{transition:none} }
   .lbmode{margin:11px 0 0}
   .lbmode select{-webkit-appearance:none;appearance:none;width:100%;
     padding:12px 34px 12px 13px;border-radius:11px;border:1px solid var(--line);
@@ -1720,9 +1750,26 @@ window.GA_ID='G-L29P5MRWKE';
   .lbmode.isconf select{border-color:rgba(245,158,11,.5);color:#fbbf24}
   .lbcount{margin:12px 0 0;font-family:var(--fn);font-size:11px;font-weight:700;
     letter-spacing:.07em;text-transform:uppercase;color:var(--dim-2)}
+  .lbcount b{font-size:14px;color:var(--ink)}
   .lb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:9px}
   .lbr{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 11px;
     border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  /* FIVE HUNDRED ROWS FOR THE PRICE OF THE ONES YOU CAN SEE.
+     content-visibility lets the browser skip layout, style and paint for a row that is
+     off screen, which is what makes a list this long scroll like a short one. The
+     intrinsic size is the row's real height, so the scrollbar is honest and does not
+     jump as rows render on approach. Every text run in a row is nowrap at a fixed size
+     in a fixed padding, so 55px is a measurement rather than a guess -- if a row ever
+     gains a wrapping line this number has to be measured again, or the scrollbar lies
+     by the difference times five hundred.
+     Scoped to .lb .lbr so the pinned row below, which is always on screen, is not asked
+     to do this. */
+  .lb .lbr{content-visibility:auto;contain-intrinsic-size:auto 55px}
+  /* A board row opens the season behind it, so it has to look like it does. */
+  .lbr{cursor:pointer}
+  .lbr:active{transform:scale(.995)}
+  .lbr .go{flex:0 0 9px;margin-left:2px;color:var(--dim-2);font-family:var(--fn);
+    font-size:13px;line-height:1}
   /* Your own season, wherever it lands in the list. */
   /* ── YOUR ROWS ─────────────────────────────────────────────────
      A RAIL DOWN THE LEFT EDGE, because that is what a thumb scrolling a list of five
@@ -1736,21 +1783,32 @@ window.GA_ID='G-L29P5MRWKE';
      not stand out from a green page. Blue is used for nothing else here, it means the row
      is yours, and it is the same blue the NFL game uses for the same thing: one account
      plays both, and "this one is mine" should not change color when you change game. */
-  .lbr.me{position:relative;border-color:rgba(59,130,246,.55);
+  /* `.mine`, not `.me`. Both games carry this concept and both now spell it the same,
+     because a class that means the same thing in two files that get read side by side
+     should not be two words. */
+  .lbr.mine{position:relative;border-color:rgba(59,130,246,.55);
     background:rgba(59,130,246,.10)}
-  .lbr.me .rk{color:#93c5fd}
-  .lbr.me::before{content:'';position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;
+  .lbr.mine .rk{color:#93c5fd}
+  .lbr.mine::before{content:'';position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;
     border-radius:10px 0 0 10px;background:linear-gradient(180deg,#60a5fa,#3b82f6);
     box-shadow:0 0 8px rgba(59,130,246,.5)}
   /* The season just posted is a step louder than your older ones, because on the board that
      opens straight off a results screen it is the row being looked for. */
-  .lbr.me.just{border-color:rgba(59,130,246,.8);background:rgba(59,130,246,.17)}
-  .lbr.me.just::before{width:4px}
+  .lbr.mine.just{border-color:rgba(59,130,246,.8);background:rgba(59,130,246,.17)}
+  .lbr.mine.just::before{width:4px}
+  /* A GILDED ROW IS A PERFECT SEASON, and nothing else. Rank is already said by the
+     rank, so gilding the leader would be saying it twice; and on a reversed board the
+     first row is the WORST season in the window, where a gold row would be congratulating
+     it. Perfect is true about the season itself, so it survives both. */
+  .lbr.gold{border-color:rgba(251,191,36,.42);background:rgba(251,191,36,.07)}
+  .lbr.gold .rk{color:#fcd34d}
   /* THE TOP-THREE METAL SURVIVES ON A ROW OF YOURS, and that is on purpose rather than by
-     accident: `.lbr.me .rk` and `.lbr.top1 .rk` carry the same specificity, and the top-three
-     rule sits below this one, so it wins. It should. The two say different things -- the
-     rail says the row is yours, the gold number says it is the best run on the board -- and
-     being first is not worth less for being yours. */
+     accident: `.lbr.mine .rk` and `.lbr.top1 .rk` carry the same specificity, and the
+     top-three rule sits below this one, so it wins. It should. The two say different
+     things -- the rail says the row is yours, the metal says where it came -- and being
+     first is not worth less for being yours.
+     These only ever show when the podium is NOT drawn, since the list starts at four when
+     it is: on a reversed board, or one with fewer than three seasons on it. */
   /* ── THE PROFILE CIRCLE ────────────────────────────────────────
      One element at three sizes: 26px on a board row, .big on nothing yet, .huge in the
      school picker's preview. The fill and the ring are set inline per circle by
@@ -1771,30 +1829,173 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr .who{flex:1;min-width:0}
   .lbr .who b{display:block;font-family:var(--fn);font-size:13px;font-weight:700;
     color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* THE CHAMPION MARK: a small gilded crown or trophy on a perfect or title season.
+     Before the name, so a long name can never truncate it away. */
+  .champbadge{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:5px;
+    flex:0 0 auto}
+  /* `.lbr .who span` scores (0,2,1) against `.champbadge`'s (0,1,0), so inside a row the
+     mark wins the markup and loses the cascade: it computes to display:block, takes the
+     full width of the column and pushes the name onto a second line. Same two classes
+     plus the element it lives in is enough to win it back. */
+  .lbr .who b .champbadge{display:inline-flex;width:auto}
+  .champbadge .champ-svg{width:14px;height:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
   .lbr .who span{display:block;font-size:11px;color:var(--dim-2);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lbr .val{flex:0 0 auto;text-align:right}
   .lbr .val b{display:block;font-family:var(--fd);font-size:19px;line-height:1;color:var(--ink)}
-  .lbr .val b.gold{color:#fbbf24}
   .lbr .val span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
     letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+  /* ─── A PERFECT SEASON MOVES ───────────────────────────────────────────────────
+     The results screen has swept a highlight across a gilded record since launch. The
+     board was using a flat #fbbf24 for the same claim, so the rarest thing in the game
+     looked livelier on one screen than on the one where it is compared against
+     everybody else's. Same gradient, same keyframe, same 3.4s as the football game's:
+     one gold across both games, and it is the only thing that moves like this.
+
+     -webkit-text-fill-color rather than color:transparent. If background-clip:text is
+     not supported, `color` is still there underneath and this degrades to flat gold
+     instead of to an invisible column of scores.
+
+     NO background-repeat:no-repeat. recsheen starts at background-position:190%, and at
+     a background-size of 260% that puts the whole gradient clear of the text box, so
+     with no-repeat there would be nothing to clip and a gilded figure would render
+     INVISIBLE for the first part of every sweep. Tiling is what keeps paint under the
+     glyphs at every position. */
+  .lbr .val b.gold,
+  .pod.perfect .pr{color:#fbbf24;
+    background-image:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
+    background-size:260% 100%;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:recsheen 3.4s ease-in-out infinite}
+  @keyframes recsheen{0%{background-position:190% 0}100%{background-position:-90% 0}}
+  @media (prefers-reduced-motion:reduce){
+    .lbr .val b.gold,.pod.perfect .pr{animation:none;background-image:none;
+      -webkit-text-fill-color:currentColor}
+  }
+
+  /* ── THE PODIUM ────────────────────────────────────────────────
+     The top three, second and first and third across, which is how a podium is
+     arranged and not how a list is. Only on a board pointed its natural way: on a
+     reversed one the top three are the three worst seasons in the window, and a podium
+     there would be celebrating them. */
+  .podium{display:none;margin:11px 0 16px}
+  .podium.on{display:block}
+  /* Three steps, then ONE base under all of them. A stub of floor per step reads as
+     three boxes that have been cut off rather than as a podium. */
+  .podrow{display:grid;grid-template-columns:1fr 1.16fr 1fr;align-items:end;gap:7px}
+  .podbase{height:6px;border-radius:0 0 7px 7px;
+    background:linear-gradient(180deg,var(--line-2),rgba(255,255,255,.05))}
+  .pod{min-width:0;border-radius:12px 12px 0 0;padding:9px 7px 8px;text-align:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    border:1px solid var(--line);border-bottom:none;cursor:pointer}
+  .pod .pl{display:block;font-family:var(--fd);font-size:20px;line-height:1;
+    color:var(--dim-2)}
+  /* .pod is text-align:center, which centres TEXT; .pfp is a fixed-width grid box, so
+     the text rule does nothing for it and auto margins are what centre it. */
+  .pod .pfp{margin:7px auto 0}
+  .pod .pn{display:block;font-size:11.5px;font-weight:700;margin-top:5px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod .pr{display:block;font-family:var(--fn);font-size:15px;font-weight:600;margin-top:2px}
+  .pod .ps{display:block;font-size:9.5px;color:var(--dim-2);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod:active{transform:translateY(1px)}
+  /* First is taller and gold, second and third step down. That is the whole point of a
+     podium: the gap is visible without reading a number. */
+  .pod.p1{padding-top:17px;border-color:rgba(251,191,36,.45);
+    background:linear-gradient(180deg,rgba(251,191,36,.16),rgba(251,191,36,.03))}
+  .pod.p1 .pl{color:#fcd34d;font-size:25px}
+  .pod.p2{padding-top:11px;border-color:rgba(203,213,225,.3)}
+  .pod.p2 .pl{color:#cbd5e1}
+  .pod.p3{border-color:rgba(180,120,70,.34)}
+  .pod.p3 .pl{color:#c98b52}
+  /* The place colours above are medals -- gold, silver, bronze -- which is a different
+     claim from a gilded FIGURE. What joins the shimmer rule is the figure: gold there
+     means on the steps exactly what it means in the list below them. */
+  .pod.mine{border-color:rgba(59,130,246,.6);
+    background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.04))}
+  .pod.just{border-color:rgba(59,130,246,.85)}
+  .pod .champbadge{margin-right:3px}
+  .pod .champbadge .champ-svg{width:12px;height:12px}
   .lbempty{margin:11px 0 0;padding:18px 12px;border-radius:12px;text-align:center;
     border:1px dashed var(--line);color:var(--dim);font-size:13px}
   .notlive{margin:11px 0 0;padding:10px 12px;border-radius:10px;font-size:12px;
     line-height:1.45;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07);
     color:#fca5a5}
-  /* THE PINNED FOOT. The list runs to a hundred rows and the way out would otherwise
-     be a hundred rows down. Sat above the fixed ad strip rather than under it: sticky
+  /* THE PINNED FOOT. The list runs to five hundred rows and the way out would otherwise
+     be five hundred rows down. Sat above the fixed ad strip rather than under it: sticky
      offsets are measured from the scrollport, so bottom:0 is the viewport edge, which
-     is exactly where the strip is. */
-  .lbfoot{position:sticky;bottom:var(--adstrip,0px);z-index:3;display:grid;
-    grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding:10px 0 6px;
-    background:linear-gradient(180deg,rgba(8,11,20,0),var(--bg) 32%)}
-  /* The last thing before the foot has to clear it. A sticky element still occupies
-     its place in the flow, but only at the point it was declared, so anything ABOVE
-     it that is still on screen when it pins gets covered: the fine print under the
-     list was sitting behind the two buttons. This is the foot's own height. */
-  #s-board{padding-bottom:66px}
+     is exactly where the strip is.
+
+     ONE FIXED HEIGHT, declared here and reused as .mypin's offset, because the two are
+     sticky siblings and the only thing stopping them overlapping is that one knows how
+     tall the other is. */
+  #s-board{--lbdock:54px}
+  /* TWO TRACKS SIZED TO THEIR CONTENT, not 1fr 1fr. At 1fr 1fr the second button gets
+     exactly half the row whatever it says, and "Check the connection" does not fit half
+     of 320px: it wrapped to two lines and took the bar with it, which broke the height
+     .mypin above is offset by. One track sized to Back's own word, one taking the rest,
+     and the long label truncates rather than wrapping. */
+  /* IT SITS ON THE VIEWPORT EDGE AND PADS ITSELF OVER THE STRIP, rather than floating
+     54px up. The ad strip's own background is transparent, so offsetting the bar by its
+     height left a 54px band below the bar with nothing in it and the list carried on
+     scrolling visibly through it and out of the bottom of the screen -- which reads as a
+     rendering fault rather than as a bar. box-sizing is border-box here, so the content
+     box is still exactly --lbdock and .mypin's offset above is unchanged. */
+  .lbfoot{position:sticky;bottom:0;z-index:6;display:grid;
+    grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;
+    height:calc(var(--lbdock) + var(--adstrip,0px));padding-bottom:var(--adstrip,0px);
+    margin-top:14px;background:var(--bg)}
+  /* The fade above it, for when the place row is faded out and the list runs straight
+     into the bar. Painted outside the box and BEHIND the place row, which is opaque and
+     one layer up, so with the row showing there is no fade to see through. */
+  .lbfoot::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:14px;
+    pointer-events:none;
+    /* --bg at zero alpha, written out because a gradient cannot take the alpha off a
+       variable. One theme on this page, so one value to keep in step. */
+    background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
+  /* Same height for both, set here rather than left to whatever their two font sizes
+     happen to produce. */
+  .lbfoot .btn{width:auto;margin:0;height:42px;padding-top:0;padding-bottom:0;
+    display:grid;place-items:center}
+  .lbfoot #b-board-back{padding-left:20px;padding-right:20px}
+  .lbfoot #b-diag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+  /* NO padding-bottom HERE ANY MORE, and it has to go rather than merely be re-sized.
+     It was 66px, the old foot's height, added so the fine print above would clear the bar
+     when the bar pinned. That was solving the wrong half of the problem: a sticky element
+     DOES hold its place in the flow at the point it was declared, and the foot is the last
+     thing in this screen, so at the true bottom of the page nothing was ever behind it.
+     What the padding actually did was add 66px of nothing UNDER the bar, and once the bar
+     grew to dock+strip the two stacked into a bar floating 166px above the bottom of the
+     screen with empty page below it.
+     Mid-scroll the bar does cover the list, which is what the fade above it is for. */
+
+  /* ── WHERE YOU SIT, PINNED TO THE BOTTOM OF THE VIEWPORT ───────
+     A board five hundred rows deep is a board almost nobody is on the front of, and the
+     whole reason to open one is to find yourself. So your own place travels with the
+     scroll. It is the same row as any other, one shade louder, and it opens the same
+     season sheet.
+     One layer BELOW .lbfoot in the markup but sticky ABOVE it on screen, offset by the
+     foot's own height so the two never overlap. */
+  .mypin{position:sticky;bottom:calc(var(--adstrip,0px) + var(--lbdock));z-index:7;
+    margin-top:10px;padding-top:7px;
+    /* The list runs on underneath this, so it needs its own backdrop rather than
+       borrowing the page's: a translucent row over moving text is unreadable on a
+       phone. The padding keeps the label off the row it is floating over. */
+    background:var(--bg);border-radius:12px;
+    box-shadow:0 -10px 18px -6px var(--bg),0 10px 26px -8px rgba(0,0,0,.6);
+    transition:opacity .18s linear,transform .18s ease}
+  .mypin[hidden]{display:none}
+  .mypin .lbr{border-color:rgba(59,130,246,.62);background:rgba(59,130,246,.14)}
+  .mypin .lbr .rk{color:#93c5fd}
+  .mypin .lbr .who b{color:#dbeafe}
+  /* The label that makes this a preview rather than a row that has lost its place in
+     the list. Small, above the figures, and it names which board the number is for. */
+  .mypin .pinlab{display:block;padding:0 2px 4px;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+  /* Fading rather than vanishing: it goes the moment your real row scrolls into view,
+     and a hard cut there reads as a glitch. */
+  .mypin.away{opacity:0;transform:translateY(6px);pointer-events:none}
+  @media (prefers-reduced-motion:reduce){ .mypin{transition:none} }
 
   /* ── your place, on the results screen ──────────────────────── */
   .placebox{margin:12px 0 0;border:1px solid var(--line);border-radius:12px;
@@ -2643,25 +2844,50 @@ or endorsed by the NCAA, the CFP or any school.
       <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
     </div></div>
-    <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY. Record and team overall are
-         high-to-low; the national ranking is low-to-best, because No. 1 in the country
-         is first. board.js carries the direction per axis so no caller has to
-         remember which. -->
-    <div class="sortbar">
+    <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY BY DEFAULT. Record and team
+         overall are high-to-low; the national ranking is low-to-best, because No. 1 in
+         the country is first. board.js carries that default per axis so no caller has
+         to remember which, and the button beside them reverses whichever is on.
+
+         A BUTTON RATHER THAN A FOURTH TAB, because it is a toggle: a segment reading
+         "low to high" would imply it was a fourth board. Three axes do not leave room
+         for it on one line at 320, so .sortbar wraps and it drops underneath. -->
+    <div class="sortbar three">
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
         <button data-sort="overall">Team overall</button>
         <button data-sort="rank">Final ranking</button>
       </div>
+      <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
+        <span id="lb-dir-label">Best first</span>
+      </button>
     </div>
     <!-- The count LABELS the board, so it sits above it rather than reading as a
          footnote to the rows. -->
     <p class="lbcount" id="lb-count"></p>
+    <!-- THE TOP THREE, as a podium. Empty and display:none until paintPodium fills
+         it, which it only does on a board pointed the natural way with at least
+         three seasons on it. -->
+    <div class="podium" id="lb-podium"></div>
     <div class="lb" id="lb-rows"></div>
     <p class="notlive" id="lb-note" style="display:none"></p>
+    <!-- Which seasons this board counts and when it resets: fine print, so it goes at
+         the foot, ABOVE the two pinned blocks so that when you do reach the real bottom
+         of the page the order reads list, fine print, your place, buttons. -->
     <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:14px 0 0"></p>
-    <!-- PINNED, because the list runs to a hundred rows and the way out would
-         otherwise be a hundred rows down. -->
+    <!-- YOUR PLACE, ALWAYS ON SCREEN. Sticky rather than sitting under the list,
+         because the list is now up to 500 rows long and a row at the foot of it would
+         be five hundred rows of scrolling away. It stands itself down while your real
+         row is in view, so it is only ever there when the board is showing you
+         strangers. -->
+    <div class="mypin" id="lb-mine" hidden></div>
+    <!-- PINNED, because the list runs to five hundred rows and the way out would
+         otherwise be five hundred rows down. Two sticky blocks rather than one, so the
+         place row above can fade out when your own row scrolls into view without the
+         buttons jumping down into the gap it leaves. Its height is fixed in CSS and
+         shared with .mypin's offset through --lbdock, which is what keeps the two from
+         overlapping. -->
     <div class="lbfoot">
       <button class="btn ghost sm" id="b-board-back">Back</button>
       <button class="btn ghost sm" id="b-diag">Check the connection</button>
@@ -2778,7 +3004,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="run.js?v=11"></script>
 <script src="achievements.js?v=9"></script>
 <script src="auth.js?v=2"></script>
-<script src="board.js?v=3"></script>
+<script src="board.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -3455,8 +3681,28 @@ function seasonFate(r){
     :r.bowl?(bowlNm?'Lost the '+esc(bowlNm):'Bowl loss')
     :'Missed the playoffs';
 }
-function seasonSheet(row,back){
+/* Tiny gilded marks for a champion's row. Flat rather than gradient-filled, so a
+   board can carry fifty of them with no gradient-id collisions and no extra paint.
+   The same two glyphs as the football game's, because a crown means the same thing in
+   both: a season nobody could improve on. */
+const BADGE_TROPHY='<svg class="champ-svg" viewBox="0 0 24 24" fill="#f5b301" aria-hidden="true"><path d="M6 3h12v2h3v2.5a3.5 3.5 0 0 1-3.9 3.48A6 6 0 0 1 13 15.9V18h3.5v2h-9v-2H11v-2.1a6 6 0 0 1-4.1-4.92A3.5 3.5 0 0 1 3 7.5V5h3V3Zm0 4H5v.5A1.5 1.5 0 0 0 6 8.9V7Zm12 0v1.9a1.5 1.5 0 0 0 1-1.4V7h-1Z"/></svg>';
+const BADGE_CROWN='<svg class="champ-svg" viewBox="0 0 24 24" fill="#f5b301" aria-hidden="true"><path d="M2 8l4.2 3.6L12 4l5.8 7.6L22 8l-1.6 10.5H3.6L2 8Zm2.9 12.5h14.2V22H4.9v-1.5Z"/></svg>';
+/* A crown outranks a trophy: every perfect season is also a title, so asking about
+   perfect first is what stops the rarer thing being marked as the commoner one. */
+const seasonBadge=(r)=>r&&r.perfect
+  ? '<span class="champbadge" title="Perfect season">'+BADGE_CROWN+'</span>'
+  : (r&&r.title_won
+    ? '<span class="champbadge" title="National champions">'+BADGE_TROPHY+'</span>' : '');
+/* `mine` says whose season this is, and it is a real distinction now that the board opens
+   this sheet: the profile's own list is always yours, a board row usually is not, and an
+   eyebrow reading "Your season" over a stranger's roster is simply wrong. Left undefined
+   by the profile's callers, which is what keeps the old behaviour where it was already
+   right. */
+function seasonSheet(row,back,mine){
   pfPaint++;
+  const whose=mine===false
+    ? (row.display_name?esc(row.display_name)+'&rsquo;s season':'An anonymous season')
+    : 'Your season';
   const men=cfbSlotOrder((row.picks||[]).map(k=>{
     /* Stored "id:season" on the board and keyed "id|season" here. Only the first colon
        is replaced, because a player id may carry one and the season never does. */
@@ -3472,9 +3718,9 @@ function seasonSheet(row,back){
   const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
 
   $('sheet-in').innerHTML=
-    '<div class="eyebrow green">Your season</div>'+
+    '<div class="eyebrow green">'+whose+'</div>'+
     '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
-      esc(row.wins+'-'+row.losses)+'</h2>'+
+      esc(row.wins+'-'+row.losses)+seasonBadge(row)+'</h2>'+
     '<p class="dim" style="font-size:12.5px;margin:0">'+seasonFate(row)+' &middot; '+
       esc(modeLabel(row.run_mode||'free'))+(when?' &middot; '+esc(when):'')+'</p>'+
     (men.length?'<div class="rost">'+men.map(m=>{
@@ -4663,10 +4909,29 @@ function recordRun(row){
    than throwing, and a null shows as "the board is not reachable" rather than as a
    made-up number. Somebody with an ad blocker, a dead network or a project where
    62_cfb_leaderboard.sql has not been run plays exactly the same game. */
-let lbWindow='day', lbSort='record', lbBusy=false, lbFrom='s-intro', lbMode='free';
+/* FIVE HUNDRED, not a hundred. The request costs almost the same -- these are small
+   rows and the index scan is the same scan -- and a hundred was cutting off the part of
+   the all-time board most people are actually on. Rendering all five hundred is paid for
+   by content-visibility on .lb .lbr, which skips layout and paint for every row that is
+   off screen. */
+const LB_LIMIT=500;
+let lbWindow='day', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
+/* The rows the board is currently showing, held so the podium, the pinned place row and
+   a tap on any of them all read the same array rather than re-deriving it. */
+let lbRows=null, lbMyPlace=null;
 /* The row id the board gave back for the season on screen, so the results screen
    can highlight it and a late sign-in can claim it. */
 let myRunId=null, myPlace=null;
+
+/* WHICH WAY THIS BOARD IS POINTED. null means "the axis's own direction", which is what
+   every axis opens on and what the Best first label describes; board.js holds the
+   default per axis, because on the ranking axis best is LOW and nothing up here should
+   have to remember that. Changing axis clears the override for the same reason: having
+   reversed the record board, landing on the ranking board pointed at the worst seasons
+   in the country is not what "keep my direction" should mean. */
+const lbNaturalDir=()=>(B&&B.DIR&&B.DIR[lbSort])||'desc';
+const lbDirNow=()=>lbDir||lbNaturalDir();
+const lbReversed=()=>lbDirNow()!==lbNaturalDir();
 
 function openBoard(mode){
   const cur=document.querySelector('.screen.on');
@@ -4688,20 +4953,57 @@ function paintCompSelect(){
   sel.parentNode.classList.toggle('isconf',lbMode!=='free');
 }
 
+/* THE CONTROLS SAY WHAT YOU TAPPED, whatever the network is doing. This used to live
+   INSIDE paintBoard below the busy guard, so tapping an axis while a request was in
+   flight -- which on a dead board means for fifteen seconds at a stretch -- changed the
+   state, skipped the fetch, and left every button looking exactly as it had. The board
+   healed itself when the in-flight read landed, but in between the screen was denying
+   a tap it had actually taken. */
+function paintBoardControls(){
+  $('lb-tabs').querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.lb===lbWindow));
+  $('lb-sort').querySelectorAll('button').forEach(t=>t.classList.toggle('on',t.dataset.sort===lbSort));
+  $('b-lb-dir').classList.toggle('up',lbReversed());
+  $('lb-dir-label').textContent=lbReversed()?'Worst first':'Best first';
+}
+
+/* Set when the board is asked to repaint while it is already reading. The read in flight
+   is for the OLD question, so when it lands the answer is thrown away and the new one is
+   asked instead -- rather than the tap being silently dropped. */
+let lbAgain=false;
+
 async function paintBoard(){
   if(!B){ $('lb-rows').innerHTML=''; $('lb-note').style.display='';
     $('lb-note').textContent='The leaderboard did not load.'; return; }
-  if(lbBusy) return;
-  lbBusy=true;
-  $('lb-tabs').querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.lb===lbWindow));
-  $('lb-sort').querySelectorAll('button').forEach(t=>t.classList.toggle('on',t.dataset.sort===lbSort));
+  paintBoardControls();
+  if(lbBusy){ lbAgain=true; return; }
+  lbBusy=true; lbAgain=false;
   $('lb-note').style.display='none';
-  $('lb-count').textContent='Loading';
-  $('lb-rows').innerHTML='<div style="text-align:center;padding:26px 0;color:var(--dim);font-size:13px">'+
-    '<div class="dots"><i></i><i></i><i></i></div></div>';
+  $('lb-count').textContent='';
+  $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
+  hideMyPin();
+  $('lb-rows').innerHTML='<div class="rload"><i></i><i></i><i></i>'+
+    '<span>Reading the board</span></div>';
+  /* TWO COUNTS, because they answer two different questions and the board should not
+     have to pick one. How many seasons were played is activity, and a guest season is a
+     season; how many are ON the board is who signed in for one. The list and every
+     placing are the second of those, and the line above them says both.
+     THREE REQUESTS RATHER THAN ONE, in parallel: the place is asked for alongside the
+     list rather than after it, because it is an index-only count and waiting on it would
+     put a second round trip in front of the rows. It resolves to null when there is no
+     season to place, which is most visits. */
   const opts={window:lbWindow,mode:lbMode};
-  const [rows,count]=await Promise.all([B.top(opts,100,lbSort),B.total(opts)]);
+  const named=Object.assign({},opts,{named:true});
+  const want=myPlaceValue();
+  const [rows,total,onBoard,place]=await Promise.all([
+    B.top(named,LB_LIMIT,lbSort,lbDirNow()),
+    B.total(opts), B.total(named),
+    want===null?null:B.placeIn(named,lbSort,lbDirNow(),want)]);
   lbBusy=false;
+  /* The question moved while this was in the air, so this answer is to a question nobody
+     is asking any more. Drop it and ask the new one rather than painting a board with the
+     wrong axis on it and the right axis lit up above. */
+  if(lbAgain){ lbAgain=false; return paintBoard(); }
+  lbRows=rows; lbMyPlace=place;
   if(!rows){
     $('lb-count').textContent='';
     $('lb-rows').innerHTML='';
@@ -4713,18 +5015,82 @@ async function paintBoard(){
     return;
   }
   const label={day:'today',week:'this week',all:'all time'}[lbWindow];
-  $('lb-count').textContent=count===null?'' :
-    (count===1?'1 season '+label:count.toLocaleString()+' seasons '+label);
+  if(total!==null){
+    /* Said out loud when the field is bigger than the list, so a board that stops at
+       five hundred is a board that told you so rather than one that looks like the
+       whole field and is not. */
+    const capped=onBoard!==null&&rows.length>=LB_LIMIT&&onBoard>rows.length
+      ? ' · top '+LB_LIMIT.toLocaleString()+' shown' : '';
+    /* The second number only when it differs, and never when the count could not be
+       read: "224 seasons, 224 on the board" is noise, and a confident zero standing in
+       for a failed query is worse than saying nothing. */
+    const on=(onBoard!==null&&onBoard!==total)
+      ? ' · <b>'+onBoard.toLocaleString()+'</b> on the board' : '';
+    $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
+      (total===1?'season ':'seasons ')+label+on+capped;
+  }
   $('lb-blurb').textContent=(lbMode==='free'
       ? 'Every free-play season lands here. '
       : 'Only '+lbMode.replace(/^conf:/,'')+' drafts land here, because six spins from one '+
         'conference and six from the whole country are not the same competition. ')+
+    'Only seasons played signed in are listed. '+
     'Today and This week reset at midnight Eastern; the week starts Monday.';
+  paintRows();
+}
+
+/* Painting is split from loading so a repaint that changes nothing about the query --
+   there is none yet, and there was none in the football game either until there was --
+   never costs a round trip. */
+function paintRows(){
+  const rows=lbRows||[];
+  const label={day:'today',week:'this week',all:'all time'}[lbWindow];
   if(!rows.length){
-    $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+' yet. Yours could be the first.</div>';
+    $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
+    $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+
+      ' yet. Yours could be the first.</div>';
+    hideMyPin();
     return;
   }
-  $('lb-rows').innerHTML=rows.map((r,i)=>lbRow(r,i+1)).join('');
+  /* THE LIST STARTS WHERE THE PODIUM STOPPED. Starting at one would put first, second
+     and third on the screen twice: once on the steps and again as the first three rows
+     under them. The podium only draws on a board pointed its natural way with at least
+     three seasons on it, so the offset is whether it ACTUALLY drew rather than a
+     hardcoded three, and the true index still goes to lbRow so the rank on a row and the
+     season a tap opens are both still right. */
+  const above=paintPodium(rows)?3:0;
+  $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>lbRow(r,above+j+1,above+j)).join('');
+  paintMyPin();
+}
+
+/* THE TOP THREE, as a podium.
+   Hidden on a reversed board, because the first three rows there are the three worst
+   seasons in the window and putting them on a podium would be congratulating them.
+   Hidden below three rows too: a podium with one step is a box.
+   Returns whether it actually drew, because the list below has to know how many seasons
+   have already been shown above it. */
+function paintPodium(rows){
+  const el=$('lb-podium');
+  if(lbReversed()||rows.length<3){ el.className='podium'; el.innerHTML=''; return false; }
+  const order=[1,0,2];                    // second, first, third: an actual podium
+  el.className='podium on';
+  el.innerHTML='<div class="podrow">'+order.map((i)=>{
+    const r=rows[i], place=i+1;
+    const just=!!(myRunId&&r.id===myRunId);
+    const mine=just||isMyRow(r);
+    /* THE STEPS SHOW WHAT THE BOARD IS RANKED ON, whichever axis that is. Printing the
+       record on a board sorted by team overall would put three figures on the steps that
+       have nothing to do with the order they are standing in. */
+    const c=lbCell(r);
+    const pf=avatarOf(r.display_name,r.display_school,r.display_initials);
+    return '<div class="pod p'+place+(mine?' mine':'')+(just?' just':'')+
+      (r.perfect?' perfect':'')+'" data-i="'+i+'">'+
+      '<span class="pl">'+place+'</span>'+
+      avatarHTML(pf,'big')+
+      '<span class="pn">'+seasonBadge(r)+esc(lbName(r,mine))+'</span>'+
+      '<span class="pr">'+esc(c.v)+'</span>'+
+      '<span class="ps">'+esc(c.k)+'</span></div>';
+  }).join('')+'</div><div class="podbase"></div>';
+  return true;
 }
 
 /* ── WHOSE ROW IS THIS ───────────────────────────────────────────────
@@ -4752,29 +5118,180 @@ function isMyRow(r){
   return !!(me&&r.display_name&&String(r.display_name).trim().toLowerCase()===me);
 }
 
-/* One row. THE VALUE COLUMN CHANGES WITH THE AXIS, because a board sorted by
-   something it does not show is a board you cannot check. */
-function lbRow(r,pos){
+/* Who played it. A signed-in season carries the name cfb_submit_run() copied out of
+   profiles, never anything a client sent. Your own season says so, because "Anonymous"
+   sitting where you know your own row is reads as the board having lost you. */
+function lbName(r,mine){
+  if(mine) return 'You';
+  return (r&&r.display_name)||'Anonymous';
+}
+
+/* THE VALUE COLUMN CHANGES WITH THE AXIS, because a board sorted by something it does
+   not show is a board you cannot check. Two figures, not one: the quantity that ranks
+   you, and a second that says what it was made of -- a rating with no outcome beside it
+   is an abstraction, and a record with no differential hides the thing that breaks its
+   ties. `gold` is a PERFECT SEASON and never a leading position: rank is already said by
+   the rank, and on a reversed board the leader is the worst season in the window. */
+function lbCell(r){
+  const d=Number(r.point_diff);
+  const diff=isFinite(d)?((d>=0?'+':'')+d.toFixed(1)+' diff'):'';
+  const rec=r.wins+'-'+r.losses;
+  if(lbSort==='overall'){
+    return {v:r.overall==null?'--':Number(r.overall).toFixed(1),k:rec,gold:!!r.perfect};
+  }
+  if(lbSort==='rank'){
+    return {v:r.national_rank==null?'--':'#'+r.national_rank,k:rec,gold:!!r.perfect};
+  }
+  return {v:rec,k:diff||'record',gold:!!r.perfect};
+}
+
+/* THE LINE UNDER THE NAME. Three things about the season, chosen because between them
+   they answer "was this a good draft" from directions the value column cannot: how
+   strong the roster was, how close it came to the best the same six spins allowed, and
+   who the best man on it was.
+   It used to carry the record and the fate, which on the record board was the same
+   record already printed in large type on the right of the same row. A row's one line of
+   small text is worth more than an echo. The fate stays where the value column is not
+   already the record -- it is the most college thing on the row -- and drops where it
+   would crowd out all three. */
+function lbSub(r){
+  const bits=[];
+  /* Not on the overall board, where the rating is already the big number on the right of
+     this same row. Printing it twice in two sizes is not emphasis. */
+  if(lbSort!=='overall'&&r.overall!==null&&r.overall!==undefined){
+    bits.push(Number(r.overall).toFixed(1)+' overall');
+  }
+  /* Older seasons were recorded before the game worked this out, so it is a maybe rather
+     than a zero: "0% perfect" for a season nobody measured is a lie about the draft
+     rather than a gap in the data. */
+  if(r.perfect_pct!==null&&r.perfect_pct!==undefined){ bits.push(r.perfect_pct+'% perfect'); }
+  const best=lbBestMan(r.picks);
+  if(best) bits.push(best);
+  /* Nothing resolved -- an old row, or player data this browser has not loaded -- so say
+     what the season DID rather than leaving the line blank. */
+  if(!bits.length) return seasonFate(r);
+  return bits.join(' · ');
+}
+/* The most expensive man on the roster, which on a board where every roster cost the
+   same budget is the closest thing to "the best player on it". Resolved against this
+   browser's own copy of the player data, so a row whose picks predate a data change
+   simply contributes nothing rather than breaking the line. */
+function lbBestMan(picks){
+  if(!Array.isArray(picks)||!BYKEY) return '';
+  let best=null;
+  picks.forEach((k)=>{
+    /* Stored "id:season" on the board and keyed "id|season" here. Only the FIRST colon is
+       replaced, because a player id may carry one and the season never does. */
+    const p=BYKEY.get(String(k).replace(':','|'));
+    if(p&&(!best||p.price_musd>best.price_musd)) best=p;
+  });
+  return best?lastName(best.name)+' '+best.season:'';
+}
+
+/* One row. `pos` is what the rank column says; `i` is the index into lbRows, which is
+   what a tap uses to find the season behind it. They differ by nothing today and would
+   differ the moment anything ever filtered the list, so they are two arguments rather
+   than one arithmetic assumption. */
+function lbRow(r,pos,i){
   const just=!!(myRunId&&r.id===myRunId);
   const mine=just||isMyRow(r);
-  const who=mine?'You':(r.display_name?esc(r.display_name):'Anonymous');
-  const rec=r.wins+'-'+r.losses;
-  const what=seasonFate(r);
-  let v,k,gold=false;
-  if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
-  else if(lbSort==='rank'){ v='#'+r.national_rank; k='in the country'; gold=r.national_rank===1; }
-  else { v=rec; k=r.perfect?'perfect':'record'; gold=!!r.perfect; }
+  const c=lbCell(r);
   /* THE CIRCLE GOES BETWEEN THE NUMBER AND THE NAME, which is where a face sits on every
      other leaderboard anybody has used. Drawn from the ROW's own columns, never from the
      viewer's, so two people who both play in Virginia colors both show Virginia. A guest
      row has no name and gets the dashed outline, which is honest: nobody has claimed it. */
   const pf=avatarOf(r.display_name,r.display_school,r.display_initials);
-  return '<div class="lbr'+(mine?' me':'')+(just?' just':'')+(pos<=3?' top'+pos:'')+'">'+
+  return '<div class="lbr'+(c.gold?' gold':'')+(mine?' mine':'')+(just?' just':'')+
+      (pos<=3?' top'+pos:'')+'" data-i="'+(i===undefined?pos-1:i)+'">'+
     '<span class="rk">'+pos+'</span>'+
     avatarHTML(pf)+
-    '<span class="who"><b>'+who+'</b><span>'+
-      (lbSort==='record'?what:rec+' &middot; '+what)+'</span></span>'+
-    '<span class="val"><b'+(gold?' class="gold"':'')+'>'+v+'</b><span>'+k+'</span></span></div>';
+    '<span class="who"><b>'+seasonBadge(r)+esc(lbName(r,mine))+'</b>'+
+      '<span>'+lbSub(r)+'</span></span>'+
+    '<span class="val"><b'+(c.gold?' class="gold"':'')+'>'+esc(c.v)+'</b>'+
+      '<span>'+esc(c.k)+'</span></span>'+
+    '<span class="go">&rsaquo;</span></div>';
+}
+
+/* ── WHERE THIS SEASON WOULD SIT, PINNED ──────────────────────────
+   The quantity the CURRENT axis ranks on, taken off the season on screen rather than off
+   a board row, because this season may not be on the board at all yet. null whenever
+   there is nothing to place: no finished season, or one played in another competition,
+   which is a different board and a place on it would be a number this season does not
+   hold. */
+function myPlaceValue(){
+  if(!run||!run.outcome||!B) return null;
+  if(runMode(run)!==lbMode) return null;
+  const stats=run.boardStats; if(!stats) return null;
+  /* Each of these is the number the ROW would carry, worked out the way the row got it,
+     which is the only way a locally-counted place can agree with the list beside it:
+       overall  submitted raw and stored as numeric(6,2). placeIn rounds it to two the way
+                Postgres does, so it is handed over unrounded rather than rounded twice.
+       rank     cfb_submit_run stores p_national_rank verbatim, and this is the same
+                expression paintOver submits.
+       record   scoreOf is board.js's local copy of the derived score column, rounded the
+                way Postgres rounds rather than the way Math.round does. */
+  if(lbSort==='overall'){
+    const v=Number(stats.overall);
+    return isFinite(v)?v:null;
+  }
+  if(lbSort==='rank'){
+    const v=Number(run.outcome.nationalRank||yourRank());
+    return isFinite(v)&&v>0?v:null;
+  }
+  return B.scoreOf(run.outcome.wins,stats.pointDiff);
+}
+
+/* Held at module scope so a repaint REPLACES the observer rather than stacking a second
+   one on the same element. */
+let myPinObs=null;
+function hideMyPin(){
+  const el=$('lb-mine'); if(!el) return;
+  el.hidden=true; el.innerHTML=''; el.classList.remove('away');
+  if(myPinObs){ myPinObs.disconnect(); myPinObs=null; }
+}
+
+function paintMyPin(){
+  const el=$('lb-mine'); if(!el) return;
+  hideMyPin();
+  if(lbMyPlace===null||myPlaceValue()===null) return;
+  const o=run.outcome, stats=run.boardStats;
+  /* A ROW SHAPED LIKE A BOARD ROW, off the season on screen rather than off the board,
+     so the figure your eye compares against is the same quantity in the same place. The
+     board's own copy of this season may not exist yet -- a guest's never will. */
+  const asRow={ wins:o.wins, losses:o.losses, perfect:o.perfect, title_won:o.titleWon,
+    point_diff:stats.pointDiff, overall:stats.overall,
+    national_rank:o.nationalRank, perfect_pct:null,
+    picks:run.roster.map(p=>p.player_id+'|'+p.season) };
+  const c=lbCell(asRow);
+  /* Whether this is a place or a preview of one is a real distinction and the label
+     makes it: a guest's season is not on this board, and "your place" would be a lie. */
+  const live=!!(authState.signedIn&&authState.name&&myRunId);
+  const of={day:'today',week:'this week',all:'all time'}[lbWindow];
+  const axis={record:'record',overall:'team overall',rank:'final ranking'}[lbSort];
+  /* Your own circle comes from your own account rather than from a board row, because
+     this season may not be on the board. A guest gets the outline, which is honest. */
+  const pf=avatarOf(live?authState.name:null,myAvatar.school,myAvatar.initials);
+  el.innerHTML='<span class="pinlab">'+(live?'Your place':'Where this season would sit')+
+      ' · '+esc(axis)+', '+esc(of)+'</span>'+
+    '<div class="lbr mine'+(c.gold?' gold':'')+'">'+
+      '<span class="rk">'+(lbMyPlace>999?lbMyPlace.toLocaleString():lbMyPlace)+'</span>'+
+      avatarHTML(pf)+
+      '<span class="who"><b>'+seasonBadge(asRow)+(live?'You':'This season')+'</b>'+
+        '<span>'+esc(seasonFate(asRow))+'</span></span>'+
+      '<span class="val"><b'+(c.gold?' class="gold"':'')+'>'+esc(c.v)+'</b>'+
+        '<span>'+esc(c.k)+'</span></span>'+
+      '<span class="go">&rsaquo;</span></div>';
+  el.hidden=false;
+  /* Your real row, when this season is on this board and inside the five hundred. There
+     is nothing to watch otherwise and the preview simply stays up.
+     .just rather than .mine: this stands the preview down when YOUR ROW FOR THIS SEASON
+     is on screen, and any other row of yours scrolling past is not that. */
+  const real=myRunId?$('lb-rows').querySelector('.lbr.just'):null;
+  if(!real||typeof IntersectionObserver!=='function') return;
+  myPinObs=new IntersectionObserver((es)=>{
+    es.forEach((e)=>el.classList.toggle('away',e.isIntersecting));
+  },{threshold:0.6});
+  myPinObs.observe(real);
 }
 
 /* ── submitting a finished season ─────────────────────────────────
@@ -4855,9 +5372,13 @@ async function paintPlace(){
   /* Counted against the competition this season was played in, not against every
      season ever recorded. A Pac-12 run ranked among free-play runs is a number
      that means nothing. */
-  const opts={window:'week',mode:runMode(run)};
+  /* NAMED, the same as the board's own list. Counting against every row in the window,
+     guests included, meant this screen could say 40th and the board -- which lists only
+     the named ones -- would seat the same season at 31st. Two numbers for one question,
+     and the one you could check was the one that was wrong. */
+  const opts={window:'week',mode:runMode(run),named:true};
   const [place,count]=await Promise.all([
-    B.placeIn(opts,'record',score), B.total(opts),
+    B.placeIn(opts,'record','desc',score), B.total(opts),
   ]);
   if(place===null){
     /* Two ways to have no place, and they read differently. Before the migration
@@ -7891,8 +8412,55 @@ $('lb-tabs').addEventListener('click',(e)=>{
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
-  lbSort=t.dataset.sort; ga('board_sort',{sort:lbSort}); paintBoard();
+  /* The direction override is dropped with the axis. Having reversed the record board,
+     landing on the ranking board pointed at the worst seasons in the country is not what
+     "keep my direction" should mean -- and the three axes do not even agree on which way
+     round their own natural order runs. */
+  lbSort=t.dataset.sort; lbDir=null;
+  ga('board_sort',{sort:lbSort}); paintBoard();
 });
+$('b-lb-dir').onclick=()=>{
+  lbDir=lbReversed()?null:(lbNaturalDir()==='asc'?'desc':'asc');
+  ga('board_sort',{sort:lbSort,dir:lbDirNow()});
+  paintBoard();
+};
+/* Tap a row, or a step on the podium, for the season behind it. Delegated, so both keep
+   working through every repaint without rebinding. */
+$('lb-rows').addEventListener('click',(e)=>{
+  const el=e.target.closest('.lbr'); if(!el) return;
+  const r=(lbRows||[])[+el.dataset.i];
+  if(r) boardSeason(r);
+});
+$('lb-podium').addEventListener('click',(e)=>{
+  const el=e.target.closest('.pod'); if(!el) return;
+  const r=(lbRows||[])[+el.dataset.i];
+  if(r) boardSeason(r);
+});
+/* The pinned preview opens the same sheet. It has no row in lbRows -- it is built off the
+   season on screen -- so it passes what it has. */
+$('lb-mine').addEventListener('click',()=>{
+  if(!run||!run.outcome||!run.boardStats) return;
+  const o=run.outcome, stats=run.boardStats;
+  boardSeason({ id:myRunId, created_at:new Date().toISOString(),
+    display_name:(authState.signedIn&&authState.name)||null,
+    wins:o.wins, losses:o.losses, perfect:o.perfect, title_won:o.titleWon,
+    made_playoffs:o.madePlayoffs, eliminated_in:o.eliminatedIn||null,
+    bowl:o.bowlGame||null, bowl_won:!!o.bowlWon, bowl_key:o.bowlKey||null,
+    national_rank:o.nationalRank, point_diff:stats.pointDiff, overall:stats.overall,
+    chemistry_pct:Math.round((run.season.chemistry-1)*1000)/10,
+    spend_musd:stats.spend, run_mode:runMode(run),
+    picks:run.roster.map(p=>p.player_id+'|'+p.season),
+    slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]) },true);
+});
+/* The board opens the season sheet the profile's own list opens, and closing it comes
+   BACK to the board rather than dumping you out of it: the board is a list you were
+   reading, and losing your place in it to look at one row is a one-way trip. */
+function boardSeason(r,mine){
+  /* seasonSheet opens the sheet itself. Closing comes straight back to the board, which
+     is still the screen underneath: the board is a list you were reading, and losing your
+     place in it to look at one row would be a one-way trip. */
+  seasonSheet(r,()=>closeSheet(),mine===undefined?isMyRow(r):mine);
+}
 /* WHY THE BOARD IS OFFLINE, when it is. Two very different reasons look identical
    from the outside: the migration has not been run, or the request did not get
    there. The player does not need this, and whoever is deploying does. */
