@@ -133,54 +133,66 @@ async function catMembers(category) {
 // wrong sport. A resolution that fails prints its candidates, so a rename is a
 // one-line diff next time rather than another silent zero.
 //
-// { q: search phrase, must: [required substrings], not: [disqualifiers], tag }
+// { q: [search phrases tried in order], must: [required substrings],
+//   not: [disqualifiers], tag }
+// Several phrasings per award because Wikipedia is inconsistent about whether
+// the sanctioning body is in the title ("Associated Press NFL ...") and about
+// NFL/NBA vs the spelled-out league name.
 const NO_WOMEN = ['wnba', 'women', "women's", 'girls'];
 const NO_AMATEUR = ['college', 'ncaa', 'high school', 'euroleague', 'canadian football'];
 const NBA_CATS = [
-  { q: 'NBA Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['finals', 'all-star game']), tag: 'NBA MVP' },
-  { q: 'NBA Finals Most Valuable Player Award winners', must: ['finals', 'most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Finals MVP' },
-  { q: 'NBA All-Star Game Most Valuable Player Award winners', must: ['all-star', 'most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'All-Star Game MVP' },
-  { q: 'NBA Defensive Player of the Year Award winners', must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football']), tag: 'Defensive Player of the Year' },
-  { q: 'NBA Rookie of the Year Award winners', must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'baseball']), tag: 'Rookie of the Year' },
-  { q: 'NBA Sixth Man of the Year Award winners', must: ['sixth man'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Sixth Man of the Year' },
-  { q: 'National Basketball Association All-Stars', must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'NBA All-Star' },
-  { q: 'Naismith Memorial Basketball Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Hall of Fame' }
+  { q: ['NBA Most Valuable Player Award winners', 'National Basketball Association Most Valuable Player Award winners'], must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['finals', 'all-star game']), tag: 'NBA MVP' },
+  { q: ['NBA Finals Most Valuable Player Award winners', 'National Basketball Association Finals Most Valuable Player Award winners', 'NBA Finals MVPs'], must: ['finals'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Finals MVP' },
+  { q: ['NBA All-Star Game Most Valuable Player Award winners', 'National Basketball Association All-Star Game Most Valuable Player Award winners'], must: ['all-star', 'most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'All-Star Game MVP' },
+  { q: ['NBA Defensive Player of the Year Award winners', 'National Basketball Association Defensive Player of the Year Award winners'], must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football']), tag: 'Defensive Player of the Year' },
+  { q: ['NBA Rookie of the Year Award winners', 'National Basketball Association Rookie of the Year Award winners'], must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'baseball']), tag: 'Rookie of the Year' },
+  { q: ['NBA Sixth Man of the Year Award winners', 'National Basketball Association Sixth Man of the Year Award winners'], must: ['sixth man'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Sixth Man of the Year' },
+  { q: ['National Basketball Association All-Stars'], must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'NBA All-Star' },
+  { q: ['Naismith Memorial Basketball Hall of Fame inductees'], must: ['hall of fame'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Hall of Fame' }
 ];
 const NFL_CATS = [
-  { q: 'National Football League Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['super bowl', 'pro bowl', 'basketball', 'baseball']), tag: 'NFL MVP' },
-  { q: 'Super Bowl Most Valuable Player Award winners', must: ['super bowl', 'most valuable player'], not: NO_WOMEN, tag: 'Super Bowl MVP' },
-  { q: 'NFL Offensive Player of the Year Award winners', must: ['offensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie']), tag: 'Offensive Player of the Year' },
-  { q: 'NFL Defensive Player of the Year Award winners', must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie', 'basketball']), tag: 'Defensive Player of the Year' },
-  { q: 'NFL Offensive Rookie of the Year Award winners', must: ['offensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Offensive Rookie of the Year' },
-  { q: 'NFL Defensive Rookie of the Year Award winners', must: ['defensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Defensive Rookie of the Year' },
-  { q: 'National Conference Pro Bowl players', must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
-  { q: 'American Conference Pro Bowl players', must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
-  { q: 'Pro Football Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' }
+  { q: ['Associated Press NFL Most Valuable Player Award winners', 'National Football League Most Valuable Player Award winners', 'NFL Most Valuable Player Award winners', 'NFL Most Valuable Player winners'], must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['super bowl', 'pro bowl', 'basketball', 'baseball']), tag: 'NFL MVP' },
+  { q: ['Super Bowl Most Valuable Player Award winners', 'Super Bowl MVPs', 'Super Bowl Most Valuable Players'], must: ['super bowl'], not: NO_WOMEN.concat(['appearances', 'records', 'broadcasters']), tag: 'Super Bowl MVP' },
+  { q: ['Associated Press NFL Offensive Player of the Year Award winners', 'NFL Offensive Player of the Year Award winners'], must: ['offensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie']), tag: 'Offensive Player of the Year' },
+  { q: ['Associated Press NFL Defensive Player of the Year Award winners', 'NFL Defensive Player of the Year Award winners'], must: ['defensive player of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['rookie', 'basketball']), tag: 'Defensive Player of the Year' },
+  { q: ['Associated Press NFL Offensive Rookie of the Year Award winners', 'NFL Offensive Rookie of the Year Award winners'], must: ['offensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Offensive Rookie of the Year' },
+  { q: ['Associated Press NFL Defensive Rookie of the Year Award winners', 'NFL Defensive Rookie of the Year Award winners'], must: ['defensive rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR), tag: 'Defensive Rookie of the Year' },
+  { q: ['National Conference Pro Bowl players'], must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
+  { q: ['American Conference Pro Bowl players'], must: ['pro bowl'], not: NO_WOMEN, tag: 'Pro Bowl' },
+  { q: ['Pro Football Hall of Fame inductees'], must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' }
 ];
 const MLB_CATS = [
-  { q: 'Major League Baseball Most Valuable Player Award winners', must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['world series', 'all-star game', 'league championship']), tag: 'MLB MVP' },
-  { q: 'Cy Young Award winners', must: ['cy young'], not: [], tag: 'Cy Young' },
-  { q: 'Major League Baseball Rookie of the Year Award winners', must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'basketball']), tag: 'Rookie of the Year' },
-  { q: 'Gold Glove Award winners', must: ['gold glove'], not: [], tag: 'Gold Glove' },
-  { q: 'Silver Slugger Award winners', must: ['silver slugger'], not: [], tag: 'Silver Slugger' },
-  { q: 'Major League Baseball All-Stars', must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'MLB All-Star' },
-  { q: 'National Baseball Hall of Fame inductees', must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' },
-  { q: 'World Series Most Valuable Player Award winners', must: ['world series', 'most valuable player'], not: NO_WOMEN, tag: 'World Series MVP' }
+  { q: ['Major League Baseball Most Valuable Player Award winners'], must: ['most valuable player'], not: NO_WOMEN.concat(NO_AMATEUR, ['world series', 'all-star game', 'league championship']), tag: 'MLB MVP' },
+  { q: ['Cy Young Award winners'], must: ['cy young'], not: [], tag: 'Cy Young' },
+  { q: ['Major League Baseball Rookie of the Year Award winners'], must: ['rookie of the year'], not: NO_WOMEN.concat(NO_AMATEUR, ['football', 'basketball']), tag: 'Rookie of the Year' },
+  { q: ['Gold Glove Award winners'], must: ['gold glove'], not: [], tag: 'Gold Glove' },
+  { q: ['Silver Slugger Award winners'], must: ['silver slugger'], not: [], tag: 'Silver Slugger' },
+  { q: ['Major League Baseball All-Stars'], must: ['all-star'], not: NO_WOMEN.concat(NO_AMATEUR, ['most valuable player', 'game']), tag: 'MLB All-Star' },
+  { q: ['National Baseball Hall of Fame inductees'], must: ['hall of fame'], not: NO_WOMEN.concat(['college']), tag: 'Hall of Fame' },
+  { q: ['World Series Most Valuable Player Award winners'], must: ['world series', 'most valuable player'], not: NO_WOMEN, tag: 'World Series MVP' }
 ];
 
 const RESOLVED = new Map();
+function accepts(spec, title) {
+  const l = title.toLowerCase();
+  return spec.must.every((m) => l.includes(m)) && !spec.not.some((n) => l.includes(n));
+}
 async function resolveCategory(spec) {
-  if (RESOLVED.has(spec.q)) return RESOLVED.get(spec.q);
-  const d = await req(WIKI + '?action=query&format=json&formatversion=2&list=search' +
-    '&srnamespace=14&srlimit=12&srsearch=' + encodeURIComponent(spec.q));
-  const hits = ((d && d.query && d.query.search) || []).map((h) => String(h.title).replace(/^Category:/, ''));
-  const ok = hits.find((t) => {
-    const l = t.toLowerCase();
-    return spec.must.every((m) => l.includes(m)) && !spec.not.some((n) => l.includes(n));
-  }) || null;
-  if (!ok) console.log('  ??   nothing matched "' + spec.q + '"; candidates: ' + (hits.join(' | ') || '(none)'));
-  RESOLVED.set(spec.q, ok);
-  return ok;
+  const key = spec.tag + '|' + spec.q[0];
+  if (RESOLVED.has(key)) return RESOLVED.get(key);
+  const seen = [];
+  for (const phrase of spec.q) {
+    const d = await req(WIKI + '?action=query&format=json&formatversion=2&list=search' +
+      '&srnamespace=14&srlimit=12&srsearch=' + encodeURIComponent(phrase));
+    const hits = ((d && d.query && d.query.search) || []).map((h) => String(h.title).replace(/^Category:/, ''));
+    hits.forEach((h) => { if (seen.indexOf(h) < 0) seen.push(h); });
+    const ok = hits.find((t) => accepts(spec, t));
+    if (ok) { RESOLVED.set(key, ok); return ok; }
+  }
+  console.log('  ??   nothing matched ' + spec.tag + ' (tried: ' + spec.q.join(' / ') + ')');
+  console.log('  ??   candidates seen: ' + (seen.join(' | ') || '(none)'));
+  RESOLVED.set(key, null);
+  return null;
 }
 
 async function buildFromCats(sport, specs) {
