@@ -286,10 +286,11 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
     stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
   .hp-secondary.locked .lk{display:block}
-  /* LAUNCH WEEK ONLY. Same green chip the Trade Machine card wears, so the promise on the
-     front page and the thing behind the button are visibly the same announcement. Hidden in
-     the markup and revealed by script inside the window: if the script never runs, a missing
-     tag is a smaller lie than one that says NEW forever. See TRADE_NEW_UNTIL. */
+  /* LAUNCH WEEK ONLY. Same green chip the newest card behind this button wears, so the
+     promise on the front page and the thing behind it are visibly the same announcement.
+     Hidden in the markup and revealed by script inside the window: if the script never
+     runs, a missing tag is a smaller lie than one that says NEW forever. See
+     MODES_NEW_UNTIL. */
   .hp-new{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.07em;
     text-transform:uppercase;padding:2px 5px;border-radius:4px;flex:0 0 auto;
     background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.45)}
@@ -1007,7 +1008,11 @@ window.GA_ID='G-L29P5MRWKE';
      Football: Perfect Season" over three lines. Above it, the title has the full width and the
      card reads in the right order anyway: the news first, then what it is called. */
   .modecard .mc-flag{display:block;margin-bottom:9px}
-  .modecard .mc-flag .mc-soon-tag{margin-left:0}
+  /* Both tags, because the flag now carries NEW after launch and carried Coming Soon
+     before it. The margin exists to space a tag from a title it sits AFTER, and on its own
+     line there is no title in front of it. */
+  .modecard .mc-flag .mc-soon-tag,
+  .modecard .mc-flag .mc-new{margin-left:0}
 
   /* ---- AND WHILE IT IS NOT OUT YET, IT IS GRAY ----
      The emerald border and the teal title above are the college game's own colors, and
@@ -1023,6 +1028,16 @@ window.GA_ID='G-L29P5MRWKE';
      the one thing here meant to catch the eye, and graying it would leave nothing saying the
      game is coming at all. Which is also why none of this is done with opacity on the card
      -- see the note above .modecard.mc-preview. */
+  /* ---- THE ONE-TIME ANNOUNCEMENT ----
+     The college game's own emerald, on a sheet that is otherwise this game's red and navy,
+     because the whole job of this panel is to say "a different game" and the color is the
+     fastest way to say it. A left rail rather than a full frame: a boxed panel inside a
+     sheet reads as a second sheet. */
+  .xp-pop{border-left:3px solid rgba(16,185,129,.8);padding:2px 0 2px 13px;
+    background:linear-gradient(90deg,rgba(16,185,129,.09),transparent 62%)}
+  .xp-pop .mc-new{margin-left:0}
+  .xp-pop h2{color:#5eead4}
+
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -5465,29 +5480,36 @@ function darkenForWhite(hex,target){
 
    The page it points at is already on the site, so this is about ANNOUNCEMENT rather than
    access: until the flag flips, this card builds the hype without claiming the game is out. */
-const CFB_LIVE=false;
+/* IT IS OUT. The card was a signpost to a page that existed but was not finished; the
+   college game is now on the site's front page, in the sitemap and indexable, so this
+   game claiming it is Coming Soon is the only place left saying otherwise. */
+const CFB_LIVE=true;
 
 /* ---- THE LAUNCH-WEEK "NEW" CHIP ON THE FRONT PAGE ----
-   The Trade Machine lives behind "More ways to play", so nobody who does not open that sheet
-   has any way to learn it exists. This puts the same green NEW chip on the button itself for
-   launch week, then takes it away on its own.
+   Whatever is behind "More ways to play" is invisible to anybody who does not open that
+   sheet, so this puts a green NEW chip on the button itself for launch week and then takes
+   it away on its own.
+
+   IT NOW MARKS THE COLLEGE GAME rather than the Trade Machine, because the chip announces
+   whatever is newest behind that button and the Trade Machine is not that any more. It is
+   deliberately not named after either one: the next thing to go in there should be able to
+   reuse this by moving a date, not by renaming a constant and every reference to it.
 
    ONE DATE, and it expires rather than needing to be remembered: a NEW tag still sitting
    there in a month is worse than no tag, and the thing most likely to keep it there forever
    is a human being meant to come back and delete it. Pushing the date out is how you extend
-   it; setting it to null (or letting it pass) is how it ends. The chip on the mode card
-   itself is NOT on this timer -- that one marks the mode, not the announcement. */
-const TRADE_NEW_UNTIL='2026-08-11T00:00:00Z';
+   it; setting it to null (or letting it pass) is how it ends. */
+const MODES_NEW_UNTIL='2026-08-24T00:00:00Z';
+const modesNewLive=()=>{
+  if(!MODES_NEW_UNTIL) return false;
+  const until=Date.parse(MODES_NEW_UNTIL);
+  /* An unparseable date leaves it off rather than on forever. */
+  return isFinite(until)&&Date.now()<until;
+};
 function paintNewChip(){
   const el=$('hp-new');
   if(!el) return;
-  let live=false;
-  if(TRADE_NEW_UNTIL){
-    const until=Date.parse(TRADE_NEW_UNTIL);
-    /* An unparseable date leaves the chip off rather than on forever. */
-    live=isFinite(until)&&Date.now()<until;
-  }
-  el.hidden=!live;
+  el.hidden=!modesNewLive();
 }
 const CFB_URL='/cfb/';
 
@@ -5525,10 +5547,12 @@ function modeMenu(){
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
           '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-          /* NEW at launch, Coming Soon only if the switch is ever turned back off. One tag
-             or the other, never both: they answer the same question. */
+          /* NO "NEW" HERE ANY MORE. It is not, and a tag that says so on a mode people have
+             been playing for weeks makes every other NEW on the screen worth less. Coming
+             Soon stays, because that one is not an announcement -- it is the answer to
+             "why can I not press this", and it is still true for anybody off the list. */
           '</svg></div><div class="mc-title">The Trade Machine'+
-          (ct?' <span class="mc-new">New</span>':' <span class="mc-soon-tag">Coming Soon</span>')+
+          (ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+
           '</div>'+(ct?arrow:'')+'</div>'+
         '<p>You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.</p>'+
       '</button>'+
@@ -5540,7 +5564,15 @@ function modeMenu(){
       '<p class="xp-h">Love college football?</p>'+
       '<button class="modecard mc-cfb'+(CFB_LIVE?'':' mc-preview')+'" id="b-mc-cfb"'+
         (CFB_LIVE?'':' disabled')+'>'+
-        (CFB_LIVE?'':'<span class="mc-flag"><span class="mc-soon-tag gold">Coming Soon</span></span>')+
+        /* THE FLAG SAYS ONE OF TWO THINGS AND NEVER BOTH, because they answer the same
+           question. Before launch it was Coming Soon; now it is the NEW the Trade Machine
+           used to wear, and on the same timer as the chip on the front-page button so the
+           two announcements start and stop together. It keeps its own line above the name
+           for the reason it always did: inline it steals enough width to break "College
+           Football: Perfect Season" over three lines. */
+        (CFB_LIVE
+          ? (modesNewLive()?'<span class="mc-flag"><span class="mc-new">New</span></span>':'')
+          : '<span class="mc-flag"><span class="mc-soon-tag gold">Coming Soon</span></span>')+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* A football, and TILTED, which is the whole trick: a level ellipse with a line
              through it and three ticks reads as an eye at 18px, which is what the first
@@ -5599,6 +5631,84 @@ function modeMenu(){
 }
 
 let wantModes=false;
+
+/* ---- THE COLLEGE GAME, ANNOUNCED ONCE, TO SOMEBODY WHO IS SIGNED IN ----
+   The card in the modes sheet only reaches people who open that sheet, which is the same
+   problem the front-page chip exists to solve and it only half solves it: a chip says
+   something is new, not what. This says what, once, and then never again.
+
+   ONCE PER ACCOUNT rather than once per browser, and stored under the account id, so a
+   second person signing in on the same phone gets told too and the first is not told twice.
+   Signed out nobody is told at all: there is no id to write down, so "once" could not be
+   kept, and a promo that reappears every reload is an advert.
+
+   IT ONLY EVER APPEARS ON THE FRONT PAGE, never over a draft or a finished season. Both of
+   those are the middle of something, and the whole reason this game has a cross-promo is
+   that somebody who is enjoying it might enjoy the other one -- which is not a thought
+   worth interrupting a run to have.
+
+   IT EXPIRES WITH THE CHIP. Same window, same constant: when the announcement stops being
+   news the popup stops with it, without anybody having to remember to remove it. */
+const CFB_SEEN_KEY='ps_cfb_promo_seen';
+function cfbPromoSeen(userId){
+  if(!userId) return true;
+  try{ const a=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'[]');
+    return Array.isArray(a)&&a.indexOf(userId)>=0; }catch(e){ return false; }
+}
+function markCfbPromoSeen(userId){
+  if(!userId) return;
+  try{ const a=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'[]');
+    const list=Array.isArray(a)?a:[];
+    if(list.indexOf(userId)<0) list.push(userId);
+    /* Trimmed from the front. A shared browser could otherwise grow this forever, and the
+       oldest account is the one least likely to come back and be shown it twice. */
+    localStorage.setItem(CFB_SEEN_KEY,JSON.stringify(list.slice(-20)));
+  }catch(e){}
+}
+/* Every condition in one place, so the answer to "why did it not show" is one function. */
+function cfbPromoDue(){
+  if(!CFB_LIVE||!modesNewLive()) return false;
+  if(!authState.ready||!authState.signedIn||!authState.userId) return false;
+  if(cfbPromoSeen(authState.userId)) return false;
+  /* The front page, and nothing on top of it. A sheet is already open when somebody is
+     mid sign-up or has just been sent to the club picker, and stacking this on top would
+     replace the thing they asked for with a thing they did not. */
+  if(!$('s-intro').classList.contains('on')) return false;
+  if($('sheet').classList.contains('on')) return false;
+  /* Something else is about to open a sheet the moment the username lands. Wait; this
+     will be re-asked on the next auth change and on the next visit either way. */
+  if(wantModes||wantOneTeam) return false;
+  return true;
+}
+function cfbPromo(){
+  if(!cfbPromoDue()) return;
+  /* Marked BEFORE it is shown, not after it is dismissed. Whatever happens next -- they
+     tap through, they close it, they kill the tab -- they have been told, and a promo that
+     only counts as seen when it is politely dismissed is one that comes back for everybody
+     who ignored it. */
+  markCfbPromoSeen(authState.userId);
+  ga('cross_promo_shown',{game:'cfb',from:'signin'});
+  $('sheet-in').innerHTML=
+    '<div class="xp-pop">'+
+      '<span class="mc-new">New</span>'+
+      '<h2 class="display" style="font-size:26px;margin:9px 0 6px;line-height:1.1">'+
+        'College Football: Perfect Season</h2>'+
+      '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+
+        'The college edition is out. Spin for a year and a school, sign six players under '+
+        'an NIL budget, and chase a perfect twelve-game season &mdash; bowls, the playoff '+
+        'and all. Same account, same leaderboards, no sign-up.</p>'+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-xp-go">Play it</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-xp-no">Maybe later</button></div>';
+  $('sheet-in').dataset.kind='cfbpromo';
+  openSheet();
+  $('b-xp-no').onclick=closeSheet;
+  /* Leaves this page, so it is tracked before it goes. */
+  $('b-xp-go').onclick=()=>{
+    ga('cross_promo_click',{game:'cfb',from:'signin'});
+    location.href=CFB_URL;
+  };
+}
 
 function eraPicker(){
   const eras=Object.keys(E.ERAS);
@@ -10120,6 +10230,12 @@ function authBoot(){
     }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
+    /* LAST, and on every change rather than only on the transition. The username usually
+       arrives one auth change AFTER signing in, and the two branches above that open a
+       sheet of their own fire on that same later change -- so asking here, after them,
+       is what keeps this from landing on top of a picker somebody actually asked for.
+       cfbPromoDue() re-checks all of it; this is deliberately not the only guard. */
+    cfbPromo();
   });
   a.boot();
 }
