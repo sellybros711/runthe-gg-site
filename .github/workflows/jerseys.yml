@@ -1,0 +1,52 @@
+name: Refresh jersey stints
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Limit to one sport (NFL/NBA/MLB), blank = all'
+        required: false
+        default: ''
+      maxpages:
+        description: 'Cap NBA BBRef pages (smoke test); 0 = no cap'
+        required: false
+        default: '0'
+      commit:
+        description: 'Commit arcade/jerseys.js back to this branch (true/false)'
+        required: false
+        default: 'false'
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate jersey stints
+        env:
+          JERSEYS_ONLY: ${{ github.event.inputs.only }}
+          JERSEYS_MAXPAGES: ${{ github.event.inputs.maxpages }}
+        run: node scripts/fetch-jerseys.mjs
+      - name: Upload generated data as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jerseys
+          path: arcade/jerseys*.js
+          if-no-files-found: warn
+      - name: Commit if requested
+        if: ${{ github.event.inputs.commit == 'true' && github.event.inputs.only == '' }}
+        run: |
+          git config user.name "roster-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arcade/jerseys.js
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Refresh jersey-stint dataset (arcade/jerseys.js)"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing (attempt $i)"
+              git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            done
+          }
