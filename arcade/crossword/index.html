@@ -377,7 +377,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     </div>
     <div class="share-grid" id="mShareGrid"></div>
     <div class="milestone" id="mMilestone"></div>
-    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mAgain">Play again</button>
     <button class="btn gold" id="mShare">Share result</button>
@@ -417,7 +416,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/data.js?v=1"></script>
 <script src="gen.js?v=2"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -847,7 +845,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(flawless) s.perfects=(s.perfects||0)+1;
       save(s);
       milestone = streakMilestone(s.streak);
-      if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('crossword', Math.round(elapsed), true);
       if(newBestT && !milestone) milestone = '\ud83c\udfc6 New best time!';
     }
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest){
@@ -865,7 +862,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mFlawless').classList.toggle('on', flawless);
     // ranked = the day's first (ranked) attempt; extra plays are practice only
     document.getElementById('mSub').textContent = attemptFirst ? 'Nice grid. Your streak lives another day.' : 'Practice, not ranked';
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
     updateAgainBtn();
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
@@ -959,7 +955,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return h+'h '+String(m).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s'; }
   function startCountdown(id){
     if(cdTargets.indexOf(id)===-1) cdTargets.push(id);
-    function upd(){ var html='Next crossword in <b>'+fmtCountdown(msToTomorrow())+'</b>';
+    function upd(){ var html='New boards in <b>'+fmtCountdown(msToTomorrow())+'</b>';
       cdTargets.forEach(function(t){ var el=document.getElementById(t); if(el && el.offsetParent!==null) el.innerHTML=html; }); }
     upd(); if(cdTick) clearInterval(cdTick); cdTick=setInterval(upd,1000);
   }

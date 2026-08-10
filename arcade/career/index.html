@@ -274,7 +274,6 @@
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
-    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -295,7 +294,6 @@
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -579,7 +577,6 @@
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
     save(s);
-    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('career', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -611,7 +608,6 @@
     if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'career');
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
@@ -643,7 +639,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New paths in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New boards in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
