@@ -1097,7 +1097,10 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(140deg,#132a26,#0b1220 62%,#0d2320)}
   .ggad.ggad-cfb:hover{border-color:#10b981;
     background:linear-gradient(140deg,#17362f,#0d1626 62%,#102c26)}
-  .ggad.ggad-cfb .ggad-logo{border-color:rgba(16,185,129,.4)}
+  /* NOT pixelated. `image-rendering:pixelated` on the base rule is there for the R GAMES
+     mark, which IS pixel art and would go soft without it. The helmet is not: it is a
+     192px drawing shown at 46, and nearest-neighbour on that is visibly crunchy. */
+  .ggad.ggad-cfb .ggad-logo{border-color:rgba(16,185,129,.4);image-rendering:auto}
   .ggad.ggad-cfb .ggad-tm{border-color:rgba(16,185,129,.3)}
   .ggad.ggad-cfb .ggad-tm i{color:#34d399;text-shadow:0 0 10px rgba(16,185,129,.5)}
   .ggad.ggad-cfb .ggad-txt b{color:#5eead4}
@@ -5699,6 +5702,7 @@ function paintResultsPromo(){
   const head=t&&t.querySelector('b');
   const long=t&&t.querySelector('.ggad-long');
   const short=t&&t.querySelector('.ggad-short');
+  const img=a.querySelector('.ggad-logo');
   if(!head||!long||!short) return;
   /* Stashed on first paint so the restore is the page's own words rather than a second
      copy of them kept in this file and free to drift. */
@@ -5708,6 +5712,7 @@ function paintResultsPromo(){
     a.dataset.ggShort=short.innerHTML;
     a.dataset.ggHref=a.getAttribute('href');
     a.dataset.ggLabel=a.getAttribute('aria-label')||'';
+    if(img){ a.dataset.ggSrc=img.getAttribute('src'); a.dataset.ggAlt=img.getAttribute('alt')||''; }
   }
   if(CFB_LIVE&&modesNewLive()){
     a.classList.add('ggad-cfb');
@@ -5729,8 +5734,23 @@ function paintResultsPromo(){
     long.textContent='Just out. Spin for a year and a school, sign six under an NIL budget, '+
       'and chase a perfect twelve-game season. Same account.';
     short.textContent='Just out. Six players, an NIL budget, a perfect season.';
+    /* THE COLLEGE GAME'S OWN APP ICON, not the platform's. The banner used the R GAMES
+       mark, which is right when it points at the hub and vague when it points at one
+       game. The two games share a helmet on purpose -- see cfb/ICONS.md -- but the PLATE
+       behind it differs, navy for this game and green for that one, so the icon does the
+       same job as the emerald frame around it: it says which game before a word is read.
+       If it fails to load, the .ggad-mark onerror already falls back to the CSS wordmark,
+       so a missing file is a wordmark rather than a hole. */
+    if(img){ img.closest('.ggad-mark').classList.remove('nologo');
+      img.setAttribute('src','/cfb/icon-192.png');
+      img.setAttribute('alt','College Football: Perfect Season'); }
   }else{
     a.classList.remove('ggad-cfb');
+    /* nologo is latched by the img's own onerror and never cleared by it, so a swap that
+       failed would go on hiding the image it was swapped back to. */
+    if(img){ img.closest('.ggad-mark').classList.remove('nologo');
+      img.setAttribute('src',a.dataset.ggSrc||img.getAttribute('src'));
+      img.setAttribute('alt',a.dataset.ggAlt||''); }
     a.setAttribute('href',a.dataset.ggHref);
     a.setAttribute('target','_blank');
     a.setAttribute('aria-label',a.dataset.ggLabel);
@@ -5786,8 +5806,8 @@ function cfbPromo(){
         'College Football: Perfect Season</h2>'+
       '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+
         'The college edition is out. Spin for a year and a school, sign six players under '+
-        'an NIL budget, and chase a perfect twelve-game season &mdash; bowls, the playoff '+
-        'and all. Same account, same leaderboards, no sign-up.</p>'+
+        'an NIL budget, and chase a perfect twelve-game season, bowls and the playoff '+
+        'included. Same account, same leaderboards, no sign-up.</p>'+
     '</div>'+
     '<div style="margin-top:14px"><button class="btn" id="b-xp-go">Play it</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-xp-no">Maybe later</button></div>';
