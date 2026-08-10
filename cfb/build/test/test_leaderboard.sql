@@ -304,6 +304,16 @@ select
 from generate_series(1, 200000) g;
 update cfb_runs set user_id='11111111-1111-1111-1111-111111111111'
  where id % 997 = 0;
+/* NAMED ON A THIN SLICE, which is the shape that matters. The board lists only
+   named seasons, and on a real board most seasons are guests, so the partial
+   indexes in 67 have to be tested against a table where the predicate is highly
+   selective. One row in 997 is roughly the ratio the football board measured at
+   two million rows, and it is the ratio that makes an unindexed filter expensive:
+   the planner walks the mode index in score order and discards 996 rows for every
+   one it keeps. Naming every row instead would make the filter free and the test
+   meaningless. */
+update cfb_runs set display_name='bulkcoach'
+ where id % 997 = 0;
 analyze cfb_runs;
 
 -- EXPLAIN returns one row per plan line, and `execute ... into` keeps only the
@@ -333,6 +343,44 @@ select t_ok('a conference board is an index scan too',
 select t_ok('a player''s own history uses cfb_runs_user_idx',
   t_plan('select id from cfb_runs where user_id = ''11111111-1111-1111-1111-111111111111'' order by created_at desc limit 50')
     like '%cfb_runs_user_idx%');
+
+-- THE NAMED BOARD, which is what the game actually lists now. Each of these is the
+-- query above plus `display_name is not null`, and each must land on one of the partial
+-- indexes from 67 rather than on the mode index with a filter bolted on: on a board
+-- where most seasons are guests, the second one degrades with seasons PLAYED and the
+-- first does not. If one of these starts naming a cfb_runs_mode_* index, the board
+-- still returns the right rows and quietly gets slower with every guest run, which is
+-- the failure worth catching early.
+--
+-- THE FAMILY, NOT THE EXACT INDEX, and that is deliberate. At the ratio above there
+-- are a few dozen named seasons per mode, so once the planner is inside any partial
+-- index it has already discarded 99.9% of the table and sorting what is left is free.
+-- It therefore picks whichever named index it likes and sorts, which is the correct
+-- plan and not the "matching" one. Demanding cfb_runs_named_score_idx for the score
+-- board would be asserting the planner's cost model at one particular table shape;
+-- what actually matters, and all that is worth pinning, is that the scan starts from
+-- a partial index at all. A young board really does look like this.
+select t_ok('the named record board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by score desc, created_at asc limit 50')
+    like '%cfb_runs_named%');
+select t_ok('the named overall board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null and overall is not null order by overall desc, created_at asc limit 50')
+    like '%cfb_runs_named%');
+select t_ok('the named ranking board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by national_rank asc, created_at asc limit 50')
+    like '%cfb_runs_named%');
+select t_ok('the newest-first board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by created_at desc, score desc limit 50')
+    like '%cfb_runs_named%');
+-- And the thing those four are really guarding against, stated once directly.
+select t_ok('  ...and never the whole-mode index with a filter on top',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by score desc, created_at asc limit 50')
+    not like '%cfb_runs_mode_%');
+-- The count behind "N on the board" is the same predicate with no order, and it has
+-- to come off the index too or the cheap half of the header line is the expensive one.
+select t_ok('counting the named field is an index scan',
+  t_plan('select count(*) from cfb_runs where run_mode = ''free'' and display_name is not null')
+    like '%cfb_runs_named%');
 
 \echo ''
 select 'rows recorded: ' || count(*) from cfb_runs;

@@ -15,6 +15,8 @@ psql -d cfbtest -f cfb/build/test/stub_supabase.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
 psql -d cfbtest -f supabase/63_cfb_run_mode.sql
 psql -d cfbtest -f supabase/64_cfb_bowl_key.sql
+psql -d cfbtest -f supabase/66_cfb_profile_avatars.sql
+psql -d cfbtest -f supabase/67_cfb_named_board.sql
 node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &
 python3 -m http.server 8080 &
 ```

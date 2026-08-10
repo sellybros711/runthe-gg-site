@@ -16,6 +16,29 @@
  * season ever played.
  */
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
+
+/* Same database the PostgREST stub is serving. See test_bowl_key.mjs's header. */
+const DB = process.argv[2] || 'cfbe2e';
+const psql = (sql) => execFileSync('psql', ['-X', '-A', '-t', '-d', DB, '-c', sql],
+  { encoding: 'utf8', env: { ...process.env, PGHOST: process.env.PGHOST || '/tmp',
+    PGPORT: process.env.PGPORT || '5433', PGUSER: process.env.PGUSER || 'postgres' } }).trim();
+
+/* A NAMED SEASON IN ONE COMPETITION, so there is a field to be placed against. The
+   board lists named seasons only now, and this suite plays signed out, so without
+   this the Pac-12 board is empty and the honest answer is "nobody has signed in for
+   this one yet" rather than a placing. That is correct behaviour and not what this
+   file is trying to test: the property here is that a conference season is counted
+   against ITS OWN competition and not against free play, which needs a field in one
+   of them and nothing in the other to be visible at all. */
+const seedNamed = (mode, tag) => psql(
+  `delete from cfb_runs where display_name = '${tag}';
+   insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games, national_rank,
+     made_playoffs, title_won, perfect, bowl_won, seed_label, point_diff, chemistry_pct,
+     spend_musd, overall, picks, run_mode, display_name)
+   values (11, 0, 11, 1, 12, 3, false, false, false, false, 'Bowl Game', 18.0, 2.0, 10.5, 99.0,
+     array['${tag}1:2016','${tag}2:2007','${tag}3:2014','${tag}4:2011','${tag}5:2009','${tag}6:2017'],
+     '${mode}', '${tag}')`);
 
 const SS = '/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
 const browser = await chromium.launch({
@@ -131,6 +154,7 @@ console.log('\n=== the wheel never leaves the conference ===');
 
 console.log('\n=== a conference season, all the way through ===');
 {
+  seedNamed('conf:Pac-12', 'pacfield');
   const page = await open();
   await pickConference(page, 'Pac-12');
   ok('the draft screen says which competition', /Pac-12 draft/.test(await page.textContent('#d-mode')));
@@ -154,7 +178,12 @@ console.log('\n=== a conference season, all the way through ===');
   await page.click('#o-lb'); await page.waitForTimeout(2600);
   ok('the board opens on the competition just played',
     (await page.$eval('#lb-comp', (e) => e.value)) === 'conf:Pac-12');
-  ok('and the season is on it', (await page.$$eval('.lbr', (e) => e.length)) >= 1);
+  /* The seeded NAMED season is on it. The one just played is not, and must not be: it
+     was played signed out, and the board lists named seasons only. */
+  ok('the named season in this competition is on it',
+    (await page.$$eval('.lbr', (e) => e.length)) >= 1);
+  ok('and the signed-out season just played is not',
+    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
   ok('the blurb says why it is its own board',
     /not the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });

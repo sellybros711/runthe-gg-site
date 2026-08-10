@@ -251,6 +251,19 @@
        including the counts: a place counted against the wrong competition is worse
        than no place at all. */
     return '&run_mode=eq.' + encodeURIComponent(modeOf(opts && opts.mode)) +
+      /* NAMED RUNS ONLY, when asked for, exactly as the NFL board does it. A guest
+         season is a real season and counts towards how many have been played, but it
+         carries no name, so listing it puts a row of Anonymous on a board whose whole
+         job is to say who did what. Every ranking call asks for this; the activity
+         count deliberately does not, which is the difference between "how many
+         seasons happened" and "who is on the board".
+
+         cfb_runs_named_* in 67_cfb_named_board.sql are partial indexes over exactly
+         these rows, which is what keeps this free: they hold only the named seasons,
+         so they grow with the number of people who signed in rather than with the
+         number of seasons played. Without them this is a filter applied after the
+         scan, and on a board where most rows are guests that is most of the table. */
+      ((opts && opts.named) ? '&display_name=not.is.null' : '') +
       (cut ? '&created_at=gte.' + encodeURIComponent(cut) : '');
   }
 
@@ -373,7 +386,10 @@
   async function ranks(score, mode) {
     const wins = ['today', 'week', 'all'];
     const out = await Promise.all(wins.map(async (w) => {
-      const opts = { window: w === 'today' ? 'day' : w, mode };
+      /* Named on both halves, so the place and the field it is out of describe the
+         same population as the list. "#4 of 900" against a board showing nine rows
+         is not a placing, it is two unrelated numbers next to each other. */
+      const opts = { window: w === 'today' ? 'day' : w, mode, named: true };
       const [place, count] = await Promise.all([
         placeIn(opts, 'record', score), total(opts),
       ]);

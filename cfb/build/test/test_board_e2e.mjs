@@ -19,10 +19,19 @@
  * narrow surface auth.js actually uses.
  */
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
 
 const SS = '/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
 const UID = '11111111-1111-1111-1111-111111111111';
 const NAME = 'coachprime';
+
+/* THE SAME DATABASE THE POSTGREST STUB IS SERVING, or the guest-visibility checks
+   below are meaningless: they count what is on the board against what is in the
+   table, and those have to be one table. Defaults match the stub's own. */
+const DB = process.argv[2] || 'cfbe2e';
+const psql = (sql) => execFileSync('psql', ['-X', '-A', '-t', '-d', DB, '-c', sql],
+  { encoding: 'utf8', env: { ...process.env, PGHOST: process.env.PGHOST || '/tmp',
+    PGPORT: process.env.PGPORT || '5433', PGUSER: process.env.PGUSER || 'postgres' } }).trim();
 
 const browser = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
@@ -111,12 +120,22 @@ async function newPage(signedIn) {
 
 console.log('\n=== a guest finishes a season ===');
 {
+  /* EMPTY FIRST, because this block asserts that a guest season is recorded and NOT
+     listed, and "not listed" cannot be told apart from "listed among other rows"
+     unless the board starts empty. Left over rows from an earlier run of this suite
+     would make the guest-is-invisible check pass for the wrong reason. */
+  psql('truncate cfb_runs');
   const page = await newPage(false);
   ok('accounts report themselves offline, not broken',
     (await page.evaluate(() => !!window.PS_CFB_AUTH)) === true);
   ok('reached the results screen', await playSeason(page));
+  /* NOT "1ST OF 0". The board counts named seasons, this one is the only season on an
+     empty board and it carries no name, so there is no field to place it in. The old
+     assertion here wanted /of \d/ and would have passed on the nonsense the arithmetic
+     produces. It asks for the invitation instead. */
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ').trim();
-  ok('the results screen shows a place on the board', /of \d/.test(place), place.slice(0, 80));
+  ok('an empty board offers a place rather than claiming one',
+    /No signed-in season/.test(place) && /Sign in/.test(place), place.slice(0, 90));
   const row = await page.evaluate(() => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id,display_name,user_id,wins,losses,national_rank,playoff_seed,made_playoffs,bowl,picks&order=id.desc&limit=1')
     .then(r => r.json()).then(a => a[0]));
   ok('the season reached the table', !!row, row ? JSON.stringify(row).slice(0, 130) : '');
@@ -124,21 +143,29 @@ console.log('\n=== a guest finishes a season ===');
   ok('six picks stored as id:season', !!row && row.picks.length === 6 && /^[^:]+:\d{4}$/.test(row.picks[0]));
   await page.screenshot({ path: SS + 'e2e_guest_results.png', fullPage: true });
 
-  console.log('\n=== the board screen ===');
+  console.log('\n=== a guest season is recorded but not listed ===');
+  /* THE WHOLE POINT OF THE NAMED BOARD. The season above is in the table, and this
+     asserts it is not on the list: a row reading "Anonymous" is exactly what the
+     football board has always refused to show and what this one used to. */
   await page.click('#o-lb'); await page.waitForTimeout(2500);
   ok('the board opened', !!(await page.$('#s-board.on')));
-  const rows = await page.$$eval('.lbr', (e) => e.length);
-  ok('it lists the season just played', rows >= 1, rows + ' rows');
-  ok('and marks it as yours', (await page.$$eval('.lbr.me', (e) => e.length)) === 1);
-  ok('the count labels the board', /season/.test(await page.textContent('#lb-count')),
-    await page.textContent('#lb-count'));
-  await page.screenshot({ path: SS + 'e2e_board.png', fullPage: true });
+  ok('one season is in the table', psql('select count(*) from cfb_runs') === '1');
+  ok('and none of it is on the board', (await page.$$eval('.lbr', (e) => e.length)) === 0);
+  ok('so the board says it is empty rather than showing Anonymous',
+    /No seasons/.test(await page.textContent('#lb-rows')),
+    (await page.textContent('#lb-rows')).replace(/\s+/g, ' ').trim().slice(0, 70));
+  /* Both numbers, which is the line that keeps a guest season visible as ACTIVITY
+     even though it is not on the list. */
+  const cnt = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  ok('the count still credits the season played', /1 season/.test(cnt), cnt);
+  ok('  ...and says none of them are on the board', /0 on the board/.test(cnt), cnt);
+  await page.screenshot({ path: SS + 'e2e_board_guest.png', fullPage: true });
 
   for (const sort of ['overall', 'rank', 'record']) {
     await page.click('#lb-sort button[data-sort="' + sort + '"]');
     await page.waitForTimeout(1600);
-    const n = await page.$$eval('.lbr', (e) => e.length);
-    ok('sorting by ' + sort + ' returns rows', n >= 1, n + ' rows');
+    ok('sorting by ' + sort + ' keeps the guest off',
+      (await page.$$eval('.lbr', (e) => e.length)) === 0);
   }
   for (const win of ['week', 'all', 'day']) {
     await page.click('#lb-tabs .tab[data-lb="' + win + '"]');
@@ -159,6 +186,24 @@ console.log('\n=== a signed-in player finishes a season ===');
   ok('the season is attributed to the account', !!row && row.user_id === UID);
   ok('under the name from profiles, never the client', !!row && row.display_name === NAME,
     row ? String(row.display_name) : '');
+
+  /* THE OTHER HALF OF THE NAMED BOARD. The guest block proved a nameless season stays
+     off the list; this proves a named one goes on it, against the same table, which is
+     what makes the pair evidence of a filter rather than of an empty board. Two seasons
+     in the table by now, exactly one of them named. */
+  await page.click('#o-lb'); await page.waitForTimeout(2500);
+  ok('two seasons in the table', psql('select count(*) from cfb_runs') === '2');
+  ok('the named one is on the board', (await page.$$eval('.lbr', (e) => e.length)) === 1);
+  ok('and it is marked as yours', (await page.$$eval('.lbr.me', (e) => e.length)) === 1);
+  /* Your own row reads "You" rather than your name, which is the board's rule for every
+     game here. The assertion that matters is the other one: the word this whole change
+     exists to remove never appears on the list. */
+  const boardText = (await page.textContent('#lb-rows')).replace(/\s+/g, ' ');
+  ok('your own row reads You', /You/.test(boardText));
+  ok('and Anonymous appears nowhere on the board', !/Anonymous/.test(boardText));
+  const cnt2 = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  ok('the count separates played from on the board', /2 season/.test(cnt2) && /1 on the board/.test(cnt2), cnt2);
+  await page.screenshot({ path: SS + 'e2e_board_named.png', fullPage: true });
 
   console.log('\n=== the trophy case comes off the board when signed in ===');
   /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip across
