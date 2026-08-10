@@ -62,7 +62,9 @@ async function req(url, tries = 3) {
     try {
       const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
       if (r.ok) return await r.json();
-      if (r.status === 404) return null;
+      // statsapi answers 500, not 404, for an award/season pair it does not
+      // serve - a permanent "no", so retrying it just triples the cost.
+      if (r.status === 404 || r.status === 500) return null;
       last = 'HTTP ' + r.status;
     } catch (e) { last = e.message; }
     await sleep(500 * (i + 1));
@@ -191,16 +193,44 @@ function mlbLabel(name) {
 // list is capped - and what the cap drops is printed, because a silent
 // truncation reads as "covered everything" when it isn't.
 const MLB_MAX_AWARDS = 40;
+const PROBE_YEARS = [2024, 2019, 2014, 2009, 2004, 1999];   // spread, so a defunct-but-real award still lands
+// statsapi's catalogue is mostly MINOR league: the first run burned its whole
+// budget on ids like SLMSAS and TLPLOY (Southern League, Texas League), every
+// one of which 500s and yields nothing. Filter to the majors when the payload
+// says which sport an award belongs to, and - because that field may be absent
+// or renamed - probe each survivor across six spread seasons before committing
+// to a full sweep. A wrong filter then costs six requests, not forty-seven.
+function isMajors(a) {
+  var s = a.sportId != null ? a.sportId : (a.sport && a.sport.id);
+  var l = a.leagueId != null ? a.leagueId : (a.league && a.league.id);
+  if (s != null) return s === 1;
+  if (l != null) return l === 103 || l === 104;   // AL / NL
+  return true;                                    // no sport field at all -> let the probe decide
+}
 async function buildMLB() {
   const cat = await req('https://statsapi.mlb.com/api/v1/awards');
   const all = (cat && cat.awards) || [];
   console.log('  MLB  statsapi published ' + all.length + ' awards');
-  let wanted = all.filter((a) => a && a.id && MLB_WANT.test(a.name || '') && mlbLabel(a.name));
+  if (all.length) console.log('  MLB  award record shape: ' + Object.keys(all[0]).join(','));
+
+  let named = all.filter((a) => a && a.id && MLB_WANT.test(a.name || '') && mlbLabel(a.name));
+  const majors = named.filter(isMajors);
+  console.log('  MLB  ' + named.length + ' match by name, ' + majors.length + ' of those look major-league');
+
+  // probe
+  const probed = await mapPool(majors, 8, async (a) => {
+    const hits = await mapPool(PROBE_YEARS, 3, (y) =>
+      req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) + '/recipients?season=' + y, 1));
+    return hits.some((d) => d && d.awards && d.awards.length);
+  });
+  const dead = majors.filter((a, i) => !probed[i]);
+  let wanted = majors.filter((a, i) => probed[i]);
+  if (dead.length) console.log('  MLB  ' + dead.length + ' served nothing on probe, skipped: ' + dead.map((a) => a.id).join(', '));
   if (wanted.length > MLB_MAX_AWARDS) {
-    console.log('  MLB  ' + wanted.length + ' matched; hydrating the first ' + MLB_MAX_AWARDS +
-      ' and SKIPPING: ' + wanted.slice(MLB_MAX_AWARDS).map((a) => a.id).join(', '));
+    console.log('  MLB  capping at ' + MLB_MAX_AWARDS + ', SKIPPING: ' + wanted.slice(MLB_MAX_AWARDS).map((a) => a.id).join(', '));
     wanted = wanted.slice(0, MLB_MAX_AWARDS);
   }
+
   const years = [];
   for (let y = 1980; y <= NOW_YEAR; y++) years.push(y);
   console.log('  MLB  hydrating ' + wanted.length + ' awards x ' + years.length + ' seasons');
@@ -210,7 +240,7 @@ async function buildMLB() {
     const label = mlbLabel(a.name);
     let got = 0;
     const pages = await mapPool(years, 8, (y) =>
-      req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) + '/recipients?season=' + y, 2));
+      req('https://statsapi.mlb.com/api/v1/awards/' + encodeURIComponent(a.id) + '/recipients?season=' + y, 1));
     pages.forEach((d) => {
       ((d && d.awards) || []).forEach((r) => {
         const p = r && r.player;
