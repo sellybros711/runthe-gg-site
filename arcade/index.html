@@ -144,8 +144,10 @@
   .hud-drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
 
   /* 7 · CTA stack */
-  /* small membership/plays status line: quiet, its own row above the CTA */
+  /* small membership/plays status line: quiet, its own row above the CTA.
+     Members get a ticket badge: ink pill, inverts with the theme. */
   .tierline{padding:12px 18px 0; text-align:center; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .tierline.member span{display:inline-flex; align-items:center; gap:7px; background:var(--ink); color:var(--bg); border-radius:999px; padding:6px 14px; font-size:10.5px; letter-spacing:.14em; box-shadow:var(--shadow);}
   .hud-cta{padding:14px 18px 16px;}
   .hud-cta .btn{display:flex; flex-wrap:wrap; width:100%; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
     min-height:48px; padding:12px 14px; border-radius:999px; color:#fff; border:0; cursor:pointer; font-family:inherit;
@@ -693,8 +695,9 @@
     if(!TOK || !chip || !lbl){ return; }
     chip.style.color='';
     var card = TOK.isPro && TOK.isPro(), testing = TOK.testing && TOK.testing();
+    chip.classList.toggle('member', !!(card || testing));
     if(card || testing){
-      lbl.textContent='ARCADE CARD MEMBER';
+      lbl.textContent='🎟️ ARCADE CARD MEMBER';
       chip.setAttribute('title', card?'Arcade Card · unlimited plays':'Testing · unlimited plays');
       return;
     }
