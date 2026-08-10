@@ -1,4 +1,4 @@
-/* Run The Arcade — daily play economy (shared wallet)
+/* Run The Arcade - daily play economy (shared wallet)
  *
  * A token = one game play (any game). The daily wallet is SHARED across all
  * games, and its size is the player's tier:
@@ -6,7 +6,7 @@
  *   FREE ACCOUNT (signed in)→ 3 tokens/day
  *   ARCADE CARD (paid)      → unlimited
  * Tokens refill at local midnight (the same boundary the daily puzzles use) and
- * do NOT bank — each day simply starts at the cap.
+ * do NOT bank - each day simply starts at the cap.
  *
  * Guest→account carry-over falls out for free: the wallet is one per-device
  * counter, so a guest who spent their 1 token then signs in has cap jump 1→3
@@ -18,7 +18,7 @@
  * back-compat; the consumer-facing name is "Arcade Card".)
  *
  * Client-side is UX + the guest gate. For SIGNED-IN users the server RPC
- * (arcade_spend_token) is the real cap — this module never blocks a bypass on
+ * (arcade_spend_token) is the real cap - this module never blocks a bypass on
  * its own, it just drives the UI and the guest limit.
  *
  * Fail-safe: pure localStorage, no network, synchronous. window.RTGTokens.
@@ -37,7 +37,7 @@
   var SB_SESSION_KEY = 'sb-jcrrxqfpdelrmvjuihnm-auth-token';
 
   // TESTING: unlimited plays for everyone while we run through the games.
-  // LAUNCH: false — the guest (1/day) / account (3/day) / card (unlimited) tiers
+  // LAUNCH: false - the guest (1/day) / account (3/day) / card (unlimited) tiers
   // are now enforced. Flip back to true only to demo without limits.
   // Nothing else references this.
   var TESTING = false;
@@ -50,7 +50,7 @@
   // reconciles the flag against the server once signed in.
   function hasCard(){ try{ return signedIn() && LS.getItem('runthegrid_pro')==='1'; }catch(e){ return false; } }
 
-  // Synchronous "is there a signed-in session?" — read the Supabase token blob
+  // Synchronous "is there a signed-in session?" - read the Supabase token blob
   // straight from localStorage (no client boot, no network), scanning any
   // sb-*-auth-token key so a lib default-key change can't silently break it.
   function signedIn(){
@@ -97,7 +97,7 @@
   function canPlay(){ return remaining()>0; }                // any token left (arg ignored)
 
   // Spend one token from the shared wallet for `game`.
-  // { ok, tryNo, first, bonus, left } — first=true marks the ranked daily attempt
+  // { ok, tryNo, first, bonus, left } - first=true marks the ranked daily attempt
   // (the day's first play of THIS game); replays are practice.
   // Spend on the server too (signed-in, non-card): keeps the server's per-day
   // count authoritative so the client wallet can be reconciled against it. Fire-

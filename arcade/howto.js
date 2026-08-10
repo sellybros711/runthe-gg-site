@@ -1,4 +1,4 @@
-/* Run The Arcade — shared "How to play" helper.
+/* Run The Arcade - shared "How to play" helper.
    Usage: <script src="/arcade/howto.js"></script> then RTGHowto.init('table').
    Injects a "?" topbar button + a small modal with per-game bullets.
    First-ever visit auto-opens the modal once (localStorage 'rtg:howto:<game>'),
@@ -8,10 +8,10 @@
 
   var CONTENT = {
     match: [
-      'Sixteen cards hide four secret groups of four.',
-      'A group can be a team, a college, a jersey number — any shared thread.',
-      'Tap four cards, then Submit. "One away" means three of them belong together.',
-      'Four mistakes ends the day. Solve all four groups to keep your streak.'
+      'Twenty names hide five secret groups of four.',
+      'A group can be a team, a jersey number, a surname, any shared thread.',
+      'Build a group of four and lock it in. "One away" means three belong together.',
+      'Six wrong guesses ends the day. Solve all five groups to keep your streak.'
     ],
     table: [
       'Two athletes, one question: who wore the higher jersey number?',
@@ -79,7 +79,7 @@
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
       '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--coral,#F06A5F);color:#fff;font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
     // Pages without a --hero display font (e.g. the crossword) fall back to the
-    // body font — bump the title weight there so it still reads as a heading.
+    // body font - bump the title weight there so it still reads as a heading.
     var hero = '';
     try{ hero = (getComputedStyle(document.documentElement).getPropertyValue('--hero') || '').trim(); }catch(e){}
     if(!hero) css += '.rtgHowto-title{font-weight:800;}';

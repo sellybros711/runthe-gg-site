@@ -136,7 +136,7 @@
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
-  /* arcade tactile polish — top-accent uses --gold, which applyFav() recolors to the favorite team */
+  /* arcade tactile polish - top-accent uses --gold, which applyFav() recolors to the favorite team */
   .choice{border-width:2px; border-top:4px solid var(--gold); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .1s, border-color .15s, background .15s, box-shadow .1s;}
   .choice:hover{transform:translate(-1px,-1px);}
   .choice:active{transform:translate(2px,2px);}
@@ -270,7 +270,7 @@
   // Unlimited streak: each day serves the ENTIRE eligible pool in a per-day
   // shuffled order. Practically nobody reaches the end (~800 correct answers
   // in a row); the run just terminates on the first miss. "How far can you
-  // go" becomes real again — the ceiling is your knowledge, not our cap.
+  // go" becomes real again - the ceiling is your knowledge, not our cap.
   var GAME_BASE='almamater', ROUNDS=1000;   // soft cap; hits pool length first
   // Mode-parameterized ids (Pro version picker): 'all' keeps the base ids; a
   // sport mode suffixes them so each version has its own seed, board, streak,
@@ -367,7 +367,7 @@
   // (~two months at today's pool size) and every archived day is a distinct
   // hand. Replays deal only cards not yet seen today (tracked per date), so
   // "Play again" can't re-serve this morning's names either.
-  // Per-date shuffle of the full eligible pool. Each date reorders — icons
+  // Per-date shuffle of the full eligible pool. Each date reorders - icons
   // still float to the top (warmup effect) but the SPECIFIC icon at position
   // 1 differs day-to-day, and the deep-cut tail differs too. The seed
   // includes DATE so every player sees the identical ordering for a given
@@ -403,12 +403,12 @@
       // Unlimited streak: serve the ENTIRE pool in today's shuffled order.
       // Deck already has icons floating to the top (fame sort) with per-day
       // shuffle inside each fame tier, so early rounds are always icons.
-      // The run ends on your first miss — no artificial cap.
+      // The run ends on your first miss - no artificial cap.
       seq = deck.slice(0, ROUNDS);
     } else {
       var seen={}; getSeen().forEach(function(k){ seen[k]=1; });
       var fresh=deck.filter(function(p){ return !seen[p.name+'|'+p.sport]; });
-      if(fresh.length<ROUNDS){ fresh=deck; try{ LS.removeItem(seenKey()); }catch(e){} }   // whole deck seen today — start the cycle over
+      if(fresh.length<ROUNDS){ fresh=deck; try{ LS.removeItem(seenKey()); }catch(e){} }   // whole deck seen today - start the cycle over
       fresh=shuffle(fresh);   // replay rng: a fresh random order each time
       seq=fresh.slice(0,ROUNDS);
     }
@@ -466,7 +466,7 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token or replaying
-  // animations. Rounds before idx are skipped — SEQ is deterministic.
+  // animations. Rounds before idx are skipped - SEQ is deterministic.
   function resumeAttempt(r){
     seedDaily(); SEQ=buildRounds(true); servedDaily=true;
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
@@ -539,7 +539,7 @@
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(run>=SEQ.length) sub='You named them all!';
     else if(NEWBEST) sub='\ud83c\udfc6 NEW PERSONAL BEST';
-    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best \u2014 one more tomorrow!';
+    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
     else sub='Your run ended';
     var subEl=document.getElementById('mSub');

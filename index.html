@@ -1105,7 +1105,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(!(window.supabase && window.supabase.createClient)) return;   // fail open: panel + CTA still work, modal shows "offline"
     // Inbound bridge: if the user is signed in on RunTheTour (golf) but the home
     // page's default key is empty, copy the golf session over before createClient
-    // reads it — otherwise navigating from golf to here renders the user as logged out.
+    // reads it - otherwise navigating from golf to here renders the user as logged out.
     try{
       var _def=localStorage.getItem(DEFAULT_KEY);
       if(!(_def && _def.indexOf('access_token')>=0)){

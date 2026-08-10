@@ -210,8 +210,8 @@
   .lane.locked .lane-chip{box-shadow:0 1px 2px rgba(0,0,0,.28);}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
-  .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
+  .lane-sport{font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--ink);
+    border:1.5px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
   .slots{flex:1 1 320px; display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
@@ -382,7 +382,7 @@
     .pool .tile{min-height:56px; font-size:13px;}
     .statgrid .rstat .v{font-size:20px;}
   }
-  /* very narrow phones: the coins chip is the one non-uniform extra — drop it
+  /* very narrow phones: the coins chip is the one non-uniform extra - drop it
      before the topbar can overflow (coins still show in the result modal) */
   @media (max-width:480px){
     .chip.coins{display:none;}
@@ -396,10 +396,10 @@
   .checkbtn:active, .btn:active{transform:translate(2px,2px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Match "Locker Room Board"
+     BOLD SPORTS-MACHINE - Match "Locker Room Board"
      Marquee banner, caged roster cabinet, scoreboard section bars,
      nameplate tiles + chunky lineup racks. Solved groups keep their
-     solid team-colour jerseys. Visual only — no DOM / logic / key changes.
+     solid team-colour jerseys. Visual only - no DOM / logic / key changes.
      ================================================================= */
   :root{ --r-lg:6px; --r-md:5px; --r-sm:4px; }
   body{ background-color:var(--bg);
@@ -419,7 +419,7 @@
     box-shadow:inset 0 3px 16px -9px rgba(0,0,0,.7); }
 
   /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour).
-     Names keep the original readable title-case font — only the frame is nameplated. */
+     Names keep the original readable title-case font - only the frame is nameplated. */
   .tile{ border-width:2px; border-radius:4px;
     box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
   .tile:active{ box-shadow:var(--a-shadow-press,1px 1px 0 rgba(7,20,38,.16)); }
@@ -1223,7 +1223,7 @@
     function finish(won) {
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
-      resumeClear();   // attempt is over — nothing left to resume
+      resumeClear();   // attempt is over - nothing left to resume
       var finalTime = elapsedSec();
 
       if (!won) autoSolveReveal();
@@ -1260,7 +1260,7 @@
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
       // Save the day's result (for the "played today" screen) on the ranked
-      // first attempt only. No coins — the arcade has no currency.
+      // first attempt only. No coins - the arcade has no currency.
       if (attemptFirst && !ARCHIVE) {
         LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, order: solveOrder.slice() }));
       }
@@ -1344,7 +1344,7 @@
       });
       // flawless ribbon (win with zero misses)
       document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
-      // streak milestone banner (or a "practice — not ranked" note on bonus replays)
+      // streak milestone banner (or a "practice - not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
       if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
@@ -1410,7 +1410,7 @@
         cy += 96;
       } else { cy += 20; }
 
-      // HERO: you finished. (grade removed — the accomplishment + the solve
+      // HERO: you finished. (grade removed - the accomplishment + the solve
       // order are the story now.)
       var heroWord = r.won ? 'SOLVED' : 'FINAL';
       var heroCol = r.won ? '#17A34A' : '#5c6b7a';
@@ -1607,7 +1607,7 @@
     streakChip.addEventListener('click', openStats);
     streakChip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
 
-    // ---- tester: load a fresh board (with confirm — it abandons the current board) ----
+    // ---- tester: load a fresh board (with confirm - it abandons the current board) ----
     var newBtn = document.getElementById('btnNew');
     var newArmed = false, newArmT = null;
     function disarmNew() {
@@ -1717,7 +1717,7 @@
           var v = pl[t.id];
           place[t.id] = (typeof v === 'number' && v >= 0 && v < CATS) ? v : null;
         });
-        // a solved lane must hold exactly its true four — repair from the solution if not
+        // a solved lane must hold exactly its true four - repair from the solution if not
         for (var li = 0; li < CATS; li++) {
           if (!locked[li]) continue;
           var ids = day.tiles.filter(function (t) { return place[t.id] === li; }).map(function (t) { return t.id; }).sort();

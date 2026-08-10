@@ -151,7 +151,7 @@
     .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
     .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
       }
-    /* the five answer rows are the whole game — let them own the column
+    /* the five answer rows are the whole game - let them own the column
        instead of floating in it (the old grid tied the empty subprompt row to
        the tall streak rail, dropping the choices ~170px down the page) */
     .choices{ gap:12px; }
@@ -280,7 +280,7 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
-  // RECOGNIZABILITY GATE: icons (f5) always qualify — Babe Ruth belongs in a
+  // RECOGNIZABILITY GATE: icons (f5) always qualify - Babe Ruth belongs in a
   // trivia game regardless of era. The auto-scraped fame-4 tier only qualifies
   // from 1960 onward: its pre-1960 names ("2 notable seasons" in the 1930s) are
   // the "who is this?" pulls players kept running into.
@@ -289,11 +289,11 @@
   // GRADUATED DIFFICULTY: rounds 1-3 draw from an icon-only warmup pool so the
   // very first pull is always a softball; round 4+ opens up to the full
   // recognizable pool. An "icon" is fame-5 always, plus fame-4 with real
-  // career credentials — a high-round draft pick or a listed award for NFL
+  // career credentials - a high-round draft pick or a listed award for NFL
   // (raw fame-4 NFL is huge and noisy), and 8+ notable seasons for NBA/MLB.
   function icon(e){
     if(!TEAM_SPORTS[e.sport]) return false;
-    // Curated star overlay wins — every hand-picked NBA/NFL/MLB name in
+    // Curated star overlay wins - every hand-picked NBA/NFL/MLB name in
     // stars.js is a recognizable answer regardless of era or auto-detected
     // credentials. Only fall through to the auto-detected fame gate when
     // an entity was NOT curated.
@@ -310,7 +310,7 @@
   var teams={}; ENT.forEach(function(e){ if(!TEAM_SPORTS[e.sport]||!recog(e)) return; (e.t||[]).forEach(function(t){ (teams[t]=teams[t]||[]).push(e); }); });
   var teamKeys=Object.keys(teams).filter(function(t){ return teams[t].length>=4; });
   var oddPool=ENT.filter(function(e){ return recog(e) && TEAM_SPORTS[e.sport]; });
-  // WARMUP tier — icon-gated. Team member arrays are sorted by fame desc so
+  // WARMUP tier - icon-gated. Team member arrays are sorted by fame desc so
   // buildT(warmup) can pick the TOP FOUR from a team ("the four you know") vs
   // any four the team ever rostered.
   var teamsW={}; ENT.forEach(function(e){ if(!icon(e)) return; (e.t||[]).forEach(function(t){ (teamsW[t]=teamsW[t]||[]).push(e); }); });
@@ -344,7 +344,7 @@
 
   // FAIRNESS: the intended odd must be the ONLY defensible odd-one. Any salient
   // category (a team, a position family, a nationality, HOF status, a decade)
-  // that exactly 4 of the 5 share implies a different "odd" — reject the round
+  // that exactly 4 of the 5 share implies a different "odd" - reject the round
   // unless every such category points at the same intended odd. Protects against
   // e.g. "4 are American, the 5th isn't" giving a second correct answer, and
   // applies uniformly to every round type below.
@@ -376,7 +376,7 @@
     if(!fairOdd(five, odd.id)) return null;              // reject ambiguous rounds
     return { type:type, team:team||'', conn:conn, ckey:ckey, odd:odd.id, five:shuffle(five).map(function(e){return e.id;}) };
   }
-  // 't': four share a team. Prefer a SAME-SPORT odd (a real roster test — you
+  // 't': four share a team. Prefer a SAME-SPORT odd (a real roster test - you
   // can't just spot the different sport); fall back to cross-sport if needed.
   // The warmup flag restricts to modern-star pools so round 1 stays a softball.
   function buildT(warmup){
@@ -410,7 +410,7 @@
     return finishRound('p', four, odd, 'p:'+k.fam, famPlural(k.fam), '');
   }
   // 'd': four starred in the same decade; the odd's whole career sits at least
-  // 20 years away — same sport, so eras are actually comparable.
+  // 20 years away - same sport, so eras are actually comparable.
   function buildD(){
     if(!decKeys.length) return null;
     var k=decKeys[ri(decKeys.length)];
@@ -433,7 +433,7 @@
 
   function buildRounds(){
     // Deterministic type schedule from the daily rng: every block of six is
-    // t,?,t,?,t,? with p/d/h shuffled into the gaps — team rounds stay most
+    // t,?,t,?,t,? with p/d/h shuffled into the gaps - team rounds stay most
     // common (15 of 30) and two special rounds are never adjacent.
     // Round 1 is always a TEAM round (biggest / most-recognizable pool of the
     // four types) so the very first pull is always a softball for the player.
@@ -443,7 +443,7 @@
     plan[0]='t';
     // GRADUATED DIFFICULTY: the first three rounds draw from the warmup pool
     // (modern-era stars only). p/d/h round-builders don't have a warmup pool
-    // yet — they only apply the warmup flag through buildT — so the schedule
+    // yet - they only apply the warmup flag through buildT - so the schedule
     // forces team rounds during the warmup window to keep the promise honest.
     for(var w=0; w<3 && w<plan.length; w++) plan[w]='t';
     function warmupFor(i){ return i<3; }                              // rounds 1-3
@@ -502,7 +502,7 @@
     }
   }
 
-  // Bonus after a correct spot: name WHY the four are linked. No points — it's a
+  // Bonus after a correct spot: name WHY the four are linked. No points - it's a
   // quick insight beat that reinforces the connection. Decoys are verified false
   // against the four, and this never affects the run or streak.
   function whyTrueLabel(r){
@@ -526,7 +526,7 @@
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
     ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
     var opts = shuffle([trueLab].concat(decoys));
-    choicesEl.innerHTML = '<div class="whyq">Bonus — why are they linked?</div>' +
+    choicesEl.innerHTML = '<div class="whyq">Bonus: why are they linked?</div>' +
       opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('');
     var tapped=false, advanced=false;
     function go(){ if(advanced) return; advanced=true; busy=false; renderRound(); }
@@ -538,7 +538,7 @@
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
           if(x===b && !ok) x.classList.add('wrong');
         });
-        if(ok){ toast('Right — you knew why!'); if(window.RTGSound) RTGSound.lock(); }
+        if(ok){ toast('Right! You knew why!'); if(window.RTGSound) RTGSound.lock(); }
         else { toast('The link: '+trueLab); }
         setTimeout(go, 1150);
       });
@@ -567,7 +567,7 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token, replaying
-  // animations or sounds. Rounds before idx are simply skipped — SEQ is
+  // animations or sounds. Rounds before idx are simply skipped - SEQ is
   // deterministic, so the board is consistent with what was already played.
   function resumeAttempt(r){
     seedDaily(); SEQ=buildRounds(); servedDaily=true;
@@ -642,7 +642,7 @@
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(run>=SEQ.length) sub='You cleared them all!';
     else if(NEWBEST) sub='\ud83c\udfc6 NEW PERSONAL BEST';
-    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best \u2014 one more tomorrow!';
+    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
     else sub='Your run ended';
     var subEl=document.getElementById('mSub');

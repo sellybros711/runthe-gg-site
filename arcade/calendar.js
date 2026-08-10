@@ -1,13 +1,13 @@
-/* calendar.js — the shared Arcade Archive calendar for Run The Arcade.
+/* calendar.js - the shared Arcade Archive calendar for Run The Arcade.
  *
  * One self-mounting module (like auth-ui.js / card.js). Any arcade page can open
  * a per-game calendar of past playable days:
- *   RTGCalendar.open('rankit')     — opens the Rank It archive calendar
- *   RTGCalendar.GAMES              — the game registry (key, path, name, accent, icon)
- *   RTGCalendar.get('rankit')      — one game's registry entry
+ *   RTGCalendar.open('rankit')     - opens the Rank It archive calendar
+ *   RTGCalendar.GAMES              - the game registry (key, path, name, accent, icon)
+ *   RTGCalendar.get('rankit')      - one game's registry entry
  *
  * A day cell links to /arcade/<path>/?date=YYYY-MM-DD (the same date-override the
- * game pages already understand). Playable range is LAUNCH .. yesterday — today's
+ * game pages already understand). Playable range is LAUNCH .. yesterday - today's
  * puzzle lives on the hub, not the archive. Entitlement/gating is the caller's
  * job; this module is pure presentation and fails soft with no network.
  */
@@ -16,7 +16,7 @@
 
   var LAUNCH = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-06-01';
 
-  // Game registry — icons/accents mirror the hub tiles so the archive reads as
+  // Game registry - icons/accents mirror the hub tiles so the archive reads as
   // the same product. `cls` matches the hub's .tile.<cls> accent rules.
   var GAMES = [
     { key:'table',      path:'table',      cls:'table',  name:'HiQ',    accent:'var(--gold)',

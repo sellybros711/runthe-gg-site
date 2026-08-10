@@ -79,7 +79,7 @@
         try {
           // On a SUCCESSFUL read (still fail-open on error/offline above), the
           // subscriptions row is authoritative: grant when active, otherwise
-          // clear the flag — including when there is NO row (free user). This
+          // clear the flag - including when there is NO row (free user). This
           // stops a stale flag (e.g. a browser that was once a cardholder) from
           // granting unlimited plays to a free account.
           if (active) localStorage.setItem('runthegrid_pro', '1');

@@ -1,4 +1,4 @@
-/* RunThe.GG — per-sport version picker for Pro (shared).
+/* RunThe.GG - per-sport version picker for Pro (shared).
  *
  * FREE users always play the mixed "All Sports" game (nothing changes).
  * PRO users (and, while TESTING, everyone) choose one of four daily versions
@@ -72,7 +72,7 @@
         '<button class="rtgm-x" type="button" aria-label="Close">✕</button>' +
         '<div class="rtgm-pill">ARCADE CARD</div>' +
         '<h2 class="rtgm-h">Play every version</h2>' +
-        '<p class="rtgm-sub">The Arcade Card unlocks an NBA-only, NFL-only and MLB-only edition of ' + esc(title || 'each game') + ' — each with its own daily board and streak — plus unlimited plays and the full archive.</p>' +
+        '<p class="rtgm-sub">The Arcade Card unlocks an NBA-only, NFL-only and MLB-only edition of ' + esc(title || 'each game') + ', each with its own daily board and streak, plus unlimited plays and the full archive.</p>' +
         '<div class="rtgm-opts">' + MODES.filter(function (m) { return m.k !== 'all'; }).map(function (m) {
           return '<div class="rtgm-opt lk" style="--mc:' + m.c + '"><span class="rtgm-lab">' + esc(m.label) + '</span><span class="rtgm-msub">' + esc(m.sub) + '</span></div>';
         }).join('') + '</div>' +
@@ -91,12 +91,12 @@
       var st = (window.RTG_BOARD && window.RTG_BOARD.state()) || {};
       if (!st.signedIn && window.RTGAuthUI) { close(); RTGAuthUI.open('signup'); return; }
       if (window.RTGCard && RTGCard.paywall) { close(); RTGCard.paywall({ reason: 'upsell' }); return; }
-      fine.textContent = 'Checkout isn’t live yet — check back soon.';
+      fine.textContent = 'Checkout isn’t live yet. Check back soon.';
     });
   }
 
   // Free users: fill the (otherwise hidden) #modesw strip with a locked
-  // switcher — All active, sport versions padlocked, tap → upsell. Games hide
+  // switcher - All active, sport versions padlocked, tap → upsell. Games hide
   // the strip synchronously at boot for free users, so we fill it after.
   function mountLockedSwitcher() {
     try {

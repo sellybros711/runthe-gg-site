@@ -1,4 +1,4 @@
-/* pregame.js — the intro screen shown when you open a Run The Arcade game.
+/* pregame.js - the intro screen shown when you open a Run The Arcade game.
  *
  * Self-mounting (like auth-ui.js / card.js / calendar.js). On a game page it
  * shows a full-screen overlay BEFORE the board is touched:
@@ -8,7 +8,7 @@
  *
  * Why this is safe: every game charges its token only on the FIRST interaction
  * (startAttempt via startIfNeeded), never on load. This overlay sits in front
- * of the board, so nothing is spent until the player dismisses it and plays —
+ * of the board, so nothing is spent until the player dismisses it and plays -
  * no game code changes, no double spend. Skipped entirely in archive practice.
  *
  * Reads tier from RTGTokens, name/icon/accent from RTGCalendar, the all-time
@@ -26,7 +26,7 @@
 
   // How-to-play (2-3 short lines each).
   var RULES = {
-    table:      ['Tap the bigger number.', 'One wrong pick ends the run — how far can you go?'],
+    table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
     match:      ['Sort 20 names into 5 hidden groups of four.', 'Find them all before six mistakes.'],
     career:     ['Name the athlete from their team-by-team path.', 'One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
@@ -106,6 +106,11 @@
   }
 
   var scrim=null, dismissed=false;
+  // First-visit check happens ONCE at boot: render() re-runs on auth changes,
+  // and re-reading the flag (set by the first render) would flip the intro to
+  // "Welcome back" mid-display.
+  var INTRO_SEEN=false;
+  try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
   function build(){
     injectStyles();
     scrim=document.createElement('div'); scrim.className='rtgpg-scrim';
@@ -141,20 +146,32 @@
     }
 
     if(canPlay()){
-      // FREE with plays left: rules + plays remaining + upsell + Start
+      // FREE with plays left. Rules show on the FIRST visit to a game only;
+      // after that the player knows how to play and gets their personal best
+      // instead (the ? button in the topbar keeps the rules one tap away).
+      // Setting the same 'rtg:howto:<game>' flag howto.js reads also stops
+      // its modal from re-onboarding right after this gate.
       var left=remaining();
       var unlimited = left===Infinity;
       var note = unlimited ? 'Unlimited plays' : (left+' play'+(left===1?'':'s')+' left today');
-      // Offer both ways to get more: sign in for 3/day (guests) and the Arcade
-      // Card for unlimited (everyone on the free tier).
       var upsell = unlimited ? '' :
         (signedIn()
           ? '<div class="rtgpg-note2">Want more? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for unlimited plays.</div>'
           : '<div class="rtgpg-note2"><a class="rtgpg-link" id="rtgpgSignin">Sign in</a> for 3 a day, or <a class="rtgpg-link" id="rtgpgCard">get an Arcade Card</a> for unlimited.</div>');
+      var mid;
+      if(!INTRO_SEEN){
+        mid='<div class="rtgpg-tag">How to play</div>'+
+          '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
+        try{ localStorage.setItem('rtg:howto:'+GAME,'1'); }catch(e){}
+      } else {
+        var hs=bestText();
+        mid='<div class="rtgpg-tag">Welcome back</div>'+
+          ((hs && hs.n!=='0')?('<div class="rtgpg-hs"><div class="rtgpg-stat"><div class="v">'+esc(hs.n)+'</div><div class="l">Your '+esc(hs.cap)+'</div></div></div>'):'')+
+          '<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+      }
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
-        '<div class="rtgpg-tag">How to play</div>'+
-        '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>'+
+        mid+
         '<div class="rtgpg-note">'+esc(note)+'</div>'+
         upsell+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Start</button>'+

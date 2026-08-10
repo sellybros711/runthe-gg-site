@@ -107,13 +107,13 @@
   /* the board.
      All eight rows live in the DOM from the first moment (guesses fill them
      top-down, resume repaints them), but only the ACTIVE blank row plus a
-     faded peek at the next stays visible — a wall of eight empty dashed rows
+     faded peek at the next stays visible - a wall of eight empty dashed rows
      made the pre-game board read as a giant blank form. The "8 guesses left"
      counter already says how much rope you have. */
   .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:12px 12px 6px; box-shadow:var(--shadow);}
   /* pre-guess: hide the whole readout board (header labels + eight empty rows)
-     — before any guess exists it teaches nothing and just makes the game feel
+     - before any guess exists it teaches nothing and just makes the game feel
      enormous. It appears the moment you submit your first name. */
   .board:not(.hasfilled){display:none;}
   .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
@@ -204,10 +204,10 @@
   .search .go:active, .cluebtn:active{transform:translate(1px,1px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Guess "Scouting Terminal"
+     BOLD SPORTS-MACHINE - Guess "Scouting Terminal"
      A caged terminal console: titled header bar, console column strip,
      record-style name bars, bordered readout cells with status LEDs.
-     Visual only — no logic changes.
+     Visual only - no logic changes.
      ================================================================= */
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
@@ -422,7 +422,7 @@
   /* pools: GUESSABLE is what you can type; TARGETS is what the game answers
      with. In ROSTER MODE both are built from the live, self-updating roster
      feed (every current NBA/NFL/MLB player), so the pool is ~1,500 names and
-     grows with each roster refresh — rookies included. Without an enriched
+     grows with each roster refresh - rookies included. Without an enriched
      feed we fall back to the curated corpus behavior. */
   var GUESSABLE, TARGETS, ROSTER_MODE = false, byId = {};
   if(ROS_RICH){
@@ -460,7 +460,7 @@
   } else {
     // ---- curated-corpus fallback (thin/absent roster file) -----------------
     // Guessable = anything the corpus knows enough about to build a readout.
-    // Target (the mystery player) has to be recognizable — .star from stars.js
+    // Target (the mystery player) has to be recognizable - .star from stars.js
     // is the primary signal; fall through to auto-detected fame for uncurated
     // names so a fresh corpus player can still shine through.
     GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0) >= (e.sport==='NFL'?4:3); });
@@ -499,7 +499,7 @@
   function intersect(a,b){ var s={}; a.forEach(function(x){s[x]=1;}); return b.some(function(x){return s[x];}); }
   /* Which side of the ball an NFL position plays. Derived by keyword because
      the pos strings are prose ("Defensive Lineman", "Cornerback"): defensive
-     keywords first, then special teams, and everything left is offense —
+     keywords first, then special teams, and everything left is offense -
      quarterback, running back, receiver, tight end, linemen, fullback all
      land there without needing their own list. */
   function sideOf(pos){
@@ -566,7 +566,7 @@
   function activeCols(){
     if(ROSTER_MODE){
       // current-player board: Team, [Div], Pos, Side (NFL) / Nat (NBA·MLB),
-      // Age, No. — every column carries signal for active players.
+      // Age, No. - every column carries signal for active players.
       var cols=[colTeam]; if(HAS_DIV) cols.push(colDiv);
       cols.push(colPos, SPORT==='NFL'?colSide:colNat, colAge, colNo);
       return cols;
@@ -579,7 +579,7 @@
   }
 
   /* ---- Clues: Masked-Singer-vague hints built from the target's own data.
-     Deliberately foggy — a clue never names a team, position or number value,
+     Deliberately foggy - a clue never names a team, position or number value,
      because earning those is what the five columns are for. Ordered vaguest
      first; each press reveals the next one down. FREE players get 1 clue per
      play; PRO is unlimited (same gating pattern as wordsearch's hint). */
@@ -603,8 +603,8 @@
     return c;
   }
   /* Roster-mode clues: atmospheric riddles built from the current player's
-     live data. Never names a team / position / number VALUE — earning those
-     is the board's job — and never names a division either (a division name
+     live data. Never names a team / position / number VALUE - earning those
+     is the board's job - and never names a division either (a division name
      leaks the sport and narrows to 4-5 teams in one line). Clues read as
      lateral hints, not fact-cards. */
   function buildCluesRoster(t){
@@ -619,7 +619,7 @@
     }
     if(t.exp!=null && t.exp>=12) c.push("Has outlasted more head coaches than most fans have season tickets.");
     else if(t.exp!=null && t.exp<=1) c.push("Still learning which airport to sprint through on road trips.");
-    // atmospheric take on the division — no league or place named
+    // atmospheric take on the division - no league or place named
     if(div){
       if(/east|atlantic/i.test(div)) c.push("Home tip-off shows up early on the coast-to-coast TV grid.");
       else if(/west|pacific|northwest|southwest/i.test(div)) c.push("Home games run late enough that half the country is asleep.");
@@ -632,7 +632,7 @@
     else if(t.age!=null && t.age>=35) c.push("Older than the average bat boy’s dad.");
     if(jn!=null && jn<=9) c.push("Wears a number a soccer captain would recognize.");
     else if(jn!=null && jn>=90) c.push("Wears the kind of number linemen tend to hoard.");
-    if(c.length<2) c.push("Not the flashiest name — just the one you should’ve thought of first.");
+    if(c.length<2) c.push("Not the flashiest name, just the one you should’ve thought of first.");
     if(c.length<2) c.push("Their name showed up in a recent box score if you were paying attention.");
     return c;
   }
@@ -781,7 +781,7 @@
     updateLead();
   }
   // Resume an interrupted ranked attempt: rebuild today's deterministic target,
-  // then re-render the stored guesses and clues against it — no re-charge, no
+  // then re-render the stored guesses and clues against it - no re-charge, no
   // sounds, no animations. If the stored guesses already decided the game
   // (a hit, or all eight spent), finish immediately so the result is recorded.
   function resumeAttempt(r){
@@ -860,9 +860,9 @@
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    // skill tier by guesses used — instant dopamine on a win (becomes a live
+    // skill tier by guesses used - instant dopamine on a win (becomes a live
     // percentile once the leaderboard has a real distribution to rank against)
-    var TIER=['','Bullseye — first try! 🎯','Sniper — 2 guesses 🎯','Scout-level — 3 guesses 🔭','Sharp — 4 guesses','Solid — 5 guesses','Clutch — 6 guesses','Down to the wire — 7','Buzzer-beater — 8 ⏱'];
+    var TIER=['','Bullseye: first try! 🎯','Sniper: 2 guesses 🎯','Scout-level: 3 guesses 🔭','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8 ⏱'];
     document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
     (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');

@@ -1,6 +1,6 @@
-/* Run The Arcade — archive / past-day mode (shared)
+/* Run The Arcade - archive / past-day mode (shared)
  * A game page with ?date=YYYY-MM-DD runs THAT day's deterministic puzzle
- * instead of today's — a PRO-only "play any past day" feature.
+ * instead of today's - a PRO-only "play any past day" feature.
  *
  * Rules enforced here:
  *  - Only a valid past date (>= LAUNCH, < today) activates archive mode.
@@ -14,7 +14,7 @@
  */
 (function(){
   'use strict';
-  var LAUNCH='2026-07-22';   // the day RunTheGrid launched — earliest archive day
+  var LAUNCH='2026-07-22';   // the day RunTheGrid launched - earliest archive day
   function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function isPro(){ return !!(window.RTGTokens && window.RTGTokens.isPro && window.RTGTokens.isPro()); }
   function param(){ try{ return new URLSearchParams(location.search).get('date'); }catch(e){ return null; } }
@@ -31,7 +31,7 @@
 
   // Per-date personal best. Every archive attempt is untracked by streak /
   // leaderboard for integrity, but the paying member's own high score on a
-  // given day is worth persisting — this is the "chase your personal best"
+  // given day is worth persisting - this is the "chase your personal best"
   // hook the banner is promising. Games call recordBest(game, score) on
   // finish (archive only); the banner reads it back on the next visit.
   function pbKey(game){ return 'rtg:'+game+':pb:'+raw; }
@@ -104,7 +104,7 @@
     wantsPast:function(){ return wantsPast; },            // a valid past date was requested (pro or not)
     isPro:isPro,
     pretty:pretty,
-    // per-date personal-best helpers — safe no-ops when not in archive mode
+    // per-date personal-best helpers - safe no-ops when not in archive mode
     recordBest:recordBest,
     readBest:readBest
   };

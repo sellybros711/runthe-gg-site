@@ -9,7 +9,7 @@
  * The session lives in supabase-js under its default storage key, the same key
  * board.js and every other game read, so signing in here signs you in everywhere and
  * the other way round. RunTheTour (/golf) keeps its own session key, so we bridge the
- * session blob to it the same way the home page does — this is what makes one account
+ * session blob to it the same way the home page does - this is what makes one account
  * follow you into Arcade, Football, Soccer, Golf and back.
  *
  * OPTIONAL, exactly like board.js. If the supabase-js CDN is blocked or the library
@@ -137,7 +137,7 @@
 
   // Username OR email login: a bare username is resolved to its email first, but only
   // if the password checks out (email_for_login is the site's current, password-gated
-  // login RPC — the old anon email_for_username hole was revoked).
+  // login RPC - the old anon email_for_username hole was revoked).
   function signIn(idOrEmail, password) {
     if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
     var id = String(idOrEmail || '').trim();

@@ -106,7 +106,7 @@
       t.textContent = 'Your account';
       l.textContent = 'One account. Your streaks, scores and Pro follow you into every RunThe.GG game.';
       var nm = cur.name || 'Player';
-      // "Manage subscription" lives here (account plumbing), not on the hub —
+      // "Manage subscription" lives here (account plumbing), not on the hub -
       // shown only to cardholders; opens the member view of the card modal,
       // which hands off to the Stripe portal.
       var isPro = false;
@@ -149,7 +149,7 @@
     // sign in / sign up
     var isUp = m === 'signup';
     t.textContent = isUp ? 'Create your account' : 'Welcome back';
-    l.textContent = 'Free forever. One account works across every RunThe.GG game — Arcade, Football, Soccer, Golf and more.';
+    l.textContent = 'Free forever. One account works across every RunThe.GG game: Arcade, Football, Soccer, Golf and more.';
     b.innerHTML =
       '<button class="rtgauth-gbtn" id="rtgauthG" type="button"' + (busy ? ' disabled' : '') + '>' + GOOGLE_G + 'Continue with Google</button>' +
       '<div class="rtgauth-or">or</div>' +

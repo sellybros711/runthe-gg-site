@@ -334,7 +334,7 @@
       // distractors: same sport, and NOT the same exact team path (no second correct answer)
       var others=(bySport[t.sport]||[]).filter(function(e){ return e.id!==t.id && (e.t||[]).join('>')!==tpath; });
       if(others.length<3) continue;
-      // Prefer decoys that SHARE at least one team with the target — "he also
+      // Prefer decoys that SHARE at least one team with the target - "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
       // name. Still fair: only the target has the exact full chronological path.
       // Progressive difficulty by round number (out.length = rounds built so far):
@@ -378,7 +378,7 @@
     }).join('') + eraLine(target);
     function eraLine(t){
       // era clue: a short path (two recorded stints) can be almost anyone, so
-      // anchor it in time — narrows the guess to contemporaries without naming
+      // anchor it in time - narrows the guess to contemporaries without naming
       // anything the decoy logic depends on (decoys share sport, not era).
       var d=t.decade||[]; if(!d.length) return '';
       var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s–'+d[d.length-1]+'s');
@@ -428,7 +428,7 @@
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token, replaying
-  // animations or sounds. Rounds before idx are simply skipped — SEQ is
+  // animations or sounds. Rounds before idx are simply skipped - SEQ is
   // deterministic, so the board is consistent with what was already played.
   function resumeAttempt(r){
     seedDaily(); SEQ=buildRounds(); servedDaily=true;
@@ -503,7 +503,7 @@
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(run>=SEQ.length) sub='You named them all!';
     else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
-    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best — one more tomorrow!';
+    else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
     else sub='Your run ended';
     var subEl=document.getElementById('mSub');
