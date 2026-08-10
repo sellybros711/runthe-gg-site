@@ -20,7 +20,8 @@
   'use strict';
 
   var MONTHLY = { plan: 'monthly', price: '$5.99', per: 'month', bill: '$5.99/month' };
-  var ANNUAL  = { plan: 'annual',  price: '$49.99', per: 'year', bill: '$49.99/year', permo: '$4.17/mo', save: 'Save $21.89' };
+  var ANNUAL  = { plan: 'annual',  price: '$49.99', per: 'year', bill: '$49.99/year', permo: '$4.17/mo',
+                  save: 'SAVE 30%', anchor: '$71.88' };
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function $(id){ return document.getElementById(id); }
@@ -88,11 +89,25 @@
   function close(){ var el=$('rtgcardScrim'); if(el) el.hidden=true; }
 
   var CHECK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  // Days of archive available, and the puzzle count that implies (9 games a
+  // day). The number is the whole argument: "past days" is abstract, "171
+  // puzzles" is not.
+  function vaultDays(){
+    try {
+      var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
+      return Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
+    } catch (e) { return 0; }
+  }
   function benefitsHTML(){
+    var d = vaultDays(), pz = d * 9;
     return '<ul class="rtgc-perks">' +
-      '<li><span>♾️</span> Unlimited Arcade plays, every day</li>' +
-      '<li><span>🏀</span> NBA, NFL &amp; MLB versions of every game</li>' +
-      '<li><span>🗂️</span> Full Arcade Archive: play past days</li>' +
+      // Lead with the most differentiated perk: four editions of nine games is
+      // a bigger idea than "unlimited", and nothing else on the market has it.
+      '<li><span>🏀</span> <b>36 daily puzzles, not 9</b> - NBA-only, NFL-only and MLB-only editions of every game, each with its own streak</li>' +
+      '<li><span>♾️</span> Unlimited plays, every day</li>' +
+      (d > 0
+        ? '<li><span>🗂️</span> The full Archive: <b>' + d + ' past days</b>, ' + pz + ' puzzles you can still play</li>'
+        : '<li><span>🗂️</span> Full Arcade Archive: play past days</li>') +
       '<li><span>🆕</span> New games &amp; challenges as they drop</li>' +
       '<li><span>📊</span> Your full history &amp; stats</li>' +
     '</ul>';
@@ -106,8 +121,12 @@
     var chosen = 'annual';   // steer to best value by default
     var kicker, head, sub;
     if(reason==='archive'){
-      kicker='Arcade Archive'; head='Unlock the full Archive';
-      sub='Play any past day’s puzzles across every game with an Arcade Card.';
+      var vd = vaultDays();
+      kicker='Arcade Archive';
+      head = vd > 0 ? ('Unlock ' + vd + ' days you missed') : 'Unlock the full Archive';
+      sub = vd > 0
+        ? ('That’s ' + (vd*9) + ' puzzles waiting, across all nine games. Play any of them, any time.')
+        : 'Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='upsell'){
       kicker='Arcade Card'; head='Go unlimited';
       sub='Unlimited plays across every game, every day, plus the full archive.';
@@ -132,7 +151,7 @@
         '<div class="rtgc-terms" id="rtgcardTerms"></div>'+
         '<div id="rtgcardErr"></div>'+
         '<button class="rtgc-ghost" id="rtgcardLater" type="button">Come back tomorrow</button>'+
-        '<div class="rtgc-fine">Cancel anytime. Renews automatically. Manage or cancel from your account.</div>';
+        '<div class="rtgc-fine">Cancel anytime in two taps &middot; Your streaks stay yours if you cancel &middot; Instant access</div>';
       [].forEach.call(b.querySelectorAll('.rtgc-plan'),function(p){ p.onclick=function(){ chosen=p.dataset.plan; render(); }; });
       $('rtgcardGo').onclick=function(){ startCheckout(chosen); };
       $('rtgcardLater').onclick=close;
@@ -175,7 +194,7 @@
       (plan==='annual'?'<span class="badge">Best value</span>':'')+
       '<div class="pt">'+(plan==='annual'?'Annual':'Monthly')+'</div>'+
       '<div class="pp">'+p.price+'</div>'+
-      '<div class="pm">'+(plan==='annual'?('/year · '+p.permo):'/month')+'</div>'+
+      '<div class="pm">'+(plan==='annual'?('<s style="opacity:.55">'+p.anchor+'</s> /year · '+p.permo):'/month')+'</div>'+
       (plan==='annual'?'<span class="save">'+p.save+'</span>':'')+
     '</div>';
   }

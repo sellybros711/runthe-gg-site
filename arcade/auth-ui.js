@@ -60,11 +60,15 @@
       '.rtgauth-av{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--gold,#F2B632);color:#20160a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;font-family:var(--hero,inherit);}',
       '.rtgauth-me .u{font-weight:800;font-size:15px;} .rtgauth-me .e{font-size:11.5px;color:var(--mut,#93a4bd);}',
       // topbar account button
-      '.rtgauth-chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:9px;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;line-height:1;}',
+      // min-width holds the chip's footprint: it mounts as "Sign in" and repaints
+      // to a username when auth resolves (~500ms), and the width change used to
+      // shove every other topbar button sideways - the arcade's single biggest
+      // layout-shift source.
+      '.rtgauth-chip{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;min-width:92px;padding:0 11px;border-radius:9px;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;line-height:1;}',
       '.rtgauth-chip:hover{border-color:var(--gold,#F2B632);}',
       '.rtgauth-chip .rtgauth-cav{width:20px;height:20px;border-radius:50%;background:var(--gold,#F2B632);color:#20160a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;}',
       '.rtgauth-chip .rtgauth-clab{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-      '@media (max-width:430px){.rtgauth-chip{padding:0 8px;gap:0;}.rtgauth-chip .rtgauth-clab{display:none;}}'
+      '@media (max-width:430px){.rtgauth-chip{padding:0 8px;gap:0;min-width:40px;}.rtgauth-chip .rtgauth-clab{display:none;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }

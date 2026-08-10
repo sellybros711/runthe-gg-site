@@ -161,6 +161,9 @@
 <script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function(){
+  // days of archive since launch; drives the gate's concrete pitch
+  var VAULTD = (function(){ try{ var L=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-07-22';
+    return Math.max(0, Math.floor((Date.now()-Date.parse(L))/864e5)); }catch(e){ return 0; } })();
   'use strict';
   var LS=window.localStorage;
   var content=document.getElementById('content');
@@ -188,8 +191,11 @@
     content.innerHTML =
       '<div class="gate">'+
         '<div class="crown"><svg width="28" height="28" viewBox="0 0 24 24" fill="#20140a" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7z"/></svg></div>'+
-        '<h2>The Archive is an Arcade Card perk</h2>'+
-        '<p>Go back and play any puzzle you missed, from any game.</p>'+
+        // the day count is live: an abstract perk becomes a specific pile
+        '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Archive is an Arcade Card perk') + '</h2>'+
+        '<p>' + (VAULTD > 0
+          ? ('That’s ' + (VAULTD * 9) + ' puzzles you can still play, across all nine games.')
+          : 'Go back and play any puzzle you missed, from any game.') + '</p>'+
         '<ul>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, every game</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays, no daily token limit</span></li>'+
