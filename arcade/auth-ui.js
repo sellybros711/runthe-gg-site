@@ -106,15 +106,23 @@
       t.textContent = 'Your account';
       l.textContent = 'One account. Your streaks, scores and Pro follow you into every RunThe.GG game.';
       var nm = cur.name || 'Player';
+      // "Manage subscription" lives here (account plumbing), not on the hub —
+      // shown only to cardholders; opens the member view of the card modal,
+      // which hands off to the Stripe portal.
+      var isPro = false;
+      try { isPro = !!(window.RTGTokens && RTGTokens.isPro && RTGTokens.isPro()); } catch (e) {}
       b.innerHTML =
         '<div class="rtgauth-me"><div class="rtgauth-av">' + esc((nm.charAt(0) || 'P').toUpperCase()) + '</div>' +
           '<div><div class="u">' + esc(nm) + '</div>' + (cur.email ? '<div class="e">' + esc(cur.email) + '</div>' : '') + '</div></div>' +
         '<button class="rtgauth-ghost" id="rtgauthRename" type="button">Change username</button>' +
         '<div style="height:9px"></div>' +
+        (isPro ? '<button class="rtgauth-ghost" id="rtgauthSub" type="button">Manage subscription</button><div style="height:9px"></div>' : '') +
         '<button class="rtgauth-ghost" id="rtgauthOut" type="button">Sign out</button>' +
         (st.err ? '<div class="rtgauth-err" style="margin-top:12px">' + esc(st.err) + '</div>' : '') +
         '<div style="text-align:center;margin-top:14px"><button class="rtgauth-danger" id="rtgauthDel" type="button">Delete account</button></div>';
       $('rtgauthRename').onclick = function () { st.mode = 'username'; st.err = ''; renderModal(); };
+      var sub = $('rtgauthSub');
+      if (sub) sub.onclick = function () { close(); if (window.RTGCard) RTGCard.paywall({}); };
       $('rtgauthOut').onclick = function () { run(function () { return A.signOut(); }, true); };
       $('rtgauthDel').onclick = onDelete;
       return;
