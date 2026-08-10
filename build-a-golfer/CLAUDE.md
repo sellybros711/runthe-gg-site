@@ -14383,6 +14383,47 @@ allows Google Fonts, or self-host Anton.*
   byte-identical to the source afterward). Tunable: `catPlural`'s irregular-suffix rule if a future category
   label needs a special case.
 
+- **Legend Circuit achievements now ACCUMULATE across every circuit career (player bug report).** A player
+  emailed: *"on my achievements I stopped accumulating wins towards the Legend Circuit career achievement
+  for 100 wins. I hit every other achievement, but can't move this one any closer."* Root cause: the
+  circuit's wins/majors/seasons were captured as a **MAX of a SINGLE circuit career** — `endCircuit()` banked
+  `max:{circuitWins:cc.wins,…}` and `achMetrics()` read `Math.max(flag, S.circuitCareer.wins)`. So when a
+  circuit ended and the player started a new career + circuit, `S.circuitCareer.wins` reset to 0 and the
+  persisted max stayed frozen: new circuit wins contributed **nothing** until they EXCEEDED the previous
+  best. A 12-season circuit yields roughly 20-40 wins after the CS130 difficulty pass, so "Circuit Immortal ·
+  Win 100 Legend Circuit events" (and Senior Major Legend 10 / Grand Master 20) were effectively unreachable,
+  while their descriptions imply a lifetime total like every other career achievement — and the reporter had
+  hit everything else precisely because every OTHER career counter is a genuine lifetime accumulator. A
+  second, quieter half of the bug: the circuit season-record block never called `evaluateAch()`, so circuit
+  achievements only evaluated when the player happened to open the Profile (which does, CS-era) or at the
+  ceremony.
+  Fix (all client-side, no migration):
+  - **New lifetime flags** `circuitWinsLife` / `circuitMajorsLife` / `circuitSeasonsLife`, **seeded ONCE**
+    from the legacy MAX flag (`seedCircuitLife()`, guarded by `circuitLifeSeed`). The old max is always ≤ the
+    true lifetime total, so the migration can only ever credit, never revoke — nobody loses an unlock.
+  - **`bankCircuitAch(cc)`** banks the DELTA since the last bank (`cc._bankW/_bankM/_bankS`), so it's
+    idempotent (a repeat call, or a repeated `endCircuit()`, adds nothing) and an **abandoned** circuit keeps
+    its progress. Called at each **circuit season record** AND at **`endCircuit()`**; the season block now
+    also runs `evaluateAch()`, so circuit achievements unlock DURING the circuit instead of only at the
+    ceremony. Guest-safe (`sbSignedIn()` gate, like the rest of the achievement system) and the bank markers
+    ride `S.circuitCareer` through `saveCareer`, so they're resume- and cloud-safe (`mergeAch` object-merges
+    flags).
+  - **`achMetrics` = banked lifetime + this circuit's UNBANKED feats** (`circuitLifeMetric`), so an
+    in-progress circuit still counts live (the behaviour the old comment promised) with no double-count after
+    a bank and no jump/drop at the moment of banking.
+  Verified in Playwright against the real in-file functions: the reporter's case — two circuits of 38 + 41
+  wins now report **79** through the real `endCircuit()` path (old behaviour: 41), and four circuits of 28
+  report 112/100 on Circuit Immortal (old: frozen at 28); a legacy account mid-new-circuit reads
+  oldMax+live with no discontinuity when it first banks; repeat banks + a repeated `endCircuit()` never
+  double-count; the metric never decreases (no unlock revoked); the circuit tiers unlock and `evaluateAch()`
+  runs clean; a guest banks nothing. Full regression (18-hole practice daily round to the result, overlay
+  sweep) green with **0 page errors**; `node --check` clean. Deployed to /golf (verified byte-identical;
+  main had moved twice mid-deploy from parallel game workstreams, but neither touched `golf/index.html`, so
+  nothing was clobbered or needed adopting). NOTE for the owner: the reporter's stuck counter now unlocks
+  itself — their banked best-circuit total is seeded as the lifetime starting point and every future circuit
+  adds on top; under true lifetime accumulation 100 circuit wins is roughly 4-8 full careers, i.e. a genuine
+  long-haul goal in line with the other 250/500-win tiers rather than an impossible one.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
