@@ -33,6 +33,9 @@
  */
 import { readFileSync, writeFileSync } from 'fs';
 
+// Include the current season so the Number Game reflects live rosters (offseason
+// moves and mid-season trades). This job is re-run on a schedule (see
+// .github/workflows/jerseys.yml) to keep it current.
 const NOW_YEAR = new Date().getFullYear();
 const START = 1990;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

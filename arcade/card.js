@@ -32,6 +32,11 @@
     }catch(e){}
     return null;
   }
+  // The Supabase session access token. The billing endpoints verify it and
+  // derive the user id from it (they no longer trust a body user_id), so a
+  // request without it is rejected 401.
+  function authToken(){ try{ return (window.RTG_AUTH && RTG_AUTH.token && RTG_AUTH.token()) || null; }catch(e){ return null; } }
+  function authHeaders(){ var h={'Content-Type':'application/json'}; var t=authToken(); if(t) h.Authorization='Bearer '+t; return h; }
   function signedIn(){ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()) || !!userId(); }
   function hasCard(){ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }
   function returnPath(){ try{ return location.pathname + location.search; }catch(e){ return '/arcade/'; } }
@@ -235,7 +240,7 @@
     var uid=userId();
     if(!uid){ showErr('Please sign in and try again.'); return; }
     fetch('/api/stripe/checkout', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, plan: plan, return_path: returnPath() })
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){
@@ -243,7 +248,7 @@
         if(d && d.error==='already_active'){ renderMember(); return; }   // server says: you already have a card
         var msg = (d && d.detail) ? ('Checkout error: '+d.detail)
           : (d && d.error==='stripe_not_configured') ? 'Checkout isn’t configured yet (missing keys/prices).'
-          : (d && d.error==='missing_user_id') ? 'Please sign in, then try again.'
+          : (d && (d.error==='missing_user_id'||d.error==='unauthorized')) ? 'Please sign in, then try again.'
           : (d && d.error) ? ('Checkout error: '+d.error)
           : 'Could not start checkout. Please try again.';
         showErr(msg);
@@ -259,7 +264,7 @@
   function portal(){
     var uid=userId(); if(!uid){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return; }
     return fetch('/api/stripe/portal', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, return_path: returnPath() })
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){ if(d && d.url) location.href=d.url; return d; })
