@@ -7,6 +7,12 @@
   'use strict';
 
   var CONTENT = {
+    match: [
+      'Sixteen cards hide four secret groups of four.',
+      'A group can be a team, a college, a jersey number — any shared thread.',
+      'Tap four cards, then Submit. "One away" means three of them belong together.',
+      'Four mistakes ends the day. Solve all four groups to keep your streak.'
+    ],
     table: [
       'Two athletes, one question: who wore the higher jersey number?',
       'Tap your pick and the numbers reveal instantly.',

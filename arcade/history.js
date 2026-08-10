@@ -15,6 +15,7 @@
   var idv=function(v){ return v; };
   var CFG={
     table:     { unit:'in a row', fmt:idv,     accent:'var(--goldT,#F2B632)' },
+    almamater: { unit:'in a row', fmt:idv,     accent:'var(--goldT,#F2B632)' },
     oddone:    { unit:'in a row', fmt:idv,     accent:'var(--violetT,#A982F3)' },
     career:    { unit:'in a row', fmt:idv,     accent:'var(--greenT,#48D17A)' },
     rankit:    { unit:'sets',     fmt:idv,     accent:'var(--pinkT,#F65C9C)' },

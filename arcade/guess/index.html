@@ -175,6 +175,9 @@
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px;}
   .sheet h2.win{color:var(--greenT);} .sheet h2.lose{color:var(--coralT);}
+  .milestone{display:none; margin:2px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .revcard{display:flex; align-items:center; gap:12px; text-align:left; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:12px 0;}
   .revcard .rn{font-weight:900; font-size:17px; color:var(--ink);} .revcard .rs{font-size:12px; color:var(--mut); margin-top:2px;}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0 4px;}
@@ -327,12 +330,14 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle" class="win">SOLVED</h2>
     <div class="sub-h" id="mSub"></div>
+    <div class="milestone" id="mMilestone"></div>
     <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -354,6 +359,8 @@
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/history.js?v=1"></script>
+<script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -827,19 +834,27 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), g:guesses.map(function(e){ return e.id; }), c:cluesUsed })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  var MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
   function finish(w){
     if(done) return; done=true; won=w; if(tick) clearInterval(tick);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       // streak counts a day you SOLVED it; a loss breaks the streak
       s.streak = w ? ((s.lastDone===y)?(s.streak||0)+1:1) : 0;
       s.bestStreak=Math.max(s.bestStreak||0, s.streak);
-      if(w){ s.wins=(s.wins||0)+1; }
+      if(w){ s.wins=(s.wins||0)+1; if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak); }
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
+    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('guess', w?guesses.length:null, w);
     if(ARCHIVE && w && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, guesses.length, { higherIsBetter:false, label:'guesses' });
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
@@ -858,6 +873,9 @@
     document.getElementById('mStreak').textContent=s.streak||0;
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
     document.getElementById('yourBest').textContent = s.bestStreak||0;
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
 
     if(w && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
@@ -886,7 +904,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
