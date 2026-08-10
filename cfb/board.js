@@ -78,12 +78,25 @@
   const SORTS = { record: 'score', overall: 'overall', rank: 'national_rank' };
   const DIR = { record: 'desc', overall: 'desc', rank: 'asc' };
 
-  /* Postgres reads an index backwards as happily as forwards, but only when every
-     sort key reverses together: `score asc, created_at asc` against a
-     (score desc, created_at asc) index is a backward scan plus an Incremental Sort,
-     while `score asc, created_at desc` is a clean backward scan. So the tiebreak
-     flips with the sort. */
-  const ORDER_TIEBREAK = { desc: 'asc', asc: 'desc' };
+  /* Postgres reads an index backwards as happily as forwards, but only when EVERY sort
+     key reverses together: `score asc, created_at asc` against a
+     (score desc, created_at asc) index is a backward scan plus an Incremental Sort, while
+     `score asc, created_at desc` is a clean backward scan. So the tiebreak flips whenever
+     the read does.
+     WHICH IS NOT THE SAME AS FLIPPING WITH THE LITERAL DIRECTION, and that distinction
+     cost the ranking axis its index. This used to be keyed on the word -- desc meant an
+     asc tiebreak and asc meant a desc one -- which is only true for the two axes whose
+     index happens to be (col desc, created_at asc). national_rank's index is
+     (national_rank ASC, created_at asc), so its natural read is forwards and asked for a
+     DESC tiebreak, which is a forward scan on the first key and a sort on the second: the
+     one axis where a board read could not be served from its index.
+     Keyed on whether the index is being read backwards instead, which is true for all
+     three and stays true for any axis added later, whichever way its own index runs.
+     Every created_at in the three AXIS indexes -- in 63_cfb_run_mode.sql and again as
+     partials in 67_cfb_named_board.sql -- is ASC, so forward is asc and backward is
+     desc. (The fourth in each file leads with created_at and serves a COUNT, which has
+     no order at all, so it is not one of these.) */
+  const tiebreakFor = (key, way) => (way === DIR[key] ? 'asc' : 'desc');
 
   let offline = false;
 
@@ -339,11 +352,14 @@
      also leaves it out.
 
      Equal seasons share a place, and the list breaks the tie by who got there first. */
-  async function placeIn(opts, sort, value) {
+  /* `dir` sits before `value` to match the football game's placeIn, so the two boards'
+     board.js files read the same way round. Counting the rows AHEAD of you is the same
+     count either way; which comparison means "ahead" is what flips. */
+  async function placeIn(opts, sort, dirWant, value) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
     const key = SORTS[sort] ? sort : 'record';
     const col = SORTS[key];
-    const dir = DIR[key];
+    const dir = dirOf(key, dirWant);
     /* Rounded to match what the column HOLDS, or the comparison is against a
        precision the stored rows do not have and the place comes back one out. */
     const v = col === 'overall' ? round2(value) : value;
@@ -383,6 +399,11 @@
   /* The three windows in one go, for the results screen. Parallel rather than
      sequential: three round trips one after another is most of a second on a phone,
      and they do not depend on each other. */
+  /* COUNTED AGAINST THE BOARD, WHICH IS THE NAMED ROWS. It used to count against every
+     row in the window, guests included, so the results screen could say 40th and the
+     board -- which only lists the named ones -- would seat the same season at 31st.
+     Two different numbers for one question, and the one you could check was the one
+     that was wrong. The football game has counted these the same way for a while. */
   async function ranks(score, mode) {
     const wins = ['today', 'week', 'all'];
     const out = await Promise.all(wins.map(async (w) => {
@@ -391,7 +412,7 @@
          is not a placing, it is two unrelated numbers next to each other. */
       const opts = { window: w === 'today' ? 'day' : w, mode, named: true };
       const [place, count] = await Promise.all([
-        placeIn(opts, 'record', score), total(opts),
+        placeIn(opts, 'record', 'desc', score), total(opts),
       ]);
       return { window: w, place, total: count };
     }));
@@ -420,13 +441,22 @@
     return res;
   }
 
-  /* ---------------- the list ---------------- */
-  async function top(opts, limit, sort) {
+  /* ---------------- the list ----------------
+     `dir`, when given, overrides the axis's natural direction. Reading an index
+     BACKWARDS is as cheap as reading it forwards in Postgres, so a reversed board costs
+     no new index and no extra time -- provided the tiebreak reverses with it, which is
+     what tiebreakFor above is for.
+
+     Validated against DIR's own two values rather than passed through, for the same
+     reason `sort` is looked up in SORTS: nothing a caller hands in reaches an order=
+     parameter as text. */
+  const dirOf = (key, dir) => (dir === 'asc' || dir === 'desc' ? dir : DIR[key]);
+  async function top(opts, limit, sort, dir) {
     const key = SORTS[sort] ? sort : 'record';
     const col = SORTS[key];
-    const way = DIR[key];
+    const way = dirOf(key, dir);
     const q = (c) => base() + TABLE + '?select=' + c +
-      '&order=' + col + '.' + way + ',created_at.' + ORDER_TIEBREAK[way] +
+      '&order=' + col + '.' + way + ',created_at.' + tiebreakFor(key, way) +
       '&limit=' + (limit || 25) + scope(opts) +
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {

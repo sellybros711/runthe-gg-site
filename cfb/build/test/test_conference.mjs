@@ -178,13 +178,20 @@ console.log('\n=== a conference season, all the way through ===');
   await page.click('#o-lb'); await page.waitForTimeout(2600);
   ok('the board opens on the competition just played',
     (await page.$eval('#lb-comp', (e) => e.value)) === 'conf:Pac-12');
-  /* The seeded NAMED season is on it. The one just played is not, and must not be: it
-     was played signed out, and the board lists named seasons only. */
+  /* THE SEEDED NAMED SEASON IS ON IT. The one just played is not, and must not be: it
+     was played signed out, and the board lists named seasons only.
+     Podium AND list: the top three are steps above the list rather than the first three
+     rows of it, so `.lbr` alone would look right on a board of three and find nothing.
+     And `.mine`, not `.me` -- the class was renamed when both games settled on one
+     spelling, so this half of the assertion had been selecting an empty set. */
   ok('the named season in this competition is on it',
-    (await page.$$eval('.lbr', (e) => e.length)) >= 1);
+    (await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length)) >= 1);
   ok('and the signed-out season just played is not',
-    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
-  ok('the blurb says why it is its own board',
+    (await page.$$eval('#lb-rows .lbr.mine, #lb-podium .pod.mine', (e) => e.length)) === 0);
+  /* Counted as ACTIVITY on this competition even so, which is the other half of what
+     "the boards stay apart" means. */
+  const cCount = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  ok('and the season is counted on it', /^[1-9]/.test(cCount), cCount);  ok('the blurb says why it is its own board',
     /not the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });
   await page.selectOption('#lb-comp', 'free'); await page.waitForTimeout(2200);
@@ -194,8 +201,10 @@ console.log('\n=== a conference season, all the way through ===');
      went red the moment another test left a free-play row behind. */
   const onFree = await page.evaluate((id) => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free&id=eq.' + id)
     .then((r) => r.json()).then((a) => a.length), row.id);
+  /* `.lbr.me` was the class before both games settled on `.mine`, so this half of the
+     assertion had stopped selecting anything and had been passing on an empty set. */
   ok('and it is not on the free-play board', onFree === 0 &&
-    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
+    (await page.$$eval('.lbr.mine, .pod.mine', (e) => e.length)) === 0);
   ok('every competition is selectable',
     (await page.$$eval('#lb-comp option', (e) => e.length)) === 6);
   await page.close();

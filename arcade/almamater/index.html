@@ -258,7 +258,6 @@
       <button class="abtn" id="mShare" type="button">Share</button>
       <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
     </div>
-    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
   </div>
 </div>
@@ -272,7 +271,6 @@
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -286,6 +284,7 @@
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=1"></script>
 <script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
@@ -550,7 +549,6 @@
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
     save(s);
-    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('almamater', run, run>0);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -582,7 +580,6 @@
     if(mm){ if(!locked && MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'almamater');
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
@@ -608,13 +605,13 @@
     }
   document.getElementById('mShare').addEventListener('click', function(){
     var stat=(run>0?'🔥 ':'')+run+' in a row';
-    RTGShare.fire(RTGShare.card('almamater', DATE, { grid:shareGrid(), stat:stat }), run);
+    RTGShare.send({ key:'almamater', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
   });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New players in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New boards in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m '+String(x%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F2B632','#37C5D5','#F06A5F','#A982F3','#48D17A','#2F6BFF'];
   function goldPalette(){ var t=window.RTGFavTeam?RTGFavTeam.resolved():null;

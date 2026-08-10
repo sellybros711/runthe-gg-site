@@ -372,6 +372,29 @@ select t_ok('the named ranking board scans a named index',
 select t_ok('the newest-first board scans a named index',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by created_at desc, score desc limit 50')
     like '%cfb_runs_named%');
+-- REVERSED, which the direction button on the board can now ask for. The whole cost
+-- argument for that button is that Postgres reads an index backwards as cheaply as
+-- forwards -- but only when EVERY key reverses together, which is why cfb/board.js
+-- flips the created_at tiebreak along with the sort key. These three are the queries
+-- it sends with the direction turned round, and they have to land on a partial index
+-- exactly as the natural three above do.
+--
+-- Note the tiebreak on the ranking axis: reversed is created_at DESC, and NATURAL is
+-- created_at ASC, matching the ranking check above. That is not symmetry for its own
+-- sake -- national_rank's index is (national_rank ASC, created_at asc), so its natural
+-- read is forwards, and asking for a DESC tiebreak there was a forward scan plus a
+-- sort. board.js used to key the tiebreak on the literal direction, which is only
+-- right for the two axes whose index runs (col desc, created_at asc).
+select t_ok('the reversed record board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by score asc, created_at desc limit 50')
+    like '%cfb_runs_named%');
+select t_ok('the reversed overall board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null and overall is not null order by overall asc, created_at desc limit 50')
+    like '%cfb_runs_named%');
+select t_ok('the reversed ranking board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by national_rank desc, created_at desc limit 50')
+    like '%cfb_runs_named%');
+
 -- And the thing those four are really guarding against, stated once directly.
 select t_ok('  ...and never the whole-mode index with a filter on top',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by score desc, created_at asc limit 50')

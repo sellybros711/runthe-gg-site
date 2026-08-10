@@ -581,7 +581,6 @@
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
-      <div id="rtgHist"></div>
       <div class="coinline" id="resCoins"></div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
@@ -629,7 +628,6 @@
 <script src="/arcade/data.js?v=1"></script>
   <script src="generator.js?v=12"></script>
   <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -641,6 +639,7 @@
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=1"></script>
 <script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
   <script>
@@ -1305,7 +1304,6 @@
       if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
         RTGArchive.recordBest('match', Math.round(finalTime), { higherIsBetter:false, label:'sec' });
       }
-      if (attemptFirst && !ARCHIVE && window.RTGHistory) RTGHistory.push('match', won ? Math.round(finalTime) : null, won);
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 
@@ -1342,7 +1340,6 @@
       if (time <= 1.4 * par && m <= 3) return 'C';
       return 'D';
     }
-    var VERDICTS = { 'A+': 'First-round lock.', 'A': 'Franchise pick.', 'B': 'Solid starter.', 'C': 'Made the roster.', 'D': 'Practice squad.', 'F': 'Cut in camp.' };
 
     // ---- result modal ----
     function colorEmoji(hex) {
@@ -1374,7 +1371,6 @@
       document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
       // streak milestone banner (or a "practice - not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
-      if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
       else if (r.practice) { ms.textContent = 'Practice, not ranked'; ms.classList.add('on'); }
       else { ms.textContent = ''; ms.classList.remove('on'); }
@@ -1390,121 +1386,18 @@
         if (window.RTGSound) RTGSound.win();
       }
     }
-    function shareText(r) {
-      var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
-      var resLine = r.won
-        ? ('🧩 5/5 · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : ('🧩 ' + solveOrder.length + '/5 groups');
-      if (r.streak) resLine += ' · streak ' + r.streak;
-      // stat rides the challenge link when solved: solve time, lower is better.
-      try { window.RTGShareStat = r.won ? Math.round(r.time) : null; } catch (e) {}
-      return RTGShare.card('match', DATE, { grid: strip || null, stat: resLine });
-    }
-
-    // ---- visual share card: render the result to a PNG (canvas) -------------
-    var GRADE_COL = { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#1596AC', 'C': '#B8801A', 'D': '#B8801A', 'F': '#E0432A' };
-    function drawMatchCard(r) {
-      var W = 1080, H = 1350, cv = document.createElement('canvas');
-      cv.width = W; cv.height = H; var g = cv.getContext('2d');
-      function rr(x, y, w, h, rad) { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad); g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath(); }
-      function ls(v) { try { g.letterSpacing = v; } catch (e) {} }
-      // background + corner glows
-      var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#faf8f5'); bg.addColorStop(1, '#f2f0ec');
-      g.fillStyle = bg; g.fillRect(0, 0, W, H);
-      var gl = g.createRadialGradient(130, 70, 0, 130, 70, 560); gl.addColorStop(0, 'rgba(255,90,60,.13)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H);
-      var gl2 = g.createRadialGradient(W - 90, 50, 0, W - 90, 50, 560); gl2.addColorStop(0, 'rgba(124,92,240,.13)'); gl2.addColorStop(1, 'rgba(124,92,240,0)'); g.fillStyle = gl2; g.fillRect(0, 0, W, H);
-
-      g.textBaseline = 'alphabetic';
-      // wordmark: RunThe (ink) + Grid (coral), centered
-      g.font = '900 italic 66px Archivo, sans-serif'; ls('0px');
-      var t1 = 'RunThe', t2 = 'Grid', w1 = g.measureText(t1).width, w2 = g.measureText(t2).width, sx = W / 2 - (w1 + w2) / 2;
-      g.textAlign = 'left';
-      g.fillStyle = '#182430'; g.fillText(t1, sx, 132);
-      g.fillStyle = '#FF5A3C'; g.fillText(t2, sx + w1, 132);
-      g.textAlign = 'center';
-      g.font = '800 30px Archivo, sans-serif'; ls('6px'); g.fillStyle = '#FF5A3C'; g.fillText('DAILY MATCH', W / 2, 184); ls('0px');
-      g.font = '700 34px Archivo, sans-serif'; g.fillStyle = '#5c6b7a'; g.fillText(r.dateStr, W / 2, 248);
-
-      // white card panel
-      g.fillStyle = '#ffffff'; rr(70, 300, W - 140, 770, 44); g.fill();
-      g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(70, 300, W - 140, 770, 44); g.stroke();
-
-      var cy = 384;
-      if (r.won && r.mistakes === 0) {
-        var rw = 460, rh = 66, rx = W / 2 - rw / 2;
-        var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
-        g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
-        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('FLAWLESS', W / 2, cy + 43); ls('0px');
-        cy += 96;
-      } else { cy += 20; }
-
-      // HERO: you finished. (grade removed - the accomplishment + the solve
-      // order are the story now.)
-      var heroWord = r.won ? 'SOLVED' : 'FINAL';
-      var heroCol = r.won ? '#17A34A' : '#5c6b7a';
-      g.font = '400 172px Anton, Impact, sans-serif'; g.fillStyle = heroCol;
-      g.fillText(heroWord, W / 2, cy + 130);
-
-      // THE STORY: solve-order colour strip, big and centered
-      var sy = cy + 198;
-      if (r.strip && r.strip.length) {
-        g.font = '900 22px Archivo, sans-serif'; ls('4px'); g.fillStyle = '#5c6b7a'; g.fillText('THE ORDER YOU CRACKED THEM', W / 2, sy); ls('0px');
-        var bw = 132, bh = 52, bgap = 18, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = sy + 34;
-        r.strip.forEach(function (col, i) {
-          g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 14); g.fill();
-        });
-      }
-
-      // stat pills: TIME / MISSES / STREAK
-      var pills = [['TIME', r.timeStr], ['MISSES', String(r.mistakes)], ['STREAK', String(r.streak)]];
-      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = sy + 150;
-      pills.forEach(function (p, i) {
-        var px = px0 + i * (pw + gap);
-        g.fillStyle = '#faf8f5'; rr(px, py, pw, ph, 26); g.fill();
-        g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(px, py, pw, ph, 26); g.stroke();
-        g.fillStyle = '#182430'; g.font = '400 66px Anton, Impact, sans-serif'; g.fillText(p[1], px + pw / 2, py + 84);
-        g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
-      });
-
-      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/arcade', W / 2, H - 72); ls('0px');
-      return cv;
-    }
-    function cvToBlob(cv) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); }); }
+    // Share the invite card every game now shares (RTGShare.send): the solve
+    // order becomes the grid, the result line becomes the stat, and solve time
+    // (lower is better) rides the challenge link. Replaces Match's old bespoke
+    // canvas so all nine games look identical.
     function shareResultImage() {
       var r = window._lastResult || {};
-      var card = {
-        won: r.won, grade: r.grade, verdict: VERDICTS[r.grade] || '', timeStr: fmt(r.time),
-        mistakes: r.mistakes, streak: r.streak,
-        dateStr: new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
-        strip: solveOrder.map(function (idx) { return laneById[laneCat[idx]].color; })
-      };
-      var txt = shareText(r);
-      function go() {
-        var cv;
-        try { cv = drawMatchCard(card); } catch (e) { cv = null; }
-        if (!cv) { textShareFallback(txt); return; }
-        cvToBlob(cv).then(function (blob) {
-          if (!blob) { textShareFallback(txt); return; }
-          var file = new File([blob], 'runthegrid-match.png', { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: txt, title: 'Run The Arcade Daily Match' })
-              .catch(function (e) { if (e && e.name === 'AbortError') return; downloadBlob(blob, txt); });
-          } else { downloadBlob(blob, txt); }
-        });
-      }
-      if (document.fonts && document.fonts.ready && document.fonts.ready.then) { document.fonts.ready.then(go, go); } else { go(); }
-    }
-    function downloadBlob(blob, txt) {
-      var url = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = url; a.download = 'runthegrid-match.png'; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
-      if (txt && navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () {});
-      toast('Result image saved');
-    }
-    function textShareFallback(txt) {
-      if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
-      else { toast('Copy not supported'); }
+      var grid = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
+      var stat = r.won
+        ? ('\uD83E\uDDE9 5/5 \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('\uD83E\uDDE9 ' + solveOrder.length + '/5 groups');
+      if (r.streak) stat += ' \u00B7 streak ' + r.streak;
+      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null });
     }
 
     // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
@@ -1833,7 +1726,7 @@
     function startCountdown(elId) {
       if (cdTargets.indexOf(elId) === -1) cdTargets.push(elId);
       function upd() {
-        var html = 'Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
+        var html = 'New boards in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
         cdTargets.forEach(function (id) { var el = document.getElementById(id); if (el && el.offsetParent !== null) el.innerHTML = html; });
       }
       upd(); if (cdTick) clearInterval(cdTick); cdTick = setInterval(upd, 1000);

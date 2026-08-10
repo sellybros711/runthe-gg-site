@@ -362,7 +362,6 @@
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
-    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -384,7 +383,6 @@
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -397,6 +395,7 @@
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=1"></script>
 <script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
 <script>
@@ -881,7 +880,6 @@
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
-    if(!ARCHIVE && attemptFirst && window.RTGHistory) RTGHistory.push('guess', w?guesses.length:null, w);
     if(ARCHIVE && w && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, guesses.length, { higherIsBetter:false, label:'guesses' });
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
@@ -902,7 +900,6 @@
     document.getElementById('yourBest').textContent = s.bestStreak||0;
     var mm=document.getElementById('mMilestone');
     if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
 
     if(w && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
@@ -922,13 +919,13 @@
   document.getElementById('mShare').addEventListener('click', function(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
     var stat=(won?('🎯 '+guesses.length+'/'+MAX):('❌ X/'+MAX))+' · '+fmt(elapsed);
-    RTGShare.fire(RTGShare.card('guess', DATE, { grid:grid, stat:stat }), won?guesses.length:null);
+    RTGShare.send({ key:'guess', date:DATE, grid:grid, stat:stat, statInt:(won?guesses.length:null) });
   });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New boards in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}

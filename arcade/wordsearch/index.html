@@ -300,7 +300,6 @@
       <button class="abtn" id="mShare" type="button">Share</button>
       <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
     </div>
-    <div id="rtgHist"></div>
     <div class="countdown" id="mCountdown"></div>
   </div>
 </div>
@@ -314,7 +313,6 @@
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
@@ -327,6 +325,7 @@
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=1"></script>
 <script src="/arcade/pregame.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/howto.js?v=1"></script>
@@ -710,7 +709,7 @@
       NEWBEST=(!ARCHIVE && attemptFirst && prevBest>0 && Math.round(elapsed)<prevBest);
       s.best=Math.min(s.best||1e9, Math.round(elapsed));
       s.solves=(s.solves||0)+1; save(s);
-      if(!ARCHIVE && attemptFirst){ MSTONE=streakMilestone(s.streak); if(window.RTGHistory) RTGHistory.push('wordsearch', Math.round(elapsed), true); }
+      if(!ARCHIVE && attemptFirst){ MSTONE=streakMilestone(s.streak); }
     }
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, Math.round(elapsed), { higherIsBetter:false, label:'sec' });
     document.getElementById('streakN').textContent=s.streak||0;
@@ -725,7 +724,6 @@
     subEl.classList.toggle('newbest', NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'wordsearch');
     updateAgainBtn();
 
     if(attemptFirst && window.RTG_BOARD){
@@ -767,14 +765,14 @@
     // The theme is part of this game's identity, so it rides just under the
     // numbered header as its own line.
     var stat='📆 '+P.theme+'\n⏱ '+fmt(elapsed)+' · '+mark;
-    RTGShare.fire(RTGShare.card('wordsearch', DATE, { grid:shareGrid(), stat:stat }), Math.round(elapsed));
+    RTGShare.send({ key:'wordsearch', date:DATE, grid:shareGrid(), stat:stat, statInt:Math.round(elapsed) });
   }
 
   // ---- countdown to tomorrow ----
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n; var s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next word search in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n; var s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New boards in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   // ---- confetti ----
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];

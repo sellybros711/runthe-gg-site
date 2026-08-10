@@ -128,6 +128,16 @@ console.log('\n=== a guest finishes a season ===');
   const page = await newPage(false);
   ok('accounts report themselves offline, not broken',
     (await page.evaluate(() => !!window.PS_CFB_AUTH)) === true);
+  /* What the day window held BEFORE this season, so every count below is a delta. */
+  const [beforeTotal, beforeNamed] = await page.evaluate(async () => {
+    const cut = new Date(Date.now() - 36e5 * 12).toISOString();
+    const n = async (extra) => {
+      const r = await fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free'
+        + '&created_at=gte.' + encodeURIComponent(cut) + extra);
+      return (await r.json()).length;
+    };
+    return [await n(''), await n('&display_name=not.is.null')];
+  });
   ok('reached the results screen', await playSeason(page));
   /* NOT "1ST OF 0". The board counts named seasons, this one is the only season on an
      empty board and it carries no name, so there is no field to place it in. The old
@@ -160,13 +170,24 @@ console.log('\n=== a guest finishes a season ===');
   ok('the count still credits the season played', /1 season/.test(cnt), cnt);
   ok('  ...and says none of them are on the board', /0 on the board/.test(cnt), cnt);
   await page.screenshot({ path: SS + 'e2e_board_guest.png', fullPage: true });
-
+  /* THE PINNED PREVIEW ONLY EXISTS OVER A LIST. There is nothing on this board to
+     preview a place among, and "where this season would sit: 1st" on top of "no seasons
+     yet" contradicts itself -- so the invitation is the whole answer and the pin stays
+     down, which is what the NFL game does with the same case. */
+  ok('and no place is pinned over an empty board',
+    (await page.$('#lb-mine:not([hidden])')) === null);
+  /* Every axis and every direction must ANSWER: a note that does not say unreachable,
+     and either rows or the panel that says there are none. Those are different facts
+     from a board that did not reply, and only one of them can be true at a time. */
   for (const sort of ['overall', 'rank', 'record']) {
     await page.click('#lb-sort button[data-sort="' + sort + '"]');
     await page.waitForTimeout(1600);
     ok('sorting by ' + sort + ' keeps the guest off',
-      (await page.$$eval('.lbr', (e) => e.length)) === 0);
-  }
+      (await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length)) === 0);  }
+  await page.click('#b-lb-dir'); await page.waitForTimeout(1600);
+  ok('reversing answers too', /Worst first/.test(await page.textContent('#lb-dir-label')),
+    await page.textContent('#lb-dir-label'));
+  await page.click('#b-lb-dir'); await page.waitForTimeout(1600);
   for (const win of ['week', 'all', 'day']) {
     await page.click('#lb-tabs .tab[data-lb="' + win + '"]');
     await page.waitForTimeout(1500);
@@ -187,25 +208,39 @@ console.log('\n=== a signed-in player finishes a season ===');
   ok('under the name from profiles, never the client', !!row && row.display_name === NAME,
     row ? String(row.display_name) : '');
 
-  /* THE OTHER HALF OF THE NAMED BOARD. The guest block proved a nameless season stays
-     off the list; this proves a named one goes on it, against the same table, which is
-     what makes the pair evidence of a filter rather than of an empty board. Two seasons
-     in the table by now, exactly one of them named. */
-  await page.click('#o-lb'); await page.waitForTimeout(2500);
-  ok('two seasons in the table', psql('select count(*) from cfb_runs') === '2');
-  ok('the named one is on the board', (await page.$$eval('.lbr', (e) => e.length)) === 1);
-  ok('and it is marked as yours', (await page.$$eval('.lbr.me', (e) => e.length)) === 1);
-  /* Your own row reads "You" rather than your name, which is the board's rule for every
-     game here. The assertion that matters is the other one: the word this whole change
-     exists to remove never appears on the list. */
-  const boardText = (await page.textContent('#lb-rows')).replace(/\s+/g, ' ');
-  ok('your own row reads You', /You/.test(boardText));
-  ok('and Anonymous appears nowhere on the board', !/Anonymous/.test(boardText));
-  const cnt2 = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
-  ok('the count separates played from on the board', /2 season/.test(cnt2) && /1 on the board/.test(cnt2), cnt2);
-  await page.screenshot({ path: SS + 'e2e_board_named.png', fullPage: true });
+  /* THE OTHER HALF OF THE CONTRACT the guest block above only proves one side of: a
+     named season IS on the board, under its name, marked as yours, and openable. */
+  console.log('\n=== a named season is on the board ===');
+  await page.click('#o-lb'); await page.waitForTimeout(2600);
+  ok('the board opened', !!(await page.$('#s-board.on')));
+  const n = await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length);
+  /* Exactly one: the table was truncated at the top of this suite and holds a guest
+     season and this one, and only this one is named. */
+  ok('it lists the season just played, and only it', n === 1, n + ' entries');
+  const mine = await page.$$eval('#lb-rows .lbr.mine, #lb-podium .pod.mine', (e) => e.length);
+  ok('and marks it as yours', mine === 1, mine + ' marked');
+  const just = await page.$$eval('#lb-rows .lbr.just, #lb-podium .pod.just', (e) => e.length);
+  ok('exactly one is the one just posted', just === 1, just + ' just');
+  const shown = (await page.textContent('#lb-podium')) + (await page.textContent('#lb-rows'));
+  ok('your own rows say You rather than your name',
+    /You/.test(shown) && !new RegExp(NAME).test(shown), shown.replace(/\s+/g, ' ').slice(0, 80));
+  /* Tapping it opens the season behind it, which is new and is the whole reason the
+     rows carry a chevron. */
+  /* .just, not .mine. On a database this suite has run against before, this account
+     owns several seasons and some were seeded straight into the table with synthetic
+     picks that do not resolve to six players -- so clicking "the first row of mine"
+     opens whichever of them sorted highest and counts its roster. .just is the season
+     THIS run played, and there is exactly one of it. */
+  await page.click('#lb-podium .pod.just, #lb-rows .lbr.just');
+  await page.waitForTimeout(900);
+  const sheet = (await page.textContent('#sheet-in')).replace(/\s+/g, ' ');
+  ok('tapping it opens the season', /Your season/.test(sheet), sheet.slice(0, 60));
+  ok('with the six who played it', (await page.$$eval('#sheet-in .rrow', (e) => e.length)) === 6);
+  await page.click('#sp-x'); await page.waitForTimeout(600);
+  ok('and closing comes back to the board', !!(await page.$('#s-board.on')));  await page.screenshot({ path: SS + 'e2e_board_named.png', fullPage: true });
 
   console.log('\n=== the trophy case comes off the board when signed in ===');
+  await page.click('#b-board-back'); await page.waitForTimeout(700);
   /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip across
      the top. The route is the avatar, then the Trophy case row on the hub. The old
      `.achtabs button[data-tab="case"]` no longer exists, and a click on a selector
