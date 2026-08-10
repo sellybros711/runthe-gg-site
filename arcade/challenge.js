@@ -46,33 +46,71 @@
     return '';
   }
 
+  // Per-game comparison: what the shared integer means, and which way is better.
+  // The URL only ever carries the integer (&s=), so the unit and direction live
+  // here, keyed by the game the challenge is opened ON - which is always the
+  // game it was created on, since the link points at that game.
+  var CH = {
+    table: { unit: 'in a row', dir: 'high' },
+    career: { unit: 'in a row', dir: 'high' },
+    oddone: { unit: 'in a row', dir: 'high' },
+    almamater: { unit: 'in a row', dir: 'high' },
+    rankit: { unit: 'sets cleared', dir: 'high' },
+    guess: { unit: 'guesses', dir: 'low' },
+    wordsearch: { unit: '', dir: 'low', time: true },
+    crossword: { unit: '', dir: 'low', time: true },
+    match: { unit: '', dir: 'low', time: true }
+  };
+  function fmtTime(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  // The integer rendered the way its game shows it: a time for the timed games,
+  // "10 in a row" / "7 sets cleared" for the counters, "3 guesses" otherwise.
+  function markOf(key, n) {
+    var c = CH[key] || {};
+    if (c.time) return fmtTime(n);
+    return n + (c.unit ? ' ' + c.unit : '');
+  }
+
   // ---------- the incoming challenge ----------
-  var TARGET = null;
+  var TARGET = null;   // { who, n:int|null, mark:displayString }
   function readTarget() {
     try {
       var q = new URLSearchParams(location.search);
-      var who = (q.get('from') || '').slice(0, 24).trim();
-      var mark = (q.get('m') || '').slice(0, MAXMARK).trim();
-      if (!who || !mark) return null;
-      return { who: who, mark: mark };
+      var who = (q.get('vs') || q.get('from') || '').slice(0, 24).trim();
+      if (!who) return null;
+      var raw = q.get('s');
+      var n = (raw != null && raw !== '') ? parseInt(raw, 10) : NaN;
+      if (!isNaN(n)) return { who: who, n: n, mark: markOf(gameKey(), n) };
+      var legacy = (q.get('m') || '').slice(0, MAXMARK).trim();   // pre-clean links still in the wild
+      if (legacy) return { who: who, n: null, mark: legacy };
+      return null;
     } catch (e) { return null; }
   }
 
-  // A mark like "12 in a row" or "4:07 · 1 hint" is free text somebody else
-  // wrote, so we only ever claim a winner when both sides are plainly the same
-  // shape: a leading integer followed by the same words. Anything else is shown
-  // side by side and left for the player to judge.
-  function unitOf(mark) {
-    var m = /^(\d+)\s+(.+)$/.exec(mark);
-    return m ? { n: parseInt(m[1], 10), unit: m[2].toLowerCase().replace(/s\b/g, '') } : null;
+  // The player's own comparable integer, read from the end modal: the big
+  // number for the counters, the clock for the timed games.
+  function mineInt(sheet) {
+    var c = CH[gameKey()] || {};
+    if (c.time) {
+      var tm = sheet.querySelector('#mTime, #resTime');
+      var t = tm ? /(\d+):(\d{2})/.exec(tm.textContent || '') : null;
+      return t ? (+t[1] * 60 + +t[2]) : null;
+    }
+    var big = sheet.querySelector('#mRun, #mScore');
+    if (big) { var v = parseInt((big.textContent || '').replace(/[^\d]/g, ''), 10); return isNaN(v) ? null : v; }
+    return null;
   }
-  function verdict(mine) {
-    if (!TARGET || !mine) return '';
-    var a = unitOf(mine), b = unitOf(TARGET.mark);
-    if (!a || !b || a.unit !== b.unit) return '';
-    if (a.n > b.n) return 'You beat ' + TARGET.who + '.';
-    if (a.n < b.n) return (b.n - a.n) + ' short of ' + TARGET.who + '.';
-    return 'Dead level with ' + TARGET.who + '.';
+  function verdict(sheet) {
+    if (!TARGET || TARGET.n == null) return '';
+    var mine = mineInt(sheet);
+    if (mine == null) return '';
+    var dir = (CH[gameKey()] || {}).dir || 'high';
+    if (mine === TARGET.n) return 'Dead level with ' + TARGET.who + '.';
+    var better = dir === 'low' ? mine < TARGET.n : mine > TARGET.n;
+    if (better) return 'You beat ' + TARGET.who + '!';
+    var gap = Math.abs(mine - TARGET.n);
+    if ((CH[gameKey()] || {}).time) return fmtTime(gap) + ' behind ' + TARGET.who + '.';
+    var unit = (CH[gameKey()] || {}).unit || '';
+    return gap + (unit ? ' ' + unit.replace(/s\b/, '') : '') + ' short of ' + TARGET.who + '.';
   }
 
   var styled = false;
@@ -117,31 +155,27 @@
   }
 
   // ---------- the outgoing share ----------
-  // Every game's share text ends:  <result line>\nrunthe.gg/arcade/<game>
-  // Rewrite that last line into a challenge link and leave everything else -
-  // the emoji grid, the header - exactly as the game wrote it.
-  var LASTMARK = '';
+  // Every game's card ends:  ...\nrunthe.gg/arcade/<game>
+  // Rewrite that last line into a challenge link and leave the header, grid and
+  // stat line exactly as the game wrote them. The mark that used to travel as
+  // prose (?m=1%20in%20a%20row) is gone: RTGShare.fire stashes the one integer
+  // worth comparing in window.RTGShareStat, and only that rides the URL
+  // (?vs=You&s=10). The receiving page turns it back into "10 in a row" from
+  // its own vocabulary, so the link stays clean no matter the game.
   function decorate(txt) {
     try {
       if (typeof txt !== 'string') return txt;
+      var stat = window.RTGShareStat;
+      if (stat == null || (typeof stat === 'number' && isNaN(stat))) return txt;   // nothing beatable to offer
+      var me = myName();
+      if (!me) return txt;   // an anonymous challenge has nobody to beat
       var lines = txt.split('\n');
       var i = lines.length - 1;
       while (i >= 0 && !lines[i].trim()) i--;
-      if (i < 1) return txt;
-      var url = lines[i].trim();
-      if (!/^runthe\.gg\/arcade\/[a-z]+$/.test(url)) return txt;   // already decorated, or not our shape
-      var mark = '';
-      for (var j = i - 1; j >= 0; j--) {
-        var t = lines[j].trim();
-        // the result line is the last one carrying words, not just emoji squares
-        if (t && /[A-Za-z0-9]/.test(t)) { mark = t; break; }
-      }
-      if (!mark) return txt;
-      mark = mark.replace(/\s*·\s*best\s+\d+\s*$/i, '').slice(0, MAXMARK).trim();
-      LASTMARK = mark;
-      var me = myName();
-      if (!me) return txt;   // an anonymous challenge has nobody to beat
-      lines[i] = url + '?from=' + encodeURIComponent(me) + '&m=' + encodeURIComponent(mark);
+      if (i < 0) return txt;
+      var m = /^runthe\.gg\/arcade\/([a-z]+)$/.exec(lines[i].trim());
+      if (!m) return txt;   // already decorated, or not our footer
+      lines[i] = 'runthe.gg/arcade/' + m[1] + '?vs=' + encodeURIComponent(me) + '&s=' + (stat | 0);
       return lines.join('\n');
     } catch (e) { return txt; }
   }
@@ -180,26 +214,16 @@
     var t = el ? (el.textContent || '').trim() : '';
     return t ? t.replace(/^[^\w]+/, '') : '';
   }
-  // The player's own mark, in the same words the game uses for it, so the two
-  // halves of the head-to-head are comparable: "14 in a row" beside "12 in a
-  // row", not a bare "14". The unit is taken from the game's own caption (the
-  // <h2> under the big number, or the .rstat label) - never invented here,
-  // which is also what keeps verdict() from comparing unlike things.
+  // The player's own mark for the head-to-head, in the same words the target
+  // carries: the comparable integer read from the modal, rendered through the
+  // same markOf() the target used. So "14 in a row" sits beside "12 in a row",
+  // and a timed game shows "2:41" beside "2:13" - never a bare number.
   function myMark(sheet) {
-    var big = sheet.querySelector('#mRun');
-    if (big) {
-      var cap = big.nextElementSibling;
-      while (cap && !/^(H2|H3)$/.test(cap.tagName)) cap = cap.nextElementSibling;
-      var unit = cap ? (cap.textContent || '').trim().toLowerCase() : '';
-      var n = (big.textContent || '').trim();
-      return (n + (unit ? ' ' + unit : '')).slice(0, MAXMARK);
-    }
-    var stat = sheet.querySelector('.rstat .v');
-    if (stat) {
-      var lab = stat.parentNode && stat.parentNode.querySelector('.l');
-      return ((stat.textContent || '').trim() + (lab ? ' ' + (lab.textContent || '').trim().toLowerCase() : '')).slice(0, MAXMARK);
-    }
-    return '';
+    var n = mineInt(sheet);
+    if (n != null) return markOf(gameKey(), n);
+    // last resort for a game with no comparable integer: the big number as-is
+    var big = sheet.querySelector('#mRun, #mScore, .rstat .v');
+    return big ? (big.textContent || '').trim().slice(0, MAXMARK) : '';
   }
   function mileSeen(g, n) {
     try { return LS.getItem('rtg:mile:' + g + ':' + n) === '1'; } catch (e) { return true; }
@@ -222,14 +246,13 @@
 
     // head-to-head, if we arrived on somebody's challenge
     if (TARGET && !sheet.querySelector('.chlVs')) {
-      // the mark this player just put up is whatever their own share would say
-      var mine = LASTMARK || myMark(sheet);
+      var mine = myMark(sheet);
       var vs = document.createElement('div');
       vs.className = 'chlVs';
       vs.innerHTML = '<div><span class="k">' + esc(TARGET.who) + '</span><span class="v">' + esc(TARGET.mark) + '</span></div>' +
         '<div><span class="k">You</span><span class="v">' + esc(mine || '—') + '</span></div>';
       put(vs);
-      var v = verdict(mine);
+      var v = verdict(sheet);
       if (v) {
         var vd = document.createElement('div');
         vd.className = 'chlVerdict'; vd.textContent = v;

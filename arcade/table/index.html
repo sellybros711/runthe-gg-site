@@ -309,6 +309,7 @@
 <script src="/arcade/sfx.js?v=1"></script>
 <script src="/arcade/history.js?v=1"></script>
 <script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
@@ -613,12 +614,9 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var score=Math.max(run, peak);
-    var bar=shareGrid();
-    var txt='Run The Arcade · Number Game\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/table';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
-    else toast('Sharing not supported');
+    var score=Math.max(run, peak), best=load().bestRun||0;
+    var stat=(score>0?'🔥 ':'')+score+' in a row'+(best?(' · best '+best):'');
+    RTGShare.fire(RTGShare.card('table', DATE, { grid:shareGrid(), stat:stat }), score);
   });
 
   var cdT=null;
