@@ -1835,7 +1835,13 @@ window.GA_ID='G-L29P5MRWKE';
   .lbmode{margin:11px 0 0}
   .lbmode select{-webkit-appearance:none;appearance:none;width:100%;
     padding:12px 34px 12px 13px;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel);color:var(--ink);font-family:var(--fn);font-size:14px;
+    background:var(--panel);color:var(--ink);font-family:var(--fn);
+    /* THE LONGEST OPTION HAS TO FIT, and it is 305px at 14px: "Perfect COLLEGE
+       Season: Classic Draft". That clears a 390 phone by eight pixels and clips
+       outright at 360 and 320. A native select cannot ellipsize reliably and cannot
+       wrap, so the only honest fix is to let the type shrink exactly as far as the
+       viewport demands and no further: 11px at 320, full size again by 390. */
+    font-size:clamp(11px,calc(4.3vw - 2.8px),14px);
     font-weight:700;cursor:pointer;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
       linear-gradient(135deg,var(--dim) 50%,transparent 50%);
@@ -2914,7 +2920,7 @@ or endorsed by the NCAA, the CFP or any school.
     <p class="dim" id="ch-sub" style="font-size:13.5px;line-height:1.45;margin:0 0 14px"></p>
     <div class="verdict" id="ch-card">
       <div class="hero-rec">
-        <div class="modetag" id="ch-mode">Free play</div>
+        <div class="modetag" id="ch-mode">Classic draft</div>
         <div class="eyebrow" style="margin-top:8px">Their team overall</div>
         <div class="big" id="ch-rating" style="font-size:56px">0.0</div>
       </div>
@@ -5078,7 +5084,7 @@ function openBoard(mode){
 function paintCompSelect(){
   const sel=$('lb-comp'); if(!sel||!B) return;
   sel.innerHTML=B.MODES.map(m=>'<option value="'+esc(m)+'"'+(m===lbMode?' selected':'')+'>'+
-    esc(modeLabel(m))+'</option>').join('');
+    esc(modeLabelLong(m))+'</option>').join('');
   sel.parentNode.classList.toggle('isconf',lbMode!=='free');
 }
 
@@ -6067,7 +6073,18 @@ function newRun(){
    one being described and the two can differ the moment somebody picks a
    different mode. */
 const runMode=(r)=>(r&&r.conference)?('conf:'+r.conference):'free';
-const modeLabel=(m)=>m==='free'?'Free play':m.replace(/^conf:/,'')+' draft';
+/* TWO LENGTHS, because the same mode is named in two very different spaces.
+   modeLabel is for the dense ones: a season row already carries a fate, an
+   overall and a date and truncates on a phone before it runs out of things to
+   say, so the mode gets two words there. modeLabelLong is for the leaderboard
+   select, which owns a full-width line of its own and is the one place worth
+   spending the game's name on. The default mode is "Classic Draft" in both;
+   "Free play" is gone, because a board that offers conference drafts alongside
+   it reads better when every option is named after what it is. */
+const modeLabel=(m)=>m==='free'?'Classic draft':m.replace(/^conf:/,'')+' draft';
+const modeLabelLong=(m)=>m==='free'
+  ? 'Perfect COLLEGE Season: Classic Draft'
+  : m.replace(/^conf:/,'')+' Draft';
 
 function beginDraft(conference){
   pendingChallenge=false;
@@ -6081,8 +6098,10 @@ function beginDraft(conference){
 }
 
 /* The badge that says which competition this is, on the draft screen and the
-   results screen. Free play says nothing: the unmarked case is the common one and
-   a badge reading "Free play" on every screen is noise. */
+   results screen. The Classic Draft says nothing: the unmarked case is the common
+   one and a badge naming it on every screen is noise. The leaderboard select does
+   name it, because there it sits beside the conference boards and has to be told
+   apart from them. */
 function paintModeTag(){
   const conf=run&&run.conference;
   for(const id of ['d-mode','o-mode']){
@@ -8129,7 +8148,7 @@ function rosterFromBlob(t){
   }
   return { roster, slotIndex, chemistry:1+(Number(t.c)||0)/100 };
 }
-const chModeLabel=(t)=> t.conf?(t.conf+' draft'):'Free play';
+const chModeLabel=(t)=> t.conf?(t.conf+' draft'):'Classic draft';
 
 /* The same lineup rows the results screen draws, for a team you did not draft. */
 function renderRosterRows(el,roster,slotIndex){
