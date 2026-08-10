@@ -15,9 +15,11 @@
  *    doesn't end in a runthe.gg/arcade line it is passed through untouched.
  *
  * 2. MILESTONE. Day 3, 7, 14, 30, 50, 100... are the moments somebody is
- *    actually proud enough to post. When the end modal opens on one, it gets a
- *    banner saying so and the Share button gets a pulse - once per milestone
- *    per game, remembered in localStorage so it never nags.
+ *    actually proud enough to post, and every game already names them in
+ *    #mMilestone. What none of them do is ASK for the share. When the end
+ *    modal opens on a milestone the game itself declared, the Share button
+ *    gets a line and a pulse - once per milestone per game, remembered in
+ *    localStorage so it never nags.
  *
  * Everything is guarded; a missing element or a hostile URL just means the
  * module does nothing. window.RTGChallenge.
@@ -25,7 +27,6 @@
 (function () {
   'use strict';
   var LS = window.localStorage;
-  var MILESTONES = [3, 7, 14, 30, 50, 100, 150, 200, 250, 365];
   var MAXMARK = 60;   // a shared mark is one short result line, never a payload
 
   function gameKey() {
@@ -169,10 +170,36 @@
   }
 
   // ---------- the end modal ----------
-  function streakNow() {
-    var el = document.getElementById('streakN');
-    var n = el ? parseInt((el.textContent || '').replace(/[^\d]/g, ''), 10) : NaN;
-    return isNaN(n) ? 0 : n;
+  // Every game already decides for itself when a streak is worth calling out
+  // and writes it into #mMilestone ("One-week streak!"). Read that rather than
+  // re-deriving a milestone list here: it can't disagree with what's on screen,
+  // and it can't announce a milestone the game didn't think it had earned.
+  // What no game does is ASK for the share, which is what this adds.
+  function milestoneNow() {
+    var el = document.getElementById('mMilestone');
+    var t = el ? (el.textContent || '').trim() : '';
+    return t ? t.replace(/^[^\w]+/, '') : '';
+  }
+  // The player's own mark, in the same words the game uses for it, so the two
+  // halves of the head-to-head are comparable: "14 in a row" beside "12 in a
+  // row", not a bare "14". The unit is taken from the game's own caption (the
+  // <h2> under the big number, or the .rstat label) - never invented here,
+  // which is also what keeps verdict() from comparing unlike things.
+  function myMark(sheet) {
+    var big = sheet.querySelector('#mRun');
+    if (big) {
+      var cap = big.nextElementSibling;
+      while (cap && !/^(H2|H3)$/.test(cap.tagName)) cap = cap.nextElementSibling;
+      var unit = cap ? (cap.textContent || '').trim().toLowerCase() : '';
+      var n = (big.textContent || '').trim();
+      return (n + (unit ? ' ' + unit : '')).slice(0, MAXMARK);
+    }
+    var stat = sheet.querySelector('.rstat .v');
+    if (stat) {
+      var lab = stat.parentNode && stat.parentNode.querySelector('.l');
+      return ((stat.textContent || '').trim() + (lab ? ' ' + (lab.textContent || '').trim().toLowerCase() : '')).slice(0, MAXMARK);
+    }
+    return '';
   }
   function mileSeen(g, n) {
     try { return LS.getItem('rtg:mile:' + g + ':' + n) === '1'; } catch (e) { return true; }
@@ -184,41 +211,42 @@
     if (!sheet) return;
     injectCSS();
     var share = document.getElementById('mShare');
+    if (!share) return;
+    // Share sits inside a flex CTA row, so anything inserted next to it lands
+    // BESIDE the buttons. Insert above that whole row instead - and fall back
+    // to the button itself if it happens not to be wrapped in one.
+    var row = share.parentNode;
+    var host = row && row.parentNode;
+    if (!host || row === sheet) { host = row; row = share; }
+    var put = function (el) { host.insertBefore(el, row); };
 
     // head-to-head, if we arrived on somebody's challenge
     if (TARGET && !sheet.querySelector('.chlVs')) {
       // the mark this player just put up is whatever their own share would say
-      var mine = LASTMARK;
-      if (!mine) {
-        var run = sheet.querySelector('#mRun, #mScore, .rstat .v');
-        mine = run ? (run.textContent || '').trim().slice(0, MAXMARK) : '';
-      }
+      var mine = LASTMARK || myMark(sheet);
       var vs = document.createElement('div');
       vs.className = 'chlVs';
       vs.innerHTML = '<div><span class="k">' + esc(TARGET.who) + '</span><span class="v">' + esc(TARGET.mark) + '</span></div>' +
         '<div><span class="k">You</span><span class="v">' + esc(mine || '—') + '</span></div>';
+      put(vs);
       var v = verdict(mine);
-      if (share && share.parentNode) {
-        share.parentNode.insertBefore(vs, share);
-        if (v) {
-          var vd = document.createElement('div');
-          vd.className = 'chlVerdict'; vd.textContent = v;
-          share.parentNode.insertBefore(vd, share);
-        }
+      if (v) {
+        var vd = document.createElement('div');
+        vd.className = 'chlVerdict'; vd.textContent = v;
+        put(vd);
       }
     }
 
-    // milestone prompt
-    var g = gameKey(), n = streakNow();
-    if (g && MILESTONES.indexOf(n) >= 0 && !mileSeen(g, n) && !sheet.querySelector('.chlMile')) {
-      markMile(g, n);
+    // milestone prompt - the game has already said WHAT the milestone is, so
+    // this only has to ask for the share and point at the button.
+    var g = gameKey(), mile = milestoneNow();
+    if (g && mile && !mileSeen(g, mile) && !sheet.querySelector('.chlMile')) {
+      markMile(g, mile);
       var m = document.createElement('div');
       m.className = 'chlMile';
-      m.innerHTML = '<b>' + n + ' days in a row.</b> That is worth telling somebody about.';
-      if (share && share.parentNode) {
-        share.parentNode.insertBefore(m, share);
-        share.classList.add('chlPulse');
-      }
+      m.textContent = 'That one is worth telling somebody about.';
+      put(m);
+      share.classList.add('chlPulse');
     }
   }
 
