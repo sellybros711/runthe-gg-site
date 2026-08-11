@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade: Sportegories | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+(function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
+  document.documentElement.setAttribute('data-theme',t); })();
+</script>
+<meta name="description" content="Sportegories: a daily sports Scattergories. One letter, eight categories, ninety seconds." />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<style>
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --coral:#F06A5F; --gold:#F2B632; --green:#48D17A; --red:#FF625F;
+    --sp:#37C5D5; --spT:#4FD8E8;
+    --coralT:#F06A5F; --goldT:#F2B632; --greenT:#48D17A;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --sp:#0E7C89; --spT:#0E7C89;
+    --coralT:#D8452F; --goldT:#A87508; --greenT:#17A34A; --red:#C4372C;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--sp); outline-offset:2px; border-radius:4px;}
+  .wrap{width:100%; max-width:640px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; letter-spacing:.14em; color:var(--mut); margin-top:3px; margin-left:2px; white-space:nowrap;}
+  .spacer{flex:1;}
+  .devpill{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--goldT);
+    border:1px solid var(--goldT); border-radius:999px; padding:3px 8px; white-space:nowrap;}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+
+  .panel{display:none;} .panel.on{display:block;}
+
+  /* ---- setup ---- */
+  .hero{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; box-shadow:var(--shadow); text-align:center;}
+  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(34px,9vw,52px); line-height:.95; margin:0 0 10px; letter-spacing:.02em;}
+  .hero h1 b{color:var(--spT); font-weight:400;}
+  .hero p{margin:0 auto 18px; max-width:44ch; font-size:14px; color:var(--mut); line-height:1.5;}
+  .rules{display:grid; gap:9px; text-align:left; margin:0 auto 20px; max-width:400px;}
+  .rule{display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--ink); font-weight:600;}
+  .rule .b{flex:0 0 22px; height:22px; border-radius:6px; background:var(--sp); color:#04222a; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;}
+  :root[data-theme="light"] .rule .b{color:#fff;}
+  .rule small{display:block; font-weight:600; color:var(--mut); margin-top:2px; font-size:12px;}
+  .gobtn{appearance:none; border:0; cursor:pointer; font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase;
+    font-size:20px; padding:15px 22px; border-radius:13px; background:var(--sp); color:#04222a; width:100%; box-shadow:var(--shadow);}
+  :root[data-theme="light"] .gobtn{color:#fff;}
+  .gobtn:hover{filter:brightness(1.06);}
+  .ghost{appearance:none; cursor:pointer; background:var(--card2); color:var(--ink); border:1px solid var(--line2);
+    font-family:var(--f); font-weight:800; font-size:13.5px; padding:12px 18px; border-radius:11px; width:100%; margin-top:9px;}
+
+  /* ---- play ---- */
+  .board{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
+  .lethead{display:flex; align-items:center; gap:14px; margin-bottom:12px;}
+  .letter{flex:0 0 auto; width:62px; height:62px; border-radius:14px; background:var(--sp); color:#04222a;
+    font-family:var(--hero); font-weight:400; font-size:40px; line-height:62px; text-align:center;
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.18);}
+  :root[data-theme="light"] .letter{color:#fff;}
+  .lethead .li{min-width:0; flex:1;}
+  .lethead .k{font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .lethead .v{font-size:14px; font-weight:800; margin-top:3px; line-height:1.3;}
+  .clock{flex:0 0 auto; text-align:right;}
+  .clock .t{font-family:var(--hero); font-weight:400; font-size:30px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .clock.warn .t{color:var(--red);}
+  .clock .l{font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
+  .bar{height:5px; border-radius:999px; background:var(--card3); overflow:hidden; margin-bottom:14px;}
+  .bar i{display:block; height:100%; background:var(--sp); width:100%; transition:width .3s linear;}
+  .bar i.warn{background:var(--red);}
+
+  .rows{display:grid; gap:8px;}
+  .row{background:var(--card2); border:1px solid var(--line2); border-left:3px solid var(--sp); border-radius:11px; padding:9px 11px;}
+  .row .cl{font-size:12.5px; font-weight:800; color:var(--ink); line-height:1.3; margin-bottom:7px; display:flex; align-items:center; gap:7px;}
+  .row .cl .tier{font-size:8.5px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line2); border-radius:999px; padding:2px 6px; flex:0 0 auto;}
+  .row input{width:100%; font-family:var(--f); font-size:15px; font-weight:700; color:var(--ink); background:var(--card);
+    border:1.5px solid var(--line2); border-radius:9px; padding:10px 11px; min-height:44px;}
+  .row input::placeholder{color:var(--dim); font-weight:600;}
+  .row input:focus{border-color:var(--sp); outline:none;}
+  .row input:disabled{opacity:.85;}
+  /* graded */
+  .row.good{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card2));}
+  .row.bad{border-left-color:var(--red);}
+  .res{display:flex; align-items:center; gap:8px; margin-top:7px; font-size:12px; font-weight:700; flex-wrap:wrap;}
+  .res .pts{font-family:var(--hero); font-weight:400; font-size:19px; line-height:1; color:var(--greenT);}
+  .res .pct{color:var(--mut); font-weight:800; font-size:11px;}
+  .res .why{color:var(--red); font-weight:800;}
+  .res .allit{color:var(--goldT); font-weight:900; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;}
+  .res .also{color:var(--mut); font-weight:600; font-size:11.5px; width:100%; line-height:1.45;}
+  .res .also b{color:var(--ink); font-weight:700;}
+
+  .actions{display:flex; gap:9px; margin-top:14px;}
+  .actions button{flex:1;}
+  .submit{appearance:none; border:0; cursor:pointer; font-family:var(--hero); font-weight:400; letter-spacing:.05em; text-transform:uppercase;
+    font-size:17px; padding:14px; border-radius:12px; background:var(--sp); color:#04222a; box-shadow:var(--shadow);}
+  :root[data-theme="light"] .submit{color:#fff;}
+
+  /* ---- result ---- */
+  .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
+  .scrim.hidden{display:none;}
+  .sheet{width:100%; max-width:420px; background:var(--card); border:1px solid var(--line2); border-radius:18px; padding:24px 20px; box-shadow:0 24px 60px -24px rgba(0,0,0,.8); text-align:center; position:relative;}
+  .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--mut); cursor:pointer; font-size:15px;}
+  .sheet .sub-h{font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);}
+  .bigscore{font-family:var(--hero); font-weight:400; font-size:70px; line-height:.9; color:var(--spT); margin:8px 0 2px;}
+  .sheet h2{font-family:var(--hero); font-weight:400; font-size:17px; letter-spacing:.05em; margin:0 0 16px; color:var(--ink);}
+  .rstats{display:flex; gap:9px; margin-bottom:16px;}
+  .rstat{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:11px; padding:10px 8px;}
+  .rstat .v{font-family:var(--hero); font-weight:400; font-size:22px; line-height:1; color:var(--ink);}
+  .rstat .l{font-size:8.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .abtn{appearance:none; cursor:pointer; width:100%; font-family:var(--f); font-weight:900; font-size:14px; padding:13px; border-radius:11px;
+    border:1px solid var(--line2); background:var(--card2); color:var(--ink); margin-bottom:9px;}
+  .abtn.go{background:var(--sp); color:#04222a; border-color:transparent; font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.05em; text-transform:uppercase;}
+  :root[data-theme="light"] .abtn.go{color:#fff;}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none;}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+  .foot{margin-top:22px; text-align:center; font-size:11.5px; color:var(--dim); line-height:1.6;}
+  .foot a{color:var(--mut); text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">SPORTEGORIES</span></a>
+    <div class="spacer"></div>
+    <span class="devpill">In development</span>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== setup ===== -->
+  <section class="panel on" id="panelSetup">
+    <div class="hero">
+      <h1>Sport<b>egories</b></h1>
+      <p>One letter. Eight sports categories. Ninety seconds to fill in a player for each.</p>
+      <div class="rules">
+        <div class="rule"><span class="b">1</span><div>Answer with a player's <b>full name</b><small>“Chris” won’t count — “Chris Bosh” will.</small></div></div>
+        <div class="rule"><span class="b">2</span><div>Either name can start with the letter<small>On <b>B</b>, both “Bosh” and “Barry Bonds” work.</small></div></div>
+        <div class="rule"><span class="b">3</span><div>Both names matching scores double<small>“Barry Bonds” on B is worth 2 — before rarity.</small></div></div>
+        <div class="rule"><span class="b">4</span><div>Rarer answers are worth more<small>And you can’t use the same player twice.</small></div></div>
+      </div>
+      <button class="gobtn" id="startBtn" type="button">Start today’s puzzle</button>
+      <button class="ghost" id="practiceBtn" type="button">Random practice puzzle</button>
+      <div style="margin-top:14px;font-size:11.5px;color:var(--dim)" id="bestLine"></div>
+    </div>
+  </section>
+
+  <!-- ===== play ===== -->
+  <section class="panel" id="panelPlay">
+    <div class="board">
+      <div class="lethead">
+        <div class="letter" id="letterTile">–</div>
+        <div class="li">
+          <div class="k" id="modeLab">Today’s letter</div>
+          <div class="v">Name a player for each category whose <b>first or last name</b> starts with it.</div>
+        </div>
+        <div class="clock" id="clock"><div class="t" id="clockT">1:30</div><div class="l">Left</div></div>
+      </div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="rows" id="rows"></div>
+      <div class="actions">
+        <button class="submit" id="doneBtn" type="button">I’m done</button>
+      </div>
+      <div class="foot" id="playFoot"></div>
+    </div>
+  </section>
+
+  <datalist id="sug"></datalist>
+  <div class="foot">Sportegories · in development inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a></div>
+</div>
+
+<div class="scrim hidden" id="scrim">
+  <div class="sheet">
+    <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
+    <div class="sub-h" id="mSub">Time’s up</div>
+    <div class="bigscore" id="mScore">0</div>
+    <h2 id="mTitle">POINTS</h2>
+    <div class="rstats">
+      <div class="rstat"><div class="v" id="mFilled">0</div><div class="l">Correct</div></div>
+      <div class="rstat"><div class="v" id="mBonus">0</div><div class="l">Bonus pts</div></div>
+      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
+    </div>
+    <button class="abtn go" id="mAgain" type="button">Play again</button>
+    <a class="abtn" href="/arcade/" style="text-decoration:none;display:block">More games</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/arcade/sportegories-data.js?v=1"></script>
+<script src="/arcade/sportegories.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+  var SP = window.RTG_SPORTEGORIES;
+  var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
+  var SAVE = 'rtg_sportegories_v1';
+  var SECONDS = 90;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function load(){ try{ return JSON.parse(LS.getItem(SAVE))||{}; }catch(e){ return {}; } }
+  function save(o){ try{ LS.setItem(SAVE, JSON.stringify(o)); }catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  var P = { setup:$('panelSetup'), play:$('panelPlay') };
+  function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
+
+  var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
+
+  var TIER_NAME = ['Anchor','Mid','Hard','Spice'];
+
+  function render(){
+    var host=$('rows'); host.innerHTML=''; inputs=[];
+    puz.cats.forEach(function(c, i){
+      var row=document.createElement('div'); row.className='row'; row.id='row'+i;
+      row.innerHTML='<div class="cl"><span>'+esc(c.label)+'</span><span class="tier">'+TIER_NAME[c.tier]+'</span></div>'+
+        '<input type="text" id="in'+i+'" list="sug" autocomplete="off" autocorrect="off" spellcheck="false" '+
+        'autocapitalize="words" placeholder="Full name…" aria-label="'+esc(c.label)+'" />'+
+        '<div class="res" id="res'+i+'" style="display:none"></div>';
+      host.appendChild(row);
+      var el=row.querySelector('input'); inputs.push(el);
+      el.addEventListener('input', onType);
+      el.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); var n=inputs[i+1]; if(n) n.focus(); else grade(); }
+      });
+    });
+    $('letterTile').textContent = puz.letter;
+    $('modeLab').textContent = isDaily ? 'Today’s letter' : 'Practice letter';
+    $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice.';
+  }
+
+  /* Typeahead searches the WHOLE player list, never the category's answers —
+     a category-aware suggester would hand over the answer. */
+  var sugT=null;
+  function onType(e){
+    var v=e.target.value;
+    if(sugT) clearTimeout(sugT);
+    sugT=setTimeout(function(){
+      var list=SP.suggest(v, 8), dl=$('sug');
+      dl.innerHTML = list.map(function(n){ return '<option value="'+esc(n)+'"></option>'; }).join('');
+    }, 90);
+  }
+
+  function startPuzzle(daily){
+    isDaily = daily;
+    puz = daily ? SP.daily(today()) : SP.practice();
+    if(!puz){ toast('Could not build a puzzle'); return; }
+    graded=false; left=SECONDS;
+    render(); show('play');
+    $('scrim').classList.add('hidden');
+    tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
+    setTimeout(function(){ if(inputs[0]) inputs[0].focus(); },120);
+  }
+  function tick(){
+    var m=Math.floor(left/60), s=left%60;
+    $('clockT').textContent = m+':'+String(s).padStart(2,'0');
+    var pct = Math.max(0, left/SECONDS*100);
+    $('barFill').style.width = pct+'%';
+    var warn = left<=15;
+    $('clock').classList.toggle('warn', warn);
+    $('barFill').classList.toggle('warn', warn);
+    if(left<=0){ clearInterval(timer); timer=null; grade(); return; }
+    left--;
+  }
+
+  function grade(){
+    if(graded) return; graded=true;
+    if(timer){ clearInterval(timer); timer=null; }
+    var used={}, total=0, correct=0, bonus=0;
+    puz.cats.forEach(function(c,i){
+      var el=inputs[i]; el.disabled=true;
+      var r = SP.check(puz, i, el.value, used);
+      var row=$('row'+i), res=$('res'+i);
+      res.style.display='';
+      if(r.ok){
+        used[r.player.idx]=1; total+=r.points; correct++; bonus += (r.points-1);
+        row.classList.add('good');
+        res.innerHTML='<span class="pts">+'+r.points+'</span>'+
+          (r.allit>1?'<span class="allit">×'+r.allit+' letter bonus</span>':'')+
+          '<span class="pct">'+r.rarity.tier+' · est. '+r.rarity.pct+'%</span>';
+      } else {
+        row.classList.add('bad');
+        var why = r.reason==='empty' ? 'No answer' : (r.msg||'Not valid');
+        var also = SP.answersFor(puz, i, 4);
+        res.innerHTML='<span class="why">'+esc(why)+'</span>'+
+          (also.length?'<span class="also">Could have said: <b>'+also.map(esc).join('</b>, <b>')+'</b></span>':'');
+      }
+    });
+    var st=load(); var best=Math.max(st.best||0, total);
+    if(isDaily){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+    $('mScore').textContent=total;
+    $('mFilled').textContent=correct+'/'+puz.cats.length;
+    $('mBonus').textContent=bonus;
+    $('mBest').textContent=best;
+    $('mSub').textContent = left<=0 ? 'Time’s up' : 'Card complete';
+    setTimeout(function(){ $('scrim').classList.remove('hidden'); }, 420);
+  }
+
+  var toastT=null;
+  function toast(m){ var el=$('toast'); el.textContent=m; el.classList.add('on'); if(toastT)clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2200); }
+
+  $('startBtn').addEventListener('click', function(){ startPuzzle(true); });
+  $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
+  $('doneBtn').addEventListener('click', grade);
+  $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
+  $('mAgain').addEventListener('click', function(){ startPuzzle(false); });
+
+  function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=$('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
+  applyThemeMeta();
+  $('themeBtn').addEventListener('click', function(){
+    var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ LS.setItem('runthegrid_theme',next); }catch(e){}
+    applyThemeMeta();
+  });
+
+  // boot
+  (function(){
+    if(!SP || !SP.data()){ $('bestLine').textContent='Data failed to load.'; return; }
+    var st=load();
+    var bits=[];
+    if(st.best) bits.push('Best ever: '+st.best+' pts');
+    if(st.last && st.last.d===today()) bits.push('Played today: '+st.last.score+' pts');
+    $('bestLine').textContent = bits.join(' · ');
+  })();
+})();
+</script>
+</body>
+</html>

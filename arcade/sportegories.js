@@ -99,7 +99,8 @@
   var PCT_BY_FAME = { 5: 62, 4: 38, 3: 20, 2: 9, 1: 4, 0: 2 };
   function rarityOf(p) {
     var pct = PCT_BY_FAME[Math.max(0, Math.min(5, p.f || 0))];
-    return { pct: pct, bonus: pct >= 40 ? 0 : pct >= 15 ? 1 : 2 };
+    var bonus = pct >= 40 ? 0 : pct >= 15 ? 1 : 2;
+    return { pct: pct, bonus: bonus, tier: bonus === 0 ? 'Common' : bonus === 1 ? 'Uncommon' : 'Rare', est: true };
   }
 
   // ---------- seeded rng ----------
