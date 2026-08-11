@@ -27,13 +27,13 @@
 <meta property="og:title" content="Run The Arcade: Daily Sports Puzzles" />
 <meta property="og:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
 <meta property="og:url" content="https://runthe.gg/arcade/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Run The Arcade: Daily Sports Puzzles" />
 <meta name="twitter:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,6 +47,7 @@
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
     --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
+    --hl:#22C1DE; --hlT:#3FCDE6;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
@@ -55,7 +56,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0;
+    --coralT:#D8452F; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#0C7A93;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -278,6 +279,7 @@
   .tile.career{--c:var(--green);}
   .tile.rankit{--c:var(--pink);}
   .tile.alma{--c:var(--gold);}
+  .tile.highlow{--c:var(--hl);}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
@@ -288,9 +290,10 @@
   .tile.career .nm{color:var(--greenT);}
   .tile.rankit .nm{color:var(--pinkT);}
   .tile.alma .nm{color:var(--goldT);}
+  .tile.highlow .nm{color:var(--hlT);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;}
+  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.highlow{order:10;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -386,11 +389,20 @@
   @media (prefers-reduced-motion:reduce){
     .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
     .tile.guess .cap svg rect, .tile.word .cap svg .wsdiag, .tile.career .cap svg path,
-    .tile.career .cap svg circle, .tile.cross .cap svg .cwletters text, .tile.alma .cap svg{
+    .tile.career .cap svg circle, .tile.cross .cap svg .cwletters text, .tile.alma .cap svg,
+    .tile.highlow .cap svg .hlup, .tile.highlow .cap svg .hldn{
       animation:none !important; transform:none !important; opacity:1 !important; stroke-dashoffset:0 !important;}
   }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
+  /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
+  .tile.highlow .badge{background:var(--gold); color:#3a2600; text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
+  .tile.highlow .badge svg{width:10px; height:10px;}
+  /* High Low: the two arrows bob up and down in turn */
+  .tile.highlow .cap svg .hlup{animation:capHlUp 3.2s ease-in-out infinite;}
+  .tile.highlow .cap svg .hldn{animation:capHlDn 3.2s ease-in-out infinite;}
+  @keyframes capHlUp{0%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+  @keyframes capHlDn{0%,100%{transform:translateY(0)}70%{transform:translateY(4px)}}
   .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
     padding:4px 9px; border-radius:999px; line-height:1; border:1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); color:var(--ink); background:color-mix(in srgb,var(--card) 55%, transparent);}
   .tile .status.ready{border-color:color-mix(in srgb, var(--ink) 32%, transparent); color:var(--ink);}
@@ -687,6 +699,22 @@
               <span class="play" id="playA">PLAY <span class="arw">→</span></span>
             </span>
           </a>
+
+          <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Card</span><span class="status" id="stH">Members</span>
+              <svg viewBox="0 0 56 56">
+                <!-- up / down: the whole game in one glyph -->
+                <g class="hlup" fill="#22C1DE"><path d="M17 8 L26 22 L8 22 Z"/></g>
+                <g class="hldn" fill="#22C1DE" opacity=".62"><path d="M39 48 L48 34 L30 34 Z"/></g>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">High Low</span>
+              <span class="desc">Pick a player and a stat, then call every next player higher or lower. Card members only.</span>
+              <span class="play" id="playH">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
         </div>
 
         <div class="double" id="double">
@@ -726,6 +754,7 @@
     <a href="/arcade/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
     <a href="/arcade/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
     <a href="/arcade/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
+    <a href="/arcade/highlow/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>High Low</a>
     <a href="/arcade/archive/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Archive</a>
   </nav>
 </div>
