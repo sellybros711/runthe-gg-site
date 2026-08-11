@@ -9994,15 +9994,18 @@ function dailyHeroCard(){
       : `<span class="gc-chip">${dCd('hm')} left</span>`;
   }
   const cname=c.v?dShort(c.v):'';
+  // The art is only DEFERRED the very first time (building a terrain tile costs ~100ms). Once it's built
+  // it goes straight into the markup, so re-rendering the home screen can't pop the strip in and out.
+  const artReady=(_dArt[ck]!==undefined)?_dArt[ck]:null;
   const card=$(`<button class="gcard gc-gold${cname?' hasart':''}" aria-label="Play 18, today's round${cname?' at '+esc(cname):''}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${chips}<span class="gc-go">${played?(dleft>0?'Go lower ▸':'View ▸'):'Play ▸'}</span></div>
-    ${cname?`<div class="gc-strip"><div class="gc-striplab">📍 ${esc(cname)}<span class="sl-par">Par ${c.par} · ${esc(dCondLabel(dailyConditions(dk,ck)))}</span></div></div>`:''}
+    ${cname?`<div class="gc-strip">${artReady?`<img src="${artReady}" alt="" aria-hidden="true">`:''}<div class="gc-striplab">📍 ${esc(cname)}<span class="sl-par">Par ${c.par} · ${esc(dCondLabel(dailyConditions(dk,ck)))}</span></div></div>`:''}
   </button>`);
   card.onclick=startDailyChallenge;
-  // fill the course art in after paint (first build of a terrain tile is ~100ms)
-  if(cname) setTimeout(()=>{ try{
+  // first ever build: fill the art in after paint, then every later render has it inline (above)
+  if(cname && _dArt[ck]===undefined) setTimeout(()=>{ try{
     const strip=card.querySelector('.gc-strip'); if(!strip||!strip.isConnected) return;
     const url=dailyCourseArt(ck); if(!url) return;
     const img=new Image(); img.alt=''; img.setAttribute('aria-hidden','true'); img.src=url;
@@ -12583,23 +12586,37 @@ function pxGolferIdleURL(look){
   u=c2.toDataURL('image/png'); _pxIdle.set(cv,u); return u;
 }
 function pxIdleAttr(look){ try{ return ' data-breathe="'+pxGolferIdleURL(look)+'"'; }catch(e){ return ''; } }
-function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer">${pxFxParts(look,14)}</div>`; }
+// A freshly-rendered golfer must join the breathe cycle where it ALREADY is: starting every new img on the
+// base frame while the on-screen ones sit on the breathe frame makes the golfer snap a pixel on every
+// re-render (the home-screen flicker). So render it at the ticker's current phase and stamp data-base
+// explicitly (the ticker would otherwise adopt whatever src it first saw as the base).
+var _pxFlip=false;   // var, not let: an early caller must never TDZ-crash the whole script
+function pxIdleSrcAttrs(look){
+  const base=pxGolferURL(look);
+  let br=''; try{ br=pxGolferIdleURL(look); }catch(e){}
+  let reduce=false; try{ reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  const cur=(br&&_pxFlip&&!reduce)?br:base;
+  return `src="${cur}" data-base="${base}"${br?` data-breathe="${br}"`:''}`;
+}
+function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle${pxFxClass(look)}" ${pxIdleSrcAttrs(look)} alt="Your golfer">${pxFxParts(look,14)}</div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
   return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
 function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
-  const img=`<img class="pxfigsm pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
+  const img=`<img class="pxfigsm pxidle${pxFxClass(look)}" ${pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
   const parts=pxFxParts(look, Math.max(8,Math.round(h*0.16)));
   return parts?`<span class="pxfxwrap">${img}${parts}</span>`:img; }
 // the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
-(function(){ let flip=false;
+(function(){
   setInterval(function(){ try{
     const reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) _pxFlip=false;
     const imgs=document.querySelectorAll('img.pxidle'); if(!imgs.length) return;
     if(reduce){ imgs.forEach(function(im){ if(im.dataset.base&&im.src!==im.dataset.base) im.src=im.dataset.base; }); return; }
-    flip=!flip;
+    _pxFlip=!_pxFlip;
+    const flip=_pxFlip;
     imgs.forEach(function(im){ const b=im.getAttribute('data-breathe'); if(!b) return;
       if(!im.dataset.base) im.dataset.base=im.src;
       im.src=flip?b:im.dataset.base; });

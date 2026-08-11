@@ -14504,6 +14504,35 @@ allows Google Fonts, or self-host Anton.*
   the stylesheet, `STEPS`/the hold threshold/the safety timeout in the boot driver, and the status copy at
   the three in-game milestones.
 
+- **HOME SCREEN: the golfer preview and the course preview no longer flicker while navigating (owner:
+  "there are still items on the Home Screen that are flickering when you're navigating through.
+  Specifically the golfer preview and the course preview").** Measured both instead of guessing, and they
+  turned out to be two different bugs:
+  1. **The course preview genuinely disappeared on every render.** `dailyHeroCard` ALWAYS inserted the Play
+     18 course art via `setTimeout(...,60)` with a fresh `new Image()` - correct the very first time (the
+     first build of a terrain tile costs ~100ms and shouldn't block the paint) but wrong every time after,
+     since the tile is cached in `_dArt`. Measured: the strip's `<img>` was **MISSING in 6/6 renders**, both
+     in the frame right after the render AND a frame later, so the art popped in ~60ms+ late on every visit
+     to the home screen. Fixed: when `_dArt[ck]` is already built the art goes straight into the card's
+     markup (so it paints WITH the card), and the deferred insert now only runs on the first-ever build.
+     Now **0/6 missing**.
+  2. **The golfer preview snapped a pixel on every render.** The idle breathe animation is a global 700ms
+     ticker that swaps `img.pxidle` between a base and a breathe frame; a re-render always built the new
+     `<img>` on the BASE frame, so if the ticker happened to be on the breathe frame the fresh golfer came
+     back 1px out of phase with itself (and reset the cycle). Fixed with a shared `pxIdleSrcAttrs(look)`
+     used by `pxAvatarHTML`/`pxFigureHTML`: it renders the img at the ticker's CURRENT phase (`_pxFlip`,
+     now module-level - `var`, so an early caller can't TDZ-crash the script) and stamps `data-base`
+     explicitly, since the ticker would otherwise adopt whatever src it first saw as the base. Reduced-motion
+     still pins the base frame. The fix applies everywhere the golfer renders (home header, resume card,
+     leaderboard podiums, player card, H2H), not just the home screen.
+  Verified in Playwright on a returning-player home screen: 6 consecutive re-renders now show the course art
+  present in the SAME frame (was missing every time), and after the ticker has flipped to the breathe frame
+  a re-render brings the golfer back on that same frame (`phaseKeptOnRerender`) with the ticker still
+  alternating afterwards; a scan of every `#app` image right after a render finds nothing undecoded except
+  the RunThe.GG footer-ad logo, which is a network asset that 404s locally and is HTTP-cached in production.
+  Full regressions green (final suite: shop sections + an 18-hole practice daily round to the result; boot
+  screen; tour-pass sweep) with **0 page errors**; inline scripts parse clean. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
