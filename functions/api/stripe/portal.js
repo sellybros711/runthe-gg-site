@@ -15,6 +15,24 @@
  */
 import { verifyUser } from './_verify.js';
 
+// Health check: GET /api/stripe/portal returns a small JSON so you can confirm
+// in a browser that this Function is deployed and how it's configured. Exposes
+// only booleans + the key MODE (live/test) - never any secret value.
+export async function onRequestGet(context) {
+  const { env } = context;
+  var sk = env.STRIPE_SECRET_KEY || '';
+  return json({
+    ok: true, fn: 'portal', ver: 'portal-2026-08-11a',
+    env: {
+      stripe_key: !!sk,
+      stripe_mode: sk ? (/^sk_live/.test(sk) ? 'live' : (/^sk_test/.test(sk) ? 'test' : 'other')) : null,
+      supabase_url: !!env.SUPABASE_URL,
+      supabase_service_role: !!env.SUPABASE_SERVICE_ROLE,
+      site_url: env.SITE_URL || null
+    }
+  });
+}
+
 export async function onRequestPost(context) {
   const { env, request } = context;
   // Wrap everything: an unhandled throw here surfaces to the browser as an
