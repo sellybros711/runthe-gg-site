@@ -644,6 +644,29 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--mut);opacity:.7;
     margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line);}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
+
+  /* ---- Mobile: swipe carousel. The five game cards become a horizontal, snap-scrolling
+       rail (one card at a time with a peek of the next), so the phone home screen is one
+       card tall instead of a long stack. Desktop is unchanged. ---- */
+  .games-dots{display:none;}
+  @media (max-width:640px){
+    .games{
+      display:flex;flex-wrap:nowrap;gap:12px;align-items:stretch;
+      overflow-x:auto;overflow-y:visible;
+      scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      margin:0 -16px;padding:2px 16px 6px;scroll-padding-left:16px;
+    }
+    .games::-webkit-scrollbar{display:none;}
+    .games > .feat,.games > .game.soon{
+      flex:0 0 87%;margin:0;scroll-snap-align:start;
+    }
+    .game.soon{min-height:220px;}
+    .games-dots{display:flex;gap:7px;justify-content:center;align-items:center;margin:15px 0 0;padding:0;}
+    .gdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.24);
+      cursor:pointer;-webkit-appearance:none;appearance:none;transition:width .2s ease,background .2s ease;}
+    .gdot.on{width:20px;border-radius:4px;background:var(--green);}
+  }
 </style>
 </head>
 <body>
@@ -827,6 +850,7 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="sd">New free sports games are in the works, and your one RunThe.GG account plays them all. <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow @RunTheGG</a> to hear what's next.</span>
       </div>
     </main>
+    <div class="games-dots" aria-hidden="true"></div>
 
     <!-- Account panel sits BELOW the games on purpose: playing requires no account,
          so the games come first. Signed-out CTA is the default so it shows even if the
@@ -1447,6 +1471,35 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     setTimeout(spin,700);
   }
   [].forEach.call(document.querySelectorAll('.slot'),slot);
+})();
+</script>
+
+<script>
+/* Mobile carousel dots: build one dot per game card, highlight the card nearest the
+   left edge as you swipe, and let a tap on a dot scroll to that card. The rail itself
+   is pure CSS scroll-snap; this only drives the indicator. Harmless on desktop, where
+   the dots are hidden and the games render as the usual vertical stack. */
+(function(){
+  var main=document.querySelector('main.games');
+  var dots=document.querySelector('.games-dots');
+  if(!main||!dots) return;
+  var sl=[].slice.call(main.children).filter(function(el){ return el.matches('.feat, .game.soon'); });
+  if(sl.length<2) return;
+  sl.forEach(function(s,i){
+    var b=document.createElement('button'); b.type='button'; b.className='gdot';
+    b.setAttribute('aria-label','View game '+(i+1)+' of '+sl.length);
+    b.addEventListener('click',function(){ s.scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'}); });
+    dots.appendChild(b);
+  });
+  var raf;
+  function update(){
+    var anchor=main.getBoundingClientRect().left+22, best=0, bd=Infinity;
+    sl.forEach(function(s,i){ var d=Math.abs(s.getBoundingClientRect().left-anchor); if(d<bd){ bd=d; best=i; } });
+    for(var i=0;i<dots.children.length;i++){ dots.children[i].classList.toggle('on', i===best); }
+  }
+  update();
+  main.addEventListener('scroll',function(){ if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(update); },{passive:true});
+  window.addEventListener('resize',function(){ requestAnimationFrame(update); });
 })();
 </script>
 
