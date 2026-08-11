@@ -279,7 +279,7 @@
     ensureScrim();
     var b=$('rtgcardBody');
     b.innerHTML =
-      '<div class="rtgc-kick">Keep playing</div>'+
+      '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">Wanna keep playing?</h2>'+
       arcadeBanner('rtgcardCard','Unlimited plays for everyone. Every past day unlocked.')+
       '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>Or Create a Free Account</b>'+
         '<small>3 plays per day and access to leaderboard. Account stays with you on all RunThe.GG content.</small></button>'+
