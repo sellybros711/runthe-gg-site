@@ -262,7 +262,7 @@
   .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:pointer;
-    overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
+    overflow:hidden; overflow-wrap:break-word; hyphens:none; -webkit-hyphens:none; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
     user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:manipulation;}
   .tile .tn{display:block; width:100%;}
   .tile:hover{border-color:rgba(47,107,255,.55);}
@@ -484,7 +484,9 @@
   /* the pick-four grid: four across at every size (NYT-style), names wrap */
   .pool{ grid-template-columns:repeat(4,1fr); gap:8px; }
   .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
-  .pool .tile .tn{ line-height:1.15; word-break:break-word; overflow-wrap:anywhere; }
+  /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
+     so the longest word fits, then the name wraps at the space onto two lines */
+  .pool .tile .tn{ line-height:1.15; white-space:normal; word-break:normal; overflow-wrap:normal; hyphens:none; -webkit-hyphens:none; }
   .tile.bad{ animation:shake .4s; border-color:var(--red); }
 
   /* submit / deselect bar */
@@ -923,10 +925,23 @@
       poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id)); });
       poolEl.classList.remove('pool-hold');
       document.getElementById('poolCount').textContent = poolTiles.length;
+      fitPool();
       renderDots();
       updateHintBtn();
       updateProgress();
       updateSubmit();
+    }
+
+    // Shrink each name until its longest word fits the tile, so names wrap at the
+    // space onto two lines instead of hyphenating or splitting a word mid-letter.
+    function fitPool() {
+      var tns = poolEl.querySelectorAll('.tile .tn');
+      for (var i = 0; i < tns.length; i++) {
+        var tn = tns[i], fs = 13;
+        tn.style.fontSize = fs + 'px';
+        var guard = 0;
+        while (tn.scrollWidth > tn.clientWidth + 0.5 && fs > 8 && guard < 8) { fs -= 1; tn.style.fontSize = fs + 'px'; guard++; }
+      }
     }
 
     // Submit / Deselect bar state, driven by the current selection.
