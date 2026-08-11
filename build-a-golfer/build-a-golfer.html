@@ -6833,10 +6833,15 @@ function wheelStep(steps, idx){ for(const [at,v] of steps) if(idx>=at) return v;
 // A wedge is narrow, so coin values read as a tight 580 / 2.7k / 12k rather than a comma'd number.
 function wheelNum(n){ n=Math.round(n||0); if(n<1000) return String(n);
   const k=n/1000; return (k<10?k.toFixed(1).replace(/\.0$/,''):String(Math.round(k)))+'k'; }
-// The 10 segments, in wheel order (the two boosts sit opposite each other). Values and weights are a
-// function of the rank, so a promotion is always a strictly better wheel.
-// Coins are the bulk of the wheel by design (5 of the 10 wedges, ~74% of the weight), so packs and the
-// XP boosts stay genuinely rare - they read as a hit rather than a routine payout.
+// The 13 segments, in wheel order (coins and non-coins alternate so the face reads evenly). Values and
+// weights are a function of the rank, so a promotion is always a strictly better wheel.
+// Coins are the bulk of the wheel by design (7 of the 13 wedges, ~63% of the weight), so packs and the
+// long XP boosts stay genuinely rare - they read as a hit rather than a routine payout.
+// The bottom of the ladder is deliberately WIDE (tiny/xs/small-b/small coins + a 15-min boost): the low
+// wedges carry the variety, and they get rarer as the rank climbs (see the -f terms) while the big coin
+// wedges, the pack and the long boost get commoner. The TOP-prize odds are unchanged from the 10-wedge
+// table - the new low wedges were funded by splitting the two smallest coin wedges, so pack/shard/spin
+// all still sit at the same share of the total weight.
 function wheelPrizesFor(idx){
   idx=Math.max(0,Math.min(REP_ORDER.length-1, idx|0));
   const f=idx/(REP_ORDER.length-1);                                  // 0 at Amateur, 1 at G.O.A.T.
@@ -6845,15 +6850,19 @@ function wheelPrizesFor(idx){
   const shCol={common:'#9fdcff', rare:'#4aa3ff', epic:'#a24be0'}[shR]||'#9fdcff';
   const shLab={common:'Common', rare:'Rare', epic:'Epic'}[shR]||'Common';
   const pk=(typeof packType==='function')?packType(pkT):{name:'Base Pack', col:'#3fbf7a'};
-  const cXs=sc(100,1.6), cSm=sc(250,1.9), cMd=sc(600,3.5), cLg=sc(1200,4), cBg=sc(2500,5);
+  const cTn=sc(50,1.2), cXs=sc(100,1.6), cSb=sc(160,1.7), cSm=sc(250,1.9);
+  const cMd=sc(600,3.5), cLg=sc(1200,4), cBg=sc(2500,5);
   const cn=(id,w,amt)=>({id, w, kind:'coins', amt, label:coinFmt(amt)+' Coins', short:wheelNum(amt), col:'#ffd45e'});
   return [
-    cn('cXs', 18-3*f, cXs),
-    {id:'xp30', w:8,        kind:'boost', mins:30,       label:'2× XP · 30 min', short:'2× XP', col:'#a78bfa'},
-    cn('cSm', 20-2*f, cSm),
+    cn('cTn', 9-2*f,  cTn),
+    {id:'xp15', w:8-2*f,    kind:'boost', mins:15,       label:'2× XP · 15 min', short:'2× XP', col:'#8b7ae0'},
+    cn('cXs', 9-1*f,  cXs),
+    {id:'xp30', w:5,        kind:'boost', mins:30,       label:'2× XP · 30 min', short:'2× XP', col:'#a78bfa'},
+    cn('cSb', 10-2*f, cSb),
     {id:'sh',   w:6+1*f,    kind:'shard', r:shR, n:1,    label:shLab+' Shard',   short:'◆',     col:shCol},
-    cn('cMd', 18,     cMd),
+    cn('cSm', 10-1*f, cSm),
     {id:'pack', w:3+1.5*f,  kind:'pack',  tier:pkT, n:1, label:pk.name,          short:'PACK',  col:pk.col||'#3fbf7a'},
+    cn('cMd', 13,     cMd),
     {id:'xp60', w:4+1*f,    kind:'boost', mins:60,       label:'2× XP · 1 hour', short:'2× XP', col:'#c9a0ff'},
     cn('cLg', 12+2*f, cLg),
     {id:'spin', w:4-0.5*f,  kind:'spin',  n:1,           label:'Bonus Spin',     short:'+1',    col:'#ff7ab8'},
@@ -6981,7 +6990,7 @@ function wheelFaceSVG(pz){
     out+=`<path d="M${cx},${cy} L${s0[0]},${s0[1]} A${r},${r} 0 0 1 ${s1[0]},${s1[1]} Z" fill="${fill}" stroke="rgba(255,255,255,.16)" stroke-width="1"/>`;
   });
   pz.forEach((p,i)=>{
-    const sub = p.kind==='boost' ? (p.mins>=60?'1 HR':'30 MIN')
+    const sub = p.kind==='boost' ? (p.mins>=60?((p.mins/60)+' HR'):(p.mins+' MIN'))
               : p.kind==='shard' ? String(p.r||'').toUpperCase()
               : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMP':(p.tier||'base')).toUpperCase()
               : p.kind==='spin'  ? 'SPIN' : 'COINS';
@@ -6990,10 +6999,15 @@ function wheelFaceSVG(pz){
     // Both halves put the value on the OUTER radius (where the wedge is widest) and the small caption
     // inboard, so a long label like "PACK" never has to fit the narrow inner end.
     const deg=i*step, flip=(deg>90 && deg<270), rot=deg+(flip?180:0);
-    const yMain=flip?200:40, ySub=flip?183:57;
+    // More wedges = a narrower arc, so on a busy wheel the value steps down a size, the caption shrinks
+    // and both move outward (where the wedge is widest) to keep clear of the neighbouring labels.
+    const big=step>=32;
+    const yMain=big?(flip?200:40):(flip?203:37), ySub=big?(flip?183:57):(flip?188:52);
+    const fs=p.short.length>4?(big?12:11):(big?15:13);
+    const ss=big?7.5:6.4, ls=big?'.06em':'.02em';
     out+=`<g transform="rotate(${rot},120,120)">
-      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${p.short.length>4?12:15}px var(--body)">${esc(p.short)}</text>
-      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 7.5px var(--body);letter-spacing:.06em">${sub}</text></g>`;
+      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${fs}px var(--body)">${esc(p.short)}</text>
+      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 ${ss}px var(--body);letter-spacing:${ls}">${sub}</text></g>`;
   });
   return out+`</svg>`;
 }
@@ -10015,12 +10029,16 @@ function dailyHeroCard(){
 }
 // Prize Wheel home card. Glows when a spin is ready (the daily hook); shows a live 2x-XP boost timer
 // when one is running, so the urgency is visible from the home screen.
-// A tiny spinning wheel graphic for the home button (10 wedges, matching the real face's colours).
+// A tiny spinning wheel graphic for the home button. Derived from the real prize table, so the wedge
+// COUNT and colours always match the face the player is about to spin (adding a segment can't desync it).
 function wheelMiniSVG(){
-  const cols=['#ffd45e','#a78bfa','#ffd45e','#9fdcff','#ffd45e','#3fbf7a','#c9a0ff','#ffd45e','#ff7ab8','#ffd45e'];
+  let cols;
+  try{ cols=wheelPrizes().map(p=>p.col); }catch(e){}
+  if(!cols||!cols.length) cols=['#ffd45e','#a78bfa','#ffd45e','#9fdcff','#ffd45e','#3fbf7a','#c9a0ff','#ffd45e','#ff7ab8','#ffd45e'];
+  const step=360/cols.length, half=step/2;
   const pt=(d)=>{ const a=d*Math.PI/180; return [(12+11*Math.sin(a)).toFixed(2),(12-11*Math.cos(a)).toFixed(2)]; };
   let s=`<svg class="wbi" viewBox="0 0 24 24" aria-hidden="true">`;
-  cols.forEach((c,i)=>{ const a=pt(i*36-18), b=pt(i*36+18);
+  cols.forEach((c,i)=>{ const a=pt(i*step-half), b=pt(i*step+half);
     s+=`<path d="M12,12 L${a[0]},${a[1]} A11,11 0 0 1 ${b[0]},${b[1]} Z" fill="${c}" opacity="${i%2?.95:.65}"/>`; });
   return s+`<circle cx="12" cy="12" r="11" fill="none" stroke="#ff7ab8" stroke-width="1.6"/><circle cx="12" cy="12" r="3.1" fill="#2b0a1a" stroke="#ff7ab8" stroke-width="1.2"/></svg>`;
 }
