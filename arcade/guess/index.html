@@ -277,7 +277,7 @@
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
-        "top   top" "title title" "lead lead" "mode mode"
+        "top   top" "title title" "mode mode" "lead lead"
         "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
     .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
@@ -310,9 +310,10 @@
 
   <div class="a-gametitle" style="--a-tc:var(--coralT)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
 
+  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
+
   <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
-  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="searchwrap">
     <div class="search">
       <input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a player's name…" aria-label="Guess a player" />
@@ -390,7 +391,7 @@
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=2"></script>
+<script src="/arcade/mode.js?v=3"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
