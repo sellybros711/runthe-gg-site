@@ -105,10 +105,35 @@
     options: { redirectTo: location.origin + location.pathname },
   }));
 
+  /* THE PROJECT REF, WHICH IS ALSO THE STORAGE KEY. supabase-js keeps the session at
+     `sb-<ref>-auth-token` in localStorage, per ORIGIN, which is what lets the two games
+     on this site share one sign-in: the same project, the same key, no storageKey
+     override in either. Derived from the URL rather than written out, so a project move
+     cannot leave this pointing at the old one. */
+  const projectRef = () => {
+    try { return new URL(url()).hostname.split('.')[0] || null; } catch (e) { return null; }
+  };
+  /* SIGNING OUT HAS TO SURVIVE A DEAD NETWORK, and on its own it does not.
+     supabase-js only clears the stored session AFTER its POST to /logout comes back, and
+     it makes that call even at scope:'local'. A network failure is not one of the
+     statuses it forgives (404, 401, 403), so it throws before the session is removed --
+     leaving a token in localStorage while every screen says signed out, and signing the
+     player straight back in on the next load. On a shared device that is somebody else's
+     account still being open.
+     So the stored session is removed here as well. When the call DID work this is a
+     no-op on a key that is already gone. */
+  function forgetStoredSession() {
+    try {
+      const ref = projectRef(); if (!ref) return;
+      localStorage.removeItem('sb-' + ref + '-auth-token');
+      localStorage.removeItem('sb-' + ref + '-auth-token-code-verifier');
+    } catch (e) {}
+  }
   async function signOut() {
     if (!sb) return;
     try { await sb.auth.signOut({ scope: 'local' }); }
     catch (e) { try { await sb.auth.signOut(); } catch (e2) {} }
+    forgetStoredSession();
     session = null; profile = null; fire();
   }
 
