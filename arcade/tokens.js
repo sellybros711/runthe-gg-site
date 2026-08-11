@@ -92,7 +92,7 @@
   function playsOf(game){ return read().plays[game]||0; }
   function remaining(){ var c=cap(); return c===Infinity?Infinity:Math.max(0, c - used()); }
   // Raise the server-used floor (never lowers it within a day).
-  function setServerUsed(n){ var s=read(); var v=Math.max(0, n|0); if(v>(s.sf||0)){ s.sf=v; write(s); } }
+  function setServerUsed(n){ var s=read(); var v=Math.max(0, n|0); if(v>(s.sf||0)){ s.sf=v; write(s); emit('rtg:tokens'); } }
   function triesLeft(){ return remaining(); }                // wallet-wide now (arg ignored)
   function canPlay(){ return remaining()>0; }                // any token left (arg ignored)
 
@@ -126,11 +126,11 @@
     var s=read(), before=s.plays[game]||0;
     DENIED=false;
     if(unlimited()){
-      s.plays[game]=before+1; write(s);
+      s.plays[game]=before+1; write(s); emit('rtg:tokens');
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
     if(used() >= cap()) return { ok:false, tryNo:before, first:false, bonus:false, left:0 };
-    s.plays[game]=before+1; write(s);
+    s.plays[game]=before+1; write(s); emit('rtg:tokens');
     serverSpend();
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remaining() };
   }

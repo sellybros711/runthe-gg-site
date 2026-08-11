@@ -297,6 +297,9 @@
     }
   }
   function mountChips() {
+    // The shared top banner (topbanner.js) owns the account control site-wide;
+    // when it's present, don't also inject a topbar chip (avoids two profiles).
+    if (window.RTG_HAS_BANNER) return;
     // 1) games: drop a chip into the .topbar, before the streak chip if there is one
     var bars = document.querySelectorAll('.topbar');
     for (var i = 0; i < bars.length; i++) {
