@@ -142,7 +142,8 @@
   .metricbar .mb-name{color:var(--hlT);}
   .metricbar .mb-x{appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:inherit; font-weight:800; font-size:11px; border-radius:999px; padding:4px 10px; cursor:pointer; text-transform:none; letter-spacing:0;}
   .metricbar .mb-x:hover{color:var(--ink);}
-  .asof{text-align:center; font-size:10.5px; color:var(--dim); margin:0 0 12px; font-weight:700;}
+  .asof{text-align:center; font-size:10.5px; color:var(--dim); margin:0 0 12px; font-weight:700; transition:color .15s;}
+  .asof.hot{color:var(--hlT); font-weight:900; font-size:11.5px;}
 
   .hlcard{border:2px solid var(--line2); border-top:4px solid var(--hl); border-radius:14px; background:var(--card); box-shadow:4px 4px 0 rgba(7,20,38,.22); padding:clamp(16px,3vh,26px) 16px; text-align:center; position:relative; overflow:hidden;}
   :root[data-theme="light"] .hlcard{box-shadow:4px 4px 0 rgba(13,27,44,.12);}
@@ -383,9 +384,9 @@
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=6"></script>
+<script src="/arcade/card.js?v=7"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/share.js?v=1"></script>
+<script src="/arcade/share.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script>
 (function(){
@@ -481,11 +482,10 @@
   // ---------- value formatting ----------
   function fmtVal(cat, v, ent){
     if(v==null) return '';
-    var body = (cat.prefix||'') + fmtNum(v);
-    var star = (cat.isStat && ent && cat.asof && ACTIVE[ent.id]) ? '<span class="star" title="through the '+cat.asof+' season">*</span>' : '';
     var u = cat.unit ? '<span class="u">'+esc(cat.unit)+'</span>' : '';
-    return body + star + u;
+    return (cat.prefix||'') + fmtNum(v) + u;
   }
+  function isActive(e){ return !!(e && ACTIVE[e.id]); }
 
   // ---------- draw a fresh opponent from the category pool ----------
   function drawOpponent(cat, baseline){
@@ -607,9 +607,6 @@
     document.getElementById('streakN').textContent='0';
     var lbl = cat.label + (cat.note?(' ('+cat.note+')'):'');
     document.getElementById('mbMetric').textContent = cat.sport+' · '+lbl;
-    var asofEl=document.getElementById('asofNote');
-    if(cat.isStat && cat.asof){ asofEl.style.display=''; asofEl.textContent='* Active players’ totals run through the '+cat.asof+' season.'; }
-    else asofEl.style.display='none';
     baselineVal = cat.vfn(baseline);
     document.getElementById('lb').classList.remove('on');
     try{ if(window.RTGTokens && RTGTokens.startAttempt){ RTGTokens.startAttempt(GAME); charged=true; } }catch(e){}
@@ -622,6 +619,16 @@
     document.getElementById('baseName').textContent=e.name;
     document.getElementById('baseMeta').textContent=metaLine(e);
     document.getElementById('baseVal').innerHTML=fmtVal(cat, v, e);
+    updateAsof(e);
+  }
+  // The "totals run through {season}" line sits above the cards for stat
+  // categories, and goes bold when the player in the TOP spot is still active
+  // (their number is a moving total) - drawing the eye exactly when it matters.
+  function updateAsof(e){
+    var el=document.getElementById('asofNote'); if(!el) return;
+    if(!(cat && cat.isStat && cat.asof)){ el.style.display='none'; el.classList.remove('hot'); return; }
+    el.style.display=''; el.textContent='Active players’ totals run through the '+cat.asof+' season.';
+    el.classList.toggle('hot', isActive(e));
   }
   function nextOpponent(){
     var drawn=drawOpponent(cat, baseline);

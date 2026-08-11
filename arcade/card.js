@@ -147,13 +147,15 @@
     archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l1.6-3h6.8L13 7h7a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>',
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z"/></svg>',
     chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="12" width="2.6" height="5" fill="currentColor" stroke="none"/><rect x="11.7" y="8" width="2.6" height="9" fill="currentColor" stroke="none"/><rect x="16.4" y="14" width="2.6" height="3" fill="currentColor" stroke="none"/></svg>',
-    ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>'
+    ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>',
+    hilo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>'
   };
   function benefitsHTML(){
     return '<ul class="rtgc-perks">' +
       // Lead with the most differentiated perk: 36 daily games vs the free 9.
       '<li><span>' + ICN.ball + '</span><div><b><s>9</s> 36 new daily games</b>' +
         '<small>In addition to our classic game, you get NFL, NBA, and MLB specific daily games.</small></div></li>' +
+      '<li><span>' + ICN.hilo + '</span> Member-only Higher or Lower game</li>' +
       '<li><span>' + ICN.infinity + '</span> Unlimited plays, every day</li>' +
       '<li><span>' + ICN.archive + '</span> The full Archive of all past games</li>' +
       '<li><span>' + ICN.spark + '</span> New games &amp; challenges as they drop</li>' +
