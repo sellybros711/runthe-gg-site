@@ -550,6 +550,49 @@ window.GA_ID='G-L29P5MRWKE';
   .feat.arcade .chip:nth-of-type(3){color:#6fc9f2;border-left-color:rgba(92,140,255,.8);}
   .feat.arcade .play{background:linear-gradient(180deg,#B06BF0,#7C3AED);color:#12082e;
     box-shadow:0 10px 26px -10px rgba(169,130,243,.95),0 0 22px -6px rgba(176,107,240,.6);}
+
+  /* ---- animated card motifs: gamecast (Perfect Season + CFB) and slot machine (Arcade).
+       The widget lives in its own column so it never sits on top of the copy, the way
+       RunThePitch keeps its phones clear of the text; on phones it drops below instead. ---- */
+  .feat.football .feat-in,.feat.cfb .feat-in,.feat.arcade .feat-in{grid-template-columns:1fr;}
+  .gc-wrap,.slot-wrap{position:relative;z-index:2;pointer-events:none;display:flex;align-items:center;justify-content:flex-start;}
+  .gc{width:234px;max-width:100%;}
+  .gc-scr{background:linear-gradient(180deg,rgba(4,10,20,.86),rgba(4,10,20,.72));border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 13px;box-shadow:0 18px 40px -20px rgba(0,0,0,.9);}
+  .gc-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;}
+  .gc-row+.gc-row{border-top:1px solid rgba(255,255,255,.08);}
+  .gc-team{display:flex;align-items:center;gap:8px;font-family:'Anton',Impact,sans-serif;font-size:20px;letter-spacing:.03em;color:#eaf1f8;}
+  .gc-dot{width:14px;height:14px;border-radius:3px;box-shadow:0 0 8px -1px currentColor;flex:0 0 auto;}
+  .gc-rk{font-size:10px;font-weight:900;color:#cbd7e5;opacity:.8;}
+  .gc-score{font-weight:900;font-size:22px;font-variant-numeric:tabular-nums;color:#fff;transition:transform .2s,color .2s;}
+  .gc-score.bump{transform:scale(1.35);color:#ffe27a;}
+  .gc-foot{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;font-weight:800;letter-spacing:.04em;color:#aebfd2;font-variant-numeric:tabular-nums;text-transform:uppercase;}
+  .gc-clock{color:#eaf1f8;}
+  .gc-dd{margin-left:auto;color:#cbd7e5;}
+  .gc-live{color:#ff6a6a;letter-spacing:.06em;animation:gcblink 1.4s steps(2,end) infinite;}
+  .gc-cfb .gc-live{color:#F0975A;}
+  @keyframes gcblink{0%,60%{opacity:1;}61%,100%{opacity:.35;}}
+  .cw-cycle{animation:cwcolor 6s linear infinite;}
+  @keyframes cwcolor{0%{color:#eaf1f8;}20%{color:#E5402A;}40%{color:#4F86C6;}60%{color:#F2C14E;}80%{color:#8E44AD;}100%{color:#eaf1f8;}}
+  .slot{width:210px;max-width:100%;text-align:center;}
+  .slot-top{font-family:'Anton',Impact,sans-serif;font-size:13px;letter-spacing:.14em;color:#c9b3ff;text-shadow:0 0 12px rgba(169,130,243,.6);margin-bottom:7px;}
+  .slot-frame{position:relative;height:96px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#160b34,#0e0722);border:2px solid rgba(169,130,243,.6);box-shadow:0 0 0 1px rgba(0,0,0,.4) inset,0 0 24px -6px rgba(176,107,240,.7),0 0 0 4px rgba(124,58,237,.12);}
+  .slot-reel{position:absolute;left:0;right:0;top:0;will-change:transform;}
+  .slot-item{height:32px;display:flex;align-items:center;justify-content:center;font-family:'Anton',Impact,sans-serif;font-size:17px;letter-spacing:.04em;color:#dcc6ff;}
+  .slot-line{position:absolute;left:0;right:0;top:32px;height:32px;border-top:1px solid rgba(247,120,174,.5);border-bottom:1px solid rgba(92,200,255,.5);background:linear-gradient(90deg,rgba(247,120,174,.08),rgba(169,130,243,.14),rgba(92,200,255,.08));box-shadow:0 0 18px -4px rgba(176,107,240,.7) inset;}
+  .slot-frame.win .slot-line{animation:slotwin .5s ease 2;}
+  @keyframes slotwin{50%{background:linear-gradient(90deg,rgba(247,120,174,.35),rgba(169,130,243,.5),rgba(92,200,255,.35));}}
+  .slot-glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%,transparent 78%,rgba(0,0,0,.35));}
+  .slot-cta{margin-top:8px;}
+  .slot-pill{display:inline-block;font-size:9.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#12082e;background:linear-gradient(180deg,#C9A6FF,#9a6cf0);border-radius:999px;padding:4px 12px;box-shadow:0 0 16px -4px rgba(176,107,240,.8);}
+  @media (min-width:820px){
+    .feat.football .feat-in,.feat.cfb .feat-in{grid-template-columns:1fr 250px;}
+    .feat.arcade .feat-in{grid-template-columns:1fr 232px;}
+    .gc-wrap,.slot-wrap{justify-content:center;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .gc-live,.cw-cycle,.slot-frame.win .slot-line{animation:none!important;}
+    .slot-reel{transition:none!important;}
+  }
   /* ---- College Football: Perfect Season: green and gold ----
      The sister game to The Perfect Season, so the card is built the same way and only
      the colour changes: green and gold on near-black, which is what the game itself
@@ -629,7 +672,7 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="note">Free · No download</span>
     </div>
     <main class="games">
-      <article class="feat football noshots">
+      <article class="feat football">
         <span class="art"></span>
         <a class="feat-link" href="/football/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -644,10 +687,19 @@ window.GA_ID='G-L29P5MRWKE';
             <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#DC3C3C"/><rect x="2" y="2" width="8" height="8" fill="#f3c4c2"/><rect x="4" y="4" width="4" height="4" fill="#DC3C3C"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>One Franchise Mode</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#f3c4c2"/><rect x="2" y="5" width="8" height="2" fill="#DC3C3C"/><rect x="3" y="7" width="6" height="1" fill="#f3c4c2"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>All-Time Rosters</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#DC3C3C"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#DC3C3C"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>Leaderboards</span></span>
             <div class="g-foot"><a class="play" href="/football/">Play now <span class="arw">&rarr;</span></a></div>
           </div>
+          <div class="gc-wrap" aria-hidden="true">
+            <div class="gc gc-nfl">
+              <div class="gc-scr">
+                <div class="gc-row"><span class="gc-team"><i class="gc-dot" style="background:#EF5350;color:#EF5350"></i>KC</span><span class="gc-score" data-s="a">0</span></div>
+                <div class="gc-row"><span class="gc-team"><i class="gc-dot" style="background:#c9c9c9;color:#c9c9c9"></i>SF</span><span class="gc-score" data-s="b">0</span></div>
+                <div class="gc-foot"><span class="gc-q">Q1</span><span class="gc-clock">15:00</span><span class="gc-dd">1st &amp; 10</span><span class="gc-live">&#9679;&nbsp;LIVE</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </article>
 
-      <article class="feat arcade noshots">
+      <article class="feat arcade">
         <span class="art"></span>
         <a class="feat-link" href="/arcade/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -662,10 +714,17 @@ window.GA_ID='G-L29P5MRWKE';
             <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="4" height="4" fill="#B79BF6"/><rect x="7" y="1" width="4" height="4" fill="#DCC9FF"/><rect x="1" y="7" width="4" height="4" fill="#DCC9FF"/><rect x="7" y="7" width="4" height="4" fill="#B79BF6"/></svg>10 Daily Games</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="1" width="2" height="2" fill="#F2B632"/><rect x="4" y="3" width="4" height="2" fill="#F778AE"/><rect x="3" y="5" width="6" height="4" fill="#F778AE"/><rect x="4" y="6" width="4" height="3" fill="#F2B632"/><rect x="3" y="9" width="6" height="1" fill="#F778AE"/></svg>Build Streaks</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#5C8CFF"/><rect x="4" y="4" width="3" height="7" fill="#6FC9F2"/><rect x="7" y="6" width="3" height="5" fill="#5C8CFF"/><rect x="4" y="2" width="3" height="1" fill="#6FC9F2"/></svg>Climb Leaderboards</span></span>
             <div class="g-foot"><a class="play" href="/arcade/">Play now <span class="arw">&rarr;</span></a></div>
           </div>
+          <div class="slot-wrap" aria-hidden="true">
+            <div class="slot">
+              <div class="slot-top">RUN THE ARCADE</div>
+              <div class="slot-frame"><div class="slot-reel" data-names="Daily Match|Crossword|Word Search|Odd One Out|Alma Mater|Career|Rank It|Guess|High Low|The Table"></div><div class="slot-line"></div><div class="slot-glass"></div></div>
+              <div class="slot-cta"><span class="slot-pill">Today&rsquo;s Pick</span></div>
+            </div>
+          </div>
         </div>
       </article>
 
-      <article class="feat cfb noshots">
+      <article class="feat cfb">
         <span class="art"></span>
         <a class="feat-link" href="/cfb/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -673,12 +732,21 @@ window.GA_ID='G-L29P5MRWKE';
             <span class="g-head">
               <span class="crest"><img src="/cfb/icon-192.png" alt="College Football: Perfect Season crest" width="76" height="76" loading="lazy" /></span>
               <span class="g-title">
-                <span class="nm"><span><span class="t">College Football: </span><span class="g">Perfect Season</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span></span></span>
+                <span class="nm"><span><span class="t"><span class="cw-cycle">College</span> Football: </span><span class="g">Perfect Season</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span></span></span>
               </span>
             </span>
             <p class="g-desc">Spin a year and a school, sign six players from any season since 2005 under an $11M NIL budget, then play all 12 games and chase the national title through the 12-team playoff.</p>
             <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#10b981"/><rect x="2" y="2" width="8" height="8" fill="#a7f3d0"/><rect x="4" y="4" width="4" height="4" fill="#10b981"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>Every School</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#a7f3d0"/><rect x="2" y="5" width="8" height="2" fill="#10b981"/><rect x="3" y="7" width="6" height="1" fill="#a7f3d0"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>2005 to 2025</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#10b981"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#10b981"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>12-Team Playoff</span></span>
             <div class="g-foot"><a class="play" href="/cfb/">Play now <span class="arw">&rarr;</span></a></div>
+          </div>
+          <div class="gc-wrap" aria-hidden="true">
+            <div class="gc gc-cfb">
+              <div class="gc-scr">
+                <div class="gc-row"><span class="gc-team"><i class="gc-dot" style="background:#E2762E;color:#E2762E"></i><span class="gc-rk">#2</span>UGA</span><span class="gc-score" data-s="a">0</span></div>
+                <div class="gc-row"><span class="gc-team"><i class="gc-dot" style="background:#c9c9c9;color:#c9c9c9"></i><span class="gc-rk">#6</span>OSU</span><span class="gc-score" data-s="b">0</span></div>
+                <div class="gc-foot"><span class="gc-q">Q1</span><span class="gc-clock">15:00</span><span class="gc-dd">1st &amp; 10</span><span class="gc-live">&#9679;&nbsp;CFP</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </article>
@@ -1313,6 +1381,60 @@ document.querySelectorAll('.feat-link').forEach(function(a){
       }
     }catch(e){}
   })();
+</script>
+
+<script>
+/* Card motifs: the Perfect Season / College Football gamecast scoreboards and the Arcade
+   slot machine. Pure DOM, no assets. Honors reduce-motion by rendering a static frame. */
+(function(){
+  var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  function pad(n){ return (n<10?'0':'')+n; }
+  var DD=['1st & 10','2nd & 6','3rd & 3','1st & 10','2nd & 8','3rd & 5','4th & 1','1st & Goal'];
+  function gamecast(el){
+    var A=el.querySelector('[data-s=a]'),B=el.querySelector('[data-s=b]');
+    var Q=el.querySelector('.gc-q'),CL=el.querySelector('.gc-clock'),DDe=el.querySelector('.gc-dd');
+    if(!A||!B||!Q||!CL) return;
+    var q=1,secs=900,ddi=0;
+    function bump(node,pts){ var v=(+node.textContent)+pts; node.textContent=v; node.classList.add('bump'); setTimeout(function(){ node.classList.remove('bump'); },550); }
+    function draw(){ Q.textContent='Q'+q; CL.textContent=Math.floor(secs/60)+':'+pad(secs%60); }
+    draw();
+    if(reduce){ A.textContent=24; B.textContent=17; Q.textContent='Q4'; CL.textContent='2:11'; if(DDe)DDe.textContent='3rd & 5'; return; }
+    setInterval(function(){
+      secs-=8; if(secs<=0){ if(q>=4){ q=1; A.textContent=0; B.textContent=0; } else q++; secs=900; }
+      var r=Math.random();
+      if(r<0.05) bump(A, Math.random()<0.6?7:3);
+      else if(r<0.09) bump(B, Math.random()<0.6?7:3);
+      if(DDe && Math.random()<0.5){ ddi=(ddi+1)%DD.length; DDe.textContent=DD[ddi]; }
+      draw();
+    },240);
+  }
+  [].forEach.call(document.querySelectorAll('.gc'),gamecast);
+
+  function slot(el){
+    var reel=el.querySelector('.slot-reel'),frame=el.querySelector('.slot-frame');
+    if(!reel) return;
+    var names=(reel.getAttribute('data-names')||'').split('|').filter(Boolean);
+    if(!names.length) return;
+    var base=names.length,H=32,html='';
+    for(var k=0;k<24;k++){ for(var j=0;j<base;j++){ html+='<div class="slot-item">'+names[j]+'</div>'; } }
+    reel.innerHTML=html;
+    var i=base*10;
+    function setPos(idx,anim){ reel.style.transition=anim?'transform 1.5s cubic-bezier(.16,.84,.3,1)':'none'; reel.style.transform='translateY('+(-(idx-1)*H)+'px)'; }
+    setPos(i,false);
+    if(reduce){ setPos(base*10+4,false); return; }
+    function spin(){
+      var steps=17+Math.floor(Math.random()*13); i+=steps; setPos(i,true);
+      reel.addEventListener('transitionend',function te(){
+        reel.removeEventListener('transitionend',te);
+        if(frame){ frame.classList.add('win'); setTimeout(function(){ frame.classList.remove('win'); },1000); }
+        var norm=((i%base)+base)%base; i=norm+base*10; setPos(i,false); void reel.offsetHeight;
+        setTimeout(spin,1700);
+      });
+    }
+    setTimeout(spin,700);
+  }
+  [].forEach.call(document.querySelectorAll('.slot'),slot);
+})();
 </script>
 
 </body>
