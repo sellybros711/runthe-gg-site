@@ -456,7 +456,9 @@
   function poolFor(sport, vfn){ return ENT.filter(function(e){ return e.sport===sport && vfn(e)!=null; }); }
 
   // stat categories (merged), grouped by sport
+  var SKIP_CATS = { mlb_saves:1 };   // too few players to be a fair High Low category
   Object.keys(STAT).forEach(function(k){
+    if(SKIP_CATS[k]) return;
     var st = STAT[k]; if(SPORTS.indexOf(st.sport)<0) return;
     var vfn = (function(vals){ return function(e){ var v=vals[e.id]; return (v==null)?null:v; }; })(st.vals);
     var pool = poolFor(st.sport, vfn); if(pool.length < MIN_POOL) return;
