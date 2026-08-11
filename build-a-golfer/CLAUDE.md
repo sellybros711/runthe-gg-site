@@ -14575,6 +14575,31 @@ allows Google Fonts, or self-host Anton.*
   adopt). Tunable: the `wheelPrizesFor` table (amounts via the `sc(base,mult)` ladder, weights via the
   `w` terms), `WHEEL_SHARD_STEPS`/`WHEEL_PACK_STEPS`.
 
+- **PRIZE WHEEL: labels read the right way up once the wheel STOPS (owner, with a landed-wheel screenshot:
+  "when spinning the prize wheel, all of the prizes should be readable and not upside down").** A real bug
+  that predates the 13-wedge change and that my earlier tests missed because they only ever inspected the
+  face MARKUP, never its on-screen orientation. `wheelFaceSVG` flips every bottom-half wedge 180° so it
+  doesn't read upside down, but it made that decision against the UNROTATED face while the wheel comes to
+  rest at whatever angle it landed on (`rot: 360*6 - idx*step + jit`). So the instant a spin finished,
+  every wedge that started on the bottom half was sitting on the TOP half reading upside down, and vice
+  versa - i.e. it was wrong in exactly the state the player stares at while the prize is revealed (the
+  owner's screenshot: an inverted "PACK", "2.1k", "600"). Fix: `wheelFaceSVG(pz, restRot)` flips against
+  where each wedge will ACTUALLY sit (`(deg + wheelRot) % 360`), and `overlayWheel` passes the landing
+  rotation while spinning and once done, 0 before the first spin.
+  - Baked into the markup rather than counter-rotated per frame (which would have needed a CSS-synced
+    inverse rotation on 13 label groups + `transform-box` compat): the labels still turn WITH the wheel
+    like a real one, so they're only unreadable during the blur of the spin itself, never at rest.
+  Verified by measuring the REAL on-screen angle of every label via `getScreenCTM()` (which folds in the
+  `.pwv-rot` CSS rotation, so it checks what the player sees, not what the markup says) across all 65
+  landing angles a spin can produce (13 wedges × 5 jitter positions) plus a full 360° sweep in 7° steps:
+  **0 upside down out of 1,690 labels**, 0 at rest, and the winning wedge under the pointer reads dead
+  upright (max tilt 0.0°) for all 13 wedges. Screenshot of a real Elite-wheel spin confirms it against the
+  reported case. Wheel + regression suites green with 0 page errors. Deployed to /golf (byte-identical
+  verified; main had moved but `golf/index.html` was untouched, so nothing to adopt).
+  NOTE for future sessions: the `wheel_ui` scratchpad suite's "spin consumed" check has to allow for the
+  **Bonus Spin** wedge handing a spin straight back (`wheelAvail()` holds level) - a plain `before-1`
+  assertion fails ~4% of runs and reads as a regression when it isn't.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
