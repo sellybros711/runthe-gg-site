@@ -481,8 +481,9 @@
   .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
   .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--lc); }
 
-  /* the pick-four grid: four across at every size (NYT-style), names wrap */
-  .pool{ grid-template-columns:repeat(4,1fr); gap:8px; }
+  /* the pick-four grid: 5 across on desktop (fills the wider column), 4 across on
+     phones. Names wrap; fitPool() shrinks any that don't fit. */
+  .pool{ grid-template-columns:repeat(5,1fr); gap:8px; }
   .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
   /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
      so the longest word fits, then the name wraps at the space onto two lines */
@@ -607,8 +608,8 @@
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
           <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
-          <li><b>Drag a name onto a rack</b>, or tap the name then the rack. Your first group is revealed free to get you rolling.</li>
-          <li>Filled a rack? <b>Hit Check group.</b> Nail it and it locks in; miss and it costs you a guess.</li>
+          <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
+          <li>The easiest group's name is <b>revealed free</b> to get you rolling.</li>
           <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
         </ol>
       </details>
