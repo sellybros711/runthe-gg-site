@@ -885,12 +885,18 @@
   // ---- ARCADE TICKET: one daily punch-card across all nine games ----
   (function(){
     // [label, done, accent] - a punched hole takes its game's color, so the
-    // filling ticket doubles as a map of the nine game identities.
+    // filling ticket doubles as a map of the game identities.
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
       ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
     ];
+    // Members get a 10th punch: the card-only High Low, "done" once they've
+    // played it today (it's endless, so a single play counts).
+    var isMember=false; try{ isMember=!!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){}
+    var hlDone=false; try{ hlDone=isMember && window.RTGTokens && RTGTokens.playsOf && RTGTokens.playsOf('highlow')>0; }catch(e){}
+    if(isMember) GAMES.push(['High Low',hlDone,'var(--hlT)']);
+    var N=GAMES.length;
     var doneN=GAMES.filter(function(x){return x[1];}).length;
     var perfect=doneN===GAMES.length;
     var css=document.createElement('style');
@@ -914,14 +920,14 @@
       '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}';
     document.head.appendChild(css);
     var el=document.createElement('div'); el.className='aticket';
-    el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / 9 punched</span><button class="tk-share" type="button">Share</button></div>'+
+    el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / '+N+' punched</span><button class="tk-share" type="button">Share</button></div>'+
       '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
-      (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL 9 CLEARED \u2605</div>':'');
+      (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL '+N+' CLEARED \u2605</div>':'');
     var host=document.getElementById('puzzles');
     if(host) host.insertBefore(el, host.firstChild);
     el.querySelector('.tk-share').addEventListener('click', function(){
       var bar=GAMES.map(function(x){return x[1]?'\ud83c\udfab':'\u2b1c';}).join('');
-      var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / 9 games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
+      var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / '+N+' games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
       if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
       else if(navigator.clipboard){ navigator.clipboard.writeText(txt); this.textContent='Copied!'; }
     });
