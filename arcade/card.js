@@ -77,7 +77,38 @@
       '.rtgc-ghost{width:100%;box-sizing:border-box;appearance:none;border:1px solid var(--line2,#22304a);background:transparent;color:var(--ink,#eaf0f7);border-radius:12px;padding:12px;min-height:46px;font-weight:800;font-size:13px;cursor:pointer;margin-top:10px;}',
       '.rtgc-ghost:hover{border-color:var(--mut,#93a4bd);}',
       '.rtgc-err{background:color-mix(in srgb,var(--red,#F0653A) 15%,transparent);color:var(--redT,#ff8a72);border-radius:8px;padding:9px 11px;font-size:12.5px;font-weight:600;margin:10px 0 0;}',
-      '.rtgc-fine{font-size:11px;color:var(--dim,#6b7d97);margin-top:11px;line-height:1.4;}'
+      '.rtgc-fine{font-size:11px;color:var(--dim,#6b7d97);margin-top:11px;line-height:1.4;}',
+      // Arcade-cabinet banner (ported from the old hub CTA): the primary "get a
+      // card" button. Its own orange->red identity, independent of any game color.
+      '.arcade-buy{display:block;width:100%;border:0;padding:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+      '.arcade-buy .ab-card{display:flex;align-items:stretch;overflow:hidden;border-radius:16px;min-height:104px;background:linear-gradient(105deg,#FF9A2E 0%,#FF6A3D 48%,#F0384E 100%);box-shadow:0 12px 28px -12px rgba(240,56,78,.65);transition:transform .12s ease,box-shadow .12s ease;}',
+      '.arcade-buy:hover .ab-card{transform:translateY(-2px);box-shadow:0 18px 36px -12px rgba(240,56,78,.85);}',
+      '.arcade-buy:active .ab-card{transform:translateY(0);}',
+      '.arcade-buy .ab-cab{flex:0 0 96px;position:relative;padding:8px;display:grid;place-items:center;background:linear-gradient(180deg,#141d33,#080d18);clip-path:polygon(0 0,100% 0,82% 50%,100% 100%,0 100%);}',
+      '.arcade-buy .ac-icon{position:relative;width:74px;height:66px;}',
+      '.arcade-buy .ac-card{position:absolute;left:50%;top:50%;width:42px;height:52px;transform:translate(-50%,-50%) rotate(-7deg);border-radius:9px;border:2px solid transparent;background:linear-gradient(#0e1832,#0a1226) padding-box,linear-gradient(155deg,#FF8A3D,#F0384E) border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 6px 14px -6px rgba(240,56,78,.55);}',
+      '.arcade-buy .ac-crown{width:23px;height:16px;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}',
+      '.arcade-buy .ac-bar{border-radius:2px;height:3px;}',
+      '.arcade-buy .ac-bar.b1{width:21px;background:#F0384E;}',
+      '.arcade-buy .ac-bar.b2{width:14px;background:#2ee6cf;}',
+      '.arcade-buy .ac-spark{position:absolute;display:block;}',
+      '.arcade-buy .ac-spark.s1{width:11px;height:11px;top:2px;right:6px;}',
+      '.arcade-buy .ac-spark.s2{width:8px;height:8px;bottom:4px;left:4px;opacity:.9;}',
+      '.arcade-buy .ac-line{position:absolute;height:3px;border-radius:2px;}',
+      '.arcade-buy .ac-line.l1{width:13px;top:30%;left:-2px;background:#F0384E;}',
+      '.arcade-buy .ac-line.l2{width:9px;top:46%;left:-4px;background:#2ee6cf;}',
+      '.arcade-buy .ac-line.l3{width:12px;top:64%;right:-2px;background:#3a4a66;}',
+      '.arcade-buy .ab-body{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:12px 14px 12px 6px;}',
+      '.arcade-buy .ab-txt{flex:1;min-width:0;text-align:left;}',
+      '.arcade-buy .ab-txt b{display:block;font-family:var(--f,inherit);font-weight:900;font-style:italic;font-size:22px;line-height:1;color:#1a1206;white-space:nowrap;}',
+      '.arcade-buy .ab-txt small{display:block;font-size:11.5px;font-weight:800;color:rgba(26,18,6,.82);margin-top:5px;line-height:1.3;}',
+      '.arcade-buy .ab-arrow{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:#fff;background:#12161f;box-shadow:0 3px 8px rgba(0,0,0,.4);transition:background .12s;}',
+      '.arcade-buy:hover .ab-arrow{background:#0a0d14;}',
+      // secondary "create a free account" - two-line, theme-neutral
+      '.rtgc-create{width:100%;box-sizing:border-box;text-align:center;appearance:none;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);border-radius:12px;padding:13px 14px;min-height:56px;cursor:pointer;margin-top:12px;font-family:inherit;}',
+      '.rtgc-create:hover{border-color:var(--gold,#F2B632);}',
+      '.rtgc-create b{display:block;font-weight:900;font-size:14px;}',
+      '.rtgc-create small{display:block;font-size:11px;font-weight:700;color:var(--mut,#93a4bd);margin-top:4px;line-height:1.35;}'
     ].join('');
     (document.head||document.documentElement).appendChild(s);
   }
@@ -220,16 +251,38 @@
     '</div>';
   }
 
-  // Guest used their one free play → convert to a free account (3/day).
+  // The arcade-cabinet "get a card" banner (ported from the old hub CTA). Its
+  // own orange->red identity, so it reads the same on every game (not tied to
+  // the game's accent color).
+  function arcadeBanner(id, sub){
+    return '<button class="arcade-buy" type="button" id="'+id+'" aria-label="Get an Arcade Card: unlimited plays, every past day unlocked">'+
+      '<span class="ab-card">'+
+        '<span class="ab-cab" aria-hidden="true"><span class="ac-icon">'+
+          '<i class="ac-line l1"></i><i class="ac-line l2"></i><i class="ac-line l3"></i>'+
+          '<span class="ac-card">'+
+            '<svg class="ac-crown" viewBox="0 0 24 18"><defs><linearGradient id="acCrownG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A3D"/><stop offset="1" stop-color="#F0384E"/></linearGradient></defs><path d="M2 15V6l5 3.6L12 3l5 6.6L22 6v9z" fill="url(#acCrownG2)"/></svg>'+
+            '<i class="ac-bar b1"></i><i class="ac-bar b2"></i>'+
+          '</span>'+
+          '<svg class="ac-spark s1" viewBox="0 0 24 24"><path d="M12 0c1.2 6.4 5.4 10.6 12 12-6.6 1.4-10.8 5.6-12 12-1.2-6.4-5.4-10.6-12-12 6.6-1.4 10.8-5.6 12-12z" fill="#2ee6cf"/></svg>'+
+          '<svg class="ac-spark s2" viewBox="0 0 24 24"><path d="M12 0c1.2 6.4 5.4 10.6 12 12-6.6 1.4-10.8 5.6-12 12-1.2-6.4-5.4-10.6-12-12 6.6-1.4 10.8-5.6 12-12z" fill="#2ee6cf"/></svg>'+
+        '</span></span>'+
+        '<span class="ab-body"><span class="ab-txt"><b>Arcade Card</b>'+
+          '<small>'+esc(sub)+'</small></span>'+
+          '<span class="ab-arrow" aria-hidden="true">→</span></span>'+
+      '</span>'+
+    '</button>';
+  }
+
+  // Guest used their one free play → convert. Arcade Card is the big primary
+  // banner; a free account is the "or…" alternative underneath.
   function guestConvert(){
     ensureScrim();
     var b=$('rtgcardBody');
     b.innerHTML =
       '<div class="rtgc-kick">Keep playing</div>'+
-      '<h2 class="rtgc-h">Create a free account</h2>'+
-      '<p class="rtgc-sub">A free RunThe.GG account gets you <b>3 Arcade plays every day</b>, and saves your streaks, stats and leaderboard rank across every game. Or get an Arcade Card for unlimited play.</p>'+
-      '<button class="rtgc-go" id="rtgcardCreate" type="button">Create free account</button>'+
-      '<button class="rtgc-ghost" id="rtgcardCard" type="button">Get an Arcade Card for unlimited play</button>'+
+      arcadeBanner('rtgcardCard','Unlimited plays for everyone. Every past day unlocked.')+
+      '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>Or Create a Free Account</b>'+
+        '<small>3 plays per day and access to leaderboard. Account stays with you on all RunThe.GG content.</small></button>'+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
       '<div class="rtgc-fine">No card required for account.</div>';
     $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup'); };
