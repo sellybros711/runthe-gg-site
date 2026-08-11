@@ -2163,6 +2163,19 @@ window.GA_ID='G-L29P5MRWKE';
     align-items:center;justify-content:center;flex:0 0 auto}
   .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round}
+  /* A REAL LOGO IS THE TILE, so it gets no gradient behind it and no padding around
+     it: the artwork already carries its own navy field and its own edge.
+
+     32px AND NOT THE 38 THE NFL GAME USES for the matching card, which is a
+     deliberate difference rather than a missed detail. Measured at four widths, the
+     size changes the outcome at exactly one: 390, the commonest phone, where 38
+     wraps "The Perfect Season" onto a second line and 32 does not. That card's title
+     over there is "College Football: Perfect Season", long enough to wrap at every
+     width, so the extra pixels cost it nothing and cost this one a line. */
+  .modecard .mc-icon-img{width:32px;height:32px;background:none;border-radius:8px;
+    overflow:hidden}
+  .modecard .mc-icon-img img{width:100%;height:100%;display:block;border-radius:8px}
+  .modecard.mc-nfl .mc-icon-img{background:none}
   .modecard .mc-title{font-family:var(--fn);font-size:17px;font-weight:800;
     letter-spacing:.01em;text-transform:uppercase;color:var(--ink);line-height:1.15}
   .modecard.mc-conf{border-color:rgba(245,158,11,.38)}
@@ -4339,12 +4352,14 @@ function modeMenu(){
          like a link does, middle-click and all. Styled as a card so it matches the
          one above it. */
       '<a class="modecard mc-nfl" href="/football/" id="b-mc-nfl">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<g transform="rotate(-30 12 12)">'+
-            '<path d="M2.5 12c0-3 4.2-5.5 9.5-5.5S21.5 9 21.5 12s-4.2 5.5-9.5 5.5S2.5 15 2.5 12z"/>'+
-            '<path d="M8.5 12h7"/><path d="M10.5 10.4v3.2"/><path d="M13 10.4v3.2"/>'+
-          '</g>'+
-        '</svg></div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
+        /* THE REAL MARK, not a drawn football. This was a hand-tilted SVG ball, which
+           was the honest placeholder while nothing better was to hand. The NFL game
+           has a logo: the puzzle helmet on navy that it wears on the site's front
+           page, on a home screen and on its own results banner. Using anything else
+           here teaches a player that the two games are unrelated. */
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+          '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
         '<p>The same game in the NFL. Spin for a year and a team, sign six all-time '+
         'legends under the $140M cap, then play all 17 games and the playoffs.</p>'+
       '</a>'+
