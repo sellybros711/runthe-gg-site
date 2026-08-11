@@ -2115,8 +2115,13 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .mypin{transition:none} }
 
   /* ── your place, on the results screen ──────────────────────── */
+  /* WRAPS, because the sign-in offer is a fourth child of a row built for three.
+     The place, its label and the Board button stay on one line; the offer takes a
+     full line of its own underneath rather than being squeezed in beside them. */
   .placebox{margin:12px 0 0;border:1px solid var(--line);border-radius:12px;
-    background:var(--panel);padding:11px 13px;display:flex;align-items:center;gap:12px}
+    background:var(--panel);padding:11px 13px;display:flex;align-items:center;
+    gap:12px;flex-wrap:wrap}
+  .placebox .gateline{flex:0 0 100%;margin-top:2px}
   .placebox .pv{font-family:var(--fd);font-size:26px;line-height:1;color:var(--ink)}
   .placebox .pv.gold{color:#fbbf24}
   .placebox .pl{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--dim)}
@@ -2535,6 +2540,14 @@ window.GA_ID='G-L29P5MRWKE';
   .rcell.top10 .rn{color:#93c5fd}
   .rcell.dead .rn{color:var(--dim-2);font-size:22px}
   .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
+  /* The sign-in ask, wherever it is made. Ruled off from what is above it because it
+     is an offer rather than more of the result, and :empty so a signed-in player is
+     not left looking at a rule under nothing. */
+  .gateline:empty{display:none}
+  .gateline{margin-top:13px;padding-top:12px;border-top:1px solid var(--line);
+    font-size:12.5px;line-height:1.45;color:var(--dim);text-align:left}
+  .gateline b{color:#fff;font-weight:700}
+  .gateline .btn{margin-top:10px;width:100%}
   .rankwho{margin:7px 0 0;font-size:11.5px;color:var(--dim-2);line-height:1.4}
   .rload{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;
     color:var(--dim)}
@@ -4407,6 +4420,48 @@ let authMsg=null;         // {err} or {ok}
    day cannot re-claim a row that is no longer the one on screen. */
 let pendingClaim=null;
 
+/* ── ASKING FOR THE SIGN-IN, AND PAYING IT OFF ──────────────────────────────
+   This screen used to ask in prose: "Sign in to put your name on it", with no
+   button under it. The player then had to know the avatar in the corner opens an
+   account page, on the one screen where signing in is worth anything. The NFL game
+   puts a button at exactly this moment and converts better, so this is that.
+
+   THREE STATES, NOT TWO, and the third is the one that quietly loses people. A
+   Google sign-in creates an account with no username, and this board lists named
+   seasons only, so that player has signed in, had their season claimed, and is
+   STILL not on the board, with nothing on screen saying why. "Sign in" is the wrong
+   thing to say to them; they already did.
+
+   gateState is one function because the place box and the Where it ranks tab both
+   ask, and two prompts disagreeing about whether you are on the board is worse than
+   either being wrong alone. */
+function gateState(){
+  if(!authState.ready||authState.waiting) return '';
+  if(!authState.signedIn) return 'guest';
+  if(!authState.name) return 'noname';
+  return '';
+}
+const GATE_WORDS={
+  guest:{ say:'Only seasons with a name on them go on the board. This one is saved either way.',
+          act:'Sign in and keep this season' },
+  noname:{ say:'Your season is saved and yours. The board lists seasons by name, so it needs one before it can show this.',
+           act:'Pick your name' },
+};
+function gateCta(){
+  const g=gateState(); if(!g) return '';
+  return '<div class="gateline"><span>'+GATE_WORDS[g].say+'</span>'+
+    '<button class="btn sm" data-gate="'+g+'">'+GATE_WORDS[g].act+'</button></div>';
+}
+/* Delegated, so every repaint of either panel keeps working without rewiring. */
+let signInForBoard=false;
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest&&e.target.closest('[data-gate]'); if(!b) return;
+  const g=b.dataset.gate;
+  if(g==='guest') signInForBoard=true;
+  ga('gate_clicked',{from:'results',state:g});
+  openProfile('account');
+});
+
 function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
@@ -4417,9 +4472,27 @@ function bootAuth(){
     authState=st;
     updateAvatar();
     /* Signing in with a finished season on screen takes it over. */
+    /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
+       repainting a placing is not an answer to "what did I just get". The NFL game
+       says so out loud and, when the sign-in came from the button on the results
+       screen, opens the board on the season that was just added; doing the same
+       here is most of the point of this change.
+
+       And the nameless case is told the truth rather than congratulated: the row
+       exists and is owned, but a board that lists by name still has nothing to show
+       until there is one, so saying "you are on the board" would be a lie the player
+       could check in one tap. */
     if(st.signedIn&&pendingClaim){
       const id=pendingClaim;
-      a.claim(id).then((got)=>{ if(got){ pendingClaim=null; ga('run_claimed'); paintPlace(); } });
+      const wanted=signInForBoard; signInForBoard=false;
+      a.claim(id).then((got)=>{
+        if(!got) return;
+        pendingClaim=null; ga('run_claimed');
+        paintPlace();
+        if(!authState.name){ toast('Season saved. Pick a name to get it on the board'); return; }
+        if(wanted&&run){ closeSheet(); openBoard(runMode(run)); }
+        else toast('Your season is on the board');
+      });
     }
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
@@ -5589,8 +5662,8 @@ async function paintPlace(){
        fact and the one that tells them what to do about it. */
     const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox"><div class="pl">'+
-      'No signed-in season has been put on the'+which+' board this week yet. '+
-      '<b>Sign in</b> and yours is the first.</div>'+
+      'No named season has been put on the'+which+' board this week yet. '+
+      'Yours would be the first.</div>'+gateCta()+
       '<button id="o-lb">Board</button></div>';
   }else{
     myPlace=place;
@@ -5601,13 +5674,13 @@ async function paintPlace(){
        all four and you are 5th of 4. Counting yourself in fixes the arithmetic and is
        also what actually happens the moment you sign in and claim the run. */
     const field=(!authState.signedIn&&count!==null&&place>count)?place:count;
-    const nameLine=authState.signedIn
-      ? '' : ' <b>Sign in</b> to put your name on it.';
+    /* The ask is the button under this line now, so the sentence stops repeating it. */
+    const nameLine='';
     const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox">'+
       '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
       '<div class="pl">of '+(field===null?'the':field.toLocaleString())+which+
-        ' seasons this week.'+nameLine+'</div>'+
+        ' seasons this week.'+nameLine+'</div>'+gateCta()+
       '<button id="o-lb">Board</button></div>';
   }
   const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
@@ -5677,7 +5750,7 @@ async function paintRanksTab(){
   }
   el.innerHTML='<p class="rankwho">'+who+'</p>'+
     '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k])).join('')+'</div>'+
-    (authState.signedIn?'':'<p class="rankfoot"><b>Sign in</b> to put your name on it.</p>');
+    gateCta();
 }
 
 /* paintNewBadges() PAINTED A PANEL HERE, listing what the season had just earned with a

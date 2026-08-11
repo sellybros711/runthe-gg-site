@@ -145,7 +145,13 @@ console.log('\n=== a guest finishes a season ===');
      produces. It asks for the invitation instead. */
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ').trim();
   ok('an empty board offers a place rather than claiming one',
-    /No signed-in season/.test(place) && /Sign in/.test(place), place.slice(0, 90));
+    /No named season/.test(place) && /Yours would be the first/.test(place), place.slice(0, 90));
+  /* AND THE OFFER IS A BUTTON, not a sentence telling them to go and find one. This
+     used to read "Sign in to put your name on it" with nothing to press, on the one
+     screen where signing in is worth something. */
+  const gate = await page.$('#o-place [data-gate="guest"]');
+  ok('a guest is given something to press', !!gate,
+    gate ? (await gate.textContent()) : 'no button');
   const row = await page.evaluate(() => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id,display_name,user_id,wins,losses,national_rank,playoff_seed,made_playoffs,bowl,picks&order=id.desc&limit=1')
     .then(r => r.json()).then(a => a[0]));
   ok('the season reached the table', !!row, row ? JSON.stringify(row).slice(0, 130) : '');
