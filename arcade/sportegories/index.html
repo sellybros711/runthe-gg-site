@@ -148,6 +148,42 @@
   .res .also{color:var(--mut); font-weight:600; font-size:11.5px; width:100%; line-height:1.45;}
   .res .also b{color:var(--ink); font-weight:700;}
 
+  /* ---- reveal ---- */
+  /* Rows resolve one at a time. Each sits in a "checking" shimmer for a beat
+     before it flips, so there's a moment of suspense per answer instead of the
+     whole card landing at once. */
+  .row.pending{border-left-color:var(--gold); background:color-mix(in srgb, var(--gold) 9%, var(--card2));}
+  .row.pending .cl{opacity:.75;}
+  .row.pending input{border-color:color-mix(in srgb, var(--gold) 55%, var(--line2));}
+  .dots{display:inline-flex; gap:4px; margin-left:auto; flex:0 0 auto;}
+  .dots i{width:5px; height:5px; border-radius:50%; background:var(--goldT); opacity:.3; animation:dotp 1s infinite;}
+  .dots i:nth-child(2){animation-delay:.16s;} .dots i:nth-child(3){animation-delay:.32s;}
+  @keyframes dotp{0%,100%{opacity:.25; transform:translateY(0);}50%{opacity:1; transform:translateY(-3px);}}
+  .row.flip{animation:rowflip .42s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes rowflip{0%{transform:scale(.982);}55%{transform:scale(1.018);}100%{transform:scale(1);}}
+  .res .pts{display:inline-block; animation:ptspop .42s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes ptspop{0%{transform:scale(.3); opacity:0;}100%{transform:scale(1); opacity:1;}}
+
+  /* running tally while the card is being scored */
+  .tally{display:none; align-items:center; gap:12px; background:var(--card2); border:1px solid var(--line2);
+    border-radius:12px; padding:11px 14px; margin-bottom:12px;}
+  .tally.on{display:flex;}
+  .tally .n{font-family:var(--hero); font-weight:400; font-size:34px; line-height:1; color:var(--spT); font-variant-numeric:tabular-nums; min-width:52px;}
+  .tally .n.bump{animation:tbump .3s ease;}
+  @keyframes tbump{0%{transform:scale(1);}45%{transform:scale(1.22);}100%{transform:scale(1);}}
+  .tally .l{font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .tally .l b{display:block; font-size:13px; letter-spacing:0; text-transform:none; color:var(--ink); margin-top:3px;}
+  .tally .skip{margin-left:auto; appearance:none; cursor:pointer; background:transparent; border:1px solid var(--line2);
+    color:var(--mut); font-family:var(--f); font-weight:800; font-size:11px; padding:7px 11px; border-radius:999px;}
+
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
+  .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
+  @keyframes cfall{to{transform:translateY(108vh) rotate(720deg);}}
+  @media (prefers-reduced-motion: reduce){
+    .row.flip,.res .pts,.tally .n.bump,.dots i{animation:none;}
+    .confetti{display:none;}
+  }
+
   .actions{display:flex; gap:9px; margin-top:14px;}
   .actions button{flex:1;}
   .submit{appearance:none; border:0; cursor:pointer; font-family:var(--hero); font-weight:400; letter-spacing:.05em; text-transform:uppercase;
@@ -236,6 +272,11 @@
         <div class="clock" id="clock"><div class="t" id="clockT">1:30</div><div class="l">Left</div></div>
       </div>
       <div class="bar"><i id="barFill"></i></div>
+      <div class="tally" id="tally">
+        <span class="n" id="tallyN">0</span>
+        <span class="l">Points<b id="tallyLab">Scoring your card…</b></span>
+        <button class="skip" id="skipBtn" type="button">Skip</button>
+      </div>
       <div class="rows" id="rows"></div>
       <div class="actions">
         <button class="submit" id="doneBtn" type="button">I’m done</button>
@@ -408,6 +449,9 @@
     spinTo(puz.letter, beginPlay);
   }
   function beginPlay(){
+    clearReveal(); revealDone=null;
+    $('tally').classList.remove('on');
+    $('doneBtn').style.display='';
     render(); show('play');
     tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
     setTimeout(function(){ if(inputs[0]) inputs[0].focus(); },120);
@@ -424,37 +468,119 @@
     left--;
   }
 
+  function confetti(count, gold){
+    if(reduced()) return;
+    var pal = gold?['#F2B632','#FFD36B','#4FD8E8','#48D17A']:['#37C5D5','#4FD8E8','#48D17A','#F2B632','#A982F3'];
+    var wrap=document.createElement('div'); wrap.className='confetti';
+    for(var i=0;i<count;i++){ var p=document.createElement('i');
+      p.style.left=(Math.random()*100).toFixed(2)+'%';
+      p.style.background=pal[i%pal.length];
+      p.style.animationDuration=(2.1+Math.random()*1.6).toFixed(2)+'s';
+      p.style.animationDelay=(Math.random()*0.35).toFixed(2)+'s';
+      if(Math.random()<0.45){ p.style.width='8px'; p.style.height='8px'; p.style.borderRadius='50%'; }
+      wrap.appendChild(p); }
+    document.body.appendChild(wrap); setTimeout(function(){ wrap.remove(); }, 4200);
+  }
+  function countTo(el, to, ms){
+    if(reduced()){ el.textContent=to; return; }
+    var from=parseInt(el.textContent,10)||0, t0=performance.now();
+    if(to===from){ el.textContent=to; return; }
+    (function step(now){
+      var p=Math.min(1,(now-t0)/ms);
+      el.textContent = Math.round(from+(to-from)*(1-Math.pow(1-p,3)));
+      if(p<1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  /* The card used to resolve all at once. Now each answer gets a beat of
+     "checking" before it flips, with the score ticking up beside it — the
+     scoring IS the payoff, so it's paced rather than dumped. */
+  var revealTimers=[], revealDone=null;
+  function clearReveal(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
+
   function grade(){
     if(graded) return; graded=true;
     if(timer){ clearInterval(timer); timer=null; }
-    var used={}, total=0, correct=0, bonus=0;
+    $('doneBtn').style.display='none';
+    $('tally').classList.add('on');
+    $('tallyN').textContent='0';
+    $('tallyLab').textContent='Scoring your card…';
+
+    // resolve everything first, then pace the telling of it
+    var used={}, results=[], total=0, correct=0, bonus=0;
     puz.cats.forEach(function(c,i){
       var el=inputs[i]; el.disabled=true;
       var r = SP.check(puz, i, el.value, used);
-      var row=$('row'+i), res=$('res'+i);
+      if(r.ok){ used[r.player.idx]=1; total+=r.points; correct++; bonus+=(r.points-1); }
+      results.push(r);
+    });
+
+    var running=0, n=puz.cats.length;
+    function paint(i){
+      var r=results[i], row=$('row'+i), res=$('res'+i);
+      row.classList.remove('pending');
+      var d=row.querySelector('.dots'); if(d) d.remove();
       res.style.display='';
+      row.classList.add(r.ok?'good':'bad','flip');
       if(r.ok){
-        used[r.player.idx]=1; total+=r.points; correct++; bonus += (r.points-1);
-        row.classList.add('good');
+        running+=r.points;
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
           (r.allit>1?'<span class="allit">×'+r.allit+' letter bonus</span>':'')+
           '<span class="pct">'+r.rarity.tier+' · est. '+r.rarity.pct+'%</span>';
+        var tn=$('tallyN'); countTo(tn, running, 320);
+        tn.classList.remove('bump'); void tn.offsetWidth; tn.classList.add('bump');
+        sfx(r.points>=3?'win':'lock'); buzz(r.points>=3?[18,40,18]:22);
       } else {
-        row.classList.add('bad');
         var why = r.reason==='empty' ? 'No answer' : (r.msg||'Not valid');
         var also = SP.answersFor(puz, i, 4);
         res.innerHTML='<span class="why">'+esc(why)+'</span>'+
           (also.length?'<span class="also">Could have said: <b>'+also.map(esc).join('</b>, <b>')+'</b></span>':'');
+        sfx('wrong');
       }
-    });
-    var st=load(); var best=Math.max(st.best||0, total);
-    if(isDaily){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
-    $('mScore').textContent=total;
-    $('mFilled').textContent=correct+'/'+puz.cats.length;
-    $('mBonus').textContent=bonus;
-    $('mBest').textContent=best;
-    $('mSub').textContent = left<=0 ? 'Time’s up' : 'Card complete';
-    setTimeout(function(){ $('scrim').classList.remove('hidden'); }, 420);
+      $('tallyLab').textContent = (i+1)+' of '+n+' scored';
+    }
+    function pend(i){
+      var row=$('row'+i);
+      row.classList.add('pending');
+      if(!row.querySelector('.dots')){
+        var d=document.createElement('span'); d.className='dots'; d.innerHTML='<i></i><i></i><i></i>';
+        row.querySelector('.cl').appendChild(d);
+      }
+      try{ row.scrollIntoView({behavior:reduced()?'auto':'smooth', block:'center'}); }catch(e){}
+    }
+    function finish(){
+      clearReveal();
+      $('tally').classList.remove('on');
+      var st=load(); var best=Math.max(st.best||0, total);
+      if(isDaily){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+      $('mScore').textContent='0';
+      $('mFilled').textContent=correct+'/'+n;
+      $('mBonus').textContent=bonus;
+      $('mBest').textContent=best;
+      $('mSub').textContent = left<=0 ? 'Time’s up' : 'Card complete';
+      $('scrim').classList.remove('hidden');
+      countTo($('mScore'), total, 900);
+      if(correct>=6 || total>=14){ confetti(total>=18?130:90, total>=18); sfx('win'); }
+    }
+    revealDone = function(){                      // skip: land everything now
+      clearReveal();
+      for(var i=0;i<n;i++){ var row=$('row'+i);
+        if(!row.classList.contains('good') && !row.classList.contains('bad')) paint(i); }
+      $('tallyN').textContent=total;
+      revealDone=null; finish();
+    };
+
+    // The last answer gets a longer drumroll than the rest — the card's whole
+    // score often turns on it, so it earns the extra beat.
+    var GAP=260, at=0;
+    for(var i=0;i<n;i++){
+      (function(i, startAt, hold){
+        revealTimers.push(setTimeout(function(){ pend(i); }, startAt));
+        revealTimers.push(setTimeout(function(){ paint(i); }, startAt+hold));
+      })(i, at, i===n-1 ? 820 : 300);
+      at += (i===n-1 ? 820 : 300) + GAP;
+    }
+    revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, at+480));
   }
 
   var toastT=null;
@@ -463,6 +589,7 @@
   $('startBtn').addEventListener('click', function(){ startPuzzle(true); });
   $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
   $('doneBtn').addEventListener('click', grade);
+  $('skipBtn').addEventListener('click', function(){ if(revealDone) revealDone(); });
   $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
   $('mAgain').addEventListener('click', function(){ startPuzzle(false); });
 
