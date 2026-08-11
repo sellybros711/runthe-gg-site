@@ -113,7 +113,12 @@
   // ---------- puzzle generation ----------
   var CATS_PER = 8;
   var LETTER_MIN_CATS = 120;     // don't roll a letter the library can barely serve
-  var TIER_PLAN = [0, 0, 1, 1, 2, 2, 1, 2];   // anchor,anchor,mid,mid,hard,hard,mid,hard
+  var TIER_PLAN = [0, 0, 1, 1, 2, 1, 1, 2];   // 2 anchor, 4 mid, 2 hard
+  /* Sport mix. The library is football-heavy by nature (NFL rosters churn), so
+   * bias the draw toward basketball and away from baseball, and cap any one
+   * sport so a day can't turn into an all-MLB card. */
+  var SPORT_W = { NBA: 2.4, ANY: 1.2, NFL: 1.0, MLB: 0.5 };
+  var SPORT_CAP = { MLB: 2, NFL: 3, NBA: 4, ANY: 3 };
 
   function viableFor(L) {
     var l = L.toLowerCase(), ids = D.byLetter[L] || [];
@@ -136,17 +141,27 @@
     var tot = w.reduce(function (a, b) { return a + b; }, 0), roll = r() * tot, L = pick[pick.length - 1];
     for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
     var avail = viableFor(L);
-    var out = [], used = {}, byTag = {};
+    var out = [], used = {}, byTag = {}, bySport = {};
+    function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
+    function draw(opts) {                       // weighted by sport
+      var tot = 0, i;
+      for (i = 0; i < opts.length; i++) tot += (SPORT_W[opts[i].s || 'ANY'] || 1);
+      var roll = r() * tot;
+      for (i = 0; i < opts.length; i++) { roll -= (SPORT_W[opts[i].s || 'ANY'] || 1); if (roll <= 0) return opts[i]; }
+      return opts[opts.length - 1];
+    }
     TIER_PLAN.forEach(function (want) {
       var opts = avail.filter(function (c) {
-        return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2;
+        return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2 && freeSport(c);
       });
-      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && (byTag[c.g] || 0) < 2; });
+      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && (byTag[c.g] || 0) < 2 && freeSport(c); });
+      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && freeSport(c); });
       if (!opts.length) opts = avail.filter(function (c) { return !used[c.i]; });
       if (!opts.length) return;
-      var c = opts[Math.floor(r() * opts.length)];
+      var c = draw(opts);
       used[c.i] = 1; byTag[c.g] = (byTag[c.g] || 0) + 1;
-      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
+      bySport[c.s || 'ANY'] = (bySport[c.s || 'ANY'] || 0) + 1;
+      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
     });
     return { letter: L, cats: out, seed: seed };
   }
