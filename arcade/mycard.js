@@ -18,6 +18,16 @@
   function T() { return window.RTGTokens || null; }
   function A() { return window.RTG_AUTH || null; }
 
+  // Our own icon set (no stock emoji): monochrome, square-cut, currentColor —
+  // same family as RTGIcons. Sized by their container.
+  var ICN = {
+    flame: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>',
+    pad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M6 12h3M7.5 10.5v3" stroke-linecap="round"/><circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="18.5" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></svg>',
+    ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>'
+  };
+
   function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 
   // ---- stats, mirroring the hub's localStorage reads ----
@@ -135,7 +145,11 @@
       // achievements grid
       '.rtgmc-ach{display:grid;grid-template-columns:1fr 1fr;gap:9px;}',
       '.rtgmc-ach .a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:11px;background:var(--card2,#162B44);border:1px solid var(--line,rgba(244,247,251,.08));}',
-      '.rtgmc-ach .a .ic{font-size:17px;line-height:1;}',
+      '.rtgmc-ach .a .ic{width:20px;height:20px;flex:0 0 auto;display:inline-flex;}',
+      '.rtgmc-ach .a .ic svg{width:100%;height:100%;display:block;}',
+      '.rtgmc-who .nm .badge svg{width:12px;height:12px;display:block;}',
+      '.rtgmc-btn.vault .tkic{display:inline-flex;width:18px;height:18px;color:var(--goldT,#F2B632);}',
+      '.rtgmc-btn.vault .tkic svg{width:100%;height:100%;}',
       '.rtgmc-ach .a .v{font-family:var(--hero,inherit);font-weight:400;font-size:19px;color:var(--ink,#F4F7FB);line-height:1;}',
       '.rtgmc-ach .a .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.04em;color:var(--mut,#A9B8CB);margin-top:2px;}',
       // most played bars
@@ -193,10 +207,10 @@
 
     // achievements: only genuinely-earned tiles (plus best streak, always shown)
     var ach = [];
-    ach.push(['🔥', s.best, s.best === 1 ? 'Best streak (day)' : 'Best streak (days)']);
-    if (s.perfect > 0) ach.push(['⭐', s.perfect, s.perfect === 1 ? 'Perfect day' : 'Perfect days']);
-    if (s.topRun > 0) ach.push(['🎯', s.topRun, 'Best run']);
-    ach.push(['🎮', s.totalPlays, s.totalPlays === 1 ? 'Game played' : 'Games played']);
+    ach.push([ICN.flame, s.best, s.best === 1 ? 'Best streak (day)' : 'Best streak (days)', 'var(--goldT,#F2B632)']);
+    if (s.perfect > 0) ach.push([ICN.star, s.perfect, s.perfect === 1 ? 'Perfect day' : 'Perfect days', 'var(--goldT,#F2B632)']);
+    if (s.topRun > 0) ach.push([ICN.target, s.topRun, 'Best run', 'var(--coralT,#F06A5F)']);
+    ach.push([ICN.pad, s.totalPlays, s.totalPlays === 1 ? 'Game played' : 'Games played', 'var(--tealT,#37C5D5)']);
 
     // most played (top 4 by lifetime plays)
     var mp = [];
@@ -209,7 +223,7 @@
       '<div class="rtgmc-brand"><img src="' + ICON + '" alt=""><span class="bt">Arcade Card<span class="sub">runthe.gg/arcade</span></span></div>' +
       '<div class="rtgmc-who"><div class="rtgmc-av">' + initial + '</div>' +
         '<div class="nm"><b>' + esc(ti.name) + '</b>' +
-          (ti.isCard ? '<span class="badge card">🎟 Member · Unlimited</span>'
+          (ti.isCard ? '<span class="badge card">' + ICN.ticket + 'Member · Unlimited</span>'
             : ti.signed ? '<span class="badge free">Free account</span>'
             : '<span class="badge free">Guest</span>') +
         '</div></div>' +
@@ -225,7 +239,7 @@
       '<span class="t" id="rtgmcCd">--:--:--</span></div>';
 
     out += '<div class="rtgmc-h">Achievements</div><div class="rtgmc-ach">' +
-      ach.map(function (a) { return '<div class="a"><span class="ic">' + a[0] + '</span><div><span class="v">' + a[1] + '</span><span class="k">' + esc(a[2]) + '</span></div></div>'; }).join('') +
+      ach.map(function (a) { return '<div class="a"><span class="ic" style="color:' + a[3] + '">' + a[0] + '</span><div><span class="v">' + a[1] + '</span><span class="k">' + esc(a[2]) + '</span></div></div>'; }).join('') +
       '</div>';
 
     out += '<div class="rtgmc-h">Most played</div>';
@@ -241,7 +255,7 @@
     }
 
     // actions
-    out += '<a class="rtgmc-btn vault" href="/arcade/archive/">🎟️ <b>Enter your Vault · ' + s.vault + ' days available</b></a>';
+    out += '<a class="rtgmc-btn vault" href="/arcade/archive/"><span class="tkic">' + ICN.ticket + '</span><b>Enter your Vault · ' + s.vault + ' days available</b></a>';
     if (ti.isCard) {
       out += '<button class="rtgmc-sub" type="button" id="rtgmcManage">Manage subscription</button>';
     } else if (ti.signed) {

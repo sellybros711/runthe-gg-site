@@ -384,26 +384,26 @@
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
-<script src="/arcade/sfx.js?v=1"></script>
+<script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=1"></script>
+<script src="/arcade/mode.js?v=2"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
 <script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=3"></script>
+<script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=2"></script>
-<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=3"></script>
+<script src="/arcade/card.js?v=2"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=1"></script>
 <script src="/arcade/pregame.js?v=1"></script>
-<script src="/arcade/howto.js?v=1"></script>
+<script src="/arcade/howto.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -893,7 +893,7 @@
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     // skill tier by guesses used - instant dopamine on a win (becomes a live
     // percentile once the leaderboard has a real distribution to rank against)
-    var TIER=['','Bullseye: first try! 🎯','Sniper: 2 guesses 🎯','Scout-level: 3 guesses 🔭','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8 ⏱'];
+    var TIER=['','Bullseye: first try!','Sniper: 2 guesses','Scout-level: 3 guesses','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8'];
     document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
     (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');

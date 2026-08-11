@@ -57,7 +57,10 @@
       '.rtgc-card .name{font-family:var(--hero,inherit);font-weight:800;letter-spacing:.03em;text-transform:uppercase;font-size:15px;color:var(--gold,#F2B632);display:flex;align-items:center;gap:8px;margin-bottom:10px;}',
       '.rtgc-perks{list-style:none;margin:0;padding:0;display:grid;gap:7px;}',
       '.rtgc-perks li{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink,#eaf0f7);}',
-      '.rtgc-perks li span{flex:0 0 20px;text-align:center;}',
+      '.rtgc-perks li span{flex:0 0 20px;height:20px;text-align:center;color:var(--gold,#F2B632);}',
+      '.rtgc-perks li span svg{width:20px;height:20px;display:block;margin:0 auto;}',
+      '.rtgc-card .name svg{width:18px;height:18px;flex:0 0 auto;}',
+      '.rtgc-h svg{width:20px;height:20px;vertical-align:-4px;margin-right:5px;}',
       // plan toggle
       '.rtgc-plans{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 6px;}',
       '.rtgc-plan{position:relative;border:2px solid var(--line2,#22304a);background:var(--card2,#16233a);border-radius:12px;padding:13px 10px 11px;cursor:pointer;text-align:center;transition:border-color .12s, background .12s;}',
@@ -104,18 +107,27 @@
       return Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
     } catch (e) { return 0; }
   }
+  // Our own icon set (no stock emoji): monochrome, square-cut, currentColor.
+  var ICN = {
+    ball: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6c3 2.6 3 10.2 0 12.8M18.4 5.6c-3 2.6-3 10.2 0 12.8"/></svg>',
+    infinity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6.5 8.5a3.5 3.5 0 1 0 0 7c2 0 3.2-1.7 4-3.5.8-1.8 2-3.5 4-3.5a3.5 3.5 0 1 1 0 7c-2 0-3.2-1.7-4-3.5"/></svg>',
+    archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l1.6-3h6.8L13 7h7a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4v16h16"/><rect x="7" y="12" width="2.6" height="5" fill="currentColor" stroke="none"/><rect x="11.7" y="8" width="2.6" height="9" fill="currentColor" stroke="none"/><rect x="16.4" y="14" width="2.6" height="3" fill="currentColor" stroke="none"/></svg>',
+    ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>'
+  };
   function benefitsHTML(){
     var d = vaultDays(), pz = d * 9;
     return '<ul class="rtgc-perks">' +
       // Lead with the most differentiated perk: four editions of nine games is
       // a bigger idea than "unlimited", and nothing else on the market has it.
-      '<li><span>🏀</span> <b>36 daily puzzles, not 9</b> - NBA-only, NFL-only and MLB-only editions of every game, each with its own streak</li>' +
-      '<li><span>♾️</span> Unlimited plays, every day</li>' +
+      '<li><span>' + ICN.ball + '</span> <b>36 daily puzzles, not 9</b> - NBA-only, NFL-only and MLB-only editions of every game, each with its own streak</li>' +
+      '<li><span>' + ICN.infinity + '</span> Unlimited plays, every day</li>' +
       (d > 0
-        ? '<li><span>🗂️</span> The full Archive: <b>' + d + ' past days</b>, ' + pz + ' puzzles you can still play</li>'
-        : '<li><span>🗂️</span> Full Arcade Archive: play past days</li>') +
-      '<li><span>🆕</span> New games &amp; challenges as they drop</li>' +
-      '<li><span>📊</span> Your full history &amp; stats</li>' +
+        ? '<li><span>' + ICN.archive + '</span> The full Archive: <b>' + d + ' past days</b>, ' + pz + ' puzzles you can still play</li>'
+        : '<li><span>' + ICN.archive + '</span> Full Arcade Archive: play past days</li>') +
+      '<li><span>' + ICN.spark + '</span> New games &amp; challenges as they drop</li>' +
+      '<li><span>' + ICN.chart + '</span> Your full history &amp; stats</li>' +
     '</ul>';
   }
 
@@ -148,7 +160,7 @@
         '<div class="rtgc-kick">'+esc(kicker)+'</div>'+
         '<h2 class="rtgc-h">'+esc(head)+'</h2>'+
         '<p class="rtgc-sub">'+esc(sub)+'</p>'+
-        '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+        '<div class="rtgc-card"><div class="name">' + ICN.ticket + 'Arcade Card</div>'+benefitsHTML()+'</div>'+
         '<div class="rtgc-plans">'+
           planHTML('monthly', chosen==='monthly')+
           planHTML('annual', chosen==='annual')+
@@ -181,7 +193,7 @@
       '<div class="rtgc-kick">Arcade Card</div>'+
       '<h2 class="rtgc-h">You’re a member</h2>'+
       '<p class="rtgc-sub">You’ve got unlimited plays and the full archive. Thanks for supporting Run The Arcade.</p>'+
-      '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+      '<div class="rtgc-card"><div class="name">' + ICN.ticket + 'Arcade Card</div>'+benefitsHTML()+'</div>'+
       '<button class="rtgc-go" id="rtgcardManage" type="button">Manage subscription</button>'+
       '<div id="rtgcardErr"></div>'+
       '<button class="rtgc-ghost" id="rtgcardLater" type="button">Close</button>';
@@ -386,9 +398,9 @@
     var b=$('rtgcardBody');
     b.innerHTML =
       '<div class="rtgc-kick">Welcome aboard</div>'+
-      '<h2 class="rtgc-h">🎟️ You’ve got the Arcade Card</h2>'+
+      '<h2 class="rtgc-h">' + ICN.ticket + 'You’ve got the Arcade Card</h2>'+
       '<p class="rtgc-sub">Unlimited plays are live right now. Every past day is open in the Archive, and the NBA, NFL and MLB versions of every game are yours.</p>'+
-      '<div class="rtgc-card"><div class="name">🎟️ Arcade Card</div>'+benefitsHTML()+'</div>'+
+      '<div class="rtgc-card"><div class="name">' + ICN.ticket + 'Arcade Card</div>'+benefitsHTML()+'</div>'+
       '<button class="rtgc-go" id="rtgcardStart" type="button">Start playing</button>'+
       '<div class="rtgc-fine">Manage or cancel anytime from this menu.</div>';
     $('rtgcardStart').onclick=close;
