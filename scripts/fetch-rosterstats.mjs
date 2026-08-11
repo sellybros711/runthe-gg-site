@@ -10,9 +10,9 @@
  * from nflverse via fetch-hlstats.mjs, so this job only does NBA + MLB.
  *
  * SOURCES (reachable from CI; BOTH blocked in the dev sandbox):
- *   NBA  stats.nba.com - commonallplayers (name->id) then playercareerstats
- *        (career regular-season PTS/REB/AST/STL/BLK/FG3M). JSON, needs the
- *        standard stats.nba.com headers.
+ *   NBA  basketball-reference - name->slug from the A-Z player indexes, then
+ *        each player page's career-totals row (PTS/TRB/AST/STL/BLK/FG3).
+ *        (stats.nba.com blocks GitHub Actions IPs, so bref is the CI source.)
  *   MLB  statsapi.mlb.com - people search (name->id) then people/{id}/stats
  *        career hitting (HR/H/RBI/SB) and pitching (W/SO).
  *
@@ -58,39 +58,61 @@ function put(key, label, unit, sport, id, val){
 }
 
 // ------------------------------- NBA -----------------------------------
-const NBA_H = { 'User-Agent':'Mozilla/5.0 (compatible; runthe-arcade/1.0)', 'Referer':'https://www.nba.com/',
-  'Origin':'https://www.nba.com', 'Accept':'application/json, text/plain, */*',
-  'x-nba-stats-origin':'stats', 'x-nba-stats-token':'true', 'Accept-Language':'en-US,en;q=0.9' };
-function rsRows(json, name){ // pull a named resultSet as array-of-objects
-  if(!json || !json.resultSets) return [];
-  const set = json.resultSets.find(s=>s.name===name) || json.resultSets[0];
-  if(!set) return []; const h = set.headers;
-  return set.rowSet.map(r=>{ const o={}; h.forEach((k,i)=>o[k]=r[i]); return o; });
+// stats.nba.com blocks GitHub Actions datacenter IPs, so we scrape
+// basketball-reference instead (the jersey job already does this from CI).
+async function getText(url, tries=4){
+  for(let i=0;i<tries;i++){
+    try{ const r = await fetch(url, { headers:{ 'User-Agent':'Mozilla/5.0 (compatible; runthe-arcade/1.0)' } });
+      if(r.ok) return await r.text(); if(r.status===404) return null; if(r.status===429) await sleep(9000*(i+1)); }
+    catch(e){}
+    await sleep(1500*(i+1));
+  }
+  return null;
+}
+// bref hides most per-player tables inside HTML comments; strip them first.
+function uncomment(h){ return String(h||'').replace(/<!--/g,'').replace(/-->/g,''); }
+function cellNum(rowHtml, stat){
+  const m = rowHtml.match(new RegExp('data-stat="'+stat+'"[^>]*>([\\s\\S]*?)</t[dh]>','i'));
+  if(!m) return null; const v = parseInt(m[1].replace(/<[^>]*>/g,'').replace(/[^0-9-]/g,''),10);
+  return isNaN(v) ? null : v;
 }
 async function buildNBA(){
-  console.log('NBA: fetching player index...');
-  const idx = await getJSON('https://stats.nba.com/stats/commonallplayers?LeagueID=00&Season='+ (YEAR-1) +'-'+String(YEAR).slice(2)+'&IsOnlyCurrentSeason=0', NBA_H);
-  const players = rsRows(idx, 'CommonAllPlayers');
-  if(!players.length){ console.log('  NBA index unreachable - skipping NBA'); return; }
-  const byName = {}; players.forEach(p=>{ byName[nk(p.DISPLAY_FIRST_LAST)] = p; });
-  const targets = nbaEnt.filter(e=>byName[nk(e.name)]);
-  console.log('  matched '+targets.length+'/'+nbaEnt.length+' NBA corpus players to stats.nba.com');
+  console.log('NBA: building name->slug index from basketball-reference...');
+  const slugByName = {};
+  for(const L of 'abcdefghijklmnopqrstuvwxyz'){
+    const html = await getText('https://www.basketball-reference.com/players/'+L+'/');
+    if(html){
+      const re = /\/players\/[a-z]\/([a-z0-9]+)\.html">([^<]+)<\/a>/g; let m;
+      while((m = re.exec(html))) { const k = nk(m[2]); if(!slugByName[k]) slugByName[k] = m[1]; }
+    }
+    await sleep(2500);
+  }
+  const targets = nbaEnt.filter(e=>slugByName[nk(e.name)]);
+  console.log('  matched '+targets.length+'/'+nbaEnt.length+' NBA corpus players to bref');
   let n=0;
   for(const e of targets){
-    const p = byName[nk(e.name)]; const pid = p.PERSON_ID;
-    const car = await getJSON('https://stats.nba.com/stats/playercareerstats?PlayerID='+pid+'&PerMode=Totals', NBA_H);
-    const tot = rsRows(car, 'CareerTotalsRegularSeason')[0];
-    if(tot){
-      put('nba_points','career NBA points','pts','NBA',e.id,tot.PTS);
-      put('nba_rebounds','career NBA rebounds','reb','NBA',e.id,tot.REB);
-      put('nba_assists','career NBA assists','ast','NBA',e.id,tot.AST);
-      put('nba_steals','career NBA steals','stl','NBA',e.id,tot.STL);
-      put('nba_blocks','career NBA blocks','blk','NBA',e.id,tot.BLK);
-      put('nba_threes','career 3-pointers made','3PM','NBA',e.id,tot.FG3M);
-      if(e.act===1) activeIds[e.id]=1;
+    const slug = slugByName[nk(e.name)];
+    const page = await getText('https://www.basketball-reference.com/players/'+slug[0]+'/'+slug+'.html');
+    if(page){
+      const doc = uncomment(page);
+      const tbl = doc.match(/<table[^>]*\bid="totals"[\s\S]*?<\/table>/i);
+      if(tbl){
+        // the career summary row (in tfoot): season cell reads "Career"
+        const rows = tbl[0].match(/<tr[\s\S]*?<\/tr>/gi) || [];
+        const career = rows.find(r=>/data-stat="season"[^>]*>\s*(<[^>]*>)*\s*Career/i.test(r));
+        if(career){
+          put('nba_points','career NBA points','pts','NBA',e.id,cellNum(career,'pts'));
+          put('nba_rebounds','career NBA rebounds','reb','NBA',e.id,cellNum(career,'trb'));
+          put('nba_assists','career NBA assists','ast','NBA',e.id,cellNum(career,'ast'));
+          put('nba_steals','career NBA steals','stl','NBA',e.id,cellNum(career,'stl'));
+          put('nba_blocks','career NBA blocks','blk','NBA',e.id,cellNum(career,'blk'));
+          put('nba_threes','career 3-pointers made','3PM','NBA',e.id,cellNum(career,'fg3'));
+          if(e.act===1) activeIds[e.id]=1;
+        }
+      }
     }
-    if(++n % 25 === 0) console.log('  NBA '+n+'/'+targets.length);
-    await sleep(600);   // be polite to stats.nba.com
+    if(++n % 20 === 0) console.log('  NBA '+n+'/'+targets.length);
+    await sleep(3000);   // bref throttles ~20 req/min
   }
 }
 
