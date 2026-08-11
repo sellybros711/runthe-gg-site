@@ -2197,6 +2197,20 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-nfl .mc-title{color:#f0918e}
   .modecard.mc-nfl{text-decoration:none}
 
+  /* Alma Mater's gold, #F2B632, the colour its mortarboard is drawn in on the
+     arcade's front page. Borrowed for the same reason the red above is: somebody who
+     has played it should recognise the card.
+
+     IT IS CLOSE TO THE CONFERENCE DRAFT AMBER and both are on screen at once, which
+     is a real cost and is accepted rather than overlooked. Changing it would mean
+     inventing a colour for a game that already has one, and the same rule that makes
+     the NFL card red would be broken to do it. What separates them instead is
+     everything else: they are not adjacent, a rule and a heading sit between them,
+     the red card breaks the run, and the glyphs are a pennant and a mortarboard. */
+  .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
+  .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
+  .modecard.mc-alma .mc-title{color:#f2b632}
+
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
   .confbtn{padding:15px 10px;border-radius:12px;border:1.5px solid var(--line);
@@ -4364,10 +4378,34 @@ function modeMenu(){
         'legends under the $140M cap, then play all 17 games and the playoffs.</p>'+
       '</a>'+
     '</div>'+
+    '<div class="xpromo">'+
+      /* A DIFFERENT KIND OF THING, so it gets its own heading rather than being
+         stacked under "Love pro football?". That one is a season to play; this is a
+         couple of minutes a day. Framed by the college angle because that is what
+         this game's player is here for. */
+      '<p class="xp-h">Know your colleges?</p>'+
+      '<a class="modecard mc-alma" href="/arcade/almamater/" id="b-mc-alma">'+
+        /* THE MORTARBOARD, WHICH IS ALMA MATER'S OWN MARK in the arcade, and not the
+           arcade's joystick icon. The joystick stands for all nine arcade games at
+           once, so on a card that goes to one of them it would name the wrong
+           destination. A glyph rather than a photo here for the same reason: this
+           game has no app icon of its own to show, unlike the NFL card above, and
+           inventing one would be worse than drawing its own symbol. */
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<path d="M2 9l10-4 10 4-10 4z"/>'+
+          '<path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>'+
+          '<path d="M22 9v5"/>'+
+        '</svg></div><div class="mc-title">Alma Mater</div>'+ARROW+'</div>'+
+        '<p>A new one every day. Name the college each NBA, NFL or MLB player came '+
+        'from, four choices and one right, and it gets harder the longer your run '+
+        'lasts.</p>'+
+      '</a>'+
+    '</div>'+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x" style="width:100%">Close</button></div>';
   openSheet();
   $('b-mc-conf').onclick=conferenceMenu;
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
+  $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
 }
 
