@@ -567,8 +567,7 @@ window.GA_ID='G-L29P5MRWKE';
   .slot-frame.win .slot-line{animation:slotwin .5s ease 2;}
   @keyframes slotwin{50%{background:linear-gradient(90deg,rgba(251,191,36,.35),rgba(242,113,28,.5),rgba(255,94,58,.35));}}
   .slot-glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%,transparent 78%,rgba(0,0,0,.35));}
-  .slot-cta{margin-top:8px;}
-  .slot-pill{display:inline-block;font-size:9.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#2a1206;background:linear-gradient(180deg,#FDBA74,#F2711C);border-radius:999px;padding:4px 12px;box-shadow:0 0 16px -4px rgba(251,146,60,.8);}
+  .slot-wrap{justify-content:center;}
   @media (min-width:820px){
     .feat.football .feat-in,.feat.cfb .feat-in{grid-template-columns:1fr 250px;}
     .feat.arcade .feat-in{grid-template-columns:1fr 232px;}
@@ -720,7 +719,6 @@ window.GA_ID='G-L29P5MRWKE';
             <div class="slot">
               <div class="slot-top">RUN THE ARCADE</div>
               <div class="slot-frame"><div class="slot-reel" data-names="Daily Match|Crossword|Word Search|Odd One Out|Alma Mater|Career|Rank It|Guess|High Low|The Table"></div><div class="slot-line"></div><div class="slot-glass"></div></div>
-              <div class="slot-cta"><span class="slot-pill">Today&rsquo;s Pick</span></div>
             </div>
           </div>
         </div>
@@ -1374,7 +1372,7 @@ document.querySelectorAll('.feat-link').forEach(function(a){
   })();
 </script>
 
-<script src="/football/drivecast.js?v=1"></script>
+<script src="/football/drivecast.js?v=2"></script>
 <script>
 /* Card motifs: the two Perfect Season cards run the football game's own drive-chart gamecast
    (football/drivecast.js) in their motif column; the Arcade card runs a slot machine. */
@@ -1384,7 +1382,8 @@ document.querySelectorAll('.feat-link').forEach(function(a){
   var CFB=[['UGA','#BA0C2F'],['OSU','#D42121'],['ALA','#C8324F'],['MICH','#FFCB05'],['TEX','#E07A1E'],['ORE','#FEE123'],['LSU','#FDD023'],['USC','#FFC72C'],['ND','#C99700'],['FSU','#CEB888'],['CLEM','#F56600'],['OU','#D0263C'],['PSU','#2E6BC4'],['TENN','#FF8200'],['UW','#8B5CC7'],['OLE','#CE1126'],['UF','#2E5BE0'],['AUB','#E87722'],['WIS','#D14B54'],['NEB','#E41C38'],['MSU','#2E8B57'],['MIA','#F47321']];
   if(window.RTDrive){
     [].forEach.call(document.querySelectorAll('.drivecanvas'),function(cv){
-      try{ RTDrive.mount(cv,{teams:(cv.getAttribute('data-league')==='cfb')?CFB:NFL}); }catch(e){}
+      var cfb=cv.getAttribute('data-league')==='cfb';
+      try{ RTDrive.mount(cv,{teams:cfb?CFB:NFL, field:cfb?'college':'nfl'}); }catch(e){}
     });
   }
 

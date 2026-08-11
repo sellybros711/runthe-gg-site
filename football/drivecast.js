@@ -71,7 +71,7 @@ function generateDrives(script,rng){
   }
   return drives;
 }
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,style){
   if(!ctx)return;
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
@@ -85,11 +85,17 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   const ezW=Math.round(fw*0.06);
   const pfL=fl+ezW,pfW=fw-ezW*2;
 
-  /* field background */
-  ctx.fillStyle='#1a3a1a';ctx.fillRect(fl,ft,fw,fh);
+  /* field background — the college field is a cooler green with mowing stripes and bolder
+     end zones so it reads clearly apart from the pro field. */
+  const college=style==='college';
+  ctx.fillStyle=college?'#14402a':'#1a3a1a';ctx.fillRect(fl,ft,fw,fh);
+  if(college){
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    for(let syd=0;syd<100;syd+=20){ ctx.fillRect(pfL+(syd/100)*pfW, ft, (10/100)*pfW, fh); }
+  }
 
-  /* end-zone color wash */
-  ctx.globalAlpha=0.18;
+  /* end-zone color wash (bolder on the college field) */
+  ctx.globalAlpha=college?0.34:0.18;
   ctx.fillStyle=youColor;ctx.fillRect(fl,ft,ezW,fh);
   ctx.fillStyle=themColor;ctx.fillRect(fl+fw-ezW,ft,ezW,fh);
   ctx.globalAlpha=1;
@@ -254,7 +260,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   function pick2(a){ var i=Math.floor(Math.random()*a.length),j; do{j=Math.floor(Math.random()*a.length);}while(j===i); return [a[i],a[j]]; }
 
   function mount(canvas, opts){
-    opts=opts||{}; var teams=opts.teams||[['HOME','#3aa0ff'],['AWAY','#ff6a6a']];
+    opts=opts||{}; var teams=opts.teams||[['HOME','#3aa0ff'],['AWAY','#ff6a6a']]; var field=opts.field||'';
     var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
     var ctx=canvas.getContext('2d'), GAME=3600, DUR=opts.dur||22000, HOLD=2600;
     var W,H,drives,youC,themC,youN,themN,startT=null,raf=0;
@@ -263,7 +269,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
       canvas.width=W; canvas.height=H; }
     function newGame(){ var t=pick2(teams); youN=t[0][0]; themN=t[1][0]; youC=t[0][1]; themC=t[1][1];
       drives=generateDrives(randomScript(), Math.random); startT=null; }
-    function draw(upTo){ drawDriveChart(ctx,W,H,drives,upTo,youC,themC,youN,themN); }
+    function draw(upTo){ drawDriveChart(ctx,W,H,drives,upTo,youC,themC,youN,themN,field); }
     size(); newGame();
     if(reduce){ draw(GAME); return; }
     function frame(ts){ if(startT==null) startT=ts; var el=ts-startT;
