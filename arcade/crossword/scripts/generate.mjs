@@ -74,7 +74,6 @@ const T = {
   player: [
     (p) => `${p.team} Hall of Famer ${p.first} ___`,
     (p) => `${p.first} ___, ${p.note}`,
-    (p) => `${p.team} great ${p.first} ___`,
   ],
   playerNonHof: [
     (p) => `${p.team} star ${p.first} ___`,
