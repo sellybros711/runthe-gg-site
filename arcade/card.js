@@ -235,9 +235,13 @@
       Promise.resolve(portal()).then(function(d){
         if(d && d.url) return;                          // redirecting to Stripe portal
         if(go){ go.disabled=false; go.textContent='Manage subscription'; }
-        showErr((d && d.error==='no_customer')
-          ? 'This membership is complimentary. There’s nothing to bill or manage.'
-          : 'Could not open the billing portal. Please try again.');
+        var err = d && d.error, msg;
+        if(err==='no_customer') msg='This membership is complimentary. There’s nothing to bill or manage.';
+        else if(err==='unauthorized'){ msg='Your session expired — please sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
+        else if(err==='stripe_not_configured') msg='Billing isn’t fully connected yet. Please contact support.';
+        else if(err==='stripe_error') msg='Stripe couldn’t open the portal'+((d&&d.detail)?(': '+d.detail):'.');
+        else msg='Could not open the billing portal. Please try again.';
+        showErr(msg);
       });
     };
   }
@@ -336,9 +340,16 @@
     return fetch('/api/stripe/portal', {
       method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, return_path: returnPath() })
-    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
-      .then(function(d){ if(d && d.url) location.href=d.url; return d; })
-      .catch(function(){});
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(d){ d=d||{}; d.status=r.status; return d; });
+    })
+      .then(function(d){
+        if(d && d.url){ location.href=d.url; return d; }
+        // Surface the real cause in the console so billing issues are diagnosable.
+        try{ console.warn('[Arcade Card] portal failed', d && d.status, d && d.error, d && d.detail); }catch(e){}
+        return d;
+      })
+      .catch(function(e){ try{ console.warn('[Arcade Card] portal request error', e); }catch(_){} return { error:'network' }; });
   }
 
   // Resume a checkout the visitor started before signing in. The plan also
