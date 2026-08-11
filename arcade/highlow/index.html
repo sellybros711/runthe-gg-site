@@ -526,7 +526,8 @@
   // ---------- card gate ----------
   function isMember(){ try{ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){ return false; } }
   var revealed=false;
-  function revealGame(){ if(revealed) return; revealed=true; show('setup'); showCategories(); }
+  function revealGame(){ if(revealed) return; revealed=true; show('setup'); showCategories();
+    document.getElementById('lb').classList.add('on'); renderRealBoard(); }
 
   document.getElementById('gateGet').addEventListener('click', function(){
     try{ if(window.RTGCard && RTGCard.paywall){ RTGCard.paywall({reason:'upsell'}); return; } }catch(e){}
@@ -764,7 +765,7 @@
 
   if(isMember()) revealGame(); else show('gate');
   if(window.RTG_BOARD){
-    try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){ if(isMember()) revealGame(); }); }catch(e){}
+    try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){ if(isMember()){ revealGame(); renderRealBoard(); } }); }catch(e){}
   }
 })();
 </script>
