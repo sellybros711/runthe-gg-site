@@ -996,8 +996,12 @@ window.GA_ID='G-L29P5MRWKE';
      different game on a different page, and dropping it into the same list would read as
      another way to play this one. The rule and the heading are what separate them. */
   .xpromo{margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+  /* 16 rather than 10, and the reason is the sticker rather than the spacing: it hangs
+     9px above the card it is anchored to, and at 320 the heading wraps close enough that
+     the last character of "LOVE COLLEGE FOOTBALL?" landed underneath it. Moving the card
+     down moves the sticker with it, and the sticker now rises 19px rather than 9. */
   .xpromo .xp-h{font-family:var(--fn);font-size:12.5px;font-weight:800;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+    text-transform:uppercase;color:var(--dim);margin:0 0 26px}
   /* Emerald, which is the college game's color on the RunThe.GG home page and on its own
      pages. Borrowed on purpose: somebody who has seen it before should recognize it here. */
   .modecard.mc-cfb{border-color:rgba(16,185,129,.38)}
@@ -1007,6 +1011,52 @@ window.GA_ID='G-L29P5MRWKE';
      sentence; parked at the right of the title row it stole enough width to break "College
      Football: Perfect Season" over three lines. Above it, the title has the full width and the
      card reads in the right order anyway: the news first, then what it is called. */
+  /* THE ICON AS AN IMAGE. The other cards draw a stroked SVG inside a colored tile; this
+     one IS the tile, so the padding and the gradient behind it come off and the artwork
+     fills the box. Slightly larger than the 32px the others use, because a detailed mark
+     needs the room where a two-stroke glyph does not. */
+  .modecard .mc-icon-img{width:38px;height:38px;background:none;border-radius:9px;
+    overflow:hidden}
+  .modecard .mc-icon-img img{width:100%;height:100%;display:block;border-radius:9px}
+  .modecard.mc-cfb .mc-icon-img{background:none}
+
+  /* ---- THE NEW STICKER ----
+     Slapped over the top-right corner of the card the way a price sticker goes on a box:
+     out of the flow, off the grid, and deliberately at an angle, because everything else
+     on this screen is square to the edges and the tilt is what makes the eye stop.
+     Bright green on dark, with the type in near-black rather than white: at this size a
+     light-on-dark chip disappears and a dark-on-bright one does not. */
+  .modecard{position:relative}
+  .mc-sticker{position:absolute;top:-9px;right:-7px;z-index:2;
+    font-family:var(--fn);font-size:12px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;color:#04241c;
+    padding:5px 11px;border-radius:7px;
+    background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
+    border:1.5px solid rgba(255,255,255,.55);
+    box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55);
+    transform:rotate(7deg);transform-origin:100% 0}
+  /* A SLOW BREATH ON THE GLOW, NOT ON THE SIZE, and that distinction is the whole of a
+     bug rather than a preference. Scaling the sticker 7% grew its BOX, and with the
+     origin at the top-right corner it grew leftward -- straight into the title, which at
+     390 wide clears it by one pixel at rest. A pulsing shadow catches the eye exactly as
+     well and cannot move a single edge. */
+  @keyframes mcsticker{
+    0%,100%{box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55)}
+    50%{box-shadow:0 6px 26px -2px rgba(16,185,129,1),0 0 0 4px rgba(16,185,129,.20),
+      0 2px 6px rgba(0,0,0,.55)}}
+  .mc-sticker{animation:mcsticker 2.4s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){ .mc-sticker{animation:none} }
+  /* IT SITS ABOVE THE TITLE'S LINE, WHICH IS WHY IT NEVER MEETS IT.
+     The first attempt kept the sticker level with the title row and reserved space by
+     padding the title. That works and costs a line: the padding moves the wrap point, and
+     "College Football: Perfect Season" is long enough that one more break at 360 or 390
+     makes the card visibly taller. Every padding that guaranteed clearance cost a line at
+     some width, because the wrap point and the sticker's left edge both move with the
+     viewport and not together.
+     Raising it instead takes the horizontal question off the table completely: with its
+     bottom above the first line of type, the title can be as wide as it likes. */
+  .mc-sticker{top:-19px}
+
   .modecard .mc-flag{display:block;margin-bottom:9px}
   /* Both tags, because the flag now carries NEW after launch and carried Coming Soon
      before it. The margin exists to space a tag from a title it sits AFTER, and on its own
@@ -5604,19 +5654,22 @@ function modeMenu(){
            two announcements start and stop together. It keeps its own line above the name
            for the reason it always did: inline it steals enough width to break "College
            Football: Perfect Season" over three lines. */
+        /* A STICKER IN THE CORNER, not a line above the name. On its own line it read as
+           part of the card's copy and had to be small enough not to push the title
+           around; slapped over the corner it is out of the flow entirely, so it can be as
+           loud as it likes and the title gets its full width back either way.
+           Coming Soon keeps the old treatment: it is an explanation, not an announcement,
+           and it should not shout. */
         (CFB_LIVE
-          ? (modesNewLive()?'<span class="mc-flag"><span class="mc-new">New</span></span>':'')
+          ? (modesNewLive()?'<span class="mc-sticker">New</span>':'')
           : '<span class="mc-flag"><span class="mc-soon-tag gold">Coming Soon</span></span>')+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          /* A football, and TILTED, which is the whole trick: a level ellipse with a line
-             through it and three ticks reads as an eye at 18px, which is what the first
-             version of this looked like. On the diagonal it reads as a ball straight away.
-             Pointed ends rather than a plain ellipse for the same reason. */
-          '<g transform="rotate(-30 12 12)">'+
-            '<path d="M2.5 12c0-3 4.2-5.5 9.5-5.5S21.5 9 21.5 12s-4.2 5.5-9.5 5.5S2.5 15 2.5 12z"/>'+
-            '<path d="M8.5 12h7"/><path d="M10.5 10.4v3.2"/><path d="M13 10.4v3.2"/>'+
-          '</g>'+
-        '</svg></div><div class="mc-title">College Football: Perfect Season</div>'+
+        /* THE COLLEGE GAME'S OWN APP ICON rather than a drawn football. The hand-rolled
+           ball was standing in for the game while it was unlaunched and generic; the real
+           icon is what it wears on the site's front page, on a home screen and now on the
+           results banner, so this is the fourth place it is the same picture. */
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+          '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">College Football: Perfect Season</div>'+
         (CFB_LIVE?arrow:'')+'</div>'+
         '<p>Spin for a year and a school, sign six players under an NIL budget, and chase a '+
         'perfect twelve-game season. The college edition of this game.</p>'+
