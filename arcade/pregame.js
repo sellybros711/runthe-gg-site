@@ -113,6 +113,12 @@
   var INTRO_SEEN=false;
   try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
   function build(){
+    // One click to play: if the player can play right now (cardholder, or has
+    // plays left), don't gate at all — land them straight on a ready board.
+    // The token is still charged on first interaction, and each game shows the
+    // paywall itself if the server later says they're out. The overlay now only
+    // appears when they're already out of plays.
+    if (hasCard() || canPlay()) { dismissed = true; return; }
     injectStyles();
     scrim=document.createElement('div'); scrim.className='rtgpg-scrim';
     var m=meta();
