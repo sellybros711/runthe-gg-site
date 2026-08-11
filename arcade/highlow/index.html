@@ -113,6 +113,7 @@
   .catchip:active{transform:translateY(0);}
   .catchip .cl{display:block; font-weight:900; font-size:14px; line-height:1.15;}
   .catchip .cc{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+  .catsoon{margin:11px 2px 0; padding:10px 12px; border:1.5px dashed var(--line2); border-radius:11px; text-align:center; font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
 
   .crumb{display:flex; align-items:center; gap:10px; margin:0 2px 14px; flex-wrap:wrap;}
   .crumb .back{appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:inherit; font-weight:800; font-size:12px; border-radius:8px; padding:7px 11px; cursor:pointer;}
@@ -483,6 +484,11 @@
     var pool=poolFor('NBA', vfn); if(pool.length>=MIN_POOL) CATS.push({ sport:'NBA', key:'nba_draft', label:'Draft position', unit:'', prefix:'#', note:'lower = better', lowbest:true, isStat:false, asof:null, vfn:vfn, pool:pool });
   })();
 
+  // NBA: only Points, Jersey number, Years played for now. The other NBA
+  // counting stats aren't sourced reliably yet ("NBA STATS COMING SOON").
+  var NBA_KEEP = { nba_points:1, NBA_jersey:1, NBA_years:1 };
+  CATS = CATS.filter(function(c){ return c.sport!=='NBA' || NBA_KEEP[c.key]; });
+
   // order within a sport: stats (by pool size desc), then jersey, years, draft
   function catRank(c){ if(/_jersey$/.test(c.key)) return 2; if(/_years$/.test(c.key)) return 3; if(/draft/.test(c.key)) return 4; return 1; }
   CATS.sort(function(a,b){ if(a.sport!==b.sport) return SPORTS.indexOf(a.sport)-SPORTS.indexOf(b.sport); var ra=catRank(a), rb=catRank(b); if(ra!==rb) return ra-rb; return b.pool.length-a.pool.length; });
@@ -552,7 +558,9 @@
                   '<span class="cc">'+c.pool.length+' players</span>'+
                 '</button>';
       });
-      html += '</div></div>';
+      html += '</div>';
+      if(sp==='NBA') html += '<div class="catsoon">NBA Stats Coming Soon</div>';
+      html += '</div>';
     });
     host.innerHTML = html;
     host.setAttribute('data-built','1');
