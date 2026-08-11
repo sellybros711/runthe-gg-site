@@ -253,7 +253,12 @@
   .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
   .dprog .pips{display:flex; gap:5px;}
   .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
-  .dprog .pip.done{background:var(--green); border-color:var(--green);}
+  /* each pip carries its game's color; a played pip fills with it (empty ones
+     keep a faint ring of the same color, so the row reads as the nine games) */
+  .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
+  .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
+  #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--gold);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -478,7 +483,7 @@
       <main id="puzzles">
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
