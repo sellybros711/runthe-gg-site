@@ -58,7 +58,7 @@
       '.rtgc-perks{list-style:none;margin:0;padding:0;display:grid;gap:7px;}',
       '.rtgc-perks li{display:flex;align-items:flex-start;gap:9px;font-size:13px;font-weight:600;color:var(--ink,#eaf0f7);}',
       '.rtgc-perks li small{display:block;font-weight:600;font-size:11.5px;color:var(--mut,#93a4bd);margin-top:3px;line-height:1.35;}',
-      '.rtgc-perks li s{color:var(--mut,#93a4bd);text-decoration-thickness:2px;margin-right:3px;}',
+      '.rtgc-perks li s{color:var(--mut,#93a4bd);text-decoration-thickness:1px;text-decoration-color:var(--mut,#93a4bd);font-size:1.18em;margin-right:5px;}',
       '.rtgc-perks li span{flex:0 0 20px;height:20px;text-align:center;color:var(--gold,#F2B632);}',
       '.rtgc-perks li span svg{width:20px;height:20px;display:block;margin:0 auto;}',
       '.rtgc-card .name svg{width:18px;height:18px;flex:0 0 auto;}',
