@@ -194,6 +194,38 @@
     );
   }
 
+  // ---- how many people posted a result for this game today. int or null. ----
+  // The board only ever shows a handful of rows, so without this a player has no
+  // idea whether 3rd place is out of 4 or out of 400.
+  function playerCount(game, dateStr) {
+    var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
+      '&puzzle_date=eq.' + encodeURIComponent(dateStr) + '&select=id';
+    return withTimeout(
+      fetch(q, { headers: headers({ Prefer: 'count=exact', 'Range-Unit': 'items', Range: '0-0' }) })
+        .then(function (res) {
+          if (!res.ok && res.status !== 206) return fail('count', res);
+          offline = false;
+          var total = parseInt(((res.headers.get('content-range') || '').split('/')[1] || '0'), 10);
+          return isNaN(total) ? 0 : total;
+        })
+    );
+  }
+
+  // ---- the signed-in user's own row for a day, so the board can place them
+  // even when they're nowhere near the top. Row or null. ----
+  function myRun(game, dateStr) {
+    if (!session) return Promise.resolve(null);
+    var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
+      '&puzzle_date=eq.' + encodeURIComponent(dateStr) +
+      '&user_id=eq.' + encodeURIComponent(session.user.id) +
+      '&select=display_name,base_seconds,mistakes,reveals,run_len,score,flawless&limit=1';
+    return withTimeout(
+      fetch(q, { headers: headers() })
+        .then(function (res) { if (!res.ok) return fail('myRun', res); offline = false; return res.json(); })
+        .then(function (a) { return (a && a.length) ? a[0] : null; })
+    );
+  }
+
   // ---- the signed-in user's cloud streak for a game. {streak,best_streak} or null. ----
   function streakOf(game) {
     if (!session) return Promise.resolve(null);
@@ -248,6 +280,8 @@
     submit: submit,
     leaderboard: leaderboard,
     rank: rank,
+    playerCount: playerCount,
+    myRun: myRun,
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,
