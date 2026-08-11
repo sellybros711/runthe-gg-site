@@ -311,6 +311,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     .wrap > .foot{ grid-area:foot; }
     .wrap > .kbd{ display:none; }   /* physical keyboard on desktop */
   }
+  /* the crossword's grey title looked doubled/distorted with the shared hard
+     offset shadow - use a clean soft drop instead in both themes */
+  .a-gametitle__plate{ text-shadow:0 2px 10px color-mix(in srgb, var(--a-tc,#64748B) 30%, transparent) !important; }
+  :root[data-theme="light"] .a-gametitle__plate{ text-shadow:0 1px 2px rgba(13,27,44,.18) !important; }
 </style>
 </head>
 <body>
