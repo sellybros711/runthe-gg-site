@@ -82,13 +82,16 @@
    scrolling and pinch-zoom intact - so fast typing no longer zooms the board. */
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0; padding:0;}
+/* Centring used to be `display:flex` on the body, but the shared top banner is
+   injected as a body child, so it became a flex SIBLING of .wrap and the two
+   laid out side by side - pushing the whole page off-screen on a phone. Centre
+   the wrap with auto margins instead, matching every other game page. */
 body{
   background:var(--bg);
   color:var(--ink); font-family:var(--term); font-size:16px; line-height:1.45; font-weight:500;
   min-height:100dvh; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  display:flex; justify-content:center;
 }
-.wrap{width:100%; max-width:480px; padding:10px 12px 28px; position:relative;}
+.wrap{width:100%; max-width:480px; margin:0 auto; padding:10px 12px 28px; position:relative;}
 button{font-family:inherit; color:inherit; cursor:pointer;}
 .hidden{display:none !important;}
 .pix{font-family:var(--pix); font-weight:800; letter-spacing:.3px;}
