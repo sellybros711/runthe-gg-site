@@ -6976,11 +6976,15 @@ function wheelStyleOnce(){ if(_pwvcss) return; _pwvcss=true; const st=document.c
   .pwv-boostbig{margin-top:8px;font:900 15px/1 var(--body);color:#c9a0ff;font-variant-numeric:tabular-nums}
   @media (prefers-reduced-motion:reduce){ .pwv-rot{transition:none!important} .pwv-card{animation:none} .pwv-spinning .pwv-hub{animation:none} }
 `; document.head.appendChild(st); }
-// The wheel face: 8 radial segments, each tinted with its prize colour, labelled radially like a real
-// prize wheel. Segment i is centred at i*45 degrees clockwise from 12 o'clock (the pointer).
+// The wheel face: one radial segment per prize, tinted with its colour and labelled radially like a real
+// prize wheel. Segment i is centred at i*step degrees clockwise from 12 o'clock (the pointer).
+// `restRot` is the rotation the WHEEL will be sitting at when it stops (the CSS transform on .pwv-rot).
+// The labels are baked for THAT orientation, not for an unrotated face - otherwise every wedge that
+// started on the bottom half lands on the top half reading upside down once the spin finishes.
 function wheelSeg(pz){ return 360/((pz&&pz.length)||8); }      // degrees per wedge
-function wheelFaceSVG(pz){
+function wheelFaceSVG(pz, restRot){
   pz=pz||wheelPrizes();
+  const wheelRot=((+restRot||0)%360+360)%360;
   const cx=120, cy=120, r=112, step=wheelSeg(pz), half=step/2;
   const pt=(deg)=>{ const a=deg*Math.PI/180; return [(cx+r*Math.sin(a)).toFixed(2),(cy-r*Math.cos(a)).toFixed(2)]; };
   let out=`<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="117" fill="#0d1f16" stroke="#ff7ab8" stroke-width="3"/>`;
@@ -6994,11 +6998,14 @@ function wheelFaceSVG(pz){
               : p.kind==='shard' ? String(p.r||'').toUpperCase()
               : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMP':(p.tier||'base')).toUpperCase()
               : p.kind==='spin'  ? 'SPIN' : 'COINS';
-    // Bottom-half wedges would read upside down, so flip them 180 and mirror the radii about the
-    // centre - the label lands in the same wedge, the right way up.
+    // A wedge whose ON-SCREEN angle lands on the bottom half would read upside down, so flip it 180 and
+    // mirror the radii about the centre - the label stays in the same wedge, the right way up. The test
+    // is against where the wedge actually SITS once the wheel has stopped (its own angle plus the wheel's
+    // resting rotation), so the face reads correctly at rest whatever it landed on.
     // Both halves put the value on the OUTER radius (where the wedge is widest) and the small caption
     // inboard, so a long label like "PACK" never has to fit the narrow inner end.
-    const deg=i*step, flip=(deg>90 && deg<270), rot=deg+(flip?180:0);
+    const deg=i*step, view=(deg+wheelRot)%360;
+    const flip=(view>90 && view<270), rot=deg+(flip?180:0);
     // More wedges = a narrower arc, so on a busy wheel the value steps down a size, the caption shrinks
     // and both move outward (where the wedge is widest) to keep clear of the neighbouring labels.
     const big=step>=32;
@@ -7033,7 +7040,10 @@ function overlayWheel(app){
     : avail>0 ? `${avail} spin${avail>1?'s':''} ready${free?' · today’s free spin':''}${(free&&banked)?` + ${banked} banked`:''}`
     : 'Come back tomorrow for a free spin.';
   ov.appendChild($(`<p class="lede" style="margin:0 0 8px">${sub}</p>`));
-  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG(pz)}</div><div class="pwv-hub">SPIN</div></div>`);
+  // Bake the labels for where the wheel will COME TO REST (0 when it hasn't been spun), so nothing reads
+  // upside down at the moment the player is actually looking at it.
+  const faceRot=(w&&w.spun)?w.rot:0;
+  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG(pz,faceRot)}</div><div class="pwv-hub">SPIN</div></div>`);
   ov.appendChild(wrap);
   const rot=wrap.querySelector('.pwv-rot');
   const foot=$(`<div style="margin-top:14px"></div>`); ov.appendChild(foot);
