@@ -2207,6 +2207,73 @@ window.GA_ID='G-L29P5MRWKE';
      the NFL card red would be broken to do it. What separates them instead is
      everything else: they are not adjacent, a rule and a heading sit between them,
      the red card breaks the run, and the glyphs are a pennant and a mortarboard. */
+  /* ---- THE NEW STICKER ----
+     Ported from the NFL game, which arrived at this after two measured mistakes that
+     are worth not repeating. Slapped over the top-right corner the way a price
+     sticker goes on a box: out of the flow, off the grid, and tilted, because
+     everything else here is square to the edges and the tilt is what stops the eye.
+     Bright green with the type in near-black: at this size a light-on-dark chip
+     disappears and a dark-on-bright one does not.
+
+     IT BREATHES ON THE GLOW, NOT ON THE SIZE. Scaling it grows its BOX, and with the
+     origin at the top-right that growth goes leftward into whatever text is beside
+     it. A pulsing shadow catches the eye just as well and cannot move an edge. */
+  /* THE CARD HAS TO BE THE POSITIONING CONTEXT. Without this the sticker is absolute
+     against whatever distant ancestor happens to be positioned, and it lands in the
+     right region by luck: it cleared the title and the heading when measured and was
+     still anchored to the wrong element, floating between the card above and this
+     one's heading where it read as the OTHER card's badge. */
+  .modecard{position:relative}
+  .mc-sticker{position:absolute;right:-7px;z-index:3;pointer-events:none;
+    font-family:var(--fn);font-size:12px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;color:#04241c;padding:5px 11px;border-radius:7px;
+    background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
+    border:1.5px solid rgba(255,255,255,.55);
+    box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55);
+    transform:rotate(7deg);transform-origin:100% 0;
+    animation:mcsticker 2.4s ease-in-out infinite}
+  @keyframes mcsticker{
+    0%,100%{box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55)}
+    50%{box-shadow:0 6px 26px -2px rgba(16,185,129,1),0 0 0 4px rgba(16,185,129,.20),
+      0 2px 6px rgba(0,0,0,.55)}}
+  @media (prefers-reduced-motion:reduce){ .mc-sticker{animation:none} }
+  /* ON A CARD it clears the title by sitting ABOVE the first line of type, so the
+     title can be as wide as it likes and the wrap point stops mattering. The section
+     heading above gets the room that overhang needs. */
+  .modecard .mc-sticker{top:-19px}
+  .xpromo:has(.mc-sticker) .xp-h{margin-bottom:20px}
+  /* ON THE INTRO BUTTON it can barely hang at all, and the tilt is why.
+     That button sits 9px under "Draft your team" in a grid. A 19px overhang would
+     obviously land on it, but so did 11px: rotating a 57px-wide box by 7 degrees
+     about its top-right corner lifts the far end, and the BOUNDING RECT grows by
+     width*sin(7deg), about 7px. The sticker was 11px up and reading as 18.
+     Buying vertical room is not an option here: the intro is laid out so every
+     button clears the fold on a phone, and pushing this one down pushes Leaderboard
+     and How to play off the bottom, which is a bug this page has had before. So the
+     overhang has to fit a 7px gap, because a media query tightens .ctas to 7px on
+     anything under 700 wide, which is every phone.
+
+     AND IT CANNOT BUY THAT ROOM. Reserving 3px here for the sticker cost exactly the
+     fold: test_launch measures the front page against a browser-chrome allowance and
+     an iPhone SE went to "slack 88px, need 90". Every button on this page clearing
+     the fold is a thing that has been broken before and asked for specifically, and
+     it outranks a sticker's overhang.
+
+     So the sticker sits INSIDE the button and lets the tilt do the overhanging. Its
+     box top is 2px below the button's, the 7-degree rotation lifts the far corner
+     about 7px, and the rendered rect ends up 5px proud of the button into a 7px gap.
+     It reads as stuck on the corner, it never touches the button above, and the
+     layout does not move by a pixel. */
+  #b-modes{position:relative;overflow:visible}
+  #b-modes .mc-sticker{top:2px;right:-5px}
+  /* AND ON THE NARROWEST PHONE IT HAS TO GIVE WAY TO THE LABEL. At 320 the button's
+     own "More ways to play" runs wide enough that a full-size sticker sits on the
+     last word. The sticker is the thing that can afford to lose a point of type
+     here; the label is what the button is for. */
+  @media(max-width:359px){
+    #b-modes .mc-sticker{font-size:10px;letter-spacing:.05em;padding:4px 7px;right:-7px}
+  }
+
   .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
   .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
   .modecard.mc-alma .mc-title{color:#f2b632}
@@ -2712,7 +2779,7 @@ or endorsed by the NCAA, the CFP or any school.
          the only reason this is markup and not CSS. -->
     <div class="ctas">
       <button class="btn" id="b-play-intro">Draft your team</button>
-      <button class="btn ghost" id="b-modes">More ways to play</button>
+      <button class="btn ghost" id="b-modes">More ways to play<span class="mc-sticker">New</span></button>
       <div class="cta2">
         <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
         <button class="btn ghost sm" id="b-how">How to play</button>
@@ -4404,6 +4471,7 @@ function modeMenu(){
           '<path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>'+
           '<path d="M22 9v5"/>'+
         '</svg></div><div class="mc-title">Alma Mater</div>'+ARROW+'</div>'+
+        '<span class="mc-sticker">New</span>'+
         '<p>A new one every day. Name the college each NBA, NFL or MLB player came '+
         'from, four choices and one right, and it gets harder the longer your run '+
         'lasts.</p>'+
