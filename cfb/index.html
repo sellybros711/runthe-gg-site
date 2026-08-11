@@ -645,12 +645,21 @@ window.GA_ID='G-L29P5MRWKE';
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line);margin:12px 0;contain:layout}
   /* A LINEUP NEEDS A FLOOR IN PIXELS, NOT A RATIO. A chip is 63px tall whatever the
-     screen: a 34px disc, the surname, and the school-and-year plate. Three rows of
-     them plus breathing room is 197px, and an aspect ratio does not know that, so a
-     narrow phone computed a box far shorter than its own contents. 210px is the
-     floor; wider screens still take the ratio, which is larger. The front page's
-     field is not in this list and keeps its 15vh cap: it has no chips to fit. */
-  #field,#field2,#field3{min-height:210px}
+     screen: a 34px disc, the surname, and the school-and-year plate. An aspect ratio
+     does not know that, so a narrow phone computed a box shorter than its own
+     contents and the rows sat on each other.
+
+     THE FLOOR IS SET BY THE GOAL LINE, not just by the chips. The end zone is the
+     top 4 of 23 yards this field draws, so 17.4% of the box is behind the goal and
+     no player should stand in it. Three 63px rows have to fit in the 82.6% that is
+     left, which needs 189/0.826 = 229px. At 210 they did not fit, so the top row was
+     pushed up into the end zone to keep the rows off each other: the arithmetic had
+     one degree of freedom and spent it in the wrong place. 240 leaves the formation
+     entirely on the field of play.
+
+     Wider screens still take the ratio, which is larger. The front page's field is
+     not in this list and keeps its 15vh cap: it has no chips to fit. */
+  #field,#field2,#field3{min-height:240px}
   .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
     rgba(255,255,255,.020) 0 25%,transparent 25% 50%)}
   .field .lit{position:absolute;inset:0;
@@ -3370,7 +3379,7 @@ window.addEventListener('error',(ev)=>{
    is 20 percent apart, and 20 percent of a box that a phone computed as 135px is
    27px. The chips are 63px. Every row overlapped both of its neighbours and the
    layout could not have worked at any x. The box now has a 210px floor and the rows
-   are spread across it, so a row clears the next one instead of landing in it.
+   are spread across the field of play, which starts below the goal line at 17.4%.
 
    THAT ALSO FREES THE X AXIS. Two chips clash only if they overlap on BOTH axes, so
    once the rows are genuinely apart, being in the same column as something on
@@ -3380,14 +3389,14 @@ window.addEventListener('error',(ev)=>{
    a lone receiver. Only same-row neighbours still need spacing, and that is set by
    the widest a chip gets, 78px, which is 21.5% of a 362px field. */
 const SPOTS={
-  QB: [{ x: 50, y: 42 }],
+  QB: [{ x: 50, y: 52 }],
   /* Up to THREE, because both flex spots can take a back. The table stopped at two
      and row() clamps past the end, so a third back was handed the second one's
      coordinate exactly and the two chips sat perfectly on top of each other. */
   RB: [[],
-    [{ x: 50, y: 74 }],
-    [{ x: 28, y: 74 }, { x: 72, y: 74 }],
-    [{ x: 17, y: 74 }, { x: 50, y: 74 }, { x: 83, y: 74 }]],
+    [{ x: 50, y: 79 }],
+    [{ x: 28, y: 79 }, { x: 72, y: 79 }],
+    [{ x: 17, y: 79 }, { x: 50, y: 79 }, { x: 83, y: 79 }]],
 };
 /* The line of scrimmage, spread by how many are on it, 1 through 4: receivers,
    tight ends, and whatever flex is still open. Spacing is set by the widest a chip
@@ -3397,12 +3406,12 @@ const SPOTS={
    12 and 32, which is 20%, and they overlapped by 2px at every width measured. */
 const REC = [
   [],
-  [{ x: 50, y: 10 }],
-  [{ x: 27, y: 10 }, { x: 73, y: 10 }],
-  [{ x: 11, y: 10 }, { x: 50, y: 10 }, { x: 89, y: 10 }],
-  [{ x: 9, y: 10 }, { x: 36, y: 10 }, { x: 64, y: 10 }, { x: 91, y: 10 }],
+  [{ x: 50, y: 25 }],
+  [{ x: 27, y: 25 }, { x: 73, y: 25 }],
+  [{ x: 11, y: 25 }, { x: 50, y: 25 }, { x: 89, y: 25 }],
+  [{ x: 9, y: 25 }, { x: 36, y: 25 }, { x: 64, y: 25 }, { x: 91, y: 25 }],
 ];
-const SPOT_FALLBACK=[{x:50,y:42},{x:50,y:74},{x:11,y:10},{x:89,y:10},{x:36,y:10},{x:64,y:10}];
+const SPOT_FALLBACK=[{x:50,y:52},{x:50,y:79},{x:11,y:25},{x:89,y:25},{x:36,y:25},{x:64,y:25}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
