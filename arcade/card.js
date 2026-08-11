@@ -35,7 +35,27 @@
   // The Supabase session access token. The billing endpoints verify it and
   // derive the user id from it (they no longer trust a body user_id), so a
   // request without it is rejected 401.
-  function authToken(){ try{ return (window.RTG_AUTH && RTG_AUTH.token && RTG_AUTH.token()) || null; }catch(e){ return null; } }
+  function authToken(){
+    try{ var t=(window.RTG_AUTH && RTG_AUTH.token && RTG_AUTH.token()); if(t) return t; }catch(e){}
+    // Fallback: read the raw Supabase session straight from localStorage (the
+    // same blob tokens.js scans for signedIn). Otherwise a signed-in member is
+    // blocked from billing whenever RTG_AUTH/supabase-js hasn't parsed the
+    // session on this page yet - which is exactly when the member modal still
+    // shows (it's gated on that raw check), so the two must agree.
+    try{
+      var LS=window.localStorage;
+      for(var i=0;i<LS.length;i++){
+        var k=LS.key(i);
+        if(k && k.indexOf('sb-')===0 && /auth-token$/.test(k)){
+          var v=LS.getItem(k); if(!v || v.indexOf('access_token')<0) continue;
+          var o=JSON.parse(v);
+          var at=o && (o.access_token || (o.currentSession && o.currentSession.access_token));
+          if(typeof at==='string' && at) return at;
+        }
+      }
+    }catch(e){}
+    return null;
+  }
   function authHeaders(){ var h={'Content-Type':'application/json'}; var t=authToken(); if(t) h.Authorization='Bearer '+t; return h; }
   function signedIn(){ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()) || !!userId(); }
   function hasCard(){ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }
@@ -237,6 +257,7 @@
         if(go){ go.disabled=false; go.textContent='Manage subscription'; }
         var err = d && d.error, msg;
         if(err==='no_customer') msg='This membership is complimentary. There’s nothing to bill or manage.';
+        else if(err==='signin') msg='Please sign in to manage your membership.';
         else if(err==='unauthorized'){ msg='Your session expired — please sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
         else if(err==='stripe_not_configured') msg='Billing isn’t fully connected yet. Please contact support.';
         else if(err==='stripe_error') msg='Stripe couldn’t open the portal'+((d&&d.detail)?(': '+d.detail):'.');
@@ -336,10 +357,17 @@
 
   // Manage / cancel via Stripe Customer Portal.
   function portal(){
-    var uid=userId(); if(!uid){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return; }
+    // The portal is per-customer, so the server needs a verified session token.
+    // Being a "member" can come from this browser's saved flag alone (no live
+    // session) - in that case authenticate first rather than failing silently.
+    var t=authToken();
+    if(!t){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return Promise.resolve({ error:'signin' }); }
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    var to=ctrl?setTimeout(function(){ try{ ctrl.abort(); }catch(e){} },12000):0;
     return fetch('/api/stripe/portal', {
       method:'POST', headers:authHeaders(),
-      body: JSON.stringify({ user_id: uid, return_path: returnPath() })
+      body: JSON.stringify({ return_path: returnPath() }),
+      signal: ctrl?ctrl.signal:undefined
     }).then(function(r){
       return r.json().catch(function(){ return {}; }).then(function(d){ d=d||{}; d.status=r.status; return d; });
     })
@@ -349,7 +377,8 @@
         try{ console.warn('[Arcade Card] portal failed', d && d.status, d && d.error, d && d.detail); }catch(e){}
         return d;
       })
-      .catch(function(e){ try{ console.warn('[Arcade Card] portal request error', e); }catch(_){} return { error:'network' }; });
+      .catch(function(e){ try{ console.warn('[Arcade Card] portal request error', e); }catch(_){} return { error:'network' }; })
+      .then(function(d){ if(to) clearTimeout(to); return d; });
   }
 
   // Resume a checkout the visitor started before signing in. The plan also
