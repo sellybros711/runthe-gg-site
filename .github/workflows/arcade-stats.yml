@@ -1,0 +1,51 @@
+name: Refresh High Low roster stats
+# Fills arcade/rosterstats.js with career NBA (stats.nba.com) + MLB (statsapi)
+# counting stats for every corpus player, so High Low's stat pools run into the
+# hundreds. Both sources are open in CI but blocked in the dev sandbox, so this
+# is the only place the data can be built. Fails soft (skips anything it can't
+# reach) and prints a coverage report.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit arcade/rosterstats.js back to this branch (true/false)'
+        required: false
+        default: 'true'
+  schedule:
+    - cron: '23 10 1 * *'   # monthly (1st, ~10:23 UTC) to refresh active players
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate roster stats
+        run: node scripts/fetch-rosterstats.mjs
+      - name: Upload generated data as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rosterstats
+          path: arcade/rosterstats.js
+          if-no-files-found: warn
+      - name: Commit if requested
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.commit == 'true' }}
+        run: |
+          # Cache-bust the High Low page so refreshed data actually reaches browsers.
+          V="${GITHUB_RUN_NUMBER}"
+          sed -i "s|rosterstats.js?v=[0-9]*|rosterstats.js?v=$V|" arcade/highlow/index.html
+          git config user.name "roster-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arcade/rosterstats.js arcade/highlow/index.html
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Refresh High Low roster stats (arcade/rosterstats.js)"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing (attempt $i)"
+              git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            done
+          }
