@@ -241,7 +241,7 @@
     }
 
     // actions
-    out += '<a class="rtgmc-btn vault" href="/arcade/archive/">🎟️ <b>Enter your Vault · ' + s.vault + '</b></a>';
+    out += '<a class="rtgmc-btn vault" href="/arcade/archive/">🎟️ <b>Enter your Vault · ' + s.vault + ' days available</b></a>';
     if (ti.isCard) {
       out += '<button class="rtgmc-sub" type="button" id="rtgmcManage">Manage subscription</button>';
     } else if (ti.signed) {
