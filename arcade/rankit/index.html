@@ -388,6 +388,7 @@
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/leaderboard.js?v=1"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
@@ -969,6 +970,20 @@
       renderRealBoard();
     });
   }
+})();
+</script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there. */
+(function(){
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el, game:'rankit', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'sets' });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
 </body>
