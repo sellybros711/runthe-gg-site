@@ -59,6 +59,9 @@
       '.rtgauth-me{display:flex;align-items:center;gap:11px;background:var(--card2,#16233a);border:1px solid var(--line2,#22304a);border-radius:12px;padding:12px 13px;margin-bottom:14px;}',
       '.rtgauth-av{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--gold,#F2B632);color:#20160a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;font-family:var(--hero,inherit);}',
       '.rtgauth-me .u{font-weight:800;font-size:15px;} .rtgauth-me .e{font-size:11.5px;color:var(--mut,#93a4bd);}',
+      '.rtgauth-nav{display:flex;gap:8px;margin-top:14px;}',
+      '.rtgauth-nav a{flex:1;text-align:center;padding:11px 8px;border-radius:9px;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-weight:800;font-size:12px;text-decoration:none;}',
+      '.rtgauth-nav a:hover{border-color:var(--gold,#F2B632);}',
       // topbar account button
       // min-width holds the chip's footprint: it mounts as "Sign in" and repaints
       // to a username when auth resolves (~500ms), and the width change used to
@@ -124,6 +127,8 @@
         (isPro ? '<button class="rtgauth-ghost" id="rtgauthSub" type="button">Manage subscription</button><div style="height:9px"></div>' : '') +
         '<button class="rtgauth-ghost" id="rtgauthOut" type="button">Sign out</button>' +
         (st.err ? '<div class="rtgauth-err" style="margin-top:12px">' + esc(st.err) + '</div>' : '') +
+        // quick navigation back into the arcade (the hub lists every game)
+        '<div class="rtgauth-nav"><a href="/arcade/">🏠 Arcade home</a><a href="/arcade/archive/">🎟️ Your Vault</a></div>' +
         '<div style="text-align:center;margin-top:14px"><button class="rtgauth-danger" id="rtgauthDel" type="button">Delete account</button></div>';
       $('rtgauthRename').onclick = function () { st.mode = 'username'; st.err = ''; renderModal(); };
       var sub = $('rtgauthSub');
