@@ -14533,6 +14533,48 @@ allows Google Fonts, or self-host Anton.*
   Full regressions green (final suite: shop sections + an 18-hole practice daily round to the result; boot
   screen; tour-pass sweep) with **0 page errors**; inline scripts parse clean. Deployed to /golf.
 
+- **PRIZE WHEEL: three more LOW-LEVEL wedges, 10 -> 13 segments (owner: "The daily spin wheel needs a few
+  more options that are low level").** The wheel's variety all sat in the middle and top of the ladder (two
+  small coin wedges, then straight to mid/large coins, the pack, the shard and the hour boost), so the low
+  end had nothing to land on. Added three genuinely low options, all from the EXISTING prize pool (no new
+  currency, no cosmetics - the wheel's standing rule): **tiny coins** (50 at Amateur -> 110 at G.O.A.T.), a
+  **second small coin tier** (160 -> 430), and a **2× Tour Pass XP boost for 15 minutes** (below the
+  existing 30 min / 1 hour). Deliberately NOT a second shard wedge: a common shard is ~5,000 coins of value
+  (`RARITY_PRICE/SHARD_COST`), i.e. worth more than the biggest coin wedge, and the economy audit already
+  flagged shards as the largest faucet - it would have read as low-level while being the opposite.
+  - **Top-prize odds are unchanged.** The new wedges were funded by SPLITTING the two smallest coin wedges
+    rather than by adding weight, so the total stays 99 at Amateur and the pack / shard / bonus spin / hour
+    boost all sit at exactly the same share as before (3.03% / 6.06% / 4.04% / 4.04%, verified against the
+    old table). The 30-minute boost gives up some of its weight to the new 15-minute one, so total boost
+    odds go UP (12.1% -> 17.2%); average coins per spin fall ~9% at Amateur (475 -> 431), which is the
+    intended effect of a wider low end. The rank scaling is intact and now pulls both ways: the low wedges
+    get RARER as you climb (`-f` terms on cTn/xp15/cXs/cSb/cSm) while the big coins, the pack and the hour
+    boost get commoner, so a promotion is still strictly a better wheel.
+  - **Everything else was already derived from the prize array** (`wheelSeg`, the face geometry, the spin
+    rotation + jitter, `wheelPick`, `wheelNextUpgrade`'s coin sum), so no other math needed touching. Two
+    things that were NOT derived, now are: **`wheelMiniSVG`** hardcoded a 10-colour array, so the home
+    button's little wheel would have silently desynced from the real face - it now reads `wheelPrizes()`
+    (old array kept only as a fallback); and the wedge **caption hardcoded "30 MIN"** for any sub-hour
+    boost, so the new 15-minute wedge rendered as "30 MIN" (caught by the test, fixed to print the real
+    duration).
+  - **Label fit at 13 wedges**: the arc narrows from 36° to 27.7°, so the value steps down a size, the
+    caption shrinks + loses its letter-spacing, and both move outward to where the wedge is widest
+    (`step>=32` keeps the old sizing for any future smaller wheel). Screenshot-verified: every label sits
+    inside its own wedge with clear gaps (the first cut had the captions colliding).
+  Verified in Playwright against the live file: 13 segments, no duplicate ids, no missing fields, weights
+  positive at every rank, all 20 rank tables valid with a monotonically rising coin total; the new wedges
+  are genuinely the lowest of their kind (tiny < xs, 15 min < 30 min); top-prize odds match the old table to
+  2 dp; `wheelPick` stays in range over 4,000 rolls and every one of the 13 segments is reachable; the spin
+  rotation lands the chosen wedge under the pointer for all 13 × 200 jittered rolls; the face + the home
+  mini both render 13 wedges and the captions read 15 MIN / 30 MIN / 1 HR. Live UI: each new prize actually
+  grants (tiny + small-b coins credit the exact amount, the 15-min boost activates `passXpMult()===2` and
+  still EXTENDS rather than overwrites an existing boost), and a real spin through the overlay consumes a
+  spin, lands, and reveals the prize that was rolled. Regressions green (final suite: shop sections + a full
+  18-hole practice daily round; tour-pass overlay sweep; the home-screen flicker suite) with **0 page
+  errors**; inline scripts parse clean. Deployed to /golf (byte-identical; main had no parallel edits to
+  adopt). Tunable: the `wheelPrizesFor` table (amounts via the `sc(base,mult)` ladder, weights via the
+  `w` terms), `WHEEL_SHARD_STEPS`/`WHEEL_PACK_STEPS`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
