@@ -80,8 +80,9 @@
     --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
-  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps
-     (tiles keep touch-action:none below for dragging; that still wins). */
+  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps.
+     Tiles are tap-to-select (no drag), so they keep manipulation too and the
+     page scrolls normally when a touch starts on a name. */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   html,body{margin:0;padding:0;}
   body{
@@ -260,12 +261,12 @@
   /* ---------------- tiles ---------------- */
   .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:pointer;
     overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
-    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
+    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:manipulation;}
   .tile .tn{display:block; width:100%;}
   .tile:hover{border-color:rgba(47,107,255,.55);}
-  .tile:active{cursor:grabbing;}
+  .tile:active{transform:scale(.97);}
   .tile.sel{border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,107,255,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}

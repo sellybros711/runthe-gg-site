@@ -114,7 +114,11 @@
      shoved 400px down the page a second after first paint. */
   .rows:empty{min-height:412px;}
   /* a rank slot = a detached number block on the left + the draggable card */
-  .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:none; transition:transform .12s;}
+  /* The card body scrolls the page (touch-action:pan-y); on touch, only the
+     number block (.rord) grabs to reorder — so you can scroll past the list on
+     mobile. Desktop still drags anywhere on the card. Arrows work everywhere. */
+  .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:pan-y; transition:transform .12s;}
+  .ritem .rord{touch-action:none;}
   .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
   .rord{flex:0 0 auto; width:40px; align-self:stretch; display:flex; align-items:center; justify-content:center; border-radius:11px; background:var(--card2); border:1px solid var(--line2); font-family:var(--hero); font-weight:400; font-size:19px; color:var(--mut);}
   .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
@@ -569,6 +573,9 @@
     items.forEach(function(item){
       item.addEventListener('pointerdown', function(e){
         if(done || busy || drag || e.button===2 || e.target.closest('.ctrl')) return;   // one gesture at a time; let arrows work
+        // On touch, only the number grip starts a drag; touching the card body
+        // lets the page scroll (the ▲▼ arrows still reorder). Mouse/pen drag anywhere.
+        if(e.pointerType === 'touch' && !e.target.closest('.rord')) return;
         e.preventDefault();
         var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9;
         drag={ items:items, item:item, fromIdx:fromIdx, target:fromIdx };
