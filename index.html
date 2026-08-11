@@ -645,29 +645,26 @@ window.GA_ID='G-L29P5MRWKE';
     margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line);}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
 
-  /* ---- Golf card: a line of four pixel golfers whose looks (skin tone, hair, outfit,
-       hat) reshuffle every few seconds to show off the character customization. Colours are
-       the game's real cosmetic palettes. ---- */
+  /* ---- Golf card: a line of four golfers, rendered by the game's own pixel-golfer engine
+       (golf/pxgolfer.js), whose looks reshuffle every few seconds to show off the exact same
+       characters, outfits and accessories players can design in RunTheTour. ---- */
   .feat.golf .feat-in{grid-template-columns:1fr;}
   .golf-showcase{position:relative;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
-  .gshow-green{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;max-width:250px;
+  .gshow-green{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;max-width:250px;min-height:96px;
     background:linear-gradient(180deg,#1e7a47 0%,#125230 58%,#0b3d25 100%);
-    border:1px solid rgba(235,166,31,.28);border-radius:12px;padding:14px 8px 9px;
+    border:1px solid rgba(235,166,31,.28);border-radius:12px;padding:12px 6px 8px;
     box-shadow:inset 0 2px 14px rgba(0,0,0,.38);overflow:hidden;}
-  .golfer-slot{width:52px;flex:0 0 auto;display:block;}
-  .golfer-slot .golfer{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5));
+  .golfer-slot{width:56px;flex:0 0 auto;display:block;line-height:0;}
+  .golfer-slot img{width:100%;height:auto;display:block;image-rendering:pixelated;
     transition:opacity .22s ease;animation:gbob 3.6s ease-in-out infinite;}
-  .golfer-slot:nth-child(2) .golfer{animation-delay:.45s;}
-  .golfer-slot:nth-child(3) .golfer{animation-delay:.9s;}
-  .golfer-slot:nth-child(4) .golfer{animation-delay:1.35s;}
-  .golfer-slot.rolling .golfer{opacity:.1;}
+  .golfer-slot:nth-child(2) img{animation-delay:.45s;}
+  .golfer-slot:nth-child(3) img{animation-delay:.9s;}
+  .golfer-slot:nth-child(4) img{animation-delay:1.35s;}
+  .golfer-slot.rolling img{opacity:.1;}
   @keyframes gbob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
   .gshow-cap{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#EBA61F;}
-  .golfer-slot .hs,.golfer-slot .hatg{display:none;}
-  .golfer-slot.style-short .hs-short,.golfer-slot.style-buzz .hs-buzz,.golfer-slot.style-afro .hs-afro,.golfer-slot.style-long .hs-long,.golfer-slot.style-mohawk .hs-mohawk,.golfer-slot.style-ponytail .hs-ponytail{display:block;}
-  .golfer-slot.hatted .hatg{display:block;}
   @media (min-width:820px){ .feat.golf .feat-in{grid-template-columns:1fr 250px;} }
-  @media (prefers-reduced-motion: reduce){ .golfer-slot .golfer{animation:none;} }
+  @media (prefers-reduced-motion: reduce){ .golfer-slot img{animation:none;} }
 
   /* ---- Mobile: swipe carousel. The five game cards become a horizontal, snap-scrolling
        rail (one card at a time with a peek of the next), so the phone home screen is one
@@ -1504,35 +1501,26 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 })();
 </script>
 
+<script src="/golf/pxgolfer.js?v=1"></script>
 <script>
-/* Golf card: build four pixel golfers and reshuffle their look (skin tone, hair colour +
-   style, shirt, trousers, shoes, optional cap) every 5s, using the game's real cosmetic
-   palettes, so visitors see the range of characters they can design. Reduce-motion gets a
-   single random line-up with no reshuffle. */
+/* Golf card: four golfers rendered by RunTheTour's own pixel-golfer engine (golf/pxgolfer.js),
+   reshuffling to a new random look every 5s so visitors see the exact characters, outfits and
+   accessories they can design in the game. Reduce-motion shows a static line-up. */
 (function(){
   var slots=[].slice.call(document.querySelectorAll('.golfer-slot'));
-  if(!slots.length) return;
+  if(!slots.length || !window.RTGolfer) return;
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
-  var SK=[['#f4d4ba','#e6c0a2'],['#eec096','#dba87c'],['#dca572','#c68e5b'],['#c0844f','#a87044'],['#9e6840','#875634'],['#794e30','#643f27'],['#523524','#41291b'],['#36231a','#281913']];
-  var SH=[['#0FA888','#0c917a'],['#214a8c','#1a3c72'],['#e6a91f','#c7a31f'],['#eef0ee','#d7dbd6'],['#6b4bb0','#583c93'],['#20242b','#16191f'],['#5fd94a','#3fb832'],['#173a63','#0d2b4a'],['#b3413a','#8f322d'],['#3f6b45','#315538']];
-  var PT=[['#c7bfa8','#bcb39b'],['#2a3550','#222a40'],['#9aa0a8','#878d95'],['#ededdf','#deded1'],['#262a31','#1d2026'],['#b39a68','#9c854f'],['#b3413a','#8f322d'],['#3f6b45','#315538'],['#2b4fd8','#2340ad'],['#7a2440','#611c33'],['#d4af37','#b4922c'],['#5d2ea6','#4a2487']];
-  var HR=[['#1c150f','#100b07'],['#3a2a1c','#281c12'],['#5f3e26','#46301d'],['#823a1f','#5e2c18'],['#cda35c','#ab8543'],['#e4ca9b','#c7ab78'],['#b3ada4','#928c83'],['#4e3320','#382413'],['#b5541e','#8a3d14'],['#c97a48','#a55c30'],['#efe9dc','#cfc7b6'],['#a02030','#761523'],['#d96fa8','#b34f87'],['#3a6fd8','#2a51a4'],['#7a4bd0','#5a339e'],['#3a9e58','#297741']];
-  var SHOE=['#eef0ee','#282b31','#2c3750','#9aa0a8','#c23b34','#c6b189'];
-  var STYLES=['short','buzz','afro','long','mohawk','ponytail'];
-  var SVG='<svg class="golfer" viewBox="0 0 20 33" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><g class="hs hs-short"><rect x="6" y="4" width="8" height="2" fill="var(--hr)"/><rect x="6" y="6" width="1" height="2" fill="var(--hr)"/><rect x="13" y="6" width="1" height="2" fill="var(--hrS)"/><rect x="6" y="3.4" width="8" height="0.8" fill="var(--hrS)"/></g><g class="hs hs-buzz"><rect x="6" y="4.2" width="8" height="1.1" fill="var(--hrS)"/><rect x="6" y="5.2" width="1" height="1.2" fill="var(--hrS)"/><rect x="13" y="5.2" width="1" height="1.2" fill="var(--hrS)"/></g><g class="hs hs-afro"><rect x="5" y="1.6" width="10" height="1.2" fill="var(--hr)"/><rect x="3.6" y="2.6" width="12.8" height="3" fill="var(--hr)"/><rect x="4" y="5" width="1.4" height="3" fill="var(--hr)"/><rect x="14.6" y="5" width="1.4" height="3" fill="var(--hrS)"/></g><g class="hs hs-long"><rect x="6" y="4" width="8" height="2" fill="var(--hr)"/><rect x="4.6" y="5.5" width="1.4" height="8" fill="var(--hr)"/><rect x="14" y="5.5" width="1.4" height="8" fill="var(--hrS)"/><rect x="6" y="3.4" width="8" height="0.8" fill="var(--hrS)"/></g><g class="hs hs-mohawk"><rect x="9" y="0.8" width="2" height="5.4" fill="var(--hr)"/><rect x="9" y="0.8" width="2" height="0.9" fill="var(--hrS)"/></g><g class="hs hs-ponytail"><rect x="6" y="4" width="8" height="2" fill="var(--hr)"/><rect x="6" y="6" width="1" height="2" fill="var(--hr)"/><rect x="14" y="6.5" width="1.6" height="5" fill="var(--hrS)"/><rect x="6" y="3.4" width="8" height="0.8" fill="var(--hrS)"/></g><g class="hatg"><rect x="5" y="2.6" width="9.5" height="3" fill="var(--ht)"/><rect x="5" y="2.6" width="9.5" height="1" fill="var(--htS)"/><rect x="14" y="5" width="3.4" height="1.1" fill="var(--htS)"/><rect x="9.3" y="1.6" width="1.2" height="1.1" fill="var(--htS)"/><rect x="5" y="5.4" width="1" height="2.2" fill="var(--hrS)"/><rect x="14" y="5.4" width="1" height="2.2" fill="var(--hrS)"/></g><rect x="16.4" y="11" width="0.9" height="13" fill="#c2c6cc"/><rect x="15.6" y="23.5" width="2.6" height="1.6" fill="#3a3f47"/><rect x="5" y="22" width="4" height="7" fill="var(--pt)"/><rect x="11" y="22" width="4" height="7" fill="var(--ptS)"/><rect x="5" y="22" width="10" height="1" fill="#20242a"/><rect x="4" y="29" width="5" height="2" fill="var(--sho)"/><rect x="11" y="29" width="5" height="2" fill="var(--sho)"/><rect x="4" y="31" width="5" height="0.8" fill="#12141a"/><rect x="11" y="31" width="5" height="0.8" fill="#12141a"/><rect x="5" y="13" width="10" height="9" fill="var(--sh)"/><rect x="12" y="13" width="3" height="9" fill="var(--shS)"/><rect x="8" y="13" width="4" height="1.2" fill="var(--shS)"/><rect x="9.5" y="14" width="1" height="7" fill="var(--shS)"/><rect x="3" y="14" width="2" height="6" fill="var(--sh)"/><rect x="15" y="14" width="2" height="6" fill="var(--shS)"/><rect x="3" y="20" width="2" height="2.2" fill="var(--sk)"/><rect x="15" y="20" width="2" height="2.2" fill="var(--sk)"/><rect x="8.5" y="11.6" width="3" height="1.6" fill="var(--skS)"/><rect x="6" y="5" width="8" height="7" fill="var(--sk)"/><rect x="12" y="5" width="2" height="7" fill="var(--skS)"/><rect x="5" y="8" width="1" height="2" fill="var(--sk)"/><rect x="14" y="8" width="1" height="2" fill="var(--skS)"/><rect x="8" y="9" width="1" height="1.2" fill="#232f38"/><rect x="11" y="9" width="1" height="1.2" fill="#232f38"/></svg>';
-  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
-  function look(el){
-    var sk=pick(SK),sh=pick(SH),pt=pick(PT),hr=pick(HR),sho=pick(SHOE);
-    var hasHat=Math.random()<0.42, ht=hasHat?pick(SH):null, st=pick(STYLES);
-    el.style.cssText='width:52px;--sk:'+sk[0]+';--skS:'+sk[1]+';--sh:'+sh[0]+';--shS:'+sh[1]+';--pt:'+pt[0]+';--ptS:'+pt[1]+';--hr:'+hr[0]+';--hrS:'+hr[1]+';--sho:'+sho+(ht?';--ht:'+ht[0]+';--htS:'+ht[1]:'')+';';
-    el.className='golfer-slot '+(hasHat?'hatted':'style-'+st);
+  function paint(el){
+    var img=el.firstChild;
+    if(!img){ img=new Image(); img.alt=''; img.decoding='async'; el.appendChild(img); }
+    try{ img.src=RTGolfer.url(RTGolfer.randomLook()); }catch(e){}
   }
-  slots.forEach(function(el){ el.innerHTML=SVG; look(el); });
+  slots.forEach(paint);
   if(reduce) return;
   function rerollAll(){
     slots.forEach(function(el,i){ setTimeout(function(){
       el.classList.add('rolling');
-      setTimeout(function(){ look(el); },210);
+      setTimeout(function(){ paint(el); el.classList.remove('rolling'); }, 210);
     }, i*150); });
   }
   setInterval(rerollAll, 5000);
