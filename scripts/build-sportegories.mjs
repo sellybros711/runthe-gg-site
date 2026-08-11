@@ -158,7 +158,17 @@ for (const sp of ['NBA', 'NFL', 'MLB']) {
 // -- franchise (any team with a real body of players)
 const teamCount = {};
 PLAYERS.forEach((p) => p.t.forEach((t) => { teamCount[t] = (teamCount[t] || 0) + 1; }));
-const BIG_TEAMS = Object.entries(teamCount).filter(([, n]) => n >= 60).map(([t]) => t);
+/* Roster sizes differ wildly by sport - an NFL franchise churns through far
+ * more players than an NBA one - so a single cutoff silently made this a
+ * football-and-baseball game. Gate per sport instead. */
+const teamSport = {};
+PLAYERS.forEach((p) => p.t.forEach((t) => {
+  (teamSport[t] = teamSport[t] || {})[p.sport] = (teamSport[t][p.sport] || 0) + 1;
+}));
+const sportOfTeam = (t) => Object.entries(teamSport[t] || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+const TEAM_MIN = { NBA: 38, NFL: 75, MLB: 75 };
+const BIG_TEAMS = Object.entries(teamCount)
+  .filter(([t, n]) => n >= (TEAM_MIN[sportOfTeam(t)] || 999)).map(([t]) => t);
 /* Nicknames are ambiguous once you shorten them ("Red Sox"/"White Sox" both end
  * in "Sox", both New York clubs, both LA clubs), so label with the full name. */
 BIG_TEAMS.forEach((t) => add(`Played for the ${t}`, { k: 'team', v: t }, 'team'));
@@ -228,6 +238,39 @@ const COMBO = [
 ];
 COMBO.forEach(([l, p]) => add(l, p, 'combo'));
 
+/* ---- basketball expansion ----
+ * The generic axes under-serve the NBA: fewer franchises clear any roster
+ * threshold, its counting stats are still thin (the CI job that fills them
+ * keeps coming back empty), and college categories skew football because
+ * football rosters are enormous. So build NBA-scoped categories explicitly. */
+const NBA = { k: 'sport', v: 'NBA' };
+const nbaAdd = (label, pred, tag) => {
+  const n = PLAYERS.filter((p) => test(p, pred)).length;
+  if (n >= 18) add(label, pred, tag);
+};
+[1970, 1980, 1990, 2000, 2010, 2020].forEach((d) =>
+  nbaAdd(`NBA player who played in the ${d}s`, { all: [NBA, { k: 'decade', v: d }] }, 'era'));
+['Hall of Fame', 'NBA All-Star'].forEach((a) =>
+  nbaAdd(a === 'Hall of Fame' ? 'NBA Hall of Famer' : 'NBA All-Star selection', { all: [NBA, { k: 'award', v: a }] }, 'award'));
+nbaAdd('NBA MVP or Finals MVP', { all: [NBA, { k: 'awardRe', v: 'MVP' }] }, 'award');
+nbaAdd('NBA Rookie of the Year', { all: [NBA, { k: 'awardRe', v: 'Rookie of the Year' }] }, 'award');
+['Duke', 'Kentucky', 'North Carolina', 'UCLA', 'Kansas', 'Michigan State', 'Arizona', 'Connecticut', 'Indiana', 'Louisville', 'Syracuse', 'Michigan']
+  .forEach((c) => nbaAdd(`NBA player out of ${c}`, { all: [NBA, { k: 'col', v: c }] }, 'col'));
+Object.keys(CONF).forEach((c) => nbaAdd(`NBA player from ${AN(c)} ${c} school`, { all: [NBA, { k: 'conf', v: c }] }, 'col'));
+nbaAdd('Active NBA player', { all: [NBA, { k: 'act' }] }, 'era');
+nbaAdd('NBA player who played for 3+ teams', { all: [NBA, { k: 'teams', min: 3 }] }, 'journey');
+nbaAdd('NBA player who played for 4+ teams', { all: [NBA, { k: 'teams', min: 4 }] }, 'journey');
+nbaAdd('NBA #1 overall draft pick', { all: [NBA, { k: 'draft1' }] }, 'draft');
+[10000, 15000, 20000].forEach((min) =>
+  nbaAdd(`${min.toLocaleString()}+ career NBA points`, { k: 'stat', v: 'nba_points', min }, 'stat'));
+// marquee NBA franchise pairs
+[['Los Angeles Lakers', 'Boston Celtics'], ['Chicago Bulls', 'New York Knicks'], ['Los Angeles Lakers', 'Miami Heat'],
+ ['Golden State Warriors', 'Brooklyn Nets'], ['Boston Celtics', 'Philadelphia 76ers']]
+  .forEach(([a, b]) => {
+    if (!iT.has(a) || !iT.has(b)) return;
+    nbaAdd(`Played for BOTH the ${a} and the ${b}`, { all: [{ k: 'team', v: a }, { k: 'team', v: b }] }, 'two');
+  });
+
 // ------------------------------------------------------------- evaluate
 function test(p, pr) {
   if (pr.all) return pr.all.every((x) => test(p, x));
@@ -255,9 +298,25 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const initialsOf = (p) => { const k = nameKey(p.name); return k ? [...new Set([k.first[0], k.last[0]])] : []; };
 PLAYERS.forEach((p) => { p._i = initialsOf(p); });
 
+/* Which sport a category really belongs to. Most are implicit rather than
+ * declared ("300+ home runs" is MLB; "Played at an SEC school" is nobody's),
+ * so derive it from who actually answers: one sport owning 70%+ of the
+ * recognizable answers makes it that sport's category, otherwise it's ANY.
+ * The daily generator uses this to balance the sport mix. */
+function sportOf(hits) {
+  const known = hits.filter((p) => (p.f || 0) >= FAME_MIN);
+  const base = known.length >= 8 ? known : hits;
+  if (!base.length) return 'ANY';
+  const n = {};
+  base.forEach((p) => { n[p.sport] = (n[p.sport] || 0) + 1; });
+  const [top, cnt] = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+  return cnt / base.length >= 0.7 ? top : 'ANY';
+}
+
 const viability = {};        // catIndex -> { letter: recognizableCount }
 CATS.forEach((c) => {
   const hits = PLAYERS.filter((p) => test(p, c.p));
+  c.s = sportOf(hits);
   const by = {};
   hits.forEach((p) => { if ((p.f || 0) >= FAME_MIN) p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; }); });
   const all = {};
@@ -299,7 +358,7 @@ const payload = {
   fameMin: FAME_MIN, minAnswers: MIN_ANSWERS,
   sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, awards: AWDS, conf: CONF,
   players: compact,
-  cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t })),
+  cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,
   byLetter
@@ -321,6 +380,8 @@ const tiers = [0, 0, 0, 0]; CATS.forEach((c) => tiers[c.t]++);
 console.log('  by tier         anchor ' + tiers[0] + ', mid ' + tiers[1] + ', hard ' + tiers[2] + ', spice ' + tiers[3]);
 const gTag = {}; CATS.forEach((c) => gTag[c.g] = (gTag[c.g] || 0) + 1);
 console.log('  by axis         ' + Object.entries(gTag).map(([k, v]) => k + ':' + v).join(', '));
+const gSp = {}; CATS.forEach((c) => gSp[c.s] = (gSp[c.s] || 0) + 1);
+console.log('  by sport        ' + Object.entries(gSp).sort((a,b)=>b[1]-a[1]).map(([k, v]) => k + ':' + v).join(', '));
 console.log('playable letters  ' + PLAYABLE.length + '  ' + PLAYABLE.join(''));
 console.log('  per letter      ' + LETTERS.filter(L => byLetter[L].length).map((L) => L + ':' + byLetter[L].length).join(' '));
 console.log('data file         ' + (size / 1024).toFixed(0) + ' KB  -> arcade/sportegories-data.js');
