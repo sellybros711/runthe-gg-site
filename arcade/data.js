@@ -106,6 +106,51 @@
     return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
       .toLowerCase().replace(/[\.']/g,'').replace(/\s+/g,' ').trim();
   }
+
+  /* ------------------------------------------------------------------
+   * Collapse SAME-PERSON duplicates that slipped in because the curated
+   * corpus and the auto-scrape spell a name differently. Two sources of
+   * dupes: accent/punctuation ("Jose Ramirez" vs "José Ramírez", "J.R.
+   * Smith" vs "JR Smith") and a handful of suffix mismatches where a feed
+   * dropped or added a suffix ("Jimmy Butler" vs "Jimmy Butler III").
+   *
+   * The key keeps the suffix (Jr/Sr/II/III), so genuine father/son pairs -
+   * Griffey Jr vs Sr, Gary Payton vs Payton II, Vlad Guerrero vs Jr - stay
+   * separate. ALIAS handles the verified same-person suffix cases only.
+   * First occurrence wins (entities.js is seeded first, so the curated
+   * spelling is kept); a dropped dupe donates its teams so no stint is lost.
+   * ---------------------------------------------------------------- */
+  var ALIAS = {
+    'NBA|Jimmy Butler III': 'Jimmy Butler',
+    'NFL|Robert Griffin': 'Robert Griffin III',
+    'NFL|Odell Beckham': 'Odell Beckham Jr.',
+    'MLB|Nolan Ryan Jr.': 'Nolan Ryan'
+  };
+  (function dedupePeople(){
+    function dkey(e){
+      var nm = ALIAS[e.sport + '|' + e.name] || e.name;
+      return e.sport + '|' + normName(nm);   // normName strips accents + . ' but keeps suffix words
+    }
+    var seen = {}, kept = [];
+    for (var i = 0; i < ENT.length; i++){
+      var e = ENT[i];
+      if (!e || !e.name || !e.sport){ kept.push(e); continue; }
+      // Long snappers are unrecognizable to even avid fans - drop them from
+      // every game (they were slipping into Daily Match groups).
+      if (e.pos === 'Long Snapper') continue;
+      var k = dkey(e), prev = seen[k];
+      if (prev){
+        if (Array.isArray(e.t) && e.t.length){
+          if (!Array.isArray(prev.t)) prev.t = [];
+          e.t.forEach(function(tm){ if (prev.t.indexOf(tm) === -1) prev.t.push(tm); });
+        }
+        continue;   // drop the duplicate spelling
+      }
+      seen[k] = e; kept.push(e);
+    }
+    if (kept.length !== ENT.length){ ENT.length = 0; Array.prototype.push.apply(ENT, kept); }
+  })();
+
   var A = root.RTG_AWARDS;
   if (A && A.players){
     var awMap = {};

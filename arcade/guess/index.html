@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Guess the Player | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -11,20 +13,20 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Guess the mystery athlete in Run The Arcade. Each guess reveals how close you are on team, position, era, number and more." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Guess the Player: Daily Sports Puzzle" />
 <meta property="og:description" content="One mystery athlete a day. Crack it in eight guesses." />
 <meta property="og:url" content="https://runthe.gg/arcade/guess/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Guess the Player: Daily Sports Puzzle" />
 <meta name="twitter:description" content="One mystery athlete a day. Crack it in eight guesses." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/guess/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -332,7 +334,7 @@
 
   <div class="legend"><span><i style="background:var(--hit)"></i>Match</span><span><i style="background:var(--close)"></i>Close</span><span><i style="background:var(--miss)"></i>Miss</span><span>↑ higher · ↓ lower</span></div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
       <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">–</span></div>
@@ -386,12 +388,15 @@
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -866,7 +871,7 @@
       14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
     return map[n]||'';
   }
-  function finish(w){
+  function finish(w){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('guess', DATE);
     if(done) return; done=true; won=w; if(tick) clearInterval(tick);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

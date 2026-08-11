@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -18,20 +20,20 @@
 })();
 </script>
 <meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Daily Match: Sports Connections" />
 <meta property="og:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
 <meta property="og:url" content="https://runthe.gg/arcade/match/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Daily Match: Sports Connections" />
 <meta name="twitter:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -78,8 +80,9 @@
     --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
-  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps
-     (tiles keep touch-action:none below for dragging; that still wins). */
+  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps.
+     Tiles are tap-to-select (no drag), so they keep manipulation too and the
+     page scrolls normally when a touch starts on a name. */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   html,body{margin:0;padding:0;}
   body{
@@ -258,12 +261,12 @@
   /* ---------------- tiles ---------------- */
   .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
-    overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
-    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:pointer;
+    overflow:hidden; overflow-wrap:break-word; hyphens:none; -webkit-hyphens:none; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
+    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:manipulation;}
   .tile .tn{display:block; width:100%;}
   .tile:hover{border-color:rgba(47,107,255,.55);}
-  .tile:active{cursor:grabbing;}
+  .tile:active{transform:scale(.97);}
   .tile.sel{border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,107,255,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}
@@ -453,6 +456,64 @@
   .lane-chip{ width:18px; height:18px; border-radius:3px; box-shadow:0 0 0 3px color-mix(in srgb, var(--lc) 26%, transparent); }
   .slot{ border-radius:4px; }
   .checkbtn{ border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* ===== NYT-Connections layout: solved rows on top, one tappable grid below ===== */
+  /* the board now holds only SOLVED rows, so kill the old empty-rack reservations */
+  .board:empty{ min-height:0 !important; margin:0 !important; }
+  .board{ gap:8px; margin-bottom:12px; }
+  .pool.pool-hold{ min-height:0 !important; }
+
+  /* solved group: colored header line + its four names as chips */
+  .lane.locked .lane-names{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .lane-tile{ font-size:12.5px; font-weight:800; color:#071426; background:var(--lc);
+    border-radius:6px; padding:6px 10px; line-height:1.1; }
+  .lane.autofill{ opacity:.92; }
+  .lane.autofill .lane-tile{ background:color-mix(in srgb, var(--lc) 20%, var(--card));
+    color:var(--ink); border:1px dashed color-mix(in srgb, var(--lc) 55%, transparent); }
+  .lane .lane-check{ display:inline; }
+
+  /* revealed-category hint chips (above the grid) */
+  .hints{ display:flex; flex-wrap:wrap; gap:7px; margin:0 2px 12px; }
+  .hints:empty{ display:none; }
+  .hint-chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800;
+    color:var(--ink); background:color-mix(in srgb, var(--lc) 12%, var(--card));
+    border:1px solid color-mix(in srgb, var(--lc) 45%, transparent); border-radius:999px; padding:5px 11px; }
+  .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
+  .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--lc); }
+
+  /* the pick-four grid: 5 across on desktop (fills the wider column), 4 across on
+     phones. Names wrap; fitPool() shrinks any that don't fit. */
+  .pool{ grid-template-columns:repeat(5,1fr); gap:8px; }
+  .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
+  /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
+     so the longest word fits, then the name wraps at the space onto two lines */
+  .pool .tile .tn{ line-height:1.15; white-space:normal; word-break:normal; overflow-wrap:normal; hyphens:none; -webkit-hyphens:none; }
+  .tile.bad{ animation:shake .4s; border-color:var(--red); }
+
+  /* submit / deselect bar */
+  .submitbar{ display:flex; gap:10px; justify-content:center; margin:2px 2px 0; }
+  .submit-go,.submit-ghost{ appearance:none; border-radius:999px; padding:13px 26px; min-height:50px;
+    font-family:inherit; font-weight:900; font-size:14px; letter-spacing:.03em; cursor:pointer; }
+  .submit-go{ border:0; background:var(--blue); color:#071426; }
+  .submit-go:hover:not(:disabled){ filter:brightness(1.07); }
+  .submit-go:disabled{ background:var(--card2); color:var(--mut); cursor:default; }
+  .submit-ghost{ background:transparent; border:1px solid var(--line2); color:var(--ink); }
+  .submit-ghost:disabled{ opacity:.5; cursor:default; }
+  .mfeedback{ margin:10px 2px 0; text-align:center; font-size:13px; font-weight:800; border-radius:10px; padding:9px 12px; display:none; }
+  .mfeedback.close{ background:rgba(242,182,50,.12); color:var(--goldT); border:1px solid rgba(242,182,50,.35); }
+  .mfeedback.miss{ background:rgba(255,98,95,.10); color:var(--redT); border:1px solid rgba(255,98,95,.35); }
+  .mfeedback.free{ background:rgba(47,107,255,.10); color:var(--blueT); border:1px solid rgba(47,107,255,.32); }
+
+  @media (max-width:760px){
+    .board:empty{ min-height:0 !important; }
+    .pool{ grid-template-columns:repeat(4,1fr); gap:7px; }
+    .pool .tile{ min-height:62px; font-size:12px; }
+    .submit-go,.submit-ghost{ flex:1; padding:13px 12px; }
+  }
+  @media (max-width:380px){
+    .pool .tile{ font-size:11px; }
+    .lane-tile{ font-size:11.5px; padding:5px 8px; }
+  }
 </style>
 </head>
 <body>
@@ -495,21 +556,26 @@
         <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
       </div>
 
+      <!-- solved groups stack here, the category name sitting above its four -->
+      <div class="board" id="board" role="list" aria-label="Solved groups"></div>
+      <!-- revealed-but-unsolved category names (hints) -->
+      <div class="hints" id="hints" aria-label="Revealed categories"></div>
+
       <div class="pool-h">
-        <span class="t">Today's 20</span>
-        <span class="n"><span id="poolCount">20</span> left to place</span>
+        <span class="t">Pick four that go together</span>
+        <span class="n"><span id="poolCount">20</span> names left</span>
         <button class="clearbtn shufbtn" id="shuffleBtn" type="button" aria-label="Shuffle the names">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
           Shuffle
         </button>
       </div>
-      <div class="pool pool-hold" id="pool" role="list" aria-label="Unplaced names"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Names — tap to select four"></div>
 
-      <div class="pool-h groups-h">
-        <span class="t">Build your groups</span>
-        <span class="n">drag or tap a name, then a rack</span>
+      <div class="submitbar" id="submitbar">
+        <button class="submit-ghost" id="btnDeselect" type="button" disabled>Deselect all</button>
+        <button class="submit-go" id="btnSubmit" type="button" disabled>Submit</button>
       </div>
-      <div class="board" id="board" role="list" aria-label="Five group racks"></div>
+      <div class="mfeedback" id="mFeedback" role="status" aria-live="polite"></div>
     </main>
 
     <aside class="side" aria-label="Game status and controls">
@@ -530,7 +596,7 @@
         </button>
         <button class="abtn ghost" id="btnClear" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          Clear board
+          Deselect all
         </button>
         <button class="abtn ghost" id="btnNew" type="button" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
@@ -542,13 +608,13 @@
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
           <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
-          <li><b>Drag a name onto a rack</b>, or tap the name then the rack. Your first group is revealed free to get you rolling.</li>
-          <li>Filled a rack? <b>Hit Check group.</b> Nail it and it locks in; miss and it costs you a guess.</li>
+          <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
+          <li>The easiest group's name is <b>revealed free</b> to get you rolling.</li>
           <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
         </ol>
       </details>
 
-      <div class="card mlb">
+      <div class="card mlb" id="lb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
           <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
@@ -631,11 +697,14 @@
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
   <script src="/arcade/tokens.js?v=1"></script>
   <script src="/arcade/archive.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -705,9 +774,13 @@
     var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
+    var solveTimes = [];               // elapsed seconds at each solve (parallel to solveOrder) - for the share timeline
     var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
+    var sel = [];                      // NYT-style: tile ids currently selected (max GROUP)
+    var lastMissSet = '';              // 'id,id,id,id' of the last wrong submit (blocks re-submitting the same four)
+    var fbT = null;                    // feedback auto-clear timer
     var charged = false, attemptFirst = false;   // play-token economy: one token per attempt, first===ranked
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
     var dealingLane = -1;              // lane currently receiving the auto-dealt final group (suppresses its Check/Clear during the deal)
@@ -759,8 +832,8 @@
 
     // ---- reset play state ----
     function resetState() {
-      place = {}; laneCat = {}; locked = {}; solveOrder = []; lastMissIds = {};
-      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
+      place = {}; laneCat = {}; locked = {}; solveOrder = []; solveTimes = []; lastMissIds = {};
+      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; sel = []; lastMissSet = ''; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
       poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has 20 tiles, so the count-based guard in render() wouldn't catch it)
@@ -771,27 +844,21 @@
     // ---- render ----
     var boardEl = document.getElementById('board'), poolEl = document.getElementById('pool');
 
-    function tileEl(tid, opts) {
-      opts = opts || {};
+    // A selectable name in the pool. No drag/drop (that trapped touch-scroll on
+    // mobile) — you tap to toggle it into your selection of four, then Submit.
+    function tileEl(tid) {
       var t = byId[tid];
+      var isSel = sel.indexOf(tid) >= 0;
       var el = document.createElement('div');
-      el.className = 'tile' + (opts.locked ? ' locked' : '') + (selected === tid ? ' sel' : '');
+      el.className = 'tile' + (isSel ? ' sel' : '');
       el.dataset.tid = tid;
-      var sub = t.sport && t.sport !== 'multi' ? '<span class="sub">' + t.sport + '</span>' : '';
-      el.innerHTML = '<span class="tn">' + escapeHtml(t.name) + '</span>' + (opts.locked ? sub : '');
-      if (opts.color) el.style.cssText = '--lc:' + opts.color;
-      if (!opts.locked) {
-        el.setAttribute('draggable', 'true');
-        el.setAttribute('role', 'button');
-        el.setAttribute('tabindex', '0');
-        el.setAttribute('aria-pressed', selected === tid ? 'true' : 'false');
-        el.setAttribute('aria-label', t.name + (selected === tid ? ', selected' : ''));
-        el.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', tid); selected = tid; });
-        el.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTileClick(tid); }
-        });
-      }
+      el.innerHTML = '<span class="tn">' + escapeHtml(t.name) + '</span>';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+      el.setAttribute('aria-label', t.name + (isSel ? ', selected' : ''));
       el.addEventListener('click', function (e) { e.stopPropagation(); onTileClick(tid); });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTileClick(tid); } });
       return el;
     }
 
@@ -807,129 +874,88 @@
       return '<span class="lane-chip"></span>';
     }
 
+    var DIFF = ['Easiest', 'Easy', 'Medium', 'Hard', 'Trickiest'];
     function render() {
-      // revealed-but-unsolved categories label lanes from the top down (the
-      // free one lands on Group 1). Labels are display-only: any valid four
-      // still locks in any lane, so a label may move if its lane solves as
-      // something else.
-      var revealedQueue = day.lanes.filter(function (l) { return revealedCats[l.id] && !usedCat(l.id); });
-      var revPtr = 0;
-      // lanes
+      // ---- solved groups stack on top, category name above its four names ----
       boardEl.innerHTML = '';
-      for (var i = 0; i < 5; i++) {
+      var order = solveOrder.slice();
+      for (var ai = 0; ai < CATS; ai++) { if (locked[ai] && order.indexOf(ai) < 0) order.push(ai); }  // auto (loss) reveals
+      order.forEach(function (i) {
+        if (!locked[i]) return;
+        var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
+        if (!cat) return;
+        var isAuto = locked[i] === 'auto';
         var lane = document.createElement('div');
-        lane.className = 'lane';
+        lane.className = 'lane locked' + (isAuto ? ' autofill' : '');
         lane.dataset.idx = i;
         lane.setAttribute('role', 'listitem');
-        var isLocked = !!locked[i];
-        var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
-
-        // colour only when something is KNOWN about the lane: solved, or
-        // carrying a revealed-category label. Otherwise stay neutral.
-        var revLabel = (!isLocked && revPtr < revealedQueue.length) ? revealedQueue[revPtr++] : null;
-        var color = isLocked && cat ? cat.color : (revLabel ? revLabel.color : 'var(--lane-neutral)');
-        lane.style.setProperty('--lc', color);
-        if (isLocked) lane.classList.add('locked');
-
+        lane.style.setProperty('--lc', cat.color);
+        var dIdx = -1; for (var dj = 0; dj < day.lanes.length; dj++) { if (day.lanes[dj].id === cat.id) { dIdx = dj; break; } }
         var head = document.createElement('div');
         head.className = 'lane-head';
-        if (isLocked && cat) {
-          // difficulty tag: lane order in day.lanes runs easiest -> trickiest
-          var dIdx = -1; for (var dj = 0; dj < day.lanes.length; dj++) { if (day.lanes[dj].id === cat.id) { dIdx = dj; break; } }
-          var DIFF = ['Easiest', 'Easy', 'Medium', 'Hard', 'Trickiest'];
-          var dTag = dIdx >= 0 ? '<span class="lane-sport" style="color:var(--lc); border-color:color-mix(in srgb, var(--lc) 55%, transparent)">' + DIFF[Math.min(dIdx, DIFF.length - 1)] + '</span>' : '';
-          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
-            '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' + dTag +
-            '<span class="lane-check">✓ Locked</span>';
-        } else if (revLabel) {
-          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
-            '<span class="lane-pill">' + (day.lanes[0] && revLabel.id === day.lanes[0].id ? 'Free' : 'Revealed') + '</span>' +
-            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
-        } else {
-          lane.classList.add('lane-hidden');
-          head.innerHTML = ballChip(i) +
-            '<span class="lane-name">Group ' + (i + 1) + '</span>' +
-            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
-        }
+        head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
+          '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
+          (dIdx >= 0 ? '<span class="lane-sport" style="color:var(--lc);border-color:color-mix(in srgb, var(--lc) 55%, transparent)">' + DIFF[Math.min(dIdx, 4)] + '</span>' : '') +
+          '<span class="lane-check">' + (isAuto ? 'Answer' : '✓') + '</span>';
         lane.appendChild(head);
-
-        var slots = document.createElement('div');
-        slots.className = 'slots';
-        var inLane = tilesInLane(i);
-        for (var s = 0; s < GROUP; s++) {
-          var slot = document.createElement('div');
-          slot.className = 'slot';
-          if (inLane[s] != null) {
-            slot.classList.add('filled');
-            slot.appendChild(tileEl(inLane[s], { locked: isLocked, color: color }));
-          } else {
-            slot.setAttribute('aria-label', 'Empty slot in group ' + (i + 1));
-          }
-          slots.appendChild(slot);
-        }
-        lane.appendChild(slots);
-
-        // explicit submit: a full, unlocked group grows a Check button right
-        // in its header block (where the group name sits)
-        if (!isLocked && i !== dealingLane && laneFillCount(i) === GROUP && !done) {
-          var cb = document.createElement('button');
-          cb.className = 'checkbtn';
-          cb.type = 'button';
-          var curIds = tilesInLane(i).filter(Boolean).sort().join(',');
-          var repeat = lastMissIds[i] === curIds;
-          cb.disabled = repeat;
-          cb.textContent = repeat ? 'Change a name to re-check' : 'Check group';
-          cb.setAttribute('aria-label', 'Check group ' + (i + 1));
-          (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
-          head.appendChild(cb);
-        }
-        // per-rack Clear: dump this rack's names back to the pool in one tap
-        if (!isLocked && i !== dealingLane && laneFillCount(i) > 0 && !done) {
-          var clr = document.createElement('button');
-          clr.className = 'clearbtn';
-          clr.type = 'button';
-          clr.textContent = 'Clear';
-          clr.setAttribute('aria-label', 'Clear group ' + (i + 1));
-          (function (idx) {
-            clr.addEventListener('click', function (e) {
-              e.stopPropagation();
-              day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
-              delete lastMissIds[idx]; selected = null; render(); resumeSave();
-            });
-          })(i);
-          head.appendChild(clr);
-        }
-
-        if (!isLocked) {
-          attachDrop(lane, i);
-          lane.setAttribute('tabindex', '0');
-          lane.setAttribute('aria-label', 'Group ' + (i + 1) + ', ' + laneFillCount(i) + ' of 4 filled' + (selected ? '. Press Enter to place selected name' : ''));
-          (function (idx) {
-            lane.addEventListener('keydown', function (e) {
-              if ((e.key === 'Enter' || e.key === ' ') && selected != null) { e.preventDefault(); placeInLane(selected, idx); }
-            });
-          })(i);
-        } else {
-          lane.setAttribute('aria-label', 'Group ' + (i + 1) + (cat ? ', solved: ' + cat.name : ', solved'));
-        }
+        var names = document.createElement('div');
+        names.className = 'lane-names';
+        day.solution[cat.id].forEach(function (tid) {
+          var chip = document.createElement('span'); chip.className = 'lane-tile'; chip.textContent = byId[tid].name; names.appendChild(chip);
+        });
+        lane.appendChild(names);
         boardEl.appendChild(lane);
+      });
+
+      // ---- revealed-but-unsolved category names, as hint chips ----
+      var hintsEl = document.getElementById('hints');
+      if (hintsEl) {
+        hintsEl.innerHTML = '';
+        day.lanes.forEach(function (l) {
+          if (!revealedCats[l.id] || usedCat(l.id)) return;
+          var c = document.createElement('span'); c.className = 'hint-chip'; c.style.setProperty('--lc', l.color);
+          c.innerHTML = '<span class="hint-dot"></span>' + escapeHtml(l.name) +
+            (day.lanes[0] && l.id === day.lanes[0].id ? ' <em>free</em>' : '');
+          hintsEl.appendChild(c);
+        });
       }
 
-      // pool (rendered in poolOrder so a shuffle just reorders the display)
+      // ---- pool: the remaining names, tap to select (rendered in poolOrder) ----
       poolEl.innerHTML = '';
       if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
       var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
-      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
-      // The boot reservation that stops the pool popping in at full height has
-      // to be dropped the first time it's filled - the pool is legitimately
-      // empty once all twenty names are placed, and holding 669px there would
-      // punch a hole in the page at the most triumphant moment of the puzzle.
+      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id)); });
       poolEl.classList.remove('pool-hold');
       document.getElementById('poolCount').textContent = poolTiles.length;
-      attachPoolDrop();
+      fitPool();
       renderDots();
       updateHintBtn();
       updateProgress();
+      updateSubmit();
+    }
+
+    // Shrink each name until its longest word fits the tile, so names wrap at the
+    // space onto two lines instead of hyphenating or splitting a word mid-letter.
+    function fitPool() {
+      var tns = poolEl.querySelectorAll('.tile .tn');
+      for (var i = 0; i < tns.length; i++) {
+        var tn = tns[i], fs = 13;
+        tn.style.fontSize = fs + 'px';
+        var guard = 0;
+        while (tn.scrollWidth > tn.clientWidth + 0.5 && fs > 8 && guard < 8) { fs -= 1; tn.style.fontSize = fs + 'px'; guard++; }
+      }
+    }
+
+    // Submit / Deselect bar state, driven by the current selection.
+    function updateSubmit() {
+      var go = document.getElementById('btnSubmit'), de = document.getElementById('btnDeselect'), bar = document.getElementById('submitbar');
+      if (!go) return;
+      var full = sel.length === GROUP;
+      var same = full && sel.slice().sort().join(',') === lastMissSet;
+      go.disabled = done || !full || same;
+      go.textContent = same ? 'Change a name' : (full ? 'Submit' : 'Submit (' + sel.length + '/' + GROUP + ')');
+      de.disabled = done || sel.length === 0;
+      if (bar) bar.style.display = done ? 'none' : '';
     }
 
     function tilesInLane(i) {
@@ -968,12 +994,66 @@
 
     // ---- interaction ----
     function onTileClick(tid) {
-      if (done) return;
-      var laneIdx = place[tid];
-      if (laneIdx != null && locked[laneIdx]) return;         // can't move locked tiles
-      if (laneIdx != null) { place[tid] = null; selected = null; startIfNeeded(); render(); resumeSave(); return; } // tap placed tile -> pool
-      selected = (selected === tid) ? null : tid;             // toggle selection in pool
+      if (done || place[tid] != null) return;                 // solved tiles are locked
+      var i = sel.indexOf(tid);
+      if (i >= 0) { sel.splice(i, 1); }
+      else {
+        if (sel.length >= GROUP) { toast('Pick four, then Submit'); return; }
+        sel.push(tid); startIfNeeded();
+      }
+      if (window.RTGSound) RTGSound.place();
+      feedback('', '');
       render();
+    }
+
+    // The one place a group is checked now: the four selected names.
+    function submit() {
+      if (done || sel.length !== GROUP) return;
+      var ids = sel.slice().sort();
+      if (ids.join(',') === lastMissSet) return;              // don't re-submit the identical four
+      var matchCat = null;
+      for (var cid in day.solution) {
+        if (usedCat(cid)) continue;
+        if (setsEqual(ids, day.solution[cid].slice().sort())) { matchCat = cid; break; }
+      }
+      if (matchCat) {
+        var idx = solveOrder.length;                          // next solved row
+        ids.forEach(function (tid) { place[tid] = idx; });
+        locked[idx] = true; laneCat[idx] = matchCat; solveOrder.push(idx); solveTimes.push(elapsedSec());
+        lastMissSet = ''; sel = [];
+        feedback('', '');
+        render(); resumeSave(); playLockAnim(idx);
+        if (solveOrder.length === CATS - 1) autoSolveLast();
+        else if (solveOrder.length === CATS) finish(true);
+      } else {
+        // FAIRNESS (unchanged): never punish a factually-correct four.
+        var lane = allFitSomeLane(ids);
+        var fact = lane ? null : sharedFactLabel(ids);
+        if (lane) {
+          freeMiss(ids, revealedCats[lane.id]
+            ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+            : 'Those four do share something real, but this board needs one in a different group. No guess used.');
+        } else if (fact) {
+          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+        } else {
+          registerMiss(ids);
+        }
+      }
+    }
+
+    function feedback(msg, kind) {
+      var el = document.getElementById('mFeedback'); if (!el) return;
+      el.textContent = msg || '';
+      el.className = 'mfeedback' + (kind ? ' ' + kind : '');
+      el.style.display = msg ? '' : 'none';
+      if (fbT) { clearTimeout(fbT); fbT = null; }
+      if (msg) fbT = setTimeout(function () { el.style.display = 'none'; el.textContent = ''; }, 3600);
+    }
+    function shakeSelected() {
+      sel.forEach(function (tid) {
+        var el = poolEl.querySelector('.tile[data-tid="' + tid + '"]');
+        if (el) { el.classList.add('bad'); setTimeout(function () { el.classList.remove('bad'); }, 420); }
+      });
     }
 
     function placeInLane(tid, laneIdx) {
@@ -1049,7 +1129,7 @@
       }
 
       if (matchCat) {
-        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
+        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx); solveTimes.push(elapsedSec());
         delete lastMissIds[laneIdx];
         render();
         resumeSave();
@@ -1080,64 +1160,20 @@
     // four groups locked -> the last is a gimme. Instead of snapping the four
     // remaining names into place, DEAL them in one at a time, each gliding from
     // the pool into its slot (solitaire-style), then lock and win.
+    // Four groups down → the fifth is forced. Solve it automatically (no
+    // busywork) into a new top row, then win.
     function autoSolveLast() {
-      var freeIdx = -1;
-      for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
       var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
       var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
-      if (freeIdx < 0 || !remId) { finish(true); return; }
-
-      function lockAndWin() {
-        dealingLane = -1;
-        locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
-        delete lastMissIds[freeIdx];
-        render();
-        playLockAnim(freeIdx);
-        popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
-        setTimeout(function () { finish(true); }, 620);
-      }
-
-      // clear the free lane back to the pool so all four true names start there
-      day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
-      var order = day.solution[remId].slice();   // the true four, in solution order
-
-      var reduce = false;
-      try { reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) {}
-      if (reduce) {
-        order.forEach(function (tid) { place[tid] = freeIdx; });
-        lockAndWin();
-        return;
-      }
-
-      laneCat[freeIdx] = remId;   // label the empty lane now so it reads right during the deal
-      dealingLane = freeIdx;      // hide this lane's Check/Clear while the four glide in
+      if (!remId) { finish(true); return; }
+      var idx = solveOrder.length;
+      day.solution[remId].forEach(function (tid) { place[tid] = idx; });
+      locked[idx] = true; laneCat[idx] = remId; solveOrder.push(idx); solveTimes.push(elapsedSec());
+      sel = [];
       render();
-
-      var STEP = 340, GLIDE = 300;
-      order.forEach(function (tid, k) {
-        setTimeout(function () {
-          if (done) return;
-          // FLIP: measure the name where it sits in the pool, place it, then
-          // glide it home from that spot into the freshly-filled slot.
-          var src = poolEl.querySelector('.tile[data-tid="' + tid + '"]') || boardEl.querySelector('.tile[data-tid="' + tid + '"]');
-          var sr = src ? src.getBoundingClientRect() : null;
-          place[tid] = freeIdx; render();
-          var dst = boardEl.querySelector('.lane[data-idx="' + freeIdx + '"] .tile[data-tid="' + tid + '"]');
-          if (dst && sr) {
-            var dr = dst.getBoundingClientRect();
-            var dx = sr.left - dr.left, dy = sr.top - dr.top;
-            dst.style.transition = 'none';
-            dst.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.05)';
-            dst.style.zIndex = '6';
-            void dst.offsetWidth;   // commit the start frame
-            dst.style.transition = 'transform ' + GLIDE + 'ms cubic-bezier(.22,.61,.36,1)';
-            dst.style.transform = 'translate(0,0) scale(1)';
-          }
-          if (window.RTGSound) { (RTGSound.place || RTGSound.soft || function () {}).call(RTGSound); }
-        }, k * STEP);
-      });
-
-      setTimeout(lockAndWin, (order.length - 1) * STEP + GLIDE + 120);
+      playLockAnim(idx);
+      popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
+      setTimeout(function () { finish(true); }, 640);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
@@ -1157,22 +1193,12 @@
       return null;
     }
     // a factually-valid four that isn't this board's split: no guess charged
-    function freeMiss(laneIdx, ids, message) {
-      lastMissIds[laneIdx] = ids.join(',');
+    function freeMiss(ids, message) {
+      lastMissSet = ids.slice().sort().join(',');
       if (window.RTGSound) RTGSound.soft();
-      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-      if (laneEl) {
-        laneEl.classList.add('bad');
-        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
-        var note = document.createElement('div');
-        note.className = 'lane-note close';
-        note.setAttribute('role', 'status');
-        note.textContent = message;
-        laneEl.appendChild(note);
-        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 3400);
-        var cb = laneEl.querySelector('.checkbtn');
-        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
-      }
+      feedback(message, 'free');
+      shakeSelected();
+      updateSubmit();
     }
 
     // off-board shared fact across the four, from RAW entity data (window.GRID_ENTITIES)
@@ -1214,40 +1240,26 @@
       return best === GROUP - 1;
     }
 
-    function registerMiss(laneIdx, ids) {
+    function registerMiss(ids) {
       mistakes++; penalty += 5;
       if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
-      lastMissIds[laneIdx] = ids.join(',');       // block re-checking the identical four
-      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-      if (laneEl) {
-        laneEl.classList.add('bad');
-        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
-        // inline feedback directly beneath the group (not just a distant toast)
-        var note = document.createElement('div');
-        note.className = 'lane-note ' + (close ? 'close' : 'miss');
-        note.setAttribute('role', 'status');
-        note.textContent = close
-          ? 'One away: 3 of these 4 belong together.'
-          : 'Not a group. Swap a name and try again. (−1 guess)';
-        laneEl.appendChild(note);
-        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 2800);
-        // disable this lane's check button until the four change
-        var cb = laneEl.querySelector('.checkbtn');
-        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
-      }
+      lastMissSet = ids.slice().sort().join(',');   // block re-submitting the identical four
+      feedback(close ? 'One away — 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
+      shakeSelected();
       popDot(mistakes - 1);
       renderDots();
       popDot(mistakes - 1);
       updateTimer();
       updateHintBtn();
+      updateSubmit();
       resumeSave();
       if (mistakes >= MISTAKE_LIMIT) { setTimeout(function () { finish(false); }, 650); }
     }
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
 
     // ---- finish (win or 6th-miss fail) ----
-    function finish(won) {
+    function finish(won) { if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('match', DATE);
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
       resumeClear();   // attempt is over - nothing left to resume
@@ -1308,27 +1320,17 @@
     }
 
     function autoSolveReveal() {
-      // fill every unlocked lane with its correct answer, greyed (draft-grade reveal)
+      // on a loss, reveal the remaining answers as greyed "Answer" rows on top
       var used = {}; for (var k in laneCat) { if (locked[k]) used[laneCat[k]] = true; }
-      var remainingCats = day.lanes.map(function (l) { return l.id; }).filter(function (c) { return !used[c]; });
-      var li = 0;
-      for (var i = 0; i < 5; i++) {
-        if (locked[i]) continue;
-        var cid = remainingCats[li++]; laneCat[i] = cid; locked[i] = 'auto';
-        day.solution[cid].forEach(function (tid) { place[tid] = i; });
-      }
-      renderSolved();
-    }
-    function renderSolved() {
-      // re-render with auto lanes shown greyed
-      render();
-      boardEl.querySelectorAll('.lane').forEach(function (laneEl) {
-        var idx = +laneEl.dataset.idx;
-        if (locked[idx] === 'auto') {
-          laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
-          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = 'Answer';
-        }
+      var remaining = day.lanes.map(function (l) { return l.id; }).filter(function (c) { return !used[c]; });
+      var next = 0;
+      remaining.forEach(function (cid) {
+        while (locked[next]) next++;
+        laneCat[next] = cid; locked[next] = 'auto';
+        day.solution[cid].forEach(function (tid) { place[tid] = next; });
+        next++;
       });
+      render();
     }
 
     // ---- grade & coins (design doc §7, §8) ----
@@ -1397,7 +1399,15 @@
         ? ('\uD83E\uDDE9 5/5 \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
         : ('\uD83E\uDDE9 ' + solveOrder.length + '/5 groups');
       if (r.streak) stat += ' \u00B7 streak ' + r.streak;
-      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null });
+      // Solve timeline for the image card: each group as a dot on a time bar at
+      // the second it locked, plus a splits list below. Colors only - no category
+      // names - so the invite never spoils the puzzle. Only when we have a live
+      // time per solve (a resumed board has none -> falls back to the grid card).
+      var timeline = (r.won && solveTimes.length === solveOrder.length && solveOrder.length)
+        ? solveOrder.map(function (idx, i) { return { color: laneById[laneCat[idx]].color, t: solveTimes[i] }; })
+        : null;
+      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null,
+                      timeline: timeline, total: r.won ? r.time : null });
     }
 
     // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
@@ -1444,10 +1454,16 @@
       if (hintBtn.disabled) disarmHint();
     }
 
-    document.getElementById('btnClear').addEventListener('click', function () {
-      if (done) return;
-      day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
-      selected = null; render(); resumeSave();
+    function deselectAll() { if (done) return; sel = []; feedback('', ''); render(); }
+    document.getElementById('btnSubmit').addEventListener('click', submit);
+    document.getElementById('btnDeselect').addEventListener('click', deselectAll);
+    document.getElementById('btnClear').addEventListener('click', deselectAll);
+    // Enter submits when four are selected (keyboard players)
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !done && sel.length === GROUP) {
+        var tag = (e.target && e.target.tagName) || '';
+        if (tag !== 'BUTTON' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); submit(); }
+      }
     });
 
     // ---- shuffle the unplaced names (display order only; nothing about the puzzle changes) ----

@@ -32,6 +32,11 @@
     }catch(e){}
     return null;
   }
+  // The Supabase session access token. The billing endpoints verify it and
+  // derive the user id from it (they no longer trust a body user_id), so a
+  // request without it is rejected 401.
+  function authToken(){ try{ return (window.RTG_AUTH && RTG_AUTH.token && RTG_AUTH.token()) || null; }catch(e){ return null; } }
+  function authHeaders(){ var h={'Content-Type':'application/json'}; var t=authToken(); if(t) h.Authorization='Bearer '+t; return h; }
   function signedIn(){ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()) || !!userId(); }
   function hasCard(){ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }
   function returnPath(){ try{ return location.pathname + location.search; }catch(e){ return '/arcade/'; } }
@@ -65,6 +70,7 @@
       '.rtgc-go{width:100%;box-sizing:border-box;appearance:none;border:0;border-radius:12px;padding:15px;min-height:52px;font-family:var(--hero,inherit);font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:16px;background:var(--gold,#F2B632);color:#20160a;cursor:pointer;margin-top:10px;}',
       '.rtgc-go:hover{filter:brightness(1.05);} .rtgc-go:disabled{opacity:.6;cursor:default;}',
       '.rtgc-terms{font-size:11.5px;color:var(--mut,#93a4bd);margin-top:9px;font-weight:600;}',
+      '.rtgc-terms a{color:inherit;text-decoration:underline;}',
       '.rtgc-ghost{width:100%;box-sizing:border-box;appearance:none;border:1px solid var(--line2,#22304a);background:transparent;color:var(--ink,#eaf0f7);border-radius:12px;padding:12px;min-height:46px;font-weight:800;font-size:13px;cursor:pointer;margin-top:10px;}',
       '.rtgc-ghost:hover{border-color:var(--mut,#93a4bd);}',
       '.rtgc-err{background:color-mix(in srgb,var(--red,#F0653A) 15%,transparent);color:var(--redT,#ff8a72);border-radius:8px;padding:9px 11px;font-size:12.5px;font-weight:600;margin:10px 0 0;}',
@@ -160,7 +166,10 @@
     function updTerms(){
       var t=$('rtgcardTerms'); if(!t) return;
       var p = chosen==='annual'?ANNUAL:MONTHLY;
-      t.textContent = p.bill;
+      // Billing terms + the legal links card networks expect at the point of sale.
+      t.innerHTML = esc(p.bill) +
+        ' &middot; <a href="/terms.html" target="_blank" rel="noopener">Terms</a>' +
+        ' &middot; <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>';
     }
     render(); open();
   }
@@ -235,7 +244,7 @@
     var uid=userId();
     if(!uid){ showErr('Please sign in and try again.'); return; }
     fetch('/api/stripe/checkout', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, plan: plan, return_path: returnPath() })
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){
@@ -243,7 +252,7 @@
         if(d && d.error==='already_active'){ renderMember(); return; }   // server says: you already have a card
         var msg = (d && d.detail) ? ('Checkout error: '+d.detail)
           : (d && d.error==='stripe_not_configured') ? 'Checkout isn’t configured yet (missing keys/prices).'
-          : (d && d.error==='missing_user_id') ? 'Please sign in, then try again.'
+          : (d && (d.error==='missing_user_id'||d.error==='unauthorized')) ? 'Please sign in, then try again.'
           : (d && d.error) ? ('Checkout error: '+d.error)
           : 'Could not start checkout. Please try again.';
         showErr(msg);
@@ -259,7 +268,7 @@
   function portal(){
     var uid=userId(); if(!uid){ if(window.RTGAuthUI) RTGAuthUI.open('signin'); return; }
     return fetch('/api/stripe/portal', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, return_path: returnPath() })
     }).then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(d){ if(d && d.url) location.href=d.url; return d; })

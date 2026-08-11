@@ -517,7 +517,14 @@ window.GA_ID='G-L29P5MRWKE';
   .cta2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   @media(max-width:700px){
     .hero h1{font-size:min(clamp(26px,14.5vw,84px),5.6vh)}
-    .field{max-height:15vh}
+    /* #h-field, NOT .field. This cap is the front page's fold fix and it belongs to
+       the front page's decorative formation, which carries no names and loses
+       nothing by being short. Written as .field it also hit the three fields that
+       are the actual lineup, squashing them to 15vh, and a chip with a name and a
+       team under it is 63px tall however short the box is. Three rows of those in
+       135px cannot avoid each other: every width measured had five overlapping
+       pairs, which is the running back sitting on the receiver. */
+    #h-field{max-height:15vh}
     .stage{margin-bottom:12px}
     .stage .field{margin-top:8px}
     .hnote{margin-top:8px}
@@ -637,6 +644,13 @@ window.GA_ID='G-L29P5MRWKE';
   .field{position:relative;width:100%;aspect-ratio:1/0.54;border-radius:14px;overflow:hidden;
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line);margin:12px 0;contain:layout}
+  /* A LINEUP NEEDS A FLOOR IN PIXELS, NOT A RATIO. A chip is 63px tall whatever the
+     screen: a 34px disc, the surname, and the school-and-year plate. Three rows of
+     them plus breathing room is 197px, and an aspect ratio does not know that, so a
+     narrow phone computed a box far shorter than its own contents. 210px is the
+     floor; wider screens still take the ratio, which is larger. The front page's
+     field is not in this list and keeps its 15vh cap: it has no chips to fit. */
+  #field,#field2,#field3{min-height:210px}
   .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
     rgba(255,255,255,.020) 0 25%,transparent 25% 50%)}
   .field .lit{position:absolute;inset:0;
@@ -1026,7 +1040,7 @@ window.GA_ID='G-L29P5MRWKE';
     border-bottom:1px solid var(--line)}
   .boxscore tbody th{text-align:left;font-family:var(--fd);font-size:17px;letter-spacing:.02em;
     color:var(--ink);width:36%}
-  .boxscore tr.you th{color:#6ee7b7}
+  .boxscore tr.you th{color:var(--youink,#6ee7b7)}
   .boxscore tbody td{color:var(--dim)}
   .boxscore td.tot{font-family:var(--fd);font-size:20px}
   .boxscore tr.win td.tot{color:#fff}
@@ -1039,7 +1053,7 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:13px;border-top:1px solid rgba(255,255,255,.04)}
   .bsp .bsc{color:var(--dim-2);font-size:12px;font-variant-numeric:tabular-nums}
   .bsp .bsw{font-family:var(--fn);font-size:12px;font-weight:800}
-  .bsp.you .bsw{color:#6ee7b7} .bsp.them .bsw{color:#cbd5e1}
+  .bsp.you .bsw{color:var(--youink,#6ee7b7)} .bsp.them .bsw{color:#cbd5e1}
   .bsp .bsk{color:var(--ink)}
   .bsp .bss{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
   .bsnone{font-size:13px;color:var(--dim);text-align:center;padding:14px 0}
@@ -1274,7 +1288,7 @@ window.GA_ID='G-L29P5MRWKE';
     animation:callin .36s var(--ezs) both}
   .pocap .call b{display:block;font-family:var(--fd);font-size:26px;letter-spacing:.03em;line-height:1}
   .pocap .call span{display:block;font-size:11.5px;color:var(--dim);margin-top:3px}
-  .pocap .call.you b{color:#4ade80} .pocap .call.them b{color:#fca5a5}
+  .pocap .call.you b{color:var(--youink,#4ade80)} .pocap .call.them b{color:#fca5a5}
   .pocap .call.big{border-color:rgba(251,191,36,.45)}
   .pocap .call.big b{color:#fcd34d}
   @keyframes callin{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
@@ -1285,7 +1299,7 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .t{flex:0 0 58px;font-family:var(--fn);font-size:11px;color:var(--dim-2)}
   .polog .pl .w{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
-  .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
+  .polog .pl.you .w{color:var(--youink,#86efac)} .polog .pl.them .w{color:#fca5a5}
 
   /* ── drive chart ────────────────────────────────────────────── */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
@@ -1835,7 +1849,13 @@ window.GA_ID='G-L29P5MRWKE';
   .lbmode{margin:11px 0 0}
   .lbmode select{-webkit-appearance:none;appearance:none;width:100%;
     padding:12px 34px 12px 13px;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel);color:var(--ink);font-family:var(--fn);font-size:14px;
+    background:var(--panel);color:var(--ink);font-family:var(--fn);
+    /* THE LONGEST OPTION HAS TO FIT, and it is 305px at 14px: "Perfect COLLEGE
+       Season: Classic Draft". That clears a 390 phone by eight pixels and clips
+       outright at 360 and 320. A native select cannot ellipsize reliably and cannot
+       wrap, so the only honest fix is to let the type shrink exactly as far as the
+       viewport demands and no further: 11px at 320, full size again by 390. */
+    font-size:clamp(11px,calc(4.3vw - 2.8px),14px);
     font-weight:700;cursor:pointer;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
       linear-gradient(135deg,var(--dim) 50%,transparent 50%);
@@ -2095,8 +2115,13 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .mypin{transition:none} }
 
   /* ── your place, on the results screen ──────────────────────── */
+  /* WRAPS, because the sign-in offer is a fourth child of a row built for three.
+     The place, its label and the Board button stay on one line; the offer takes a
+     full line of its own underneath rather than being squeezed in beside them. */
   .placebox{margin:12px 0 0;border:1px solid var(--line);border-radius:12px;
-    background:var(--panel);padding:11px 13px;display:flex;align-items:center;gap:12px}
+    background:var(--panel);padding:11px 13px;display:flex;align-items:center;
+    gap:12px;flex-wrap:wrap}
+  .placebox .gateline{flex:0 0 100%;margin-top:2px}
   .placebox .pv{font-family:var(--fd);font-size:26px;line-height:1;color:var(--ink)}
   .placebox .pv.gold{color:#fbbf24}
   .placebox .pl{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--dim)}
@@ -2515,6 +2540,14 @@ window.GA_ID='G-L29P5MRWKE';
   .rcell.top10 .rn{color:#93c5fd}
   .rcell.dead .rn{color:var(--dim-2);font-size:22px}
   .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
+  /* The sign-in ask, wherever it is made. Ruled off from what is above it because it
+     is an offer rather than more of the result, and :empty so a signed-in player is
+     not left looking at a rule under nothing. */
+  .gateline:empty{display:none}
+  .gateline{margin-top:13px;padding-top:12px;border-top:1px solid var(--line);
+    font-size:12.5px;line-height:1.45;color:var(--dim);text-align:left}
+  .gateline b{color:#fff;font-weight:700}
+  .gateline .btn{margin-top:10px;width:100%}
   .rankwho{margin:7px 0 0;font-size:11.5px;color:var(--dim-2);line-height:1.4}
   .rload{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;
     color:var(--dim)}
@@ -2914,7 +2947,7 @@ or endorsed by the NCAA, the CFP or any school.
     <p class="dim" id="ch-sub" style="font-size:13.5px;line-height:1.45;margin:0 0 14px"></p>
     <div class="verdict" id="ch-card">
       <div class="hero-rec">
-        <div class="modetag" id="ch-mode">Free play</div>
+        <div class="modetag" id="ch-mode">Classic draft</div>
         <div class="eyebrow" style="margin-top:8px">Their team overall</div>
         <div class="big" id="ch-rating" style="font-size:56px">0.0</div>
       </div>
@@ -3333,24 +3366,43 @@ window.addEventListener('error',(ev)=>{
    fill the backfield, and EVERYONE ELSE (receivers, tight ends, and whatever
    flex is still open) shares the line of scrimmage, laid out together by how
    many there are, so no two chips can ever be handed the same coordinate. */
+/* THREE ROWS, SPACED FOR A 63px CHIP. The rows used to sit at 24, 44 and 64, which
+   is 20 percent apart, and 20 percent of a box that a phone computed as 135px is
+   27px. The chips are 63px. Every row overlapped both of its neighbours and the
+   layout could not have worked at any x. The box now has a 210px floor and the rows
+   are spread across it, so a row clears the next one instead of landing in it.
+
+   THAT ALSO FREES THE X AXIS. Two chips clash only if they overlap on BOTH axes, so
+   once the rows are genuinely apart, being in the same column as something on
+   another row is harmless. The old note here forbade the centre column because a
+   receiver's label fell onto the quarterback's disc; that was a symptom of the rows
+   touching, and with them apart the centre is the natural place for a lone back or
+   a lone receiver. Only same-row neighbours still need spacing, and that is set by
+   the widest a chip gets, 78px, which is 21.5% of a 362px field. */
 const SPOTS={
-  QB: [{ x: 50, y: 44 }],
-  RB: [[], [{ x: 28, y: 64 }], [{ x: 28, y: 64 }, { x: 72, y: 64 }]],
+  QB: [{ x: 50, y: 42 }],
+  /* Up to THREE, because both flex spots can take a back. The table stopped at two
+     and row() clamps past the end, so a third back was handed the second one's
+     coordinate exactly and the two chips sat perfectly on top of each other. */
+  RB: [[],
+    [{ x: 50, y: 74 }],
+    [{ x: 28, y: 74 }, { x: 72, y: 74 }],
+    [{ x: 17, y: 74 }, { x: 50, y: 74 }, { x: 83, y: 74 }]],
 };
-/* The line of scrimmage, spread by how many are on it (1 through 4). NOTHING SITS
-   IN THE CENTER COLUMN. The quarterback is at x50 one row down, and this field is
-   short (aspect 1/0.54), so a receiver at x50 would drop its name-and-team label
-   straight onto the quarterback's disc. Every spot here stays clear of the x45-55
-   band the quarterback and its label occupy, so a three-receiver set slots the
-   third man off to the side rather than dead center. */
+/* The line of scrimmage, spread by how many are on it, 1 through 4: receivers,
+   tight ends, and whatever flex is still open. Spacing is set by the widest a chip
+   gets rather than by eye. At the tightest width that still shows a full-size label
+   a chip is 78px against a 362px field, so neighbours need 21.5% between centres;
+   the narrowest gap below is 26%. The old table put two of a three-receiver set at
+   12 and 32, which is 20%, and they overlapped by 2px at every width measured. */
 const REC = [
   [],
-  [{ x: 32, y: 24 }],
-  [{ x: 16, y: 24 }, { x: 84, y: 24 }],
-  [{ x: 12, y: 24 }, { x: 88, y: 24 }, { x: 32, y: 24 }],
-  [{ x: 9, y: 23 }, { x: 33, y: 26 }, { x: 67, y: 26 }, { x: 91, y: 23 }],
+  [{ x: 50, y: 10 }],
+  [{ x: 27, y: 10 }, { x: 73, y: 10 }],
+  [{ x: 11, y: 10 }, { x: 50, y: 10 }, { x: 89, y: 10 }],
+  [{ x: 9, y: 10 }, { x: 36, y: 10 }, { x: 64, y: 10 }, { x: 91, y: 10 }],
 ];
-const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:37,y:27},{x:63,y:27}];
+const SPOT_FALLBACK=[{x:50,y:42},{x:50,y:74},{x:11,y:10},{x:89,y:10},{x:36,y:10},{x:64,y:10}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
@@ -3515,7 +3567,7 @@ function applyTheme(t,remember){
   if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-ink-a','--th-ink-b',
       '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink','--pfpring']
       .forEach(v=>root.style.removeProperty(v));
-    body.classList.remove('themed'); selectedSchool=null;
+    body.classList.remove('themed'); selectedSchool=null; syncYouInk();
     if(remember){ savedSchool=null; try{localStorage.removeItem('cfb_school');}catch(e){} }
     updateAvatar(); return; }
   const a=t.color;
@@ -3537,6 +3589,7 @@ function applyTheme(t,remember){
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
   selectedSchool=t;
+  syncYouInk();
   if(remember){ savedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){} }
   updateAvatar();
 }
@@ -4367,6 +4420,48 @@ let authMsg=null;         // {err} or {ok}
    day cannot re-claim a row that is no longer the one on screen. */
 let pendingClaim=null;
 
+/* ── ASKING FOR THE SIGN-IN, AND PAYING IT OFF ──────────────────────────────
+   This screen used to ask in prose: "Sign in to put your name on it", with no
+   button under it. The player then had to know the avatar in the corner opens an
+   account page, on the one screen where signing in is worth anything. The NFL game
+   puts a button at exactly this moment and converts better, so this is that.
+
+   THREE STATES, NOT TWO, and the third is the one that quietly loses people. A
+   Google sign-in creates an account with no username, and this board lists named
+   seasons only, so that player has signed in, had their season claimed, and is
+   STILL not on the board, with nothing on screen saying why. "Sign in" is the wrong
+   thing to say to them; they already did.
+
+   gateState is one function because the place box and the Where it ranks tab both
+   ask, and two prompts disagreeing about whether you are on the board is worse than
+   either being wrong alone. */
+function gateState(){
+  if(!authState.ready||authState.waiting) return '';
+  if(!authState.signedIn) return 'guest';
+  if(!authState.name) return 'noname';
+  return '';
+}
+const GATE_WORDS={
+  guest:{ say:'Only seasons with a name on them go on the board. This one is saved either way.',
+          act:'Sign in and keep this season' },
+  noname:{ say:'Your season is saved and yours. The board lists seasons by name, so it needs one before it can show this.',
+           act:'Pick your name' },
+};
+function gateCta(){
+  const g=gateState(); if(!g) return '';
+  return '<div class="gateline"><span>'+GATE_WORDS[g].say+'</span>'+
+    '<button class="btn sm" data-gate="'+g+'">'+GATE_WORDS[g].act+'</button></div>';
+}
+/* Delegated, so every repaint of either panel keeps working without rewiring. */
+let signInForBoard=false;
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest&&e.target.closest('[data-gate]'); if(!b) return;
+  const g=b.dataset.gate;
+  if(g==='guest') signInForBoard=true;
+  ga('gate_clicked',{from:'results',state:g});
+  openProfile('account');
+});
+
 function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
@@ -4377,9 +4472,27 @@ function bootAuth(){
     authState=st;
     updateAvatar();
     /* Signing in with a finished season on screen takes it over. */
+    /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
+       repainting a placing is not an answer to "what did I just get". The NFL game
+       says so out loud and, when the sign-in came from the button on the results
+       screen, opens the board on the season that was just added; doing the same
+       here is most of the point of this change.
+
+       And the nameless case is told the truth rather than congratulated: the row
+       exists and is owned, but a board that lists by name still has nothing to show
+       until there is one, so saying "you are on the board" would be a lie the player
+       could check in one tap. */
     if(st.signedIn&&pendingClaim){
       const id=pendingClaim;
-      a.claim(id).then((got)=>{ if(got){ pendingClaim=null; ga('run_claimed'); paintPlace(); } });
+      const wanted=signInForBoard; signInForBoard=false;
+      a.claim(id).then((got)=>{
+        if(!got) return;
+        pendingClaim=null; ga('run_claimed');
+        paintPlace();
+        if(!authState.name){ toast('Season saved. Pick a name to get it on the board'); return; }
+        if(wanted&&run){ closeSheet(); openBoard(runMode(run)); }
+        else toast('Your season is on the board');
+      });
     }
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
@@ -5078,7 +5191,7 @@ function openBoard(mode){
 function paintCompSelect(){
   const sel=$('lb-comp'); if(!sel||!B) return;
   sel.innerHTML=B.MODES.map(m=>'<option value="'+esc(m)+'"'+(m===lbMode?' selected':'')+'>'+
-    esc(modeLabel(m))+'</option>').join('');
+    esc(modeLabelLong(m))+'</option>').join('');
   sel.parentNode.classList.toggle('isconf',lbMode!=='free');
 }
 
@@ -5549,8 +5662,8 @@ async function paintPlace(){
        fact and the one that tells them what to do about it. */
     const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox"><div class="pl">'+
-      'No signed-in season has been put on the'+which+' board this week yet. '+
-      '<b>Sign in</b> and yours is the first.</div>'+
+      'No named season has been put on the'+which+' board this week yet. '+
+      'Yours would be the first.</div>'+gateCta()+
       '<button id="o-lb">Board</button></div>';
   }else{
     myPlace=place;
@@ -5561,13 +5674,13 @@ async function paintPlace(){
        all four and you are 5th of 4. Counting yourself in fixes the arithmetic and is
        also what actually happens the moment you sign in and claim the run. */
     const field=(!authState.signedIn&&count!==null&&place>count)?place:count;
-    const nameLine=authState.signedIn
-      ? '' : ' <b>Sign in</b> to put your name on it.';
+    /* The ask is the button under this line now, so the sentence stops repeating it. */
+    const nameLine='';
     const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox">'+
       '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
       '<div class="pl">of '+(field===null?'the':field.toLocaleString())+which+
-        ' seasons this week.'+nameLine+'</div>'+
+        ' seasons this week.'+nameLine+'</div>'+gateCta()+
       '<button id="o-lb">Board</button></div>';
   }
   const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
@@ -5637,7 +5750,7 @@ async function paintRanksTab(){
   }
   el.innerHTML='<p class="rankwho">'+who+'</p>'+
     '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k])).join('')+'</div>'+
-    (authState.signedIn?'':'<p class="rankfoot"><b>Sign in</b> to put your name on it.</p>');
+    gateCta();
 }
 
 /* paintNewBadges() PAINTED A PANEL HERE, listing what the season had just earned with a
@@ -6067,7 +6180,18 @@ function newRun(){
    one being described and the two can differ the moment somebody picks a
    different mode. */
 const runMode=(r)=>(r&&r.conference)?('conf:'+r.conference):'free';
-const modeLabel=(m)=>m==='free'?'Free play':m.replace(/^conf:/,'')+' draft';
+/* TWO LENGTHS, because the same mode is named in two very different spaces.
+   modeLabel is for the dense ones: a season row already carries a fate, an
+   overall and a date and truncates on a phone before it runs out of things to
+   say, so the mode gets two words there. modeLabelLong is for the leaderboard
+   select, which owns a full-width line of its own and is the one place worth
+   spending the game's name on. The default mode is "Classic Draft" in both;
+   "Free play" is gone, because a board that offers conference drafts alongside
+   it reads better when every option is named after what it is. */
+const modeLabel=(m)=>m==='free'?'Classic draft':m.replace(/^conf:/,'')+' draft';
+const modeLabelLong=(m)=>m==='free'
+  ? 'Perfect COLLEGE Season: Classic Draft'
+  : m.replace(/^conf:/,'')+' Draft';
 
 function beginDraft(conference){
   pendingChallenge=false;
@@ -6081,8 +6205,10 @@ function beginDraft(conference){
 }
 
 /* The badge that says which competition this is, on the draft screen and the
-   results screen. Free play says nothing: the unmarked case is the common one and
-   a badge reading "Free play" on every screen is noise. */
+   results screen. The Classic Draft says nothing: the unmarked case is the common
+   one and a badge naming it on every screen is noise. The leaderboard select does
+   name it, because there it sits beside the conference boards and has to be told
+   apart from them. */
 function paintModeTag(){
   const conf=run&&run.conference;
   for(const id of ['d-mode','o-mode']){
@@ -6584,8 +6710,28 @@ function paintCalendar(justPlayed){
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
 }
 
+/* YOUR SIDE WEARS THE SCHOOL YOU PICKED. Every opponent on the scorebug is washed
+   through E.washColors, and running your own colours through the SAME function is
+   the point: both sides are then treated identically, so a school whose real
+   primary is nearly black or nearly white gets the same lift its opponent would,
+   and no pairing can come out as two panels of the same colour.
+
+   selectedSchool, not savedSchool. Colours are a signed-in feature and
+   selectedSchool is only set while the theme is actually in force, so a guest, or
+   somebody signed out with a school still remembered, keeps the green. This is one
+   function on purpose: the scorebug, the three box scores and the drive charts all
+   read it, so they cannot disagree about what colour you are. */
 const YOU_GREEN={bg:'#0e7a4f',accent:'#6ee7b7'};
-function youColors(){return YOU_GREEN;}
+function youColors(){
+  const t=selectedSchool;
+  if(t&&t.color){ try{ return E.washColors(t.color,t.alt); }catch(e){} }
+  return YOU_GREEN;
+}
+/* The same colour as a CSS variable, for the "YOU" labels that are text rather
+   than a painted panel. Set wherever the theme changes, so the two never drift. */
+function syncYouInk(){
+  try{ document.documentElement.style.setProperty('--youink',youColors().accent); }catch(e){}
+}
 
 /* The broadcast ribbon reads the stakes: a ranked opponent is a showdown, the
    final regular-season week is rivalry week, everything else is just gameday. */
@@ -7938,14 +8084,29 @@ function drawShareCard(){
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{bySlot[run.slotIndex[i]]=p;});
   const COLS=posColors();
+
+  /* THE CARD IS SORTED BY POSITION, NOT BY SLOT, and the chip is painted by the
+     player rather than by the spot he fills. A team sheet reads as a depth chart:
+     quarterback, then the backs, then the receivers, then the tight ends. Slot
+     order scattered them, so a flex running back sat two rows below the other
+     running back with a purple chip between them and the eye had to do the sorting.
+
+     THIS REVERSES AN EARLIER DECISION, deliberately. The chip used to be painted by
+     the slot on the grounds that a green FLEX reads as a second running back. That
+     was true while the rows were in slot order and is not true now: grouped, the
+     colour says what he plays and the word FLEX still says how he got on the field,
+     so the two carry different information instead of competing. The label is
+     still the slot for exactly that reason. */
+  const POS_RANK={QB:0,RB:1,WR:2,TE:3};
+  const rows=[];
+  E.SLOTS.forEach((slot,i)=>{ const p=bySlot[i]; if(p) rows.push({slot,p}); });
+  /* Stable, so two players of the same position keep the order they were drafted. */
+  rows.sort((a,b)=>(POS_RANK[a.p.position]??9)-(POS_RANK[b.p.position]??9));
+
   let y=CARD.ROWS;const ROW=CARD.ROW;
-  E.SLOTS.forEach((slot,i)=>{
-    const p=bySlot[i];if(!p) return;
+  rows.forEach(({slot,p})=>{
     const cw=88,ch=52;const tag=slot||p.position;
-    /* Painted by the SLOT, not the player, so the FLEX chip is the FLEX color whoever
-       is standing in it. Colored by position it came out green under a running back
-       and blue under a receiver, which reads as a second RB rather than a flex. */
-    x.fillStyle=COLS[slot]||COLS[p.position]||'#64748b';
+    x.fillStyle=COLS[p.position]||COLS[slot]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12);x.fill();
     N('700',26);x.fillStyle='#ffffff';
     x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
@@ -8129,7 +8290,7 @@ function rosterFromBlob(t){
   }
   return { roster, slotIndex, chemistry:1+(Number(t.c)||0)/100 };
 }
-const chModeLabel=(t)=> t.conf?(t.conf+' draft'):'Free play';
+const chModeLabel=(t)=> t.conf?(t.conf+' draft'):'Classic draft';
 
 /* The same lineup rows the results screen draws, for a team you did not draft. */
 function renderRosterRows(el,roster,slotIndex){

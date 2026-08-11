@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Daily Word Search | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: shared suite preference in runthegrid_theme; else follow system. */
@@ -14,20 +16,20 @@
 })();
 </script>
 <meta name="description" content="A daily sports word search inside Run The Arcade. Every day a new theme; find all the hidden names against the clock." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Daily Sports Word Search" />
 <meta property="og:description" content="Find every hidden name in the grid. Beat the clock for a clean run." />
 <meta property="og:url" content="https://runthe.gg/arcade/wordsearch/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Daily Sports Word Search" />
 <meta name="twitter:description" content="Find every hidden name in the grid. Beat the clock for a clean run." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/wordsearch/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -217,9 +219,31 @@
 
   /* ===== big stage: enlarge + center the grid on desktop; fill height on mobile ===== */
   @media (min-width:1000px){
-    .wrap{ max-width:860px; }
-    .grid{ max-width:min(64vh,600px); }
-    .board{ padding:16px; }
+    /* desktop: the grid on the left, the word bank + leaderboard as a right rail.
+       Mobile keeps the single stacked column. */
+    .wrap{ max-width:1000px; display:grid; column-gap:26px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 320px;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "info  info"
+        "mode  mode"
+        "board wlab"
+        "board words"
+        "board lb"
+        "acts  lb"
+        "foot  foot"; }
+    .wrap > .topbar{ grid-area:top; }
+    .wrap > .a-gametitle{ grid-area:title; }
+    .wrap > .infobar{ grid-area:info; }
+    .wrap > #modesw{ grid-area:mode; }
+    .wrap > .board{ grid-area:board; align-self:start; padding:16px; }
+    .wrap > .wordslab{ grid-area:wlab; }
+    .wrap > .words{ grid-area:words; align-self:start; }
+    .wrap > .actions{ grid-area:acts; }
+    .wrap > .lb{ grid-area:lb; align-self:start; margin:0; }
+    .wrap > .foot{ grid-area:foot; }
+    .grid{ max-width:min(58vh,560px); }
   }
   @media (max-width:760px){
     .grid{ max-width:min(90vw,64vh); }
@@ -264,7 +288,7 @@
     </button>
   </div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
       <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">–</span></div>
@@ -316,12 +340,15 @@
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -696,7 +723,7 @@
       14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
     return map[n]||'';
   }
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('wordsearch', DATE);
     if(done) return; done=true; if(tick) clearInterval(tick);
     resumeClear();   // attempt is over - nothing left to resume
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

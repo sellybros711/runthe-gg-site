@@ -78,8 +78,12 @@
       '.rtgcal-d{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:13px;font-weight:800;}',
       '.rtgcal-d.blank{visibility:hidden;}',
       '.rtgcal-d.off{color:var(--dim,#7C8DA3);opacity:.38;}',
-      'a.rtgcal-d.on{background:var(--card2,#162B44);border:1px solid var(--line2,rgba(244,247,251,.15));color:var(--ink,#F4F7FB);text-decoration:none;transition:transform .08s,border-color .12s,background .12s;}',
+      'a.rtgcal-d.on{position:relative;background:var(--card2,#162B44);border:1px solid var(--line2,rgba(244,247,251,.15));color:var(--ink,#F4F7FB);text-decoration:none;transition:transform .08s,border-color .12s,background .12s;overflow:visible;}',
       'a.rtgcal-d.on:hover{border-color:var(--c,var(--blue,#2F6BFF));background:color-mix(in srgb, var(--c,var(--blue,#2F6BFF)) 16%, var(--card2,#162B44));transform:translateY(-1px);}',
+      'a.rtgcal-d.today{border-color:var(--c,var(--blue,#2F6BFF));box-shadow:0 0 0 1px var(--c,var(--blue,#2F6BFF)) inset;}',
+      'a.rtgcal-d.done{border-color:var(--green,#48D17A);background:color-mix(in srgb,var(--green,#48D17A) 14%, var(--card2,#162B44));}',
+      '.rtgcal-ck{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:var(--green,#48D17A);color:#06210f;font-size:11px;font-weight:900;line-height:17px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.45);}',
+      '.rtgcal-ckdot{display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--green,#48D17A);color:#06210f;font-size:10px;font-weight:900;line-height:15px;text-align:center;vertical-align:-2px;}',
       '.rtgcal-note{text-align:center;color:var(--dim,#7C8DA3);font-size:11px;margin:16px 2px 2px;line-height:1.5;}',
       '.rtgcal-note a{color:var(--c,var(--blue,#2F6BFF));}'
     ].join('');
@@ -110,13 +114,15 @@
 
   function calBody(g){
     var today=new Date(iso(new Date())+'T00:00:00');
-    var yest=new Date(today); yest.setDate(yest.getDate()-1);
+    var todayIso=iso(today);
     var launch=new Date(LAUNCH+'T00:00:00');
     var startY=launch.getFullYear(), startM=launch.getMonth();
     var dows=['S','M','T','W','T','F','S'];
     var months=[], y=today.getFullYear(), m=today.getMonth();
     while(y>startY || (y===startY && m>=startM)){ months.push([y,m]); m--; if(m<0){ m=11; y--; } }
-    var out='', playable=0;
+    // which days this player has completed (archive PBs + the shared done marker)
+    var done=(window.RTGArchive && RTGArchive.doneDates) ? RTGArchive.doneDates(g.key) : {};
+    var out='', playable=0, doneCount=0;
     for(var i=0;i<months.length;i++){
       var yy=months[i][0], mm=months[i][1];
       var lead=new Date(yy,mm,1).getDay();
@@ -126,12 +132,22 @@
       for(var b=0;b<lead;b++) out+='<div class="rtgcal-d blank"></div>';
       for(var day=1; day<=dim; day++){
         var cd=new Date(yy,mm,day), ds=iso(cd);
-        if(cd>=launch && cd<=yest){ playable++; out+='<a class="rtgcal-d on" href="/arcade/'+g.path+'/?date='+ds+'">'+day+'</a>'; }
+        // playable = launch through TODAY (today included); only the future is greyed out
+        if(cd>=launch && cd<=today){
+          var isDone=!!done[ds]; if(isDone) doneCount++;
+          if(ds!==todayIso) playable++;
+          // today opens its live game on the hub; past days open in archive mode
+          var href = ds===todayIso ? '/arcade/'+g.path+'/' : '/arcade/'+g.path+'/?date='+ds;
+          out+='<a class="rtgcal-d on'+(isDone?' done':'')+(ds===todayIso?' today':'')+'" href="'+href+'">'+day+
+               (isDone?'<span class="rtgcal-ck" aria-label="completed">✓</span>':'')+'</a>';
+        }
         else out+='<div class="rtgcal-d off">'+day+'</div>';
       }
       out+='</div></div>';
     }
-    out+='<div class="rtgcal-note">'+playable+' past day'+(playable===1?'':'s')+' to play. Archive runs don’t affect your streak or the daily leaderboard.<br>Today’s '+esc(g.name)+' is on the <a href="/arcade/">home page</a>.</div>';
+    out+='<div class="rtgcal-note">'+playable+' past day'+(playable===1?'':'s')+' to play'+
+      (doneCount?(' · <span class="rtgcal-ckdot">✓</span> '+doneCount+' completed'):'')+
+      '.<br>Archive runs don’t affect your streak or the daily leaderboard.</div>';
     return out;
   }
 

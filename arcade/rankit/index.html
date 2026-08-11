@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Rank It | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -11,20 +13,20 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Rank It: a daily sports ranking streak game. Put five athletes in the right order by era or career stats. Clear the set, get a new one. One wrong order ends your run." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Rank It: Daily Sports Ordering Game" />
 <meta property="og:description" content="Five athletes. One right order. A new set every day." />
 <meta property="og:url" content="https://runthe.gg/arcade/rankit/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Rank It: Daily Sports Ordering Game" />
 <meta name="twitter:description" content="Five athletes. One right order. A new set every day." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/rankit/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -112,7 +114,11 @@
      shoved 400px down the page a second after first paint. */
   .rows:empty{min-height:412px;}
   /* a rank slot = a detached number block on the left + the draggable card */
-  .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:none; transition:transform .12s;}
+  /* The card body scrolls the page (touch-action:pan-y); on touch, only the
+     number block (.rord) grabs to reorder — so you can scroll past the list on
+     mobile. Desktop still drags anywhere on the card. Arrows work everywhere. */
+  .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:pan-y; transition:transform .12s;}
+  .ritem .rord{touch-action:none;}
   .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
   .rord{flex:0 0 auto; width:40px; align-self:stretch; display:flex; align-items:center; justify-content:center; border-radius:11px; background:var(--card2); border:1px solid var(--line2); font-family:var(--hero); font-weight:400; font-size:19px; color:var(--mut);}
   .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
@@ -323,7 +329,7 @@
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
   <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check. You get two tries per set.</div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
       <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
@@ -376,12 +382,15 @@
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -565,6 +574,9 @@
     items.forEach(function(item){
       item.addEventListener('pointerdown', function(e){
         if(done || busy || drag || e.button===2 || e.target.closest('.ctrl')) return;   // one gesture at a time; let arrows work
+        // On touch, only the number grip starts a drag; touching the card body
+        // lets the page scroll (the ▲▼ arrows still reorder). Mouse/pen drag anywhere.
+        if(e.pointerType === 'touch' && !e.target.closest('.rord')) return;
         e.preventDefault();
         var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9;
         drag={ items:items, item:item, fromIdx:fromIdx, target:fromIdx };
@@ -754,7 +766,7 @@
   // in the right spot" is the near-miss that makes somebody tap Play again -
   // the run line alone can't say it.
   var ENDSLOTS=null;
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('rankit', DATE);
     if(done) return; done=true; busy=false;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

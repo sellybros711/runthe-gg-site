@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Alma Mater | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -11,20 +13,20 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Alma Mater: a daily sports streak game. Name the college each NBA, NFL or MLB player came from. Four choices, one right. Easy to start, tougher as your run grows." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Alma Mater: Daily College Sports Game" />
 <meta property="og:description" content="Name the college every player came from. How long can your streak last?" />
 <meta property="og:url" content="https://runthe.gg/arcade/almamater/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Alma Mater: Daily College Sports Game" />
 <meta name="twitter:description" content="Name the college every player came from. How long can your streak last?" />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/almamater/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -222,7 +224,7 @@
   <div class="choices" id="choices"></div>
   <div class="hintline" id="hintline">Tap the school they played for.</div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
       <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
@@ -274,13 +276,16 @@
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/mode.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="/arcade/favteam.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -534,7 +539,7 @@
   // the square where it ended is the whole point (this is the shape that
   // made Wordle spread).
   var ANSLOG=[];
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('almamater', DATE);
     if(done) return; done=true;
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;

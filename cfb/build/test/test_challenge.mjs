@@ -97,7 +97,7 @@ await B.goto('http://localhost:8080/cfb/index.html?k='+kParam,{waitUntil:'domcon
 await B.waitForTimeout(2500);
 ok('the accept screen takes over', !!(await B.$('#s-challenge.on')));
 ok('named after the sender', (await B.textContent('#ch-title')).includes('coachprime'));
-ok('mode is shown', /Free play|draft/.test(await B.textContent('#ch-mode')), await B.textContent('#ch-mode'));
+ok('mode is shown', /Classic draft|draft/.test(await B.textContent('#ch-mode')), await B.textContent('#ch-mode'));
 const bSeen=await B.$$eval('#ch-rost .rrow .nm b',(els)=>els.map(e=>e.textContent));
 ok('all six of the sender\'s players survive the trip', bSeen.length===6&&bSeen.join('|')===aNames.join('|'));
 const chRating=parseFloat(await B.textContent('#ch-rating'));

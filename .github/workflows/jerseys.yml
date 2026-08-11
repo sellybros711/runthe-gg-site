@@ -1,5 +1,10 @@
 name: Refresh jersey stints
 on:
+  # Daily refresh so the Number Game tracks live rosters (offseason moves,
+  # mid-season trades). The commit is guarded (scripts/guard-jerseys.mjs): a
+  # throttled/partial scrape is rejected so it can never wipe good data.
+  schedule:
+    - cron: '17 9 * * *'   # ~09:17 UTC daily
   workflow_dispatch:
     inputs:
       only:
@@ -19,7 +24,7 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,8 +41,12 @@ jobs:
           name: jerseys
           path: arcade/jerseys*.js
           if-no-files-found: warn
+      - name: Guard against a throttled / truncated scrape
+        if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
+        run: node scripts/guard-jerseys.mjs
+      # Scheduled runs always commit (guarded above); manual runs commit only when asked.
       - name: Commit if requested
-        if: ${{ github.event.inputs.commit == 'true' && github.event.inputs.only == '' }}
+        if: ${{ (github.event_name == 'schedule' || github.event.inputs.commit == 'true') && github.event.inputs.only == '' }}
         run: |
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"

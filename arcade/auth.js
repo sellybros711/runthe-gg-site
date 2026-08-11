@@ -31,6 +31,7 @@
   var sb = null;
   var session = null;
   var profile = null;                 // { username }
+  var recovery = false;               // true after arriving via a password-reset link
   var listeners = [];
 
   function fire() { for (var i = 0; i < listeners.length; i++) { try { listeners[i](state()); } catch (e) {} } }
@@ -40,7 +41,8 @@
       signedIn: !!session,
       email: session && session.user && session.user.email,
       userId: session && session.user && session.user.id,
-      name: profile && profile.username
+      name: profile && profile.username,
+      recovery: recovery
     };
   }
 
@@ -105,6 +107,9 @@
     } catch (e) { sb = null; return false; }
     sb.auth.onAuthStateChange(function (evt, s) {
       if (evt === 'INITIAL_SESSION') return;   // getSession() below handles the first read
+      // Arrived from a reset email: supabase-js parsed the recovery token into a
+      // short-lived session. Flag it so the UI can show "set a new password".
+      if (evt === 'PASSWORD_RECOVERY') recovery = true;
       session = s || null;
       if (session) bridgeSession(); else bridgeClear();
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
@@ -209,6 +214,27 @@
     });
   }
 
+  // ---- password reset ----------------------------------------------------------
+  // Step 1: email a reset link. redirectTo brings the reader back to the page they
+  // asked from; on arrival supabase-js fires PASSWORD_RECOVERY (handled above) and
+  // the UI shows the "set a new password" step. We do not reveal whether the email
+  // exists - the caller shows the same "check your email" note either way.
+  function resetPassword(email) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return wrap(sb.auth.resetPasswordForEmail(String(email || '').trim(), {
+      redirectTo: location.origin + location.pathname
+    }));
+  }
+  // Step 2: set the new password inside the recovery session. On success the reader
+  // is signed in with the new password; clear the recovery flag so the UI moves on.
+  function updatePassword(newPassword) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return wrap(sb.auth.updateUser({ password: newPassword })).then(function (r) {
+      if (!r.error) { recovery = false; fire(); }
+      return r;
+    });
+  }
+
   var token = function () { return (session && session.access_token) || null; };
 
   // Ending the account is one RPC (supabase/65_delete_account.sql). A refusal (e.g. a
@@ -231,6 +257,7 @@
     state: state,
     onChange: function (f) { listeners.push(f); if (sb) f(state()); return function () {}; },
     signIn: signIn, signUp: signUp, signInGoogle: signInGoogle, signOut: signOut,
-    available: available, setName: setName, token: token, deleteAccount: deleteAccount
+    available: available, setName: setName, token: token, deleteAccount: deleteAccount,
+    resetPassword: resetPassword, updatePassword: updatePassword
   };
 })();

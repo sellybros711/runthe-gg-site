@@ -173,26 +173,186 @@
     var no = puzzleNo(spec.date);
     if (no) { g.font = '900 34px Archivo, sans-serif'; g.fillStyle = accent; g.fillText('#' + no, W / 2, 262); }
 
-    // the grid, drawn as rounded squares and auto-fit to a comfortable box
-    var rows = String(spec.grid || '').split('\n').map(emojiCells).filter(function (r) { return r.length; });
-    var top = 320, boxH = 620, boxW = 860, bx0 = (W - boxW) / 2;
-    if (rows.length) {
+    var top = 320, boxH = 620;
+    // Each game gets its OWN picture of how the run went - never the generic
+    // Wordle squares. Daily Match draws a solve timeline; the rest dispatch to a
+    // bespoke renderer below (streak motifs for the streak games, a time hero for
+    // the timed ones, a dossier for Guess). All read the stat the game already
+    // passes (statInt / stat), so no per-game wiring is needed. handledStat=true
+    // means the art already shows the score, so we skip the generic ribbon.
+    var handledStat = false;
+    var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
+    var ART = { table:artLadder, oddone:artStreak, career:artPath, almamater:artPennant,
+                rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artCross,
+                match:artMatch };
+    if (tl) { drawTimeline(tl, spec.total, top, boxH); }
+    else if (ART[spec.key]) { ART[spec.key](spec, top, boxH); handledStat = true; }
+    else { drawGrid(spec, top, boxH); }
+
+    function fmtT(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+    function cbig(txt, y, size, color) { g.textAlign = 'center'; g.font = '400 ' + size + 'px Anton, Impact, sans-serif'; g.fillStyle = color; g.fillText(txt, W / 2, y); }
+    function clabel(txt, y, color) { g.textAlign = 'center'; g.font = '900 30px Archivo, sans-serif'; ls('.14em'); g.fillStyle = color || '#8AA0B8'; g.fillText(String(txt).toUpperCase(), W / 2, y); ls('0px'); }
+
+    // fallback: the old emoji grid, for any key without a bespoke renderer
+    function drawGrid(spec, top, boxH) {
+      var rows = String(spec.grid || '').split('\n').map(emojiCells).filter(function (r) { return r.length; });
+      var boxW2 = 860;
+      if (!rows.length) return;
       var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 1);
-      var gap, cell = Math.min(150, Math.floor(boxW / cols) - 16, Math.floor(boxH / rows.length) - 16);
+      var gap, cell = Math.min(150, Math.floor(boxW2 / cols) - 16, Math.floor(boxH / rows.length) - 16);
       cell = Math.max(28, cell); gap = Math.max(8, Math.round(cell * 0.14));
-      var gw = cols * cell + (cols - 1) * gap, gh = rows.length * cell + (rows.length - 1) * gap;
-      var oy = top + (boxH - gh) / 2;
+      var gh = rows.length * cell + (rows.length - 1) * gap, oy = top + (boxH - gh) / 2;
       rows.forEach(function (r, ri) {
         var ox = (W - (r.length * cell + (r.length - 1) * gap)) / 2;
-        r.forEach(function (col, ci) {
-          g.fillStyle = col; rr(ox + ci * (cell + gap), oy + ri * (cell + gap), cell, cell, Math.round(cell * 0.2)); g.fill();
-        });
+        r.forEach(function (col, ci) { g.fillStyle = col; rr(ox + ci * (cell + gap), oy + ri * (cell + gap), cell, cell, Math.round(cell * 0.2)); g.fill(); });
+      });
+    }
+
+    // ---- Number Game: the run as a rising staircase of bars ----
+    function artLadder(spec) {
+      var run = Math.max(0, spec.statInt | 0);
+      cbig(String(run), 560, 240, accent); clabel('in a row', 628);
+      var n = Math.min(Math.max(run, 1), 12), bw = 46, gap = 16;
+      var bx = (W - (n * bw + (n - 1) * gap)) / 2, baseY = 850, maxH = 150;
+      for (var i = 0; i < n; i++) { var h = Math.round(maxH * ((i + 1) / n)); g.fillStyle = (i === n - 1 ? accent : accent + '55'); rr(bx + i * (bw + gap), baseY - h, bw, h, 9); g.fill(); }
+    }
+    // ---- Odd One Out: a run of correct picks, then the miss that ended it ----
+    function artStreak(spec) {
+      var run = Math.max(0, spec.statInt | 0);
+      cbig(String(run), 560, 240, accent); clabel('in a row', 628);
+      var n = Math.min(run, 8), items = n + 1, r = 30, gap = 26;
+      var tw = items * (r * 2) + (items - 1) * gap, sx = (W - tw) / 2 + r, y = 800;
+      for (var i = 0; i < items; i++) {
+        var x = sx + i * (r * 2 + gap), miss = i === items - 1 && run >= 0;
+        g.beginPath(); g.arc(x, y, r, 0, 7);
+        g.fillStyle = miss ? '#E5484D' : accent; g.fill();
+        g.fillStyle = '#0B1B30'; g.font = '900 30px Archivo, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(miss ? '✕' : '✓', x, y + 2); g.textBaseline = 'alphabetic';
+      }
+    }
+    // ---- Career Path: the run drawn as a journey of connected nodes ----
+    function artPath(spec) {
+      var run = Math.max(0, spec.statInt | 0);
+      cbig(String(run), 560, 240, accent); clabel('in a row', 628);
+      var n = Math.min(Math.max(run, 2), 7), bx = 150, bw = W - 300, y0 = 790, amp = 60;
+      g.strokeStyle = accent; g.lineWidth = 8; g.lineJoin = 'round'; g.beginPath();
+      var pts = [];
+      for (var i = 0; i < n; i++) { var x = bx + (n === 1 ? bw / 2 : bw * i / (n - 1)); var y = y0 + (i % 2 ? amp : -amp); pts.push([x, y]); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+      g.stroke();
+      pts.forEach(function (p, i) { g.beginPath(); g.arc(p[0], p[1], 17, 0, 7); g.fillStyle = '#0B1B30'; g.fill(); g.beginPath(); g.arc(p[0], p[1], 13, 0, 7); g.fillStyle = accent; g.fill(); });
+    }
+    // ---- Alma Mater: the run flown as a row of pennants ----
+    function artPennant(spec) {
+      var run = Math.max(0, spec.statInt | 0);
+      cbig(String(run), 560, 240, accent); clabel('in a row', 628);
+      var n = Math.min(Math.max(run, 1), 9), pw = 70, gap = 18, sx = (W - (n * pw + (n - 1) * gap)) / 2, y = 760;
+      for (var i = 0; i < n; i++) { var x = sx + i * (pw + gap);
+        g.fillStyle = i % 2 ? accent : accent + '99'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + pw, y); g.lineTo(x + pw, y + 70); g.lineTo(x + pw / 2, y + 50); g.lineTo(x, y + 70); g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2; g.stroke(); }
+    }
+    // ---- Rank It: a leaderboard-style stack of bars ----
+    function artRank(spec) {
+      var r = Math.max(0, spec.statInt | 0);
+      cbig(String(r), 540, 220, accent); clabel('best run', 604);
+      var rows = 5, bw0 = 300, step = 90, bx = W / 2 - 250, y0 = 690, bh = 40, gap = 20;
+      for (var i = 0; i < rows; i++) { var w = bw0 + i * step; g.fillStyle = i === rows - 1 ? accent : accent + (i < 2 ? '44' : '77'); rr(bx, y0 + i * (bh + gap), w, bh, 12); g.fill(); }
+    }
+    // ---- Guess the Player: a scouting dossier - cracked in N of 8 ----
+    function artDossier(spec) {
+      var won = spec.statInt != null && !isNaN(spec.statInt), used = won ? (spec.statInt | 0) : 8;
+      clabel('scouting report', 430);
+      cbig(won ? (used + '/8') : 'MISS', 600, won ? 200 : 150, won ? accent : '#E5484D');
+      clabel(won ? 'cracked it' : 'the one that got away', 668, won ? '#8AA0B8' : '#E5A5A5');
+      var pips = 8, r = 26, gap = 22, tw = pips * (r * 2) + (pips - 1) * gap, sx = (W - tw) / 2 + r, y = 800;
+      for (var i = 0; i < pips; i++) { var x = sx + i * (r * 2 + gap), lit = won && i < used;
+        g.beginPath(); g.arc(x, y, r, 0, 7);
+        if (lit) { g.fillStyle = accent; g.fill(); } else { g.fillStyle = 'rgba(255,255,255,.06)'; g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.18)'; g.stroke(); }
+      }
+    }
+    // ---- Word Search / Crossword: a stopwatch hero + the game's own icon feel ----
+    function artClock(spec) {
+      var secs = Math.max(0, spec.statInt | 0);
+      var cx = W / 2, cy = 560, R = 150;
+      g.lineWidth = 16; g.strokeStyle = 'rgba(255,255,255,.09)'; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+      g.strokeStyle = accent; g.lineCap = 'round'; g.beginPath(); g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 1.5); g.stroke(); g.lineCap = 'butt';
+      // stem + crown so it reads as a stopwatch
+      g.fillStyle = accent; rr(cx - 22, cy - R - 34, 44, 22, 6); g.fill(); rr(cx - 6, cy - R - 46, 12, 16, 4); g.fill();
+      cbig(fmtT(secs), cy + 22, 108, '#F4F7FB');
+      clabel('to clear the board', 780);
+    }
+    // ---- Crossword: a mini crossword grid hero + the solve time (distinct from
+    // Word Search's stopwatch so the two timed games never share a card) ----
+    function artCross(spec) {
+      var secs = Math.max(0, spec.statInt | 0);
+      clabel('mini crossword', 420);
+      var N = 5, cell = 58, gap = 8, tw = N * cell + (N - 1) * gap, sx = (W - tw) / 2, sy = 452;
+      var blocks = { '0,4':1, '2,2':1, '4,0':1 };                 // classic blocked cells
+      var letters = { '0,0':'R', '0,1':'T', '0,2':'G', '2,0':'G', '4,4':'G' };
+      for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
+        var x = sx + c * (cell + gap), y = sy + r * (cell + gap), k = r + ',' + c;
+        if (blocks[k]) { g.fillStyle = 'rgba(255,255,255,.10)'; rr(x, y, cell, cell, 9); g.fill(); continue; }
+        g.fillStyle = '#F4F7FB'; rr(x, y, cell, cell, 9); g.fill();
+        if (letters[k]) { g.fillStyle = '#10233A'; g.textAlign = 'center'; g.font = '400 40px Anton, Impact, sans-serif'; g.fillText(letters[k], x + cell / 2, y + cell / 2 + 15); }
+      }
+      cbig(fmtT(secs), 850, 96, accent); clabel('to solve', 908);
+    }
+    // ---- Daily Match, no-timeline case (a loss or a resumed board): groups
+    // solved out of five, so the losing/partial share still gets a bespoke card
+    // instead of the generic emoji grid. ----
+    function artMatch(spec) {
+      var m = /(\d)\s*\/\s*5/.exec(spec.stat || '');
+      var solved = m ? (+m[1]) : (spec.statInt != null ? 5 : 0);
+      var won = solved >= 5;
+      clabel('daily match', 430);
+      cbig(solved + '/5', 600, 200, won ? accent : '#E5484D');
+      clabel(won ? 'board cleared' : 'groups found', 668, won ? '#8AA0B8' : '#E5A5A5');
+      var n = 5, cw = 128, gap = 20, tw = n * cw + (n - 1) * gap, sx = (W - tw) / 2, y = 770, ch = 74;
+      for (var i = 0; i < n; i++) {
+        var x = sx + i * (cw + gap), lit = i < solved;
+        if (lit) { g.fillStyle = accent; rr(x, y, cw, ch, 16); g.fill(); }
+        else { g.fillStyle = 'rgba(255,255,255,.06)'; rr(x, y, cw, ch, 16); g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.18)'; rr(x, y, cw, ch, 16); g.stroke(); }
+      }
+    }
+    function drawTimeline(items, total, top, boxH) {
+      total = total || items[items.length - 1].t || 1; if (total <= 0) total = 1;
+      var bx0 = 130, bx1 = W - 130, bw = bx1 - bx0, by = top + 120, th = 24;
+      // track
+      g.fillStyle = 'rgba(255,255,255,.09)'; rr(bx0, by - th / 2, bw, th, th / 2); g.fill();
+      // progress fill up to the last group
+      var lastX = bx0 + Math.min(1, items[items.length - 1].t / total) * bw;
+      var fg = g.createLinearGradient(bx0, 0, lastX, 0); fg.addColorStop(0, accent + 'AA'); fg.addColorStop(1, accent);
+      g.fillStyle = fg; rr(bx0, by - th / 2, Math.max(th, lastX - bx0), th, th / 2); g.fill();
+      // a dot per group at its lock time (dark halo so light dots read on the bar)
+      items.forEach(function (s) {
+        var x = bx0 + Math.min(1, s.t / total) * bw;
+        g.fillStyle = '#0B1B30'; g.beginPath(); g.arc(x, by, 34, 0, 7); g.fill();
+        g.fillStyle = s.color; g.beginPath(); g.arc(x, by, 26, 0, 7); g.fill();
+        g.lineWidth = 5; g.strokeStyle = '#F4F7FB'; g.beginPath(); g.arc(x, by, 26, 0, 7); g.stroke();
+      });
+      // end labels (a touch below the dots so they never kiss the halos)
+      g.font = '800 30px Archivo, sans-serif'; g.fillStyle = '#8AA0B8';
+      g.textAlign = 'left'; g.fillText('0:00', bx0, by + 78);
+      g.textAlign = 'right'; g.fillText(fmtT(total), bx1, by + 78);
+      g.textAlign = 'center';
+      // splits list: rank · color chip · cumulative time · (+split), in solve order.
+      // Vertically centered in the gap between the timeline and the stat pill so
+      // the five rows breathe evenly instead of crowding the pill below.
+      var lx = W / 2 - 210, listTop = by + 128, rowH = 62;
+      items.forEach(function (s, i) {
+        var cy = listTop + i * rowH, prev = i ? items[i - 1].t : 0;
+        g.textAlign = 'left';
+        g.font = '900 30px Archivo, sans-serif'; g.fillStyle = accent; g.fillText(String(i + 1), lx, cy + 38);
+        g.fillStyle = s.color; rr(lx + 42, cy + 4, 46, 46, 12); g.fill();
+        g.font = '400 52px Anton, Impact, sans-serif'; g.fillStyle = '#F4F7FB'; g.fillText(fmtT(s.t), lx + 116, cy + 44);
+        g.font = '800 29px Archivo, sans-serif'; g.fillStyle = '#6E8298'; g.fillText('+' + fmtT(s.t - prev), lx + 296, cy + 40);
+        g.textAlign = 'center';
       });
     }
 
     // stat ribbon - font auto-fits so a long line (a Word Search theme + time)
     // stays inside the pill and the card instead of bleeding off both edges.
-    var sy = top + boxH + 70, label = stripEmoji(spec.stat);
+    // Skipped when a bespoke renderer already shows the score (handledStat).
+    var sy = top + boxH + 70, label = handledStat ? '' : stripEmoji(spec.stat);
     if (label) {
       var maxRibbon = 960, pad = 44, maxText = maxRibbon - pad * 2, fs = 70;
       g.font = '400 ' + fs + 'px Anton, Impact, sans-serif';
@@ -239,11 +399,11 @@
         blob = b;
         var file = (b && window.File) ? new File([b], 'runthe-arcade-' + spec.key + '.png', { type: 'image/png' }) : null;
         if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          // No `title`: iMessage and others print the share title as its own
-          // line ABOVE the text, which already opens with "Run The Arcade —
-          // <game> #N" - so a title just repeats the brand. The text carries
-          // everything, so the title is pure duplication.
-          navigator.share({ files: [file], text: text })
+          // Explicit empty title: omitting it lets some targets fall back to the
+          // page's document.title ("Run The Arcade: ...") and print it as a line
+          // ABOVE the text, which already opens with "Run The Arcade — <game> #N".
+          // title:'' suppresses that duplicate; the text carries everything.
+          navigator.share({ files: [file], text: text, title: '' })
             .catch(function (e) { if (e && e.name === 'AbortError') return; if (blob) { download(blob, spec.key); copyText(text); } else fire(text, spec.statInt); });
           return;
         }

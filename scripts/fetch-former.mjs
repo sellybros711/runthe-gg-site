@@ -320,6 +320,7 @@ async function buildNFL() {
     const teams = Object.keys(e.teams).sort((a, b) => e.teams[a] - e.teams[b]);
     let f = 3; if (nseason >= 8 || (hp && pick && pick <= 15)) f = 4;
     if (f < 4 && !isWhitelisted('NFL', e.name)) continue;
+    if (posNFL(e.pos) === 'Long Snapper') continue;   // no one recognizes long snappers - keep them out of every game
     players.push({
       id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams, col: e.col || null,
       j: Object.keys(e.jerseys).map(Number).sort((a, b) => a - b).slice(0, 4),

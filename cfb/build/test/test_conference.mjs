@@ -154,6 +154,16 @@ console.log('\n=== the wheel never leaves the conference ===');
 
 console.log('\n=== a conference season, all the way through ===');
 {
+  /* EMPTY FIRST, the same reason test_board_e2e does it. The competition check
+     below reads the NEWEST row in cfb_runs and expects it to be the season this
+     block just played. Rows left by whatever ran before, and this suite is usually
+     run after test_board_e2e, mean that assertion can be answered by somebody
+     else's free-play season. It then reports run_mode "free" on a Pac-12 run,
+     which reads exactly like the competition failing to record and is not: the
+     same block passes on an empty table. A suite that fails on what ran before it
+     is worse than no suite, because the next person spends the afternoon looking
+     for a bug in the game. */
+  psql('truncate cfb_runs');
   seedNamed('conf:Pac-12', 'pacfield');
   const page = await open();
   await pickConference(page, 'Pac-12');

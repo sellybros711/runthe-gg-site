@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Daily Sports Crossword</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: manual choice persists in runthegrid_theme (shared across the
@@ -18,20 +20,20 @@
 })();
 </script>
 <meta name="description" content="One sports crossword a day. Fill the grid, beat the clock, keep your streak alive, a daily crossword inside Run The Arcade on RunThe.GG." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=1" />
-<link rel="apple-touch-icon" href="/arcade/assets/arcade-icon.png?v=1" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Daily Sports Crossword" />
 <meta property="og:description" content="A sports mini crossword, fresh every day. Beat the clock for a flawless solve." />
 <meta property="og:url" content="https://runthe.gg/arcade/crossword/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Daily Sports Crossword" />
 <meta name="twitter:description" content="A sports mini crossword, fresh every day. Beat the clock for a flawless solve." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
 <link rel="canonical" href="https://runthe.gg/arcade/crossword/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -285,7 +287,29 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ===== big stage: enlarge + center the board on desktop ===== */
   @media (min-width:1000px){
-    .wrap{ max-width:680px; }
+    /* desktop: board + clue bar on the left, the leaderboard as a right rail,
+       the Across/Down lists full-width below. Mobile keeps the single column. */
+    .wrap{ max-width:1040px; display:grid; column-gap:28px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 336px;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "info  lb"
+        "clue  lb"
+        "board lb"
+        "ctrl  lb"
+        "lists lists"
+        "foot  foot"; }
+    .wrap > .topbar{ grid-area:top; }
+    .wrap > .a-gametitle{ grid-area:title; }
+    .wrap > .inforow{ grid-area:info; }
+    .wrap > .cluebar{ grid-area:clue; }
+    .wrap > .board-wrap{ grid-area:board; }
+    .wrap > .controls{ grid-area:ctrl; }
+    .wrap > .lists{ grid-area:lists; }
+    .wrap > .lb{ grid-area:lb; align-self:start; margin:0; }
+    .wrap > .foot{ grid-area:foot; }
+    .wrap > .kbd{ display:none; }   /* physical keyboard on desktop */
   }
 </style>
 </head>
@@ -342,7 +366,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="list"><h3>Down</h3><ol id="listD"></ol></div>
   </div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="pill">Sample</span></h3>
     <div class="lb-you">
       <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">–</span></div>
@@ -419,11 +443,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/funnel.js?v=1"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=1"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=1"></script>
+<script src="/arcade/alltime.js?v=1"></script>
 <script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/topbanner.js?v=1"></script>
 <script src="/arcade/auth-ui.js?v=1"></script>
 <script src="/arcade/card.js?v=1"></script>
 <script src="/arcade/calendar.js?v=1"></script>
@@ -817,7 +844,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(cwToastT) clearTimeout(cwToastT); cwToastT=setTimeout(function(){ el.classList.remove('on'); }, 2800);
   }
 
-  function finish(){
+  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
     done=true; if(tick) clearInterval(tick);
     clearResume();   // attempt is over - nothing left to restore
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
