@@ -86,7 +86,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "SMITH",
-        "clue": "Cowboys great Emmitt ___"
+        "clue": "Cowboys Hall of Famer Emmitt ___"
       },
       {
         "num": 2,
@@ -94,7 +94,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 2,
         "answer": "FAVRE",
-        "clue": "Packers great Brett ___"
+        "clue": "Packers Hall of Famer Brett ___"
       },
       {
         "num": 3,
@@ -354,7 +354,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 0,
         "answer": "ELWAY",
-        "clue": "Broncos great John ___"
+        "clue": "Broncos Hall of Famer John ___"
       },
       {
         "num": 6,
@@ -411,7 +411,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 4,
         "answer": "BRETT",
-        "clue": "Royals great George ___"
+        "clue": "Royals Hall of Famer George ___"
       },
       {
         "num": 4,

@@ -161,10 +161,13 @@
     // the generic "star of the era / standout" wordings are a last resort,
     // right for individual-sport athletes (boxing, tennis, F1) with no team.
     var rich = [];
+    // "<Team> great" is never used. Hall of Famers are clued as such; everyone
+    // else is clued by something they DID - position, era on the team.
     if (e.hof && tn) rich.push({ t: tn + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true, team: tn } });
     if (tn && pos) rich.push({ t: tn + ' ' + pos + ' ' + fn + ' ___', used: { team: tn, pos: e.pos } });
     if (pos && era) rich.push({ t: fn + ' ___, ' + e.sport + ' ' + pos + ' of the ' + era, used: { sport: e.sport, pos: e.pos, era: dec } });
-    if (tn) rich.push({ t: tn + ' great ' + fn + ' ___', used: { team: tn } });
+    if (tn && era) rich.push({ t: tn + ' standout of the ' + era + ', ' + fn + ' ___', used: { team: tn, era: dec } });
+    if (tn && pos && era) rich.push({ t: fn + ' ___, ' + tn + ' ' + pos + ' in the ' + era, used: { team: tn, pos: e.pos, era: dec } });
     if (e.hof) rich.push({ t: e.sport + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true } });
     var lean = [];
     if (era) lean.push({ t: fn + ' ___, ' + e.sport + ' star of the ' + era, used: { sport: e.sport, era: dec } });
