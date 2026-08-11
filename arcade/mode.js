@@ -131,30 +131,12 @@
     document.addEventListener('DOMContentLoaded', function () { setTimeout(mountLockedSwitcher, 600); });
   } else { setTimeout(mountLockedSwitcher, 600); }
 
-  // choose(base,{title}) -> Promise<mode>. Free/archive resolve to 'all' with no UI.
-  function choose(base, opts) {
-    opts = opts || {};
-    return new Promise(function (resolve) {
-      if (!eligible()) { resolve('all'); return; }
-      ensureStyle();
-      var def = last(base), title = opts.title || 'today’s game';
-      var scr = document.createElement('div'); scr.className = 'rtgm-scrim';
-      scr.innerHTML =
-        '<div class="rtgm-sheet" role="dialog" aria-label="Choose version">' +
-          '<div class="rtgm-pill">ARCADE CARD</div>' +
-          '<h2 class="rtgm-h">Choose your version</h2>' +
-          '<p class="rtgm-sub">Pick which ' + esc(title) + ' to play today. Each version has its own board and streak.</p>' +
-          '<div class="rtgm-opts">' + MODES.map(function (m) {
-            return '<button class="rtgm-opt' + (m.k === def ? ' on' : '') + '" type="button" data-k="' + m.k + '" style="--mc:' + m.c + '">' +
-              '<span class="rtgm-lab">' + esc(m.label) + '</span><span class="rtgm-msub">' + esc(m.sub) + '</span></button>';
-          }).join('') + '</div>' +
-        '</div>';
-      document.body.appendChild(scr);
-      function pick(k) { remember(base, k); scr.remove(); resolve(k); }
-      [].forEach.call(scr.querySelectorAll('.rtgm-opt'), function (b) {
-        b.addEventListener('click', function () { pick(b.dataset.k); });
-      });
-    });
+  // choose(base,{title}) -> Promise<mode>. No pre-game modal any more: the game
+  // boots straight into the last version you played (or All Sports), and members
+  // switch versions from the inline All/NBA/NFL/MLB switcher tabs at the top.
+  // Free/archive resolve to 'all'.
+  function choose(base) {
+    return Promise.resolve(eligible() ? last(base) : 'all');
   }
 
   window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed, last: last, choose: choose, upsell: showUpsell };

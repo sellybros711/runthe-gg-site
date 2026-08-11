@@ -156,15 +156,25 @@
     );
   }
 
+  // Names kept off every public board (test accounts). Case-insensitive.
+  var HIDE_NAMES = { 'jordantest': 1 };
+  function scrub(rows) {
+    if (!Array.isArray(rows)) return rows;
+    return rows.filter(function (r) {
+      return !(r && r.display_name && HIDE_NAMES[String(r.display_name).toLowerCase()]);
+    });
+  }
+
   // ---- top rows for a game's day. Returns array (maybe empty) or null. ----
   function leaderboard(game, dateStr, limit) {
     var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
       '&puzzle_date=eq.' + encodeURIComponent(dateStr) +
-      '&order=score.asc,created_at.asc&limit=' + (limit || 5) +
+      '&order=score.asc,created_at.asc&limit=' + ((limit || 5) + 3) +   // fetch a few extra so scrub can't shrink a full board
       '&select=display_name,base_seconds,mistakes,reveals,run_len,score,flawless';
     return withTimeout(
       fetch(q, { headers: headers() })
         .then(function (res) { if (!res.ok) return fail('leaderboard', res); offline = false; return res.json(); })
+        .then(function (rows) { return Array.isArray(rows) ? scrub(rows).slice(0, limit || 5) : rows; })
     );
   }
 
@@ -214,8 +224,8 @@
   function streakBoard(game, limit) {
     if (!sb) return Promise.resolve(null);
     return withTimeout(
-      sb.rpc('grid_streak_board', { p_game: game, p_limit: limit || 10 })
-        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? r.data : null; })
+      sb.rpc('grid_streak_board', { p_game: game, p_limit: (limit || 10) + 3 })
+        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? scrub(r.data).slice(0, limit || 10) : null; })
     );
   }
 
@@ -226,8 +236,8 @@
   function allTimeBoard(game, limit) {
     if (!sb) return Promise.resolve(null);
     return withTimeout(
-      sb.rpc('grid_alltime_board', { p_game: game, p_limit: limit || 10 })
-        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? r.data : null; })
+      sb.rpc('grid_alltime_board', { p_game: game, p_limit: (limit || 10) + 3 })
+        .then(function (r) { return (r && !r.error && Array.isArray(r.data)) ? scrub(r.data).slice(0, limit || 10) : null; })
     );
   }
 
