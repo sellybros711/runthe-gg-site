@@ -20,8 +20,11 @@
   var NAMES = {
     table: 'Number Game', match: 'Daily Match', career: 'Career Path',
     oddone: 'Odd One Out', rankit: 'Rank It', almamater: 'Alma Mater',
-    guess: 'Guess the Player', crossword: 'Daily Crossword', wordsearch: 'Word Search'
+    guess: 'Guess the Player', crossword: 'Daily Crossword', wordsearch: 'Word Search',
+    highlow: 'High Low'
   };
+  // Games with no daily puzzle number (endless / not a shared board).
+  var NO_NUMBER = { highlow: 1 };
 
   // Days since the first archived puzzle, 1-indexed, computed in UTC so it
   // can't drift by a day across time zones. The archive's earliest day is
@@ -52,7 +55,7 @@
   // "Run The Arcade — Number Game #142". The em-dash reads as brand→game; the
   // number is dropped only if the date can't be parsed (never, in practice).
   function header(key, dateIso) {
-    var no = puzzleNo(dateIso);
+    var no = NO_NUMBER[key] ? null : puzzleNo(dateIso);
     return 'Run The Arcade — ' + name(key) + (no ? ' #' + no : '');
   }
 
@@ -122,7 +125,7 @@
   var ACCENT = {
     table: '#F2B632', career: '#48D17A', oddone: '#A982F3', rankit: '#EC5E9C',
     guess: '#F0653A', almamater: '#F2B632', wordsearch: '#37C5D5',
-    match: '#2F6BFF', crossword: '#F0653A'
+    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B'
   };
   // Emoji square -> fill on the dark card. Blanks/absent squares become faint
   // panels rather than the glaring white/black they are as text.
@@ -170,7 +173,7 @@
     g.fillText('RUN THE ARCADE', W / 2, 118); ls('0px');
     g.font = '400 96px Anton, Impact, sans-serif'; g.fillStyle = '#F4F7FB';
     g.fillText(name(spec.key), W / 2, 214);
-    var no = puzzleNo(spec.date);
+    var no = NO_NUMBER[spec.key] ? null : puzzleNo(spec.date);
     if (no) { g.font = '900 34px Archivo, sans-serif'; g.fillStyle = accent; g.fillText('#' + no, W / 2, 262); }
 
     var top = 320, boxH = 620;
@@ -184,7 +187,7 @@
     var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
     var ART = { table:artLadder, oddone:artStreak, career:artPath, almamater:artPennant,
                 rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artCross,
-                match:artMatch };
+                match:artMatch, highlow:artHighLow };
     if (tl) { drawTimeline(tl, spec.total, top, boxH); }
     else if (ART[spec.key]) { ART[spec.key](spec, top, boxH); handledStat = true; }
     else { drawGrid(spec, top, boxH); }
@@ -313,6 +316,23 @@
         else { g.fillStyle = 'rgba(255,255,255,.06)'; rr(x, y, cw, ch, 16); g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.18)'; rr(x, y, cw, ch, 16); g.stroke(); }
       }
     }
+    // ---- High Low: the category up top, the streak as a run of calls ----
+    function artHighLow(spec) {
+      var run = Math.max(0, spec.statInt | 0);
+      var m = /·\s*([^·]+?)\s*$/.exec(spec.stat || '');       // "... in a row · Receiving TDs"
+      var catLabel = m ? m[1].trim() : '';
+      if (catLabel) clabel(catLabel, 440, accent);
+      cbig(String(run), 620, 220, '#F4F7FB'); clabel('in a row', 688);
+      var n = Math.min(run, 8), items = n + 1, r = 30, gap = 26;
+      var tw = items * (r * 2) + (items - 1) * gap, sx = (W - tw) / 2 + r, y = 820;
+      for (var i = 0; i < items; i++) {
+        var x = sx + i * (r * 2 + gap), miss = i === items - 1;
+        g.beginPath(); g.arc(x, y, r, 0, 7);
+        g.fillStyle = miss ? '#E5484D' : accent; g.fill();
+        g.fillStyle = '#0B1B30'; g.font = '900 30px Archivo, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(miss ? '✕' : '✓', x, y + 2); g.textBaseline = 'alphabetic';
+      }
+    }
     function drawTimeline(items, total, top, boxH) {
       total = total || items[items.length - 1].t || 1; if (total <= 0) total = 1;
       var bx0 = 130, bx1 = W - 130, bw = bx1 - bx0, by = top + 120, th = 24;
@@ -367,7 +387,7 @@
     g.font = '400 118px Anton, Impact, sans-serif'; g.fillStyle = accent;
     g.fillText('YOUR TURN', W / 2, sy + 168);
     g.font = '800 36px Archivo, sans-serif'; g.fillStyle = '#C7D4E3';
-    g.fillText('Same puzzle. Can you beat it?', W / 2, sy + 224);
+    g.fillText(spec.key === 'highlow' ? 'Can you beat my streak?' : 'Same puzzle. Can you beat it?', W / 2, sy + 224);
 
     // footer
     g.font = '900 40px Archivo, sans-serif'; ls('1px'); g.fillStyle = accent;
