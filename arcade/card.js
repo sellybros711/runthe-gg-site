@@ -50,8 +50,8 @@
       '.rtgc-scrim[hidden]{display:none;}',
       '.rtgc-sheet{width:100%;max-width:400px;margin:auto 0;background:var(--card,#0f1a2b);color:var(--ink,#eaf0f7);border:1px solid var(--line2,#22304a);border-radius:18px;padding:22px 20px 20px;position:relative;box-shadow:0 30px 90px -20px rgba(0,0,0,.75);text-align:center;}',
       '.rtgc-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-size:14px;cursor:pointer;}',
-      '.rtgc-kick{font-family:var(--hero,inherit);font-weight:800;letter-spacing:.02em;text-transform:uppercase;font-size:12px;color:var(--gold,#F2B632);margin-bottom:6px;}',
-      '.rtgc-h{font-family:var(--hero,inherit);font-weight:800;font-size:23px;line-height:1.05;margin:0 0 8px;}',
+      '.rtgc-kick{font-family:var(--f,inherit);font-weight:900;letter-spacing:.06em;text-transform:uppercase;font-size:14px;color:var(--gold,#F2B632);margin-bottom:6px;}',
+      '.rtgc-h{font-family:var(--f,inherit);font-weight:900;font-size:27px;line-height:1.08;margin:0 0 8px;}',
       '.rtgc-sub{font-size:13px;color:var(--mut,#93a4bd);line-height:1.45;margin:0 auto 16px;max-width:320px;}',
       '.rtgc-card{background:color-mix(in srgb, var(--gold,#F2B632) 8%, var(--card2,#16233a));border:1px solid color-mix(in srgb, var(--gold,#F2B632) 45%, var(--line2,#22304a));border-radius:14px;padding:15px 15px 16px;margin:0 0 15px;text-align:left;}',
       '.rtgc-card .name{font-family:var(--hero,inherit);font-weight:800;letter-spacing:.03em;text-transform:uppercase;font-size:15px;color:var(--gold,#F2B632);display:flex;align-items:center;gap:8px;margin-bottom:10px;}',
@@ -176,7 +176,7 @@
         ? ('That’s ' + (vd*9) + ' puzzles waiting, across all nine games. Play any of them, any time.')
         : 'Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='upsell'){
-      kicker='Arcade Card'; head='Go unlimited';
+      kicker='Arcade Card'; head='Go Unlimited';
       sub='Unlimited plays across every game, every day, plus the full archive.';
     } else {
       kicker='Out of plays'; head='You’re out of plays today';
