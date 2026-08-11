@@ -645,12 +645,21 @@ window.GA_ID='G-L29P5MRWKE';
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line);margin:12px 0;contain:layout}
   /* A LINEUP NEEDS A FLOOR IN PIXELS, NOT A RATIO. A chip is 63px tall whatever the
-     screen: a 34px disc, the surname, and the school-and-year plate. Three rows of
-     them plus breathing room is 197px, and an aspect ratio does not know that, so a
-     narrow phone computed a box far shorter than its own contents. 210px is the
-     floor; wider screens still take the ratio, which is larger. The front page's
-     field is not in this list and keeps its 15vh cap: it has no chips to fit. */
-  #field,#field2,#field3{min-height:210px}
+     screen: a 34px disc, the surname, and the school-and-year plate. An aspect ratio
+     does not know that, so a narrow phone computed a box shorter than its own
+     contents and the rows sat on each other.
+
+     THE FLOOR IS SET BY THE GOAL LINE, not just by the chips. The end zone is the
+     top 4 of 23 yards this field draws, so 17.4% of the box is behind the goal and
+     no player should stand in it. Three 63px rows have to fit in the 82.6% that is
+     left, which needs 189/0.826 = 229px. At 210 they did not fit, so the top row was
+     pushed up into the end zone to keep the rows off each other: the arithmetic had
+     one degree of freedom and spent it in the wrong place. 240 leaves the formation
+     entirely on the field of play.
+
+     Wider screens still take the ratio, which is larger. The front page's field is
+     not in this list and keeps its 15vh cap: it has no chips to fit. */
+  #field,#field2,#field3{min-height:240px}
   .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
     rgba(255,255,255,.020) 0 25%,transparent 25% 50%)}
   .field .lit{position:absolute;inset:0;
@@ -2154,6 +2163,19 @@ window.GA_ID='G-L29P5MRWKE';
     align-items:center;justify-content:center;flex:0 0 auto}
   .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round}
+  /* A REAL LOGO IS THE TILE, so it gets no gradient behind it and no padding around
+     it: the artwork already carries its own navy field and its own edge.
+
+     32px AND NOT THE 38 THE NFL GAME USES for the matching card, which is a
+     deliberate difference rather than a missed detail. Measured at four widths, the
+     size changes the outcome at exactly one: 390, the commonest phone, where 38
+     wraps "The Perfect Season" onto a second line and 32 does not. That card's title
+     over there is "College Football: Perfect Season", long enough to wrap at every
+     width, so the extra pixels cost it nothing and cost this one a line. */
+  .modecard .mc-icon-img{width:32px;height:32px;background:none;border-radius:8px;
+    overflow:hidden}
+  .modecard .mc-icon-img img{width:100%;height:100%;display:block;border-radius:8px}
+  .modecard.mc-nfl .mc-icon-img{background:none}
   .modecard .mc-title{font-family:var(--fn);font-size:17px;font-weight:800;
     letter-spacing:.01em;text-transform:uppercase;color:var(--ink);line-height:1.15}
   .modecard.mc-conf{border-color:rgba(245,158,11,.38)}
@@ -2174,6 +2196,20 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-nfl .mc-icon{background:linear-gradient(135deg,#ef5350 0%,#c0272b 100%)}
   .modecard.mc-nfl .mc-title{color:#f0918e}
   .modecard.mc-nfl{text-decoration:none}
+
+  /* Alma Mater's gold, #F2B632, the colour its mortarboard is drawn in on the
+     arcade's front page. Borrowed for the same reason the red above is: somebody who
+     has played it should recognise the card.
+
+     IT IS CLOSE TO THE CONFERENCE DRAFT AMBER and both are on screen at once, which
+     is a real cost and is accepted rather than overlooked. Changing it would mean
+     inventing a colour for a game that already has one, and the same rule that makes
+     the NFL card red would be broken to do it. What separates them instead is
+     everything else: they are not adjacent, a rule and a heading sit between them,
+     the red card breaks the run, and the glyphs are a pennant and a mortarboard. */
+  .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
+  .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
+  .modecard.mc-alma .mc-title{color:#f2b632}
 
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -2594,7 +2630,15 @@ or endorsed by the NCAA, the CFP or any school.
       <span class="brand">Perfect<em class="clg">College</em><i>Season</i></span>
     </a>
     <div class="hdr-r">
-      <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
+      <!-- "/" AND NOT "https://runthe.gg". Both www.runthe.gg and runthe.gg serve
+           this site and neither redirects to the other, and a browser keeps a separate
+           localStorage per hostname, so the sign-in does not cross between them. An
+           absolute link here took anybody who arrived on www and sent them to the apex,
+           where they were signed out through no fault of the account code. A relative
+           link keeps whatever host they came in on. The canonical and og:url stay
+           absolute on purpose: those name the one URL search should index, which is a
+           different question from where a tap should go. -->
+      <a class="pill site" href="/">RunThe<i>.GG</i></a>
       <button class="avatar" id="b-profile" aria-label="Choose your school colors">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>
           <path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>
@@ -2699,7 +2743,7 @@ or endorsed by the NCAA, the CFP or any school.
            would throw away the run they are reporting. -->
       <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
       <div class="follow">
-        <a href="https://runthe.gg">RunThe.GG</a>
+        <a href="/">RunThe.GG</a>
       </div>
       <!-- ALL FOUR, the same accounts the NFL game links to. Four marks rather than four
            sentences: the handle is in the title and the aria-label of each, so the glyph is
@@ -3370,7 +3414,7 @@ window.addEventListener('error',(ev)=>{
    is 20 percent apart, and 20 percent of a box that a phone computed as 135px is
    27px. The chips are 63px. Every row overlapped both of its neighbours and the
    layout could not have worked at any x. The box now has a 210px floor and the rows
-   are spread across it, so a row clears the next one instead of landing in it.
+   are spread across the field of play, which starts below the goal line at 17.4%.
 
    THAT ALSO FREES THE X AXIS. Two chips clash only if they overlap on BOTH axes, so
    once the rows are genuinely apart, being in the same column as something on
@@ -3380,14 +3424,14 @@ window.addEventListener('error',(ev)=>{
    a lone receiver. Only same-row neighbours still need spacing, and that is set by
    the widest a chip gets, 78px, which is 21.5% of a 362px field. */
 const SPOTS={
-  QB: [{ x: 50, y: 42 }],
+  QB: [{ x: 50, y: 52 }],
   /* Up to THREE, because both flex spots can take a back. The table stopped at two
      and row() clamps past the end, so a third back was handed the second one's
      coordinate exactly and the two chips sat perfectly on top of each other. */
   RB: [[],
-    [{ x: 50, y: 74 }],
-    [{ x: 28, y: 74 }, { x: 72, y: 74 }],
-    [{ x: 17, y: 74 }, { x: 50, y: 74 }, { x: 83, y: 74 }]],
+    [{ x: 50, y: 79 }],
+    [{ x: 28, y: 79 }, { x: 72, y: 79 }],
+    [{ x: 17, y: 79 }, { x: 50, y: 79 }, { x: 83, y: 79 }]],
 };
 /* The line of scrimmage, spread by how many are on it, 1 through 4: receivers,
    tight ends, and whatever flex is still open. Spacing is set by the widest a chip
@@ -3397,12 +3441,12 @@ const SPOTS={
    12 and 32, which is 20%, and they overlapped by 2px at every width measured. */
 const REC = [
   [],
-  [{ x: 50, y: 10 }],
-  [{ x: 27, y: 10 }, { x: 73, y: 10 }],
-  [{ x: 11, y: 10 }, { x: 50, y: 10 }, { x: 89, y: 10 }],
-  [{ x: 9, y: 10 }, { x: 36, y: 10 }, { x: 64, y: 10 }, { x: 91, y: 10 }],
+  [{ x: 50, y: 25 }],
+  [{ x: 27, y: 25 }, { x: 73, y: 25 }],
+  [{ x: 11, y: 25 }, { x: 50, y: 25 }, { x: 89, y: 25 }],
+  [{ x: 9, y: 25 }, { x: 36, y: 25 }, { x: 64, y: 25 }, { x: 91, y: 25 }],
 ];
-const SPOT_FALLBACK=[{x:50,y:42},{x:50,y:74},{x:11,y:10},{x:89,y:10},{x:36,y:10},{x:64,y:10}];
+const SPOT_FALLBACK=[{x:50,y:52},{x:50,y:79},{x:11,y:25},{x:89,y:25},{x:36,y:25},{x:64,y:25}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
@@ -4330,20 +4374,46 @@ function modeMenu(){
          like a link does, middle-click and all. Styled as a card so it matches the
          one above it. */
       '<a class="modecard mc-nfl" href="/football/" id="b-mc-nfl">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<g transform="rotate(-30 12 12)">'+
-            '<path d="M2.5 12c0-3 4.2-5.5 9.5-5.5S21.5 9 21.5 12s-4.2 5.5-9.5 5.5S2.5 15 2.5 12z"/>'+
-            '<path d="M8.5 12h7"/><path d="M10.5 10.4v3.2"/><path d="M13 10.4v3.2"/>'+
-          '</g>'+
-        '</svg></div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
+        /* THE REAL MARK, not a drawn football. This was a hand-tilted SVG ball, which
+           was the honest placeholder while nothing better was to hand. The NFL game
+           has a logo: the puzzle helmet on navy that it wears on the site's front
+           page, on a home screen and on its own results banner. Using anything else
+           here teaches a player that the two games are unrelated. */
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+          '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
         '<p>The same game in the NFL. Spin for a year and a team, sign six all-time '+
         'legends under the $140M cap, then play all 17 games and the playoffs.</p>'+
+      '</a>'+
+    '</div>'+
+    '<div class="xpromo">'+
+      /* A DIFFERENT KIND OF THING, so it gets its own heading rather than being
+         stacked under "Love pro football?". That one is a season to play; this is a
+         couple of minutes a day. Framed by the college angle because that is what
+         this game's player is here for. */
+      '<p class="xp-h">Know your colleges?</p>'+
+      '<a class="modecard mc-alma" href="/arcade/almamater/" id="b-mc-alma">'+
+        /* THE MORTARBOARD, WHICH IS ALMA MATER'S OWN MARK in the arcade, and not the
+           arcade's joystick icon. The joystick stands for all nine arcade games at
+           once, so on a card that goes to one of them it would name the wrong
+           destination. A glyph rather than a photo here for the same reason: this
+           game has no app icon of its own to show, unlike the NFL card above, and
+           inventing one would be worse than drawing its own symbol. */
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<path d="M2 9l10-4 10 4-10 4z"/>'+
+          '<path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>'+
+          '<path d="M22 9v5"/>'+
+        '</svg></div><div class="mc-title">Alma Mater</div>'+ARROW+'</div>'+
+        '<p>A new one every day. Name the college each NBA, NFL or MLB player came '+
+        'from, four choices and one right, and it gets harder the longer your run '+
+        'lasts.</p>'+
       '</a>'+
     '</div>'+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x" style="width:100%">Close</button></div>';
   openSheet();
   $('b-mc-conf').onclick=conferenceMenu;
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
+  $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
 }
 

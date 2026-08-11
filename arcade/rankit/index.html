@@ -20,13 +20,13 @@
 <meta property="og:title" content="Rank It: Daily Sports Ordering Game" />
 <meta property="og:description" content="Five athletes. One right order. A new set every day." />
 <meta property="og:url" content="https://runthe.gg/arcade/rankit/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Rank It: Daily Sports Ordering Game" />
 <meta name="twitter:description" content="Five athletes. One right order. A new set every day." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/rankit/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -315,7 +315,7 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Two tries per set. The first only says how many are in place, then one more try.</span></div>
+    <div class="rl"><span class="k">Sets cleared today</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -376,27 +376,28 @@
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
-<script src="/arcade/stats.js?v=1"></script>
+<script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
-<script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=1"></script>
-<script src="/arcade/mode.js?v=1"></script>
+<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/mode.js?v=4"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=1"></script>
-<script src="/arcade/alltime.js?v=1"></script>
+<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/topbanner.js?v=1"></script>
-<script src="/arcade/auth-ui.js?v=1"></script>
-<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=3"></script>
+<script src="/arcade/card.js?v=11"></script>
 <script src="/arcade/calendar.js?v=1"></script>
-<script src="/arcade/archivecta.js?v=1"></script>
-<script src="/arcade/pregame.js?v=1"></script>
-<script src="/arcade/howto.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=2"></script>
+<script src="/arcade/pregame.js?v=2"></script>
+<script src="/arcade/howto.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -804,15 +805,15 @@
     if(locked) sub='Your run today';
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(r>=SETS.length && r>=TOTAL_SETS) sub='You cleared every set!';
-    else if(NEWBEST) sub='🏆 NEW PERSONAL BEST';
+    else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && r===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && r>0 && PREVBEST-r<=2) sub=(PREVBEST-r)+' off your best. So close!';
     else sub='Your run ended';
     var subEl=document.getElementById('mSub');
-    subEl.textContent = sub;
+    subEl.innerHTML = sub;
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
-    if(mm){ if(!locked && MSTONE){ mm.textContent='🔥 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
+    if(mm){ if(!locked && MSTONE){ mm.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg> '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('mTitle').textContent = 'SETS CLEARED';
     document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.' : 'Run over. '+r+' set'+(r===1?'':'s')+' cleared.';
     document.getElementById('yourTm').textContent = r+' set'+(r===1?'':'s');

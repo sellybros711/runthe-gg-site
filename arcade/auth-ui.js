@@ -20,6 +20,9 @@
 
   var GOOGLE_G = '<svg width="17" height="17" viewBox="0 0 48 48" style="flex:0 0 auto" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.1 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7.1l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.6z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.7-2.9-.7-4.6s.3-3.2.7-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.6l-7.1-5.5c-2 1.3-4.5 2.1-8.4 2.1-6.3 0-11.6-3.6-13.5-8.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
   var PERSON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+  // Our own icons for the account nav (no stock emoji).
+  var NAV_HOME = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>';
+  var NAV_TICKET = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>';
 
   var st = { mode: 'signin', busy: false, err: '', note: '' };
   var cur = A.state();       // last known auth state
@@ -59,6 +62,10 @@
       '.rtgauth-me{display:flex;align-items:center;gap:11px;background:var(--card2,#16233a);border:1px solid var(--line2,#22304a);border-radius:12px;padding:12px 13px;margin-bottom:14px;}',
       '.rtgauth-av{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--gold,#F2B632);color:#20160a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;font-family:var(--hero,inherit);}',
       '.rtgauth-me .u{font-weight:800;font-size:15px;} .rtgauth-me .e{font-size:11.5px;color:var(--mut,#93a4bd);}',
+      '.rtgauth-nav{display:flex;gap:8px;margin-top:14px;}',
+      '.rtgauth-nav a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 8px;border-radius:9px;border:1px solid var(--line2,#22304a);background:var(--card2,#16233a);color:var(--ink,#eaf0f7);font-weight:800;font-size:12px;text-decoration:none;}',
+      '.rtgauth-nav a svg{flex:0 0 auto;color:var(--gold,#F2B632);}',
+      '.rtgauth-nav a:hover{border-color:var(--gold,#F2B632);}',
       // topbar account button
       // min-width holds the chip's footprint: it mounts as "Sign in" and repaints
       // to a username when auth resolves (~500ms), and the width change used to
@@ -124,6 +131,8 @@
         (isPro ? '<button class="rtgauth-ghost" id="rtgauthSub" type="button">Manage subscription</button><div style="height:9px"></div>' : '') +
         '<button class="rtgauth-ghost" id="rtgauthOut" type="button">Sign out</button>' +
         (st.err ? '<div class="rtgauth-err" style="margin-top:12px">' + esc(st.err) + '</div>' : '') +
+        // quick navigation back into the arcade (the hub lists every game)
+        '<div class="rtgauth-nav"><a href="/arcade/">' + NAV_HOME + 'Arcade home</a><a href="/arcade/archive/">' + NAV_TICKET + 'Your Vault</a></div>' +
         '<div style="text-align:center;margin-top:14px"><button class="rtgauth-danger" id="rtgauthDel" type="button">Delete account</button></div>';
       $('rtgauthRename').onclick = function () { st.mode = 'username'; st.err = ''; renderModal(); };
       var sub = $('rtgauthSub');

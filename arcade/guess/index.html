@@ -20,13 +20,13 @@
 <meta property="og:title" content="Guess the Player: Daily Sports Puzzle" />
 <meta property="og:description" content="One mystery athlete a day. Crack it in eight guesses." />
 <meta property="og:url" content="https://runthe.gg/arcade/guess/" />
-<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Guess the Player: Daily Sports Puzzle" />
 <meta name="twitter:description" content="One mystery athlete a day. Crack it in eight guesses." />
-<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=2" />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/guess/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -277,7 +277,7 @@
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
-        "top   top" "title title" "lead lead" "mode mode"
+        "top   top" "title title" "mode mode" "lead lead"
         "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
     .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
@@ -308,11 +308,12 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--coralT)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--coral)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
+
+  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
 
   <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
-  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="searchwrap">
     <div class="search">
       <input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a player's name…" aria-label="Guess a player" />
@@ -384,25 +385,26 @@
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
-<script src="/arcade/sfx.js?v=1"></script>
-<script src="/arcade/funnel.js?v=1"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=1"></script>
-<script src="/arcade/mode.js?v=1"></script>
+<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/mode.js?v=4"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=1"></script>
-<script src="/arcade/alltime.js?v=1"></script>
+<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/topbanner.js?v=1"></script>
-<script src="/arcade/auth-ui.js?v=1"></script>
-<script src="/arcade/card.js?v=1"></script>
+<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=3"></script>
+<script src="/arcade/card.js?v=11"></script>
 <script src="/arcade/calendar.js?v=1"></script>
-<script src="/arcade/archivecta.js?v=1"></script>
-<script src="/arcade/pregame.js?v=1"></script>
-<script src="/arcade/howto.js?v=1"></script>
+<script src="/arcade/archivecta.js?v=2"></script>
+<script src="/arcade/pregame.js?v=2"></script>
+<script src="/arcade/howto.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -892,7 +894,7 @@
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     // skill tier by guesses used - instant dopamine on a win (becomes a live
     // percentile once the leaderboard has a real distribution to rank against)
-    var TIER=['','Bullseye: first try! 🎯','Sniper: 2 guesses 🎯','Scout-level: 3 guesses 🔭','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8 ⏱'];
+    var TIER=['','Bullseye: first try!','Sniper: 2 guesses','Scout-level: 3 guesses','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8'];
     document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
     (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');

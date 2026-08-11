@@ -58,7 +58,7 @@
     b.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>' +
-      '<span>Play a past day <span class="rtgArchTag">· Card</span></span>';
+      '<span>Play a past day</span>';
     b.addEventListener('click', function () { try { RTGCalendar.open(game); } catch (e) {} });
     cd.parentNode.insertBefore(b, cd);
   }

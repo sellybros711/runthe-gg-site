@@ -72,6 +72,23 @@
   function tier(){ return hasCard() ? 'card' : (signedIn() ? 'account' : 'guest'); }
   function cap(){ if(unlimited()) return Infinity; return signedIn() ? USER_DAILY : GUEST_DAILY; }
 
+  // Lifetime totals (never reset at midnight) - powers the Arcade Card's
+  // achievements + "most played". Separate key from the daily wallet.
+  var LKEY='rtg:lifetime:v1';
+  function readLife(){
+    var s; try{ s=JSON.parse(LS.getItem(LKEY)); }catch(e){ s=null; }
+    if(!s || typeof s!=='object') s={ plays:{}, perfect:0, since:todayStr() };
+    if(!s.plays || typeof s.plays!=='object') s.plays={};
+    if(typeof s.perfect!=='number') s.perfect=0;
+    if(!s.since) s.since=todayStr();
+    return s;
+  }
+  function writeLife(s){ try{ LS.setItem(LKEY, JSON.stringify(s)); }catch(e){} return s; }
+  function bumpLife(game){ var s=readLife(); s.plays[game]=(s.plays[game]||0)+1; writeLife(s); }
+  // Count a perfect day (all nine cleared) once, keyed on the date so repeat
+  // hub visits the same day don't double-count. Called by the hub.
+  function recordPerfect(){ var s=readLife(); var t=todayStr(); if(s.lastPerfect===t) return; s.lastPerfect=t; s.perfect=(s.perfect||0)+1; writeLife(s); }
+
   function fresh(){ return { date:todayStr(), plays:{}, sf:0 }; }
   function read(){
     var s;
@@ -126,11 +143,11 @@
     var s=read(), before=s.plays[game]||0;
     DENIED=false;
     if(unlimited()){
-      s.plays[game]=before+1; write(s); emit('rtg:tokens');
+      s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
     if(used() >= cap()) return { ok:false, tryNo:before, first:false, bonus:false, left:0 };
-    s.plays[game]=before+1; write(s); emit('rtg:tokens');
+    s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
     serverSpend();
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remaining() };
   }
@@ -158,6 +175,9 @@
     canPlay: canPlay,
     startAttempt: startAttempt,
     rankAuthorized: rankAuthorized,
+    // lifetime totals (Arcade Card)
+    lifetime: readLife,
+    recordPerfect: recordPerfect,
     // a compact, tier-aware status string for hints/tiles. Callers append
     // " today" (every game's hint line does), so no string here may end in it.
     label: function(){

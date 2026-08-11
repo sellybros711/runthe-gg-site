@@ -41,12 +41,15 @@
       '.rtg-topbanner .rtb-tokens:hover{border-color:var(--coralT,#F06A5F);}',
       '.rtg-topbanner .rtb-tokens.unlimited{color:var(--goldT,#F2B632);border-color:color-mix(in srgb,var(--goldT,#F2B632) 55%,transparent);}',
       '.rtg-topbanner .rtb-tokens.unlimited .tk-ic{color:var(--goldT,#F2B632);}',
-      '.rtg-topbanner .rtb-prof{width:34px;height:34px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line2,rgba(244,247,251,.14));background:var(--card2,#162B44);color:var(--ink,#F4F7FB);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}',
+      '.rtg-topbanner .rtb-prof{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 11px 0 5px;border-radius:999px;border:1px solid var(--line2,rgba(244,247,251,.14));background:var(--card2,#162B44);color:var(--ink,#F4F7FB);cursor:pointer;font-family:inherit;line-height:1;max-width:190px;}',
+      '.rtg-topbanner .rtb-prof.out{padding:0 12px;}',
       '.rtg-topbanner .rtb-prof:hover{border-color:var(--coralT,#F06A5F);}',
-      '.rtg-topbanner .rtb-prof svg{width:18px;height:18px;}',
-      '.rtg-topbanner .rtb-prof .rtb-av{width:24px;height:24px;border-radius:50%;background:var(--coral,#F06A5F);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;font-family:var(--hero,inherit);}',
+      '.rtg-topbanner .rtb-prof svg{width:17px;height:17px;flex:0 0 auto;}',
+      '.rtg-topbanner .rtb-prof .rtb-plab{font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.rtg-topbanner .rtb-prof .rtb-av{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--coral,#F06A5F),#F0913C);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;font-family:var(--hero,inherit);}',
       '@media (max-width:520px){.rtg-topbanner .rtb-name{display:none;}}',
-      '@media (max-width:380px){.rtg-topbanner .rtb-site{display:none;}}'
+      '@media (max-width:440px){.rtg-topbanner .rtb-prof{max-width:130px;}}',
+      '@media (max-width:380px){.rtg-topbanner .rtb-site{display:none;}.rtg-topbanner .rtb-prof .rtb-plab{max-width:74px;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }
@@ -63,8 +66,8 @@
         '<span class="rtb-name">Run The Arcade</span></a>' +
       '<div class="rtb-right">' +
         '<a class="rtb-site" href="https://runthe.gg">RunThe<i>.GG</i></a>' +
-        '<button class="rtb-tokens" id="rtbTokens" type="button" aria-label="Your plays today"></button>' +
-        '<button class="rtb-prof" id="rtbProf" type="button" aria-label="Your profile"></button>' +
+        '<button class="rtb-tokens" id="rtbTokens" type="button" aria-label="Your Arcade Card"></button>' +
+        '<button class="rtb-prof out" id="rtbProf" type="button" aria-label="Your profile"></button>' +
       '</div>';
     document.body.insertBefore(el, document.body.firstChild);
 
@@ -96,15 +99,22 @@
     if (pf) {
       var st = (A() && A().state) ? A().state() : null;
       if (st && st.signedIn && st.name) {
-        pf.innerHTML = '<span class="rtb-av">' + esc((st.name.charAt(0) || 'P').toUpperCase()) + '</span>';
+        pf.className = 'rtb-prof out';
+        pf.innerHTML = '<span class="rtb-plab">' + esc(st.name) + '</span>';
         pf.setAttribute('aria-label', 'Signed in as ' + st.name);
-      } else { pf.innerHTML = PERSON; pf.setAttribute('aria-label', 'Sign in'); }
+      } else {
+        pf.className = 'rtb-prof out';
+        pf.innerHTML = PERSON + '<span class="rtb-plab">Sign in</span>';
+        pf.setAttribute('aria-label', 'Sign in');
+      }
     }
   }
 
   function onTokens() {
-    var t = T();
-    if (t && t.hasCard && t.hasCard()) { onProfile(); return; }         // members: nothing to buy → account
+    // The tokens/Unlimited chip opens the player's Arcade Card (streaks,
+    // achievements, next drop, vault, most played). Non-members find the
+    // upgrade CTA inside it. Falls back to the paywall if the card is absent.
+    if (window.RTGMyCard && RTGMyCard.open) { RTGMyCard.open(); return; }
     if (window.RTGCard && RTGCard.paywall) { RTGCard.paywall({ reason: 'upsell' }); return; }
     onProfile();
   }

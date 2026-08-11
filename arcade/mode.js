@@ -57,7 +57,8 @@
       '.rtgm-lab{font-weight:900;font-size:16px;}' +
       '.rtgm-msub{font-size:11px;font-weight:700;color:var(--mut,#A9B8CB);text-transform:uppercase;letter-spacing:.05em;}' +
       '.rtgm-opt.lk{opacity:.55;cursor:pointer;}' +
-      '.rtgm-opt.lk .rtgm-lab::after{content:" 🔒";font-size:12px;}' +
+      '.rtgm-opt.lk .rtgm-lab::after{content:"";display:inline-block;width:12px;height:12px;margin-left:6px;vertical-align:-1px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Cpath fill=%27black%27 d=%27M6 10V7a6 6 0 0 1 12 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h8V7a4 4 0 0 0-8 0z%27/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Cpath fill=%27black%27 d=%27M6 10V7a6 6 0 0 1 12 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h8V7a4 4 0 0 0-8 0z%27/%3E%3C/svg%3E") center/contain no-repeat;}' +
+      '.rtgm-lk{width:12px;height:12px;vertical-align:-1px;margin-left:5px;}' +
       '.rtgm-cta{margin-top:14px;width:100%;border:0;border-radius:11px;background:var(--gold,#F2B632);color:#20180A;font-weight:900;font-size:14px;padding:13px;min-height:46px;cursor:pointer;font-family:inherit;}' +
       '.rtgm-cta:disabled{opacity:.6;cursor:default;}' +
       '.rtgm-fine{font-size:10.5px;color:var(--mut,#A9B8CB);margin:9px 0 0;font-weight:600;line-height:1.4;}' +
@@ -117,7 +118,7 @@
       el.innerHTML = MODES.map(function (m) {
         return '<button type="button" data-k="' + m.k + '" class="' + (m.k === 'all' ? 'on' : '') + '"' +
           (m.k === 'all' ? '' : ' aria-label="' + esc(m.label) + ' version, Pro feature" style="opacity:.55"') + '>' +
-          esc(m.label) + (m.k === 'all' ? '' : ' 🔒') + '</button>';
+          esc(m.label) + (m.k === 'all' ? '' : ' <svg class="rtgm-lk" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-1px;margin-left:4px"><path d="M6 10V7a6 6 0 0 1 12 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h8V7a4 4 0 0 0-8 0z"/></svg>') + '</button>';
       }).join('');
       var title = (document.title.split('|')[0] || '').replace(/Run The Arcade:?/i, '').trim() || 'this game';
       [].forEach.call(el.querySelectorAll('button'), function (b) {
@@ -130,30 +131,12 @@
     document.addEventListener('DOMContentLoaded', function () { setTimeout(mountLockedSwitcher, 600); });
   } else { setTimeout(mountLockedSwitcher, 600); }
 
-  // choose(base,{title}) -> Promise<mode>. Free/archive resolve to 'all' with no UI.
-  function choose(base, opts) {
-    opts = opts || {};
-    return new Promise(function (resolve) {
-      if (!eligible()) { resolve('all'); return; }
-      ensureStyle();
-      var def = last(base), title = opts.title || 'today’s game';
-      var scr = document.createElement('div'); scr.className = 'rtgm-scrim';
-      scr.innerHTML =
-        '<div class="rtgm-sheet" role="dialog" aria-label="Choose version">' +
-          '<div class="rtgm-pill">ARCADE CARD</div>' +
-          '<h2 class="rtgm-h">Choose your version</h2>' +
-          '<p class="rtgm-sub">Pick which ' + esc(title) + ' to play today. Each version has its own board and streak.</p>' +
-          '<div class="rtgm-opts">' + MODES.map(function (m) {
-            return '<button class="rtgm-opt' + (m.k === def ? ' on' : '') + '" type="button" data-k="' + m.k + '" style="--mc:' + m.c + '">' +
-              '<span class="rtgm-lab">' + esc(m.label) + '</span><span class="rtgm-msub">' + esc(m.sub) + '</span></button>';
-          }).join('') + '</div>' +
-        '</div>';
-      document.body.appendChild(scr);
-      function pick(k) { remember(base, k); scr.remove(); resolve(k); }
-      [].forEach.call(scr.querySelectorAll('.rtgm-opt'), function (b) {
-        b.addEventListener('click', function () { pick(b.dataset.k); });
-      });
-    });
+  // choose(base,{title}) -> Promise<mode>. No pre-game modal any more: the game
+  // boots straight into the last version you played (or All Sports), and members
+  // switch versions from the inline All/NBA/NFL/MLB switcher tabs at the top.
+  // Free/archive resolve to 'all'.
+  function choose(base) {
+    return Promise.resolve(eligible() ? last(base) : 'all');
   }
 
   window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed, last: last, choose: choose, upsell: showUpsell };

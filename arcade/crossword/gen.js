@@ -144,6 +144,40 @@
   // standard crossword convention for a surname answer ("Lions great Barry
   // ___" -> SANDERS). The given name is not the answer, so it never leaks the
   // fill; it does make the clue specific instead of "NFL star of the '80s".
+  // ---- accolades: a player is only a valid answer if they have a real
+  // distinction (award / All-Pro / All-Star / champion / HOF / milestone), and
+  // the clue names it. Sources: entity.aw + entity.ml + awards.js (RTG_AWARDS).
+  function awardsOf(e) {
+    var out = (e.aw && e.aw.length) ? e.aw.slice() : [];
+    try {
+      var A = root && root.RTG_AWARDS;
+      if (A && A.players && e.name) {
+        var rec = A.players[e.sport + '|' + String(e.name).toLowerCase()];
+        if (rec && rec.aw && rec.aw.length) out = out.concat(rec.aw);
+      }
+    } catch (x) {}
+    return out;
+  }
+  // The single most impressive award, phrased to read in "<Team> <phrase> <First> ___".
+  var AWARD_RANK = [
+    [/finals mvp/i, 'Finals MVP'], [/super bowl mvp/i, 'Super Bowl MVP'], [/world series mvp/i, 'World Series MVP'],
+    [/\bmvp\b/i, 'MVP'], [/cy young/i, 'Cy Young winner'], [/defensive player/i, 'Defensive Player of the Year'],
+    [/all-?pro/i, 'All-Pro'], [/pro bowl/i, 'Pro Bowler'], [/all-?star/i, 'All-Star'],
+    [/gold glove/i, 'Gold Glove winner'], [/silver slugger/i, 'Silver Slugger'],
+    [/rookie of the year/i, 'Rookie of the Year'], [/champion|title|world series|super bowl|finals/i, 'champion']
+  ];
+  function awardPhrase(e) {
+    var a = awardsOf(e);
+    for (var i = 0; i < AWARD_RANK.length; i++)
+      for (var j = 0; j < a.length; j++)
+        if (AWARD_RANK[i][0].test(a[j])) return AWARD_RANK[i][1];
+    return null;
+  }
+  // Eligible as a crossword answer only with a genuine distinction.
+  function hasDistinction(e) {
+    return !!(e && (e.hof || (e.ml && e.ml.length) || awardPhrase(e)));
+  }
+
   function clueFor(word, rng) {
     var e = word.e;
     var fn = givenOf(e.name);
@@ -160,15 +194,20 @@
     // Rich, team-anchored clues first (shuffled for variety across a grid);
     // the generic "star of the era / standout" wordings are a last resort,
     // right for individual-sport athletes (boxing, tennis, F1) with no team.
+    // Every eligible player has a distinction (isCwIcon requires it); the clue
+    // NAMES it - Hall of Famer, or an award/All-Pro/All-Star/champion. Plain
+    // "position / standout" wordings are gone: a player must have earned the clue.
+    var dist = awardPhrase(e);
+    var ml0 = (e.ml && e.ml.length) ? e.ml[0] : null;
     var rich = [];
     if (e.hof && tn) rich.push({ t: tn + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos) rich.push({ t: tn + ' ' + pos + ' ' + fn + ' ___', used: { team: tn, pos: e.pos } });
-    if (pos && era) rich.push({ t: fn + ' ___, ' + e.sport + ' ' + pos + ' of the ' + era, used: { sport: e.sport, pos: e.pos, era: dec } });
-    if (tn) rich.push({ t: tn + ' great ' + fn + ' ___', used: { team: tn } });
+    if (dist && tn) rich.push({ t: tn + ' ' + dist + ' ' + fn + ' ___', used: { team: tn, aw: true } });
+    if (dist && tn && pos) rich.push({ t: tn + ' ' + pos + ' and ' + dist + ' ' + fn + ' ___', used: { team: tn, pos: e.pos, aw: true } });
     if (e.hof) rich.push({ t: e.sport + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true } });
+    if (dist) rich.push({ t: e.sport + ' ' + dist + ' ' + fn + ' ___', used: { sport: e.sport, aw: true } });
+    if (ml0 && tn) rich.push({ t: tn + '’s ' + fn + ' ___, ' + ml0, used: { team: tn, ml: true } });
+    if (ml0) rich.push({ t: fn + ' ___, ' + ml0, used: { ml: true } });
     var lean = [];
-    if (era) lean.push({ t: fn + ' ___, ' + e.sport + ' star of the ' + era, used: { sport: e.sport, era: dec } });
-    lean.push({ t: e.sport + ' standout ' + fn + ' ___', used: { sport: e.sport } });
     var order = (rng ? shuffle(rich, rng) : rich).concat(lean);
     for (var i = 0; i < order.length; i++) {
       var got = tryDisambig(order[i], e, rivals, word.w);
@@ -341,6 +380,7 @@
   function isCwIcon(e) {
     var T = { NBA: 1, NFL: 1, MLB: 1 };
     if (!T[e.sport]) return false;
+    if (!hasDistinction(e)) return false;   // must have a real accolade to earn a clue
     if (e.star) return true;
     var d = e.decade;
     if (!d || !d.length || d[d.length - 1] < 1990) return false;

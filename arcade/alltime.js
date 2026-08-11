@@ -24,6 +24,7 @@
     oddone:     { timed: false, unit: 'in a row' },
     rankit:     { timed: false, unit: 'sets' },
     almamater:  { timed: false, unit: 'in a row' },
+    highlow:    { timed: false, unit: 'in a row' },
     match:      { timed: true },
     guess:      { timed: true },
     crossword:  { timed: true },

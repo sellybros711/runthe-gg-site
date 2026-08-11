@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade: High Low | RunThe.GG</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+(function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
+  document.documentElement.setAttribute('data-theme',t); })();
+</script>
+<meta name="description" content="High Low: an endless higher-or-lower streak game for Arcade Card members. Pick a category, then call every next player higher or lower." />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="High Low: Endless Sports Streak Game" />
+<meta property="og:description" content="Pick a category, then call every next player higher or lower. Card members only." />
+<meta property="og:url" content="https://runthe.gg/arcade/highlow/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="High Low: Endless Sports Streak Game" />
+<meta name="twitter:description" content="Pick a category, then call every next player higher or lower. Card members only." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<link rel="canonical" href="https://runthe.gg/arcade/highlow/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<script src="/arcade/icons.js?v=1"></script>
+<style>
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
+    --hl:#F5822B; --hlT:#FF9D52;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --nfl:#5C8CFF; --mlb:#F0685F; --nba:#F2B632;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
+    --hlT:#C25E12;
+    --nfl:#2358E0; --mlb:#D8452F; --nba:#A87508;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--hl); outline-offset:2px; border-radius:4px;}
+  .wrap{width:100%; max-width:920px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; letter-spacing:.14em; color:var(--mut); margin-top:3px; margin-left:2px; white-space:nowrap;}
+  .spacer{flex:1;}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
+  .themeBtn:hover{color:var(--ink);}
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+  .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
+  .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px; border:1px solid var(--line2); border-radius:9px; background:var(--card); box-shadow:var(--shadow); flex:0 0 auto;}
+  .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--hlT); font-variant-numeric:tabular-nums;}
+  .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+
+  .a-gametitle{margin:2px 0 12px;}
+  .a-gametitle__plate{font-family:var(--hero); font-weight:400; font-size:clamp(30px,7vw,46px); line-height:.92; letter-spacing:.01em; color:var(--ink); text-transform:uppercase;}
+  .a-gametitle__plate b{color:var(--hlT); font-weight:400;}
+
+  .panel{display:none;}
+  .panel.on{display:block;}
+
+  /* ===== card gate (non-members) ===== */
+  .gate{background:var(--card); border:1px solid var(--line2); border-top:5px solid var(--hl); border-radius:16px; padding:30px 22px; text-align:center; box-shadow:var(--shadow); max-width:520px; margin:20px auto;}
+  .gate .lock{width:58px; height:58px; border-radius:50%; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--hl) 16%, var(--card)); color:var(--hlT); border:1px solid color-mix(in srgb, var(--hl) 40%, transparent);}
+  .gate .kick{font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--hlT); margin-bottom:8px;}
+  .gate h1{font-family:var(--hero); font-weight:400; text-transform:uppercase; font-size:clamp(24px,6vw,34px); line-height:1; margin:0 0 12px; color:var(--ink);}
+  .gate p{color:var(--mut); font-size:14px; line-height:1.55; margin:0 auto 20px; max-width:400px;}
+  .gate .getbtn{appearance:none; border:0; cursor:pointer; font-family:inherit; font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#2a1500; background:var(--hl); border-radius:999px; padding:14px 26px; min-height:50px; display:inline-flex; align-items:center; gap:9px; box-shadow:var(--shadow); transition:filter .12s, transform .08s;}
+  .gate .getbtn:hover{filter:brightness(1.06);}
+  .gate .getbtn:active{transform:translateY(1px);}
+  .gate .backlink{display:block; margin-top:16px; font-size:13px; font-weight:800; color:var(--mut);}
+  .gate .backlink:hover{color:var(--ink);}
+
+  /* ===== setup ===== */
+  .setup{max-width:620px; margin:0 auto;}
+  .setuphead{font-family:var(--hero); font-weight:400; text-transform:uppercase; letter-spacing:.02em; font-size:clamp(19px,3.6vw,24px); color:var(--ink); margin:2px 2px 4px;}
+  .setupsub{font-size:12.5px; color:var(--mut); margin:0 2px 16px; font-weight:600;}
+
+  .catsport{margin-bottom:18px;}
+  .catsport h3{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--sc,var(--mut)); margin:0 2px 9px;}
+  .catsport h3::after{content:""; flex:1; height:1px; background:var(--line);}
+  .catgrid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  @media (min-width:540px){ .catgrid{grid-template-columns:1fr 1fr 1fr;} }
+  .catchip{appearance:none; text-align:left; font-family:inherit; cursor:pointer; background:var(--card2); border:1.5px solid var(--line2); border-left:3px solid var(--sc,var(--hl)); border-radius:11px; padding:11px 12px; color:var(--ink); transition:border-color .12s, transform .08s, background .12s; min-height:58px; display:flex; flex-direction:column; justify-content:center;}
+  .catchip:hover,.catchip:focus-visible{border-color:var(--sc,var(--hl)); background:color-mix(in srgb, var(--sc,var(--hl)) 10%, var(--card2)); transform:translateY(-1px);}
+  .catchip:active{transform:translateY(0);}
+  .catchip .cl{display:block; font-weight:900; font-size:14px; line-height:1.15;}
+  .catchip .cc{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+  .catsoon{margin:11px 2px 0; padding:10px 12px; border:1.5px dashed var(--sc,var(--line2)); border-radius:11px; text-align:center; font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--sc,var(--mut));}
+
+  .crumb{display:flex; align-items:center; gap:10px; margin:0 2px 14px; flex-wrap:wrap;}
+  .crumb .back{appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:inherit; font-weight:800; font-size:12px; border-radius:8px; padding:7px 11px; cursor:pointer;}
+  .crumb .back:hover{color:var(--ink);}
+  .crumb .tag{font-size:12px; font-weight:900; letter-spacing:.02em; color:var(--hlT);}
+  .crumb .tag .sp{color:var(--mut); font-weight:800;}
+
+  .step{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:18px 16px; box-shadow:var(--shadow);}
+  .step .steplab{font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--hlT); margin-bottom:9px;}
+  .searchbox{position:relative;}
+  .searchbox input{width:100%; font-family:inherit; font-size:16px; font-weight:700; color:var(--ink); background:var(--card2); border:2px solid var(--line2); border-radius:11px; padding:13px 14px; min-height:50px; outline:none;}
+  .searchbox input:focus{border-color:var(--hl);}
+  .searchbox input::placeholder{color:var(--dim); font-weight:600;}
+  .results{list-style:none; margin:10px 0 0; padding:0; border:1px solid var(--line2); border-radius:11px; overflow:hidden; background:var(--card2); max-height:44vh; overflow-y:auto;}
+  .results:empty{display:none;}
+  .results li{margin:0; padding:0;}
+  .results button{width:100%; text-align:left; appearance:none; border:0; background:transparent; font-family:inherit; cursor:pointer; padding:11px 14px; display:flex; align-items:center; gap:10px; color:var(--ink); border-top:1px solid var(--line);}
+  .results li:first-child button{border-top:0;}
+  .results button:hover,.results button:focus-visible{background:color-mix(in srgb, var(--hl) 14%, var(--card2));}
+  .results .rn{font-weight:800; font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;}
+  .results .rmeta{font-size:11px; font-weight:900; letter-spacing:.02em; color:var(--mut); flex:0 0 auto;}
+  .noresults{font-size:13px; color:var(--mut); padding:12px 4px 2px;}
+
+  /* ===== play ===== */
+  .play-wrap{max-width:620px; margin:0 auto;}
+  .metricbar{display:flex; align-items:center; justify-content:center; gap:8px; margin:0 0 6px; font-size:12px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); flex-wrap:wrap;}
+  .metricbar .mb-name{color:var(--hlT);}
+  .metricbar .mb-x{appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:inherit; font-weight:800; font-size:11px; border-radius:999px; padding:4px 10px; cursor:pointer; text-transform:none; letter-spacing:0;}
+  .metricbar .mb-x:hover{color:var(--ink);}
+  .asof{text-align:center; font-size:10.5px; color:var(--dim); margin:0 0 12px; font-weight:700; transition:color .15s;}
+  .asof.hot{color:var(--hlT); font-weight:900; font-size:11.5px;}
+
+  .hlcard{border:2px solid var(--line2); border-top:4px solid var(--hl); border-radius:14px; background:var(--card); box-shadow:4px 4px 0 rgba(7,20,38,.22); padding:clamp(16px,3vh,26px) 16px; text-align:center; position:relative; overflow:hidden;}
+  :root[data-theme="light"] .hlcard{box-shadow:4px 4px 0 rgba(13,27,44,.12);}
+  .hlcard .role{font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .hlcard .nm{font-weight:900; font-size:clamp(20px,4.4vw,30px); line-height:1.1; color:var(--ink); margin:6px 0 3px;}
+  .hlcard .meta{font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut);}
+  .hlcard .val{font-family:var(--hero); font-weight:400; font-size:clamp(38px,9vw,60px); line-height:1; color:var(--hlT); margin-top:10px; font-variant-numeric:tabular-nums;}
+  .hlcard .val .u{font-family:var(--f); font-size:.3em; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); margin-left:6px; vertical-align:.4em;}
+  .hlcard .val .star{color:var(--hlT); font-size:.5em; vertical-align:.7em;}
+  .hlcard .qmark{font-family:var(--hero); font-weight:400; font-size:clamp(38px,9vw,60px); line-height:1; color:var(--dim); margin-top:10px;}
+  .hlcard.baseline{border-top-color:var(--mut);}
+  .hlcard.opp.correct{border-color:var(--green); border-top-color:var(--green); background:color-mix(in srgb, var(--green) 14%, var(--card));}
+  .hlcard.opp.wrong{border-color:var(--red); border-top-color:var(--red); background:color-mix(in srgb, var(--red) 14%, var(--card));}
+  .hlcard .revval{opacity:0; height:0; transition:opacity .22s ease;}
+  .hlcard.revealed .revval{opacity:1; height:auto;}
+  .hlcard.revealed .qmark{display:none;}
+
+  .midprompt{text-align:center; font-weight:900; font-size:clamp(14px,2.4vh,18px); color:var(--ink); margin:14px 0;}
+  .midprompt b{color:var(--hlT);}
+  .divider{display:flex; align-items:center; justify-content:center; margin:12px 0;}
+  .divider .vs{width:44px; height:44px; border-radius:50%; background:var(--hl); color:#2a1500; font-family:var(--hero); font-weight:400; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.5);}
+
+  .controls{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .hlbtn{appearance:none; font-family:inherit; cursor:pointer; border:2px solid var(--line2); border-radius:14px; background:var(--card2); color:var(--ink); font-weight:900; font-size:17px; letter-spacing:.03em; text-transform:uppercase; padding:16px 10px; min-height:66px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow:4px 4px 0 rgba(7,20,38,.22); transition:transform .08s, box-shadow .08s, border-color .12s, background .12s;}
+  :root[data-theme="light"] .hlbtn{box-shadow:4px 4px 0 rgba(13,27,44,.12);}
+  .hlbtn:hover{border-color:var(--hl);}
+  .hlbtn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.22);}
+  .hlbtn[disabled]{opacity:.5; cursor:default; pointer-events:none;}
+  .hlbtn.higher{border-color:color-mix(in srgb, var(--green) 45%, var(--line2)); color:var(--greenT);}
+  .hlbtn.lower{border-color:color-mix(in srgb, var(--red) 45%, var(--line2)); color:var(--red);}
+  .hlbtn .arr{font-size:20px; line-height:1;}
+  .hlbtn .sub{font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:none; color:var(--mut);}
+
+  .hint{text-align:center; font-size:12px; color:var(--mut); margin:16px 0 2px; font-weight:700;}
+
+  /* ===== leaderboard rail (after a run) ===== */
+  .lb{display:none; background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px auto 14px; max-width:620px;}
+  .lb.on{display:block;}
+  .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--hlT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .lb-pill{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--hlT); border:1px solid var(--hlT); border-radius:999px; padding:2px 8px;}
+  .lb-you{display:flex; gap:9px; margin-bottom:12px;}
+  .lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
+  .lb-you .box.me{border-color:var(--hlT); background:color-mix(in srgb, var(--hlT) 12%, var(--card2));}
+  .lb-you .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .lb-you .big{display:block; font-family:var(--hero); font-weight:400; font-size:20px; line-height:1.2; margin-top:5px; color:var(--ink);}
+  .lb-you .box.me .big{color:var(--hlT);}
+  .lb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
+  .lb .row:first-of-type{border-top:0;}
+  .lb .row.you{color:var(--hlT);}
+  .lb .rk{font-family:var(--hero); font-weight:400; color:var(--mut); width:20px;}
+  .lb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lb .tm{font-variant-numeric:tabular-nums; color:var(--hlT); font-weight:700;}
+  .lb .samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
+  .lb .note{font-size:11px; color:var(--mut); margin-top:8px;}
+
+  .foot{text-align:center; color:var(--dim); font-size:11.5px; padding:14px 0 2px;}
+  .foot a{color:var(--hlT);}
+
+  /* ===== end modal ===== */
+  .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
+  .scrim.hidden{display:none;}
+  .sheet{width:100%; max-width:380px; background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0; text-align:center;}
+  .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
+  .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--hlT); margin:4px 0 0;}
+  .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
+  .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .sheet .sub-h.newbest{color:var(--hlT); font-weight:900; letter-spacing:.04em;}
+  .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
+  .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
+  .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
+  .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .rcta{display:flex; gap:9px; margin-top:16px;}
+  .abtn{flex:1; appearance:none; border:2px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:10px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; box-shadow:4px 4px 0 rgba(7,20,38,.22); transition:transform .08s, box-shadow .08s, filter .12s;}
+  :root[data-theme="light"] .abtn{box-shadow:4px 4px 0 rgba(13,27,44,.12);}
+  .abtn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.22);}
+  .abtn.go{background:var(--hl); color:#2a1500; border-color:color-mix(in srgb, var(--hl) 60%, #000);}
+  .abtn.go:hover{filter:brightness(1.05);}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
+  .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
+  @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">HIGH LOW</span></a>
+    <div class="spacer"></div>
+    <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+      <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+    </button>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
+    <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
+  </div>
+
+  <div class="a-gametitle"><span class="a-gametitle__plate">High <b>Low</b></span></div>
+
+  <!-- ===== card gate (non-members) ===== -->
+  <section class="panel" id="panelGate">
+    <div class="gate">
+      <div class="lock" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+      </div>
+      <div class="kick">Arcade Card exclusive</div>
+      <h1>Members only</h1>
+      <p>High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.</p>
+      <button class="getbtn" id="gateGet" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19"/></svg>
+        Get the Arcade Card
+      </button>
+      <a class="backlink" href="/arcade/">‹ Back to the arcade</a>
+    </div>
+  </section>
+
+  <!-- ===== setup ===== -->
+  <section class="panel" id="panelSetup">
+    <!-- step 1: pick a category -->
+    <div class="setup" id="stepCategory">
+      <div class="setuphead">Pick a category</div>
+      <div class="setupsub">Choose a stat or metric. You'll then pick your starting player from everyone we have for it, and call every next player higher or lower.</div>
+      <div id="catList"></div>
+    </div>
+
+    <!-- step 2: pick your starting player -->
+    <div class="setup" id="stepBaseline" style="display:none">
+      <div class="crumb">
+        <button class="back" id="backCat" type="button">‹ Categories</button>
+        <span class="tag" id="crumbCat"></span>
+      </div>
+      <div class="step">
+        <div class="steplab" id="baseLab">Pick your starting player</div>
+        <div class="searchbox">
+          <input id="searchInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search this category…" aria-label="Search for a player" aria-controls="results" />
+        </div>
+        <ul class="results" id="results" role="listbox" aria-label="Player matches"></ul>
+        <div class="noresults" id="noResults" style="display:none">No players match that. Try another name.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== play ===== -->
+  <section class="panel" id="panelPlay">
+    <div class="play-wrap">
+      <div class="metricbar">
+        <span>Comparing <span class="mb-name" id="mbMetric">–</span></span>
+        <button class="mb-x" id="quitBtn" type="button">New game</button>
+      </div>
+      <div class="asof" id="asofNote" style="display:none"></div>
+
+      <div class="hlcard baseline" id="baseCard">
+        <div class="role">Baseline</div>
+        <div class="nm" id="baseName">–</div>
+        <div class="meta" id="baseMeta"></div>
+        <div class="val" id="baseVal"></div>
+      </div>
+
+      <div class="divider"><span class="vs" aria-hidden="true">VS</span></div>
+      <div class="midprompt" id="midPrompt">Will <b id="oppNameQ">this player</b> be higher or lower?</div>
+
+      <div class="hlcard opp" id="oppCard">
+        <div class="role">Next player</div>
+        <div class="nm" id="oppName">–</div>
+        <div class="meta" id="oppMeta"></div>
+        <div class="qmark" id="oppQ">???</div>
+        <div class="val revval" id="oppVal"></div>
+      </div>
+
+      <div class="controls">
+        <button class="hlbtn higher" id="btnHigher" type="button" aria-label="Guess higher">
+          <span class="arr" aria-hidden="true">▲</span>HIGHER<span class="sub">bigger number</span>
+        </button>
+        <button class="hlbtn lower" id="btnLower" type="button" aria-label="Guess lower">
+          <span class="arr" aria-hidden="true">▼</span>LOWER<span class="sub">smaller number</span>
+        </button>
+      </div>
+      <div class="hint" id="playHint">Higher or lower than the baseline? Build the longest streak you can.</div>
+    </div>
+
+    <div class="lb" id="lb">
+      <h3>Leaderboard <span class="lb-pill" id="lbPill">Sample</span></h3>
+      <div class="lb-you">
+        <div class="box me"><span class="cap">Your last run</span><span class="big" id="yourRun">–</span></div>
+        <div class="box"><span class="cap">Best ever</span><span class="big" id="yourBest">–</span></div>
+      </div>
+      <div id="lbSample">
+        <div class="samplab">Longest streaks</div>
+        <div class="row"><span class="rk">1</span><span class="who">streakmaster</span><span class="tm">24 in a row</span></div>
+        <div class="row"><span class="rk">2</span><span class="who">high_roller</span><span class="tm">19 in a row</span></div>
+        <div class="row"><span class="rk">3</span><span class="who">card_shark</span><span class="tm">15 in a row</span></div>
+      </div>
+      <div class="note" id="lbNote">Sample board. Sign in on RunThe.GG to post your run.</div>
+    </div>
+  </section>
+
+  <div class="foot">An Arcade Card exclusive inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
+</div>
+
+<div class="scrim hidden" id="scrim">
+  <div class="sheet">
+    <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
+    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="runbig" id="mRun">0</div>
+    <h2 id="mTitle">IN A ROW</h2>
+    <div class="rstats">
+      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
+      <div class="rstat"><div class="v" id="mMetric">–</div><div class="l">Category</div></div>
+    </div>
+    <div class="rcta">
+      <button class="abtn go" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
+      <button class="abtn" id="mShare" type="button">Share</button>
+      <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../match/entities.js?v=12"></script>
+<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/jerseys.js?v=1"></script>
+<script src="/arcade/stats.js?v=3"></script>
+<script src="/arcade/hlstats.js?v=3"></script>
+<script src="/arcade/rosterstats.js?v=2"></script>
+<script src="/arcade/tokens.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/alltime.js?v=2"></script>
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=3"></script>
+<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/share.js?v=2"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+  var ENT = window.GRID_ENTITIES || [];
+  var LS = window.localStorage;
+  var SAVE_KEY = 'rtg:highlow:v1', GAME = 'highlow';
+  var MIN_POOL = 8;                 // hide categories with too few players for a fair run
+  var SPORTS = ['NFL','MLB','NBA']; // display order + which sports High Low covers
+
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  var DATE = todayStr();
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function ri(n){ return Math.floor(Math.random()*n); }
+  function fmtNum(v){ try{ return Number(v).toLocaleString('en-US'); }catch(e){ return String(v); } }
+  function cap(s){ s=String(s||''); return s.charAt(0).toUpperCase()+s.slice(1); }
+  function nkey(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,''); }
+
+  var idMap = {}; ENT.forEach(function(e){ if(e && e.id) idMap[e.id]=e; });
+
+  // jersey stints grouped by name+sport (matches the Number Game's join)
+  var stintsByName = {};
+  try{ ((window.RTG_JERSEYS && RTG_JERSEYS.stints) || []).forEach(function(s){
+    var k = s.sport+'|'+nkey(s.name); (stintsByName[k] || (stintsByName[k]=[])).push(s);
+  }); }catch(e){}
+
+  function jerseyVal(e){
+    if(!e) return null;
+    var ss = stintsByName[e.sport+'|'+nkey(e.name)];
+    if(ss && ss.length){ var best=null; for(var i=0;i<ss.length;i++){ if(ss[i].num!=null && (best===null || ss[i].y1>best.y1)) best=ss[i]; } if(best) return best.num; }
+    if(e.j && e.j.length){ var last=e.j[e.j.length-1]; if(last!=null) return last; }
+    return null;
+  }
+  function yearsVal(e){
+    if(!e) return null;
+    var ss = stintsByName[e.sport+'|'+nkey(e.name)];
+    if(ss && ss.length){ var y0=Infinity,y1=-Infinity; for(var i=0;i<ss.length;i++){ if(ss[i].y0<y0)y0=ss[i].y0; if(ss[i].y1>y1)y1=ss[i].y1; } if(isFinite(y0)&&isFinite(y1)) return (y1-y0+1); }
+    if(e.decade && e.decade.length){ var d0=Math.min.apply(null,e.decade), d1=Math.max.apply(null,e.decade); return (d1-d0)+10; }
+    return null;
+  }
+
+  // ---------- merge stat sources ----------
+  // stats.js (RTG_STATS): NBA + retired-full NFL/MLB counting stats (hand-curated).
+  // hlstats.js (RTG_HLSTATS): broad, active-inclusive NFL (nflverse) + MLB WAR.
+  // For a category present in both, stats.js wins per-player (full career totals
+  // for retired legends beat nflverse's 1999+ partials); hlstats fills the rest.
+  var RS = window.RTG_STATS || {};
+  // Two generated sources merge over the hand-curated stats.js: hlstats.js
+  // (NFL via nflverse + MLB WAR) and rosterstats.js (CI: NBA + MLB counting
+  // stats for every corpus player). rosterstats wins for its categories.
+  var HLo = window.RTG_HLSTATS || {}, RSo = window.RTG_ROSTERSTATS || {};
+  var HL = Object.assign({}, HLo.stats || {}, RSo.stats || {});
+  var ASOF = Object.assign({}, HLo.asof || {}, RSo.asof || {});
+  var ACTIVE = Object.assign({}, HLo.activeIds || {}, RSo.activeIds || {});   // players still accruing
+  function tidyLabel(s){ return cap(String(s||'').replace(/^career\s+/i,'').replace(/^(nba|nfl|mlb)\s+/i,'')); }
+  function sportOf(key){ var p=key.split('_')[0].toUpperCase(); return (p==='NBA'||p==='NFL'||p==='MLB')?p:''; }
+  var STAT = {};   // key -> { label, unit, sport, lowbest, vals }
+  Object.keys(RS).forEach(function(k){
+    STAT[k] = { label:RS[k].label, unit:RS[k].unit||'', sport:sportOf(k), lowbest:false, vals:Object.assign({}, RS[k].vals||{}) };
+  });
+  Object.keys(HL).forEach(function(k){
+    var h = HL[k];
+    if(STAT[k]){ var v=STAT[k].vals, hv=h.vals||{}; Object.keys(hv).forEach(function(id){ if(v[id]==null) v[id]=hv[id]; }); if(h.lowbest) STAT[k].lowbest=true; }
+    else STAT[k] = { label:h.label, unit:h.unit||'', sport:h.sport||sportOf(k), lowbest:!!h.lowbest, vals:Object.assign({}, h.vals||{}) };
+  });
+
+  // ---------- build the category list ----------
+  // Each category: { sport, key, label, unit, prefix, note, lowbest, isStat, asof, vfn(e), pool[] }
+  var CATS = [];
+  function poolFor(sport, vfn){ return ENT.filter(function(e){ return e.sport===sport && vfn(e)!=null; }); }
+
+  // stat categories (merged), grouped by sport
+  var SKIP_CATS = { mlb_saves:1 };   // too few players to be a fair High Low category
+  Object.keys(STAT).forEach(function(k){
+    if(SKIP_CATS[k]) return;
+    var st = STAT[k]; if(SPORTS.indexOf(st.sport)<0) return;
+    var vfn = (function(vals){ return function(e){ var v=vals[e.id]; return (v==null)?null:v; }; })(st.vals);
+    var pool = poolFor(st.sport, vfn); if(pool.length < MIN_POOL) return;
+    var isDraft = /draft/.test(k);
+    CATS.push({ sport:st.sport, key:k, label:(isDraft?'Draft position':tidyLabel(st.label)), unit:st.unit,
+      prefix:(isDraft?'#':''), note:(st.lowbest?'lower = better':''), lowbest:st.lowbest,
+      isStat:true, asof:(isDraft?null:(ASOF[st.sport]||null)), vfn:vfn, pool:pool });
+  });
+  // years played, per sport (jersey number removed as a category)
+  SPORTS.forEach(function(sp){
+    var yp = poolFor(sp, yearsVal);  if(yp.length>=MIN_POOL) CATS.push({ sport:sp, key:sp+'_years', label:'Years played', unit:'yrs', prefix:'', note:'longevity', lowbest:false, isStat:false, asof:null, vfn:yearsVal, pool:yp });
+  });
+  // NBA draft position from the corpus draft field (NFL draft comes from hlstats)
+  (function(){
+    var vfn=function(e){ return (typeof e.dp==='number')?e.dp:null; };
+    var pool=poolFor('NBA', vfn); if(pool.length>=MIN_POOL) CATS.push({ sport:'NBA', key:'nba_draft', label:'Draft position', unit:'', prefix:'#', note:'lower = better', lowbest:true, isStat:false, asof:null, vfn:vfn, pool:pool });
+  })();
+
+  // NBA: only Points and Years played for now. The other NBA counting stats
+  // aren't sourced reliably yet ("NBA STATS COMING SOON").
+  var NBA_KEEP = { nba_points:1, NBA_years:1 };
+  CATS = CATS.filter(function(c){ return c.sport!=='NBA' || NBA_KEEP[c.key]; });
+
+  // order within a sport: stats (by pool size desc), then jersey, years, draft
+  function catRank(c){ if(/_jersey$/.test(c.key)) return 2; if(/_years$/.test(c.key)) return 3; if(/draft/.test(c.key)) return 4; return 1; }
+  CATS.sort(function(a,b){ if(a.sport!==b.sport) return SPORTS.indexOf(a.sport)-SPORTS.indexOf(b.sport); var ra=catRank(a), rb=catRank(b); if(ra!==rb) return ra-rb; return b.pool.length-a.pool.length; });
+
+  // ---------- value formatting ----------
+  function fmtVal(cat, v, ent){
+    if(v==null) return '';
+    var u = cat.unit ? '<span class="u">'+esc(cat.unit)+'</span>' : '';
+    return (cat.prefix||'') + fmtNum(v) + u;
+  }
+  function isActive(e){ return !!(e && ACTIVE[e.id]); }
+
+  // ---------- draw a fresh opponent from the category pool ----------
+  function drawOpponent(cat, baseline){
+    var pool = cat.pool || [], bv = cat.vfn(baseline);
+    var recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=3; });
+    if(recog.length < 8) recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=2; });
+    if(!recog.length) recog = pool.filter(function(e){ return e.id!==baseline.id; });
+    if(!recog.length) return null;
+    var guard=0;
+    while(guard<400){ guard++;
+      var c = recog[ri(recog.length)]; var cv = cat.vfn(c);
+      if(cv==null || cv===bv) continue;      // skip ties + strays
+      return { ent:c, val:cv };
+    }
+    for(var i=0;i<recog.length;i++){ var cv2=cat.vfn(recog[i]); if(cv2!=null && cv2!==bv) return { ent:recog[i], val:cv2 }; }
+    return null;
+  }
+
+  // ---------- state ----------
+  var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0;
+  var run=0, best=0, busy=false, playing=false, charged=false;
+
+  function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
+
+  // ---------- panels ----------
+  var P = { gate:document.getElementById('panelGate'), setup:document.getElementById('panelSetup'), play:document.getElementById('panelPlay') };
+  function show(name){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===name); }); }
+
+  // ---------- card gate ----------
+  function isMember(){ try{ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){ return false; } }
+  var revealed=false;
+  function revealGame(){ if(revealed) return; revealed=true; show('setup'); showCategories();
+    document.getElementById('lb').classList.add('on'); renderRealBoard(); }
+
+  document.getElementById('gateGet').addEventListener('click', function(){
+    try{ if(window.RTGCard && RTGCard.paywall){ RTGCard.paywall({reason:'upsell'}); return; } }catch(e){}
+    location.href='/arcade/';
+  });
+
+  // ---------- step 1: categories ----------
+  var SPORT_LABEL = { NFL:'NFL', MLB:'MLB', NBA:'NBA' };
+  function showCategories(){
+    document.getElementById('stepCategory').style.display='';
+    document.getElementById('stepBaseline').style.display='none';
+    var host = document.getElementById('catList');
+    if(host.getAttribute('data-built')==='1') return;
+    var html='';
+    SPORTS.forEach(function(sp){
+      var list = CATS.filter(function(c){ return c.sport===sp; });
+      if(!list.length) return;
+      html += '<div class="catsport" style="--sc:var(--'+sp.toLowerCase()+')"><h3>'+esc(SPORT_LABEL[sp])+'</h3><div class="catgrid">';
+      list.forEach(function(c){
+        html += '<button class="catchip" type="button" data-key="'+esc(c.key)+'">'+
+                  '<span class="cl">'+esc(c.label)+'</span>'+
+                  '<span class="cc">'+c.pool.length+' players</span>'+
+                '</button>';
+      });
+      html += '</div>';
+      if(sp==='NBA') html += '<div class="catsoon">NBA Stats Coming Soon</div>';
+      html += '</div>';
+    });
+    host.innerHTML = html;
+    host.setAttribute('data-built','1');
+    [].forEach.call(host.querySelectorAll('.catchip'), function(b){
+      b.addEventListener('click', function(){ pickCategory(b.getAttribute('data-key')); });
+    });
+  }
+  var catByKey={}; CATS.forEach(function(c){ catByKey[c.key]=c; });
+
+  // ---------- step 2: baseline ----------
+  var searchInput=document.getElementById('searchInput');
+  var resultsEl=document.getElementById('results');
+  var noResultsEl=document.getElementById('noResults');
+
+  function pickCategory(key){
+    cat = catByKey[key]; if(!cat) return;
+    document.getElementById('stepCategory').style.display='none';
+    document.getElementById('stepBaseline').style.display='';
+    document.getElementById('crumbCat').innerHTML = '<span class="sp">'+esc(cat.sport)+' · </span>'+esc(cat.label);
+    document.getElementById('baseLab').textContent = 'Pick your starting player · '+cat.pool.length+' available';
+    searchInput.value=''; searchInput.placeholder='Search '+cat.pool.length+' players…';
+    renderResults('');
+    try{ searchInput.focus(); }catch(e){}
+    try{ document.getElementById('stepBaseline').scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+  }
+  document.getElementById('backCat').addEventListener('click', function(){ showCategories(); });
+
+  function renderResults(q){
+    resultsEl.innerHTML=''; noResultsEl.style.display='none';
+    q=(q||'').trim().toLowerCase();
+    var pool = (cat&&cat.pool)||[], out=[];
+    if(q.length>=1){
+      for(var i=0;i<pool.length && out.length<40;i++){ if(String(pool[i].name).toLowerCase().indexOf(q)>=0) out.push(pool[i]); }
+    } else {
+      // default: the most recognizable names in this category, so there's always something to tap
+      out = pool.slice().sort(function(a,b){ return (b.f||0)-(a.f||0); }).slice(0,25);
+    }
+    if(!out.length){ noResultsEl.style.display='block'; return; }
+    var html='';
+    for(var j=0;j<out.length;j++){
+      var e=out[j];
+      html+='<li role="option"><button type="button" data-id="'+esc(e.id)+'"><span class="rn">'+esc(e.name)+'</span><span class="rmeta">'+esc(metaLine(e))+'</span></button></li>';
+    }
+    resultsEl.innerHTML=html;
+    [].forEach.call(resultsEl.querySelectorAll('button'), function(b){
+      b.addEventListener('click', function(){ startGame(b.getAttribute('data-id')); });
+    });
+  }
+  searchInput.addEventListener('input', function(){ renderResults(searchInput.value); });
+
+  // ---------- play ----------
+  var baseCard=document.getElementById('baseCard'), oppCard=document.getElementById('oppCard');
+  var btnHigher=document.getElementById('btnHigher'), btnLower=document.getElementById('btnLower');
+
+  function metaLine(e){ var bits=[]; if(e.pos) bits.push(e.pos); else if(e.sport) bits.push(e.sport); return bits.join(' · '); }
+
+  function startGame(baseId){
+    var e = idMap[baseId]; if(!e || !cat) return;
+    baseline=e; run=0; playing=true; busy=false; charged=false;
+    var s=load(); best=s.best||0;
+    document.getElementById('streakN').textContent='0';
+    var lbl = cat.label + (cat.note?(' ('+cat.note+')'):'');
+    document.getElementById('mbMetric').textContent = cat.sport+' · '+lbl;
+    baselineVal = cat.vfn(baseline);
+    document.getElementById('lb').classList.remove('on');
+    try{ if(window.RTGTokens && RTGTokens.startAttempt){ RTGTokens.startAttempt(GAME); charged=true; } }catch(e){}
+    show('play');
+    setBaselineCard(baseline, baselineVal);
+    nextOpponent();
+  }
+
+  function setBaselineCard(e, v){
+    document.getElementById('baseName').textContent=e.name;
+    document.getElementById('baseMeta').textContent=metaLine(e);
+    document.getElementById('baseVal').innerHTML=fmtVal(cat, v, e);
+    updateAsof(e);
+  }
+  // A consistent "updated through 2025" line sits above the cards for every
+  // sport and category, and goes bold when the player in the TOP spot is still
+  // active (their number is a moving total) - drawing the eye when it matters.
+  function updateAsof(e){
+    var el=document.getElementById('asofNote'); if(!el) return;
+    el.style.display=''; el.textContent='All numbers are updated through the end of the 2025 season.';
+    el.classList.toggle('hot', isActive(e));
+  }
+  function nextOpponent(){
+    var drawn=drawOpponent(cat, baseline);
+    if(!drawn){ toast('Out of fair matchups — nice run!'); finish(); return; }
+    opp=drawn.ent; oppVal=drawn.val;
+    oppCard.classList.remove('revealed','correct','wrong');
+    document.getElementById('oppName').textContent=opp.name;
+    document.getElementById('oppMeta').textContent=metaLine(opp);
+    document.getElementById('oppNameQ').textContent=opp.name;
+    document.getElementById('oppVal').innerHTML=fmtVal(cat, oppVal, opp);
+    setControls(true);
+  }
+  function setControls(on){ btnHigher.disabled=!on; btnLower.disabled=!on; }
+
+  function guess(dir){
+    if(!playing || busy) return; busy=true; setControls(false);
+    var actualHigher = oppVal > baselineVal;   // ties never presented
+    var correct = (dir==='higher') === actualHigher;
+    oppCard.classList.add('revealed'); oppCard.classList.add(correct?'correct':'wrong');
+    if(correct){
+      run++; if(run>best) best=run;
+      document.getElementById('streakN').textContent=run;
+      try{ if(window.RTGSound) RTGSound.lock(); }catch(e){}
+      setTimeout(function(){ baseline=opp; baselineVal=oppVal; setBaselineCard(baseline, baselineVal); busy=false; nextOpponent(); }, 780);
+    } else {
+      try{ if(window.RTGSound) RTGSound.wrong(); }catch(e){}
+      setTimeout(function(){ finish(); }, 900);
+    }
+  }
+  btnHigher.addEventListener('click', function(){ guess('higher'); });
+  btnLower.addEventListener('click', function(){ guess('lower'); });
+  document.addEventListener('keydown', function(ev){
+    if(!P.play.classList.contains('on') || !playing || busy) return;
+    if(ev.key==='ArrowUp'){ ev.preventDefault(); guess('higher'); }
+    else if(ev.key==='ArrowDown'){ ev.preventDefault(); guess('lower'); }
+  });
+
+  document.getElementById('quitBtn').addEventListener('click', function(){ backToSetup(); });
+  function backToSetup(){
+    playing=false; busy=false;
+    document.getElementById('scrim').classList.add('hidden');
+    baseline=null; opp=null;
+    show('setup'); showCategories();
+  }
+
+  // ---------- finish ----------
+  var NEWBEST=false;
+  function finish(){
+    if(!playing) return; playing=false; busy=false;
+    var s=load(); var prevBest=s.best||0;
+    NEWBEST = run>0 && run>prevBest;
+    s.best=Math.max(prevBest, run); s.last={ run:run }; save(s); best=s.best;
+    document.getElementById('mRun').textContent=run;
+    document.getElementById('mBest').textContent=s.best;
+    document.getElementById('mMetric').textContent = cat ? cat.label : '–';
+    document.getElementById('yourRun').textContent = run+' in a row';
+    document.getElementById('yourBest').textContent = s.best;
+    var sub;
+    if(NEWBEST) sub='NEW PERSONAL BEST';
+    else if(prevBest>0 && run===prevBest) sub='Tied your best';
+    else if(run===0) sub='Better luck next run';
+    else sub='Your run ended';
+    var subEl=document.getElementById('mSub'); subEl.textContent=sub; subEl.classList.toggle('newbest', NEWBEST);
+    document.getElementById('lb').classList.add('on');
+    setTimeout(function(){
+      document.getElementById('scrim').classList.remove('hidden');
+      if(run>=5 || NEWBEST){ confetti(NEWBEST?130:80, NEWBEST); try{ if(window.RTGSound) RTGSound.win(); }catch(e){} }
+    }, 260);
+    try{
+      if(run>0 && window.RTG_BOARD && RTG_BOARD.submit){
+        RTG_BOARD.submit(GAME, DATE, { seconds:0, mistakes:0, reveals:0, runLen:run }).then(function(res){
+          if(res && res.streak){ document.getElementById('streakN').textContent=res.streak; }
+          renderRealBoard();
+        });
+      }
+    }catch(e){}
+  }
+
+  document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); });
+  document.getElementById('mAgain').addEventListener('click', function(){ backToSetup(); });
+  document.getElementById('mShare').addEventListener('click', function(){
+    try{
+      var stat=(run>0?'🔥 ':'')+run+' in a row'+(cat?(' · '+cat.label):'');
+      if(window.RTGShare && RTGShare.send){ RTGShare.send({ key:'highlow', date:DATE, grid:'', stat:stat, statInt:run }); return; }
+    }catch(e){}
+    toast('Sharing unavailable');
+  });
+
+  // ---------- leaderboard rail ----------
+  function renderRealBoard(){
+    if(!window.RTG_BOARD || !RTG_BOARD.leaderboard) return;
+    try{
+      RTG_BOARD.leaderboard(GAME, DATE, 5).then(function(rows){
+        if(rows===null) return;
+        var pill=document.getElementById('lbPill'); if(pill) pill.textContent='Live';
+        var samp=document.getElementById('lbSample'); if(!samp) return;
+        if(!rows.length){ samp.innerHTML='<div class="samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Longest runs today</div>';
+          for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+esc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
+          samp.innerHTML=h;
+        }
+        var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins. Sign in on RunThe.GG to post yours.';
+      });
+    }catch(e){}
+  }
+
+  // ---------- confetti / toast / theme ----------
+  var CFC=['#F5822B','#FF9D52','#48D17A','#F2B632','#A982F3','#F06A5F'];
+  function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+    var pal=gold?['#F5822B','#FF9D52','#FFC089','#F2B632']:CFC, wrap=document.createElement('div'); wrap.className='confetti';
+    for(var i=0;i<count;i++){ var p=document.createElement('i'); p.style.left=(Math.random()*100).toFixed(2)+'%'; p.style.background=pal[i%pal.length]; p.style.animationDuration=(2.2+Math.random()*1.7).toFixed(2)+'s'; p.style.animationDelay=(Math.random()*0.4).toFixed(2)+'s'; if(Math.random()<0.45){ p.style.width='8px'; p.style.height='8px'; p.style.borderRadius='50%'; } wrap.appendChild(p); }
+    document.body.appendChild(wrap); setTimeout(function(){ wrap.remove(); },4200);
+  }
+  var toastT=null; function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('on'); if(toastT) clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2400); }
+
+  function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
+  applyThemeMeta();
+  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); });
+
+  // ---------- boot ----------
+  var s0=load();
+  document.getElementById('yourBest').textContent = s0.best||0;
+  if(s0.last && s0.last.run!=null) document.getElementById('yourRun').textContent = s0.last.run+' in a row';
+
+  if(isMember()) revealGame(); else show('gate');
+  if(window.RTG_BOARD){
+    try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){ if(isMember()){ revealGame(); renderRealBoard(); } }); }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>

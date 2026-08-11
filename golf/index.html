@@ -6833,10 +6833,15 @@ function wheelStep(steps, idx){ for(const [at,v] of steps) if(idx>=at) return v;
 // A wedge is narrow, so coin values read as a tight 580 / 2.7k / 12k rather than a comma'd number.
 function wheelNum(n){ n=Math.round(n||0); if(n<1000) return String(n);
   const k=n/1000; return (k<10?k.toFixed(1).replace(/\.0$/,''):String(Math.round(k)))+'k'; }
-// The 10 segments, in wheel order (the two boosts sit opposite each other). Values and weights are a
-// function of the rank, so a promotion is always a strictly better wheel.
-// Coins are the bulk of the wheel by design (5 of the 10 wedges, ~74% of the weight), so packs and the
-// XP boosts stay genuinely rare - they read as a hit rather than a routine payout.
+// The 13 segments, in wheel order (coins and non-coins alternate so the face reads evenly). Values and
+// weights are a function of the rank, so a promotion is always a strictly better wheel.
+// Coins are the bulk of the wheel by design (7 of the 13 wedges, ~63% of the weight), so packs and the
+// long XP boosts stay genuinely rare - they read as a hit rather than a routine payout.
+// The bottom of the ladder is deliberately WIDE (tiny/xs/small-b/small coins + a 15-min boost): the low
+// wedges carry the variety, and they get rarer as the rank climbs (see the -f terms) while the big coin
+// wedges, the pack and the long boost get commoner. The TOP-prize odds are unchanged from the 10-wedge
+// table - the new low wedges were funded by splitting the two smallest coin wedges, so pack/shard/spin
+// all still sit at the same share of the total weight.
 function wheelPrizesFor(idx){
   idx=Math.max(0,Math.min(REP_ORDER.length-1, idx|0));
   const f=idx/(REP_ORDER.length-1);                                  // 0 at Amateur, 1 at G.O.A.T.
@@ -6845,15 +6850,19 @@ function wheelPrizesFor(idx){
   const shCol={common:'#9fdcff', rare:'#4aa3ff', epic:'#a24be0'}[shR]||'#9fdcff';
   const shLab={common:'Common', rare:'Rare', epic:'Epic'}[shR]||'Common';
   const pk=(typeof packType==='function')?packType(pkT):{name:'Base Pack', col:'#3fbf7a'};
-  const cXs=sc(100,1.6), cSm=sc(250,1.9), cMd=sc(600,3.5), cLg=sc(1200,4), cBg=sc(2500,5);
+  const cTn=sc(50,1.2), cXs=sc(100,1.6), cSb=sc(160,1.7), cSm=sc(250,1.9);
+  const cMd=sc(600,3.5), cLg=sc(1200,4), cBg=sc(2500,5);
   const cn=(id,w,amt)=>({id, w, kind:'coins', amt, label:coinFmt(amt)+' Coins', short:wheelNum(amt), col:'#ffd45e'});
   return [
-    cn('cXs', 18-3*f, cXs),
-    {id:'xp30', w:8,        kind:'boost', mins:30,       label:'2× XP · 30 min', short:'2× XP', col:'#a78bfa'},
-    cn('cSm', 20-2*f, cSm),
+    cn('cTn', 9-2*f,  cTn),
+    {id:'xp15', w:8-2*f,    kind:'boost', mins:15,       label:'2× XP · 15 min', short:'2× XP', col:'#8b7ae0'},
+    cn('cXs', 9-1*f,  cXs),
+    {id:'xp30', w:5,        kind:'boost', mins:30,       label:'2× XP · 30 min', short:'2× XP', col:'#a78bfa'},
+    cn('cSb', 10-2*f, cSb),
     {id:'sh',   w:6+1*f,    kind:'shard', r:shR, n:1,    label:shLab+' Shard',   short:'◆',     col:shCol},
-    cn('cMd', 18,     cMd),
+    cn('cSm', 10-1*f, cSm),
     {id:'pack', w:3+1.5*f,  kind:'pack',  tier:pkT, n:1, label:pk.name,          short:'PACK',  col:pk.col||'#3fbf7a'},
+    cn('cMd', 13,     cMd),
     {id:'xp60', w:4+1*f,    kind:'boost', mins:60,       label:'2× XP · 1 hour', short:'2× XP', col:'#c9a0ff'},
     cn('cLg', 12+2*f, cLg),
     {id:'spin', w:4-0.5*f,  kind:'spin',  n:1,           label:'Bonus Spin',     short:'+1',    col:'#ff7ab8'},
@@ -6967,11 +6976,15 @@ function wheelStyleOnce(){ if(_pwvcss) return; _pwvcss=true; const st=document.c
   .pwv-boostbig{margin-top:8px;font:900 15px/1 var(--body);color:#c9a0ff;font-variant-numeric:tabular-nums}
   @media (prefers-reduced-motion:reduce){ .pwv-rot{transition:none!important} .pwv-card{animation:none} .pwv-spinning .pwv-hub{animation:none} }
 `; document.head.appendChild(st); }
-// The wheel face: 8 radial segments, each tinted with its prize colour, labelled radially like a real
-// prize wheel. Segment i is centred at i*45 degrees clockwise from 12 o'clock (the pointer).
+// The wheel face: one radial segment per prize, tinted with its colour and labelled radially like a real
+// prize wheel. Segment i is centred at i*step degrees clockwise from 12 o'clock (the pointer).
+// `restRot` is the rotation the WHEEL will be sitting at when it stops (the CSS transform on .pwv-rot).
+// The labels are baked for THAT orientation, not for an unrotated face - otherwise every wedge that
+// started on the bottom half lands on the top half reading upside down once the spin finishes.
 function wheelSeg(pz){ return 360/((pz&&pz.length)||8); }      // degrees per wedge
-function wheelFaceSVG(pz){
+function wheelFaceSVG(pz, restRot){
   pz=pz||wheelPrizes();
+  const wheelRot=((+restRot||0)%360+360)%360;
   const cx=120, cy=120, r=112, step=wheelSeg(pz), half=step/2;
   const pt=(deg)=>{ const a=deg*Math.PI/180; return [(cx+r*Math.sin(a)).toFixed(2),(cy-r*Math.cos(a)).toFixed(2)]; };
   let out=`<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="117" fill="#0d1f16" stroke="#ff7ab8" stroke-width="3"/>`;
@@ -6981,19 +6994,27 @@ function wheelFaceSVG(pz){
     out+=`<path d="M${cx},${cy} L${s0[0]},${s0[1]} A${r},${r} 0 0 1 ${s1[0]},${s1[1]} Z" fill="${fill}" stroke="rgba(255,255,255,.16)" stroke-width="1"/>`;
   });
   pz.forEach((p,i)=>{
-    const sub = p.kind==='boost' ? (p.mins>=60?'1 HR':'30 MIN')
+    const sub = p.kind==='boost' ? (p.mins>=60?((p.mins/60)+' HR'):(p.mins+' MIN'))
               : p.kind==='shard' ? String(p.r||'').toUpperCase()
               : p.kind==='pack'  ? String(p.tier==='champ'?'CHAMP':(p.tier||'base')).toUpperCase()
               : p.kind==='spin'  ? 'SPIN' : 'COINS';
-    // Bottom-half wedges would read upside down, so flip them 180 and mirror the radii about the
-    // centre - the label lands in the same wedge, the right way up.
+    // A wedge whose ON-SCREEN angle lands on the bottom half would read upside down, so flip it 180 and
+    // mirror the radii about the centre - the label stays in the same wedge, the right way up. The test
+    // is against where the wedge actually SITS once the wheel has stopped (its own angle plus the wheel's
+    // resting rotation), so the face reads correctly at rest whatever it landed on.
     // Both halves put the value on the OUTER radius (where the wedge is widest) and the small caption
     // inboard, so a long label like "PACK" never has to fit the narrow inner end.
-    const deg=i*step, flip=(deg>90 && deg<270), rot=deg+(flip?180:0);
-    const yMain=flip?200:40, ySub=flip?183:57;
+    const deg=i*step, view=(deg+wheelRot)%360;
+    const flip=(view>90 && view<270), rot=deg+(flip?180:0);
+    // More wedges = a narrower arc, so on a busy wheel the value steps down a size, the caption shrinks
+    // and both move outward (where the wedge is widest) to keep clear of the neighbouring labels.
+    const big=step>=32;
+    const yMain=big?(flip?200:40):(flip?203:37), ySub=big?(flip?183:57):(flip?188:52);
+    const fs=p.short.length>4?(big?12:11):(big?15:13);
+    const ss=big?7.5:6.4, ls=big?'.06em':'.02em';
     out+=`<g transform="rotate(${rot},120,120)">
-      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${p.short.length>4?12:15}px var(--body)">${esc(p.short)}</text>
-      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 7.5px var(--body);letter-spacing:.06em">${sub}</text></g>`;
+      <text x="120" y="${yMain}" text-anchor="middle" fill="${p.col}" style="font:900 ${fs}px var(--body)">${esc(p.short)}</text>
+      <text x="120" y="${ySub}" text-anchor="middle" fill="rgba(255,255,255,.72)" style="font:800 ${ss}px var(--body);letter-spacing:${ls}">${sub}</text></g>`;
   });
   return out+`</svg>`;
 }
@@ -7019,7 +7040,10 @@ function overlayWheel(app){
     : avail>0 ? `${avail} spin${avail>1?'s':''} ready${free?' · today’s free spin':''}${(free&&banked)?` + ${banked} banked`:''}`
     : 'Come back tomorrow for a free spin.';
   ov.appendChild($(`<p class="lede" style="margin:0 0 8px">${sub}</p>`));
-  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG(pz)}</div><div class="pwv-hub">SPIN</div></div>`);
+  // Bake the labels for where the wheel will COME TO REST (0 when it hasn't been spun), so nothing reads
+  // upside down at the moment the player is actually looking at it.
+  const faceRot=(w&&w.spun)?w.rot:0;
+  const wrap=$(`<div class="pwv-wrap${spinning?' pwv-spinning':''}"><div class="pwv-ptr"></div><div class="pwv-rot">${wheelFaceSVG(pz,faceRot)}</div><div class="pwv-hub">SPIN</div></div>`);
   ov.appendChild(wrap);
   const rot=wrap.querySelector('.pwv-rot');
   const foot=$(`<div style="margin-top:14px"></div>`); ov.appendChild(foot);
@@ -9994,15 +10018,18 @@ function dailyHeroCard(){
       : `<span class="gc-chip">${dCd('hm')} left</span>`;
   }
   const cname=c.v?dShort(c.v):'';
+  // The art is only DEFERRED the very first time (building a terrain tile costs ~100ms). Once it's built
+  // it goes straight into the markup, so re-rendering the home screen can't pop the strip in and out.
+  const artReady=(_dArt[ck]!==undefined)?_dArt[ck]:null;
   const card=$(`<button class="gcard gc-gold${cname?' hasart':''}" aria-label="Play 18, today's round${cname?' at '+esc(cname):''}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${chips}<span class="gc-go">${played?(dleft>0?'Go lower ▸':'View ▸'):'Play ▸'}</span></div>
-    ${cname?`<div class="gc-strip"><div class="gc-striplab">📍 ${esc(cname)}<span class="sl-par">Par ${c.par} · ${esc(dCondLabel(dailyConditions(dk,ck)))}</span></div></div>`:''}
+    ${cname?`<div class="gc-strip">${artReady?`<img src="${artReady}" alt="" aria-hidden="true">`:''}<div class="gc-striplab">📍 ${esc(cname)}<span class="sl-par">Par ${c.par} · ${esc(dCondLabel(dailyConditions(dk,ck)))}</span></div></div>`:''}
   </button>`);
   card.onclick=startDailyChallenge;
-  // fill the course art in after paint (first build of a terrain tile is ~100ms)
-  if(cname) setTimeout(()=>{ try{
+  // first ever build: fill the art in after paint, then every later render has it inline (above)
+  if(cname && _dArt[ck]===undefined) setTimeout(()=>{ try{
     const strip=card.querySelector('.gc-strip'); if(!strip||!strip.isConnected) return;
     const url=dailyCourseArt(ck); if(!url) return;
     const img=new Image(); img.alt=''; img.setAttribute('aria-hidden','true'); img.src=url;
@@ -10012,12 +10039,16 @@ function dailyHeroCard(){
 }
 // Prize Wheel home card. Glows when a spin is ready (the daily hook); shows a live 2x-XP boost timer
 // when one is running, so the urgency is visible from the home screen.
-// A tiny spinning wheel graphic for the home button (10 wedges, matching the real face's colours).
+// A tiny spinning wheel graphic for the home button. Derived from the real prize table, so the wedge
+// COUNT and colours always match the face the player is about to spin (adding a segment can't desync it).
 function wheelMiniSVG(){
-  const cols=['#ffd45e','#a78bfa','#ffd45e','#9fdcff','#ffd45e','#3fbf7a','#c9a0ff','#ffd45e','#ff7ab8','#ffd45e'];
+  let cols;
+  try{ cols=wheelPrizes().map(p=>p.col); }catch(e){}
+  if(!cols||!cols.length) cols=['#ffd45e','#a78bfa','#ffd45e','#9fdcff','#ffd45e','#3fbf7a','#c9a0ff','#ffd45e','#ff7ab8','#ffd45e'];
+  const step=360/cols.length, half=step/2;
   const pt=(d)=>{ const a=d*Math.PI/180; return [(12+11*Math.sin(a)).toFixed(2),(12-11*Math.cos(a)).toFixed(2)]; };
   let s=`<svg class="wbi" viewBox="0 0 24 24" aria-hidden="true">`;
-  cols.forEach((c,i)=>{ const a=pt(i*36-18), b=pt(i*36+18);
+  cols.forEach((c,i)=>{ const a=pt(i*step-half), b=pt(i*step+half);
     s+=`<path d="M12,12 L${a[0]},${a[1]} A11,11 0 0 1 ${b[0]},${b[1]} Z" fill="${c}" opacity="${i%2?.95:.65}"/>`; });
   return s+`<circle cx="12" cy="12" r="11" fill="none" stroke="#ff7ab8" stroke-width="1.6"/><circle cx="12" cy="12" r="3.1" fill="#2b0a1a" stroke="#ff7ab8" stroke-width="1.2"/></svg>`;
 }
@@ -12583,23 +12614,37 @@ function pxGolferIdleURL(look){
   u=c2.toDataURL('image/png'); _pxIdle.set(cv,u); return u;
 }
 function pxIdleAttr(look){ try{ return ' data-breathe="'+pxGolferIdleURL(look)+'"'; }catch(e){ return ''; } }
-function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer">${pxFxParts(look,14)}</div>`; }
+// A freshly-rendered golfer must join the breathe cycle where it ALREADY is: starting every new img on the
+// base frame while the on-screen ones sit on the breathe frame makes the golfer snap a pixel on every
+// re-render (the home-screen flicker). So render it at the ticker's current phase and stamp data-base
+// explicitly (the ticker would otherwise adopt whatever src it first saw as the base).
+var _pxFlip=false;   // var, not let: an early caller must never TDZ-crash the whole script
+function pxIdleSrcAttrs(look){
+  const base=pxGolferURL(look);
+  let br=''; try{ br=pxGolferIdleURL(look); }catch(e){}
+  let reduce=false; try{ reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  const cur=(br&&_pxFlip&&!reduce)?br:base;
+  return `src="${cur}" data-base="${base}"${br?` data-breathe="${br}"`:''}`;
+}
+function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle${pxFxClass(look)}" ${pxIdleSrcAttrs(look)} alt="Your golfer">${pxFxParts(look,14)}</div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
   return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
 function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
-  const img=`<img class="pxfigsm pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
+  const img=`<img class="pxfigsm pxidle${pxFxClass(look)}" ${pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
   const parts=pxFxParts(look, Math.max(8,Math.round(h*0.16)));
   return parts?`<span class="pxfxwrap">${img}${parts}</span>`:img; }
 // the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
-(function(){ let flip=false;
+(function(){
   setInterval(function(){ try{
     const reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) _pxFlip=false;
     const imgs=document.querySelectorAll('img.pxidle'); if(!imgs.length) return;
     if(reduce){ imgs.forEach(function(im){ if(im.dataset.base&&im.src!==im.dataset.base) im.src=im.dataset.base; }); return; }
-    flip=!flip;
+    _pxFlip=!_pxFlip;
+    const flip=_pxFlip;
     imgs.forEach(function(im){ const b=im.getAttribute('data-breathe'); if(!b) return;
       if(!im.dataset.base) im.dataset.base=im.src;
       im.src=flip?b:im.dataset.base; });

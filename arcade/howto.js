@@ -16,7 +16,7 @@
     table: [
       'Two athletes, one question: who wore the higher jersey number?',
       'Tap your pick and the numbers reveal instantly.',
-      'Every correct pick extends your run. You get one 🛡 save; a second miss ends it.',
+      'Every correct pick extends your run. You get one save; a second miss ends it.',
       'The run gets tougher: later pairs wear closer numbers.'
     ],
     career: [
@@ -41,7 +41,7 @@
       'One current NBA, NFL, or MLB player. The sport is given.',
       'Type any player from that sport; tiles show how close you are on team, position, age and number.',
       'Green = match, yellow = close, arrows point higher or lower.',
-      'Eight guesses. Stuck? Burn a 🎭 clue.'
+      'Eight guesses. Stuck? Burn a clue for a hint.'
     ],
     almamater: [
       'One NBA, NFL or MLB player at a time. Where did they go to college?',

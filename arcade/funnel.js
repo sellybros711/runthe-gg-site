@@ -39,8 +39,9 @@
     if (styled) return; styled = true;
     var s = document.createElement('style');
     s.textContent = '.funprog{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#8aa0b8);margin:10px 0 -4px;}' +
-      '.funhome{display:block;margin:10px auto 0;background:none;border:0;font:800 12px var(--f,system-ui);color:var(--mut,#8aa0b8);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}' +
-      '.funhome:hover{color:var(--ink,#F4F7FB);}';
+      '.funrow{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;margin:10px 0 0;}' +
+      '.funhome,.funlb{display:inline-block;margin:0;background:none;border:0;font:800 12px var(--f,system-ui);color:var(--mut,#8aa0b8);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}' +
+      '.funhome:hover,.funlb:hover{color:var(--ink,#F4F7FB);}';
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -71,26 +72,43 @@
     // The specific next-game link replaced the generic hub link, so restore a
     // way home: a quiet text link under the button row (skipped on a clean
     // sweep, where the main link already points at the hub).
+    // A "Back to the arcade" + "Leaderboard" row sits under the button row.
+    // Leaderboard closes the result modal and scrolls to today's board (which
+    // is revealed once the game is finished).
+    var rowEl = document.getElementById('funRow');
+    if (!rowEl) {
+      rowEl = document.createElement('div'); rowEl.className = 'funrow'; rowEl.id = 'funRow';
+      var host = link.parentNode;
+      if (host && host.parentNode) host.parentNode.insertBefore(rowEl, host.nextSibling);
+      var h = document.createElement('a');
+      h.className = 'funhome'; h.id = 'funHome'; h.setAttribute('href', '/arcade/'); h.textContent = 'Back to the arcade';
+      var lb = document.createElement('button');
+      lb.type = 'button'; lb.className = 'funlb'; lb.id = 'funLb'; lb.textContent = 'Leaderboard';
+      lb.addEventListener('click', showBoard);
+      rowEl.appendChild(h); rowEl.appendChild(lb);
+    }
     var home = document.getElementById('funHome');
     if (next) {
       prog.textContent = played + ' of ' + GAMES.length + ' played today';
       link.setAttribute('href', '/arcade/' + next[0] + '/');
       link.innerHTML = 'Next: ' + next[1] + ' <span aria-hidden="true">→</span>';
-      if (!home) {
-        home = document.createElement('a');
-        home.className = 'funhome'; home.id = 'funHome';
-        home.setAttribute('href', '/arcade/');
-        home.textContent = 'Back to the arcade';
-        var row2 = link.parentNode;
-        if (row2 && row2.parentNode) row2.parentNode.insertBefore(home, row2.nextSibling);
-      }
-      home.style.display = '';
+      if (home) home.style.display = '';
     } else {
       prog.textContent = 'Clean sweep! All ' + GAMES.length + ' played!';
       link.setAttribute('href', '/arcade/');
       link.textContent = 'Back to the arcade';
-      if (home) home.style.display = 'none';
+      if (home) home.style.display = 'none';   // the main button is the way home
     }
+  }
+  // close the result overlay and reveal today's leaderboard rail
+  function showBoard() {
+    try {
+      var s = document.getElementById('scrim'); if (s) s.classList.add('hidden');
+      var r = document.getElementById('resultModal'); if (r) r.setAttribute('hidden', '');
+      document.body.style.overflow = '';
+      var lb = document.querySelector('.lb, .mlb');
+      if (lb) lb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
   }
 
   function watch() {
