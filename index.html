@@ -1390,15 +1390,28 @@ document.querySelectorAll('.feat-link').forEach(function(a){
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   function pad(n){ return (n<10?'0':'')+n; }
   var DD=['1st & 10','2nd & 6','3rd & 3','1st & 10','2nd & 8','3rd & 5','4th & 1','1st & Goal'];
+  // Team pools — a fresh, random matchup fills each scoreboard on every page load.
+  var NFL=[['KC','#E31837'],['SF','#AA0000'],['DAL','#869397'],['PHI','#14A76C'],['BUF','#1D7FE0'],['MIA','#00C6B7'],['BAL','#7B5CD6'],['GB','#FFB612'],['DET','#4F9BE0'],['SEA','#69BE28'],['DEN','#FB4F14'],['CHI','#E85D2A'],['MIN','#8B5CC7'],['PIT','#FFC20E'],['LV','#C4C9CC'],['NE','#3A6FBF'],['NYG','#2A54D0'],['LAR','#FFD100'],['TB','#D50A0A'],['CIN','#FB6A1E'],['HOU','#E4324B'],['TEN','#4F9BD8'],['JAX','#12A3A3'],['CAR','#1FA9E0']];
+  var CFB=[['UGA','#BA0C2F'],['OSU','#D42121'],['ALA','#C8324F'],['MICH','#FFCB05'],['TEX','#E07A1E'],['ORE','#FEE123'],['LSU','#FDD023'],['USC','#FFC72C'],['ND','#C99700'],['FSU','#CEB888'],['CLEM','#F56600'],['OU','#D0263C'],['PSU','#2E6BC4'],['TENN','#FF8200'],['UW','#8B5CC7'],['OLE','#CE1126'],['UF','#2E5BE0'],['AUB','#E87722'],['WIS','#D14B54'],['NEB','#E41C38'],['MSU','#2E8B57'],['MIA','#F47321']];
+  function pick2(a){ var i=Math.floor(Math.random()*a.length),j; do{ j=Math.floor(Math.random()*a.length); }while(j===i); return [a[i],a[j]]; }
+  function randScore(){ var s=0,n=Math.floor(Math.random()*6); for(var k=0;k<n;k++) s+=(Math.random()<0.5?7:3); return s; }
   function gamecast(el){
     var A=el.querySelector('[data-s=a]'),B=el.querySelector('[data-s=b]');
     var Q=el.querySelector('.gc-q'),CL=el.querySelector('.gc-clock'),DDe=el.querySelector('.gc-dd');
-    if(!A||!B||!Q||!CL) return;
-    var q=1,secs=900,ddi=0;
+    var teams=el.querySelectorAll('.gc-team');
+    if(!A||!B||!Q||!CL||teams.length<2) return;
+    var cfb=el.className.indexOf('gc-cfb')>=0;
+    var pr=pick2(cfb?CFB:NFL), ranks=null;
+    if(cfb){ var r1=1+Math.floor(Math.random()*14),r2; do{ r2=1+Math.floor(Math.random()*14); }while(r2===r1); ranks=[r1,r2]; }
+    for(var t=0;t<2;t++){
+      teams[t].innerHTML='<i class="gc-dot" style="background:'+pr[t][1]+';color:'+pr[t][1]+'"></i>'+(cfb?'<span class="gc-rk">#'+ranks[t]+'</span>':'')+'<span class="gc-ab">'+pr[t][0]+'</span>';
+    }
+    var q=1+Math.floor(Math.random()*4), secs=60+Math.floor(Math.random()*840), ddi=Math.floor(Math.random()*DD.length);
+    A.textContent=randScore(); B.textContent=randScore(); if(DDe)DDe.textContent=DD[ddi];
     function bump(node,pts){ var v=(+node.textContent)+pts; node.textContent=v; node.classList.add('bump'); setTimeout(function(){ node.classList.remove('bump'); },550); }
     function draw(){ Q.textContent='Q'+q; CL.textContent=Math.floor(secs/60)+':'+pad(secs%60); }
     draw();
-    if(reduce){ A.textContent=24; B.textContent=17; Q.textContent='Q4'; CL.textContent='2:11'; if(DDe)DDe.textContent='3rd & 5'; return; }
+    if(reduce) return;   // random teams + a frozen in-progress frame, no ticking
     setInterval(function(){
       secs-=8; if(secs<=0){ if(q>=4){ q=1; A.textContent=0; B.textContent=0; } else q++; secs=900; }
       var r=Math.random();
