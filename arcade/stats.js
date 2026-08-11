@@ -40,6 +40,7 @@
         'nba_allen-iverson': 24368,
         'nba_charles-barkley': 23757,
         'nba_robert-parish': 23334,
+        'nba_adrian-dantley': 23177,
         'nba_dwyane-wade': 23165,
         'nba_elgin-baylor': 23149,
         'nba_clyde-drexler': 22195,
@@ -48,13 +49,48 @@
         'nba_pau-gasol': 20894,
         'nba_david-robinson': 20790,
         'nba_mitch-richmond': 20497,
+        'nba_antawn-jamison': 20042,
         'nba_john-stockton': 19711,
+        'nba_bernard-king': 19655,
+        'nba_bob-lanier': 19248,
         'nba_scottie-pippen': 18940,
         'nba_isiah-thomas': 18822,
+        'nba_bob-mcadoo': 18787,
+        'nba_zach-randolph': 18578,
         'nba_tracy-mcgrady': 18381,
+        'nba_chris-mullin': 17911,
         'nba_magic-johnson': 17707,
+        'nba_earl-monroe': 17454,
         'nba_steve-nash': 17387,
-        'nba_bill-russell': 14522
+        'nba_kevin-mchale': 17335,
+        'nba_chris-bosh': 17189,
+        'nba_chris-webber': 17182,
+        'nba_grant-hill': 17137,
+        'nba_elton-brand': 16827,
+        'nba_latrell-sprewell': 16712,
+        'nba_james-worthy': 16320,
+        'nba_stephon-marbury': 16297,
+        'nba_juwan-howard': 16159,
+        'nba_rasheed-wallace': 16006,
+        'nba_amare-stoudemire': 15994,
+        'nba_sam-cassell': 15981,
+        'nba_pete-maravich': 15948,
+        'nba_shawn-kemp': 15347,
+        'nba_luol-deng': 15208,
+        'nba_richard-hamilton': 15123,
+        'nba_al-jefferson': 15025,
+        'nba_josh-smith': 14877,
+        'nba_allan-houston': 14719,
+        'nba_bill-russell': 14522,
+        'nba_manu-ginobili': 14043,
+        'nba_dave-cowens': 13516,
+        'nba_jalen-rose': 13220,
+        'nba_carlos-boozer': 12842,
+        'nba_willis-reed': 12183,
+        'nba_michael-redd': 11554,
+        'nba_larry-johnson': 11450,
+        'nba_yao-ming': 9247,
+        'nba_bill-walton': 6215
       }
     },
     mlb_hr: {
@@ -190,7 +226,20 @@
         'nba_patrick-ewing': 11607,
         'nba_dirk-nowitzki': 11489,
         'nba_pau-gasol': 11305,
-        'nba_david-robinson': 10497
+        'nba_david-robinson': 10497,
+        'nba_dave-cowens': 10444,
+        'nba_zach-randolph': 9727,
+        'nba_bob-lanier': 9698,
+        'nba_marcus-camby': 9494,
+        'nba_chris-webber': 9123,
+        'nba_al-jefferson': 8480,
+        'nba_willis-reed': 8414,
+        'nba_elton-brand': 8213,
+        'nba_bob-mcadoo': 8048,
+        'nba_chris-bosh': 7592,
+        'nba_kevin-mchale': 7122,
+        'nba_amare-stoudemire': 6952,
+        'nba_bill-walton': 4923
       }
     },
     nba_assists: {
@@ -204,12 +253,20 @@
         'nba_oscar-robertson': 9887,
         'nba_isiah-thomas': 9061,
         'nba_gary-payton': 8966,
+        'nba_terry-porter': 7160,
         'nba_tim-hardaway': 7095,
         'nba_tony-parker': 7036,
         'nba_bob-cousy': 6955,
         'nba_kevin-johnson': 6711,
+        'nba_sam-cassell': 5939,
+        'nba_baron-davis': 5647,
+        'nba_stephon-marbury': 5627,
         'nba_dave-bing': 5397,
-        'nba_walt-frazier': 5040
+        'nba_walt-frazier': 5040,
+        'nba_mark-price': 4863,
+        'nba_penny-hardaway': 4270,
+        'nba_grant-hill': 4252,
+        'nba_manu-ginobili': 4001
       }
     },
     nba_blocks: {
@@ -223,10 +280,18 @@
         'nba_david-robinson': 2954,
         'nba_patrick-ewing': 2894,
         'nba_shaquille-oneal': 2732,
+        'nba_marcus-camby': 2564,
         'nba_robert-parish': 2361,
         'nba_alonzo-mourning': 2356,
         'nba_ben-wallace': 2137,
-        'nba_kevin-garnett': 2037
+        'nba_kevin-garnett': 2037,
+        'nba_josh-smith': 1949,
+        'nba_kevin-mchale': 1690,
+        'nba_elton-brand': 1580,
+        'nba_al-jefferson': 1321,
+        'nba_bill-walton': 1034,
+        'nba_chris-bosh': 923,
+        'nba_yao-ming': 920
       }
     },
     nba_steals: {
@@ -243,8 +308,13 @@
         'nba_karl-malone': 2085,
         'nba_allen-iverson': 1983,
         'nba_isiah-thomas': 1861,
+        'nba_eddie-jones': 1739,
         'nba_magic-johnson': 1724,
-        'nba_larry-bird': 1556
+        'nba_larry-bird': 1556,
+        'nba_baron-davis': 1541,
+        'nba_shawn-marion': 1421,
+        'nba_manu-ginobili': 1392,
+        'nba_grant-hill': 1053
       }
     },
     nba_threes: {
@@ -262,7 +332,13 @@
         'nba_joe-johnson': 1978,
         'nba_chauncey-billups': 1830,
         'nba_steve-nash': 1685,
-        'nba_glen-rice': 1559
+        'nba_mike-miller': 1590,
+        'nba_glen-rice': 1559,
+        'nba_nick-van-exel': 1528,
+        'nba_michael-redd': 1381,
+        'nba_allan-houston': 1305,
+        'nba_jalen-rose': 1063,
+        'nba_rasheed-wallace': 934
       }
     },
     nfl_passyds: {
