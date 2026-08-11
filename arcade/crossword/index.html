@@ -287,7 +287,29 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ===== big stage: enlarge + center the board on desktop ===== */
   @media (min-width:1000px){
-    .wrap{ max-width:680px; }
+    /* desktop: board + clue bar on the left, the leaderboard as a right rail,
+       the Across/Down lists full-width below. Mobile keeps the single column. */
+    .wrap{ max-width:1040px; display:grid; column-gap:28px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 336px;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "info  lb"
+        "clue  lb"
+        "board lb"
+        "ctrl  lb"
+        "lists lists"
+        "foot  foot"; }
+    .wrap > .topbar{ grid-area:top; }
+    .wrap > .a-gametitle{ grid-area:title; }
+    .wrap > .inforow{ grid-area:info; }
+    .wrap > .cluebar{ grid-area:clue; }
+    .wrap > .board-wrap{ grid-area:board; }
+    .wrap > .controls{ grid-area:ctrl; }
+    .wrap > .lists{ grid-area:lists; }
+    .wrap > .lb{ grid-area:lb; align-self:start; margin:0; }
+    .wrap > .foot{ grid-area:foot; }
+    .wrap > .kbd{ display:none; }   /* physical keyboard on desktop */
   }
 </style>
 </head>

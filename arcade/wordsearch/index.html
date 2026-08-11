@@ -219,9 +219,31 @@
 
   /* ===== big stage: enlarge + center the grid on desktop; fill height on mobile ===== */
   @media (min-width:1000px){
-    .wrap{ max-width:860px; }
-    .grid{ max-width:min(64vh,600px); }
-    .board{ padding:16px; }
+    /* desktop: the grid on the left, the word bank + leaderboard as a right rail.
+       Mobile keeps the single stacked column. */
+    .wrap{ max-width:1000px; display:grid; column-gap:26px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 320px;
+      grid-template-areas:
+        "top   top"
+        "title title"
+        "info  info"
+        "mode  mode"
+        "board wlab"
+        "board words"
+        "board lb"
+        "acts  lb"
+        "foot  foot"; }
+    .wrap > .topbar{ grid-area:top; }
+    .wrap > .a-gametitle{ grid-area:title; }
+    .wrap > .infobar{ grid-area:info; }
+    .wrap > #modesw{ grid-area:mode; }
+    .wrap > .board{ grid-area:board; align-self:start; padding:16px; }
+    .wrap > .wordslab{ grid-area:wlab; }
+    .wrap > .words{ grid-area:words; align-self:start; }
+    .wrap > .actions{ grid-area:acts; }
+    .wrap > .lb{ grid-area:lb; align-self:start; margin:0; }
+    .wrap > .foot{ grid-area:foot; }
+    .grid{ max-width:min(58vh,560px); }
   }
   @media (max-width:760px){
     .grid{ max-width:min(90vw,64vh); }
