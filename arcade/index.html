@@ -452,6 +452,10 @@
     .tile .nm{font-size:15px;}
     .tile .desc{display:none;}
     .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
+    /* Archive + Leaderboard: two pills can't fit "Leaderboard" in a half-width
+       2-up card, so stack them full-width on mobile instead of clipping. */
+    .tile .play.split{flex-direction:column; gap:7px;}
+    .tile .play.split .half{width:100%; flex:0 0 auto; min-height:38px; font-size:12.5px; letter-spacing:.01em;}
   }
 
   /* ---- daily double banner (all solved) ---- */
