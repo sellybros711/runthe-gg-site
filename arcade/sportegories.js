@@ -119,6 +119,12 @@
     var l = L.toLowerCase(), ids = D.byLetter[L] || [];
     return ids.map(function (i) { return D.cats[i]; });
   }
+  /* The letters a puzzle can actually roll — also the wheel's segments, so the
+   * spin shows exactly the pool the draw comes from. */
+  function wheelLetters() {
+    if (!data()) return [];
+    return (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
+  }
   function build(seed) {
     if (!data()) return null;
     var r = rng(seed);
@@ -215,7 +221,7 @@
 
   return {
     setData: setData, data: function () { return data(); },
-    daily: daily, practice: practice, build: build,
+    daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     test: test, rarityOf: rarityOf, CATS_PER: CATS_PER
   };

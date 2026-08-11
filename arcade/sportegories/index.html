@@ -49,15 +49,27 @@
 
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
-  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; letter-spacing:.14em; color:var(--mut); margin-top:3px; margin-left:2px; white-space:nowrap;}
+  /* no wordmark image on this page, so the row needs a real line-height or the
+     title overflows its box and collides with the pill beside it */
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; min-width:0; overflow:hidden;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; line-height:1.2; letter-spacing:.12em; color:var(--mut); margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .spacer{flex:1;}
   .devpill{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--goldT);
-    border:1px solid var(--goldT); border-radius:999px; padding:3px 8px; white-space:nowrap;}
+    border:1px solid var(--goldT); border-radius:999px; padding:3px 8px; white-space:nowrap; flex:0 0 auto;}
+  /* On a phone the title + pill + two buttons overrun the bar, so shrink the
+     type rather than letting them collide. */
+  @media (max-width:430px){
+    .brand.logo .sub{font-size:11px; letter-spacing:.06em;}
+    .devpill{font-size:8px; letter-spacing:.06em; padding:3px 6px;}
+    .topbar{gap:6px;}
+  }
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+  .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+  .sndBtn.snd-on{color:var(--spT); border-color:var(--sp);}
+  .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
 
   .panel{display:none;} .panel.on{display:block;}
 
@@ -77,6 +89,25 @@
   .gobtn:hover{filter:brightness(1.06);}
   .ghost{appearance:none; cursor:pointer; background:var(--card2); color:var(--ink); border:1px solid var(--line2);
     font-family:var(--f); font-weight:800; font-size:13.5px; padding:12px 18px; border-radius:11px; width:100%; margin-top:9px;}
+
+  /* ---- wheel ---- */
+  .spinboard{text-align:center; padding:22px 14px 20px;}
+  .spinlab{font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); margin-bottom:16px;}
+  .wheelbox{position:relative; width:min(320px,80vw); aspect-ratio:1; margin:0 auto;}
+  .wheelbox canvas{width:100%; height:100%; display:block;}
+  /* the marker the wheel lands under */
+  .pointer{position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:0; height:0;
+    border-left:13px solid transparent; border-right:13px solid transparent; border-top:22px solid var(--sp);
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)); z-index:2;}
+  .hub{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:31%; aspect-ratio:1;
+    border-radius:50%; background:var(--card); border:3px solid var(--sp); display:flex; align-items:center; justify-content:center;
+    font-family:var(--hero); font-weight:400; font-size:clamp(30px,11vw,44px); color:var(--spT); z-index:2;
+    box-shadow:0 6px 20px -8px rgba(0,0,0,.6);}
+  .hub.pop{animation:hubpop .5s cubic-bezier(.2,1.5,.4,1);}
+  @keyframes hubpop{0%{transform:translate(-50%,-50%) scale(.55);}100%{transform:translate(-50%,-50%) scale(1);}}
+  .spinhint{font-size:13px; font-weight:800; color:var(--mut); margin-top:18px; min-height:20px;}
+  .spinhint b{color:var(--spT);}
+  @media (prefers-reduced-motion: reduce){ .hub.pop{animation:none;} }
 
   /* ---- play ---- */
   .board{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
@@ -153,6 +184,10 @@
     <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">SPORTEGORIES</span></a>
     <div class="spacer"></div>
     <span class="devpill">In development</span>
+    <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+      <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+    </button>
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
       <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -173,6 +208,19 @@
       <button class="gobtn" id="startBtn" type="button">Start today’s puzzle</button>
       <button class="ghost" id="practiceBtn" type="button">Random practice puzzle</button>
       <div style="margin-top:14px;font-size:11.5px;color:var(--dim)" id="bestLine"></div>
+    </div>
+  </section>
+
+  <!-- ===== wheel ===== -->
+  <section class="panel" id="panelSpin">
+    <div class="board spinboard">
+      <div class="spinlab" id="spinLab">Spinning for today’s letter</div>
+      <div class="wheelbox">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="660" height="660" aria-hidden="true"></canvas>
+        <div class="hub" id="hub">?</div>
+      </div>
+      <div class="spinhint" id="spinHint">Round and round…</div>
     </div>
   </section>
 
@@ -217,15 +265,16 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=1"></script>
-<script src="/arcade/sportegories.js?v=1"></script>
+<script src="/arcade/sportegories.js?v=2"></script>
 <script>
 (function(){
   'use strict';
   var SP = window.RTG_SPORTEGORIES;
   var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
   var SAVE = 'rtg_sportegories_v1';
-  var SECONDS = 90;
+  var SECONDS = 120;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -233,7 +282,7 @@
   function save(o){ try{ LS.setItem(SAVE, JSON.stringify(o)); }catch(e){} }
   function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
-  var P = { setup:$('panelSetup'), play:$('panelPlay') };
+  var P = { setup:$('panelSetup'), spin:$('panelSpin'), play:$('panelPlay') };
   function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
 
   var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
@@ -272,13 +321,94 @@
     }, 90);
   }
 
+  /* ---------- the wheel ----------
+     The letter is already decided (date-seeded), so the spin is animated to
+     land on it rather than deciding anything — the segments are the real
+     rollable pool, so what you watch is what could have happened. */
+  var WHEEL = [], spinning = false;
+  function reduced(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+  function sfx(fn){ try{ if(window.RTGSound && RTGSound[fn]) RTGSound[fn](); }catch(e){} }
+  function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+
+  function drawWheel(rot, hi){
+    var cv=$('wheel'), ctx=cv.getContext('2d');
+    var W=cv.width, cx=W/2, cy=W/2, R=W/2-10, n=WHEEL.length;
+    if(!n) return;
+    var seg=Math.PI*2/n;
+    var cs=getComputedStyle(document.documentElement);
+    var A=(cs.getPropertyValue('--sp')||'#37C5D5').trim();
+    var C1=(cs.getPropertyValue('--card2')||'#162B44').trim();
+    var C2=(cs.getPropertyValue('--card3')||'#1A3350').trim();
+    var INK=(cs.getPropertyValue('--ink')||'#fff').trim();
+    ctx.clearRect(0,0,W,W);
+    for(var i=0;i<n;i++){
+      var a0=rot+i*seg, a1=a0+seg;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a0,a1); ctx.closePath();
+      ctx.fillStyle = (i===hi) ? A : (i%2 ? C1 : C2);
+      ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=2; ctx.stroke();
+      // Letters sit upright rather than rotating with the segment — radial text
+      // reads upside-down across the whole left half of the wheel.
+      var mid=a0+seg/2, lr=R*0.76;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = (i===hi) ? '#04222a' : INK;
+      ctx.font='700 '+Math.round(W*0.075)+'px Anton, Impact, sans-serif';
+      ctx.fillText(WHEEL[i], cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr);
+    }
+    // rim
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.strokeStyle=A; ctx.lineWidth=7; ctx.stroke();
+  }
+
+  function spinTo(letter, done){
+    WHEEL = SP.wheelLetters();
+    var idx = WHEEL.indexOf(letter);
+    if(idx < 0){ WHEEL = WHEEL.concat([letter]); idx = WHEEL.length-1; }
+    var n=WHEEL.length, seg=Math.PI*2/n;
+    // land the segment's centre under the pointer at the top (-90 degrees)
+    var centre = idx*seg + seg/2;
+    var target = -Math.PI/2 - centre + Math.PI*2*6;     // six full turns in
+    $('hub').textContent='?'; $('hub').classList.remove('pop');
+    $('spinHint').textContent='Round and round…';
+
+    if(reduced()){                                       // no motion: just land it
+      drawWheel(target % (Math.PI*2), idx);
+      $('hub').textContent=letter; $('hub').classList.add('pop');
+      $('spinHint').innerHTML='Your letter is <b>'+letter+'</b>';
+      setTimeout(done, 600); return;
+    }
+    spinning=true;
+    var DUR=4200, t0=performance.now(), lastSeg=-1, lastTick=0;
+    function frame(now){
+      var p=Math.min(1,(now-t0)/DUR);
+      var e=1-Math.pow(1-p,4);                           // ease-out quart: fast, long glide
+      var rot=target*e;
+      // tick as each segment passes the pointer
+      var under=Math.floor((((-Math.PI/2 - rot)%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/seg);
+      if(under!==lastSeg){ lastSeg=under; if(now-lastTick>55 && p<0.995){ sfx('soft'); lastTick=now; } }
+      drawWheel(rot, p>0.995?idx:-1);
+      if(p<1){ requestAnimationFrame(frame); return; }
+      spinning=false;
+      $('hub').textContent=letter; $('hub').classList.add('pop');
+      $('spinHint').innerHTML='Your letter is <b>'+letter+'</b>';
+      sfx('win'); buzz(35);
+      setTimeout(done, 950);
+    }
+    requestAnimationFrame(frame);
+  }
+
   function startPuzzle(daily){
+    if(spinning) return;
     isDaily = daily;
     puz = daily ? SP.daily(today()) : SP.practice();
     if(!puz){ toast('Could not build a puzzle'); return; }
     graded=false; left=SECONDS;
-    render(); show('play');
     $('scrim').classList.add('hidden');
+    $('spinLab').textContent = daily ? 'Spinning for today’s letter' : 'Spinning a practice letter';
+    show('spin');
+    spinTo(puz.letter, beginPlay);
+  }
+  function beginPlay(){
+    render(); show('play');
     tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
     setTimeout(function(){ if(inputs[0]) inputs[0].focus(); },120);
   }
