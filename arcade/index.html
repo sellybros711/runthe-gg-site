@@ -398,6 +398,10 @@
   /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
   .tile.highlow .badge{background:var(--gold); color:#3a2600; text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
   .tile.highlow .badge svg{width:10px; height:10px;}
+  /* High Low tile: Members Only centered up top, Beta tag top-right */
+  .tile.highlow .status{left:50%; right:auto; transform:translateX(-50%);}
+  .tile.highlow .beta{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; padding:4px 8px; border-radius:6px; line-height:1; background:var(--hl); color:#2a1500;}
+  @media (max-width:640px){ .tile.highlow .beta{top:7px; right:8px; font-size:8.5px; padding:3px 6px;} }
   /* High Low: the two arrows bob up and down in turn */
   .tile.highlow .cap svg .hlup{animation:capHlUp 3.2s ease-in-out infinite;}
   .tile.highlow .cap svg .hldn{animation:capHlDn 3.2s ease-in-out infinite;}
@@ -702,7 +706,7 @@
 
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
-              <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Card required</span><span class="status" id="stH">Members only</span>
+              <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Card required</span><span class="status" id="stH">Members only</span><span class="beta">Beta</span>
               <svg viewBox="0 0 56 56">
                 <g class="hlup" fill="#F5822B"><path d="M17 8 L26 22 L8 22 Z"/></g>
                 <g class="hldn" fill="#F5822B" opacity=".62"><path d="M39 48 L48 34 L30 34 Z"/></g>
