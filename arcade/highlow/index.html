@@ -377,6 +377,7 @@
 <script src="/arcade/jerseys.js?v=1"></script>
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/hlstats.js?v=3"></script>
+<script src="/arcade/rosterstats.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=2"></script>
@@ -435,9 +436,13 @@
   // For a category present in both, stats.js wins per-player (full career totals
   // for retired legends beat nflverse's 1999+ partials); hlstats fills the rest.
   var RS = window.RTG_STATS || {};
-  var HL = (window.RTG_HLSTATS && RTG_HLSTATS.stats) || {};
-  var ASOF = (window.RTG_HLSTATS && RTG_HLSTATS.asof) || {};
-  var ACTIVE = (window.RTG_HLSTATS && RTG_HLSTATS.activeIds) || {};   // players still accruing (in latest season)
+  // Two generated sources merge over the hand-curated stats.js: hlstats.js
+  // (NFL via nflverse + MLB WAR) and rosterstats.js (CI: NBA + MLB counting
+  // stats for every corpus player). rosterstats wins for its categories.
+  var HLo = window.RTG_HLSTATS || {}, RSo = window.RTG_ROSTERSTATS || {};
+  var HL = Object.assign({}, HLo.stats || {}, RSo.stats || {});
+  var ASOF = Object.assign({}, HLo.asof || {}, RSo.asof || {});
+  var ACTIVE = Object.assign({}, HLo.activeIds || {}, RSo.activeIds || {});   // players still accruing
   function tidyLabel(s){ return cap(String(s||'').replace(/^career\s+/i,'').replace(/^(nba|nfl|mlb)\s+/i,'')); }
   function sportOf(key){ var p=key.split('_')[0].toUpperCase(); return (p==='NBA'||p==='NFL'||p==='MLB')?p:''; }
   var STAT = {};   // key -> { label, unit, sport, lowbest, vals }
