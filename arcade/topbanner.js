@@ -99,9 +99,8 @@
     if (pf) {
       var st = (A() && A().state) ? A().state() : null;
       if (st && st.signedIn && st.name) {
-        pf.className = 'rtb-prof';
-        pf.innerHTML = '<span class="rtb-av">' + esc((st.name.charAt(0) || 'P').toUpperCase()) + '</span>' +
-          '<span class="rtb-plab">' + esc(st.name) + '</span>';
+        pf.className = 'rtb-prof out';
+        pf.innerHTML = '<span class="rtb-plab">' + esc(st.name) + '</span>';
         pf.setAttribute('aria-label', 'Signed in as ' + st.name);
       } else {
         pf.className = 'rtb-prof out';
