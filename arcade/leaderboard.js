@@ -12,8 +12,8 @@
  *   - Where YOU stand: rank, field size, percentile, and the gap to the place
  *     above. A top-5 list tells you nothing if you're 23rd.
  *   - Your row pinned in when you finish outside the visible top.
- *   - Honest states: skeleton while loading, real empty state, signed-out
- *     prompt, offline note - never fake sample players.
+ *   - Honest states: a loading bar over whatever is already drawn, a real
+ *     empty state, a signed-out prompt, an offline note - never fake players.
  *
  * Usage from a game page:
  *   RTG_LB.mount({ el: document.querySelector('.lb'), game: 'table',
@@ -32,6 +32,7 @@
   var LIMIT = 25;                    // rows fetched for both tabs
   var CFG = null, slot = null, modal = null, sheet = null, bodyEl = null, trigger = null;
   var tab = 'today', busy = false, cache = {}, keepIds = [], openState = false;
+  var loadEl = null, lastHTML = { today: '', all: '' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -99,6 +100,15 @@
       '.rtglb-tabs button.on{background:var(--lba);color:#0A1728;}',
       ':root[data-theme="light"] .rtglb-tabs button.on{color:#fff;}',
       '.rtglb-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 18px;flex:1 1 auto;}',
+      /* A slim indeterminate bar, so refreshing never blanks the board out from
+         under you the way swapping in skeleton rows did. */
+      '.rtglb-load{height:3px;background:var(--card3,#1A3350);overflow:hidden;flex:0 0 auto;',
+      '  opacity:0;transition:opacity .18s ease;margin:0 16px 10px;border-radius:999px;}',
+      '.rtglb-load.on{opacity:1;}',
+      '.rtglb-load i{display:block;height:100%;width:38%;border-radius:999px;background:var(--lba);',
+      '  animation:rtglbslide 1.05s cubic-bezier(.5,.05,.5,.95) infinite;}',
+      '@keyframes rtglbslide{0%{transform:translateX(-110%);}100%{transform:translateX(370%);}}',
+      '.rtglb-rows .rtglb-when{font-size:11px;font-weight:700;color:var(--mut,#A9B8CB);flex:0 0 auto;}',
 
       /* where you stand */
       '.rtglb-you{background:var(--card2,#162B44);border:1px solid var(--line2,rgba(255,255,255,.15));',
@@ -142,7 +152,7 @@
       '.rtglb-cta{appearance:none;cursor:pointer;margin-top:11px;width:100%;background:var(--lba);color:#0A1728;border:0;',
       '  border-radius:10px;padding:11px;font-family:inherit;font-weight:900;font-size:12.5px;}',
       ':root[data-theme="light"] .rtglb-cta{color:#fff;}',
-      '@media (prefers-reduced-motion: reduce){.rtglb-sk i{animation:none;}.rtglb-you .rtglb-bar i{transition:none;}',
+      '@media (prefers-reduced-motion: reduce){.rtglb-sk i,.rtglb-load i{animation:none;}.rtglb-you .rtglb-bar i{transition:none;}',
       '  .rtglb-scrim,.rtglb-sheet{transition:none;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(s);
@@ -160,10 +170,11 @@
       '<div class="rtglb-head"><h3>Leaderboard</h3><button class="rtglb-x" type="button" aria-label="Close">✕</button>' +
       '<div class="rtglb-tabs"><button type="button" data-tab="today">Today</button>' +
       '<button type="button" data-tab="all">All-time</button></div></div>' +
-      '<div class="rtglb-body"></div>';
+      '<div class="rtglb-load"><i></i></div><div class="rtglb-body"></div>';
     modal.appendChild(sheet);
     document.body.appendChild(modal);
     bodyEl = sheet.querySelector('.rtglb-body');
+    loadEl = sheet.querySelector('.rtglb-load');
 
     sheet.querySelector('.rtglb-x').addEventListener('click', close);
     modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
@@ -224,11 +235,7 @@
   function tease(txt) { var t = document.getElementById('rtglbTease'); if (t && txt) t.textContent = txt; }
 
   // -------------------------------------------------------------- render
-  function skeleton(n) {
-    var h = '';
-    for (var i = 0; i < (n || 6); i++) h += '<div class="rtglb-sk"><i class="a"></i><i class="b"></i><i class="c"></i></div>';
-    return h;
-  }
+  function busyBar(on) { if (loadEl) loadEl.classList.toggle('on', !!on); }
   function paint(html) {
     if (!bodyEl) return;
     bodyEl.innerHTML = html;
@@ -236,6 +243,10 @@
     if (cta) cta.addEventListener('click', function () { try { if (window.RTGAuthUI) RTGAuthUI.open('signin'); } catch (e) {} });
   }
 
+  function fmtDate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); if (!m) return '';
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+m[2]) - 1] + ' ' + (+m[3]);
+  }
   function rowsHTML(rows, myName, myRank) {
     var MED = ['🥇', '🥈', '🥉'];
     var h = '', shown = {}, meShown = false;
@@ -246,7 +257,7 @@
       h += '<li class="' + (mine ? 'rtglb-me' : '') + '">' +
         '<span class="rtglb-rk">' + (i < 3 ? '<span class="rtglb-medal">' + MED[i] + '</span>' : (i + 1)) + '</span>' +
         '<span class="rtglb-who">' + esc(r.display_name || 'Player') + (mine ? ' (you)' : '') + '</span>' +
-        (r.flawless ? '<span class="rtglb-fl">Clean</span>' : '') +
+        (tab === 'all' && r.played_on ? '<span class="rtglb-when">' + esc(fmtDate(r.played_on)) + '</span>' : '') +
         '<span class="rtglb-val">' + esc(valueOf(r)) + '</span></li>';
     });
     if (myRank && !shown[myRank] && !meShown && cache.mine) {
@@ -298,7 +309,10 @@
     styles();
     var B = window.RTG_BOARD;
     if (!B || !B.leaderboard) { paint('<div class="rtglb-msg">Leaderboard unavailable.</div>'); return; }
-    paint(skeleton(6));
+    // Show what we already have and refresh underneath the bar; only a first,
+    // contentless load starts empty.
+    paint(lastHTML[tab] || '');
+    busyBar(true);
     if (tab === 'all') { renderAll(); return; }
 
     busy = true;
@@ -308,7 +322,7 @@
       B.playerCount ? B.playerCount(CFG.game, CFG.date) : Promise.resolve(null),
       (B.myRun && st.signedIn) ? B.myRun(CFG.game, CFG.date) : Promise.resolve(null)
     ]).then(function (res) {
-      busy = false;
+      busy = false; busyBar(false);
       var rows = res[0], total = res[1], mine = res[2];
       cache.mine = mine;
       if (rows === null) { paint('<div class="rtglb-msg">Board unavailable offline. Your result is saved and will post when you reconnect.</div>'); return; }
@@ -321,28 +335,32 @@
       if (total) tease(total + ' played today · tap to see the board');
       var myName = st.name || null;
       var done = function (myRank) {
-        paint(youHTML(myRank, total || rows.length, mine, rows) +
+        var html = youHTML(myRank, total || rows.length, mine, rows) +
           rowsHTML(rows, myName, myRank) +
           '<div class="rtglb-foot">' + footNote(total) + '</div>' +
-          (st.signedIn ? '' : '<button class="rtglb-cta" type="button">Sign in to join the board</button>'));
+          (st.signedIn ? '' : '<button class="rtglb-cta" type="button">Sign in to join the board</button>');
+        lastHTML.today = html; paint(html); busyBar(false);
       };
       if (mine && B.rank) B.rank(CFG.game, CFG.date, mine.score).then(done);
       else done(null);
     }).catch(function () {
-      busy = false;
-      paint('<div class="rtglb-msg">Couldn’t load the board. It’ll retry shortly.</div>');
+      busy = false; busyBar(false);
+      if (!lastHTML.today) paint('<div class="rtglb-msg">Couldn’t load the board. It’ll retry shortly.</div>');
     });
   }
 
   function renderAll() {
     var B = window.RTG_BOARD;
-    if (!B.allTimeBoard) { paint('<div class="rtglb-msg">All-time board unavailable.</div>'); return; }
+    if (!B.allTimeBoard) { busyBar(false); paint('<div class="rtglb-msg">All-time board unavailable.</div>'); return; }
     Promise.resolve(B.allTimeBoard(CFG.game, LIMIT)).then(function (rows) {
+      busyBar(false);
       if (!rows || !rows.length) { paint('<div class="rtglb-msg">No all-time results yet.</div>'); return; }
       var st = (B.state && B.state()) || {};
-      paint(rowsHTML(rows, st.name || null, null) +
-        '<div class="rtglb-foot">Every player’s single best result, all time.</div>');
-    }).catch(function () { paint('<div class="rtglb-msg">Couldn’t load the all-time board.</div>'); });
+      var html = rowsHTML(rows, st.name || null, null) +
+        '<div class="rtglb-foot">Every player’s single best result, all time.</div>';
+      lastHTML.all = html; paint(html);
+    }).catch(function () { busyBar(false);
+      if (!lastHTML.all) paint('<div class="rtglb-msg">Couldn’t load the all-time board.</div>'); });
   }
 
   // ---------------------------------------------------------------- api
