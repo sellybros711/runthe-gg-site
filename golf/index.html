@@ -3992,7 +3992,7 @@ function overlayS1Launch(screen){
     S.overlay=null; render();
   };
   ov.querySelector('.x').onclick=close; ov.querySelector('.play').onclick=close;
-  ov.querySelector('.store').onclick=()=>{ try{ track('s1_launch_store'); }catch(e){} S.overlay='shop'; S.shopSec='buckets'; render(); };
+  ov.querySelector('.store').onclick=()=>{ try{ track('s1_launch_store'); }catch(e){} S.overlay='shop'; S.shopSec='tourpass'; render(); };
   screen.appendChild(ov);
 }
 // ════ POST-PURCHASE CELEBRATION (#6) ═══════════════════════════════════════════════════════════
@@ -9633,8 +9633,8 @@ function overlayDailyDone(screen){
     <button class="btn gold" id="dd-records" style="margin-bottom:8px">Course Records</button>
     <button class="btn red">Close</button></div>`);
   const tb=ov.querySelector('#dd-token'); if(tb) tb.onclick=()=>{ beginDailyTokenPlay(); };
-  const bt=ov.querySelector('#dd-buytok'); if(bt) bt.onclick=()=>{S.overlay='shop';S.shopSec='buckets';render();};
-  const pp=ov.querySelector('#dd-pass'); if(pp) pp.onclick=()=>{S.overlay='shop';S.shopSec='buckets';render();};
+  const bt=ov.querySelector('#dd-buytok'); if(bt) bt.onclick=()=>{S.overlay='shop';S.shopSec='tokens';render();};
+  const pp=ov.querySelector('#dd-pass'); if(pp) pp.onclick=()=>{S.overlay='shop';S.shopSec='tourpass';render();};
   const rb=ov.querySelector('#dd-records'); if(rb) rb.onclick=()=>{S.overlay='courserecords';render();};
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
@@ -23239,7 +23239,7 @@ function scrDailyResult(){
     } else if(TOKENS_ENABLED){
       // token blue (#5bcfe8), the same colour Daily Tokens wear in the store
       primary=$(`<button class="btn" style="flex:1;margin:0;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Daily Tokens ▸<span class="sub">Play more rounds today</span></button>`);
-      primary.onclick=()=>{ track('daily_result_buytok',{from:'primary'}); S.overlay='shop'; S.shopSec='buckets'; render(); }; cr=ghostRecs();
+      primary.onclick=()=>{ track('daily_result_buytok',{from:'primary'}); S.overlay='shop'; S.shopSec='tokens'; render(); }; cr=ghostRecs();
     } else {
       primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
     }
@@ -23249,7 +23249,7 @@ function scrDailyResult(){
   // A second, explicit route to the store when the primary above spends a token you already own.
   if(buyTok){
     const bt=$(`<button class="btn" style="max-width:520px;margin:10px auto 0;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy more Daily Tokens ▸<span class="sub">Extra rounds at today's course</span></button>`);
-    bt.onclick=()=>{ track('daily_result_buytok',{from:'secondary'}); S.overlay='shop'; S.shopSec='buckets'; render(); };
+    bt.onclick=()=>{ track('daily_result_buytok',{from:'secondary'}); S.overlay='shop'; S.shopSec='tokens'; render(); };
     add(bt);
   }
   // ✨ Share Highlights — a looping GIF reel of every birdie-or-better hole's tracer from this round.
@@ -23524,7 +23524,7 @@ function passPerksHTML(){
     ['target','Unlimited daily plays','No attempt cap on Beat the Pro for the whole season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Opened from the Pro Shop whenever you want'],
-    ['bolt',PASS_PRO_MULT+'× coins from every round','Everything you play pays more, all season'],
+    ['bolt',PASS_REWARD_MULT+'× coins from every round','Everything you play pays more, all season'],
     ['clock','Fast simulation','The quickest sim pace in career mode, get through a season in half the time']];
   return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
 }
@@ -23550,7 +23550,7 @@ function overlayTourPass(screen){
       <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
         <li><i>✓</i>All 60 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li><li><i>✓</i>2 Summer Smash collectibles</li></ul></div>
       <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
-        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_PRO_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li><li><i>★</i>${PASS_REWARD_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
       </div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
     const cta=$(`<div class="tps-cta">
@@ -25363,14 +25363,17 @@ function loadBucketBuys(force){
 // on every size (optimistic; almost everyone seeing the store hasn't bought yet, and the server is the
 // authority on what's actually credited).
 function bucketBuys(){ if(_bucketBuysCache) return _bucketBuysCache.set; loadBucketBuys(); return new Set(); }
-function bucketShopNode(){
+function bucketShopNode(focus){
+  // focus: 'pass' | 'tokens' | 'coins' renders just that product so each can own a store tab;
+  // no focus renders all three (the original single-scroll storefront).
+  var showPass=(!focus||focus==='pass'), showTok=(!focus||focus==='tokens'), showCoins=(!focus||focus==='coins');
   packStyleOnce();
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
   var buys=bucketBuys();                  // bucket sizes this account has already bought (paid)
   var anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   // ---- Tour Pass (60-day season — THE one pass sold) ----
-  if(TOURPASS_ENABLED){
+  if(TOURPASS_ENABLED && showPass){
     var passCol='#a24be0', active=dailyPassActive(), ssn=passSeason();
     wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol+'">Tour Pass</div>'));
     var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:linear-gradient(165deg,'+passCol+'22,#0c1f16);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
@@ -25392,7 +25395,7 @@ function bucketShopNode(){
     wrap.appendChild(pc);
   }
   // ---- Daily Tokens ----
-  if(TOKENS_ENABLED){
+  if(TOKENS_ENABLED && showTok){
     wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#5bcfe8">Daily Tokens</div>'));
     wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 0;line-height:1.5">Play extra Daily Challenge rounds beyond your free 3/day. You have <b style="color:#5bcfe8">'+dailyTokens()+'</b> token'+(dailyTokens()===1?'':'s')+'.</div>'));
     var tg=$('<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;max-width:400px;margin:9px auto 0"></div>');
@@ -25402,7 +25405,7 @@ function bucketShopNode(){
       if(t.badge) card.appendChild($('<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:'+col+';color:#0c1f16;font:900 8px var(--body);letter-spacing:.08em;padding:2px 7px;border-radius:20px;white-space:nowrap">'+esc(t.badge)+'</div>'));
       card.appendChild($('<div style="font:900 26px var(--body);color:'+col+'">'+t.n+'</div>'));
       card.appendChild($('<div class="small muted" style="margin-top:-2px">token'+(t.n===1?'':'s')+'</div>'));
-      var tb=$('<button class="btn" style="width:100%;margin:8px 0 0;background:'+col+';color:#0c1f16;font-weight:900;font-size:14px;padding:9px">$'+t.usd.toFixed(2)+'</button>');
+      var tb=$('<button class="btn" style="width:100%;margin:8px 0 0;background:'+col+';color:#0c1f16;font-weight:900;font-size:14px;padding:9px">Buy · $'+t.usd.toFixed(2)+'</button>');
       tb.onclick=function(){ beginTokenPurchase(t.id); };
       card.appendChild(tb);
       tg.appendChild(card);
@@ -25410,6 +25413,7 @@ function bucketShopNode(){
     wrap.appendChild(tg);
   }
   // ---- Coins (buckets) — at the BOTTOM of the store ----
+  if(showCoins){
   wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#F1D04A">Coins</div>'));
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 6px;line-height:1.5">Coins for gear &amp; packs.</div>'));
   if(anyFirst) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First-time bonus, <span style="color:#fff">DOUBLE coins</span> the first time you buy each bucket!</div>'));
@@ -25433,11 +25437,12 @@ function bucketShopNode(){
         +'</div>'
         +(extras.length?'<div class="small" style="color:#cfe6d8;margin-top:2px">'+extras.join(' · ')+'</div>':'')
       +'</div>'
-      +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">$'+b.usd.toFixed(2)+'</button>'
+      +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">Buy · $'+b.usd.toFixed(2)+'</button>'
     +'</div>'));
     card.querySelector('.buybtn').onclick=function(){ beginBucketPurchase(b.id); };
     wrap.appendChild(card);
   });
+  }
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.<br><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with a purchase? Contact us</a></div>'));
   var _pi=wrap.querySelector('.pissue'); if(_pi) _pi.onclick=function(e){ e.preventDefault(); S.fbText=''; fbReset('purchase'); render(); };
   if(sbSignedIn()){ var chB=$('<button class="btn ghost" style="width:auto;margin:12px auto 0;padding:8px 14px;font-size:12.5px;display:block">🧾 Coin history ▸</button>');
@@ -25548,6 +25553,8 @@ function overlayShop(screen){
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
     ${(['apparel','accessories','effects','bag','owned','drops'].indexOf(sec)>=0)?`<div class="shop-preview">${avatarFullHTML()}</div>`:''}
     <div class="segrow shopseg">
+      ${TOURPASS_ENABLED?`<button data-sec="tourpass" class="${sec==='tourpass'?'on':''}" style="color:${sec==='tourpass'?'':'#c98bf0'}">🎟️ Tour Pass</button>`:''}
+      ${TOKENS_ENABLED?`<button data-sec="tokens" class="${sec==='tokens'?'on':''}" style="color:${sec==='tokens'?'':'#7fdcef'}">Tokens</button>`:''}
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       ${packsOn()?`<button data-sec="shards" class="${sec==='shards'?'on':''}">◆ Shards</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
@@ -25571,8 +25578,10 @@ function overlayShop(screen){
   // (screen already 'setup'), just close the overlay to reveal it; otherwise open the closet in edit mode.
   promos.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
     if(S.screen==='setup'){ render(); return; } S.setupEdit=true; S.setupReturn=null; S.screen='setup'; S.setupCat='shirt'; render(); });
-  if(sec==='buckets'){
-    ov.appendChild(bucketShopNode());
+  if(sec==='buckets'||sec==='tourpass'||sec==='tokens'){
+    // Each real-money product owns a tab, so a player who taps "Tour Pass" or "Tokens" lands on
+    // that product instead of scrolling a single storefront that opened on coins.
+    ov.appendChild(bucketShopNode(sec==='tourpass'?'pass':sec==='tokens'?'tokens':'coins'));
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
     ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
