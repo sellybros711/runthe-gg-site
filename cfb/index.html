@@ -7709,7 +7709,63 @@ function playFeatureBroadcast(cfg){
 /* ── confetti ────────────────────────────────────────────────── */
 const perfNow=()=>(window.performance||Date).now();
 
+/* IT FALLS IN YOUR SCHOOL'S COLOURS. Everything else about the celebration stays
+   the same; only the paint changes.
+
+   A CHIP HAS TO BE VISIBLE AGAINST A DARK SKY, and a lot of real schools lead with
+   navy, maroon or black. Dropped in raw those fall as holes in the screen. This is
+   the same problem textSafe solves for type, at a lower bar: a falling chip is far
+   bigger than a letter, so it needs less lift, and lifting it further than necessary
+   would turn every school pastel and lose the identity the change is for.
+
+   A NEAR-WHITE OR NEAR-BLACK SECOND COLOUR IS A NEUTRAL, NOT A COLOUR. Plenty of
+   schools pair one strong colour with white or black, and using that as the second
+   confetti colour gives half a screen of grey. Where the alt has no real hue, the
+   second colour is derived from the primary instead, exactly as applyTheme already
+   does for the page theme, so the two agree.
+
+   Five entries rather than two, because confetti made of two flat colours reads as
+   two flat colours. The extras are tints of the school's own pair, so the palette
+   stays theirs. */
+const confettiSafe=(hex)=>{ let c=hex; for(let i=0;i<10&&lumOf(c)<0.34;i++) c=shade(c,0.14); return c; };
+const chromaOf=(hex)=>{ const [r,g,b]=_hx(hex); return Math.max(r,g,b)-Math.min(r,g,b); };
+/* BLACK LIFTS TO GREY, AND GREY IS NOT A SCHOOL COLOUR. Running every dark colour
+   through confettiSafe is right for a navy or a maroon, which keep their hue as they
+   come up, and wrong for a black: Iowa and Purdue came out falling in #5d5d5d. Their
+   partner is white, which is what black-and-gold schools actually throw, so an
+   achromatic dark colour becomes white rather than a lifted grey.
+   White stays white for the same reason: plenty of schools are navy and white, and
+   swapping that white for a tint of the navy loses half of who they are. */
+const confettiChip=(hex)=>{
+  if(lumOf(hex)>0.86) return '#ffffff';
+  if(chromaOf(hex)<26&&lumOf(hex)<0.30) return '#ffffff';
+  return confettiSafe(hex);
+};
+function schoolConfetti(){
+  const t=selectedSchool;
+  if(!t||!t.color) return null;
+  try{
+    const chips=[];
+    for(const c of [t.color,t.alt]){ if(!c) continue;
+      const v=confettiChip(c); if(chips.indexOf(v)<0) chips.push(v); }
+    if(!chips.length) return null;
+    /* One usable colour, because the pair collapsed to the same chip: give it a
+       partner derived from the school's own primary rather than a stock colour. */
+    if(chips.length===1){
+      const base=confettiSafe(t.color);
+      chips.push(chips[0]==='#ffffff'?base:shade(base,-0.3));
+    }
+    const A=chips[0],B=chips[1];
+    return [A,B,shade(A,0.28),shade(B,0.22),A==='#ffffff'?shade(B,0.55):shade(A,0.55)];
+  }catch(e){ return null; }
+}
+
 function confettiTheme(perfect){
+  /* The school's colours whenever there is one in force. A perfect season keeps its
+     bigger, longer fall; what made it special was the amount, and the gold was only
+     ever standing in for colours the game did not know. */
+  const sc=schoolConfetti();
+  if(sc) return {colors:sc,count:perfect?200:150,duration:perfect?4200:3400};
   if(perfect) return {colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200};
   return {colors:['#10b981','#34d399','#fcd34d','#ffffff'],count:150,duration:3400};
 }
