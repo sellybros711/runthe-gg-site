@@ -310,6 +310,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="/arcade/tokens.js?v=2"></script>
+<!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
+<script src="/arcade/archive.js?v=1"></script>
+<script src="/arcade/calendar.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=3"></script>
 <script src="/arcade/leaderboard.js?v=3"></script>
@@ -325,6 +328,11 @@
   var GAME = 'sportegories';
   var SAVE = 'rtg_sportegories_v1';
   var lastMarks = '';
+  // Past-day mode. archive.js owns the members gate and the banner; here we
+  // just seed from the requested date and keep archive plays out of today's
+  // saved progress and off the live board.
+  var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
+  function pdate(){ return (window.RTGArchive && RTGArchive.date) ? RTGArchive.date() : today(); }
   var SECONDS = 120;
 
   function $(id){ return document.getElementById(id); }
@@ -356,7 +364,7 @@
       });
     });
     $('letterTile').textContent = puz.letter;
-    $('modeLab').textContent = isDaily ? 'Today’s letter' : 'Practice letter';
+    $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
     $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice.';
   }
 
@@ -450,11 +458,11 @@
   function startPuzzle(daily){
     if(spinning) return;
     isDaily = daily;
-    puz = daily ? SP.daily(today()) : SP.practice();
+    puz = daily ? SP.daily(pdate()) : SP.practice();
     if(!puz){ toast('Could not build a puzzle'); return; }
     graded=false; left=SECONDS;
     $('scrim').classList.add('hidden');
-    $('spinLab').textContent = daily ? 'Spinning for today’s letter' : 'Spinning a practice letter';
+    $('spinLab').textContent = ARCHIVE ? 'Spinning that day’s letter' : (daily ? 'Spinning for today’s letter' : 'Spinning a practice letter');
     show('spin');
     spinTo(puz.letter, beginPlay);
   }
@@ -562,12 +570,20 @@
       clearReveal();
       $('tally').classList.remove('on');
       var st=load(); var best=Math.max(st.best||0, total);
-      if(isDaily){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+      if(isDaily && !ARCHIVE){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+      if(isDaily){
+        try{
+          if(window.RTGArchive){
+            if(RTGArchive.markDone) RTGArchive.markDone(GAME, pdate());
+            if(ARCHIVE && RTGArchive.recordBest) RTGArchive.recordBest(GAME, total, { higherIsBetter:true, label:'pts' });
+          }
+        }catch(e){}
+      }
       // Points ride the run_len column: the board's score is
       // 1000000 - run_len*1000 + seconds, i.e. most points wins and a faster
       // card breaks the tie - exactly this game's ordering.
       lastMarks = results.map(function(r){ return r && r.ok ? 'x' : '.'; }).join('');
-      if(isDaily && total>0){
+      if(isDaily && total>0 && !ARCHIVE){
         try{
           var secs = Math.max(5, SECONDS - Math.max(0,left));
           if(window.RTG_BOARD && RTG_BOARD.submit){
@@ -643,7 +659,7 @@
       if(window.RTG_BOARD){
         RTG_BOARD.boot();
         if(window.RTG_LB) RTG_LB.mount({ el:document.querySelector('.lb'), game:GAME,
-          date:today(), kind:'pts' });
+          date:pdate(), kind:'pts' });
       }
     }catch(e){}
   })();
