@@ -198,13 +198,13 @@
         ? ('That’s ' + (vd*9) + ' puzzles waiting, across all nine games. Play any of them, any time.')
         : 'Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='upsell'){
-      kicker='Arcade Card'; head='Go Unlimited';
-      sub='Unlimited plays across every game, every day, plus the full archive.';
+      kicker='Arcade Card'; head='9 → 36 daily games';
+      sub='An NBA, NFL and MLB edition of every game, a members-only game, unlimited plays and the full archive.';
     } else {
-      kicker='Out of plays'; head='You’re out of plays today';
+      kicker='Arcade Card'; head='Keep playing, unlimited';
       sub = signedIn()
-        ? 'You’ve used today’s 3 free Arcade plays. Come back tomorrow for 3 more, or unlock the entire Arcade now.'
-        : 'Come back tomorrow for another free play, or unlock the entire Arcade now.';
+        ? 'That’s today’s 3 free plays done. Members play as much as they like, every day, across 36 daily games.'
+        : 'That’s today’s free play done. Members play as much as they like, every day, across 36 daily games.';
     }
     function render(){
       var b=$('rtgcardBody');
@@ -220,7 +220,7 @@
         '<button class="rtgc-go" id="rtgcardGo" type="button">Get Arcade Card</button>'+
         '<div class="rtgc-terms" id="rtgcardTerms"></div>'+
         '<div id="rtgcardErr"></div>'+
-        '<button class="rtgc-ghost" id="rtgcardLater" type="button">Come back tomorrow</button>'+
+        '<button class="rtgc-ghost" id="rtgcardLater" type="button">Maybe later</button>'+
         '<div class="rtgc-fine">Cancel anytime in two taps &middot; Your streaks stay yours if you cancel &middot; Instant access</div>';
       [].forEach.call(b.querySelectorAll('.rtgc-plan'),function(p){ p.onclick=function(){ chosen=p.dataset.plan; render(); }; });
       $('rtgcardGo').onclick=function(){ startCheckout(chosen); };
@@ -306,7 +306,7 @@
     ensureScrim();
     var b=$('rtgcardBody');
     b.innerHTML =
-      '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">Wanna keep playing?</h2>'+
+      '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">Keep playing?</h2>'+
       arcadeBanner('rtgcardCard','Unlimited plays for everyone. Every past day unlocked.')+
       '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>Or Create a Free Account</b>'+
         '<small>3 plays per day and access to leaderboard. Account stays with you on all RunThe.GG content.</small></button>'+
