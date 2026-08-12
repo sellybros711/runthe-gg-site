@@ -25532,7 +25532,18 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if((sec==='shards')&&!packsOn()) sec='apparel'; if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='shards'&&sec!=='drops'&&sec!=='buckets') sec='apparel';
+  // Every section a tab can open. A tab has to be listed HERE as well as in the segment row below:
+  // anything not on this list is silently rewritten to Apparel on the next render, so the tab sets
+  // S.shopSec, re-renders, and bounces straight back - which is exactly how the Tour Pass and Tokens
+  // tabs shipped dead. Keep this list and the segment row in step (same enable flags on both).
+  const SHOP_SECS=['apparel','accessories','effects','owned','bag','drops']
+    .concat(packsOn()?['packs','shards']:[])
+    .concat(BUCKETS_ENABLED?['buckets']:[])
+    .concat(TOURPASS_ENABLED?['tourpass']:[])
+    .concat(TOKENS_ENABLED?['tokens']:[]);
+  let sec=S.shopSec;
+  if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel';
+  if(SHOP_SECS.indexOf(sec)<0) sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
