@@ -372,6 +372,15 @@
       styles(); buildTrigger(); buildModal();
       // warm the teaser without opening anything
       render();
+      // The hub's "Leaderboard" button deep-links to /arcade/<game>/#lb. That
+      // used to anchor-scroll to the rail; now that the board is a modal the
+      // hash has to open it, or the tap just dumps you on the game.
+      try {
+        if (/^#lb\b/i.test(location.hash || '')) {
+          setTimeout(open, 60);
+          if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+        }
+      } catch (e) {}
       try {
         if (window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(function () { if (!busy) render(); });
       } catch (e) {}
