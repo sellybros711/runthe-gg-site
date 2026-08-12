@@ -201,6 +201,33 @@
 
   /* Buy Arcade Card - arcade-cabinet banner: dark cabinet (screen + joystick +
      sports balls) on the left, orange->red gradient with the pitch on the right */
+  /* ---- Hub value banner: the Arcade Card pitch, always visible to non-members.
+       Leads with the 9 -> 36 games hook (the strongest differentiator) and the annual
+       price, so the value is merchandised on the landing surface instead of only
+       appearing as a wall when a free player runs out of plays. ---- */
+  .cardpitch{display:none; margin:22px 0 4px; border-radius:18px; padding:20px 18px; text-align:center;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--coral) 16%, var(--card)), var(--card));
+    border:1px solid color-mix(in srgb, var(--coral) 45%, var(--line2)); box-shadow:var(--shadow);}
+  .cardpitch.show{display:block;}
+  .cp-kicker{font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--coralT); text-transform:uppercase;}
+  .cp-head{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:clamp(24px,6vw,34px); line-height:1.05; margin:9px 0 4px; color:var(--ink);}
+  .cp-head s{color:var(--dim); text-decoration-thickness:2px; margin-right:6px;}
+  .cp-head b{color:var(--coralT); font-weight:400;}
+  .cp-sub{font-size:13.5px; color:var(--mut); font-weight:600; line-height:1.5; max-width:440px; margin:0 auto;}
+  .cp-perks{list-style:none; padding:0; margin:14px auto 0; max-width:330px; text-align:left;
+    display:grid; grid-template-columns:1fr; gap:7px;}
+  .cp-perks li{font-size:13px; font-weight:700; color:var(--ink); display:flex; gap:8px; align-items:flex-start;}
+  .cp-perks li i{color:var(--greenT); font-style:normal; flex:0 0 auto;}
+  .cp-cta{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px;
+    border-radius:13px; padding:14px 22px; min-height:52px; width:100%; max-width:330px; margin:16px auto 0;
+    display:block; background:var(--coral); color:#fff; box-shadow:var(--shadow);}
+  .cp-cta:hover{filter:brightness(1.06);}
+  .cp-price{font-size:12px; color:var(--mut); margin-top:10px; font-weight:700;}
+  .cp-price b{color:var(--ink);}
+  .cp-price s{color:var(--dim);}
+  .cp-save{display:inline-block; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+    color:#20140a; background:var(--gold); border-radius:999px; padding:3px 9px; margin-left:5px;}
   .arcade-buy{display:block; width:100%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent;}
   .ab-card{display:flex; align-items:stretch; overflow:hidden; border-radius:16px; min-height:96px;
     background:linear-gradient(105deg,#FF9A2E 0%, #FF6A3D 48%, #F0384E 100%);
@@ -736,6 +763,20 @@
           <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
+        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
+          <div class="cp-kicker">Arcade Card</div>
+          <h2 class="cp-head" id="cp-head"><s>9</s> <b>36 daily games</b></h2>
+          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of every one, plus a members-only game.</p>
+          <ul class="cp-perks">
+            <li><i>&#10003;</i> Unlimited plays, every day</li>
+            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
+            <li><i>&#10003;</i> Higher or Lower, members only</li>
+            <li><i>&#10003;</i> The full archive of past days</li>
+          </ul>
+          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
+          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
+        </section>
+
         <div class="m-links">
           <a href="/">Sign in to save your streak →</a>
           <a href="/arcade/archive/">Play past days →</a>
@@ -1035,6 +1076,25 @@
     if (TOK && TOK.recordPerfect) TOK.recordPerfect();
   }
 })();
+</script>
+<script>
+  /* Hub Card pitch: show to everyone except existing members, and hand off to the
+     canonical paywall in card.js so there is one purchase flow. */
+  (function(){
+    function member(){ try{ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){ return false; } }
+    function sync(){
+      var el=document.getElementById('cardpitch'); if(!el) return;
+      el.classList.toggle('show', !member());
+    }
+    var btn=document.getElementById('cpGet');
+    if(btn) btn.addEventListener('click', function(){
+      try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
+      location.href='/arcade/archive/';
+    });
+    sync();
+    setTimeout(sync, 1200);          // re-check once the membership state settles
+    window.addEventListener('focus', sync);
+  })();
 </script>
 </body>
 </html>
