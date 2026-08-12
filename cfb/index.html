@@ -3251,7 +3251,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=25"></script>
 <script src="run.js?v=11"></script>
-<script src="achievements.js?v=9"></script>
+<script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
 <script>
@@ -5045,7 +5045,7 @@ function peekCaseHtml(res){
 }
 
 /* ── THE CABINET ─────────────────────────────────────────────────────
-   IT WAS A FLAT WALL OF NINETY-FIVE CARDS, all eight groups open at once, with no way to
+   IT WAS A FLAT WALL OF CARDS, all eight groups open at once, with no way to
    tell at a glance how far in you were or which of them were the rare ones. Three things
    the NFL game's has had since its cabinet existed, and now this one does:
 
@@ -5053,8 +5053,9 @@ function peekCaseHtml(res){
        far in am I" reads the same way twice.
      A SHELF OF YOUR BEST, gold and legend only and rarest first. A shelf of bronzes is not
        a trophy shelf, so the top two tiers are the only ones on it.
-     GROUPS THAT COLLAPSE, shut by default, with a chevron. Ninety-five cards is four
-       screens of scrolling to reach the last group; eight headings is one.
+     GROUPS THAT COLLAPSE, shut by default, with a chevron. The catalog is past two hundred
+       cards now, which is a dozen screens of scrolling to reach the last group; eight
+       headings is one, whatever the catalog grows to.
 
    NO TILE VARIANT HERE. The NFL cabinet renders its collection badges -- the vintages, the
    thirty-two -- as compact tiles, because a year needs no description line. Nothing in this
@@ -5121,7 +5122,7 @@ function achWire(root){
    them the first time it is opened.
 
    THE FIRST SIGHTING IS RECORDED QUIETLY. Somebody whose case was already full before this
-   shipped would otherwise get ninety-five headlines at once, so the first read marks
+   shipped would otherwise get two hundred headlines at once, so the first read marks
    everything seen without saying anything; only what turns up after that celebrates. */
 const ACH_SEEN_KEY='cfb_ach_seen';
 function achSeen(userId){
@@ -5270,7 +5271,14 @@ function rowFromBoard(r){
 
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString());
+  /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
+     and remembers how many there really are, so a career of six hundred arrives here as
+     five hundred rows. Counting rows would cap "finish 500 seasons" at exactly the fetch
+     size and put "finish 1,000" out of reach for anybody. The true count goes with the
+     board's rows and only with them: local history has none, because a history trimmed
+     at four hundred has genuinely forgotten the rest. */
+  const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet

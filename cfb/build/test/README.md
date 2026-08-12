@@ -55,6 +55,8 @@ before the day rather than during it.
 | `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_scorelines.mjs` | That the scores on screen are scores college football has actually produced. Names every calibration key the engine reads one at a time, then demands each final be a hi/lo pair that appears in `real_pairs`, that across a few thousand real seasons nobody ever scores 1 or 4, that 2 and 5 stay near their real rates, and that the mean lands within three points of the real one. The pair check is the load-bearing one: it is what noticed that the sampler was switched off. |
+| `test_achievements.mjs` | That every badge in the catalog can actually be earned. Builds a career out of the real player file, one designed to earn all 226, and demands the evaluator hand back all 226. Every simultaneous-roster badge is solved against the six slots, the two-back cap, the two-per-team-season cap and the $11M budget before it is believed, and the three-Heisman roster that does not fit is kept in as the negative case. No database, no browser. |
+| `test_cabinet.mjs` | The trophy case drawn on a 360px phone rather than counted: the eight shelf headings add up to the whole catalog, the biggest shelf opens and draws all of it, and nothing hangs off the side. Signed in is stubbed, because the full shelves are a signed-in feature, and the board URL points at a dead port so the case falls back to this browser's own seasons. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. **Currently broken**, and not by anything it tests: the profile sheet became a hub and five pages, and this suite still drives the old tab strip. Its signed-out cases assert an information architecture that no longer exists, so fixing it is a product decision rather than a selector swap. |
@@ -71,6 +73,7 @@ before the day rather than during it.
 psql -d cfbtest -f cfb/build/test/test_leaderboard.sql          # look for FAIL
 node cfb/build/test/test_score_parity.mjs cfbtest
 node cfb/build/test/test_scorelines.mjs                         # no database, no browser
+node cfb/build/test/test_achievements.mjs                       # no database, no browser
 (nohup python3 -m http.server 8080 &)
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs
@@ -81,11 +84,21 @@ node cfb/build/test/test_ranks_tab.mjs
 node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
 node cfb/build/test/test_ticker.mjs
+node cfb/build/test/test_cabinet.mjs
 node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Eleven bugs these caught, so far
+## Twelve bugs these caught, so far
+
+**Four badges in the trophy case could not be earned by anybody.** Three asked for a
+Heisman winner and no player in the shipped file carried an award, because stage 5 of the
+build joins `cfb_awards.csv` and had never been run against it. The fourth asked for +10%
+chemistry against an engine that clamps chemistry at +8% on a curve that only approaches
+it, so the true ceiling is +7.9% and only from a roster of six men out of one program.
+None of the four threw, none looked wrong, and every test in this directory passed with
+them dead on the shelf. `test_achievements.mjs` exists because of them, and the rule it
+enforces is that a badge that cannot be earned is worse than no badge.
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
