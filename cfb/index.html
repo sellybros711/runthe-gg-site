@@ -3282,6 +3282,10 @@ const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const M=(v)=>(v>0&&v<1)?'$'+Math.round(v*1000)+'K':'$'+v.toFixed(1)+'M';
+/* Whole millions, for amounts the RULES define exactly: the cap and the respin
+   fees. NOT for money spent, which is a sum of six prices and lands on 10.9 as
+   often as on 11: rounding it printed a squad that cost $10.9M as $11M, which is
+   the cap-adjacent number a player is watching and the one they would check. */
 const M0=(v)=>'$'+Math.round(v)+'M';
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
@@ -4035,7 +4039,7 @@ function seasonSheet(row,back,mine){
       tile(overall===null?'--':overall.toFixed(1),'Team overall')+
       tile(row.national_rank?'#'+row.national_rank:'--','In the country')+
       tile(chem===null?'--':pc(chem/100),'Chemistry')+
-      tile(spend===null?'--':M0(spend),'Spent')+
+      tile(spend===null?'--':M(spend),'Spent')+
     '</div>'+
     (fppg!==null&&mult!==null&&overall!==null
       ? '<p class="caveat">'+fppg.toFixed(1)+' squad FPPG, '+pc(chem===null?0:chem/100)+
@@ -7959,7 +7963,7 @@ function paintOver(){
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   $('o-splits').innerHTML=
     split(pc(run.season.chemistry-1),'Chemistry')+
-    split(M0(spendUsed),'Spent')+
+    split(M(spendUsed),'Spent')+
     split(o.seedLabel.replace(/^Season.*/,'None'),'Postseason');
 
   /* Résumé: the conference title, the final ranking, the signature wins. The
@@ -8110,16 +8114,27 @@ function paintOver(){
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
       const spots=kept===E.SLOTS.length?'You picked the best available player at every spot.'
         :kept?'You had '+kept+' of the '+E.SLOTS.length+' spots exactly right.'
-        :'You matched none of the best picks.';
+        :'You matched none of the best picks, so the gap is all in the players, not in how they fit.';
       $('o-miss').innerHTML=
         '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
           '<div class="ptrack"><i style="width:'+share+'%;background:'+sband+'"></i></div>'+
           '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
+        '<p class="caveat" style="margin:0 0 2px">Spot by spot, against the best your same six '+
+        'teams and same '+M0(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when '+
+        'spending less there buys more somewhere else.</p>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Team overall includes chemistry and how the six fit. Your record is '+
-        'this season&rsquo;s result; the best roster&rsquo;s is a projection (it never played) '+
-        'from replaying it against your 12 opponents hundreds of times.</p>';
+        /* THE SENTENCE THIS SECTION EXISTS FOR. Players read a high overall and a
+           strong projection and conclude the best lineup should have won it all. Both
+           records are now averages of hundreds of seasons, so the table compares like
+           with like, and this says out loud what that means: twelve wins typically is
+           not twelve wins guaranteed, and the season they played is one sample. */
+        '<p class="caveat">Team overall includes chemistry and how the six fit, because that is '+
+        'what the simulation scores with. BOTH records are typical ones, from replaying each '+
+        'team against your 12 opponents hundreds of times, because one season is mostly luck: '+
+        'the best roster in the country still loses games, and a team that typically goes 12-1 '+
+        'will sometimes go 9-4. Your six spins stay fixed either way, since a different pick '+
+        'would also have changed what the wheel offered you next.</p>';
     }
   });
 }
@@ -8170,7 +8185,15 @@ function comparison(best){
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
     vs('Team overall',mineRating.toFixed(1),bestRating.toFixed(1),true)+
-    vs('Record',run.outcome.record,theirs.typicalRecord,true)+
+    /* TYPICAL AGAINST TYPICAL, which is the whole point of the row and was the one
+       thing this table got wrong. It used to put YOUR ACTUAL RECORD next to the best
+       roster's PROJECTED one, which is not a comparison: one is a single season and
+       the other is the average of hundreds. A player who went 12-1 with a 105 overall
+       then read a projected 12-1 beside it and concluded the perfect lineup should
+       have won the title, when the honest reading is that both teams win about twelve
+       and the one season they actually played is mostly luck.
+       mine was already being computed here and its record thrown away. */
+    vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
   '</div>';
 }
@@ -8335,7 +8358,7 @@ function drawShareCard(){
   const rb2=(v)=>v>=70?'#4ade80':(v>=50?'#fbbf24':'#f87171');
   stat('TEAM OVERALL',rating.toFixed(1),CARD.W*0.22,rb2(rating),70);
   stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,chem>0.05?'#4ade80':'#e2e8f0');
-  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
+  stat('SPENT','$'+spend.toFixed(1)+'M',CARD.W*0.78,'#e2e8f0');
   B('600',30);x.fillStyle='rgba(255,255,255,.62)';
   centered('Can you draft a better team?',CARD.DARE);
   const label='RUNTHE.GG/CFB';
