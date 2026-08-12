@@ -519,7 +519,7 @@
   }
 
   // ---------- state ----------
-  var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0;
+  var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0, runStart=0;
   var run=0, best=0, busy=false, playing=false, charged=false;
 
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
@@ -620,6 +620,7 @@
   function startGame(baseId){
     var e = idMap[baseId]; if(!e || !cat) return;
     baseline=e; run=0; playing=true; busy=false; charged=false;
+    runStart=Date.now();   // real elapsed time is the board's tiebreak
     var s=load(); best=s.best||0;
     document.getElementById('streakN').textContent='0';
     var lbl = cat.label + (cat.note?(' ('+cat.note+')'):'');
@@ -715,7 +716,8 @@
     }, 260);
     try{
       if(run>0 && window.RTG_BOARD && RTG_BOARD.submit){
-        RTG_BOARD.submit(GAME, DATE, { seconds:0, mistakes:0, reveals:0, runLen:run }).then(function(res){
+        var secs = Math.max(1, Math.round((Date.now() - (runStart||Date.now()))/1000));
+        RTG_BOARD.submit(GAME, DATE, { seconds:secs, mistakes:0, reveals:0, runLen:run }).then(function(res){
           if(res && res.streak){ document.getElementById('streakN').textContent=res.streak; }
           renderRealBoard();
         });

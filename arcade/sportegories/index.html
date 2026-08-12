@@ -285,6 +285,7 @@
     </div>
   </section>
 
+  <div class="lb"></div>
   <datalist id="sug"></datalist>
   <div class="foot">Sportegories · in development inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a></div>
 </div>
@@ -301,11 +302,18 @@
       <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
     </div>
     <button class="abtn go" id="mAgain" type="button">Play again</button>
+    <button class="abtn" id="mShare" type="button">Share your card</button>
+    <button class="abtn" id="mBoard" type="button">Leaderboard</button>
     <a class="abtn" href="/arcade/" style="text-decoration:none;display:block">More games</a>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/tokens.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=3"></script>
+<script src="/arcade/leaderboard.js?v=2"></script>
+<script src="/arcade/share.js?v=3"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=2"></script>
 <script src="/arcade/sportegories.js?v=3"></script>
@@ -314,7 +322,9 @@
   'use strict';
   var SP = window.RTG_SPORTEGORIES;
   var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
+  var GAME = 'sportegories';
   var SAVE = 'rtg_sportegories_v1';
+  var lastMarks = '';
   var SECONDS = 120;
 
   function $(id){ return document.getElementById(id); }
@@ -553,6 +563,19 @@
       $('tally').classList.remove('on');
       var st=load(); var best=Math.max(st.best||0, total);
       if(isDaily){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+      // Points ride the run_len column: the board's score is
+      // 1000000 - run_len*1000 + seconds, i.e. most points wins and a faster
+      // card breaks the tie - exactly this game's ordering.
+      lastMarks = results.map(function(r){ return r && r.ok ? 'x' : '.'; }).join('');
+      if(isDaily && total>0){
+        try{
+          var secs = Math.max(5, SECONDS - Math.max(0,left));
+          if(window.RTG_BOARD && RTG_BOARD.submit){
+            RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:total })
+              .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
+          }
+        }catch(e){}
+      }
       $('mScore').textContent='0';
       $('mFilled').textContent=correct+'/'+n;
       $('mBonus').textContent=bonus;
@@ -592,6 +615,18 @@
   $('skipBtn').addEventListener('click', function(){ if(revealDone) revealDone(); });
   $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
   $('mAgain').addEventListener('click', function(){ startPuzzle(false); });
+  $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
+  $('mShare').addEventListener('click', function(){
+    try{
+      var pts = parseInt($('mScore').textContent,10)||0;
+      if(window.RTGShare && RTGShare.send){
+        RTGShare.send({ key:'sportegories', date:today(), grid:'', stat:pts+' pts',
+                        statInt:pts, letter:(puz&&puz.letter)||'', marks:lastMarks });
+        return;
+      }
+    }catch(e){}
+    toast('Sharing unavailable');
+  });
 
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=$('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
   applyThemeMeta();
@@ -601,6 +636,17 @@
     try{ LS.setItem('runthegrid_theme',next); }catch(e){}
     applyThemeMeta();
   });
+
+  // board + leaderboard
+  (function(){
+    try{
+      if(window.RTG_BOARD){
+        RTG_BOARD.boot();
+        if(window.RTG_LB) RTG_LB.mount({ el:document.querySelector('.lb'), game:GAME,
+          date:today(), kind:'pts' });
+      }
+    }catch(e){}
+  })();
 
   // boot
   (function(){

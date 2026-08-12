@@ -273,7 +273,8 @@
         if (d > 0) gap = '<b>' + d + 's</b> faster takes ' + ord(rank - 1);
       } else {
         var dd = Math.max(0, (above.run_len || 0) - (mine.run_len || 0));
-        if (dd > 0) gap = '<b>+' + dd + '</b> ' + (CFG.kind === 'pts' ? 'pts' : (CFG.unit || 'more')) + ' takes ' + ord(rank - 1);
+        var unit = CFG.kind === 'pts' ? (dd === 1 ? 'pt' : 'pts') : (CFG.unit || 'more');
+        if (dd > 0) gap = '<b>+' + dd + '</b> ' + unit + ' takes ' + ord(rank - 1);
       }
     }
     tease(ord(rank) + ' of ' + total + ' today · ' + lead);

@@ -25,6 +25,7 @@
     rankit:     { timed: false, unit: 'sets' },
     almamater:  { timed: false, unit: 'in a row' },
     highlow:    { timed: false, unit: 'in a row' },
+    sportegories: { timed: false, unit: 'pts' },
     match:      { timed: true },
     guess:      { timed: true },
     crossword:  { timed: true },
