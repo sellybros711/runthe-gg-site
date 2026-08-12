@@ -273,6 +273,39 @@
     );
   }
 
+  // ---- one page of the all-time board, for the leaderboard sheet's endless
+  // scroll. Unlike allTimeBoard() this reports the RAW row count alongside the
+  // scrubbed rows: the caller advances its offset by what the SERVER returned,
+  // not by what survived scrub(), or hiding one test account would make every
+  // later page skip a real player. Resolves {rows, raw} or null (offline). ----
+  function allTimePage(game, limit, offset) {
+    if (!sb) return Promise.resolve(null);
+    var n = limit || 50;
+    return withTimeout(
+      sb.rpc('grid_alltime_board', { p_game: game, p_limit: n, p_offset: offset || 0 })
+        .then(function (r) {
+          if (!r || r.error || !Array.isArray(r.data)) return null;
+          return { rows: scrub(r.data), raw: r.data.length };
+        })
+    );
+  }
+
+  // ---- field size + the signed-in caller's own all-time best and rank, in one
+  // call. The RPC reads auth.uid() itself, so this is safe to call signed-out —
+  // it just comes back with total and nulls. Object or null (offline). ----
+  function allTimeStats(game) {
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(
+      sb.rpc('grid_alltime_stats', { p_game: game })
+        .then(function (r) {
+          if (!r || r.error) return null;
+          var d = r.data;
+          if (Array.isArray(d)) d = d[0];
+          return d || null;
+        })
+    );
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
@@ -285,6 +318,8 @@
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,
+    allTimePage: allTimePage,
+    allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
