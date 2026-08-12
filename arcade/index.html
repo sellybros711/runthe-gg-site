@@ -201,6 +201,24 @@
 
   /* Buy Arcade Card - arcade-cabinet banner: dark cabinet (screen + joystick +
      sports balls) on the left, orange->red gradient with the pitch on the right */
+  /* ---- Locked sport editions strip: makes the NBA/NFL/MLB versions of every game a
+       visible, tangible perk on the hub instead of a padlock a player only meets inside
+       a game. Non-members only; tapping opens the same Card paywall. ---- */
+  .editions{display:none; margin:20px 0 0; padding:15px 14px; border-radius:16px; text-align:center;
+    background:var(--card); border:1px solid var(--line2); box-shadow:var(--shadow);}
+  .editions.show{display:block;}
+  .ed-h{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:17px; color:var(--ink); margin:0 0 3px;}
+  .ed-s{font-size:12.5px; color:var(--mut); font-weight:600; margin:0 0 12px; line-height:1.45;}
+  .ed-row{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; max-width:340px; margin:0 auto;}
+  .ed-chip{appearance:none; cursor:pointer; font-family:var(--f); font-weight:900; font-size:13px;
+    display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 6px; border-radius:12px;
+    color:var(--ec); background:color-mix(in srgb, var(--ec) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--ec) 45%, transparent);}
+  .ed-chip:hover{background:color-mix(in srgb, var(--ec) 20%, transparent);}
+  .ed-chip svg{width:12px; height:12px; flex:0 0 auto; opacity:.85;}
+  .ed-nba{--ec:#F0653A;} .ed-nfl{--ec:#5FA052;} .ed-mlb{--ec:#2F6BFF;}
+
   /* ---- Hub value banner: the Arcade Card pitch, always visible to non-members.
        Leads with the 9 -> 36 games hook (the strongest differentiator) and the annual
        price, so the value is merchandised on the landing surface instead of only
@@ -763,6 +781,16 @@
           <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
+        <section class="editions" id="editions">
+          <h2 class="ed-h">Every game, three more ways</h2>
+          <p class="ed-s">Each daily game also has an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
+          <div class="ed-row">
+            <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
+            <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
+            <button class="ed-chip ed-mlb" type="button" data-ed="MLB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>MLB</button>
+          </div>
+        </section>
+
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
           <h2 class="cp-head" id="cp-head"><s>9</s> <b>36 daily games</b></h2>
@@ -1085,7 +1113,14 @@
     function sync(){
       var el=document.getElementById('cardpitch'); if(!el) return;
       el.classList.toggle('show', !member());
+      var ed=document.getElementById('editions');
+      if(ed) ed.classList.toggle('show', !member());
     }
+    Array.prototype.forEach.call(document.querySelectorAll('.ed-chip'), function(c){
+      c.addEventListener('click', function(){
+        try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
+      });
+    });
     var btn=document.getElementById('cpGet');
     if(btn) btn.addEventListener('click', function(){
       try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
