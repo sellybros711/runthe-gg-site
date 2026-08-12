@@ -14600,6 +14600,37 @@ allows Google Fonts, or self-host Anton.*
   **Bonus Spin** wedge handing a spin straight back (`wheelAvail()` holds level) - a plain `before-1`
   assertion fails ~4% of runs and reads as a regression when it isn't.
 
+- **PRO SHOP: the Tour Pass and Tokens tabs were dead (owner, with a screenshot of the shop sitting on
+  Apparel: "the tour pass and tokens button tabs aren't working").** `overlayShop` validates `S.shopSec`
+  against a hardcoded condition and rewrites anything unrecognised to `'apparel'`. The two new real-money
+  tabs had been added to the segment row AND given a render branch, but never added to that condition, so
+  tapping one set `S.shopSec`, re-rendered, and the guard bounced it straight back to Apparel - both tabs
+  visible, neither reachable. Replaced the hardcoded condition with a **`SHOP_SECS` list built from the same
+  enable flags the segment row uses** (`packsOn()` / `BUCKETS_ENABLED` / `TOURPASS_ENABLED` /
+  `TOKENS_ENABLED`), so a tab and its section can't drift apart again, plus a comment stating a tab has to
+  be in both places. The `buckets`-without-BUCKETS_ENABLED fallback (→ packs) is preserved.
+  - **Also ADOPTED a parallel workstream's store split**, which is where those tabs came from: they edited
+    the DEPLOYED `golf/index.html` directly (Tour Pass / Tokens / Buy Coins each own a tab via a new
+    `bucketShopNode(focus)` instead of one scrolling storefront, a Ko-fi support link in the footer,
+    "Buy · $X" button labels, the `PASS_PRO_MULT`→`PASS_REWARD_MULT` rename, and the deep links from the
+    daily-result + season-launch CTAs). Since `build-a-golfer.html` is the source of truth and gets copied
+    OVER that file, their work was one deploy away from being clobbered. The live file was my last
+    byte-identical deploy plus their changes, so it was taken wholesale as the new source (verified my
+    prize-wheel work survived intact) and the fix applied on top.
+  Verified by clicking **all 11 tabs**: each lands on its own section, stays highlighted and renders real
+  content (**0 dead tabs**). The same test run against the PRE-FIX file reports dead tabs
+  `["tourpass","tokens"]` and nothing else, so it genuinely catches this bug rather than something adjacent.
+  Tour Pass renders the pass + its price with no coin-bucket leakage, Tokens renders the token packs, an
+  unknown/stale section still falls back to Apparel, the golfer preview correctly stays OFF the payment
+  pages, and both deep links (daily result "Buy Daily Tokens", the season-launch store CTA) resolve.
+  Screenshots of both tabs. Regressions green (final suite: shop sections + an 18-hole practice daily round;
+  tour-pass overlay sweep; both wheel suites) with **0 page errors**; inline scripts parse clean. Deployed to
+  /golf (byte-identical verified).
+  **PROCESS NOTE for other sessions:** `golf/index.html` is REGENERATED from `build-a-golfer.html` on every
+  golf deploy. Editing the deployed file directly means the next golf deploy silently reverts it. Make golf
+  changes in `build-a-golfer/build-a-golfer.html` (or expect the golf session to have to notice and adopt
+  them, as here). Two adoptions in three sessions now.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
