@@ -14878,3 +14878,56 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   NOTE: lbregress.mjs's daily-round fixture throws in `autoFinishDaily` (it drives the draft over a
   `file://` URL, never reaches the round, then calls it blindly) - verified identical on the DEPLOYED file,
   so it is a stale fixture, not a regression; its leaderboard assertions all pass.
+
+- **SIGN-OUT IDENTITY LEAK: the golfer is now ACCOUNT-SCOPED (owner: "When I sign out of my account, all of
+  my accessories that my golfer was wearing stays. When you sign out, nothing should be leaking through
+  from your signed in profile").** Root cause: `bag_look` (the whole golfer identity - skin/hair/kit +
+  patterns + accessories + effects + caddie + country + handedness + equipped title + club/ball/cleats +
+  nameplate/card background) and `bag_name` were the LAST two per-player stores still written to BARE,
+  unscoped localStorage keys, while every other one (career, careersave, coins, achievements, streak,
+  daily, legend tokens, special, passport, XP...) has been `acctKey()`-scoped since CS54/CS87. So a guest
+  session on the same browser inherited the signed-in account's entire outfit and golfer name - and,
+  symmetrically, a guest who customized could then clobber the account's real look through the CS99
+  last-write-wins cloud merge (`_ts`), since both wrote the same key. `sbSignOut()` also never touched
+  `S.look`/`S.name`, so even a scoped store would have kept the account's golfer on screen for the rest of
+  the session.
+  Fixed the way the other per-player stores were:
+  - **Scoped the identity.** New `lookKey()`/`nameKey()` (= `acctKey('bag_look'/'bag_name')`) +
+    `saveGolferName()`, routed through EVERY read/write: `saveLook()`, `profileLook()`/`profileName()`, the
+    initial `S` build, both name writers (the setup name field + the "default to your username" fallback),
+    `cloudBundle()` and `cloudPull()`'s LWW adoption. The in-progress DRAFT snapshot (`bag_resume`, which
+    carries the golfer's name + look) is scoped too, so a guest can't see or resume the signed-in player's
+    half-built golfer (same reasoning as CS54's career fix).
+  - **Sign-out is now a clean slate.** `sbSignOut()` clears the remaining board/wallet caches and calls
+    `reset()`, which rebuilds `S` from the GUEST slots - the golfer reverts to the default, the name
+    clears, and the in-memory career/season/draft the account was playing is dropped. `sbApply(null)` (a
+    session dropped in another tab / expired) calls the new `reloadIdentityForAccount()`, which re-reads
+    the identity with NO fallback to what's in memory: the existing `restoreProfileIdentity()` passes
+    `S.look` as its fallback, which would have kept the account's golfer on screen exactly when the guest
+    key is empty (i.e. the leak).
+  - **Nobody loses their golfer.** `migrateLegacyIdentity()` (on sign-in, beside the existing
+    `migrateLegacyCareerSave`/`migrateLegacyLifetimeStats`) adopts this browser's pre-scoping unscoped
+    golfer into the account's slot the first time that slot is empty, then CLEARS the unscoped copy -
+    without that clear it stays behind as the "guest" golfer and the account's outfit reappears the moment
+    you sign out. An account that already has a look is never overwritten by a stale unscoped one, and
+    re-running the migration is a no-op. Sign-in also calls `restoreProfileIdentity()` immediately so the
+    account's golfer shows without waiting on `cloudPull`.
+  - **Caught + fixed a fatal bug this introduced**: `sbUser` is a `let` declared ~20k lines BELOW the
+    initial `S` build, so reading the identity through `acctKey()` up there hit the temporal dead zone -
+    and `typeof` does NOT save you from a TDZ binding, it throws, which aborted the ENTIRE inline script at
+    load (the game booted to a dead page). `acctKey` now reads `sbUser` inside a try/catch (falling back to
+    the guest key), with a comment so it isn't "simplified" back.
+  Verified in Playwright (21 + 9 checks, 0 page errors): the exact report - a decked-out signed-in golfer
+  (navy polo, gold hat, argyle, crown, aviators, gold aura, title, caddie, country) signs out and the guest
+  session shows the DEFAULT golfer with no name, while the account's look stays on disk and comes BACK on
+  sign-in; the reverse leak is closed (guest edits write the guest key and leave the account's look
+  untouched); the legacy migration adopts once, clears the unscoped copy, never overwrites a real account
+  look, and is idempotent; the draft snapshot is scoped and invisible to a guest; `cloudBundle` reads the
+  account identity; sign-out drops the in-memory career/season; and the REAL UI path (the menu's Sign Out
+  row) reverts the header + the closet golfer to the default with the script confirmed to have executed
+  fully (no TDZ abort). Regressions green (regress_final's full 18-hole daily round + shop sections,
+  tp_final's Tour Pass sweep, the 11-tab shop suite); inline scripts parse clean. Deployed to /golf
+  (verified byte-identical; `origin/main` had no parallel golf edits to adopt).
+  NOTE on scope: `bag_courserecords` is still a device-level store, but what a guest sees there is the
+  GLOBAL course record (name + score) that `crLoad` merges in from the public board, not private profile
+  data, so it was deliberately left alone.
