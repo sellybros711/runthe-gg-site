@@ -57,7 +57,7 @@
     --blue:#2F6BFF;
     --green:#48D17A; --red:#FF625F;
     /* text-safe accent variants (meet contrast on the current surface) */
-    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --redT:#FF625F;
+    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --redT:#FF625F;
     --banner-ink:#FFDFA3;
     --lane-neutral:#3A506B;       /* unsolved, unrevealed lane accent */
     /* inverse chrome (toast / popup) */
@@ -74,7 +74,7 @@
     --dropbg:#E8F1FA; --slotbg:rgba(13,27,44,.03);
     --ink:#0D1B2C; --mut:#51637A;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --redT:#C4372C;
+    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --redT:#C4372C;
     --banner-ink:#7A4E00;
     --lane-neutral:#C4D0DE;
     --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
@@ -479,7 +479,7 @@
     color:var(--ink); background:color-mix(in srgb, var(--lc) 12%, var(--card));
     border:1px solid color-mix(in srgb, var(--lc) 45%, transparent); border-radius:999px; padding:5px 11px; }
   .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
-  .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--lc); }
+  .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); }
 
   /* the pick-four grid: 5 across on desktop (fills the wider column), 4 across on
      phones. Names wrap; fitPool() shrinks any that don't fit. */
@@ -702,17 +702,17 @@
   <script src="/arcade/archive.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=2"></script>
+<script src="/arcade/howto.js?v=3"></script>
   <script>
   (function () {
     'use strict';

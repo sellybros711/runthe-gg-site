@@ -39,7 +39,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#FF5A4E; --brand:#FF8A3D; --brandT:#FF8A3D; --coral:#FF5A4E; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
     --hit:#2FA968; --close:#C79114; --miss:#26364C;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -49,7 +49,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
+    --coralT:#C4372C; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
     --hit:#2FA968; --close:#E0A21C; --miss:#D5DEEA;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -108,12 +108,12 @@
   .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
   .modesw button:hover{color:var(--ink); border-color:var(--coral);}
-  .modesw button.on{background:var(--coral); color:#fff; border-color:transparent;}
+  .modesw button.on{background:var(--coral); color:var(--onAccent,#160B02); border-color:transparent;}
   .searchwrap{position:relative; margin-bottom:8px;}
   .search{display:flex; gap:8px;}
   .search input{font-size:16px; flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
   .search input::placeholder{color:var(--dim); font-weight:600;}
-  .search .go{flex:0 0 auto; border:0; background:var(--coral); color:#fff; font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
+  .search .go{flex:0 0 auto; border:0; background:var(--coral); color:var(--onAccent,#160B02); font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
   .search .go:disabled{background:var(--card2); color:var(--mut); cursor:default;}
   .ac{position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:20; background:var(--card); border:1px solid var(--line2); border-radius:11px; box-shadow:0 20px 50px -18px rgba(0,0,0,.7); overflow:hidden; display:none;}
   .ac.on{display:block;}
@@ -213,7 +213,7 @@
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--coral); color:#fff; border-color:transparent;}
+  .abtn.gold{background:var(--coral); color:var(--onAccent,#160B02); border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
 
@@ -392,21 +392,21 @@
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=4"></script>
+<script src="/arcade/mode.js?v=5"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=2"></script>
+<script src="/arcade/howto.js?v=3"></script>
 <script>
 (function(){
   'use strict';
