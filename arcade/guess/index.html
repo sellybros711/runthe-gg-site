@@ -382,6 +382,7 @@
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/cluebank.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/rosters.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
@@ -670,7 +671,18 @@
     if(c.length<2) c.push("Their name showed up in a recent box score if you were paying attention.");
     return c;
   }
-  function cluesFor(t){ return (ROSTER_MODE?buildCluesRoster:buildClues)(t); }
+  /* Hand-written clues (cluebank.js) come first when this player has any —
+     a real moment beats anything assembled from the data fields. Only clues
+     tagged safe for this game are returned: one naming his own team, position
+     or number would hand over a board column the player is meant to earn.
+     The generated hints still follow, so the clue button never runs dry. */
+  function cluesFor(t){
+    var gen = (ROSTER_MODE?buildCluesRoster:buildClues)(t), hand = [];
+    try {
+      if(window.RTG_CLUES && t && t.name) hand = RTG_CLUES.forGuess(t.sport, t.name) || [];
+    } catch(e){}
+    return hand.concat(gen);
+  }
   var CLUES=[], cluesUsed=0;
   function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
   function updateClueBtn(){

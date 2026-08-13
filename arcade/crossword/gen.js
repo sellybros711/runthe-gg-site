@@ -178,10 +178,32 @@
     return !!(e && (e.hof || (e.ml && e.ml.length) || awardPhrase(e)));
   }
 
+  // A hand-written clue from cluebank.js, when this player has one. These skip
+  // the rival-disambiguation walk below on purpose: that machinery exists to
+  // stop two same-surname players from wearing the same fact list, and a clue
+  // naming one specific moment can only ever describe one of them. The bank's
+  // own validator guarantees the surname never appears in the text.
+  function curatedClue(e, given, rng) {
+    try {
+      var B = root && root.RTG_CLUES;
+      if (!B || !B.has(e.sport, e.name)) return null;
+      var list = B.get(e.sport, e.name);
+      if (!list.length) return null;
+      var pick = rng ? Math.floor(rng() * list.length) : 0;
+      return { text: given + ' ___, ' + list[pick].x, facts: { curated: true } };
+    } catch (x) { return null; }
+  }
+  function hasCurated(e) {
+    try { return !!(root && root.RTG_CLUES && e && root.RTG_CLUES.has(e.sport, e.name)); }
+    catch (x) { return false; }
+  }
+
   function clueFor(word, rng) {
     var e = word.e;
     var fn = givenOf(e.name);
     if (!fn) return null;
+    var hand = curatedClue(e, fn, rng);
+    if (hand) return hand;
     // Only players who share BOTH names are genuine rivals for a named clue;
     // a different first name already tells the solver who is meant.
     var fnKey = norm(fn);
@@ -411,6 +433,10 @@
     });
     return pool;
   }
+  // How many extra copies of each hand-clued player go into the pick pool.
+  // Tuned against a 365-day run — see scripts/check-cluebank.mjs, which reports
+  // the resulting share of curated clue slots.
+  var CURATED_WEIGHT = 14;
   var _poolSrc = null, _poolCache = null;
   function getPool(corpus) {
     if (_poolSrc !== corpus) {
@@ -428,6 +454,16 @@
       var mult = Math.max(6, Math.floor(surnames.length / ((team.length + vocab.length) * 3)));
       var boost = [];
       for (var m = 0; m < mult; m++) boost = boost.concat(team, vocab);
+      // Weight players who have a HAND-WRITTEN clue far above the rest. This
+      // does double duty: the puzzle reads better (a real moment instead of
+      // "NFL Pro Bowler Jack ___"), and it stops the grid filling up with
+      // technically-eligible players no casual fan could name. The long tail
+      // stays in the pool so the generator never starves on a hard grid — it
+      // just stops being the default.
+      var handed = surnames.filter(function (w) { return hasCurated(w.e); });
+      if (handed.length) {
+        for (var h = 0; h < CURATED_WEIGHT; h++) surnames = surnames.concat(handed);
+      }
       _poolCache = surnames.concat(boost);
     }
     return _poolCache;
