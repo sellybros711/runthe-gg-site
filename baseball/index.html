@@ -1495,21 +1495,113 @@ function fireConfetti(gold){
 }
 
 /* ─── share ─── */
-function shareResult(){
+function shareVerdict(o){
+  if(o.isGOAT) return 'Greatest of all time';
+  if(o.titleWon) return 'World Series Champions';
+  if(o.beatRecord) return 'Tied the all-time record';
+  if(o.madePlayoffs){const l=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];return 'Out in the '+l.round;}
+  return 'Missed the playoffs';
+}
+function shareLines(o){
+  const era=RUN.era?' ('+RUN.era+')':'';
+  let t='Run The Diamond'+era+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
+  if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
+  t+='\nCan you draft a better team?\nrunthe.gg/baseball';
+  return t;
+}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawShareCard(o){
+  const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');
+  // vintage cream ground
+  c.fillStyle='#e8dcc8';c.fillRect(0,0,W,H);
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#f0e7d2');g.addColorStop(1,'#e2d4bb');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  // top leather band
+  c.fillStyle='#6b3410';c.fillRect(0,0,W,14);
+  const win=o.titleWon||o.beatRecord;
+  // kicker
+  c.textAlign='center';c.fillStyle='#b8860b';c.font='800 30px Archivo, sans-serif';
+  c.fillText('★  RUN THE DIAMOND  ★',W/2,118);
+  // all-time rank ribbon
+  if(o.allTimeRank){c.fillStyle='#7a5c12';c.font='700 26px Archivo, sans-serif';
+    c.fillText(ordinal(o.allTimeRank).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
+  // record
+  c.font='400 210px "Righteous", Impact, sans-serif';
+  const rec=o.wins+'–'+o.losses;
+  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('–').width, lt=c.measureText(o.losses+'').width;
+  const tot=wt+dt+lt, sx=W/2-tot/2;
+  c.textAlign='left';
+  c.fillStyle='#2e7d32';c.fillText(o.wins+'',sx,368);
+  c.fillStyle='#8a7e6e';c.fillText('–',sx+wt,368);
+  c.fillStyle='#c0392b';c.fillText(o.losses+'',sx+wt+dt,368);
+  c.textAlign='center';
+  // verdict
+  c.fillStyle=win?'#b8860b':'#1a1a1a';c.font='400 62px "Righteous", Impact, sans-serif';
+  c.fillText(shareVerdict(o).toUpperCase(),W/2,452);
+  // three cells
+  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'—','#1a1a1a'],
+    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'—','#b8860b'],
+    ['CHEMISTRY',(o.chemistry.multiplier>=1?'+':'')+((o.chemistry.multiplier-1)*100).toFixed(0)+'%','#2e7d32']];
+  const cw=300,ch=150,gap=30,startx=W/2-(cw*3+gap*2)/2,cy=510;
+  cells.forEach((cell,i)=>{const x=startx+i*(cw+gap);
+    c.fillStyle='#f5f0e6';rr(c,x,cy,cw,ch,18);c.fill();
+    c.strokeStyle='rgba(0,0,0,.10)';c.lineWidth=2;rr(c,x,cy,cw,ch,18);c.stroke();
+    c.fillStyle=cell[2];c.font='400 66px "Righteous", Impact, sans-serif';c.fillText(cell[1]+'',x+cw/2,cy+82);
+    c.fillStyle='#8a7e6e';c.font='800 22px Archivo, sans-serif';c.fillText(cell[0],x+cw/2,cy+124);
+  });
+  // roster (two columns)
+  const roster=RUN.roster.map((p,i)=>({p,slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const order=['C','1B','2B','3B','SS','LF','CF','RF','DH','SP1','SP2','CL'];
+  roster.sort((a,b)=>order.indexOf(a.slot)-order.indexOf(b.slot));
+  const ry=730,rh=88,colw=500,colgap=40,cx0=W/2-(colw*2+colgap)/2;
+  roster.forEach((r,i)=>{const col=i%2,rowi=Math.floor(i/2);
+    const x=cx0+col*(colw+colgap),y=ry+rowi*rh;
+    c.fillStyle='#f5f0e6';rr(c,x,y,colw,rh-14,12);c.fill();
+    // pos chip
+    const pc=posColor(r.slot.replace(/[12]$/,''));
+    c.fillStyle=pc;rr(c,x+16,y+18,86,38,8);c.fill();
+    c.fillStyle='#fff';c.font='800 24px Archivo, sans-serif';c.textAlign='center';
+    c.fillText(r.slot,x+16+43,y+44);
+    c.textAlign='left';c.fillStyle='#1a1a1a';c.font='700 30px "Bitter", Georgia, serif';
+    let nm=r.p.n;if(nm.length>20)nm=nm.slice(0,19)+'…';
+    c.fillText(nm,x+118,y+38);
+    c.fillStyle='#8a7e6e';c.font='600 22px Archivo, sans-serif';
+    c.fillText(r.p.s+' '+r.p.t,x+118,y+64);
+    c.textAlign='right';c.fillStyle='#1a1a1a';c.font='800 28px Archivo, sans-serif';
+    c.fillText(r.p.w.toFixed(1),x+colw-18,y+50);c.textAlign='left';
+  });
+  // footer pill
+  c.textAlign='center';
+  c.fillStyle='#6b3410';rr(c,W/2-190,H-96,380,64,32);c.fill();
+  c.fillStyle='#f0ebe3';c.font='800 30px Archivo, sans-serif';
+  c.fillText('RUNTHE.GG/BASEBALL',W/2,H-54);
+  return cv;
+}
+async function shareResult(){
   if(!RUN||!RUN.outcome) return;
   const o=RUN.outcome;
-  const era=RUN.era?' ('+RUN.era+')':'';
-  let text='Run The Diamond'+era+'\n'+o.wins+'-'+o.losses+'\n';
-  if(o.titleWon) text+='World Series Champions!\n';
-  if(o.isGOAT) text+='Greatest of All Time\n';
-  text+='\nrunthe.gg/baseball';
-  if(navigator.share){navigator.share({text}).catch(()=>{});}
-  else if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>{
-      $('b-share').textContent='Copied!';
-      setTimeout(()=>{$('b-share').textContent='Share result';},2000);
-    });
-  }
+  const text=shareLines(o);
+  const btn=$('b-share');const orig=btn.innerHTML;
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(_){}
+  let file=null;
+  try{
+    const cv=drawShareCard(o);
+    const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+    if(blob) file=new File([blob],'run-the-diamond.png',{type:'image/png'});
+  }catch(e){ console.error('share card',e); }
+  try{
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({text,files:[file]});return;
+    }
+    if(navigator.share){ await navigator.share({text});return; }
+  }catch(e){ if(e&&e.name==='AbortError')return; }
+  // fallback: copy text + download the image
+  try{ if(navigator.clipboard) await navigator.clipboard.writeText(text); }catch(_){}
+  if(file){ const url=URL.createObjectURL(file);const a=document.createElement('a');
+    a.href=url;a.download='run-the-diamond.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+  btn.textContent='Copied!';setTimeout(()=>{btn.innerHTML=orig;},2000);
 }
 
 /* ─── init ─── */
