@@ -416,6 +416,65 @@ h1,h2,h3{margin:0}
   background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
 .ro-chemlink.fam{background:rgba(184,134,11,.14);color:var(--gold);border-color:rgba(184,134,11,.3)}
 
+/* ─── new badges panel (results) ─── */
+.newbadges{background:var(--panel);border:1px solid rgba(184,134,11,.35);border-radius:14px;
+  padding:14px 16px;margin:12px 0;box-shadow:0 2px 8px -2px rgba(184,134,11,.3)}
+.newbadges .nb-hd{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.nb-list{display:flex;flex-direction:column;gap:8px}
+.nb-item{display:flex;align-items:center;gap:10px;animation:nbin .4s ease both}
+@keyframes nbin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.nb-item .bdg-ic{flex:0 0 auto}
+.nb-item .nb-t{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink)}
+.nb-item .nb-d{font-size:11px;color:var(--dim)}
+.newbadges .nb-more{font-size:11px;color:var(--dim-2);margin-top:8px;font-family:var(--fn);font-weight:600}
+.btn.trophy-cta{margin-top:10px}
+
+/* ─── badge medallion ─── */
+.bdg-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+  font-size:15px;border:2px solid rgba(0,0,0,.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
+.bdg-ic.bronze{background:linear-gradient(160deg,#c88a4a,#8a5a2a)}
+.bdg-ic.silver{background:linear-gradient(160deg,#cfd4da,#9aa2ab)}
+.bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
+.bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
+.bdg-ic.off{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+
+/* ─── bottom sheet ─── */
+.sheet{position:fixed;inset:0;z-index:120;display:none}
+.sheet.on{display:block}
+.sheet-scrim{position:absolute;inset:0;background:rgba(30,20,10,.5);animation:scrimin .25s ease}
+@keyframes scrimin{from{opacity:0}to{opacity:1}}
+.sheet-inner{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;
+  background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 30px -8px rgba(0,0,0,.4);animation:sheetup .32s cubic-bezier(.33,1,.68,1)}
+@keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+.sheet-grab{width:40px;height:4px;border-radius:99px;background:rgba(0,0,0,.18);margin:8px auto 4px}
+.sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px}
+.sheet-title{font-family:'Righteous',var(--fd);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.sheet-x{background:none;border:none;font-size:28px;line-height:1;color:var(--dim);cursor:pointer;padding:0 4px}
+@media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
+  bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
+
+/* ─── trophy case ─── */
+.trophy-career{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.trophy-career .stk{background:var(--panel);border:1px solid rgba(0,0,0,.08);border-radius:10px;
+  padding:10px 6px;text-align:center}
+.trophy-career .stk .sv{font-family:var(--fd);font-size:24px;line-height:1;color:var(--ink)}
+.trophy-career .stk .sl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+.trophy-group{margin-bottom:16px}
+.trophy-group .tg-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.trophy-group .tg-name{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim)}
+.trophy-group .tg-count{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
+.trophy-grid{display:flex;flex-direction:column;gap:6px}
+.ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(0,0,0,.07);
+  border-radius:10px;padding:9px 12px}
+.ach.locked{opacity:.62}
+.ach .ach-t{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink)}
+.ach .ach-d{font-size:11px;color:var(--dim);margin-top:1px}
+.trophy-note{text-align:center;font-size:11px;color:var(--dim-2);margin:10px 0 0}
+
 /* ─── era picker ─── */
 .era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
 .era-btn{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:8px;padding:10px 8px;
@@ -479,6 +538,7 @@ h1,h2,h3{margin:0}
   <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
+    <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
   </div>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
@@ -606,12 +666,14 @@ h1,h2,h3{margin:0}
     <div class="ro-chemlinks" id="ro-chemlinks"></div>
   </div>
 
+  <div id="ro-newbadges"></div>
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
   <div class="share-row">
     <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
   <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
+  <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
@@ -622,15 +684,112 @@ h1,h2,h3{margin:0}
 
 </div><!-- .wrap -->
 
+<div class="sheet" id="sheet-trophy" aria-hidden="true">
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Trophy case</h3>
+      <button class="sheet-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="trophy-career" id="trophy-career"></div>
+    <div class="trophy-body" id="trophy-body"></div>
+    <p class="trophy-note">Badges are kept in this browser. Play more seasons to unlock them all.</p>
+  </div>
+</div>
+
 <script src="engine.js?v=5"></script>
 <script src="run.js?v=4"></script>
+<script src="achievements.js?v=1"></script>
 <script>
 (function(){
 'use strict';
 
-const E=window.RTD_ENGINE, R=window.RTD_RUN;
+const E=window.RTD_ENGINE, R=window.RTD_RUN, ACH=window.RTD_ACH;
 let DATA=null, RUN=null, activeTab='ALL', lastChem=1;
 let sortKey='war', sortAsc=false;
+
+/* analytics helper (no-op if GA not present) */
+function ga(ev,params){try{if(window.gtag)window.gtag('event',ev,params||{});}catch(_){}}
+
+/* ─── history persistence (derive-everything: store compact rows only) ─── */
+const HIST_KEY='rtd_history', HIST_MAX=400;
+function loadHistory(){
+  try{const raw=localStorage.getItem(HIST_KEY);const a=raw?JSON.parse(raw):[];return Array.isArray(a)?a:[];}
+  catch(_){return [];}
+}
+function saveHistory(rows){
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(rows.slice(-HIST_MAX)));}catch(_){}
+}
+function rowFromRun(o){
+  const links=(o.chemistry&&o.chemistry.links||[]).filter(l=>l.value>0).map(l=>l.type);
+  let bps=null;try{bps=R.bestPossibleSquad(RUN,DATA);}catch(_){}
+  const last=(RUN.playoffs&&RUN.playoffs.rounds)?RUN.playoffs.rounds[RUN.playoffs.rounds.length-1]:null;
+  return {
+    ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
+    rating:o.rating!=null?Math.round(o.rating):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
+    chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
+    spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
+    efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
+    chemLinks:[...new Set(links)],era:RUN.era||null,
+    eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
+    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
+  };
+}
+let lastNewBadges=[];
+function recordRun(o){
+  if(!ACH){lastNewBadges=[];return;}
+  const prev=loadHistory();
+  const row=rowFromRun(o);
+  try{lastNewBadges=ACH.newlyEarned(prev,row);}catch(_){lastNewBadges=[];}
+  saveHistory(prev.concat([row]));
+  try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
+  lastNewBadges.forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
+}
+function badgeIc(a,earned){
+  const em=a.tier==='legend'?'&#128081;':a.tier==='gold'?'&#127942;':'&#9899;';
+  return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'">'+(earned?em:'&#128274;')+'</span>';
+}
+
+/* ─── new-badges panel on the results screen ─── */
+function paintNewBadges(){
+  const el=$('ro-newbadges');el.innerHTML='';
+  if(!lastNewBadges||!lastNewBadges.length)return;
+  const show=lastNewBadges.slice(0,6);
+  el.innerHTML='<div class="newbadges"><div class="nb-hd">'+lastNewBadges.length+
+    (lastNewBadges.length===1?' badge earned':' badges earned')+'</div><div class="nb-list">'+
+    show.map((a,i)=>'<div class="nb-item" style="animation-delay:'+(i*70)+'ms">'+badgeIc(a,true)+
+      '<div><div class="nb-t">'+esc(a.name)+'</div><div class="nb-d">'+esc(a.desc)+'</div></div></div>').join('')+
+    '</div>'+(lastNewBadges.length>6?'<div class="nb-more">and '+(lastNewBadges.length-6)+' more</div>':'')+'</div>';
+}
+
+/* ─── trophy case ─── */
+function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-hidden','false');}
+function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
+function renderTrophy(){
+  const rows=loadHistory();const ev=ACH.evaluate(rows);
+  const st=ev.stats;
+  $('trophy-career').innerHTML=[
+    ['Seasons',st.runs],['Titles',st.titles],
+    ['Best rank',st.bestRank?('#'+st.bestRank):'—'],['Day streak',ev.play.best],
+  ].map(s=>'<div class="stk"><div class="sv">'+s[1]+'</div><div class="sl">'+s[0]+'</div></div>').join('');
+  const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
+  ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
+  ev.locked.forEach(a=>byGroup[a.group]&&byGroup[a.group].locked.push(a));
+  $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
+    'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
+    ACH.GROUPS.map(g=>{
+      const grp=byGroup[g];const all=grp.earned.concat(grp.locked);
+      return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
+        '</span><span class="tg-count">'+grp.earned.length+'/'+all.length+'</span></div><div class="trophy-grid">'+
+        all.map(a=>{const earned=grp.earned.includes(a);
+          return '<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
+            '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
+        }).join('')+'</div></div>';
+    }).join('');
+}
+function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
 const $=id=>document.getElementById(id);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
@@ -1068,6 +1227,9 @@ $('b-quit').addEventListener('click',()=>{
 });
 $('b-again').addEventListener('click',()=>{RUN=null;show('s-intro');heroSync();});
 $('b-share').addEventListener('click',shareResult);
+$('b-trophy').addEventListener('click',openTrophy);
+$('b-trophy-2').addEventListener('click',openTrophy);
+document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
 document.addEventListener('visibilitychange',heroSync);
 
 /* ─── era mode ─── */
@@ -1380,6 +1542,8 @@ function ordinal(n){
 function showResult(){
   show('s-over');
   const o=RUN.outcome;
+  recordRun(o);
+  paintNewBadges();
   const hero=$('ro-hero');
 
   // Hero: ribbon (all-time standing), record, verdict
