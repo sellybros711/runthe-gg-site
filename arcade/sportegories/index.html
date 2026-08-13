@@ -650,8 +650,12 @@
     function finish(){
       clearReveal();
       $('tally').classList.remove('on');
-      var st=load(); var best=Math.max(st.best||0, total);
+      var st=load(); var prevBest=st.best||0; var best=Math.max(prevBest, total);
       if(isDaily && !ARCHIVE){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
+      // A personal best is a personal best, even set in practice — and without
+      // persisting it, the same practice score would re-trigger the new-best
+      // confetti every single time it was matched.
+      else if(best>prevBest){ st.best=best; save(st); }
       if(isDaily){
         try{
           if(window.RTGArchive){
@@ -677,10 +681,20 @@
       $('mFilled').textContent=correct+'/'+n;
       $('mBonus').textContent=bonus;
       $('mBest').textContent=best;
-      $('mSub').textContent = left<=0 ? 'Time’s up' : 'Card complete';
+      /* Confetti has to MEAN something. The old rule (6 of 8, or 14 points) was
+         a guess at an absolute bar, and an absolute bar is either so low it
+         fires most days and stops registering, or so high a decent card gets
+         nothing. Tie it to the player instead: a perfect card always, or a
+         score better than anything they have posted before. That calibrates
+         itself to every skill level and cannot go stale. */
+      var perfect = correct===n;
+      var newBest = total>0 && total>prevBest;
+      $('mSub').textContent = perfect ? 'Perfect card'
+        : (newBest ? 'New personal best'
+        : (left<=0 ? 'Time’s up' : 'Card complete'));
       $('scrim').classList.remove('hidden');
       countTo($('mScore'), total, 900);
-      if(correct>=6 || total>=14){ confetti(total>=18?130:90, total>=18); sfx('win'); }
+      if(perfect || (newBest && correct>=4)){ confetti(perfect?130:90, perfect); sfx('win'); }
     }
     revealDone = function(){                      // skip: land everything now
       clearReveal();
@@ -692,15 +706,22 @@
 
     // The last answer gets a longer drumroll than the rest — the card's whole
     // score often turns on it, so it earns the extra beat.
-    var GAP=260, at=0;
+    //
+    // The daily is a once-a-day event and can carry a 5.5s reveal. Practice is
+    // the replay loop, where the same ceremony a fourth time in ten minutes is
+    // just a wall between you and the next card — so it runs at roughly a
+    // third the length. Reduced-motion gets the short version too.
+    var FAST = (!isDaily) || reduced();
+    var HOLD = FAST ? 110 : 300, LAST = FAST ? 240 : 820, GAP = FAST ? 80 : 260;
+    var at=0;
     for(var i=0;i<n;i++){
       (function(i, startAt, hold){
         revealTimers.push(setTimeout(function(){ pend(i); }, startAt));
         revealTimers.push(setTimeout(function(){ paint(i); }, startAt+hold));
-      })(i, at, i===n-1 ? 820 : 300);
-      at += (i===n-1 ? 820 : 300) + GAP;
+      })(i, at, i===n-1 ? LAST : HOLD);
+      at += (i===n-1 ? LAST : HOLD) + GAP;
     }
-    revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, at+480));
+    revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, at+(FAST?180:480)));
   }
 
   var toastT=null;

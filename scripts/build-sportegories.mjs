@@ -151,8 +151,19 @@ const POS_BY_SPORT = {};
 PLAYERS.forEach((p) => { if (p.pos && p.sport) (POS_BY_SPORT[p.sport] = POS_BY_SPORT[p.sport] || new Set()).add(p.pos); });
 for (const sp of ['NBA', 'NFL', 'MLB']) {
   for (const ps of [...(POS_BY_SPORT[sp] || [])].sort()) {
-    const n = PLAYERS.filter((p) => p.sport === sp && p.pos === ps).length;
-    if (n >= 25) add(`${sp} ${ps}`, { all: [{ k: 'sport', v: sp }, { k: 'pos', v: ps }] }, 'pos');
+    const base = { all: [{ k: 'sport', v: sp }, { k: 'pos', v: ps }] };
+    const n = PLAYERS.filter((p) => test(p, base)).length;
+    // A bare position is a filter, not a puzzle - "NBA Center" asks nothing.
+    // Keep it only as a wide anchor, and hang the interesting variants off it.
+    if (n >= 25) add(`${sp} ${ps}`, base, 'pos');
+    const hooks = [
+      [`Hall of Fame ${ps}`, { all: [...base.all, { k: 'award', v: 'Hall of Fame' }] }],
+      [`Active ${sp} ${ps}`, { all: [...base.all, { k: 'act' }] }],
+      [`${ps} who played for 3+ teams`, { all: [...base.all, { k: 'teams', min: 3 }] }],
+      [`${ps} who never left one franchise`, { all: [...base.all, { k: 'teamsMax', max: 1 }] }],
+      [`${ps} whose career spanned 3 decades`, { all: [...base.all, { k: 'decades', min: 3 }] }]
+    ];
+    hooks.forEach(([l, pr]) => { if (PLAYERS.filter((p) => test(p, pr)).length >= 14) add(l, pr, 'pos'); });
   }
 }
 // -- franchise (any team with a real body of players)
@@ -172,6 +183,32 @@ const BIG_TEAMS = Object.entries(teamCount)
 /* Nicknames are ambiguous once you shorten them ("Red Sox"/"White Sox" both end
  * in "Sox", both New York clubs, both LA clubs), so label with the full name. */
 BIG_TEAMS.forEach((t) => add(`Played for the ${t}`, { k: 'team', v: t }, 'team'));
+/* Franchise x accolade. This is where the pool gets its depth AND its
+ * character: "Hall of Famer who played for the Steelers" is a real question a
+ * fan enjoys, and it multiplies one flat axis (86 franchises) into hundreds of
+ * specific categories. Without these the library leaned on a handful of very
+ * broad categories, and the same few showed up every fourth day. */
+const TEAM_HOOKS = [
+  ['Hall of Fame', (t) => `Hall of Famer who played for the ${t}`],
+  ['NBA All-Star', (t) => `NBA All-Star who played for the ${t}`],
+  ['MLB All-Star', (t) => `MLB All-Star who played for the ${t}`],
+  ['Pro Bowl', (t) => `Pro Bowler who played for the ${t}`]
+];
+BIG_TEAMS.forEach((t) => {
+  TEAM_HOOKS.forEach(([aw, mk]) => {
+    const pr = { all: [{ k: 'team', v: t }, { k: 'award', v: aw }] };
+    if (PLAYERS.filter((p) => test(p, pr)).length >= 12) add(mk(t), pr, 'team');
+  });
+  // the journeyman cut: passed through here, and through plenty of others
+  const jr = { all: [{ k: 'team', v: t }, { k: 'teams', min: 4 }] };
+  if (PLAYERS.filter((p) => test(p, jr)).length >= 14)
+    add(`Played for the ${t} and 3 other franchises`, jr, 'team');
+  // the loyalist cut: this club and nobody else
+  const lo = { all: [{ k: 'team', v: t }, { k: 'teamsMax', max: 1 }] };
+  if (PLAYERS.filter((p) => test(p, lo)).length >= 12)
+    add(`Spent an entire career with the ${t}`, lo, 'team');
+});
+
 // -- two-franchise (only pairs with a real intersection)
 const RIVALS = [
   ['New York Yankees', 'Boston Red Sox'], ['Dallas Cowboys', 'San Francisco 49ers'],
@@ -218,7 +255,21 @@ STAT_STEPS.forEach(([key, label, steps]) => steps.forEach((min) => {
   if (n >= 12) add(`${min.toLocaleString()}+ ${label}`, { k: 'stat', v: key, min }, 'stat');
 }));
 // -- era & status
-[1960, 1970, 1980, 1990, 2000, 2010, 2020].forEach((d) => add(`Played in the ${d}s`, { k: 'decade', v: d }, 'era'));
+/* Bare decades are gone. "Played in the 2010s" matched thousands of players
+ * and filled 10% of every card's slots with the least interesting question the
+ * game can ask. What survives is the SHAPE of a career: spanning two named
+ * decades, or lasting three, or never leaving one town. */
+/* Adjacent pairs are a long career; the non-adjacent ones are a REALLY long
+ * career, and a better question for it. */
+[[1980, 1990], [1990, 2000], [2000, 2010], [2010, 2020],
+ [1980, 2000], [1990, 2010], [2000, 2020]].forEach(([a, b]) =>
+  add(`Played in both the ${a}s and the ${b}s`,
+      { all: [{ k: 'decade', v: a }, { k: 'decade', v: b }] }, 'era'));
+add('Career spanned 3 different decades', { k: 'decades', min: 3 }, 'era');
+add('Career spanned 4 different decades', { k: 'decades', min: 4 }, 'era');
+add('Never played for another franchise', { k: 'teamsMax', max: 1 }, 'journey');
+add('Played for exactly two franchises', { k: 'teamsMax', max: 2 }, 'journey');
+add('Played for 6+ franchises', { k: 'teams', min: 6 }, 'journey');
 add('Active player today', { k: 'act' }, 'era');
 add('#1 overall draft pick', { k: 'draft1' }, 'draft');
 add('Played for 3+ franchises', { k: 'teams', min: 3 }, 'journey');
@@ -248,10 +299,15 @@ const nbaAdd = (label, pred, tag) => {
   const n = PLAYERS.filter((p) => test(p, pred)).length;
   if (n >= 18) add(label, pred, tag);
 };
-[1970, 1980, 1990, 2000, 2010, 2020].forEach((d) =>
-  nbaAdd(`NBA player who played in the ${d}s`, { all: [NBA, { k: 'decade', v: d }] }, 'era'));
-['Hall of Fame', 'NBA All-Star'].forEach((a) =>
-  nbaAdd(a === 'Hall of Fame' ? 'NBA Hall of Famer' : 'NBA All-Star selection', { all: [NBA, { k: 'award', v: a }] }, 'award'));
+[[1980, 1990], [1990, 2000], [2000, 2010], [2010, 2020],
+ [1980, 2000], [1990, 2010], [2000, 2020]].forEach(([a, b]) =>
+  nbaAdd(`NBA player who played in both the ${a}s and the ${b}s`,
+         { all: [NBA, { k: 'decade', v: a }, { k: 'decade', v: b }] }, 'era'));
+nbaAdd('NBA career spanning 3 decades', { all: [NBA, { k: 'decades', min: 3 }] }, 'era');
+nbaAdd('NBA player who never left one franchise', { all: [NBA, { k: 'teamsMax', max: 1 }] }, 'journey');
+// 'NBA All-Star' already exists as a plain award category; adding an
+// NBA-scoped clone put two identical-reading labels in the same pool.
+nbaAdd('NBA Hall of Famer', { all: [NBA, { k: 'award', v: 'Hall of Fame' }] }, 'award');
 nbaAdd('NBA MVP or Finals MVP', { all: [NBA, { k: 'awardRe', v: 'MVP' }] }, 'award');
 nbaAdd('NBA Rookie of the Year', { all: [NBA, { k: 'awardRe', v: 'Rookie of the Year' }] }, 'award');
 ['Duke', 'Kentucky', 'North Carolina', 'UCLA', 'Kansas', 'Michigan State', 'Arizona', 'Connecticut', 'Indiana', 'Louisville', 'Syracuse', 'Michigan']
@@ -287,6 +343,8 @@ function test(p, pr) {
     case 'act': return p.act === 1;
     case 'draft1': return p.dp === 1;
     case 'teams': return p.t.length >= pr.min;
+    case 'teamsMax': return p.t.length > 0 && p.t.length <= pr.max;
+    case 'decades': return new Set(p.decade).size >= pr.min;
     default: return false;
   }
 }
