@@ -33,6 +33,7 @@
   const url = () => window.PS_BOARD_URL || SB_URL;
 
   function boot() {
+    if (sb) return true;   // idempotent: never build a second GoTrue client for one page
     if (!(window.supabase && window.supabase.createClient)) return false;
     try {
       sb = window.supabase.createClient(url(), SB_ANON, {

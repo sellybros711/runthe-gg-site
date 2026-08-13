@@ -44,12 +44,24 @@
     };
   }
 
+  /* ONE GoTrue client per page. Two Supabase clients sharing a storage key both try to
+     consume the single-use OAuth code when Google redirects back, so whichever loses the
+     race reports a failure and the first Google sign-in appears not to work (the second
+     attempt then succeeds because the session is already stored). board.js and auth.js
+     both need a client, so they share this one. */
+  function rtgSharedClient(url, anon) {
+    try { if (window.__RTG_SB__ && window.__RTG_SB__.__rtgUrl === url) return window.__RTG_SB__; } catch (e) {}
+    var c = window.supabase.createClient(url, anon, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    try { c.__rtgUrl = url; window.__RTG_SB__ = c; } catch (e) {}
+    return c;
+  }
+
   function boot() {
     if (!(window.supabase && window.supabase.createClient)) { offline = true; return false; }
     try {
-      sb = window.supabase.createClient(SB_URL, SB_ANON, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-      });
+      sb = rtgSharedClient(SB_URL, SB_ANON);
     } catch (e) { sb = null; offline = true; return false; }
     sb.auth.onAuthStateChange(function (_evt, s) {
       session = s || null;
