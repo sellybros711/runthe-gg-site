@@ -533,8 +533,8 @@ h1,h2,h3{margin:0}
 
 </div><!-- .wrap -->
 
-<script src="engine.js?v=4"></script>
-<script src="run.js?v=3"></script>
+<script src="engine.js?v=5"></script>
+<script src="run.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -949,6 +949,11 @@ async function boot(){
     const res=await fetch('data/players.json?v=2');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
+    // Curated real relationships (families) — non-fatal if it fails to load.
+    try{
+      const cres=await fetch('data/chemistry.json?v=1');
+      if(cres.ok) E.setCuratedChemistry(await cres.json());
+    }catch(_){}
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
     if(hasPositions) E.setPositionsAvailable(true);

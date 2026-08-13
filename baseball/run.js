@@ -14,6 +14,10 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTD_ENGINE;
 
+/* Cached indexed data (opponent pool + rating table) for the sim, so the
+ * season functions don't need `data` threaded through every call. */
+let _data = null;
+
 const PHASES = {
   DRAFT: 'draft',
   SEASON: 'season',
@@ -46,16 +50,78 @@ function remaining(run) {
 
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
 
-function reserveFloor(run) {
-  return Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+/* Cheapest player that could still fill `slotName` right now: not already
+ * used (by id or already earmarked), from a team-season not maxed on draws.
+ * cheapBy[pos] is price-sorted, so the first valid candidate is the cheapest.
+ * Returns the price and the earmarked key so the caller avoids double-count. */
+function cheapestForSlot(slotName, usedIds, drawn, taken) {
+  const pool = _data && _data.cheapBy && _data.cheapBy['*'];
+  const FLOOR = E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  if (!pool) return { price: FLOOR, key: null };
+  const elig = E.SLOT_ELIGIBILITY[slotName] || [];
+  let best = { price: Infinity, key: null };
+  for (const pos of elig) {
+    const list = pool[pos];
+    if (!list) continue;
+    for (const c of list) {
+      if (c.price >= best.price) break;               // sorted; can't beat current best
+      const pid = c.id.split('|')[0];
+      if (usedIds.has(pid) || taken.has(c.id)) continue;
+      if ((drawn[c.ts] || 0) >= TUNING.MAX_DRAWS_PER_TEAM_SEASON) continue;
+      best = { price: c.price, key: c.id };
+      break;                                          // first valid = cheapest for this pos
+    }
+  }
+  return best.price === Infinity ? { price: FLOOR, key: null } : best;
 }
 
+/* Position-aware minimum cost to fill a set of open slots. Assigns narrowest-
+ * eligibility slots first (a dedicated C before the flexible DH) and never
+ * reuses a player, so the budget "knows" you still owe a catcher and a
+ * closer and reserves enough to actually sign them. */
+function assignedFloors(run, slotNames, excludeId) {
+  const usedIds = new Set(run.usedPlayers);
+  const drawn = {};
+  for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
+  const taken = new Set();
+  if (excludeId) taken.add(excludeId);
+  const order = [...slotNames].sort(
+    (a, b) => (E.SLOT_ELIGIBILITY[a] || []).length - (E.SLOT_ELIGIBILITY[b] || []).length);
+  let total = 0, maxOne = 0;
+  for (const slot of order) {
+    const c = cheapestForSlot(slot, usedIds, drawn, taken);
+    total += c.price;
+    if (c.key) taken.add(c.key);
+    if (c.price > maxOne) maxOne = c.price;
+  }
+  return { total, maxOne };
+}
+
+/* Minimum to fill every remaining slot. */
 function fullFloor(run) {
-  return slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  return assignedFloors(run, openSlotNames(run)).total;
+}
+
+/* What must stay in the bank after the current pick: enough to fill all
+ * remaining slots except the priciest (which the current pick can cover). */
+function reserveFloor(run) {
+  const f = assignedFloors(run, openSlotNames(run));
+  return Math.max(0, f.total - f.maxOne);
 }
 
 function spendable(run) {
   return money(remaining(run) - reserveFloor(run));
+}
+
+/* Could you still fill your roster after signing this player? Tentatively
+ * assign them to their slot and check the remaining budget covers the
+ * cheapest way to fill what's left. This is the authoritative price gate. */
+function canFinishAfter(run, player) {
+  const slot = slotForPlayer(run, player);
+  if (slot === null) return false;
+  const rest = openSlotNames(run).filter(s => s !== E.SLOTS[slot]);
+  const need = assignedFloors(run, rest, pkey(player)).total;
+  return money(remaining(run) - player.p) >= need - 1e-9;
 }
 
 function canRespin(run) {
@@ -80,7 +146,7 @@ const BLOCK = { DRAFTED: 'drafted', NO_SPOT: 'no_spot', PRICE: 'price' };
 function blockFor(run, player) {
   if (run.usedPlayers.includes(player.i)) return BLOCK.DRAFTED;
   if (slotForPlayer(run, player) === null) return BLOCK.NO_SPOT;
-  if (player.p > spendable(run)) return BLOCK.PRICE;
+  if (!canFinishAfter(run, player)) return BLOCK.PRICE;
   return null;
 }
 
@@ -159,11 +225,10 @@ function drawable(run, data) {
     .filter(t => {
       const players = data.byTeamSeason[t.team_season_id];
       if (!players) return false;
-      return players.some(p => {
-        if (run.usedPlayers.includes(p.i)) return false;
-        if (p.p > spendable(run)) return false;
-        return open.some(slot => E.canFillSlot(p, slot));
-      });
+      // Must contain at least one fully-signable player (affordable AND
+      // leaves enough to finish the roster), so a draw never lands on a
+      // team whose whole board is blocked.
+      return players.some(p => blockFor(run, p) === null);
     });
 }
 
@@ -256,7 +321,9 @@ function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
-  const result = E.playRun(run.roster, rng, slotNames);
+  const pool = _data && _data.oppPool;
+  const result = E.playRun(run.roster, rng, slotNames, pool);
+  result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
   run.schedule = result.schedule;
@@ -275,6 +342,9 @@ function playSeason(run) {
     totalRS: result.totalRS,
     totalRA: result.totalRA,
     chemistry: result.chemistry,
+    structure: result.structure,
+    rating: result.rating,
+    allTimeRank: result.allTimeRank,
     offense: result.offense,
     defense: result.defense,
     savePct: result.savePct,
@@ -292,13 +362,16 @@ function advanceGame(run, gameIndex) {
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
     const chem = E.resolveChemistry(tagged);
-    const offense = E.rosterOffense(tagged, chem.multiplier, 1.0);
+    const structure = E.rosterStructure(tagged);
+    const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
     const savePct = E.closerSavePct(tagged);
-    const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES);
+    const pool = _data && _data.oppPool;
+    const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
+    const rating = E.overallRating(E.teamWinPct(offense, defense));
 
     run._simState = {
-      rng, tagged, chem, offense, defense, savePct, schedule,
+      rng, tagged, chem, structure, offense, defense, savePct, schedule, rating,
       results: [],
       wins: 0, losses: 0,
       totalRS: 0, totalRA: 0,
@@ -329,7 +402,7 @@ function finalizeSeason(run) {
   if (!st) throw new Error('no sim state');
 
   const seed = E.seedFromRecord(st.wins);
-  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins);
+  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating);
   const titleWon = playoffs && playoffs.won;
   const isGOAT = st.wins >= E.CONSTANTS.GOAT_WINS;
   const beatRecord = st.wins >= E.CONSTANTS.RECORD_WINS;
@@ -351,6 +424,9 @@ function finalizeSeason(run) {
     totalRS: st.totalRS,
     totalRA: st.totalRA,
     chemistry: st.chem,
+    structure: st.structure,
+    rating: st.rating,
+    allTimeRank: _data ? E.nationalRank(st.rating, _data.ratingTable) : null,
     offense: Math.round(st.offense * 100) / 100,
     defense: Math.round(st.defense * 100) / 100,
     savePct: Math.round(st.savePct * 1000) / 1000,
@@ -360,9 +436,96 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
-/* Index the raw player data for draft use. */
+/*
+ * The strongest legal 12-man roster you could have built from every team-
+ * season you spun this run, under the cap. Drives the "draft efficiency"
+ * gauge: how close your actual roster came to the best available from your
+ * own draws. DP knapsack over $1M budget buckets, best WAR per slot.
+ */
+function bestPossibleSquad(run, data) {
+  data = data || _data;
+  if (!data) return null;
+  const seen = [...new Set(run.usedTeamSeasons)];
+  const poolMap = {};
+  for (const ts of seen) {
+    for (const p of (data.byTeamSeason[ts] || [])) poolMap[pkey(p)] = p;
+  }
+  const pool = Object.values(poolMap);
+  if (!pool.length) return null;
+  const CAP = Math.floor(capOf(run));
+
+  const frontier = (slot) => {
+    const elig = pool.filter(p => E.canFillSlot(p, slot)).sort((a, b) => a.p - b.p);
+    const fr = []; let best = -1;
+    for (const p of elig) { if (p.w > best) { fr.push(p); best = p.w; } }
+    return fr;
+  };
+
+  let dp = new Array(CAP + 1).fill(-1); dp[0] = 0;
+  let picks = new Array(CAP + 1).fill(null);
+  for (const slot of E.SLOTS) {
+    const fr = frontier(slot);
+    const ndp = new Array(CAP + 1).fill(-1);
+    const npk = new Array(CAP + 1).fill(null);
+    for (let b = 0; b <= CAP; b++) {
+      if (dp[b] < 0) continue;
+      for (const p of fr) {
+        const nb = b + Math.ceil(p.p);
+        if (nb > CAP) break;
+        const nw = dp[b] + p.w;
+        if (nw > ndp[nb]) { ndp[nb] = nw; npk[nb] = { prev: b, p, prevPicks: picks[b] }; }
+      }
+    }
+    dp = ndp; picks = npk;
+  }
+  let bestB = 0;
+  for (let b = 0; b <= CAP; b++) if (dp[b] > dp[bestB]) bestB = b;
+  if (dp[bestB] < 0) return null;
+  const lineup = [];
+  for (let n = picks[bestB]; n; n = n.prevPicks) lineup.unshift(n.p);
+  const bestWar = dp[bestB];
+  const actualWar = run.roster.reduce((s, p) => s + p.w, 0);
+  return {
+    bestWar: Math.round(bestWar * 10) / 10,
+    actualWar: Math.round(actualWar * 10) / 10,
+    efficiency: Math.max(0, Math.min(100, Math.round(actualWar / bestWar * 1000) / 10)),
+    lineup,
+    spend: bestB,
+  };
+}
+
+/* Monte-Carlo the built roster to project the season before it plays: typical
+ * / floor / ceiling wins and the odds of playoffs, the record, and a title. */
+function projectSeason(run, trials) {
+  const n = trials || 200;
+  const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
+  const pool = _data && _data.oppPool;
+  const wins = [];
+  let po = 0, title = 0, rec = 0;
+  for (let i = 0; i < n; i++) {
+    const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
+    const out = E.playRun(run.roster, rng, slotNames, pool);
+    wins.push(out.record.wins);
+    if (out.seed.made) po++;
+    if (out.titleWon) title++;
+    if (out.beatRecord) rec++;
+  }
+  wins.sort((a, b) => a - b);
+  const q = (p) => wins[Math.floor((n - 1) * p)];
+  return {
+    typical: q(0.5), lo: q(0.1), hi: q(0.9),
+    mean: Math.round(wins.reduce((s, w) => s + w, 0) / n),
+    playoffPct: Math.round(100 * po / n),
+    titlePct: Math.round(100 * title / n),
+    recordPct: Math.round(100 * rec / n),
+  };
+}
+
+/* Index the raw player data for draft use. Caches the result so the season
+ * sim can reach the opponent pool and rating table. */
 function indexData(players) {
-  return E.indexData(players);
+  _data = E.indexData(players);
+  return _data;
 }
 
 // ─── exports ─────────────────────────────────────────────────────────────────
@@ -373,9 +536,9 @@ const publicAPI = {
   createRun,
   spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
-  previewSigning,
+  previewSigning, bestPossibleSquad, projectSeason,
   indexData,
-  remaining, reserveFloor, spendable, canRespin,
+  remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,
   openSlots, openSlotNames, slotForPlayer, slotsLeft,
   capOf, money, blockFor, BLOCK,
 };
