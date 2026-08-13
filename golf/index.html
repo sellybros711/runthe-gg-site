@@ -2691,7 +2691,14 @@ function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); if(typeof cloud
 // equipped title). Stamped with a last-edited time so the cloud sync can pick the most-recently-customized
 // version across devices (last-write-wins), then pushed to the account. Central setter so every look change
 // stays timestamped + synced; call this instead of LS.set('bag_look', ...) directly.
-function saveLook(){ try{ S.look._ts=Date.now(); }catch(e){} LS.set('bag_look', S.look); if(typeof cloudPush==='function') cloudPush(); if(typeof pushProfileLook==='function') pushProfileLook(); }   // 65_: board avatars track your current golfer
+// ACCOUNT-SCOPED (acctKey), like every other per-player store: the golfer you build is part of your
+// PROFILE, not this browser's. Unscoped it leaked both ways, sign out and the guest session inherited the
+// account's whole outfit (kit / patterns / accessories / caddie / country / title / name), and a guest who
+// customized then signed in could clobber the account's look via the last-write-wins cloud merge.
+function lookKey(){ return acctKey('bag_look'); }
+function nameKey(){ return acctKey('bag_name'); }
+function saveLook(){ try{ S.look._ts=Date.now(); }catch(e){} LS.set(lookKey(), S.look); if(typeof cloudPush==='function') cloudPush(); if(typeof pushProfileLook==='function') pushProfileLook(); }   // 65_: board avatars track your current golfer
+function saveGolferName(n){ LS.set(nameKey(), n); }
 // one-time: adopt this browser's pre-existing (unscoped) lifetime stats into the signed-in account's own
 // slot, the first time that slot is empty, mirrors migrateLegacyCareerSave()'s approach for career saves.
 // Never deletes the unscoped copy (a signed-out guest on this same browser should still see it).
@@ -3698,7 +3705,10 @@ function todayKey(){return _tzKey();}
 // per-account storage key: daily completion + streak are tied to the signed-in user, not the
 // device, otherwise one person's daily "done"/streak bleeds onto every other account that
 // signs in on the same browser. Guests (signed out) share the unscoped key.
-function acctKey(base){ return (typeof sbUser!=='undefined'&&sbUser&&sbUser.id)?base+'@'+sbUser.id:base; }
+// NOTE the try/catch: sbUser is a `let` declared much further down, so it's in the temporal dead zone
+// while the top-level code up here runs (the initial S build reads the golfer identity through this).
+// `typeof` does NOT save you from a TDZ binding, it throws, which would abort the whole script.
+function acctKey(base){ let u=null; try{ u=sbUser; }catch(e){ u=null; } return (u&&u.id)?base+'@'+u.id:base; }
 const DAILY_MAX_ATTEMPTS=3;   // plays allowed per ACCOUNT per day; best score is the one that counts
 const GUEST_DAILY_ATTEMPTS=1; // guests get a single attempt (per browser), then must sign in for more
 function dailyMaxAttempts(){ return sbSignedIn()?DAILY_MAX_ATTEMPTS:GUEST_DAILY_ATTEMPTS; }
@@ -4322,16 +4332,25 @@ function maybeChallengesPopup(){
 // Retired single-type club items (the old free woods/irons/wedges/putters) fold into the Starter set.
 const CLUB_LEGACY={wood:1,iron:1,wedge:1,putter:1};
 function normClub(id){ return CLUB_LEGACY[id]?'driver':(id||'driver'); }
-function profileLook(snap){ const L=Object.assign({},DEFLOOK,LS.get('bag_look', snap||{})); L.club=normClub(L.club); return L; }
-function profileName(snap){ return LS.get('bag_name', snap||'') || snap || ''; }
+function profileLook(snap){ const L=Object.assign({},DEFLOOK,LS.get(lookKey(), snap||{})); L.club=normClub(L.club); return L; }
+function profileName(snap){ return LS.get(nameKey(), snap||'') || snap || ''; }
 // Snap the LIVE identity back to the profile (used when leaving a Legend round, whose token look/name
 // replaced S.look/S.name for the duration of that round).
 function restoreProfileIdentity(){ try{ S.look=profileLook(S.look); S.name=profileName(S.name); }catch(e){} }
+// Re-read the identity from the CURRENT account's slot with NO fallback to what's in memory. Used when the
+// signed-in account changes (sign-out, or a session dropped in another tab): falling back to S.look there
+// would keep showing the account's golfer, which is exactly the leak.
+function reloadIdentityForAccount(){
+  try{ const L=Object.assign({},DEFLOOK,LS.get(lookKey(),{})); L.club=normClub(L.club); S.look=L;
+       S.name=LS.get(nameKey(),'')||''; }catch(e){}
+}
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
+// Account-scoped too: an in-progress draft carries the golfer's name + look, so a guest on this browser
+// must not see (or resume) the signed-in player's half-built golfer.
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
-  LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
-function clearResume(){ LS.set('bag_resume',null); }
-function resumeInfo(){const r=LS.get('bag_resume',null); if(!r||!r.slots)return null;
+  LS.set(acctKey('bag_resume'),{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
+function clearResume(){ LS.set(acctKey('bag_resume'),null); }
+function resumeInfo(){const r=LS.get(acctKey('bag_resume'),null); if(!r||!r.slots)return null;
   const n=Object.values(r.slots).filter(Boolean).length; return n>0?{n,r}:null; }
 function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.r; reset();
   S.slots=r.slots; S.revealed=new Set(r.revealed||[]); S.reSpins=(r.reSpins==null?2:r.reSpins); S.name=profileName(r.name);
@@ -4393,6 +4412,18 @@ function migrateLegacyCareerSave(){
     if(!(cur&&cur.career)) LS.set(acctKey('bag_careersave'), legacy);
   }
   if(legacy!=null) LS.set('bag_careersave', null);
+}
+// one-time: the golfer identity (look + name) saved before it was account-scoped lives under the old
+// unscoped keys. On sign-in, claim it for this account (if it has none yet) so nobody loses the golfer
+// they built, then CLEAR the unscoped copy, otherwise it stays behind as the "guest" golfer and the
+// account's outfit shows up again the moment you sign out (the leak this scoping fixes).
+function migrateLegacyIdentity(){
+  if(!sbSignedIn()) return;
+  const lk=LS.get('bag_look',null), nm=LS.get('bag_name',null);
+  if(lk && typeof lk==='object'){ if(!LS.get(lookKey(),null)) LS.set(lookKey(), lk); }
+  if(nm!=null && String(nm).trim()){ if(!LS.get(nameKey(),null)) LS.set(nameKey(), nm); }
+  if(lk!=null) LS.set('bag_look', null);
+  if(nm!=null) LS.set('bag_name', null);
 }
 // mid-season "Save & Exit", checkpoints the in-progress season (completed events + standings) so you can
 // resume EXACTLY where you left off; the current event re-sims on resume (it hadn't been recorded yet).
@@ -6221,8 +6252,8 @@ function caddieEventEo(ew, evtName, isMajor){
 function caddieFeePct(){ const cad=equippedCaddie(); return (cad && cad.power.fee!=null)?cad.power.fee:COSTS.caddiePct; }
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);_radarPrev=null;S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
-  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
-  look:(function(){ const L=Object.assign({},DEFLOOK,LS.get('bag_look',{})); L.club=normClub(L.club); return L; })(),year:1,career:null,
+  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get(nameKey(),''),
+  look:(function(){ const L=Object.assign({},DEFLOOK,LS.get(lookKey(),{})); L.club=normClub(L.club); return L; })(),year:1,career:null,
   schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
   autoSim:LS.get('bag_autosim',true),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
@@ -10891,7 +10922,7 @@ function scrSetup(){
     const form=$(`<div style="margin-top:12px"></div>`);
     const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
-    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
+    inp.oninput=e=>{S.name=e.target.value; saveGolferName(S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
     const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
     wrap.appendChild(form);
   } else if(cat==='caddie' && !guest){
@@ -10969,7 +11000,7 @@ function scrSetup(){
     // Profile-edit mode (opened from the Trophy Room). Changes auto-save on each pick; Done just returns.
     const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
     const done=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Done ✓</button>`);
-    const ret=()=>{ S.shopPreview=null; if(!guest && !(S.name||'').trim()){ S.name=(sbUsername||'Your Golfer'); LS.set('bag_name',S.name); saveLook(); } S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null;
+    const ret=()=>{ S.shopPreview=null; if(!guest && !(S.name||'').trim()){ S.name=(sbUsername||'Your Golfer'); saveGolferName(S.name); saveLook(); } S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null;
       // CS484: the banner-profile entry stores {screen,overlay} to restore; the Trophy Room entry stores 'record'.
       if(r && typeof r==='object'){ S.screen=(r.screen&&r.screen!=='setup')?r.screen:'title'; S.overlay=r.overlay||null; }
       else { S.screen='title'; S.overlay=(r==='record'?'record':null); }
@@ -26355,6 +26386,8 @@ async function sbApply(session){
     flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
     migrateLegacyLifetimeStats();   // claim this browser's pre-scoping lifetime badges/stats, once
+    try{ migrateLegacyIdentity(); }catch(e){}   // claim this browser's pre-scoping golfer, clear the unscoped copy
+    try{ restoreProfileIdentity(); }catch(e){}  // show THIS account's golfer immediately (cloudPull may refine it)
     try{ grandfatherLook(); }catch(e){}   // CS192: keep a returning player's current look owned after the cosmetics-shop launch
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
@@ -26376,6 +26409,7 @@ async function sbApply(session){
     h2hTryPendingJoin();   // if they arrived via an invite link, join that match now that they're signed in
     return;
   }
+  try{ reloadIdentityForAccount(); }catch(e){}   // no session → show the GUEST golfer, never the last account's
   render();   // refresh so the header (Sign in ↔ Player) and any open overlay reflect auth state
 }
 /* ---- in-game auth (shared RunThe.GG accounts) ---- */
@@ -26419,6 +26453,12 @@ async function sbSignOut(){
   setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; sbNameFlag=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
   _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;
+  crCacheLegend=null; dbCacheLegend=null; lifeCache={}; _walletCache=null;
+  // NOTHING from the signed-in profile may bleed into the guest session. Every per-player store is
+  // acctKey-scoped, so now that sbUser is null a full reset() rebuilds S from the GUEST slots: the golfer
+  // identity (look + name) re-reads as the default golfer, and the in-memory career/season/draft the
+  // account was playing is dropped. Callers route to the title right after this.
+  try{ reset(); }catch(e){}
 }
 /* ---------------------------------------------------------------------------
    Forced rename (moderation). supabase/75_runtour_force_rename.sql retires an
@@ -26543,8 +26583,8 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
 function cloudBundle(){
   return {
     career: LS.get(acctKey('bag_career'), null),   // build-record fields (Builds/Best*/Wins/HoF); lt owned by sbSyncStats
-    look: LS.get('bag_look', null),                // golfer identity/appearance + equipped title (last-write-wins by _ts)
-    name: LS.get('bag_name', null),                // golfer name (rides with look's timestamp)
+    look: LS.get(lookKey(), null),                 // golfer identity/appearance + equipped title (last-write-wins by _ts)
+    name: LS.get(nameKey(), null),                // golfer name (rides with look's timestamp)
     courseRecords: courseRecords(),                // your all-time course records (device store; kept in sync cross-device)
     courseRecordsLegend: courseRecordsLegend(),
     courseRecordsSpot: courseRecordsSpot(),        // Monthly Spotlight course records (own bucket)
@@ -26788,9 +26828,9 @@ async function cloudPull(){
     LS.set('bag_courserecords_spotlight', mergeCourseRecords(courseRecordsSpot(), server.courseRecordsSpot));
     crCache=null; crCacheLegend=null; crCacheSpot=null;   // force the records overlay to re-read the freshly-merged local store
     // identity (look + name): last-write-wins by the look's _ts, so the most-recently-customized device wins
-    { const sv=server.look, lv=LS.get('bag_look',null);
+    { const sv=server.look, lv=LS.get(lookKey(),null);
       if(sv && typeof sv==='object' && (sv._ts||0) > ((lv&&lv._ts)||0)){
-        LS.set('bag_look', sv); if(server.name!=null) LS.set('bag_name', server.name);
+        LS.set(lookKey(), sv); if(server.name!=null) LS.set(nameKey(), server.name);
         try{ if(S&&S.look) S.look=Object.assign({},DEFLOOK,sv); if(server.name!=null) S.name=server.name; }catch(e){} } }
     const mergedCareersave=mergeCareerSave(LS.get(acctKey('bag_careersave'),null), server.careersave);
     if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
