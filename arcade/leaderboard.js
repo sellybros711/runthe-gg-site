@@ -57,6 +57,16 @@
   }
   function reduced() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
 
+  /* `game` and `variant` may be given as FUNCTIONS, resolved on every read.
+   *
+   * The sport editions decide which board they belong to from state that is
+   * not always settled when the page mounts — one game briefly queried the
+   * all-sports board before its cardholder status resolved, then switched.
+   * Resolving lazily removes the whole class of ordering bug: the board asks
+   * for the current key at the moment it queries, not once at startup. */
+  function gameOf() { try { return typeof CFG.game === 'function' ? CFG.game() : CFG.game; } catch (e) { return null; } }
+  function variantOf() { try { return typeof CFG.variant === 'function' ? CFG.variant() : CFG.variant; } catch (e) { return null; } }
+
   /* One row's headline value, in that game's own language. */
   function valueOf(row) {
     if (!row) return '';
@@ -104,6 +114,11 @@
       '.rtglb-head{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;flex:0 0 auto;flex-wrap:wrap;}',
       '.rtglb-head h3{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.03em;text-transform:uppercase;',
       '  font-size:16px;color:var(--lba);margin:0;flex:0 0 auto;}',
+      /* which version's board this is - the sport editions are separate
+         rankings, so an unlabelled "Leaderboard" would be ambiguous */
+      '.rtglb-var{font-size:9.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;',
+      '  color:var(--lba);border:1px solid var(--lba);border-radius:999px;padding:3px 8px;flex:0 0 auto;}',
+      '.rtglb-var[hidden]{display:none;}',
       '.rtglb-x{margin-left:auto;width:32px;height:32px;border-radius:50%;border:1px solid var(--line2,rgba(255,255,255,.15));',
       '  background:var(--card2,#162B44);color:var(--mut,#A9B8CB);cursor:pointer;font-size:14px;line-height:1;flex:0 0 auto;}',
       '.rtglb-tabs{display:inline-flex;background:var(--card2,#162B44);border:1px solid var(--line2,rgba(255,255,255,.15));',
@@ -206,7 +221,8 @@
     modal.setAttribute('aria-label', 'Leaderboard');
     sheet = document.createElement('div'); sheet.className = 'rtglb-sheet';
     sheet.innerHTML = '<div class="rtglb-grab"></div>' +
-      '<div class="rtglb-head"><h3>Leaderboard</h3><button class="rtglb-x" type="button" aria-label="Close">✕</button>' +
+      '<div class="rtglb-head"><h3>Leaderboard</h3><span class="rtglb-var" hidden></span>' +
+      '<button class="rtglb-x" type="button" aria-label="Close">✕</button>' +
       '<div class="rtglb-tabs"><button type="button" data-tab="today">Today</button>' +
       '<button type="button" data-tab="all">All-time</button></div></div>' +
       '<div class="rtglb-load"><i></i></div><div class="rtglb-body"></div>' +
@@ -235,7 +251,14 @@
       });
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && openState) close(); });
-    syncTabs();
+    syncTabs(); syncVariant();
+  }
+  function syncVariant() {
+    if (!sheet) return;
+    var el = sheet.querySelector('.rtglb-var');
+    if (!el) return;
+    var v = CFG && variantOf();
+    if (v) { el.textContent = v; el.hidden = false; } else { el.hidden = true; }
   }
   function syncTabs() {
     if (!sheet) return;
@@ -396,7 +419,7 @@
 
   function render() {
     if (!CFG || !bodyEl) return;
-    styles();
+    styles(); syncVariant();
     var B = window.RTG_BOARD;
     if (!B || !B.leaderboard) { paint('<div class="rtglb-msg">Leaderboard unavailable.</div>'); return; }
     // Show what we already have and refresh underneath the bar; only a first,
@@ -408,9 +431,9 @@
     busy = true;
     var st = (B.state && B.state()) || {};
     Promise.all([
-      B.leaderboard(CFG.game, CFG.date, LIMIT),
-      B.playerCount ? B.playerCount(CFG.game, CFG.date) : Promise.resolve(null),
-      (B.myRun && st.signedIn) ? B.myRun(CFG.game, CFG.date) : Promise.resolve(null)
+      B.leaderboard(gameOf(), CFG.date, LIMIT),
+      B.playerCount ? B.playerCount(gameOf(), CFG.date) : Promise.resolve(null),
+      (B.myRun && st.signedIn) ? B.myRun(gameOf(), CFG.date) : Promise.resolve(null)
     ]).then(function (res) {
       busy = false; busyBar(false);
       var rows = res[0], total = res[1], mine = res[2];
@@ -435,7 +458,7 @@
         lastHTML.today = html; paint(html); busyBar(false);
         renderPin(myRank, total || rows.length, mine, st);
       };
-      if (mine && B.rank) B.rank(CFG.game, CFG.date, mine.score).then(done);
+      if (mine && B.rank) B.rank(gameOf(), CFG.date, mine.score).then(done);
       else done(null);
     }).catch(function () {
       busy = false; busyBar(false);
@@ -491,8 +514,8 @@
     allBusy = true; busyBar(true);
     var first = allOffset === 0;
     Promise.all([
-      B.allTimePage(CFG.game, PAGE, allOffset),
-      (first && B.allTimeStats) ? B.allTimeStats(CFG.game) : Promise.resolve(null)
+      B.allTimePage(gameOf(), PAGE, allOffset),
+      (first && B.allTimeStats) ? B.allTimeStats(gameOf()) : Promise.resolve(null)
     ]).then(function (res) {
       allBusy = false; busyBar(false);
       var page = res[0], stats = res[1];
@@ -558,6 +581,22 @@
     },
     open: open, close: close,
     refresh: function () { cache = {}; resetAll(); render(); },
-    setDate: function (d) { if (CFG) { CFG.date = d; cache = {}; resetAll(); render(); } }
+    setDate: function (d) { if (CFG) { CFG.date = d; cache = {}; resetAll(); render(); } },
+    /* Repoint the board at another game key without remounting.
+     *
+     * The sport editions switch in place — no reload — so the board has to
+     * follow, or you sit on the NBA version looking at the all-sports ranking.
+     * `variant` is the human label ("NBA"); it shows in the sheet header so it
+     * is never ambiguous which board you are reading. */
+    setGame: function (g, variant) {
+      if (!CFG || !g) return;
+      // No "already there" shortcut: `game` is usually a resolver that ALREADY
+      // reflects the new mode by the time this is called, so comparing keys
+      // would skip the update every time and leave the badge stale.
+      CFG.game = g; CFG.variant = variant || null;
+      cache = {}; resetAll(); lastHTML.today = '';
+      syncVariant();
+      render();
+    }
   };
 })();

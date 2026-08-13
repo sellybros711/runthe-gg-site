@@ -139,5 +139,18 @@
     return Promise.resolve(eligible() ? last(base) : 'all');
   }
 
-  window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed, last: last, choose: choose, upsell: showUpsell };
+  /* The board key and label for whichever version is currently in play.
+   * One place decides this, so a game page can never mount its leaderboard
+   * against a different key than the one it submits scores to — which is
+   * exactly the bug that made every sport-edition score vanish. */
+  function boardKey(base) { return key(base, eligible() ? last(base) : 'all'); }
+  function label(mode) {
+    if (!mode || mode === 'all') return null;          // no badge on the main board
+    return (BY[mode] && BY[mode].label) || String(mode).toUpperCase();
+  }
+  function boardLabel(base) { return label(eligible() ? last(base) : 'all'); }
+
+  window.RTGMode = { MODES: MODES, eligible: eligible, sportOf: sportOf, key: key, seed: seed,
+                     last: last, choose: choose, upsell: showUpsell,
+                     boardKey: boardKey, boardLabel: boardLabel, label: label };
 })();
