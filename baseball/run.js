@@ -392,6 +392,9 @@ function advanceGame(run, gameIndex) {
   return {
     game: gameIndex + 1,
     ...result,
+    oppName: game.oppName || null,
+    oppRating: game.oppRating || null,
+    marquee: !!game.marquee,
     record: { wins: st.wins, losses: st.losses },
   };
 }
