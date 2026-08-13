@@ -436,6 +436,91 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
+/*
+ * The strongest legal 12-man roster you could have built from every team-
+ * season you spun this run, under the cap. Drives the "draft efficiency"
+ * gauge: how close your actual roster came to the best available from your
+ * own draws. DP knapsack over $1M budget buckets, best WAR per slot.
+ */
+function bestPossibleSquad(run, data) {
+  data = data || _data;
+  if (!data) return null;
+  const seen = [...new Set(run.usedTeamSeasons)];
+  const poolMap = {};
+  for (const ts of seen) {
+    for (const p of (data.byTeamSeason[ts] || [])) poolMap[pkey(p)] = p;
+  }
+  const pool = Object.values(poolMap);
+  if (!pool.length) return null;
+  const CAP = Math.floor(capOf(run));
+
+  const frontier = (slot) => {
+    const elig = pool.filter(p => E.canFillSlot(p, slot)).sort((a, b) => a.p - b.p);
+    const fr = []; let best = -1;
+    for (const p of elig) { if (p.w > best) { fr.push(p); best = p.w; } }
+    return fr;
+  };
+
+  let dp = new Array(CAP + 1).fill(-1); dp[0] = 0;
+  let picks = new Array(CAP + 1).fill(null);
+  for (const slot of E.SLOTS) {
+    const fr = frontier(slot);
+    const ndp = new Array(CAP + 1).fill(-1);
+    const npk = new Array(CAP + 1).fill(null);
+    for (let b = 0; b <= CAP; b++) {
+      if (dp[b] < 0) continue;
+      for (const p of fr) {
+        const nb = b + Math.ceil(p.p);
+        if (nb > CAP) break;
+        const nw = dp[b] + p.w;
+        if (nw > ndp[nb]) { ndp[nb] = nw; npk[nb] = { prev: b, p, prevPicks: picks[b] }; }
+      }
+    }
+    dp = ndp; picks = npk;
+  }
+  let bestB = 0;
+  for (let b = 0; b <= CAP; b++) if (dp[b] > dp[bestB]) bestB = b;
+  if (dp[bestB] < 0) return null;
+  const lineup = [];
+  for (let n = picks[bestB]; n; n = n.prevPicks) lineup.unshift(n.p);
+  const bestWar = dp[bestB];
+  const actualWar = run.roster.reduce((s, p) => s + p.w, 0);
+  return {
+    bestWar: Math.round(bestWar * 10) / 10,
+    actualWar: Math.round(actualWar * 10) / 10,
+    efficiency: Math.max(0, Math.min(100, Math.round(actualWar / bestWar * 1000) / 10)),
+    lineup,
+    spend: bestB,
+  };
+}
+
+/* Monte-Carlo the built roster to project the season before it plays: typical
+ * / floor / ceiling wins and the odds of playoffs, the record, and a title. */
+function projectSeason(run, trials) {
+  const n = trials || 200;
+  const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
+  const pool = _data && _data.oppPool;
+  const wins = [];
+  let po = 0, title = 0, rec = 0;
+  for (let i = 0; i < n; i++) {
+    const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
+    const out = E.playRun(run.roster, rng, slotNames, pool);
+    wins.push(out.record.wins);
+    if (out.seed.made) po++;
+    if (out.titleWon) title++;
+    if (out.beatRecord) rec++;
+  }
+  wins.sort((a, b) => a - b);
+  const q = (p) => wins[Math.floor((n - 1) * p)];
+  return {
+    typical: q(0.5), lo: q(0.1), hi: q(0.9),
+    mean: Math.round(wins.reduce((s, w) => s + w, 0) / n),
+    playoffPct: Math.round(100 * po / n),
+    titlePct: Math.round(100 * title / n),
+    recordPct: Math.round(100 * rec / n),
+  };
+}
+
 /* Index the raw player data for draft use. Caches the result so the season
  * sim can reach the opponent pool and rating table. */
 function indexData(players) {
@@ -451,7 +536,7 @@ const publicAPI = {
   createRun,
   spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
-  previewSigning,
+  previewSigning, bestPossibleSquad, projectSeason,
   indexData,
   remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,
   openSlots, openSlotNames, slotForPlayer, slotsLeft,

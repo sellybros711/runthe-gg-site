@@ -857,6 +857,54 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
   return { rounds: results, won };
 }
 
+// ─── coach report (narrative end screen) ─────────────────────────────────────
+
+/*
+ * A human read on the roster: concrete strengths, weaknesses, and a one-line
+ * verdict. Drives the results screen's "coach's take" so a season ends with
+ * words, not just a number. Expects a slot-tagged roster.
+ */
+function coachReport(roster, chem, structure, rating, unspentMusd) {
+  const hitters = roster.filter(p => p.r === 'b');
+  const sp1 = roster.find(p => p._slot === 'SP1');
+  const sp2 = roster.find(p => p._slot === 'SP2');
+  const closer = roster.find(p => p._slot === 'CL');
+  const hitWar = hitters.reduce((s, p) => s + p.w, 0);
+  const spWar = (sp1 ? sp1.w : 0) + (sp2 ? sp2.w : 0);
+  const chemPct = chem ? (chem.multiplier - 1) * 100 : 0;
+  const top = roster.slice().sort((a, b) => b.w - a.w)[0];
+
+  const strengths = [], weaknesses = [];
+  if (hitWar >= 42) strengths.push('Loaded lineup');
+  else if (hitWar < 30) weaknesses.push('Light-hitting lineup');
+  if (spWar >= 14) strengths.push('Ace-anchored rotation');
+  else if (spWar < 8) weaknesses.push('Thin rotation');
+  if (closer && closer.w >= 3) strengths.push('Lights-out bullpen');
+  else if (!closer || closer.w < 1.2) weaknesses.push('Shaky closer');
+  if (chemPct >= 9) strengths.push('Great clubhouse chemistry');
+  else if (chemPct < 1) weaknesses.push('No real chemistry');
+  if (structure && structure.archetype && structure.archetype.key === 'one_man_show')
+    weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
+  if (typeof unspentMusd === 'number' && unspentMusd >= 15)
+    weaknesses.push(`$${unspentMusd.toFixed(0)}M left unspent`);
+  if (structure && structure.archetype && structure.archetype.bonus > 0)
+    strengths.push(structure.archetype.name);
+
+  let verdict;
+  if (rating >= 93) verdict = 'All-time great';
+  else if (rating >= 84) verdict = 'World Series contender';
+  else if (rating >= 72) verdict = 'Playoff team';
+  else if (rating >= 55) verdict = 'Fringe contender';
+  else verdict = 'Rebuilding';
+
+  return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
+}
+
+function lastNameOf(n) {
+  const parts = String(n).trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
 // ─── full season play ────────────────────────────────────────────────────────
 
 function playRun(roster, rng, slotNames, pool) {
@@ -961,6 +1009,7 @@ const publicAPI = {
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
+  coachReport,
   TEAM_COLORS, teamColors,
 };
 
