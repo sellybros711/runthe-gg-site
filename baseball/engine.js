@@ -355,17 +355,41 @@ function buildCheapBy(players) {
 
 const CHEMISTRY = {
   VALUES: {
+    /* Family is a real, rare, cross-era bond the formula can't infer — the
+     * strongest link, because drafting two brothers is a genuine story. */
+    family:    0.09,
     reunion:   0.08,
-    franchise: 0.04,
-    dp_combo:  0.06,
     battery:   0.07,
+    dp_combo:  0.06,
+    franchise: 0.04,
     /* Era is a weak ambient link — kept small so the deliberate links
-     * (reunion/battery/DP) are what actually move the needle. */
+     * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
   MIN: -0.10,
   MAX: 0.15,
 };
+
+/* Curated real-life relationships (families), loaded from data/chemistry.json.
+ * A symmetric map: player id -> { otherId -> label }. */
+let CURATED_FAMILY = {};
+function setCuratedChemistry(json) {
+  CURATED_FAMILY = {};
+  if (!json || !json.families) return;
+  for (const fam of json.families) {
+    const ids = fam.ids || [];
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        (CURATED_FAMILY[ids[i]] = CURATED_FAMILY[ids[i]] || {})[ids[j]] = fam.label;
+        (CURATED_FAMILY[ids[j]] = CURATED_FAMILY[ids[j]] || {})[ids[i]] = fam.label;
+      }
+    }
+  }
+}
+function familyLink(a, b) {
+  const m = CURATED_FAMILY[a.i];
+  return m && m[b.i] ? m[b.i] : null;
+}
 
 /*
  * Baseball chemistry per GDD §10:
@@ -379,6 +403,12 @@ function pairLinks(a, b) {
   const links = [];
   const sameTeam = a.t === b.t;
   const sameSeason = a.s === b.s;
+
+  // Family: a real relationship across any team or season (e.g. two Alous).
+  const fam = familyLink(a, b);
+  if (fam) {
+    links.push({ type: 'family', value: CHEMISTRY.VALUES.family, label: fam });
+  }
 
   if (sameTeam && sameSeason) {
     links.push({ type: 'reunion', value: CHEMISTRY.VALUES.reunion,
@@ -1002,7 +1032,7 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
-  pairLinks, resolveChemistry,
+  pairLinks, resolveChemistry, setCuratedChemistry,
   teamStrength, teamWinPct, overallRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
