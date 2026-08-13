@@ -38,8 +38,8 @@
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
-    --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#96B93C; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#96B93C; --tealT:#37C5D5; --greenT:#48D17A;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
@@ -48,7 +48,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#5F7A12; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -278,22 +278,22 @@
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=4"></script>
+<script src="/arcade/mode.js?v=5"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="/arcade/favteam.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=2"></script>
+<script src="/arcade/howto.js?v=3"></script>
 <script>
 (function(){
   'use strict';
@@ -631,16 +631,14 @@
   var toastT=null; function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('on'); if(toastT) clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2400); }
 
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
-  // Skin the whole game in the user's favorite college team colors (set by the
-  // College Football game), falling back to the maroon default. Overrides the
-  // gold accent vars; text-on-accent and the theme-legible accent text are
-  // computed so any team's palette stays readable in light and dark.
+  // Alma Mater owns its color. This used to repaint the whole game in whichever
+  // college team you had picked, which meant an arbitrary hex ended up as a
+  // button background — with no team set it fell back to a dark maroon and the
+  // shared paywall put near-black text on it at 1.61:1. Picking your school is
+  // a different game's job; here the accent is the game's own moss.
   function applyFav(){
-    if(!window.RTGFavTeam) return;
-    var t=RTGFavTeam.resolved(), theme=document.documentElement.getAttribute('data-theme'), rs=document.documentElement.style;
-    rs.setProperty('--gold', t.primary);
-    rs.setProperty('--goldT', RTGFavTeam.readable(t.primary, theme));
-    rs.setProperty('--onAccent', RTGFavTeam.onColor(t.primary));
+    var rs=document.documentElement.style;
+    rs.removeProperty('--gold'); rs.removeProperty('--goldT'); rs.removeProperty('--onAccent');
   }
   applyThemeMeta(); applyFav();
   document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); applyFav(); });

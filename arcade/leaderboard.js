@@ -72,9 +72,9 @@
     if (document.getElementById('rtglb-css')) return;
     var s = document.createElement('style'); s.id = 'rtglb-css';
     s.textContent = [
-      '.rtglb-slot{--lba:var(--accent,var(--coralT,#F06A5F));background:none;border:0;box-shadow:none;padding:0;margin:18px 0 14px;}',
+      '.rtglb-slot{--lba:var(--brand,#FF8A3D);background:none;border:0;box-shadow:none;padding:0;margin:18px 0 14px;}',
       /* the trigger that replaces the old rail */
-      '.rtglb-open{--lba:var(--accent,var(--coralT,#F06A5F));width:100%;appearance:none;cursor:pointer;display:flex;align-items:center;gap:11px;',
+      '.rtglb-open{--lba:var(--brand,#FF8A3D);width:100%;appearance:none;cursor:pointer;display:flex;align-items:center;gap:11px;',
       '  background:var(--card,#10233A);border:1px solid var(--line2,rgba(255,255,255,.15));border-left:3px solid var(--lba);',
       '  border-radius:13px;padding:13px 15px;font-family:inherit;color:var(--ink,#F4F7FB);text-align:left;',
       '  box-shadow:var(--shadow,0 6px 18px -10px rgba(0,0,0,.55));transition:border-color .14s,transform .08s;}',
@@ -93,7 +93,7 @@
          closed modal stays a full-screen layer that swallows every tap. */
       '.rtglb-scrim[hidden]{display:none;}',
       '@media (min-width:560px){.rtglb-scrim{align-items:center;}}',
-      '.rtglb-sheet{--lba:var(--accent,var(--coralT,#F06A5F));width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;',
+      '.rtglb-sheet{--lba:var(--brand,#FF8A3D);width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;',
       '  background:var(--card,#10233A);border:1px solid var(--line2,rgba(255,255,255,.15));',
       '  border-radius:20px 20px 0 0;padding:0;box-shadow:0 -18px 50px -20px rgba(0,0,0,.8);',
       '  transform:translateY(26px);opacity:0;transition:transform .26s cubic-bezier(.2,.9,.3,1),opacity .2s ease;}',
@@ -111,8 +111,7 @@
       '.rtglb-tabs button{flex:1;appearance:none;border:0;background:transparent;cursor:pointer;font-family:inherit;',
       '  font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#A9B8CB);',
       '  padding:7px 11px;border-radius:999px;min-height:32px;}',
-      '.rtglb-tabs button.on{background:var(--lba);color:#0A1728;}',
-      ':root[data-theme="light"] .rtglb-tabs button.on{color:#fff;}',
+      '.rtglb-tabs button.on{background:var(--lba);color:var(--onAccent,#160B02);}',
       '.rtglb-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 18px;flex:1 1 auto;}',
       /* A slim indeterminate bar, so refreshing never blanks the board out from
          under you the way swapping in skeleton rows did. */
@@ -190,9 +189,8 @@
       '.rtglb-msg{font-size:12.5px;color:var(--mut,#A9B8CB);line-height:1.5;padding:10px 0 2px;}',
       '.rtglb-msg b{color:var(--ink,#F4F7FB);}',
       '.rtglb-foot{font-size:11px;color:var(--mut,#A9B8CB);margin-top:11px;line-height:1.5;}',
-      '.rtglb-cta{appearance:none;cursor:pointer;margin-top:11px;width:100%;background:var(--lba);color:#0A1728;border:0;',
+      '.rtglb-cta{appearance:none;cursor:pointer;margin-top:11px;width:100%;background:var(--lba);color:var(--onAccent,#160B02);border:0;',
       '  border-radius:10px;padding:11px;font-family:inherit;font-weight:900;font-size:12.5px;}',
-      ':root[data-theme="light"] .rtglb-cta{color:#fff;}',
       '@media (prefers-reduced-motion: reduce){.rtglb-sk i,.rtglb-load i{animation:none;}.rtglb-you .rtglb-bar i{transition:none;}',
       '  .rtglb-scrim,.rtglb-sheet{transition:none;}}'
     ].join('');

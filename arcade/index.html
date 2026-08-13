@@ -46,8 +46,8 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
-    --hl:#F5822B; --hlT:#FF9D52;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
+    --hl:#FF8A3D; --hlT:#FF8A3D;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
@@ -56,7 +56,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#C25E12;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#B4530A;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -304,7 +304,7 @@
   .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
   .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
   #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
-  #pipK{--pc:var(--pink);} #pipA{--pc:var(--gold);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -312,30 +312,30 @@
   .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px;}
   @media (min-width:1100px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
   @media (max-width:640px){ .tiles{gap:11px;} }
-  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
+  .tile{--c:var(--blue); --onC:#fff; position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
-  .tile.match{--c:var(--blue);}
-  .tile.cross{--c:var(--news);}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
-  .tile.word{--c:var(--teal);}
-  .tile.guess{--c:var(--coral);}
-  .tile.table{--c:var(--gold);}
-  .tile.oddone{--c:var(--violet);}
-  .tile.career{--c:var(--green);}
-  .tile.rankit{--c:var(--pink);}
-  .tile.alma{--c:var(--gold);}
-  .tile.highlow{--c:var(--hl);}
+  .tile.match{--c:var(--blue); --onC:#fff;}
+  .tile.cross{--c:var(--news); --onC:#fff;}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
+  .tile.word{--c:var(--teal); --onC:#160B02;}
+  .tile.guess{--c:var(--brand2); --onC:#160B02;}
+  .tile.table{--c:var(--gold); --onC:#160B02;}
+  .tile.oddone{--c:var(--violet); --onC:#160B02;}
+  .tile.career{--c:var(--green); --onC:#160B02;}
+  .tile.rankit{--c:var(--pink); --onC:#160B02;}
+  .tile.alma{--c:var(--moss); --onC:#160B02;}
+  .tile.highlow{--c:var(--brand); --onC:#160B02;}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
   .tile.word .nm{color:var(--tealT);}
-  .tile.guess .nm{color:var(--coralT);}
+  .tile.guess .nm{color:var(--brand2T);}
   .tile.table .nm{color:var(--goldT);}
   .tile.oddone .nm{color:var(--violetT);}
   .tile.career .nm{color:var(--greenT);}
   .tile.rankit .nm{color:var(--pinkT);}
-  .tile.alma .nm{color:var(--goldT);}
-  .tile.highlow .nm{color:var(--hlT);}
+  .tile.alma .nm{color:var(--mossT);}
+  .tile.highlow .nm{color:var(--brandT);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
   .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.highlow{order:10;}
@@ -441,7 +441,7 @@
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
   /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
-  .tile.highlow .badge{background:var(--gold); color:#3a2600; text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
+  .tile.highlow .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
   .tile.highlow .badge svg{width:10px; height:10px;}
   /* High Low tile: Members Only sits just left of the Beta tag, top-right */
   .tile.highlow .tags{position:absolute; top:11px; right:12px; z-index:2; display:inline-flex; align-items:center; gap:6px;}
@@ -460,9 +460,11 @@
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
   .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
-    text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY, shadow keeps it legible on light accents */
-  .tile.cross .play{color:#fff;}   /* neutral silver pill reads better with dark text */
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
+  /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
+     Eight of the ten accents are light, so white text on them sat near 2:1 and
+     leaned entirely on a text-shadow. Blue and slate are the two dark ones and
+     genuinely want white — they keep the shadow, the rest do not need it. */
   /* High Low is card-only: for non-members the PLAY pill greys out so the tile
      reads as locked. It stays tappable on purpose - it opens the game page,
      which is where the Arcade Card offer lives. */
@@ -850,8 +852,8 @@
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function () {
@@ -867,20 +869,15 @@
   }
   applyThemeMeta();
 
-  // ---- Alma Mater card: skin it in the user's favorite college team colors
-  // (set by the College Football game), falling back to the maroon default.
+  // ---- Alma Mater card ----
+  // This used to repaint the tile in whichever college team you had picked,
+  // which is how an arbitrary hex ended up as a button background — with no
+  // team set it fell back to a dark maroon and the PLAY label sat on it at
+  // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
+  // picking your school belongs to a different game.
   function applyFavCard() {
-    if (!window.RTGFavTeam) return;
     var card = document.getElementById('cardAlma'); if (!card) return;
-    var t = RTGFavTeam.resolved();
-    var theme = document.documentElement.getAttribute('data-theme');
-    card.style.setProperty('--c', t.primary);
-    var nm = card.querySelector('.nm'); if (nm) nm.style.color = RTGFavTeam.readable(t.primary, theme);
-    var svg = card.querySelector('.cap svg');
-    if (svg) {
-      [].forEach.call(svg.querySelectorAll('[fill]'), function (el) { if ((el.getAttribute('fill') || '').toLowerCase() !== 'none') el.setAttribute('fill', t.primary); });
-      [].forEach.call(svg.querySelectorAll('[stroke]'), function (el) { if ((el.getAttribute('stroke') || '').toLowerCase() !== 'none') el.setAttribute('stroke', t.primary); });
-    }
+    card.style.removeProperty('--c');
   }
   applyFavCard();
 
@@ -974,7 +971,7 @@
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
+      ['Alma',aDone,'var(--mossT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
     ];
     // Members get a 10th punch: the card-only High Low, "done" once they've
     // played it today (it's endless, so a single play counts).
