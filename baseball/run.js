@@ -277,14 +277,27 @@ function respin(run, data) {
   return spin(run, data);
 }
 
-/* Sign a player from the current draw. */
-function sign(run, player) {
+/* Open slot indices this player is eligible to fill (for the position chooser). */
+function eligibleOpenSlots(run, player) {
+  return openSlots(run).filter(i => E.canFillSlot(player, E.SLOTS[i]));
+}
+
+/* Sign a player from the current draw. Pass slotIdx to place them at a chosen
+ * position (from the click-to-choose UI); otherwise auto-assign. */
+function sign(run, player, slotIdx) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   const key = pkey(player);
   if (!run.currentDraw.options.includes(key)) throw new Error('not an option');
 
-  const slot = slotForPlayer(run, player);
+  let slot;
+  if (typeof slotIdx === 'number') {
+    if (run.slotIndex.includes(slotIdx) || !E.canFillSlot(player, E.SLOTS[slotIdx]))
+      throw new Error('invalid slot');
+    slot = slotIdx;
+  } else {
+    slot = slotForPlayer(run, player);
+  }
   if (slot === null) throw new Error('no slot');
 
   run.roster.push(player);
@@ -542,7 +555,7 @@ const publicAPI = {
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
   remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,
-  openSlots, openSlotNames, slotForPlayer, slotsLeft,
+  openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,
   capOf, money, blockFor, BLOCK,
 };
 

@@ -10,7 +10,10 @@
 (function() {
 
 const CONSTANTS = {
-  CAP_MUSD: 245,
+  /* The budget has to say no, or there's no decision in the draft. At $245M
+   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $185M
+   * pushes that to ~4/12 so you genuinely can't afford a star every time. */
+  CAP_MUSD: 185,
   REGULAR_SEASON_GAMES: 162,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -94,9 +97,9 @@ const SLOT_ELIGIBILITY = {
   '2B': ['2B'],
   '3B': ['3B'],
   SS:  ['SS'],
-  LF:  ['LF'],
-  CF:  ['CF'],
-  RF:  ['RF'],
+  LF:  ['LF', 'OF'],
+  CF:  ['CF', 'OF'],
+  RF:  ['RF', 'OF'],
   DH:  ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'OF', 'IF'],
   SP1: ['SP'],
   SP2: ['SP'],
