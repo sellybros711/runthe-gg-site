@@ -243,13 +243,89 @@ function indexData(players) {
   // Build cheapBy for reserve floor calculations
   const cheapBy = buildCheapBy(players);
 
+  // Strength model: every spinnable team-season gets an offense/defense
+  // estimate and a 0-100 rating from its own best lineup. These drive real
+  // opponents (schedule) and national ranking (résumé) — the "how good was
+  // this really" layer that replaces flat win thresholds.
+  const teamStats = {};
+  const ratingTable = [];
+  for (const ts of teamSeasons) {
+    const roster = byTeamSeason[ts.team_season_id];
+    const st = teamStrength(roster);
+    st.rating = overallRating(teamWinPct(st.offense, st.defense));
+    ts.rating = st.rating;
+    ts.offMean = st.offense;
+    ts.defMean = st.defense;
+    teamStats[ts.team_season_id] = st;
+    ratingTable.push(st.rating);
+  }
+  ratingTable.sort((a, b) => a - b);
+
   return {
     players,
     allPlayers,
     byTeamSeason,
     teamSeasons,
     cheapBy,
+    teamStats,
+    ratingTable,
   };
+}
+
+/*
+ * A team-season's implied strength if you drafted its best lineup: top 9
+ * hitters for offense, top 2 starters + closer for run prevention. Uses the
+ * same run-model formulas the season sim uses, so opponents are self-
+ * consistent with your own roster.
+ */
+function teamStrength(players) {
+  const hitters = players.filter(p => p.r === 'b').sort((a, b) => b.w - a.w).slice(0, 9);
+  const sps = players.filter(p => p.r === 'p' && playerPositions(p).includes('SP'))
+    .sort((a, b) => b.w - a.w);
+  const hitWar = hitters.reduce((s, p) => s + p.w, 0);
+  const offense = REPLACEMENT_RPG + hitWar * WAR_TO_RPG;
+
+  const spEra = (sp) => sp ? Math.max(1.6, 5.0 - sp.w * 0.32) : CONSTANTS.FILLER_ERA;
+  const anchorShare = 1 - CONSTANTS.FILLER_IP_SHARE;
+  const staffEra = (spEra(sps[0]) + spEra(sps[1])) / 2 * anchorShare
+    + CONSTANTS.FILLER_ERA * CONSTANTS.FILLER_IP_SHARE;
+  const baseRA = staffEra * 1.08;
+  const defWar = hitters.reduce((s, p) => s + Math.max(0, p.w - 2) * 0.15, 0);
+  const defMod = Math.max(0.85, 1.0 - defWar * 0.005);
+  const defense = baseRA * defMod;
+
+  return { offense, defense, hitWar };
+}
+
+/* Expected win% for an offense/defense pair against the average all-time
+ * opponent (Pythagorean, opponent-quality-adjusted like the real sim). */
+function teamWinPct(offense, defense) {
+  const N = CONSTANTS.OPP_RUNS_MEAN;
+  const rf = offense * (CONSTANTS.OPP_DEF_MEAN / N);
+  const ra = defense * (CONSTANTS.OPP_OFF_MEAN / N);
+  return pythagorean(rf, ra);
+}
+
+/* Map an expected win% to a 0-100 team rating. Calibrated so ~.500 baseball
+ * sits near 50, a 100-win team near 80, and the 116-win record near 98. */
+function overallRating(winPct) {
+  const wins = winPct * CONSTANTS.REGULAR_SEASON_GAMES;
+  const r = (wins - 62) * (100 / 58) + 47;
+  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+}
+
+/* National rank: where a finished season's rating places among all
+ * spinnable team-seasons (1 = best ever). */
+function nationalRank(rating, ratingTable) {
+  if (!ratingTable || !ratingTable.length) return null;
+  // ratingTable is ascending; count how many are strictly better.
+  let lo = 0, hi = ratingTable.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (ratingTable[mid] <= rating) lo = mid + 1; else hi = mid;
+  }
+  const better = ratingTable.length - lo;
+  return better + 1;
 }
 
 /* For each position, the cheapest players sorted by price. */
@@ -726,6 +802,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry,
+  teamStrength, teamWinPct, overallRating, nationalRank,
   generateSchedule, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
