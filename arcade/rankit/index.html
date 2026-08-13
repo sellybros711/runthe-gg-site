@@ -384,11 +384,11 @@
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=5"></script>
+<script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=6"></script>
+<script src="/arcade/leaderboard.js?v=7"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
@@ -919,6 +919,8 @@
     servedDaily=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderSwitcher();
+    // the board is per-version, so follow the switch
+    try{ if(window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); }catch(e){}
     bootCurrentMode();
     toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
   }
@@ -981,9 +983,21 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:'rankit', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'sets' });
+    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('rankit'):'rankit'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('rankit'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'sets' });
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+  /* mode.js decides which version's board this is. It can still be parsing
+     when the document is ready, and mounting without it would query the
+     all-sports board first and then switch - a wasted request and a visible
+     flicker on the wrong ranking. Wait briefly for it, then mount regardless
+     so a failed load can never leave the board unmounted. */
+  function ready(){
+    var tries=0;
+    (function wait(){
+      if(window.RTGMode || tries++>40) return go();
+      setTimeout(wait,25);
+    })();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
 })();
 </script>
 </body>
