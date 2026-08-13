@@ -354,6 +354,60 @@ h1,h2,h3{margin:0}
 .rslot .rname{font-family:var(--fp);font-size:15px;font-weight:700;flex:1}
 .rslot .rteam{font-family:var(--fn);font-size:10px;color:var(--dim);font-weight:600}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
+.rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
+.rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
+
+/* ─── results v2 ─── */
+.ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
+  border-radius:16px;overflow:hidden;background:var(--grad-panel);
+  border:1px solid rgba(0,0,0,.10);box-shadow:0 4px 16px -6px rgba(0,0,0,.18)}
+.ro-hero.win{border-color:rgba(184,134,11,.55);
+  background:linear-gradient(180deg,#f7efd8,#efe3c6);box-shadow:0 6px 22px -8px rgba(184,134,11,.4)}
+.ro-hero.lose{background:linear-gradient(180deg,#f2ece0,#e9e0d0)}
+.ro-ribbon{display:inline-block;font-family:var(--fn);font-size:10.5px;font-weight:800;
+  letter-spacing:.14em;text-transform:uppercase;color:#7a5c12;background:rgba(184,134,11,.14);
+  border:1px solid rgba(184,134,11,.35);padding:4px 12px;border-radius:99px;margin-bottom:12px}
+.ro-record{font-family:var(--fd);font-size:clamp(48px,15vw,76px);line-height:.95;letter-spacing:.02em}
+.ro-record .w{color:var(--green)} .ro-record .l{color:var(--red)} .ro-record .d{color:var(--dim);margin:0 6px}
+.ro-verdict{font-family:'Righteous',var(--fd);font-size:clamp(18px,5vw,24px);text-transform:uppercase;
+  letter-spacing:.03em;margin-top:8px;color:var(--ink)}
+.ro-verdict.ring{color:var(--gold)}
+.ro-sub{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);margin-top:5px}
+
+.ro-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.ro-cell{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:12px;
+  padding:12px 8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-cell .cv{font-family:var(--fd);font-size:30px;line-height:1;color:var(--ink)}
+.ro-cell .cv .u{font-size:15px;color:var(--dim-2)}
+.ro-cell .cv.gold{color:var(--gold)} .ro-cell .cv.green{color:var(--green)}
+.ro-cell .cl{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+.ro-meter{height:5px;border-radius:99px;background:rgba(0,0,0,.09);margin-top:8px;overflow:hidden}
+.ro-meter i{display:block;height:100%;border-radius:99px;background:var(--grad-gold)}
+
+.ro-coach{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
+  padding:15px 16px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-coach .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+.ro-coach .ceyebrow{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ro-arch{font-family:'Righteous',var(--fd);font-size:14px;color:var(--leather);
+  background:rgba(139,109,76,.12);border:1px solid rgba(139,109,76,.3);
+  padding:3px 11px;border-radius:99px;letter-spacing:.02em}
+.ro-takes{display:flex;flex-direction:column;gap:6px}
+.ro-take{display:flex;align-items:flex-start;gap:8px;font-family:var(--fb);font-size:13px;line-height:1.35}
+.ro-take .ic{flex:0 0 auto;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  font-size:10px;font-weight:800;margin-top:1px;font-family:var(--fn)}
+.ro-take.pos .ic{background:rgba(46,125,50,.16);color:var(--green)}
+.ro-take.neg .ic{background:rgba(192,57,43,.14);color:var(--red)}
+.ro-take .tt{color:var(--ink)}
+.ro-proj{font-family:var(--fn);font-size:12px;color:var(--dim);margin-top:11px;
+  padding-top:11px;border-top:1px solid rgba(0,0,0,.08)}
+.ro-proj b{color:var(--ink);font-weight:800}
+
+.ro-chemlinks{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;justify-content:center}
+.ro-chemlink{font-family:var(--fn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
+  background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
+.ro-chemlink.fam{background:rgba(184,134,11,.14);color:var(--gold);border-color:rgba(184,134,11,.3)}
 
 /* ─── era picker ─── */
 .era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
@@ -507,17 +561,32 @@ h1,h2,h3{margin:0}
 </div>
 
 <div class="screen" id="s-over">
-  <div class="result-card" id="r-card">
-    <div class="rc-title" id="r-title">Season over</div>
-    <div class="rc-record" id="r-record"></div>
-    <div class="rc-outcome" id="r-outcome"></div>
-    <div class="rc-chem" id="r-chem"></div>
+  <div class="ro-hero" id="ro-hero">
+    <div class="ro-ribbon" id="ro-ribbon"></div>
+    <div class="ro-record" id="ro-record"></div>
+    <div class="ro-verdict" id="ro-verdict"></div>
+    <div class="ro-sub" id="ro-sub"></div>
   </div>
   <div id="r-goat" style="display:none"></div>
+
+  <div class="ro-cells">
+    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl">Team rating</div>
+      <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
+    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl">All-time rank</div></div>
+    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl">Draft grade</div></div>
+  </div>
+
+  <div class="ro-coach">
+    <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="ro-arch"></span></div>
+    <div class="ro-takes" id="ro-takes"></div>
+    <div class="ro-proj" id="ro-proj"></div>
+    <div class="ro-chemlinks" id="ro-chemlinks"></div>
+  </div>
+
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
   <div class="share-row">
-    <button class="btn" id="b-share">Share result</button>
+    <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
   <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
   <footer class="legal">
@@ -1245,41 +1314,71 @@ function startPlayoffs(){
 }
 
 /* ─── result ─── */
+function ordinal(n){
+  const s=['th','st','nd','rd'],v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
+}
 function showResult(){
   show('s-over');
   const o=RUN.outcome;
-  $('r-record').innerHTML='<span style="color:var(--green)">'+o.wins+'</span><span style="color:var(--dim);margin:0 6px">-</span><span style="color:var(--red)">'+o.losses+'</span>';
-  if(o.titleWon){
-    $('r-title').textContent='World Series Champions';
-    $('r-outcome').textContent='You won it all';
-    $('r-outcome').className='rc-outcome ring';
-    $('r-card').style.borderColor='var(--gold)';
-  }else if(o.madePlayoffs){
-    const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
-    $('r-title').textContent='Season over';
-    $('r-outcome').textContent='Eliminated in the '+last.round;
-    $('r-outcome').className='rc-outcome lost';
-    $('r-card').style.borderColor='';
-  }else{
-    $('r-title').textContent='Season over';
-    $('r-outcome').textContent='Missed the playoffs';
-    $('r-outcome').className='rc-outcome lost';
-    $('r-card').style.borderColor='';
-  }
-  const chemPct=((o.chemistry.multiplier-1)*100).toFixed(1);
-  $('r-chem').textContent='Chemistry: '+(o.chemistry.multiplier>=1?'+':'')+chemPct+'%';
-  if(o.chemistry.links.length>0){
-    $('r-chem').textContent+=' ('+o.chemistry.links.slice(0,3).map(l=>l.label).join(', ')+')';
-  }
+  const hero=$('ro-hero');
+
+  // Hero: ribbon (all-time standing), record, verdict
+  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">&ndash;</span><span class="l">'+o.losses+'</span>';
+  const rank=o.allTimeRank;
+  $('ro-ribbon').textContent=rank?(ordinal(rank)+'-greatest team of all time'):'Season complete';
+  const vd=$('ro-verdict');
+  if(o.titleWon){hero.className='ro-hero win';vd.textContent='World Series Champions';vd.className='ro-verdict ring';}
+  else if(o.madePlayoffs){const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
+    hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
+  else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
+  $('ro-sub').textContent=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+
+  // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';
   if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time &mdash; '+o.wins+' wins</div>';}
   else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record &mdash; 116 wins</div>';}
 
+  // Big cells: rating / rank / draft grade
+  const rating=o.rating!=null?Math.round(o.rating):null;
+  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'&mdash;';
+  $('ro-rating-bar').style.width=(rating!=null?Math.max(3,rating):0)+'%';
+  $('ro-rank').textContent=rank?('#'+rank):'&mdash;';
+  const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
+  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'&mdash;';
+
+  // Coach's take
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const cr=E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
+  $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
+  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
+  $('ro-takes').innerHTML=takes.length?takes.map(t=>
+    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
+  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+
+  // Projection line
+  if(RUN&&R.projectSeason){
+    const proj=R.projectSeason(RUN,160);
+    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'&ndash;'+proj.hi+' wins</b> &middot; '+
+      '<b>'+proj.playoffPct+'%</b> playoffs &middot; <b>'+proj.titlePct+'%</b> to win it all';
+  }
+
+  // Chemistry links (family highlighted)
+  const links=(o.chemistry.links||[]).filter(l=>l.value>0);
+  const uniq=[];const seen=new Set();
+  for(const l of links){if(!seen.has(l.label)){seen.add(l.label);uniq.push(l);}}
+  const chemPct=((o.chemistry.multiplier-1)*100).toFixed(1);
+  $('ro-chemlinks').innerHTML=(Math.abs(o.chemistry.multiplier-1)>0.0005?
+    '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
+    uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
+
+  // Stat row
   $('r-stats').innerHTML=[
     {label:'Runs scored',value:o.totalRS},{label:'Runs allowed',value:o.totalRA},
     {label:'R/G',value:(o.totalRS/162).toFixed(1)},{label:'RA/G',value:(o.totalRA/162).toFixed(1)},
   ].map(s=>'<div class="stat-box"><div class="sv">'+s.value+'</div><div class="sl">'+s.label+'</div></div>').join('');
 
+  // Roster with WAR
   const rosterDiv=$('r-roster');
   rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
   const roster=document.createElement('div');roster.className='roster-final';
@@ -1289,10 +1388,51 @@ function showResult(){
     div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="rname">'+esc(p.n)+'</span>'+
       '<span class="rteam">'+p.s+' '+esc(p.t)+'</span>'+
-      '<span class="rprice">'+M(p.p)+'</span>';
+      '<span class="rwar">'+p.w.toFixed(1)+'</span>';
     roster.appendChild(div);
   });
   rosterDiv.appendChild(roster);
+
+  if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
+}
+function gradeFor(pct){
+  if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
+  if(pct>=85)return'B+';if(pct>=80)return'B';if(pct>=74)return'B-';
+  if(pct>=68)return'C+';if(pct>=60)return'C';if(pct>=50)return'D';return'F';
+}
+
+/* ─── confetti ─── */
+function fireConfetti(gold){
+  if(reduceMotion())return;
+  let cv=document.getElementById('confetti-cv');
+  if(!cv){cv=document.createElement('canvas');cv.id='confetti-cv';
+    cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:200';
+    document.body.appendChild(cv);}
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const W=cv.width=innerWidth*dpr,H=cv.height=innerHeight*dpr;
+  const ctx=cv.getContext('2d');
+  const cols=gold?['#e8c840','#f5f0e6','#b8860b','#d4772c']:['#2e7d32','#b8860b','#f5f0e6','#c0392b'];
+  const N=gold?200:150;const parts=[];
+  for(let i=0;i<N;i++)parts.push({
+    x:W*(.5+(Math.random()-.5)*.4),y:H*.2+Math.random()*H*.1,
+    vx:(Math.random()-.5)*10*dpr,vy:(Math.random()*-6-3)*dpr,
+    g:(.22+Math.random()*.16)*dpr,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,
+    sz:(5+Math.random()*6)*dpr,c:cols[i%cols.length],round:Math.random()<.35});
+  const t0=(window.performance||Date).now();const life=gold?4200:3400;
+  (function frame(){
+    const t=(window.performance||Date).now()-t0;
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.vx*=.995;p.rot+=p.vr;
+      const a=Math.max(0,1-t/life);
+      ctx.save();ctx.globalAlpha=a;ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;
+      if(p.round){ctx.beginPath();ctx.arc(0,0,p.sz/2,0,6.28);ctx.fill();}
+      else ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*.6);
+      ctx.restore();
+    }
+    if(t<life)requestAnimationFrame(frame);
+    else{ctx.clearRect(0,0,W,H);cv.remove();}
+  })();
 }
 
 /* ─── share ─── */
