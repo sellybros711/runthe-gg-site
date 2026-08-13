@@ -14834,3 +14834,47 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   free pack and a bundle sub-open still go straight through; the existing item preview+Buy path is
   unchanged; a full pack flow (confirm → wheel → 8s spin → land → Equip footer), all 9 shop sections, and
   an 18-hole practice daily round all regress clean — **0 page errors**; `node --check` clean.
+
+- **LIFETIME LEADERBOARD: all-time totals per player, across every career (owner: "can we add a lifetime
+  leaderboard section to the leaderboard where you can see all users lifetime stats on a leaderboard?").**
+  A fourth-and-fifth board joins Single Season / Career / Play 18 / Streaks: **Lifetime**, one row per
+  PLAYER aggregating every season they have ever posted, across every career (including Legend Circuit
+  years), sortable by Earnings / Profit / Wins / Majors / Seasons / Careers / Best OVR / Fans.
+  - **Backend `supabase/70_runtour_lifetime_board.sql` (owner-run):** `runtour_lifetime_board(p_limit,
+    p_sort, p_dir)` groups `runtour_scores` by `user_id`. It aggregates the SAME source the player card's
+    Lifetime panel already uses (migration 68), so a player's card and their row on this board can never
+    disagree - verified by a test asserting exact equality between the two. Follows the 61 perf discipline:
+    aggregate + rank + LIMIT on SCALAR columns only, then join the jsonb (the golfer look) for the handful
+    of returned rows via a lateral. Username comes from `profiles` (LIVE), not the display_name frozen onto
+    each row at submit time, so a renamed player reads correctly without posting a new season; guests
+    (`user_id is null`) are excluded since a guest post can't be attributed to a person. Adds
+    `runtour_scores_user_idx` to keep the group-by cheap. Validated on a local Postgres across 9 checks:
+    default earnings ranking, all 7 alternate sorts, `p_dir='asc'` returning the true bottom with real ranks
+    kept, guests excluded, exact agreement with `runtour_player_card`, the live username beating the frozen
+    row name, cur_look/latest-look precedence, limit clamp + contiguous ranks, an unknown sort falling back
+    to earnings, anon execute, and an idempotent re-run.
+  - **Client:** new `lifeCache`/`lifeLoad` (the standard `rpcTry` 12s-timeout + `boardStale` retry-on-reopen
+    pattern, so a failed board shows the reason + a working Try again rather than sticking), `lifeStatVal`
+    for the right-hand column, and `overlayLeaderboardLifetime` - podium top-3 with each player's golfer,
+    the ranked list starting at #4 (per the no-duplicate-top-3 rule), a "Your lifetime rank: #N" banner,
+    the guest sign-in CTA, and skeleton rows while loading. Rows open the player card (`pcReg(...,'lifetime')`);
+    since a lifetime row IS the aggregate the card's own Lifetime panel shows, the card seeds `_pcStats`
+    from the row instead of repeating it in a second section (and `sec` is now only added when it has rows,
+    so no empty box).
+  - **Factored `lbTabsHTML`** while wiring the fifth tab: the tab row had been duplicated in THREE renderers,
+    which is exactly the "added in one place, not the other" bug just fixed in the Pro Shop - it is now one
+    shared function, so a future tab can't go missing from a board.
+  - Fail-open: pre-migration the tab shows "Lifetime board unavailable" + Try again, everything else is
+    unaffected.
+  Verified in Playwright: the tab renders in EVERY board renderer; the podium shows 3 golfers with the list
+  starting at rank 4; the heading/sub read "Lifetime · Earnings" / "2 careers · 5 seasons"; the "Your
+  lifetime rank: #1" banner; all 8 sorts are sent to the server and re-rank correctly (earnings/net/wins/
+  majors→alice, seasons/careers→cara, ovr/fans→bob); the ascending view fetches its own board with no
+  podium; a row tap opens a player card prefilled with the lifetime stats and no duplicate section; a
+  re-render does not refetch; the failure path shows the reason + a working retry; the guest CTA renders.
+  Regressions green (regress_final's full 18-hole daily round, tp_regress overlay sweep, the shop-tabs
+  suite, both wheel suites) - **0 page errors** throughout; inline scripts parse clean. Deployed client to
+  /golf. **ACTION: run `supabase/70_runtour_lifetime_board.sql`.**
+  NOTE: lbregress.mjs's daily-round fixture throws in `autoFinishDaily` (it drives the draft over a
+  `file://` URL, never reaches the round, then calls it blindly) - verified identical on the DEPLOYED file,
+  so it is a stale fixture, not a regression; its leaderboard assertions all pass.

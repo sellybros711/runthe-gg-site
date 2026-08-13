@@ -8864,11 +8864,22 @@ function overlayAccount(screen){
   const xb=ov.querySelector('.x'); if(xb) xb.onclick=()=>{ S.overlay=null; S.acctErr=''; S.acctNote=''; render(); };   // absent while a rename is forced
   screen.appendChild(ov);
 }
+// The leaderboard's tab row, in ONE place. Every board renderer (season/career, Play 18, streaks,
+// lifetime) draws it from here: the row and the set of boards that exist can't drift apart, and adding a
+// tab is a one-line change instead of an edit in four renderers that's easy to half-do.
+const LB_TABS=[['season','Single Season'],['career','Career'],['lifetime','Lifetime'],['daily','Play 18'],['streaks','Streaks']];
+function lbTabsHTML(active){
+  return `<div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">`+
+    LB_TABS.map(([id,lab])=>`<button class="btn ${active===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`).join('')+`</div>`;
+}
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
 const LB_SORTS={   // Tour Rep is no longer a sort category, the rep rank shows next to each name instead
   // ...the derived stat sorts (sg/ttg/putts/hcp) are computed client-side from each row's stored skills
   season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],   // OVR sort removed (owner) - the OVR now shows on every row's sub line instead
   career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
+  // Lifetime = one row per PLAYER, every season they've ever posted added up (all careers, circuit years
+  // included). Server-side sorts only - there's no per-row `skills` to derive a stat from.
+  lifetime:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['careers','Careers'],['ovr','Best OVR'],['fans','Fans']],
 };
 // CS214: these aren't DB columns - they're derived from each row's `skills` jsonb (golferStats) and ranked
 // client-side over the fetched board. key=field on golferStats(); low=true when a lower value is better.
@@ -8969,6 +8980,13 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
   } else if(reg.kind==='season'){
     rows.push(['Year','Yr '+(r.year||1)],['Wins',r.wins!=null?r.wins:'-'],['Majors',r.majors!=null?r.majors:'-'],
       ['Earnings',fmtShort(r.season_earnings||0)],['Net',neg(r.season_net)]);
+  } else if(reg.kind==='lifetime'){
+    // A lifetime row IS the aggregate the card's own Lifetime panel shows, so don't repeat it in a second
+    // section - seed the card-stats cache from the row instead. The panel fills in instantly (no RPC
+    // round-trip) and the warmed cache serves the other boards too.
+    if(r.user_id && !_pcStats[r.user_id]) _pcStats[r.user_id]={ok:true, careers:r.careers, seasons:r.seasons,
+      wins:r.wins, majors:r.majors, earnings:r.earnings, best_net:r.best_net, best_ovr:r.best_ovr,
+      followers:r.followers, rep_pts:r.rep_pts};
   } else {
     const par=(DAILY_COURSES[r.course_key]||{}).par;
     if(r.total_to_par!=null){ rows.push(['This week',dtp(r.total_to_par)],['Days played',r.days_played||1],['Best round',dtp(r.best_to_par)]); }
@@ -8986,7 +9004,7 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
   S.cardView={ name:reg.name||r.display_name||'Player', look,
     rep:(r.rep_pts!=null?repTierName(r.rep_pts):null),
     ovr, arch:arch?arch.name:null, golfer:r.golfer_name||null,
-    sec:{label:secLab,rows}, scorecard:scard, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
+    sec:rows.length?{label:secLab,rows}:null, scorecard:scard, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
   if(you){ try{ S.cardView.lt=_selfLifetime(); }catch(e){} }
   else if(r.user_id) loadPlayerCardStats(r.user_id);
   S.cardReturn=(S.overlay&&S.overlay!=='playercard')?S.overlay:null;   // close returns to the board you tapped from
@@ -9146,6 +9164,7 @@ function overlayLeaderboard(screen){
   const tab=S.lbTab||'season';
   if(tab==='daily'||tab==='weekly'){ overlayLeaderboardDaily(screen, tab); return; }   // CS393: separate board
   if(tab==='streaks'){ overlayStreakBoard(screen); return; }   // CS401: active daily-streak leaderboard
+  if(tab==='lifetime'){ overlayLeaderboardLifetime(screen); return; }   // owner: all-time totals per player
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
   const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' = true bottom N (low→high)
   // CS417: TODAY / THIS WEEK / ALL-TIME window on the season+career boards. since = the window start
@@ -9309,7 +9328,7 @@ function overlayLeaderboard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
+    ${lbTabsHTML(tab)}
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Window</div>
     <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${winSeg('today','Today')}${winSeg('week','This week')}${winSeg('all','All-Time')}</div>
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
@@ -9432,7 +9451,7 @@ function overlayLeaderboardDaily(screen, tab){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
+    ${lbTabsHTML(tab)}
     <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">${title}</h2><div class="small muted" style="margin:0">${subtitle}</div></div>
     ${p18Controls}${p18Records}
     <div class="board">${board}</div>
@@ -9452,6 +9471,117 @@ function overlayLeaderboardDaily(screen, tab){
   screen.appendChild(ov);
 }
 // CS401: the ACTIVE daily-streak leaderboard (a self-contained tab, mirrors overlayLeaderboardDaily).
+// ── LIFETIME board (owner): one row per PLAYER, every posted season added up across every career and
+// the Legend Circuit. Same aggregate the player card's LIFETIME panel shows (migration 68), so a card
+// and a board row can never disagree. Self-contained like the Play 18 / streak boards.
+let lifeCache={};
+function lifeLoad(sort,dir){
+  sort=sort||'earnings'; dir=(dir==='asc')?'asc':'desc';
+  const k=sort+':'+dir;
+  if(lifeCache[k] && lifeCache[k].loading) return;
+  if(!sb){ lifeCache[k]={loading:false,ok:false,rows:[],err:'offline',t:Date.now()}; return; }
+  lifeCache[k]={loading:true,ok:false,rows:[],t:Date.now()};
+  const done=()=>{ if(S.overlay==='leaderboard' && S.lbTab==='lifetime') render(); };
+  rpcTry('runtour_lifetime_board',{p_limit:200,p_sort:sort,p_dir:dir}).then(({data,error})=>{
+    lifeCache[k]= error ? {loading:false,ok:false,rows:[],err:(error.message||'error'),t:Date.now()}
+                        : {loading:false,ok:true,rows:(data||[]),t:Date.now()};
+    done();
+  }).catch(e=>{ lifeCache[k]={loading:false,ok:false,rows:[],err:(e&&e.message)||'error',t:Date.now()}; done(); });
+}
+// the right-hand value column for the lifetime board
+function lifeStatVal(r,sort){
+  switch(sort){
+    case 'net':      { const v=r.net||0; return `<span style="color:${v>=0?'#35d6a0':'#E14A33'}">${fmtSigned(v)}</span>`; }
+    case 'wins':     { const w=r.wins||0; return `<span style="color:var(--gold)">${w} win${w===1?'':'s'}</span>`; }
+    case 'majors':   return `<span style="color:var(--gold)">${r.majors||0} maj</span>`;
+    case 'seasons':  return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
+    case 'careers':  { const n=r.careers||0; return `<span style="color:var(--gold)">${n} career${n===1?'':'s'}</span>`; }
+    case 'ovr':      return `<span style="color:var(--gold)">OVR ${r.best_ovr||'-'}</span>`;
+    case 'fans':     return `<span style="color:#ff9d3a;font-weight:800">${fmtFollowers(r.followers||0)} fans</span>`;
+    default:         return `<span style="color:var(--gold)">${fmt(r.earnings||0)}</span>`;
+  }
+}
+function overlayLeaderboardLifetime(screen){
+  if(sb) proLoad();
+  _pcRows.length=0;
+  let sort=S.lbSort||'earnings'; if(!lbSortValid('lifetime',sort)){ sort='earnings'; S.lbSort='earnings'; }
+  const dir=S.lbDir||'desc', k=sort+':'+dir;
+  if(boardStale(lifeCache[k])) lifeLoad(sort,dir);
+  const v=lifeCache[k], loading=!v||v.loading, ok=v&&v.ok, rows=ok?v.rows:[];
+  const you=r=>!!(sbUser&&r.user_id&&r.user_id===sbUser.id);
+  // a renamed player reads correctly (the board returns their live profile name); your own row shows your
+  // live username + current rep the moment they change, without waiting for a new season to post.
+  const nameOf=r=>(you(r)&&sbUsername)?sbUsername:(r.display_name||'Golfer');
+  const repOf=r=>{ let rp=r.rep_pts; if(you(r)){ const my=(typeof achPoints==='function')?achPoints():null; if(my!=null) rp=Math.max(rp||0,my); }
+    const nm=(rp!=null)?repTierName(rp):null; return (nm&&nm!=='Amateur')?nm:null; };
+  const lookOf=r=>you(r)?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK);
+  const subOf=r=>{ const bits=[(r.careers||0)+' career'+((r.careers||0)===1?'':'s'), (r.seasons||0)+' season'+((r.seasons||0)===1?'':'s')];
+    if(sort!=='wins'&&(r.wins||0)>0) bits.push((r.wins)+' win'+(r.wins===1?'':'s'));
+    if(sort!=='majors'&&(r.majors||0)>0) bits.push(r.majors+' major'+(r.majors===1?'':'s'));
+    return bits.join(' · '); };
+  const rowFn=r=>{
+    const pc=pcReg(r,nameOf(r),'lifetime'), rep=repOf(r);
+    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" style="grid-template-columns:26px 32px 1fr auto;cursor:pointer" aria-label="View ${esc(nameOf(r))}’s player card">
+      <span class="pos">${r.rank===1?'🏆':r.rank}</span>
+      ${pxAvatarChip(lookOf(r),30)}
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${proNameHTML(nameOf(r),r.user_id)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>
+      <div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(subOf(r))}</div></span>
+      <span class="mny" style="white-space:nowrap">${lifeStatVal(r,sort)}</span></div>`; };
+  const guestCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
+      <div style="font-size:22px;line-height:1">🔒</div><b style="color:var(--gold);display:block;margin-top:5px">Sign in to build a lifetime record</b>
+      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Every season you post adds to your lifetime totals. Guest rounds aren't attributed to anyone.</div>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
+  let board;
+  if(loading){
+    board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join('');
+  } else if(ok && rows.length){
+    let podiumHTML='';
+    if(dir!=='asc' && rows.length>=3){
+      const pod=[rows[1],rows[0],rows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+      podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const pc=pcReg(r,nameOf(r),'lifetime');
+        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(nameOf(r))}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(lookOf(r), di===1?74:56)}</div><div class="nm">${proNameHTML(nameOf(r),r.user_id)}</div><div class="vl">${lifeStatVal(r,sort)}</div><div class="rk">${(r.seasons||0)} season${(r.seasons||0)===1?'':'s'}</div></div>`; }).join('')+'</div>';
+    }
+    board=podiumHTML+(podiumHTML?rows.slice(3):rows).map(rowFn).join('')+guestCTA;
+  } else if(ok){
+    board=`<div class="small muted center" style="padding:18px 8px">No lifetime records yet, finish a season to start one.</div>`+guestCTA;
+  } else {
+    board=`<div class="small muted center" style="padding:14px 8px">Lifetime board unavailable right now${(v&&v.err)?' ('+esc(v.err)+')':''}.</div>`
+      +`<div class="center" style="padding:0 8px 10px"><button class="btn ghost lbretry" style="width:auto;padding:7px 14px;font-size:12.5px">↺ Try again</button></div>`+guestCTA;
+  }
+  const mine=ok?rows.find(you):null;
+  const banner = sbSignedIn()
+    ? `<div><b style="color:var(--gold)">${mine?`Your lifetime rank: #${mine.rank}`:'Your lifetime record'}</b><div class="small muted" style="margin-top:2px">${mine?`${mine.careers} career${mine.careers===1?'':'s'} · ${mine.seasons} season${mine.seasons===1?'':'s'} · ${mine.wins} win${mine.wins===1?'':'s'} · ${mine.majors} major${mine.majors===1?'':'s'}`:'Every season you post adds to your lifetime totals.'}</div></div>`
+    : `<div><b style="color:var(--gold)">Lifetime leaderboard</b><div class="small muted" style="margin-top:2px">Every season a player has ever posted, added up. Sign in to start your own record.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
+  const sortSeg=(kk,lab)=>`<button class="btn ${sort===kk?'gold':'ghost'} lbsort" data-sort="${kk}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
+  const lbl=lbSortLabel('lifetime',sort);
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Lifetime leaderboard">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>🏆 Leaderboard</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
+    ${lbTabsHTML('lifetime')}
+    <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${LB_SORTS.lifetime.map(s=>sortSeg(s[0],s[1])).join('')}</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
+      <div style="min-width:0"><h2 style="margin:0 0 2px">Lifetime · ${esc(lbl)}</h2>
+        <div class="small muted" style="margin:0">Every season a player has ever posted, added up across all their careers${dir==='asc'?' · the lowest in the database':''}</div></div>
+      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
+    </div>
+    <div class="board">${board}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbretry').forEach(b=>b.onclick=()=>{ lifeCache={}; render(); });
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});
+  ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});
+  ov.querySelectorAll('.lbdir').forEach(b=>b.onclick=()=>{S.lbDir=(S.lbDir==='asc'?'desc':'asc');render();});
+  ov.querySelectorAll('[data-pc]').forEach(el=>{ const go=()=>openPlayerCardRow(_pcRows[+el.getAttribute('data-pc')]);
+    el.onclick=go; el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
+  const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
+  const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
+  const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
+  screen.appendChild(ov);
+}
 let streakBoardCache=null;
 function streakBoardLoad(){
   // t is what boardStale() reads, so a failed streak board retries when you reopen it (never hammers)
@@ -9493,7 +9623,7 @@ function overlayStreakBoard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
+    ${lbTabsHTML('streaks')}
     <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">Active Streaks</h2><div class="small muted" style="margin:0">Longest active daily-play streaks · keep playing to hold your spot</div></div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
