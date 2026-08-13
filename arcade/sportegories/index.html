@@ -26,7 +26,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --gold:#F2B632; --green:#48D17A; --red:#FF625F;
-    --sp:#37C5D5; --spT:#4FD8E8;
+    --sp:#DA6BE6; --spT:#DA6BE6;
     --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --greenT:#48D17A;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -36,7 +36,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --sp:#0E7C89; --spT:#0E7C89;
+    --sp:#DA6BE6; --spT:#A03BD0;
     --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --greenT:#17A34A; --red:#C4372C;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -80,12 +80,10 @@
   .hero p{margin:0 auto 18px; max-width:44ch; font-size:14px; color:var(--mut); line-height:1.5;}
   .rules{display:grid; gap:9px; text-align:left; margin:0 auto 20px; max-width:400px;}
   .rule{display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--ink); font-weight:600;}
-  .rule .b{flex:0 0 22px; height:22px; border-radius:6px; background:var(--sp); color:#04222a; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;}
-  :root[data-theme="light"] .rule .b{color:#fff;}
+  .rule .b{flex:0 0 22px; height:22px; border-radius:6px; background:var(--sp); color:var(--onAccent,#160B02); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;}
   .rule small{display:block; font-weight:600; color:var(--mut); margin-top:2px; font-size:12px;}
   .gobtn{appearance:none; border:0; cursor:pointer; font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase;
-    font-size:20px; padding:15px 22px; border-radius:13px; background:var(--sp); color:#04222a; width:100%; box-shadow:var(--shadow);}
-  :root[data-theme="light"] .gobtn{color:#fff;}
+    font-size:20px; padding:15px 22px; border-radius:13px; background:var(--sp); color:var(--onAccent,#160B02); width:100%; box-shadow:var(--shadow);}
   .gobtn:hover{filter:brightness(1.06);}
   .ghost{appearance:none; cursor:pointer; background:var(--card2); color:var(--ink); border:1px solid var(--line2);
     font-family:var(--f); font-weight:800; font-size:13.5px; padding:12px 18px; border-radius:11px; width:100%; margin-top:9px;}
@@ -112,10 +110,9 @@
   /* ---- play ---- */
   .board{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
   .lethead{display:flex; align-items:center; gap:14px; margin-bottom:12px;}
-  .letter{flex:0 0 auto; width:62px; height:62px; border-radius:14px; background:var(--sp); color:#04222a;
+  .letter{flex:0 0 auto; width:62px; height:62px; border-radius:14px; background:var(--sp); color:var(--onAccent,#160B02);
     font-family:var(--hero); font-weight:400; font-size:40px; line-height:62px; text-align:center;
     box-shadow:inset 0 -4px 0 rgba(0,0,0,.18);}
-  :root[data-theme="light"] .letter{color:#fff;}
   .lethead .li{min-width:0; flex:1;}
   .lethead .k{font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
   .lethead .v{font-size:14px; font-weight:800; margin-top:3px; line-height:1.3;}
@@ -136,6 +133,19 @@
     border:1.5px solid var(--line2); border-radius:9px; padding:10px 11px; min-height:44px;}
   .row input::placeholder{color:var(--dim); font-weight:600;}
   .row input:focus{border-color:var(--sp); outline:none;}
+  /* Suggestion dropdown. Lives on <body> and is positioned to the focused row,
+     so it is never clipped by a scrolling ancestor and can flip above the
+     field when the on-screen keyboard eats the space below. */
+  .sugbox{position:fixed; z-index:90; background:var(--card2); border:1.5px solid var(--sp);
+    border-radius:11px; box-shadow:0 18px 40px -14px rgba(0,0,0,.7); overflow:hidden;
+    max-height:min(46vh,290px); overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .sugbox[hidden]{display:none;}
+  .sugitem{display:block; width:100%; text-align:left; appearance:none; border:0; cursor:pointer;
+    background:transparent; font-family:var(--f); font-size:15px; font-weight:700; color:var(--ink);
+    padding:12px 13px; min-height:46px; border-top:1px solid var(--line);}
+  .sugitem:first-child{border-top:0;}
+  .sugitem.on,.sugitem:hover{background:color-mix(in srgb, var(--sp) 18%, var(--card2));}
+  .sugitem:active{background:color-mix(in srgb, var(--sp) 28%, var(--card2));}
   .row input:disabled{opacity:.85;}
   /* graded */
   .row.good{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card2));}
@@ -187,8 +197,7 @@
   .actions{display:flex; gap:9px; margin-top:14px;}
   .actions button{flex:1;}
   .submit{appearance:none; border:0; cursor:pointer; font-family:var(--hero); font-weight:400; letter-spacing:.05em; text-transform:uppercase;
-    font-size:17px; padding:14px; border-radius:12px; background:var(--sp); color:#04222a; box-shadow:var(--shadow);}
-  :root[data-theme="light"] .submit{color:#fff;}
+    font-size:17px; padding:14px; border-radius:12px; background:var(--sp); color:var(--onAccent,#160B02); box-shadow:var(--shadow);}
 
   /* ---- result ---- */
   .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
@@ -204,8 +213,7 @@
   .rstat .l{font-size:8.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .abtn{appearance:none; cursor:pointer; width:100%; font-family:var(--f); font-weight:900; font-size:14px; padding:13px; border-radius:11px;
     border:1px solid var(--line2); background:var(--card2); color:var(--ink); margin-bottom:9px;}
-  .abtn.go{background:var(--sp); color:#04222a; border-color:transparent; font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.05em; text-transform:uppercase;}
-  :root[data-theme="light"] .abtn.go{color:#fff;}
+  .abtn.go{background:var(--sp); color:var(--onAccent,#160B02); border-color:transparent; font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.05em; text-transform:uppercase;}
 
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none;}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
@@ -286,7 +294,6 @@
   </section>
 
   <div class="lb"></div>
-  <datalist id="sug"></datalist>
   <div class="foot">Sportegories · in development inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a></div>
 </div>
 
@@ -353,13 +360,17 @@
     puz.cats.forEach(function(c, i){
       var row=document.createElement('div'); row.className='row'; row.id='row'+i;
       row.innerHTML='<div class="cl"><span>'+esc(c.label)+'</span><span class="tier">'+TIER_NAME[c.tier]+'</span></div>'+
-        '<input type="text" id="in'+i+'" list="sug" autocomplete="off" autocorrect="off" spellcheck="false" '+
-        'autocapitalize="words" placeholder="Full name…" aria-label="'+esc(c.label)+'" />'+
+        '<input type="text" id="in'+i+'" autocomplete="off" autocorrect="off" spellcheck="false" '+
+        'autocapitalize="words" placeholder="Full name…" aria-label="'+esc(c.label)+'" '+
+        'role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="sugbox" />'+
         '<div class="res" id="res'+i+'" style="display:none"></div>';
       host.appendChild(row);
       var el=row.querySelector('input'); inputs.push(el);
       el.addEventListener('input', onType);
+      el.addEventListener('focus', onType);
+      el.addEventListener('blur', function(){ setTimeout(closeSug, 140); });
       el.addEventListener('keydown', function(e){
+        if(sugKey(e)) return;                 // arrows / Enter belong to the list first
         if(e.key==='Enter'){ e.preventDefault(); var n=inputs[i+1]; if(n) n.focus(); else grade(); }
       });
     });
@@ -370,15 +381,85 @@
 
   /* Typeahead searches the WHOLE player list, never the category's answers —
      a category-aware suggester would hand over the answer. */
-  var sugT=null;
+  /* A real dropdown, not a <datalist>. This game is two minutes of typing full
+     player names on a phone, so the suggester IS the interface. Native datalist
+     renders as a cramped strip on iOS, can't be styled, can't be tapped
+     reliably, and gives no keyboard affordance — every one of which costs
+     seconds a player does not have. This one anchors under the focused row,
+     is tappable, arrow-key navigable, and jumps to the next category the
+     moment you pick, so a whole answer is one tap. */
+  var sugT=null, sugBox=null, sugItems=[], sugIx=-1, sugFor=null;
+
+  function ensureSugBox(){
+    if(sugBox) return sugBox;
+    sugBox=document.createElement('div');
+    sugBox.className='sugbox'; sugBox.id='sugbox';
+    sugBox.setAttribute('role','listbox');
+    sugBox.hidden=true;
+    document.body.appendChild(sugBox);
+    // pointerdown beats blur, so the tap lands before the field closes the list
+    sugBox.addEventListener('pointerdown', function(ev){
+      var b=ev.target.closest('.sugitem'); if(!b) return;
+      ev.preventDefault();
+      pickSug(parseInt(b.getAttribute('data-i'),10));
+    });
+    return sugBox;
+  }
+  function closeSug(){
+    if(!sugBox||sugBox.hidden) return;
+    sugBox.hidden=true; sugItems=[]; sugIx=-1;
+    if(sugFor) sugFor.setAttribute('aria-expanded','false');
+    sugFor=null;
+  }
+  function placeSug(el){
+    var r=el.getBoundingClientRect();
+    sugBox.style.left=Math.round(r.left)+'px';
+    sugBox.style.width=Math.round(r.width)+'px';
+    // flip above when the keyboard leaves no room below
+    var below=window.innerHeight-r.bottom;
+    if(below < 150 && r.top > below){
+      sugBox.style.top=''; sugBox.style.bottom=Math.round(window.innerHeight-r.top+6)+'px';
+    } else {
+      sugBox.style.bottom=''; sugBox.style.top=Math.round(r.bottom+6)+'px';
+    }
+  }
+  function paintSug(){
+    sugBox.innerHTML = sugItems.map(function(n,i){
+      return '<button type="button" class="sugitem'+(i===sugIx?' on':'')+'" data-i="'+i+'" role="option" '+
+             'aria-selected="'+(i===sugIx)+'" tabindex="-1">'+esc(n)+'</button>';
+    }).join('');
+  }
+  function pickSug(i){
+    if(!sugFor||i<0||i>=sugItems.length) return;
+    var el=sugFor, ix=inputs.indexOf(el);
+    el.value=sugItems[i];
+    closeSug();
+    var nxt=inputs[ix+1];
+    if(nxt) nxt.focus(); else el.blur();
+  }
+  function sugKey(e){
+    if(!sugBox||sugBox.hidden||!sugItems.length) return false;
+    if(e.key==='ArrowDown'){ e.preventDefault(); sugIx=(sugIx+1)%sugItems.length; paintSug(); return true; }
+    if(e.key==='ArrowUp'){ e.preventDefault(); sugIx=(sugIx-1+sugItems.length)%sugItems.length; paintSug(); return true; }
+    if(e.key==='Escape'){ closeSug(); return true; }
+    if(e.key==='Enter' && sugIx>=0){ e.preventDefault(); pickSug(sugIx); return true; }
+    return false;
+  }
   function onType(e){
-    var v=e.target.value;
+    var el=e.target, v=el.value;
     if(sugT) clearTimeout(sugT);
     sugT=setTimeout(function(){
-      var list=SP.suggest(v, 8), dl=$('sug');
-      dl.innerHTML = list.map(function(n){ return '<option value="'+esc(n)+'"></option>'; }).join('');
-    }, 90);
+      if(document.activeElement!==el) return;
+      var list=SP.suggest(v, 7);
+      if(!list.length){ closeSug(); return; }
+      ensureSugBox();
+      sugItems=list; sugIx=-1; sugFor=el;
+      el.setAttribute('aria-expanded','true');
+      paintSug(); sugBox.hidden=false; placeSug(el);
+    }, 80);
   }
+  window.addEventListener('resize', function(){ if(sugFor && sugBox && !sugBox.hidden) placeSug(sugFor); });
+  window.addEventListener('scroll', function(){ if(sugFor && sugBox && !sugBox.hidden) placeSug(sugFor); }, true);
 
   /* ---------- the wheel ----------
      The letter is already decided (date-seeded), so the spin is animated to
