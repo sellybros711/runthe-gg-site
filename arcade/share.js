@@ -125,7 +125,7 @@
   var ACCENT = {
     table: '#F2B632', career: '#48D17A', oddone: '#A982F3', rankit: '#EC5E9C',
     guess: '#F0653A', almamater: '#F2B632', wordsearch: '#37C5D5',
-    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#37C5D5'
+    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#DA6BE6'
   };
   // Emoji square -> fill on the dark card. Blanks/absent squares become faint
   // panels rather than the glaring white/black they are as text.
