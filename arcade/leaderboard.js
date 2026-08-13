@@ -72,6 +72,17 @@
     if (!row) return '';
     if (CFG.kind === 'time') return fmtTime(row.base_seconds);
     var n = row.run_len == null ? 0 : row.run_len;
+    /* 'tries' games post ATTEMPTS REMAINING, not attempts used, so that the
+     * shared score column (most run_len wins, faster breaks the tie) already
+     * means "fewest tries wins". The board has to invert it back for display,
+     * because nobody thinks in attempts remaining. run_len 0 is a card that
+     * never solved. */
+    if (CFG.kind === 'tries') {
+      var mt = CFG.maxTries || 5;
+      if (n <= 0) return 'unsolved';
+      var t = Math.max(1, mt + 1 - n);
+      return t + (t === 1 ? ' try' : ' tries');
+    }
     return n + (CFG.kind === 'pts' ? ' pts' : (CFG.unit ? ' ' + CFG.unit : ''));
   }
 
@@ -395,6 +406,9 @@
       if (CFG.kind === 'time') {
         var d = Math.max(0, Math.round((mine.base_seconds || 0) - (above.base_seconds || 0)));
         if (d > 0) gap = '<b>' + d + 's</b> faster takes ' + ord(rank - 1);
+      } else if (CFG.kind === 'tries') {
+        var dt = Math.max(0, (above.run_len || 0) - (mine.run_len || 0));
+        if (dt > 0) gap = '<b>' + dt + '</b> fewer ' + (dt === 1 ? 'try' : 'tries') + ' takes ' + ord(rank - 1);
       } else {
         var dd = Math.max(0, (above.run_len || 0) - (mine.run_len || 0));
         var unit = CFG.kind === 'pts' ? (dd === 1 ? 'pt' : 'pts') : (CFG.unit || 'more');
@@ -413,7 +427,9 @@
 
   function footNote(total) {
     var what = CFG.kind === 'time' ? 'Fastest clean solve wins' :
-      (CFG.kind === 'pts' ? 'Most points wins, ties broken by time' : 'Longest run wins, ties broken by time');
+      (CFG.kind === 'pts' ? 'Most points wins, ties broken by time' :
+      (CFG.kind === 'tries' ? 'Fewest tries wins, ties broken by time' :
+       'Longest run wins, ties broken by time'));
     return what + (total ? ' · <b>' + total + '</b> played today' : '') + '. Resets at midnight.';
   }
 
