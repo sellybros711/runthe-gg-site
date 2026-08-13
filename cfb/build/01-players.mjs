@@ -17,7 +17,7 @@ import path from 'node:path';
 
 import {
   SEASONS, POSITIONS, MIN_GAMES, DATA_DIR, BUILD_DIR,
-  cfbdFetchRetry, isDrawable,
+  cfbdFetchRetry, isDrawable, fixName,
   mean, stdev, quantileSorted, round, writePair,
 } from './lib.mjs';
 import { secondPosition } from './dual-positions.mjs';
@@ -430,7 +430,9 @@ async function main() {
       const team = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.apiTeam;
       return {
         player_id: p.player_id,
-        name: p.name,
+        /* Corrected on the way in, so every file downstream of this one carries the
+           same spelling and nothing has to be fixed twice. See fixName in lib.mjs. */
+        name: fixName(p.name),
         season: p.season,
         school: team,
         team_season_id: team ? `${team}-${p.season}` : null,

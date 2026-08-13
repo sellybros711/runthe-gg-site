@@ -3250,7 +3250,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=25"></script>
-<script src="run.js?v=11"></script>
+<script src="run.js?v=12"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
@@ -5949,7 +5949,7 @@ async function boot(){
        is large enough that the JSON parse is a real part of the wait, and a bar that
        jumped to full while the main thread was still busy would be lying at the one
        moment it matters. */
-    const j=(f)=>fetch(f+'?v=7').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=8').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
     /* The poll is fetched alongside the rest but is allowed to be absent: it is the
        only file the game can run without, and a project that has not run
@@ -5969,7 +5969,7 @@ async function boot(){
        league unranked, which quietly makes five badges unearnable. A missing file
        is loud by comparison. 400 is well under a real poll, which carries about
        twenty seasons of top 25, and well over anything a broken write produces. */
-    fetch('data/cfb_rankings.json?v=7').then(r=>r.ok?r.json():null)
+    fetch('data/cfb_rankings.json?v=8').then(r=>r.ok?r.json():null)
       .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
       .catch(()=>{});
     DATA=R.indexData(pl,tm);
@@ -6667,19 +6667,24 @@ function askSlot(p,choices){
     const left=R.openSlots(run).filter(x=>x!==i).map(x=>E.SLOTS[x]);
     return left.length?'Leaves '+left.join(', ')+' to fill':'Fills your last spot';
   };
+  /* THE COPY IS SHORT AND HAS NO PRONOUN IN IT. It used to read "He can play any of
+     these, and which one he takes decides what is left for your other picks", which is
+     two clauses saying one thing and gets the actor wrong on top: nobody takes a spot,
+     you put him in one. Second person, one sentence, and the dismiss says where it goes
+     rather than "Not yet", which reads like a delay and is really a way back. */
   box.innerHTML='<div class="eyebrow green">Two positions</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Where does '+
       esc(p.name)+' play?</h2>'+
-    '<p class="dim" style="font-size:13.5px;margin:0">He can play any of these, and which '+
-      'one he takes decides what is left for your other picks.</p>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">Pick a spot. The one you use '+
+      'decides what is left for the rest of your picks.</p>'+
     '<div class="slotpick">'+choices.map(i=>
       '<button class="slotopt" data-i="'+i+'">'+
         '<span class="tag" style="'+posPaint(E.SLOTS[i])+'">'+esc(E.SLOTS[i])+'</span>'+
-        '<span class="t"><b>Play him at '+esc(E.SLOTS[i])+'</b>'+
+        '<span class="t"><b>Play at '+esc(E.SLOTS[i])+'</b>'+
         '<span>'+esc(after(i))+'</span></span>'+
         '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">'+
-      'Not yet</button></div>';
+      'Back to the board</button></div>';
   openSheet();
   $('sp-x').onclick=closeSheet;
   box.querySelectorAll('.slotopt').forEach(b=>{ b.onclick=()=>{

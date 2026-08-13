@@ -62,6 +62,7 @@ before the day rather than during it.
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. **Currently broken**, and not by anything it tests: the profile sheet became a hub and five pages, and this suite still drives the old tab strip. Its signed-out cases assert an information architecture that no longer exists, so fixing it is a product decision rather than a selector swap. |
 | `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
 | `test_bowl_key.mjs` | Which bowl a season played, as the row records it. Sweeps every reachable (wins, rank) and demands the database and `seedFromRanking()` agree on the tier, round-trips all 37 bowl names through the slug and back, and proves the named-bowl badges are earnable signed in, which they were not before `64_cfb_bowl_key.sql`. |
+| `test_slot_chooser.mjs` | The sheet a two-position man puts up, read off a 390px screen: that tapping him asks rather than assumes, that every option names the spot and says what it leaves behind, and that the copy is the short one. Deterministic, because two-position men are 143 of 14,154 players and clicking until one turns up took minutes: the page seeds a run from `Date.now()` and `Math.random()`, so both are pinned and the first spin is always 2008 Texas A&M with Ryan Tannehill on the board. |
 | `test_ticker.mjs` | The poll ticker pinned along the bottom of the front page: that its RECTANGLE lands on screen rather than merely reporting `position:fixed`, that it clears whatever the mobile ad strip owns, that nothing on the page ends up behind it with the page scrolled to the bottom, and that it disappears the moment another screen takes over. |
 | `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
 | `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
@@ -84,6 +85,7 @@ node cfb/build/test/test_ranks_tab.mjs
 node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
 node cfb/build/test/test_ticker.mjs
+node cfb/build/test/test_slot_chooser.mjs
 node cfb/build/test/test_cabinet.mjs
 node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
