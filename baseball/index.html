@@ -10,14 +10,22 @@
 <meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $245M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8">
 <link rel="canonical" href="https://runthe.gg/baseball/">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
 <meta property="og:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Diamond — draft an all-time MLB roster and chase the perfect season.">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
 "description":"Draft an all-time MLB roster from 1901 to 2025 under a $245M salary cap, then simulate a 162-game season and chase the World Series.",
@@ -547,6 +555,7 @@ h1,h2,h3{margin:0}
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
       href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+      href="/baseball/how-to-play.html">How to play</a><span>&middot;</span><a
       href="/" target="_blank" rel="noopener">More games</a></p>
     <p class="src">WAR data from Baseball-Reference. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
   </footer>
@@ -1749,6 +1758,7 @@ function drawShareCard(o){
 async function shareResult(){
   if(!RUN||!RUN.outcome) return;
   const o=RUN.outcome;
+  ga('result_shared',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed'});
   const text=shareLines(o);
   const btn=$('b-share');const orig=btn.innerHTML;
   try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(_){}
