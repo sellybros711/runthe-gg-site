@@ -14,6 +14,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   SEASONS, POSITIONS, MIN_GAMES, DATA_DIR, BUILD_DIR,
@@ -120,19 +121,47 @@ function modeSplit(t, games, actualPpg) {
   };
 }
 
-function statLine(position, t) {
+/*
+ * THE LINE UNDER A PLAYER'S NAME, and the one rule it has: IT IS NEVER EMPTY.
+ *
+ * The thresholds below are about tidiness, not truth. A running back who threw one
+ * trick-play pass should not have "8 pass yds, 0 TD, 0 INT" hung off his name, so
+ * each category has to clear a bar before it is worth printing.
+ *
+ * What nobody checked was the case where a man clears NONE of them. Ninety-three
+ * players came out with an empty line and a real fantasy average beside it, which on
+ * screen is a name, a team, a blank where the season should be, and a number: it reads
+ * as missing data rather than as a quiet season. They are all men who just scraped past
+ * the six-game minimum and did very little with it, a backup quarterback with
+ * twenty-five completions being the shape of it.
+ *
+ * So the thresholds still decide what is worth a headline, and if that comes to nothing
+ * the fallback prints what he actually did without them. A small line is honest; a
+ * blank one is not.
+ */
+export function statLine(position, t) {
   const n = (v) => v.toLocaleString('en-US');
+  const pass = () => [`${n(t.passing_yards)} pass yds`, `${t.passing_tds} TD`, `${t.passing_interceptions} INT`];
+  const rush = () => [`${n(t.rushing_yards)} rush yds`, `${t.rushing_tds} TD`];
+  const rec = () => [`${t.receptions} rec`, `${n(t.receiving_yards)} yds`, `${t.receiving_tds} TD`];
+
   const parts = [];
-  if (t.completions >= 30) {
-    parts.push(`${n(t.passing_yards)} pass yds`, `${t.passing_tds} TD`, `${t.passing_interceptions} INT`);
-  }
+  if (t.completions >= 30) parts.push(...pass());
   const runs = t.rushing_yards > 0
     && (position === 'RB' ? t.carries > 0 : (t.rushing_yards >= 100 || t.rushing_tds >= 2));
-  if (runs) parts.push(`${n(t.rushing_yards)} rush yds`, `${t.rushing_tds} TD`);
+  if (runs) parts.push(...rush());
   if (t.receptions >= 8 || (['WR', 'TE'].includes(position) && t.receptions > 0)) {
-    parts.push(`${t.receptions} rec`, `${n(t.receiving_yards)} yds`, `${t.receiving_tds} TD`);
+    parts.push(...rec());
   }
-  return parts.join(', ');
+  if (parts.length) return parts.join(', ');
+
+  /* Nothing cleared a bar. Print whatever he did, biggest first, and if he genuinely
+     did nothing at all say so in words rather than handing back an empty string. */
+  const back = [];
+  if (t.attempts > 0 || t.passing_yards) back.push(...pass());
+  if (t.carries > 0 || t.rushing_yards) back.push(...rush());
+  if (t.receptions > 0) back.push(...rec());
+  return back.length ? back.join(', ') : 'No offensive stats recorded';
 }
 
 const STAT_KEYS = [
@@ -587,4 +616,9 @@ async function main() {
               `$${BASE_PRICE}M floor.`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+/* Only when this file IS the command. Exported for cfb/build/test/test_player_data.mjs,
+   which exercises statLine() directly, and importing a module must not set a pipeline
+   running against an API key the importer does not have. */
+const invokedDirectly = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) main().catch((e) => { console.error(e); process.exit(1); });

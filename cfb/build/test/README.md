@@ -55,6 +55,7 @@ before the day rather than during it.
 | `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_scorelines.mjs` | That the scores on screen are scores college football has actually produced. Names every calibration key the engine reads one at a time, then demands each final be a hi/lo pair that appears in `real_pairs`, that across a few thousand real seasons nobody ever scores 1 or 4, that 2 and 5 stay near their real rates, and that the mean lands within three points of the real one. The pair check is the load-bearing one: it is what noticed that the sampler was switched off. |
+| `test_player_data.mjs` | The shipped data files, checked for what a player notices before a test does: that nobody has a fantasy average beside a blank stat line, that no name is one the pipeline would correct, that no chemistry label names a suffix instead of a man, and that every team the wheel can land on offers four men to choose between. Every assertion in it exists because somebody found it on their phone first. No database, no browser, no key. |
 | `test_achievements.mjs` | That every badge in the catalog can actually be earned. Builds a career out of the real player file, one designed to earn all 226, and demands the evaluator hand back all 226. Every simultaneous-roster badge is solved against the six slots, the two-back cap, the two-per-team-season cap and the $11M budget before it is believed, and the three-Heisman roster that does not fit is kept in as the negative case. No database, no browser. |
 | `test_cabinet.mjs` | The trophy case drawn on a 360px phone rather than counted: the eight shelf headings add up to the whole catalog, the biggest shelf opens and draws all of it, and nothing hangs off the side. Signed in is stubbed, because the full shelves are a signed-in feature, and the board URL points at a dead port so the case falls back to this browser's own seasons. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
@@ -75,6 +76,7 @@ psql -d cfbtest -f cfb/build/test/test_leaderboard.sql          # look for FAIL
 node cfb/build/test/test_score_parity.mjs cfbtest
 node cfb/build/test/test_scorelines.mjs                         # no database, no browser
 node cfb/build/test/test_achievements.mjs                       # no database, no browser
+node cfb/build/test/test_player_data.mjs                        # no database, no browser
 (nohup python3 -m http.server 8080 &)
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs

@@ -9829,7 +9829,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 550468,Gerald Holmes,2017,Michigan State,Michigan State-2017,RB,Big Ten,10,5.65,4.45,0.3172,0.5,5.7,0,3.45,2.2,"285 rush yds, 1 TD, 8 rec, 80 yds, 1 TD",,MI,-8.91,false
 4040616,Dwayne Haskins,2017,Ohio State,Ohio State-2017,QB,Big Ten,8,5.65,5.53,0.1485,0.5,5.7,4.58,1.07,0,"565 pass yds, 4 TD, 1 INT",,MD,-8.91,false
 137031,Dominique Byrd,2005,USC,USC-2005,WR,Pac-10,10,4.99,3.11,0.2013,0.5,5,0,0,4.99,"24 rec, 259 yds, 0 TD",,,-8.91,false
-175616,Marcus Jackson,2006,TCU,TCU-2006,QB,Mountain West,7,3.82,5.09,0.0395,0.5,3.8,3.06,0.76,0,,,TX,-8.91,false
+175616,Marcus Jackson,2006,TCU,TCU-2006,QB,Mountain West,7,3.82,5.09,0.0395,0.5,3.8,3.06,0.76,0,"7 games, mostly passing",,TX,-8.91,false
 4360580,Peje' Harris,2020,Georgia Tech,Georgia Tech-2020,TE,ACC,6,5.13,3.7,0.2373,0.5,5.1,0,0,5.13,"11 rec, 138 yds, 1 TD",,GA,-8.91,false
 3915230,C.J. Conrad,2018,Kentucky,Kentucky-2018,TE,SEC,11,6.32,3.98,0.557,0.5,6.3,0,0,6.32,"28 rec, 295 yds, 2 TD",,OH,-8.91,false
 4360290,Brayden Willis,2021,Oklahoma,Oklahoma-2021,TE,Big 12,7,6.39,3.89,0.51,0.5,6.4,0,0,6.39,"15 rec, 177 yds, 2 TD",,TX,-8.91,false
@@ -9926,7 +9926,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4240573,Ihmir Smith-Marsette,2018,Iowa,Iowa-2018,WR,Big Ten,11,6.24,6.55,0.3494,0.5,6.2,0,0.65,5.59,"19 rec, 305 yds, 2 TD",,NJ,-8.99,false
 194464,Nick Sheridan,2008,Michigan,Michigan-2008,QB,Big Ten,8,4.71,6.06,0.1205,0.5,4.7,2.81,1.9,0,"613 pass yds, 2 TD, 5 INT",,,-8.99,false
 4567415,Trent Whittemore,2021,Florida,Florida-2021,WR,SEC,8,6.31,4.07,0.3107,0.5,6.3,1.21,0,5.1,"16 rec, 188 yds, 1 TD",,FL,-9,false
-168823,Sean Canfield,2006,Oregon State,Oregon State-2006,QB,Pac-10,6,3.73,5.58,0.0263,0.5,3.7,2.9,0.83,0,,,CA,-9,false
+168823,Sean Canfield,2006,Oregon State,Oregon State-2006,QB,Pac-10,6,3.73,5.58,0.0263,0.5,3.7,2.9,0.83,0,"6 games, mostly passing",,CA,-9,false
 501848,Quincy Enunwa,2011,Nebraska,Nebraska-2011,WR,Big Ten,11,5.66,2.97,0.2815,0.5,5.7,0,0,5.66,"21 rec, 293 yds, 2 TD",,CA,-9,false
 4686728,Gunnar Helm,2023,Texas,Texas-2023,TE,Big 12,7,6.23,5.87,0.4623,0.5,6.2,0,0,6.23,"13 rec, 186 yds, 2 TD",,CO,-9,false
 157000,John Peel,2009,Utah,Utah-2009,WR,Mountain West,8,5.36,4.81,0.2238,0.5,5.4,0,0,5.36,"16 rec, 209 yds, 1 TD",,AZ,-9,false
@@ -10285,7 +10285,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4242248,Austin Williams,2018,Mississippi State,Mississippi State-2018,WR,SEC,7,5.96,6.3,0.3283,0.5,6,0,0,5.96,"10 rec, 137 yds, 3 TD",,MS,-9.27,false
 4596602,Brashard Smith,2021,Miami,Miami-2021,RB,ACC,8,6.02,8.07,0.3349,0.5,6,0,0.29,5.74,"23 rush yds, 0 TD, 14 rec, 199 yds, 2 TD",,FL,-9.28,false
 189318,Brad Taylor,2009,Baylor,Baylor-2009,TE,Big 12,7,5.09,4.2,0.4167,0.5,5.1,0,0,5.09,"13 rec, 166 yds, 1 TD",,TX,-9.28,false
-154149,Carl Bonnell,2007,Washington,Washington-2007,QB,Pac-10,6,5.1,8.74,0.15,0.5,5.1,4.61,0.48,0,,,,-9.28,false
+154149,Carl Bonnell,2007,Washington,Washington-2007,QB,Pac-10,6,5.1,8.74,0.15,0.5,5.1,4.61,0.48,0,"6 games, mostly passing",,,-9.28,false
 548155,David Williams,2016,South Carolina,South Carolina-2016,RB,SEC,9,6.46,6.99,0.3929,0.5,6.5,0,4.66,1.8,"239 rush yds, 3 TD, 9 rec, 72 yds, 0 TD",,PA,-9.28,false
 4240120,Emeka Emezie,2017,NC State,NC State-2017,WR,ACC,6,5.28,6.14,0.2531,0.5,5.3,0,0,5.28,"12 rec, 137 yds, 1 TD",,NC,-9.28,false
 4429173,Bryce Farrell,2023,Stanford,Stanford-2023,WR,Pac-12,12,5.95,5.5,0.2762,0.5,5.9,0,2.02,3.93,"62 rush yds, 3 TD, 22 rec, 192 yds, 1 TD",,CA,-9.28,false
@@ -10964,7 +10964,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4047654,D'Vaughn Pennamon,2017,Ole Miss,Ole Miss-2017,TE,SEC,11,4.74,3.65,0.28,0.4,4.7,0,3.06,1.67,"217 rush yds, 2 TD, 10 rec, 84 yds, 0 TD",,TX,-9.82,false
 480693,Josh Lenz,2010,Iowa State,Iowa State-2010,WR,Big 12,9,4.87,3.4,0.1643,0.4,4.9,0,0.09,4.78,"14 rec, 170 yds, 2 TD",,IA,-9.82,false
 545518,Ty Slanina,2013,TCU,TCU-2013,WR,Big 12,8,5.43,4.98,0.2593,0.4,5.4,0,0,5.43,"19 rec, 184 yds, 1 TD",,TX,-9.82,false
-192425,Carson Coffman,2008,Kansas State,Kansas State-2008,QB,Big 12,6,3.88,3.15,0.0843,0.4,3.9,1.88,2,0,,,MO,-9.83,false
+192425,Carson Coffman,2008,Kansas State,Kansas State-2008,QB,Big 12,6,3.88,3.15,0.0843,0.4,3.9,1.88,2,0,"6 games, mostly rushing",,MO,-9.83,false
 3791110,Tommy Stevens,2018,Penn State,Penn State-2018,QB,Big Ten,6,5.4,4.36,0.0753,0.4,5.4,1.07,3.97,0.37,"118 rush yds, 2 TD",,IN,-9.83,false
 162110,Cedric Peerman,2006,Virginia,Virginia-2006,RB,ACC,9,2.9,1.84,0.0769,0.4,2.9,0,1.7,1.2,"153 rush yds, 0 TD",,,-9.83,false
 3693033,Jacques Patrick,2016,Florida State,Florida State-2016,RB,ACC,11,5.9,5.35,0.3482,0.4,5.9,0,5.35,0.55,"348 rush yds, 4 TD",,FL,-9.83,false
@@ -11001,7 +11001,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 480240,Michael Ford,2012,LSU,LSU-2012,RB,SEC,12,5.18,5.05,0.2736,0.4,5.2,0,4.78,0.41,"393 rush yds, 3 TD",,LA,-9.86,false
 168359,Mario Price,2006,Baylor,Baylor-2006,WR,Big 12,7,2.87,3.28,0.0138,0.4,2.9,0,0.13,2.74,"13 rec, 62 yds, 0 TD",,,-9.86,false
 189244,Eddie McGee,2007,Illinois,Illinois-2007,WR,Big Ten,9,4.51,5.76,0.1466,0.4,4.5,1.5,2.96,0.06,"146 rush yds, 2 TD, 1 rec, -5 yds, 0 TD",,DC,-9.86,false
-550019,Jeremy Johnson,2014,Auburn,Auburn-2014,QB,SEC,6,5.79,6.47,0.0549,0.4,5.8,4.91,0.88,0,,,AL,-9.86,false
+550019,Jeremy Johnson,2014,Auburn,Auburn-2014,QB,SEC,6,5.79,6.47,0.0549,0.4,5.8,4.91,0.88,0,"6 games, mostly passing",,AL,-9.86,false
 5147376,Kameron Courtney,2025,Virginia,Virginia-2025,WR,ACC,11,5.17,5.58,0.2027,0.4,5.2,0,0.89,4.28,"24 rec, 231 yds, 0 TD",,VA,-9.86,false
 381029,Khiry Cooper,2009,Nebraska,Nebraska-2009,WR,Big 12,6,4.5,3.55,0.1264,0.4,4.5,0,0,4.5,"13 rec, 80 yds, 1 TD",,LA,-9.86,false
 513025,Cody Latimer,2011,Indiana,Indiana-2011,WR,Big Ten,8,4.8,4.41,0.1921,0.4,4.8,0,0.04,4.76,"12 rec, 141 yds, 2 TD",,OH,-9.86,false
@@ -11319,7 +11319,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3127306,Dante Pettis,2014,Washington,Washington-2014,WR,Pac-12,8,5.54,4.3,0.2364,0.4,5.5,0,0,5.54,"15 rec, 233 yds, 1 TD",,CA,-10.11,false
 4367449,Brandon Sanders,2021,Rutgers,Rutgers-2021,WR,Big Ten,8,5.19,6.06,0.1812,0.4,5.2,0,0.15,5.04,"16 rec, 183 yds, 1 TD",,,-10.11,false
 4360575,Malachi Carter,2019,Georgia Tech,Georgia Tech-2019,WR,ACC,9,5.78,3.99,0.2492,0.4,5.8,0,0,5.78,"16 rec, 240 yds, 2 TD",,GA,-10.11,false
-4432774,Ty Thompson,2023,Oregon,Oregon-2023,TE,Pac-12,6,5.11,3.49,0.2925,0.4,5.1,4.31,0.8,0,,,AZ,-10.11,false
+4432774,Ty Thompson,2023,Oregon,Oregon-2023,TE,Pac-12,6,5.11,3.49,0.2925,0.4,5.1,4.31,0.8,0,"6 games, mostly passing",,AZ,-10.11,false
 518196,Kyle Carter,2013,Penn State,Penn State-2013,TE,Big Ten,9,5.13,3.86,0.2985,0.4,5.1,0,0,5.13,"18 rec, 222 yds, 1 TD",,DE,-10.12,false
 549873,LaQuvionte Gonzalez,2013,Texas A&M,Texas A&M-2013,WR,SEC,9,5.13,4.52,0.2191,0.4,5.1,0,0,5.13,"18 rec, 222 yds, 1 TD",,TX,-10.12,false
 4428414,Mike Sainristil,2021,Michigan,Michigan-2021,WR,Big Ten,12,5.18,3.79,0.178,0.4,5.2,0,0.06,5.13,"20 rec, 295 yds, 2 TD",,MA,-10.12,false
@@ -11657,7 +11657,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 150187,Tielor Robinson,2008,Duke,Duke-2008,WR,ACC,12,3.31,2.98,0.0548,0.4,3.3,0,1.17,2.14,"20 rush yds, 2 TD, 16 rec, 97 yds, 0 TD",,,-10.4,false
 3121556,Zander Neuville,2017,Wisconsin,Wisconsin-2017,TE,Big Ten,7,4.16,4.06,0.1733,0.4,4.2,0,0,4.16,"9 rec, 81 yds, 2 TD",,WI,-10.4,false
 3929923,Grant Perry,2016,Michigan,Michigan-2016,WR,Big Ten,7,5.33,2.6,0.2092,0.4,5.3,0,0,5.33,"13 rec, 183 yds, 1 TD",,MI,-10.4,false
-534449,Trevor Knight,2015,Oklahoma,Oklahoma-2015,QB,Big 12,6,4.85,4.8,0.0761,0.4,4.9,2.7,2.15,0,,,TX,-10.4,false
+534449,Trevor Knight,2015,Oklahoma,Oklahoma-2015,QB,Big 12,6,4.85,4.8,0.0761,0.4,4.9,2.7,2.15,0,"6 games, mostly passing",,TX,-10.4,false
 4240506,Adonicas Sanders,2019,Georgia Tech,Georgia Tech-2019,WR,ACC,8,5.49,3.12,0.234,0.4,5.5,0,0,5.49,"19 rec, 249 yds, 0 TD",,SC,-10.4,false
 382642,Tyler Wilson,2010,Arkansas,Arkansas-2010,QB,SEC,6,4.29,9.95,0.1474,0.4,4.3,4.69,-0.4,0,"453 pass yds, 4 TD, 3 INT",,AR,-10.4,false
 160281,Pierre Brown,2006,Texas A&M,Texas A&M-2006,WR,Big 12,9,2.32,2.15,0,0.4,2.3,-0.22,0.06,2.49,"12 rec, 104 yds, 0 TD",,,-10.41,false
@@ -11833,7 +11833,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5195300,Matt Zollers,2025,Missouri,Missouri-2025,QB,SEC,6,4.48,4.25,0.1031,0.4,4.5,5.01,-0.53,0,"402 pass yds, 4 TD, 1 INT",,PA,-10.55,false
 4565183,Will Swanson,2024,Kansas State,Kansas State-2024,TE,Big 12,7,4.8,3.73,0.416,0.4,4.8,0,0,4.8,"9 rec, 66 yds, 3 TD",,NE,-10.55,false
 175586,Kahlil Bell,2005,UCLA,UCLA-2005,RB,Pac-10,7,3.34,3.28,0.0788,0.4,3.3,0,3.34,0,"174 rush yds, 1 TD",,,-10.56,false
-4801306,Conner Harrell,2024,North Carolina,North Carolina-2024,QB,ACC,6,4.8,9.76,0.0882,0.4,4.8,2.88,1.92,0,,,AL,-10.56,false
+4801306,Conner Harrell,2024,North Carolina,North Carolina-2024,QB,ACC,6,4.8,9.76,0.0882,0.4,4.8,2.88,1.92,0,"6 games, mostly passing",,AL,-10.56,false
 4685495,Alex Orji,2024,Michigan,Michigan-2024,QB,Big Ten,10,4.8,3.84,0.0784,0.4,4.8,1.6,3.2,0,"260 rush yds, 1 TD",,TX,-10.56,false
 4035848,Jordan Duncan,2017,California,California-2017,WR,Pac-12,7,4,2.81,0.1156,0.4,4,0,0,4,"10 rec, 120 yds, 1 TD",,MS,-10.56,false
 4870839,Kaleb Jackson,2023,LSU,LSU-2023,RB,SEC,9,4.67,5.66,0.2691,0.4,4.7,0,3.67,1,"150 rush yds, 3 TD",,LA,-10.56,false
@@ -11919,7 +11919,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 381048,Tim Marlowe,2011,Nebraska,Nebraska-2011,WR,Big Ten,9,4.04,4.59,0.1159,0.4,4,0,0.79,3.26,"12 rec, 113 yds, 1 TD",,OH,-10.62,false
 382894,Gene McCaskill,2009,Kentucky,Kentucky-2009,WR,SEC,7,3.74,2.88,0.0975,0.4,3.7,0,0,3.74,"13 rec, 132 yds, 0 TD",,SC,-10.62,false
 4242445,Tim Jordan,2019,Tennessee,Tennessee-2019,RB,SEC,11,5.27,4.26,0.293,0.4,5.3,0,4.39,0.88,"423 rush yds, 1 TD",,FL,-10.62,false
-231927,Willy Korn,2008,Clemson,Clemson-2008,QB,ACC,6,3.09,5.94,0.0361,0.4,3.1,1.77,1.32,0,,,SC,-10.62,false
+231927,Willy Korn,2008,Clemson,Clemson-2008,QB,ACC,6,3.09,5.94,0.0361,0.4,3.1,1.77,1.32,0,"6 games, mostly passing",,SC,-10.62,false
 3116198,Jordan Jurasevich,2015,Purdue,Purdue-2015,TE,Big Ten,6,4.63,3.67,0.358,0.4,4.6,0,0,4.63,"10 rec, 58 yds, 2 TD",,IN,-10.62,false
 500218,Deon Hill,2013,Georgia Tech,Georgia Tech-2013,RB,ACC,7,4.63,3.66,0.2315,0.4,4.6,0,2.5,2.13,"115 rush yds, 1 TD",,AL,-10.62,false
 547240,Charlie Callinan,2016,Boston College,Boston College-2016,WR,ACC,10,5.11,3.62,0.1938,0.4,5.1,0,0,5.11,"21 rec, 241 yds, 1 TD",,NJ,-10.62,false
@@ -11976,7 +11976,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5086448,Kamrean Johnson,2023,Vanderbilt,Vanderbilt-2023,TE,SEC,7,4.56,3.36,0.217,0.4,4.6,0,0,4.56,"10 rec, 99 yds, 2 TD",,AL,-10.67,false
 5121893,Tony Livingston,2025,Florida,Florida-2025,TE,SEC,8,4.36,3,0.2,0.4,4.4,0,0,4.36,"11 rec, 119 yds, 2 TD",,FL,-10.67,false
 4574730,Isaiah Washington,2021,Rutgers,Rutgers-2021,WR,Big Ten,7,4.63,3.31,0.1165,0.4,4.6,0,-0.07,4.7,"17 rec, 159 yds, 0 TD",,FL,-10.67,false
-480215,AJ McCarron,2010,Alabama,Alabama-2010,QB,SEC,6,4.02,3.57,0.1263,0.4,4,4.25,-0.23,0,,,AL,-10.67,false
+480215,AJ McCarron,2010,Alabama,Alabama-2010,QB,SEC,6,4.02,3.57,0.1263,0.4,4,4.25,-0.23,0,"6 games, mostly passing",,AL,-10.67,false
 504702,Deantre Lewis,2014,Arizona State,Arizona State-2014,RB,Pac-12,9,4.98,3.23,0.2566,0.4,5,0,2.78,2.2,"190 rush yds, 1 TD, 9 rec, 108 yds, 0 TD",,CA,-10.67,false
 235265,Lionel Breaux,2009,Ole Miss,Ole Miss-2009,WR,SEC,9,3.69,2.67,0.0903,0.4,3.7,0,0,3.69,"12 rec, 152 yds, 1 TD",,LA,-10.67,false
 192044,Michael Pooschke,2007,Kansas State,Kansas State-2007,WR,Big 12,10,3.7,2.01,0.0684,0.4,3.7,0,0,3.7,"21 rec, 160 yds, 0 TD",,,-10.67,false
@@ -12048,7 +12048,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4567095,Keilan Robinson,2023,Texas,Texas-2023,RB,Big 12,10,4.5,6.95,0.2287,0.4,4.5,0,3.14,1.36,"134 rush yds, 3 TD, 8 rec, 56 yds, 0 TD",,DC,-10.73,false
 4920162,Seth Davis,2023,Mississippi State,Mississippi State-2023,RB,SEC,11,4.5,4.25,0.2287,0.4,4.5,0,3.78,0.72,"356 rush yds, 1 TD",,TX,-10.73,false
 4570417,Garrett Miller,2021,Purdue,Purdue-2021,TE,Big Ten,7,4.57,5.15,0.27,0.4,4.6,0,0,4.57,"18 rec, 140 yds, 0 TD",,TX,-10.73,false
-236732,Jamarr Robinson,2010,Maryland,Maryland-2010,QB,ACC,9,3.96,5.53,0.1158,0.4,4,2.88,1.08,0,,,NC,-10.73,false
+236732,Jamarr Robinson,2010,Maryland,Maryland-2010,QB,ACC,9,3.96,5.53,0.1158,0.4,4,2.88,1.08,0,"9 games, mostly passing",,NC,-10.73,false
 4241880,Dominique Maiden,2018,West Virginia,West Virginia-2018,WR,Big 12,6,4.5,4.05,0.1867,0.4,4.5,0,0,4.5,"8 rec, 130 yds, 1 TD",,CA,-10.73,false
 4362862,Josh Vann,2020,South Carolina,South Carolina-2020,WR,SEC,7,3.31,2.15,0.0203,0.4,3.3,0,0,3.31,"9 rec, 82 yds, 1 TD",,GA,-10.73,false
 3929786,Donavan Hale,2016,Indiana,Indiana-2016,WR,Big Ten,8,5,3.56,0.1785,0.4,5,0,0,5,"13 rec, 210 yds, 1 TD",,FL,-10.73,false
@@ -12263,7 +12263,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3125123,Dorian Leonard,2017,Texas,Texas-2017,WR,Big 12,9,3.63,2.21,0.0875,0.4,3.6,0,0,3.63,"18 rec, 147 yds, 0 TD",,TX,-10.93,false
 243368,Patrick DiMarco,2009,South Carolina,South Carolina-2009,WR,SEC,9,3.43,3.75,0.065,0.4,3.4,0,0.34,3.09,"14 rec, 78 yds, 1 TD",,FL,-10.93,false
 4035583,Jordan Jones,2018,Arkansas,Arkansas-2018,WR,SEC,10,4.3,7.07,0.1566,0.4,4.3,0,0.09,4.21,"17 rec, 191 yds, 1 TD",,AR,-10.93,false
-4590294,Brady Lichtenberg,2023,Cincinnati,Cincinnati-2023,QB,Big 12,7,4.3,5.43,0.0729,0.4,4.3,2.3,2,0,,,OH,-10.93,false
+4590294,Brady Lichtenberg,2023,Cincinnati,Cincinnati-2023,QB,Big 12,7,4.3,5.43,0.0729,0.4,4.3,2.3,2,0,"7 games, mostly passing",,OH,-10.93,false
 550221,Harrison Handley,2016,Utah,Utah-2016,TE,Pac-12,6,4.8,2.08,0.3378,0.4,4.8,0,0,4.8,"12 rec, 168 yds, 0 TD",,UT,-10.93,false
 3916899,Austin Cantrell,2017,Arkansas,Arkansas-2017,TE,SEC,8,3.63,2.82,0.1333,0.4,3.6,0,0.94,2.69,"13 rec, 85 yds, 0 TD",,OK,-10.94,false
 4569439,David Ellis,2019,Indiana,Indiana-2019,RB,Big Ten,9,4.96,4.37,0.2744,0.4,5,0,1.26,3.7,"53 rush yds, 1 TD, 16 rec, 173 yds, 0 TD",,MI,-10.94,false
@@ -12331,7 +12331,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4379399,James Cook,2019,Georgia,Georgia-2019,RB,SEC,12,4.9,4.85,0.2698,0.4,4.9,0,2.47,2.43,"176 rush yds, 2 TD, 16 rec, 132 yds, 0 TD",,FL,-10.99,false
 3127293,Jomon Dotson,2016,Washington,Washington-2016,RB,Pac-12,10,4.74,7.33,0.25,0.4,4.7,0,3.17,1.57,"257 rush yds, 1 TD",,CA,-10.99,false
 3917281,Nick Gibson,2018,Mississippi State,Mississippi State-2018,RB,SEC,8,4.24,3.22,0.1505,0.4,4.2,0,3.16,1.07,"193 rush yds, 1 TD",,AL,-10.99,false
-482357,Rob Henry,2012,Purdue,Purdue-2012,QB,Big Ten,11,4.05,4.43,0.0693,0.4,4,1.69,1.22,1.14,,,FL,-10.99,false
+482357,Rob Henry,2012,Purdue,Purdue-2012,QB,Big Ten,11,4.05,4.43,0.0693,0.4,4,1.69,1.22,1.14,"11 games, mostly passing",,FL,-10.99,false
 4046665,Beau Tanner,2017,BYU,BYU-2017,WR,FBS Independents,9,3.57,3.15,0.0844,0.4,3.6,0,0.07,3.5,"12 rec, 135 yds, 1 TD",,AZ,-10.99,false
 5081332,Jaziun Patterson,2023,Iowa,Iowa-2023,RB,Big Ten,9,4.23,5.4,0.2018,0.4,4.2,0,3.54,0.69,"199 rush yds, 2 TD",,FL,-10.99,false
 514189,Brandon Cottom,2013,Purdue,Purdue-2013,RB,Big Ten,9,4.26,4.61,0.1991,0.4,4.3,0,2.38,1.88,"154 rush yds, 1 TD",,PA,-10.99,false
@@ -12392,7 +12392,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4432387,Nate McCollum,2021,Georgia Tech,Georgia Tech-2021,WR,ACC,7,4.26,4.61,0.0809,0.4,4.3,0,0,4.26,"13 rec, 108 yds, 1 TD",,GA,-11.04,false
 241372,Brock Mansion,2010,California,California-2010,QB,Pac-10,7,3.65,2.5,0.0842,0.4,3.6,3.41,0.1,0.14,"646 pass yds, 2 TD, 5 INT",,TX,-11.04,false
 4429133,Malik Hornsby,2022,Arkansas,Arkansas-2022,WR,SEC,7,4.33,7.43,0.1129,0.4,4.3,1.47,2.46,0.4,"172 rush yds, 0 TD, 2 rec, 8 yds, 0 TD",,TX,-11.04,false
-480221,Tajh Boyd,2010,Clemson,Clemson-2010,QB,ACC,6,3.65,7.03,0.0737,0.4,3.6,2.11,1.53,0,,,VA,-11.04,false
+480221,Tajh Boyd,2010,Clemson,Clemson-2010,QB,ACC,6,3.65,7.03,0.0737,0.4,3.6,2.11,1.53,0,"6 games, mostly passing",,VA,-11.04,false
 5214401,Jon Denman,2025,TCU,TCU-2025,RB,Big 12,7,3.99,3.98,0.1635,0.4,4,0,3.81,0.17,"147 rush yds, 2 TD",,TX,-11.05,false
 4880279,P.J. Prioleau,2025,Virginia Tech,Virginia Tech-2025,RB,ACC,7,3.99,5.48,0.1635,0.4,4,0,0.84,3.14,"59 rush yds, 0 TD, 13 rec, 90 yds, 0 TD",,VA,-11.05,false
 3916417,Devante Peete,2018,Louisville,Louisville-2018,WR,ACC,11,4.18,2.25,0.1416,0.4,4.2,0,0,4.18,"21 rec, 250 yds, 0 TD",,FL,-11.05,false
@@ -12428,7 +12428,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 545296,Dezmond Wortham,2014,Wake Forest,Wake Forest-2014,RB,ACC,7,4.57,2.03,0.1947,0.4,4.6,0,3.44,1.13,"241 rush yds, 0 TD",,TX,-11.08,false
 502058,Reid Branderhorst,2011,Iowa State,Iowa State-2011,TE,Big 12,6,3.58,2.74,0.2024,0.4,3.6,0,0,3.58,"10 rec, 55 yds, 1 TD",,IA,-11.08,false
 4039901,Sawyer Smith,2019,Kentucky,Kentucky-2019,QB,SEC,8,4.81,7.49,0.0833,0.4,4.8,4.2,0.61,0,"690 pass yds, 4 TD, 5 INT",,FL,-11.08,false
-4685694,Steven Angeli,2023,Notre Dame,Notre Dame-2023,QB,FBS Independents,6,4.15,5.73,0.0521,0.4,4.1,4.15,0,0,,,NJ,-11.08,false
+4685694,Steven Angeli,2023,Notre Dame,Notre Dame-2023,QB,FBS Independents,6,4.15,5.73,0.0521,0.4,4.1,4.15,0,0,"6 games, mostly passing",,NJ,-11.08,false
 381857,Luke Matthews,2012,Utah,Utah-2012,WR,Pac-12,10,3.96,2.25,0.0987,0.4,4,0,0.02,3.94,"19 rec, 204 yds, 0 TD",,AZ,-11.08,false
 4567533,Keyon Brooks,2019,Vanderbilt,Vanderbilt-2019,RB,SEC,11,4.81,5.06,0.2651,0.4,4.8,0,2.84,1.97,"252 rush yds, 1 TD, 16 rec, 57 yds, 0 TD",,GA,-11.08,false
 4430802,Darnell Washington,2021,Georgia,Georgia-2021,TE,SEC,7,4.21,2.21,0.24,0.4,4.2,0,0,4.21,"9 rec, 145 yds, 1 TD",,NV,-11.09,false
@@ -12510,7 +12510,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3121410,Parris Campbell,2016,Ohio State,Ohio State-2016,WR,Big Ten,8,4.56,4.07,0.1415,0.4,4.6,0,1.43,3.14,"13 rec, 121 yds, 0 TD",,OH,-11.17,false
 4570037,Terrance Ferguson,2021,Oregon,Oregon-2021,TE,Pac-12,10,4.13,3.67,0.2,0.4,4.1,0,0,4.13,"16 rec, 133 yds, 2 TD",,CO,-11.17,false
 5114332,Jaivian Thomas,2023,California,California-2023,RB,Pac-12,7,4.06,2.87,0.1839,0.4,4.1,0,2.43,1.63,"110 rush yds, 1 TD",,CA,-11.17,false
-3122796,Troy Flutie,2015,Boston College,Boston College-2015,WR,ACC,7,4.08,4.45,0.1313,0.4,4.1,3.61,0.47,0,,,MA,-11.17,false
+3122796,Troy Flutie,2015,Boston College,Boston College-2015,WR,ACC,7,4.08,4.45,0.1313,0.4,4.1,3.61,0.47,0,"7 games, mostly passing",,MA,-11.17,false
 3886612,Austin Kafentzis,2017,BYU,BYU-2017,RB,FBS Independents,9,3.39,4.73,0.1366,0.4,3.4,0,3.19,0.2,"227 rush yds, 1 TD",,UT,-11.17,false
 4433880,Jontavis Robertson,2021,Duke,Duke-2021,WR,ACC,7,4.13,3.51,0.0777,0.4,4.1,0,0.06,4.07,"17 rec, 115 yds, 0 TD",,GA,-11.17,false
 548076,Johnell Barnes,2014,Duke,Duke-2014,WR,ACC,9,4.48,4.06,0.1606,0.4,4.5,0,0,4.48,"21 rec, 193 yds, 0 TD",,FL,-11.17,false
@@ -12527,7 +12527,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3127262,Squally Canada,2016,BYU,BYU-2016,RB,FBS Independents,10,4.55,4.87,0.2321,0.4,4.5,0,4.18,0.37,"298 rush yds, 2 TD",,CA,-11.18,false
 4428186,Alex Padilla,2021,Iowa,Iowa-2021,QB,Big Ten,8,4.12,7.72,0.0337,0.4,4.1,3.68,0.44,0,"636 pass yds, 2 TD, 2 INT",,CO,-11.18,false
 4868300,Nate Johnson,2025,Utah,Utah-2025,WR,Big 12,8,3.85,3.84,0.1196,0.4,3.8,0,3.52,0.32,"222 rush yds, 1 TD, 1 rec, 16 yds, 0 TD",,CA,-11.18,false
-235158,John Brantley,2008,Florida,Florida-2008,QB,SEC,8,2.52,4.03,0.0241,0.4,2.5,2.42,0.1,0,,,FL,-11.18,false
+235158,John Brantley,2008,Florida,Florida-2008,QB,SEC,8,2.52,4.03,0.0241,0.4,2.5,2.42,0.1,0,"8 games, mostly passing",,FL,-11.18,false
 4243765,Austin Upshaw,2022,SMU,SMU-2022,WR,American Athletic,9,4.19,3.56,0.0968,0.4,4.2,0,-0.06,4.24,"16 rec, 162 yds, 1 TD",,TX,-11.19,false
 546474,Francis Owusu,2015,Stanford,Stanford-2015,WR,Pac-12,9,4.07,3.09,0.1281,0.4,4.1,0,0.01,4.06,"13 rec, 175 yds, 1 TD",,CA,-11.19,false
 169341,Trey Stross,2008,Iowa,Iowa-2008,WR,Big Ten,9,2.52,1.1,0.0274,0.4,2.5,0,0.04,2.48,"12 rec, 103 yds, 0 TD",,OH,-11.19,false
@@ -12588,7 +12588,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 500346,JJ James,2014,UCLA,UCLA-2014,RB,Pac-12,11,4.4,4.22,0.1814,0.4,4.4,0,2.71,1.69,"238 rush yds, 1 TD, 10 rec, 86 yds, 0 TD",,,-11.25,false
 4241891,Alec Sinkfield,2021,Boston College,Boston College-2021,RB,ACC,12,4.05,3.44,0.1627,0.4,4,0,3.92,0.13,"350 rush yds, 2 TD",,FL,-11.25,false
 4689090,Brandon Frazier,2025,Auburn,Auburn-2025,TE,SEC,6,3.78,2.08,0.1565,0.4,3.8,0,0,3.78,"13 rec, 97 yds, 0 TD",,TX,-11.25,false
-3115912,Chayce Crouch,2015,Illinois,Illinois-2015,QB,Big Ten,7,4,3.53,0.0652,0.4,4,1.77,2.23,0,,,OH,-11.25,false
+3115912,Chayce Crouch,2015,Illinois,Illinois-2015,QB,Big Ten,7,4,3.53,0.0652,0.4,4,1.77,2.23,0,"7 games, mostly rushing",,OH,-11.25,false
 550220,Siale Fakailoatonga,2015,Utah,Utah-2015,TE,Pac-12,6,4,1.88,0.2716,0.4,4,0,0,4,"12 rec, 120 yds, 0 TD",,UT,-11.25,false
 4371968,Miles Marshall,2019,Indiana,Indiana-2019,WR,Big Ten,8,4.64,3.15,0.1611,0.4,4.6,0,0,4.64,"14 rec, 171 yds, 1 TD",,GA,-11.25,false
 5076106,Marquis Johnson,2024,Missouri,Missouri-2024,WR,SEC,10,4.1,3.21,0.1285,0.4,4.1,0,0,4.1,"18 rec, 230 yds, 0 TD",,TX,-11.25,false
@@ -12625,7 +12625,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5081332,Jaziun Patterson,2025,Iowa,Iowa-2025,RB,Big Ten,9,3.76,2.54,0.1538,0.4,3.8,0,3.32,0.43,"299 rush yds, 0 TD",,FL,-11.28,false
 4426399,Ramel Keyton,2020,Tennessee,Tennessee-2020,WR,SEC,6,2.77,1.39,0.0102,0.4,2.8,0,0,2.77,"9 rec, 76 yds, 0 TD",,GA,-11.28,false
 377754,Marcus Wright,2009,Georgia Tech,Georgia Tech-2009,RB,ACC,12,3.08,3.76,0.0777,0.4,3.1,0,3.08,0,"190 rush yds, 3 TD",,TX,-11.28,false
-4361825,Spencer Sanders,2023,Ole Miss,Ole Miss-2023,QB,SEC,7,3.95,5.03,0.0313,0.4,3.9,3.3,0.64,0,,,TX,-11.28,false
+4361825,Spencer Sanders,2023,Ole Miss,Ole Miss-2023,QB,SEC,7,3.95,5.03,0.0313,0.4,3.9,3.3,0.64,0,"7 games, mostly passing",,TX,-11.28,false
 480841,Nick Turner,2010,Indiana,Indiana-2010,RB,Big Ten,10,3.41,4,0.1337,0.4,3.4,0,2.17,1.24,"157 rush yds, 1 TD",,IN,-11.28,false
 550381,D.J. Polite-Bray,2014,Texas Tech,Texas Tech-2014,WR,Big 12,6,4.37,3.16,0.1515,0.4,4.4,0,0,4.37,"11 rec, 92 yds, 1 TD",,GA,-11.28,false
 4923226,Collin Dixon,2024,Illinois,Illinois-2024,WR,Big Ten,10,4.07,2.35,0.1223,0.4,4.1,0,0,4.07,"17 rec, 237 yds, 0 TD",,OH,-11.28,false
@@ -12704,7 +12704,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3930298,Noah Togiai,2015,Oregon State,Oregon State-2015,TE,Pac-12,6,3.88,3.57,0.1975,0.4,3.9,0,0,3.88,"10 rec, 73 yds, 1 TD",,UT,-11.37,false
 502454,Josh Quezada,2011,BYU,BYU-2011,RB,FBS Independents,12,3.29,2.96,0.1144,0.4,3.3,0,2.78,0.51,"274 rush yds, 1 TD",,CA,-11.37,false
 5079687,Jordan Shipp,2024,North Carolina,North Carolina-2024,WR,ACC,6,3.98,3.3,0.1129,0.4,4,0,-0.22,4.2,"8 rec, 112 yds, 1 TD",,NC,-11.37,false
-183837,Will Fidler,2009,Kentucky,Kentucky-2009,QB,SEC,6,2.99,3.73,0.0989,0.4,3,1.57,1.42,0,,,KY,-11.37,false
+183837,Will Fidler,2009,Kentucky,Kentucky-2009,QB,SEC,6,2.99,3.73,0.0989,0.4,3,1.57,1.42,0,"6 games, mostly passing",,KY,-11.37,false
 175598,Chane Moline,2007,UCLA,UCLA-2007,RB,Pac-10,10,3,4.52,0.0357,0.4,3,0,2.4,0.6,"180 rush yds, 1 TD",,CA,-11.37,false
 3930272,Tim Cook,2016,Oregon State,Oregon State-2016,RB,Pac-12,7,4.36,6.2,0.2232,0.4,4.4,0,2.81,1.54,"137 rush yds, 1 TD",,AR,-11.37,false
 483063,Hutson Prioleau,2010,Texas A&M,Texas A&M-2010,TE,Big 12,6,3.32,3.1,0.1475,0.4,3.3,0,0.02,3.3,"8 rec, 58 yds, 1 TD",,TX,-11.37,false
@@ -12852,7 +12852,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 514185,Nick Vannett,2012,Ohio State,Ohio State-2012,TE,Big Ten,6,3.53,1.66,0.1081,0.3,3.5,0,-0.02,3.55,"9 rec, 123 yds, 0 TD",,OH,-11.51,false
 236102,Ray Sims,2008,Baylor,Baylor-2008,RB,Big 12,11,2.2,2.21,0.0622,0.3,2.2,0,1.75,0.45,"133 rush yds, 1 TD",,,-11.51,false
 4879611,Amari Daniels,2025,Texas A&M,Texas A&M-2025,RB,SEC,9,3.52,5.15,0.1202,0.3,3.5,0,3.07,0.46,"216 rush yds, 1 TD",,FL,-11.51,false
-4685694,Steven Angeli,2024,Notre Dame,Notre Dame-2024,QB,FBS Independents,6,3.84,4.94,0.0392,0.3,3.8,3.49,0.35,0,,,NJ,-11.51,false
+4685694,Steven Angeli,2024,Notre Dame,Notre Dame-2024,QB,FBS Independents,6,3.84,4.94,0.0392,0.3,3.8,3.49,0.35,0,"6 games, mostly passing",,NJ,-11.51,false
 548076,Johnell Barnes,2013,Duke,Duke-2013,WR,ACC,8,3.74,2.72,0.0926,0.3,3.7,0,0,3.74,"13 rec, 169 yds, 0 TD",,FL,-11.51,false
 4427630,Oscar Adaway III,2025,South Carolina,South Carolina-2025,RB,SEC,10,3.52,3.52,0.1154,0.3,3.5,0,2,1.52,"140 rush yds, 1 TD, 8 rec, 72 yds, 0 TD",,AR,-11.51,false
 4035106,Dawson Downing,2019,Missouri,Missouri-2019,RB,SEC,9,4.38,3.99,0.2047,0.3,4.4,0,3.19,1.19,"227 rush yds, 1 TD, 8 rec, 27 yds, 0 TD",,KS,-11.51,false
@@ -12864,7 +12864,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 546611,Ashton Shumpert,2013,Mississippi State,Mississippi State-2013,RB,SEC,9,3.73,7.74,0.1157,0.3,3.7,0,3.12,0.61,"161 rush yds, 2 TD",,MS,-11.52,false
 188301,Jake Ballard,2009,Ohio State,Ohio State-2009,TE,Big Ten,9,2.84,2.33,0.0417,0.3,2.8,0,0,2.84,"13 rec, 126 yds, 0 TD",,OH,-11.52,false
 3929788,Mike Majette,2016,Indiana,Indiana-2016,RB,Big Ten,8,4.21,3.87,0.2098,0.3,4.2,0,2.25,1.96,"180 rush yds, 0 TD",,VA,-11.52,false
-3917810,TaQuon Marshall,2015,Georgia Tech,Georgia Tech-2015,QB,ACC,6,3.73,4.33,0.0435,0.3,3.7,0,0.97,2.77,,,GA,-11.52,false
+3917810,TaQuon Marshall,2015,Georgia Tech,Georgia Tech-2015,QB,ACC,6,3.73,4.33,0.0435,0.3,3.7,0,0.97,2.77,"6 games, mostly receiving",,GA,-11.52,false
 4684525,Eli Sanders,2022,Iowa State,Iowa State-2022,RB,Big 12,8,3.85,3.2,0.1667,0.3,3.9,0,2.34,1.51,"187 rush yds, 0 TD",,CA,-11.52,false
 4432326,Trevor Kardell,2024,Kansas,Kansas-2024,TE,Big 12,7,3.83,2.21,0.24,0.3,3.8,0,0,3.83,"12 rec, 148 yds, 0 TD",,MO,-11.53,false
 3120349,Jalen Greene,2017,USC,USC-2017,WR,Pac-12,6,3.03,1.62,0.0594,0.3,3,0,0.07,2.97,"8 rec, 98 yds, 0 TD",,CA,-11.53,false
@@ -12912,7 +12912,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3843469,Derrick Dillon,2017,LSU,LSU-2017,WR,SEC,12,2.99,1.91,0.0563,0.3,3,0,0.78,2.21,"14 rec, 125 yds, 0 TD",,LA,-11.57,false
 482351,Gary Bush,2010,Purdue,Purdue-2010,WR,Big Ten,9,3.12,2.46,0.0321,0.3,3.1,0,0.18,2.94,"11 rec, 95 yds, 1 TD",,FL,-11.57,false
 160289,Kerry Franks,2005,Texas A&M,Texas A&M-2005,WR,Big 12,7,2.33,1.82,0,0.3,2.3,0,0.04,2.29,"10 rec, 60 yds, 0 TD",,,-11.57,false
-550477,Damion Terry,2016,Michigan State,Michigan State-2016,QB,Big Ten,7,4.16,3.9,0.09,0.3,4.2,1.73,2.07,0.36,,,PA,-11.57,false
+550477,Damion Terry,2016,Michigan State,Michigan State-2016,QB,Big Ten,7,4.16,3.9,0.09,0.3,4.2,1.73,2.07,0.36,"7 games, mostly rushing",,PA,-11.57,false
 550478,Delton Williams,2013,Michigan State,Michigan State-2013,RB,Big Ten,9,3.68,5.54,0.1065,0.3,3.7,0,3.31,0.37,"238 rush yds, 1 TD",,PA,-11.57,false
 4038536,Dylan Thomas,2017,TCU,TCU-2017,WR,Big 12,7,2.99,2.39,0.0531,0.3,3,0,0,2.99,"9 rec, 59 yds, 1 TD",,TX,-11.57,false
 534485,Taylor McNamara,2016,USC,USC-2016,TE,Pac-12,7,4.16,4.75,0.2297,0.3,4.2,0,0,4.16,"12 rec, 111 yds, 1 TD",,CA,-11.57,false
@@ -12927,7 +12927,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3930097,Farrod Green,2019,Mississippi State,Mississippi State-2019,TE,SEC,11,4.31,2.62,0.2234,0.3,4.3,0,0,4.31,"18 rec, 234 yds, 1 TD",,MS,-11.58,false
 5141598,Daune Morris,2025,Tennessee,Tennessee-2025,RB,SEC,6,3.45,3.99,0.1106,0.3,3.5,0,3.22,0.23,"133 rush yds, 1 TD",,TN,-11.58,false
 4832792,Major Everhart,2025,TCU,TCU-2025,WR,Big 12,6,3.45,3.01,0.0698,0.3,3.5,0,-0.07,3.52,"10 rec, 111 yds, 0 TD",,TX,-11.58,false
-501543,Devin Gardner,2011,Michigan,Michigan-2011,QB,Big Ten,7,3.08,3.54,0.0899,0.3,3.1,1.29,1.61,0.17,,,MI,-11.59,false
+501543,Devin Gardner,2011,Michigan,Michigan-2011,QB,Big Ten,7,3.08,3.54,0.0899,0.3,3.1,1.29,1.61,0.17,"7 games, mostly rushing",,MI,-11.59,false
 4373016,Josh Fleeks,2018,Baylor,Baylor-2018,WR,Big 12,9,3.64,5.55,0.0843,0.3,3.6,0,0.84,2.8,"10 rec, 92 yds, 1 TD",,TX,-11.59,false
 4710344,Titus Mokiao-Atimalala,2022,UCLA,UCLA-2022,WR,Pac-12,9,3.79,2.38,0.0677,0.3,3.8,0,0,3.79,"14 rec, 201 yds, 0 TD",,HI,-11.59,false
 3930065,Jason Pellerin,2016,Ole Miss,Ole Miss-2016,TE,SEC,8,4.15,5.63,0.2162,0.3,4.1,0.77,3.38,0,"90 rush yds, 3 TD",,LA,-11.59,false
@@ -13003,7 +13003,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 512843,Aaron Green,2013,TCU,TCU-2013,RB,Big 12,10,3.56,2.82,0.0972,0.3,3.6,0,2.32,1.24,"232 rush yds, 0 TD",,TX,-11.69,false
 5114331,Suderian Harrison,2024,Virginia,Virginia-2024,WR,ACC,6,3.66,3.52,0.0909,0.3,3.7,0.18,0,3.48,"11 rec, 99 yds, 0 TD",,SC,-11.69,false
 535166,A.J. Williams,2015,Michigan,Michigan-2015,TE,Big Ten,7,3.56,2.5,0.1481,0.3,3.6,0,0,3.56,"12 rec, 129 yds, 0 TD",,OH,-11.7,false
-4035460,Zerrick Cooper,2017,Clemson,Clemson-2017,QB,ACC,7,2.86,3.53,0.0495,0.3,2.9,2.61,0.26,0,,,GA,-11.7,false
+4035460,Zerrick Cooper,2017,Clemson,Clemson-2017,QB,ACC,7,2.86,3.53,0.0495,0.3,2.9,2.61,0.26,0,"7 games, mostly passing",,GA,-11.7,false
 514175,Jeff Heuerman,2012,Ohio State,Ohio State-2012,TE,Big Ten,7,3.34,4.4,0.0946,0.3,3.3,0,0,3.34,"8 rec, 94 yds, 1 TD",,FL,-11.7,false
 4240411,Sharod Johnson,2021,Syracuse,Syracuse-2021,WR,ACC,9,3.6,1.47,0.0485,0.3,3.6,0,0,3.6,"14 rec, 184 yds, 0 TD",,FL,-11.7,false
 4429287,Peny Boone,2021,Maryland,Maryland-2021,RB,Big Ten,9,3.6,4.03,0.1196,0.3,3.6,0,3.24,0.36,"172 rush yds, 2 TD",,MI,-11.7,false
@@ -13089,7 +13089,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 232158,Rell Lewis,2011,Kansas,Kansas-2011,RB,Big 12,9,2.87,2.62,0.0846,0.3,2.9,0,0.8,2.07,"72 rush yds, 0 TD",,OK,-11.8,false
 4362892,Geor'quarius Spivey,2022,TCU,TCU-2022,TE,Big 12,8,3.58,4,0.1321,0.3,3.6,0,0,3.58,"10 rec, 126 yds, 1 TD",,LA,-11.8,false
 4685441,Kendrick Law,2023,Alabama,Alabama-2023,WR,SEC,8,3.42,1.77,0.0571,0.3,3.4,0,0,3.42,"14 rec, 134 yds, 0 TD",,LA,-11.8,false
-500571,Jameill Showers,2012,Texas A&M,Texas A&M-2012,QB,SEC,7,3.24,2.93,0.0396,0.3,3.2,2.68,0.56,0,,,TX,-11.8,false
+500571,Jameill Showers,2012,Texas A&M,Texas A&M-2012,QB,SEC,7,3.24,2.93,0.0396,0.3,3.2,2.68,0.56,0,"7 games, mostly passing",,TX,-11.8,false
 4879971,Cam Schurr,2024,Army,Army-2024,WR,American Athletic,6,3.55,2.74,0.0815,0.3,3.6,0,0,3.55,"7 rec, 83 yds, 1 TD",,GA,-11.8,false
 4691688,Robbie Ouzts,2024,Alabama,Alabama-2024,TE,SEC,6,3.55,3.92,0.184,0.3,3.6,0,0,3.55,"7 rec, 83 yds, 1 TD",,SC,-11.8,false
 382708,Enrique Davis,2011,Ole Miss,Ole Miss-2011,RB,SEC,7,2.86,2.37,0.0796,0.3,2.9,0,2.47,0.39,"173 rush yds, 0 TD",,FL,-11.81,false
@@ -13114,7 +13114,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 549827,Corey Smith,2014,Ohio State,Ohio State-2014,WR,Big Ten,9,3.82,2.29,0.1091,0.3,3.8,0,0,3.82,"17 rec, 174 yds, 0 TD",,OH,-11.83,false
 482762,Tyree Watkins,2011,Duke,Duke-2011,WR,ACC,6,2.83,1.98,0.0397,0.3,2.8,0,0,2.83,"10 rec, 70 yds, 0 TD",,NJ,-11.83,false
 4277721,Tyler Hunt,2022,Michigan State,Michigan State-2022,TE,Big Ten,7,3.54,1.95,0.1226,0.3,3.5,0,0,3.54,"15 rec, 98 yds, 0 TD",,MI,-11.83,false
-156431,Kirby Freeman,2007,Miami,Miami-2007,QB,ACC,6,2.54,2.39,0.05,0.3,2.5,1.71,0.83,0,,,,-11.83,false
+156431,Kirby Freeman,2007,Miami,Miami-2007,QB,ACC,6,2.54,2.39,0.05,0.3,2.5,1.71,0.83,0,"6 games, mostly passing",,,-11.83,false
 530669,Justin Hardee,2013,Illinois,Illinois-2013,WR,Big Ten,6,3.42,2,0.0617,0.3,3.4,0,0,3.42,"11 rec, 95 yds, 0 TD",,OH,-11.83,false
 4369864,Jacob Warren,2022,Tennessee,Tennessee-2022,TE,SEC,8,3.54,1.66,0.1132,0.3,3.5,0,0,3.54,"12 rec, 163 yds, 0 TD",,TN,-11.84,false
 4243261,Bryan Thompson,2021,Arizona State,Arizona State-2021,WR,Pac-12,8,3.46,3.46,0.0453,0.3,3.5,0,0.21,3.25,"13 rec, 130 yds, 0 TD",,CA,-11.84,false
@@ -13149,7 +13149,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 236794,Tony Logan,2011,Maryland,Maryland-2011,WR,ACC,6,2.78,3.25,0.0364,0.3,2.8,0.23,-0.08,2.63,"9 rec, 68 yds, 0 TD",,NJ,-11.89,false
 4361008,Cole Fotheringham,2021,Utah,Utah-2021,TE,Pac-12,7,3.41,2.31,0.12,0.3,3.4,0,0,3.41,"13 rec, 109 yds, 0 TD",,CA,-11.89,false
 541620,Damon Graham,2015,Indiana,Indiana-2015,WR,Big Ten,6,3.37,0.97,0.0688,0.3,3.4,0,0,3.37,"10 rec, 102 yds, 0 TD",,IN,-11.89,false
-500419,Trevor Siemian,2011,Northwestern,Northwestern-2011,QB,Big Ten,8,2.77,3.25,0.0787,0.3,2.8,2.53,0.24,0,,,FL,-11.89,false
+500419,Trevor Siemian,2011,Northwestern,Northwestern-2011,QB,Big Ten,8,2.77,3.25,0.0787,0.3,2.8,2.53,0.24,0,"8 games, mostly passing",,FL,-11.89,false
 4035005,Brian Herrien,2017,Georgia,Georgia-2017,RB,SEC,13,2.66,2.18,0.0793,0.3,2.7,0,2.5,0.16,"265 rush yds, 1 TD",,GA,-11.9,false
 501938,Bryant Jackson,2012,Texas,Texas-2012,WR,Big 12,7,3.14,1.37,0.0493,0.3,3.1,0,0,3.14,"8 rec, 140 yds, 0 TD",,TX,-11.9,false
 483454,Collin Ashley,2009,Vanderbilt,Vanderbilt-2009,WR,SEC,8,2.46,1.32,0.0181,0.3,2.5,0,0,2.46,"10 rec, 97 yds, 0 TD",,TX,-11.9,false
@@ -13174,7 +13174,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5150582,Salahadin Allah,2024,Oregon State,Oregon State-2024,RB,Pac-12,10,3.44,3.26,0.181,0.3,3.4,0,3.18,0.26,"258 rush yds, 1 TD",,TX,-11.91,false
 4432706,Antonio Harmon,2023,Mississippi State,Mississippi State-2023,WR,SEC,9,3.31,1.93,0.0508,0.3,3.3,0,0,3.31,"14 rec, 98 yds, 1 TD",,MS,-11.92,false
 5141559,Chris Lawson,2025,Washington,Washington-2025,WR,Big Ten,6,3.12,1.67,0.0598,0.3,3.1,0,0,3.12,"9 rec, 97 yds, 0 TD",,CA,-11.92,false
-480396,Brock Osweiler,2009,Arizona State,Arizona State-2009,QB,Pac-10,6,2.44,4.34,0.0879,0.3,2.4,2.33,0.12,0,,,MT,-11.92,false
+480396,Brock Osweiler,2009,Arizona State,Arizona State-2009,QB,Pac-10,6,2.44,4.34,0.0879,0.3,2.4,2.33,0.12,0,"6 games, mostly passing",,MT,-11.92,false
 4431303,Jake Overman,2024,Pittsburgh,Pittsburgh-2024,TE,ACC,9,3.43,2.27,0.152,0.3,3.4,0,0,3.43,"16 rec, 149 yds, 0 TD",,CA,-11.92,false
 508743,Ayele Forde,2013,Oregon,Oregon-2013,RB,Pac-12,7,3.33,2.89,0.0833,0.3,3.3,0,3.06,0.27,"214 rush yds, 0 TD",,CA,-11.92,false
 512841,Brandon Williams,2011,Oklahoma,Oklahoma-2011,RB,Big 12,8,2.74,2.75,0.0697,0.3,2.7,0,2.74,0,"219 rush yds, 0 TD",,TX,-11.92,false
@@ -13198,7 +13198,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4372569,Brady Schipper,2021,Wisconsin,Wisconsin-2021,RB,Big Ten,8,3.35,3,0.11,0.3,3.4,0,1.6,1.75,"128 rush yds, 0 TD",,WI,-11.95,false
 4596545,C.J. Dippre,2023,Alabama,Alabama-2023,TE,SEC,8,3.27,1.42,0.0849,0.3,3.3,0,0,3.27,"9 rec, 172 yds, 0 TD",,PA,-11.95,false
 4046540,Tru Wilson,2019,Michigan,Michigan-2019,RB,Big Ten,8,3.94,3.45,0.1721,0.3,3.9,0,3.51,0.43,"221 rush yds, 1 TD",,MI,-11.95,false
-4899369,Christopher Vizzina,2024,Clemson,Clemson-2024,QB,ACC,6,3.4,4.75,0.0196,0.3,3.4,1.27,2.13,0,,,AL,-11.95,false
+4899369,Christopher Vizzina,2024,Clemson,Clemson-2024,QB,ACC,6,3.4,4.75,0.0196,0.3,3.4,1.27,2.13,0,"6 games, mostly rushing",,AL,-11.95,false
 4429093,Quincy Brown,2021,TCU,TCU-2021,WR,Big 12,9,3.34,2.53,0.0421,0.3,3.3,0,0,3.34,"12 rec, 121 yds, 1 TD",,LA,-11.96,false
 3133354,Bobby Hartzog Jr.,2016,Kansas,Kansas-2016,WR,Big 12,8,3.77,2.1,0.0862,0.3,3.8,0,0,3.77,"17 rec, 132 yds, 0 TD",,TX,-11.96,false
 4240819,Kade Warner,2021,Kansas State,Kansas State-2021,WR,Big 12,7,3.34,2.1,0.0388,0.3,3.3,0,0,3.34,"11 rec, 124 yds, 0 TD",,AZ,-11.96,false
@@ -13276,7 +13276,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4685445,Rayshon Luke,2023,Arizona,Arizona-2023,RB,Pac-12,11,3.16,4.76,0.1031,0.3,3.2,0,1.94,1.23,"153 rush yds, 1 TD",,CA,-12.06,false
 183814,Cody Clay,2013,West Virginia,West Virginia-2013,TE,Big 12,7,3.19,2.64,0.0896,0.3,3.2,0,0,3.19,"9 rec, 73 yds, 1 TD",,WV,-12.06,false
 181680,Trindon Holliday,2008,LSU,LSU-2008,RB,SEC,9,1.64,2.12,0.0259,0.3,1.6,0,1.06,0.59,"95 rush yds, 0 TD",,LA,-12.06,false
-3870490,Chris Chugunov,2019,Ohio State,Ohio State-2019,QB,Big Ten,9,3.83,4.71,0.0521,0.3,3.8,3.94,-0.11,0,,,NJ,-12.06,false
+3870490,Chris Chugunov,2019,Ohio State,Ohio State-2019,QB,Big Ten,9,3.83,4.71,0.0521,0.3,3.8,3.94,-0.11,0,"9 games, mostly passing",,NJ,-12.06,false
 4036131,Noah Fant,2016,Iowa,Iowa-2016,TE,Big Ten,6,3.67,3.26,0.1622,0.3,3.7,0,0,3.67,"9 rec, 70 yds, 1 TD",,NE,-12.07,false
 3136308,George Aston,2018,Pittsburgh,Pittsburgh-2018,WR,ACC,11,3.16,3.4,0.0663,0.3,3.2,0,0.64,2.53,"15 rec, 68 yds, 1 TD",,VA,-12.07,false
 4569031,Darren Wilson,2021,Iowa State,Iowa State-2021,WR,Big 12,6,3.23,2.61,0.0356,0.3,3.2,0,0,3.23,"10 rec, 94 yds, 0 TD",,GA,-12.07,false
@@ -13296,7 +13296,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4749271,Justin Smith-Brown,2025,West Virginia,West Virginia-2025,WR,Big 12,6,2.95,2.68,0.0565,0.3,3,0,-0.17,3.12,"7 rec, 117 yds, 0 TD",,FL,-12.08,false
 4602966,Jacob Gill,2021,Northwestern,Northwestern-2021,WR,Big Ten,7,3.21,3.63,0.0324,0.3,3.2,0,0,3.21,"8 rec, 85 yds, 1 TD",,NC,-12.09,false
 170909,Reggie Fish,2007,Arkansas,Arkansas-2007,WR,SEC,6,2.28,1.42,0.0163,0.3,2.3,0,0,2.28,"8 rec, 57 yds, 0 TD",,TX,-12.09,false
-237319,Jercell Fort,2009,TCU,TCU-2009,WR,Mountain West,7,2.27,2.27,0.0108,0.3,2.3,0,2.27,0,,,CA,-12.09,false
+237319,Jercell Fort,2009,TCU,TCU-2009,WR,Mountain West,7,2.27,2.27,0.0108,0.3,2.3,0,2.27,0,"7 games, mostly rushing",,CA,-12.09,false
 4685366,Benji Gosnell,2025,Virginia Tech,Virginia Tech-2025,TE,ACC,7,2.94,1.45,0.0957,0.3,2.9,0,0,2.94,"12 rec, 86 yds, 0 TD",,VA,-12.09,false
 549947,Dakwa Nichols,2015,NC State,NC State-2015,RB,ACC,8,3.16,4.38,0.0852,0.3,3.2,0,2.99,0.17,"179 rush yds, 1 TD",,NC,-12.09,false
 482625,Carl Winston,2010,Washington State,Washington State-2010,RB,Pac-10,6,2.6,1.53,0.0891,0.3,2.6,0,1.5,1.1,"90 rush yds, 0 TD",,CA,-12.09,false
@@ -13330,11 +13330,11 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4879248,Eli Green,2025,Iowa State,Iowa State-2025,WR,Big 12,8,2.91,1.53,0.0498,0.3,2.9,0,0,2.91,"11 rec, 123 yds, 0 TD",,MN,-12.12,false
 5151965,Kadarius Calloway,2024,California,California-2024,RB,ACC,6,3.23,5.65,0.1629,0.3,3.2,0,3.07,0.17,"124 rush yds, 1 TD",,MS,-12.12,false
 3116659,Charles Standberry,2014,Louisville,Louisville-2014,TE,ACC,7,3.53,2.79,0.16,0.3,3.5,0,0,3.53,"7 rec, 57 yds, 2 TD",,AL,-12.12,false
-3127332,Marcus McMaryion,2015,Oregon State,Oregon State-2015,QB,Pac-12,7,3.13,4.56,0.0326,0.3,3.1,2.02,1.11,0,,,CA,-12.12,false
+3127332,Marcus McMaryion,2015,Oregon State,Oregon State-2015,QB,Pac-12,7,3.13,4.56,0.0326,0.3,3.1,2.02,1.11,0,"7 games, mostly passing",,CA,-12.12,false
 189574,Jarvis Williams,2007,NC State,NC State-2007,WR,ACC,6,2.25,0.93,0.0098,0.3,2.3,0,0,2.25,"8 rec, 55 yds, 0 TD",,FL,-12.12,false
 511690,Justice Hayes,2014,Michigan,Michigan-2014,RB,Big Ten,11,3.53,1.59,0.115,0.3,3.5,0,1.94,1.59,"213 rush yds, 0 TD, 11 rec, 65 yds, 0 TD",,MI,-12.12,false
 503941,Darian Lazard,2011,Houston,Houston-2011,WR,Conference USA,6,2.53,1.48,0.0265,0.3,2.5,0,0,2.53,"8 rec, 72 yds, 0 TD",,TX,-12.13,false
-189757,Mitch Mustain,2008,USC,USC-2008,QB,Pac-10,6,1.58,3.46,0,0.3,1.6,1.71,-0.13,0,,,AR,-12.13,false
+189757,Mitch Mustain,2008,USC,USC-2008,QB,Pac-10,6,1.58,3.46,0,0.3,1.6,1.71,-0.13,0,"6 games, mostly passing",,AR,-12.13,false
 4873168,Jordan Anthony,2024,Arkansas,Arkansas-2024,WR,SEC,8,3.23,3.49,0.0627,0.3,3.2,0,0.09,3.14,"8 rec, 111 yds, 1 TD",,MS,-12.13,false
 174300,Bryan Payton,2006,Indiana,Indiana-2006,RB,Big Ten,6,0.6,0.8,0,0.3,0.6,0,0.6,0,"36 rush yds, 0 TD",,IN,-12.13,false
 4259215,Keoni-Kordell Makekau,2019,Navy,Navy-2019,WR,American Athletic,10,3.76,3.82,0.0912,0.3,3.8,0,1.88,1.88,"188 rush yds, 0 TD, 4 rec, 148 yds, 0 TD",,HI,-12.13,false
@@ -13347,7 +13347,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 241509,De'Vion Moore,2011,Missouri,Missouri-2011,RB,Big 12,8,2.52,3.01,0.0448,0.3,2.5,0,1.89,0.64,"151 rush yds, 0 TD",,MO,-12.14,false
 500923,Thomas Rees,2012,Notre Dame,Notre Dame-2012,QB,FBS Independents,9,2.9,3.62,0.0297,0.3,2.9,2.38,0.52,0,"436 pass yds, 2 TD, 2 INT",,,-12.14,false
 4870656,Johntay Cook II,2023,Texas,Texas-2023,WR,Big 12,7,3.09,1.83,0.0381,0.3,3.1,0,0,3.09,"8 rec, 136 yds, 0 TD",,TX,-12.14,false
-4432782,Brock Vandagriff,2023,Georgia,Georgia-2023,QB,SEC,6,3.08,3.93,0.0104,0.3,3.1,2.43,0.65,0,,,GA,-12.14,false
+4432782,Brock Vandagriff,2023,Georgia,Georgia-2023,QB,SEC,6,3.08,3.93,0.0104,0.3,3.1,2.43,0.65,0,"6 games, mostly passing",,GA,-12.14,false
 545452,Eric Carter,2016,Minnesota,Minnesota-2016,WR,Big Ten,6,3.58,3.28,0.0646,0.3,3.6,0,0,3.58,"9 rec, 125 yds, 0 TD",,FL,-12.15,false
 3122856,C.J. Fuller,2016,Clemson,Clemson-2016,RB,ACC,9,3.58,4.1,0.1429,0.3,3.6,0,2.28,1.3,"205 rush yds, 0 TD",,SC,-12.15,false
 4370796,Tavares Kelly,2018,Virginia,Virginia-2018,WR,ACC,8,3.08,2.97,0.0572,0.3,3.1,0,0.31,2.76,"10 rec, 121 yds, 0 TD",,FL,-12.16,false
@@ -13381,7 +13381,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4360447,Isaiah Floyd,2018,Arizona State,Arizona State-2018,RB,Pac-12,11,3.05,4.03,0.0728,0.3,3,0,2.4,0.65,"204 rush yds, 1 TD",,CA,-12.18,false
 512844,Jamal Turner,2015,Nebraska,Nebraska-2015,WR,Big Ten,6,3.07,2.11,0.05,0.3,3.1,0,0.02,3.05,"9 rec, 93 yds, 0 TD",,TX,-12.19,false
 4686223,Malachi Thomas,2024,Virginia Tech,Virginia Tech-2024,RB,ACC,9,3.17,5.37,0.1538,0.3,3.2,0,2.44,0.72,"160 rush yds, 1 TD",,GA,-12.19,false
-481926,Kevin Newsome,2010,Penn State,Penn State-2010,QB,Big Ten,6,2.5,2.81,0.0421,0.3,2.5,0.52,1.98,0,,,VA,-12.19,false
+481926,Kevin Newsome,2010,Penn State,Penn State-2010,QB,Big Ten,6,2.5,2.81,0.0421,0.3,2.5,0.52,1.98,0,"6 games, mostly rushing",,VA,-12.19,false
 545487,Ben Johnson,2015,Kansas,Kansas-2015,TE,Big 12,8,3.06,1.21,0.0864,0.3,3.1,0,0,3.06,"13 rec, 115 yds, 0 TD",,KS,-12.19,false
 183448,Greg Smith,2010,Texas,Texas-2010,TE,Big 12,6,2.5,1.85,0.0328,0.3,2.5,0,0,2.5,"9 rec, 60 yds, 0 TD",,TX,-12.19,false
 4242648,James Bostic,2019,Vanderbilt,Vanderbilt-2019,WR,SEC,6,3.7,2.28,0.0851,0.3,3.7,0,0,3.7,"11 rec, 112 yds, 0 TD",,FL,-12.19,false
@@ -13409,7 +13409,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4568658,Daniel Carter,2022,Pittsburgh,Pittsburgh-2022,RB,ACC,6,3.15,2.62,0.1081,0.3,3.2,0,2.67,0.48,"40 rush yds, 2 TD",,FL,-12.22,false
 4691138,Aaron Anderson,2023,LSU,LSU-2023,WR,SEC,6,3,1.54,0.0317,0.3,3,0,0,3,"12 rec, 60 yds, 0 TD",,LA,-12.23,false
 515588,Orville Reynolds,2014,Wake Forest,Wake Forest-2014,RB,ACC,9,3.42,3.66,0.1018,0.3,3.4,0,1.89,1.53,"170 rush yds, 0 TD, 11 rec, 28 yds, 0 TD",,FL,-12.23,false
-231927,Willy Korn,2009,Clemson,Clemson-2009,QB,ACC,6,2.13,6.05,0.0769,0.3,2.1,0.93,1.2,0,,,SC,-12.23,false
+231927,Willy Korn,2009,Clemson,Clemson-2009,QB,ACC,6,2.13,6.05,0.0769,0.3,2.1,0.93,1.2,0,"6 games, mostly rushing",,SC,-12.23,false
 4035198,Brandon Edward Johnson,2018,Tennessee,Tennessee-2018,WR,SEC,8,3,2.67,0.0482,0.3,3,0,0,3,"13 rec, 110 yds, 0 TD",,FL,-12.23,false
 559629,Jared Cornelius,2018,Arkansas,Arkansas-2018,WR,SEC,6,3,2.45,0.0452,0.3,3,-0.03,0,3.03,"8 rec, 102 yds, 0 TD",,LA,-12.23,false
 3121650,C'yontai Lewis,2018,Florida,Florida-2018,TE,SEC,6,3,2.88,0.0886,0.3,3,0,0,3,"8 rec, 100 yds, 0 TD",,AL,-12.23,false
@@ -13447,11 +13447,11 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4362763,Daniel Parker,2019,Missouri,Missouri-2019,TE,SEC,8,3.63,2.58,0.1277,0.3,3.6,0,0,3.63,"15 rec, 140 yds, 0 TD",,MO,-12.27,false
 4871054,Riley Williams,2024,Miami,Miami-2024,TE,ACC,6,3.08,1.57,0.128,0.3,3.1,0,0,3.08,"7 rec, 115 yds, 0 TD",,OR,-12.27,false
 552103,Victor Bolden Jr.,2013,Oregon State,Oregon State-2013,WR,Pac-12,9,2.98,2.94,0.0494,0.3,3,0,1.62,1.36,"6 rec, 62 yds, 0 TD",,CA,-12.27,false
-550123,Devante Kincade,2014,Ole Miss,Ole Miss-2014,QB,SEC,7,3.38,4.04,0.022,0.3,3.4,1.23,2.14,0,,,TX,-12.27,false
+550123,Devante Kincade,2014,Ole Miss,Ole Miss-2014,QB,SEC,7,3.38,4.04,0.022,0.3,3.4,1.23,2.14,0,"7 games, mostly rushing",,TX,-12.27,false
 4036055,Maurice Ffrench,2016,Pittsburgh,Pittsburgh-2016,WR,ACC,7,3.46,5.14,0.0462,0.3,3.5,0,3.46,0,"122 rush yds, 2 TD",,NJ,-12.27,false
 4693184,Andrew Sowinski,2022,Purdue,Purdue-2022,WR,Big Ten,6,3.1,2.27,0.0387,0.3,3.1,0,0,3.1,"9 rec, 96 yds, 0 TD",,IN,-12.28,false
 533292,Alonzo Moore,2014,Nebraska,Nebraska-2014,WR,Big Ten,7,3.37,1.76,0.0697,0.3,3.4,0,0,3.37,"10 rec, 136 yds, 0 TD",,LA,-12.28,false
-504052,Blake Sims,2013,Alabama,Alabama-2013,QB,SEC,7,2.97,3.51,0.049,0.3,3,2.1,0.87,0,,,GA,-12.28,false
+504052,Blake Sims,2013,Alabama,Alabama-2013,QB,SEC,7,2.97,3.51,0.049,0.3,3,2.1,0.87,0,"7 games, mostly passing",,GA,-12.28,false
 550316,Lavon Coleman,2015,Washington,Washington-2015,RB,Pac-12,7,2.97,2.23,0.0717,0.3,3,0,1.96,1.01,"137 rush yds, 0 TD",,CA,-12.28,false
 4917981,AJ Newberry,2025,Vanderbilt,Vanderbilt-2025,RB,SEC,10,2.75,4.28,0.0673,0.3,2.8,0,2.37,0.38,"57 rush yds, 3 TD",,TX,-12.28,false
 4686374,Steven McBride,2021,Kansas,Kansas-2021,WR,Big 12,8,3.01,1.39,0.0259,0.3,3,0,0.04,2.98,"15 rec, 88 yds, 0 TD",,LA,-12.29,false
@@ -13501,13 +13501,13 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5079371,Chris Davis Jr.,2024,Stanford,Stanford-2024,RB,ACC,11,2.99,2.43,0.1312,0.3,3,0,2.62,0.37,"288 rush yds, 0 TD",,MS,-12.36,false
 550172,Keyante Green,2014,Purdue,Purdue-2014,RB,Big Ten,7,3.29,2.56,0.0929,0.3,3.3,0,2.84,0.44,"199 rush yds, 0 TD",,GA,-12.36,false
 5079749,Yasin Willis,2024,Syracuse,Syracuse-2024,RB,ACC,9,2.99,4.2,0.1267,0.3,3,0,2.08,0.91,"127 rush yds, 1 TD",,NJ,-12.37,false
-504908,Grant Hedrick,2011,Boise State,Boise State-2011,QB,Mountain West,6,2.29,3.72,0.0674,0.3,2.3,0.13,2.17,0,,,OR,-12.37,false
+504908,Grant Hedrick,2011,Boise State,Boise State-2011,QB,Mountain West,6,2.29,3.72,0.0674,0.3,2.3,0.13,2.17,0,"6 games, mostly rushing",,OR,-12.37,false
 5150538,Devin Hyatt,2024,Arizona,Arizona-2024,WR,Big 12,6,2.98,1.57,0.0533,0.3,3,0,0,2.98,"7 rec, 109 yds, 0 TD",,FL,-12.37,false
 184370,Paul Homer,2007,Washington,Washington-2007,RB,Pac-10,10,2,2.53,0.0119,0.3,2,0,1.14,0.86,"54 rush yds, 1 TD",,NE,-12.37,false
 4250802,Chance Brewington,2022,Nebraska,Nebraska-2022,TE,Big Ten,9,3,2.39,0.0755,0.3,3,0,0,3,"11 rec, 100 yds, 1 TD",,TX,-12.38,false
 4685203,Caleb Robinson,2022,Stanford,Stanford-2022,RB,Pac-12,6,3,2.51,0.0946,0.3,3,0,1.52,1.48,"91 rush yds, 0 TD",,MD,-12.38,false
 237345,Jeremy Kerley,2007,TCU,TCU-2007,WR,Mountain West,9,2,2.09,0.0065,0.3,2,0.24,0.18,1.58,"6 rec, 82 yds, 0 TD",,TX,-12.38,false
-4432691,Carlos Del Rio-Wilson,2022,Syracuse,Syracuse-2022,QB,ACC,6,3,4.16,0.0316,0.3,3,2.28,0.72,0,,,GA,-12.38,false
+4432691,Carlos Del Rio-Wilson,2022,Syracuse,Syracuse-2022,QB,ACC,6,3,4.16,0.0316,0.3,3,2.28,0.72,0,"6 games, mostly passing",,GA,-12.38,false
 481562,Jake Long,2013,Nebraska,Nebraska-2013,TE,Big Ten,7,2.87,1.04,0.0597,0.3,2.9,0,0,2.87,"8 rec, 121 yds, 0 TD",,NE,-12.38,false
 385331,John Goodman,2011,Notre Dame,Notre Dame-2011,WR,FBS Independents,6,2.28,0.7,0.0132,0.3,2.3,0,0.03,2.25,"7 rec, 65 yds, 0 TD",,IN,-12.38,false
 504776,Tyler Anderson,2013,Oregon State,Oregon State-2013,WR,Pac-12,9,2.87,2.43,0.0432,0.3,2.9,0,0.18,2.69,"10 rec, 82 yds, 1 TD",,CA,-12.38,false
@@ -13536,7 +13536,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4431527,Derrick Davis Jr.,2024,Pittsburgh,Pittsburgh-2024,RB,ACC,8,2.94,2.83,0.1222,0.3,2.9,0,2.38,0.56,"70 rush yds, 2 TD",,PA,-12.42,false
 4242410,Jeremiah Hawkins,2017,California,California-2017,WR,Pac-12,7,2.14,1.94,0.0094,0.3,2.1,0,0,2.14,"8 rec, 70 yds, 0 TD",,CA,-12.42,false
 4579071,Billy Riviere III,2022,Washington State,Washington State-2022,TE,Pac-12,9,2.96,2.24,0.066,0.3,3,0,0,2.96,"11 rec, 96 yds, 1 TD",,MN,-12.42,false
-4239998,Hunter Johnson,2017,Clemson,Clemson-2017,QB,ACC,7,2.14,4.11,0.0297,0.3,2.1,2.19,-0.06,0,,,IN,-12.42,false
+4239998,Hunter Johnson,2017,Clemson,Clemson-2017,QB,ACC,7,2.14,4.11,0.0297,0.3,2.1,2.19,-0.06,0,"7 games, mostly passing",,IN,-12.42,false
 511943,Kelsey Young,2014,Stanford,Stanford-2014,RB,Pac-12,12,3.23,1.9,0.0885,0.3,3.2,0,2.55,0.68,"306 rush yds, 0 TD",,CA,-12.42,false
 4574732,Aaron Young,2019,Rutgers,Rutgers-2019,RB,Big Ten,12,3.47,2.45,0.1488,0.3,3.5,0,1.28,2.19,"153 rush yds, 0 TD, 15 rec, 113 yds, 0 TD",,PA,-12.42,false
 4242289,Berkeley Holman,2019,Northwestern,Northwestern-2019,WR,Big Ten,6,3.47,2.98,0.0638,0.3,3.5,0,-0.1,3.57,"9 rec, 124 yds, 0 TD",,CA,-12.42,false
@@ -13544,7 +13544,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 501541,Rob Bolden,2011,Penn State,Penn State-2011,QB,Big Ten,9,2.24,2.61,0.0562,0.3,2.2,1.99,0.24,0,"548 pass yds, 1 TD, 4 INT",,MI,-12.43,false
 3135736,Trayone Gray,2018,Miami,Miami-2018,RB,ACC,10,2.8,2.35,0.0534,0.3,2.8,0,2.03,0.77,"83 rush yds, 2 TD",,FL,-12.43,false
 4361732,Shocky Jacques-Louis,2018,Pittsburgh,Pittsburgh-2018,WR,ACC,8,2.8,2.23,0.0361,0.3,2.8,0,0.73,2.08,"9 rec, 76 yds, 0 TD",,FL,-12.43,false
-232417,Jarrett Lee,2009,LSU,LSU-2009,QB,SEC,6,1.93,3.09,0.0659,0.3,1.9,2.31,-0.38,0,,,TX,-12.43,false
+232417,Jarrett Lee,2009,LSU,LSU-2009,QB,SEC,6,1.93,3.09,0.0659,0.3,1.9,2.31,-0.38,0,"6 games, mostly passing",,TX,-12.43,false
 183542,Richard Murphy,2010,LSU,LSU-2010,RB,SEC,10,2.26,1.89,0.0743,0.3,2.3,0,0.82,1.44,"82 rush yds, 0 TD, 10 rec, 44 yds, 0 TD",,LA,-12.43,false
 546332,J.J. Green,2016,Georgia Tech,Georgia Tech-2016,RB,ACC,8,3.3,3.05,0.125,0.3,3.3,0,2.42,0.88,"134 rush yds, 1 TD",,GA,-12.43,false
 4035379,Jordan Thomas,2016,Mississippi State,Mississippi State-2016,TE,SEC,6,3.3,2.78,0.1081,0.3,3.3,0,0,3.3,"9 rec, 48 yds, 1 TD",,MS,-12.43,false
@@ -13559,7 +13559,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 184365,D'Andre Goodwin,2007,Washington,Washington-2007,WR,Pac-10,7,1.93,1.21,0.0033,0.3,1.9,0,0.66,1.27,"6 rec, 29 yds, 0 TD",,CA,-12.44,false
 4426780,Jirehl Brock,2021,Iowa State,Iowa State-2021,RB,Big 12,11,2.85,3.82,0.0622,0.3,2.9,0,1.75,1.11,"132 rush yds, 1 TD",,IL,-12.45,false
 480354,Chris Coyle,2011,Arizona State,Arizona State-2011,TE,Pac-12,6,2.22,0.73,0,0.3,2.2,0,0,2.22,"6 rec, 73 yds, 0 TD",,CA,-12.45,false
-5083371,Davi Belfort,2025,UCF,UCF-2025,QB,Big 12,6,2.59,3.91,0.0619,0.3,2.6,0.02,2.57,0,,,,-12.45,false
+5083371,Davi Belfort,2025,UCF,UCF-2025,QB,Big 12,6,2.59,3.91,0.0619,0.3,2.6,0.02,2.57,0,"6 games, mostly rushing",,,-12.45,false
 4361943,Cooper Lutz,2021,Syracuse,Syracuse-2021,RB,ACC,6,2.85,2.93,0.0574,0.3,2.8,0,2,0.85,"60 rush yds, 1 TD",,PA,-12.45,false
 3915115,Jordan Scarlett,2015,Florida,Florida-2015,RB,SEC,9,2.8,3.88,0.0628,0.3,2.8,0,2.68,0.12,"181 rush yds, 1 TD",,FL,-12.45,false
 512182,Jay Rome,2015,Georgia,Georgia-2015,TE,SEC,6,2.8,1.15,0.0741,0.3,2.8,0,0,2.8,"8 rec, 88 yds, 0 TD",,GA,-12.45,false
@@ -13590,7 +13590,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 500803,Reggie Pegram,2011,Purdue,Purdue-2011,RB,Big Ten,8,2.18,2.2,0.0299,0.3,2.2,0,1.06,1.11,"85 rush yds, 0 TD",,TX,-12.49,false
 518196,Kyle Carter,2014,Penn State,Penn State-2014,TE,Big Ten,8,3.16,1.53,0.1067,0.3,3.2,0,0,3.16,"13 rec, 123 yds, 0 TD",,DE,-12.49,false
 4432731,Moliki Matavao,2021,Oregon,Oregon-2021,TE,Pac-12,8,2.81,2.4,0.04,0.3,2.8,0,0,2.81,"9 rec, 75 yds, 1 TD",,NV,-12.49,false
-4360403,Gunnar Holmberg,2020,Duke,Duke-2020,QB,ACC,6,1.56,1.7,0.0161,0.3,1.6,0.41,1.15,0,,,NC,-12.49,false
+4360403,Gunnar Holmberg,2020,Duke,Duke-2020,QB,ACC,6,1.56,1.7,0.0161,0.3,1.6,0.41,1.15,0,"6 games, mostly rushing",,NC,-12.49,false
 4569547,Nick Kallerup,2024,Minnesota,Minnesota-2024,TE,Big Ten,6,2.87,1.72,0.104,0.3,2.9,0,0,2.87,"7 rec, 102 yds, 0 TD",,MN,-12.49,false
 515951,Mike Blakely,2012,Auburn,Auburn-2012,RB,SEC,6,2.55,1.51,0.0896,0.3,2.6,0,2.55,0,"153 rush yds, 0 TD",,FL,-12.49,false
 4568524,Perry Olsen,2019,Navy,Navy-2019,RB,American Athletic,7,3.4,5.78,0.1349,0.3,3.4,0.54,2.86,0,"80 rush yds, 2 TD",,OK,-12.49,false
@@ -13631,7 +13631,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4950379,Zach Ortwerth,2025,Iowa,Iowa-2025,TE,Big Ten,6,2.48,1.56,0.0348,0.3,2.5,0,0,2.48,"8 rec, 69 yds, 0 TD",,MO,-12.55,false
 233147,Preston Lyons,2009,Georgia Tech,Georgia Tech-2009,RB,ACC,11,1.81,2.88,0.0104,0.3,1.8,0,1.81,0,"139 rush yds, 1 TD",,GA,-12.55,false
 3930284,Paul Lucas,2015,Oregon State,Oregon State-2015,WR,Pac-12,7,2.7,3.42,0.0406,0.3,2.7,0,2.46,0.24,"172 rush yds, 0 TD, 1 rec, 7 yds, 0 TD",,AZ,-12.55,false
-530450,Chad Voytik,2015,Pittsburgh,Pittsburgh-2015,QB,ACC,6,2.7,4.52,0.0217,0.3,2.7,1.08,1.62,0,,,TN,-12.56,false
+530450,Chad Voytik,2015,Pittsburgh,Pittsburgh-2015,QB,ACC,6,2.7,4.52,0.0217,0.3,2.7,1.08,1.62,0,"6 games, mostly rushing",,TN,-12.56,false
 546546,Josh Walker Smith,2016,Tennessee,Tennessee-2016,WR,SEC,8,3.17,2.84,0.0338,0.3,3.2,0,0,3.17,"11 rec, 84 yds, 1 TD",,TN,-12.56,false
 4361006,Solomon Enis,2019,Utah,Utah-2019,WR,Pac-12,9,3.33,2.66,0.0578,0.3,3.3,0,0.01,3.32,"14 rec, 159 yds, 0 TD",,AZ,-12.56,false
 4240801,Tyjon Lindsey,2017,Nebraska,Nebraska-2017,WR,Big Ten,10,2,1.75,0.0063,0.3,2,0,0.04,1.96,"12 rec, 76 yds, 0 TD",,CA,-12.56,false
@@ -13667,7 +13667,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 535457,Quinton White Jr.,2014,Texas Tech,Texas Tech-2014,WR,Big 12,10,3.03,2.16,0.0394,0.3,3,0,1.21,1.82,"121 rush yds, 0 TD, 10 rec, 82 yds, 0 TD",,,-12.62,false
 546611,Ashton Shumpert,2016,Mississippi State,Mississippi State-2016,RB,SEC,12,3.11,3.28,0.0982,0.3,3.1,0,2.63,0.48,"255 rush yds, 1 TD",,MS,-12.62,false
 382030,Ralph Bolden,2008,Purdue,Purdue-2008,RB,Big Ten,7,1.09,1.35,0,0.3,1.1,0,0.4,0.69,"28 rush yds, 0 TD",,GA,-12.62,false
-188980,Austen Arnaud,2007,Iowa State,Iowa State-2007,QB,Big 12,6,1.75,2.85,0.0375,0.3,1.7,1.45,0.3,0,,,IA,-12.63,false
+188980,Austen Arnaud,2007,Iowa State,Iowa State-2007,QB,Big 12,6,1.75,2.85,0.0375,0.3,1.7,1.45,0.3,0,"6 games, mostly passing",,IA,-12.63,false
 4240398,Chris Elmore,2017,Syracuse,Syracuse-2017,RB,ACC,6,1.93,2.3,0.0529,0.3,1.9,0,1.93,0,"56 rush yds, 1 TD",,IL,-12.63,false
 4428272,Juwuan Price,2023,Syracuse,Syracuse-2023,RB,ACC,9,2.6,2.81,0.0583,0.3,2.6,0,1.84,0.76,"166 rush yds, 0 TD",,AZ,-12.63,false
 3116145,Solomon Vault,2015,Northwestern,Northwestern-2015,WR,Big Ten,12,2.63,2.33,0.0375,0.3,2.6,0,1.32,1.3,"159 rush yds, 0 TD, 8 rec, 76 yds, 0 TD",,MD,-12.63,false
@@ -13677,7 +13677,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4035680,Demari Simpkins,2016,Utah,Utah-2016,WR,Pac-12,10,3.1,2.66,0.0308,0.3,3.1,0,0,3.1,"15 rec, 100 yds, 1 TD",,FL,-12.63,false
 482351,Gary Bush,2013,Purdue,Purdue-2013,WR,Big Ten,6,2.62,1.76,0.0247,0.3,2.6,0,0,2.62,"10 rec, 57 yds, 0 TD",,FL,-12.63,false
 5278798,Cam Abshire,2025,Oklahoma State,Oklahoma State-2025,WR,Big 12,8,2.4,1.17,0.0266,0.3,2.4,0,0,2.4,"10 rec, 92 yds, 0 TD",,VA,-12.63,false
-480209,Garrett Gilbert,2009,Texas,Texas-2009,QB,Big 12,7,1.72,3.31,0.044,0.3,1.7,0.71,1.01,0,,,TX,-12.64,false
+480209,Garrett Gilbert,2009,Texas,Texas-2009,QB,Big 12,7,1.72,3.31,0.044,0.3,1.7,0.71,1.01,0,"7 games, mostly rushing",,TX,-12.64,false
 530733,K.J. Maye,2012,Minnesota,Minnesota-2012,WR,Big Ten,9,2.4,1.47,0.0197,0.3,2.4,0,0.63,1.77,"11 rec, 49 yds, 0 TD",,,-12.64,false
 4868300,Nate Johnson,2024,Vanderbilt,Vanderbilt-2024,WR,SEC,7,2.71,4.57,0.0408,0.3,2.7,0.07,2.49,0.16,"114 rush yds, 1 TD, 1 rec, 1 yds, 0 TD",,CA,-12.64,false
 488429,Devon Smith,2009,Penn State,Penn State-2009,WR,Big Ten,6,1.72,1.79,0.0072,0.3,1.7,0,0.55,1.17,"4 rec, 30 yds, 0 TD",,MD,-12.64,false
@@ -13692,7 +13692,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4037217,Brandon Chapman,2019,Wake Forest,Wake Forest-2019,TE,ACC,6,3.23,1.28,0.0745,0.3,3.2,0,0,3.23,"10 rec, 94 yds, 0 TD",,OH,-12.66,false
 547728,Cole Hunt,2017,TCU,TCU-2017,TE,Big 12,7,1.9,0.63,0.0133,0.3,1.9,0,0,1.9,"7 rec, 63 yds, 0 TD",,TX,-12.66,false
 4875282,Charlie Offerdahl,2022,Colorado,Colorado-2022,RB,Pac-12,8,2.71,2.97,0.0766,0.3,2.7,0,1.88,0.84,"150 rush yds, 0 TD",,CO,-12.66,false
-514124,Jake Coker,2013,Florida State,Florida State-2013,QB,ACC,6,2.58,3.82,0.0392,0.3,2.6,1.33,1.25,0,,,AL,-12.67,false
+514124,Jake Coker,2013,Florida State,Florida State-2013,QB,ACC,6,2.58,3.82,0.0392,0.3,2.6,1.33,1.25,0,"6 games, mostly passing",,AL,-12.67,false
 532120,Edward Pope,2013,Texas A&M,Texas A&M-2013,WR,SEC,6,2.58,1.61,0.0216,0.3,2.6,0,0,2.58,"9 rec, 65 yds, 0 TD",,TX,-12.67,false
 4361279,Charlie Mangieri,2021,Northwestern,Northwestern-2021,TE,Big Ten,6,2.63,1.25,0.03,0.3,2.6,0,0,2.63,"9 rec, 68 yds, 0 TD",,IL,-12.67,false
 4685342,Cristian Driver,2024,Minnesota,Minnesota-2024,WR,Big Ten,7,2.69,3.55,0.0376,0.3,2.7,0,0.13,2.56,"7 rec, 49 yds, 1 TD",,TX,-12.67,false
@@ -13717,7 +13717,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 480513,Ricky Marvray,2011,UCLA,UCLA-2011,WR,Pac-12,8,1.96,0.76,0.0066,0.3,2,0,0,1.96,"10 rec, 57 yds, 0 TD",,CA,-12.7,false
 502065,Albert Gary,2013,Iowa State,Iowa State-2013,WR,Big 12,6,2.55,1.21,0.0154,0.3,2.5,0,-0.12,2.67,"8 rec, 80 yds, 0 TD",,FL,-12.7,false
 503798,Adrian Flemming,2014,Syracuse,Syracuse-2014,WR,ACC,8,2.95,1.65,0.0364,0.3,3,0,-0.04,2.99,"13 rec, 109 yds, 0 TD",,VA,-12.7,false
-3123047,Malik Rosier,2015,Miami,Miami-2015,QB,ACC,6,2.55,6.53,0.0109,0.3,2.6,2.59,-0.03,0,,,AL,-12.7,false
+3123047,Malik Rosier,2015,Miami,Miami-2015,QB,ACC,6,2.55,6.53,0.0109,0.3,2.6,2.59,-0.03,0,"6 games, mostly passing",,AL,-12.7,false
 4686093,E.J. Williams,2021,Clemson,Clemson-2021,WR,ACC,6,2.6,1.77,0.0032,0.3,2.6,0,0,2.6,"9 rec, 66 yds, 0 TD",,AL,-12.7,false
 4427789,Keyon Lesane,2021,NC State,NC State-2021,WR,ACC,6,2.6,0.85,0.0032,0.3,2.6,0,0.17,2.43,"8 rec, 66 yds, 0 TD",,NC,-12.7,false
 509428,Josh Ford,2012,Colorado,Colorado-2012,RB,Pac-12,8,2.34,4.12,0.0697,0.3,2.3,0,2.34,0,"127 rush yds, 1 TD",,CO,-12.7,false
@@ -13734,7 +13734,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4923252,Dante Dowdell,2023,Oregon,Oregon-2023,RB,Pac-12,6,2.5,4.46,0.0448,0.3,2.5,0,2.5,0,"90 rush yds, 1 TD",,MS,-12.73,false
 4250013,Ramon Jefferson,2023,Kentucky,Kentucky-2023,RB,SEC,7,2.5,2.67,0.0448,0.3,2.5,0,2.5,0,"175 rush yds, 0 TD",,NY,-12.73,false
 504248,Nick Griffin,2014,Mississippi State,Mississippi State-2014,RB,SEC,10,2.92,3.01,0.0708,0.3,2.9,0,2.17,0.75,"157 rush yds, 1 TD",,MS,-12.73,false
-546469,Ryan Burns,2017,Stanford,Stanford-2017,QB,Pac-12,6,1.83,2.14,0.0198,0.3,1.8,1.05,0.35,0.43,,,VA,-12.73,false
+546469,Ryan Burns,2017,Stanford,Stanford-2017,QB,Pac-12,6,1.83,2.14,0.0198,0.3,1.8,1.05,0.35,0.43,"6 games, mostly passing",,VA,-12.73,false
 5161835,Jaylen McGill,2025,North Carolina,North Carolina-2025,RB,ACC,6,2.3,2.23,0.0433,0.3,2.3,0,0.32,1.98,"19 rush yds, 0 TD",,SC,-12.73,false
 192058,Cory Jackson,2009,Maryland,Maryland-2009,RB,ACC,8,1.63,1.64,0,0.3,1.6,0,0.3,1.33,"24 rush yds, 0 TD",,WV,-12.74,false
 514216,Jordan Fredrick,2015,Wisconsin,Wisconsin-2015,WR,Big Ten,6,2.52,0.92,0.0344,0.3,2.5,0,0,2.52,"7 rec, 81 yds, 0 TD",,WI,-12.74,false
@@ -13743,7 +13743,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 500215,Synjyn Days,2012,Georgia Tech,Georgia Tech-2012,RB,ACC,8,2.3,3.44,0.0647,0.3,2.3,-0.25,2.55,0,"144 rush yds, 1 TD",,GA,-12.74,false
 4362787,C.J. Bolar,2019,Vanderbilt,Vanderbilt-2019,WR,SEC,6,3.15,1.24,0.0456,0.3,3.1,0,0,3.15,"11 rec, 79 yds, 0 TD",,MS,-12.74,false
 4428035,Elijah Mojarro,2022,California,California-2022,TE,Pac-12,6,2.63,2.43,0.0377,0.3,2.6,0,0,2.63,"8 rec, 78 yds, 0 TD",,CA,-12.74,false
-175616,Marcus Jackson,2009,TCU,TCU-2009,QB,Mountain West,7,1.62,3.03,0.033,0.3,1.6,0.7,0.91,0,,,TX,-12.74,false
+175616,Marcus Jackson,2009,TCU,TCU-2009,QB,Mountain West,7,1.62,3.03,0.033,0.3,1.6,0.7,0.91,0,"7 games, mostly rushing",,TX,-12.74,false
 3916109,Blaise Gammon,2018,Kansas State,Kansas State-2018,TE,Big 12,6,2.48,1.05,0.0506,0.3,2.5,0,0,2.48,"8 rec, 69 yds, 0 TD",,KS,-12.75,false
 4037582,Hasise Dubois,2016,Virginia,Virginia-2016,WR,ACC,6,2.98,1.77,0.0277,0.3,3,0,0,2.98,"8 rec, 99 yds, 0 TD",,NJ,-12.75,false
 4240481,Jerry Howard,2019,Georgia Tech,Georgia Tech-2019,RB,ACC,10,3.14,4.3,0.1256,0.3,3.1,0,1.02,2.12,"102 rush yds, 0 TD",,SC,-12.75,false
@@ -13758,15 +13758,15 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5110535,Kyson Brown,2023,Arizona State,Arizona State-2023,RB,Pac-12,10,2.45,2.22,0.0359,0.3,2.5,0,1.06,1.39,"106 rush yds, 0 TD, 9 rec, 49 yds, 0 TD",,TX,-12.78,false
 500420,Adonis Smith,2010,Northwestern,Northwestern-2010,RB,Big Ten,8,1.91,1.52,0.0446,0.3,1.9,0,1.69,0.23,"135 rush yds, 0 TD",,CA,-12.78,false
 4240785,Clevan Thomas,2019,Kentucky,Kentucky-2019,WR,SEC,8,3.11,2.95,0.0426,0.3,3.1,0,-0.06,3.17,"10 rec, 94 yds, 1 TD",,FL,-12.78,false
-4242210,Myles Brennan,2019,LSU,LSU-2019,QB,SEC,6,3.11,2.62,0.0313,0.3,3.1,2.43,0.68,0,,,MS,-12.78,false
-4433886,Tate Rodemaker,2022,Florida State,Florida State-2022,QB,ACC,6,2.59,3.69,0.0211,0.3,2.6,2.36,0.23,0,,,GA,-12.78,false
+4242210,Myles Brennan,2019,LSU,LSU-2019,QB,SEC,6,3.11,2.62,0.0313,0.3,3.1,2.43,0.68,0,"6 games, mostly passing",,MS,-12.78,false
+4433886,Tate Rodemaker,2022,Florida State,Florida State-2022,QB,ACC,6,2.59,3.69,0.0211,0.3,2.6,2.36,0.23,0,"6 games, mostly passing",,GA,-12.78,false
 4035893,Keegan Brewer,2016,Kansas,Kansas-2016,WR,Big 12,8,2.95,1.98,0.0246,0.3,2.9,0,0,2.95,"15 rec, 86 yds, 0 TD",,TX,-12.78,false
 3892679,Henry Enyenihi,2015,Illinois,Illinois-2015,RB,Big Ten,7,2.47,3.34,0.0448,0.3,2.5,0,1.69,0.79,"58 rush yds, 1 TD",,GA,-12.78,false
-4570554,Chandler Rogers,2024,California,California-2024,QB,ACC,8,2.57,2.44,0.0098,0.3,2.6,0.58,1.82,0.16,,,TX,-12.78,false
+4570554,Chandler Rogers,2024,California,California-2024,QB,ACC,8,2.57,2.44,0.0098,0.3,2.6,0.58,1.82,0.16,"8 games, mostly rushing",,TX,-12.78,false
 549932,Bra'Lon Cherry,2013,NC State,NC State-2013,WR,ACC,6,2.47,0.94,0.0093,0.3,2.5,0,0,2.47,"8 rec, 68 yds, 0 TD",,NC,-12.78,false
 530653,Devante McFarlane,2014,Syracuse,Syracuse-2014,RB,ACC,9,2.87,4.21,0.0619,0.3,2.9,0,1.88,0.99,"169 rush yds, 0 TD",,NY,-12.78,false
 5146753,Shamar Rigby,2024,Purdue,Purdue-2024,WR,Big Ten,9,2.57,1.42,0.0282,0.3,2.6,0.04,0.06,2.48,"11 rec, 113 yds, 0 TD",,FL,-12.79,false
-483461,Joe Southwick,2010,Boise State,Boise State-2010,QB,Western Athletic,8,1.9,3.3,0.0211,0.3,1.9,1.51,0.39,0,,,CA,-12.79,false
+483461,Joe Southwick,2010,Boise State,Boise State-2010,QB,Western Athletic,8,1.9,3.3,0.0211,0.3,1.9,1.51,0.39,0,"8 games, mostly passing",,CA,-12.79,false
 146234,Mickey Turner,2009,Wisconsin,Wisconsin-2009,TE,Big Ten,6,1.57,0.43,0,0.3,1.6,0,0,1.57,"6 rec, 34 yds, 0 TD",,MO,-12.79,false
 4917270,Harry Lodge,2024,Wake Forest,Wake Forest-2024,TE,ACC,9,2.56,0.75,0.064,0.3,2.6,0,0,2.56,"12 rec, 110 yds, 0 TD",,MA,-12.8,false
 4428969,Joshua Youngblood,2019,Kansas State,Kansas State-2019,WR,Big 12,9,3.09,3.25,0.0395,0.3,3.1,0,1.28,1.81,"9 rec, 73 yds, 0 TD",,FL,-12.8,false
@@ -13777,7 +13777,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4046531,Eddie McDoom,2016,Michigan,Michigan-2016,WR,Big Ten,9,2.92,2.75,0.0215,0.3,2.9,0,1.71,1.21,"154 rush yds, 0 TD, 5 rec, 59 yds, 0 TD",,FL,-12.81,false
 5149563,DJ Butler,2024,Houston,Houston-2024,RB,Big 12,7,2.54,2.44,0.095,0.3,2.5,0,1.46,1.09,"102 rush yds, 0 TD",,AL,-12.81,false
 500415,Venric Mark,2011,Northwestern,Northwestern-2011,RB,Big Ten,6,1.85,1.81,0.0249,0.3,1.8,0,1.62,0.23,"97 rush yds, 0 TD",,TX,-12.81,false
-5151060,Cole Ballard,2025,Kansas,Kansas-2025,QB,Big 12,7,2.22,2.77,0.0412,0.3,2.2,0.9,1.31,0,,,IN,-12.82,false
+5151060,Cole Ballard,2025,Kansas,Kansas-2025,QB,Big 12,7,2.22,2.77,0.0412,0.3,2.2,0.9,1.31,0,"7 games, mostly rushing",,IN,-12.82,false
 4371970,Matt Bjorson,2021,Indiana,Indiana-2021,TE,Big Ten,6,2.48,1.21,0.02,0.3,2.5,0,0,2.48,"8 rec, 69 yds, 0 TD",,IL,-12.82,false
 4373642,Dax Milne,2018,BYU,BYU-2018,WR,FBS Independents,8,2.41,2.24,0.0241,0.3,2.4,0,0.29,2.12,"10 rec, 70 yds, 0 TD",,UT,-12.82,false
 559751,Brandon Harris,2017,North Carolina,North Carolina-2017,QB,ACC,6,1.74,5.96,0.0099,0.3,1.7,0.31,1.43,0,"346 pass yds, 1 TD, 8 INT",,LA,-12.82,false
@@ -13788,8 +13788,8 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4567217,Ja'Varrius Johnson,2024,UCF,UCF-2024,WR,Big 12,8,2.53,2.09,0.0251,0.3,2.5,0,0.5,2.03,"10 rec, 62 yds, 0 TD",,AL,-12.83,false
 5150662,Hayden Large,2025,Iowa,Iowa-2025,TE,Big Ten,6,2.2,1.13,0.0261,0.3,2.2,0,0,2.2,"8 rec, 52 yds, 0 TD",,MI,-12.83,false
 549942,Gavin Locklear,2015,NC State,NC State-2015,WR,ACC,6,2.42,1.08,0.0313,0.3,2.4,0,0,2.42,"7 rec, 75 yds, 0 TD",,NC,-12.84,false
-480265,Morgan Newton,2012,Kentucky,Kentucky-2012,QB,SEC,6,2.2,4.99,0.0198,0.3,2.2,0.15,2.05,0,,,IN,-12.84,false
-4429133,Malik Hornsby,2021,Arkansas,Arkansas-2021,WR,SEC,6,2.46,3.01,0,0.3,2.5,0.31,2.15,0,,,TX,-12.84,false
+480265,Morgan Newton,2012,Kentucky,Kentucky-2012,QB,SEC,6,2.2,4.99,0.0198,0.3,2.2,0.15,2.05,0,"6 games, mostly rushing",,IN,-12.84,false
+4429133,Malik Hornsby,2021,Arkansas,Arkansas-2021,WR,SEC,6,2.46,3.01,0,0.3,2.5,0.31,2.15,0,"6 games, mostly rushing",,TX,-12.84,false
 4362217,Mike O'Laughlin,2023,Houston,Houston-2023,TE,Big 12,9,2.38,1.3,0.0189,0.3,2.4,0,0,2.38,"12 rec, 94 yds, 0 TD",,IL,-12.85,false
 4683263,Heinrich Haarberg,2024,Nebraska,Nebraska-2024,TE,Big Ten,8,2.5,2.57,0.056,0.3,2.5,0.25,2.02,0.22,"102 rush yds, 1 TD, 1 rec, 8 yds, 0 TD",,NE,-12.85,false
 4896391,Sean Wilson,2023,Virginia,Virginia-2023,WR,ACC,8,2.38,1.25,0.0095,0.3,2.4,0,-0.1,2.48,"10 rec, 98 yds, 0 TD",,NY,-12.85,false
@@ -13809,15 +13809,15 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 500475,Kyle Slavin,2014,Colorado,Colorado-2014,TE,Pac-12,8,2.76,1.69,0.0667,0.3,2.8,0,0,2.76,"11 rec, 111 yds, 0 TD",,CO,-12.89,false
 4602783,Trent Battle,2022,TCU,TCU-2022,RB,Big 12,8,2.49,1.07,0.0631,0.3,2.5,0,0.48,2.01,"38 rush yds, 0 TD",,AL,-12.89,false
 3123075,Braxton Berrios,2015,Miami,Miami-2015,WR,ACC,8,2.36,2.11,0.025,0.3,2.4,0,0,2.36,"11 rec, 79 yds, 0 TD",,NC,-12.89,false
-546033,Anthony Jennings,2013,LSU,LSU-2013,QB,SEC,8,2.36,3.68,0.0196,0.3,2.4,0.99,1.36,0,,,GA,-12.89,false
+546033,Anthony Jennings,2013,LSU,LSU-2013,QB,SEC,8,2.36,3.68,0.0196,0.3,2.4,0.99,1.36,0,"8 games, mostly rushing",,GA,-12.89,false
 5079604,Isaiah Marshall,2025,Kansas,Kansas-2025,QB,Big 12,8,2.14,1.44,0.0309,0.3,2.1,0.14,2,0,"160 rush yds, 0 TD",,MI,-12.89,false
 3120349,Jalen Greene,2016,USC,USC-2016,WR,Pac-12,6,2.83,0.88,0.0185,0.3,2.8,0,0.2,2.63,"7 rec, 88 yds, 0 TD",,CA,-12.9,false
 4920135,Kalib Hicks,2025,Oklahoma State,Oklahoma State-2025,RB,Big 12,6,2.13,2.98,0.0288,0.3,2.1,0,2.13,0,"128 rush yds, 0 TD",,TX,-12.9,false
 3127200,Tre Watson,2014,California,California-2014,RB,Pac-12,6,2.75,2.65,0.0575,0.3,2.8,0,2.57,0.18,"94 rush yds, 1 TD",,CA,-12.9,false
-238915,Matt Simms,2011,Tennessee,Tennessee-2011,QB,SEC,6,1.76,2.18,0.0337,0.3,1.8,1.13,0.63,0,,,NJ,-12.9,false
+238915,Matt Simms,2011,Tennessee,Tennessee-2011,QB,SEC,6,1.76,2.18,0.0337,0.3,1.8,1.13,0.63,0,"6 games, mostly passing",,NJ,-12.9,false
 550814,Jacquille Veii,2013,Maryland,Maryland-2013,WR,ACC,9,2.34,2.16,0.0062,0.3,2.3,0,1.59,0.76,"143 rush yds, 0 TD, 5 rec, 18 yds, 0 TD",,MD,-12.91,false
 4587701,Andrel Anthony Jr.,2022,Michigan,Michigan-2022,WR,Big Ten,6,2.47,1.7,0.0194,0.3,2.5,0,-0.03,2.5,"7 rec, 80 yds, 0 TD",,MI,-12.91,false
-4685720,Bryce Young,2020,Alabama,Alabama-2020,QB,SEC,7,1.13,2.14,0,0.3,1.1,1.46,-0.33,0,,,CA,-12.91,false
+4685720,Bryce Young,2020,Alabama,Alabama-2020,QB,SEC,7,1.13,2.14,0,0.3,1.1,1.46,-0.33,0,"7 games, mostly passing",,CA,-12.91,false
 550839,Austin Ramesh,2016,Wisconsin,Wisconsin-2016,RB,Big Ten,10,2.82,2.83,0.0804,0.3,2.8,0,2.28,0.54,"48 rush yds, 3 TD",,WI,-12.91,false
 5081435,Keith Adams Jr.,2024,Clemson,Clemson-2024,RB,ACC,7,2.44,3.29,0.0769,0.3,2.4,0,2.44,0,"111 rush yds, 1 TD",,UT,-12.91,false
 5150582,Salahadin Allah,2025,Oregon State,Oregon State-2025,RB,Pac-12,6,2.12,1.86,0.024,0.3,2.1,0,1.18,0.93,"71 rush yds, 0 TD",,TX,-12.92,false
@@ -13853,7 +13853,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4613193,Joshua Cobbs,2023,Houston,Houston-2023,WR,Big 12,6,2.22,0.77,0.0032,0.3,2.2,0,0,2.22,"7 rec, 63 yds, 0 TD",,TX,-13.01,false
 4430393,Jutahn McClain,2020,Kentucky,Kentucky-2020,RB,SEC,6,1.03,0.83,0.0142,0.3,1,0,1.03,0,"62 rush yds, 0 TD",,OH,-13.01,false
 4035721,Jackson Anthrop,2018,Purdue,Purdue-2018,WR,Big Ten,6,2.22,1.3,0.0181,0.3,2.2,0,-0.02,2.23,"8 rec, 54 yds, 0 TD",,IN,-13.01,false
-483461,Joe Southwick,2011,Boise State,Boise State-2011,QB,Mountain West,7,1.65,1.91,0.0225,0.3,1.6,1.42,0.23,0,,,CA,-13.02,false
+483461,Joe Southwick,2011,Boise State,Boise State-2011,QB,Mountain West,7,1.65,1.91,0.0225,0.3,1.6,1.42,0.23,0,"7 games, mostly passing",,CA,-13.02,false
 511336,Josh Grady,2012,Vanderbilt,Vanderbilt-2012,WR,SEC,9,2.02,2.66,0.0099,0.3,2,0,0.26,1.77,"7 rec, 89 yds, 0 TD",,FL,-13.02,false
 5108220,Kendrick Bell,2024,Michigan,Michigan-2024,WR,Big Ten,6,2.33,1.03,0.0157,0.3,2.3,0,0,2.33,"7 rec, 70 yds, 0 TD",,MO,-13.02,false
 546849,Troy Fumagalli,2014,Wisconsin,Wisconsin-2014,TE,Big Ten,11,2.63,0.91,0.0533,0.3,2.6,0,0,2.63,"12 rec, 169 yds, 0 TD",,IL,-13.02,false
@@ -13878,18 +13878,18 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3930097,Farrod Green,2018,Mississippi State,Mississippi State-2018,TE,SEC,8,2.17,0.9,0.0127,0.3,2.2,0,0,2.17,"10 rec, 74 yds, 0 TD",,MS,-13.05,false
 237191,Jeremy Stewart,2010,Stanford,Stanford-2010,RB,Pac-10,6,1.63,3.18,0.0297,0.3,1.6,0,1.63,0,"38 rush yds, 1 TD",,LA,-13.06,false
 530988,Kenneth Walker,2012,UCLA,UCLA-2012,WR,Pac-12,6,1.98,1.02,0.0033,0.3,2,0,-0.02,2,"8 rec, 40 yds, 0 TD",,CA,-13.06,false
-243266,Joe Bauserman,2010,Ohio State,Ohio State-2010,QB,Big Ten,8,1.63,3.12,0.0105,0.3,1.6,1.62,0.01,0,,,VA,-13.06,false
+243266,Joe Bauserman,2010,Ohio State,Ohio State-2010,QB,Big Ten,8,1.63,3.12,0.0105,0.3,1.6,1.62,0.01,0,"8 games, mostly passing",,VA,-13.06,false
 515818,Damiere Byrd,2011,South Carolina,South Carolina-2011,WR,SEC,6,1.6,1.66,0,0.3,1.6,0,1.17,0.43,"1 rec, 16 yds, 0 TD",,NJ,-13.06,false
 4038814,Chavis Dawkins,2019,South Carolina,South Carolina-2019,WR,SEC,7,2.83,1.37,0.0334,0.3,2.8,0,0,2.83,"10 rec, 98 yds, 0 TD",,SC,-13.06,false
 4360425,Ronnie Walker Jr.,2019,Indiana,Indiana-2019,RB,Big Ten,12,2.83,3.92,0.1116,0.3,2.8,0,0.65,2.18,"78 rush yds, 0 TD, 10 rec, 101 yds, 1 TD",,VA,-13.07,false
-4570057,Cole Snyder,2021,Rutgers,Rutgers-2021,QB,Big Ten,6,2.23,2.11,0.0112,0.3,2.2,1.53,0.7,0,,,NY,-13.07,false
+4570057,Cole Snyder,2021,Rutgers,Rutgers-2021,QB,Big Ten,6,2.23,2.11,0.0112,0.3,2.2,1.53,0.7,0,"6 games, mostly passing",,NY,-13.07,false
 3116659,Charles Standberry,2015,Louisville,Louisville-2015,TE,ACC,6,2.18,1.38,0,0.3,2.2,0,0,2.18,"6 rec, 71 yds, 0 TD",,AL,-13.07,false
 5141402,Royal Capell,2025,Oklahoma State,Oklahoma State-2025,WR,Big 12,8,1.96,1.95,0.01,0.3,2,0,0.13,1.84,"10 rec, 47 yds, 0 TD",,TX,-13.07,false
-381967,Mike Glennon,2009,NC State,NC State-2009,QB,ACC,7,1.29,2.53,0.022,0.3,1.3,1.42,-0.13,0,,,VA,-13.07,false
+381967,Mike Glennon,2009,NC State,NC State-2009,QB,ACC,7,1.29,2.53,0.022,0.3,1.3,1.42,-0.13,0,"7 games, mostly passing",,VA,-13.07,false
 549947,Dakwa Nichols,2016,NC State,NC State-2016,RB,ACC,7,2.66,4.12,0.067,0.3,2.7,0,2.04,0.61,"83 rush yds, 1 TD",,NC,-13.07,false
 4428209,Ricky Pearsall,2019,Arizona State,Arizona State-2019,WR,Pac-12,6,2.82,1.26,0.0304,0.3,2.8,0,0,2.82,"6 rec, 109 yds, 0 TD",,AZ,-13.07,false
 4371870,Isaac Ruoss,2019,Navy,Navy-2019,RB,American Athletic,6,2.82,2.5,0.107,0.3,2.8,0,2.82,0,"109 rush yds, 1 TD",,PA,-13.07,false
-4911961,Jack Lausch,2023,Northwestern,Northwestern-2023,QB,Big Ten,8,2.15,3.99,0,0.3,2.2,0.05,1.74,0.36,,,IL,-13.08,false
+4911961,Jack Lausch,2023,Northwestern,Northwestern-2023,QB,Big Ten,8,2.15,3.99,0,0.3,2.2,0.05,1.74,0.36,"8 games, mostly rushing",,IL,-13.08,false
 500415,Venric Mark,2010,Northwestern,Northwestern-2010,RB,Big Ten,7,1.61,1.42,0.0248,0.3,1.6,0,0.59,1.03,"41 rush yds, 0 TD",,TX,-13.08,false
 3122166,Dallas Rivers,2016,Vanderbilt,Vanderbilt-2016,RB,SEC,7,2.64,2.38,0.0625,0.3,2.6,0,2.17,0.47,"92 rush yds, 1 TD",,GA,-13.09,false
 237325,Jared Crank,2010,Purdue,Purdue-2010,RB,Big Ten,10,1.6,3.2,0.0198,0.3,1.6,0,1.36,0.24,"76 rush yds, 1 TD",,TX,-13.09,false
@@ -13906,14 +13906,14 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4036409,Tyler Burns,2020,Kansas State,Kansas State-2020,RB,Big 12,7,0.9,0.77,0,0.3,0.9,0,0.51,0.39,"36 rush yds, 0 TD",,KS,-13.14,false
 233147,Preston Lyons,2010,Georgia Tech,Georgia Tech-2010,RB,ACC,8,1.54,1.75,0.0149,0.3,1.5,0,0.75,0.79,"60 rush yds, 0 TD",,GA,-13.15,false
 4239999,Will Swinney,2019,Clemson,Clemson-2019,WR,ACC,8,2.74,2.33,0.0243,0.3,2.7,0,0.06,2.68,"12 rec, 94 yds, 0 TD",,SC,-13.15,false
-545550,John O'Korn,2016,Michigan,Michigan-2016,QB,Big Ten,7,2.57,2.04,0.05,0.3,2.6,2.13,0.44,0,,,PA,-13.16,false
+545550,John O'Korn,2016,Michigan,Michigan-2016,QB,Big Ten,7,2.57,2.04,0.05,0.3,2.6,2.13,0.44,0,"7 games, mostly passing",,PA,-13.16,false
 4035849,Zion Echols,2017,California,California-2017,RB,Pac-12,6,1.4,1.12,0.0132,0.3,1.4,0,0.28,1.12,"17 rush yds, 0 TD",,CA,-13.16,false
 3116164,Mike Gesicki,2014,Penn State,Penn State-2014,TE,Big Ten,9,2.49,1.31,0.0267,0.3,2.5,0,0,2.49,"11 rec, 114 yds, 0 TD",,NJ,-13.16,false
 546829,Warren Long,2014,Northwestern,Northwestern-2014,RB,Big Ten,8,2.49,2.51,0.0487,0.3,2.5,0,1.54,0.95,"123 rush yds, 0 TD",,CA,-13.16,false
 3932440,C.J. Sanders,2019,SMU,SMU-2019,WR,American Athletic,7,2.73,2.81,0.0213,0.3,2.7,0,0.06,2.67,"7 rec, 117 yds, 0 TD",,CA,-13.16,false
 145030,Brady Leaf,2007,Oregon,Oregon-2007,QB,Pac-10,6,1.21,0.8,0.0125,0.3,1.2,1.17,0.03,0,"276 pass yds, 0 TD, 2 INT",,,-13.17,false
-4685526,Adam Randall,2022,Clemson,Clemson-2022,RB,ACC,7,2.2,1.44,0.045,0.3,2.2,0,0,2.2,,,SC,-13.18,false
-192386,Elijah Wesson,2008,Utah,Utah-2008,WR,Mountain West,6,0.53,0.75,0,0.3,0.5,0,0.53,0,,,CA,-13.18,false
+4685526,Adam Randall,2022,Clemson,Clemson-2022,RB,ACC,7,2.2,1.44,0.045,0.3,2.2,0,0,2.2,"7 games, mostly receiving",,SC,-13.18,false
+192386,Elijah Wesson,2008,Utah,Utah-2008,WR,Mountain West,6,0.53,0.75,0,0.3,0.5,0,0.53,0,"6 games, mostly rushing",,CA,-13.18,false
 4035469,J.C. Chalk,2019,Clemson,Clemson-2019,TE,ACC,7,2.71,1.07,0.0426,0.3,2.7,0,0,2.71,"13 rec, 60 yds, 0 TD",,TX,-13.18,false
 4255988,B.J. Baylor,2018,Oregon State,Oregon State-2018,RB,Pac-12,8,2.05,2.82,0.0194,0.3,2,0,1.75,0.3,"80 rush yds, 1 TD",,TX,-13.18,false
 550478,Delton Williams,2015,Michigan State,Michigan State-2015,RB,Big Ten,7,2.07,2.14,0.0224,0.3,2.1,0,1.57,0.5,"50 rush yds, 1 TD",,PA,-13.18,false
@@ -13927,7 +13927,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3116145,Solomon Vault,2018,Northwestern,Northwestern-2018,WR,Big Ten,8,2.02,1.68,0.0151,0.3,2,0,0.86,1.16,"8 rec, 13 yds, 0 TD",,MD,-13.21,false
 4567223,Mark-Antony Richards,2023,UCF,UCF-2023,RB,Big 12,7,2.01,2.27,0.0314,0.3,2,0,1.33,0.69,"33 rush yds, 1 TD",,FL,-13.21,false
 4046826,Darien Rencher,2019,Clemson,Clemson-2019,RB,ACC,12,2.68,2.84,0.093,0.3,2.7,0,2.13,0.55,"135 rush yds, 2 TD",,SC,-13.22,false
-5158446,Brock Thomas,2025,Oregon,Oregon-2025,QB,Big Ten,6,1.82,2.25,0.0206,0.3,1.8,1.53,0.28,0,,,OR,-13.22,false
+5158446,Brock Thomas,2025,Oregon,Oregon-2025,QB,Big Ten,6,1.82,2.25,0.0206,0.3,1.8,1.53,0.28,0,"6 games, mostly passing",,OR,-13.22,false
 4690811,Savion Red,2023,Texas,Texas-2023,RB,Big 12,10,2.01,2.79,0.0269,0.3,2,0.1,1.91,0,"131 rush yds, 1 TD",,TX,-13.22,false
 3917953,Carson Epps,2015,Iowa State,Iowa State-2015,WR,Big 12,6,2.03,1.46,0.0156,0.3,2,0,0,2.03,"8 rec, 42 yds, 0 TD",,OK,-13.22,false
 3122791,Sherman Alston Jr.,2015,Boston College,Boston College-2015,WR,ACC,9,2.03,2.12,0.0125,0.3,2,0,0.4,1.63,"7 rec, 77 yds, 0 TD",,TX,-13.22,false
@@ -14004,9 +14004,9 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4361530,Artur Sitkowski,2018,Rutgers,Rutgers-2018,QB,Big Ten,11,1.79,7.07,0,0.3,1.8,2.39,-0.6,0,"1,157 pass yds, 4 TD, 18 INT",,NJ,-13.44,false
 4035390,Jared Atkinson,2019,Baylor,Baylor-2019,WR,Big 12,6,2.45,0.9,0.0122,0.3,2.4,0,0,2.45,"7 rec, 77 yds, 0 TD",,TX,-13.44,false
 4608691,Maximilian Mang,2022,Syracuse,Syracuse-2022,TE,ACC,6,1.93,0.78,0.0189,0.3,1.9,0,0,1.93,"6 rec, 56 yds, 0 TD",,,-13.44,false
-501098,Clint Trickett,2012,Florida State,Florida State-2012,QB,ACC,7,1.6,1.72,0.0099,0.3,1.6,1.55,0.04,0,,,FL,-13.44,false
+501098,Clint Trickett,2012,Florida State,Florida State-2012,QB,ACC,7,1.6,1.72,0.0099,0.3,1.6,1.55,0.04,0,"7 games, mostly passing",,FL,-13.44,false
 550189,David Yancey,2016,Purdue,Purdue-2016,RB,Big Ten,7,2.29,1.37,0.0268,0.3,2.3,0,0.37,1.91,"26 rush yds, 0 TD",,IN,-13.45,false
-4242210,Myles Brennan,2017,LSU,LSU-2017,QB,SEC,6,1.11,2.04,0,0.3,1.1,1.21,-0.1,0,,,MS,-13.45,false
+4242210,Myles Brennan,2017,LSU,LSU-2017,QB,SEC,6,1.11,2.04,0,0.3,1.1,1.21,-0.1,0,"6 games, mostly passing",,MS,-13.45,false
 511828,Tre Mason,2011,Auburn,Auburn-2011,RB,SEC,8,1.21,0.93,0.01,0.3,1.2,0,1.21,0,"97 rush yds, 0 TD",,FL,-13.45,false
 4240025,Bailey Hockman,2019,NC State,NC State-2019,QB,ACC,7,2.43,4.15,0.0208,0.3,2.4,2.55,-0.11,0,"546 pass yds, 1 TD, 4 INT",,GA,-13.46,false
 4040867,Beau Bisharat,2017,Colorado,Colorado-2017,TE,Pac-12,7,1.1,1.42,0,0.3,1.1,0,0.87,0.23,"1 rec, 6 yds, 0 TD",,CA,-13.46,false
@@ -14018,7 +14018,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4877627,Chase Gillespie,2023,Vanderbilt,Vanderbilt-2023,RB,SEC,8,1.75,1.72,0.0224,0.3,1.8,0,0.78,0.98,"62 rush yds, 0 TD",,FL,-13.48,false
 3116680,Austin Proehl,2014,North Carolina,North Carolina-2014,WR,ACC,11,2.17,1.08,0.0091,0.3,2.2,0,0,2.17,"14 rec, 99 yds, 0 TD",,NC,-13.48,false
 4239941,Travis Levy,2019,Boston College,Boston College-2019,RB,ACC,7,2.41,3.31,0.0698,0.3,2.4,0,2.14,0.27,"90 rush yds, 1 TD",,MD,-13.48,false
-3116417,Foster Sawyer,2016,TCU,TCU-2016,QB,Big 12,7,2.25,2.57,0.03,0.3,2.2,1.87,0.37,0,,,TX,-13.49,false
+3116417,Foster Sawyer,2016,TCU,TCU-2016,QB,Big 12,7,2.25,2.57,0.03,0.3,2.2,1.87,0.37,0,"7 games, mostly passing",,TX,-13.49,false
 4568075,Juan Davis,2024,Texas,Texas-2024,TE,SEC,6,1.87,0.58,0.008,0.3,1.9,0,0,1.87,"7 rec, 42 yds, 0 TD",,TX,-13.49,false
 3676529,Jarrison Stewart,2016,TCU,TCU-2016,WR,Big 12,7,2.24,0.98,0.0062,0.3,2.2,0,0,2.24,"9 rec, 67 yds, 0 TD",,TX,-13.49,false
 3121560,George Rushing,2014,Wisconsin,Wisconsin-2014,WR,Big Ten,6,2.15,1.66,0.0061,0.3,2.1,0,0.28,1.87,"5 rec, 62 yds, 0 TD",,FL,-13.5,false
@@ -14049,7 +14049,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4240603,Malik Davis,2019,Florida,Florida-2019,RB,SEC,10,2.25,2.85,0.0558,0.3,2.3,0,1.43,0.82,"83 rush yds, 1 TD",,FL,-13.64,false
 3915969,John Moten IV,2017,Northwestern,Northwestern-2017,RB,Big Ten,6,0.92,0.85,0,0.3,0.9,0,0.92,0,"55 rush yds, 0 TD",,MO,-13.64,false
 4255986,Champ Flemings,2018,Oregon State,Oregon State-2018,WR,Pac-12,6,1.58,3.24,0.003,0.3,1.6,0,-0.22,1.8,"4 rec, 68 yds, 0 TD",,CA,-13.65,false
-4433971,Kyle McCord,2022,Ohio State,Ohio State-2022,QB,Big Ten,7,1.71,3.05,0.0105,0.3,1.7,1.66,0.06,0,,,PA,-13.66,false
+4433971,Kyle McCord,2022,Ohio State,Ohio State-2022,QB,Big Ten,7,1.71,3.05,0.0105,0.3,1.7,1.66,0.06,0,"7 games, mostly passing",,PA,-13.66,false
 4683582,Lawson Albright,2025,Northwestern,Northwestern-2025,TE,Big Ten,9,1.37,1.04,0,0.3,1.4,0,0.02,1.34,"7 rec, 51 yds, 0 TD",,NC,-13.67,false
 4035537,Kene Nwangwu,2019,Iowa State,Iowa State-2019,RB,Big 12,6,2.22,1.93,0.0512,0.3,2.2,0,1.92,0.3,"115 rush yds, 0 TD",,TX,-13.67,false
 4362632,Chris Curry,2019,LSU,LSU-2019,RB,SEC,6,2.22,1.94,0.0465,0.3,2.2,0,1.65,0.57,"99 rush yds, 0 TD",,FL,-13.67,false
@@ -14064,16 +14064,16 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4685445,Rayshon Luke,2022,Arizona,Arizona-2022,RB,Pac-12,7,1.66,1.44,0.018,0.3,1.7,0,1.5,0.16,"105 rush yds, 0 TD",,CA,-13.72,false
 4044439,Dorian Maddox,2019,Stanford,Stanford-2019,RB,Pac-12,7,2.17,2.14,0.0419,0.3,2.2,0,1.07,1.1,"75 rush yds, 0 TD",,MD,-13.72,false
 4259348,Daniel Young,2018,Texas,Texas-2018,RB,Big 12,10,1.5,1.92,0.0049,0.3,1.5,0,1.5,0,"150 rush yds, 0 TD",,TX,-13.73,false
-530875,Jeff Lockie,2013,Oregon,Oregon-2013,QB,Pac-12,6,1.51,2.8,0.0098,0.3,1.5,0.05,1.47,0,,,CA,-13.74,false
-5126464,Deuce Adams,2025,Louisville,Louisville-2025,QB,ACC,6,1.3,2.08,0.0103,0.3,1.3,0.75,0.55,0,,,TX,-13.74,false
-501176,Michael Rocco,2010,Virginia,Virginia-2010,QB,ACC,6,0.95,1.79,0,0.3,1,0.95,0,0,,,VA,-13.74,false
+530875,Jeff Lockie,2013,Oregon,Oregon-2013,QB,Pac-12,6,1.51,2.8,0.0098,0.3,1.5,0.05,1.47,0,"6 games, mostly rushing",,CA,-13.74,false
+5126464,Deuce Adams,2025,Louisville,Louisville-2025,QB,ACC,6,1.3,2.08,0.0103,0.3,1.3,0.75,0.55,0,"6 games, mostly passing",,TX,-13.74,false
+501176,Michael Rocco,2010,Virginia,Virginia-2010,QB,ACC,6,0.95,1.79,0,0.3,1,0.95,0,0,"6 games, mostly passing",,VA,-13.74,false
 4602783,Trent Battle,2023,TCU,TCU-2023,RB,Big 12,9,1.48,1.57,0.0179,0.3,1.5,0,0.28,1.2,"25 rush yds, 0 TD",,AL,-13.75,false
 503233,Donnell Kirkwood,2014,Minnesota,Minnesota-2014,RB,Big Ten,11,1.9,2.97,0.0221,0.3,1.9,0,1.9,0,"89 rush yds, 2 TD",,FL,-13.75,false
-4695709,Devin Brown,2024,Ohio State,Ohio State-2024,QB,Big Ten,6,1.6,1.89,0,0.3,1.6,1.39,0.22,0,,,AZ,-13.75,false
+4695709,Devin Brown,2024,Ohio State,Ohio State-2024,QB,Big Ten,6,1.6,1.89,0,0.3,1.6,1.39,0.22,0,"6 games, mostly passing",,AZ,-13.75,false
 4243249,TJ Green,2019,Utah,Utah-2019,RB,Pac-12,6,2.13,2.78,0.0372,0.3,2.1,0,2.13,0,"68 rush yds, 1 TD",,AZ,-13.76,false
 5079643,Zion Ragins,2024,Oklahoma,Oklahoma-2024,WR,SEC,7,1.59,0.82,0.0031,0.3,1.6,0,0.04,1.54,"6 rec, 48 yds, 0 TD",,GA,-13.77,false
 511363,Clifton Richardson,2012,Virginia,Virginia-2012,RB,ACC,7,1.27,1.21,0.0149,0.3,1.3,0,0.84,0.43,"59 rush yds, 0 TD",,VA,-13.77,false
-4243258,Jason Shelley,2019,Utah,Utah-2019,QB,Pac-12,7,2.12,5.11,0.0104,0.3,2.1,0.82,1.3,0,,,TX,-13.77,false
+4243258,Jason Shelley,2019,Utah,Utah-2019,QB,Pac-12,7,2.12,5.11,0.0104,0.3,2.1,0.82,1.3,0,"7 games, mostly rushing",,TX,-13.77,false
 4595354,Gabe Ervin,2022,Nebraska,Nebraska-2022,RB,Big Ten,7,1.6,2.12,0.0135,0.3,1.6,0,1.34,0.26,"94 rush yds, 0 TD",,GA,-13.78,false
 3139456,Cameron Batson,2014,Texas Tech,Texas Tech-2014,WR,Big 12,7,1.87,0.67,0.003,0.3,1.9,0,0,1.87,"9 rec, 41 yds, 0 TD",,OK,-13.78,false
 4814930,Hank Beatty,2022,Illinois,Illinois-2022,WR,Big Ten,6,1.58,0.7,0,0.3,1.6,0,0,1.58,"7 rec, 25 yds, 0 TD",,IL,-13.79,false
@@ -14086,8 +14086,8 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3915757,Josh Crawford,2015,Vanderbilt,Vanderbilt-2015,RB,SEC,6,1.42,1.98,0.0135,0.3,1.4,0,0.9,0.52,"54 rush yds, 0 TD",,AL,-13.84,false
 559642,Jeremy Liggins,2014,Ole Miss,Ole Miss-2014,RB,SEC,10,1.81,2.99,0.0133,0.3,1.8,0,1.68,0.13,"48 rush yds, 2 TD",,MS,-13.84,false
 4569988,Enoch Nawahine,2025,BYU,BYU-2025,RB,Big 12,8,1.18,1.22,0,0.3,1.2,0,0.63,0.55,"50 rush yds, 0 TD",,HI,-13.86,false
-175658,Jonathan Crompton,2007,Tennessee,Tennessee-2007,QB,SEC,6,0.5,3.07,0,0.3,0.5,0.65,-0.15,0,,,NC,-13.88,false
-5155864,Julian Dugger,2025,Washington State,Washington State-2025,QB,Pac-12,7,1.14,2.78,0,0.3,1.1,0,0.89,0.26,,,PA,-13.89,false
+175658,Jonathan Crompton,2007,Tennessee,Tennessee-2007,QB,SEC,6,0.5,3.07,0,0.3,0.5,0.65,-0.15,0,"6 games, mostly passing",,NC,-13.88,false
+5155864,Julian Dugger,2025,Washington State,Washington State-2025,QB,Pac-12,7,1.14,2.78,0,0.3,1.1,0,0.89,0.26,"7 games, mostly rushing",,PA,-13.89,false
 4035466,T.J. Chase,2019,Clemson,Clemson-2019,WR,ACC,7,2,0.47,0.0091,0.3,2,0,0,2,"7 rec, 70 yds, 0 TD",,FL,-13.89,false
 4372472,Paul Woods,2019,Rutgers,Rutgers-2019,WR,Big Ten,7,1.97,1.43,0.0061,0.3,2,0,0,1.97,"9 rec, 48 yds, 0 TD",,NY,-13.92,false
 4432453,Isaiah Newell,2023,Oregon State,Oregon State-2023,RB,Pac-12,6,1.3,1.31,0.0135,0.3,1.3,0,1.3,0,"78 rush yds, 0 TD",,CA,-13.93,false
@@ -14097,7 +14097,7 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4869582,Cam Barfield,2022,Boston College,Boston College-2022,RB,ACC,6,1.37,1.27,0.009,0.3,1.4,0,0.88,0.48,"53 rush yds, 0 TD",,NV,-14.01,false
 4035507,Malik Miller,2019,Auburn,Auburn-2019,RB,SEC,7,1.87,1.31,0.0233,0.3,1.9,0,0.6,1.27,"42 rush yds, 0 TD",,AL,-14.02,false
 4685699,Damari Alston,2022,Auburn,Auburn-2022,RB,SEC,8,1.35,1.46,0.0045,0.3,1.3,0,1.06,0.29,"85 rush yds, 0 TD",,GA,-14.03,false
-535461,Gunnar Holcombe,2014,Marshall,Marshall-2014,QB,Conference USA,7,1.62,1.33,0,0.3,1.6,0.68,0.94,0,,,FL,-14.03,false
+535461,Gunnar Holcombe,2014,Marshall,Marshall-2014,QB,Conference USA,7,1.62,1.33,0,0.3,1.6,0.68,0.94,0,"7 games, mostly rushing",,FL,-14.03,false
 4046826,Darien Rencher,2018,Clemson,Clemson-2018,RB,ACC,6,1.17,0.59,0,0.3,1.2,0,1.07,0.1,"64 rush yds, 0 TD",,SC,-14.06,false
 3895431,Traveon Samuel,2019,Memphis,Memphis-2019,WR,American Athletic,8,1.82,1.48,0.003,0.3,1.8,0,0.97,0.85,"5 rec, 18 yds, 0 TD",,AL,-14.07,false
 512198,Hunter Joyer,2012,Florida,Florida-2012,TE,SEC,6,0.97,0.73,0,0.3,1,0,0.02,0.95,"4 rec, 17 yds, 0 TD",,FL,-14.07,false
@@ -14109,17 +14109,17 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 3895827,Ty'Son Williams,2015,North Carolina,North Carolina-2015,RB,ACC,6,1.12,1.26,0.009,0.3,1.1,0,0.95,0.17,"57 rush yds, 0 TD",,SC,-14.14,false
 531103,Dennis Andrews,2014,Georgia Tech,Georgia Tech-2014,WR,ACC,7,1.5,1.24,0,0.3,1.5,0,1.5,0,"105 rush yds, 0 TD",,FL,-14.15,false
 4429709,Jamious Griffin,2019,Georgia Tech,Georgia Tech-2019,RB,ACC,9,1.73,1.64,0.014,0.3,1.7,0,1.39,0.34,"125 rush yds, 0 TD",,GA,-14.16,false
-501949,Connor Wood,2012,Colorado,Colorado-2012,QB,Pac-12,6,0.88,3.78,0,0.3,0.9,1.1,-0.22,0,,,TX,-14.16,false
+501949,Connor Wood,2012,Colorado,Colorado-2012,QB,Pac-12,6,0.88,3.78,0,0.3,0.9,1.1,-0.22,0,"6 games, mostly passing",,TX,-14.16,false
 5095218,Ryan Butler,2023,Stanford,Stanford-2023,RB,Pac-12,7,1.06,1.69,0.0045,0.3,1.1,0,0.86,0.2,"60 rush yds, 0 TD",,NJ,-14.17,false
 4363045,Camm McDonald,2019,Florida State,Florida State-2019,TE,ACC,6,1.72,0.93,0,0.3,1.7,0,0,1.72,"6 rec, 43 yds, 0 TD",,CA,-14.17,false
-550967,Malik Zaire,2016,Notre Dame,Notre Dame-2016,QB,FBS Independents,8,1.54,2.07,0.02,0.3,1.5,1.11,0.43,0,,,OH,-14.2,false
+550967,Malik Zaire,2016,Notre Dame,Notre Dame-2016,QB,FBS Independents,8,1.54,2.07,0.02,0.3,1.5,1.11,0.43,0,"8 games, mostly passing",,OH,-14.2,false
 5076584,Terrell Washington Jr.,2024,Iowa,Iowa-2024,RB,Big Ten,6,1.13,0.45,0.0181,0.3,1.1,0,0.52,0.62,"31 rush yds, 0 TD",,TX,-14.22,false
 481493,John Hubert,2010,Kansas State,Kansas State-2010,RB,Big 12,6,0.47,0.74,0,0.3,0.5,0,0.47,0,"28 rush yds, 0 TD",,TX,-14.22,false
 4428211,Nathaniel Peat,2019,Stanford,Stanford-2019,RB,Pac-12,9,1.67,1,0.0093,0.3,1.7,0,0.63,1.03,"57 rush yds, 0 TD",,MO,-14.22,false
 4877627,Chase Gillespie,2024,Vanderbilt,Vanderbilt-2024,RB,SEC,6,1.12,0.98,0.0136,0.3,1.1,0,0.85,0.27,"51 rush yds, 0 TD",,FL,-14.24,false
 541013,C.J. Davidson,2015,Clemson,Clemson-2015,RB,ACC,6,1,1.1,0.0045,0.3,1,0,1,0,"60 rush yds, 0 TD",,SC,-14.25,false
 4605477,Alante Brown,2023,Michigan State,Michigan State-2023,WR,Big Ten,8,0.97,1.27,0,0.3,1,0.21,0.05,0.71,"3 rec, 27 yds, 0 TD",,IL,-14.25,false
-183667,Marc Verica,2009,Virginia,Virginia-2009,QB,ACC,6,0.09,1.07,0.011,0.3,0.1,0.71,-0.62,0,,,PA,-14.27,false
+183667,Marc Verica,2009,Virginia,Virginia-2009,QB,ACC,6,0.09,1.07,0.011,0.3,0.1,0.71,-0.62,0,"6 games, mostly passing",,PA,-14.27,false
 3122119,Ish Witter,2014,Missouri,Missouri-2014,RB,SEC,11,1.35,2.69,0.0088,0.3,1.4,0,1.35,0,"89 rush yds, 1 TD",,FL,-14.3,false
 4362632,Chris Curry,2021,Utah,Utah-2021,RB,Pac-12,8,1,0.85,0.0096,0.3,1,0,1,0,"80 rush yds, 0 TD",,FL,-14.3,false
 4923288,Barry Jackson Jr.,2024,Cincinnati,Cincinnati-2024,WR,Big 12,7,1.04,1.08,0,0.3,1,0,0.3,0.74,"3 rec, 22 yds, 0 TD",,GA,-14.31,false
@@ -14128,18 +14128,18 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 4372568,Nakia Watson,2021,Washington State,Washington State-2021,RB,Pac-12,6,0.87,0.9,0.0048,0.3,0.9,0,0.87,0,"52 rush yds, 0 TD",,TX,-14.43,false
 504744,Kenny Bassett,2012,Oregon,Oregon-2012,RB,Pac-12,7,0.57,0.62,0,0.3,0.6,0,0.57,0,"40 rush yds, 0 TD",,CA,-14.47,false
 381491,Iona Pritchard,2012,BYU,BYU-2012,RB,FBS Independents,7,0.57,0.42,0,0.3,0.6,0,0.57,0,"40 rush yds, 0 TD",,UT,-14.47,false
-3916725,Tom Flacco,2016,Western Michigan,Western Michigan-2016,QB,Mid-American,6,1.23,2.11,0.01,0.3,1.2,0,1.23,0,,,NJ,-14.5,false
+3916725,Tom Flacco,2016,Western Michigan,Western Michigan-2016,QB,Mid-American,6,1.23,2.11,0.01,0.3,1.2,0,1.23,0,"6 games, mostly rushing",,NJ,-14.5,false
 4918103,Cam Cook,2023,TCU,TCU-2023,RB,Big 12,8,0.72,0.87,0,0.3,0.7,0,0.72,0,"58 rush yds, 0 TD",,TX,-14.5,false
-550477,Damion Terry,2015,Michigan State,Michigan State-2015,QB,Big Ten,8,0.75,0.9,0,0.3,0.8,0.07,0.68,0,,,PA,-14.5,false
-4242974,Austin Burton,2021,Purdue,Purdue-2021,QB,Big Ten,7,0.79,0.83,0,0.3,0.8,0.25,0.54,0,,,MA,-14.51,false
+550477,Damion Terry,2015,Michigan State,Michigan State-2015,QB,Big Ten,8,0.75,0.9,0,0.3,0.8,0.07,0.68,0,"8 games, mostly rushing",,PA,-14.5,false
+4242974,Austin Burton,2021,Purdue,Purdue-2021,QB,Big Ten,7,0.79,0.83,0,0.3,0.8,0.25,0.54,0,"7 games, mostly rushing",,MA,-14.51,false
 4360803,Marcus Riley,2018,Louisville,Louisville-2018,WR,ACC,6,0.72,0.81,0,0.3,0.7,0,0.07,0.65,"3 rec, 9 yds, 0 TD",,FL,-14.51,false
 530652,George Morris,2014,Syracuse,Syracuse-2014,RB,ACC,9,1.12,1.01,0.0044,0.3,1.1,0,1.12,0,"101 rush yds, 0 TD",,GA,-14.53,false
 537720,Lane Roseberry,2013,Oregon,Oregon-2013,RB,Pac-12,6,0.67,0.64,0.0093,0.3,0.7,0,0.67,0,"40 rush yds, 0 TD",,OR,-14.58,false
-480235,Richard Brehaut,2009,UCLA,UCLA-2009,QB,Pac-10,6,-0.22,1.15,0,0.3,-0.2,0,0,0,,,CA,-14.58,false
+480235,Richard Brehaut,2009,UCLA,UCLA-2009,QB,Pac-10,6,-0.22,1.15,0,0.3,-0.2,0,0,0,"6 games, no offensive stats recorded",,CA,-14.58,false
 500231,Tony Zenon,2013,Georgia Tech,Georgia Tech-2013,RB,ACC,8,0.64,0.97,0.0046,0.3,0.6,0,0.44,0.2,"35 rush yds, 0 TD",,GA,-14.61,false
 5084286,Makhi Frazier,2024,Michigan State,Michigan State-2024,RB,Big Ten,6,0.72,0.83,0.0045,0.3,0.7,0,0.35,0.37,"21 rush yds, 0 TD",,TX,-14.64,false
 4033797,Trey Sneed,2016,Rutgers,Rutgers-2016,RB,Big Ten,6,1.08,0.86,0.0089,0.3,1.1,0,0.88,0.2,"53 rush yds, 0 TD",,FL,-14.65,false
-4427740,Cole Kramer,2022,Minnesota,Minnesota-2022,QB,Big Ten,6,0.72,0.66,0,0.3,0.7,0.27,0.45,0,,,MN,-14.65,false
+4427740,Cole Kramer,2022,Minnesota,Minnesota-2022,QB,Big Ten,6,0.72,0.66,0,0.3,0.7,0.27,0.45,0,"6 games, mostly rushing",,MN,-14.65,false
 546051,Elijah Wellman,2016,West Virginia,West Virginia-2016,TE,Big 12,7,1.03,0.78,0,0.3,1,0,0.63,0.4,"2 rec, 8 yds, 0 TD",,WV,-14.7,false
 547575,Marcus Stamps,2015,San Diego State,San Diego State-2015,RB,Mountain West,6,0.55,0.39,0,0.3,0.6,0,0.55,0,"33 rush yds, 0 TD",,CA,-14.7,false
 505319,Ricky Seale,2013,Stanford,Stanford-2013,RB,Pac-12,6,0.5,0.71,0,0.3,0.5,0,0.5,0,"30 rush yds, 0 TD",,CA,-14.75,false
@@ -14150,6 +14150,6 @@ player_id,name,season,school,team_season_id,position,conference,games_played,ppr
 5084178,Jamoni Jones,2024,Vanderbilt,Vanderbilt-2024,RB,SEC,11,0.45,0.54,0,0.3,0.5,0,0.45,0,"50 rush yds, 0 TD",,OK,-14.9,false
 4568233,Jaylen Coleman,2021,Duke,Duke-2021,RB,ACC,7,0.2,0.2,0,0.3,0.2,0,0.2,0,"14 rush yds, 0 TD",,NC,-15.1,false
 547217,Denzell Evans,2016,Kansas,Kansas-2016,RB,Big 12,7,0.41,0.89,0,0.3,0.4,0,0.41,0,"29 rush yds, 0 TD",,TX,-15.32,false
-3122790,Darius Wade,2016,Boston College,Boston College-2016,QB,ACC,7,0.37,1.31,0,0.3,0.4,0.29,0.09,0,,,DE,-15.36,false
-4432774,Ty Thompson,2022,Oregon,Oregon-2022,TE,Pac-12,6,-0.29,1.56,0,0.3,-0.3,0,0,0,,,AZ,-15.66,false
+3122790,Darius Wade,2016,Boston College,Boston College-2016,QB,ACC,7,0.37,1.31,0,0.3,0.4,0.29,0.09,0,"7 games, mostly passing",,DE,-15.36,false
+4432774,Ty Thompson,2022,Oregon,Oregon-2022,TE,Pac-12,6,-0.29,1.56,0,0.3,-0.3,0,0,0,"6 games, no offensive stats recorded",,AZ,-15.66,false
 4035285,Deuce Wallace,2019,Vanderbilt,Vanderbilt-2019,QB,SEC,8,0.15,2.06,0,0.3,0.1,0.53,-0.39,0,"307 pass yds, 0 TD, 4 INT",,TN,-15.74,false

@@ -5949,7 +5949,7 @@ async function boot(){
        is large enough that the JSON parse is a real part of the wait, and a bar that
        jumped to full while the main thread was still busy would be lying at the one
        moment it matters. */
-    const j=(f)=>fetch(f+'?v=8').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=9').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
     /* The poll is fetched alongside the rest but is allowed to be absent: it is the
        only file the game can run without, and a project that has not run
@@ -5969,7 +5969,7 @@ async function boot(){
        league unranked, which quietly makes five badges unearnable. A missing file
        is loud by comparison. 400 is well under a real poll, which carries about
        twenty seasons of top 25, and well over anything a broken write produces. */
-    fetch('data/cfb_rankings.json?v=8').then(r=>r.ok?r.json():null)
+    fetch('data/cfb_rankings.json?v=9').then(r=>r.ok?r.json():null)
       .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
       .catch(()=>{});
     DATA=R.indexData(pl,tm);
