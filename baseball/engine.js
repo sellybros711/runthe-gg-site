@@ -11,9 +11,10 @@
 
 const CONSTANTS = {
   /* The budget has to say no, or there's no decision in the draft. At $245M
-   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $185M
-   * pushes that to ~4/12 so you genuinely can't afford a star every time. */
-  CAP_MUSD: 185,
+   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
+   * makes the budget bite hard — you can't afford a star most spins, and a
+   * strong roster takes real draft skill, not just best-available. */
+  CAP_MUSD: 170,
   REGULAR_SEASON_GAMES: 162,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -694,8 +695,8 @@ const SCHEDULE = {
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
   // year, holding the calibrated difficulty. These are the difficulty dial.
-  OPP_OFF_SCALE: 1.01,
-  OPP_DEF_SCALE: 0.957,
+  OPP_OFF_SCALE: 1.02,
+  OPP_DEF_SCALE: 0.95,
 };
 
 /* Build the pool of real team-seasons your schedule is drawn from. Returns
