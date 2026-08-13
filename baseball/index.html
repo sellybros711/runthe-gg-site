@@ -306,10 +306,14 @@ h1,h2,h3{margin:0}
 .sim-feed{max-height:400px;overflow-y:auto;margin:12px 0}
 .sim-game{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
   border-bottom:1px solid rgba(0,0,0,.06);font-family:var(--fn);font-size:13px}
-.sim-game .gnum{color:var(--dim-2);width:36px;font-weight:700}
-.sim-game .gscore{font-weight:700;flex:1;text-align:right}
+.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto}
+.sim-game .gopp{flex:1;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;padding:0 8px}
+.sim-game .gscore{font-weight:800;width:22px;text-align:right;flex:0 0 auto}
 .sim-game .gw{color:var(--green)} .sim-game .gl{color:var(--red)}
-.sim-game .gruns{width:60px;text-align:center}
+.sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
+.sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
+.sim-game.marquee .gopp{color:var(--gold);font-weight:700}
 .sim-progress{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0;justify-content:center}
 .sim-pip{width:5px;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
@@ -407,6 +411,9 @@ h1,h2,h3{margin:0}
   padding-top:11px;border-top:1px solid rgba(0,0,0,.08)}
 .ro-proj b{color:var(--ink);font-weight:800}
 
+.sq-verdict{text-align:center;font-family:'Righteous',var(--fd);font-size:clamp(18px,5.5vw,26px);
+  text-transform:uppercase;letter-spacing:.02em;margin-top:14px;color:var(--leather)}
+.sq-verdict.great{color:var(--gold)}
 .ro-chemlinks{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;justify-content:center}
 .ro-chemlink{font-family:var(--fn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
   background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
@@ -539,6 +546,22 @@ h1,h2,h3{margin:0}
   <div id="opts" class="opts"></div>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
+</div>
+
+<div class="screen" id="s-squad">
+  <div class="sim-header">
+    <div class="eyebrow">Your roster is set</div>
+    <h2 class="display" style="font-size:30px;margin:4px 0">The squad</h2>
+  </div>
+  <div class="field" id="sq-field"></div>
+  <div class="sq-verdict" id="sq-verdict"></div>
+  <div class="ro-coach" style="margin-top:12px">
+    <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
+    <div class="ro-takes" id="sq-takes"></div>
+    <div class="ro-chemlinks" id="sq-chemlinks"></div>
+  </div>
+  <button class="btn" id="b-playball" style="margin-top:14px">&#9918; Play the season</button>
+  <div style="margin-top:10px"><button class="btn ghost sm" id="b-squad-quit">Quit this run</button></div>
 </div>
 
 <div class="screen" id="s-season">
@@ -1186,7 +1209,7 @@ function paintOpts(draw){
       const p=DATA.allPlayers[key];
       if(!p) return;
       R.sign(RUN,p);
-      if(RUN.phase===R.PHASES.SEASON) startSeason();
+      if(RUN.phase===R.PHASES.SEASON) showSquad();
       else nextSpin();
     });
   });
@@ -1236,6 +1259,39 @@ function paintRespins(){
   }
 }
 
+/* ─── squad review (no pre-play odds) ─── */
+function showSquad(){
+  show('s-squad');
+  drawField($('sq-field'),false);
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const chem=E.resolveChemistry(tagged);
+  const structure=E.rosterStructure(tagged);
+  const rating=E.overallRating(E.teamWinPct(
+    E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
+    E.rosterRunPrevention(tagged,chem.multiplier)));
+  const cr=E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
+  const vd=$('sq-verdict');
+  vd.textContent=cr.verdict;
+  vd.className='sq-verdict'+(rating>=84?' great':'');
+  $('sq-arch').textContent=(structure.archetype&&structure.archetype.name)||'';
+  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
+  $('sq-takes').innerHTML=takes.length?takes.map(t=>
+    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
+  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+  const links=(chem.links||[]).filter(l=>l.value>0);
+  const uniq=[];const seen=new Set();
+  for(const l of links){if(!seen.has(l.label)){seen.add(l.label);uniq.push(l);}}
+  const chemPct=((chem.multiplier-1)*100).toFixed(1);
+  $('sq-chemlinks').innerHTML=(Math.abs(chem.multiplier-1)>0.0005?
+    '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
+    uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
+}
+$('b-playball').addEventListener('click',()=>startSeason());
+$('b-squad-quit').addEventListener('click',()=>{
+  if(!confirm('Quit this run? Your draft will be lost.'))return;
+  RUN=null;show('s-intro');heroSync();
+});
+
 /* ─── season sim ─── */
 function startSeason(){
   show('s-season');
@@ -1262,10 +1318,13 @@ function simGame(idx){
   const gp=idx+1;
   $('s-pace').textContent='Game '+gp+' of 162 | On pace for '+Math.round(result.record.wins/gp*162)+' wins';
   const feed=$('s-feed');
-  const row=document.createElement('div');row.className='sim-game';
-  row.innerHTML='<span class="gnum">G'+result.game+'</span><span class="gruns">'+result.yourRuns+' - '+result.oppRuns+'</span><span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
+  const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
+  const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
+  row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
+    '<span class="gruns">'+result.yourRuns+'&ndash;'+result.oppRuns+'</span>'+
+    '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
   feed.insertBefore(row,feed.firstChild);
-  if(feed.children.length>20) feed.removeChild(feed.lastChild);
+  if(feed.children.length>18) feed.removeChild(feed.lastChild);
   const speed=idx<10?120:idx<40?60:idx<100?30:15;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
