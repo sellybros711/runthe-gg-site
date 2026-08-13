@@ -7,14 +7,14 @@
      Kept out of the index so the site is not crawled as a set of near-empty pages. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $245M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
+<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $185M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8">
 <link rel="canonical" href="https://runthe.gg/baseball/">
 <link rel="manifest" href="manifest.webmanifest?v=1">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
-<meta property="og:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
+<meta property="og:description" content="Draft an all-time MLB roster under a $185M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
@@ -24,11 +24,11 @@
 <meta property="og:image:alt" content="Run The Diamond — draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
-<meta name="twitter:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
+<meta name="twitter:description" content="Draft an all-time MLB roster under a $185M cap. Simulate 162 games. Win the World Series.">
 <meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
-"description":"Draft an all-time MLB roster from 1901 to 2025 under a $245M salary cap, then simulate a 162-game season and chase the World Series.",
+"description":"Draft an all-time MLB roster from 1901 to 2025 under a $185M salary cap, then simulate a 162-game season and chase the World Series.",
 "genre":["Sports","Simulation","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
 "playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
@@ -486,6 +486,21 @@ h1,h2,h3{margin:0}
 .ach .ach-d{font-size:11px;color:var(--dim);margin-top:1px}
 .trophy-note{text-align:center;font-size:11px;color:var(--dim-2);margin:10px 0 0}
 
+/* ─── position chooser ─── */
+.pos-sub{font-size:13px;color:var(--dim);margin:0 0 12px}
+.pos-opts{display:flex;flex-direction:column;gap:8px}
+.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(0,0,0,.10);
+  border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;
+  transition:border-color .12s,transform .1s}
+.pos-opt:active{transform:scale(.99)}
+.pos-opt.natural{border-color:rgba(46,125,50,.4);box-shadow:0 0 0 1px rgba(46,125,50,.15)}
+.pos-opt .pchip{flex:0 0 auto;min-width:42px;text-align:center;padding:6px 0;border-radius:8px;
+  color:#fff;font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.04em}
+.pos-opt .pmeta{flex:1;min-width:0}
+.pos-opt .pmeta .pname{font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
+.pos-opt .pmeta .pnote{font-size:11px;color:var(--dim-2);margin-top:1px}
+.pos-opt .pgo{font-size:20px;color:var(--dim-2)}
+
 /* ─── era picker ─── */
 .era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
 .era-btn{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:8px;padding:10px 8px;
@@ -573,7 +588,7 @@ h1,h2,h3{margin:0}
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). You see the players you can draft from that roster. Fill any open position — you choose the order.</p>
-    <p><b style="color:var(--ink)">Budget.</b> You have $245M to fill all twelve spots. Prices are based on WAR — superstars cost a premium, so you can't stack legends everywhere.</p>
+    <p><b style="color:var(--ink)">Budget.</b> You have $185M to fill all twelve spots. Prices are based on WAR — superstars cost a premium, so you can't stack legends everywhere.</p>
     <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starting pitchers, and a closer. Players must be eligible for the position you slot them into.</p>
     <p><b style="color:var(--ink)">Chemistry.</b> Teammates from the same team-season, franchise loyalists, and batterymates boost your chemistry multiplier.</p>
     <p><b style="color:var(--ink)">Season.</b> Your roster simulates a full 162-game season using real historical WAR. Offense is driven by your hitters, defense by your pitchers and fielders.</p>
@@ -590,7 +605,7 @@ h1,h2,h3{margin:0}
       <span class="eyebrow" id="d-count">Spin 1 of 12</span>
     </div>
     <div class="capline">
-      <div class="amt num" id="c-amt">$245.0M</div>
+      <div class="amt num" id="c-amt">$185.0M</div>
       <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">None</span></div>
     </div>
     <div class="bar"><i id="c-bar" style="width:100%"></i></div>
@@ -696,6 +711,19 @@ h1,h2,h3{margin:0}
 
 </div><!-- .wrap -->
 
+<div class="sheet" id="sheet-pos" aria-hidden="true">
+  <div class="sheet-scrim" data-close-pos></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title" id="pos-title">Where to play</h3>
+      <button class="sheet-x" data-close-pos aria-label="Close">&times;</button>
+    </div>
+    <p class="pos-sub" id="pos-sub"></p>
+    <div class="pos-opts" id="pos-opts"></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-trophy" aria-hidden="true">
   <div class="sheet-scrim" data-close></div>
   <div class="sheet-inner">
@@ -710,8 +738,8 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=5"></script>
-<script src="run.js?v=4"></script>
+<script src="engine.js?v=6"></script>
+<script src="run.js?v=5"></script>
 <script src="achievements.js?v=1"></script>
 <script>
 (function(){
@@ -1242,6 +1270,7 @@ $('b-share').addEventListener('click',shareResult);
 $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
 document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
+document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
 document.addEventListener('visibilitychange',heroSync);
 
 /* ─── era mode ─── */
@@ -1379,9 +1408,9 @@ function paintOpts(draw){
       const key=tile.dataset.key;
       const p=DATA.allPlayers[key];
       if(!p) return;
-      R.sign(RUN,p);
-      if(RUN.phase===R.PHASES.SEASON) showSquad();
-      else nextSpin();
+      const choices=signChoices(p);
+      if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
+      else openPosChooser(p, choices);
     });
   });
 
@@ -1391,8 +1420,16 @@ function paintOpts(draw){
 function optTile(r,i){
   const p=r.p,block=r.block;
   const pos=p.pp||(p.ep?p.ep.split(';')[0]:'');
-  const slot=R.slotForPlayer(RUN,p);
-  const destSlot=slot!==null?E.SLOTS[slot]:null;
+  // Distinct open positions this player could fill (SP1/SP2 collapsed).
+  let destSlot=null;
+  if(!block){
+    const bases=[];const seen=new Set();
+    for(const idx of R.eligibleOpenSlots(RUN,p)){
+      const bs=E.SLOTS[idx].replace(/[12]$/,'');
+      if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
+    }
+    if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+  }
   let chemHtml='';
   if(!block&&RUN.roster.length>0){
     const preview=R.previewSigning(RUN,p);
@@ -1408,7 +1445,7 @@ function optTile(r,i){
     '<div class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
-    '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot&&!block?' &rarr; '+destSlot:'')+'</div>'+
+    '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
     '<div class="tf"><div class="pts"><b>'+p.w.toFixed(1)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
     '</button>';
 }
@@ -1428,6 +1465,57 @@ function paintRespins(){
   }else{
     el.innerHTML='';
   }
+}
+
+/* ─── position chooser ─── */
+function slotBase(name){return name.replace(/[12]$/,'');}
+/* Distinct placement choices for a player among open slots. SP1/SP2 collapse
+ * (identical), so the user only chooses between real positions. */
+function signChoices(p){
+  const idxs=R.eligibleOpenSlots(RUN,p);
+  const out=[];const seenSP=new Set();
+  for(const i of idxs){
+    const name=E.SLOTS[i];const base=slotBase(name);
+    if(base==='SP'){if(seenSP.has('SP'))continue;seenSP.add('SP');}
+    const natural=(p.pp===name)||(p.pp&&base===p.pp)||
+      (name==='SP1'&&p.r==='p')||(name==='CL'&&p.r==='p');
+    out.push({slotIdx:i,name,base,natural});
+  }
+  // natural position first, DH last
+  out.sort((a,b)=>{
+    if(a.natural!==b.natural)return a.natural?-1:1;
+    if((a.base==='DH')!==(b.base==='DH'))return a.base==='DH'?1:-1;
+    return 0;
+  });
+  return out;
+}
+function afterSign(){ if(RUN.phase===R.PHASES.SEASON) showSquad(); else nextSpin(); }
+function signPlayer(p,slotIdx){
+  try{R.sign(RUN,p,slotIdx);}catch(e){console.error(e);return;}
+  closeSheet('sheet-pos');
+  afterSign();
+}
+function openPosChooser(p,choices){
+  $('pos-title').textContent=lastName(p.n);
+  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+p.s+' '+p.t+')';
+  $('pos-opts').innerHTML=choices.map((ch,i)=>{
+    const note=ch.base==='DH'?'Designated hitter':ch.natural?'Primary position':
+      (p.r==='p'?'Pitcher':'Also played here');
+    return '<button class="pos-opt'+(ch.natural?' natural':'')+'" data-slot="'+ch.slotIdx+'">'+
+      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+ch.name+'</span>'+
+      '<span class="pmeta"><span class="pname">'+esc(ch.name==='DH'?'Designated Hitter':posLabel(ch.name))+'</span>'+
+      '<span class="pnote">'+note+'</span></span><span class="pgo">&rsaquo;</span></button>';
+  }).join('');
+  $('pos-opts').querySelectorAll('.pos-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>signPlayer(p,parseInt(btn.dataset.slot,10)));
+  });
+  openSheet('sheet-pos');
+}
+function posLabel(name){
+  const L={C:'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',SS:'Shortstop',
+    LF:'Left Field',CF:'Center Field',RF:'Right Field',DH:'Designated Hitter',
+    SP1:'Starting Pitcher',SP2:'Starting Pitcher',CL:'Closer'};
+  return L[name]||name;
 }
 
 /* ─── squad review (no pre-play odds) ─── */
