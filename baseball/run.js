@@ -50,16 +50,78 @@ function remaining(run) {
 
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
 
-function reserveFloor(run) {
-  return Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+/* Cheapest player that could still fill `slotName` right now: not already
+ * used (by id or already earmarked), from a team-season not maxed on draws.
+ * cheapBy[pos] is price-sorted, so the first valid candidate is the cheapest.
+ * Returns the price and the earmarked key so the caller avoids double-count. */
+function cheapestForSlot(slotName, usedIds, drawn, taken) {
+  const pool = _data && _data.cheapBy && _data.cheapBy['*'];
+  const FLOOR = E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  if (!pool) return { price: FLOOR, key: null };
+  const elig = E.SLOT_ELIGIBILITY[slotName] || [];
+  let best = { price: Infinity, key: null };
+  for (const pos of elig) {
+    const list = pool[pos];
+    if (!list) continue;
+    for (const c of list) {
+      if (c.price >= best.price) break;               // sorted; can't beat current best
+      const pid = c.id.split('|')[0];
+      if (usedIds.has(pid) || taken.has(c.id)) continue;
+      if ((drawn[c.ts] || 0) >= TUNING.MAX_DRAWS_PER_TEAM_SEASON) continue;
+      best = { price: c.price, key: c.id };
+      break;                                          // first valid = cheapest for this pos
+    }
+  }
+  return best.price === Infinity ? { price: FLOOR, key: null } : best;
 }
 
+/* Position-aware minimum cost to fill a set of open slots. Assigns narrowest-
+ * eligibility slots first (a dedicated C before the flexible DH) and never
+ * reuses a player, so the budget "knows" you still owe a catcher and a
+ * closer and reserves enough to actually sign them. */
+function assignedFloors(run, slotNames, excludeId) {
+  const usedIds = new Set(run.usedPlayers);
+  const drawn = {};
+  for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
+  const taken = new Set();
+  if (excludeId) taken.add(excludeId);
+  const order = [...slotNames].sort(
+    (a, b) => (E.SLOT_ELIGIBILITY[a] || []).length - (E.SLOT_ELIGIBILITY[b] || []).length);
+  let total = 0, maxOne = 0;
+  for (const slot of order) {
+    const c = cheapestForSlot(slot, usedIds, drawn, taken);
+    total += c.price;
+    if (c.key) taken.add(c.key);
+    if (c.price > maxOne) maxOne = c.price;
+  }
+  return { total, maxOne };
+}
+
+/* Minimum to fill every remaining slot. */
 function fullFloor(run) {
-  return slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  return assignedFloors(run, openSlotNames(run)).total;
+}
+
+/* What must stay in the bank after the current pick: enough to fill all
+ * remaining slots except the priciest (which the current pick can cover). */
+function reserveFloor(run) {
+  const f = assignedFloors(run, openSlotNames(run));
+  return Math.max(0, f.total - f.maxOne);
 }
 
 function spendable(run) {
   return money(remaining(run) - reserveFloor(run));
+}
+
+/* Could you still fill your roster after signing this player? Tentatively
+ * assign them to their slot and check the remaining budget covers the
+ * cheapest way to fill what's left. This is the authoritative price gate. */
+function canFinishAfter(run, player) {
+  const slot = slotForPlayer(run, player);
+  if (slot === null) return false;
+  const rest = openSlotNames(run).filter(s => s !== E.SLOTS[slot]);
+  const need = assignedFloors(run, rest, pkey(player)).total;
+  return money(remaining(run) - player.p) >= need - 1e-9;
 }
 
 function canRespin(run) {
@@ -84,7 +146,7 @@ const BLOCK = { DRAFTED: 'drafted', NO_SPOT: 'no_spot', PRICE: 'price' };
 function blockFor(run, player) {
   if (run.usedPlayers.includes(player.i)) return BLOCK.DRAFTED;
   if (slotForPlayer(run, player) === null) return BLOCK.NO_SPOT;
-  if (player.p > spendable(run)) return BLOCK.PRICE;
+  if (!canFinishAfter(run, player)) return BLOCK.PRICE;
   return null;
 }
 
@@ -163,11 +225,10 @@ function drawable(run, data) {
     .filter(t => {
       const players = data.byTeamSeason[t.team_season_id];
       if (!players) return false;
-      return players.some(p => {
-        if (run.usedPlayers.includes(p.i)) return false;
-        if (p.p > spendable(run)) return false;
-        return open.some(slot => E.canFillSlot(p, slot));
-      });
+      // Must contain at least one fully-signable player (affordable AND
+      // leaves enough to finish the roster), so a draw never lands on a
+      // team whose whole board is blocked.
+      return players.some(p => blockFor(run, p) === null);
     });
 }
 
@@ -392,7 +453,7 @@ const publicAPI = {
   playSeason, advanceGame, finalizeSeason,
   previewSigning,
   indexData,
-  remaining, reserveFloor, spendable, canRespin,
+  remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,
   openSlots, openSlotNames, slotForPlayer, slotsLeft,
   capOf, money, blockFor, BLOCK,
 };
