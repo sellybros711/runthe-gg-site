@@ -36,8 +36,8 @@ const CONSTANTS = {
   /* Your opponents are OTHER all-time rosters, not league-average teams.
    * They score more (OPP_OFF_MEAN) and allow less (OPP_DEF_MEAN) than the
    * league baseline. These two numbers are the primary difficulty knobs. */
-  OPP_OFF_MEAN: 5.25,
-  OPP_DEF_MEAN: 3.98,
+  OPP_OFF_MEAN: 5.34,
+  OPP_DEF_MEAN: 3.95,
 
   /* Consistency: how much each side's runs are pulled toward expected value.
    * At 0 pure variance; at 1 deterministic. */
@@ -517,6 +517,73 @@ function rosterRunPrevention(roster, chemMultiplier) {
 }
 
 /*
+ * ROSTER STRUCTURE (shape multiplier).
+ *
+ * WAR sum measures raw talent; structure measures how well that talent is
+ * arranged. A great roster isn't just a pile of WAR — it balances bats and
+ * arms, has no dead slots, and isn't one injury from collapse. This is the
+ * "shape matters as much as talent" layer, applied to offense.
+ *
+ * Three factors, each 1.0 when ideal and <1.0 when off:
+ *  - balance:       hitting/pitching WAR split near ideal
+ *  - floor:         the bottom of the roster isn't near-replacement scrubs
+ *  - concentration: not one boom-or-bust star carrying everything
+ * Damped by SHAPE_STRENGTH so shape modulates rather than dominates, plus a
+ * small archetype bonus for a coherent identity.
+ */
+/* Thresholds are calibrated to real 12-man drafted rosters: median top-player
+ * share ~0.16, bottom-4 share ~0.16, pitching share ~0.25. */
+const STRUCTURE = {
+  MIN: 0.84, MAX: 1.08,
+  CONCENTRATION_START: 0.20, CONCENTRATION_WEIGHT: 0.85,
+  FLOOR_START: 0.10, FLOOR_WEIGHT: 1.15,
+  IDEAL_PITCH_SHARE: 0.26, PITCH_TOLERANCE: 0.08, BALANCE_WEIGHT: 1.05,
+  SHAPE_STRENGTH: 0.55,
+  ARCHETYPE_BONUS: 0.025,
+};
+
+/* Name the roster's identity — flavor for the coach report, plus a small
+ * cohesion bonus when the shape reads as a deliberate build. */
+function detectArchetype(m) {
+  if (m.topShare >= 0.24)
+    return { key: 'one_man_show', name: 'One-Man Show', bonus: 0 };
+  if (m.floorShare >= 0.19 && m.topShare <= 0.17)
+    return { key: 'no_weak_links', name: 'No Weak Links', bonus: STRUCTURE.ARCHETYPE_BONUS };
+  if (m.pitchShare <= 0.19 && m.floorShare >= 0.14)
+    return { key: 'murderers_row', name: "Murderers' Row", bonus: STRUCTURE.ARCHETYPE_BONUS };
+  if (m.pitchShare >= 0.36)
+    return { key: 'aces_wild', name: 'Aces Wild', bonus: STRUCTURE.ARCHETYPE_BONUS * 0.5 };
+  if (m.pitchShare >= 0.22 && m.pitchShare <= 0.30 && m.floorShare >= 0.14 && m.topShare <= 0.19)
+    return { key: 'balanced', name: 'Balanced Contender', bonus: STRUCTURE.ARCHETYPE_BONUS };
+  return { key: 'mixed', name: 'Mixed Bag', bonus: 0 };
+}
+
+function rosterStructure(roster) {
+  const wars = roster.map(p => Math.max(0, p.w));
+  const total = wars.reduce((s, w) => s + w, 0) || 1;
+  const sorted = [...wars].sort((a, b) => b - a);
+
+  const topShare = sorted[0] / total;
+  const floorShare = sorted.slice(-4).reduce((s, w) => s + w, 0) / total;
+  const pitchWar = roster.filter(p => p.r === 'p').reduce((s, p) => s + Math.max(0, p.w), 0);
+  const pitchShare = pitchWar / total;
+
+  const S = STRUCTURE;
+  const conc = 1 - S.CONCENTRATION_WEIGHT * Math.max(0, topShare - S.CONCENTRATION_START);
+  const floor = 1 - S.FLOOR_WEIGHT * Math.max(0, S.FLOOR_START - floorShare);
+  const balance = 1 - S.BALANCE_WEIGHT *
+    Math.max(0, Math.abs(pitchShare - S.IDEAL_PITCH_SHARE) - S.PITCH_TOLERANCE);
+
+  const metrics = { topShare, floorShare, pitchShare };
+  const archetype = detectArchetype(metrics);
+  const shape = Math.max(0.3, conc) * Math.max(0.3, floor) * Math.max(0.3, balance);
+  const multiplier = Math.max(S.MIN, Math.min(S.MAX,
+    1 + (shape - 1) * S.SHAPE_STRENGTH + archetype.bonus));
+
+  return { multiplier, archetype, conc, floor, balance, ...metrics };
+}
+
+/*
  * Closer save conversion rate.
  * Base rate + bonus from closer WAR.
  */
@@ -717,7 +784,8 @@ function playRun(roster, rng, slotNames) {
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
   const chem = resolveChemistry(tagged);
-  const offense = rosterOffense(tagged, chem.multiplier, 1.0);
+  const structure = rosterStructure(tagged);
+  const offense = rosterOffense(tagged, chem.multiplier, structure.multiplier);
   const defense = rosterRunPrevention(tagged, chem.multiplier);
   const savePct = closerSavePct(tagged);
 
@@ -747,9 +815,13 @@ function playRun(roster, rng, slotNames) {
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
   const beatRecord = wins >= CONSTANTS.RECORD_WINS;
 
+  const rating = overallRating(teamWinPct(offense, defense));
+
   return {
     roster: tagged,
     chemistry: chem,
+    structure,
+    rating,
     offense: Math.round(offense * 100) / 100,
     defense: Math.round(defense * 100) / 100,
     savePct: Math.round(savePct * 1000) / 1000,
@@ -807,7 +879,7 @@ const publicAPI = {
   resolveGame, playoffSeries, playRun,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees,
-  pythagorean, rosterOffense, rosterRunPrevention, closerSavePct,
+  pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   TEAM_COLORS, teamColors,
 };
 

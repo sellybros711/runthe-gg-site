@@ -292,7 +292,8 @@ function advanceGame(run, gameIndex) {
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
     const chem = E.resolveChemistry(tagged);
-    const offense = E.rosterOffense(tagged, chem.multiplier, 1.0);
+    const structure = E.rosterStructure(tagged);
+    const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
     const savePct = E.closerSavePct(tagged);
     const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES);
