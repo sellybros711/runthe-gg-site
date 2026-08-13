@@ -74,6 +74,7 @@
   }
 
   // ---------- predicate evaluation (mirrors the builder) ----------
+  function bitCount(n) { n = n | 0; var c = 0; while (n) { n &= n - 1; c++; } return c; }
   function test(p, pr) {
     if (pr.all) { for (var i = 0; i < pr.all.length; i++) if (!test(p, pr.all[i])) return false; return true; }
     switch (pr.k) {
@@ -89,6 +90,11 @@
       case 'act': return p.act;
       case 'draft1': return p.dp1;
       case 'teams': return p.teams.length >= pr.min;
+      // Loyalty and longevity. A career shape is a far better category than a
+      // decade tag: "never played for another team" is a fact fans argue about,
+      // "played in the 2010s" is just a filter.
+      case 'teamsMax': return p.teams.length > 0 && p.teams.length <= pr.max;
+      case 'decades': return bitCount(p.decBits) >= pr.min;
       default: return false;
     }
   }
@@ -120,6 +126,31 @@
   var SPORT_W = { NBA: 2.4, ANY: 1.2, NFL: 1.0, MLB: 0.5 };
   var SPORT_CAP = { MLB: 2, NFL: 3, NBA: 4, ANY: 3 };
 
+  /* How many letters a category can serve at all.
+   *
+   * Uniform drawing quietly favoured the broadest categories: an era category
+   * is viable for all 25 letters, while "Played for the Cleveland Browns" only
+   * works for the handful of letters that franchise covers. So the broad ones
+   * showed up in every day's option list and ate ~10% of all slots, which is
+   * why one wording kept recurring. Damping by sqrt(breadth) evens that out
+   * without banning anything - a category that fits everywhere is still
+   * eligible everywhere, it just stops crowding out the specific ones. */
+  var _breadth = null;
+  function breadthOf(c) {
+    if (!_breadth) {
+      _breadth = {};
+      var letters = D.letters || [];
+      for (var i = 0; i < letters.length; i++) {
+        var ids = D.byLetter[letters[i]] || [];
+        for (var j = 0; j < ids.length; j++) _breadth[ids[j]] = (_breadth[ids[j]] || 0) + 1;
+      }
+    }
+    return _breadth[c.i] || 1;
+  }
+  function wOf(c) {
+    return (SPORT_W[c.s || 'ANY'] || 1) / Math.sqrt(breadthOf(c));
+  }
+
   function viableFor(L) {
     var l = L.toLowerCase(), ids = D.byLetter[L] || [];
     return ids.map(function (i) { return D.cats[i]; });
@@ -143,11 +174,11 @@
     var avail = viableFor(L);
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
-    function draw(opts) {                       // weighted by sport
+    function draw(opts) {                       // weighted by sport AND breadth
       var tot = 0, i;
-      for (i = 0; i < opts.length; i++) tot += (SPORT_W[opts[i].s || 'ANY'] || 1);
+      for (i = 0; i < opts.length; i++) tot += wOf(opts[i]);
       var roll = r() * tot;
-      for (i = 0; i < opts.length; i++) { roll -= (SPORT_W[opts[i].s || 'ANY'] || 1); if (roll <= 0) return opts[i]; }
+      for (i = 0; i < opts.length; i++) { roll -= wOf(opts[i]); if (roll <= 0) return opts[i]; }
       return opts[opts.length - 1];
     }
     TIER_PLAN.forEach(function (want) {
