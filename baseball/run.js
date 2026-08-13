@@ -14,6 +14,10 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTD_ENGINE;
 
+/* Cached indexed data (opponent pool + rating table) for the sim, so the
+ * season functions don't need `data` threaded through every call. */
+let _data = null;
+
 const PHASES = {
   DRAFT: 'draft',
   SEASON: 'season',
@@ -256,7 +260,9 @@ function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
-  const result = E.playRun(run.roster, rng, slotNames);
+  const pool = _data && _data.oppPool;
+  const result = E.playRun(run.roster, rng, slotNames, pool);
+  result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
   run.schedule = result.schedule;
@@ -275,6 +281,9 @@ function playSeason(run) {
     totalRS: result.totalRS,
     totalRA: result.totalRA,
     chemistry: result.chemistry,
+    structure: result.structure,
+    rating: result.rating,
+    allTimeRank: result.allTimeRank,
     offense: result.offense,
     defense: result.defense,
     savePct: result.savePct,
@@ -296,10 +305,12 @@ function advanceGame(run, gameIndex) {
     const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
     const savePct = E.closerSavePct(tagged);
-    const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES);
+    const pool = _data && _data.oppPool;
+    const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
+    const rating = E.overallRating(E.teamWinPct(offense, defense));
 
     run._simState = {
-      rng, tagged, chem, offense, defense, savePct, schedule,
+      rng, tagged, chem, structure, offense, defense, savePct, schedule, rating,
       results: [],
       wins: 0, losses: 0,
       totalRS: 0, totalRA: 0,
@@ -352,6 +363,9 @@ function finalizeSeason(run) {
     totalRS: st.totalRS,
     totalRA: st.totalRA,
     chemistry: st.chem,
+    structure: st.structure,
+    rating: st.rating,
+    allTimeRank: _data ? E.nationalRank(st.rating, _data.ratingTable) : null,
     offense: Math.round(st.offense * 100) / 100,
     defense: Math.round(st.defense * 100) / 100,
     savePct: Math.round(st.savePct * 1000) / 1000,
@@ -361,9 +375,11 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
-/* Index the raw player data for draft use. */
+/* Index the raw player data for draft use. Caches the result so the season
+ * sim can reach the opponent pool and rating table. */
 function indexData(players) {
-  return E.indexData(players);
+  _data = E.indexData(players);
+  return _data;
 }
 
 // ─── exports ─────────────────────────────────────────────────────────────────

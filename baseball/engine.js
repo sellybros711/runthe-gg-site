@@ -260,6 +260,7 @@ function indexData(players) {
     ratingTable.push(st.rating);
   }
   ratingTable.sort((a, b) => a - b);
+  const oppPool = buildOpponentPool(teamSeasons);
 
   return {
     players,
@@ -269,6 +270,7 @@ function indexData(players) {
     cheapBy,
     teamStats,
     ratingTable,
+    oppPool,
   };
 }
 
@@ -650,12 +652,69 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
 
 // ─── schedule ────────────────────────────────────────────────────────────────
 
-function generateSchedule(rng, games) {
+/* Opponent scheduling constants — your slate is real all-time teams. */
+const SCHEDULE = {
+  CONTENDER_MIN_RATING: 66,   // the pool a title team faces all year
+  MARQUEE_MIN_RATING: 82,     // elite opponents injected as marquee games
+  MARQUEE_GAMES: 14,          // the gauntlet — why an unbeaten season is rare
+  OPP_GAME_SD: 0.55,          // per-game noise around an opponent's true means
+  // Real teams' run-prevention model floors around ~4.1; scale the pool so
+  // these opponents play at the postseason intensity a title team faces all
+  // year, holding the calibrated difficulty. These are the difficulty dial.
+  OPP_OFF_SCALE: 1.01,
+  OPP_DEF_SCALE: 0.957,
+};
+
+/* Build the pool of real team-seasons your schedule is drawn from. Returns
+ * contenders (the season-long slate) and marquee (elite marquee opponents).
+ * Pass the result to generateSchedule / playRun for real opponents. */
+function buildOpponentPool(teamSeasons) {
+  const contenders = [], marquee = [];
+  for (const t of teamSeasons) {
+    if (typeof t.rating !== 'number') continue;
+    const o = {
+      name: t.display, rating: t.rating,
+      off: t.offMean * SCHEDULE.OPP_OFF_SCALE,
+      def: t.defMean * SCHEDULE.OPP_DEF_SCALE,
+    };
+    if (t.rating >= SCHEDULE.CONTENDER_MIN_RATING) contenders.push(o);
+    if (t.rating >= SCHEDULE.MARQUEE_MIN_RATING) marquee.push(o);
+  }
+  return { contenders, marquee };
+}
+
+function generateSchedule(rng, games, pool) {
   const count = games || CONSTANTS.REGULAR_SEASON_GAMES;
   const schedule = [];
+
+  // Real-opponent path: draw a slate of actual all-time team-seasons, with
+  // MARQUEE_GAMES hardest matchups sprinkled in.
+  if (pool && pool.contenders && pool.contenders.length) {
+    const marqueeSet = new Set();
+    if (pool.marquee && pool.marquee.length) {
+      while (marqueeSet.size < Math.min(SCHEDULE.MARQUEE_GAMES, count)) {
+        marqueeSet.add(Math.floor(rng() * count));
+      }
+    }
+    for (let i = 0; i < count; i++) {
+      const bucket = marqueeSet.has(i) ? pool.marquee : pool.contenders;
+      const opp = bucket[Math.floor(rng() * bucket.length)];
+      const oppOff = Math.max(2.5, opp.off + normal(rng) * SCHEDULE.OPP_GAME_SD);
+      const oppDef = Math.max(2.5, opp.def + normal(rng) * SCHEDULE.OPP_GAME_SD);
+      schedule.push({
+        game: i + 1,
+        oppName: opp.name,
+        oppRating: opp.rating,
+        marquee: marqueeSet.has(i),
+        oppRunsScored: Math.round(oppOff * 100) / 100,
+        oppRunsAllowed: Math.round(oppDef * 100) / 100,
+      });
+    }
+    return schedule;
+  }
+
+  // Fallback: abstract opponents around the all-time-roster baselines.
   for (let i = 0; i < count; i++) {
-    // Opponent strength: how they hit (oppRunsScored) and how they pitch
-    // (oppRunsAllowed), sampled around the all-time-roster baselines.
     const oppOff = Math.max(2.5, CONSTANTS.OPP_OFF_MEAN + normal(rng) * 0.8);
     const oppDef = Math.max(2.5, CONSTANTS.OPP_DEF_MEAN + normal(rng) * 0.7);
     schedule.push({
@@ -777,7 +836,7 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
 
 // ─── full season play ────────────────────────────────────────────────────────
 
-function playRun(roster, rng, slotNames) {
+function playRun(roster, rng, slotNames, pool) {
   // Tag each player with their actual slot. slotNames maps roster order to
   // slot names (players draft in random order); without it, fall back to
   // assuming the roster is already in SLOTS order.
@@ -789,8 +848,8 @@ function playRun(roster, rng, slotNames) {
   const defense = rosterRunPrevention(tagged, chem.multiplier);
   const savePct = closerSavePct(tagged);
 
-  // 162-game season
-  const schedule = generateSchedule(rng, CONSTANTS.REGULAR_SEASON_GAMES);
+  // 162-game season vs real all-time opponents (pool) or abstract fallback.
+  const schedule = generateSchedule(rng, CONSTANTS.REGULAR_SEASON_GAMES, pool);
   const seasonGames = [];
   let wins = 0, losses = 0;
   let totalRS = 0, totalRA = 0;
@@ -875,7 +934,7 @@ const publicAPI = {
   indexData, buildCheapBy,
   pairLinks, resolveChemistry,
   teamStrength, teamWinPct, overallRating, nationalRank,
-  generateSchedule, generatePlayoffs, gameMeans,
+  generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees,
