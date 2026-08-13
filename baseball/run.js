@@ -341,7 +341,7 @@ function finalizeSeason(run) {
   if (!st) throw new Error('no sim state');
 
   const seed = E.seedFromRecord(st.wins);
-  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins);
+  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating);
   const titleWon = playoffs && playoffs.won;
   const isGOAT = st.wins >= E.CONSTANTS.GOAT_WINS;
   const beatRecord = st.wins >= E.CONSTANTS.RECORD_WINS;

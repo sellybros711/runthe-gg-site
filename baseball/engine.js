@@ -765,6 +765,24 @@ function playoffRoundNames(rounds) {
 }
 
 /*
+ * TITLE DIFFICULTY: the deepest rounds are scaled to your team rating, so a
+ * title means you built a great team — not that you got hot in a short
+ * series. A weak team that sneaks into October faces a stiffened opponent in
+ * the LCS and World Series; an all-time roster gets a fair fight. Returns a
+ * multiplier applied to the opponent's scoring (>1 = tougher).
+ */
+const TITLE = {
+  PIVOT: 84,        // rating at/above which the title is a fair fight
+  SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
+  MAX_EDGE: 1.34,
+  SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
+};
+function titleEdge(rating) {
+  if (typeof rating !== 'number') return 1;
+  return Math.max(1, Math.min(TITLE.MAX_EDGE, 1 + (TITLE.PIVOT - rating) * TITLE.SLOPE));
+}
+
+/*
  * Playoff series: best-of-5 for LDS, best-of-7 for LCS and WS.
  * Returns { won, gamesPlayed, seriesScore }.
  */
@@ -788,8 +806,9 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins) {
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating) {
   if (!seed.made) return null;
+  const edge = titleEdge(rating);
 
   const rounds = playoffRoundNames(seed.rounds);
   const results = [];
@@ -810,9 +829,13 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
     if (!alive) break;
 
     const roundName = rounds[i];
-    // Opponents get tougher each round
+    // Opponents get tougher each round, and the deepest rounds are further
+    // stiffened for weaker teams (title difficulty scaled to your rating).
     const roundDifficulty = 1 + i * CONSTANTS.PLAYOFF_ROUND_STEP;
-    const oppRA = defAdj * roundDifficulty;
+    let titleMult = 1;
+    if (roundName === 'World Series') titleMult = edge;
+    else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
+    const oppRA = defAdj * roundDifficulty * titleMult;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
     const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
@@ -868,13 +891,12 @@ function playRun(roster, rng, slotNames, pool) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins);
+  const rating = overallRating(teamWinPct(offense, defense));
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
   const beatRecord = wins >= CONSTANTS.RECORD_WINS;
-
-  const rating = overallRating(teamWinPct(offense, defense));
 
   return {
     roster: tagged,
@@ -936,7 +958,7 @@ const publicAPI = {
   teamStrength, teamWinPct, overallRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   TEAM_COLORS, teamColors,
