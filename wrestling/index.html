@@ -92,6 +92,11 @@
   .opt h4{margin:0 0 4px; font-family:var(--display); font-size:17px; letter-spacing:.02em; color:var(--cream); text-transform:uppercase;}
   .opt .meta{font-size:12px; color:var(--text-faint); font-family:var(--mono);}
   .opt p{margin:8px 0 0; font-size:13px; color:var(--text-dim);}
+  .opt .perk{margin-top:8px;font-size:12px;color:var(--text-dim);line-height:1.45;}
+  .opt .perkn{display:block;font-family:var(--display);font-size:14px;letter-spacing:.03em;color:var(--gold);text-transform:uppercase;}
+  .perkcard{background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.2));border:1px solid rgba(224,179,65,.35);border-radius:12px;padding:11px 13px;margin-top:12px;}
+  .perkcard .pn{font-family:var(--display);font-size:15px;letter-spacing:.03em;color:var(--gold);text-transform:uppercase;}
+  .perkcard .pd{font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.45;}
 
   .movecard{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:7px;}
   .movecard.have{border-left-color:var(--green);}
@@ -328,7 +333,7 @@
         </div>
       </div>
       <div>
-        <div class="flab">Starting Style <span class="hint">— a small early tilt, never a ceiling</span></div>
+        <div class="flab">Archetype <span class="hint">— shapes your stats, how fast you learn, and how you fight</span></div>
         <div class="grid g2" id="cStyles" style="margin-top:6px;"></div>
       </div>
     </div>
@@ -768,14 +773,49 @@ function arsenalScore(){ const b=bestMoves(6); if(!b.length) return 20;
 /* ============================================================
    NEW CAREER
    ============================================================ */
+/* Archetypes are a real identity, not a stat tilt. Each one changes:
+     b     — starting attributes
+     grow  — how fast training + natural growth raise each attribute
+     mast  — how fast you build mastery in your signature move categories
+     out/in— damage dealt / taken in the live match
+     dec   — bonus success odds on the in-match decisions you're built for
+     perk  — the named passive, surfaced in the UI                        */
 const STYLES=[
-  {id:'powerhouse',name:'Powerhouse',b:{po:8,to:5},blurb:'Big, strong, hits hard.'},
-  {id:'technician',name:'Technician',b:{te:8,ps:5},blurb:'Mat-based and precise.'},
-  {id:'highflyer',name:'High-Flyer',b:{ae:9,st:4},blurb:'Fast, acrobatic, spectacular.'},
-  {id:'brawler',name:'Brawler',b:{to:8,po:5},blurb:'Tough, wild, takes punishment.'},
-  {id:'showman',name:'Showman',b:{ch:9,ps:4},blurb:'Born for the microphone.'},
-  {id:'allrounder',name:'All-Rounder',b:{ps:4,te:4,ch:4},blurb:'No holes, no shortcuts.'},
+  {id:'powerhouse',plan:{a:'slam',b:'strike'},name:'Powerhouse',b:{po:11,to:6},blurb:'Big, strong, hits hard.',
+   grow:{po:1.5,to:1.3}, mast:{slam:1.6,strike:1.3}, out:1.18, in:0.88,
+   dec:{fin:0.08,grind:0.06},
+   perk:{n:'Heavy Hands',d:'Hit 18% harder, absorb 12% of incoming punishment. Slams & Strikes master fastest.'}},
+
+  {id:'technician',plan:{a:'submission',b:'technical'},name:'Technician',b:{te:11,ps:6},blurb:'Mat-based and precise.',
+   grow:{te:1.5,ps:1.35}, mast:{submission:1.6,suplex:1.4,technical:1.4}, out:1.0, in:0.96,
+   dec:{counter:0.14,chain:0.12},
+   perk:{n:'Ring General',d:'Counters and chain sequences land far more often. Submissions, Suplexes & Counters master fastest.'}},
+
+  {id:'highflyer',plan:{a:'aerial',b:'strike'},name:'High-Flyer',b:{ae:12,st:5},blurb:'Fast, acrobatic, spectacular.',
+   grow:{ae:1.6,st:1.25}, mast:{aerial:1.7}, out:1.06, in:1.10,
+   dec:{risk:0.16},
+   perk:{n:'Gravity Optional',d:'High-risk spots hit far more often and pop the crowd — but you take 10% more damage.'}},
+
+  {id:'brawler',plan:{a:'hardcore',b:'strike'},name:'Brawler',b:{to:11,po:6},blurb:'Tough, wild, takes punishment.',
+   grow:{to:1.55,po:1.25}, mast:{hardcore:1.7,strike:1.3}, out:1.08, in:0.80,
+   dec:{survive:0.14,fire:0.08},
+   perk:{n:'Cast Iron',d:'Take 20% less damage and survive runs others cannot. Hardcore masters fastest.'}},
+
+  {id:'showman',plan:{a:'showman',b:'strike'},name:'Showman',b:{ch:12,ps:5},blurb:'Born for the microphone.',
+   grow:{ch:1.6,ps:1.2}, mast:{showman:1.7}, out:0.96, in:1.0,
+   dec:{crowd:0.16,heat:0.14,fire:0.10}, popMult:1.35,
+   perk:{n:'Draws Money',d:'Crowd work almost never fails and you gain popularity 35% faster. Showmanship masters fastest.'}},
+
+  {id:'allrounder',plan:{a:'strike',b:'technical'},name:'All-Rounder',b:{ps:5,te:5,ch:5},blurb:'No holes, no shortcuts.',
+   grow:{po:1.15,te:1.15,ae:1.15,ch:1.15,ps:1.15,to:1.15,st:1.15}, mast:{}, out:1.0, in:0.94,
+   dec:{fin:0.04,grind:0.04,crowd:0.04,counter:0.04,chain:0.04,risk:0.04,survive:0.04,fire:0.04,heat:0.04},
+   tpBonus:0.25,
+   perk:{n:'Complete Package',d:'Everything improves 15% faster and you earn 25% more training points. Slight bonus to every in-match decision.'}},
 ];
+function styleOf(){ return STYLES.find(x=>x.id===(G&&G.w.style))||STYLES[5]; }
+function styleDec(kind){ const d=styleOf().dec||{}; return d[kind]||0; }
+function growMult(k){ const g=styleOf().grow||{}; return g[k]||1; }
+function mastMult(cat){ const m=styleOf().mast||{}; return m[cat]||1; }
 let CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
 
 function startCreate(){
@@ -801,7 +841,9 @@ function quickStart(){
 }
 function renderStyles(){
   $('cStyles').innerHTML=STYLES.map(s=>`<div class="opt ${CREATE.style===s.id?'sel':''}" onclick="CREATE.style='${s.id}';renderStyles()">
-    <h4>${s.name}</h4><div class="meta">${Object.entries(s.b).map(([k,v])=>'+'+v+' '+k.toUpperCase()).join(' · ')}</div><p>${s.blurb}</p></div>`).join('');
+    <h4>${s.name}</h4>
+    <div class="meta">${Object.entries(s.b).map(([k,v])=>'+'+v+' '+k.toUpperCase()).join(' · ')}</div>
+    <div class="perk"><span class="perkn">${s.perk.n}</span> ${s.perk.d}</div></div>`).join('');
 }
 // look editor used by create + locker
 // ---------- visual customizer (tile picker with live mini-previews) ----------
@@ -892,7 +934,7 @@ function finishCreate(){
         look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0 },
     car:{ age:21, year:1, week:1, rep:0, pop:5, cond:100, morale:70, mom:50,
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
-          plan:{a:'strike',b:'technical'}, mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[] },
+          plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[] },
     bag:{ coins:1500, owned:{}, shards:0 },
     log:[], hist:[]
   };
@@ -973,7 +1015,8 @@ function renderCareer(){
     return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:13px;">
       <span style="color:var(--text-dim);font-weight:700;">${label}</span><span class="mono" style="color:var(--cream);font-weight:800;">${Math.round(v)}</span></div>
       <div class="bar"><i style="width:${clamp(v)}%"></i></div></div>`;
-  }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>`;
+  }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>
+    <div class="perkcard"><div class="pn">${styleOf().name} — ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
   renderWeek();
 }
 function renderWeek(){
@@ -1159,12 +1202,12 @@ async function runFight(){
     if(myTurn){
       const mv=myMove(); MS.usedMoves.push(mv);
       const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
-      const dmg=clamp(mv.dmg*0.30 + skill*0.10 + rnd()*6, 4, 34);
+      const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
       await exchange(true, mv.name, dmg, 7+mv.pop*0.06, mv.tier>=4?'BIG MOVE!':'POW!');
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
     } else {
       const mv=oppMove();
-      const dmg=clamp(o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06, 4, 30);
+      const dmg=clamp((o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06)*(styleOf().in||1), 3, 32);
       await exchange(false, mv.name, dmg, -(6+rnd()*5));
       MS.quality+=4;
     }
@@ -1180,11 +1223,11 @@ async function finishDecision(){
   MS.finishTried=true; MS.decisions++;
   const fin=G.w.finisher?moveById(G.w.finisher):null;
   const psy=G.w.attrs.ps, base=0.40+psy*0.004+(MS.mom/380)+((100-MS.opp.hp)/300);
-  const pFin=clamp(base+(fin?0.10:0),0,0.95), pSafe=clamp(base+0.24,0,0.96);
+  const pFin=clamp(base+(fin?0.10:0)+styleDec('fin'),0,0.95), pSafe=clamp(base+0.24+styleDec('grind'),0,0.96);
   const pick=await decide('THEY\'RE DOWN — CALL IT.','Your opponent is reeling. This is the moment.',[
     {name:fin?fin.name:'Go For The Finish',desc:'End it now. Huge payoff if it lands.',p:pFin,kind:'fin'},
     {name:'Grind Them Down',desc:'Safer. Keep control, finish later.',p:pSafe,kind:'grind'},
-    {name:'Play To The Crowd',desc:'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003,0,0.92),kind:'crowd'},
+    {name:'Play To The Crowd',desc:'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003+styleDec('crowd'),0,0.92),kind:'crowd'},
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fin'){
@@ -1206,7 +1249,7 @@ async function finishDecision(){
 async function comebackDecision(){
   MS.decisions++;
   const to=G.w.attrs.to, ch=G.w.attrs.ch, ps=G.w.attrs.ps;
-  const pFire=clamp(0.32+ch*0.005+to*0.002,0,0.93), pCounter=clamp(0.28+ps*0.006,0,0.93), pSurvive=clamp(0.62+to*0.003,0,0.96);
+  const pFire=clamp(0.32+ch*0.005+to*0.002+styleDec('fire'),0,0.93), pCounter=clamp(0.28+ps*0.006+styleDec('counter'),0,0.93), pSurvive=clamp(0.62+to*0.003+styleDec('survive'),0,0.96);
   const pick=await decide('YOU\'RE IN TROUBLE.','They have all the momentum. How do you turn this around?',[
     {name:'Fire Up',desc:'Feed off the crowd and rally.',p:pFire,kind:'fire'},
     {name:'Catch Them Clean',desc:'Time a counter out of nowhere.',p:pCounter,kind:'counter'},
@@ -1232,9 +1275,9 @@ async function midDecision(){
   MS.decisions++;
   const ae=G.w.attrs.ae, te=G.w.attrs.te, ch=G.w.attrs.ch;
   const pick=await decide('SWING THE MATCH.','A window opens. What do you call?',[
-    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006,0,0.93),kind:'risk'},
-    {name:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004,0,0.95),kind:'chain'},
-    {name:'Work The Crowd',desc:'Build heat before the finish.',p:clamp(0.48+ch*0.005,0,0.95),kind:'heat'},
+    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006+styleDec('risk'),0,0.93),kind:'risk'},
+    {name:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004+styleDec('chain'),0,0.95),kind:'chain'},
+    {name:'Work The Crowd',desc:'Build heat before the finish.',p:clamp(0.48+ch*0.005+styleDec('heat'),0,0.95),kind:'heat'},
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='risk'){
@@ -1311,9 +1354,15 @@ function finalizeFight(iWon){
 function skipFight(){
   if(!MS||MS.ended) return;
   MS.ended=true;
-  // resolve instantly on the state so far
-  const lead=MS.me.hp-MS.opp.hp+MS.mom*0.3;
-  finalizeFight(lead>=0);
+  // Resolve the REST of the match properly: same odds the live loop would face,
+  // nudged by however the match was actually going when you skipped.
+  const o=MS.o, c=G.car;
+  const meOvr=ovr(G.w)+c.mom*0.10+(c.streak>0?Math.min(6,c.streak):0);
+  let p=1/(1+Math.pow(10,(o.oppOvr-meOvr)/16));
+  p += ((MS.me.hp-MS.opp.hp)/100)*0.35 + MS.mom/500;
+  if(o.stakes==='title'||o.stakes==='defense') p*=0.82;
+  MS.quality += Math.max(0,MS.maxBeats-MS.beat)*2.6;   // the unseen exchanges still happened
+  finalizeFight(rnd()<clamp(p,0.05,0.95));
 }
 
 function takeMatch(i){
@@ -1364,15 +1413,15 @@ function applyMatch(o,res){
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
-  const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach;
+  const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1);
   c.pop=clamp(c.pop+popGain,1,100);
   c.mom=clamp(c.mom+(res.win?7:-6)+(res.quality-55)/8);
   c.cond=clamp(c.cond-(6+o.mult*5+(res.quality>75?3:0)));
   // XP → training points; mastery in the categories you emphasised
   const xp=Math.round(20+res.quality*0.6+(o.stakes==='title'?25:0));
-  w.xp+=xp; while(w.xp>=100){ w.xp-=100; w.tp+=1; }
-  const gain=Math.round(9+res.quality*0.16);
-  [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)); });
+  w.xp+=Math.round(xp*(1+(styleOf().tpBonus||0))); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
+  const gain=9+res.quality*0.16;
+  [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)); });
   // title
   let titleMsg=null;
   const tt=tierOf(c.rep);
@@ -1458,7 +1507,7 @@ function yearEnd(){
   const peak=30;
   ATTRS.forEach(([k])=>{
     // young talent improves fastest; growth tapers toward the peak, then reverses
-    const g = c.age<26 ? 1.4 : c.age<peak ? 0.8 : 0;
+    const g = (c.age<26 ? 1.4 : c.age<peak ? 0.8 : 0) * growMult(k);
     if(g) w.attrs[k]=clamp(w.attrs[k]+(k==='ps'?g+0.4:g));
     else if(c.age>34){ const d=(c.age-34)*0.55; w.attrs[k]=clamp(w.attrs[k]-(k==='ps'?d*0.25:k==='ae'?d*1.4:d)); }
   });
@@ -1481,7 +1530,8 @@ function renderTrain(){
   $('trainBody').innerHTML=`<div class="grid g2">`+ATTRS.map(([k,label])=>{
     const v=G.w.attrs[k], cost=1;
     return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;">
-      <div><div style="font-weight:800;color:var(--cream);font-size:15px;">${label}</div>
+      <div><div style="font-weight:800;color:var(--cream);font-size:15px;">${label}
+        ${growMult(k)>1.05?`<span class="badge b-leg" style="margin-left:6px;">${styleOf().name} ×${growMult(k).toFixed(2)}</span>`:''}</div>
       <div class="hint">${gateHint(k)}</div></div>
       <div style="text-align:right;"><div class="mono" style="font-size:22px;font-weight:800;">${Math.round(v)}</div>
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
@@ -1494,7 +1544,7 @@ function gateHint(k){
   const next=MOVES.filter(m=>catById(m.cat).attr===k&&!moveUnlocked(m)&&m.val>G.w.attrs[k]).sort((a,b)=>a.val-b.val)[0];
   return (cats.length?'Governs '+cats.join(' & ')+'. ':'')+(next?`Next gate: ${next.val} → ${next.name}`:'');
 }
-function spendTP(k){ if(G.w.tp<1) return; G.w.tp--; G.w.attrs[k]=clamp(G.w.attrs[k]+1);
+function spendTP(k){ if(G.w.tp<1) return; G.w.tp--; G.w.attrs[k]=clamp(G.w.attrs[k]+growMult(k));
   const u=checkUnlocks(); save(); renderTrain(); refreshHud();
   if(u.length) toast('Unlocked: '+u.map(m=>m.name).join(', ')); }
 
@@ -1502,7 +1552,8 @@ function renderMoves(){
   let h=`<div class="grid g2" style="margin-bottom:16px;">`+MCATS.map(c=>{
     const m=G.w.mastery[c.id]||0, t=masteryTier(c.id), nx=MTIERS.find(x=>x.t===t+1);
     return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-weight:800;color:var(--cream);">${c.icon} ${c.name}</div>
+      <div style="font-weight:800;color:var(--cream);">${c.icon} ${c.name}
+        ${mastMult(c.id)>1.05?`<span class="badge b-leg" style="margin-left:4px;">×${mastMult(c.id).toFixed(1)}</span>`:''}</div>
       <span class="badge b-com">T${t} ${MTIERS[t-1].name}</span></div>
       <div class="hint" style="margin-top:4px;">Governed by ${ATTRS.find(a=>a[0]===c.attr)[1]} · mastery ${m}${nx?' / '+nx.mastery:''}</div>
       <div class="bar gd" style="margin-top:6px;"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div></div>`;
