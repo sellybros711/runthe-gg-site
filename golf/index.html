@@ -4014,11 +4014,38 @@ function overlayS1Launch(screen){
    live round, and never greets a brand-new player mid-onboarding. Opens in a NEW TAB so an
    in-progress career/round is never lost.                                                          */
 const ARCADE_URL='/arcade/';
-const ARCADE_AD_SESSION='rtt_arcade_ad_seen';   // per-tab session flag
-const ARCADE_AD_OFF='bag_arcade_ad_off';        // "don't show this again" (persistent)
-function arcadeAdSeenThisSession(){ try{ return sessionStorage.getItem(ARCADE_AD_SESSION)==='1'; }catch(e){ return false; } }
-function arcadeAdMarkSession(){ try{ sessionStorage.setItem(ARCADE_AD_SESSION,'1'); }catch(e){} }
-function arcadeAdOff(){ return !!LS.get(ARCADE_AD_OFF,false); }
+/* SITE-WIDE KEYS, SHARED WITH /assets/arcade-ad.js. The homepage, the NFL game and the
+   college game run that shared panel; this game keeps its own renderer because the ad is
+   wired into the overlay stack and the back-button handling here, and lifting it out would
+   cost that. The REMEMBERING is what has to be common: these were bag_/rtt_ keys, which
+   meant a player crossing the site in one sitting was told about the Arcade four times and
+   "don't show this again" only ever silenced the surface they ticked it on.
+
+   Read and written RAW rather than through LS, deliberately. LS JSON-stringifies, so it
+   stores `true` where the shared file stores '1' -- pointing both at one key without
+   matching the format would look unified and silently not be.
+
+   Out of the bag_ namespace for a second reason: resetData() wipes every bag_* key at
+   launch, and somebody's "stop showing me this" is not game data to be reset. */
+const ARCADE_AD_SESSION='rtg_arcade_ad_seen';   // per-tab session flag
+const ARCADE_AD_OFF='rtg_arcade_ad_off';        // "don't show this again" (persistent)
+const ARCADE_AD_AT='rtg_arcade_ad_at';          // when, so OTHER TABS know too
+/* Thirty minutes, matching the shared file. sessionStorage is per tab, so somebody with
+   the site open in three tabs would be told three times -- the one case a session flag
+   cannot see. The timestamp closes it, and is short enough that coming back after dinner
+   is a new visit. */
+const ARCADE_AD_WINDOW=30*60*1000;
+function arcadeAdSeenThisSession(){
+  try{ if(sessionStorage.getItem(ARCADE_AD_SESSION)==='1') return true; }catch(e){}
+  try{ const at=Number(localStorage.getItem(ARCADE_AD_AT));
+    if(isFinite(at)&&at>0&&(Date.now()-at)<ARCADE_AD_WINDOW) return true; }catch(e){}
+  return false;
+}
+function arcadeAdMarkSession(){
+  try{ sessionStorage.setItem(ARCADE_AD_SESSION,'1'); }catch(e){}
+  try{ localStorage.setItem(ARCADE_AD_AT,String(Date.now())); }catch(e){}
+}
+function arcadeAdOff(){ try{ return localStorage.getItem(ARCADE_AD_OFF)==='1'; }catch(e){ return false; } }
 // Count the ad as seen (once per session). Called when it has survived a beat on screen AND on any
 // interaction with it, so acting on it immediately still spends the session's one showing.
 function arcadeAdSeenNow(){ try{
@@ -4129,7 +4156,12 @@ function overlayArcadeAd(screen){
       <label class="aachk"><input type="checkbox" class="aaoff" ${arcadeAdOff()?'checked':''}><span>Don't show this again</span></label>
     </div></div>`);
   const box=ov.querySelector('.aaoff');
-  const remember=()=>{ try{ LS.set(ARCADE_AD_OFF, !!box.checked); }catch(e){} };
+  /* Raw '1' / removed, matching the shared file's format -- see ARCADE_AD_OFF above for
+     why this does not go through LS. */
+  const remember=()=>{ try{
+    if(box.checked) localStorage.setItem(ARCADE_AD_OFF,'1');
+    else localStorage.removeItem(ARCADE_AD_OFF);
+  }catch(e){} };
   box.onchange=()=>{ remember(); if(box.checked){ try{ track('arcade_ad_optout'); }catch(e){} } };
   // Acting on the ad counts as seeing it, even inside the 320ms "did it survive" window — otherwise
   // closing it immediately would leave the flag unburnt and it would pop straight back up.

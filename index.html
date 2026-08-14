@@ -342,47 +342,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sheet .fine{color:#6f829a;font-size:11px;line-height:1.5;margin-top:14px;text-align:center;}
   .sheet .fine a{color:#9db2c8;}
 
-  /* ---- THE ARCADE ANNOUNCEMENT ----
-       The Arcade's own orange, on a sheet that is otherwise this site's navy and gold,
-       because the whole job of this panel is to say "a different kind of thing to play"
-       and colour is the fastest way to say it. It is the same treatment .feat.arcade
-       gets further down the page, CRT scanlines included, so the panel and the card
-       somebody scrolls to afterwards read as one game rather than two. */
-  .sheet.aa{background:
-      repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.022) 3px 4px),
-      radial-gradient(120% 120% at 88% -10%, rgba(242,113,28,.26), transparent 55%),
-      linear-gradient(180deg,#2e1608,#1b0d05);
-    border-color:rgba(242,113,28,.42);
-    box-shadow:0 0 0 1px rgba(242,113,28,.12),0 30px 80px -20px rgba(0,0,0,.85);}
-  .sheet.aa .x{border-color:rgba(242,113,28,.32);}
-  .aa-head{display:flex;align-items:center;gap:12px;margin:2px 0 11px;padding-right:38px;}
-  .aa-head img{width:52px;height:52px;border-radius:9px;flex:0 0 auto;
-    border:1px solid rgba(242,113,28,.35);box-shadow:0 0 22px -8px rgba(251,146,60,.9);}
-  .sheet.aa h2{margin:0;padding:0;font-size:25px;line-height:1.02;}
-  .sheet.aa h2 .g{background:linear-gradient(92deg,#FFC46B 0%,#FB923C 52%,#F2530E 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#FB923C;}
-  .aa-kick{display:block;font-size:10.5px;font-weight:800;
-    letter-spacing:.14em;text-transform:uppercase;color:#FBBF24;margin-bottom:4px;}
-  .sheet.aa .lede{color:#e7d3c0;margin-bottom:12px;}
-  /* THE GAMES BY NAME. "Ten daily puzzles" is a quantity; "Alma Mater, Rank It, The
-     Table" is a reason to tap, and one of them is always somebody's kind of thing. */
-  .aa-games{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 4px;}
-  .aa-games span{font-size:11.5px;font-weight:700;color:#fbcfa0;padding:4px 8px;border-radius:5px;
-    background:rgba(242,113,28,.1);border:1px solid rgba(242,113,28,.26);white-space:nowrap;}
-  .aa-games span.more{color:#c08f63;background:none;border-color:rgba(242,113,28,.16);}
-  #aa-go{background:linear-gradient(180deg,#FB923C,#D2570A);color:#2a1206;
-    box-shadow:0 10px 26px -10px rgba(242,113,28,.95),0 0 22px -8px rgba(251,146,60,.6);}
-  #aa-go:hover{background:linear-gradient(180deg,#FDBA74,#EA580C);}
-  #aa-go .arw{transition:transform .18s ease;}
-  #aa-go:hover .arw{transform:translateX(4px);}
-  #aa-not{margin-top:8px;}
-  /* The opt-out sits under a rule, below both buttons: it is the quietest thing here and
-     has to look like a preference rather than a third offer competing with the CTA. */
-  .sheet.aa .remember{margin-top:14px;padding-top:12px;color:#c9ac93;
-    border-top:1px solid rgba(242,113,28,.18);}
-  .sheet.aa .remember input{accent-color:#FB923C;}
-  @media (prefers-reduced-motion: reduce){ #aa-go .arw{transition:none;} }
-
   /* ---- content sections (about / how it works / faq) ---- */
   .content{margin:30px 0 0;}
   /* section headings in the wordmark's pixel type, with a pixel-square tick */
@@ -958,34 +917,6 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
   </div>
 
-  <!-- Run The Arcade announcement. Once per browsing session, and never again for
-       anybody who ticks the box at the bottom. -->
-  <div class="modal" id="arcade-ad" hidden>
-    <div class="sheet aa" role="dialog" aria-modal="true" aria-labelledby="aa-title">
-      <button class="x" id="aa-close" aria-label="Close">✕</button>
-      <div class="aa-head">
-        <img src="/arcade/assets/arcade-icon.png?v=2" alt="" width="52" height="52" />
-        <div>
-          <span class="aa-kick">New on RunThe.GG</span>
-          <h2 id="aa-title">Run The <span class="g">Arcade</span></h2>
-        </div>
-      </div>
-      <p class="lede">Ten quick sports puzzles, new every day. Most take a minute. Build a
-        streak on the ones you like, climb the board on the ones you are good at, and come
-        back tomorrow to a fresh set. Same account as the rest of RunThe.GG.</p>
-      <div class="aa-games">
-        <span>Daily Match</span><span>Odd One Out</span><span>Alma Mater</span>
-        <span>Crossword</span><span>Rank It</span><span>Career</span>
-        <span class="more">+4 more</span>
-      </div>
-      <a class="btn go" id="aa-go" href="/arcade/">Play today's puzzles <span class="arw">&rarr;</span></a>
-      <button class="btn ghost go" id="aa-not" type="button">Not now</button>
-      <label class="remember">
-        <input type="checkbox" id="aa-off" /> Don't show this again
-      </label>
-    </div>
-  </div>
-
 <script>
 /* ---------- Add to Home Screen (PWA install) ---------- */
 (function(){
@@ -1083,86 +1014,31 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 
+<script defer src="/assets/arcade-ad.js"></script>
 <script>
-/* ---- RUN THE ARCADE, ANNOUNCED ONCE A SESSION ----
-   Two different questions, so two different stores:
-
-     sessionStorage   have they already been shown it in THIS browsing session
-     localStorage     have they asked never to be shown it again
-
-   A session, not a page load. Somebody who taps into a game and comes back, or reloads,
-   or opens the homepage in a second tab, has done nothing that deserves a second telling
-   -- and the same panel twice in five minutes reads as a bug rather than an advert.
-   sessionStorage is exactly the lifetime wanted: it dies with the tab, so the next real
-   visit is a new session and they are told again. Nothing else on the site uses it, so
-   there is nothing it can be confused with.
-
-   The tickbox writes to localStorage instead, because "never again" has to outlive the
-   tab, and it is read first so that answer always wins. */
+/* The panel itself lives in /assets/arcade-ad.js -- one look and one set of storage keys
+   for every surface that runs it. All this page decides is WHEN it is polite to ask,
+   which is the only part that is local knowledge. */
 (function(){
-  var SEEN='rtg_arcade_ad_seen';   // sessionStorage: this session only
-  var OFF='rtg_arcade_ad_off';     // localStorage: for good
-
-  /* Both stores throw rather than return null in older Safari's private mode. Every read
-     defaults to "not seen, not opted out" and every write is allowed to fail quietly: the
-     worst case is a panel shown once per visit to somebody whose browser refuses to
-     remember, which is a far smaller wrong than a script error taking the homepage down. */
-  function got(store,key){ try{ return !!window[store].getItem(key); }catch(e){ return false; } }
-  function put(store,key){ try{ window[store].setItem(key,'1'); }catch(e){} }
-  function drop(store,key){ try{ window[store].removeItem(key); }catch(e){} }
-  function el(id){ return document.getElementById(id); }
-
-  function close(){ var m=el('arcade-ad'); if(m) m.hidden=true; }
-
-  function due(){
-    if(got('localStorage',OFF)) return false;
-    if(got('sessionStorage',SEEN)) return false;
-    /* NOT ON TOP OF SOMETHING ELSE. The auth sheet opens on its own when somebody lands
-       back from Google, and the install sheet may be open from a tap a moment ago.
-       Stacking this on either would replace the thing they asked for with a thing they
-       did not. */
-    var m=el('modal'), i=el('install');
-    if(m && !m.hidden) return false;
-    if(i && !i.hidden) return false;
-    return true;
+  function otherSheetOpen(){
+    /* The sign-in sheet opens by itself when somebody lands back from Google, and the
+       install sheet may be open from a tap a moment ago. Stacking on either would replace
+       the thing they asked for with a thing they did not. */
+    var m=document.getElementById('modal'), i=document.getElementById('install');
+    return !!((m && !m.hidden) || (i && !i.hidden));
   }
-
-  function show(){
-    var m=el('arcade-ad');
-    if(!m || !due()) return;
-    /* Marked BEFORE it is shown, not when it is dismissed. Whatever happens next -- they
-       tap through, they close it, they kill the tab -- they have been told, and a panel
-       that only counts as seen once it is politely dismissed is one that comes back for
-       everybody who ignored it. */
-    put('sessionStorage',SEEN);
-    m.hidden=false;
-    if(typeof gtag==='function') gtag('event','arcade_promo_shown',{});
-    /* The close button, not the call to action: this is an interruption nobody asked for,
-       and a stray Return should dismiss it rather than navigate away from the page. */
-    var x=el('aa-close'); if(x) x.focus();
+  function ask(){
+    var A=window.RTG_ARCADE_AD; if(!A) return;
+    if(A.forced()){ A.show({from:'home'}); return; }
+    if(!A.due() || otherSheetOpen()) return;
+    A.show({from:'home'});
   }
-
-  function wire(){
-    var m=el('arcade-ad'); if(!m) return;
-    var x=el('aa-close'); if(x) x.onclick=close;
-    var no=el('aa-not');  if(no) no.onclick=close;
-    m.addEventListener('click',function(e){ if(e.target===m) close(); });
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !m.hidden) close(); });
-    /* Written on the tick rather than on the way out, so it still counts for somebody who
-       ticks the box and then leaves through the button or closes the tab outright. */
-    var off=el('aa-off');
-    if(off) off.onchange=function(){
-      if(off.checked) put('localStorage',OFF); else drop('localStorage',OFF);
-    };
-    var go=el('aa-go');
-    if(go) go.onclick=function(){ if(typeof gtag==='function') gtag('event','arcade_promo_click',{}); };
-    /* A beat after the page is up. The homepage has video and canvas work to get through
-       first, and the auth script decides on DOMContentLoaded whether IT is opening a
-       sheet. due() re-checks both sheets when the timer fires, so the delay is politeness
-       and not the actual guard. */
-    setTimeout(show,1200);
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
+  /* A beat after the page is up: the homepage has video and canvas work to get through
+     first, and the auth script decides on DOMContentLoaded whether IT is opening a sheet.
+     The guards are re-read when the timer fires, so the delay is politeness and not the
+     actual protection. */
+  function boot(){ setTimeout(ask,1200); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
 

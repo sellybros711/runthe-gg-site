@@ -1078,34 +1078,6 @@ window.GA_ID='G-L29P5MRWKE';
      the one thing here meant to catch the eye, and graying it would leave nothing saying the
      game is coming at all. Which is also why none of this is done with opacity on the card
      -- see the note above .modecard.mc-preview. */
-  /* ---- THE ARCADE ANNOUNCEMENT ----
-     The Arcade's own orange, on a sheet that is otherwise this game's red and navy. The
-     whole job of the panel is to say "a different kind of thing to play" and colour says
-     it faster than the copy does. A left rail rather than a full frame: a boxed panel
-     inside a sheet reads as a second sheet. */
-  .aa-pop{border-left:3px solid rgba(242,113,28,.85);padding:2px 0 2px 13px;
-    background:linear-gradient(90deg,rgba(242,113,28,.10),transparent 62%)}
-  .aa-kick{display:block;font-size:10.5px;font-weight:800;letter-spacing:.14em;
-    text-transform:uppercase;color:#FBBF24}
-  .aa-pop h2{color:#FDBA74}
-  /* THE GAMES BY NAME. "Ten daily puzzles" is a quantity; naming them is a reason to tap,
-     and one of them is always somebody's kind of thing. */
-  .aa-games{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 0}
-  .aa-games span{font-size:11.5px;font-weight:700;color:#fbcfa0;padding:4px 8px;
-    border-radius:5px;background:rgba(242,113,28,.1);
-    border:1px solid rgba(242,113,28,.26);white-space:nowrap}
-  .aa-games span.more{color:#c08f63;background:none;border-color:rgba(242,113,28,.16)}
-  /* Orange, not this game's red: it leaves for a different game, and the button is the
-     last thing read before the tap and the first thing seen on the page it lands on. */
-  #b-aa-go{background:linear-gradient(180deg,#FB923C,#D2570A);color:#2a1206;
-    box-shadow:0 10px 26px -14px rgba(242,113,28,.95), inset 0 1px 0 rgba(255,255,255,.22)}
-  #b-aa-go:hover{background:linear-gradient(180deg,#FDBA74,#EA580C)}
-  /* The opt-out sits under a rule, below both buttons: it is the quietest thing in the
-     panel and has to read as a preference rather than a third offer. */
-  .aa-off{display:flex;align-items:center;gap:9px;margin-top:14px;padding-top:12px;
-    border-top:1px solid rgba(242,113,28,.18);font-size:12.5px;color:#c9ac93;cursor:pointer}
-  .aa-off input{width:17px;height:17px;accent-color:#FB923C;flex:0 0 auto}
-
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -4569,6 +4541,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=17"></script>
 <script src="achievements.js?v=8"></script>
+<!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
+     panel looks the same everywhere and one "don't show this again" covers the lot. -->
+<script defer src="/assets/arcade-ad.js?v=1"></script>
 <script defer src="auth.js?v=2"></script>
 <script>
 (function(){
@@ -5076,9 +5051,9 @@ async function boot(){
     ga('game_loaded');
     /* A beat after the intro lands, because the auth client decides on ITS first change
        whether it is opening a sheet of its own, and this must not get there first.
-       arcadeAdDue() re-checks the screen and the sheet when the timer fires, so the delay
+       askArcadeAd() re-reads the screen and the sheet when the timer fires, so the delay
        is politeness rather than the actual guard. */
-    setTimeout(arcadeAd,1200);
+    setTimeout(askArcadeAd,1200);
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -5826,82 +5801,23 @@ function paintResultsPromo(){
   }
 }
 
-/* ---- RUN THE ARCADE, ANNOUNCED ONCE A SESSION ----
-   THE KEYS ARE THE HOMEPAGE'S, DELIBERATELY. Both stores are scoped to the ORIGIN, not the
-   path, so / and /football/ genuinely share them. That buys two things for free: ticking
-   the box in either place silences both, and somebody already told on the homepage on
-   their way in is not told a second time when the game opens. One telling per session
-   across the whole site, wherever they happen to land first.
-
-   A session, not a page load. Somebody who reloads, or comes back from the Arcade, or
-   loses the tab to the phone's memory and reopens it, has done nothing that deserves a
-   second telling -- and the same panel twice in five minutes reads as a bug rather than
-   an advert. sessionStorage is exactly that lifetime: it dies with the tab.
-
-   The tickbox writes to localStorage instead, because "never again" has to outlive the
-   tab, and it is read first so that answer always wins. */
-const AA_SEEN='rtg_arcade_ad_seen';   // sessionStorage: this session only
-const AA_OFF='rtg_arcade_ad_off';     // localStorage: for good
-const AA_URL='/arcade/';
-/* Older Safari THROWS on both stores in private mode rather than returning null. Every
-   read defaults to "not seen, not opted out" and every write is allowed to fail: a panel
-   shown once a visit to somebody whose browser refuses to remember is a far smaller wrong
-   than a script error taking the game's boot down with it. */
-function aaGot(store,key){ try{ return !!window[store].getItem(key); }catch(e){ return false; } }
-function aaPut(store,key){ try{ window[store].setItem(key,'1'); }catch(e){} }
-function aaDrop(store,key){ try{ window[store].removeItem(key); }catch(e){} }
-/* Every condition in one place, so the answer to "why did it not show" is one function. */
-function arcadeAdDue(){
-  if(aaGot('localStorage',AA_OFF)) return false;
-  if(aaGot('sessionStorage',AA_SEEN)) return false;
+/* ---- RUN THE ARCADE ----
+   The panel itself is /assets/arcade-ad.js: one look and one set of storage keys for every
+   surface on the site, so ticking "don't show this again" anywhere silences it everywhere
+   and nobody is told twice in a sitting. All this game decides is WHEN it is polite to
+   ask, which is the only part that is local knowledge. */
+function askArcadeAd(){
+  const A=window.RTG_ARCADE_AD; if(!A) return;
+  if(A.forced()){ A.show({from:'football'}); return; }
+  if(!A.due()) return;
   /* The front page, and nothing on top of it. A challenge link takes over the first
      screen, and a sheet is already open when somebody is mid sign-up or has been sent to
-     the club picker; stacking this on either would replace the thing they asked for with
-     a thing they did not. */
-  if(!$('s-intro').classList.contains('on')) return false;
-  if($('sheet').classList.contains('on')) return false;
-  if(wantModes||wantOneTeam) return false;
-  return true;
-}
-function arcadeAd(){
-  if(!arcadeAdDue()) return;
-  /* Marked BEFORE it is shown, not when it is dismissed. Whatever happens next -- they tap
-     through, they close it, they kill the tab -- they have been told, and a panel that
-     only counts as seen once politely dismissed is one that comes back for everybody who
-     ignored it. */
-  aaPut('sessionStorage',AA_SEEN);
-  ga('arcade_promo_shown',{from:'football'});
-  $('sheet-in').innerHTML=
-    '<div class="aa-pop">'+
-      '<span class="aa-kick">New on RunThe.GG</span>'+
-      '<h2 class="display" style="font-size:26px;margin:6px 0 6px;line-height:1.1">'+
-        'Run The Arcade</h2>'+
-      '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+
-        'Ten quick sports puzzles, new every day. Most take a minute. Build a streak on '+
-        'the ones you like, climb the board on the ones you are good at, and come back '+
-        'tomorrow to a fresh set. Same account as this game.</p>'+
-      '<div class="aa-games">'+
-        '<span>Daily Match</span><span>Odd One Out</span><span>Alma Mater</span>'+
-        '<span>Crossword</span><span>Rank It</span><span>Career</span>'+
-        '<span class="more">+4 more</span>'+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-aa-go">Play today’s puzzles</button></div>'+
-    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-aa-no">Not now</button></div>'+
-    '<label class="aa-off"><input type="checkbox" id="aa-off"> Don’t show this again</label>';
-  $('sheet-in').dataset.kind='arcadead';
-  openSheet();
-  $('b-aa-no').onclick=closeSheet;
-  /* Written on the tick rather than on the way out, so it still counts for somebody who
-     ticks the box and then leaves through the button or closes the tab outright. */
-  $('aa-off').onchange=function(){
-    if(this.checked) aaPut('localStorage',AA_OFF); else aaDrop('localStorage',AA_OFF);
-  };
-  /* Leaves this page, so it is tracked before it goes. */
-  $('b-aa-go').onclick=()=>{
-    ga('arcade_promo_click',{from:'football'});
-    location.href=AA_URL;
-  };
+     the club picker; covering either would replace the thing they asked for with a thing
+     they did not. */
+  if(!$('s-intro').classList.contains('on')) return;
+  if($('sheet').classList.contains('on')) return;
+  if(wantModes||wantOneTeam) return;
+  A.show({from:'football'});
 }
 
 function eraPicker(){
