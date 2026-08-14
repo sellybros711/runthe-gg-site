@@ -59,7 +59,7 @@
         teams: r[3].map(function (x) { return D.teams[x]; }),
         col: r[4] >= 0 ? D.cols[r[4]] : null,
         aw: r[5].map(function (x) { return D.awards[x]; }),
-        decBits: r[6], act: !!(r[7] & 1), dp1: !!(r[7] & 2), f: r[8], st: r[9] || null,
+        decBits: r[6], act: !!(r[7] & 1), dp1: !!(r[7] & 2), tpart: !!(r[7] & 4), f: r[8], st: r[9] || null,
         first: t[0] || '', last: t.length > 1 ? t[t.length - 1] : (t[0] || ''), toks: t
       };
     });
@@ -90,7 +90,9 @@
       // Loyalty and longevity. A career shape is a far better category than a
       // decade tag: "never played for another team" is a fact fans argue about,
       // "played in the 2010s" is just a filter.
-      case 'teamsMax': return p.teams.length > 0 && p.teams.length <= pr.max;
+      // tpart marks a record whose team list came from today's roster only. One
+      // team listed for a ten-year veteran is a snapshot, not a one-town career.
+      case 'teamsMax': return !p.tpart && p.teams.length > 0 && p.teams.length <= pr.max;
       case 'decades': return bitCount(p.decBits) >= pr.min;
       default: return false;
     }
@@ -286,11 +288,12 @@
       return { ok: false, reason: 'letter', msg: 'Needs to start with ' + puz.letter + '.' };
     }
 
-    /* Not in our 5,900 names. That is a fact about our file, not about the
-     * player — say so, and flag it for the live check (see livecheck.js). */
+    /* Absent from our file. This game is about deep cuts, so our file is never
+     * the boundary of who counts — the miss goes to the live check, and even
+     * the fallback wording claims only that WE couldn't confirm them. */
     var ids = BY_KEY[keyOf(toks)] || [];
     if (!ids.length) {
-      return { ok: false, reason: 'unknown', live: true, msg: 'Not in our player list.' };
+      return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
     }
 
     // among same-named players, take any that satisfies the category

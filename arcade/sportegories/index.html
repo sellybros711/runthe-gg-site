@@ -330,9 +330,9 @@
 <script src="/arcade/leaderboard.js?v=8"></script>
 <script src="/arcade/share.js?v=3"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/sportegories-data.js?v=2"></script>
-<script src="/arcade/sportegories.js?v=5"></script>
-<script src="/arcade/livecheck.js?v=1"></script>
+<script src="/arcade/sportegories-data.js?v=3"></script>
+<script src="/arcade/sportegories.js?v=6"></script>
+<script src="/arcade/livecheck.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -620,7 +620,7 @@
       results.push(r);
     });
 
-    /* Anything our 5,900-name file doesn't know goes out to the live check.
+    /* Anything our file doesn't know goes out to the live check.
        This is the difference between "we've never heard of him" and "he isn't
        real" — a distinction the game got wrong until now. The request goes out
        here, at the top of the reveal, so it runs under cover of the animation
@@ -649,7 +649,7 @@
       row.classList.remove('pending');
       var d=row.querySelector('.dots'); if(d) d.remove();
       res.style.display='';
-      row.classList.add(r.ok?'good':(r.reason==='unverified'?'unsure':'bad'),'flip');
+      row.classList.add(r.ok?'good':(soft(r)?'unsure':'bad'),'flip');
       if(r.ok){
         running+=r.points;
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
@@ -660,7 +660,7 @@
         sfx(r.points>=3?'win':'lock'); buzz(r.points>=3?[18,40,18]:22);
       } else {
         var why = r.reason==='empty' ? 'No answer' : (r.msg||'Not valid');
-        var hedge = r.reason==='unverified';
+        var hedge = soft(r);
         var also = SP.answersFor(puz, i, 4);
         res.innerHTML='<span class="'+(hedge?'hedge':'why')+'">'+esc(why)+'</span>'+
           (also.length?'<span class="also">Could have said: <b>'+also.map(esc).join('</b>, <b>')+'</b></span>':'');
@@ -768,6 +768,11 @@
     }
     step(0);
   }
+
+  /* Amber, not red. "We couldn't confirm this" is a statement about our
+     reach, not a ruling that the answer was wrong — only a category we can
+     positively contradict earns a red row. */
+  function soft(r){ return r.reason==='unverified' || r.reason==='unknown'; }
 
   function nameKey(s){
     return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')

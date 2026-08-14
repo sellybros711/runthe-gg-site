@@ -33,7 +33,8 @@ function is(actual, expect, what) {
 
 /* ---------- fixtures: raw /api/player-check payloads ---------- */
 
-// A real NFL back who is not in our 5,900 — the case that started this.
+// A real NFL back. He IS in the corpus now (the builder finally reads the
+// active rosters), so this fixture stands in for whoever is still missing.
 const chaseBrown = {
   found: true, qid: 'Q00', name: 'Chase Brown',
   occupations: ['American football player'], sports: ['American football'],
@@ -171,10 +172,21 @@ is(dup[0].reason, 'dup', 'resolve: cannot reuse a player already on the card');
 // The letter rule is settled before we ever reach the network.
 is(SP.check({ letter: 'Q', cats: [{ i: iRB }] }, 0, 'Chase Brown', {}).reason, 'letter',
   'check: wrong letter short-circuits before the live lookup');
-const unk = SP.check(puz, 0, 'Chase Brown', {});
+/* Regression guard for the report that started this: Chase Brown is a current
+ * Bengals back sitting in arcade/rosters.js, and the builder used not to read
+ * that file, so the game said it had never heard of him. He grades from the
+ * corpus now, with no network involved. */
+const cbLocal = SP.check(puz, 0, 'Chase Brown', {});
+is(cbLocal.ok, true, 'corpus: Chase Brown is in the data and scores');
+is(cbLocal.live, undefined, 'corpus: and never reaches the live check');
+is(cbLocal.rarity.tier, 'Rare', 'corpus: an active-roster deep cut scores as rare');
+is(SP.check(puz, 0, 'Chase Brown', {}).player.sport, 'NFL', 'corpus: as an NFL player');
+
+// Only a name in neither place takes the live path.
+const unk = SP.check(puz, 0, 'Corbin Thistlewaite', {});
 is(unk.reason, 'unknown', 'check: absent from the corpus');
 is(unk.live, true, 'check: flagged for the live lookup');
-is(unk.msg, 'Not in our player list.', 'check: says it is our file that is short, not that he is fake');
+is(unk.msg, 'Couldn\u2019t verify that one.', 'check: claims only that WE could not confirm them');
 
 // A network that falls over must not turn a real player into a fake one.
 LC.clearCache();

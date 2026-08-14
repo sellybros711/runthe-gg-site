@@ -1,10 +1,11 @@
 /* livecheck.js — grade Sportegories answers that aren't in our corpus.
  *
- * The corpus is 5,900 players. Type a real athlete outside it and the game used
- * to say "No player by that name", which is a lie, and then score you as if you
- * had made the name up. This module does the honest thing: ask whether the
- * person exists, pull the facts of their career, and decide whether those facts
- * satisfy the category.
+ * The corpus is 9,400 players and every active pro is in it, so a name that
+ * misses is a genuine deep cut — a retired backup, a cup-of-coffee career.
+ * Exactly the answer this game exists to reward. It used to be told "No player
+ * by that name", which is a lie, and scored as if the player had made it up.
+ * This module does the honest thing: ask whether the person exists, pull the
+ * facts of their career, and decide whether those facts satisfy the category.
  *
  * Three outcomes, and the middle one matters most:
  *
@@ -420,8 +421,11 @@
         var key = String(p.text || '').trim().toLowerCase().replace(/\s+/g, ' ');
         var prof = map[key];
         if (!prof || !prof.found) {
+          // Not "no player by that name" — we don't get to declare who exists.
+          // We looked in two places and came up empty; a typo is the likeliest
+          // reason, so point at that instead of at the player.
           out[p.i] = { ok: false, reason: 'unknown', live: 'missing',
-            msg: 'We couldn’t find a player by that name.' };
+            msg: 'Couldn’t find them — check the spelling?' };
           return;
         }
         var s = shape(prof, D);

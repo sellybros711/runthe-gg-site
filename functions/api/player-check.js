@@ -3,7 +3,7 @@
  * POST /api/player-check   body: { names: ["Chase Brown", ...] }
  *   → { players: { "chase brown": <profile|null>, ... } }
  *
- * Sportegories grades against a 5,900-player corpus. Real athletes outside it
+ * Sportegories grades against a 9,400-player corpus. Real athletes outside it
  * used to be told "No player by that name", which is both wrong and unfair —
  * Chase Brown is a Bengals running back, he just isn't in our file. This
  * endpoint answers the only question the corpus can't: does this person exist,
