@@ -14631,6 +14631,68 @@ allows Google Fonts, or self-host Anton.*
   changes in `build-a-golfer/build-a-golfer.html` (or expect the golf session to have to notice and adopt
   them, as here). Two adoptions in three sessions now.
 
+- **THE MATCH PLAY CHAMPIONSHIP: a 32-seed knockout the tour ADDS partway through a career (owner: "let's
+  build the bracket championship" - build item #1 from the career-depth brainstorm, whose framing was
+  "different decisions the tour organization can make that impact the career", with the owner's own idea
+  being "there could be a chance the league implements a tournament-style championship").** A season is
+  twenty-odd stroke-play weeks; this is the one week a year that is not. The top 32 in the world by OWGR are
+  seeded, drawn against each other, and play five rounds head to head over one week - lose once and your week
+  is over, and the final is 36 holes.
+  - **It ARRIVES rather than always having been there** (the "the league implements it" half of the ask).
+    `bracketStartYear(careerSeed)` rolls a per-save start year in **3-8** (deterministic, so a save resumes
+    consistently but two careers differ), `bracketOnSchedule` keeps the week off the calendar before then, and
+    the season it lands opens on a one-time **Tour News** card (`scrTourNews`, `S.pendingTourNews`) announcing
+    the format/field/purse. It fires BEFORE the first event rather than mid-schedule, so it is deliberately
+    NOT part of the in-season interruption budget.
+  - **Built on the machinery that already exists**, not a new simulation: `simMatch` drives the holes (it now
+    takes a `holes` param defaulting to 18, so the three Cup call sites are untouched and the final passes
+    36), `worldRanking()` seeds the draw, `bracketSeedOrder` builds the standard 1v32 tree (1 and 2 in
+    opposite halves), each player's week comes from `eventOverall` + `caddieEventEo` + `confEo` + `careerFxEo`
+    exactly as `beginEvent` computes a stroke-play field, halved matches go to sudden death on `holeScore`,
+    and `PAYOUT` pays it out (each exit group splitting the slots it occupies, like `assignTies`).
+  - **Miss the 32 and the week is not dead air.** `beginEvent` gains a `bracket` branch modelled on the
+    Olympics precedent: the championship plays out headless (`playBracketHeadless`) and you play the
+    **opposite-field Palm Coast Classic** against everyone else who missed it, with the 32 filtered out of
+    that field. Crucially the headless path pushes **no result row** (`S.season.results` is indexed by
+    schedule position, so an extra row would misalign the rail/recap and double-count the week).
+  - **A knockout has no score to par**, so an order entry carries its own short/long finish (`bres` "WON" /
+    `bfull` "Lost in the quarter-finals, 3&2 to X") and the four display sites that show a result branch on it
+    (`lbRow`, the recap list + detail, the tournament overlay) instead of faking stroke totals; `total:null`
+    keeps the season rail from rendering "(E)".
+  - **The screen** (`scrBracket`): draw card (your seed + first-round opponent + the full draw in an
+    accordion) -> five rounds revealed one at a time, each led by YOUR match with a path strip (R32/R16/QF/SF/F,
+    ✓/✕ + margin) over that round's results -> champion banner + your finish + money -> Continue. Auto Sim
+    advances the rounds on a timer; Skip jumps to the result. `skipToEnd` and `finishSeasonHeadless` both
+    finish an in-progress bracket rather than simulating it as stroke play.
+  - **Balance (Monte Carlo, 400 brackets/build via the real `simBracket`)**: an OVR-94 build seeds #1 and wins
+    it **25.3%**, reaches the final 34.8%, and goes out in the R32 **19.3%**; an 88 build averages seed 11 and
+    wins 3.8%; field-wide the **1 seed wins 28%** and **top-8 seeds produce 72.7%** of champions. Seeding
+    matters and upsets happen, which is the point of a knockout.
+  - Also: 3 achievements (Into the Final / Last One Standing / Bracket Master), a Match Play callout on the
+    season summary, a `winTale` case so the Dispatch reads "by beating X 3&2 in the final", and course fit +
+    venue entries (Ironwood Ranch Club, Hill Country, Texas).
+  - Verified in Playwright, **0 page errors** throughout: an engine suite (start-year range/determinism/
+    variance, seed order, schedule presence + absence before the start year, qualification + seed, sim shape
+    16/8/4/2/1 with a 36-hole final and exactly one champion, path consistency, order groups 1/1/2/4/8/16 with
+    descending pct, finalize banking + no double-finalize + exactly one result row, and the non-qualified path
+    banking the 32 while pushing no row and putting you in the alt field); a UI walkthrough (news card -> ack
+    -> draw -> all five rounds -> champion -> Continue finalizes + advances, plus the recap list/detail and
+    tournament overlay rendering a bracket result); and the skip path (20 results from a 22-event schedule
+    with a champion crowned). Regressions green (regress_final's 18-hole daily round + shop sections, tp_final's
+    Tour Pass sweep, shoptabs' 11 tabs). Deployed to /golf (byte-identical verified).
+  - **Adopted a parallel workstream's edits first**: main's `golf/index.html` carried a site-wide Arcade-ad key
+    unification (`rtg_` keys shared with `/assets/arcade-ad.js`, raw-string format instead of LS, plus a 30-min
+    cross-tab window) made directly on the deployed file, which this deploy would have clobbered - folded into
+    `build-a-golfer.html` before deploying and verified the source then differed from main ONLY by the bracket.
+    **Three adoptions in four sessions now** - see the process note above.
+  - NOTE on `arcade_ad.mjs`: its last 2 checks now fail because they assert the OLD `bag_arcade_ad_off` LS key
+    that the adoption replaced. Confirmed a **stale fixture, not a regression** - the same 2 fail identically on
+    the previously-deployed file, and a rewritten check against the new contract (`aa_optout2.mjs`) passes 4/4,
+    i.e. ticking the box really does persist and suppress the ad across sessions.
+  - Tunable: `BRACKET_MIN_YEAR`/`BRACKET_MAX_YEAR` (when the tour adds it), `BRACKET_SIZE`/`BRACKET_WK`/
+    `BRACKET_PURSE`/`BRACKET_PTS`, `BRACKET_ROUNDS` (round names + hole counts), the opposite-field event in
+    `beginEvent`'s bracket branch.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
