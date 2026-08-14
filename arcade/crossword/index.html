@@ -217,7 +217,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
-.share-grid{font-family:monospace; font-size:22px; line-height:1.05; letter-spacing:2px; margin:2px 0 16px;}
+/* A crossword result is a time. The emoji board that used to sit here said
+   nothing a solver cares about — which squares were black is not an
+   achievement — so the clock takes the space instead and everything else
+   steps back to one quiet line. */
+.hero-time{margin:4px 0 12px;}
+.hero-time .v{font-family:var(--pix); font-weight:800; font-size:clamp(52px,17vw,68px); line-height:1;
+  color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.hero-time .k{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
+  font-weight:800; margin-top:9px;}
+.runline{display:flex; align-items:center; justify-content:center; gap:11px; flex-wrap:wrap;
+  margin:0 0 18px; font-size:12px; font-weight:700; color:var(--mut);}
+.runline b{font-family:var(--pix); font-weight:800; font-size:14px; color:var(--ink);
+  font-variant-numeric:tabular-nums; margin-right:3px;}
+.runline i{width:3px; height:3px; border-radius:50%; background:var(--mut); opacity:.5; flex:0 0 auto;}
 
 /* ---------- dopamine: confetti ---------- */
 .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -401,12 +414,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="flawless" id="mFlawless"><span class="rib"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless: no reveals</span></div>
     <h2 id="mTitle">Solved!</h2>
     <p id="mSub">Nice grid. Your streak lives another day.</p>
-    <div class="statgrid">
-      <div class="box"><div class="v" id="mTime">0:00</div><div class="k">Time</div></div>
-      <div class="box"><div class="v" id="mStreak">1</div><div class="k">Streak</div></div>
-      <div class="box"><div class="v" id="mBest">1</div><div class="k">Best</div></div>
+    <div class="hero-time">
+      <div class="v" id="mTime">0:00</div>
+      <div class="k" id="mTimeK">Your time</div>
     </div>
-    <div class="share-grid" id="mShareGrid"></div>
+    <div class="runline">
+      <span><b id="mBest">–</b> best</span><i></i>
+      <span><b id="mStreak">0</b> day streak</span><i></i>
+      <span><b id="mAvg">–</b> average</span>
+    </div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mAgain">Play again</button>
@@ -874,8 +890,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
       s.lastDone = today;
       var prevBestT=s.best||0;
-      var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && Math.round(elapsed)<prevBestT);
-      s.best = Math.min(s.best||1e9, Math.round(elapsed));
+      // Store the second the player was SHOWN. fmt() floors, so rounding here
+      // let a 1:18.6 solve display "1:18" and post a 1:19 best — two numbers
+      // that now sit side by side and used to disagree.
+      var shownT=Math.floor(elapsed);
+      var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && shownT<prevBestT);
+      s.best = Math.min(s.best||1e9, shownT);
       s.bestStreak = Math.max(s.bestStreak||0, s.streak);
       // lifetime stats
       s.solves = (s.solves||0)+1;
@@ -894,7 +914,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mTime').textContent = fmt(elapsed);
     document.getElementById('mStreak').textContent = s.streak||1;
     document.getElementById('mBest').textContent = fmt(s.best||elapsed);
-    document.getElementById('mShareGrid').textContent = buildShareGrid();
+    document.getElementById('mTimeK').textContent = 'Your time';
+    var nSolv = s.solves||1;
+    document.getElementById('mAvg').textContent = s.timeSum ? fmt(Math.round(s.timeSum/nSolv)) : fmt(elapsed);
     document.getElementById('yourTm').textContent = fmt(elapsed);
     document.getElementById('yourBest').textContent = fmt(s.best || elapsed);
     document.getElementById('mFlawless').classList.toggle('on', flawless);
@@ -932,17 +954,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  // emoji share grid - 🟨 revealed, 🟩 solved cleanly, ⬛ black
-  function buildShareGrid(){
-    var out=[];
-    for(var r=0;r<N;r++){ var line='';
-      for(var c=0;c<N;c++){ var cell=cells[r][c];
-        line += cell.block ? '⬛' : (cell.revealed ? '🟨' : '🟩');
-      } out.push(line);
-    }
-    return out.join('\n');
-  }
-
   document.getElementById('mAgain').addEventListener('click', function(){
     if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
@@ -950,12 +961,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
 
-  // Share the invite card every game shares (RTGShare.send): the solved grid
-  // becomes the picture, size + time the stat, solve time (lower is better) the
-  // challenge integer. Replaces the old bespoke canvas so Crossword matches the
-  // other eight.
+  // Share the invite card every game shares (RTGShare.send). No emoji board:
+  // a crossword's shape is the puzzle's, not the solver's, and posting it
+  // spoils which squares are blocked while boasting about nothing. The time is
+  // the boast, and the poster already draws its own grid art.
   function shareCrosswordImage(){
-    RTGShare.send({ key:'crossword', date:DATE, grid:buildShareGrid(),
+    RTGShare.send({ key:'crossword', date:DATE,
       stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) });
   }
 
@@ -1123,7 +1134,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mTime').textContent=bestStr;
     document.getElementById('mStreak').textContent=saved.streak||0;
     document.getElementById('mBest').textContent=bestStr;
-    document.getElementById('mShareGrid').textContent='';
+    document.getElementById('mTimeK').textContent='Best time';
+    document.getElementById('mAvg').textContent = (saved.timeSum && saved.solves) ? fmt(Math.round(saved.timeSum/saved.solves)) : '–';
     document.getElementById('mFlawless').classList.remove('on');
     var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
     updateAgainBtn();
