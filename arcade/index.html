@@ -337,8 +337,19 @@
   .tile.highlow .nm{color:var(--brandT);}
   .tile.spg .nm{color:var(--spgT,#DA6BE6);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
-  .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.spg{order:9;} .tile.highlow{order:10;}
+  /* Two groups, not one wall of ten. The split is the one the games already
+     make in their own descriptions: five you solve once and are done for the
+     day, five that keep going until you miss. Knowing which kind a game is
+     before you read its name is most of the "what even is this" problem. */
+  .tsec{grid-column:1 / -1; margin:6px 0 -4px;}
+  .tsec:first-child{margin-top:0;}
+  .tsec b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.07em;
+    text-transform:uppercase; font-size:14px; color:var(--ink);}
+  .tsec span{display:block; font-size:12px; color:var(--mut); margin-top:2px;}
+  .tsec.daily{order:0;}
+  .tile.match{order:1;} .tile.cross{order:2;} .tile.spg{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
+  .tsec.run{order:6;}
+  .tile.table{order:7;} .tile.career{order:8;} .tile.oddone{order:9;} .tile.alma{order:10;} .tile.highlow{order:11;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -436,6 +447,7 @@
   }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
+  .tile .badge .bshort{display:none;}   /* the narrow-row wording; see the mobile block */
   /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
   .tile.highlow .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
   .tile.highlow .badge svg{width:10px; height:10px;}
@@ -455,7 +467,14 @@
   .tile .body{display:flex; flex-direction:column; flex:1; padding:15px 15px 15px;}
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
-  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
+  /* How long it takes, next to the button. The one thing a games hub can tell
+     you that the name and the blurb can't, and the question you actually ask
+     when you're deciding on a phone: have I got time for this right now. */
+  .tile .foot{margin-top:auto;}
+  .tile .tmeta{display:block; font-size:10.5px; font-weight:900; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--dim,var(--mut)); margin:0 0 9px; text-align:center;}
+  .tile.archive .tmeta{display:none;}   /* the split Archive/Leaderboard pill needs the room */
+  .tile .play{border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
   /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
      Eight of the ten accents are light, so white text on them sat near 2:1 and
@@ -491,21 +510,61 @@
   .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, var(--card2));}
   .tile .play.split .half svg{width:15px; height:15px; flex:0 0 auto;}
   .tile.archive.cross .play.split .half{color:var(--coralT); border-color:var(--coral);}
-  /* mobile: 2-up compact cards (cap + title + PLAY) */
+  /* Mobile: one game per row, and the row says what the game is.
+     This used to be a 2-up grid of squares, which left each card about 176px
+     wide — too narrow for a sentence, so the description was simply switched
+     off. That is what made the hub unreadable: ten abstract icons, ten names
+     like "Alma Mater" and "Odd One Out", and no way to learn what any of them
+     were without opening all ten. A full-width row has room for the blurb that
+     was already written, so it shows it. */
   @media (max-width:640px){
-    .tile{border-radius:14px;}
-    .tile .cap{height:76px;}
-    .tile .cap svg{width:42px; height:42px;}
-    .tile .badge{top:7px; left:8px; font-size:8.5px; padding:3px 6px;}
-    .tile .status{top:7px; right:8px; font-size:8.5px; padding:3px 7px;}
-    .tile .body{padding:11px 11px 11px;}
-    .tile .nm{font-size:15px; text-align:center;}
-    .tile .desc{display:none;}
-    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
-    /* Archive + Leaderboard: two pills can't fit "Leaderboard" in a half-width
-       2-up card, so stack them full-width on mobile instead of clipping. */
-    .tile .play.split{flex-direction:column; gap:7px;}
-    .tile .play.split .half{width:100%; flex:0 0 auto; min-height:38px; font-size:12.5px; letter-spacing:.01em;}
+    .tiles{grid-template-columns:1fr; gap:10px;}
+    .tile{flex-direction:row; align-items:stretch; border-radius:14px;}
+    .tile:hover{transform:none;}          /* no hover on touch; the lift only caused jitter */
+    /* The cap becomes a colour spine down the left: same per-game identity and
+       the same animated mark, in a fifth of the height. */
+    .tile .cap{flex:0 0 86px; height:auto; position:static;}
+    .tile .cap svg{width:40px; height:40px;}
+    .tile .cap svg.jrot{width:46px; height:46px;}
+    /* cap is static on mobile, so these two now anchor to the row itself */
+    .tile .badge{top:auto; bottom:6px; left:6px; font-size:8px; padding:3px 5px; letter-spacing:.06em;}
+    .tile .status{top:9px; right:10px; font-size:8.5px; padding:3px 7px;}
+    .tile .body{padding:11px 12px 11px 13px; justify-content:center; min-width:0;}
+    /* Only the title runs under the status chip, so only the title is inset. */
+    .tile .nm{font-size:16.5px; text-align:left; padding-right:58px;}
+    /* Every blurb is written to land inside two lines at this width, so rows
+       come out even. The clamp is a backstop for a blurb that grows later, and
+       it sits at three rather than two on purpose: an uneven row is a much
+       smaller problem than a sentence cut off at "Find the…", which just reads
+       as broken. On a 320px screen most of them do need the third line. */
+    .tile .desc{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+      overflow:hidden; font-size:12.5px; line-height:1.42; margin:4px 0 0;}
+    .tile .foot{display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:8px; margin-top:8px;}
+    .tile .tmeta{margin:0; text-align:left; font-size:10px;}
+    /* The whole row is the link, so the button no longer has to be the tap
+       target — it shrinks to a chip and stops being the loudest thing on the
+       screen ten times over. */
+    .tile .play{min-height:33px; padding:0 15px; font-size:12.5px; flex:0 0 auto;}
+    /* Archive + Leaderboard: two pills need the full row width, so they take it
+       and the time chip stands down. */
+    .tile .play.split{flex:1 1 100%; gap:7px;}
+    .tile .play.split .half{flex:1 1 0; min-height:34px; font-size:12px; letter-spacing:.01em; padding:0 8px;}
+    /* "Members only" doesn't fit an 86px spine; the short form does. */
+    .tile .badge .bfull{display:none;}
+    .tile .badge .bshort{display:inline;}
+  }
+  /* iPhone SE and the small Androids: give the sentence back the width the
+     colour spine was taking, so most blurbs still land in two lines. */
+  @media (max-width:360px){
+    .tile .cap{flex:0 0 68px;}
+    .tile .cap svg{width:34px; height:34px;}
+    .tile .cap svg.jrot{width:38px; height:38px;}
+    .tile .body{padding:11px 10px 11px 11px;}
+    .tile .nm{font-size:15.5px; padding-right:52px;}
+    .tile .desc{font-size:12px;}
+    .tile .tmeta{font-size:9.5px; letter-spacing:.06em;}
+    .tile .play{padding:0 13px; font-size:12px;}
   }
 
   /* ---- daily double banner (all solved) ---- */
@@ -552,11 +611,14 @@
            from the top banner; the hub is games-first, edge to edge) -->
       <main id="puzzles">
         <div class="zone-head">
-          <span class="day">Today's Puzzles</span>
+          <span class="day">Today's Games</span>
           <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
+          <div class="tsec daily"><b>Daily puzzles</b><span>One solve each, then you're done until tomorrow.</span></div>
+          <div class="tsec run"><b>Streak games</b><span>Keep answering until you miss. How far can you get?</span></div>
+
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" aria-hidden="true">
               <span class="status" id="stM">Ready</span>
@@ -568,8 +630,11 @@
             </span>
             <span class="body">
               <span class="nm">Daily Match</span>
-              <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</span>
-              <span class="play" id="playM">PLAY <span class="arw">→</span></span>
+              <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four.</span>
+              <span class="foot">
+                <span class="tmeta">About 3 min</span>
+                <span class="play" id="playM">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -607,8 +672,11 @@
             </span>
             <span class="body">
               <span class="nm">Daily Crossword</span>
-              <span class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</span>
-              <span class="play" id="playC">PLAY <span class="arw">→</span></span>
+              <span class="desc">A sports mini crossword, fresh every day. Beat the clock.</span>
+              <span class="foot">
+                <span class="tmeta">About 3 min</span>
+                <span class="play" id="playC">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -627,7 +695,10 @@
             <span class="body">
               <span class="nm">Guess the Player</span>
               <span class="desc">One mystery athlete a day. Crack it in eight guesses from the clues.</span>
-              <span class="play" id="playG">PLAY <span class="arw">→</span></span>
+              <span class="foot">
+                <span class="tmeta">About 2 min</span>
+                <span class="play" id="playG">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -658,8 +729,11 @@
             </span>
             <span class="body">
               <span class="nm">Number Game</span>
-              <span class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</span>
-              <span class="play" id="playT">PLAY <span class="arw">→</span></span>
+              <span class="desc">Higher or lower? Tap the bigger number and keep the run alive.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playT">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -673,8 +747,11 @@
             </span>
             <span class="body">
               <span class="nm">Odd One Out</span>
-              <span class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</span>
-              <span class="play" id="playO">PLAY <span class="arw">→</span></span>
+              <span class="desc">Four names share a connection, one doesn't. Spot it.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playO">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -688,8 +765,11 @@
             </span>
             <span class="body">
               <span class="nm">Career Path</span>
-              <span class="desc">Name the athlete from their team-by-team journey. How many in a row?</span>
-              <span class="play" id="playR">PLAY <span class="arw">→</span></span>
+              <span class="desc">Name the athlete from their team-by-team journey.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playR">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -704,8 +784,11 @@
             </span>
             <span class="body">
               <span class="nm">Rank It</span>
-              <span class="desc">Put five athletes in the right order by a career stat or era. Two tries per set; clear it and get another.</span>
-              <span class="play" id="playK">PLAY <span class="arw">→</span></span>
+              <span class="desc">Put five athletes in the right order by a career stat or era. Two tries per set.</span>
+              <span class="foot">
+                <span class="tmeta">About 2 min</span>
+                <span class="play" id="playK">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -721,8 +804,11 @@
             </span>
             <span class="body">
               <span class="nm">Alma Mater</span>
-              <span class="desc">Name the college each player came from. Four choices, one right. How far can you run?</span>
-              <span class="play" id="playA">PLAY <span class="arw">→</span></span>
+              <span class="desc">Name the college each player came from. Four choices, one right.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playA">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -738,13 +824,16 @@
             <span class="body">
               <span class="nm">Sportegories</span>
               <span class="desc">One letter, eight categories, two minutes. Name a player for every one.</span>
-              <span class="play" id="playS">PLAY <span class="arw">→</span></span>
+              <span class="foot">
+                <span class="tmeta">2 min, timed</span>
+                <span class="play" id="playS">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
-              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members only</span>
+              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="bfull">Members only</span><span class="bshort">Card</span></span>
               <svg viewBox="0 0 56 56">
                 <g class="hlup" fill="#F5822B"><path d="M17 8 L26 22 L8 22 Z"/></g>
                 <g class="hldn" fill="#F5822B" opacity=".62"><path d="M39 48 L48 34 L30 34 Z"/></g>
@@ -752,8 +841,11 @@
             </span>
             <span class="body">
               <span class="nm">High Low</span>
-              <span class="desc">Pick a stat, then call every next player higher or lower. Endless. Card members only.</span>
-              <span class="play" id="playH">PLAY <span class="arw">→</span></span>
+              <span class="desc">Pick a stat, then call every next player higher or lower.</span>
+              <span class="foot">
+                <span class="tmeta">Endless</span>
+                <span class="play" id="playH">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
         </div>
@@ -966,7 +1058,7 @@
     css.textContent=
       // ticket body: dashed rim + a notched "torn edge" on each side, like a
       // stub ripped off the roll. The notches are just two masked circles.
-      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:18px 0 0; box-shadow:var(--shadow);}'+
       '.aticket:before,.aticket:after{content:""; position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+';}'+
       '.aticket:before{left:-9px; transform:translateY(-50%);}'+
       '.aticket:after{right:-9px; transform:translateY(-50%);}'+
@@ -986,8 +1078,14 @@
     el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / '+N+' punched</span><button class="tk-share" type="button">Share</button></div>'+
       '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
       (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL '+N+' CLEARED \u2605</div>':'');
+    /* Below the games, not above them. As the first thing on the page it was a
+       punch-card of nine names you had not learned yet — the most overwhelming
+       possible opening. It is a record of what you've done, so it belongs after
+       the doing; the dot row in the zone head already carries the count up top. */
     var host=document.getElementById('puzzles');
-    if(host) host.insertBefore(el, host.firstChild);
+    var after=host && host.querySelector('.tiles');
+    if(after) after.parentNode.insertBefore(el, after.nextSibling);
+    else if(host) host.appendChild(el);
     el.querySelector('.tk-share').addEventListener('click', function(){
       var bar=GAMES.map(function(x){return x[1]?'\ud83c\udfab':'\u2b1c';}).join('');
       var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / '+N+' games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
