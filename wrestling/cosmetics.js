@@ -93,3 +93,58 @@ window.RTR_PALETTE = {
 };
 // (sanitise any typo'd swatch at load — keeps the picker safe)
 window.RTR_PALETTE.gear = window.RTR_PALETTE.gear.filter(c=>/^#[0-9a-fA-F]{6}$/.test(c));
+
+// ---------- expanded catalogue (v2): more of everything + two new slots ----------
+window.RTR_COSMETICS.push(
+  // HAIR
+  { id:'h_dreads',  slot:'hair', name:'Dreadlocks',      rarity:'rare',      v:'dreads' },
+  { id:'h_undercut',slot:'hair', name:'Undercut',        rarity:'rare',      v:'undercut' },
+  { id:'h_wild',    slot:'hair', name:'Wild Mane',       rarity:'epic',      v:'wild' },
+  { id:'h_horns',   slot:'hair', name:'Horned Crest',    rarity:'legendary', v:'hornhair' },
+  // FACE
+  { id:'f_mutton',  slot:'face', name:'Mutton Chops',    rarity:'rare',      v:'mutton' },
+  { id:'f_scar',    slot:'face', name:'Scarred',         rarity:'epic',      v:'scar' },
+  { id:'f_halfpaint',slot:'face',name:'Half Paint',      rarity:'epic',      v:'halfpaint' },
+  { id:'f_venom',   slot:'face', name:'Venom Paint',     rarity:'legendary', v:'venom' },
+  // MASK
+  { id:'m_tiger',   slot:'mask', name:'Tiger Mask',      rarity:'epic',      v:'tiger' },
+  { id:'m_skullm',  slot:'mask', name:'Bone Mask',       rarity:'epic',      v:'skullmask' },
+  { id:'m_phantom', slot:'mask', name:'Phantom Mask',    rarity:'legendary', v:'phantom' },
+  // ATTIRE
+  { id:'a_shorts',  slot:'attire', name:'Fight Shorts',  rarity:'common',    v:'shorts', owned:true },
+  { id:'a_vest',    slot:'attire', name:'Leather Vest',  rarity:'rare',      v:'vest' },
+  { id:'a_bodysuit',slot:'attire', name:'Full Bodysuit', rarity:'epic',      v:'bodysuit' },
+  { id:'a_armor',   slot:'attire', name:'Ring Armour',   rarity:'legendary', v:'armor' },
+  // BOOTS
+  { id:'b_wraps',   slot:'boots', name:'Foot Wraps',     rarity:'common',    v:'wraps', owned:true },
+  { id:'b_platform',slot:'boots', name:'Platform Boots', rarity:'epic',      v:'platform' },
+  { id:'b_gold',    slot:'boots', name:'Gilded Boots',   rarity:'legendary', v:'goldboot' },
+  // ACCESSORIES
+  { id:'x_kneepads',slot:'acc', name:'Knee Pads',        rarity:'common',    v:'knee', owned:true },
+  { id:'x_bandana', slot:'acc', name:'Bandana',          rarity:'rare',      v:'bandana' },
+  { id:'x_gloves',  slot:'acc', name:'Fingerless Gloves',rarity:'rare',      v:'gloves' },
+  { id:'x_scarf',   slot:'acc', name:'Ring Scarf',       rarity:'epic',      v:'scarf' },
+  { id:'x_wings',   slot:'acc', name:'Entrance Wings',   rarity:'legendary', v:'wings' },
+  // PATTERNS
+  { id:'g_bolt',    slot:'pattern', name:'Lightning',    rarity:'rare',      v:'bolt' },
+  { id:'g_check',   slot:'pattern', name:'Checker',      rarity:'rare',      v:'check' },
+  { id:'g_scales',  slot:'pattern', name:'Scales',       rarity:'epic',      v:'scales' },
+  { id:'g_royal',   slot:'pattern', name:'Royal Trim',   rarity:'legendary', v:'royal' },
+
+  // ---- NEW SLOT: TATTOOS ----
+  { id:'t_none',    slot:'tattoo', name:'None',          rarity:'common',    v:'none', owned:true },
+  { id:'t_sleeve',  slot:'tattoo', name:'Sleeve',        rarity:'rare',      v:'sleeve' },
+  { id:'t_chest',   slot:'tattoo', name:'Chest Piece',   rarity:'rare',      v:'chest' },
+  { id:'t_full',    slot:'tattoo', name:'Full Body Ink', rarity:'epic',      v:'full' },
+  { id:'t_tribalink',slot:'tattoo',name:'Tribal Ink',    rarity:'legendary', v:'tribalink' },
+
+  // ---- NEW SLOT: ENTRANCE AURA ----
+  { id:'au_none',   slot:'aura', name:'No Aura',         rarity:'common',    v:'none', owned:true },
+  { id:'au_spark',  slot:'aura', name:'Sparks',          rarity:'rare',      v:'spark' },
+  { id:'au_smoke',  slot:'aura', name:'Smoke',           rarity:'rare',      v:'smoke' },
+  { id:'au_flame',  slot:'aura', name:'Flame Aura',      rarity:'epic',      v:'flame' },
+  { id:'au_storm',  slot:'aura', name:'Storm Aura',      rarity:'legendary', v:'storm' },
+  { id:'au_halo',   slot:'aura', name:'Golden Halo',     rarity:'legendary', v:'halo' }
+);
+// duplicates convert to shards you can spend on any item of that rarity
+window.RTR_SHARD_COST = { common:4, rare:8, epic:16, legendary:32 };

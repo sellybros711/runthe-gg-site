@@ -144,7 +144,24 @@
   .tile-opt .tr{position:absolute;top:4px;left:4px;font-size:8px;padding:1px 5px;border-radius:999px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;}
   .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
   .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
+  .packbox{width:110px;height:130px;border-radius:14px;border:2px dashed var(--brandred);display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-size:52px;color:var(--brandred-bright);animation:pkShake .5s infinite;}
+  @keyframes pkShake{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(3deg) scale(1.05)}}
+  .reveal{position:relative;text-align:center;animation:rvIn .4s ease-out;}
+  @keyframes rvIn{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+  .reveal .rv-art{height:140px;display:flex;align-items:center;justify-content:center;}
+  .reveal .rv-art svg{height:140px;width:auto;image-rendering:pixelated;}
+  .reveal .rv-rar{display:inline-block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;border:1px solid;border-radius:999px;padding:2px 10px;}
+  .reveal .rv-name{font-family:var(--display);font-size:22px;color:var(--cream);text-transform:uppercase;margin-top:5px;}
+  .reveal .rv-slot{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;}
+  .reveal .rv-burst{position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle,rgba(224,179,65,.30),transparent 62%);animation:rvB .7s ease-out;}
+  .reveal.r-legendary .rv-burst{background:radial-gradient(circle,rgba(224,179,65,.55),transparent 66%);}
+  .reveal.r-epic .rv-burst{background:radial-gradient(circle,rgba(176,138,198,.42),transparent 64%);}
+  @keyframes rvB{0%{opacity:0;transform:scale(.4)}45%{opacity:1}100%{opacity:.25;transform:scale(1.25)}}
   .say{color:#e8dcc0;font-style:italic;}
+  .faccard{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.25));border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px;}
+  .faccard .st{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;}
+  .faccard .sn{font-family:var(--display);font-size:19px;color:var(--cream);letter-spacing:.02em;text-transform:uppercase;line-height:1.1;}
   .storycard{background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.25));border:1.5px solid var(--brandred);border-radius:14px;padding:13px 15px;}
   .storycard .sh{display:flex;gap:12px;align-items:center;}
   .storycard .st{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--brandred-bright);font-weight:800;}
@@ -593,7 +610,74 @@ const ROSTER=(window.RTR_ROSTER||[]).map(corrected);
 const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.RTR_TIERS||[];
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
-const PROMOS=window.RTR_PROMOS||[], CHARS=window.RTR_CHARS||[];
+const PROMOS=window.RTR_PROMOS||[], CHARS=window.RTR_CHARS||[], FACTIONS=window.RTR_FACTIONS||[];
+function facById(id){ return FACTIONS.find(f=>f.id===id); }
+function myFaction(){ return G&&G.car.faction? facById(G.car.faction):null; }
+function facOf(charId){ return FACTIONS.find(f=>f.leader===charId||f.members.includes(charId)); }
+function facBonus(k,dflt){ const f=myFaction(); return f&&f.bonus&&f.bonus[k]!=null? f.bonus[k] : (dflt!=null?dflt:1); }
+function facMembers(f){ return [f.leader,...f.members].map(charById).filter(Boolean); }
+// a faction recruits you once its leader genuinely rates you
+function checkRecruit(){
+  if(G.car.faction||G.car.facCooldown>G.car.week+G.car.year*1000) return false;
+  const cand=FACTIONS.filter(f=>{ const r=rel(f.leader); return r.respect>=52 && r.matches>=2 && !(G.car.exFactions||[]).includes(f.id); });
+  if(!cand.length) return false;
+  const f=cand[Math.floor(rnd()*cand.length)], lead=charById(f.leader);
+  modal(`${lead.name} wants a word`,
+    `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;">
+       <div style="width:80px;flex:none;">${wrestlerSVG(lead.look)}</div>
+       <div><div class="say" style="font-size:13.5px;">"${(lead.lines.respect&&lead.lines.respect[0])||'You have earned a look.'}"</div>
+       <p class="log" style="margin-top:8px;">They are offering you a place in <b style="color:${f.color}">${f.name}</b>.</p>
+       <div class="hint">${f.blurb}</div>
+       <div class="hint" style="margin-top:6px;color:var(--gold);">${f.perk}</div></div></div>
+     <div class="decgrid">
+       <div class="decopt" data-a="join"><div class="dn">Join them</div><div class="dd">Take the spot and the perks.</div></div>
+       <div class="decopt" data-a="no"><div class="dn">Walk away</div><div class="dd">You ride alone.</div></div>
+     </div>`, []);
+  setTimeout(()=>{ document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+    closeModal();
+    if(d.dataset.a==='join'){ joinFaction(f.id); }
+    else { G.car.facCooldown=(G.car.year*1000+G.car.week)+40; rel(f.leader).respect=clamp(rel(f.leader).respect-12,0,100);
+      pushInboxItem({ico:'🚪',sev:'info',txt:`You turned down <b>${f.name}</b>. ${lead.name} took it personally.`}); }
+    save(); renderCareer();
+  }); },0);
+  return true;
+}
+function joinFaction(id){
+  const f=facById(id); if(!f) return;
+  G.car.faction=id; G.car.facWeek=G.car.week; G.car.facYear=G.car.year;
+  facMembers(f).forEach(m=>{ const r=rel(m.id); r.respect=clamp(r.respect+22,0,100); r.heat=clamp(r.heat-18,0,100); });
+  (f.rivals||[]).forEach(rid=>{ const rf=facById(rid); if(rf) facMembers(rf).forEach(m=>{ rel(m.id).heat=clamp(rel(m.id).heat+22,0,100); }); });
+  G.car.pop=clamp(G.car.pop+5,1,100);
+  pushInboxItem({ico:'🤝',sev:'good',txt:`You are now part of <b>${f.name}</b>. ${f.perk}`});
+  pushLog(`Joined <b>${f.name}</b>.`);
+  G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Joined ${f.name}`});
+}
+function leaveFaction(betray){
+  const f=myFaction(); if(!f) return;
+  G.car.exFactions=(G.car.exFactions||[]).concat([f.id]);
+  G.car.faction=null; G.car.facCooldown=(G.car.year*1000+G.car.week)+30;
+  facMembers(f).forEach(m=>{ const r=rel(m.id);
+    if(betray){ r.heat=clamp(r.heat+45,0,100); r.respect=clamp(r.respect-30,0,100); }
+    else { r.respect=clamp(r.respect-8,0,100); r.heat=clamp(r.heat+10,0,100); } });
+  if(betray){
+    G.car.pop=clamp(G.car.pop+8,1,100);
+    const lead=charById(f.leader);
+    pushInboxItem({ico:'🔪',sev:'bad',txt:`You turned on <b>${f.name}</b>. ${lead?lead.name:'They'} will come for you, and the whole locker room saw it.`});
+    G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Betrayed ${f.name}`});
+    if(!story()) startStory(f.leader,'wants blood after your betrayal.');
+  } else {
+    pushInboxItem({ico:'🚪',sev:'info',txt:`You left <b>${f.name}</b> on decent terms.`});
+    G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Left ${f.name}`});
+  }
+  save(); renderCareer();
+}
+function confirmLeave(){
+  const f=myFaction(); if(!f) return;
+  modal('Leave '+f.name+'?','How you go matters. Walking out costs you a little standing; turning on them makes enemies for life — and a career-defining moment.',
+    [{label:'Cancel',cls:'ghost',fn:closeModal},
+     {label:'Walk away',cls:'ghost',fn:()=>{closeModal(); leaveFaction(false);}},
+     {label:'Betray them',fn:()=>{closeModal(); leaveFaction(true);}}]);
+}
 function charById(id){ return CHARS.find(c=>c.id===id); }
 function promoById(id){ return PROMOS.find(p=>p.id===id); }
 function charTier(c){ const p=promoById(c.promo); return p?p.tier:'indie'; }
@@ -624,7 +708,7 @@ function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; con
 /* ============================================================
    PIXEL WRESTLER RENDERER  (pure SVG rects — no assets)
    ============================================================ */const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
-  hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic' };
+  hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic', tattoo:'none', aura:'none' };
 const OUTLINE='#120f0f';
 function P(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
 function shade(hex,amt){ hex=(hex||'#888888'); const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
@@ -645,7 +729,7 @@ function wrestlerSVG(L,opt){
   const sk=L.skin, skD=shade(sk,-34), skL=shade(sk,22), hair=L.hair, gear=L.gear, trim=L.trim;
   const build=L.build||'athletic';
   const bw = build==='heavy'?3 : build==='lean'?-2 : 0;   // torso/limb spread
-  const tightsFull=(L.attire==='tights'||L.attire==='singlet');
+  const tightsFull=(L.attire==='tights'||L.attire==='singlet'||L.attire==='bodysuit'||L.attire==='armor');
   const covered =(L.attire!=='trunks');                    // torso has fabric on it
   const legCol = tightsFull? gear : sk;
   const torsoCol = covered? gear : sk;
@@ -667,6 +751,13 @@ function wrestlerSVG(L,opt){
   let out=boxes.map(b=>P(b[0]-1,b[1]-1,b[2]+2,b[3]+2,OUTLINE)).join('');
 
   let s='';
+  // ---- entrance aura (behind everything) ----
+  if(L.aura&&L.aura!=='none'){
+    const A={spark:['#e0b341','#f6d97a'],smoke:['#4a4a52','#6f6f7a'],flame:['#C6392C','#e07b39'],storm:['#3f7fbf','#7dc4e8'],halo:['#e0b341','#f6d97a']}[L.aura]||['#888','#aaa'];
+    if(L.aura==='halo'){ s+=P(26,-1,12,2,A[0])+P(24,0,2,2,A[0])+P(38,0,2,2,A[0])+P(28,-2,8,1,A[1]); }
+    else { for(let i=0;i<9;i++){ const px2=8+((i*57)%50), py=6+((i*31)%74);
+      s+=P(px2,py,2,2,i%2?A[0]:A[1]); } s+=P(6,40,2,10,A[0])+P(56,34,2,12,A[1]); }
+  }
   // ---- cape behind body ----
   if(L.acc==='cape'){ s=P(16-bw,27,32+bw*2,40,OUTLINE)+LIMB(17-bw,28,30+bw*2,38,shade(gear,-46))+s; }
 
@@ -684,10 +775,13 @@ function wrestlerSVG(L,opt){
   if(L.boots==='pads'){ s+=P(23,65,9,5,OUTLINE)+LIMB(24,66,7,4,shade(trim,-30))+P(32,65,9,5,OUTLINE)+LIMB(33,66,7,4,shade(trim,-30)); }
 
   // ---- boots ----
-  const bootTop = L.boots==='tall'?70 : L.boots==='pads'?72 : 77;
+  const bootTop = (L.boots==='tall'||L.boots==='goldboot')?70 : L.boots==='pads'?72 : L.boots==='platform'?68 : L.boots==='wraps'?74 : 77;
   s+=LIMB(24,bootTop,7,81-bootTop,trim)+LIMB(33,bootTop,7,81-bootTop,trim);
   s+=P(24,bootTop,7,1,shade(trim,30))+P(33,bootTop,7,1,shade(trim,30));      // cuff
   if(L.boots==='sneak'){ s+=P(24,76,7,1,shade(trim,-40))+P(33,76,7,1,shade(trim,-40)); }
+  if(L.boots==='wraps'){ for(let y=74;y<81;y+=2){ s+=P(24,y,7,1,shade(trim,-34))+P(33,y,7,1,shade(trim,-34)); } }
+  if(L.boots==='platform'){ s+=P(20,80,13,4,OUTLINE)+LIMB(21,81,11,3,shade(trim,-30))+P(31,80,13,4,OUTLINE)+LIMB(32,81,11,3,shade(trim,-30)); }
+  if(L.boots==='goldboot'){ s+=P(24,70,7,2,'#e0b341')+P(33,70,7,2,'#e0b341')+P(24,77,7,1,'#e0b341')+P(33,77,7,1,'#e0b341'); }
   s+=LIMB(21,81,11,6,shade(trim,-46))+LIMB(32,81,11,6,shade(trim,-46));      // feet
   s+=P(21,86,11,1,OUTLINE)+P(32,86,11,1,OUTLINE);
 
@@ -705,8 +799,16 @@ function wrestlerSVG(L,opt){
     if(L.pattern==='flame'){ s+=P(21-bw,40,22+bw*2,2,trim)+P(24,37,4,3,trim)+P(32,37,4,3,trim); }
     if(L.pattern==='stars'){ s+=P(25,36,3,3,trim)+P(34,38,3,3,trim); }
     if(L.pattern==='gold'){ s+=P(19-bw,28,26+bw*2,1,'#e0b341')+P(21-bw,42,22+bw*2,1,'#e0b341'); }
+    if(L.pattern==='bolt'){ s+=P(28,34,4,4,trim)+P(31,38,4,4,trim)+P(29,42,4,3,trim); }
+    if(L.pattern==='check'){ for(let cx=0;cx<5;cx++) for(let cy=0;cy<3;cy++) if((cx+cy)%2===0) s+=P(21-bw+cx*4,34+cy*3,4,3,trim); }
+    if(L.pattern==='scales'){ for(let cy=0;cy<4;cy++) for(let cx=0;cx<6;cx++) s+=P(21-bw+cx*4+(cy%2?2:0),34+cy*2,2,2,shade(gear,-32)); }
+    if(L.pattern==='royal'){ s+=P(19-bw,28,26+bw*2,2,'#e0b341')+P(21-bw,41,22+bw*2,2,'#e0b341')+P(30,34,4,8,'#e0b341')+P(31,35,2,6,shade('#e0b341',-30)); }
   }
   if(L.attire==='tank'){ s+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }        // shoulder skin
+  if(L.attire==='vest'){ s+=LIMB(19-bw,28,7,20,shade(gear,-24))+LIMB(36+bw,28,7,20,shade(gear,-24))+P(28,29,8,14,sk); }
+  if(L.attire==='armor'){ s+=P(19-bw,27,26+bw*2,3,'#e0b341')+P(21-bw,33,22+bw*2,2,trim)+P(24,40,16,2,'#e0b341')
+      +P(18-bw,30,4,9,shade(trim,-20))+P(42+bw,30,4,9,shade(trim,-20)); }
+  if(L.attire==='shorts'){ s+=P(22,44,20,13,OUTLINE)+LIMB(23,45,18,11,gear)+P(24,46,3,5,shade(gear,26)); }
   if(L.attire==='singlet'){ s+=P(22-bw,28,3,6,sk)+P(39+bw,28,3,6,sk); }
   if(sleeved){ s+=LIMB(19-bw,28,5,16,shade(gear,-30))+LIMB(40+bw,28,5,16,shade(gear,-30))+P(29,34,6,9,sk); }
   if(L.attire==='duster'){ s+=P(17-bw,44,4,22,OUTLINE)+LIMB(18-bw,44,4,21,shade(gear,-40))+P(43+bw,44,4,22,OUTLINE)+LIMB(44+bw,44,4,21,shade(gear,-40)); }
@@ -720,6 +822,19 @@ function wrestlerSVG(L,opt){
     if(L.pattern==='stars') s+=P(27,47,2,2,trim)+P(35,49,2,2,trim);
     if(L.pattern==='flame') s+=P(23,50,18,2,trim);
     s+=P(24,46,3,4,shade(gear,26));                    // highlight
+  }
+
+  // ---- tattoos (on skin, under gear edges) ----
+  if(L.tattoo&&L.tattoo!=='none'){
+    const ink=shade(sk,-62);
+    if(L.tattoo==='sleeve'||L.tattoo==='full'||L.tattoo==='tribalink'){
+      s+=P(14-bw,31,7,11,ink)+P(12-bw,44,7,9,ink);
+      if(L.tattoo!=='sleeve') s+=P(43+bw,31,7,11,ink)+P(45+bw,44,7,9,ink);
+    }
+    if((L.tattoo==='chest'||L.tattoo==='full'||L.tattoo==='tribalink')&&!covered){
+      s+=P(26,36,12,2,ink)+P(29,38,6,5,ink)+P(24,44,4,2,ink)+P(36,44,4,2,ink);
+    }
+    if(L.tattoo==='tribalink'){ s+=P(25,21,3,3,ink)+P(36,21,3,3,ink)+P(24,54,4,3,ink)+P(36,54,4,3,ink); }
   }
 
   // ---- arms ----
@@ -751,6 +866,12 @@ function wrestlerSVG(L,opt){
     }
     if(L.mask==='half'){ s+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
     if(L.mask==='hood'){ s+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
+    if(L.mask==='tiger'){ s+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#F4E8DB')+P(33,13,5,4,'#F4E8DB')+P(27,14,2,3,'#1a1a1a')+P(35,14,2,3,'#1a1a1a')
+        +P(24,8,4,2,trim)+P(36,8,4,2,trim)+P(24,12,3,2,trim)+P(37,12,3,2,trim)+P(28,19,8,3,'#1a1a1a')+P(29,20,1,2,'#F4E8DB')+P(34,20,1,2,'#F4E8DB'); }
+    if(L.mask==='skullmask'){ s+=LIMB(24,6,16,16,'#e8dcc0')+P(26,12,5,6,'#1a1a1a')+P(33,12,5,6,'#1a1a1a')+P(30,17,4,3,'#1a1a1a')
+        +P(27,21,10,3,'#1a1a1a')+P(28,21,1,3,'#e8dcc0')+P(31,21,1,3,'#e8dcc0')+P(34,21,1,3,'#e8dcc0'); }
+    if(L.mask==='phantom'){ s+=LIMB(24,6,16,16,'#F4E8DB')+P(26,12,6,5,'#1a1a1a')+P(33,12,6,5,'#1a1a1a')
+        +P(24,6,16,2,gear)+P(31,8,2,14,gear)+P(22,4,5,6,gear)+P(37,4,5,6,gear); }
     if(L.mask==='demon'){
       s+=LIMB(24,6,16,16,'#17110f')+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341');
       s+=P(24,6,16,2,'#C6392C')+P(27,19,10,2,'#C6392C')+P(29,21,6,1,'#C6392C');
@@ -770,6 +891,10 @@ function wrestlerSVG(L,opt){
       if(hs==='afro'){ s+=LIMB(21,-1,22,9,hair)+P(19,2,3,8,hair)+P(42,2,3,8,hair)+P(23,7,4,3,hair)+P(37,7,4,3,hair)+P(23,0,7,3,hL); }
       if(hs==='mohawk'){ s+=P(23,5,18,4,hD)+P(28,-3,8,10,OUTLINE)+LIMB(29,-2,6,9,hair)+P(30,-2,2,7,hL); }
       if(hs==='topknot'){ s+=LIMB(23,5,18,5,hair)+LIMB(29,0,6,5,hair)+P(30,0,2,3,hL); }
+      if(hs==='dreads'){ s+=LIMB(23,4,18,6,hair); for(let i=0;i<5;i++) s+=P(21+i*4,9,3,10+((i*5)%8),hair); s+=P(24,4,6,2,hL); }
+      if(hs==='undercut'){ s+=P(23,8,18,3,hD)+LIMB(24,3,16,6,hair)+P(25,3,6,2,hL); }
+      if(hs==='wild'){ s+=LIMB(20,1,24,10,hair)+P(17,5,4,11,hair)+P(43,5,4,11,hair)+P(22,-1,5,4,hair)+P(36,-1,5,4,hair)+P(23,2,7,3,hL); }
+      if(hs==='hornhair'){ s+=LIMB(23,5,18,5,hair)+P(21,-2,5,8,hair)+P(38,-2,5,8,hair)+P(22,-3,3,3,hL)+P(39,-3,3,3,hL); }
       if(hs==='flames'){ s+=LIMB(23,4,18,6,'#e0b341')+P(24,-1,3,6,'#C6392C')+P(29,-3,4,8,'#e07b39')+P(35,-1,3,6,'#C6392C')+P(30,-3,2,4,'#f6d97a'); }
     }
     // eyes / brows / face
@@ -783,7 +908,28 @@ function wrestlerSVG(L,opt){
     if(L.face==='warrior'){ s+=P(25,11,5,9,'#C6392C')+P(34,11,5,9,'#C6392C')+P(26,12,2,7,shade('#C6392C',30)); }
     if(L.face==='skull'){ s+=P(24,6,16,3,'#F4E8DB')+P(25,11,6,6,'#1a1a1a')+P(33,11,6,6,'#1a1a1a')+P(28,19,8,3,'#1a1a1a')+P(29,20,1,2,'#F4E8DB')+P(32,20,1,2,'#F4E8DB'); }
     if(L.face==='tribal'){ s+=P(24,10,4,11,'#1a1a1a')+P(36,10,4,11,'#1a1a1a')+P(28,6,8,3,'#C6392C')+P(30,21,4,2,'#1a1a1a'); }
+    if(L.face==='mutton'){ s+=P(24,15,3,8,hair)+P(38,15,3,8,hair)+P(26,21,2,3,hair)+P(37,21,2,3,hair); }
+    if(L.face==='scar'){ s+=P(35,10,1,8,shade(sk,-46))+P(34,13,3,1,shade(sk,-46)); }
+    if(L.face==='halfpaint'){ s+=P(24,6,8,17,'#1a1a1a')+P(26,13,4,3,'#F4E8DB')+P(27,13,2,3,'#1a1a1a'); }
+    if(L.face==='venom'){ s+=P(24,9,16,3,'#4a8f76')+P(25,12,5,8,'#1a1a1a')+P(34,12,5,8,'#1a1a1a')+P(28,20,8,2,'#4a8f76')+P(29,21,1,3,'#4a8f76')+P(34,21,1,3,'#4a8f76'); }
     if(L.face==='none'){ s+=P(29,21,6,1,skD); }                      // mouth line
+  }
+  if(L.acc==='knee'){ s+=P(23,64,9,5,OUTLINE)+LIMB(24,65,7,4,trim)+P(32,64,9,5,OUTLINE)+LIMB(33,65,7,4,trim); }
+  if(L.acc==='gloves'){ s+=LIMB(11-bw,54,8,5,shade(trim,-25))+LIMB(45+bw,54,8,5,shade(trim,-25)); }
+  if(L.acc==='bandana'){ s+=P(23,7,18,4,trim)+P(23,7,18,1,shade(trim,25))+P(40,9,4,7,trim); }
+  if(L.acc==='scarf'){ s+=P(26,26,12,4,trim)+P(38,29,4,12,shade(trim,-20)); }
+  if(L.acc==='wings'){
+    const wl=shade(trim,6), wd=shade(trim,-30);
+    // left wing: steps up and out from the shoulder
+    s+=P(15-bw,22,4,8,OUTLINE)+P(16-bw,23,3,7,wl);
+    s+=P(11-bw,26,5,10,OUTLINE)+P(12-bw,27,4,9,wl);
+    s+=P(7-bw,31,5,10,OUTLINE)+P(8-bw,32,4,9,wd);
+    s+=P(4-bw,37,4,8,OUTLINE)+P(5-bw,38,3,7,wd);
+    // right wing (mirrored)
+    s+=P(45+bw,22,4,8,OUTLINE)+P(45+bw,23,3,7,wl);
+    s+=P(48+bw,26,5,10,OUTLINE)+P(48+bw,27,4,9,wl);
+    s+=P(52+bw,31,5,10,OUTLINE)+P(52+bw,32,4,9,wd);
+    s+=P(56+bw,37,4,8,OUTLINE)+P(56+bw,38,3,7,wd);
   }
   if(L.acc==='shades'){ s+=P(24,12,17,5,'#0c0b0b')+P(25,13,6,2,'#3d4c57')+P(34,13,6,2,'#2b363e'); }
   if(L.acc==='chain'){ s+=P(28,28,8,2,'#e0b341')+P(30,30,4,2,'#e0b341')+P(31,32,2,2,shade('#e0b341',-30)); }
@@ -906,6 +1052,8 @@ const LOOK_TABS=[
   {k:'boots',    slot:'boots',  label:'Boots'},
   {k:'acc',      slot:'acc',    label:'Extras'},
   {k:'pattern',  slot:'pattern',label:'Pattern'},
+  {k:'tattoo',   slot:'tattoo', label:'Tattoos'},
+  {k:'aura',     slot:'aura',   label:'Aura'},
 ];
 const COLOR_TABS=[{k:'skin',label:'Skin',pal:'skin'},{k:'hair',label:'Hair Colour',pal:'hair'},{k:'gear',label:'Gear',pal:'gear'},{k:'trim',label:'Trim',pal:'trim'}];
 let LOOKCTX=null, LOOKTAB='hairStyle';
@@ -1076,6 +1224,20 @@ function renderStoryPanel(){
   const st=story(), el=$('storyPanel'); if(!el) return;
   const inbox=(G.car.inbox||[]).slice(0,3);
   let h='';
+  const f=myFaction();
+  if(f){
+    h+=`<div class="faccard" style="border-color:${f.color}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><div class="st" style="color:${f.color}">Faction</div>
+          <div class="sn">${f.name}</div></div>
+        <button class="ghost" style="padding:5px 11px;font-size:11px;" onclick="confirmLeave()">Leave</button>
+      </div>
+      <div class="charrow" style="margin-top:9px;">`+
+      facMembers(f).map(m=>`<div class="charcard" onclick="charProfile('${m.id}')">
+        <div class="cav">${wrestlerSVG(m.look,{frame:'head'})}</div><div class="cnm">${m.name}</div>
+        <div class="cnk">${m.id===f.leader?'Leader':'Ally'}</div></div>`).join('')+`</div>
+      <div class="hint" style="margin-top:8px;color:var(--gold);">${f.perk}</div></div>`;
+  }
   if(st){
     const c=charById(st.charId), R=rel(st.charId), stg=STORY_STAGES[st.stage];
     h+=`<div class="storycard">
@@ -1416,9 +1578,17 @@ async function runFight(){
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
     } else {
       const mv=oppMove();
-      const dmg=clamp((o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06)*(styleOf().in||1), 3, 32);
+      const dmg=clamp((o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06)*(styleOf().in||1)*facBonus('tough'), 3, 32);
       await exchange(false, mv.name, dmg, -(6+rnd()*5));
       MS.quality+=4;
+    }
+    // ---- a faction ally can turn the tide ----
+    if(!MS.ended && !MS.ally && MS.mom<-30 && myFaction() && rnd()<facBonus('interfere',0)){
+      MS.ally=true; const f=myFaction(), mate=facMembers(f).filter(m=>m.id!==MS.o.oppId)[0];
+      if(mate){ shake(); burst(50,'INTERFERENCE!'); await callout(f.name.toUpperCase()+'!');
+        fLog(`<span class="hi">${mate.name} hits the ring — ${f.name} has your back!</span>`);
+        MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
+        MS.quality+=8; await sleep(420); }
     }
     // ---- decision triggers ----
     if(!MS.ended && MS.opp.hp<=34 && MS.mom>12 && !MS.finishTried){ await finishDecision(); }
@@ -1484,7 +1654,7 @@ async function midDecision(){
   MS.decisions++;
   const ae=G.w.attrs.ae, te=G.w.attrs.te, ch=G.w.attrs.ch;
   const pick=await decide('SWING THE MATCH.','A window opens. What do you call?',[
-    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006+styleDec('risk'),0,0.93),kind:'risk'},
+    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006+styleDec('risk')+facBonus('risk',0),0,0.93),kind:'risk'},
     {name:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004+styleDec('chain'),0,0.95),kind:'chain'},
     {name:'Work The Crowd',desc:'Build heat before the finish.',p:clamp(0.48+ch*0.005+styleDec('heat'),0,0.95),kind:'heat'},
   ]);
@@ -1625,19 +1795,19 @@ function applyMatch(o,res){
   const qf=res.quality/70;
   const coins=Math.round(o.purse*(res.win?1.15:0.85)*clamp(qf,0.4,1.4));
   G.bag.coins+=coins; c.earnings+=coins;
-  const repGain=Math.round((res.quality*0.30+(res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2));
+  const repGain=Math.round((res.quality*0.30+(res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
-  const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1);
+  const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
   c.pop=clamp(c.pop+popGain,1,100);
   c.mom=clamp(c.mom+(res.win?7:-6)+(res.quality-55)/8);
   c.cond=clamp(c.cond-(6+o.mult*5+(res.quality>75?3:0)));
   // XP → training points; mastery in the categories you emphasised
   const xp=Math.round(20+res.quality*0.6+(o.stakes==='title'?25:0));
-  w.xp+=Math.round(xp*(1+(styleOf().tpBonus||0))); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
+  w.xp+=Math.round(xp*(1+(styleOf().tpBonus||0)+facBonus('tp',0))); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const gain=9+res.quality*0.16;
-  [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)); });
+  [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)*facBonus('mastery')); });
   // title
   let titleMsg=null;
   const tt=tierOf(c.rep);
@@ -1721,7 +1891,7 @@ function advanceWeek(){
   if(c.injWeeks>0) c.injWeeks--;
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   save();
-  setTimeout(maybeBackstage,260);
+  setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
 }
 // a live feud produces a backstage moment every few weeks
 function maybeBackstage(){
@@ -1889,6 +2059,35 @@ function renderShop(){
 }
 function buyItem(id){ const c=cosmById(id), r=RAR[c.rarity]; if(G.bag.coins<r.price) return;
   G.bag.coins-=r.price; G.bag.owned[id]=true; save(); renderShop(); refreshHud(); toast('Unlocked '+c.name); }
+// dramatic one-by-one reveal
+async function revealPack(pack,got){
+  const rr=r=>RAR[r]||{label:r,color:'#999'};
+  modal(pack.name, `<div id="revealArea" style="min-height:190px;display:flex;align-items:center;justify-content:center;">
+      <div class="packbox" id="packBox">?</div></div>
+    <div class="hint" style="text-align:center;">Opening…</div>`, []);
+  await new Promise(r=>setTimeout(r,520));
+  for(let i=0;i<got.length;i++){
+    const c=got[i], R=rr(c.rarity);
+    $('revealArea').innerHTML=`<div class="reveal r-${c.rarity}">
+        <div class="rv-burst"></div>
+        <div class="rv-art">${wrestlerSVG(Object.assign({},G.w.look,{[slotKey(c.slot)]:c.v}),{frame:frameFor(c.slot)})}</div>
+        <div class="rv-rar" style="color:${R.color};border-color:${R.color}">${R.label}</div>
+        <div class="rv-name">${c.name}</div>
+        <div class="rv-slot">${cap(c.slot)}</div></div>`;
+    await new Promise(r=>setTimeout(r,c.rarity==='legendary'?1150:c.rarity==='epic'?850:620));
+  }
+  $('modalBody').innerHTML=`<div class="grid g2">`+got.map(c=>{
+      const R=rr(c.rarity);
+      return `<div class="card" style="border-color:${R.color}"><span class="badge" style="color:${R.color};border:1px solid ${R.color}">${R.label}</span>
+        <div style="font-weight:800;color:var(--cream);margin-top:6px;">${c.name}</div><div class="hint">${cap(c.slot)}</div></div>`;
+    }).join('')+`</div>`;
+  $('modalBtns').innerHTML='';
+  const btn=document.createElement('button'); btn.textContent='To the Locker';
+  btn.onclick=()=>{closeModal(); go('locker');}; $('modalBtns').appendChild(btn);
+}
+function slotKey(slot){ return ({hair:'hairStyle',face:'face',mask:'mask',attire:'attire',boots:'boots',acc:'acc',pattern:'pattern',tattoo:'tattoo',aura:'aura'})[slot]||slot; }
+function frameFor(slot){ return (slot==='hair'||slot==='face'||slot==='mask')?'head':(slot==='boots'?'legs':'full'); }
+
 function openPack(pid){
   const p=PACKS.find(x=>x.id===pid); if(!p||G.bag.coins<p.price) return;
   G.bag.coins-=p.price;
@@ -1904,10 +2103,8 @@ function openPack(pid){
     else { G.bag.shards+=(RAR[rar]||{shards:1}).shards; }
   }
   save(); refreshHud(); renderShop();
-  modal(p.name, got.length? `<div class="grid g2">`+got.map(c=>`<div class="card"><span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.rarity}</span>
-    <div style="font-weight:800;color:var(--cream);margin-top:6px;">${c.name}</div><div class="hint">${cap(c.slot)}</div></div>`).join('')+`</div>`
-    : `<p class="log">Everything in this pack was already yours — converted to shards.</p>`,
-    [{label:'Nice',fn:()=>{closeModal(); go('locker');}}]);
+  if(got.length) revealPack(p,got);
+  else modal(p.name,`<p class="log">Everything in this pack was already yours — converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
 }
 
 function renderWorld(){
@@ -1934,6 +2131,23 @@ function renderWorld(){
           </div>`;
         }).join('')+`</div></div>`;
     });
+  });
+  // factions
+  h+=`<h3>Factions</h3>`;
+  FACTIONS.forEach(f=>{
+    const mine=G.car.faction===f.id, lead=charById(f.leader);
+    h+=`<div class="promocard" style="border-left:4px solid ${f.color}">
+      <div class="ph"><div><span class="pshort" style="color:${f.color}">${f.name}</span>${mine?' <span class="badge b-red">Your faction</span>':''}</div>
+        <span class="hint">${(promoById(f.promo)||{}).short||''} · led by ${lead?lead.name:'—'}</span></div>
+      <div class="pblurb">${f.blurb}</div>
+      <div class="hint" style="color:var(--gold);margin-bottom:8px;">${f.perk}</div>
+      <div class="charrow">`+facMembers(f).map(m=>{
+        const r=rel(m.id), lb=relLabel(r);
+        return `<div class="charcard" onclick="charProfile('${m.id}')">
+          <div class="cav">${wrestlerSVG(m.look,{frame:'head'})}</div>
+          <div class="cnm">${m.name}</div><div class="cnk">${m.id===f.leader?'Leader':'Member'}</div>
+          <div class="crel" style="color:${lb.c}">${lb.t}</div></div>`;
+      }).join('')+`</div></div>`;
   });
   $('worldBody').innerHTML=h;
 }

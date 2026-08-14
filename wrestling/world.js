@@ -362,3 +362,49 @@ window.RTR_CHARS = [
 
 /* Every character starts neutral with you; the career mutates this. */
 window.RTR_REL_DEFAULT = { respect:0, heat:0, matches:0, wins:0, losses:0, met:false };
+
+/* ============================================================
+   FACTIONS — the groups that run each locker room
+   ------------------------------------------------------------
+   You can be recruited into one once its leader respects you.
+   Membership brings allies (who interfere on your behalf), a
+   reputation share, and enemies you inherit whether you like it
+   or not. You can also betray them, which nobody forgets.
+   ============================================================ */
+window.RTR_FACTIONS = [
+  { id:'f_court', name:"The Kingmaker's Court", promo:'cwf', color:'#e0b341', align:'heel',
+    leader:'c_kaiser', members:['c_nadia','c_titus'], rivals:['f_gate'],
+    blurb:'Duke Kaiser does not have friends. He has assets, and they are the most protected people in the business.',
+    perk:'Ally interference swings close matches your way, and reputation flows to you faster.',
+    bonus:{ interfere:0.34, rep:1.22, heat:6 } },
+
+  { id:'f_family', name:'The Grit City Family', promo:'gcw', color:'#a8602c', align:'tweener',
+    leader:'c_slade', members:['c_trash','c_cutler'], rivals:['f_syndicate'],
+    blurb:'Not a stable so much as a congregation. They bled in the same bingo hall and they do not forget who showed up.',
+    perk:'Your people have your back in the ugly matches — and you take less punishment.',
+    bonus:{ interfere:0.26, tough:0.88, rep:1.08 } },
+
+  { id:'f_syndicate', name:'The Sunset Syndicate', promo:'scw', color:'#d2687a', align:'heel',
+    leader:'c_kip', members:['c_mimi'], rivals:['f_family'],
+    blurb:'Matching jackets, a publicist, and a shared belief that the spotlight is a finite resource.',
+    perk:'Constant camera time — popularity climbs much faster while you are with them.',
+    bonus:{ interfere:0.22, pop:1.45 } },
+
+  { id:'f_dojo', name:'The Iron Blossom Dojo', promo:'kaiju', color:'#4a8f76', align:'face',
+    leader:'c_ryu', members:['c_sora','c_mori'], rivals:['f_court'],
+    blurb:'A training hall first and a faction second. You are not recruited so much as accepted.',
+    perk:'Relentless drilling — you build move mastery considerably faster.',
+    bonus:{ mastery:1.4, rep:1.1 } },
+
+  { id:'f_eternos', name:'Los Eternos', promo:'eterna', color:'#d99a2b', align:'face',
+    leader:'c_relampago', members:['c_sangre'], rivals:[],
+    blurb:'Three generations of masks under one banner. The lineage matters more than any single member.',
+    perk:'The crowd adopts you as one of their own, and big spots land more often.',
+    bonus:{ pop:1.28, risk:0.10 } },
+
+  { id:'f_gate', name:'The Gatekeepers', promo:'acw', color:'#5e7f8a', align:'tweener',
+    leader:'c_grange', members:['c_tank'], rivals:['f_court'],
+    blurb:'Two men who never won the big one and decide, quietly, who gets to. The most powerful people nobody books.',
+    perk:'Veteran counsel — training points go further and your ring psychology grows faster.',
+    bonus:{ tp:0.35, psy:1.5 } },
+];
