@@ -282,7 +282,9 @@
       colleges: colleges.filter(uniq),
       hadColleges: (profile.colleges || []).length > 0,
       awards: awardsFor(profile.awards || []),
-      died: !!profile.died
+      died: !!profile.died,
+      // undefined when the source doesn't know; only the register asserts it
+      active: (typeof profile.active === 'boolean') ? profile.active : null
     };
   }
 
@@ -359,11 +361,17 @@
 
       case 'act': {
         if (s.died) return false;
-        var live = datedStints(s).some(function (st) { return st.end == null && st.start >= year() - 5; });
-        if (live) return true;
-        var last = 0;
-        datedStints(s).forEach(function (st) { last = Math.max(last, st.end || st.start); });
-        if (last && last < year() - 3) return false;    // demonstrably retired
+        // A source that actually knows beats any inference from stint dates —
+        // a long tenure with no end date is not evidence of retirement.
+        if (s.active !== null && s.active !== undefined) return s.active;
+        /* Read the LATEST stint, not any stint. An open-ended spell is the
+           source saying "still there" however long ago it began; anchoring on
+           the start date instead made a long tenure look like a retirement. */
+        var dated = datedStints(s);
+        if (!dated.length) return null;
+        var latest = dated.reduce(function (a, b) { return b.start > a.start ? b : a; });
+        if (latest.end == null) return true;
+        if (latest.end < year() - 3) return false;      // demonstrably retired
         return null;
       }
 
@@ -377,6 +385,36 @@
   // ---------- network ----------
   var cache = Object.create(null);
 
+  /* Our own register, turned into the same profile shape the endpoint returns,
+     so shape()/verdict() below don't care where the facts came from.
+
+     One real difference: the register holds a career span, not per-team dates.
+     That is exactly right for "played in the 2010s" and for counting teams, and
+     it is why an active player's last stint is left open-ended — otherwise a
+     current player would read as retired. */
+  var OCC_OF = { NFL: 'American football player', MLB: 'baseball player', NBA: 'basketball player' };
+  function fromRegister(rows) {
+    var byKey = {};
+    rows.forEach(function (r) {
+      var teams = String(r.teams || '').split('|').filter(Boolean).map(function (t) {
+        return { name: t, start: r.first_season || null, end: r.active ? null : (r.last_season || null) };
+      });
+      var prof = {
+        found: true, name: r.name, source: 'register',
+        occupations: [OCC_OF[r.sport]].filter(Boolean),
+        sports: [], positions: r.pos ? [r.pos] : [],
+        colleges: r.college ? [r.college] : [],
+        awards: [],                       // the register carries no honours
+        teams: teams, died: false,
+        active: !!r.active               // known, not inferred from stint dates
+      };
+      // Two players can share a key; keep whichever we know the most about.
+      var cur = byKey[r.name_key];
+      if (!cur || teams.length > cur.teams.length) byKey[r.name_key] = prof;
+    });
+    return byKey;
+  }
+
   function lookup(names) {
     var want = [], out = {};
     names.forEach(function (n) {
@@ -386,6 +424,50 @@
       else if (want.indexOf(k) < 0) want.push(n);
     });
     if (!want.length) return Promise.resolve(out);
+
+    /* Ask our own register first. It is complete, structured, first-party and
+       one hop away; Wikidata is the fallback for whatever it has never heard
+       of (other leagues, college-only careers, the genuinely obscure). */
+    return ours(want).then(function (hit) {
+      var left = want.filter(function (n) {
+        var k = norm2(n);
+        if (hit[k]) { cache[k] = hit[k]; out[k] = hit[k]; return false; }
+        return true;
+      });
+      if (!left.length) return out;
+      return wiki(left, out);
+    });
+  }
+
+  function norm2(n) { return String(n || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+
+  /* name -> the "first|last" key the register is indexed on, matching
+     keyOf() in sportegories.js so both sides agree on what a name is. */
+  function regKey(n) {
+    var SUF = { jr: 1, sr: 1, ii: 1, iii: 1, iv: 1, v: 1 };
+    var t = String(n || '').trim().split(/\s+/)
+      .map(function (x) { return norm(x).replace(/ /g, ''); }).filter(Boolean);
+    while (t.length > 2 && SUF[t[t.length - 1]]) t.pop();
+    if (!t.length) return null;
+    return t.length === 1 ? t[0] + '|' + t[0] : t[0] + '|' + t[t.length - 1];
+  }
+
+  function ours(names) {
+    var B = (typeof window !== 'undefined' && window.RTG_BOARD) || null;
+    if (!B || !B.registerLookup) return Promise.resolve({});
+    var keys = [], back = {};
+    names.forEach(function (n) { var k = regKey(n); if (k) { keys.push(k); back[k] = n; } });
+    if (!keys.length) return Promise.resolve({});
+    return B.registerLookup(keys).then(function (rows) {
+      var byKey = fromRegister(rows || []), out = {};
+      Object.keys(byKey).forEach(function (k) {
+        if (back[k]) out[norm2(back[k])] = byKey[k];
+      });
+      return out;
+    })['catch'](function () { return {}; });
+  }
+
+  function wiki(want, out) {
     var f = fetchFn();
     if (!f) return Promise.resolve(out);
     return f(ENDPOINT, {

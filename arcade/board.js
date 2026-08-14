@@ -309,6 +309,26 @@
     );
   }
 
+  /* ---- the complete player register (supabase/77_player_register.sql) ----
+   * Sportegories' own file is curated for recognition and always will be — it
+   * has to be small enough to ship. This is the other half: every player who
+   * ever appeared, kept server-side because it is ~56k rows and 4MB+ in the
+   * client encoding. Takes normalized "first|last" keys, one card's worth at a
+   * time; the RPC caps at ten. Works signed-out — it is public sports data. */
+  function registerLookup(keys) {
+    if (!keys || !keys.length) return Promise.resolve([]);
+    return withTimeout(
+      fetch(REST + 'rpc/player_lookup', {
+        method: 'POST',
+        headers: headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ p_keys: keys.slice(0, 10) })
+      }).then(function (res) {
+        if (!res.ok) return fail('register', res);
+        offline = false; return res.json();
+      })
+    ).then(function (r) { return Array.isArray(r) ? r : []; });
+  }
+
   // ---- the signed-in user's own row for a day, so the board can place them
   // even when they're nowhere near the top. Row or null. ----
   function myRun(game, dateStr) {
@@ -415,6 +435,7 @@
     rank: rank,
     playerCount: playerCount,
     myRun: myRun,
+    registerLookup: registerLookup,
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,

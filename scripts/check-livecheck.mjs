@@ -273,6 +273,59 @@ is(rep[0].player.name, 'Jericho Cotchery', 'reported: scored under his own name'
 is(rep[1].ok, false, 'reported: a points threshold cannot be confirmed live');
 is(rep[1].reason, 'unverified', 'reported: and it is NOT called a wrong answer');
 
+/* ---------- the complete register (supabase/77_player_register.sql) ----------
+ * Rows in the exact shape player_lookup() returns. The register is asked first
+ * and Wikidata only for what it misses, so these assert both halves: a name it
+ * knows never reaches the network, and one it doesn't still falls through. */
+let wikiCalls = 0;
+LC.clearCache();
+globalThis.window = globalThis.window || {};
+globalThis.window.RTG_BOARD = {
+  registerLookup: async (keys) => {
+    is(keys.length <= 10, true, 'register: never asks for more than one card of names');
+    const db = {
+      'jericho|cotchery': {
+        name_key: 'jericho|cotchery', sport: 'NFL', name: 'Jericho Cotchery',
+        pos: 'Wide Receiver', college: 'North Carolina State',
+        teams: 'New York Jets|Pittsburgh Steelers|Carolina Panthers',
+        first_season: 2004, last_season: 2015, active: false,
+      },
+      'juwan|johnson': {
+        name_key: 'juwan|johnson', sport: 'NFL', name: 'Juwan Johnson',
+        pos: 'Tight End', college: 'Oregon', teams: 'New Orleans Saints',
+        first_season: 2020, last_season: 2026, active: true,
+      },
+    };
+    return keys.map((k) => db[k]).filter(Boolean);
+  },
+};
+LC.setFetch(async () => { wikiCalls++; return { ok: true, json: async () => ({ players: {} }) }; });
+
+const iJets2 = catIndexWhere((c) => c.l === 'Played for the New York Jets');
+const iTE = catIndexWhere((c) => c.l === 'NFL Tight End');
+const reg = await LC.resolve({ letter: 'J', cats: [{ i: iJets2 }, { i: iTE }] },
+  [{ i: 0, text: 'Jericho Cotchery' }, { i: 1, text: 'Juwan Johnson' }], {});
+
+is(reg[0].ok, true, 'register: Cotchery is confirmed a Jet from our own data');
+is(reg[1].ok, true, 'register: an active player resolves too');
+is(wikiCalls, 0, 'register: a name we hold never touches Wikidata');
+
+// Anything the register misses still falls through to the endpoint.
+LC.clearCache();
+wikiCalls = 0;
+const miss = await LC.resolve({ letter: 'J', cats: [{ i: iJets2 }] },
+  [{ i: 0, text: 'Jarnobody Whoeverson' }], {});
+is(wikiCalls, 1, 'register: a name we do NOT hold still reaches the fallback');
+is(miss[0].ok, false, 'register: and an unknown stays unresolved');
+
+// An active player must not read as retired just because we store a last season.
+const shaped = LC.shape({
+  found: true, name: 'Juwan Johnson', occupations: ['American football player'],
+  sports: [], positions: ['Tight End'], colleges: [], awards: [],
+  teams: [{ name: 'New Orleans Saints', start: 2020, end: null }], died: false,
+}, D);
+is(LC.verdict(shaped, { k: 'act' }), true, 'register: an open-ended stint reads as active');
+
 console.log(bad.length ? bad.map((b) => '  FAIL ' + b).join('\n') : '');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
