@@ -1,0 +1,95 @@
+/* ============================================================
+   RunTheRopes — Build-A-Wrestler: Cosmetics, Packs & Store (v1)
+   ------------------------------------------------------------
+   Everything here is drawn procedurally by the pixel renderer —
+   no image assets. Items unlock via the Pro Shop (coins) or by
+   opening packs earned through your career.
+
+   slots: hair | face | mask | attire | boots | acc | pattern
+   rarity: common | rare | epic | legendary
+   ============================================================ */
+window.RTR_RARITY = {
+  common:    { label:'Common',    color:'#b3a794', odds:0.62, price:1200,  shards:1 },
+  rare:      { label:'Rare',      color:'#6aa7c4', odds:0.26, price:4500,  shards:3 },
+  epic:      { label:'Epic',      color:'#b08ac6', odds:0.10, price:12000, shards:8 },
+  legendary: { label:'Legendary', color:'#e0b341', odds:0.02, price:30000, shards:20 },
+};
+
+window.RTR_PACKS = [
+  { id:'p_base',   name:'Locker Room Pack', price:8000,  n:3, floor:'common', boost:0,    blurb:'3 items. Standard gear pulls.' },
+  { id:'p_elite',  name:'Main Event Pack',  price:22000, n:4, floor:'rare',   boost:0.18, blurb:'4 items, at least one Rare+.' },
+  { id:'p_legend', name:'Hall of Fame Pack',price:55000, n:5, floor:'epic',   boost:0.42, blurb:'5 items, at least one Epic+.' },
+];
+
+// Cosmetic catalogue. `v` is the value the renderer reads for that slot.
+window.RTR_COSMETICS = [
+  // ---------- HAIR ----------
+  { id:'h_short',   slot:'hair', name:'Short Crop',      rarity:'common', v:'short',   owned:true },
+  { id:'h_bald',    slot:'hair', name:'Bald',            rarity:'common', v:'bald',    owned:true },
+  { id:'h_buzz',    slot:'hair', name:'Buzz Cut',        rarity:'common', v:'buzz',    owned:true },
+  { id:'h_long',    slot:'hair', name:'Long Hair',       rarity:'common', v:'long',    owned:true },
+  { id:'h_pony',    slot:'hair', name:'Ponytail',        rarity:'rare',   v:'pony'  },
+  { id:'h_mullet',  slot:'hair', name:'Business/Party',  rarity:'rare',   v:'mullet'},
+  { id:'h_spiky',   slot:'hair', name:'Spiked Up',       rarity:'rare',   v:'spiky' },
+  { id:'h_afro',    slot:'hair', name:'Afro',            rarity:'rare',   v:'afro'  },
+  { id:'h_mohawk',  slot:'hair', name:'Mohawk',          rarity:'epic',   v:'mohawk'},
+  { id:'h_topknot', slot:'hair', name:'Top Knot',        rarity:'epic',   v:'topknot'},
+  { id:'h_flames',  slot:'hair', name:'Flame Mane',      rarity:'legendary', v:'flames'},
+
+  // ---------- FACE / PAINT ----------
+  { id:'f_none',    slot:'face', name:'Clean',           rarity:'common', v:'none',   owned:true },
+  { id:'f_beard',   slot:'face', name:'Beard',           rarity:'common', v:'beard',  owned:true },
+  { id:'f_stache',  slot:'face', name:'Moustache',       rarity:'common', v:'stache', owned:true },
+  { id:'f_goatee',  slot:'face', name:'Goatee',          rarity:'rare',   v:'goatee'},
+  { id:'f_warrior', slot:'face', name:'War Paint',       rarity:'epic',   v:'warrior'},
+  { id:'f_skull',   slot:'face', name:'Skull Paint',     rarity:'epic',   v:'skull' },
+  { id:'f_tribal',  slot:'face', name:'Tribal Paint',    rarity:'legendary', v:'tribal'},
+
+  // ---------- MASKS ----------
+  { id:'m_none',    slot:'mask', name:'No Mask',         rarity:'common', v:'none',   owned:true },
+  { id:'m_lucha',   slot:'mask', name:'Lucha Mask',      rarity:'rare',   v:'lucha' },
+  { id:'m_half',    slot:'mask', name:'Half Mask',       rarity:'rare',   v:'half'  },
+  { id:'m_hood',    slot:'mask', name:'Executioner Hood',rarity:'epic',   v:'hood'  },
+  { id:'m_demon',   slot:'mask', name:'Demon Mask',      rarity:'legendary', v:'demon'},
+
+  // ---------- ATTIRE ----------
+  { id:'a_trunks',  slot:'attire', name:'Classic Trunks',rarity:'common', v:'trunks', owned:true },
+  { id:'a_tights',  slot:'attire', name:'Full Tights',   rarity:'common', v:'tights', owned:true },
+  { id:'a_singlet', slot:'attire', name:'Singlet',       rarity:'rare',   v:'singlet'},
+  { id:'a_tank',    slot:'attire', name:'Tank Top',      rarity:'rare',   v:'tank'  },
+  { id:'a_jacket',  slot:'attire', name:'Entrance Jacket',rarity:'epic',  v:'jacket'},
+  { id:'a_duster',  slot:'attire', name:'Long Coat',     rarity:'legendary', v:'duster'},
+
+  // ---------- BOOTS ----------
+  { id:'b_short',   slot:'boots', name:'Low Boots',      rarity:'common', v:'short',  owned:true },
+  { id:'b_tall',    slot:'boots', name:'Tall Boots',     rarity:'common', v:'tall',   owned:true },
+  { id:'b_sneak',   slot:'boots', name:'Wrestling Shoes',rarity:'rare',   v:'sneak' },
+  { id:'b_pads',    slot:'boots', name:'Padded Kickers', rarity:'epic',   v:'pads'  },
+
+  // ---------- ACCESSORIES ----------
+  { id:'x_none',    slot:'acc', name:'None',             rarity:'common', v:'none',   owned:true },
+  { id:'x_wrist',   slot:'acc', name:'Wrist Tape',       rarity:'common', v:'wrist',  owned:true },
+  { id:'x_elbow',   slot:'acc', name:'Elbow Pads',       rarity:'rare',   v:'elbow' },
+  { id:'x_shades',  slot:'acc', name:'Shades',           rarity:'rare',   v:'shades'},
+  { id:'x_chain',   slot:'acc', name:'Chain',            rarity:'epic',   v:'chain' },
+  { id:'x_cape',    slot:'acc', name:'Cape',             rarity:'epic',   v:'cape'  },
+  { id:'x_belt',    slot:'acc', name:'Title Belt',       rarity:'legendary', v:'belt'},
+
+  // ---------- GEAR PATTERNS ----------
+  { id:'g_solid',   slot:'pattern', name:'Solid',        rarity:'common', v:'solid',  owned:true },
+  { id:'g_stripe',  slot:'pattern', name:'Side Stripe',  rarity:'common', v:'stripe', owned:true },
+  { id:'g_split',   slot:'pattern', name:'Split Colour', rarity:'rare',   v:'split' },
+  { id:'g_flame',   slot:'pattern', name:'Flames',       rarity:'epic',   v:'flame' },
+  { id:'g_stars',   slot:'pattern', name:'Stars',        rarity:'epic',   v:'stars' },
+  { id:'g_gold',    slot:'pattern', name:'Gold Trim',    rarity:'legendary', v:'gold'},
+];
+
+// Colour swatches available to every wrestler (free — colour is expression, not paywalled)
+window.RTR_PALETTE = {
+  skin: ['#f3d3b3','#e8bd95','#d29b6e','#b2764a','#8a5533','#5d3a22'],
+  hair: ['#241a12','#4a2f1b','#8a5a2b','#c99b3d','#e8dcc0','#b03a2e','#3b6ea5','#7a3f9d','#e0e0e0','#22c2a8'],
+  gear: ['#C6392C','#e0b341','#2f7fbf','#3aa濃','#5bb083','#7a3f9d','#e07b39','#F4E8DB','#1a1a1a','#d2687a','#2fbfa8','#8a1c1c'],
+  trim: ['#F4E8DB','#e0b341','#1a1a1a','#C6392C','#2fbfa8','#7a3f9d'],
+};
+// (sanitise any typo'd swatch at load — keeps the picker safe)
+window.RTR_PALETTE.gear = window.RTR_PALETTE.gear.filter(c=>/^#[0-9a-fA-F]{6}$/.test(c));
