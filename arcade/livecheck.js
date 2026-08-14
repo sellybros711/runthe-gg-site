@@ -1,0 +1,468 @@
+/* livecheck.js — grade Sportegories answers that aren't in our corpus.
+ *
+ * The corpus is 5,900 players. Type a real athlete outside it and the game used
+ * to say "No player by that name", which is a lie, and then score you as if you
+ * had made the name up. This module does the honest thing: ask whether the
+ * person exists, pull the facts of their career, and decide whether those facts
+ * satisfy the category.
+ *
+ * Three outcomes, and the middle one matters most:
+ *
+ *   true   the facts confirm the category  -> score it
+ *   false  the facts contradict it         -> no points, "doesn't fit"
+ *   null   we can't tell from the facts    -> no points, and we SAY so
+ *
+ * null is not a failure mode, it's the design. Wikidata knows who a player
+ * played for; it does not know that they have 300 career home runs, and it
+ * lists maybe a third of the All-Star selections that actually happened. If an
+ * unverifiable category scored on the honour system, every stat and award
+ * category in the game would be worth free points to anyone who typed any real
+ * athlete's name. So we only award points we can stand behind, and we tell the
+ * player which of the two reasons they got nothing.
+ *
+ * Absence of evidence is treated as absence of evidence throughout: a missing
+ * award claim returns null, not false. The only negatives we trust are ones
+ * where the data we do have positively contradicts the category.
+ *
+ * Network lives here too, but injectable (setFetch) so the whole file runs in
+ * node without one.
+ */
+(function (root, factory) {
+  var mod = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = mod;
+  root.RTG_LIVECHECK = mod;
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var ENDPOINT = '/api/player-check';
+  var _fetch = null;
+  var _now = null;                 // test seam for "is this player active"
+  var _engine = null;              // node has no window to find RTG_SPORTEGORIES on
+
+  function fetchFn() {
+    if (_fetch) return _fetch;
+    if (typeof fetch === 'function') return fetch;
+    return null;
+  }
+  function year() { return _now || new Date().getUTCFullYear(); }
+
+  // ---------- text ----------
+  function norm(s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  function tokensOf(s) { var n = norm(s); return n ? n.split(' ') : []; }
+  /* Does `a` start with all of `b`'s tokens? Token-wise so "illinois" matches
+   * "illinois urbana champaign" but not "illinoisan". */
+  function tokenPrefix(a, b) {
+    if (!a.length || !b.length || b.length > a.length) return false;
+    for (var i = 0; i < b.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  // ---------- vocab, derived from the game's own data ----------
+  /* Every mapping below is built from sportegories-data.js rather than typed
+   * out, so it can never drift from the corpus it has to agree with. */
+  var V = null;
+  function vocab(D) {
+    if (V && V.D === D) return V;
+    var teamSport = {}, teamCanon = {}, colByCore = {}, posCanon = {};
+    D.teams.forEach(function (t) { teamCanon[norm(t)] = t; });
+    // team -> league, counted across the corpus so a shared name resolves to
+    // whichever league actually uses it
+    var tally = {};
+    D.players.forEach(function (r) {
+      var sp = D.sports[r[1]];
+      r[3].forEach(function (x) {
+        var t = D.teams[x]; if (!t) return;
+        (tally[t] = tally[t] || {})[sp] = (tally[t][sp] || 0) + 1;
+      });
+    });
+    Object.keys(tally).forEach(function (t) {
+      var best = null, n = -1;
+      for (var s in tally[t]) if (tally[t][s] > n) { n = tally[t][s]; best = s; }
+      teamSport[norm(t)] = best;
+    });
+    D.cols.forEach(function (c) {
+      var k = colCore(c);
+      (colByCore[k] = colByCore[k] || []).push(c);
+    });
+    D.pos.forEach(function (p) { posCanon[norm(p)] = p; });
+    V = { D: D, teamSport: teamSport, teamCanon: teamCanon, colByCore: colByCore, posCanon: posCanon };
+    return V;
+  }
+
+  /* College names are the one place our vocab and the outside world disagree
+   * hard: we say "Illinois", the world says "University of Illinois Urbana-
+   * Champaign". Reduce both to a core and match by token prefix. */
+  function colCore(s) {
+    var n = norm(s)
+      .replace(/^the /, '')
+      .replace(/^university of /, '')
+      .replace(/ university$/, '')
+      .replace(/ college$/, '')
+      .replace(/ cc$/, '')
+      .replace(/ community$/, '')
+      .replace(/^univ /, '');
+    return n.trim();
+  }
+  /* Abbreviations and nicknames our data uses that no reduction will reach. */
+  var COL_ALIAS = {
+    'southern california': ['USC', 'Southern California'],
+    'usc': ['USC', 'Southern California'],
+    'louisiana state': ['LSU', 'Louisiana State'],
+    'lsu': ['LSU', 'Louisiana State'],
+    'brigham young': ['BYU', 'Brigham Young'],
+    'byu': ['BYU', 'Brigham Young'],
+    'texas christian': ['TCU', 'Texas Christian'],
+    'tcu': ['TCU', 'Texas Christian'],
+    'central florida': ['UCF', 'Central Florida'],
+    'ucf': ['UCF', 'Central Florida'],
+    'mississippi': ['Mississippi', 'Ole Miss'],
+    'ole miss': ['Mississippi', 'Ole Miss'],
+    'pittsburgh': ['Pittsburgh', 'Pitt'],
+    'pitt': ['Pittsburgh', 'Pitt'],
+    'connecticut': ['Connecticut', 'UConn'],
+    'uconn': ['Connecticut', 'UConn'],
+    'southern methodist': ['SMU', 'Southern Methodist'],
+    'smu': ['SMU', 'Southern Methodist'],
+    'nevada las vegas': ['UNLV', 'Nevada-Las Vegas'],
+    'unlv': ['UNLV', 'Nevada-Las Vegas'],
+    'california los angeles': ['UCLA'],
+    'ucla': ['UCLA'],
+    'miami': ['Miami', 'Miami (FL)', 'Miami (Fla.)'],
+    'california berkeley': ['California', 'Cal'],
+    'texas at austin': ['Texas'],
+    'texas austin': ['Texas'],
+    'north carolina at chapel hill': ['North Carolina'],
+    'north carolina chapel hill': ['North Carolina'],
+    'illinois urbana champaign': ['Illinois'],
+    'michigan ann arbor': ['Michigan'],
+    'wisconsin madison': ['Wisconsin'],
+    'minnesota twin cities': ['Minnesota'],
+    'washington seattle': ['Washington'],
+    'colorado boulder': ['Colorado'],
+    'massachusetts amherst': ['Massachusetts', 'UMass'],
+    'nebraska lincoln': ['Nebraska'],
+    'missouri columbia': ['Missouri'],
+    'arkansas fayetteville': ['Arkansas'],
+    'tennessee knoxville': ['Tennessee'],
+    'kentucky lexington': ['Kentucky'],
+    'oklahoma norman': ['Oklahoma'],
+    'florida gainesville': ['Florida'],
+    'georgia athens': ['Georgia'],
+    'alabama tuscaloosa': ['Alabama'],
+    'iowa iowa city': ['Iowa'],
+    'kansas lawrence': ['Kansas'],
+    'oregon eugene': ['Oregon'],
+    'arizona tucson': ['Arizona'],
+    'utah salt lake city': ['Utah']
+  };
+
+  /* Which of our vocab colleges could this outside label mean? Returns every
+   * plausible entry, not one guess — the predicate only needs to know whether
+   * its own answer is in the set, so ambiguity between "Miami" and "Miami (FL)"
+   * costs nothing. */
+  function collegesFor(label, vb) {
+    var core = colCore(label);
+    if (!core) return [];
+    if (COL_ALIAS[core]) {
+      return COL_ALIAS[core].filter(function (c) { return vb.colByCore[colCore(c)]; })
+        .concat(vb.colByCore[core] || []).filter(uniq);
+    }
+    if (vb.colByCore[core]) return vb.colByCore[core].slice();
+    // token-prefix: "illinois urbana champaign" -> "Illinois"
+    var toks = core.split(' '), out = [];
+    Object.keys(vb.colByCore).forEach(function (k) {
+      if (k && tokenPrefix(toks, k.split(' '))) out = out.concat(vb.colByCore[k]);
+    });
+    return out.filter(uniq);
+  }
+  function uniq(v, i, a) { return a.indexOf(v) === i; }
+
+  /* Positions. Wikidata is finer-grained than we are (it says "defensive end",
+   * we say "Defensive Lineman"), so fold its vocabulary into ours. */
+  var POS_ALIAS = {
+    'defensive end': 'Defensive Lineman', 'defensive tackle': 'Defensive Lineman',
+    'nose tackle': 'Defensive Lineman', 'edge rusher': 'Defensive Lineman',
+    'offensive tackle': 'Offensive Lineman', 'offensive guard': 'Offensive Lineman',
+    'tackle': 'Offensive Lineman', 'guard american football': 'Offensive Lineman',
+    'center american football': 'Offensive Lineman', 'long snapper': 'Offensive Lineman',
+    'left fielder': 'Outfielder', 'right fielder': 'Outfielder', 'center fielder': 'Outfielder',
+    'starting pitcher': 'Pitcher', 'relief pitcher': 'Pitcher', 'closer': 'Pitcher',
+    'placekicker': 'Kicker', 'place kicker': 'Kicker',
+    'strong safety': 'Safety', 'free safety': 'Safety', 'defensive back': 'Safety',
+    'inside linebacker': 'Linebacker', 'outside linebacker': 'Linebacker',
+    'middle linebacker': 'Linebacker',
+    'halfback': 'Running Back', 'tailback': 'Running Back',
+    'wide receiver': 'Wide Receiver', 'split end': 'Wide Receiver', 'flanker': 'Wide Receiver',
+    'combo guard': 'Guard', 'swingman': 'Forward', 'stretch four': 'Power Forward',
+    'centre basketball': 'Center', 'goalkeeper': 'Goaltender', 'goalie': 'Goaltender'
+  };
+  function positionsFor(labels, vb) {
+    var out = [];
+    labels.forEach(function (l) {
+      var n = norm(l);
+      if (POS_ALIAS[n]) out.push(POS_ALIAS[n]);
+      else if (vb.posCanon[n]) out.push(vb.posCanon[n]);
+    });
+    return out.filter(uniq);
+  }
+
+  /* Awards. Wikidata's names are formal; ours are how fans say them. */
+  var AWARD_RULES = [
+    [/hall of fame/, 'Hall of Fame'],
+    [/nba.*most valuable player|most valuable player.*nba/, 'NBA MVP'],
+    [/nba finals most valuable player|finals mvp/, 'Finals MVP'],
+    [/nba all-?star/, 'NBA All-Star'],
+    [/nba defensive player of the year/, 'Defensive Player of the Year'],
+    [/nba rookie of the year/, 'Rookie of the Year'],
+    [/(ap |nfl )?(most valuable player).*(nfl|football)|nfl most valuable player/, 'NFL MVP'],
+    [/super bowl most valuable player|super bowl mvp/, 'Super Bowl MVP'],
+    [/pro bowl/, 'Pro Bowl'],
+    [/nfl offensive player of the year/, 'Offensive Player of the Year'],
+    [/nfl defensive player of the year/, 'Defensive Player of the Year'],
+    [/offensive rookie of the year/, 'Offensive Rookie of the Year'],
+    [/defensive rookie of the year/, 'Defensive Rookie of the Year'],
+    [/cy young/, 'Cy Young'],
+    [/gold glove/, 'Gold Glove'],
+    [/silver slugger/, 'Silver Slugger'],
+    [/world series most valuable player|world series mvp/, 'World Series MVP'],
+    [/(mlb|major league baseball).*most valuable player/, 'MLB MVP'],
+    [/(mlb|major league baseball) all-?star|all-?star game.*baseball/, 'MLB All-Star'],
+    [/rookie of the year/, 'Rookie of the Year']
+  ];
+  function awardsFor(labels) {
+    var out = [];
+    labels.forEach(function (l) {
+      var n = norm(l).replace(/ /g, ' ');
+      for (var i = 0; i < AWARD_RULES.length; i++) {
+        if (AWARD_RULES[i][0].test(n)) { out.push(AWARD_RULES[i][1]); return; }
+      }
+    });
+    return out.filter(uniq);
+  }
+
+  /* Sport, from the leagues the recognised teams belong to. Occupation labels
+   * are only a fallback: "basketball player" is true of a EuroLeague player
+   * too, and our tag means the league, not the game. */
+  var OCC_SPORT = {
+    'basketball player': 'NBA', 'american football player': 'NFL',
+    'baseball player': 'MLB', 'ice hockey player': 'NHL',
+    'association football player': 'Soccer', 'tennis player': 'Tennis',
+    'golfer': 'Golf', 'boxer': 'Boxing', 'racing driver': null,
+    'mixed martial artist': 'UFC', 'professional wrestler': 'Pro Wrestling'
+  };
+
+  // ---------- the shaped view of one outside player ----------
+  function shape(profile, D) {
+    var vb = vocab(D);
+    var teams = [], stints = [];
+    (profile.teams || []).forEach(function (t) {
+      var canon = vb.teamCanon[norm(t.name)];
+      if (!canon) return;                       // college/national/youth sides drop out here
+      if (teams.indexOf(canon) < 0) teams.push(canon);
+      stints.push({ team: canon, start: t.start, end: t.end, sport: vb.teamSport[norm(canon)] || null });
+    });
+    var sports = [];
+    stints.forEach(function (s) { if (s.sport && sports.indexOf(s.sport) < 0) sports.push(s.sport); });
+    var occSports = [];
+    (profile.occupations || []).concat(profile.sports || []).forEach(function (o) {
+      var s = OCC_SPORT[norm(o)];
+      if (s && occSports.indexOf(s) < 0) occSports.push(s);
+    });
+    var colleges = [];
+    (profile.colleges || []).forEach(function (c) { colleges = colleges.concat(collegesFor(c, vb)); });
+    return {
+      name: profile.name || '',
+      teams: teams, stints: stints, sports: sports, occSports: occSports,
+      positions: positionsFor(profile.positions || [], vb),
+      hadPositions: (profile.positions || []).length > 0,
+      colleges: colleges.filter(uniq),
+      hadColleges: (profile.colleges || []).length > 0,
+      awards: awardsFor(profile.awards || []),
+      died: !!profile.died
+    };
+  }
+
+  function decadesOf(s) {
+    var out = {};
+    s.stints.forEach(function (st) {
+      if (st.start == null) return;
+      var end = st.end == null ? st.start : st.end;
+      for (var y = Math.floor(st.start / 10) * 10; y <= end; y += 10) out[y] = 1;
+    });
+    return Object.keys(out).map(Number);
+  }
+  function datedStints(s) { return s.stints.filter(function (st) { return st.start != null; }); }
+
+  // ---------- the verdict ----------
+  /* true / false / null, where null means "the facts we have don't settle it". */
+  function verdict(s, pr) {
+    if (pr.all) {
+      var unknown = false;
+      for (var i = 0; i < pr.all.length; i++) {
+        var v = verdict(s, pr.all[i]);
+        if (v === false) return false;          // one contradiction sinks the whole clause
+        if (v === null) unknown = true;
+      }
+      return unknown ? null : true;
+    }
+    switch (pr.k) {
+      case 'sport':
+        if (s.sports.length) return s.sports.indexOf(pr.v) >= 0;
+        if (s.occSports.length) return s.occSports.indexOf(pr.v) >= 0 ? true : false;
+        return null;
+
+      case 'team':
+        // A negative here is trustworthy only once we've seen a real roster.
+        return s.teams.length ? s.teams.indexOf(pr.v) >= 0 : null;
+
+      case 'pos':
+        if (s.positions.length) return s.positions.indexOf(pr.v) >= 0;
+        return null;
+
+      case 'col':
+        if (s.colleges.length) return s.colleges.indexOf(pr.v) >= 0;
+        return null;
+
+      case 'conf': {
+        if (!s.colleges.length || !V) return null;
+        var list = V.D.conf[pr.v] || [];
+        return s.colleges.some(function (c) { return list.indexOf(c) >= 0; });
+      }
+
+      case 'award':
+        // Award lists are chronically incomplete out there — a Pro Bowl that
+        // isn't listed didn't not happen. Confirm, never deny.
+        return s.awards.indexOf(pr.v) >= 0 ? true : null;
+      case 'awardRe':
+        return s.awards.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
+
+      case 'teams':
+        // Rosters under-report, they don't over-report: enough teams proves the
+        // claim, too few proves nothing.
+        return s.teams.length >= pr.min ? true : null;
+
+      case 'teamsMax':
+        // "Never left one franchise" is a claim about a complete career, which
+        // is exactly what we can't establish. We can only refute it.
+        return s.teams.length > pr.max ? false : null;
+
+      case 'decade': {
+        var ds = decadesOf(s);
+        return ds.indexOf(pr.v) >= 0 ? true : null;
+      }
+      case 'decades':
+        return decadesOf(s).length >= pr.min ? true : null;
+
+      case 'act': {
+        if (s.died) return false;
+        var live = datedStints(s).some(function (st) { return st.end == null && st.start >= year() - 5; });
+        if (live) return true;
+        var last = 0;
+        datedStints(s).forEach(function (st) { last = Math.max(last, st.end || st.start); });
+        if (last && last < year() - 3) return false;    // demonstrably retired
+        return null;
+      }
+
+      // No public structured source settles these, so we never pretend to.
+      case 'stat': return null;
+      case 'draft1': return null;
+      default: return null;
+    }
+  }
+
+  // ---------- network ----------
+  var cache = Object.create(null);
+
+  function lookup(names) {
+    var want = [], out = {};
+    names.forEach(function (n) {
+      var k = String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      if (!k) return;
+      if (k in cache) out[k] = cache[k];
+      else if (want.indexOf(k) < 0) want.push(n);
+    });
+    if (!want.length) return Promise.resolve(out);
+    var f = fetchFn();
+    if (!f) return Promise.resolve(out);
+    return f(ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ names: want })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      var ps = (j && j.players) || {};
+      for (var k in ps) { cache[k] = ps[k]; out[k] = ps[k]; }
+      return out;
+    }).catch(function () { return out; });   // fail soft: caller keeps its corpus verdict
+  }
+
+  // ---------- grading an unknown answer ----------
+  /* pending: [{ i, text }] — the answers check() flagged as live:true.
+   * Resolves to { <i>: result } in the same shape check() returns, so the game
+   * can drop them straight into its results array. */
+  function resolve(puz, pending, usedNames) {
+    var SP = _engine ||
+             (typeof window !== 'undefined' && window.RTG_SPORTEGORIES) ||
+             (typeof root !== 'undefined' && root.RTG_SPORTEGORIES) || null;
+    if (!SP || !pending || !pending.length) return Promise.resolve({});
+    var D = SP.data();
+    if (!D) return Promise.resolve({});
+    var used = usedNames || {};
+
+    return lookup(pending.map(function (p) { return p.text; })).then(function (map) {
+      var out = {};
+      pending.forEach(function (p) {
+        var key = String(p.text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        var prof = map[key];
+        if (!prof || !prof.found) {
+          out[p.i] = { ok: false, reason: 'unknown', live: 'missing',
+            msg: 'We couldn’t find a player by that name.' };
+          return;
+        }
+        var s = shape(prof, D);
+        var nk = norm(s.name || p.text);
+        if (used[nk]) {
+          out[p.i] = { ok: false, reason: 'dup', live: 'dup', msg: 'Already used this player.' };
+          return;
+        }
+        var v = verdict(s, D.cats[puz.cats[p.i].i].p);
+        if (v === false) {
+          out[p.i] = { ok: false, reason: 'category', live: 'no',
+            msg: 'Doesn’t fit this category.' };
+          return;
+        }
+        if (v === null) {
+          out[p.i] = { ok: false, reason: 'unverified', live: 'maybe',
+            msg: 'Real player — we couldn’t verify this category.' };
+          return;
+        }
+        used[nk] = 1;                           // two of these can't be the same person either
+        var m = SP.letterHits(puz, p.text);     // letter rule was already passed
+        // Outside the corpus is, by definition, off the beaten path: a verified
+        // answer nobody's file has scores as rare.
+        var rar = { pct: 2, bonus: 2, tier: 'Rare', est: true, live: true };
+        out[p.i] = {
+          ok: true, live: 'yes',
+          player: { idx: -1, name: s.name || p.text, sport: s.sports[0] || s.occSports[0] || null, f: 0, key: nk },
+          base: m, allit: m, rarity: rar, points: m + rar.bonus
+        };
+      });
+      return out;
+    });
+  }
+
+  return {
+    resolve: resolve, lookup: lookup, verdict: verdict, shape: shape,
+    collegesFor: collegesFor, colCore: colCore,
+    setFetch: function (f) { _fetch = f; },
+    setEngine: function (e) { _engine = e; },
+    setYear: function (y) { _now = y; },
+    setEndpoint: function (u) { ENDPOINT = u; },
+    clearCache: function () { cache = Object.create(null); }
+  };
+});

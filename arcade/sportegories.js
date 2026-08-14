@@ -264,7 +264,9 @@
 
   // ---------- grading ----------
   /* Returns:
-   *   { ok:false, reason:'empty'|'fullname'|'unknown'|'letter'|'category'|'dup', msg }
+   *   { ok:false, reason:'empty'|'fullname'|'letter'|'unknown'|'category'|'dup', msg }
+   *   reason 'unknown' carries live:true — the name is absent from OUR data,
+   *   which livecheck.js can still resolve against the wider world.
    *   { ok:true, player, points, base, allit, rarity:{pct,bonus} } */
   function check(puz, catIndex, text, usedPlayers) {
     if (!data()) return { ok: false, reason: 'nodata', msg: 'Data not loaded.' };
@@ -277,13 +279,20 @@
     var t = trimSuffix(toks);
     if (t.length < 2) return { ok: false, reason: 'fullname', msg: 'Enter the full name — first and last.' };
 
-    var ids = BY_KEY[keyOf(toks)] || [];
-    if (!ids.length) return { ok: false, reason: 'unknown', msg: 'No player by that name.' };
-
-    // letter must lead the first or the last name
+    // Letter first: a wrong letter is wrong whoever they are, and settling it
+    // here means an unknown name only reaches the live check when it could
+    // still have scored.
     if (t[0][0] !== L && t[t.length - 1][0] !== L) {
       return { ok: false, reason: 'letter', msg: 'Needs to start with ' + puz.letter + '.' };
     }
+
+    /* Not in our 5,900 names. That is a fact about our file, not about the
+     * player — say so, and flag it for the live check (see livecheck.js). */
+    var ids = BY_KEY[keyOf(toks)] || [];
+    if (!ids.length) {
+      return { ok: false, reason: 'unknown', live: true, msg: 'Not in our player list.' };
+    }
+
     // among same-named players, take any that satisfies the category
     var def = D.cats[cat.i], hit = null;
     for (var i = 0; i < ids.length; i++) { var p = P[ids[i]]; if (test(p, def.p)) { hit = p; break; } }
@@ -298,6 +307,14 @@
       ok: true, player: { idx: hit.idx, name: hit.name, sport: hit.sport, f: hit.f },
       base: allit, allit: allit, rarity: rar, points: allit + rar.bonus
     };
+  }
+
+  /* How many words of a typed name lead with the puzzle's letter. Exposed so
+   * the live check can score an outside player on the same scale. */
+  function letterHits(puz, text) {
+    var L = puz.letter.toLowerCase(), t = trimSuffix(tokens(text)), n = 0;
+    for (var i = 0; i < t.length; i++) if (t[i][0] === L) n++;
+    return n;
   }
 
   // ---------- typeahead ----------
@@ -332,6 +349,7 @@
     setData: setData, data: function () { return data(); },
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
+    letterHits: letterHits,
     test: test, rarityOf: rarityOf, CATS_PER: CATS_PER
   };
 });

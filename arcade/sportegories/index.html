@@ -149,6 +149,12 @@
   /* graded */
   .row.good{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card2));}
   .row.bad{border-left-color:var(--red);}
+  /* Real player, category we can't confirm — neither a green nor a red. */
+  .row.unsure{border-left-color:var(--gold); background:color-mix(in srgb, var(--gold) 7%, var(--card2));}
+  .res .hedge{color:var(--goldT); font-weight:800;}
+  /* Shared --goldT only reaches 3.5:1 on a light card, and this line is the
+     whole explanation for why an answer got nothing — it has to be readable. */
+  :root[data-theme="light"] .res .hedge{color:#7A5100;}
   .res{display:flex; align-items:center; gap:8px; margin-top:7px; font-size:12px; font-weight:700; flex-wrap:wrap;}
   .res .pts{font-family:var(--hero); font-weight:400; font-size:19px; line-height:1; color:var(--greenT);}
   .res .pct{color:var(--mut); font-weight:800; font-size:11px;}
@@ -246,6 +252,7 @@
         <div class="rule"><span class="b">2</span><div>Either name can start with the letter<small>On <b>B</b>, both “Bosh” and “Barry Bonds” work.</small></div></div>
         <div class="rule"><span class="b">3</span><div>Both names matching scores double<small>“Barry Bonds” on B is worth 2 — before rarity.</small></div></div>
         <div class="rule"><span class="b">4</span><div>Rarer answers are worth more<small>And you can’t use the same player twice.</small></div></div>
+        <div class="rule"><span class="b">5</span><div>Deep cuts get looked up<small>Anyone missing from our list is checked against the record books when time’s up.</small></div></div>
       </div>
       <button class="gobtn" id="startBtn" type="button">Start today’s puzzle</button>
       <button class="ghost" id="practiceBtn" type="button">Random practice puzzle</button>
@@ -324,7 +331,8 @@
 <script src="/arcade/share.js?v=3"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=2"></script>
-<script src="/arcade/sportegories.js?v=4"></script>
+<script src="/arcade/sportegories.js?v=5"></script>
+<script src="/arcade/livecheck.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -374,7 +382,7 @@
     });
     $('letterTile').textContent = puz.letter;
     $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
-    $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice.';
+    $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice. Deep cuts get looked up.';
   }
 
   /* Typeahead searches the WHOLE player list, never the category's answers —
@@ -604,13 +612,36 @@
     $('tallyLab').textContent='Scoring your card…';
 
     // resolve everything first, then pace the telling of it
-    var used={}, results=[], total=0, correct=0, bonus=0;
+    var used={}, usedNames={}, results=[], total=0, correct=0, bonus=0;
     puz.cats.forEach(function(c,i){
       var el=inputs[i]; el.disabled=true;
       var r = SP.check(puz, i, el.value, used);
-      if(r.ok){ used[r.player.idx]=1; total+=r.points; correct++; bonus+=(r.points-1); }
+      if(r.ok){ used[r.player.idx]=1; usedNames[nameKey(r.player.name)]=1; total+=r.points; correct++; bonus+=(r.points-1); }
       results.push(r);
     });
+
+    /* Anything our 5,900-name file doesn't know goes out to the live check.
+       This is the difference between "we've never heard of him" and "he isn't
+       real" — a distinction the game got wrong until now. The request goes out
+       here, at the top of the reveal, so it runs under cover of the animation
+       instead of making anyone wait for it. */
+    var liveReady=true, liveWait=null;
+    var pendingLive=[];
+    results.forEach(function(r,i){ if(r && r.live===true) pendingLive.push({ i:i, text:inputs[i].value }); });
+    if(pendingLive.length && window.RTG_LIVECHECK){
+      liveReady=false;
+      RTG_LIVECHECK.resolve(puz, pendingLive, usedNames).then(function(map){
+        Object.keys(map).forEach(function(k){
+          var i=+k, r=map[k]; results[i]=r;
+          if(r.ok){ total+=r.points; correct++; bonus+=(r.points-1); }
+        });
+      })['catch'](function(){ /* fail soft: the corpus verdict stands */ })
+       .then(function(){
+         liveReady=true;
+         results.forEach(function(r,i){ if(r && r.live===true) results[i]={ ok:false, reason:'unknown', msg:'Not in our player list.' }; });
+         if(liveWait){ var f=liveWait; liveWait=null; f(); }
+       });
+    }
 
     var running=0, n=puz.cats.length;
     function paint(i){
@@ -618,7 +649,7 @@
       row.classList.remove('pending');
       var d=row.querySelector('.dots'); if(d) d.remove();
       res.style.display='';
-      row.classList.add(r.ok?'good':'bad','flip');
+      row.classList.add(r.ok?'good':(r.reason==='unverified'?'unsure':'bad'),'flip');
       if(r.ok){
         running+=r.points;
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
@@ -629,8 +660,9 @@
         sfx(r.points>=3?'win':'lock'); buzz(r.points>=3?[18,40,18]:22);
       } else {
         var why = r.reason==='empty' ? 'No answer' : (r.msg||'Not valid');
+        var hedge = r.reason==='unverified';
         var also = SP.answersFor(puz, i, 4);
-        res.innerHTML='<span class="why">'+esc(why)+'</span>'+
+        res.innerHTML='<span class="'+(hedge?'hedge':'why')+'">'+esc(why)+'</span>'+
           (also.length?'<span class="also">Could have said: <b>'+also.map(esc).join('</b>, <b>')+'</b></span>':'');
         sfx('wrong');
       }
@@ -696,10 +728,15 @@
     }
     revealDone = function(){                      // skip: land everything now
       clearReveal();
-      for(var i=0;i<n;i++){ var row=$('row'+i);
-        if(!row.classList.contains('good') && !row.classList.contains('bad')) paint(i); }
-      $('tallyN').textContent=total;
-      revealDone=null; finish();
+      var landAll = function(){
+        for(var i=0;i<n;i++){ var row=$('row'+i);
+          if(!row.classList.contains('good') && !row.classList.contains('bad') && !row.classList.contains('unsure')) paint(i); }
+        $('tallyN').textContent=total;
+        revealDone=null; finish();
+      };
+      // Skipping can't skip the network. Land it the moment the answer's back.
+      if(!liveReady){ liveWait=landAll; $('tallyLab').textContent='Checking the record books…'; return; }
+      landAll();
     };
 
     // The last answer gets a longer drumroll than the rest — the card's whole
@@ -711,15 +748,30 @@
     // third the length. Reduced-motion gets the short version too.
     var FAST = (!isDaily) || reduced();
     var HOLD = FAST ? 110 : 300, LAST = FAST ? 240 : 820, GAP = FAST ? 80 : 260;
-    var at=0;
-    for(var i=0;i<n;i++){
-      (function(i, startAt, hold){
-        revealTimers.push(setTimeout(function(){ pend(i); }, startAt));
-        revealTimers.push(setTimeout(function(){ paint(i); }, startAt+hold));
-      })(i, at, i===n-1 ? LAST : HOLD);
-      at += (i===n-1 ? LAST : HOLD) + GAP;
+    /* Stepped rather than pre-scheduled: a row that's still out at the live
+       check has to hold the queue, or it would flip after the rows below it. */
+    function step(i){
+      if(i>=n){
+        revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, FAST?180:480));
+        return;
+      }
+      pend(i);
+      revealTimers.push(setTimeout(function(){
+        if(results[i] && results[i].live===true && !liveReady){
+          $('tallyLab').textContent='Checking the record books…';
+          liveWait=function(){ paint(i); revealTimers.push(setTimeout(function(){ step(i+1); }, GAP)); };
+          return;
+        }
+        paint(i);
+        revealTimers.push(setTimeout(function(){ step(i+1); }, GAP));
+      }, i===n-1 ? LAST : HOLD));
     }
-    revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, at+(FAST?180:480)));
+    step(0);
+  }
+
+  function nameKey(s){
+    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   }
 
   var toastT=null;
