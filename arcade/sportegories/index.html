@@ -328,6 +328,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=5"></script>
 <script src="/arcade/leaderboard.js?v=8"></script>
+<!-- Sportegories shipped without the shared account chrome, so it had no
+     paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
+     free plays here while every other game gives one. -->
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=3"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=3"></script>
@@ -544,6 +551,13 @@
 
   function startPuzzle(daily){
     if(spinning) return;
+    // Same wallet as the rest of the arcade: guest 1 / account 3 / card
+    // unlimited. Archive replays are practice and never charged.
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      toast('No plays left today'); updateAgainBtn();
+      if(window.RTGCard) RTGCard.wall();
+      return;
+    }
     isDaily = daily;
     puz = daily ? SP.daily(pdate()) : SP.practice();
     if(!puz){ toast('Could not build a puzzle'); return; }
@@ -554,6 +568,8 @@
     spinTo(puz.letter, beginPlay);
   }
   function beginPlay(){
+    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt) RTGTokens.startAttempt(GAME);
+    updateAgainBtn();
     clearReveal(); revealDone=null;
     $('tally').classList.remove('on');
     $('doneBtn').style.display='';
@@ -787,7 +803,23 @@
   $('doneBtn').addEventListener('click', grade);
   $('skipBtn').addEventListener('click', function(){ if(revealDone) revealDone(); });
   $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
-  $('mAgain').addEventListener('click', function(){ startPuzzle(false); });
+  function updateAgainBtn(){
+    var b=$('mAgain'); if(!b) return;
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  // card.js publishes window.RTGCard on DOMContentLoaded, so paint the button's
+  // spent state after that or it falls back to the plain "no plays" label.
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateAgainBtn);
+  else updateAgainBtn();
+  $('mAgain').addEventListener('click', function(){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard) RTGCard.wall(); return;
+    }
+    startPuzzle(false);
+  });
   $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
   $('mShare').addEventListener('click', function(){
     try{
