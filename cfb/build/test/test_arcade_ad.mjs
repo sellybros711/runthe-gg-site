@@ -8,9 +8,15 @@
  * challenge link, and never on top of the draft. Each of those is a separate promise and
  * each one is checked here, including the two that only break on a second page load.
  *
- * The storage reads are wrapped in the page because Safari in private mode throws rather
- * than returning null, so there is a case here for storage being unavailable entirely:
- * an ad that can throw during boot is worse than no ad.
+ * THE PANEL ITSELF NOW LIVES IN /assets/arcade-ad.js, shared with the homepage, the NFL
+ * game and the golf game, and so do the storage keys. It used to be four panels with four
+ * key sets, which told a player crossing the site four times and let "don't show this
+ * again" silence only the one they ticked. What this game still owns -- and what the
+ * bottom half of this file checks -- is WHEN it is polite to ask.
+ *
+ * The storage reads are wrapped in the shared file because Safari in private mode throws
+ * rather than returning null, so there is a case here for storage being unavailable
+ * entirely: an ad that can throw during boot is worse than no ad.
  */
 import { chromium } from 'playwright';
 const SS = process.env.SS || '/tmp/';
@@ -19,9 +25,8 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
-const adUp = (p) => p.evaluate(() =>
-  document.getElementById('sheet').classList.contains('on')
-  && !!document.getElementById('arc-go'));
+const AD = '.rtgaa';
+const adUp = (p) => p.evaluate(() => !!document.querySelector('.rtgaa'));
 
 /* One context is one visit: sessionStorage lives and dies with it, localStorage does not. */
 const visit = async (ctx, url) => {
@@ -37,85 +42,88 @@ const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceSc
   const p = await visit(ctx);
   await p.waitForSelector('#s-intro.on', { timeout: 30000 });
   ok('it is not up the instant the page paints', !(await adUp(p)));
-  await p.waitForSelector('#arc-go', { timeout: 15000 });
-  /* Measured after the sheet has finished sliding, not during: the panel animates over
-     420ms and a rect read mid-flight is off the bottom of the screen by design. */
-  await p.waitForTimeout(700);
+  await p.waitForSelector(AD, { timeout: 15000 });
+  await p.waitForTimeout(500);
   ok('it arrives once the front page has settled', await adUp(p));
 
-  const t = (await p.textContent('#sheet-in')).replace(/\s+/g, ' ').trim();
+  const t = (await p.textContent(AD)).replace(/\s+/g, ' ').trim();
   console.log('  copy: ' + t);
   ok('it says where it is from', /Also from RunThe\.GG/.test(t));
-  ok('it names the arcade', /Run the Arcade/i.test(t));
-  ok('it says what is on offer and that it is free', /Nine sports puzzles, free/.test(t));
+  ok('it names the arcade', /Run The Arcade/i.test(t));
+  ok('it says what is on offer and that it is free',
+    /Ten quick sports brain-games/.test(t) && /Free/.test(t));
   ok('it names games rather than just claiming some',
-    /Alma Mater/.test(t) && /Guess the Player/.test(t) && /Daily Crossword/.test(t));
-  ok('the six named and the three unnamed add up to the nine claimed',
-    (await p.$$eval('.arc-chip', (e) => e.length)) === 6 && /Plus three more/.test(t));
-  ok('the way in points at the arcade',
-    (await p.getAttribute('#arc-go', 'href')) === '/arcade/');
-  ok('there is a way to say not now', /Not now/.test(t));
-  ok('and a box to end it for good', /Do not show this again/.test(t));
-
-  /* The mark is the arcade's real icon, and a broken image on an ad is worse than none. */
-  const mark = await p.evaluate(() => {
-    const i = document.querySelector('.arc-mark');
-    return i ? { w: i.naturalWidth, src: i.getAttribute('src') } : null;
+    /Alma Mater/.test(t) && /Guess the Player/.test(t) && /Crossword/.test(t));
+  /* All ten are named now rather than six-plus-a-count, so the grid and the claim above it
+     cannot drift apart the way they could when one was a number and the other a list.
+     The tile is read as an element rather than out of the flattened text: the count and
+     its label are adjacent nodes, so textContent gives "10GAMES" and a \b10\b never
+     matches -- which is a bug in the test, not in the panel. */
+  const claimed = await p.evaluate(() => {
+    const s = document.querySelector('.rtgaa-stat b');
+    return s ? s.textContent.trim() : null;
   });
-  ok('the arcade mark actually loaded', mark && mark.w > 0, JSON.stringify(mark));
+  ok('all ten are named, and the count agrees',
+    (await p.$$eval('.rtgaa-chip', (e) => e.length)) === 10 && claimed === '10',
+    'grid vs tile: ' + claimed);
+  ok('the way in points at the arcade',
+    (await p.getAttribute('.rtgaa-go', 'href')) === '/arcade/');
+  /* A NEW TAB, because this page may have a season in progress on it. */
+  ok('and it opens in a new tab, leaving the season alone',
+    (await p.getAttribute('.rtgaa-go', 'target')) === '_blank'
+    && /noopener/.test((await p.getAttribute('.rtgaa-go', 'rel')) || ''));
+  ok('there is a way to say not now', /Maybe later/.test(t));
+  ok('and a box to end it for good', /Don.t show this again/.test(t));
 
   const geo = await p.evaluate(() => {
     const doc = document.documentElement;
-    const over = [...document.querySelectorAll('#sheet-in *')]
+    const over = [...document.querySelectorAll('.rtgaa *')]
       .filter((e) => e.getBoundingClientRect().right > doc.clientWidth + 1).length;
-    const chip = [...document.querySelectorAll('.arc-chip b')]
+    const chip = [...document.querySelectorAll('.rtgaa-chip')]
       .filter((e) => e.scrollWidth > e.clientWidth + 1).length;
-    const sheet = document.querySelector('#sheet .inner').getBoundingClientRect();
-    return { over, chip, top: Math.round(sheet.top), bottom: Math.round(sheet.bottom), h: doc.clientHeight };
+    /* The close button used to be absolutely positioned and landed on the kicker pill. */
+    const x = document.querySelector('.rtgaa-x').getBoundingClientRect();
+    const k = document.querySelector('.rtgaa-kick').getBoundingClientRect();
+    return { over, chip, clearOfKick: x.bottom <= k.top + 1 || x.right <= k.left + 1 };
   });
   ok('nothing runs off the side of the phone', geo.over === 0, JSON.stringify(geo));
   ok('no game name is cut off mid-word', geo.chip === 0, String(geo.chip));
-  ok('the whole thing fits on the screen', geo.top >= 0 && geo.bottom <= geo.h + 1, JSON.stringify(geo));
+  ok('the close button clears the kicker', geo.clearOfKick, JSON.stringify(geo));
   await p.screenshot({ path: SS + 'arcade_ad.png' });
 
-  /* Not now closes it, and it does not come back later in the same visit. */
-  await p.click('#arc-later');
-  await p.waitForTimeout(500);
-  ok('Not now closes it', !(await adUp(p)));
+  /* Maybe later closes it, and it does not come back later in the same visit. */
+  await p.click('.rtgaa-later');
+  await p.waitForTimeout(400);
+  ok('Maybe later closes it', !(await adUp(p)));
   await p.close();
 }
 
 console.log('\n=== the off switch is on screen at every width ===');
-/* THE ONE CONTROL THAT MUST NEVER NEED LOOKING FOR. The sheet caps at 86vh and scrolls,
-   so an ad that grows past that puts its own opt-out behind a scroll, which at 320 it
-   did: 579px of content in a 488px box. The chip count and the padding both give way
-   before the box does. */
+/* THE ONE CONTROL THAT MUST NEVER NEED LOOKING FOR. The panel is a full-screen overlay
+   that scrolls, so on a short phone the box can end up below the fold unless the layout
+   gives way first -- which is what the max-height rule in the shared file is for. */
 for (const [w, h, label] of [[320, 568, '320'], [375, 667, '375'], [390, 844, '390'],
   [430, 932, '430'], [768, 1024, '768'], [1280, 900, '1280']]) {
   const c = await b.newContext({ viewport: { width: w, height: h } });
   const p = await visit(c);
-  await p.waitForSelector('#arc-go', { timeout: 20000 });
-  await p.waitForTimeout(700);
+  await p.waitForSelector(AD, { timeout: 20000 });
+  await p.waitForTimeout(500);
   const g = await p.evaluate(() => {
-    const inner = document.querySelector('#sheet .inner');
-    const r = inner.getBoundingClientRect();
-    const box = document.querySelector('.arc-never').getBoundingClientRect();
+    const box = document.querySelector('.rtgaa-chk').getBoundingClientRect();
     const doc = document.documentElement;
     return {
-      boxVisible: box.bottom <= r.bottom + 1 && box.top >= r.top - 1,
-      chips: document.querySelectorAll('.arc-chip').length,
-      more: (document.querySelector('.arc-more') || {}).textContent || '',
-      over: [...document.querySelectorAll('#sheet-in *')]
+      boxVisible: box.bottom <= window.innerHeight + 1 && box.top >= -1,
+      chips: document.querySelectorAll('.rtgaa-chip').length,
+      over: [...document.querySelectorAll('.rtgaa *')]
         .filter((e) => e.getBoundingClientRect().right > doc.clientWidth + 1).length,
-      clipped: [...document.querySelectorAll('.arc-chip b')]
+      clipped: [...document.querySelectorAll('.rtgaa-chip')]
         .filter((e) => e.scrollWidth > e.clientWidth + 1).length,
     };
   });
   ok(label + 'px: the opt-out box is on screen without scrolling', g.boxVisible,
     g.chips + ' chips, ' + g.over + ' overflowing, ' + g.clipped + ' clipped');
-  ok(label + 'px: the count under the grid matches the grid',
-    new RegExp('Plus ' + ({ 4: 'five', 5: 'four', 6: 'three' })[g.chips] + ' more').test(g.more),
-    g.chips + ' shown, copy says "' + g.more.trim() + '"');
+  ok(label + 'px: nothing overflows or clips', g.over === 0 && g.clipped === 0,
+    JSON.stringify(g));
   await p.close();
   await c.close();
 }
@@ -137,18 +145,22 @@ console.log('\n=== a new visit, having never said no ===');
 {
   const fresh = await b.newContext({ viewport: { width: 390, height: 844 } });
   const p = await visit(fresh);
-  await p.waitForSelector('#arc-go', { timeout: 20000 });
+  await p.waitForSelector(AD, { timeout: 20000 });
   ok('a new session sees it again', await adUp(p));
 
   /* Tick the box, then dismiss by the BACKDROP rather than a button: the promise has to
-     hold however the sheet is closed, which is the case a click handler on Not now
+     hold however the panel is closed, which is the case a click handler on Maybe later
      would have quietly missed. */
-  await p.click('#arc-never');
+  await p.click('.rtgaa-chk input');
   await p.waitForTimeout(200);
-  const stored = await p.evaluate(() => localStorage.getItem('cfb_arcade_ad_off'));
+  const stored = await p.evaluate(() => localStorage.getItem('rtg_arcade_ad_off'));
   ok('ticking the box is written down the moment it is ticked', stored === '1', String(stored));
-  await p.evaluate(() => document.getElementById('sheet').click());
-  await p.waitForTimeout(400);
+  /* The backdrop is the overlay itself; a tap on the panel inside it is not a dismissal. */
+  await p.evaluate(() => {
+    const n = document.querySelector('.rtgaa');
+    n.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await p.waitForTimeout(300);
   ok('the backdrop closes it', !(await adUp(p)));
   await p.close();
   await fresh.close();
@@ -157,7 +169,7 @@ console.log('\n=== a new visit, having never said no ===');
 console.log('\n=== a new visit, having said no ===');
 {
   const said = await b.newContext({ viewport: { width: 390, height: 844 } });
-  await said.addInitScript(() => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} });
+  await said.addInitScript(() => { try { localStorage.setItem('rtg_arcade_ad_off', '1'); } catch (e) {} });
   const p = await visit(said);
   await p.waitForSelector('#s-intro.on', { timeout: 30000 });
   await p.waitForTimeout(2600);
@@ -184,12 +196,12 @@ console.log('\n=== the cases it must stay out of ===');
   const ch = await b.newContext({ viewport: { width: 390, height: 844 } });
   const p = await visit(ch, URL + '?c=notarealchallengeblob');
   await p.waitForTimeout(3200);
-  const seen = await p.evaluate(() => sessionStorage.getItem('cfb_arcade_ad_seen'));
   /* A mangled link falls through to the front page by design, so the ad is allowed
      there. What must never happen is the ad landing ON the challenge screen. */
   const onChallenge = await p.evaluate(() => document.getElementById('s-challenge').classList.contains('on'));
-  ok('a challenge screen never has the ad over it', !(onChallenge && (await 0, false)) && (!onChallenge || !(await adUp(p))),
-    'challenge screen up: ' + onChallenge + ', seen flag: ' + seen);
+  const up = await adUp(p);
+  ok('a challenge screen never has the ad over it', !onChallenge || !up,
+    'challenge screen up: ' + onChallenge + ', ad up: ' + up);
   await p.close();
   await ch.close();
 }

@@ -1479,6 +1479,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ── coach panel ────────────────────────────────────────────── */
   .verdictline{margin:4px 0 0}
+  .verdictline.fitfoot{margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
   .verdictline .take{margin:0;font-family:var(--fd);font-size:22px;line-height:1.08;
     letter-spacing:-.01em;color:var(--ink)}
   .verdictline .fit{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--dim-2)}
@@ -1500,6 +1501,16 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(255,255,255,.08);overflow:hidden}
   .meter .track i{display:block;height:100%;border-radius:99px;
     transition:width .5s cubic-bezier(.2,.8,.3,1)}
+  /* THE LINE THAT ANSWERS "SAYS WHO". A player looked at a meter reading WEAK under a
+     $4.8M quarterback and could not tell what the number was being measured against or
+     what it was doing to his team. Both answers live here, under the bar: where the free
+     range ends, and what this line is costing. Costing NOTHING is the common case and
+     says so in words, because "0%" reads like a broken number. */
+  .meter .why{grid-column:1/-1;font-family:var(--fb);font-size:10.5px;line-height:1.35;
+    color:var(--dim-2);margin-top:-1px}
+  .meter .why b{font-weight:700}
+  .meters .mhead{font-family:var(--fb);font-size:11.5px;line-height:1.4;color:var(--dim-2);
+    margin:0 0 2px}
 
   /* ── scheme panel ───────────────────────────────────────────── */
   .schemepanel{position:relative;overflow:hidden}
@@ -2278,86 +2289,6 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
   .modecard.mc-alma .mc-title{color:#f2b632}
 
-  /* ── THE ARCADE, ONCE A SESSION ──────────────────────────────────
-     The one thing on this site that interrupts somebody, so it is built to earn the
-     interruption and to be easy to end. Three ways out: the button, the backdrop, and
-     a box that stops it for good.
-
-     IT WEARS THE ARCADE'S OWN ORANGE, #FF8A3D to #FF5A4E, which is --brand and
-     --brand2 in arcade.css and the glow on the joystick in its app icon. The same rule
-     that makes the NFL card red and the Alma Mater card gold: a player who has been
-     there should recognise this before reading it. The clash the mode cards worried
-     about does not apply here, because this is the only thing on screen.
-
-     THE MARK IS THE REAL ICON. Alma Mater got a drawn mortarboard because it has no
-     icon of its own; the arcade has one, so it shows it, the way the NFL card does. */
-  .arc-top{display:flex;align-items:center;gap:12px;margin:6px 0 11px}
-  .arc-mark{width:52px;height:52px;flex:0 0 52px;display:block;border-radius:12px;
-    box-shadow:0 8px 22px -8px rgba(255,110,70,.65),0 0 0 1px rgba(255,255,255,.10)}
-  .arc-name{font-family:var(--fd);font-size:30px;line-height:.92;letter-spacing:.01em;
-    text-transform:uppercase;color:#FF8A3D}
-  /* Gradient type only where the clip is supported. Without the guard an unsupporting
-     browser gets `color:transparent` over a background it cannot clip, which is a
-     headline nobody can read. */
-  @supports ((-webkit-background-clip:text) or (background-clip:text)){
-    .arc-name{background:linear-gradient(100deg,#FF8A3D 0%,#FF5A4E 78%);
-      -webkit-background-clip:text;background-clip:text;color:transparent}
-  }
-  .arc-sub{font-size:13.5px;line-height:1.45;color:var(--dim);margin:0 0 12px}
-  /* Six of the nine, named and drawn with the arcade's own glyphs, so what is promised
-     here is what is on screen when they land. A list of names is a claim; a grid of
-     them with the right icons is the thing itself. */
-  .arc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .arc-chip{display:flex;align-items:center;gap:9px;min-width:0;padding:10px;
-    border-radius:10px;background:var(--panel);border:1px solid var(--line)}
-  .arc-chip svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:#FF8A3D;
-    stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  /* WRAPS RATHER THAN TRUNCATES. Two columns on a 390px phone is about 150px of text,
-     and "Guess the Player" and "Daily Crossword" both ran past it: with an ellipsis they
-     read "Guess the Pl..." and "Daily Crossw...", which is a worse advertisement for a
-     game than not naming it. The grid stretches its row to the taller chip, so a name
-     that takes two lines costs nothing but height. */
-  .arc-chip b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
-    min-width:0;line-height:1.25}
-  /* THE SMALLEST PHONE, WHERE THE OPT-OUT HAS TO STAY IN THE PANEL. At 320 the sheet is
-     capped at 86vh, which is 488px, and everything below is the difference between the
-     box being on screen and being behind a scroll. Dropping to four chips got it from
-     579 to 522; this last thirty-odd is taken evenly off the padding rather than out of
-     any one thing, so nothing looks singled out. */
-  @media (max-width:359px){
-    .arc-top{margin:2px 0 8px;gap:10px}
-    .arc-mark{width:46px;height:46px;flex:0 0 46px;border-radius:11px}
-    .arc-name{font-size:23px}
-    .arc-sub{font-size:12.5px;margin-bottom:10px}
-    .arc-chip{padding:8px;gap:7px}
-    .arc-chip b{font-size:11.5px}
-    .arc-grid{gap:7px}
-    .arc-more{margin-top:8px}
-    .arc-go{margin-top:11px;padding:13px 12px;font-size:15px}
-    .arc-later{margin-top:7px}
-    .arc-never{margin-top:10px;padding-top:9px}
-  }
-  .arc-more{font-size:12px;line-height:1.45;color:var(--dim-2);margin:10px 0 0;text-align:center}
-  .arc-go{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
-    margin-top:14px;padding:15px 14px;border:0;border-radius:12px;cursor:pointer;
-    text-decoration:none;font-family:var(--fn);font-size:16px;font-weight:800;
-    color:#1b0a02;background:linear-gradient(135deg,#FF8A3D 0%,#FF5A4E 100%);
-    box-shadow:0 12px 28px -14px rgba(255,110,70,.95);
-    transition:transform .08s ease}
-  .arc-go:active{transform:scale(.985)}
-  .arc-go .mc-arrow{stroke:#1b0a02;width:18px;height:18px;margin:0}
-  .arc-later{width:100%;margin-top:9px}
-  /* THE BOX THAT ENDS IT, under a rule so it reads as a setting and not as a third
-     button. A whole <label> so the words are part of the target: a 18px checkbox on a
-     phone is a miss waiting to happen, and somebody trying to turn this off and hitting
-     nothing is exactly the wrong outcome for this particular control. */
-  .arc-never{display:flex;align-items:center;gap:10px;margin-top:13px;padding-top:12px;
-    border-top:1px solid var(--line);cursor:pointer;font-size:13px;color:var(--dim);
-    -webkit-tap-highlight-color:transparent}
-  .arc-never input{width:18px;height:18px;flex:0 0 18px;accent-color:var(--green);
-    cursor:pointer;margin:0}
-  .arc-never:has(input:checked){color:var(--ink)}
-
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
   .confbtn{padding:15px 10px;border-radius:12px;border:1.5px solid var(--line);
@@ -2987,6 +2918,9 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="scheme-tagline" id="q-scheme-tagline" hidden></div>
       <div class="verdictline" id="q-verdict"></div>
       <div class="meters" id="q-meters"></div>
+      <!-- The line that adds the four up. AFTER them, because "add it up" in front of
+           the things being added is not a summary, it is a riddle. -->
+      <div class="verdictline fitfoot" id="q-fit"></div>
       <div id="q-notes" style="margin-top:8px"></div>
     </div>
 
@@ -3329,11 +3263,14 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=25"></script>
+<script src="engine.js?v=26"></script>
 <script src="run.js?v=12"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
-<script src="board.js?v=6"></script>
+<script src="board.js?v=5"></script>
+<!-- The Run The Arcade house ad, shared with the homepage and the other games so the
+     panel looks the same everywhere and one "don't show this again" covers the lot. -->
+<script defer src="/assets/arcade-ad.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -4570,117 +4507,28 @@ function modeMenu(){
   $('mm-x').onclick=closeSheet;
 }
 
-/* ── THE ARCADE, ONCE A SESSION ──────────────────────────────────────
-   The only thing on this site that interrupts anybody, so the rules around it are
-   tighter than the ad itself:
+/* ── THE ARCADE ──────────────────────────────────────────────────────
+   The panel and its remembering now live in /assets/arcade-ad.js, shared with the
+   homepage, the NFL game and the golf game. It used to be four separate panels with four
+   separate sets of storage keys, which meant a player crossing the site in one sitting
+   was told four times and "don't show this again" only ever silenced the one they ticked.
+   The look, the once-a-visit rule and the two locks that enforce it (a session flag for
+   the tab, a timestamp for the other tabs) all moved there.
 
-     ONCE A VISIT, on the way in, and never on the way back. TWO LOCKS, because one
-       of them alone gets it wrong. sessionStorage covers a whole visit however long it
-       runs, so a player who bounces between the front page and a draft all evening sees
-       it once; but sessionStorage is per TAB, so opening the game in a second tab would
-       show it again. A timestamp in localStorage covers that, and covers a tab closed
-       and reopened a minute later. The timestamp alone would be wrong the other way: a
-       session that runs past the window would get a second showing mid-play.
-     NEVER AGAIN IF THEY SAY SO. The checkbox writes localStorage, which outlives the
-       session and the browser being closed. A player who has said no has said no.
+   What stays here is the only part that is local knowledge: WHEN it is polite to ask.
      NOT OVER A CHALLENGE. Somebody who arrived on a friend's link came for that, and
        routeChallenge() takes over before this is ever asked.
-     NOT OVER ANYTHING ELSE. It waits for the front page to settle and then checks it
-       is still the screen and that no other sheet is up, because a player who tapped
-       Draft in the first second should get the draft and not this.
-
-   Both reads are wrapped, because Safari in private mode throws on storage rather
-   than returning null, and an ad that can throw during boot is worse than no ad. */
-const ARC_OFF='cfb_arcade_ad_off';     /* localStorage: the checkbox, for good */
-const ARC_SEEN='cfb_arcade_ad_seen';   /* sessionStorage: shown already in this tab */
-const ARC_AT='cfb_arcade_ad_at';       /* localStorage: when, so other tabs know too */
-/* Thirty minutes, the same span analytics has always called a session. Long enough that
-   a trip to the arcade and back is one visit, short enough that coming back after dinner
-   is another. */
-const ARC_WINDOW=30*60*1000;
+     NOT OVER ANYTHING ELSE. It waits for the front page to settle and then checks it is
+       still the screen and that no other sheet is up, because a player who tapped Draft
+       in the first second should get the draft and not this. */
 const ARC_DELAY=1400;
-
-/* Six of the nine, with the arcade's own glyphs lifted from its nav, so the icons here
-   are the icons there. Alma Mater leads because this is a college football game and
-   that is the one this player is likeliest to already want. */
-const ARC_GAMES=[
-  ['Alma Mater','<path d="M2 9l10-4 10 4-10 4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/><path d="M22 9v5"/>'],
-  ['Guess the Player','<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/>'],
-  ['Career Path','<path d="M4 20 L10 10 L15 15 L20 4"/>'],
-  ['Odd One Out','<circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>'],
-  ['Daily Crossword','<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/>'],
-  ['Rank It','<path d="M4 7h9M4 12h13M4 17h6"/>'],
-];
-
-/* Nine free daily puzzles at the time of writing. High Low is a tenth and is not counted
-   here, because it is for card members and an ad that counts it is promising something
-   the tap does not deliver. */
-const ARC_TOTAL=9;
-const ARC_WORDS={1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight'};
-
-function arcadeAd(){
-  const shown=ARC_GAMES.slice(0,(window.innerWidth||390)<360?4:6);
-  /* Marked seen when it is SHOWN and not when it is closed, because seen is what the
-     once-a-session rule is about. Closing it by the backdrop is still having seen it. */
-  try{ sessionStorage.setItem(ARC_SEEN,'1'); }catch(e){}
-  try{ localStorage.setItem(ARC_AT,String(Date.now())); }catch(e){}
-  ga('arcade_ad_shown');
-  $('sheet-in').innerHTML=
-    '<div class="eyebrow green">Also from RunThe.GG</div>'+
-    '<div class="arc-top">'+
-      '<img class="arc-mark" src="/arcade/assets/arcade-apple-180.png" alt="" '+
-        'width="52" height="52" decoding="async">'+
-      /* No line break in the markup. It wraps on its own where it needs to, and a <br>
-         would put "Run theArcade" in the accessibility tree and in anything that reads
-         the page as text. */
-      '<div class="arc-name">Run the Arcade</div>'+
-    '</div>'+
-    '<p class="arc-sub">Nine sports puzzles, free, and a new one of each every day. '+
-      'For the evenings you do not have a whole season in you.</p>'+
-    /* FOUR ON THE SMALLEST PHONE, SIX EVERYWHERE ELSE, and the sentence under them
-       counts whatever is left. At 320 the panel is capped at 86vh and six chips pushed
-       the whole thing to 579px inside a 488px box, which put the opt-out box below a
-       scroll. Of everything here that is the one control that must never need looking
-       for: an ad that hides its own off switch has earned every bad thing said about
-       it. The count is read rather than hard-coded so the copy cannot go stale against
-       the grid. */
-    '<div class="arc-grid">'+shown.map(g=>
-      '<div class="arc-chip"><svg viewBox="0 0 24 24">'+g[1]+'</svg><b>'+esc(g[0])+'</b></div>'
-    ).join('')+'</div>'+
-    '<p class="arc-more">Plus '+ARC_WORDS[ARC_TOTAL-shown.length]+' more, and an archive '+
-      'of every past day.</p>'+
-    '<a class="arc-go" href="/arcade/" id="arc-go">Open the arcade'+ARROW+'</a>'+
-    '<button class="btn ghost sm arc-later" id="arc-later">Not now</button>'+
-    '<label class="arc-never" for="arc-never">'+
-      '<input type="checkbox" id="arc-never"> Do not show this again</label>';
-  openSheet();
-  $('arc-go').onclick=()=>ga('crosspromo_clicked',{to:'arcade',from:'session_ad'});
-  $('arc-later').onclick=closeSheet;
-  $('arc-never').onchange=(e)=>{
-    /* Written the moment it is ticked rather than on close, so the promise the box
-       makes holds however the sheet is dismissed, backdrop included. */
-    try{
-      if(e.target.checked) localStorage.setItem(ARC_OFF,'1');
-      else localStorage.removeItem(ARC_OFF);
-    }catch(_){}
-    ga('arcade_ad_optout',{off:!!e.target.checked});
-  };
-}
-
-function maybeArcadeAd(){
-  let off=false, seen=false, recent=false;
-  try{ off=localStorage.getItem(ARC_OFF)==='1'; }catch(e){}
-  try{ seen=sessionStorage.getItem(ARC_SEEN)==='1'; }catch(e){}
-  try{
-    const at=Number(localStorage.getItem(ARC_AT));
-    recent=isFinite(at)&&at>0&&(Date.now()-at)<ARC_WINDOW;
-  }catch(e){}
-  if(off||seen||recent) return;
-  setTimeout(()=>{
-    if(!$('s-intro').classList.contains('on')) return;
-    if($('sheet').classList.contains('on')) return;
-    arcadeAd();
-  },ARC_DELAY);
+function askArcadeAd(){
+  const A=window.RTG_ARCADE_AD; if(!A) return;
+  if(A.forced()){ A.show({from:'cfb'}); return; }
+  if(!A.due()) return;
+  if(!$('s-intro').classList.contains('on')) return;
+  if($('sheet').classList.contains('on')) return;
+  A.show({from:'cfb'});
 }
 
 /* THE FIVE, WITH THE YEARS EACH ONE COVERS. The years matter: a Pac-12 draft ends
@@ -6183,7 +6031,7 @@ async function boot(){
        one thing that would make the whole screen feel cheap. */
     const spent=((window.performance&&performance.now)?performance.now():0)-t0;
     if(spent>380) await new Promise(r=>setTimeout(r,240));
-    if(!routeChallenge()){ show('s-intro'); maybeArcadeAd(); }
+    if(!routeChallenge()){ show('s-intro'); setTimeout(askArcadeAd,ARC_DELAY); }
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -6917,17 +6765,36 @@ function paintSquad(){
 
   const cr=E.coachReport(run.roster,run.season.chemistryResult);
   const st=cr.structure;
-  const band=(v)=>v>=0.75?{c:'#22c55e',w:'Strong'}:(v>=0.45?{c:'#f59e0b',w:'OK'}:{c:'#ef4444',w:'Weak'});
-  const meter=(lbl,detail,score)=>{
-    const b=band(score);
-    const pct=Math.max(4,Math.min(100,Math.round(score*100)));
+  /* THE PAGE NO LONGER SCORES ANYTHING. Every meter reads E.structureCosts(), which is
+     what the engine actually multiplies this roster by, so a red bar and a real penalty
+     are the same fact. They used to be two implementations with different tolerances,
+     and on 15.5% of drafted rosters the run-and-pass bar went red over a split the
+     engine charged nothing for. See cfb/build/test/probe_report.mjs. */
+  const BANDC={strong:'#22c55e',ok:'#f59e0b',weak:'#ef4444'};
+  const BANDW={strong:'Strong',ok:'OK',weak:'Weak'};
+  const costs=E.structureCosts(st);
+  /* The bar is how much of this line is intact, so full and green is nothing wrong. The
+     scale runs to 15%, which is past the 95th percentile of every line measured over
+     2,100 drafts, so an ordinary bad line still has bar left to lose. */
+  const COST_FULL=0.15;
+  const meter=(lbl,detail,cost,why)=>{
+    const key=E.reportBand(cost), c=BANDC[key];
+    const pct=Math.max(4,Math.min(100,Math.round((1-Math.min(1,Math.max(0,cost)/COST_FULL))*100)));
+    /* Three sentences and not one, because a line that PAYS you should say so. Anything
+       inside half a point either way is noise and reads as nothing rather than as a
+       number too small to act on. */
+    const price=cost<=-0.005
+      ? 'adds <b style="color:'+c+'">'+(-cost*100).toFixed(1)+'%</b> to your scoring'
+      : cost<0.005 ? 'costs you nothing'
+      : 'costs you <b style="color:'+c+'">'+(cost*100).toFixed(1)+'%</b> of your scoring';
     return '<div class="meter"><span class="lbl">'+lbl+'</span>'+
       '<span class="det">'+esc(detail)+'</span>'+
-      '<span class="val" style="color:'+b.c+'">'+b.w+'</span>'+
-      '<span class="track"><i style="width:'+pct+'%;background:'+b.c+'"></i></span></div>';
+      '<span class="val" style="color:'+c+'">'+BANDW[key]+'</span>'+
+      '<span class="track"><i style="width:'+pct+'%;background:'+c+'"></i></span>'+
+      '<span class="why">'+esc(why)+' &middot; '+price+'</span></div>';
   };
-  const span=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
-  const fitBand=band(span(st.multiplier,0.82,1.06));
+  const fitKey=E.reportBand(Math.max(0,1-st.multiplier));
+  const fitBand={c:BANDC[fitKey]};
   const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
   const strong='<b style="color:'+fitBand.c+'">';
 
@@ -6936,29 +6803,62 @@ function paintSquad(){
   $('q-scheme-eye').textContent=schemeName?'Offensive scheme':"Coach's take";
   $('q-scheme-badge').hidden=!schemeName;
   $('q-scheme-tagline').hidden=!schemeName;
+  /* THE SENTENCE THAT TIES THE FOUR LINES TOGETHER IS NEVER HIDDEN NOW. It used to be
+     dropped whenever a scheme was detected, which is most good rosters, so the player
+     who reported this saw a badge, a +3%, and four graded lines with nothing anywhere
+     saying what the grades added up to or what the 3% was. The verdict headline is still
+     the scheme's when there is one; only the explaining line always stays. */
   $('q-verdict').hidden=!!schemeName;
+  $('q-fit').innerHTML='<p class="fit">'+(fitPct===0
+    ? 'Add those four up and these six neither help nor hold each other back.'
+    : 'Add those four up: because of how these six fit together they score '+strong+fitPct+'% '+
+      (st.multiplier>1?'more':'less')+'</b> than their own numbers on their own.')+'</p>';
   if(schemeName){
     $('q-scheme-icon').innerHTML=schemeIconSvg(st.scheme);
     $('q-scheme-name').textContent=schemeName;
     $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
     $('q-scheme-bonus').textContent='+'+Math.round((st.schemeBonus||0)*100)+'%';
   }else{
-    $('q-verdict').innerHTML=
-      '<p class="take">'+esc(cr.verdict)+'</p>'+
-      '<p class="fit">'+(fitPct===0
-        ? 'These six neither help nor hold each other back.'
-        : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
-          (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
+    $('q-verdict').innerHTML='<p class="take">'+esc(cr.verdict)+'</p>';
   }
+  /* WHAT GOOD LOOKS LIKE, SAID OUT LOUD, and taken from the engine's own constants so
+     the range quoted here cannot drift from the range being charged against. A number
+     with nothing to compare it to is what made this panel unreadable: "53% run" means
+     nothing until you know a third on the ground is the free range. */
+  const SC=E.STRUCTURE;
+  const pcOf=(v)=>(v*100).toFixed(0)+'%';
+  const runLo=pcOf(SC.IDEAL_RUSH_SHARE-SC.RUSH_SHARE_TOLERANCE);
+  const runHi=pcOf(SC.IDEAL_RUSH_SHARE+SC.RUSH_SHARE_TOLERANCE);
+  const recKept=Math.round(st.qbSupport*100);
+  /* THE LINE IS ABOUT THE PASSING GAME AND NOT ABOUT THE QUARTERBACK, which is the whole
+     of the bug a player reported. Collin Klein 2011 is the 99th percentile of his
+     position at $4.8M, and the panel called him WEAK for the 9 points he throws for
+     while ignoring the 22 he runs for. Those 22 were never in question: they count in
+     full, in the roster's own total. What this line has always charged for is receivers
+     left stranded by a quarterback who does not throw, so it is named for that now, and
+     a runner with nobody to strand costs nothing and says so.
+     The rushing half is still named here, because a line about a quarterback that
+     mentions only a third of what he does is how this went wrong the first time. */
+  const qb=E.findQB(run.roster);
+  const qbRun=qb?(qb.rush_ppg||0):0;
+  const passDet=st.qbPass
+    ? st.qbPass.toFixed(1)+' pass'+(qbRun>=1?', '+qbRun.toFixed(1)+' rush':'')+' a game'
+    : 'nobody throwing it';
+  const passWhy=recKept>=101
+    ? 'your receivers score at '+recKept+'% of their own numbers'
+    : recKept>=99 ? 'your receivers keep all of their own numbers'
+    : 'your receivers score at '+recKept+'% of their own numbers';
   $('q-meters').innerHTML=
-    meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' pass points a game':'nobody at quarterback',
-      span(st.qbSupport,0.70,1.12))+
-    meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
-      1-Math.min(1,Math.abs(st.rushShare-0.34)/0.20))+
-    meter('Spread',(st.topShare*100).toFixed(0)+'% through one player',
-      1-Math.min(1,Math.max(0,st.topShare-0.24)/0.20))+
+    '<p class="mhead">Each line is what that part of the roster does to the six names on '+
+      'it. Costing nothing is the good end.</p>'+
+    meter('Passing game',passDet,costs.pass,passWhy)+
+    meter('Run and pass',
+      (st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
+      costs.balance,'anything from '+runLo+' to '+runHi+' on the ground is free')+
+    meter('Reliance',(st.topShare*100).toFixed(0)+'% through one player',
+      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one man is free')+
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
-      span(st.floorShare,0.14,0.64));
+      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is free');
 
   const strFiltered=schemeName?cr.strengths.filter(t=>!t.startsWith(schemeName)):cr.strengths;
   const notes=[...cr.weaknesses.slice(0,2).map(t=>['bad',t]),

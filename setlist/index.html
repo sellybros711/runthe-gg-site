@@ -604,12 +604,44 @@
       repeating-linear-gradient(90deg, rgba(128,128,128,.04) 0 1px, transparent 1px 4px);}
 
   .song{display:flex; align-items:baseline; justify-content:space-between; gap:9px; width:100%;
-    text-align:left; padding:9px 4px 9px 11px; border-radius:0; background:transparent;
+    text-align:left; padding:9px 4px; border-radius:0; background:transparent;
     border:0; border-bottom:1px solid var(--line); position:relative;
     transition:background var(--t-fast) var(--ease), padding var(--t-fast) var(--ease);}
-  /* The accent, kept as a mark on the sheet rather than a card edge. */
-  .song:before{content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px;
-    background:var(--acc, transparent); border-radius:2px;}
+  /* ---------------- THE TIME BAR ----------------
+     THE ROW'S LENGTH, DRAWN. Running time is the resource the whole game
+     spends, and it was a number you had to read and convert. Now the row
+     carries a bar as wide as the song is long, so a list reads as a shape:
+     the twenty-minute jam is visibly a different object from the three-minute
+     one before you have read a word.
+
+     THE SCALE IS 25 MINUTES, and that is measured rather than picked. Against
+     the archive a 20 minute scale clips 7.2% of songs, 25 clips 1.4% and 30
+     clips 0.3%. 25 is the one that keeps the useful range: the median song
+     fills 41% of the bar and the 5th to 95th percentiles span 17% to 84%, so
+     most of the bar is doing work. The 1.4% that clip are 25-minute-plus
+     monsters, and a bar pinned at full width is the truth about those.
+
+     IT ALSO TAKES OVER FROM THE LEFT ACCENT STRIP. That strip carried the
+     role colour and nothing else; the bar carries the same colour AND the
+     length, so keeping both would be two things saying one thing. */
+  /* THE ELEMENT IS ALWAYS FULL WIDTH AND THE PAINT IS WHAT VARIES, which is
+     not a flourish: `.l` is a wrapping flex row (that is how the sub-line gets
+     a line of its own), and flexbox decides where to break on an item's
+     HYPOTHETICAL main size. Sizing the bar with max-width clamps that
+     hypothetical size too, so a 40% bar does not force a wrap and rides up
+     beside the title on every row that has no sub-line. Full-basis element,
+     background sized to --w, and the break is unconditional. */
+  .tbar{display:block; flex:0 0 100%; height:4px; margin:8px 0 1px;
+    background:color-mix(in srgb, var(--acc, var(--dim)) 42%, transparent);
+    background-size:max(5px, var(--w, 0%)) 100%;
+    background-repeat:no-repeat; border-radius:99px;
+    -webkit-mask:linear-gradient(#000,#000) left center/max(5px, var(--w,0%)) 100% no-repeat;
+    mask:linear-gradient(#000,#000) left center/max(5px, var(--w,0%)) 100% no-repeat;}
+  /* Nothing measures a bar off the end of the row, so the 1.4% that clip say
+     so rather than pretending 25 minutes and 78 minutes look alike. */
+  .tbar.over{background:linear-gradient(90deg,
+      color-mix(in srgb, var(--acc, var(--dim)) 42%, transparent) 82%,
+      color-mix(in srgb, var(--acc, var(--dim)) 95%, transparent) 100%);}
   .song:last-child{border-bottom:0;}
   .song:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
   .song.used{opacity:.36; cursor:not-allowed;}
@@ -687,16 +719,14 @@
      `finishes` DOES take the bar, and only because it is transient and urgent:
      for one round, what this song can do outranks what kind of song it is. */
   .song.finishes{background:color-mix(in srgb,var(--green) 10%, transparent);}
-  .song.finishes:before{background:var(--greenT); width:4px; top:7px; bottom:7px;}
+  .song.finishes .tbar{background:var(--greenT); height:5px;}
   .song.finishes .t{color:var(--greenT);}
   .song.finishes:hover{background:color-mix(in srgb,var(--green) 16%, transparent);}
 
   /* The affordance, NAMED. A glyph alone says "something is different about
      this row"; it does not say what, and it cannot say what it is for. The
      chip is the one place the game gets to use the word. */
-  .chip.opens{background:color-mix(in srgb,var(--violet) 16%, transparent);
-    color:var(--violetT);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--violet) 34%, transparent);}
+  .chip.opens{color:var(--violetT);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
@@ -833,15 +863,27 @@
      annotates in the margin next to the song. */
   .chips{display:inline-flex; gap:4px; flex-wrap:wrap; justify-content:flex-start;
     align-items:center;}
+  /* ---------------- THE DESCRIPTORS ARE TYPE, NOT CONTAINERS ----------------
+     They were filled and outlined pills, and a row of coloured rounded
+     rectangles is the house style of every generated dashboard on earth. It
+     also was not buying anything: measured across all 6,886 rows of the
+     archive, the MEDIAN row carries one descriptor and 74% carry none or one.
+     The pill was never solving a density problem, it was decoration on a
+     single word.
+
+     So the word keeps its colour, which is where all the meaning was, and
+     loses the box. Letterspaced small caps, middot separated, the way a
+     printed setlist or a sleeve note sets the same kind of aside. */
   .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
-    letter-spacing:.7px; text-transform:uppercase; padding:2px 5px; border-radius:4px;
-    background:var(--line); color:var(--mut);}
+    letter-spacing:1.6px; text-transform:uppercase; color:var(--mut);
+    padding:0; background:none; border-radius:0;}
+  .chips{gap:0 !important;}
+  .chip + .chip:before{content:'\00b7'; margin:0 7px; color:var(--line2);
+    letter-spacing:0; font-weight:700;}
   .chip svg{display:block; flex:0 0 auto;}
 
-  /* ROLE — outlined. What the song IS. The left strip on the card carries the
-     same colour, so this is the quiet family. */
-  .chip.acc{background:transparent; color:var(--acc);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
+  /* ROLE. Colour only, which is all it ever carried. */
+  .chip.acc{color:var(--acc);}
 
   /* ...except the peak, which melts. The drip is cut out of the chip's own
      body by an SVG mask, so it stays inside the chip's box and can never reach
@@ -851,27 +893,36 @@
      shouted over every other chip on the row. Same weight as its neighbours
      now, and the melt still reads. The lobes are half as deep as the first
      cut, which was eating into the text. */
-  .chip.acc.peak{background:color-mix(in srgb,var(--acc) 26%, transparent);
-    color:var(--acc); box-shadow:none; padding:2px 6px 5px; border-radius:5px 5px 0 0;
-    -webkit-mask:var(--melt) no-repeat center/100% 100%;
-    mask:var(--melt) no-repeat center/100% 100%;}
+  /* THE MELT GOES WITH THE BOX. It was a drip cut out of the chip's body, and
+     with no body to cut it from there is nothing to melt. A peak is now the
+     word in its own pink like every other role; the drip lives on in the peak
+     chip on the scorecard, which still has a filled shape to carve. */
+  .chip.acc.peak{color:var(--acc);}
 
   /* FLOW — solid green, and both of them are shaped like what they mean.
      A setlist writes a segue as ">", so the segue chip is an arrow pointing
      at the song it lands on. A sandwich is drawn as one: crust on top and
      bottom, filling between, domed like a bun. */
-  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
-    padding-right:11px;
+  /* FLOW. The two that are worth shouting keep a fill, and ONLY these two:
+     they are not descriptions of the song, they are a thing the player can go
+     and do this turn, and they appear on a handful of rows at most. The arrow
+     shape survives because a setlist writes a segue as ">" and the chip still
+     points at the song it lands on. */
+  .chip.seg{background:color-mix(in srgb,var(--green) 22%, transparent); color:var(--greenT);
+    letter-spacing:.9px; padding:2px 11px 2px 6px; border-radius:3px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
-  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px; padding:2px 7px;}
+  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;
+    padding:2px 7px; border-radius:3px;}
+  /* And they need their separator back, since they are boxes among words. */
+  .chip.seg + .chip:before, .chip.sand + .chip:before{margin-left:9px;}
 
-  /* RARITY — solid gold. */
-  .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
+  /* RARITY. */
+  .chip.rare{color:var(--goldT);}
 
   /* MONOTONY — the only chip that warns rather than tempts, so it is the only
      one in red. It has to be on the card BEFORE the pick: a penalty you first
      meet on the scorecard is a gotcha. */
-  .chip.mono{background:color-mix(in srgb,var(--red) 16%, transparent); color:var(--redT);}
+  .chip.mono{color:var(--redT);}
 
   /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
    *
@@ -895,15 +946,18 @@
   /* The dye must SWEEP inside a chip this small, not sit zoomed into one arc
      of it. At 260% a jamchart border showed a single gold edge and read as
      ENCORE; at 100% the whole wheel crosses the chip and it is unmistakable. */
+  /* THE ONE CHIP THAT IS STILL A BADGE, and it is not in the draft list at
+     all: it appears on the PLAYBACK screen, once, on its own line, at the
+     moment the crowd reacts to a version the curators flagged. That is a
+     surface with room, which is exactly the condition the dye needs. It
+     therefore declares the padding the base rule no longer provides. */
   .chip.rec{background:var(--dye); background-size:100% 100%; color:#0A1524;
-    letter-spacing:.9px;}
-  .chip.jc{color:var(--ink); border:1.5px solid transparent; padding:1px 4px;
-    background:linear-gradient(var(--card),var(--card)) padding-box,
-               var(--dye) border-box;
-    background-size:auto, 100% 100%;}
-  .song[aria-pressed="true"] .chip.jc,
-  .slot.sel .chip.jc{background:linear-gradient(var(--card3),var(--card3)) padding-box,
-               var(--dye) border-box;}
+    letter-spacing:.9px; padding:3px 9px; border-radius:4px;}
+  /* ARCHIVE. The dye-bordered box goes with the rest of them, and it is no
+     loss: at 9.5px a five-colour border round four letters was the same smudge
+     the segue arrow was, for the same reason. Gold instead, which is the
+     colour the archive already uses for its other flag, the show gap. */
+  .chip.jc{color:var(--goldT);}
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
@@ -1701,7 +1755,7 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
 <script src="/setlist/auth.js?v=38" defer></script>
-<script src="/setlist/board.js?v=6" defer></script>
+<script src="/setlist/board.js?v=38" defer></script>
 
 <script type="module">
 import {
@@ -1857,6 +1911,11 @@ const S = {
   posted: null,
   ranks: null,
 };
+
+/* What fills the time bar. See the .tbar rule for why 25 minutes and not 20.
+   Here rather than in scoring.js because it changes nothing about the score:
+   it is how long a bar is drawn, and no rule reads it. */
+const TBAR_FULL = 25 * 60;
 
 const app = document.getElementById('app');
 
@@ -2255,6 +2314,10 @@ function renderDraft(){
             ? '<span class="segout" role="img" aria-label="segued into the next song"></span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
           ${oLine}
+          <!-- Decorative: the clock on the right already states the length, so
+               this is hidden from assistive tech rather than read out twice. -->
+          <span class="tbar${lenOf(p) > TBAR_FULL ? ' over' : ''}" aria-hidden="true"
+            style="--w:${Math.min(100, 100 * lenOf(p) / TBAR_FULL).toFixed(1)}%"></span>
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;

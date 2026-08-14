@@ -4539,8 +4539,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=6"></script>
+<script src="board.js?v=17"></script>
 <script src="achievements.js?v=8"></script>
+<!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
+     panel looks the same everywhere and one "don't show this again" covers the lot. -->
+<script defer src="/assets/arcade-ad.js?v=1"></script>
 <script defer src="auth.js?v=2"></script>
 <script>
 (function(){
@@ -5046,6 +5049,11 @@ async function boot(){
        the normal intro. routeChallenge falls back to false on anything it cannot decode. */
     if(!routeChallenge()) show('s-intro');
     ga('game_loaded');
+    /* A beat after the intro lands, because the auth client decides on ITS first change
+       whether it is opening a sheet of its own, and this must not get there first.
+       askArcadeAd() re-reads the screen and the sheet when the timer fires, so the delay
+       is politeness rather than the actual guard. */
+    setTimeout(askArcadeAd,1200);
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -5791,6 +5799,25 @@ function paintResultsPromo(){
     long.textContent=a.dataset.ggLong;
     short.innerHTML=a.dataset.ggShort;
   }
+}
+
+/* ---- RUN THE ARCADE ----
+   The panel itself is /assets/arcade-ad.js: one look and one set of storage keys for every
+   surface on the site, so ticking "don't show this again" anywhere silences it everywhere
+   and nobody is told twice in a sitting. All this game decides is WHEN it is polite to
+   ask, which is the only part that is local knowledge. */
+function askArcadeAd(){
+  const A=window.RTG_ARCADE_AD; if(!A) return;
+  if(A.forced()){ A.show({from:'football'}); return; }
+  if(!A.due()) return;
+  /* The front page, and nothing on top of it. A challenge link takes over the first
+     screen, and a sheet is already open when somebody is mid sign-up or has been sent to
+     the club picker; covering either would replace the thing they asked for with a thing
+     they did not. */
+  if(!$('s-intro').classList.contains('on')) return;
+  if($('sheet').classList.contains('on')) return;
+  if(wantModes||wantOneTeam) return;
+  A.show({from:'football'});
 }
 
 function eraPicker(){
