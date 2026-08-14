@@ -231,6 +231,48 @@ is(_test.isAthlete({ missing: '' }), false, 'endpoint: a missing entity is rejec
 // The college side is exactly what the client has to throw away.
 is(LC.shape(parsed, D).teams.join(','), 'Cincinnati Bengals', 'endpoint+client: college side filtered out');
 
+/* ---------- reported: real answers the game called wrong ----------
+ * From a live card: "Jericho Cotchery" on Played for the New York Jets and
+ * "Julius Erving" on 20,000+ NBA points both came back "No player by that
+ * name" / "Doesn't fit". Cotchery is in none of our files; Erving is, but we
+ * hold no career stats for him. Neither is a wrong answer. */
+LC.clearCache();
+LC.setFetch(async (_u, o) => {
+  const names = JSON.parse(o.body).names.map((n) => n.trim().toLowerCase());
+  const db = {
+    'jericho cotchery': {
+      found: true, qid: 'Q10', name: 'Jericho Cotchery',
+      occupations: ['American football player'], sports: [], positions: ['wide receiver'],
+      colleges: ['North Carolina State University'], awards: [],
+      teams: [
+        { name: 'New York Jets', start: 2004, end: 2010 },
+        { name: 'Pittsburgh Steelers', start: 2011, end: 2012 },
+        { name: 'Carolina Panthers', start: 2014, end: 2015 },
+      ], died: false,
+    },
+    'julius erving': {
+      found: true, qid: 'Q11', name: 'Julius Erving',
+      occupations: ['basketball player'], sports: [], positions: ['small forward'],
+      colleges: ['University of Massachusetts Amherst'], awards: ['Naismith Memorial Basketball Hall of Fame'],
+      teams: [{ name: 'Philadelphia 76ers', start: 1976, end: 1987 }], died: false,
+    },
+  };
+  const players = {}; names.forEach((n) => { players[n] = db[n] || { found: false }; });
+  return { ok: true, json: async () => ({ players }) };
+});
+
+const iJets = catIndexWhere((c) => c.l === 'Played for the New York Jets');
+const iPts  = catIndexWhere((c) => c.l === '20,000+ NBA points');
+const rep = await LC.resolve({ letter: 'J', cats: [{ i: iJets }, { i: iPts }] },
+  [{ i: 0, text: 'Jericho Cotchery' }, { i: 1, text: 'Julius Erving' }], {});
+
+is(rep[0].ok, true, 'reported: Cotchery is confirmed a Jet and scores');
+is(rep[0].player.name, 'Jericho Cotchery', 'reported: scored under his own name');
+// A points threshold is not in any public structured source, so the honest
+// answer stays "we could not verify" — never "wrong".
+is(rep[1].ok, false, 'reported: a points threshold cannot be confirmed live');
+is(rep[1].reason, 'unverified', 'reported: and it is NOT called a wrong answer');
+
 console.log(bad.length ? bad.map((b) => '  FAIL ' + b).join('\n') : '');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

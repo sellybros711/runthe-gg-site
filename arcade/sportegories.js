@@ -98,6 +98,55 @@
     }
   }
 
+  /* Tri-state evaluation: true / false / NULL, where null means a field this
+   * category needs is missing from OUR record — not that the player fails it.
+   *
+   * test() above answers yes/no, which is right for building a puzzle and
+   * wrong for judging an answer. We hold a college for 49% of recognizable
+   * players, an award list for 38%, and a career stat for 12%. Evaluating
+   * those as plain booleans meant "Played college at Virginia" told half the
+   * people who named a correct answer that it "doesn't fit", and a points
+   * threshold told 88% of them. The player is being marked wrong for a hole in
+   * our file.
+   *
+   * Null routes to the live check instead, which can resolve exactly these
+   * fields from a public source (college P69, awards P166, teams P54). So the
+   * game confirms the answer rather than rejecting it.
+   *
+   * Award and stat lists are confirm-only even when present: ours are
+   * incomplete, so a missing Pro Bowl is not evidence it never happened. */
+  function evalTri(p, pr) {
+    if (pr.all) {
+      var unknown = false;
+      for (var i = 0; i < pr.all.length; i++) {
+        var v = evalTri(p, pr.all[i]);
+        if (v === false) return false;          // a real contradiction settles it
+        if (v === null) unknown = true;
+      }
+      return unknown ? null : true;
+    }
+    switch (pr.k) {
+      // always present on every record
+      case 'sport':    return p.sport === pr.v;
+      case 'act':      return !!p.act;
+      case 'decades':  return bitCount(p.decBits) >= pr.min ? true : null;
+      case 'decade':   return p.decBits ? !!(p.decBits & (1 << Math.round((pr.v - D.dec0) / 10))) : null;
+      // present most of the time; absence is not a no
+      case 'pos':      return p.pos ? (p.pos === pr.v) : null;
+      case 'team':     return p.teams.length ? (p.teams.indexOf(pr.v) >= 0) : null;
+      case 'col':      return p.col ? (p.col === pr.v) : null;
+      case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;
+      case 'teams':    return p.teams.length >= pr.min ? true : null;
+      case 'teamsMax': return (!p.tpart && p.teams.length > 0) ? (p.teams.length <= pr.max) : null;
+      // our lists are partial, so they can confirm but never deny
+      case 'award':    return p.aw.indexOf(pr.v) >= 0 ? true : null;
+      case 'awardRe':  return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
+      case 'stat':     return (p.st && p.st[pr.v] != null) ? (p.st[pr.v] >= pr.min) : null;
+      case 'draft1':   return p.dp1 ? true : null;
+      default:         return null;
+    }
+  }
+
   // ---------- rarity ----------
   /* Fame -> the Immaculate-Grid-style "% of players who said this" estimate.
    * Swapped for real crowd data once the daily aggregate exists. */
@@ -296,10 +345,19 @@
       return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
     }
 
-    // among same-named players, take any that satisfies the category
-    var def = D.cats[cat.i], hit = null;
-    for (var i = 0; i < ids.length; i++) { var p = P[ids[i]]; if (test(p, def.p)) { hit = p; break; } }
-    if (!hit) return { ok: false, reason: 'category', msg: 'Doesn’t fit this category.' };
+    // Among same-named players, take any that satisfies the category. A player
+    // we simply lack a field for is not a wrong answer — send it to the live
+    // check rather than calling it one.
+    var def = D.cats[cat.i], hit = null, unsure = false;
+    for (var i = 0; i < ids.length; i++) {
+      var p = P[ids[i]], v = evalTri(p, def.p);
+      if (v === true) { hit = p; break; }
+      if (v === null) unsure = true;
+    }
+    if (!hit) {
+      if (unsure) return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
+      return { ok: false, reason: 'category', msg: 'Doesn’t fit this category.' };
+    }
     if (usedPlayers && usedPlayers[hit.idx]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
 
     // every name-word starting with the letter is a point ("Barry Bonds" = 2)
@@ -353,6 +411,6 @@
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     letterHits: letterHits,
-    test: test, rarityOf: rarityOf, CATS_PER: CATS_PER
+    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER
   };
 });
