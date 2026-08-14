@@ -4640,7 +4640,8 @@ function autoSaveSeason(){
   if(S.daily || !S.season || S.screen!=='season' || !sbSignedIn()) return;
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
-      contracts:S.season.contracts, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
+      contracts:S.season.contracts, briefs:S.season.briefs, briefsDone:S.season.briefsDone,
+      skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
       stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney, _lastStopEvt:S.season._lastStopEvt,
       confidence:S.season.confidence, followers0:S.season.followers0 } } });
 }
@@ -5798,6 +5799,9 @@ const OPPO_NAMES=['Tahoe Championship','Bluegrass Open','Puerto Rico Open','Fall
 function makeOppoEvt(evt){ return {name:OPPO_NAMES[(evt.wk||0)%OPPO_NAMES.length], purse:4*1e6, type:'reg', wk:evt.wk, major:false, big:false, oppo:true, against:evt.name}; }
 // personal exemptions: 5-yr major-champ exemption into majors, 2-yr winner's exemption into signature events
 function playerExempt(evt){ const yr=S.year||1, wl=(S.career&&S.career.winsList)||[];
+  // Immortal Résumé (the career Grand Slam) is a lifetime major exemption - you are never outside a major
+  // field again, however far the ranking slides.
+  if(evt.major && typeof legacyFlag==='function' && legacyFlag('exemptMajor')) return true;
   if(evt.major) return wl.some(w=>w.major && (yr-(w.year||0))<=5);
   return wl.some(w=>(yr-(w.year||0))<=2); }
 // split the season field into the marquee (top entryCap by OWGR, +you if exempt) and the opposite-field rest
@@ -6447,7 +6451,9 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   if(y<DECLINE_START_YEAR) return;                               // still in your prime, nothing fades
   const formMod=1-(c.primeBank/3)*0.25;                          // +3 bank → 0.75×, -3 bank → 1.25×
   const t=clamp((y-DECLINE_START_YEAR)/(DECLINE_FULL_YEAR-DECLINE_START_YEAR),0,1);
-  const ramp=DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN);   // barely anything at 15, keeps steepening to 42
+  // Legacy perks (Ageless, Never Off His Game) SOFTEN the ramp - a great career fades slower, floored so
+  // even a decorated one still fades.
+  const ramp=(DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN)) * (typeof legacyDecline==='function'?legacyDecline():1);
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
@@ -6457,16 +6463,18 @@ function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced 
 const OFF_RESPINS=3;
 function lastCareerSeason(){ const c=(S.circuitMode&&S.circuitCareer)?S.circuitCareer:S.career;
   return (c&&c.seasons&&c.seasons.length)?c.seasons[c.seasons.length-1]:null; }
-function offRespins(){ return OFF_RESPINS; }                 // always 3, no matter what
+// Legacy perks add to BOTH budgets (a decorated career genuinely gets more room to work in the off-season).
+function offRespins(){ return OFF_RESPINS + (typeof legacyAdd==='function'?legacyAdd('respins'):0); }
 function offChanges(){
+  const bonus=(typeof legacyAdd==='function')?legacyAdd('changes'):0;
   const last=lastCareerSeason();
-  if(!last || last.rank==null) return 1;                     // no prior-season data → a single default change
+  if(!last || last.rank==null) return 1+bonus;               // no prior-season data → a single default change
   const w=last.wins||0, mj=last.majors||0, r=last.rank;
   let wr=999; try{ wr=myWorldRank(); }catch(e){}
-  if(mj>=1 || w>=2 || wr<=5) return 3;      // a major / multi-win / world top-5
-  if(w>=1 || r<=10 || wr<=20) return 2;     // a win / top-10 on the money list / world top-20
-  if(r<=40 || wr<=60) return 1;             // a solid money + ranking season
-  return 0;                                  // a poor season earns none
+  if(mj>=1 || w>=2 || wr<=5) return 3+bonus;  // a major / multi-win / world top-5
+  if(w>=1 || r<=10 || wr<=20) return 2+bonus; // a win / top-10 on the money list / world top-20
+  if(r<=40 || wr<=60) return 1+bonus;         // a solid money + ranking season
+  return 0+bonus;                             // a poor season earns none (legacy still counts)
 }
 // a short human note: re-spins are always 3; changes are earned by last season's finish.
 function offBudgetNote(){
@@ -7040,6 +7048,9 @@ function seasonBonusCoins(){
 // (PASS_XP_SEASON), while the hard-capped daily/spotlight/online faucets pay in full. Without that,
 // season-farming was worth several tiers a run and dwarfed every other way of climbing.
 function awardPlayCoins(n, label, xpMult){ if(!sbSignedIn()||!(n>0)) return 0;
+  // Legacy perks (Money Machine, Dynasty Year...) pay a career better. Applied BEFORE base is captured so
+  // the Track earns from it too - it is a career accomplishment, not a purchased multiplier.
+  try{ if(typeof legacyMul==='function'){ const lm=legacyMul('coin'); if(lm>1) n=Math.round(n*lm); } }catch(e){}
   var base=n;   // Tour Pass XP is earned from the BASE (pre-mult) amount, so the Pro coin mult never double-dips XP
   var mult=passRewardMult(), passBonus=mult>1;   // Tour Pass holders earn bigger & better
   if(passBonus){ n=Math.round(n*mult); }
@@ -14404,6 +14415,7 @@ function startSeason(majorsOnly){
   // card before the first event (once per career, since the start year is fixed per save).
   S.pendingTourNews=(!S.daily && !S.circuitMode && (S.year||1)===bracketStartYear(S.careerSeed)) ? 'bracket' : null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
+  S.legacyFresh=[];   // legacy perks earned THIS season, celebrated on the summary
   S._bannerNet=null; S._bannerFans=null; S._bannerNetDir=0; S._bannerFansDir=0; S._confBar=null; S._respBar=null;   // CS284/285/434/476: reset the banner count-up + arrow-direction + meter-glide baselines so a new season's first render doesn't animate/arrow from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; S.career.story._beatsYr=0; S.career.story.lastBeat=-99; }   // reset the per-season storyline cap (CS225) + the DECISIONS-this-year counter + the stale cross-season gap tracker (lastBeat stored an ABSOLUTE evtIndex from LAST season, which blocked this season's early beats)
@@ -14618,7 +14630,10 @@ const CONF_START=50, FOLLOWERS_START=2500, CONF_EO_MAX=0.7;
 // hundreds of millions. WINNING MAJORS and on/off-course DECISIONS are the biggest fan drivers (see
 // resultMomentum / momentDecisionStakes / the press-conference + dilemma handlers).
 const FOLLOWERS_SOFT=8e6;
-function confClamp(v){ return Math.max(0, Math.min(100, v)); }
+// Legacy perks (The Immortal, The Closer, Untouchable...) set a FLOOR on confidence: a golfer with that
+// on their CV stops being rattled by a bad month. Career only; the floor is 0 everywhere else.
+function confClamp(v){ const lo=(typeof legacyFloor==='function')?legacyFloor('confFloor'):0;
+  return Math.max(lo, Math.min(100, Math.max(0, v))); }
 function seasonConf(){ return (S.season && S.season.confidence!=null) ? S.season.confidence : CONF_START; }
 function adjConf(d){ if(!S.season) return; S.season.confidence=confClamp((S.season.confidence!=null?S.season.confidence:CONF_START)+d); }
 function confEo(){ return ((seasonConf()-50)/50)*CONF_EO_MAX; }   // ±0.7 OVR-equiv nudge for the player only; 0 at neutral
@@ -14628,8 +14643,11 @@ function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers|
   const damp=FOLLOWERS_SOFT/(FOLLOWERS_SOFT+Math.max(0,cur));   // CS301: % growth tapers as you get big
   // CS401: the damp only slows GROWTH. LOSSES (a negative pct - missed cut, PR backfire) apply the FULL
   // percentage so a big star can genuinely fall from grace (a 0.5% dip / 5-10% backfire hits at any size).
-  const ep = (pct>0) ? pct*damp : (pct||0);
-  const add=Math.round(cur*ep+(flat||0));
+  // Legacy perks (Number One, People's Champion, The Prodigy) grow your following faster. Applied to
+  // GAINS only, never to losses - a perk should not make a fall from grace hurt more.
+  const losing=(pct||0)<0, lm=losing?1:((typeof legacyMul==='function')?legacyMul('fan'):1);
+  const ep = (pct>0) ? pct*damp*lm : (pct||0);
+  const add=Math.round(cur*ep+(flat||0)*lm);
   // CS397: no ceiling - fans grow uncapped; a loss (add<0) still applies, floored at 0.
   s.followers=Math.max(0, cur+add); return add; }
 function fmtFollowers(n){ n=Math.round(n||0);
@@ -15046,6 +15064,206 @@ const STORYLINES=[
   ch:[{t:'Become the face of the game',s:'Transcend the sport',tr:'showman',fansD:6,respD:1,fan:1,fol:0.1,r:'Billboards, ad breaks, the lot. You’re a household name now.',head:'Became the crossover face of the game'},
       {t:'Keep golf at the center',s:'Stay grounded',tr:'humble',respD:5,fansD:2,conf:0.2,r:'You take the deal but keep the main thing the main thing. Everyone respects it more.',head:'Went global without losing the plot'}]}
 ];
+
+/* ==================== CAREER LEGACY ====================
+   The complaint this answers: a career ACCUMULATES numbers but the numbers never DO anything. You could
+   win all four majors in one year and the game would hand you an achievement tick and carry on exactly
+   as before. So landmark feats now leave a PERMANENT mark on the career they were earned in - a named
+   perk with a real mechanical effect on how the rest of that career plays.
+
+   Deliberately PER-CAREER, not lifetime. "Impact your career" means the career you did it in: you earn
+   the perk, it changes the road ahead, and a new golfer has to earn it again. That also keeps each
+   career shaped differently, which is the opposite of stale.
+
+   The effects are mostly STRUCTURAL and ECONOMIC (off-season budget, how fast you fade, sponsor
+   leverage, coins, fans) rather than raw skill, because the sim's difficulty has been tuned repeatedly
+   and handing out stat points would undo it. Only the apex feat touches skill, and only by a point.
+   Every aggregate is capped (see LEGACY_CAPS) so a 30-year great can't compound into invincibility.
+
+   Detected at BOTH event finalize (feats that land mid-season) and the season record (season-scoped
+   ones); when() reads live state and already-earned perks are skipped, so it is safe to run often.
+   A mid-season unlock TOASTS and queues its card for the season summary - it never opens a modal
+   mid-sim, because the interruption budget is 2 a season by design.                                   */
+const LEGACY_CAPS={changes:3, respins:2, decline:0.62, coin:1.6, fan:1.5, sponsorTier:2};
+const LEGACY_PERKS=[
+  // ---- APEX: the two rarest things a golfer can do ----
+  {id:'slam', icon:'👑', tier:'apex', name:'The Immortal', feat:'Win all four majors in a single season',
+   blurb:'The rarest year in golf. Nobody who watched it will talk about you the same way again.',
+   eff:{skill:{clu:1}, changes:1, confFloor:60, sponsorTier:2},
+   when:c=>c.seasonSlam},
+  {id:'cslam', icon:'🏛️', tier:'apex', name:'Immortal Résumé', feat:'Win all four majors across your career',
+   blurb:'Every trophy that matters, on one shelf. The majors stop being a question of whether you belong.',
+   eff:{exemptMajor:true, changes:1},
+   when:c=>c.careerSlam},
+
+  // ---- LANDMARK ----
+  {id:'no1', icon:'🥇', tier:'major', name:'Number One', feat:'Reach World No. 1',
+   blurb:'Top of the ranking. Boardrooms notice long before the public does.',
+   eff:{sponsorTier:1, fan:1.15},
+   when:c=>c.worldNo1},
+  {id:'dynasty', icon:'🔥', tier:'major', name:'Dynasty Year', feat:'Win four times in one season',
+   blurb:'A season that stops being a run and starts being an era.',
+   eff:{respins:1, coin:1.10},
+   when:c=>c.seasonWins>=4},
+  {id:'streak', icon:'⚡', tier:'major', name:'Untouchable', feat:'Win three tournaments in a row',
+   blurb:'The field stops playing the course and starts playing you.',
+   eff:{confFloor:55, coin:1.06},
+   when:c=>c.winStreak>=3},
+  {id:'cup', icon:'🏆', tier:'major', name:'The Closer', feat:'Win the Tour Cup',
+   blurb:'A whole season funnelled into one Sunday, and you took it.',
+   eff:{confFloor:52, coin:1.08},
+   when:c=>c.cupChampion},
+  {id:'ageless', icon:'⏳', tier:'major', name:'Ageless', feat:'Win a tournament at 40 or older',
+   blurb:'The body is supposed to be going. Somebody forgot to tell you.',
+   eff:{decline:0.85},
+   when:c=>c.wonAt40},
+  {id:'ironman', icon:'🛡️', tier:'major', name:'Never Off His Game', feat:'Make every cut in a 15+ event season',
+   blurb:'A whole year without a bad week. That is a body of work, not a hot streak.',
+   eff:{decline:0.9, confFloor:48},
+   when:c=>c.cleanSeason},
+  {id:'money', icon:'💰', tier:'major', name:'Money Machine', feat:'Top the money list',
+   blurb:'Best year on tour, in the only column the accountants read.',
+   eff:{coin:1.15, sponsorTier:1},
+   when:c=>c.moneyTitle},
+  {id:'prodigy', icon:'🌱', tier:'major', name:'The Prodigy', feat:'Win a major within your first five years',
+   blurb:'You did it before anyone had a chance to call you overdue.',
+   eff:{changes:1, fan:1.15},
+   when:c=>c.earlyMajor},
+  {id:'beloved', icon:'📣', tier:'major', name:"People's Champion", feat:'Reach 78 popularity',
+   blurb:'The gallery moves when you move. Sponsors pay for that and fans give it away.',
+   eff:{fan:1.2, coin:1.06},
+   when:c=>c.fans>=78},
+  {id:'stateman', icon:'🎖️', tier:'major', name:'Elder Statesman', feat:'Reach 78 respect',
+   blurb:'The locker room listens when you speak. That buys you room nothing else does.',
+   eff:{confFloor:50, sponsorTier:1},
+   when:c=>c.respect>=78},
+];
+const LEGACY_BY_ID={}; LEGACY_PERKS.forEach(p=>LEGACY_BY_ID[p.id]=p);
+
+function legacyOn(){ return !S.daily && !S.circuitMode && !!S.career; }
+function careerLegacy(){ const c=(S.career=S.career||{}); if(!Array.isArray(c.legacy)) c.legacy=[]; return c.legacy; }
+function hasLegacy(id){ return careerLegacy().indexOf(id)>=0; }
+function legacyEarned(){ if(!legacyOn()) return []; return careerLegacy().map(id=>LEGACY_BY_ID[id]).filter(Boolean); }
+// additive effects (off-season changes / re-spins / sponsor tier), capped in aggregate
+function legacyAdd(key){ if(!legacyOn()) return 0;
+  const n=legacyEarned().reduce((s,p)=>s+((p.eff&&p.eff[key])||0),0);
+  return LEGACY_CAPS[key]!=null?Math.min(LEGACY_CAPS[key],n):n; }
+// multiplicative effects (coins / fans) - compound, capped
+function legacyMul(key){ if(!legacyOn()) return 1;
+  let m=1; legacyEarned().forEach(p=>{ const v=p.eff&&p.eff[key]; if(v) m*=v; });
+  return LEGACY_CAPS[key]!=null?Math.min(LEGACY_CAPS[key],m):m; }
+// decline SOFTENERS multiply down, floored so a decorated career still fades
+function legacyDecline(){ if(!legacyOn()) return 1;
+  let m=1; legacyEarned().forEach(p=>{ const v=p.eff&&p.eff.decline; if(v) m*=v; });
+  return Math.max(LEGACY_CAPS.decline, m); }
+function legacyFloor(key){ if(!legacyOn()) return 0;
+  return legacyEarned().reduce((s,p)=>Math.max(s,(p.eff&&p.eff[key])||0),0); }
+function legacyFlag(key){ return legacyOn() && legacyEarned().some(p=>p.eff&&p.eff[key]); }
+
+/* What the perks are checked against. Everything here is read live from career + season state, so a
+   perk can never be "missed" by being checked at the wrong moment - only granted once. */
+function legacyCtx(){
+  const c=S.career||{}, s=S.season, t=(s&&s.totals&&s.me)?s.totals[s.me.name]:null, ms=c.majorStats||{};
+  const wl=c.winsList||[], yr=S.year||1;
+  const majNames=Object.keys(MAJOR_KEYS||{});   // MAJOR_KEYS is a name→short-key MAP, not a list
+  // all four majors won THIS season
+  const thisYearMajors=new Set(wl.filter(w=>w.major&&w.year===yr).map(w=>w.name));
+  // in-season wins list (the season record block only writes winsList at season end, so read results too)
+  const seasonWinNames=[]; let streak=0, best=0;
+  if(s&&s.results) s.results.forEach(r=>{ if(!r||!r.order) return; const me=r.order.find(o=>o.p&&o.p.you);
+    const won=!!(me&&me.pos===1); if(won){ seasonWinNames.push(r.evt.name); streak++; best=Math.max(best,streak); } else if(me) streak=0; });
+  seasonWinNames.forEach((n,i)=>{ const r=s.results.find(x=>x&&x.evt&&x.evt.name===n); if(r&&r.evt.major) thisYearMajors.add(n); });
+  const rep=(c.story&&c.story.rep)||{};
+  let wr=999; try{ wr=myWorldRank(); }catch(e){}
+  const seasonWins=t?t.wins:seasonWinNames.length;
+  return {
+    seasonSlam: majNames.every(n=>thisYearMajors.has(n)),
+    // read BOTH the aggregate and the raw wins list: majorStats is only written at the season record, so
+    // a slam completed by winning the fourth major mid-season would otherwise go unnoticed until September
+    careerSlam: majNames.every(n=>(ms[n]&&ms[n].wins>0) || wl.some(w=>w.major&&w.name===n) || thisYearMajors.has(n)),
+    worldNo1: wr===1 || (c.awards&&c.awards.no1>0),
+    seasonWins, winStreak:best,
+    cupChampion: !!(s&&s.cupYouWon),
+    wonAt40: wl.some(w=>(START_AGE+((w.year||1)-1))>=40) || (seasonWins>0 && playerAge()>=40),
+    cleanSeason: !!(t && t.played>=15 && t.made===t.played),
+    // the money title is only real once the season's awards are settled, so it reads the awards, not a
+    // mid-season money-list lead
+    moneyTitle: !!(S.seasonAwards && S.seasonAwards.money && S.seasonAwards.money.you),
+    earlyMajor: wl.some(w=>w.major && (w.year||1)<=5),
+    fans: rep.fans||0, respect: rep.respect||0,
+  };
+}
+/* Grant anything newly earned. Returns the perks granted (so the caller can toast/celebrate). Runs at
+   event finalize AND at the season record; every when() is a live read, so it is idempotent. */
+function checkCareerLegacy(){
+  if(!legacyOn()) return [];
+  let ctx; try{ ctx=legacyCtx(); }catch(e){ return []; }
+  const got=[];
+  for(const p of LEGACY_PERKS){
+    if(hasLegacy(p.id)) continue;
+    let ok=false; try{ ok=!!p.when(ctx); }catch(e){ ok=false; }
+    if(!ok) continue;
+    careerLegacy().push(p.id);
+    // the apex perk's skill bump rides the existing temp-effect system with no expiry, so it shows on
+    // the build screen, moves the sim through careerFxEo, and needs no separate plumbing
+    if(p.eff.skill) for(const k in p.eff.skill) addFx({k:'skill', skill:k, amt:p.eff.skill[k], ev:null, label:p.name});
+    got.push(p);
+    try{ const st=careerStory(); st.feed.unshift({year:S.year||1, evt:'Legacy', text:p.name+' · '+p.feat}); if(st.feed.length>60) st.feed.length=60; }catch(e){}
+    try{ track('legacy_unlock',{id:p.id, year:S.year||1}); }catch(e){}
+  }
+  if(got.length){
+    // queue the cards for the season summary; a mid-sim unlock gets a toast now and the moment later
+    S.legacyFresh=(S.legacyFresh||[]).concat(got.map(p=>p.id));
+    try{ if(S.screen==='season') toast(got.map(p=>`${p.icon} ${p.name} unlocked`).join(' · '), 4200); }catch(e){}
+  }
+  return got;
+}
+/* The unlock moment. A legacy perk is rare and permanent, so it gets a real card on the season summary
+   (never a mid-sim modal). Apex feats get the full treatment; the rest a clean gold card. */
+function legacyFreshNode(){
+  const ids=(S.legacyFresh||[]).filter(id=>LEGACY_BY_ID[id]); if(!ids.length) return null;
+  const cards=ids.map(id=>{ const p=LEGACY_BY_ID[id], apex=p.tier==='apex';
+    return `<div style="padding:14px;border-radius:16px;margin-top:10px;border:1px solid ${apex?'rgba(241,208,74,.75)':'rgba(241,208,74,.42)'};
+      background:${apex?'linear-gradient(160deg,rgba(241,208,74,.22),rgba(241,208,74,.05))':'linear-gradient(160deg,rgba(241,208,74,.12),rgba(241,208,74,.03))'};
+      ${apex?'box-shadow:0 0 34px rgba(241,208,74,.22)':''}">
+      <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.16em">${apex?'A CAREER-DEFINING YEAR':'LEGACY UNLOCKED'}</div>
+      <div style="font-size:34px;line-height:1.1;margin:6px 0 2px">${p.icon}</div>
+      <div style="font-family:var(--display);font-size:${apex?26:22}px;color:var(--gold);letter-spacing:.01em">${esc(p.name)}</div>
+      <div class="small" style="color:var(--oncard);margin-top:3px;letter-spacing:0">${esc(p.feat)}</div>
+      <div class="small muted" style="margin:7px 0 9px;letter-spacing:0;font-style:italic">${esc(p.blurb)}</div>
+      <div style="padding:8px 10px;border-radius:11px;background:rgba(0,0,0,.28);border:1px solid rgba(53,214,160,.32)">
+        <div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:.12em">FOR THE REST OF THIS CAREER</div>
+        <div class="small" style="color:var(--oncard);margin-top:3px;letter-spacing:0">${esc(legacyEffectLine(p))}</div>
+      </div></div>`; }).join('');
+  return $(`<div style="max-width:520px;margin:0 auto">${cards}</div>`);
+}
+// the permanent list: what this career has earned so far (summary Career tab + the career ceremony)
+function legacyListHTML(){
+  const earned=legacyEarned(); if(!earned.length) return '';
+  const rows=earned.map(p=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)">
+    <span style="flex:0 0 auto;font-size:17px">${p.icon}</span>
+    <div style="flex:1;min-width:0;text-align:left">
+      <div class="small" style="color:var(--gold);font-weight:800;letter-spacing:0">${esc(p.name)}</div>
+      <div class="small muted" style="letter-spacing:0">${esc(legacyEffectLine(p))}</div>
+    </div></div>`).join('');
+  return `<div class="tile" style="max-width:520px;margin:10px auto 0">
+    <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.14em">CAREER LEGACY · ${earned.length} of ${LEGACY_PERKS.length}</div>
+    <div class="small muted" style="margin:2px 0 2px;letter-spacing:0">Permanent perks this golfer earned on the course.</div>
+    ${rows}</div>`;
+}
+function legacyEffectLine(p){
+  const e=p.eff||{}, out=[];
+  if(e.skill) out.push(fxSkillLine({skill:e.skill})+' permanently');
+  if(e.changes) out.push('+'+e.changes+' off-season change'+(e.changes>1?'s':''));
+  if(e.respins) out.push('+'+e.respins+' off-season re-spin'+(e.respins>1?'s':''));
+  if(e.decline) out.push('You fade '+Math.round((1-e.decline)*100)+'% slower');
+  if(e.confFloor) out.push('Confidence never drops below '+e.confFloor);
+  if(e.coin) out.push('+'+Math.round((e.coin-1)*100)+'% coins');
+  if(e.fan) out.push('+'+Math.round((e.fan-1)*100)+'% fan growth');
+  if(e.sponsorTier) out.push('Sponsors treat you '+e.sponsorTier+' tier'+(e.sponsorTier>1?'s':'')+' higher');
+  if(e.exemptMajor) out.push('Exempt into every major for life');
+  return out.join(' · ');
+}
 
 /* ==================== CAREER DILEMMAS (CS325) ====================
    Specific, situational risk/reward decisions across a pro's whole life - with WEIGHTED RANDOM OUTCOMES
@@ -16029,7 +16247,11 @@ function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
   const ov=Math.max(0,Math.min(35,(ovr-78)*2.2));
   const av=Math.min(30,(c.wins||0)*1.4+(c.majors||0)*4);
   return fv+ov+av; }
-function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i; return t; }
+// Legacy perks (Number One, Money Machine, The Immortal) are LEVERAGE: brands court a golfer with that
+// résumé above what their following alone would earn.
+function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i;
+  try{ if(typeof legacyAdd==='function') t+=legacyAdd('sponsorTier'); }catch(e){}
+  return Math.max(0, Math.min(SPONSOR_TIERS.length-1, t)); }
 // ensure a committed sponsor relationship exists (migrate a legacy lastContract, else seed an entry deal)
 // CS236: TWO sponsor slots, a HAT sponsor and a SHIRT sponsor. Each is its own deal (own brand, tier,
 // relationship, goals, rewards); their logos are worn on the cap + chest. Since a fully-sponsored player
@@ -16378,6 +16600,203 @@ function contractStripNode(){
   det.addEventListener('toggle', ()=>{ S.sponsorsOpen=det.open; });
   return det;
 }
+/* ==================== SPONSOR BRIEFS ====================
+   The stale half of the sponsor system was that a deal was six season-long stat thresholds that ticked
+   along in the background and paid out in September. Nothing to act on, nothing to feel, nothing mid-season.
+
+   A BRIEF is the opposite: a short, specific ask from your brand, scoped to a WINDOW of the next few
+   starts ("two top-10s in your next three"), tracked live, paying the moment you deliver - coins AND a
+   temporary stat boost you actually carry into the next event. It turns the sponsor from a spreadsheet
+   into somebody who wants something from you this month.
+
+   Deliberately AMBIENT: briefs are issued, tracked and paid with a strip and a toast, never a modal. The
+   in-season interruption budget is 2 a season by design and this must not spend a single one of them.
+
+   Missing one costs nothing but the reward - the brand shrugs and asks for something else later. The
+   carrot is the whole mechanic; the season contract is still where the pressure lives.                  */
+// Measured over 10-year careers: at 4 per slot a brief was running almost every week, which turns a
+// standing ask into wallpaper. Three per slot with a two-event gap lands around one every three or four
+// starts, so the strip appearing still means something.
+const BRIEF_MAX_PER_SLOT=3;
+const BRIEF_COOLDOWN=2;        // clean events between one brief ending and the next arriving
+
+/* Each template knows how to size itself to the player and how to read its own progress. `win` is the
+   window in STARTS; `d` is difficulty, which sets the reward. `fit` lets a brand's personality bias what
+   it asks for (a performance brand wants a win, a patient one wants consistency). */
+const BRIEF_KINDS=[
+  {id:'top10', d:0.35, win:3, traits:['steady','loyal','patient','marketing'],
+   make:c=>({target:c.strong?2:1, boost:'app'}),
+   label:b=>`${b.target===1?'A top-10':b.target+' top-10s'} in your next ${b.win} starts`},
+  {id:'cuts',  d:0.25, win:4, traits:['patient','loyal','steady'],
+   make:c=>({target:4, boost:'clu'}),
+   label:b=>`Make the cut in all of your next ${b.win} starts`},
+  {id:'win',   d:0.95, win:5, traits:['performance','demanding','marketing'],
+   make:c=>({target:1, boost:'put'}),
+   label:b=>`Win a tournament in your next ${b.win} starts`},
+  {id:'low',   d:0.55, win:3, traits:['performance','demanding'],
+   make:c=>({target:c.strong?-6:-4, boost:'app'}),
+   label:b=>`Post a round of ${Math.abs(b.target)} under or better in your next ${b.win}`},
+  {id:'under', d:0.45, win:3, traits:['steady','patient'],
+   make:c=>({target:2, boost:'sht'}),
+   label:b=>`Finish under par in ${b.target} of your next ${b.win} starts`},
+  {id:'top5',  d:0.70, win:4, traits:['demanding','performance','marketing'],
+   make:c=>({target:1, boost:'dist'}),
+   label:b=>`A top-5 finish in your next ${b.win} starts`},
+  {id:'rival', d:0.60, win:3, traits:['marketing','demanding','performance'],
+   need:()=>!!(S.career&&S.career.rival), boost:'clu',
+   make:c=>({target:2, boost:'clu'}),
+   label:b=>`Finish ahead of ${esc(b.rival||'your rival')} ${b.target} times in your next ${b.win}`},
+];
+const BRIEF_BY_ID={}; BRIEF_KINDS.forEach(k=>BRIEF_BY_ID[k.id]=k);
+/* Reward scales with difficulty: coins you feel, plus a real (temporary) edge in the next few starts.
+   The coin figure is deliberately in the same league as the whole season reward rather than above it -
+   an early cut paid an elite season ~7.4k from briefs alone, which quietly made the sponsor the biggest
+   coin faucet in the game. The STAT BOOST is meant to be the part you feel; the coins are a bonus. */
+function briefReward(d, strong){
+  const coins=Math.round((250+d*850)*(strong?1.15:1)/50)*50;
+  const amt=d>=0.8?4:d>=0.5?3:2, ev=d>=0.8?4:3;
+  return {coins, amt, ev};
+}
+function seasonBriefs(){ if(!S.season) return []; if(!Array.isArray(S.season.briefs)) S.season.briefs=[]; return S.season.briefs; }
+function briefsOn(){ return !S.daily && !S.circuitMode && !!S.career && !!S.season; }
+function activeBriefs(){ return seasonBriefs().filter(b=>b.state==='active'); }
+function briefFor(slot){ return activeBriefs().find(b=>b.slot===slot)||null; }
+// the window's played events: schedule positions ev0 .. ev0+win-1 that have actually been played
+function briefWindow(b){
+  const out=[], res=(S.season&&S.season.results)||[];
+  for(let i=b.ev0;i<b.ev0+b.win;i++){ const r=res[i]; if(!r||!r.order) continue;
+    const me=r.order.find(o=>o.p&&o.p.you); if(me) out.push({r, me}); }
+  return out;
+}
+function briefProg(b){
+  const w=briefWindow(b), played=w.length;
+  const posOf=x=>(x.me.pos==='CUT')?999:x.me.pos;
+  let cur=0, dead=false;
+  switch(b.kind){
+    case 'top10': cur=w.filter(x=>posOf(x)<=10).length; break;
+    case 'top5':  cur=w.filter(x=>posOf(x)<=5).length; break;
+    case 'win':   cur=w.filter(x=>x.me.pos===1).length; break;
+    case 'cuts':  cur=w.filter(x=>x.me.pos!=='CUT').length; dead=w.some(x=>x.me.pos==='CUT'); break;
+    case 'under': cur=w.filter(x=>x.me.total!=null&&x.me.total<0).length; break;
+    case 'low':   cur=w.filter(x=>[x.me.r1,x.me.r2,x.me.r3,x.me.r4].some(r=>r!=null&&Math.round(r)<=b.target)).length; break;
+    case 'rival': cur=w.filter(x=>{ const rv=x.r.order.find(o=>o.p&&o.p.name===b.rival); if(!rv) return false;
+                    const rp=(rv.pos==='CUT')?999:rv.pos; return posOf(x)<rp; }).length; break;
+  }
+  const need=(b.kind==='low')?1:b.target;
+  const done=cur>=need;
+  // can it still be reached with the starts that are left in the window?
+  const left=b.win-played;
+  if(!done && (dead || cur+left<need)) return {cur, need, done:false, dead:true, played, left, pct:Math.round(cur/need*100)};
+  return {cur, need, done, dead:false, played, left, pct:Math.min(100,Math.round(cur/Math.max(1,need)*100))};
+}
+function briefProgText(b){
+  const p=briefProg(b);
+  if(b.kind==='low') return p.done?'Posted it':`best round so far · ${p.played} of ${b.win} played`;
+  if(b.kind==='cuts') return `${p.cur} / ${b.win} cuts made`;
+  return `${p.cur} / ${p.need} · ${p.played} of ${b.win} played`;
+}
+/* Issue + settle briefs. Called once per event from advanceEvent (so it runs in the interactive sim AND
+   in skipToEnd / finishSeasonHeadless, which both funnel through it). Seeded per (career, year, event,
+   slot) so a mid-season save/resume never rerolls what the brand asked for. */
+function tickBriefs(){
+  if(!briefsOn()) return [];
+  const finished=[];
+  // ---- settle what is live ----
+  for(const b of seasonBriefs()){
+    if(b.state!=='active') continue;
+    const p=briefProg(b);
+    if(p.done){
+      b.state='done'; b.at=S.evtIndex;
+      const rw=b.reward||{};
+      if(rw.amt) addFx({k:'skill', skill:b.boost, amt:rw.amt, ev:rw.ev, label:b.brand});
+      if(rw.coins) try{ awardPlayCoins(rw.coins, b.brand+' brief'); }catch(e){}
+      S.season.briefsDone=S.season.briefsDone||{};
+      S.season.briefsDone[b.slot]=(S.season.briefsDone[b.slot]||0)+1;
+      try{ careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Delivered on a ${b.brand} brief`}); }catch(e){}
+      try{ track('brief_done',{kind:b.kind, slot:b.slot}); }catch(e){}
+      finished.push(b);
+    } else if(p.dead || p.played>=b.win){
+      b.state='missed'; b.at=S.evtIndex;
+      try{ track('brief_missed',{kind:b.kind, slot:b.slot}); }catch(e){}
+    }
+  }
+  if(finished.length){
+    try{ toast(finished.map(b=>{ const rw=b.reward||{};
+      return `${b.brand} brief delivered · +${coinFmt(rw.coins||0)} coins · +${rw.amt} ${CAT_LABEL[b.boost]||b.boost}`;
+    }).join('<br>'), 4600); }catch(e){}
+  }
+  // ---- issue what is missing ----
+  const sponsors=(typeof ensureSponsors==='function')?ensureSponsors():{};
+  const nEvents=(S.schedule||[]).length;
+  SPONSOR_SLOTS.forEach((slot,si)=>{
+    const sp=sponsors[slot]; if(!sp||!sp.brand) return;
+    if(briefFor(slot)) return;
+    const mine=seasonBriefs().filter(b=>b.slot===slot);
+    if(mine.length>=BRIEF_MAX_PER_SLOT) return;
+    const last=mine.length?mine[mine.length-1]:null;
+    if(last && last.at!=null && (S.evtIndex-last.at)<BRIEF_COOLDOWN) return;
+    const ev0=S.evtIndex+1;
+    if(ev0>=nEvents) return;                                  // season is over
+    const room=nEvents-ev0;
+    const rng=mulberry32((((S.careerSeed||1)>>>0)^Math.imul((S.year||1),0x9e3779b1)^Math.imul(ev0+1,0x85ebca6b)^(si?0x53b1:0x48a7))>>>0);
+    const tr=(typeof brandInfo==='function')?(brandInfo(sp.brand).trait||'steady'):'steady';
+    const me=S.season.me, ovr=me?Math.round(me.skill||82):82, strong=ovr>=86;
+    // a brand asks for what a brand of its personality would ask for, but never something the calendar
+    // cannot fit
+    let pool=BRIEF_KINDS.filter(k=>k.win<=room && (!k.need||k.need()));
+    if(!pool.length) return;
+    const fav=pool.filter(k=>k.traits&&k.traits.indexOf(tr)>=0);
+    if(fav.length && rng()<0.7) pool=fav;
+    const k=pool[Math.floor(rng()*pool.length)%pool.length];
+    const made=k.make({strong, ovr});
+    const b={id:k.id+'-'+ev0+'-'+slot, kind:k.id, slot, brand:sp.brand, ev0, win:k.win,
+             target:made.target, boost:made.boost||'clu', state:'active',
+             rival:(S.career&&S.career.rival&&S.career.rival.name)||null,
+             reward:briefReward(k.d, strong)};
+    b.label=k.label(b);
+    seasonBriefs().push(b);
+    try{ track('brief_issued',{kind:b.kind, slot}); }catch(e){}
+    try{ toast(`${esc(b.brand)} wants something: ${b.label}`, 4200); }catch(e){}
+  });
+  return finished;
+}
+// the live strip: only rendered while a brief is actually running, so it is never permanent chrome
+function briefStripNode(){
+  if(!briefsOn()) return null;
+  const act=activeBriefs(); if(!act.length) return null;
+  const rows=act.map(b=>{ const p=briefProg(b), rw=b.reward||{};
+    const left=Math.max(0,b.win-p.played);
+    return `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid rgba(255,255,255,.07)">
+      ${brandLogoSVG(b.brand,20)}
+      <div style="flex:1;min-width:0;text-align:left">
+        <div class="small" style="color:var(--oncard);font-weight:700;letter-spacing:0">${b.label}</div>
+        <div class="small muted" style="letter-spacing:0">${briefProgText(b)} · ${left} start${left===1?'':'s'} left</div>
+      </div>
+      <div style="flex:0 0 auto;text-align:right">
+        <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">${coinFmt(rw.coins||0)}</div>
+        <div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:0">+${rw.amt} ${CAT_LABEL[b.boost]||b.boost}</div>
+      </div></div>`; }).join('');
+  return $(`<div style="max-width:560px;margin:0 auto 10px;padding:8px 12px 10px;border:1px solid rgba(95,208,224,.34);background:linear-gradient(180deg,rgba(95,208,224,.10),rgba(95,208,224,.03));border-radius:14px">
+    <div class="small" style="color:#5fd0e0;font-weight:800;letter-spacing:.14em;text-align:left">SPONSOR BRIEF${act.length>1?'S':''}</div>
+    ${rows}</div>`);
+}
+// what the briefs did for you this season, for the summary Sponsors tab
+function briefsReportHTML(){
+  const all=seasonBriefs(); if(!all.length) return '';
+  const done=all.filter(b=>b.state==='done'), missed=all.filter(b=>b.state==='missed');
+  const coins=done.reduce((s,b)=>s+((b.reward&&b.reward.coins)||0),0);
+  const rows=all.map(b=>{ const ok=b.state==='done';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">
+      <span style="flex:0 0 auto;color:${ok?'#35d6a0':(b.state==='missed'?'#e2554e':'var(--muted)')};font-weight:800">${ok?'✓':(b.state==='missed'?'✕':'·')}</span>
+      <span class="small" style="flex:1;min-width:0;text-align:left;color:${ok?'var(--oncard)':'var(--muted)'}">${b.label}</span>
+      <span class="small" style="flex:0 0 auto;color:${ok?'#ffd45e':'var(--muted)'};font-weight:700">${ok?coinFmt((b.reward&&b.reward.coins)||0):'-'}</span>
+    </div>`; }).join('');
+  return `<div class="tile" style="max-width:560px;margin:10px auto 0">
+    <div class="small" style="color:#5fd0e0;font-weight:800;letter-spacing:.14em">SPONSOR BRIEFS</div>
+    <div class="small muted" style="margin:2px 0 4px;letter-spacing:0">${done.length} delivered${missed.length?` · ${missed.length} missed`:''}${coins?` · ${coinFmt(coins)} coins earned`:''}</div>
+    ${rows}</div>`;
+}
+
 // one slot's status card (current sponsor + loyalty, or an "open slot" placeholder)
 function slotStatusCardHTML(slot){
   const sp=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
@@ -16970,6 +17389,16 @@ function finalizeEvent(){
   // the staggered finale crowns the season-long Cup champion (East Lake winner = Tour Cup champ)
   if(ce.stagger && order.length){ S.season.cupChampion=order[0].p.name; S.season.cupYouWon=!!order[0].p.you; }
   S.season.results.push({evt,order,playoff:ce.playoff}); ce.done=true; ce.order=order;
+  // Sponsor briefs + Career Legacy hang off finalizeEvent rather than advanceEvent because EVERY path
+  // funnels through here - the interactive sim, Skip to End, and the headless season finisher - whereas
+  // advanceEvent is only walked by the interactive one. A brief settles/issues against the result that
+  // just landed; a legacy feat is checked the moment it could have been earned.
+  if(!S.daily && !S.circuitMode && S.career){
+    // a season simmed to the end already forfeits its coins ("play the rounds to earn"), so briefs do not
+    // run for it either - but the FEATS still count, you did win those majors.
+    if(!S.season.skipped){ try{ tickBriefs(); }catch(e){} }
+    try{ checkCareerLegacy(); }catch(e){}
+  }
 }
 function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (tie-aware)
   const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
@@ -16981,7 +17410,7 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
   tag(made); cut.forEach(o=>{o._pos='CUT';o._tied=false;});
   return made.concat(cut);
 }
-function advanceEvent(){ if(!S.circuitMode && S.career && !S.daily){ tickCareerFx(); tickArcs(); }   // CS325/326: age temp effects + pending story arcs one event
+function advanceEvent(){ if(!S.circuitMode && S.career && !S.daily){ tickCareerFx(); tickArcs(); }   // CS325/326: age temp effects + pending story arcs one event (briefs + legacy live in finalizeEvent, which every sim path walks)
   if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; autoSaveSeason(); } }
 function skipToEnd(){
   clearTimeout(seasonTimer);
@@ -18333,6 +18762,9 @@ function scrSeason(){
   // the priority is the standings + the season-stat bar up top; Race to the Cup is a compact strip, the
   // sponsors collapse to a one-line accordion, and momentum is a small strip - none of it in the way.
   if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
+  // A live sponsor brief is time-sensitive and actionable, so it sits ABOVE the season-long contract
+  // accordion - but only while one is running, so it is never permanent chrome.
+  if(!S.daily && !S.circuitMode){ const bs=briefStripNode(); if(bs) add(bs); }
   if(!S.daily && !S.circuitMode){ const cn=contractStripNode(); if(cn) add(cn); }
   { const mn=momentumNode(); if(mn) add(mn); }   // CS226 live confidence + following
 
@@ -18853,8 +19285,12 @@ function scrSummary(){
         // CS228: advance the RELATIONSHIP per slot - deliver ≥2 goals → loyalty grows; a shutout dings it +
         // earns a strike; enough strikes and the sponsor drops you to a fresh entry-tier deal in that slot.
         const dropAt=(brandTrait(sp.brand).strikes||2);   // "patient" brands tolerate 3 strikes
-        if(x.met>=2){ sp.rel=Math.min(SPONSOR_REL_MAX,(sp.rel||1)+1); sp.strikes=0; }
-        else if(x.met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
+        // Delivering on their mid-season BRIEFS counts toward the relationship too: two or more and the
+        // brand reads the year as a partnership even if the headline goals fell short.
+        const bDone=((S.season.briefsDone||{})[slot])||0;
+        const met=x.met+(bDone>=2?1:0);
+        if(met>=2){ sp.rel=Math.min(SPONSOR_REL_MAX,(sp.rel||1)+1); sp.strikes=0; }
+        else if(met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
         else sp.strikes=0;   // met exactly 1 → hold steady
         sp.seasons=(sp.seasons||0)+1;
         // CS277 - BRAND AMBASSADOR: hit max loyalty (Lv 5) and the brand names you the face of the company.
@@ -18934,6 +19370,9 @@ function scrSummary(){
         if(aw.no1.you)S.career.awards.no1++;
         S.career.medals=S.career.medals||{gold:0,silver:0,bronze:0};
         if(med)S.career.medals[med]++; } }
+    // ---- Career Legacy: season-scoped feats (money title, clean season, 4-win year) settle here, after
+    // the awards + world ranking are final. Mid-season feats already granted at advanceEvent.
+    if(!S.daily && !S.circuitMode){ try{ checkCareerLegacy(); }catch(e){} }
     // Tour Cup title, lifetime counter for the Trophy Case (no prior running tally existed)
     if(!S.daily && S.season.cupYouWon){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));
       lt.fedexCups=(lt.fedexCups||0)+1; saveCareerLifetime(c); S.career.fedexCups=(S.career.fedexCups||0)+1; }
@@ -19146,6 +19585,7 @@ function scrSummary(){
   __cur=spC;
   { const sd=sponsorDecisionNode(); if(sd && (S.career.sponsorOffers||[]).length) add(sd); }
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
+  { const br=briefsReportHTML(); if(br) add($(br)); }                     // what the mid-season briefs paid out
   // CS483 (owner mobile pass): the Tour Rep meter + fresh-achievements reveal get their OWN "Rewards" tab (it's
   // a ~220px celebration that crowded Overview). The tab only appears when there's something (empty-tab filter),
   // like Sponsors - so a season with no new achievements simply doesn't show it. Overview leads with the results.
@@ -19322,7 +19762,10 @@ function scrSummary(){
     const tourWon = tourCol.childNodes.length ? tourCol : null;    // Tournaments Won (full width now)
     const highlights = hiCol.childNodes.length ? hiCol : null;     // Season N Highlights masthead
     const anchor = ovC.firstChild;   // the Games callout, if any (else append at the end)
-    [statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
+    // a legacy unlock LEADS the summary: it is the rarest thing that can happen in a season and the whole
+    // point is that the accomplishment visibly changed the career
+    const legacyCard=(!S.daily && !S.circuitMode)?legacyFreshNode():null;
+    [legacyCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;
@@ -19426,6 +19869,9 @@ function scrSummary(){
     // the career share CARD lives only on the end-of-career ceremony now, here we just point to it
     hiC.appendChild($(`<div class="small muted center" style="margin-top:8px">Your shareable career card unlocks when you finish your career.</div>`));
   }
+  // Permanent legacy perks, OUTSIDE the multi-year block: a perk can be earned in year 1 (a maiden major
+  // as a prodigy, three wins in a row) and it should be visible the season it was earned.
+  { const lg=legacyListHTML(); if(lg) caC.appendChild($(lg)); }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
@@ -26745,6 +27191,7 @@ function scrCareerEnd(){
     else if(sbSignedIn() && S._careerRankLoading!=='career'){ S._careerRankLoading='career'; loadCareerRank(c.net); } }
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
+  { const lg=legacyListHTML(); if(lg) add($(lg)); }    // what this career earned, permanently
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
   { const sf=storyFeedHTML(); if(sf){ const w=$(`<div style="max-width:520px;margin:0 auto"></div>`); w.innerHTML=emojifyIcons(sf); add(w); } }   // CS225 Career Story
   // career record at the 4 major championships

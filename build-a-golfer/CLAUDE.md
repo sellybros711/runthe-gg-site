@@ -14693,6 +14693,78 @@ allows Google Fonts, or self-host Anton.*
     `BRACKET_PURSE`/`BRACKET_PTS`, `BRACKET_ROUNDS` (round names + hole counts), the opposite-field event in
     `beginEvent`'s bracket branch.
 
+- **CAREER LEGACY + SPONSOR BRIEFS: landmark feats leave a permanent mark, and sponsors give you something
+  to do mid-season (owner: "the game just feels stale as you play... there needs to be a lot more specific
+  rewards and things that can happen to your career for achieving and accomplishing certain things. Like
+  winning all 4 majors in one year should do something in your career and impact it. Sponsorships also feel
+  very stale and need a big revamp. Maybe they can give challenges mid season that can give you stat boosts
+  or coins").** Diagnosed the staleness as two concrete gaps before building: (a) a career ACCUMULATES
+  numbers that never DO anything - win all four majors in a year and the game hands you an achievement tick
+  and carries on identically; (b) a sponsor deal is six passive season-long stat thresholds that pay money in
+  September and ask nothing of you in between. Both fixed, both AMBIENT (strips + toasts, never modals) so
+  neither spends the 2-per-season interruption budget.
+  1. **Career Legacy - 12 landmark feats, each with a real mechanical effect for the REST OF THAT CAREER.**
+     `LEGACY_PERKS` (id/tier/name/feat/blurb/eff/when), granted idempotently by `checkCareerLegacy()` from
+     `finalizeEvent`'s tail. Deliberately PER-CAREER, not lifetime: "impact your career" means the career you
+     did it in, so a new golfer has to earn it again and each career is shaped differently. The marquee is
+     the owner's own example - **The Immortal** (win all four majors in a single season): +1 Composure
+     PERMANENTLY (an `addFx` with `ev:null`, so it rides the existing careerFx plumbing into both the display
+     and the sim), +1 off-season change, a confidence floor of 60, and sponsors treat you two tiers higher.
+     The other apex feat, **Immortal Résumé** (the career Grand Slam), is a lifetime major exemption - you
+     are never outside a major field again however far the ranking slides. The other ten are structural or
+     economic rather than raw skill (off-season changes/re-spins, a decline-rate multiplier, a confidence
+     floor, coin/fan multipliers, sponsor leverage) because the sim difficulty has been tuned repeatedly and
+     handing out skill would undo it: World No.1, a 4-win season, a 3-event win streak, a Cup title, winning
+     at 40+, a no-missed-cut season, the money title, a major before 25, 78+ fans, 78+ respect. Every
+     aggregate is CAPPED (`LEGACY_CAPS`: +3 changes, +2 re-spins, decline never below 0.62x, coins 1.6x, fans
+     1.5x, +2 sponsor tiers) so a decorated career is helped, not broken. Hooks are one-liners at the eight
+     existing sites (`offChanges`/`offRespins`/the decline ramp/`confClamp`/`gainFollowers`/`awardPlayCoins`/
+     `playerExempt`/`eligibleSponsorTier`), each guarded so the whole system is inert in the Daily and the
+     Legend Circuit. Surfaced as a mid-season toast, a marquee unlock card leading the season summary
+     (apex feats get a bigger treatment), a permanent "CAREER LEGACY · N of 12" list on the summary's Career
+     tab, and the career-end ceremony.
+  2. **Sponsor Briefs - a short, live challenge from your sponsor, mid-season.** Each filled slot issues a
+     brief over a rolling window of your next 3-5 starts (`BRIEF_KINDS`: top-10s, made cuts, a win, a low
+     round, an under-par tournament, top-5s, and a beat-your-rival brief when one exists), matched to the
+     brand's personality and drawn with a seeded rng from (careerSeed, year, event, slot) so it is stable
+     within a save. Delivering pays **coins AND a temporary stat boost** (the owner's exact ask) - a
+     `careerFx` skill bump for the next 3-4 events, so the reward is felt in the golf, not just the wallet.
+     Settled in `finalizeEvent`: done pays out + toasts + counts toward the sponsor relationship (two
+     delivered briefs count as a met goal at season settlement, so briefs feed the existing loyalty ladder);
+     an unreachable brief is quietly dropped with NO penalty, because a punishing sponsor is how you get
+     players ignoring sponsors. Rendered as a live teal strip on the season screen and a per-season report on
+     the summary's Sponsors tab.
+  - **The key structural fix:** both systems tick from `finalizeEvent`, not `advanceEvent`. `skipToEnd`
+    increments `S.evtIndex` directly and never walks `advanceEvent`, so an early cut had a full simulated
+    season produce ZERO briefs (caught by a full-season test returning `briefs:0`); `finalizeEvent` is the
+    universal per-event hook that the interactive sim, `skipToEnd` and `finishSeasonHeadless` all walk.
+    Briefs stay gated on `!S.season.skipped` (a skipped season already forfeits its coins, so it should not
+    farm briefs either); legacy feats are recorded either way, since they are accomplishments.
+  - **Balance was measured, not eyeballed.** The first cut gave an elite career 7.9 briefs and 7,365 coins a
+    season, which made sponsors the dominant coin faucet and constant chatter; tuned to 3 per slot, a 2-event
+    cooldown and a smaller payout, landing at ~6 briefs a season worth 2,585 / 1,670 / 1,265 coins for an
+    elite / mid / weak career - a peer of the existing ~500-2,900 season reward rather than a replacement -
+    with completion scaling by skill (53% / 35% / 32%). Legacy perks land 5 / 2 / 0 over ten years for the
+    same three builds, so the marquee ones stay rare.
+  - Verified in Playwright (30 checks, 0 page errors): catalog integrity; the Grand Slam grants The Immortal
+    AND the career-slam perk, permanently raises Composure, adds an off-season change, floors confidence and
+    lifts sponsor tier; perks are never granted twice; the aggregate caps hold with all 12 earned; the whole
+    system is inert in the Daily; the money title correctly waits for the season awards to settle; briefs are
+    issued one per slot with a real ask and reward, a delivered brief pays a genuine stat boost and counts
+    toward the relationship, an unreachable one is dropped without penalty; a full PLAYED season issues and
+    settles briefs across the year within the per-slot cap; a SKIPPED season issues none; and every surface
+    renders (the unlock card, the permanent list, the live strip, the season report). Screenshots of the live
+    brief strip and the apex unlock card. Regressions green (regress_final's 18-hole daily round + shop
+    sections, tp_final's Tour Pass sweep, the 11-tab shop suite, and both bracket suites); inline scripts
+    parse clean.
+  - Fixed en route: `MAJOR_KEYS` is a name->key MAP, not an array (`Object.keys` it); the money title read a
+    `S.season._moneyTitle` that does not exist (now reads `S.seasonAwards`); the career Grand Slam was
+    undetectable mid-season because it only read `c.majorStats`, which is written at the season record (now
+    also reads `winsList` + this year's majors); and the legacy list was hidden in year 1 because it sat
+    inside a multi-year guard.
+  - Tunable: the `LEGACY_PERKS` effects + `LEGACY_CAPS`, `BRIEF_MAX_PER_SLOT`/`BRIEF_COOLDOWN`, the
+    `briefReward` curve, and the `BRIEF_KINDS` pool.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
