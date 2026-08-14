@@ -1,0 +1,101 @@
+name: Refresh setlist data
+
+# Goose plays, elgoose.net gets the setlist, and this puts it in the game.
+#
+# WEEKLY, ON A TUESDAY, and the day is chosen rather than arbitrary. Most shows
+# are Friday to Sunday, the setlist itself goes up within a day, but the parts
+# the game leans on hardest -- the jamcharts, and the "recommended" flag that
+# drives song esteem -- are curated afterwards and take longer to settle. A
+# Tuesday run catches the whole weekend with the curation mostly done. Nothing
+# breaks if a show waits three days: the archive is 656 shows deep.
+#
+# A REFRESH IS NOT AN APPEND, which is the thing to understand before touching
+# this. crowd_rating is derived -- the most-jamcharted song sets a ceiling of 75
+# and the rest scale beneath it -- so one new show restates nearly every song's
+# esteem, and role tags shift too because they are inferred from each song's
+# whole history. A one-show refresh really does rewrite ~4,000 of 7,500 lines.
+#
+# That means the commit diff is not the control and never can be. The control is
+# the four gates below, in this order, and NOTHING is committed unless all four
+# pass:
+#
+#   1. ingest --strict    the fetch itself was clean: no throttled year, no
+#                         truncated year, no jamchart outage. Without --strict
+#                         this script warns and exits 0, which for an unattended
+#                         job means committing a quietly broken file over a good
+#                         one.
+#   2. data_drift         the counts only grew, grew plausibly, and the esteem
+#                         scale did not shift under the whole archive.
+#   3. check_data         the standing regression net, including that the home
+#                         screen's stated archive size matches the file.
+#   4. verify-scoring     the scoring spec, which the data can influence.
+#
+# The working tree is left dirty on failure and simply not committed. There is
+# no cleanup step: a failed run changes nothing on main, and the next run starts
+# from a fresh checkout.
+
+on:
+  schedule:
+    - cron: '0 11 * * 2'     # Tuesdays 11:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: setlist-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No API key: elgoose.net's v2 API is open, and a full 2014-to-now fetch
+      # takes about half a minute. The script paces itself between years because
+      # the API throttles by answering an empty 200 rather than a 429.
+      - name: Fetch from elgoose.net
+        run: node scripts/setlist/ingest_band.mjs --strict
+
+      # The home screen states the archive size and DATA_CONTRACT states the
+      # counts. check_data asserts both against the file, so without this step
+      # every SUCCESSFUL refresh would fail the checks.
+      - name: Put the new counts into the copy
+        run: node scripts/setlist/sync_counts.mjs
+
+      - name: Is this refresh safe to commit
+        run: node scripts/setlist/data_drift.mjs
+
+      - name: Data and discoverability
+        run: node scripts/setlist/check_data.mjs
+
+      - name: Scoring spec
+        run: node setlist/verify-scoring.mjs
+
+      # Only reached when all four gates passed.
+      - name: Commit if the archive moved
+        run: |
+          git config user.name "setlist-bot"
+          git config user.email "noreply@anthropic.com"
+          git add setlist/data/goose.csv setlist/data/DATA_CONTRACT.md setlist/index.html
+          if git diff --cached --quiet; then
+            echo "no new shows"
+            exit 0
+          fi
+          # show_id is the first column and is always a bare number, so cut is
+          # safe here and does not need the CSV parser or a node invocation.
+          SHOWS=$(tail -n +2 setlist/data/goose.csv | cut -d, -f1 | sort -u | wc -l | tr -d ' ')
+          git commit -m "Refresh goose setlist data ($SHOWS shows)"
+          # Other scheduled jobs in this repo push to main too, so a concurrent
+          # run can advance the ref mid-job. Rebase and retry rather than fail on
+          # a non-fast-forward; nothing else touches these three files.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done

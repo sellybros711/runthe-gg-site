@@ -1,0 +1,82 @@
+/* Segue — put the archive's own counts back into the copy that states them.
+ *
+ *   node scripts/setlist/sync_counts.mjs            # after an ingest
+ *   node scripts/setlist/sync_counts.mjs --check    # report, change nothing
+ *
+ * WHY THIS HAS TO EXIST FOR THE REFRESH TO BE AUTOMATABLE AT ALL.
+ * check_data.mjs asserts that the home screen's "655 shows from the elgoose.net
+ * archive" matches the number of shows actually in the CSV, and it is right to:
+ * a home screen quoting a stale figure is the kind of wrong nobody notices for
+ * months. But it also means EVERY successful data refresh fails the checks,
+ * because one new show makes the sentence false. Without this the scheduled job
+ * would go red every time it worked.
+ *
+ * So the counts are derived from the file and written back into the two places
+ * that quote them, and check_data keeps guarding that they agree. The guard is
+ * the point; this is what lets the guard survive contact with a cron job.
+ *
+ * Deliberately NOT clever: it rewrites the digits inside two known sentences and
+ * fails loudly if it cannot find them, rather than trying to parse HTML or
+ * Markdown. If somebody rewords the copy this stops working and says so, which
+ * is better than silently editing the wrong number.
+ */
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import loadBand, { parseCSV } from '../../setlist/dataLoader.js';
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const read = p => readFileSync(resolve(repoRoot, p), 'utf8');
+const CHECK = process.argv.includes('--check');
+
+const csv = read('setlist/data/goose.csv');
+const rows = parseCSV(csv);
+const { shows } = loadBand(csv);
+const songs = new Set(rows.map(r => r.song_id).filter(Boolean)).size;
+
+const counts = { performances: rows.length, shows: shows.length, songs };
+console.log(`goose.csv: ${counts.performances} performances · ${counts.shows} shows · ${counts.songs} songs`);
+
+let changed = 0;
+const edits = [];
+
+/* Each edit names the file, the pattern it expects to find EXACTLY ONCE, and
+   what to put back. A pattern that matches zero times or more than once is a
+   failure rather than a guess. */
+const patch = (file, re, replace, what) => {
+  const before = read(file);
+  const hits = [...before.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g'))];
+  if (hits.length !== 1) {
+    console.error(`  FAIL  ${file}: expected one "${what}", found ${hits.length}`);
+    process.exitCode = 1;
+    return;
+  }
+  const after = before.replace(re, replace);
+  if (after === before) { console.log(`  ok    ${file}: ${what} already current`); return; }
+  edits.push([file, after]);
+  changed++;
+  console.log(`  ${CHECK ? 'STALE' : 'wrote'} ${file}: ${what}`);
+};
+
+// The home screen's band card.
+patch('setlist/index.html',
+  /(\d[\d,]*) shows from the elgoose\.net archive/,
+  `${counts.shows} shows from the elgoose.net archive`,
+  'archive size on the home screen');
+
+// The contract's "as of the last run" line.
+patch('setlist/data/DATA_CONTRACT.md',
+  /\*\*(\d[\d,]*) performances · (\d[\d,]*) shows · (\d[\d,]*) songs\*\*/,
+  `**${counts.performances} performances · ${counts.shows} shows · ${counts.songs} songs**`,
+  'counts in DATA_CONTRACT');
+
+if (!CHECK) for (const [file, after] of edits) writeFileSync(resolve(repoRoot, file), after);
+
+if (CHECK && changed) {
+  console.error(`\n${changed} file(s) quote stale counts. Run without --check to fix.`);
+  process.exitCode = 1;
+} else if (!changed) {
+  console.log('\nnothing to update');
+} else {
+  console.log(`\nupdated ${changed} file(s)`);
+}
