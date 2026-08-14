@@ -144,6 +144,39 @@
   .tile-opt .tr{position:absolute;top:4px;left:4px;font-size:8px;padding:1px 5px;border-radius:999px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;}
   .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
   .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
+  /* ---- player card (3D flip, RunTheTour model) ---- */
+  .pcov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:150;display:none;align-items:center;justify-content:center;padding:20px;}
+  .pcov.open{display:flex;}
+  .pcx{position:absolute;top:14px;right:16px;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:999px;width:36px;height:36px;padding:0;font-size:15px;}
+  .pcwrap{text-align:center;animation:pcIn .45s cubic-bezier(.2,.9,.3,1);}
+  @keyframes pcIn{0%{opacity:0;transform:scale(.82) translateY(18px)}100%{opacity:1;transform:none}}
+  .pchint{margin-top:12px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .pcard3d{width:min(340px,86vw);height:min(500px,72vh);perspective:1300px;cursor:pointer;margin:0 auto;}
+  .pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .62s cubic-bezier(.3,.9,.3,1);}
+  .pcard3d.flipped .pcard-inner{transform:rotateY(180deg);}
+  .pcard-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;overflow:hidden;
+    border:3px solid var(--pcf);box-shadow:0 0 34px -6px var(--pcfg),0 22px 50px -20px rgba(0,0,0,.9);}
+  .pcard-back{transform:rotateY(180deg);}
+  .pcbg{position:absolute;inset:0;}
+  .pcscrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,.72));}
+  .pctier{position:absolute;top:12px;left:14px;font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--pcf);z-index:3;}
+  .pcovr{position:absolute;top:10px;right:14px;text-align:center;z-index:3;}
+  .pcovr b{display:block;font-family:var(--display);font-size:38px;line-height:.9;color:var(--pcf);}
+  .pcovr span{font-size:9px;letter-spacing:.2em;color:var(--text-dim);font-weight:800;}
+  .pcfig{position:absolute;left:0;right:0;bottom:74px;top:44px;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .pcfig svg{height:100%;width:auto;image-rendering:pixelated;filter:drop-shadow(0 8px 16px rgba(0,0,0,.7));}
+  .pcplate{position:absolute;left:0;right:0;bottom:0;padding:12px 14px 14px;z-index:3;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.86) 42%);}
+  .pcpn{font-family:var(--display);font-size:25px;letter-spacing:.02em;text-transform:uppercase;color:var(--cream);line-height:1;}
+  .pcps{font-size:11.5px;color:var(--pcf);font-weight:700;margin-top:3px;letter-spacing:.04em;}
+  .pcback-in{position:absolute;inset:0;padding:16px 16px 14px;display:flex;flex-direction:column;z-index:3;}
+  .pcb-h{font-family:var(--display);font-size:21px;text-transform:uppercase;color:var(--cream);line-height:1.05;}
+  .pcb-sub{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--pcf);font-weight:800;margin-bottom:8px;}
+  .pcb-sec{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:9px 0 4px;border-bottom:1px solid var(--line);padding-bottom:3px;}
+  .pcb-row{display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0;color:var(--text-dim);}
+  .pcb-row b{color:var(--cream);font-family:var(--mono);}
+  .pcb-hi{font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:2px;}
+  .pcb-foot{margin-top:auto;text-align:center;font-size:10.5px;font-weight:800;color:var(--text-faint);padding-top:8px;}
   .packbox{width:110px;height:130px;border-radius:14px;border:2px dashed var(--brandred);display:flex;align-items:center;justify-content:center;
     font-family:var(--display);font-size:52px;color:var(--brandred-bright);animation:pkShake .5s infinite;}
   @keyframes pkShake{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(3deg) scale(1.05)}}
@@ -409,6 +442,7 @@
     <button class="ghost" onclick="go('mentors')">Mentors</button>
     <button class="ghost" onclick="go('locker')">Locker</button>
     <button class="ghost" onclick="go('shop')">Pro Shop</button>
+    <button class="ghost" onclick="openCard()">My Card</button>
     <button class="ghost" onclick="go('world')">World</button>
     <button class="ghost" onclick="go('record')">Record</button>
   </div>
@@ -560,6 +594,9 @@
 </div>
 </main>
 
+<div class="pcov" id="cardOv"><button class="pcx" onclick="closeCard()" aria-label="Close">✕</button>
+  <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div></div></div>
+
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -603,6 +640,7 @@ function modal(title,body,btns){ $('modalTitle').textContent=title; $('modalBody
   (btns||[{label:'OK',fn:closeModal}]).forEach(x=>{const el=document.createElement('button'); el.textContent=x.label; if(x.cls)el.className=x.cls; el.onclick=x.fn; b.appendChild(el);}); $('modalBack').classList.add('open'); }
 function closeModal(){ $('modalBack').classList.remove('open'); }
 $('modalBack').addEventListener('click',e=>{ if(e.target===$('modalBack')) closeModal(); });
+$('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard(); });
 
 /* ---------- data helpers ---------- */
 function corrected(w){ const c=(window.RTR_CORRECTIONS||{})[w.id]; return c?Object.assign({},w,c):w; }
@@ -2107,6 +2145,50 @@ function openPack(pid){
   else modal(p.name,`<p class="log">Everything in this pack was already yours — converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
 }
 
+/* ---------- Player Card — a flippable trading card of your wrestler ---------- */
+const CARD_FRAMES={ indie:{c:'#a8602c',label:'Indie Circuit'}, regional:{c:'#b6a894',label:'Regional'},
+                    national:{c:'#6aa7c4',label:'National'}, global:{c:'#e0b341',label:'Global'} };
+let CARD_FLIPPED=false;
+function openCard(){ CARD_FLIPPED=false; drawCard(); $('cardOv').classList.add('open'); }
+function closeCard(){ $('cardOv').classList.remove('open'); }
+function flipCard(){ CARD_FLIPPED=!CARD_FLIPPED; const el=document.querySelector('.pcard3d'); if(el) el.classList.toggle('flipped',CARD_FLIPPED); }
+function drawCard(){
+  const c=G.car, w=G.w, t=tierOf(c.rep), fr=CARD_FRAMES[t.id]||CARD_FRAMES.indie;
+  const st=styleOf(), f=myFaction();
+  const gear=w.look.gear||'#C6392C';
+  const bg=`linear-gradient(180deg,${shade(gear,-58)},#0b0a0a 62%),radial-gradient(circle at 50% 24%,${shade(gear,-20)}55,transparent 62%)`;
+  const legacy=Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6);
+  const rows=[['Years Active',c.year],['Record',`${c.rec.w}-${c.rec.l}`],['Title Reigns',c.reigns.length],
+    ['Earnings',money(c.earnings)],['Popularity',Math.round(c.pop)],['Moves Known',w.moves.length+'/'+MOVES.length]];
+  const hi=(G.hi||[]).slice(0,3);
+  $('cardHost').innerHTML=`<div class="pcard3d ${CARD_FLIPPED?'flipped':''}" style="--pcf:${fr.c};--pcfg:${fr.c}66" onclick="flipCard()">
+    <div class="pcard-inner">
+      <div class="pcard-face pcard-front">
+        <div class="pcbg" style="background:${bg}"></div><div class="pcscrim"></div>
+        <div class="pctier">${fr.label}</div>
+        <div class="pcovr"><b>${ovr(w)}</b><span>OVR</span></div>
+        <div class="pcfig">${wrestlerSVG(w.look)}</div>
+        <div class="pcplate">
+          <div class="pcpn">${w.name}</div>
+          <div class="pcps">${[w.nick?'"'+w.nick+'"':null, st.name].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>
+      <div class="pcard-face pcard-back">
+        <div class="pcbg" style="background:${bg};opacity:.5"></div><div class="pcscrim"></div>
+        <div class="pcback-in">
+          <div class="pcb-h">${w.name}</div>
+          <div class="pcb-sub">${fr.label}${c.title?' · Champion':''}</div>
+          <div class="pcb-sec">Career</div>
+          ${rows.map(r=>`<div class="pcb-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}
+          ${c.title?`<div class="pcb-sec">Championship</div><div class="pcb-row"><span>👑 ${c.title}</span><b>${c.defenses||0} def</b></div>`:''}
+          ${f?`<div class="pcb-sec">Faction</div><div class="pcb-row"><span>${f.name}</span><b style="color:${f.color}">●</b></div>`:''}
+          ${hi.length?`<div class="pcb-sec">Defining Moments</div>${hi.map(x=>`<div class="pcb-hi">• ${x.t}</div>`).join('')}`:''}
+          <div class="pcb-foot">LEGACY <b style="color:${fr.c}">${legacy}</b> · ${st.name}</div>
+        </div>
+      </div>
+    </div></div>`;
+}
+
 function renderWorld(){
   const order=['indie','regional','national','global'];
   const myTier=tierOf(G.car.rep).id;
@@ -2192,7 +2274,7 @@ function renderRecord(){
         <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' 🏆':''}</span>
         <span class="rq">Y${m.y} W${m.w} · ${m.stip} · rating ${m.q}</span></div></div>`).join('')
     : `<p class="hint">No matches yet.</p>`;
-  h+=`<div class="row" style="margin-top:18px;"><button class="ghost" onclick="confirmRetire()">Retire</button></div>`;
+  h+=`<div class="row" style="margin-top:18px;"><button onclick="openCard()">View Player Card</button><button class="ghost" onclick="confirmRetire()">Retire</button></div>`;
   $('recBody').innerHTML=h;
 }
 function confirmRetire(){ modal('Hang up the boots?','You can retire any time. Your career will be graded and enshrined.',
