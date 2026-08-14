@@ -745,9 +745,33 @@
      a list where every row is a different height is the thing that reads as
      overwhelming, not the size of any one row.
      19px still sets the title as the row without pushing it to two lines. */
-  .song .t{font-family:var(--ui); font-weight:400; font-size:19px; line-height:1.1;
-    letter-spacing:.2px;}
-  .song.used .t{font-size:16px;}
+  /* ---------------- THE SONG TITLE ----------------
+     NOT THE DISPLAY FACE. Anton is a condensed poster type, and a song title
+     is not a poster: it is mixed case with apostrophes, ampersands, brackets
+     and roman numerals, read ten to a screen, at 19px. Condensed and heavy
+     makes every row shout at the same volume and squeezes exactly the
+     characters that tell titles apart.
+
+     THE ARGUMENT FOR KEEPING IT WAS LINE FITTING, and it does not survive
+     being measured. Across all 364 distinct Goose titles, in the 309px a
+     title actually gets on a 390px phone:
+
+         Anton 19px          3 wrap  (0.8%)
+         Archivo 700 17.5    6 wrap  (1.6%)
+         Archivo 800 17px    9 wrap  (2.5%)
+         Archivo 900 17px   13 wrap  (3.6%)
+
+     Archivo 800 sets a median title 14% wider and costs SIX more wrapped
+     titles out of 364. That is what the condensation was buying.
+
+     800 rather than 900: the extra weight buys nothing at this size and wraps
+     four more. And it is the weight the scorecard's setlist already uses, so
+     the two lists the game shows now speak with one voice.
+
+     Anton stays where it is a display face doing display work: the countdown,
+     the show date, the band headings, the section titles. */
+  .song .t{font-weight:800; font-size:17px; line-height:1.25; letter-spacing:-.1px;}
+  .song.used .t{font-size:15.5px;}
   /* The left column wraps as a row: title, then chips, and anything
      descriptive drops to its own line underneath rather than running on after
      the title and wrapping mid-phrase. */

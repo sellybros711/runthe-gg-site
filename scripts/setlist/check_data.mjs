@@ -610,6 +610,24 @@ check(/most shows have a song that can/i.test(game),
   'committing to a segue reads as an invitation');
 check(!/the transition is lost/.test(gameBare), 'not as a risk');
 
+/* THE SONG TITLE IS NOT SET IN THE DISPLAY FACE. Anton is a condensed poster
+   type; a song title is mixed case with apostrophes, ampersands and brackets,
+   read ten to a screen. The line-fitting argument for keeping it was measured
+   across all 364 distinct titles at the 309px a title really gets: Anton wraps
+   3, Archivo 800 wraps 9. Six songs out of 364. */
+console.log('the song title');
+check(!/\.song \.t\{[^}]*font-family:var\(--ui\)/.test(game),
+  'the song title is not the display face');
+check(/\.song \.t\{[^}]*font-weight:800/.test(game), 'it is Archivo 800');
+// The draft list and the scorecard list are the same list twice. One voice.
+check(/\.rr-t\{[^}]*font-weight:800/.test(game),
+  'and the scorecard setlist matches it');
+// Anton keeps the jobs a display face is for.
+check(/\.hc-n\{[^}]*font-family:var\(--ui\)/.test(game),
+  'the countdown keeps the display face');
+check(/\.showcard \.d\{[^}]*font-family:var\(--ui\)/.test(game),
+  'and so does the show date');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
