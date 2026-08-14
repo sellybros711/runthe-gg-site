@@ -1479,6 +1479,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ── coach panel ────────────────────────────────────────────── */
   .verdictline{margin:4px 0 0}
+  .verdictline.fitfoot{margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
   .verdictline .take{margin:0;font-family:var(--fd);font-size:22px;line-height:1.08;
     letter-spacing:-.01em;color:var(--ink)}
   .verdictline .fit{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--dim-2)}
@@ -1500,6 +1501,16 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(255,255,255,.08);overflow:hidden}
   .meter .track i{display:block;height:100%;border-radius:99px;
     transition:width .5s cubic-bezier(.2,.8,.3,1)}
+  /* THE LINE THAT ANSWERS "SAYS WHO". A player looked at a meter reading WEAK under a
+     $4.8M quarterback and could not tell what the number was being measured against or
+     what it was doing to his team. Both answers live here, under the bar: where the free
+     range ends, and what this line is costing. Costing NOTHING is the common case and
+     says so in words, because "0%" reads like a broken number. */
+  .meter .why{grid-column:1/-1;font-family:var(--fb);font-size:10.5px;line-height:1.35;
+    color:var(--dim-2);margin-top:-1px}
+  .meter .why b{font-weight:700}
+  .meters .mhead{font-family:var(--fb);font-size:11.5px;line-height:1.4;color:var(--dim-2);
+    margin:0 0 2px}
 
   /* ── scheme panel ───────────────────────────────────────────── */
   .schemepanel{position:relative;overflow:hidden}
@@ -2907,6 +2918,9 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="scheme-tagline" id="q-scheme-tagline" hidden></div>
       <div class="verdictline" id="q-verdict"></div>
       <div class="meters" id="q-meters"></div>
+      <!-- The line that adds the four up. AFTER them, because "add it up" in front of
+           the things being added is not a summary, it is a riddle. -->
+      <div class="verdictline fitfoot" id="q-fit"></div>
       <div id="q-notes" style="margin-top:8px"></div>
     </div>
 
@@ -3249,7 +3263,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=25"></script>
+<script src="engine.js?v=26"></script>
 <script src="run.js?v=12"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
@@ -6751,17 +6765,36 @@ function paintSquad(){
 
   const cr=E.coachReport(run.roster,run.season.chemistryResult);
   const st=cr.structure;
-  const band=(v)=>v>=0.75?{c:'#22c55e',w:'Strong'}:(v>=0.45?{c:'#f59e0b',w:'OK'}:{c:'#ef4444',w:'Weak'});
-  const meter=(lbl,detail,score)=>{
-    const b=band(score);
-    const pct=Math.max(4,Math.min(100,Math.round(score*100)));
+  /* THE PAGE NO LONGER SCORES ANYTHING. Every meter reads E.structureCosts(), which is
+     what the engine actually multiplies this roster by, so a red bar and a real penalty
+     are the same fact. They used to be two implementations with different tolerances,
+     and on 15.5% of drafted rosters the run-and-pass bar went red over a split the
+     engine charged nothing for. See cfb/build/test/probe_report.mjs. */
+  const BANDC={strong:'#22c55e',ok:'#f59e0b',weak:'#ef4444'};
+  const BANDW={strong:'Strong',ok:'OK',weak:'Weak'};
+  const costs=E.structureCosts(st);
+  /* The bar is how much of this line is intact, so full and green is nothing wrong. The
+     scale runs to 15%, which is past the 95th percentile of every line measured over
+     2,100 drafts, so an ordinary bad line still has bar left to lose. */
+  const COST_FULL=0.15;
+  const meter=(lbl,detail,cost,why)=>{
+    const key=E.reportBand(cost), c=BANDC[key];
+    const pct=Math.max(4,Math.min(100,Math.round((1-Math.min(1,Math.max(0,cost)/COST_FULL))*100)));
+    /* Three sentences and not one, because a line that PAYS you should say so. Anything
+       inside half a point either way is noise and reads as nothing rather than as a
+       number too small to act on. */
+    const price=cost<=-0.005
+      ? 'adds <b style="color:'+c+'">'+(-cost*100).toFixed(1)+'%</b> to your scoring'
+      : cost<0.005 ? 'costs you nothing'
+      : 'costs you <b style="color:'+c+'">'+(cost*100).toFixed(1)+'%</b> of your scoring';
     return '<div class="meter"><span class="lbl">'+lbl+'</span>'+
       '<span class="det">'+esc(detail)+'</span>'+
-      '<span class="val" style="color:'+b.c+'">'+b.w+'</span>'+
-      '<span class="track"><i style="width:'+pct+'%;background:'+b.c+'"></i></span></div>';
+      '<span class="val" style="color:'+c+'">'+BANDW[key]+'</span>'+
+      '<span class="track"><i style="width:'+pct+'%;background:'+c+'"></i></span>'+
+      '<span class="why">'+esc(why)+' &middot; '+price+'</span></div>';
   };
-  const span=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
-  const fitBand=band(span(st.multiplier,0.82,1.06));
+  const fitKey=E.reportBand(Math.max(0,1-st.multiplier));
+  const fitBand={c:BANDC[fitKey]};
   const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
   const strong='<b style="color:'+fitBand.c+'">';
 
@@ -6770,29 +6803,62 @@ function paintSquad(){
   $('q-scheme-eye').textContent=schemeName?'Offensive scheme':"Coach's take";
   $('q-scheme-badge').hidden=!schemeName;
   $('q-scheme-tagline').hidden=!schemeName;
+  /* THE SENTENCE THAT TIES THE FOUR LINES TOGETHER IS NEVER HIDDEN NOW. It used to be
+     dropped whenever a scheme was detected, which is most good rosters, so the player
+     who reported this saw a badge, a +3%, and four graded lines with nothing anywhere
+     saying what the grades added up to or what the 3% was. The verdict headline is still
+     the scheme's when there is one; only the explaining line always stays. */
   $('q-verdict').hidden=!!schemeName;
+  $('q-fit').innerHTML='<p class="fit">'+(fitPct===0
+    ? 'Add those four up and these six neither help nor hold each other back.'
+    : 'Add those four up: because of how these six fit together they score '+strong+fitPct+'% '+
+      (st.multiplier>1?'more':'less')+'</b> than their own numbers on their own.')+'</p>';
   if(schemeName){
     $('q-scheme-icon').innerHTML=schemeIconSvg(st.scheme);
     $('q-scheme-name').textContent=schemeName;
     $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
     $('q-scheme-bonus').textContent='+'+Math.round((st.schemeBonus||0)*100)+'%';
   }else{
-    $('q-verdict').innerHTML=
-      '<p class="take">'+esc(cr.verdict)+'</p>'+
-      '<p class="fit">'+(fitPct===0
-        ? 'These six neither help nor hold each other back.'
-        : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
-          (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
+    $('q-verdict').innerHTML='<p class="take">'+esc(cr.verdict)+'</p>';
   }
+  /* WHAT GOOD LOOKS LIKE, SAID OUT LOUD, and taken from the engine's own constants so
+     the range quoted here cannot drift from the range being charged against. A number
+     with nothing to compare it to is what made this panel unreadable: "53% run" means
+     nothing until you know a third on the ground is the free range. */
+  const SC=E.STRUCTURE;
+  const pcOf=(v)=>(v*100).toFixed(0)+'%';
+  const runLo=pcOf(SC.IDEAL_RUSH_SHARE-SC.RUSH_SHARE_TOLERANCE);
+  const runHi=pcOf(SC.IDEAL_RUSH_SHARE+SC.RUSH_SHARE_TOLERANCE);
+  const recKept=Math.round(st.qbSupport*100);
+  /* THE LINE IS ABOUT THE PASSING GAME AND NOT ABOUT THE QUARTERBACK, which is the whole
+     of the bug a player reported. Collin Klein 2011 is the 99th percentile of his
+     position at $4.8M, and the panel called him WEAK for the 9 points he throws for
+     while ignoring the 22 he runs for. Those 22 were never in question: they count in
+     full, in the roster's own total. What this line has always charged for is receivers
+     left stranded by a quarterback who does not throw, so it is named for that now, and
+     a runner with nobody to strand costs nothing and says so.
+     The rushing half is still named here, because a line about a quarterback that
+     mentions only a third of what he does is how this went wrong the first time. */
+  const qb=E.findQB(run.roster);
+  const qbRun=qb?(qb.rush_ppg||0):0;
+  const passDet=st.qbPass
+    ? st.qbPass.toFixed(1)+' pass'+(qbRun>=1?', '+qbRun.toFixed(1)+' rush':'')+' a game'
+    : 'nobody throwing it';
+  const passWhy=recKept>=101
+    ? 'your receivers score at '+recKept+'% of their own numbers'
+    : recKept>=99 ? 'your receivers keep all of their own numbers'
+    : 'your receivers score at '+recKept+'% of their own numbers';
   $('q-meters').innerHTML=
-    meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' pass points a game':'nobody at quarterback',
-      span(st.qbSupport,0.70,1.12))+
-    meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
-      1-Math.min(1,Math.abs(st.rushShare-0.34)/0.20))+
-    meter('Spread',(st.topShare*100).toFixed(0)+'% through one player',
-      1-Math.min(1,Math.max(0,st.topShare-0.24)/0.20))+
+    '<p class="mhead">Each line is what that part of the roster does to the six names on '+
+      'it. Costing nothing is the good end.</p>'+
+    meter('Passing game',passDet,costs.pass,passWhy)+
+    meter('Run and pass',
+      (st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
+      costs.balance,'anything from '+runLo+' to '+runHi+' on the ground is free')+
+    meter('Reliance',(st.topShare*100).toFixed(0)+'% through one player',
+      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one man is free')+
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
-      span(st.floorShare,0.14,0.64));
+      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is free');
 
   const strFiltered=schemeName?cr.strengths.filter(t=>!t.startsWith(schemeName)):cr.strengths;
   const notes=[...cr.weaknesses.slice(0,2).map(t=>['bad',t]),
