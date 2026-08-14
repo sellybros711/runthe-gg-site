@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
 <script src="/arcade/icons.js?v=1"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
@@ -639,10 +639,13 @@
         <div class="g" id="resGrade">BOARD CLEARED!</div>
         <div class="verdict" id="resVerdict"></div>
       </div>
-      <div class="rstats">
-        <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
-        <div class="rstat"><div class="v" id="resMiss">0</div><div class="l">Misses</div></div>
-        <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
+      <div class="a-rhero">
+        <div class="v" id="resTime">0:00</div>
+        <div class="k">Your time</div>
+      </div>
+      <div class="a-runline">
+        <span><b id="resMiss">0</b> misses</span><i></i>
+        <span><b id="resStreak">1</b> day streak</span>
       </div>
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
@@ -696,7 +699,7 @@
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/challenge.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
   <script src="/arcade/tokens.js?v=2"></script>
   <script src="/arcade/archive.js?v=2"></script>

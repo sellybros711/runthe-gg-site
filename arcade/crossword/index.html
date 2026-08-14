@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
 <script src="/arcade/icons.js?v=1"></script>
 <style>
 :root{
@@ -217,20 +217,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
-/* A crossword result is a time. The emoji board that used to sit here said
-   nothing a solver cares about — which squares were black is not an
-   achievement — so the clock takes the space instead and everything else
-   steps back to one quiet line. */
-.hero-time{margin:4px 0 12px;}
-.hero-time .v{font-family:var(--pix); font-weight:800; font-size:clamp(52px,17vw,68px); line-height:1;
-  color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
-.hero-time .k{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
-  font-weight:800; margin-top:9px;}
-.runline{display:flex; align-items:center; justify-content:center; gap:11px; flex-wrap:wrap;
-  margin:0 0 18px; font-size:12px; font-weight:700; color:var(--mut);}
-.runline b{font-family:var(--pix); font-weight:800; font-size:14px; color:var(--ink);
-  font-variant-numeric:tabular-nums; margin-right:3px;}
-.runline i{width:3px; height:3px; border-radius:50%; background:var(--mut); opacity:.5; flex:0 0 auto;}
+/* This page loads Archivo + Rubik only — no Anton — so the shared hero takes
+   the display face this page actually has. Layout comes from .a-rhero /
+   .a-runline in arcade.css, shared with every other game. */
+.modal{--a-heroFont:var(--pix); --a-heroInk:var(--ink);}
 
 /* ---------- dopamine: confetti ---------- */
 .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -414,11 +404,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="flawless" id="mFlawless"><span class="rib"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless: no reveals</span></div>
     <h2 id="mTitle">Solved!</h2>
     <p id="mSub">Nice grid. Your streak lives another day.</p>
-    <div class="hero-time">
+    <div class="a-rhero">
       <div class="v" id="mTime">0:00</div>
       <div class="k" id="mTimeK">Your time</div>
     </div>
-    <div class="runline">
+    <div class="a-runline">
       <span><b id="mBest">–</b> best</span><i></i>
       <span><b id="mStreak">0</b> day streak</span><i></i>
       <span><b id="mAvg">–</b> average</span>
@@ -466,7 +456,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/challenge.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="/arcade/archive.js?v=2"></script>

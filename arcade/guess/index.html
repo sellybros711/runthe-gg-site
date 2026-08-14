@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
 <script src="/arcade/icons.js?v=1"></script>
 <style>
   :root{
@@ -201,6 +201,9 @@
   .sheet{width:100%; max-width:380px; background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0; text-align:center;}
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px;}
+  /* The hero takes the game's accent, the way .runbig does in the six games
+     that already led with a number. */
+  .sheet{--a-heroInk:var(--coralT);}
   .sheet h2.win{color:var(--greenT);} .sheet h2.lose{color:var(--coralT);}
   .milestone{display:none; margin:2px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
   .milestone.on{display:block; animation:mpop .5s ease;}
@@ -360,10 +363,13 @@
     <div class="sub-h" id="mSub"></div>
     <div class="milestone" id="mMilestone"></div>
     <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
-    <div class="rstats">
-      <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
-      <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
-      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
+    <div class="a-rhero">
+      <div class="v" id="mGuesses">1</div>
+      <div class="k" id="mGuessesK">Guesses</div>
+    </div>
+    <div class="a-runline">
+      <span><b id="mTime">0:00</b> time</span><i></i>
+      <span><b id="mStreak">1</b> day streak</span>
     </div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
@@ -389,7 +395,7 @@
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/challenge.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="/arcade/mode.js?v=6"></script>
