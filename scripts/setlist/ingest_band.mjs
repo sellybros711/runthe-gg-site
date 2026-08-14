@@ -93,6 +93,31 @@ const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site i
 const TO = Number(arg('to', new Date().getFullYear()));
 const PROBE = process.argv.includes('--probe');
 
+/* ---------------------------------------------------------------------------
+ * --strict : every warning becomes a failure.
+ * ---------------------------------------------------------------------------
+ * FOR UNATTENDED RUNS, and it exists because this script's whole degraded-output
+ * story is `console.warn` followed by writing the file and exiting 0. That is
+ * right for a person, who reads the output and decides. It is exactly wrong for
+ * a scheduled job, which reads nothing: a throttled year, a truncated year or a
+ * jamchart outage would each commit a quietly broken CSV over a good one.
+ *
+ * The three that matter, all of which the header already documents as real:
+ *   - a year that failed or came back empty. The API throttles by answering an
+ *     empty 200 rather than a 429, so this is the common one, and it silently
+ *     removes a whole year of shows.
+ *   - a year that hit the 4000-row cap. The array just ends; the year is
+ *     incomplete and nothing in the payload says so.
+ *   - jamcharts unavailable. crowd_rating goes blank, which means every song
+ *     scores identically. That is the exact bug v2 shipped with.
+ *
+ * Collected rather than thrown at the point of failure, so one run reports
+ * everything wrong with it instead of one thing at a time.
+ */
+const STRICT = process.argv.includes('--strict');
+const degraded = [];
+const degrade = (msg) => { degraded.push(msg); console.warn(`  ${msg}`); };
+
 // elgoose artist ids: 1 Goose · 8 Orebolo · 2 Vasudo · 3 Great Blue.
 // Pass --artist '' to keep every band (almost never what you want).
 const ARTIST_ID = String(arg('artist', '1')).trim();
@@ -200,13 +225,13 @@ async function fetchAllRows() {
       `shape has probably changed — run with --probe to see what the API returns.`
     );
   }
-  if (failures.length) console.warn(`\n  NOTE: ${failures.length} year(s) failed: ${failures.join(', ')}`);
+  if (failures.length) degrade(`${failures.length} year(s) failed: ${failures.join(', ')}`);
   if (empty.length) {
-    console.warn(`  NOTE: ${empty.length} year(s) returned nothing: ${empty.join(', ')}`);
+    degrade(`${empty.length} year(s) returned nothing: ${empty.join(', ')}`);
     console.warn('  If the band was active then, this is throttling — just run it again.');
   }
   if (truncated.length) {
-    console.warn(`\n  WARNING: ${truncated.join(', ')} hit the ${ROW_CAP}-row cap and are INCOMPLETE.`);
+    degrade(`${truncated.join(', ')} hit the ${ROW_CAP}-row cap and are INCOMPLETE.`);
     console.warn('  Split those years further (the API has no paging) before trusting the file.');
   }
   if (ARTIST_ID && !out.length) {
@@ -239,7 +264,7 @@ async function fetchJamcharts() {
     }
     console.log(`  ${map.size} jamchart entries`);
   } catch (e) {
-    console.warn(`  WARNING: jamcharts unavailable (${e.message})`);
+    degrade(`jamcharts unavailable (${e.message})`);
     console.warn('  crowd_rating and jamchart_note will be blank — scoring falls back to neutral.');
   }
   return map;
@@ -306,7 +331,7 @@ function sanityCheck(rows) {
 
   if (notes.length) {
     console.warn('\nSANITY CHECK — these columns look wrong, the CSV may be degraded:');
-    notes.forEach(n => console.warn(n));
+    notes.forEach(n => degraded.push(n.trim()) || console.warn(n));
     console.warn('Run with --probe to compare against the live field names.');
   } else {
     console.log('  sanity check passed — venue, length, jamcharts and segues all present');
@@ -637,5 +662,20 @@ async function main() {
 
 // Only fetch when run directly — importing this file just gets buildCSV.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(e => { console.error(`\nFailed: ${e.message}`); process.exit(1); });
+  main()
+    .then(() => {
+      /* THE FILE IS ALREADY WRITTEN by the time this runs, and that is
+         deliberate: a human running without --strict still wants the partial
+         file to look at. Under --strict the non-zero exit is what stops the
+         caller committing it, and the workflow leaves the working tree dirty
+         and untouched rather than trying to undo the write. */
+      if (STRICT && degraded.length) {
+        console.error(`\nFailed: --strict, and this run was degraded:`);
+        degraded.forEach(d => console.error(`  - ${d}`));
+        console.error('\nThe file was written but should NOT be committed. ' +
+          'Most of these are throttling; run it again.');
+        process.exit(1);
+      }
+    })
+    .catch(e => { console.error(`\nFailed: ${e.message}`); process.exit(1); });
 }

@@ -678,6 +678,35 @@ check(!/\.song:before\{/.test(game), 'the left accent strip is gone');
 check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
   'and the landing state takes the bar');
 
+/* THE REFRESH RUNS ITSELF, and these guard the parts that make that safe.
+   A refresh is not an append: crowd_rating is derived from the jamchart
+   standings, so one new show restates ~4,000 of 7,500 rows. The commit diff can
+   never be the control, so the gates are. */
+console.log('the automatic refresh');
+const wf = read('.github/workflows/setlist-data.yml');
+check(/cron:/.test(wf), 'the refresh is scheduled');
+/* --strict IS THE WHOLE SAFETY STORY. Without it the ingester warns about a
+   throttled year, a truncated year or a jamchart outage and still exits 0,
+   which for an unattended job means committing a broken file over a good one. */
+check(/ingest_band\.mjs --strict/.test(wf), 'and fetches in strict mode');
+check(/const STRICT = process\.argv\.includes\('--strict'\)/.test(read('scripts/setlist/ingest_band.mjs')),
+  'which the ingester implements');
+check(/if \(STRICT && degraded\.length\)/.test(read('scripts/setlist/ingest_band.mjs')),
+  'and exits non-zero on a degraded run');
+// All four gates run before anything is committed.
+for (const [step, why] of [
+  ['sync_counts.mjs', 'the copy follows the counts'],
+  ['data_drift.mjs', 'the drift is inside bounds'],
+  ['check_data.mjs', 'this net runs'],
+  ['verify-scoring.mjs', 'the scoring spec runs'],
+]) check(wf.includes(step), `before committing, ${why}`);
+check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
+  'and the commit comes after every gate');
+/* sync_counts exists because check_data asserts the home screen's archive size
+   against the file, so every SUCCESSFUL refresh would otherwise fail here. */
+check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
+  'the counts in the copy can be regenerated');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
