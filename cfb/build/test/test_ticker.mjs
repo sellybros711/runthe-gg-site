@@ -33,9 +33,17 @@ const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ')
 
 const b = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+/* THE ARCADE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off: it
+   writes localStorage on the way in, exactly as ticking the box does. It opens 1.4s after
+   the front page settles and covers the screen, so a suite that idles on the intro and
+   then clicks would be clicking a backdrop. test_arcade_ad.mjs is where the ad itself is
+   checked; everything here is about something else. */
+const NO_ARCADE_AD = () => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} };
+
 
 async function open(vp) {
   const p = await b.newPage({ viewport: vp });
+  await p.addInitScript(NO_ARCADE_AD);
   p.errs = [];
   await p.route('**/*', (r) => EXTERNAL.test(r.request().url()) ? r.abort() : r.continue());
   p.on('pageerror', (e) => p.errs.push(e.message));

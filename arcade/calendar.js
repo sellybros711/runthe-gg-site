@@ -46,6 +46,9 @@
     { key:'wordsearch', path:'wordsearch', cls:'word',   name:'Daily Word Search',accent:'var(--teal)',
       desc:'Find every hidden name from today’s theme.',
       icon:'<svg viewBox="0 0 56 56"><defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs><g clip-path="url(#wsico)"><rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/><g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g><rect x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/><rect x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5"/><rect x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5"/><g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle"><text x="10" y="13" fill="#06333A">W</text><text x="22" y="25" fill="#06333A">I</text><text x="34" y="37" fill="#06333A">N</text></g></g><rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/></svg>' }
+    ,{ key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)',
+      desc:'One letter, eight categories, two minutes.',
+      icon:'<svg viewBox="0 0 56 56"><rect x="4" y="4" width="48" height="48" rx="8" fill="#F7E9FB"/><rect x="4" y="4" width="48" height="48" rx="8" fill="none" stroke="#DA6BE6" stroke-width="2"/><g font-family="Anton, Impact, sans-serif" font-size="26" text-anchor="middle"><text x="28" y="37" fill="#DA6BE6">S</text></g><g fill="#DA6BE6" opacity=".55"><rect x="10" y="44" width="9" height="3" rx="1.5"/><rect x="23.5" y="44" width="9" height="3" rx="1.5"/><rect x="37" y="44" width="9" height="3" rx="1.5"/></g></svg>' }
   ];
 
   var byKey = {};

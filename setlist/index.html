@@ -604,12 +604,44 @@
       repeating-linear-gradient(90deg, rgba(128,128,128,.04) 0 1px, transparent 1px 4px);}
 
   .song{display:flex; align-items:baseline; justify-content:space-between; gap:9px; width:100%;
-    text-align:left; padding:9px 4px 9px 11px; border-radius:0; background:transparent;
+    text-align:left; padding:9px 4px; border-radius:0; background:transparent;
     border:0; border-bottom:1px solid var(--line); position:relative;
     transition:background var(--t-fast) var(--ease), padding var(--t-fast) var(--ease);}
-  /* The accent, kept as a mark on the sheet rather than a card edge. */
-  .song:before{content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px;
-    background:var(--acc, transparent); border-radius:2px;}
+  /* ---------------- THE TIME BAR ----------------
+     THE ROW'S LENGTH, DRAWN. Running time is the resource the whole game
+     spends, and it was a number you had to read and convert. Now the row
+     carries a bar as wide as the song is long, so a list reads as a shape:
+     the twenty-minute jam is visibly a different object from the three-minute
+     one before you have read a word.
+
+     THE SCALE IS 25 MINUTES, and that is measured rather than picked. Against
+     the archive a 20 minute scale clips 7.2% of songs, 25 clips 1.4% and 30
+     clips 0.3%. 25 is the one that keeps the useful range: the median song
+     fills 41% of the bar and the 5th to 95th percentiles span 17% to 84%, so
+     most of the bar is doing work. The 1.4% that clip are 25-minute-plus
+     monsters, and a bar pinned at full width is the truth about those.
+
+     IT ALSO TAKES OVER FROM THE LEFT ACCENT STRIP. That strip carried the
+     role colour and nothing else; the bar carries the same colour AND the
+     length, so keeping both would be two things saying one thing. */
+  /* THE ELEMENT IS ALWAYS FULL WIDTH AND THE PAINT IS WHAT VARIES, which is
+     not a flourish: `.l` is a wrapping flex row (that is how the sub-line gets
+     a line of its own), and flexbox decides where to break on an item's
+     HYPOTHETICAL main size. Sizing the bar with max-width clamps that
+     hypothetical size too, so a 40% bar does not force a wrap and rides up
+     beside the title on every row that has no sub-line. Full-basis element,
+     background sized to --w, and the break is unconditional. */
+  .tbar{display:block; flex:0 0 100%; height:4px; margin:8px 0 1px;
+    background:color-mix(in srgb, var(--acc, var(--dim)) 42%, transparent);
+    background-size:max(5px, var(--w, 0%)) 100%;
+    background-repeat:no-repeat; border-radius:99px;
+    -webkit-mask:linear-gradient(#000,#000) left center/max(5px, var(--w,0%)) 100% no-repeat;
+    mask:linear-gradient(#000,#000) left center/max(5px, var(--w,0%)) 100% no-repeat;}
+  /* Nothing measures a bar off the end of the row, so the 1.4% that clip say
+     so rather than pretending 25 minutes and 78 minutes look alike. */
+  .tbar.over{background:linear-gradient(90deg,
+      color-mix(in srgb, var(--acc, var(--dim)) 42%, transparent) 82%,
+      color-mix(in srgb, var(--acc, var(--dim)) 95%, transparent) 100%);}
   .song:last-child{border-bottom:0;}
   .song:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
   .song.used{opacity:.36; cursor:not-allowed;}
@@ -632,18 +664,69 @@
      This is the brand mark's own chevron on a viewBox cropped to the stroke,
      so the box IS the ink, sized in em so it tracks whatever the title is
      set at. Same path and the same round caps as the app icon. */
+  /* ---------------- THE SEGUE MARK IN THE SONG LIST ----------------
+     THE DYE COMES OFF THIS ONE, and it is the same lesson as the arrow, the
+     top rule and the account chip: a five-colour sweep needs room. On a 14px
+     glyph the coral and gold thirds land within a hair of the light theme's
+     own background, so a quarter of every arrow in the list was invisible and
+     the rest read as a smudge. The dye stays where it has room and means
+     identity: the logo, the header rule, the "I was here" tag, the share card.
+     Here the job is legibility at 14px, so it is one solid colour.
+
+     VIOLET, because the game already spends violet on segues everywhere else:
+     the playback's segue line, the scorecard's "+34". Three screens, one
+     colour for one idea. */
   .segout, .sf-seg, .segmark{display:inline-block; width:.5em; height:.72em;
     vertical-align:-.03em; background:var(--dye-line); flex:0 0 auto;
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
   .segout{margin-left:.26em;}
   .segmark{margin-right:.1em;}
+  /* The list, the playback and the scorecard. NOT .heromark or the tag: those
+     are the brand and they keep the dye. */
+  .song .segout, .song .o.seg .segmark, .sim-seg .segmark,
+  .rrow .segout, .sf-seg{background:var(--violetT);}
 
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
     background:color-mix(in srgb,var(--green) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--green) 30%, transparent);}
-  .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  /* ---------------- THE TWO SEGUE STATES ----------------
+     Two things a row can be, and until now the second one was invisible.
+
+     THIS RULE WAS DEAD. `.song` sets `border:0` and then a single
+     `border-bottom`, so colouring `border-color` on a card that no longer has
+     a border tinted one hairline and nothing else. It was written when the
+     rows were cards and it survived the conversion to a sheet looking like it
+     still worked. So the single most important state in the game -- THIS SONG
+     COMPLETES THE SEGUE YOU HAVE OPEN -- has effectively been unstyled.
+
+     Measured against the real archive, that state is not rare: 27% of rows can
+     start a segue, and when you play one, a partner turns up in the next show
+     73.8% of the time. Three quarters of the time the player is handed the
+     chance and could not see it.
+
+     VIOLET OPENS, GREEN LANDS. Violet is already the segue colour on the
+     playback and the scorecard; green already means "you can do this now" on
+     the hunt banner and the COMPLETES SEGUE chip. Two states, two colours,
+     used the same way on every screen. */
+  /* THE ACCENT BAR IS NOT AVAILABLE FOR THIS. It carries what KIND of song a
+     row is -- jam, peak, ballad, opener, closer, cover -- and painting it
+     segue-violet took that away from every row that could start one, on top of
+     colliding with jam, which is already violet. A PEAK row came out reading
+     as a jam. The chip and the arrow carry the opens state; the bar keeps its
+     job.
+     `finishes` DOES take the bar, and only because it is transient and urgent:
+     for one round, what this song can do outranks what kind of song it is. */
+  .song.finishes{background:color-mix(in srgb,var(--green) 10%, transparent);}
+  .song.finishes .tbar{background:var(--greenT); height:5px;}
+  .song.finishes .t{color:var(--greenT);}
+  .song.finishes:hover{background:color-mix(in srgb,var(--green) 16%, transparent);}
+
+  /* The affordance, NAMED. A glyph alone says "something is different about
+     this row"; it does not say what, and it cannot say what it is for. The
+     chip is the one place the game gets to use the word. */
+  .chip.opens{color:var(--violetT);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
@@ -692,9 +775,33 @@
      a list where every row is a different height is the thing that reads as
      overwhelming, not the size of any one row.
      19px still sets the title as the row without pushing it to two lines. */
-  .song .t{font-family:var(--ui); font-weight:400; font-size:19px; line-height:1.1;
-    letter-spacing:.2px;}
-  .song.used .t{font-size:16px;}
+  /* ---------------- THE SONG TITLE ----------------
+     NOT THE DISPLAY FACE. Anton is a condensed poster type, and a song title
+     is not a poster: it is mixed case with apostrophes, ampersands, brackets
+     and roman numerals, read ten to a screen, at 19px. Condensed and heavy
+     makes every row shout at the same volume and squeezes exactly the
+     characters that tell titles apart.
+
+     THE ARGUMENT FOR KEEPING IT WAS LINE FITTING, and it does not survive
+     being measured. Across all 364 distinct Goose titles, in the 309px a
+     title actually gets on a 390px phone:
+
+         Anton 19px          3 wrap  (0.8%)
+         Archivo 700 17.5    6 wrap  (1.6%)
+         Archivo 800 17px    9 wrap  (2.5%)
+         Archivo 900 17px   13 wrap  (3.6%)
+
+     Archivo 800 sets a median title 14% wider and costs SIX more wrapped
+     titles out of 364. That is what the condensation was buying.
+
+     800 rather than 900: the extra weight buys nothing at this size and wraps
+     four more. And it is the weight the scorecard's setlist already uses, so
+     the two lists the game shows now speak with one voice.
+
+     Anton stays where it is a display face doing display work: the countdown,
+     the show date, the band headings, the section titles. */
+  .song .t{font-weight:800; font-size:17px; line-height:1.25; letter-spacing:-.1px;}
+  .song.used .t{font-size:15.5px;}
   /* The left column wraps as a row: title, then chips, and anything
      descriptive drops to its own line underneath rather than running on after
      the title and wrapping mid-phrase. */
@@ -708,8 +815,14 @@
   /* The arrow keeps the dye, because that is the mechanic. The partner name
      steps down from bold green to the muted ink: naming it is enough, it does
      not also have to be the loudest thing on the row. */
-  .song .o.seg{color:var(--mut); font-weight:700;}
-  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
+  /* A SENTENCE NOW, not a fragment, so it wraps and needs a line height. The
+     partner is the bold word because it is the thing to go looking for. */
+  .song .o.seg{color:var(--dim); font-weight:600; line-height:1.45;}
+  .song .o.seg b{color:var(--mut); font-weight:800;}
+  .song .o.seg .segmark{margin-right:.3em; vertical-align:-.02em;}
+  /* Once a segue is open the row is about landing it, so the line that
+     describes opening one steps back. */
+  .song.finishes .o.seg{opacity:.75;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
@@ -750,15 +863,27 @@
      annotates in the margin next to the song. */
   .chips{display:inline-flex; gap:4px; flex-wrap:wrap; justify-content:flex-start;
     align-items:center;}
+  /* ---------------- THE DESCRIPTORS ARE TYPE, NOT CONTAINERS ----------------
+     They were filled and outlined pills, and a row of coloured rounded
+     rectangles is the house style of every generated dashboard on earth. It
+     also was not buying anything: measured across all 6,886 rows of the
+     archive, the MEDIAN row carries one descriptor and 74% carry none or one.
+     The pill was never solving a density problem, it was decoration on a
+     single word.
+
+     So the word keeps its colour, which is where all the meaning was, and
+     loses the box. Letterspaced small caps, middot separated, the way a
+     printed setlist or a sleeve note sets the same kind of aside. */
   .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
-    letter-spacing:.7px; text-transform:uppercase; padding:2px 5px; border-radius:4px;
-    background:var(--line); color:var(--mut);}
+    letter-spacing:1.6px; text-transform:uppercase; color:var(--mut);
+    padding:0; background:none; border-radius:0;}
+  .chips{gap:0 !important;}
+  .chip + .chip:before{content:'\00b7'; margin:0 7px; color:var(--line2);
+    letter-spacing:0; font-weight:700;}
   .chip svg{display:block; flex:0 0 auto;}
 
-  /* ROLE — outlined. What the song IS. The left strip on the card carries the
-     same colour, so this is the quiet family. */
-  .chip.acc{background:transparent; color:var(--acc);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
+  /* ROLE. Colour only, which is all it ever carried. */
+  .chip.acc{color:var(--acc);}
 
   /* ...except the peak, which melts. The drip is cut out of the chip's own
      body by an SVG mask, so it stays inside the chip's box and can never reach
@@ -768,27 +893,36 @@
      shouted over every other chip on the row. Same weight as its neighbours
      now, and the melt still reads. The lobes are half as deep as the first
      cut, which was eating into the text. */
-  .chip.acc.peak{background:color-mix(in srgb,var(--acc) 26%, transparent);
-    color:var(--acc); box-shadow:none; padding:2px 6px 5px; border-radius:5px 5px 0 0;
-    -webkit-mask:var(--melt) no-repeat center/100% 100%;
-    mask:var(--melt) no-repeat center/100% 100%;}
+  /* THE MELT GOES WITH THE BOX. It was a drip cut out of the chip's body, and
+     with no body to cut it from there is nothing to melt. A peak is now the
+     word in its own pink like every other role; the drip lives on in the peak
+     chip on the scorecard, which still has a filled shape to carve. */
+  .chip.acc.peak{color:var(--acc);}
 
   /* FLOW — solid green, and both of them are shaped like what they mean.
      A setlist writes a segue as ">", so the segue chip is an arrow pointing
      at the song it lands on. A sandwich is drawn as one: crust on top and
      bottom, filling between, domed like a bun. */
-  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
-    padding-right:11px;
+  /* FLOW. The two that are worth shouting keep a fill, and ONLY these two:
+     they are not descriptions of the song, they are a thing the player can go
+     and do this turn, and they appear on a handful of rows at most. The arrow
+     shape survives because a setlist writes a segue as ">" and the chip still
+     points at the song it lands on. */
+  .chip.seg{background:color-mix(in srgb,var(--green) 22%, transparent); color:var(--greenT);
+    letter-spacing:.9px; padding:2px 11px 2px 6px; border-radius:3px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
-  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px; padding:2px 7px;}
+  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;
+    padding:2px 7px; border-radius:3px;}
+  /* And they need their separator back, since they are boxes among words. */
+  .chip.seg + .chip:before, .chip.sand + .chip:before{margin-left:9px;}
 
-  /* RARITY — solid gold. */
-  .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
+  /* RARITY. */
+  .chip.rare{color:var(--goldT);}
 
   /* MONOTONY — the only chip that warns rather than tempts, so it is the only
      one in red. It has to be on the card BEFORE the pick: a penalty you first
      meet on the scorecard is a gotcha. */
-  .chip.mono{background:color-mix(in srgb,var(--red) 16%, transparent); color:var(--redT);}
+  .chip.mono{color:var(--redT);}
 
   /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
    *
@@ -812,15 +946,18 @@
   /* The dye must SWEEP inside a chip this small, not sit zoomed into one arc
      of it. At 260% a jamchart border showed a single gold edge and read as
      ENCORE; at 100% the whole wheel crosses the chip and it is unmistakable. */
+  /* THE ONE CHIP THAT IS STILL A BADGE, and it is not in the draft list at
+     all: it appears on the PLAYBACK screen, once, on its own line, at the
+     moment the crowd reacts to a version the curators flagged. That is a
+     surface with room, which is exactly the condition the dye needs. It
+     therefore declares the padding the base rule no longer provides. */
   .chip.rec{background:var(--dye); background-size:100% 100%; color:#0A1524;
-    letter-spacing:.9px;}
-  .chip.jc{color:var(--ink); border:1.5px solid transparent; padding:1px 4px;
-    background:linear-gradient(var(--card),var(--card)) padding-box,
-               var(--dye) border-box;
-    background-size:auto, 100% 100%;}
-  .song[aria-pressed="true"] .chip.jc,
-  .slot.sel .chip.jc{background:linear-gradient(var(--card3),var(--card3)) padding-box,
-               var(--dye) border-box;}
+    letter-spacing:.9px; padding:3px 9px; border-radius:4px;}
+  /* ARCHIVE. The dye-bordered box goes with the rest of them, and it is no
+     loss: at 9.5px a five-colour border round four letters was the same smudge
+     the segue arrow was, for the same reason. Gold instead, which is the
+     colour the archive already uses for its other flag, the show gap. */
+  .chip.jc{color:var(--goldT);}
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
@@ -1775,6 +1912,11 @@ const S = {
   ranks: null,
 };
 
+/* What fills the time bar. See the .tbar rule for why 25 minutes and not 20.
+   Here rather than in scoring.js because it changes nothing about the score:
+   it is how long a bar is drawn, and no rule reads it. */
+const TBAR_FULL = 25 * 60;
+
 const app = document.getElementById('app');
 
 function setScreen(name){
@@ -2118,12 +2260,22 @@ function renderDraft(){
       // Out of time is a different kind of no from already-played, and the
       // player needs to know which wall they hit.
       const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
-      const partnerCount = (S.data.partners.get(p.song_id) || new Set()).size;
+      /* WHAT THE SECOND LINE SAYS, and what it stopped saying.
+         It read "> Flodown or 14 more", where the 14 is every song in the
+         ARCHIVE that has ever followed this one: median 15 across the data.
+         A player reads that as fourteen chances, and it is not one. The next
+         round draws a different random show, so the only thing that matters is
+         whether a partner turns up in THAT one -- measured at 73.8%, with a
+         median of 2 available when it happens.
+         The count is gone rather than corrected. It was never actionable, it
+         put an eight-word sentence on a quarter of every list, and at 11.5px
+         nowrap it clipped mid-word anyway. The chip names the mechanic; this
+         line names the song to go looking for, and that is the whole job. */
       const oLine = why
         ? `<span class="o${whyClass}">${why}</span>`
         : p.segued_into
-          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i> ${esc(p.segued_into)}${
-              partnerCount > 1 ? ` <i>or ${partnerCount - 1} more</i>` : ''}</span>`
+          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i>Ran into
+              <b>${esc(p.segued_into)}</b></span>`
           : p.is_cover === 'true' && p.original_artist
             ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : '';
       const origShown = !why && !p.segued_into && p.is_cover === 'true' && !!p.original_artist;
@@ -2131,7 +2283,14 @@ function renderDraft(){
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
-      else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
+      else if (finishes) chips.push('<span class="chip seg">LANDS THE SEGUE</span>');
+      /* NAMED, not just marked. The arrow after the title says a row is
+         different; only a word says what the difference is FOR. It goes first,
+         because on a row that can also be an opener and a jamchart it is the
+         one chip describing something the player can go and do.
+         Not shown on a row that already says LANDS THE SEGUE: that song is
+         both, and the thing to do with it right now is land the open one. */
+      else if (p.segued_into && !dead) chips.push('<span class="chip opens">SEGUE</span>');
       if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
       // What this pick would cost by repeating the gear the set is already in.
       if (!dead) {
@@ -2145,7 +2304,8 @@ function renderDraft(){
         chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
+      return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}${
+          p.segued_into && !dead && !finishes ? ' opens' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
@@ -2154,6 +2314,10 @@ function renderDraft(){
             ? '<span class="segout" role="img" aria-label="segued into the next song"></span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
           ${oLine}
+          <!-- Decorative: the clock on the right already states the length, so
+               this is hidden from assistive tech rather than read out twice. -->
+          <span class="tbar${lenOf(p) > TBAR_FULL ? ' over' : ''}" aria-hidden="true"
+            style="--w:${Math.min(100, 100 * lenOf(p) / TBAR_FULL).toFixed(1)}%"></span>
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;
@@ -2256,8 +2420,15 @@ function renderDraft(){
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
             ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
-              <div class="commit">This one segues, so you'll need to land it next
-                or the transition is lost.</div>` : ''}
+              <!-- AN INVITATION, NOT A WARNING. This read "you'll need to land
+                   it next or the transition is lost", which frames the whole
+                   mechanic as a risk you are taking. Measured against the
+                   archive it is the opposite: play a song that segued and a
+                   partner turns up in the next show 73.8% of the time. The
+                   game was talking a player out of the thing it most wants
+                   them to try. -->
+              <div class="commit">This one segues. Land it next round and the
+                transition scores. Most shows have a song that can.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn" data-close-set>
               <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>

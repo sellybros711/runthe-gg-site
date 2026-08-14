@@ -1,8 +1,5 @@
 /* sportegories.js — the Sportegories engine (window.RTG_SPORTEGORIES).
  *
- * NOT WIRED INTO THE SITE YET. No page loads this; the game is still in
- * development and stays unreachable until it's explicitly launched.
- *
  * Consumes arcade/sportegories-data.js and provides everything the future game
  * page needs, with no DOM dependencies so it can be unit-tested in node:
  *
@@ -161,16 +158,82 @@
     if (!data()) return [];
     return (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
   }
-  function build(seed) {
+  /* ---------- the daily letter: a weighted DECK, not a fresh roll ----------
+   *
+   * An independent weighted roll each day is "fair" and feels rigged: over a
+   * year it produced 18 back-to-back repeats and long stretches leaning on the
+   * same few letters, which reads as "it's always B or C". Random clumps;
+   * people notice clumps.
+   *
+   * So build a deck instead. Each letter gets copies proportional to how well
+   * the library serves it (the same n^2 weighting as before, so S still beats
+   * N over the long run), the deck is shuffled once per cycle from a cycle
+   * seed, and consecutive days walk it. Every letter's long-run frequency is
+   * unchanged, but a letter cannot come back until the deck does — and the
+   * shuffle is de-clumped so the same letter never lands twice in a row,
+   * including across a cycle boundary. */
+  var DECK_TARGET = 120;
+  var _deckCache = {};
+  function letterDeck(cycle) {
+    if (_deckCache[cycle]) return _deckCache[cycle];
+    var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
+    var w = pick.map(function (L) { var n = (D.byLetter[L] || []).length; return n * n; });
+    var tot = w.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var deck = [];
+    for (var i = 0; i < pick.length; i++) {
+      var copies = Math.max(1, Math.round(DECK_TARGET * w[i] / tot));
+      for (var c = 0; c < copies; c++) deck.push(pick[i]);
+    }
+    var r = rng(hash('sportegories:deck:' + cycle));
+    for (var j = deck.length - 1; j > 0; j--) {
+      var k = Math.floor(r() * (j + 1)), t = deck[j]; deck[j] = deck[k]; deck[k] = t;
+    }
+    // de-clump: push any adjacent duplicate forward to the next unlike slot
+    for (var a = 1; a < deck.length; a++) {
+      if (deck[a] !== deck[a - 1]) continue;
+      for (var b = a + 1; b < deck.length; b++) {
+        if (deck[b] !== deck[a] && deck[b] !== deck[a - 1]) {
+          var tmp = deck[a]; deck[a] = deck[b]; deck[b] = tmp; break;
+        }
+      }
+    }
+    _deckCache[cycle] = deck;
+    return deck;
+  }
+  var LETTER_EPOCH = Date.UTC(2026, 6, 22);           // 2026-07-22, the archive floor
+  function letterForDate(dateStr) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ''));
+    if (!m) return null;
+    var day = Math.floor((Date.UTC(+m[1], +m[2] - 1, +m[3]) - LETTER_EPOCH) / 86400000);
+    var probe = letterDeck(0);
+    if (!probe.length) return null;
+    var n = probe.length;
+    var cycle = Math.floor(day / n);
+    var idx = ((day % n) + n) % n;
+    var deck = letterDeck(cycle);
+    var L = deck[idx];
+    // a cycle boundary can still butt two identical letters together
+    if (idx === 0 && cycle > 0) {
+      var prev = letterDeck(cycle - 1);
+      if (prev.length && prev[prev.length - 1] === L && deck.length > 1) L = deck[1];
+    }
+    return L;
+  }
+
+  function build(seed, forcedLetter) {
     if (!data()) return null;
     var r = rng(seed);
     var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
-    // Weight by how well the library serves each letter, so common letters come
-    // up far more than the thin ones - a uniform roll made N and V as likely
-    // as S, which is not how a Scattergories die feels.
-    var w = pick.map(function (L) { var n = (D.byLetter[L] || []).length; return n * n; });
-    var tot = w.reduce(function (a, b) { return a + b; }, 0), roll = r() * tot, L = pick[pick.length - 1];
-    for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
+    var L;
+    if (forcedLetter && pick.indexOf(forcedLetter) >= 0) {
+      L = forcedLetter;                    // dailies walk the deck
+    } else {
+      // practice keeps the plain weighted roll - there is no sequence to space
+      var w = pick.map(function (Lx) { var n = (D.byLetter[Lx] || []).length; return n * n; });
+      var tot = w.reduce(function (a, b) { return a + b; }, 0), roll = r() * tot;
+      L = pick[pick.length - 1];
+      for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
+    }
     var avail = viableFor(L);
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
@@ -196,7 +259,7 @@
     });
     return { letter: L, cats: out, seed: seed };
   }
-  function daily(dateStr) { return build(hash('sportegories:' + dateStr)); }
+  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr)); }
   function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed))); }
 
   // ---------- grading ----------

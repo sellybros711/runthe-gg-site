@@ -64,6 +64,7 @@ before the day rather than during it.
 | `test_challenge.mjs` | Challenge a friend end to end: the link carries the roster, both seats see the identical game from opposite sides, spectators get spectator buttons, and a mangled link just opens the game. |
 | `test_bowl_key.mjs` | Which bowl a season played, as the row records it. Sweeps every reachable (wins, rank) and demands the database and `seedFromRanking()` agree on the tier, round-trips all 37 bowl names through the slug and back, and proves the named-bowl badges are earnable signed in, which they were not before `64_cfb_bowl_key.sql`. |
 | `test_slot_chooser.mjs` | The sheet a two-position man puts up, read off a 390px screen: that tapping him asks rather than assumes, that every option names the spot and says what it leaves behind, and that the copy is the short one. Deterministic, because two-position men are 143 of 14,154 players and clicking until one turns up took minutes: the page seeds a run from `Date.now()` and `Math.random()`, so both are pinned and the first spin is always 2008 Texas A&M with Ryan Tannehill on the board. |
+| `test_arcade_ad.mjs` | The one thing on this site that interrupts anybody, and the four promises it makes about when it will not: once a visit (checked across a second tab, which is the case sessionStorage alone gets wrong), never again once the box is ticked, never on top of a draft already under way, and never over a challenge screen. Also that the opt-out box is on screen without scrolling at six widths, because an ad that hides its own off switch has earned everything said about it, and that the game still boots where storage throws instead of answering. |
 | `test_ticker.mjs` | The poll ticker pinned along the bottom of the front page: that its RECTANGLE lands on screen rather than merely reporting `position:fixed`, that it clears whatever the mobile ad strip owns, that nothing on the page ends up behind it with the page scrolled to the bottom, and that it disappears the moment another screen takes over. |
 | `test_ranks_tab.mjs` | The Where it ranks tab in all three of its lives: pinned off, no `cfb_runs` on the server, and a board that answers. The middle case is the pre-launch state and must reach the *same* placeholder as the first, because "not open yet" and "did not answer" are different facts. |
 | `test_launch.mjs` | The things that are nobody's subsystem: every internal link and sitemap entry resolves, a cold visit's weight and time-to-playable, the head and structured data on both pages, alt text and button names, sideways scroll at eight widths, a whole season with fonts and ads and the board all refused, and the card on the site's front page. |
@@ -87,6 +88,7 @@ node cfb/build/test/test_ranks_tab.mjs
 node cfb/build/test/test_bowl_key.mjs cfbtest
 (nohup node cfb/build/test/gzip_server.mjs &)                   # 8081, gzipped
 node cfb/build/test/test_ticker.mjs
+node cfb/build/test/test_arcade_ad.mjs
 node cfb/build/test/test_slot_chooser.mjs
 node cfb/build/test/test_cabinet.mjs
 node cfb/build/test/test_launch.mjs

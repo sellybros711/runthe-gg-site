@@ -46,7 +46,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
-    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --spg:#DA6BE6; --spgT:#DA6BE6; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
     --hl:#FF8A3D; --hlT:#FF8A3D;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -56,7 +56,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#B4530A;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --spgT:#A03BD0; --mossT:#5F7A12; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#B4530A;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -304,7 +304,7 @@
   .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
   .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
   #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
-  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);} #pipS{--pc:var(--spg,#DA6BE6);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -325,6 +325,7 @@
   .tile.rankit{--c:var(--pink); --onC:#160B02;}
   .tile.alma{--c:var(--moss); --onC:#160B02;}
   .tile.highlow{--c:var(--brand); --onC:#160B02;}
+  .tile.spg{--c:var(--spg,#DA6BE6); --onC:#160B02;}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
@@ -336,9 +337,10 @@
   .tile.rankit .nm{color:var(--pinkT);}
   .tile.alma .nm{color:var(--mossT);}
   .tile.highlow .nm{color:var(--brandT);}
+  .tile.spg .nm{color:var(--spgT,#DA6BE6);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.highlow{order:10;}
+  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.spg{order:10;} .tile.highlow{order:11;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -557,7 +559,7 @@
       <main id="puzzles">
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 10 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 11 played</span></span>
         </div>
 
         <div class="tiles">
@@ -762,6 +764,22 @@
             </span>
           </a>
 
+          <a class="tile spg" id="cardSpg" href="/arcade/sportegories/">
+            <span class="cap" aria-hidden="true">
+              <span class="status" id="stS">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <circle cx="28" cy="24" r="15" fill="none" stroke="#DA6BE6" stroke-width="3"/>
+                <g font-family="Anton, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#DA6BE6"><text x="28" y="30">S</text></g>
+                <g fill="#DA6BE6" opacity=".55"><rect x="12" y="44" width="10" height="4" rx="2"/><rect x="23" y="44" width="10" height="4" rx="2"/><rect x="34" y="44" width="10" height="4" rx="2"/></g>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Sportegories</span>
+              <span class="desc">One letter, eight categories, two minutes. Name a player for every one.</span>
+              <span class="play" id="playS">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
+
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
               <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members only</span>
@@ -784,8 +802,8 @@
         </div>
 
         <section class="editions" id="editions">
-          <h2 class="ed-h">Every game, three more ways</h2>
-          <p class="ed-s">Each daily game also has an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
+          <h2 class="ed-h">Five games, three more ways</h2>
+          <p class="ed-s">Alma Mater, Career Path, Guess the Player, Rank It and Word Search each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
           <div class="ed-row">
             <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
             <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
@@ -795,8 +813,8 @@
 
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>9</s> <b>36 daily games</b></h2>
-          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of every one, plus a members-only game.</p>
+          <h2 class="cp-head" id="cp-head"><s>10</s> <b>26 daily games</b></h2>
+          <p class="cp-sub">Your free Arcade is 10 games a day. The Card unlocks an NBA, NFL and MLB edition of five of them, plus a members-only game.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
@@ -939,6 +957,7 @@
   var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
   var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v2', '{}')) || {}; } catch (e) {}
   var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
+  var sg = {}; try { sg = JSON.parse(g('rtg_sportegories_v1', '{}')) || {}; } catch (e) {}
   cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
   // High-water mark: most games only persist their CURRENT day-streak, so the
   // hub is the one place that remembers your all-time best. Fold in the games
@@ -963,6 +982,7 @@
   var rDone = (rs.lastDone === t);
   var kDone = (ks.lastDone === t);
   var aDone = (as.lastDone === t);
+  var sDone = !!(sg.last && sg.last.d === t);
 
   // ---- ARCADE TICKET: one daily punch-card across all nine games ----
   (function(){
@@ -971,7 +991,7 @@
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--mossT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
+      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
     ];
     // Members get a 10th punch: the card-only High Low, "done" once they've
     // played it today (it's endless, so a single play counts).
@@ -1064,6 +1084,7 @@
   mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
   mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
+  mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + ' pts') : 'Solved', 'sportegories');
 
   // Cardholders: a played tile is an "Archive" entry. Clicking it opens that
   // game's past-days calendar (RTGCalendar) instead of replaying today.
@@ -1091,8 +1112,10 @@
   if (hlTile && isMemberN) hlTile.classList.add('ismember');
   var pipH = document.getElementById('pipH');
   if (pipH) { pipH.style.display = isMemberN ? '' : 'none'; if (hlPlayed) pipH.classList.add('done'); }
-  var total = isMemberN ? 10 : 9;
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (hlPlayed ? 1 : 0);
+  // 10 free games now that Sportegories is live; the 11th is members-only, so
+  // non-members are never shown a total they cannot reach.
+  var total = isMemberN ? 11 : 10;
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
   if (n === total) {
     document.getElementById('dprog').classList.add('all');

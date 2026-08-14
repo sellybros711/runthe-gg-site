@@ -137,6 +137,16 @@ const sitemap = read('sitemap.xml');
 check(sitemap.includes('<loc>https://runthe.gg/setlist/</loc>'), 'sitemap lists /setlist/');
 
 const game = read('setlist/index.html');
+/* THE SAME FILE WITH ITS COMMENTS REMOVED, and it exists because this suite has
+   now caught its own documentation three times. A guard that bans a phrase, a
+   class name or a declaration has to be pointed at the CODE; the comment above
+   the fix routinely quotes the thing being banned, which is exactly what makes
+   the comment worth reading. Any guard whose subject is prose or markup should
+   test this rather than `game`. CSS guards can use either, since a rule cannot
+   hide inside a comment. */
+const gameBare = game
+  .replace(/\/\*[\s\S]*?\*\//g, '')     // CSS and JS block comments
+  .replace(/<!--[\s\S]*?-->/g, '');    // HTML comments
 check(!/noindex/i.test(game), 'game page is indexable (no noindex)');
 
 console.log();
@@ -184,7 +194,13 @@ for (const [sel, what] of [['.chip.acc', 'role'], ['.chip.seg', 'segue'],
 // Deduped: the jamchart chip has a second rule for its selected state.
 const dyed = [...new Set([...game.matchAll(/\.chip\.([a-z]+)\{[^}]*var\(--dye\)/g)]
   .map(m => m[1]))].sort();
-check(dyed.join(',') === 'jc,rec', 'only the archive chips use tie dye',
+/* THE DYE IS DOWN TO ONE CHIP, and that is the same lesson as the segue arrow
+   and the account pill: it needs room. At 9.5px a five-colour border around
+   four letters is a smudge, so JAMCHART is gold now (the colour the archive
+   already uses for its other flag). RECOMMENDED keeps it because it is not in
+   the draft list at all: it appears once on the playback screen, on its own
+   line, at full badge size. */
+check(dyed.join(',') === 'rec', 'only the archive badge uses tie dye',
   `dyed: ${dyed.join(', ') || 'none'}`);
 
 console.log();
@@ -217,7 +233,11 @@ for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
    is what broke when the tile picked up a second class. */
 /* The mark lives in the top bar only. It was in the hero too, which put it
    and the wordmark twice on one screen about 60px apart. */
-check(!/\bheromark\b/.test(game), 'the hero does not repeat the top bar mark');
+/* COMMENTS STRIPPED FIRST, for the reason the `.hero p` guard below strips
+   them: this matches a bare word, so a CSS comment that merely NAMES the class
+   while explaining what does not wear it counts as the bug. Second time that
+   has happened; the guard should test the markup, not the prose about it. */
+check(!/\bheromark\b/.test(gameBare), 'the hero does not repeat the top bar mark');
 check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar shows the mark');
 check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
 check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
@@ -482,8 +502,7 @@ check(/\.hero p\{margin:0 auto;/.test(game), 'the hero blurb is centred');
   /* Comments stripped first: the explanation above the rule QUOTES the old
      broken declaration, and a guard that counts its own documentation as the
      bug is a guard nobody will keep. */
-  const bare = game.replace(/\/\*[\s\S]*?\*\//g, '');
-  const withMargin = [...bare.matchAll(/\.hero p\{([^}]*)\}/g)]
+  const withMargin = [...gameBare.matchAll(/\.hero p\{([^}]*)\}/g)]
     .filter(m => /margin/.test(m[1]));
   check(withMargin.length === 1, 'and its margin is set in exactly one rule',
     `${withMargin.length} rules set it`);
@@ -557,6 +576,107 @@ check(/Your RunThe\.GG account is still/.test(game),
   'and says plainly that the site account is unchanged');
 check(/e\.target\.id === 'segueNameForm'/.test(game),
   'the name form is handled before the sign-in branch');
+
+/* THE SEGUE MECHANIC IN THE DRAFT LIST. Measured against the real archive:
+   27% of rows can start a segue, and once you play one a partner turns up in
+   the next show 73.8% of the time. Three quarters of the time the player is
+   handed the chance, so every one of these guards a way that chance goes back
+   to being invisible. */
+console.log('the segue in the list');
+// The dye does not fit a 14px glyph. Solid violet in the list, playback and
+// scorecard; the dye keeps the surfaces that have room for it.
+check(/\.song \.segout[^{]*\{background:var\(--violetT\)/.test(game),
+  'the list mark is solid, not dye');
+check(/--dye-line\)/.test(game), 'and the dye survives where it belongs');
+// A glyph says a row is different; only a word says what it is for.
+check(/class="chip opens">SEGUE</.test(game), 'the affordance is named');
+check(/\.chip\.opens\{/.test(game), 'and styled');
+/* THE STATE THAT WAS DEAD. `.song` has border:0, so the old
+   `.song.finishes{border-color:...}` coloured a border that does not exist.
+   These are the properties that actually paint. */
+check(/\.song\.finishes\{[^}]*background:/.test(game),
+  'a row that lands a segue is filled');
+/* The accent strip this used to check is gone: the time bar replaced it and
+   carries the role colour now, so the landing state takes the BAR. Asserted
+   with the rest of the time bar below; the property here is just that the row
+   still shouts. */
+check(/\.song\.finishes \.tbar\{/.test(game), 'and takes the bar');
+check(/\.song\.finishes \.t\{[^}]*color:var\(--greenT\)/.test(game),
+  'and its title');
+check(!/\.song\.finishes\{border-color:[^;]*;\}/.test(game),
+  'and does not rely on a border it does not have');
+/* THE ACCENT BAR IS NOT AVAILABLE for the opens state: it carries what KIND of
+   song a row is, and segue-violet both erased that and collided with jam. */
+check(!/\.song\.opens:before\{/.test(game),
+  'the opens state leaves the role accent alone');
+// The line names the partner and nothing else. The old "or 14 more" counted
+// archive-wide partners, which is not what the next round offers.
+check(/Ran into\s*\n?\s*<b>/.test(game), 'the line names the partner');
+check(!/or \$\{partnerCount - 1\} more/.test(gameBare),
+  'and no longer advertises the archive-wide count');
+// And the commit line invites rather than warns.
+check(/most shows have a song that can/i.test(game),
+  'committing to a segue reads as an invitation');
+check(!/the transition is lost/.test(gameBare), 'not as a risk');
+
+/* THE SONG TITLE IS NOT SET IN THE DISPLAY FACE. Anton is a condensed poster
+   type; a song title is mixed case with apostrophes, ampersands and brackets,
+   read ten to a screen. The line-fitting argument for keeping it was measured
+   across all 364 distinct titles at the 309px a title really gets: Anton wraps
+   3, Archivo 800 wraps 9. Six songs out of 364. */
+console.log('the song title');
+check(!/\.song \.t\{[^}]*font-family:var\(--ui\)/.test(game),
+  'the song title is not the display face');
+check(/\.song \.t\{[^}]*font-weight:800/.test(game), 'it is Archivo 800');
+// The draft list and the scorecard list are the same list twice. One voice.
+check(/\.rr-t\{[^}]*font-weight:800/.test(game),
+  'and the scorecard setlist matches it');
+// Anton keeps the jobs a display face is for.
+check(/\.hc-n\{[^}]*font-family:var\(--ui\)/.test(game),
+  'the countdown keeps the display face');
+check(/\.showcard \.d\{[^}]*font-family:var\(--ui\)/.test(game),
+  'and so does the show date');
+
+/* THE DESCRIPTORS ARE TYPE, AND THE ROW DRAWS ITS OWN LENGTH.
+   Measured across all 6,886 rows of the archive: the MEDIAN row carries one
+   descriptor and 74% carry none or one. The pills were never solving a density
+   problem, so the box came off and the colour stayed. */
+console.log('the descriptors');
+check(/\.chip\{[^}]*background:none/.test(game), 'the base chip has no fill');
+check(/\.chip\{[^}]*padding:0/.test(game), 'and no padding');
+check(/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
+  'descriptors are separated by a middot instead');
+// The role, rarity, monotony and archive words are colour only now.
+for (const k of ['acc', 'rare', 'mono', 'jc'])
+  check(new RegExp(`\\.chip\\.${k}\\{color:var\\(--[a-zA-Z]+\\);\\}`).test(game),
+    `the ${k} descriptor is colour only`);
+/* THE TWO THAT KEEP A FILL are not descriptions of the song, they are a thing
+   the player can do this turn, and they land on a handful of rows at most. */
+check(/\.chip\.seg\{[^}]*background:color-mix/.test(game),
+  'landing a segue keeps its fill');
+check(/\.chip\.sand\{[^}]*background:var\(--green\)/.test(game),
+  'and so does closing a sandwich');
+
+/* THE TIME BAR. Length is the resource the game spends and it was a number you
+   had to convert. The 25 minute scale is measured: 20 clips 7.2% of songs, 25
+   clips 1.4%, 30 clips 0.3%, and at 25 the median fills 41% with p05-p95
+   spanning 17%-84%, so the bar has real range. */
+console.log('the time bar');
+check(/const TBAR_FULL = 25 \* 60;/.test(game), 'the bar scale is 25 minutes');
+check(/class="tbar\$\{/.test(game), 'every row draws one');
+check(/aria-hidden="true"/.test(game) && /class="tbar/.test(game),
+  'and it is hidden from assistive tech, since the clock states the length');
+/* FULL BASIS, PAINTED WIDTH. `.l` is a wrapping flex row, and flexbox breaks on
+   an item's hypothetical main size: sizing the bar with max-width clamps that
+   too, so a short bar rides up beside the title on any row with no sub-line. */
+check(/\.tbar\{[^}]*flex:0 0 100%/.test(game), 'the bar takes a whole line');
+check(/\.tbar\{[^}]*background-size:max\(5px, var\(--w/.test(game),
+  'and varies its paint, not its width');
+check(/\.tbar\.over\{/.test(game), 'the ones that clip say so');
+// It replaced the left accent strip rather than joining it.
+check(!/\.song:before\{/.test(game), 'the left accent strip is gone');
+check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
+  'and the landing state takes the bar');
 
 console.log('copy');
 const stripComments = src => src
