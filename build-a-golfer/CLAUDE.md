@@ -15302,3 +15302,31 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     `LEAGUE_CONTRACT_YEARS` + the terms in `leagueOfferMoney` (what signing is worth), `LEAGUE_CUP_HEAT` +
     the `leagueHeatTick` curve (how hot the feud has to run before the cup replaces the Nations Cup).
   - STILL UNBUILT from the plan: item 6 (Q-School / a feeder tour).
+
+- **"Career Legacy" renamed to CAREER TRAITS, and the coin boosts cut to 1-2% (owner: "the new legacy
+  unlocked rewards need a new name. Also I don't like how we give out so many coin boosts. It should be 1
+  or 2% for most of them if anything").**
+  1. **Renamed** (owner picked "Career Traits" from four options): the permanent list reads
+     "CAREER TRAITS · N of 12" over "Permanent traits this golfer earned on the course", the unlock card
+     reads **TRAIT UNLOCKED** (an apex feat keeps its bigger "A CAREER-DEFINING YEAR" billing), and the
+     career-feed label is now `Trait`. Deliberately NOT touched: the separate, pre-existing **Career &
+     Legacy** ACHIEVEMENT category (a different system) and the internal identifiers
+     (`LEGACY_PERKS`/`careerLegacy()`/`S.career.legacy`/the `legacy_unlock` track event), so saves and
+     analytics are unaffected.
+  2. **Coin boosts trimmed hard.** Five of the twelve traits paid a coin multiplier of 6-15%, stacking
+     multiplicatively to **1.53x** against a 1.6 cap. Now four pay 1-2% (Money Machine 2%, Dynasty Year 2%,
+     The Closer 1%, Untouchable 1%) and **People's Champion pays none at all** (it already gives +20% fan
+     growth, and the owner's "if anything" said not every trait needs one). Aggregate cap 1.6 -> **1.08**,
+     so every coin trait at once is ~6% instead of ~53%. The effect line prints the real number, so a trait
+     now reads "+2% coins".
+  - Also fixed while screenshotting: the summary's **Season high** tile could render "$NaN / Year undefined"
+    if a `career.seasons` row carried no money (a partial/legacy save), because the reduce compared against
+    `undefined` and kept the bad row. Now filters to rows with a finite money value.
+  - Verified in Playwright (13 checks, 0 page errors): most traits carry no coin boost, the ones that do are
+    1-2%, People's Champion has none, the cap matches the new scale, a fresh career is exactly 1.0, every
+    coin trait stacked is under 1.07 and `awardPlayCoins` really pays that, and the label prints "+2% coins";
+    plus the rename on the permanent list, the unlock card, the apex card and a real rendered season summary.
+    Regressions green (legacy engine 21/21 + UI 9/9, regress_final, the league end-to-end and scenario
+    suites). Two `legacy_ui` checks failed first as **stale fixtures** asserting the old "CAREER LEGACY"
+    copy (the failure payload showed the correct new text), now updated.
+  - Tunable: the `coin:` values in `LEGACY_PERKS` and `LEGACY_CAPS.coin`.
