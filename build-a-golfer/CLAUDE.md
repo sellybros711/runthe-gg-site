@@ -14978,3 +14978,35 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   since the request was for an ad "on this game". The runthe.gg hub homepage is a separate file
   (`index.html` on `main`) and was not touched; the same ad could be mirrored there if that's what was
   meant.
+
+- **ARCADE AD FIX: it was being lost for the whole session before anyone saw it (owner: "I dont see the
+  ad").** Ruled out a bad deploy first - the deployed `golf/index.html` was byte-identical to the source,
+  so the ad WAS live. The bug was a timing race, and it reproduces exactly on the deployed build:
+  `maybeArcadeAd()` burnt the once-per-session `sessionStorage` flag BEFORE `S.overlay='arcadead'; render()`.
+  The title chain fires on a fixed 420ms timer, but a signed-in player's popup cascade
+  (`cloudPull().finally(...)` -> welcome pack / referral / coin grant / first-buy spin / **login bonus** /
+  pass rewards / bucket rewards / purchase check) fires whenever cloudPull RESOLVES, i.e. at network
+  latency. Land after 420ms and it replaced the ad on screen with the flag already burnt, so the ad never
+  came back for the rest of the session - which is precisely a signed-in dev account with a coin grant + a
+  login bonus + pass rewards all queued behind one network call. (If the cascade landed BEFORE 420ms the
+  ad correctly deferred without burning the flag, so it was latency-dependent and looked random.)
+  Fixes:
+  - **The flag is burnt only once the ad has SURVIVED on screen** (a 320ms check that re-reads
+    `S.overlay==='arcadead'`), so a stomp leaves it owed and it returns on the next clean title render
+    (dismissing the stomping popup re-renders the title, which re-fires the chain).
+  - **Interaction also counts as seen** (`arcadeAdSeenNow()` from the ✕ / Maybe later / Play CTA) - without
+    this, acting on the ad inside the 320ms window left the flag unburnt and it popped straight back up.
+    Caught by the existing suite's "golf stays on the home screen" check, which started failing.
+  - **`?arcadead=1` / `#arcadead`** (mirrors `?practice=1`) forces the ad past every gate - opt-out and
+    session flag included - so it can be verified on a real device in one tap.
+  Verified in Playwright: a new 10-check race suite (stomp doesn't burn the flag, the ad returns on the
+  next title render, the flag burns once it survives, the normal path shows + tracks exactly once and never
+  repeats, both force-param forms work from a hostile opted-out + already-seen state) - and the SAME suite
+  run against the pre-fix deployed build fails on exactly the reported symptom (`{ov:'login',seen:'1'}` then
+  `{ov:null}`), so it genuinely pins the root cause. The original 19-check ad suite is now fully green (was
+  19th-check failing), the 46x380 opt-out tap target holds, and regress_final (18-hole daily round + shop
+  sections) / tp_final (Tour Pass sweep) / shoptabs are clean - 0 page errors; inline scripts parse clean.
+  Deployed to /golf (verified byte-identical; main had no parallel golf edits to adopt).
+  NOTE for the owner: on iOS the flag lives in `sessionStorage`, so a home-screen app that was never fully
+  closed still counts as the same session - fully close and reopen it (or use `?arcadead=1`) to see the ad
+  again after this deploy.
