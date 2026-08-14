@@ -145,6 +145,13 @@
   .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
   .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
   .say{color:#e8dcc0;font-style:italic;}
+  .storycard{background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.25));border:1.5px solid var(--brandred);border-radius:14px;padding:13px 15px;}
+  .storycard .sh{display:flex;gap:12px;align-items:center;}
+  .storycard .st{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--brandred-bright);font-weight:800;}
+  .storycard .sn{font-family:var(--display);font-size:19px;color:var(--cream);letter-spacing:.02em;text-transform:uppercase;line-height:1.1;}
+  .inbox-item{background:rgba(0,0,0,.25);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:9px;padding:8px 11px;margin-top:7px;font-size:12.5px;display:flex;gap:9px;align-items:flex-start;}
+  .inbox-item.sev-bad{border-left-color:var(--brandred);} .inbox-item.sev-good{border-left-color:var(--green);} .inbox-item.sev-story{border-left-color:var(--gold);}
+  .inbox-item .ico{font-size:15px;}
   .promocard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
   .promocard .ph{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;}
   .promocard .pshort{font-family:var(--display);font-size:17px;letter-spacing:.04em;}
@@ -164,7 +171,7 @@
   .fs .fnm{font-family:var(--display);font-size:19px;letter-spacing:.03em;text-transform:uppercase;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .fs.right{text-align:right;}
   .fbar{height:16px;background:rgba(0,0,0,.55);border:2px solid var(--line);border-radius:4px;overflow:hidden;margin-top:4px;}
-  .fbar i{display:block;height:100%;background:linear-gradient(180deg,#7ddc9f,#3f9b68);transition:width .45s cubic-bezier(.2,.8,.3,1);box-shadow:0 0 12px rgba(91,176,131,.5);}
+  .fbar i{display:block;height:100%;background:linear-gradient(180deg,#7dc4e8,#2f6fa8);transition:width .45s cubic-bezier(.2,.8,.3,1);box-shadow:0 0 12px rgba(106,167,196,.55);}
   .fbar.rev i{margin-left:auto;background:linear-gradient(180deg,#f0907f,#b53225);box-shadow:0 0 12px rgba(198,57,44,.5);}
   .fbar i.low{background:linear-gradient(180deg,#f5c46a,#d08b1c)!important;}
   .fbar i.crit{background:linear-gradient(180deg,#f0907f,#a32a1e)!important;animation:critPulse .6s infinite;}
@@ -178,8 +185,8 @@
   .momhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);font-weight:800;text-align:center;margin-bottom:3px;}
   .mombar{position:relative;height:14px;background:rgba(0,0,0,.6);border:2px solid var(--line);border-radius:999px;overflow:hidden;display:flex;}
   .momfill{height:100%;transition:width .5s cubic-bezier(.2,.9,.25,1);}
-  .momfill.me{background:linear-gradient(90deg,#3f9b68,#7ddc9f);margin-left:auto;}
-  .momfill.opp{background:linear-gradient(90deg,#f0907f,#b53225);}
+  .momfill.me{background:linear-gradient(90deg,#2f6fa8,#7dc4e8);margin-left:auto;box-shadow:0 0 10px rgba(106,167,196,.5);}
+  .momfill.opp{background:linear-gradient(90deg,#b53225,#f0907f);box-shadow:0 0 10px rgba(198,57,44,.5);}
   .momtick{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(244,232,219,.55);transform:translateX(-1px);}
 
   .arena{position:relative;height:300px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
@@ -395,7 +402,8 @@
       <div class="grid g3" style="margin-top:12px;" id="carTiles"></div>
     </div>
     <div>
-      <div class="card">
+      <div id="storyPanel"></div>
+      <div class="card" style="margin-top:12px;">
         <h3 style="margin-top:0;">This Week</h3>
         <div id="weekBody"></div>
       </div>
@@ -1061,7 +1069,27 @@ function renderCareer(){
       <div class="bar"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>
     <div class="perkcard"><div class="pn">${styleOf().name} — ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
+  renderStoryPanel();
   renderWeek();
+}
+function renderStoryPanel(){
+  const st=story(), el=$('storyPanel'); if(!el) return;
+  const inbox=(G.car.inbox||[]).slice(0,3);
+  let h='';
+  if(st){
+    const c=charById(st.charId), R=rel(st.charId), stg=STORY_STAGES[st.stage];
+    h+=`<div class="storycard">
+      <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
+        <div><div class="st">Feud · ${stg.name}</div>
+        <div class="sn">${G.w.name} vs ${c.name}</div>
+        <div class="hint">${stg.label}</div></div></div>
+      <div class="bar" style="margin-top:8px;"><i style="width:${(st.stage/3)*100}%;background:var(--brandred)"></i></div>
+      <div class="hint" style="margin-top:4px;">Bad blood ${Math.round(R.heat)} · ${R.wins}-${R.losses} against them${st.stage>=3?' · <b style="color:var(--gold)">BLOW-OFF AVAILABLE</b>':''}</div>
+    </div>`;
+  }
+  if(inbox.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">Recent</div>`+
+    inbox.map(i=>`<div class="inbox-item sev-${i.sev||'info'}"><span class="ico">${i.ico||'•'}</span><span class="txt">${i.txt}</span></div>`).join('')+`</div>`;
+  el.innerHTML=h;
 }
 function renderWeek(){
   const c=G.car, el=$('weekBody');
@@ -1101,8 +1129,12 @@ function makeOffers(){
   const offs=[];
   // your bitterest rival muscles onto the card
   const rivalId=G.car.rivalId;
+  const _story=story();
   for(let i=0;i<3;i++){
-    const opp=pool.length?pool[Math.floor(rnd()*pool.length)]:CHARS[0];
+    const taken=offs.map(x=>x.oppId);
+    let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
+    let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
+    if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     const st=stips[Math.floor(rnd()*stips.length)];
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
@@ -1116,10 +1148,14 @@ function makeOffers(){
     if(i===2 && holds && rnd()<0.65) stakes='defense';
     else if(i===2 && !holds && G.car.pop>=Math.min(70,18+tierIdx()*16) && rnd()<0.55) stakes='title';
     else if(rivalId===opp.id) stakes='rival';
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*(stakes==='title'||stakes==='defense'?2.2:1)*st[2]);
+    const _s=story();
+    if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
+      st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes,
       blurb: stakes==='title'?`Beat ${opp.name} and the ${t.title} is yours.`
             : stakes==='defense'?`Defend the ${t.title} against ${opp.name}.`
+            : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
             : `A ${st[0].toLowerCase()} against ${opp.name}.` });
   }
@@ -1129,6 +1165,123 @@ function makeOffers(){
 /* ============================================================
    MATCH SIM
    ============================================================ */
+/* ============================================================
+   RIVALRY STORYLINES — multi-match arcs with backstage moments
+   ------------------------------------------------------------
+   A feud runs through five stages. Each stage escalates the
+   stipulation, the stakes and the personal edge, and fires
+   backstage moments where you choose how to respond. Your
+   choices move respect / bad blood / popularity — and decide
+   whether it ends in a handshake or a lifelong grudge.
+   ============================================================ */
+const STORY_STAGES=[
+  {n:0,name:'Spark',       label:'Something happened between you.'},
+  {n:1,name:'Escalation',  label:'It is no longer just business.'},
+  {n:2,name:'Personal',    label:'This has gone somewhere ugly.'},
+  {n:3,name:'Blow-Off',    label:'It ends. One way or another.'},
+  {n:4,name:'Settled',     label:'Whatever it was, it is finished.'},
+];
+const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','hardcore',1.25],['Steel Cage','cage',1.2],['Last Man Standing','hardcore',1.35]];
+
+function story(){ return G.story||null; }
+function startStory(charId,reason){
+  const c=charById(charId); if(!c) return;
+  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year };
+  G.car.rivalId=charId; G.car.offers=null;   // rebook the week around the feud
+  pushLog(`<b>${c.name}</b> — ${reason}`);
+  pushInboxItem({ico:'🔥',sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
+}
+function advanceStory(){
+  const st=story(); if(!st) return;
+  const wk=G.car.year*1000+G.car.week;
+  if(st.lastAdv===wk) return;        // a feud escalates once a week, not twice
+  st.lastAdv=wk;
+  st.stage=Math.min(4,st.stage+1);
+  const c=charById(st.charId);
+  if(st.stage===3) pushInboxItem({ico:'💥',sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
+}
+function endStory(resolution){
+  const st=story(); if(!st) return;
+  const c=charById(st.charId), R=rel(st.charId);
+  st.stage=4;
+  if(resolution==='respect'){
+    R.respect=clamp(R.respect+30,0,100); R.heat=clamp(R.heat-40,0,100);
+    pushInboxItem({ico:'🤝',sev:'good',txt:`You and <b>${c.name}</b> shake on it. That one will be remembered.`});
+    pushLog(`Settled it with <b>${c.name}</b> — and earned their respect.`);
+  } else {
+    R.heat=clamp(R.heat+20,0,100);
+    pushInboxItem({ico:'🩸',sev:'bad',txt:`<b>${c.name}</b> will never let this go. Neither will you.`});
+    pushLog(`Your war with <b>${c.name}</b> ended in bad blood that never healed.`);
+  }
+  R.cooldown=(G.car.year*1000+G.car.week)+45;   // this one is settled for a good while
+  R.heat=Math.min(R.heat,resolution==='respect'?12:34);
+  G.car.pop=clamp(G.car.pop+6,1,100);
+  G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Blow-off with ${c.name} — ${resolution==='respect'?'settled with respect':'settled in blood'}`});
+  G.story=null; G.car.rivalId=null;
+}
+
+/* ---- backstage moments: templated, but spoken in the character's voice ---- */
+function backstageEvent(){
+  const st=story(); if(!st) return false;
+  const c=charById(st.charId); if(!c) return false;
+  st.events++;
+  const R=rel(st.charId);
+  const taunt=c.lines.taunt[Math.floor(rnd()*c.lines.taunt.length)];
+  const POOL=[
+    { head:`${c.name} jumps you in the parking lot`,
+      body:`You never saw them coming. <span class="say">"${taunt}"</span>`,
+      opts:[
+        {n:'Fight back right there',d:'No cameras, no referee.',fx:{heat:14,pop:2,cond:-8},say:'You swing first and you do not stop.'},
+        {n:'Take it — and remember',d:'Let it build.',fx:{heat:8,respect:-2,mom:8},say:'You take the beating and file it away.'},
+        {n:'Grab a mic and call them out',d:'Make it public.',fx:{heat:12,pop:5},say:'You drag it in front of the cameras where it belongs.'}]},
+    { head:`${c.name} buries you in an interview`,
+      body:`They were asked about you. It was not kind. <span class="say">"${taunt}"</span>`,
+      opts:[
+        {n:'Answer with a promo',d:'Charisma decides how it lands.',fx:{heat:10,pop:6},say:'You cut a promo that gets quoted all week.'},
+        {n:'Say nothing, let it build',d:'Silence can be louder.',fx:{heat:6,mom:6},say:'You say nothing. Somehow that is worse for them.'},
+        {n:'Agree with them publicly',d:'Disarm it completely.',fx:{heat:-10,respect:8,pop:-2},say:'You agree with every word. It short-circuits the whole thing.'}]},
+    { head:`${c.name} costs you a match`,
+      body:`Interference, plain as day. The referee saw nothing. <span class="say">"${taunt}"</span>`,
+      opts:[
+        {n:'Demand a rematch with a stipulation',d:'Escalate it.',fx:{heat:16,pop:4},say:'You demand it, and you get it.'},
+        {n:'Cost them one back',d:'An eye for an eye.',fx:{heat:18,respect:-6,pop:3},say:'The following week, you return the favour.'},
+        {n:'Go to management',d:'Play it straight.',fx:{heat:4,respect:4,pop:-3},say:'You file the complaint. It is noted. It changes nothing.'}]},
+    { head:`${c.name} offers a truce`,
+      body:`They caught you backstage, alone, and put a hand out. <span class="say">"${taunt}"</span>`,
+      opts:[
+        {n:'Shake it',d:'End the war early.',fx:{heat:-24,respect:18},say:'You shake. Whatever this was, it cools.',resolve:'respect'},
+        {n:'Slap the hand away',d:'This is not over.',fx:{heat:22,respect:-10,pop:4},say:'You slap the hand down. Now it is war.'},
+        {n:'Shake — then blindside them',d:'Ruthless, and the crowd will hate it.',fx:{heat:30,respect:-20,pop:6},say:'You shake, then put them through a table. Nobody saw that coming.'}]},
+  ];
+  const avail = st.stage>=1 ? POOL : POOL.slice(0,3);   // no early truce — let it build first
+  const ev=avail[Math.floor(rnd()*avail.length)];
+  const stg=STORY_STAGES[st.stage];
+  modal(`${stg.name.toUpperCase()} · ${ev.head}`,
+    `<div class="log" style="margin-bottom:12px;">${ev.body}</div>
+     <div class="decgrid">${ev.opts.map((o,i)=>`<div class="decopt" data-i="${i}">
+        <div class="dn">${o.n}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`,
+    []);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const o=ev.opts[+d.dataset.i], f=o.fx||{};
+      if(f.heat) R.heat=clamp(R.heat+f.heat,0,100);
+      if(f.respect) R.respect=clamp(R.respect+f.respect,0,100);
+      if(f.pop) G.car.pop=clamp(G.car.pop+f.pop,1,100);
+      if(f.cond) G.car.cond=clamp(G.car.cond+f.cond);
+      if(f.mom) G.car.mom=clamp(G.car.mom+f.mom);
+      st.beats.push({week:G.car.week,head:ev.head,choice:o.n});
+      G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`${ev.head} — you ${o.n.toLowerCase()}`});
+      closeModal();
+      if(o.resolve){ endStory(o.resolve); }
+      else if(st.stage<3) advanceStory();
+      pushInboxItem({ico:'🎬',sev:'story',txt:`<b>${ev.head}.</b> ${o.say}`});
+      save(); renderCareer();
+    });
+  },0);
+  return true;
+}
+function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
+
 /* ============================================================
    LIVE MATCH ENGINE — animated, momentum-driven, with decisions
    ============================================================ */
@@ -1500,6 +1653,15 @@ function applyMatch(o,res){
   let injMsg=null;
   const risk=res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length) + o.mult*0.04 + (100-c.cond)/380;
   if(rnd()<risk*0.55){ c.injWeeks=rint(1,6); injMsg=`You were hurt — out ${c.injWeeks} week${c.injWeeks>1?'s':''}.`; }
+  // ---- storyline progression ----
+  const _st=story();
+  if(_st && _st.charId===o.oppId){
+    if(_st.stage>=3){
+      // the blow-off: a great match settles it with respect, a bitter one does not
+      endStory((res.quality>=72 || (res.win && rel(o.oppId).respect>=40))?'respect':'blood');
+      c.rep+=260; G.bag.coins+=Math.round(o.purse*1.5);
+    } else if(res.quality>=64 || o.stakes==='rivalry'){ advanceStory(); }
+  }
   // ---- relationship with this character ----
   const R=rel(o.oppId); R.met=true; R.matches++;
   if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
@@ -1508,9 +1670,9 @@ function applyMatch(o,res){
   if(o.stakes==='title'||o.stakes==='defense') R.heat+=6;
   R.respect=clamp(R.respect,0,100); R.heat=clamp(R.heat,0,100);
   // a genuine nemesis emerges from repeated bad blood
-  if(!c.rivalId && R.heat>=42 && R.matches>=2) { c.rivalId=o.oppId;
-    const rc=charById(o.oppId);
-    if(rc) pushLog(`<b>${rc.name}</b> has become your nemesis. This is personal now.`); }
+  const _now=c.year*1000+c.week;
+  if(!c.rivalId && !story() && R.heat>=42 && R.matches>=2 && (!R.cooldown||_now>R.cooldown)) {
+    startStory(o.oppId, res.win?'is sick of losing to you.':'has your number, and they know it.'); }
   else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
     const rc=charById(o.oppId);
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef — there is real respect there now.`); }
@@ -1559,6 +1721,14 @@ function advanceWeek(){
   if(c.injWeeks>0) c.injWeeks--;
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   save();
+  setTimeout(maybeBackstage,260);
+}
+// a live feud produces a backstage moment every few weeks
+function maybeBackstage(){
+  const st=story(); if(!st) return false;
+  if(G.car.week % 3 !== 0) return false;
+  if(st.stage>=4) return false;
+  return backstageEvent();
 }
 function doRest(){ const c=G.car; c.cond=clamp(c.cond+22); c.morale=clamp(c.morale+4); advanceWeek(); toast('Rested up'); go('career'); }
 function doTrainWeek(){ const w=G.w;
