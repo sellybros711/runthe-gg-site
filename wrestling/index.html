@@ -100,11 +100,45 @@
   .movecard .nm{font-weight:800; color:var(--cream); font-size:14px;}
   .movecard .rq{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
 
-  .swatch{width:26px;height:26px;border-radius:6px;border:2px solid transparent;cursor:pointer;display:inline-block;}
-  .swatch.on{border-color:var(--cream); box-shadow:0 0 0 2px rgba(0,0,0,.5) inset;}
+  .swatch{width:30px;height:30px;border-radius:8px;border:2px solid rgba(0,0,0,.5);cursor:pointer;display:inline-block;transition:.1s;}
+  .swatch:hover{transform:scale(1.1);}
+  .swatch.on{border-color:var(--cream); box-shadow:0 0 0 2px var(--brandred);}
 
-  .avwrap{background:radial-gradient(circle at 50% 30%, rgba(198,57,44,.16), transparent 65%); border:1px solid var(--line); border-radius:14px; padding:10px; display:flex; align-items:center; justify-content:center;}
-  .avwrap svg{width:100%; height:auto; max-height:340px; image-rendering:pixelated; display:block;}
+  .avwrap{background:
+      radial-gradient(circle at 50% 32%, rgba(198,57,44,.20), transparent 62%),
+      linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.28));
+    border:1px solid var(--line); border-radius:16px; padding:14px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .avwrap::after{content:"";position:absolute;left:12%;right:12%;bottom:10px;height:10px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);}
+  .avwrap svg{width:100%; height:auto; max-height:330px; image-rendering:pixelated; display:block; position:relative;}
+  .avwrap.big svg{max-height:400px;}
+
+  /* stepper */
+  .steps{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .step{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--text-faint);border:1px solid var(--line);border-radius:999px;padding:5px 12px;}
+  .step.on{color:var(--cream);border-color:var(--brandred);background:rgba(198,57,44,.16);}
+
+  /* customizer */
+  .custom-wrap{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:18px;align-items:start;}
+  @media(max-width:720px){ .custom-wrap{grid-template-columns:1fr;} }
+  .tabrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .tabrow .tab{background:transparent;border:1px solid var(--line);color:var(--text-dim);padding:6px 12px;font-size:11px;border-radius:999px;letter-spacing:.06em;}
+  .tabrow .tab.on{border-color:var(--brandred);color:var(--cream);background:rgba(198,57,44,.18);}
+  .tilegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;}
+  .tile-opt{position:relative;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:6px 4px 8px;cursor:pointer;text-align:center;transition:.12s;overflow:hidden;}
+  .tile-opt:hover{border-color:var(--brandred);transform:translateY(-2px);}
+  .tile-opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);box-shadow:0 0 0 1px var(--brandred) inset;}
+  .tile-opt.locked{opacity:.42;cursor:not-allowed;} .tile-opt.locked:hover{transform:none;border-color:var(--line);}
+  .tile-opt .tp{height:76px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .tile-opt .tpf{display:flex;align-items:center;justify-content:center;height:76px;}
+  .tile-opt .tpf svg{width:auto;image-rendering:pixelated;display:block;}
+  .tile-opt .tpf.full svg{height:76px;}
+  .tile-opt .tpf.head svg{height:74px;}
+  .tile-opt .tpf.legs svg{height:74px;}
+  .tile-opt .tn{font-size:11px;font-weight:700;color:var(--text-dim);margin-top:2px;line-height:1.2;}
+  .tile-opt.on .tn{color:var(--cream);}
+  .tile-opt .tr{position:absolute;top:4px;left:4px;font-size:8px;padding:1px 5px;border-radius:999px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;}
+  .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
+  .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
 
   .log{font-size:13.5px; line-height:1.65; color:var(--text-dim);}
   .log b{color:var(--cream);} .log .pop{color:var(--gold);}
@@ -174,40 +208,65 @@
     <p style="max-width:640px;color:var(--text-dim);">Create a rookie, break into the business, and live a full career. Every attribute point and every move in your arsenal is <b>earned</b> in the ring — never bought. Coins only buy the look.</p>
     <div id="homeCont"></div>
     <div class="row" style="margin-top:18px;">
-      <button class="big" onclick="startCreate()">Create Your Wrestler</button>
-      <button class="ghost" onclick="location.href='booking/'">Promotion Booking Sim →</button>
+      <button class="big" onclick="quickStart()">⚡ Quick Start</button>
+      <button class="ghost big" onclick="startCreate()">Create In Detail</button>
+    </div>
+    <p class="hint" style="margin-top:8px;">Quick Start rolls you a wrestler and drops you straight into your first match — you can restyle any time in the Locker.</p>
+    <div class="row" style="margin-top:14px;">
+      <button class="ghost" style="padding:6px 12px;font-size:11px;" onclick="location.href='booking/'">Promotion Booking Sim →</button>
     </div>
   </div>
 </div>
 
 <!-- ============ CREATE ============ -->
 <div class="screen" id="s-create">
-  <h2>Create Your Wrestler <span class="sub2">everything after this is earned</span></h2>
-  <div class="grid g2">
-    <div>
+  <div class="steps"><span class="step on" id="stp1">1 · Your Wrestler</span><span class="step" id="stp2">2 · Look</span></div>
+
+  <!-- STEP 1 -->
+  <div id="createStep1">
+    <h2>Who Are You? <span class="sub2">30 seconds — everything else is earned in the ring</span></h2>
+    <div class="grid g2">
       <div class="card">
-        <label class="fld"><div class="flab">Ring Name</div><input type="text" id="cName" placeholder="e.g. Kid Dynamite" maxlength="22"></label>
-        <label class="fld"><div class="flab">Nickname</div><input type="text" id="cNick" placeholder="e.g. The Alley Cat" maxlength="26"></label>
+        <label class="fld"><div class="flab">Ring Name</div>
+          <div class="row" style="gap:8px;flex-wrap:nowrap;">
+            <input type="text" id="cName" placeholder="Kid Dynamite" maxlength="22">
+            <button class="ghost" style="padding:8px 12px;" onclick="rollName()" title="Random name">🎲</button>
+          </div></label>
+        <label class="fld"><div class="flab">Nickname <span class="hint">(optional)</span></div><input type="text" id="cNick" placeholder="The Alley Cat" maxlength="26"></label>
         <div class="grid g2" style="gap:10px;">
           <label class="fld"><div class="flab">Alignment</div>
-            <select id="cAlign"><option value="face">Face (fan favourite)</option><option value="heel">Heel (villain)</option><option value="tweener">Tweener</option></select></label>
-          <label class="fld"><div class="flab">Where You Came Up</div><select id="cEra"></select></label>
+            <select id="cAlign"><option value="face">Face — fan favourite</option><option value="heel">Heel — villain</option><option value="tweener">Tweener</option></select></label>
+          <label class="fld"><div class="flab">Came Up In</div><select id="cEra"></select></label>
         </div>
-        <div class="flab">Starting Style — a small early tilt, not a ceiling</div>
-        <div class="grid g3" id="cStyles" style="margin-top:6px;"></div>
+      </div>
+      <div>
+        <div class="flab">Starting Style <span class="hint">— a small early tilt, never a ceiling</span></div>
+        <div class="grid g2" id="cStyles" style="margin-top:6px;"></div>
       </div>
     </div>
-    <div>
-      <div class="avwrap" id="cAvWrap"></div>
-      <div class="card" style="margin-top:12px;">
-        <div class="flab">Look</div>
-        <div id="cLook"></div>
-      </div>
+    <div class="row" style="margin-top:20px;">
+      <button class="big" onclick="gotoStep(2)">Next: Your Look →</button>
+      <button class="ghost" onclick="finishCreate()">Skip &amp; Debut Now</button>
+      <button class="ghost" onclick="go('home')">Back</button>
     </div>
   </div>
-  <div class="row" style="margin-top:18px;">
-    <button class="big" onclick="finishCreate()">Debut →</button>
-    <button class="ghost" onclick="go('home')">Back</button>
+
+  <!-- STEP 2 -->
+  <div id="createStep2" style="display:none;">
+    <h2>Your Look <span class="sub2">change it any time in the Locker</span></h2>
+    <div class="custom-wrap">
+      <div>
+        <div class="avwrap big" id="cAvWrap"></div>
+        <div class="row" style="margin-top:10px;justify-content:center;">
+          <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
+        </div>
+      </div>
+      <div id="cCustom"></div>
+    </div>
+    <div class="row" style="margin-top:20px;">
+      <button class="big" onclick="finishCreate()">Debut →</button>
+      <button class="ghost" onclick="gotoStep(1)">← Back</button>
+    </div>
   </div>
 </div>
 
@@ -278,10 +337,16 @@
 <!-- ============ LOCKER ============ -->
 <div class="screen" id="s-locker">
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
-  <h2>Locker Room <span class="sub2">equip what you own</span></h2>
-  <div class="grid g2">
-    <div class="avwrap" id="lockAv"></div>
-    <div class="card" id="lockBody"></div>
+  <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Pro Shop</span></h2>
+  <div class="custom-wrap">
+    <div>
+      <div class="avwrap big" id="lockAv"></div>
+      <div class="row" style="margin-top:10px;justify-content:center;">
+        <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
+        <button class="ghost" onclick="go('shop')">Pro Shop →</button>
+      </div>
+    </div>
+    <div id="lockBody"></div>
   </div>
 </div>
 
@@ -365,105 +430,178 @@ function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; con
 
 /* ============================================================
    PIXEL WRESTLER RENDERER  (pure SVG rects — no assets)
-   ============================================================ */
-const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
+   ============================================================ */const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
   hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic' };
-function R(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
-function shade(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+const OUTLINE='#120f0f';
+function P(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
+function shade(hex,amt){ hex=(hex||'#888888'); const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
   r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
+// a shaded limb/box: base + left highlight + right shadow + bottom shadow (light from upper-left)
+function LIMB(x,y,w,h,c){
+  let s=P(x,y,w,h,c);
+  if(w>2) s+=P(x,y,1,h,shade(c,24))+P(x+w-1,y,1,h,shade(c,-34));
+  if(h>2) s+=P(x,y+h-1,w,1,shade(c,-24));
+  return s;
+}
 
+/* Pixel wrestler — 64x92 sprite grid, front stance, outlined for readability.
+   Light source upper-left. Every part is a shaded box so it reads as a sprite,
+   not a flat diagram. */
 function wrestlerSVG(L,opt){
   L=Object.assign({},DEFLOOK,L||{}); opt=opt||{};
-  const sk=L.skin, skD=shade(sk,-28), hair=L.hair, gear=L.gear, trim=L.trim, gearD=shade(gear,-30);
+  const sk=L.skin, skD=shade(sk,-34), skL=shade(sk,22), hair=L.hair, gear=L.gear, trim=L.trim;
   const build=L.build||'athletic';
-  const wide = build==='heavy'?3 : build==='lean'?-2 : 0;      // torso/arm spread
-  let s='';
-  // ---- cape (behind everything) ----
-  if(L.acc==='cape') s+=R(18-wide,30,28+wide*2,34,shade(gear,-45))+R(20-wide,62,24+wide*2,6,shade(gear,-55));
-  // ---- legs ----
-  const legTop=54, legBot=84;
-  const tightsFull = (L.attire==='tights'||L.attire==='singlet');
+  const bw = build==='heavy'?3 : build==='lean'?-2 : 0;   // torso/limb spread
+  const tightsFull=(L.attire==='tights'||L.attire==='singlet');
+  const covered =(L.attire!=='trunks');                    // torso has fabric on it
   const legCol = tightsFull? gear : sk;
-  s+=R(24,legTop,7,legBot-legTop,legCol)+R(33,legTop,7,legBot-legTop,legCol);
-  if(tightsFull && L.pattern==='stripe'){ s+=R(24,legTop,2,legBot-legTop,trim)+R(38,legTop,2,legBot-legTop,trim); }
-  if(tightsFull && L.pattern==='split'){ s+=R(33,legTop,7,legBot-legTop,trim); }
-  if(tightsFull && L.pattern==='stars'){ s+=R(26,60,2,2,trim)+R(35,66,2,2,trim)+R(27,72,2,2,trim); }
+  const torsoCol = covered? gear : sk;
+  const sleeved = (L.attire==='jacket'||L.attire==='duster');
+
+  // ---- outline silhouette (drawn first, 1px halo around every solid box) ----
+  const boxes=[];
+  const add=(x,y,w,h)=>boxes.push([x,y,w,h]);
+  add(24,6,16,15); add(25,20,14,5);                 // head + jaw
+  add(28,24,8,4);                                    // neck
+  add(19-bw,28,26+bw*2,6);                           // shoulders
+  add(21-bw,34,22+bw*2,9);                           // chest
+  add(24,43,16,10);                                  // waist
+  add(14-bw,30,7,13); add(12-bw,43,7,11); add(11-bw,54,8,5);   // left arm
+  add(43+bw,30,7,13); add(45+bw,43,7,11); add(45+bw,54,8,5);   // right arm
+  add(23,52,8,16); add(24,68,7,13);                  // left leg
+  add(33,52,8,16); add(33,68,7,13);                  // right leg
+  add(21,81,11,6); add(32,81,11,6);                  // feet
+  let out=boxes.map(b=>P(b[0]-1,b[1]-1,b[2]+2,b[3]+2,OUTLINE)).join('');
+
+  let s='';
+  // ---- cape behind body ----
+  if(L.acc==='cape'){ s=P(16-bw,27,32+bw*2,40,OUTLINE)+LIMB(17-bw,28,30+bw*2,38,shade(gear,-46))+s; }
+
+  // ---- legs ----
+  s+=LIMB(23,52,8,16,legCol)+LIMB(33,52,8,16,legCol);
+  s+=LIMB(24,68,7,13,legCol)+LIMB(33,68,7,13,legCol);
+  if(tightsFull){
+    if(L.pattern==='stripe'){ s+=P(23,52,2,16,trim)+P(39,52,2,16,trim)+P(24,68,2,13,trim)+P(38,68,2,13,trim); }
+    if(L.pattern==='split'){ s+=LIMB(33,52,8,16,trim)+LIMB(33,68,7,13,trim); }
+    if(L.pattern==='stars'){ s+=P(26,58,2,2,trim)+P(35,62,2,2,trim)+P(26,72,2,2,trim)+P(36,74,2,2,trim); }
+    if(L.pattern==='flame'){ s+=P(23,62,8,2,trim)+P(33,62,8,2,trim); }
+    if(L.pattern==='gold'){ s+=P(23,66,8,2,'#e0b341')+P(33,66,8,2,'#e0b341'); }
+  } else { s+=P(24,53,2,14,skL)+P(34,53,2,14,skL); }   // quad highlight
+  // knee pads
+  if(L.boots==='pads'){ s+=P(23,65,9,5,OUTLINE)+LIMB(24,66,7,4,shade(trim,-30))+P(32,65,9,5,OUTLINE)+LIMB(33,66,7,4,shade(trim,-30)); }
+
   // ---- boots ----
-  const bootTop = L.boots==='tall'?70 : L.boots==='pads'?66 : 78;
-  s+=R(24,bootTop,7,84-bootTop,trim)+R(33,bootTop,7,84-bootTop,trim);
-  if(L.boots==='pads'){ s+=R(23,66,9,4,shade(trim,-40))+R(32,66,9,4,shade(trim,-40)); }
-  s+=R(23,84,9,5,shade(trim,-50))+R(32,84,9,5,shade(trim,-50));   // feet
-  // ---- trunks / lower gear ----
-  if(L.attire==='trunks'||L.attire==='tank'||L.attire==='jacket'||L.attire==='duster'){
-    s+=R(22,50,20,10,gear);
-    if(L.pattern==='stripe') s+=R(22,50,2,10,trim)+R(40,50,2,10,trim);
-    if(L.pattern==='split') s+=R(32,50,10,10,trim);
-    if(L.pattern==='gold') s+=R(22,58,20,2,'#e0b341');
-  }
+  const bootTop = L.boots==='tall'?70 : L.boots==='pads'?72 : 77;
+  s+=LIMB(24,bootTop,7,81-bootTop,trim)+LIMB(33,bootTop,7,81-bootTop,trim);
+  s+=P(24,bootTop,7,1,shade(trim,30))+P(33,bootTop,7,1,shade(trim,30));      // cuff
+  if(L.boots==='sneak'){ s+=P(24,76,7,1,shade(trim,-40))+P(33,76,7,1,shade(trim,-40)); }
+  s+=LIMB(21,81,11,6,shade(trim,-46))+LIMB(32,81,11,6,shade(trim,-46));      // feet
+  s+=P(21,86,11,1,OUTLINE)+P(32,86,11,1,OUTLINE);
+
   // ---- torso ----
-  const tX=21-wide, tW=22+wide*2;
-  const bare = (L.attire==='trunks');
-  s+=R(tX,29,tW,22,bare?sk:gear);
-  if(!bare){
-    if(L.pattern==='split') s+=R(32,29,tX+tW-32,22,trim);
-    if(L.pattern==='stripe') s+=R(tX,29,2,22,trim)+R(tX+tW-2,29,2,22,trim);
-    if(L.pattern==='flame'){ s+=R(tX,44,tW,3,trim)+R(tX+3,41,4,3,trim)+R(tX+11,41,4,3,trim); }
-    if(L.pattern==='stars'){ s+=R(26,34,3,3,trim)+R(34,38,3,3,trim); }
-    if(L.pattern==='gold') s+=R(tX,29,tW,2,'#e0b341')+R(tX,49,tW,2,'#e0b341');
+  s+=LIMB(19-bw,28,26+bw*2,6,covered?gear:sk);                 // shoulders/traps
+  s+=LIMB(21-bw,34,22+bw*2,9,torsoCol);                        // chest
+  s+=LIMB(24,43,16,10,tightsFull||L.attire==='singlet'||L.attire==='tank'?gear:(covered&&L.attire!=='jacket'&&L.attire!=='duster'?gear:sk));
+  if(!covered){
+    s+=P(24,35,7,6,skL)+P(33,35,7,6,skL);                      // pecs
+    s+=P(30,34,1,8,skD);                                       // sternum
+    s+=P(28,44,2,3,skD)+P(34,44,2,3,skD)+P(28,48,2,3,skD)+P(34,48,2,3,skD); // abs
   } else {
-    s+=R(tX+3,36,3,7,skD)+R(tX+tW-6,36,3,7,skD);      // pecs/abs shading
-    s+=R(30,44,4,6,skD);
+    if(L.pattern==='split'){ s+=LIMB(32,28,13+bw,6,trim)+LIMB(32,34,11+bw,9,trim); }
+    if(L.pattern==='stripe'){ s+=P(21-bw,34,2,9,trim)+P(40+bw,34,2,9,trim); }
+    if(L.pattern==='flame'){ s+=P(21-bw,40,22+bw*2,2,trim)+P(24,37,4,3,trim)+P(32,37,4,3,trim); }
+    if(L.pattern==='stars'){ s+=P(25,36,3,3,trim)+P(34,38,3,3,trim); }
+    if(L.pattern==='gold'){ s+=P(19-bw,28,26+bw*2,1,'#e0b341')+P(21-bw,42,22+bw*2,1,'#e0b341'); }
   }
-  if(L.attire==='tank'){ s+=R(tX,29,tW,22,gear)+R(tX+2,29,4,8,sk)+R(tX+tW-6,29,4,8,sk); }
-  if(L.attire==='singlet'){ s+=R(tX+2,29,3,7,sk)+R(tX+tW-5,29,3,7,sk); }
-  if(L.attire==='jacket'){ s+=R(tX-2,29,5,24,gearD)+R(tX+tW-3,29,5,24,gearD)+R(30,29,4,22,sk); }
-  if(L.attire==='duster'){ s+=R(tX-3,29,5,38,gearD)+R(tX+tW-2,29,5,38,gearD)+R(30,29,4,22,sk); }
+  if(L.attire==='tank'){ s+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }        // shoulder skin
+  if(L.attire==='singlet'){ s+=P(22-bw,28,3,6,sk)+P(39+bw,28,3,6,sk); }
+  if(sleeved){ s+=LIMB(19-bw,28,5,16,shade(gear,-30))+LIMB(40+bw,28,5,16,shade(gear,-30))+P(29,34,6,9,sk); }
+  if(L.attire==='duster'){ s+=P(17-bw,44,4,22,OUTLINE)+LIMB(18-bw,44,4,21,shade(gear,-40))+P(43+bw,44,4,22,OUTLINE)+LIMB(44+bw,44,4,21,shade(gear,-40)); }
+
+  // ---- trunks / lower gear (over the waist, so it actually reads) ----
+  if(!tightsFull){
+    s+=P(22,44,20,11,OUTLINE)+LIMB(23,45,18,9,gear);
+    if(L.pattern==='stripe'){ s+=P(23,45,2,9,trim)+P(39,45,2,9,trim); }
+    if(L.pattern==='split') s+=LIMB(32,45,9,9,trim);
+    if(L.pattern==='gold') s+=P(23,52,18,2,'#e0b341')+P(23,45,18,1,'#e0b341');
+    if(L.pattern==='stars') s+=P(27,47,2,2,trim)+P(35,49,2,2,trim);
+    if(L.pattern==='flame') s+=P(23,50,18,2,trim);
+    s+=P(24,46,3,4,shade(gear,26));                    // highlight
+  }
+
   // ---- arms ----
-  const aL=tX-7, aR=tX+tW;
-  const sleeve = (L.attire==='jacket'||L.attire==='duster'||L.attire==='singlet'&&false);
-  s+=R(aL,30,7,16,sleeve?gearD:sk)+R(aR,30,7,16,sleeve?gearD:sk);       // upper arms
-  s+=R(aL,46,7,12,sk)+R(aR,46,7,12,sk);                                  // forearms
-  if(L.acc==='elbow'){ s+=R(aL-1,44,9,4,trim)+R(aR-1,44,9,4,trim); }
-  if(L.acc==='wrist'){ s+=R(aL,54,7,3,trim)+R(aR,54,7,3,trim); }
-  s+=R(aL,58,7,5,sk)+R(aR,58,7,5,sk);                                    // fists
+  const upCol = sleeved? shade(gear,-24) : sk;
+  s+=LIMB(14-bw,30,7,13,upCol)+LIMB(43+bw,30,7,13,upCol);      // biceps
+  if(!sleeved){ s+=P(15-bw,31,2,7,skL)+P(44+bw,31,2,7,skL); }  // bicep highlight
+  s+=LIMB(12-bw,43,7,11,sk)+LIMB(45+bw,43,7,11,sk);            // forearms
+  if(L.acc==='elbow'){ s+=P(12-bw,41,8,4,OUTLINE)+LIMB(13-bw,42,6,3,trim)+P(44+bw,41,8,4,OUTLINE)+LIMB(45+bw,42,6,3,trim); }
+  if(L.acc==='wrist'){ s+=P(12-bw,51,7,3,trim)+P(45+bw,51,7,3,trim); }
+  s+=LIMB(11-bw,54,8,5,sk)+LIMB(45+bw,54,8,5,sk);              // fists
+  s+=P(12-bw,55,2,3,skL)+P(46+bw,55,2,3,skL);
+
   // ---- neck + head ----
-  s+=R(29,25,6,5,skD);
-  s+=R(24,9,16,17,sk);
-  // mask / hair / face
+  s+=LIMB(28,24,8,4,skD);
+  s+=LIMB(24,6,16,15,sk);                                       // skull
+  s+=LIMB(25,20,14,5,sk);                                       // jaw
+  s+=P(22,13,2,5,skD)+P(40,13,2,5,skD);                         // ears
+  s+=P(25,7,3,12,skL);                                          // face highlight
+
+  // ---- mask OR hair+face ----
   if(L.mask&&L.mask!=='none'){
-    if(L.mask==='lucha'){ s+=R(24,9,16,14,gear)+R(26,15,4,3,'#0c0b0b')+R(34,15,4,3,'#0c0b0b')+R(29,20,6,2,'#0c0b0b')+R(24,9,16,2,trim)+R(31,11,2,12,trim); }
-    if(L.mask==='half'){ s+=R(24,9,16,9,gear)+R(26,14,4,3,'#0c0b0b')+R(34,14,4,3,'#0c0b0b'); }
-    if(L.mask==='hood'){ s+=R(23,7,18,15,'#1a1a1a')+R(27,14,3,3,'#C6392C')+R(34,14,3,3,'#C6392C'); }
-    if(L.mask==='demon'){ s+=R(24,9,16,15,'#1a1a1a')+R(26,14,4,3,'#e0b341')+R(34,14,4,3,'#e0b341')+R(24,9,16,2,'#C6392C')+R(27,20,10,2,'#C6392C')+R(22,7,4,5,'#C6392C')+R(38,7,4,5,'#C6392C'); }
-  } else {
-    // hair
-    const hs=L.hairStyle;
-    if(hs!=='bald'){
-      if(hs==='short'||hs==='buzz') s+=R(23,7,18,5,hair)+R(23,12,2,4,hair)+R(39,12,2,4,hair);
-      if(hs==='long') s+=R(23,7,18,5,hair)+R(21,12,3,16,hair)+R(40,12,3,16,hair);
-      if(hs==='pony') s+=R(23,7,18,5,hair)+R(40,10,3,12,hair)+R(42,14,2,6,hair);
-      if(hs==='mullet') s+=R(23,7,18,4,hair)+R(22,11,3,12,hair)+R(39,11,3,12,hair)+R(26,25,12,4,hair);
-      if(hs==='spiky') s+=R(23,7,18,5,hair)+R(24,3,3,5,hair)+R(29,2,3,6,hair)+R(34,3,3,5,hair)+R(38,4,3,4,hair);
-      if(hs==='afro') s+=R(21,3,22,10,hair)+R(19,6,3,8,hair)+R(42,6,3,8,hair);
-      if(hs==='mohawk') s+=R(30,2,5,10,hair)+R(23,8,18,3,shade(hair,-40));
-      if(hs==='topknot') s+=R(23,7,18,4,hair)+R(29,2,6,5,hair);
-      if(hs==='flames'){ s+=R(23,6,18,5,'#e0b341')+R(24,2,3,5,'#C6392C')+R(29,0,4,7,'#e07b39')+R(35,2,3,5,'#C6392C'); }
+    if(L.mask==='lucha'){
+      s+=LIMB(24,6,16,15,gear)+LIMB(25,20,14,4,gear);
+      s+=P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b');         // eye holes
+      s+=P(27,14,3,2,'#F4E8DB')+P(34,14,3,2,'#F4E8DB');
+      s+=P(29,20,6,3,'#0c0b0b');                                 // mouth hole
+      s+=P(24,6,16,2,trim)+P(31,8,2,13,trim);                    // crest + centre stripe
+      s+=P(24,11,4,2,trim)+P(36,11,4,2,trim);
     }
-    // eyes + face
-    s+=R(27,15,3,3,'#1a1a1a')+R(35,15,3,3,'#1a1a1a');
-    if(L.face==='beard') s+=R(25,20,14,5,hair)+R(25,17,2,4,hair)+R(38,17,2,4,hair);
-    if(L.face==='stache') s+=R(28,20,8,2,hair);
-    if(L.face==='goatee') s+=R(29,21,6,4,hair);
-    if(L.face==='warrior'){ s+=R(25,13,5,7,'#C6392C')+R(35,13,5,7,'#C6392C'); }
-    if(L.face==='skull'){ s+=R(26,13,5,6,'#1a1a1a')+R(34,13,5,6,'#1a1a1a')+R(29,20,7,2,'#1a1a1a')+R(24,9,16,3,'#F4E8DB'); }
-    if(L.face==='tribal'){ s+=R(24,12,4,10,'#1a1a1a')+R(37,12,4,10,'#1a1a1a')+R(29,9,6,3,'#C6392C'); }
-    s+=R(30,21,5,2,skD);   // mouth
+    if(L.mask==='half'){ s+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
+    if(L.mask==='hood'){ s+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
+    if(L.mask==='demon'){
+      s+=LIMB(24,6,16,16,'#17110f')+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341');
+      s+=P(24,6,16,2,'#C6392C')+P(27,19,10,2,'#C6392C')+P(29,21,6,1,'#C6392C');
+      // horns sweeping up and back off the brow
+      s+=P(22,3,4,4,OUTLINE)+P(23,3,3,4,'#C6392C')+P(21,-1,4,5,OUTLINE)+P(22,0,3,4,shade('#C6392C',18))+P(22,-2,2,3,shade('#C6392C',34));
+      s+=P(38,3,4,4,OUTLINE)+P(38,3,3,4,'#C6392C')+P(41,-1,4,5,OUTLINE)+P(39,0,3,4,shade('#C6392C',18))+P(40,-2,2,3,shade('#C6392C',34));
+    }
+  } else {
+    const hs=L.hairStyle, hD=shade(hair,-36), hL=shade(hair,26);
+    if(hs!=='bald'){
+      if(hs==='short'){ s+=LIMB(23,4,18,6,hair)+P(23,10,2,5,hair)+P(39,10,2,5,hair)+P(24,4,7,2,hL); }
+      if(hs==='buzz'){ s+=LIMB(24,5,16,4,hair)+P(25,5,6,1,hL); }
+      if(hs==='long'){ s+=LIMB(23,4,18,6,hair)+LIMB(20,9,4,18,hair)+LIMB(40,9,4,18,hair)+P(24,4,7,2,hL); }
+      if(hs==='pony'){ s+=LIMB(23,4,18,6,hair)+LIMB(40,8,4,14,hair)+P(43,12,3,7,hD)+P(24,4,7,2,hL); }
+      if(hs==='mullet'){ s+=LIMB(23,4,18,5,hair)+P(21,9,3,10,hair)+P(40,9,3,10,hair)+LIMB(26,23,12,7,hair)+P(24,4,6,2,hL); }
+      if(hs==='spiky'){ s+=LIMB(23,5,18,5,hair)+P(24,0,3,6,hair)+P(28,-1,4,7,hair)+P(34,0,3,6,hair)+P(38,2,3,4,hair)+P(28,0,2,3,hL); }
+      if(hs==='afro'){ s+=LIMB(21,-1,22,9,hair)+P(19,2,3,8,hair)+P(42,2,3,8,hair)+P(23,7,4,3,hair)+P(37,7,4,3,hair)+P(23,0,7,3,hL); }
+      if(hs==='mohawk'){ s+=P(23,5,18,4,hD)+P(28,-3,8,10,OUTLINE)+LIMB(29,-2,6,9,hair)+P(30,-2,2,7,hL); }
+      if(hs==='topknot'){ s+=LIMB(23,5,18,5,hair)+LIMB(29,0,6,5,hair)+P(30,0,2,3,hL); }
+      if(hs==='flames'){ s+=LIMB(23,4,18,6,'#e0b341')+P(24,-1,3,6,'#C6392C')+P(29,-3,4,8,'#e07b39')+P(35,-1,3,6,'#C6392C')+P(30,-3,2,4,'#f6d97a'); }
+    }
+    // eyes / brows / face
+    s+=P(26,13,4,3,'#F4E8DB')+P(34,13,4,3,'#F4E8DB');
+    s+=P(27,13,2,3,'#1a1a1a')+P(35,13,2,3,'#1a1a1a');
+    s+=P(26,11,4,1,shade(hair,-20))+P(34,11,4,1,shade(hair,-20));   // brows
+    s+=P(31,15,2,4,skD);                                             // nose
+    if(L.face==='beard'){ s+=LIMB(25,19,14,6,hair)+P(24,14,2,6,hair)+P(38,14,2,6,hair)+P(29,21,6,2,hD); }
+    if(L.face==='stache'){ s+=P(28,19,8,2,hair); }
+    if(L.face==='goatee'){ s+=P(29,19,6,2,hair)+P(29,21,6,4,hair); }
+    if(L.face==='warrior'){ s+=P(25,11,5,9,'#C6392C')+P(34,11,5,9,'#C6392C')+P(26,12,2,7,shade('#C6392C',30)); }
+    if(L.face==='skull'){ s+=P(24,6,16,3,'#F4E8DB')+P(25,11,6,6,'#1a1a1a')+P(33,11,6,6,'#1a1a1a')+P(28,19,8,3,'#1a1a1a')+P(29,20,1,2,'#F4E8DB')+P(32,20,1,2,'#F4E8DB'); }
+    if(L.face==='tribal'){ s+=P(24,10,4,11,'#1a1a1a')+P(36,10,4,11,'#1a1a1a')+P(28,6,8,3,'#C6392C')+P(30,21,4,2,'#1a1a1a'); }
+    if(L.face==='none'){ s+=P(29,21,6,1,skD); }                      // mouth line
   }
-  if(L.acc==='shades') s+=R(25,14,15,4,'#1a1a1a')+R(24,15,2,2,'#3a3a3a');
-  if(L.acc==='chain') s+=R(28,29,9,2,'#e0b341')+R(31,31,3,3,'#e0b341');
-  if(L.acc==='belt'){ s+=R(20,49,25,6,'#e0b341')+R(29,48,8,8,shade('#e0b341',-45))+R(31,50,4,4,'#e0b341'); }
-  const title=opt.title?`<title>${opt.title}</title>`:'';
-  return `<svg viewBox="0 0 64 96" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${title}${s}</svg>`;
+  if(L.acc==='shades'){ s+=P(24,12,17,5,'#0c0b0b')+P(25,13,6,2,'#3d4c57')+P(34,13,6,2,'#2b363e'); }
+  if(L.acc==='chain'){ s+=P(28,28,8,2,'#e0b341')+P(30,30,4,2,'#e0b341')+P(31,32,2,2,shade('#e0b341',-30)); }
+  if(L.acc==='belt'){ s+=P(20,43,24,7,OUTLINE)+LIMB(21,44,22,5,shade('#8a5a2b',-10))
+      +LIMB(27,42,10,9,'#e0b341')+P(29,44,6,5,shade('#e0b341',-38))+P(30,45,4,3,'#f6d97a')
+      +P(22,45,4,3,'#e0b341')+P(38,45,4,3,'#e0b341'); }
+
+  const t=opt.title?`<title>${opt.title}</title>`:'';
+  // frame: 'full' whole body, 'head' portrait crop, 'legs' lower-body crop
+  const vb = opt.frame==='head' ? '17 -7 30 36' : opt.frame==='legs' ? '14 40 36 50' : '-2 -4 68 94';
+  return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${t}${out}${s}</svg>`;
 }
 
 /* ============================================================
@@ -508,43 +646,104 @@ function startCreate(){
     [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate();}}]); return; }
   doStartCreate();
 }
-function doStartCreate(){
+function doStartCreate(quick){
   CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
   $('cEra').innerHTML=ERAS.map(e=>`<option value="${e.id}">${e.name} (${e.years})</option>`).join('');
-  renderStyles(); renderLookEditor('cLook','cAvWrap',CREATE.look,true);   // starter gear only — rest is earned/unlocked
-  go('create');
+  renderStyles();
+  go('create'); gotoStep(1);
+  if(!$('cName').value) rollName();
+  if(quick){ // Quick Start: randomise the look and a style, land on step 1 ready to debut
+    LOOKCTX={bodyId:'cCustom',avId:'cAvWrap',L:CREATE.look,ownedOnly:true};
+    randomizeLook(); CREATE.style=STYLES[Math.floor(Math.random()*STYLES.length)].id; renderStyles();
+  }
+}
+function quickStart(){
+  if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career.',
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate(true);}}]); return; }
+  doStartCreate(true);
 }
 function renderStyles(){
   $('cStyles').innerHTML=STYLES.map(s=>`<div class="opt ${CREATE.style===s.id?'sel':''}" onclick="CREATE.style='${s.id}';renderStyles()">
     <h4>${s.name}</h4><div class="meta">${Object.entries(s.b).map(([k,v])=>'+'+v+' '+k.toUpperCase()).join(' · ')}</div><p>${s.blurb}</p></div>`).join('');
 }
 // look editor used by create + locker
+// ---------- visual customizer (tile picker with live mini-previews) ----------
+const LOOK_TABS=[
+  {k:'hairStyle',slot:'hair',   label:'Hair'},
+  {k:'face',     slot:'face',   label:'Face'},
+  {k:'mask',     slot:'mask',   label:'Mask'},
+  {k:'attire',   slot:'attire', label:'Attire'},
+  {k:'boots',    slot:'boots',  label:'Boots'},
+  {k:'acc',      slot:'acc',    label:'Extras'},
+  {k:'pattern',  slot:'pattern',label:'Pattern'},
+];
+const COLOR_TABS=[{k:'skin',label:'Skin',pal:'skin'},{k:'hair',label:'Hair Colour',pal:'hair'},{k:'gear',label:'Gear',pal:'gear'},{k:'trim',label:'Trim',pal:'trim'}];
+let LOOKCTX=null, LOOKTAB='hairStyle';
+
 function renderLookEditor(bodyId, avId, L, ownedOnly){
-  const slots=[['hairStyle','hair','Hair'],['face','face','Face'],['mask','mask','Mask'],['attire','attire','Attire'],['boots','boots','Boots'],['acc','acc','Accessory'],['pattern','pattern','Pattern']];
-  let h='';
-  slots.forEach(([lk,slot,label])=>{
-    let items=COSM.filter(c=>c.slot===slot);
-    if(ownedOnly) items=items.filter(c=>c.owned||(G&&G.bag.owned[c.id]));
-    if(!items.length) return;
-    h+=`<div style="margin-bottom:10px;"><div class="flab">${label}</div><select onchange="setLook('${lk}',this.value)">`+
-      items.map(c=>`<option value="${c.v}" ${L[lk]===c.v?'selected':''}>${c.name}</option>`).join('')+`</select></div>`;
-  });
-  h+=`<div style="margin-bottom:10px;"><div class="flab">Build</div><select onchange="setLook('build',this.value)">`+
-    ['lean','athletic','heavy'].map(b=>`<option value="${b}" ${L.build===b?'selected':''}>${cap(b)}</option>`).join('')+`</select></div>`;
-  [['skin','Skin'],['hair','Hair Colour'],['gear','Gear Colour'],['trim','Trim Colour']].forEach(([k,label])=>{
-    const pal=PAL[k==='skin'?'skin':k==='hair'?'hair':k==='gear'?'gear':'trim']||[];
-    h+=`<div style="margin-bottom:10px;"><div class="flab">${label}</div><div class="row" style="gap:6px;">`+
-      pal.map(c=>`<span class="swatch ${L[k]===c?'on':''}" style="background:${c}" onclick="setLook('${k}','${c}')"></span>`).join('')+`</div></div>`;
-  });
+  LOOKCTX={bodyId,avId,L,ownedOnly};
+  const tabs=[...LOOK_TABS.map(t=>({id:t.k,label:t.label})),{id:'build',label:'Build'},{id:'colour',label:'Colours'}];
+  let h='<div class="tabrow">'+tabs.map(t=>`<button class="tab ${LOOKTAB===t.id?'on':''}" onclick="setLookTab('${t.id}')">${t.label}</button>`).join('')+'</div>';
+  h+='<div class="tilegrid">';
+  if(LOOKTAB==='colour'){
+    h='<div class="tabrow">'+tabs.map(t=>`<button class="tab ${LOOKTAB===t.id?'on':''}" onclick="setLookTab('${t.id}')">${t.label}</button>`).join('')+'</div>';
+    COLOR_TABS.forEach(ct=>{
+      h+=`<div class="flab" style="margin-top:12px;">${ct.label}</div><div class="swrow">`+
+        (PAL[ct.pal]||[]).map(c=>`<span class="swatch ${L[ct.k]===c?'on':''}" style="background:${c}" onclick="setLook('${ct.k}','${c}')"></span>`).join('')+`</div>`;
+    });
+    $(bodyId).innerHTML=h; $(avId).innerHTML=wrestlerSVG(L); return;
+  }
+  // frame each preview on the part being changed
+  const FRAME={hairStyle:'head',face:'head',mask:'head',boots:'legs'};
+  const fr=FRAME[LOOKTAB]||'full';
+  if(LOOKTAB==='build'){
+    ['lean','athletic','heavy'].forEach(b=>{
+      const prev=Object.assign({},L,{build:b});
+      h+=`<div class="tile-opt ${L.build===b?'on':''}" onclick="setLook('build','${b}')">
+        <div class="tp"><div class="tpf full">${wrestlerSVG(prev,{frame:'full'})}</div></div><div class="tn">${cap(b)}</div></div>`;
+    });
+  } else {
+    const tab=LOOK_TABS.find(t=>t.k===LOOKTAB);
+    COSM.filter(c=>c.slot===tab.slot).forEach(c=>{
+      const owned=c.owned||(G&&G.bag.owned[c.id]);
+      if(ownedOnly&&!owned) return;
+      const prev=Object.assign({},L); prev[tab.k]=c.v;
+      const locked=!owned;
+      h+=`<div class="tile-opt ${L[tab.k]===c.v?'on':''} ${locked?'locked':''}" ${locked?'':`onclick="setLook('${tab.k}','${c.v}')"`}>
+        <div class="tp"><div class="tpf ${fr}">${wrestlerSVG(prev,{frame:fr})}</div></div>
+        <div class="tn">${c.name}</div>
+        ${c.rarity!=='common'?`<span class="tr b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':'rare'}">${c.rarity}</span>`:''}
+        ${locked?'<span class="tlock">🔒</span>':''}</div>`;
+    });
+  }
+  h+='</div>';
   $(bodyId).innerHTML=h;
   $(avId).innerHTML=wrestlerSVG(L);
-  LOOKCTX={bodyId,avId,L,ownedOnly};
 }
-let LOOKCTX=null;
+function setLookTab(t){ LOOKTAB=t; if(LOOKCTX) renderLookEditor(LOOKCTX.bodyId,LOOKCTX.avId,LOOKCTX.L,LOOKCTX.ownedOnly); }
 function setLook(k,v){ if(!LOOKCTX) return; LOOKCTX.L[k]=v;
   renderLookEditor(LOOKCTX.bodyId,LOOKCTX.avId,LOOKCTX.L,LOOKCTX.ownedOnly);
   if(G){ G.w.look=LOOKCTX.L; save(); } }
-
+function randomizeLook(){
+  if(!LOOKCTX) return; const L=LOOKCTX.L;
+  const pickOwned=(slot)=>{ const opts=COSM.filter(c=>c.slot===slot&&(c.owned||(G&&G.bag.owned[c.id]))); return opts.length?opts[Math.floor(Math.random()*opts.length)].v:null; };
+  LOOK_TABS.forEach(t=>{ const v=pickOwned(t.slot); if(v!=null) L[t.k]=v; });
+  if(L.mask&&L.mask!=='none'&&Math.random()<0.6) L.mask='none';
+  L.build=['lean','athletic','heavy'][Math.floor(Math.random()*3)];
+  COLOR_TABS.forEach(ct=>{ const pal=PAL[ct.pal]||[]; if(pal.length) L[ct.k]=pal[Math.floor(Math.random()*pal.length)]; });
+  renderLookEditor(LOOKCTX.bodyId,LOOKCTX.avId,L,LOOKCTX.ownedOnly);
+  if(G){ G.w.look=L; save(); }
+}
+const NAME_A=['Kid','Iron','Wild','Steel','Crimson','Nitro','Diamond','Savage','Thunder','Ghost','Rebel','Turbo','Midnight','Atomic','Grim'];
+const NAME_B=['Dynamite','Vega','Cross','Reyes','Steele','Riot','Vaughn','Blaze','Knox','Vale','Storm','Kane','Frost','Rhodes','Wolfe'];
+function rollName(){ $('cName').value=NAME_A[Math.floor(Math.random()*NAME_A.length)]+' '+NAME_B[Math.floor(Math.random()*NAME_B.length)]; }
+function gotoStep(n){
+  $('createStep1').style.display=n===1?'block':'none';
+  $('createStep2').style.display=n===2?'block':'none';
+  $('stp1').classList.toggle('on',n>=1); $('stp2').classList.toggle('on',n>=2);
+  if(n===2){ LOOKTAB='hairStyle'; renderLookEditor('cCustom','cAvWrap',CREATE.look,false); }
+  window.scrollTo(0,0);
+}
 function finishCreate(){
   const name=($('cName').value||'').trim()||'The Rookie';
   const st=STYLES.find(s=>s.id===CREATE.style);
@@ -578,7 +777,7 @@ function go(s){
     if(s==='moves') renderMoves();
     if(s==='train') renderTrain();
     if(s==='mentors') renderMentors();
-    if(s==='locker'){ renderLookEditor('lockBody','lockAv',G.w.look,true); }
+    if(s==='locker'){ if(LOOKTAB==='colour') LOOKTAB='hairStyle'; renderLookEditor('lockBody','lockAv',G.w.look,false); }
     if(s==='shop') renderShop();
     if(s==='record') renderRecord();
     if(s==='hof') renderHof();
