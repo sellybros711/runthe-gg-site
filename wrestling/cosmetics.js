@@ -146,5 +146,92 @@ window.RTR_COSMETICS.push(
   { id:'au_storm',  slot:'aura', name:'Storm Aura',      rarity:'legendary', v:'storm' },
   { id:'au_halo',   slot:'aura', name:'Golden Halo',     rarity:'legendary', v:'halo' }
 );
+/* ---------- expanded catalogue (v3) ----------
+   A launch-sized locker: every entry below is drawn by the renderer,
+   so what you see in the shop is exactly what you wear in the ring. */
+window.RTR_COSMETICS.push(
+  // ---------- HAIR ----------
+  { id:'h_slick',    slot:'hair', name:'Slicked Back',    rarity:'common',    v:'slick' },
+  { id:'h_widow',    slot:'hair', name:'Widow’s Peak',rarity:'common',   v:'widow' },
+  { id:'h_bun',      slot:'hair', name:'Fighter’s Bun',rarity:'rare',    v:'bun' },
+  { id:'h_curls',    slot:'hair', name:'Loose Curls',     rarity:'rare',      v:'curls' },
+  { id:'h_fauxhawk', slot:'hair', name:'Faux Hawk',       rarity:'rare',      v:'fauxhawk' },
+  { id:'h_braids',   slot:'hair', name:'Twin Braids',     rarity:'epic',      v:'braids' },
+  { id:'h_halfshave',slot:'hair', name:'Half Shave',      rarity:'epic',      v:'halfshave' },
+  { id:'h_frosted',  slot:'hair', name:'Frosted Tips',    rarity:'epic',      v:'frosted' },
+  { id:'h_waist',    slot:'hair', name:'Waist-Length Mane',rarity:'legendary',v:'waist' },
+
+  // ---------- FACE ----------
+  { id:'f_soul',     slot:'face', name:'Soul Patch',      rarity:'common',    v:'soul' },
+  { id:'f_handlebar',slot:'face', name:'Handlebar Stache',rarity:'rare',      v:'handlebar' },
+  { id:'f_fullbeard',slot:'face', name:'Full Beard',      rarity:'rare',      v:'fullbeard' },
+  { id:'f_eyeblack', slot:'face', name:'Eye Black',       rarity:'rare',      v:'eyeblack' },
+  { id:'f_crossface',slot:'face', name:'Cross Paint',     rarity:'epic',      v:'crossface' },
+  { id:'f_visorp',   slot:'face', name:'Visor Paint',     rarity:'epic',      v:'visorpaint' },
+  { id:'f_bloodied', slot:'face', name:'Crimson Mask',    rarity:'legendary', v:'bloodied' },
+  { id:'f_mist',     slot:'face', name:'Green Mist',      rarity:'legendary', v:'mist' },
+
+  // ---------- MASKS ----------
+  { id:'m_jaguar',   slot:'mask', name:'Jaguar Mask',     rarity:'rare',      v:'jaguar' },
+  { id:'m_wolf',     slot:'mask', name:'Wolf Mask',       rarity:'rare',      v:'wolf' },
+  { id:'m_insect',   slot:'mask', name:'Hornet Mask',     rarity:'epic',      v:'insect' },
+  { id:'m_bull',     slot:'mask', name:'Bull Mask',       rarity:'epic',      v:'bull' },
+  { id:'m_crow',     slot:'mask', name:'Carrion Mask',    rarity:'legendary', v:'crow' },
+  { id:'m_dragon',   slot:'mask', name:'Dragon Mask',     rarity:'legendary', v:'dragon' },
+  { id:'m_samurai',  slot:'mask', name:'Samurai Menpo',   rarity:'legendary', v:'samurai' },
+
+  // ---------- ATTIRE ----------
+  { id:'a_crop',     slot:'attire', name:'Crop Top',      rarity:'common',    v:'crop' },
+  { id:'a_sash',     slot:'attire', name:'Shoulder Sash', rarity:'rare',      v:'sash' },
+  { id:'a_harness',  slot:'attire', name:'Strap Harness', rarity:'rare',      v:'harness' },
+  { id:'a_hoodie',   slot:'attire', name:'Ring Hoodie',   rarity:'rare',      v:'hoodie' },
+  { id:'a_gi',       slot:'attire', name:'Dojo Gi',       rarity:'epic',      v:'gi' },
+  { id:'a_chaps',    slot:'attire', name:'Leather Chaps', rarity:'epic',      v:'chaps' },
+  { id:'a_robe',     slot:'attire', name:'Entrance Robe', rarity:'legendary', v:'robe' },
+
+  // ---------- BOOTS ----------
+  { id:'b_barefoot', slot:'boots', name:'Barefoot',       rarity:'common',    v:'barefoot' },
+  { id:'b_hightop',  slot:'boots', name:'High Tops',      rarity:'common',    v:'hightop' },
+  { id:'b_combat',   slot:'boots', name:'Combat Boots',   rarity:'rare',      v:'combat' },
+  { id:'b_cowboy',   slot:'boots', name:'Cowboy Boots',   rarity:'rare',      v:'cowboy' },
+  { id:'b_steel',    slot:'boots', name:'Steel Toes',     rarity:'epic',      v:'steel' },
+  { id:'b_spiked',   slot:'boots', name:'Spiked Boots',   rarity:'legendary', v:'spiked' },
+
+  // ---------- ACCESSORIES ----------
+  { id:'x_armband',  slot:'acc', name:'Arm Bands',        rarity:'common',    v:'armband' },
+  { id:'x_necklace', slot:'acc', name:'Pendant',          rarity:'rare',      v:'necklace' },
+  { id:'x_towel',    slot:'acc', name:'Neck Towel',       rarity:'rare',      v:'towel' },
+  { id:'x_tassels',  slot:'acc', name:'Arm Tassels',      rarity:'rare',      v:'tassels' },
+  { id:'x_visor',    slot:'acc', name:'Combat Visor',     rarity:'epic',      v:'visor' },
+  { id:'x_facemask', slot:'acc', name:'Protective Mask',  rarity:'epic',      v:'facemask' },
+  { id:'x_armorpad', slot:'acc', name:'Shoulder Plate',   rarity:'epic',      v:'armorpad' },
+  { id:'x_spikes',   slot:'acc', name:'Spiked Pauldrons', rarity:'legendary', v:'spikes' },
+  { id:'x_feather',  slot:'acc', name:'Feather Headdress',rarity:'legendary', v:'feather' },
+  { id:'x_crown',    slot:'acc', name:'The Crown',        rarity:'legendary', v:'crown' },
+
+  // ---------- PATTERNS ----------
+  { id:'g_pinstripe',slot:'pattern', name:'Pinstripe',    rarity:'common',    v:'pinstripe' },
+  { id:'g_polka',    slot:'pattern', name:'Polka Dots',   rarity:'rare',      v:'polka' },
+  { id:'g_zigzag',   slot:'pattern', name:'Zig Zag',      rarity:'rare',      v:'zigzag' },
+  { id:'g_camo',     slot:'pattern', name:'Camo',         rarity:'epic',      v:'camo' },
+  { id:'g_gradient', slot:'pattern', name:'Fade',         rarity:'epic',      v:'gradient' },
+  { id:'g_tigerst',  slot:'pattern', name:'Tiger Stripes',rarity:'legendary', v:'tigerstripe' },
+  { id:'g_web',      slot:'pattern', name:'Web',          rarity:'legendary', v:'web' },
+
+  // ---------- TATTOOS ----------
+  { id:'t_neck',     slot:'tattoo', name:'Neck Ink',      rarity:'common',    v:'neck' },
+  { id:'t_barbwire', slot:'tattoo', name:'Barbed Wire',   rarity:'rare',      v:'barbwire' },
+  { id:'t_leg',      slot:'tattoo', name:'Leg Piece',     rarity:'rare',      v:'leg' },
+  { id:'t_back',     slot:'tattoo', name:'Shoulder Piece',rarity:'epic',      v:'back' },
+  { id:'t_kanji',    slot:'tattoo', name:'Kanji Chest',   rarity:'legendary', v:'kanji' },
+
+  // ---------- AURAS ----------
+  { id:'au_ice',     slot:'aura', name:'Frost Aura',      rarity:'rare',      v:'ice' },
+  { id:'au_neon',    slot:'aura', name:'Neon Frame',      rarity:'rare',      v:'neon' },
+  { id:'au_void',    slot:'aura', name:'Void Shroud',     rarity:'epic',      v:'void' },
+  { id:'au_pyro',    slot:'aura', name:'Ringside Pyro',   rarity:'legendary', v:'pyro' },
+  { id:'au_gilded',  slot:'aura', name:'Gilded Aura',     rarity:'legendary', v:'gilded' }
+);
+
 // duplicates convert to shards you can spend on any item of that rarity
 window.RTR_SHARD_COST = { common:4, rare:8, epic:16, legendary:32 };

@@ -840,18 +840,30 @@ function wrestlerSVG(L,opt){
   const sk=L.skin, skD=shade(sk,-34), skL=shade(sk,22), hair=L.hair, gear=L.gear, trim=L.trim;
   const build=L.build||'athletic';
   const bw = build==='heavy'?3 : build==='lean'?-2 : 0;
-  const tightsFull=(L.attire==='tights'||L.attire==='singlet'||L.attire==='bodysuit'||L.attire==='armor');
-  const covered =(L.attire!=='trunks'&&L.attire!=='shorts');
+  const FULLTIGHTS={tights:1,singlet:1,bodysuit:1,armor:1,gi:1};
+  const BARECHEST={trunks:1,shorts:1,harness:1,sash:1,chaps:1,bodypaint:1};
+  const SLEEVED={jacket:1,duster:1,gi:1,robe:1,hoodie:1};
+  const tightsFull=!!FULLTIGHTS[L.attire];
+  const covered =!BARECHEST[L.attire];
   const legCol = tightsFull? gear : sk;
-  const sleeved = (L.attire==='jacket'||L.attire==='duster');
+  const sleeved = !!SLEEVED[L.attire];
   const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
   // one bucket per rig bone
   const B={back:'',thighL:'',shinL:'',thighR:'',shinR:'',torso:'',upArmL:'',loArmL:'',upArmR:'',loArmR:'',head:''};
 
   // ---- entrance aura (behind everything) ----
   if(L.aura&&L.aura!=='none'){
-    const A={spark:['#e0b341','#f6d97a'],smoke:['#4a4a52','#6f6f7a'],flame:['#C6392C','#e07b39'],storm:['#3f7fbf','#7dc4e8'],halo:['#e0b341','#f6d97a']}[L.aura]||['#888','#aaa'];
+    const A={spark:['#e0b341','#f6d97a'],smoke:['#4a4a52','#6f6f7a'],flame:['#C6392C','#e07b39'],
+             storm:['#3f7fbf','#7dc4e8'],halo:['#e0b341','#f6d97a'],ice:['#5fa8d3','#bfe6f5'],
+             void:['#3a2150','#7a3f9d'],gilded:['#8a6a1c','#f6d97a'],neon:['#22c2a8','#7dffe8'],
+             pyro:['#8a1c1c','#e07b39']}[L.aura]||['#888','#aaa'];
     if(L.aura==='halo'){ B.head+=P(26,-1,12,2,A[0])+P(24,0,2,2,A[0])+P(38,0,2,2,A[0])+P(28,-2,8,1,A[1]); }
+    else if(L.aura==='pyro'){ for(let i=0;i<6;i++){ const fx2=6+i*10; B.back+=P(fx2,74-((i*13)%22),3,10+((i*7)%12),i%2?A[0]:A[1])+P(fx2,70-((i*13)%22),3,4,'#f6d97a'); } }
+    else if(L.aura==='ice'){ for(let i=0;i<7;i++){ const px2=7+((i*49)%50), py=8+((i*37)%70);
+        B.back+=P(px2,py,1,5,A[1])+P(px2-2,py+2,5,1,A[1])+P(px2-1,py+1,3,3,A[0]); } }
+    else if(L.aura==='void'){ B.back+=P(4,18,56,58,A[0]);
+        for(let i=0;i<10;i++){ const px2=6+((i*53)%52), py=20+((i*29)%54); B.back+=P(px2,py,2,2,A[1]); } }
+    else if(L.aura==='neon'){ B.back+=P(8,20,2,56,A[0])+P(54,20,2,56,A[0])+P(8,20,48,2,A[1])+P(8,74,48,2,A[1]); }
     else { for(let i=0;i<9;i++){ const px2=8+((i*57)%50), py=6+((i*31)%74); B.back+=P(px2,py,2,2,i%2?A[0]:A[1]); }
       B.back+=P(6,40,2,10,A[0])+P(56,34,2,12,A[1]); }
   }
@@ -885,18 +897,37 @@ function wrestlerSVG(L,opt){
   const splitCol=(tightsFull&&L.pattern==='split')?trim:legCol;
   B.thighL+=OL(23,52,8,16)+LIMB(23,52,8,16,legCol)+thighPat(23);
   B.thighR+=OL(33,52,8,16)+LIMB(33,52,8,16,splitCol)+thighPat(33);
+  if(L.attire==='chaps'){ // leather chaps over bare legs
+    const ch=shade(gear,-30);
+    B.thighL+=OL(22,52,9,16)+LIMB(22,52,9,16,ch)+P(22,54,2,14,shade(trim,-10));
+    B.thighR+=OL(33,52,9,16)+LIMB(33,52,9,16,ch)+P(40,54,2,14,shade(trim,-10));
+    B.shinL+=OL(23,68,8,10)+LIMB(23,68,8,10,ch); B.shinR+=OL(33,68,8,10)+LIMB(33,68,8,10,ch);
+  }
+  if(L.tattoo==='leg'){ const lk=shade(sk,-62);
+    if(!tightsFull){ B.thighL+=P(24,55,6,2,lk)+P(25,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
   if(L.boots==='pads'){ B.thighL+=OL(24,64,7,4)+LIMB(24,64,7,4,shade(trim,-30)); B.thighR+=OL(33,64,7,4)+LIMB(33,64,7,4,shade(trim,-30)); }
   if(L.acc==='knee'){ B.thighL+=OL(24,63,7,5)+LIMB(24,63,7,5,trim); B.thighR+=OL(33,63,7,5)+LIMB(33,63,7,5,trim); }
   B.shinL+=OL(24,68,7,13)+LIMB(24,68,7,13,legCol)+shinPat(23);
   B.shinR+=OL(33,68,7,13)+LIMB(33,68,7,13,splitCol)+shinPat(33);
-  const bootTop = (L.boots==='tall'||L.boots==='goldboot')?70 : L.boots==='pads'?72 : L.boots==='platform'?68 : L.boots==='wraps'?74 : 77;
-  const boot=(x)=>{ let o=LIMB(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,7,1,shade(trim,30));
+  const BOOTTOP={tall:70,goldboot:70,spiked:69,pads:72,platform:68,wraps:74,combat:71,cowboy:70,hightop:75,steel:72};
+  const bootTop = L.boots==='barefoot' ? 81 : (BOOTTOP[L.boots]||77);
+  const boot=(x)=>{
+    if(L.boots==='barefoot') return '';
+    let o=LIMB(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,7,1,shade(trim,30));
     if(L.boots==='wraps'){ for(let y=74;y<81;y+=2) o+=P(x,y,7,1,shade(trim,-34)); }
     if(L.boots==='goldboot') o+=P(x,bootTop,7,2,'#e0b341')+P(x,77,7,1,'#e0b341');
+    if(L.boots==='combat'){ for(let y=73;y<81;y+=3) o+=P(x+1,y,5,1,shade(trim,-46)); o+=P(x,bootTop,7,2,shade(trim,-30)); }
+    if(L.boots==='cowboy') o+=P(x,72,7,1,shade(trim,-40))+P(x+1,75,5,1,'#e0b341')+P(x+1,78,5,1,'#e0b341');
+    if(L.boots==='hightop') o+=P(x,77,7,2,'#F4E8DB')+P(x+2,75,3,5,shade(trim,-40));
+    if(L.boots==='steel') o+=P(x,78,7,3,'#9aa0a6')+P(x,78,7,1,'#c8ced4');
+    if(L.boots==='spiked'){ o+=P(x-1,72,2,3,'#c8ced4')+P(x+6,72,2,3,'#c8ced4')+P(x-1,77,2,3,'#c8ced4')+P(x+6,77,2,3,'#c8ced4'); }
     return o; };
   B.shinL+=boot(24); B.shinR+=boot(33);
-  B.shinL+=OL(21,81,11,6)+LIMB(21,81,11,6,shade(trim,-46)); B.shinR+=OL(32,81,11,6)+LIMB(32,81,11,6,shade(trim,-46));
+  const footCol = L.boots==='barefoot' ? sk : shade(trim,-46);
+  B.shinL+=OL(21,81,11,6)+LIMB(21,81,11,6,footCol); B.shinR+=OL(32,81,11,6)+LIMB(32,81,11,6,footCol);
+  if(L.boots==='barefoot'){ B.shinL+=P(21,82,1,3,skD)+P(23,81,1,2,skD)+P(25,81,1,2,skD); B.shinR+=P(42,82,1,3,skD)+P(40,81,1,2,skD)+P(38,81,1,2,skD); }
   if(L.boots==='platform'){ B.shinL+=OL(21,81,11,3)+LIMB(21,81,11,3,shade(trim,-30)); B.shinR+=OL(32,81,11,3)+LIMB(32,81,11,3,shade(trim,-30)); }
+  if(L.boots==='cowboy'){ B.shinL+=P(21,85,4,4,OUTLINE)+P(22,85,3,3,shade(trim,-56)); B.shinR+=P(39,85,4,4,OUTLINE)+P(39,85,3,3,shade(trim,-56)); }
 
   // ================= TORSO =================
   const tX=21-bw, tW=22+bw*2;
@@ -916,13 +947,38 @@ function wrestlerSVG(L,opt){
     if(L.pattern==='check'){ for(let cx=0;cx<5;cx++) for(let cy=0;cy<3;cy++) if((cx+cy)%2===0) B.torso+=P(tX+cx*4,34+cy*3,4,3,trim); }
     if(L.pattern==='scales'){ for(let cy=0;cy<4;cy++) for(let cx=0;cx<6;cx++) B.torso+=P(tX+cx*4+(cy%2?2:0),34+cy*2,2,2,shade(gear,-32)); }
     if(L.pattern==='royal'){ B.torso+=P(19-bw,28,26+bw*2,2,'#e0b341')+P(tX,41,tW,2,'#e0b341')+P(30,34,4,8,'#e0b341'); }
+    if(L.pattern==='camo'){ const c1=shade(gear,-28),c2=shade(gear,18);
+      for(let i=0;i<11;i++){ const cx2=tX+((i*7)%(tW-4)), cy2=29+((i*5)%22); B.torso+=P(cx2,cy2,4,3,i%2?c1:c2); } }
+    if(L.pattern==='pinstripe'){ for(let i=0;i<6;i++) B.torso+=P(tX+1+i*4,28,1,25,shade(gear,-34)); }
+    if(L.pattern==='zigzag'){ for(let i=0;i<6;i++) B.torso+=P(tX+i*4,(i%2?36:39),4,3,trim); }
+    if(L.pattern==='polka'){ for(let cy=0;cy<4;cy++) for(let cx=0;cx<4;cx++) B.torso+=P(tX+2+cx*5+(cy%2?2:0),30+cy*5,2,2,trim); }
+    if(L.pattern==='gradient'){ for(let i=0;i<7;i++) B.torso+=P(tX,29+i*3,tW,3,shade(gear,-30+i*10)); }
+    if(L.pattern==='tigerstripe'){ for(let i=0;i<5;i++){ const sy=30+i*5; B.torso+=P(tX,sy,6,2,'#141414')+P(tX+tW-7,sy+2,7,2,'#141414'); } }
+    if(L.pattern==='web'){ B.torso+=P(30,28,2,25,shade(gear,-40))+P(tX,39,tW,2,shade(gear,-40))
+      +P(24,31,2,2,shade(gear,-40))+P(37,31,2,2,shade(gear,-40))+P(24,47,2,2,shade(gear,-40))+P(37,47,2,2,shade(gear,-40)); }
   }
   if(L.attire==='tank'){ B.torso+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }
+  if(L.attire==='crop'){ B.torso+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk)+LIMB(tX,40,tW,13,sk)
+    +P(24,44,2,3,skD)+P(38,44,2,3,skD)+P(28,42,2,3,skD)+P(34,42,2,3,skD); }
   if(L.attire==='singlet'){ B.torso+=P(22-bw,28,3,6,sk)+P(39+bw,28,3,6,sk); }
   if(L.attire==='vest'){ B.torso+=LIMB(19-bw,28,7,20,shade(gear,-24))+LIMB(36+bw,28,7,20,shade(gear,-24))+P(28,29,8,14,sk); }
   if(L.attire==='armor'){ B.torso+=P(19-bw,27,26+bw*2,3,'#e0b341')+P(tX,33,tW,2,trim)+P(24,40,16,2,'#e0b341'); }
+  if(L.attire==='harness'){                       // X-strap harness over a bare chest
+    const hc=shade(gear,-34);
+    B.torso+=P(22,28,4,4,OUTLINE)+P(23,29,3,3,hc)+P(38,28,4,4,OUTLINE)+P(38,29,3,3,hc)
+      +P(25,31,4,4,hc)+P(28,34,4,4,hc)+P(31,37,4,4,hc)+P(35,31,4,4,hc)+P(32,34,3,4,hc)
+      +P(tX,41,tW,3,OUTLINE)+LIMB(tX,41,tW,3,hc)+P(30,40,5,5,'#e0b341'); }
+  if(L.attire==='sash'){ B.torso+=P(21,29,6,5,OUTLINE)+LIMB(22,30,5,4,trim)
+    +P(24,33,5,5,trim)+P(27,37,5,5,trim)+P(30,41,5,5,trim)+P(33,45,5,5,trim)+P(35,48,5,4,shade(trim,-24)); }
+  if(L.attire==='gi'){ B.torso+=P(26-bw,28,5,25,shade(gear,20))+P(33+bw,28,5,25,shade(gear,20))
+    +P(tX,46,tW,4,OUTLINE)+LIMB(tX,46,tW,4,trim)+P(29,50,7,3,shade(trim,-30))+P(30,30,4,14,shade(gear,-24)); }
+  if(L.attire==='hoodie'){ B.torso+=P(24,25,16,6,OUTLINE)+LIMB(25,26,14,5,shade(gear,-16))
+    +P(tX+2,45,tW-4,5,shade(gear,-32))+P(30,32,1,10,shade(gear,-40))+P(33,32,1,10,shade(gear,-40)); }
   if(sleeved){ B.torso+=LIMB(19-bw,28,5,16,shade(gear,-30))+LIMB(40+bw,28,5,16,shade(gear,-30))+P(29,34,6,9,sk); }
   if(L.attire==='duster'){ B.torso+=P(17-bw,44,4,22,OUTLINE)+LIMB(18-bw,44,4,21,shade(gear,-40))+P(43+bw,44,4,22,OUTLINE)+LIMB(44+bw,44,4,21,shade(gear,-40)); }
+  if(L.attire==='robe'){ B.torso+=P(16-bw,28,5,38,OUTLINE)+LIMB(17-bw,28,4,37,shade(gear,-16))
+    +P(43+bw,28,5,38,OUTLINE)+LIMB(44+bw,28,4,37,shade(gear,-16))
+    +P(tX,28,tW,2,'#e0b341')+P(29,30,6,22,shade(gear,-38)); }
   // trunks over the waist
   if(!tightsFull){
     B.torso+=P(22,44,20,11,OUTLINE)+LIMB(23,45,18,9,gear)+P(24,46,3,4,shade(gear,26));
@@ -934,9 +990,20 @@ function wrestlerSVG(L,opt){
     const ink2=shade(sk,-62);
     if((L.tattoo==='chest'||L.tattoo==='full'||L.tattoo==='tribalink')&&!covered)
       B.torso+=P(26,36,12,2,ink2)+P(29,38,6,5,ink2)+P(24,44,4,2,ink2)+P(36,44,4,2,ink2);
+    if(L.tattoo==='kanji'&&!covered) B.torso+=P(28,35,8,2,ink2)+P(31,35,2,9,ink2)+P(27,39,4,2,ink2)+P(33,39,4,2,ink2)+P(28,43,8,2,ink2);
+    if(L.tattoo==='neck') B.head+=P(28,24,8,3,shade(sk,-62))+P(27,23,10,1,shade(sk,-62));
+    if(L.tattoo==='back'&&!covered) B.torso+=P(22,30,6,2,ink2)+P(36,30,6,2,ink2)+P(25,33,14,1,ink2);
   }
   if(L.acc==='chain') B.torso+=P(28,28,8,2,'#e0b341')+P(30,30,4,2,'#e0b341')+P(31,32,2,2,shade('#e0b341',-30));
+  if(L.acc==='necklace') B.torso+=P(26,27,12,2,shade('#e0b341',-20))+P(29,29,6,2,'#e0b341')+P(30,31,4,4,OUTLINE)+P(31,32,3,3,trim);
   if(L.acc==='scarf') B.torso+=P(26,26,12,4,trim)+P(38,29,4,12,shade(trim,-20));
+  if(L.acc==='towel') B.torso+=P(25,26,5,18,OUTLINE)+LIMB(26,27,4,17,'#F4E8DB')+P(34,26,5,18,OUTLINE)+LIMB(34,27,4,17,'#e4d6c4')+P(26,26,12,3,'#F4E8DB');
+  if(L.acc==='spikes'){ const sp='#c8ced4';
+    B.torso+=P(18-bw,25,10,5,OUTLINE)+LIMB(19-bw,26,9,4,shade(gear,-40))
+      +P(36+bw,25,10,5,OUTLINE)+LIMB(36+bw,26,9,4,shade(gear,-40))
+      +P(20-bw,21,2,5,sp)+P(24-bw,20,2,6,sp)+P(38+bw,20,2,6,sp)+P(42+bw,21,2,5,sp); }
+  if(L.acc==='armorpad') B.torso+=P(17-bw,25,11,10,OUTLINE)+LIMB(18-bw,26,10,9,shade(trim,-14))
+      +P(18-bw,26,10,2,shade(trim,26))+P(20-bw,30,6,2,shade(trim,-40));
   if(L.acc==='belt') B.torso+=P(20,43,24,7,OUTLINE)+LIMB(21,44,22,5,shade('#8a5a2b',-10))
       +LIMB(27,42,10,9,'#e0b341')+P(29,44,6,5,shade('#e0b341',-38))+P(30,45,4,3,'#f6d97a')
       +P(22,45,4,3,'#e0b341')+P(38,45,4,3,'#e0b341');
@@ -949,6 +1016,9 @@ function wrestlerSVG(L,opt){
     let up=OL(ux,30,7,14)+LIMB(ux,30,7,14,upCol);
     if(!sleeved) up+=P(side<0?ux+1:ux+4,31,2,8,skL);
     if(inked&&(side<0||L.tattoo!=='sleeve')) up+=P(ux,31,7,12,ink);
+    if(L.tattoo==='barbwire') up+=P(ux,35,7,3,ink)+P(ux+1,34,2,1,ink)+P(ux+4,38,2,1,ink);
+    if(L.acc==='armband') up+=OL(ux,34,7,4)+LIMB(ux,34,7,4,trim)+P(ux,34,7,1,shade(trim,28));
+    if(L.acc==='tassels') up+=P(ux-2,41,3,9,trim)+P(ux+6,41,3,9,trim)+P(ux-2,41,9,2,shade(trim,-30));
     let lo=OL(fx,43,7,11)+LIMB(fx,43,7,11,sk);
     if(inked&&(side<0||L.tattoo!=='sleeve')) lo+=P(fx,44,7,9,ink);
     if(L.acc==='elbow') lo+=OL(fx,42,7,3)+LIMB(fx,42,7,3,trim);
@@ -975,6 +1045,30 @@ function wrestlerSVG(L,opt){
     if(L.mask==='demon'){ B.head+=LIMB(24,6,16,16,'#17110f')+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341')+P(24,6,16,2,'#C6392C')+P(27,19,10,2,'#C6392C')
       +P(22,3,4,4,OUTLINE)+P(23,3,3,4,'#C6392C')+P(21,-1,4,5,OUTLINE)+P(22,0,3,4,shade('#C6392C',18))
       +P(38,3,4,4,OUTLINE)+P(38,3,3,4,'#C6392C')+P(41,-1,4,5,OUTLINE)+P(39,0,3,4,shade('#C6392C',18)); }
+    if(L.mask==='jaguar'){ B.head+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#F4E8DB')+P(33,13,5,4,'#F4E8DB')
+      +P(27,14,2,3,'#1a1a1a')+P(35,14,2,3,'#1a1a1a')+P(28,19,8,3,shade(gear,-40));
+      for(let i=0;i<7;i++){ const jx=25+((i*7)%14), jy=7+((i*5)%12); B.head+=P(jx,jy,3,3,shade(gear,-44))+P(jx+1,jy+1,1,1,gear); } }
+    if(L.mask==='dragon'){ B.head+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341')
+      +P(28,19,8,3,'#1a1a1a')+P(24,6,16,2,trim)
+      +P(29,-4,6,11,OUTLINE)+LIMB(30,-3,4,10,trim)+P(27,-1,3,5,OUTLINE)+P(27,0,2,4,shade(trim,-24))
+      +P(35,-1,3,5,OUTLINE)+P(36,0,2,4,shade(trim,-24)); }
+    if(L.mask==='bull'){ B.head+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(29,19,6,4,shade(gear,-40))
+      +P(18,4,7,4,OUTLINE)+LIMB(19,5,6,3,'#e8dcc0')+P(16,1,4,5,OUTLINE)+LIMB(17,2,3,4,'#e8dcc0')
+      +P(39,4,7,4,OUTLINE)+LIMB(39,5,6,3,'#e8dcc0')+P(44,1,4,5,OUTLINE)+LIMB(44,2,3,4,'#e8dcc0')
+      +P(30,20,4,2,'#e8dcc0'); }
+    if(L.mask==='crow'){ B.head+=LIMB(24,4,16,17,'#17171c')+P(26,12,5,4,'#e0b341')+P(33,12,5,4,'#e0b341')
+      +P(28,17,10,8,OUTLINE)+LIMB(29,18,8,7,'#3a3a44')+P(30,23,6,3,'#26262e')
+      +P(23,3,18,3,shade(gear,-20))+P(21,6,3,7,'#17171c')+P(40,6,3,7,'#17171c'); }
+    if(L.mask==='samurai'){ B.head+=LIMB(24,6,16,10,'#1e1a1a')+LIMB(25,16,14,8,gear)
+      +P(26,10,5,4,'#F4E8DB')+P(33,10,5,4,'#F4E8DB')+P(27,11,2,3,'#1a1a1a')+P(35,11,2,3,'#1a1a1a')
+      +P(27,19,10,2,shade(gear,-46))+P(27,22,10,1,shade(gear,-46))
+      +P(22,4,20,3,OUTLINE)+LIMB(23,4,18,3,trim)+P(29,-3,6,7,OUTLINE)+LIMB(30,-2,4,6,'#e0b341'); }
+    if(L.mask==='insect'){ B.head+=LIMB(24,5,16,17,gear)+P(24,10,8,7,OUTLINE)+LIMB(25,11,7,6,'#1a1a1a')
+      +P(32,10,8,7,OUTLINE)+LIMB(33,11,7,6,'#1a1a1a')+P(26,12,3,2,shade(trim,30))+P(35,12,3,2,shade(trim,30))
+      +P(29,19,6,3,shade(gear,-44))+P(25,0,3,7,OUTLINE)+P(25,1,2,6,trim)+P(37,0,3,7,OUTLINE)+P(37,1,2,6,trim); }
+    if(L.mask==='wolf'){ B.head+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341')
+      +P(27,18,10,7,OUTLINE)+LIMB(28,19,8,6,shade(gear,-24))+P(29,22,6,2,'#F4E8DB')
+      +P(21,1,6,7,OUTLINE)+LIMB(22,2,5,6,gear)+P(37,1,6,7,OUTLINE)+LIMB(38,2,5,6,gear); }
   } else {
     const hs=L.hairStyle, hD=shade(hair,-36), hL=shade(hair,26);
     if(hs!=='bald'){
@@ -992,6 +1086,20 @@ function wrestlerSVG(L,opt){
       if(hs==='wild'){ B.head+=LIMB(20,1,24,10,hair)+P(17,5,4,11,hair)+P(43,5,4,11,hair)+P(22,-1,5,4,hair)+P(36,-1,5,4,hair)+P(23,2,7,3,hL); }
       if(hs==='hornhair'){ B.head+=LIMB(23,5,18,5,hair)+P(21,-2,5,8,hair)+P(38,-2,5,8,hair)+P(22,-3,3,3,hL)+P(39,-3,3,3,hL); }
       if(hs==='flames'){ B.head+=LIMB(23,4,18,6,'#e0b341')+P(24,-1,3,6,'#C6392C')+P(29,-3,4,8,'#e07b39')+P(35,-1,3,6,'#C6392C'); }
+      if(hs==='slick'){ B.head+=LIMB(23,4,18,6,hair)+P(23,10,3,5,hD)+P(38,10,3,5,hD)+P(24,4,15,2,hL)+P(24,8,17,2,hD); }
+      if(hs==='braids'){ B.head+=LIMB(23,4,18,6,hair)+LIMB(20,9,4,17,hair)+LIMB(40,9,4,17,hair)
+        +P(20,13,4,2,hD)+P(20,18,4,2,hD)+P(20,23,4,2,hD)+P(40,13,4,2,hD)+P(40,18,4,2,hD)+P(40,23,4,2,hD)+P(24,4,7,2,hL); }
+      if(hs==='bun'){ B.head+=LIMB(23,5,18,5,hair)+P(28,-3,8,8,OUTLINE)+LIMB(29,-2,6,6,hair)+P(30,-2,2,2,hL); }
+      if(hs==='curls'){ B.head+=LIMB(22,2,20,8,hair);
+        for(let i=0;i<4;i++) B.head+=P(21+i*6,0,5,5,i%2?hL:hair);
+        B.head+=P(19,7,4,7,hair)+P(41,7,4,7,hair); }
+      if(hs==='fauxhawk'){ B.head+=P(23,6,18,4,hD)+P(26,0,12,9,OUTLINE)+LIMB(27,1,10,8,hair)+P(29,1,3,3,hL); }
+      if(hs==='halfshave'){ B.head+=P(23,5,9,5,hD)+LIMB(32,3,9,8,hair)+P(38,10,3,11,hair)+P(33,3,4,2,hL); }
+      if(hs==='waist'){ B.head+=LIMB(23,3,18,7,hair)+LIMB(19,9,5,27,hair)+LIMB(40,9,5,27,hair)+P(24,3,8,2,hL)
+        +P(19,20,5,2,hD)+P(40,20,5,2,hD); }
+      if(hs==='frosted'){ B.head+=LIMB(23,4,18,6,hair)+P(23,4,18,2,'#e8dcc0')+P(22,10,3,7,hair)+P(39,10,3,7,hair)
+        +P(22,10,3,3,'#e8dcc0')+P(39,10,3,3,'#e8dcc0'); }
+      if(hs==='widow'){ B.head+=LIMB(23,4,18,5,hair)+P(30,8,4,3,hair)+P(21,8,3,9,hair)+P(40,8,3,9,hair)+P(24,4,7,2,hL); }
     }
     const HURT={reel:1,prone:1,proneUp:1,stagger:1,held:1,vert:1,submit:1,bridge:1};
     const hurt=!!HURT[opt.pose];
@@ -1009,12 +1117,27 @@ function wrestlerSVG(L,opt){
     if(L.face==='skull'){ B.head+=P(24,6,16,3,'#F4E8DB')+P(25,11,6,6,'#1a1a1a')+P(33,11,6,6,'#1a1a1a')+P(28,19,8,3,'#1a1a1a'); }
     if(L.face==='venom'){ B.head+=P(24,9,16,3,'#4a8f76')+P(25,12,5,8,'#1a1a1a')+P(34,12,5,8,'#1a1a1a')+P(28,20,8,2,'#4a8f76'); }
     if(L.face==='tribal'){ B.head+=P(24,10,4,11,'#1a1a1a')+P(36,10,4,11,'#1a1a1a')+P(28,6,8,3,'#C6392C'); }
+    if(L.face==='fullbeard'){ B.head+=LIMB(24,18,16,9,hair)+P(23,13,2,9,hair)+P(39,13,2,9,hair)+LIMB(27,26,10,4,hair)+P(26,19,5,2,shade(hair,20)); }
+    if(L.face==='soul'){ B.head+=P(31,20,3,4,hair); }
+    if(L.face==='handlebar'){ B.head+=P(27,19,10,2,hair)+P(25,17,2,4,hair)+P(37,17,2,4,hair); }
+    if(L.face==='eyeblack'){ B.head+=P(25,12,6,2,'#141414')+P(33,12,6,2,'#141414'); }
+    if(L.face==='crossface'){ B.head+=P(30,6,4,17,'#141414')+P(24,12,16,3,'#141414'); }
+    if(L.face==='mist'){ B.head+=P(26,18,12,4,'#4fbf6a')+P(23,21,18,3,'#7de08f')+P(28,24,9,3,'#4fbf6a')+P(30,20,5,2,'#a9f0b6'); }
+    if(L.face==='bloodied'){ B.head+=P(28,4,3,11,'#8f1a12')+P(32,5,2,9,'#8f1a12')+P(26,8,2,8,'#a3231a')+P(29,15,5,3,'#8f1a12')+P(24,6,16,2,'#a3231a'); }
+    if(L.face==='visorpaint'){ B.head+=P(23,11,19,6,'#141414')+P(26,12,5,2,trim)+P(34,12,5,2,trim); }
     if(hurt) B.head+=P(29,21,6,2,'#3a1a14');                                  // open mouth
     else B.head+=P(29,21,6,1,skD);
     if(L.tattoo==='tribalink') B.head+=P(25,21,3,3,ink)+P(36,21,3,3,ink);
   }
   if(L.acc==='shades') B.head+=P(24,12,17,5,'#0c0b0b')+P(25,13,6,2,'#3d4c57')+P(34,13,6,2,'#2b363e');
   if(L.acc==='bandana') B.head+=P(23,7,18,4,trim)+P(23,7,18,1,shade(trim,25))+P(40,9,4,7,trim);
+  if(L.acc==='crown') B.head+=P(23,-1,18,7,OUTLINE)+LIMB(24,0,16,5,'#e0b341')
+    +P(24,-3,3,4,'#e0b341')+P(30,-4,4,5,'#e0b341')+P(37,-3,3,4,'#e0b341')
+    +P(28,1,3,3,'#C6392C')+P(34,1,2,2,'#2f7fbf');
+  if(L.acc==='visor') B.head+=P(22,8,20,5,OUTLINE)+LIMB(23,9,18,4,shade(trim,-10))+P(24,13,16,4,'#2b363e')+P(25,14,6,2,'#5b7a8c');
+  if(L.acc==='facemask'){ B.head+=P(23,10,18,2,'#c8ced4')+P(23,16,18,2,'#c8ced4')+P(27,10,2,10,'#c8ced4')+P(35,10,2,10,'#c8ced4')+P(23,20,18,2,'#c8ced4'); }
+  if(L.acc==='feather'){ B.head+=P(23,4,18,4,shade(trim,-20));
+    for(let i=0;i<5;i++){ const fx3=24+i*4; B.head+=P(fx3,-6+((i%2)?2:0),3,10,i%2?trim:'#C6392C')+P(fx3,-6+((i%2)?2:0),3,3,'#F4E8DB'); } }
 
   // ---- assemble the rig ----
   const R=(rot,j,inner)=> rot ? `<g transform="rotate(${rot} ${j[0]} ${j[1]})">${inner}</g>` : inner;
