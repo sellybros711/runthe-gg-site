@@ -559,7 +559,7 @@
       <main id="puzzles">
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 11 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
@@ -618,39 +618,7 @@
             </span>
           </a>
 
-          <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
-            <span class="cap" aria-hidden="true">
-              <span class="status" id="stW">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
-                <g clip-path="url(#wsico)">
-                  <rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/>
-                  <g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
-                  <!-- teal diagonal 'found word' WIN -->
-                  <rect class="wsdiag" x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect class="wsdiag" x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.22s"/>
-                  <rect class="wsdiag" x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.44s"/>
-                  <g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle">
-                    <text x="10" y="13" fill="#06333A">W</text>
-                    <text x="22" y="25" fill="#06333A">I</text>
-                    <text x="34" y="37" fill="#06333A">N</text>
-                    <g fill="#7FA8B0">
-                      <text x="34" y="13">R</text><text x="46" y="13">T</text>
-                      <text x="10" y="37">S</text><text x="46" y="37">E</text>
-                      <text x="10" y="49">A</text><text x="22" y="49">D</text><text x="34" y="49">L</text><text x="46" y="49">O</text>
-                    </g>
-                  </g>
-                </g>
-                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Daily Word Search</span>
-              <span class="desc">Find every hidden name from today's theme. Beat the clock for a flawless run.</span>
-              <span class="play" id="playW">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
+          
           <a class="tile guess" id="cardGuess" href="/arcade/guess/">
             <span class="cap" aria-hidden="true">
               <span class="status" id="stG">Ready</span>
@@ -813,8 +781,8 @@
 
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>10</s> <b>26 daily games</b></h2>
-          <p class="cp-sub">Your free Arcade is 10 games a day. The Card unlocks an NBA, NFL and MLB edition of five of them, plus a members-only game.</p>
+          <h2 class="cp-head" id="cp-head"><s>9</s> <b>22 daily games</b></h2>
+          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of four of them, plus a members-only game.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
@@ -857,8 +825,7 @@
     <a href="/arcade/almamater/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-4 10 4-10 4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/><path d="M22 9v5"/></svg>Alma Mater</a>
     <a href="/arcade/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
     <a href="/arcade/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
-    <a href="/arcade/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
-    <a href="/arcade/highlow/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>High Low</a>
+        <a href="/arcade/highlow/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>High Low</a>
     <a href="/arcade/archive/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Archive</a>
   </nav>
 </div>
@@ -869,11 +836,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=5"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=5"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=2"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -976,7 +943,6 @@
   var mRes = null; try { mRes = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
   var mDone = !!mRes;
   var cDone = (cw.lastDone === t);
-  var wDone = (ws.lastDone === t);
   var gDone = (gs.lastDone === t);
   var tDone = (ts.lastDone === t);
   var oDone = (os.lastDone === t);
@@ -992,9 +958,9 @@
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
+      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Crossword',cDone,'var(--newsT)']
     ];
-    // Members get a 10th punch: the card-only High Low, "done" once they've
+    // Members get one more punch: the card-only High Low, "done" once they've
     // played it today (it's endless, so a single play counts).
     var isMember=false; try{ isMember=!!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){}
     var hlDone=false; try{ hlDone=isMember && window.RTGTokens && RTGTokens.playsOf && RTGTokens.playsOf('highlow')>0; }catch(e){}
@@ -1078,7 +1044,6 @@
 
   mark('cardMatch', 'pipM', 'stM', 'playM', mDone, (mRes && mRes.grade) ? ('Solved · ' + mRes.grade) : 'Solved', 'match');
   mark('cardCross', 'pipC', 'stC', 'playC', cDone, 'Solved', 'crossword');
-  mark('cardWord',  'pipW', 'stW', 'playW', wDone, 'Solved', 'wordsearch');
   mark('cardGuess', 'pipG', 'stG', 'playG', gDone, (gs.last && gs.last.won === false) ? 'Missed' : 'Solved', 'guess');
   mark('cardTable', 'pipT', 'stT', 'playT', tDone, runText(ts), 'table');
   mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
@@ -1113,10 +1078,10 @@
   if (hlTile && isMemberN) hlTile.classList.add('ismember');
   var pipH = document.getElementById('pipH');
   if (pipH) { pipH.style.display = isMemberN ? '' : 'none'; if (hlPlayed) pipH.classList.add('done'); }
-  // 10 free games now that Sportegories is live; the 11th is members-only, so
-  // non-members are never shown a total they cannot reach.
-  var total = isMemberN ? 11 : 10;
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
+  // Word Search is pulled from the lineup for now, so 9 free games; the 10th
+  // is members-only, and non-members are never shown a total they can't reach.
+  var total = isMemberN ? 10 : 9;
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
   if (n === total) {
     document.getElementById('dprog').classList.add('all');

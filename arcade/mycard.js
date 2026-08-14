@@ -39,8 +39,7 @@
     rankit:     { name: 'Rank It',       href: '/arcade/rankit/',     tone: 'var(--pinkT,#F778AE)' },
     almamater:  { name: 'Alma Mater',    href: '/arcade/almamater/',  tone: 'var(--goldT,#F2B632)' },
     guess:      { name: 'Guess the Player', href: '/arcade/guess/',   tone: 'var(--coralT,#F06A5F)' },
-    crossword:  { name: 'Daily Crossword', href: '/arcade/crossword/', tone: 'var(--newsT,#9CADC0)' },
-    wordsearch: { name: 'Word Search',   href: '/arcade/wordsearch/', tone: 'var(--tealT,#37C5D5)' }
+    crossword:  { name: 'Daily Crossword', href: '/arcade/crossword/', tone: 'var(--newsT,#9CADC0)' }
   };
 
   function stats() {
@@ -57,7 +56,7 @@
     var done = {
       table: ts.lastDone === t, match: !!mr, career: rs.lastDone === t, oddone: os.lastDone === t,
       rankit: ks.lastDone === t, almamater: as.lastDone === t, guess: gs.lastDone === t,
-      crossword: cw.lastDone === t, wordsearch: ws.lastDone === t
+      crossword: cw.lastDone === t
     };
     var punched = 0; for (var k in done) if (done.hasOwnProperty(k) && done[k]) punched++;
 

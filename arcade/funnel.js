@@ -2,7 +2,7 @@
  *
  * Every game's end modal ships a generic "More games" link back to the hub.
  * This module upgrades it into a specific pull: "Next: Daily Match →" pointing
- * at the first game you haven't played today, plus a small "N of 10 played"
+ * at the first game you haven't played today, plus a small "N of 9 played"
  * progress line. Finishing one puzzle should hand you the next one - that
  * hand-off is the whole session-extending trick of a games suite.
  *
@@ -22,7 +22,6 @@
     ['almamater', 'Alma Mater'],
     ['guess', 'Guess the Player'],
     ['crossword', 'Daily Crossword'],
-    ['wordsearch', 'Word Search'],
     ['sportegories', 'Sportegories']
   ];
 
