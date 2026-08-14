@@ -3,8 +3,8 @@
 -- Idempotent — safe to re-run.
 --
 -- THE BUG
--- Five games ship an NBA-only, NFL-only and MLB-only edition for cardholders
--- (Alma Mater, Career Path, Guess the Player, Rank It, Word Search). The client
+-- Four games ship an NBA-only, NFL-only and MLB-only edition for cardholders
+-- (Alma Mater, Career Path, Guess the Player, Rank It). The client
 -- already submits those under a mode-keyed name — mode.js key() returns
 -- 'almamater_nba' and the games pass it straight to grid_submit_run — but no
 -- such key was ever allowed. The table CHECK rejected it and the RPC raised
@@ -28,11 +28,11 @@
 -- 1) keys: base game, optionally suffixed with a sport
 alter table grid_runs    drop constraint if exists grid_runs_game_check;
 alter table grid_runs    add  constraint grid_runs_game_check
-  check (game ~ '^(match|crossword|wordsearch|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$');
+  check (game ~ '^(match|crossword|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$');
 
 alter table grid_streaks drop constraint if exists grid_streaks_game_check;
 alter table grid_streaks add  constraint grid_streaks_game_check
-  check (game ~ '^(match|crossword|wordsearch|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$');
+  check (game ~ '^(match|crossword|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$');
 
 -- 2) the submit RPC validates the key itself, so it has to learn the shape too.
 --    This function is 74's verbatim, with exactly three changes: the guard is a
@@ -54,7 +54,7 @@ declare
   v_base   text;      -- game key with any _nba/_nfl/_mlb suffix stripped
 begin
   if v_uid is null then raise exception 'sign in to post a score'; end if;
-  if p_game !~ '^(match|crossword|wordsearch|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$' then
+  if p_game !~ '^(match|crossword|guess|table|oddone|career|rankit|almamater|highlow|sportegories)(_(nba|nfl|mlb))?$' then
     raise exception 'unknown game';
   end if;
   -- a sport edition plays by its parent's rules, so caps/floors key off the base

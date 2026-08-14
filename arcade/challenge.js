@@ -57,7 +57,6 @@
     almamater: { unit: 'in a row', dir: 'high' },
     rankit: { unit: 'sets cleared', dir: 'high' },
     guess: { unit: 'guesses', dir: 'low' },
-    wordsearch: { unit: '', dir: 'low', time: true },
     crossword: { unit: '', dir: 'low', time: true },
     match: { unit: '', dir: 'low', time: true }
   };

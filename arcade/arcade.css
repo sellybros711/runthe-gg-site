@@ -184,9 +184,9 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 /* ---- result screen: one hero, one quiet line -----------------------------
    Every game ends by telling you one number. Which number differs — a time, a
    run, guesses used, points — but the shape of the telling shouldn't, and it
-   had drifted: six games led with a 60px hero while Guess, Word Search and
-   Daily Match split their result across three equal boxes, so the thing you
-   actually earned sat at the same weight as "1 hint".
+   had drifted: six games led with a 60px hero while Guess and Daily Match
+   split their result across three equal boxes, so the thing you actually
+   earned sat at the same weight as "1 miss".
 
    The hero is the currency. Everything else is one line under it. This is the
    Mini's hierarchy, and it collapses a screen that used to need scrolling.

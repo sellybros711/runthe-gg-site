@@ -20,7 +20,7 @@
   var NAMES = {
     table: 'Number Game', match: 'Daily Match', career: 'Career Path',
     oddone: 'Odd One Out', rankit: 'Rank It', almamater: 'Alma Mater',
-    guess: 'Guess the Player', crossword: 'Daily Crossword', wordsearch: 'Word Search',
+    guess: 'Guess the Player', crossword: 'Daily Crossword',
     highlow: 'High Low', sportegories: 'Sportegories'
   };
   // Games with no daily puzzle number (endless / not a shared board).
@@ -124,7 +124,7 @@
   // no per-game drawing code, no second source of truth.
   var ACCENT = {
     table: '#F2B632', career: '#48D17A', oddone: '#A982F3', rankit: '#EC5E9C',
-    guess: '#F0653A', almamater: '#F2B632', wordsearch: '#37C5D5',
+    guess: '#F0653A', almamater: '#F2B632',
     match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#DA6BE6'
   };
   // Emoji square -> fill on the dark card. Blanks/absent squares become faint
@@ -186,7 +186,7 @@
     var handledStat = false;
     var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
     var ART = { table:artLadder, oddone:artStreak, career:artPath, almamater:artPennant,
-                rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artCross,
+                rankit:artRank, guess:artDossier, crossword:artCross,
                 match:artMatch, highlow:artHighLow, sportegories:artSportegories };
     if (tl) { drawTimeline(tl, spec.total, top, boxH); }
     else if (ART[spec.key]) { ART[spec.key](spec, top, boxH); handledStat = true; }
@@ -272,19 +272,8 @@
         if (lit) { g.fillStyle = accent; g.fill(); } else { g.fillStyle = 'rgba(255,255,255,.06)'; g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.18)'; g.stroke(); }
       }
     }
-    // ---- Word Search / Crossword: a stopwatch hero + the game's own icon feel ----
-    function artClock(spec) {
-      var secs = Math.max(0, spec.statInt | 0);
-      var cx = W / 2, cy = 560, R = 150;
-      g.lineWidth = 16; g.strokeStyle = 'rgba(255,255,255,.09)'; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
-      g.strokeStyle = accent; g.lineCap = 'round'; g.beginPath(); g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 1.5); g.stroke(); g.lineCap = 'butt';
-      // stem + crown so it reads as a stopwatch
-      g.fillStyle = accent; rr(cx - 22, cy - R - 34, 44, 22, 6); g.fill(); rr(cx - 6, cy - R - 46, 12, 16, 4); g.fill();
-      cbig(fmtT(secs), cy + 22, 108, '#F4F7FB');
-      clabel('to clear the board', 780);
-    }
     // ---- Crossword: a mini crossword grid hero + the solve time (distinct from
-    // Word Search's stopwatch so the two timed games never share a card) ----
+    // a stopwatch, so the two timed games never share a card) ----
     function artCross(spec) {
       var secs = Math.max(0, spec.statInt | 0);
       clabel('mini crossword', 420);
@@ -393,7 +382,7 @@
       });
     }
 
-    // stat ribbon - font auto-fits so a long line (a Word Search theme + time)
+    // stat ribbon - font auto-fits so a long line (a theme name + a time)
     // stays inside the pill and the card instead of bleeding off both edges.
     // Skipped when a bespoke renderer already shows the score (handledStat).
     var sy = top + boxH + 70, label = handledStat ? '' : stripEmoji(spec.stat);

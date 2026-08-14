@@ -162,7 +162,7 @@
     ensure();
     scrim.querySelector('.rtgcal').style.setProperty('--c', g.accent);
     // unique-ify any clipPath ids so the modal icon can’t collide with a same
-    // icon already on the page (crossword/wordsearch use id-based clipPaths)
+    // icon already on the page (crossword uses an id-based clipPath)
     $('rtgcalIco').innerHTML = g.icon.replace(/(cwico|wsico)/g, '$1M');
     $('rtgcalNm').textContent = g.name;
     $('rtgcalSub').textContent = 'Pick a past day to play';
