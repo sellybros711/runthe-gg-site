@@ -73,8 +73,26 @@
     slot.innerHTML=' · <b>your best today: '+score+(label?(' '+label):'')+'</b>';
   }
 
+  /* Asking for a past day you cannot play used to do the worst possible thing:
+   * silently serve TODAY'S puzzle, with nothing on screen to say so. You tap a
+   * date in the archive, get the same puzzle you already played, and conclude
+   * the archive is broken. Say what happened instead. */
+  function injectDeniedBanner(){
+    if(active || !wantsPast) return;
+    if(document.getElementById('rtgArchiveBar')) return;
+    var bar=document.createElement('div');
+    bar.id='rtgArchiveBar';
+    bar.setAttribute('role','note');
+    bar.style.cssText='position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; '
+      +'padding:7px 14px; font-family:var(--f,system-ui); font-weight:800; font-size:12px; letter-spacing:.01em; '
+      +'color:#160B02; background:var(--brand,#FF8A3D); box-shadow:0 2px 10px -4px rgba(0,0,0,.5);';
+    bar.innerHTML='<span>Past days need an Arcade Card &mdash; showing <b>today\u2019s</b> puzzle instead.</span>'
+      +'<a href="/arcade/archive/" style="color:#160B02; text-decoration:underline; font-weight:900;">See the archive</a>';
+    if(document.body) document.body.insertBefore(bar, document.body.firstChild);
+  }
+
   function injectBanner(){
-    if(!active) return;
+    if(!active){ injectDeniedBanner(); return; }
     if(document.getElementById('rtgArchiveBar')) return;
     var bar=document.createElement('div');
     bar.id='rtgArchiveBar';
