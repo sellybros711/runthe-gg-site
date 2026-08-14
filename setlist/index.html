@@ -632,18 +632,71 @@
      This is the brand mark's own chevron on a viewBox cropped to the stroke,
      so the box IS the ink, sized in em so it tracks whatever the title is
      set at. Same path and the same round caps as the app icon. */
+  /* ---------------- THE SEGUE MARK IN THE SONG LIST ----------------
+     THE DYE COMES OFF THIS ONE, and it is the same lesson as the arrow, the
+     top rule and the account chip: a five-colour sweep needs room. On a 14px
+     glyph the coral and gold thirds land within a hair of the light theme's
+     own background, so a quarter of every arrow in the list was invisible and
+     the rest read as a smudge. The dye stays where it has room and means
+     identity: the logo, the header rule, the "I was here" tag, the share card.
+     Here the job is legibility at 14px, so it is one solid colour.
+
+     VIOLET, because the game already spends violet on segues everywhere else:
+     the playback's segue line, the scorecard's "+34". Three screens, one
+     colour for one idea. */
   .segout, .sf-seg, .segmark{display:inline-block; width:.5em; height:.72em;
     vertical-align:-.03em; background:var(--dye-line); flex:0 0 auto;
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2230%2018%2044%2064%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
   .segout{margin-left:.26em;}
   .segmark{margin-right:.1em;}
+  /* The list, the playback and the scorecard. NOT .heromark or the tag: those
+     are the brand and they keep the dye. */
+  .song .segout, .song .o.seg .segmark, .sim-seg .segmark,
+  .rrow .segout, .sf-seg{background:var(--violetT);}
 
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
     background:color-mix(in srgb,var(--green) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--green) 30%, transparent);}
-  .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  /* ---------------- THE TWO SEGUE STATES ----------------
+     Two things a row can be, and until now the second one was invisible.
+
+     THIS RULE WAS DEAD. `.song` sets `border:0` and then a single
+     `border-bottom`, so colouring `border-color` on a card that no longer has
+     a border tinted one hairline and nothing else. It was written when the
+     rows were cards and it survived the conversion to a sheet looking like it
+     still worked. So the single most important state in the game -- THIS SONG
+     COMPLETES THE SEGUE YOU HAVE OPEN -- has effectively been unstyled.
+
+     Measured against the real archive, that state is not rare: 27% of rows can
+     start a segue, and when you play one, a partner turns up in the next show
+     73.8% of the time. Three quarters of the time the player is handed the
+     chance and could not see it.
+
+     VIOLET OPENS, GREEN LANDS. Violet is already the segue colour on the
+     playback and the scorecard; green already means "you can do this now" on
+     the hunt banner and the COMPLETES SEGUE chip. Two states, two colours,
+     used the same way on every screen. */
+  /* THE ACCENT BAR IS NOT AVAILABLE FOR THIS. It carries what KIND of song a
+     row is -- jam, peak, ballad, opener, closer, cover -- and painting it
+     segue-violet took that away from every row that could start one, on top of
+     colliding with jam, which is already violet. A PEAK row came out reading
+     as a jam. The chip and the arrow carry the opens state; the bar keeps its
+     job.
+     `finishes` DOES take the bar, and only because it is transient and urgent:
+     for one round, what this song can do outranks what kind of song it is. */
+  .song.finishes{background:color-mix(in srgb,var(--green) 10%, transparent);}
+  .song.finishes:before{background:var(--greenT); width:4px; top:7px; bottom:7px;}
+  .song.finishes .t{color:var(--greenT);}
+  .song.finishes:hover{background:color-mix(in srgb,var(--green) 16%, transparent);}
+
+  /* The affordance, NAMED. A glyph alone says "something is different about
+     this row"; it does not say what, and it cannot say what it is for. The
+     chip is the one place the game gets to use the word. */
+  .chip.opens{background:color-mix(in srgb,var(--violet) 16%, transparent);
+    color:var(--violetT);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--violet) 34%, transparent);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
@@ -708,8 +761,14 @@
   /* The arrow keeps the dye, because that is the mechanic. The partner name
      steps down from bold green to the muted ink: naming it is enough, it does
      not also have to be the loudest thing on the row. */
-  .song .o.seg{color:var(--mut); font-weight:700;}
-  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
+  /* A SENTENCE NOW, not a fragment, so it wraps and needs a line height. The
+     partner is the bold word because it is the thing to go looking for. */
+  .song .o.seg{color:var(--dim); font-weight:600; line-height:1.45;}
+  .song .o.seg b{color:var(--mut); font-weight:800;}
+  .song .o.seg .segmark{margin-right:.3em; vertical-align:-.02em;}
+  /* Once a segue is open the row is about landing it, so the line that
+     describes opening one steps back. */
+  .song.finishes .o.seg{opacity:.75;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
@@ -2118,12 +2177,22 @@ function renderDraft(){
       // Out of time is a different kind of no from already-played, and the
       // player needs to know which wall they hit.
       const whyClass = /too long|is full/.test(why || '') ? ' notime' : '';
-      const partnerCount = (S.data.partners.get(p.song_id) || new Set()).size;
+      /* WHAT THE SECOND LINE SAYS, and what it stopped saying.
+         It read "> Flodown or 14 more", where the 14 is every song in the
+         ARCHIVE that has ever followed this one: median 15 across the data.
+         A player reads that as fourteen chances, and it is not one. The next
+         round draws a different random show, so the only thing that matters is
+         whether a partner turns up in THAT one -- measured at 73.8%, with a
+         median of 2 available when it happens.
+         The count is gone rather than corrected. It was never actionable, it
+         put an eight-word sentence on a quarter of every list, and at 11.5px
+         nowrap it clipped mid-word anyway. The chip names the mechanic; this
+         line names the song to go looking for, and that is the whole job. */
       const oLine = why
         ? `<span class="o${whyClass}">${why}</span>`
         : p.segued_into
-          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i> ${esc(p.segued_into)}${
-              partnerCount > 1 ? ` <i>or ${partnerCount - 1} more</i>` : ''}</span>`
+          ? `<span class="o seg"><i class="segmark" aria-hidden="true"></i>Ran into
+              <b>${esc(p.segued_into)}</b></span>`
           : p.is_cover === 'true' && p.original_artist
             ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : '';
       const origShown = !why && !p.segued_into && p.is_cover === 'true' && !!p.original_artist;
@@ -2131,7 +2200,14 @@ function renderDraft(){
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
-      else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
+      else if (finishes) chips.push('<span class="chip seg">LANDS THE SEGUE</span>');
+      /* NAMED, not just marked. The arrow after the title says a row is
+         different; only a word says what the difference is FOR. It goes first,
+         because on a row that can also be an opener and a jamchart it is the
+         one chip describing something the player can go and do.
+         Not shown on a row that already says LANDS THE SEGUE: that song is
+         both, and the thing to do with it right now is land the open one. */
+      else if (p.segued_into && !dead) chips.push('<span class="chip opens">SEGUE</span>');
       if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
       // What this pick would cost by repeating the gear the set is already in.
       if (!dead) {
@@ -2145,7 +2221,8 @@ function renderDraft(){
         chips.push(`<span class="chip acc ${acc.chip}">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= GAP_RARE) chips.push(`<span class="chip rare">${gap} show gap</span>`);
-      return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
+      return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}${
+          p.segued_into && !dead && !finishes ? ' opens' : ''}"
           type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
@@ -2256,8 +2333,15 @@ function renderDraft(){
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
             ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
-              <div class="commit">This one segues, so you'll need to land it next
-                or the transition is lost.</div>` : ''}
+              <!-- AN INVITATION, NOT A WARNING. This read "you'll need to land
+                   it next or the transition is lost", which frames the whole
+                   mechanic as a risk you are taking. Measured against the
+                   archive it is the opposite: play a song that segued and a
+                   partner turns up in the next show 73.8% of the time. The
+                   game was talking a player out of the thing it most wants
+                   them to try. -->
+              <div class="commit">This one segues. Land it next round and the
+                transition scores. Most shows have a song that can.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn" data-close-set>
               <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>

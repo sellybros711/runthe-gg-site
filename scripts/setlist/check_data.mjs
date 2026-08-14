@@ -137,6 +137,16 @@ const sitemap = read('sitemap.xml');
 check(sitemap.includes('<loc>https://runthe.gg/setlist/</loc>'), 'sitemap lists /setlist/');
 
 const game = read('setlist/index.html');
+/* THE SAME FILE WITH ITS COMMENTS REMOVED, and it exists because this suite has
+   now caught its own documentation three times. A guard that bans a phrase, a
+   class name or a declaration has to be pointed at the CODE; the comment above
+   the fix routinely quotes the thing being banned, which is exactly what makes
+   the comment worth reading. Any guard whose subject is prose or markup should
+   test this rather than `game`. CSS guards can use either, since a rule cannot
+   hide inside a comment. */
+const gameBare = game
+  .replace(/\/\*[\s\S]*?\*\//g, '')     // CSS and JS block comments
+  .replace(/<!--[\s\S]*?-->/g, '');    // HTML comments
 check(!/noindex/i.test(game), 'game page is indexable (no noindex)');
 
 console.log();
@@ -217,7 +227,11 @@ for (const m of game.matchAll(/["'(](\/assets\/[A-Za-z0-9_.-]+\.png)/g))
    is what broke when the tile picked up a second class. */
 /* The mark lives in the top bar only. It was in the hero too, which put it
    and the wordmark twice on one screen about 60px apart. */
-check(!/\bheromark\b/.test(game), 'the hero does not repeat the top bar mark');
+/* COMMENTS STRIPPED FIRST, for the reason the `.hero p` guard below strips
+   them: this matches a bare word, so a CSS comment that merely NAMES the class
+   while explaining what does not wear it counts as the bug. Second time that
+   has happened; the guard should test the markup, not the prose about it. */
+check(!/\bheromark\b/.test(gameBare), 'the hero does not repeat the top bar mark');
 check(/class="[^"]*\bsegmark-tile\b[^"]*"[^>]*--ms/.test(game), 'the top bar shows the mark');
 check(/<a class="lockup"/.test(game), 'the top bar lockup goes home');
 check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the suite badge');
@@ -482,8 +496,7 @@ check(/\.hero p\{margin:0 auto;/.test(game), 'the hero blurb is centred');
   /* Comments stripped first: the explanation above the rule QUOTES the old
      broken declaration, and a guard that counts its own documentation as the
      bug is a guard nobody will keep. */
-  const bare = game.replace(/\/\*[\s\S]*?\*\//g, '');
-  const withMargin = [...bare.matchAll(/\.hero p\{([^}]*)\}/g)]
+  const withMargin = [...gameBare.matchAll(/\.hero p\{([^}]*)\}/g)]
     .filter(m => /margin/.test(m[1]));
   check(withMargin.length === 1, 'and its margin is set in exactly one rule',
     `${withMargin.length} rules set it`);
@@ -557,6 +570,45 @@ check(/Your RunThe\.GG account is still/.test(game),
   'and says plainly that the site account is unchanged');
 check(/e\.target\.id === 'segueNameForm'/.test(game),
   'the name form is handled before the sign-in branch');
+
+/* THE SEGUE MECHANIC IN THE DRAFT LIST. Measured against the real archive:
+   27% of rows can start a segue, and once you play one a partner turns up in
+   the next show 73.8% of the time. Three quarters of the time the player is
+   handed the chance, so every one of these guards a way that chance goes back
+   to being invisible. */
+console.log('the segue in the list');
+// The dye does not fit a 14px glyph. Solid violet in the list, playback and
+// scorecard; the dye keeps the surfaces that have room for it.
+check(/\.song \.segout[^{]*\{background:var\(--violetT\)/.test(game),
+  'the list mark is solid, not dye');
+check(/--dye-line\)/.test(game), 'and the dye survives where it belongs');
+// A glyph says a row is different; only a word says what it is for.
+check(/class="chip opens">SEGUE</.test(game), 'the affordance is named');
+check(/\.chip\.opens\{/.test(game), 'and styled');
+/* THE STATE THAT WAS DEAD. `.song` has border:0, so the old
+   `.song.finishes{border-color:...}` coloured a border that does not exist.
+   These are the properties that actually paint. */
+check(/\.song\.finishes\{[^}]*background:/.test(game),
+  'a row that lands a segue is filled');
+check(/\.song\.finishes:before\{[^}]*background:var\(--greenT\)/.test(game),
+  'and takes the accent bar');
+check(/\.song\.finishes \.t\{[^}]*color:var\(--greenT\)/.test(game),
+  'and its title');
+check(!/\.song\.finishes\{border-color:[^;]*;\}/.test(game),
+  'and does not rely on a border it does not have');
+/* THE ACCENT BAR IS NOT AVAILABLE for the opens state: it carries what KIND of
+   song a row is, and segue-violet both erased that and collided with jam. */
+check(!/\.song\.opens:before\{/.test(game),
+  'the opens state leaves the role accent alone');
+// The line names the partner and nothing else. The old "or 14 more" counted
+// archive-wide partners, which is not what the next round offers.
+check(/Ran into\s*\n?\s*<b>/.test(game), 'the line names the partner');
+check(!/or \$\{partnerCount - 1\} more/.test(gameBare),
+  'and no longer advertises the archive-wide count');
+// And the commit line invites rather than warns.
+check(/most shows have a song that can/i.test(game),
+  'committing to a segue reads as an invitation');
+check(!/the transition is lost/.test(gameBare), 'not as a risk');
 
 console.log('copy');
 const stripComments = src => src
