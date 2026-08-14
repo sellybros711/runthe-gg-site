@@ -144,6 +144,19 @@
   .tile-opt .tr{position:absolute;top:4px;left:4px;font-size:8px;padding:1px 5px;border-radius:999px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;}
   .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
   .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
+  .say{color:#e8dcc0;font-style:italic;}
+  .promocard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+  .promocard .ph{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;}
+  .promocard .pshort{font-family:var(--display);font-size:17px;letter-spacing:.04em;}
+  .promocard .pblurb{font-size:12.5px;color:var(--text-dim);margin:6px 0 10px;line-height:1.5;}
+  .charrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px;}
+  .charcard{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:7px 5px;text-align:center;cursor:pointer;transition:.12s;}
+  .charcard:hover{border-color:var(--brandred);transform:translateY(-2px);}
+  .charcard .cav{height:56px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .charcard .cav svg{height:58px;width:auto;image-rendering:pixelated;}
+  .charcard .cnm{font-size:11.5px;font-weight:800;color:var(--cream);line-height:1.2;margin-top:3px;}
+  .charcard .cnk{font-size:10px;color:var(--text-faint);line-height:1.2;}
+  .charcard .crel{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
 
   /* ===================== LIVE MATCH ===================== */
   #s-fight{max-width:1000px;margin:0 auto;}
@@ -372,6 +385,7 @@
     <button class="ghost" onclick="go('mentors')">Mentors</button>
     <button class="ghost" onclick="go('locker')">Locker</button>
     <button class="ghost" onclick="go('shop')">Pro Shop</button>
+    <button class="ghost" onclick="go('world')">World</button>
     <button class="ghost" onclick="go('record')">Record</button>
   </div>
   <h2 id="carTitle">The Grind</h2>
@@ -499,6 +513,13 @@
   <div id="shopBody"></div>
 </div>
 
+<!-- ============ WORLD ============ -->
+<div class="screen" id="s-world">
+  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <h2>The World <span class="sub2">nine promotions · everyone you'll meet on the way up</span></h2>
+  <div id="worldBody"></div>
+</div>
+
 <!-- ============ RECORD ============ -->
 <div class="screen" id="s-record">
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
@@ -522,6 +543,7 @@
 <script src="moves.js"></script>
 <script src="legends.js"></script>
 <script src="cosmetics.js"></script>
+<script src="world.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -550,6 +572,7 @@ const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';
 function rnd(){ RNG=(RNG*1664525+1013904223)>>>0; return RNG/4294967296; }
 function rint(a,b){ return a+Math.floor(rnd()*(b-a+1)); }
 function pick(a){ return a[Math.floor(rnd()*a.length)]; }
+function pushLog(t){ if(!G) return; G.log=G.log||[]; G.log.unshift(t); if(G.log.length>60) G.log.pop(); }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function modal(title,body,btns){ $('modalTitle').textContent=title; $('modalBody').innerHTML=body; const b=$('modalBtns'); b.innerHTML='';
   (btns||[{label:'OK',fn:closeModal}]).forEach(x=>{const el=document.createElement('button'); el.textContent=x.label; if(x.cls)el.className=x.cls; el.onclick=x.fn; b.appendChild(el);}); $('modalBack').classList.add('open'); }
@@ -562,6 +585,26 @@ const ROSTER=(window.RTR_ROSTER||[]).map(corrected);
 const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.RTR_TIERS||[];
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
+const PROMOS=window.RTR_PROMOS||[], CHARS=window.RTR_CHARS||[];
+function charById(id){ return CHARS.find(c=>c.id===id); }
+function promoById(id){ return PROMOS.find(p=>p.id===id); }
+function charTier(c){ const p=promoById(c.promo); return p?p.tier:'indie'; }
+// relationship with a character — respect (they rate you) and heat (bad blood)
+function rel(id){ G.rel=G.rel||{}; if(!G.rel[id]) G.rel[id]=Object.assign({},window.RTR_REL_DEFAULT); return G.rel[id]; }
+function relLabel(r){
+  if(r.heat>=55) return {t:'Bitter Rival',c:'#f0907f'};
+  if(r.heat>=25) return {t:'Bad Blood',c:'#e0b341'};
+  if(r.respect>=55) return {t:'Deep Respect',c:'var(--green)'};
+  if(r.respect>=25) return {t:'Respected',c:'var(--blue)'};
+  if(r.matches>0) return {t:'Acquainted',c:'var(--text-dim)'};
+  return {t:'Never Met',c:'var(--text-faint)'};
+}
+function charsForTier(tier){
+  const order=['indie','regional','national','global'], i=order.indexOf(tier);
+  let list=CHARS.filter(c=>charTier(c)===tier);
+  if(list.length<6&&i>0) list=list.concat(CHARS.filter(c=>charTier(c)===order[i-1]));
+  return list.length?list:CHARS;
+}
 function moveById(id){ return MOVES.find(m=>m.id===id); }
 function catById(id){ return MCATS.find(c=>c.id===id); }
 function cosmById(id){ return COSM.find(c=>c.id===id); }
@@ -958,6 +1001,7 @@ function go(s){
     if(s==='mentors') renderMentors();
     if(s==='locker'){ if(LOOKTAB==='colour') LOOKTAB='hairStyle'; renderLookEditor('lockBody','lockAv',G.w.look,false); }
     if(s==='shop') renderShop();
+    if(s==='world') renderWorld();
     if(s==='record') renderRecord();
     if(s==='hof') renderHof();
     save();
@@ -1053,25 +1097,27 @@ function renderWeek(){
 }
 function makeOffers(){
   const t=tierOf(G.car.rep);
-  const pool=ROSTER.filter(w=>w.overness>=t.oppLo&&w.overness<=t.oppHi);
+  const pool=charsForTier(t.id);
   const offs=[];
+  // your bitterest rival muscles onto the card
+  const rivalId=G.car.rivalId;
   for(let i=0;i<3;i++){
-    const opp=pool.length?pool[Math.floor(rnd()*pool.length)]:{name:'Local Talent',overness:35,inRing:40,psych:40,ent:40,phys:40,id:'x'};
+    const opp=pool.length?pool[Math.floor(rnd()*pool.length)]:CHARS[0];
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     const st=stips[Math.floor(rnd()*stips.length)];
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
     // it — promoters book you tougher as you get better — so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
-    const mid=(t.oppLo+t.oppHi)/2, me=ovr(G.w);
+    const mid=55, me=ovr(G.w);
     const anchor=t.base+Math.max(0,me-t.base)*0.72;
-    const oppOvr=Math.round(clamp(anchor+(opp.overness-mid)*0.35+(rnd()*7-3.5),12,99));
+    const oppOvr=Math.round(clamp(anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5),12,99));
     let stakes='standard';
     const holds = G.car.title===t.title;
     if(i===2 && holds && rnd()<0.65) stakes='defense';
     else if(i===2 && !holds && G.car.pop>=Math.min(70,18+tierIdx()*16) && rnd()<0.55) stakes='title';
-    else if(G.car.rivalId===opp.id) stakes='rival';
+    else if(rivalId===opp.id) stakes='rival';
     const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*(stakes==='title'||stakes==='defense'?2.2:1)*st[2]);
-    offs.push({ oppId:opp.id, oppName:opp.name, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes,
+    offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes,
       blurb: stakes==='title'?`Beat ${opp.name} and the ${t.title} is yours.`
             : stakes==='defense'?`Defend the ${t.title} against ${opp.name}.`
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
@@ -1177,7 +1223,8 @@ async function startFight(o){
        me:{hp:100,name:G.w.name,ovr:meOvr}, opp:{hp:100,name:o.oppName,ovr:o.oppOvr},
        usedMoves:[], quality:0, finishType:null };
   $('fMe').innerHTML=wrestlerSVG(G.w.look);
-  $('fOpp').innerHTML=wrestlerSVG(oppLook(o.oppId,o.oppName));
+  const oc=charById(o.oppId);
+  $('fOpp').innerHTML=wrestlerSVG(oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
   $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
@@ -1187,6 +1234,15 @@ async function startFight(o){
   go('fight');
   $('fClock').textContent='BELL';
   await sleep(400);
+  const ch=charById(o.oppId), r=ch?rel(ch.id):null;
+  if(ch){
+    const line = (r&&r.respect>=55&&ch.lines.respect) ? ch.lines.respect
+               : ch.lines.taunt[Math.floor(rnd()*ch.lines.taunt.length)];
+    const say = Array.isArray(line)? line[0] : line;
+    fLog(`<b>${ch.name}</b> <span class="hint">(${ch.nick})</span>: <span class="say">"${say}"</span>`);
+    if(r&&r.heat>=45) fLog(`<span class="bad">There is real bad blood here — ${r.matches} previous meeting${r.matches!==1?'s':''}.</span>`);
+    await sleep(700);
+  }
   await callout('FIGHT!');
   fLog(`The bell rings — <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   runFight();
@@ -1324,7 +1380,14 @@ async function endFight(iWon){
   await callout(iWon?'WINNER!':'DEFEATED');
   fLog(iWon?`<span class="hi">${MS.me.name} gets the three count!</span>`:`<span class="bad">${MS.opp.name} takes it.</span>`);
   $('fClock').textContent=iWon?'WIN':'LOSS';
-  await sleep(700);
+  const pc=charById(MS.o.oppId);
+  if(pc){
+    const pr=rel(pc.id);
+    const pool = (pr.respect>=50&&pc.lines.respect)? pc.lines.respect : (iWon?pc.lines.lose:pc.lines.win);
+    const say = Array.isArray(pool)? pool[Math.floor(rnd()*pool.length)] : pool;
+    fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
+  }
+  await sleep(900);
   finalizeFight(iWon);
 }
 
@@ -1437,8 +1500,20 @@ function applyMatch(o,res){
   let injMsg=null;
   const risk=res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length) + o.mult*0.04 + (100-c.cond)/380;
   if(rnd()<risk*0.55){ c.injWeeks=rint(1,6); injMsg=`You were hurt — out ${c.injWeeks} week${c.injWeeks>1?'s':''}.`; }
-  // rival
-  if(!c.rivalId&&res.quality>62&&rnd()<0.3) c.rivalId=o.oppId;
+  // ---- relationship with this character ----
+  const R=rel(o.oppId); R.met=true; R.matches++;
+  if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
+  if(res.quality>=70) R.respect+=8;
+  if(res.quality>=82) R.respect+=7;
+  if(o.stakes==='title'||o.stakes==='defense') R.heat+=6;
+  R.respect=clamp(R.respect,0,100); R.heat=clamp(R.heat,0,100);
+  // a genuine nemesis emerges from repeated bad blood
+  if(!c.rivalId && R.heat>=42 && R.matches>=2) { c.rivalId=o.oppId;
+    const rc=charById(o.oppId);
+    if(rc) pushLog(`<b>${rc.name}</b> has become your nemesis. This is personal now.`); }
+  else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
+    const rc=charById(o.oppId);
+    if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef — there is real respect there now.`); }
   // unlocks
   const unlocked=checkUnlocks();
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
@@ -1663,6 +1738,59 @@ function openPack(pid){
     <div style="font-weight:800;color:var(--cream);margin-top:6px;">${c.name}</div><div class="hint">${cap(c.slot)}</div></div>`).join('')+`</div>`
     : `<p class="log">Everything in this pack was already yours — converted to shards.</p>`,
     [{label:'Nice',fn:()=>{closeModal(); go('locker');}}]);
+}
+
+function renderWorld(){
+  const order=['indie','regional','national','global'];
+  const myTier=tierOf(G.car.rep).id;
+  let h='';
+  order.forEach(t=>{
+    const ps=PROMOS.filter(p=>p.tier===t); if(!ps.length) return;
+    h+=`<h3>${t==='indie'?'Indie Circuit':t==='regional'?'Regional':t==='national'?'National':'Global'}${myTier===t?' <span class="badge b-red">You are here</span>':''}</h3>`;
+    ps.forEach(p=>{
+      const roster=CHARS.filter(c=>c.promo===p.id);
+      h+=`<div class="promocard" style="border-left:4px solid ${p.color}">
+        <div class="ph"><div><span class="pshort" style="color:${p.color}">${p.short}</span> <b>${p.name}</b></div>
+          <span class="hint">${p.region} · ${p.product}</span></div>
+        <div class="pblurb">${p.blurb}</div>
+        <div class="charrow">`+
+        roster.map(c=>{
+          const r=rel(c.id), lb=relLabel(r);
+          return `<div class="charcard" onclick="charProfile('${c.id}')">
+            <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
+            <div class="cnm">${c.name}</div>
+            <div class="cnk">${c.nick}</div>
+            <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
+          </div>`;
+        }).join('')+`</div></div>`;
+    });
+  });
+  $('worldBody').innerHTML=h;
+}
+function charProfile(id){
+  const c=charById(id); if(!c) return;
+  const r=rel(id), lb=relLabel(r), p=promoById(c.promo);
+  const bar=(k,v)=>`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-dim)">${k}</span><span class="mono">${v}</span></div><div class="bar"><i style="width:${v}%"></i></div>`;
+  modal(c.name, `<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:110px;flex:none;">${wrestlerSVG(c.look)}</div>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-family:var(--display);font-size:16px;color:var(--gold);text-transform:uppercase;">${c.nick}</div>
+        <div class="hint" style="margin:2px 0 8px;">${p?p.short+' · '+p.name:''}</div>
+        <p class="log" style="font-size:13px;">${c.gimmick}</p>
+        <div class="row" style="gap:6px;margin-top:6px;">${(c.traits||[]).map(t=>`<span class="badge b-com">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="flab" style="margin:0;">Relationship</span>
+        <span class="badge" style="color:${lb.c};border:1px solid ${lb.c}">${lb.t}</span>
+      </div>
+      ${bar('Respect',Math.round(r.respect))}${bar('Bad blood',Math.round(r.heat))}
+      <div class="hint" style="margin-top:6px;">${r.matches?`${r.matches} meeting${r.matches!==1?'s':''} · you lead ${r.wins}-${r.losses}`:'You have never faced them.'}</div>
+    </div>
+    <div style="margin-top:12px;"><div class="flab">Finisher</div><div style="color:var(--cream);font-weight:800;">${c.finisher}</div></div>
+    <div style="margin-top:10px;"><div class="flab">They say</div><div class="say" style="font-style:italic;">"${c.lines.taunt[0]}"</div></div>`,
+    [{label:'Close',fn:closeModal}]);
 }
 
 function renderRecord(){
