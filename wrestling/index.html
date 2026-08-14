@@ -316,6 +316,17 @@
   .frow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:flex-end;}
   @media(max-width:640px){ .arena{height:250px;} .fighter{width:176px;margin-left:-88px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
 
+  /* the business: contract, act, standing, mileage */
+  .bizgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;}
+  .bizcard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 12px;}
+  .bizcard .bl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .bizcard .bv{font-family:var(--display);font-size:22px;color:var(--cream);line-height:1.15;margin-top:2px;}
+  .bizcard .bs{font-size:11.5px;color:var(--text-dim);}
+  .injcard{background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.2));border:1.5px solid rgba(198,57,44,.55);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .injcard .ih{font-family:var(--display);font-size:17px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;}
+  .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
+  .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
+
   .log{font-size:13.5px; line-height:1.65; color:var(--text-dim);}
   .log b{color:var(--cream);} .log .pop{color:var(--gold);}
   .hint{color:var(--text-faint); font-size:12.5px;}
@@ -456,6 +467,7 @@
     <button class="ghost" onclick="go('locker')">Locker</button>
     <button class="ghost" onclick="go('shop')">Pro Shop</button>
     <button class="ghost" onclick="openCard()">My Card</button>
+    <button class="ghost" onclick="go('deal')">Business</button>
     <button class="ghost" onclick="go('world')">World</button>
     <button class="ghost" onclick="go('record')">Record</button>
   </div>
@@ -464,6 +476,7 @@
     <div>
       <div class="avwrap" id="carAv"></div>
       <div class="grid g3" style="margin-top:12px;" id="carTiles"></div>
+      <div id="bizPanel" style="margin-top:12px;"></div>
     </div>
     <div>
       <div id="storyPanel"></div>
@@ -585,6 +598,13 @@
   <div id="shopBody"></div>
 </div>
 
+<!-- ============ CONTRACT / THE BUSINESS ============ -->
+<div class="screen" id="s-deal">
+  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <h2>The Business <span class="sub2">your deal, your schedule, your character</span></h2>
+  <div id="dealBody"></div>
+</div>
+
 <!-- ============ WORLD ============ -->
 <div class="screen" id="s-world">
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
@@ -635,8 +655,169 @@ const TIERS=[
   {id:'indie',   name:'Indie Circuit',  rep:0,    minOvr:0,  base:34, purse:[250,800],    oppLo:28, oppHi:52, title:'Indie Championship'},
   {id:'regional',name:'Regional Scene', rep:1400, minOvr:44, base:48, purse:[900,2600],   oppLo:44, oppHi:64, title:'Regional Championship'},
   {id:'national',name:'National TV',    rep:5200, minOvr:59, base:63, purse:[3200,9500],  oppLo:56, oppHi:78, title:'National Championship'},
-  {id:'global',  name:'Global Main Event',rep:14000,minOvr:73,base:78, purse:[11000,32000],oppLo:70, oppHi:96, title:'World Championship'},
+  {id:'global',  name:'Global Main Event',rep:14000,minOvr:70,base:78, purse:[11000,32000],oppLo:70, oppHi:96, title:'World Championship'},
 ];
+
+/* ============================================================
+   A REAL CAREER
+   ------------------------------------------------------------
+   Wrestling careers are not a ladder of match results. They are
+   contracts, road schedules, a body that wears out, a character
+   that goes stale, and money that mostly does not come from the
+   purse. Everything below models that.
+   ============================================================ */
+
+/* ---------- THE ROAD ----------
+   How many nights a year you work. It is the single biggest
+   trade-off in the business: the loop is what gets you over,
+   and the loop is what destroys you. */
+const SCHEDULES=[
+  {id:'light',  name:'Light Loop',   dates:'~80 dates/yr',  pay:0.72, pop:0.70, wear:0.52, inj:0.58,
+   blurb:'TV and weekends only. Your body lasts. Your push crawls.'},
+  {id:'regular',name:'Full-Time',    dates:'~155 dates/yr', pay:1.00, pop:1.00, wear:1.00, inj:1.00,
+   blurb:'The standard loop — four or five nights a week, driving between them.'},
+  {id:'heavy',  name:'Every Town',   dates:'~235 dates/yr', pay:1.34, pop:1.32, wear:1.70, inj:1.58,
+   blurb:'Every building, every night. You get over fast and you break down faster.'},
+];
+function schedOf(id){ return SCHEDULES.find(s=>s.id===id)||SCHEDULES[1]; }
+
+/* ---------- INJURIES ----------
+   Typed, located, and consequential. Each one costs you weeks,
+   knocks down a specific attribute while you carry it, and has a
+   chance of never fully going away. */
+const INJURIES=[
+  {id:'ankle',    part:'Ankle',     nm:'a high ankle sprain',       wk:[2,6],  attr:'ae', pen:[3,8],  chronic:0.16, from:['aerial','technical']},
+  {id:'hamstring',part:'Hamstring', nm:'a torn hamstring',          wk:[2,6],  attr:'st', pen:[3,7],  chronic:0.12, from:['strike','aerial']},
+  {id:'elbow',    part:'Elbow',     nm:'a hyperextended elbow',     wk:[2,6],  attr:'te', pen:[3,7],  chronic:0.15, from:['submission','technical']},
+  {id:'ribs',     part:'Ribs',      nm:'cracked ribs',              wk:[3,7],  attr:'to', pen:[3,8],  chronic:0.14, from:['hardcore','slam']},
+  {id:'shoulder', part:'Shoulder',  nm:'a separated shoulder',      wk:[4,10], attr:'po', pen:[4,10], chronic:0.24, from:['slam','suplex']},
+  {id:'knee',     part:'Knee',      nm:'a torn knee ligament',      wk:[6,16], attr:'ae', pen:[6,14], chronic:0.34, from:['aerial','slam']},
+  {id:'concussion',part:'Head',     nm:'a concussion',              wk:[3,9],  attr:'ps', pen:[4,10], chronic:0.28, from:['hardcore','strike']},
+  {id:'back',     part:'Back',      nm:'a herniated disc',          wk:[6,18], attr:'st', pen:[6,13], chronic:0.38, from:['suplex','slam']},
+  {id:'neck',     part:'Neck',      nm:'a neck injury',             wk:[12,34],attr:'ae', pen:[10,20],chronic:0.58, from:['suplex','hardcore']},
+];
+function injById(id){ return INJURIES.find(i=>i.id===id); }
+
+/* ---------- GIMMICKS ----------
+   A character is an asset that depreciates. Freshness decays every
+   week you work the same act; when it bottoms out the office stops
+   pushing you and it is time to repackage or turn. */
+const GIMMICKS=[
+  {id:'gritty',    n:'The Grinder',       align:'face', d:'Blue-collar, never quits, bleeds for the town.',       b:{to:2,ps:1}},
+  {id:'prodigy',   n:'The Prodigy',       align:'face', d:'Impossibly gifted, impossibly young, and knows it.',   b:{te:2,ae:1}},
+  {id:'highflyer', n:'The Daredevil',     align:'face', d:'Throws himself off things no sane person would climb.',b:{ae:3}},
+  {id:'hero',      n:'The Franchise',     align:'face', d:'The face on the poster. Shakes every hand on the way out.',b:{ch:3}},
+  {id:'monster',   n:'The Monster',       align:'heel', d:'Enormous, silent, and treated as a natural disaster.', b:{po:3,to:1}},
+  {id:'arrogant',  n:'The Elite',         align:'heel', d:'Better than you, richer than you, and happy to explain why.',b:{ch:2,te:1}},
+  {id:'psycho',    n:'The Unhinged',      align:'heel', d:'Something is wrong with him and the crowd can feel it.',b:{to:2,ps:1}},
+  {id:'mercenary', n:'The Mercenary',     align:'heel', d:'No loyalty, no faction, purely for the cheque.',       b:{ps:2,po:1}},
+  {id:'technician',n:'The Craftsman',     align:'face', d:'No theatrics. Just the best pure wrestler in the room.',b:{te:3}},
+  {id:'legacy',    n:'The Bloodline',     align:'face', d:'Third generation. Half the crowd resents the name.',   b:{ps:2,ch:1}},
+  {id:'cult',      n:'The Prophet',       align:'heel', d:'Leads something that is not quite a stable and not quite a church.',b:{ch:2,ps:1}},
+  {id:'outlaw',    n:'The Outlaw',        align:'face', d:'Anti-authority, beer in hand, hated by the office and adored by the room.',b:{ch:2,to:1}},
+  {id:'lucha',     n:'The Masked Legend', align:'face', d:'The mask carries a lineage older than you are.',       b:{ae:2,ch:1}},
+  {id:'king',      n:'The Royal',         align:'heel', d:'Demands to be addressed properly. Has people for that.',b:{ch:3}},
+];
+function gimById(id){ return GIMMICKS.find(g=>g.id===id)||GIMMICKS[0]; }
+
+/* ---------- CONTRACTS ----------
+   You do not float between matches. You sign a term with a
+   promotion, take a weekly downside guarantee whether or not you
+   are booked, and negotiate creative control and a merch cut. */
+function myDeal(){ return G&&G.car.deal; }
+function myPromo(){ const d=myDeal(); return (d&&promoById(d.promo))||PROMOS[0]; }
+function promoTierIdx(p){ return Math.max(0,TIERS.findIndex(t=>t.id===(p||myPromo()).tier)); }
+// The tier you actually work is the lower of what you have earned and
+// what your promotion can offer — you cannot main-event a stadium on an
+// indie deal, however good you get.
+function workTier(){
+  const earned=TIERS.findIndex(t=>t.id===tierOf(G.car.rep).id);
+  return TIERS[Math.max(0,Math.min(earned,promoTierIdx()))];
+}
+function beltName(t){ const p=myPromo(); return `${p.short} ${(t||workTier()).title}`; }
+// weekly downside a promotion will guarantee someone of your standing
+function dealValue(p,pop,rep,standing){
+  const ti=promoTierIdx(p);
+  const base=[420,1500,5200,17000][ti];
+  const draw=1+ (pop/100)*1.5 + Math.min(1.1,rep/16000) + ((standing||50)-50)/180;
+  return Math.round(base*draw/10)*10;
+}
+function merchWeekly(){
+  const c=G.car, d=myDeal(); if(!d) return 0;
+  const ti=promoTierIdx();
+  const reach=[0.5,1.1,2.6,6.4][ti];
+  const g=gimHeat();
+  return Math.round(c.pop*reach*(d.merch||0.08)*10*(0.55+g/160)*(c.title?1.28:1));
+}
+function gimHeat(){ return G&&G.w.gimmick? clamp(G.w.gimmick.heat,0,100):60; }
+function gimStale(){ return gimHeat()<32; }
+
+/* free-agency offers, generated from who actually wants you */
+function freeAgentOffers(){
+  const c=G.car, w=G.w, o=[];
+  const earned=TIERS.findIndex(t=>t.id===tierOf(c.rep).id);
+  const cur=myPromo();
+  PROMOS.forEach(p=>{
+    const ti=promoTierIdx(p);
+    if(ti>earned+1) return;                                  // out of your league
+    // how badly they want you: draw, standing, and whether you suit the product
+    const fit=PRODUCT_FIT[p.product]||{};
+    const styleFit=(fit[w.style]||0)+(fit[w.align]||0);
+    const outgrown = earned>promoTierIdx(cur) && ti>promoTierIdx(cur);
+    let want = c.pop*0.9 + Math.min(46,c.rep/280) + styleFit*9 + (c.title?12:0)
+             + (p.id===cur.id ? (c.standing-50)*0.30 : 0)
+             - ti*6 - Math.max(0,ti-earned)*26
+             + (outgrown?20:0) + (rnd()*14-7);
+    if(want<6) return;
+    const years=ti>=2 ? (rnd()<0.5?3:2) : (rnd()<0.6?2:1);
+    const guar=dealValue(p,c.pop,c.rep,c.standing)*(0.86+want/230);
+    o.push({ promo:p.id, years, weekly:Math.round(guar/10)*10,
+      creative: want>72 || (ti<=1&&rnd()<0.5),
+      merch: +(0.06+Math.min(0.16,want/560)+(ti>=2?0.02:0)).toFixed(3),
+      want:Math.round(want),
+      pitch: p.id===cur.id ? `${p.name} want to keep you.` : `${p.name} have made an offer.` });
+  });
+  o.sort((a,b)=>b.want-a.want);
+  return o.slice(0,5);
+}
+// which products favour which archetypes — this is why the same wrestler
+// is a main-eventer in one company and a mid-carder in another
+const PRODUCT_FIT={
+  'Hardcore / Deathmatch':{brawler:2,powerhouse:1,heel:1},
+  'Workrate Indie':{technician:2,highflyer:2,face:1},
+  'Old-School Territory':{powerhouse:1,brawler:1,technician:1,face:1},
+  'Flash & Spectacle':{showman:2,highflyer:1,face:1},
+  'Joshi':{highflyer:2,technician:2},
+  'Sports-Based Competition':{technician:2,powerhouse:1,psycho:1},
+  'Strong Style':{brawler:2,technician:1,powerhouse:1},
+  'Lucha Libre':{highflyer:3,showman:1},
+  'Global Sports-Entertainment':{showman:3,powerhouse:1,face:1},
+};
+
+/* ---------- ACCOLADES ---------- */
+function award(txt,ico){
+  const c=G.car; c.accolades=c.accolades||[];
+  if(c.accolades.some(a=>a.txt===txt)) return;
+  c.accolades.unshift({txt,ico:ico||'🏅',y:c.year,w:c.week});
+  pushInboxItem({ico:ico||'🏅',sev:'good',txt:`<b>Career milestone.</b> ${txt}`});
+  pushLog(`${ico||'🏅'} ${txt}`);
+}
+function checkMilestones(res){
+  const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
+  if(c.rec.w===1) award('First professional victory.','✊');
+  [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,'📅'); });
+  if(res&&res.quality>=90&&res.quality>(c.bestMatch||89)){
+    c.bestMatch=res.quality;
+    award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,'⭐'); }
+  if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,'🏆');
+  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,'🛡️');
+  if(c.streak>=10) award('A ten-match winning streak.','🔥');
+  if(c.earnings>=250000) award('A quarter of a million earned in the business.','💰');
+  if(c.pop>=90) award('A genuine household name.','📺');
+  if(promoTierIdx()>=3) award('Signed to the biggest company on earth.','🌍');
+  if(c.year>=10) award('Ten years in the business.','⏳');
+}
+
 let G=null, RNG=1;
 
 /* ---------- utils ---------- */
@@ -754,7 +935,29 @@ function cosmById(id){ return COSM.find(c=>c.id===id); }
 
 /* ---------- persistence ---------- */
 function save(){ if(G) try{ localStorage.setItem(SAVE,JSON.stringify(G)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; const o=JSON.parse(r); return (o&&o.schema===SCHEMA)?o:null; }catch(e){ return null; } }
+function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; const o=JSON.parse(r);
+  return (o&&o.schema===SCHEMA)? migrate(o) : null; }catch(e){ return null; } }
+// bring a career started before the business systems existed up to date
+function migrate(o){
+  const c=o.car, w=o.w; if(!c||!w) return o;
+  if(!c.deal){
+    const indies=PROMOS.filter(p=>p.tier==='indie');
+    const ti=Math.max(0,TIERS.findIndex(t=>t.id===(tierOfRep(c.rep)||'indie')));
+    const pool=PROMOS.filter(p=>TIERS.findIndex(t=>t.id===p.tier)===ti);
+    const p=(pool[0]||indies[0]||PROMOS[0]);
+    c.deal={ promo:p.id, years:1, weeksLeft:Math.max(4,WEEKS_PER_YEAR-((c.week||1)-1)), weekly:0,
+             sched:'regular', creative:false, merch:0.07, signedY:c.year||1 };
+    c.deal.weekly=Math.round([420,1500,5200,17000][ti]*(1+(c.pop||5)/100));
+  }
+  if(c.standing==null) c.standing=50;
+  if(c.wear==null) c.wear=(c.year||1)*11;
+  c.injuries=c.injuries||[]; c.accolades=c.accolades||[]; c.yearLog=c.yearLog||[];
+  c.chronic=c.chronic||[]; if(c.turns==null) c.turns=0;
+  if(!w.gimmick){ const fits=GIMMICKS.filter(g=>g.align===w.align);
+    const g=(fits[0]||GIMMICKS[0]); w.gimmick={id:g.id,name:g.n,heat:70,since:c.year||1}; }
+  return o;
+}
+function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) id=t.id; }); return id; }
 
 /* ============================================================
    PIXEL WRESTLER RENDERER  (pure SVG rects — no assets)
@@ -1167,7 +1370,7 @@ function ovr(w){ const a=w.attrs;
   return Math.round(a.po*0.16+a.te*0.19+a.ae*0.11+a.ch*0.16+a.ps*0.19+a.to*0.10+a.st*0.09); }
 function tierOf(rep,o){ const lvl=(o!=null?o:(G?ovr(G.w):0));
   let t=TIERS[0]; TIERS.forEach(x=>{ if(rep>=x.rep && lvl>=x.minOvr) t=x; }); return t; }
-function tierIdx(){ return TIERS.findIndex(t=>t.id===tierOf(G.car.rep).id); }
+function tierIdx(){ return Math.max(0,TIERS.findIndex(t=>t.id===workTier().id)); }
 function masteryTier(cat){ const m=G.w.mastery[cat]||0; let t=1; MTIERS.forEach(x=>{ if(m>=x.mastery) t=x.t; }); return t; }
 function moveUnlocked(mv){ return G.w.moves.includes(mv.id); }
 function moveEligible(mv){ const c=catById(mv.cat); const a=G.w.attrs[c.attr]||0;
@@ -1350,12 +1553,28 @@ function finishCreate(){
         look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0 },
     car:{ age:21, year:1, week:1, rep:0, pop:5, cond:100, morale:70, mom:50,
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
-          plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[] },
+          plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[],
+          // --- the working life ---
+          deal:{ promo:startPromo(CREATE.style), years:1, weeksLeft:WEEKS_PER_YEAR, weekly:0, sched:'regular', creative:false, merch:0.06, signedY:1 },
+          standing:50, wear:0, injuries:[], hurt:null, accolades:[], yearLog:[], turns:0 },
     bag:{ coins:1500, owned:{}, shards:0 },
     log:[], hist:[]
   };
   RNG=(name.length*7919+Date.now())>>>0;
+  // your first character, chosen to suit the archetype you built
+  const fits=GIMMICKS.filter(g=>g.align===G.w.align);
+  const g=(fits.length?fits:GIMMICKS)[Math.floor(rnd()*(fits.length||GIMMICKS.length))];
+  G.w.gimmick={ id:g.id, name:g.n, heat:78, since:1 };
+  G.car.deal.weekly=dealValue(myPromo(),5,0,50);
+  pushLog(`You sign a one-year developmental deal with <b>${myPromo().name}</b> at ${money(G.car.deal.weekly)}/week.`);
   save(); go('career'); toast('Welcome to the business, '+name);
+}
+// the indie that takes a chance on a rookie of your type
+function startPromo(style){
+  const indies=PROMOS.filter(p=>p.tier==='indie');
+  const best=indies.map(p=>({p,f:(PRODUCT_FIT[p.product]||{})[style]||0}))
+                   .sort((a,b)=>b.f-a.f);
+  return (best[0]&&best[0].p.id)||PROMOS[0].id;
 }
 
 /* ============================================================
@@ -1375,6 +1594,7 @@ function go(s){
     if(s==='locker'){ if(LOOKTAB==='colour') LOOKTAB='hairStyle'; renderLookEditor('lockBody','lockAv',G.w.look,false); }
     if(s==='shop') renderShop();
     if(s==='world') renderWorld();
+    if(s==='deal') renderDeal();
     if(s==='record') renderRecord();
     if(s==='hof') renderHof();
     save();
@@ -1414,17 +1634,24 @@ function continueCareer(){ G=load(); if(!G){ renderHome(); return; }
    ============================================================ */
 function renderCareer(){
   const c=G.car;
-  $('carTitle').innerHTML=`${tierOf(c.rep).name} <span class="sub2">Year ${c.year}, Week ${c.week} of ${WEEKS_PER_YEAR}</span>`;
+  const t=workTier(), ti=tierIdx(), next=TIERS[ti+1];
+  const earned=tierOf(c.rep), ei=TIERS.findIndex(x=>x.id===earned.id);
+  $('carTitle').innerHTML=`${t.name} <span class="sub2">${myPromo().short} · Year ${c.year}, Week ${c.week} of ${WEEKS_PER_YEAR}</span>`;
   $('carAv').innerHTML=wrestlerSVG(G.w.look);
-  const t=tierOf(c.rep), ti=tierIdx(), next=TIERS[ti+1];
-  const repPct=next? clamp((c.rep-t.rep)/(next.rep-t.rep)*100):100;
+  // Reputation buys you the next rung; your promotion decides whether you can climb it.
+  const et=TIERS[ei], nextEarn=TIERS[ei+1];
+  const repPct=nextEarn? clamp((c.rep-et.rep)/(nextEarn.rep-et.rep)*100):100;
+  const repHint = !nextEarn ? '<div class="hint">Top of the business</div>'
+    : ei>ti ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;color:var(--gold)">You have outgrown ${myPromo().short} — a bigger company would put you on ${earned.name}.</div>`
+    : c.rep<nextEarn.rep ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;">${Math.max(0,Math.round(nextEarn.rep-c.rep))} rep to ${nextEarn.name}</div>`
+    : `<div class="bar gd"><i style="width:100%"></i></div><div class="hint" style="margin-top:3px;">Rep is there — you need OVR ${nextEarn.minOvr} (you are ${ovr(G.w)}).</div>`;
   $('carTiles').innerHTML=[
-    ['Reputation', Math.round(c.rep), next?`<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;">${Math.max(0,Math.round(next.rep-c.rep))} to ${next.name}</div>`:'<div class="hint">Top of the business</div>'],
+    ['Reputation', Math.round(c.rep), repHint],
     ['Popularity', Math.round(c.pop), `<div class="bar"><i style="width:${clamp(c.pop)}%"></i></div>`],
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
-    ['Title', c.title?'👑 Held':'—', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${t.title} available</div>`],
+    ['Title', c.title?'👑 Held':'—', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // attributes
   $('carAttrs').innerHTML=ATTRS.map(([k,label])=>{
@@ -1434,6 +1661,7 @@ function renderCareer(){
       <div class="bar"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>
     <div class="perkcard"><div class="pn">${styleOf().name} — ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
+  const bp=$('bizPanel'); if(bp) bp.innerHTML=renderBizPanel();
   renderStoryPanel();
   renderWeek();
 }
@@ -1472,9 +1700,22 @@ function renderStoryPanel(){
 }
 function renderWeek(){
   const c=G.car, el=$('weekBody');
+  if(c.freeAgent){
+    el.innerHTML=`<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
+      <button class="big" onclick="go('deal')">See Who Wants You →</button>`; return;
+  }
   if(c.injWeeks>0){
-    el.innerHTML=`<p class="log">You're <b style="color:#f0907f">injured</b> — ${c.injWeeks} week${c.injWeeks>1?'s':''} of rehab left. Rest up.</p>
-      <button class="big" onclick="doRest()">Rest This Week →</button>`; return;
+    const h=c.hurt;
+    const canWork=h && c.injWeeks<=Math.ceil(h.wk*0.55) && (c.cond>=42);
+    el.innerHTML=`<div class="injcard">
+        <div class="ih">🏥 ${h?h.part:'Injured'}</div>
+        <div class="id">${h?cap(h.nm):'You are hurt'} · <b>${c.injWeeks}</b> week${c.injWeeks>1?'s':''} of rehab left</div>
+        ${h?`<div class="hint" style="margin-top:5px;">Carrying −${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]} until you are cleared.</div>`:''}
+      </div>
+      <button class="big" onclick="doRest()">Rest &amp; Rehab →</button>
+      ${canWork?`<button class="ghost" style="margin-top:8px;width:100%;" onclick="workHurt()">Work Through It (risky)</button>
+        <div class="hint" style="margin-top:5px;">The office will love you for it. Your ${h.part.toLowerCase()} will not.</div>`:''}`;
+    return;
   }
   if(c.mentorWeeks>0){
     const m=MENTORS.find(x=>x.id===c.mentor);
@@ -1493,18 +1734,62 @@ function renderWeek(){
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <h4>${o.oppName}</h4><span class="badge ${o.stakes==='title'?'b-leg':o.stakes==='rival'?'b-red':'b-com'}">${o.stipLabel}</span>
         </div>
-        <div class="meta">OVR ${o.oppOvr} · purse ${money(o.purse)} · ${o.stakes==='title'?'🏆 TITLE MATCH':o.stakes==='rival'?'🔥 Rivalry':'Standard'}</div>
+        <div class="meta">${o.card||'Mid-Card'} · OVR ${o.oppOvr} · purse ${money(o.purse)} · ${o.stakes==='title'?'🏆 TITLE MATCH':o.stakes==='defense'?'🏆 DEFENCE':o.stakes==='rival'?'🔥 Rivalry':'Standard'}</div>
         <p>${o.blurb}</p>
       </div>`).join('')}</div>
     <div class="row">
       <button class="ghost" onclick="doTrainWeek()">Train (week)</button>
       <button class="ghost" onclick="doPromoWeek()">Media &amp; Promo</button>
       <button class="ghost" onclick="doRest()">Rest</button>
+      <button class="ghost" onclick="go('deal')">Contract</button>
     </div>`;
 }
+function workHurt(){ G.car.workedHurt=true; G.car.injWeeks=0; G.car.standing=clamp(G.car.standing+3);
+  pushLog('You told the doctor you were fine. You are not fine.'); save(); renderCareer();
+  toast('Cleared yourself. Be careful.'); }
+
+/* ---------- the business panel: contract, character, body ---------- */
+function renderBizPanel(){
+  const c=G.car, d=c.deal, p=myPromo(), sc=schedOf(d&&d.sched), g=G.w.gimmick;
+  const yrs=d? Math.max(0,d.weeksLeft/WEEKS_PER_YEAR):0;
+  const heat=gimHeat();
+  const chron=(c.chronic||[]);
+  return `<div class="bizgrid">
+    <div class="bizcard" style="border-left:3px solid ${p.color}">
+      <div class="bl">Under contract</div>
+      <div class="bv">${p.short}</div>
+      <div class="bs">${p.name}</div>
+      <div class="hint" style="margin-top:6px;">${money(d?d.weekly:0)}/wk · ${d?d.weeksLeft:0} wks left${d&&d.creative?' · creative control':''}</div>
+      <div class="bar" style="margin-top:6px;"><i style="width:${clamp(100-(d?d.weeksLeft:0)/(WEEKS_PER_YEAR*(d?d.years:1))*100)}%"></i></div>
+    </div>
+    <div class="bizcard">
+      <div class="bl">The act</div>
+      <div class="bv" style="font-size:17px;">${g?g.name:'—'}</div>
+      <div class="bs">${cap(G.w.align)} · ${c.turns||0} turn${(c.turns||0)===1?'':'s'}</div>
+      <div class="hint" style="margin-top:6px;">Freshness ${Math.round(heat)}${heat<32?' — <b style="color:#f0907f">stale</b>':heat>72?' — <b style="color:var(--green)">hot</b>':''}</div>
+      <div class="bar ${heat<32?'':'g'}" style="margin-top:6px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
+    </div>
+    <div class="bizcard">
+      <div class="bl">Standing with the office</div>
+      <div class="bv">${Math.round(c.standing||50)}</div>
+      <div class="bs">${(c.standing||50)>=72?'Protected':(c.standing||50)>=52?'Trusted':(c.standing||50)>=34?'Just a body':'In the doghouse'}</div>
+      <div class="bar gd" style="margin-top:6px;"><i style="width:${clamp(c.standing||50)}%"></i></div>
+    </div>
+    <div class="bizcard">
+      <div class="bl">Mileage</div>
+      <div class="bv">${Math.round(c.wear||0)}</div>
+      <div class="bs">${sc.name} · ${sc.dates}</div>
+      <div class="hint" style="margin-top:6px;">${chron.length? chron.map(x=>`${x.part} (−${x.pen})`).join(' · ') : 'No lasting damage yet'}</div>
+    </div>
+  </div>
+  <div class="hint" style="margin-top:8px;">Last week: ${money((c.weekPay&&c.weekPay.down)||0)} downside + ${money((c.weekPay&&c.weekPay.merch)||0)} merch.</div>`;
+}
 function makeOffers(){
-  const t=tierOf(G.car.rep);
-  const pool=charsForTier(t.id);
+  const t=workTier(), me=myPromo();
+  // you are booked against the people you actually work with. Outsiders only
+  // show up on the rare inter-promotional shot.
+  const house=CHARS.filter(x=>x.promo===me.id);
+  const pool=house.length>=3 ? house : charsForTier(t.id);
   const offs=[];
   // your bitterest rival muscles onto the card
   const rivalId=G.car.rivalId;
@@ -1523,20 +1808,28 @@ function makeOffers(){
     const anchor=t.base+Math.max(0,me-t.base)*0.72;
     const oppOvr=Math.round(clamp(anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5),12,99));
     let stakes='standard';
-    const holds = G.car.title===t.title;
-    if(i===2 && holds && rnd()<0.65) stakes='defense';
-    else if(i===2 && !holds && G.car.pop>=Math.min(70,18+tierIdx()*16) && rnd()<0.55) stakes='title';
+    const belt=beltName(t), holds = G.car.title===belt;
+    // The office only puts the belt on someone the crowd wants and the office
+    // trusts — being good is not enough on its own.
+    const trusted=G.car.standing>=52 && gimHeat()>=40;
+    if(i===2 && holds && rnd()<0.78) stakes='defense';
+    else if(i===2 && !holds && trusted && G.car.pop>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
-    offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes,
-      blurb: stakes==='title'?`Beat ${opp.name} and the ${t.title} is yours.`
-            : stakes==='defense'?`Defend the ${t.title} against ${opp.name}.`
+    // your position on the card follows your standing and how hot the act is
+    const card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
+               : (G.car.standing+gimHeat())/2>=64 ? 'Main Event'
+               : (G.car.standing+gimHeat())/2>=44 ? 'Mid-Card' : 'Opener';
+    const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
+    offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
+      blurb: stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
+            : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
-            : `A ${st[0].toLowerCase()} against ${opp.name}.` });
+            : `${card} — a ${st[0].toLowerCase()} against ${opp.name}.` });
   }
   return offs;
 }
@@ -1718,7 +2011,7 @@ function stageInit(){
     FIG[k].x=FIG[k].home;
   });
 }
-function setLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
+function figLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
 function poseSet(k,name){ const f=FIG[k]; if(f.pose===name) return;
   f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action'}); }
 function atX(k){ return FIG[k].x; }
@@ -2019,8 +2312,8 @@ async function startFight(o){
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   go('fight');
   stageInit();
-  setLook('me',G.w.look);
-  setLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
+  figLook('me',G.w.look);
+  figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fClock').textContent='BELL';
   // ---- entrances: both wrestlers walk down the aisle and play to the crowd ----
   busy(true);
@@ -2296,41 +2589,59 @@ function simMatch(o){
   return {quality:Math.round(quality), win, notes, used, p};
 }
 function applyMatch(o,res){
-  const c=G.car, w=G.w;
+  const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
   // record
   if(res.win){ c.rec.w++; c.streak=c.streak>=0?c.streak+1:1; } else { c.rec.l++; c.streak=c.streak<=0?c.streak-1:-1; }
   // rewards
   const qf=res.quality/70;
-  const coins=Math.round(o.purse*(res.win?1.15:0.85)*clamp(qf,0.4,1.4));
+  const coins=Math.round(o.purse*(res.win?1.15:0.85)*clamp(qf,0.4,1.4)*sc.pay);
   G.bag.coins+=coins; c.earnings+=coins;
+  // ---- standing with the office: they care about the show you put on ----
+  const standDelta=(res.quality-58)*0.16 + (res.win?0.6:-0.2)
+    + (o.stakes==='title'||o.stakes==='defense'?1.4:0) + (c.workedHurt?-1.6:0);
+  c.standing=clamp((c.standing||50)+standDelta);
+  // ---- the character: a strong night refreshes the act, a flat one drains it ----
+  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + (res.quality-56)*0.13 + (res.win?0.8:-0.4), 0, 100);
   const repGain=Math.round((res.quality*0.30+(res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
   const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
-  c.pop=clamp(c.pop+popGain,1,100);
+  const popCeil=Math.min(100,([38,64,85,100][tierIdx()]||38)+4);
+  c.pop=clamp(c.pop+popGain,1,popCeil);
   c.mom=clamp(c.mom+(res.win?7:-6)+(res.quality-55)/8);
   c.cond=clamp(c.cond-(6+o.mult*5+(res.quality>75?3:0)));
   // XP → training points; mastery in the categories you emphasised
-  const xp=Math.round(20+res.quality*0.6+(o.stakes==='title'?25:0));
+  const xp=Math.round(24+res.quality*0.7+(o.stakes==='title'?25:0));
   w.xp+=Math.round(xp*(1+(styleOf().tpBonus||0)+facBonus('tp',0))); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const gain=9+res.quality*0.16;
   [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)*facBonus('mastery')); });
   // title
   let titleMsg=null;
-  const tt=tierOf(c.rep);
-  if(o.stakes==='title'&&res.win){ c.title=tt.title; c.defenses=0; c.reigns.push({title:tt.title,year:c.year,week:c.week,defenses:0});
-    titleMsg=`You are the new <b>${tt.title}</b>!`; c.pop=clamp(c.pop+6,1,100); }
+  const tt=workTier(), belt=beltName(tt);
+  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
+    titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
   else if(o.stakes==='defense'){
     if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
   }
-  // injury
+  // ---- injury: a real one, in a real place, with real consequences ----
   let injMsg=null;
-  const risk=res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length) + o.mult*0.04 + (100-c.cond)/380;
-  if(rnd()<risk*0.55){ c.injWeeks=rint(1,6); injMsg=`You were hurt — out ${c.injWeeks} week${c.injWeeks>1?'s':''}.`; }
+  const cats=res.used.map(m=>m.cat).concat([o.stip==='hardcore'||o.stip==='ladder'?'hardcore':'strike']);
+  const risk=(res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length)
+    + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500) * sc.inj * (c.workedHurt?2.2:1);
+  if(rnd()<risk*0.34){
+    const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
+    injMsg=`You suffered <b>${h.nm}</b> — out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
+    pushInboxItem({ico:'🏥',sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
+  } else if(c.workedHurt && c.hurt){
+    c.injWeeks+=rint(1,3);
+    injMsg=`You got through it, but working hurt cost you — the ${c.hurt.part.toLowerCase()} needs longer.`;
+  }
+  c.workedHurt=false;
   // ---- storyline progression ----
   const _st=story();
   if(_st && _st.charId===o.oppId){
@@ -2356,6 +2667,8 @@ function applyMatch(o,res){
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef — there is real respect there now.`); }
   // unlocks
   const unlocked=checkUnlocks();
+  res.oppName=o.oppName; checkMilestones(res);
+  c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
   if(G.hist.length>120) G.hist.pop();
   res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
@@ -2389,17 +2702,79 @@ function matchStory(o,res){
    WEEK ACTIONS
    ============================================================ */
 function advanceWeek(){
-  const c=G.car;
+  const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
   c.week++; c.offers=null;
-  c.cond=clamp(c.cond+9);
+  // ---- the road: recovery is slower the harder you work ----
+  c.cond=clamp(c.cond + (11 - sc.wear*4) - (c.hurt?3:0));
   c.mom=c.mom+(50-c.mom)*0.10;
+  c.wear=(c.wear||0)+sc.wear*0.34+(c.age>32?0.10:0);
+  c.standing=clamp((c.standing||50)+(52-(c.standing||50))*0.03);
+  // ---- payday: the downside guarantee lands whether you wrestled or not ----
+  if(c.deal){
+    const dw=Math.round(c.deal.weekly*sc.pay), mr=merchWeekly();
+    G.bag.coins+=dw+mr; c.earnings+=dw+mr;
+    c.weekPay={down:dw,merch:mr};
+    c.deal.weeksLeft--;
+  }
+  // ---- the act goes stale ----
+  if(G.w.gimmick){
+    const g=G.w.gimmick;
+    g.heat=clamp(g.heat - (0.55+sc.pop*0.35) + (c.pop>60?0.18:0), 0, 100);
+    if(g.heat<30 && !c._staleWarned){ c._staleWarned=true;
+      pushInboxItem({ico:'📉',sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new — repackage or turn.`}); }
+    if(g.heat>=45) c._staleWarned=false;
+  }
   // fame can't outrun the stage you work on — drift toward the tier's ceiling
   const ceil=[38,64,85,100][tierIdx()]||38;
   if(c.pop>ceil) c.pop=Math.max(ceil,c.pop-(c.pop-ceil)*0.09);
-  if(c.injWeeks>0) c.injWeeks--;
+  // ---- healing ----
+  if(c.injWeeks>0){
+    c.injWeeks--;
+    if(c.injWeeks<=0 && c.hurt) healUp();
+  }
+  if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
+}
+// come back from an injury — the attribute hit lifts, but not always all of it
+function healUp(){
+  const c=G.car, h=c.hurt; if(!h) return;
+  const def=injById(h.id)||INJURIES[0];
+  let back=h.pen, msg=`Cleared to return after ${h.nm}.`;
+  // only the serious ones leave something behind, and even then not always
+  if(h.wk>=6 && rnd()<def.chronic*0.55){
+    const keep=Math.max(1,Math.round(h.pen*0.42));
+    back=h.pen-keep;
+    c.chronic=c.chronic||[];
+    c.chronic.push({part:def.part,attr:def.attr,pen:keep,y:c.year});
+    msg+=` The ${def.part.toLowerCase()} never fully came back — you carry it from here.`;
+  }
+  G.w.attrs[def.attr]=clamp(G.w.attrs[def.attr]+back);
+  c.hurt=null;
+  pushInboxItem({ico:'🩺',sev:'info',txt:`<b>Medically cleared.</b> ${msg}`});
+  pushLog(msg);
+}
+// pick and apply a real injury, weighted by what you were actually doing
+function takeInjury(cats,stipMult,severityBoost){
+  const c=G.car;
+  // never stack penalties: an existing knock is written off before the new one lands
+  if(c.hurt){ const od=injById(c.hurt.id); if(od) G.w.attrs[od.attr]=clamp(G.w.attrs[od.attr]+c.hurt.pen); }
+  const pool=INJURIES.filter(i=>i.from.some(f=>cats.includes(f)));
+  const set=pool.length?pool:INJURIES;
+  // heavier schedules, more mileage and a beaten-up body push you up the severity list
+  const sev=clamp((c.wear||0)/300 + (100-c.cond)/340 + (stipMult-1)*0.34 + (severityBoost||0) + rnd()*0.72, 0, 0.999);
+  const idx=Math.min(set.length-1, Math.floor(sev*set.length));
+  const def=set[idx];
+  const wk=rint(def.wk[0],def.wk[1]) + Math.round((c.wear||0)/90);
+  const pen=rint(def.pen[0],def.pen[1]);
+  G.w.attrs[def.attr]=clamp(G.w.attrs[def.attr]-pen);
+  c.injWeeks=wk;
+  c.hurt={ id:def.id, nm:def.nm, part:def.part, attr:def.attr, pen, wk, y:c.year, w:c.week };
+  c.injuries=c.injuries||[]; c.injuries.unshift(Object.assign({},c.hurt));
+  if(c.injuries.length>30) c.injuries.pop();
+  c.morale=clamp(c.morale-8);
+  return c.hurt;
 }
 // a live feud produces a backstage moment every few weeks
 function maybeBackstage(){
@@ -2426,20 +2801,42 @@ function doMentorWeek(){ const c=G.car;
 function yearEnd(){
   const c=G.car, w=G.w;
   c.age++;
-  // aging curve: growth to ~29, plateau, decline after 34
-  const peak=30;
+  // Aging is not just the calendar — it is mileage. Two wrestlers the same age
+  // decline at different rates depending on how hard they worked the road and
+  // how much of their body they left in the ring.
+  const mileage=(c.wear||0)/100;
+  const declineAge=Math.max(29, 35 - Math.floor(mileage*1.6));
+  const peak=Math.max(26, 31 - Math.floor(mileage));
   ATTRS.forEach(([k])=>{
-    // young talent improves fastest; growth tapers toward the peak, then reverses
     const g = (c.age<26 ? 1.4 : c.age<peak ? 0.8 : 0) * growMult(k);
     if(g) w.attrs[k]=clamp(w.attrs[k]+(k==='ps'?g+0.4:g));
-    else if(c.age>34){ const d=(c.age-34)*0.55; w.attrs[k]=clamp(w.attrs[k]-(k==='ps'?d*0.25:k==='ae'?d*1.4:d)); }
+    else if(c.age>declineAge){
+      const d=(c.age-declineAge)*0.55*(1+mileage*0.4);
+      // psychology keeps growing; the athletic tools go first
+      w.attrs[k]=clamp(w.attrs[k]-(k==='ps'?-0.25:k==='ae'?d*1.4:k==='st'?d*1.15:d));
+    }
   });
   c.pop=clamp(c.pop-1.5,1,100);
   checkUnlocks();
+  // ---- awards season ----
+  const yl=c.yearLog||[];
+  if(yl.length){
+    const best=yl.reduce((a,b)=>b.q>a.q?b:a);
+    const avg=yl.reduce((s,m)=>s+m.q,0)/yl.length;
+    c.awards=c.awards||[];
+    if(best.q>=88){ c.awards.unshift({y:c.year,t:'Match of the Year',d:`vs ${best.opp} (${best.q})`});
+      award(`Match of the Year — vs ${best.opp}.`,'⭐'); c.pop=clamp(c.pop+3,1,100); c.rep+=380; }
+    if(avg>=78 && c.pop>=68 && yl.length>=8){ c.awards.unshift({y:c.year,t:'Wrestler of the Year',d:`avg ${avg.toFixed(0)} across ${yl.length} matches`});
+      award('Wrestler of the Year.','👑'); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); }
+    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟'); c.rep+=260; }
+  }
+  c.yearLog=[];
   const msgs=[`<b>Year ${c.year}</b> begins. You're ${c.age}.`];
-  if(c.age>=36) msgs.push('The miles are adding up. Retirement is on the table any time.');
+  if(c.age>declineAge) msgs.push(`The miles are adding up (${Math.round(c.wear||0)} on the clock).`);
+  if(c.age>=34) msgs.push('Retirement is on the table any time.');
   G.log.unshift(msgs.join(' '));
-  if(c.age>=40 && rnd()<0.35){ retire('Your body finally called it.'); }
+  const retireOdds = (c.age>=38?0.14:0) + (c.age>=42?0.24:0) + mileage*0.055 + ((c.chronic||[]).length)*0.04;
+  if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.'; save(); go('hof'); }
 function newCareerConfirm(){ modal('Start a new career?','Your current wrestler will be retired permanently and a new career begins.',
@@ -2657,6 +3054,164 @@ function drawCard(){
         </div>
       </div>
     </div></div>`;
+}
+
+/* ============================================================
+   THE BUSINESS — contract, road schedule, repackaging
+   ============================================================ */
+function renderDeal(){
+  const c=G.car, d=c.deal, p=myPromo(), g=G.w.gimmick;
+  let h='';
+  if(c.freeAgent){
+    if(!c.faOffers||!c.faOffers.length) c.faOffers=freeAgentOffers();
+    h+=`<div class="card" style="border-color:var(--gold)">
+      <h3 style="margin-top:0;">You are a free agent</h3>
+      <p class="log">Your deal with ${p.name} is up. ${c.faOffers.length?`${c.faOffers.length} promotion${c.faOffers.length>1?'s have':' has'} made an offer.`:'Nobody is calling. Take a cheap deal and rebuild.'}</p></div>
+      <div class="grid" style="gap:12px;margin-top:12px;">`;
+    if(!c.faOffers.length) c.faOffers=[{promo:PROMOS.filter(x=>x.tier==='indie')[0].id,years:1,weekly:300,creative:false,merch:0.05,want:5,pitch:'A one-year deal to get you back on shows.'}];
+    c.faOffers.forEach((o,i)=>{
+      const pr=promoById(o.promo), up=promoTierIdx(pr)>promoTierIdx(p);
+      h+=`<div class="opt" onclick="signDeal(${i})" style="border-left:3px solid ${pr.color}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <h4>${pr.name}</h4>
+          <span class="badge ${up?'b-leg':'b-com'}">${cap(pr.tier)}${up?' · STEP UP':''}</span></div>
+        <div class="meta">${money(o.weekly)}/week · ${o.years} year${o.years>1?'s':''} · ${Math.round(o.merch*100)}% merch${o.creative?' · creative control':''}</div>
+        <p>${o.pitch} <span class="hint">${pr.product} — ${pr.blurb}</span></p>
+        <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money(o.weekly*WEEKS_PER_YEAR*o.years)}</b> · interest ${o.want}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    $('dealBody').innerHTML=h; return;
+  }
+  // ---- under contract ----
+  h+=`<div class="card" style="border-left:3px solid ${p.color}">
+    <h3 style="margin-top:0;">${p.name} <span class="sub2">${p.short} · ${p.region}</span></h3>
+    <p class="log">${p.blurb}</p>
+    <div class="grid g3" style="margin-top:10px;">
+      ${[['Weekly downside',money(d.weekly)],['Term left',`${d.weeksLeft} wks`],['Merch cut',`${Math.round((d.merch||0)*100)}%`],
+         ['Creative control',d.creative?'Yes':'No'],['Standing',Math.round(c.standing||50)],['Working tier',workTier().name]]
+        .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}
+    </div>
+    <div class="hint" style="margin-top:10px;">Merch is paying you about ${money(merchWeekly())} a week at ${Math.round(c.pop)} popularity.</div>
+    ${d.weeksLeft<=8?`<div class="hint" style="margin-top:6px;color:var(--gold);">Your deal expires in ${d.weeksLeft} weeks. Start thinking about where you go next.</div>`:''}
+    ${(c.standing>=62&&!d.renegotiated&&d.weeksLeft<WEEKS_PER_YEAR*0.6)?`<button class="ghost" style="margin-top:10px;" onclick="renegotiate()">Renegotiate</button>`:''}
+  </div>`;
+
+  // ---- the road ----
+  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Road</h3>
+    <p class="log">How many nights a year you work. It is the biggest trade-off in the business.</p>
+    <div class="grid g3" style="margin-top:10px;">`+
+    SCHEDULES.map(s=>`<div class="opt ${d.sched===s.id?'on':''}" onclick="setSchedule('${s.id}')">
+      <h4>${s.name}</h4><div class="meta">${s.dates}</div><p>${s.blurb}</p>
+      <div class="hint" style="margin-top:6px;font-family:var(--mono);">pay ×${s.pay} · pop ×${s.pop} · wear ×${s.wear} · injury ×${s.inj}</div>
+    </div>`).join('')+`</div></div>`;
+
+  // ---- the character ----
+  const heat=gimHeat();
+  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Character</h3>
+    <p class="log">You are working as <b>${g?g.name:'—'}</b>, a ${G.w.align}. ${g?gimById(g.id).d:''}</p>
+    <div class="bar ${heat<32?'':'g'}" style="margin-top:8px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
+    <div class="hint" style="margin-top:4px;">Freshness ${Math.round(heat)}/100 — ${heat<32?'the act is dead, the crowd has stopped reacting':heat<55?'starting to go stale':'still getting a reaction'}</div>
+    <p class="log" style="margin-top:12px;">A turn or a repackage resets the character. It costs you popularity in the short term and buys you a new run.</p>
+    <div class="row" style="margin-top:8px;">
+      <button onclick="doTurn()">Turn ${G.w.align==='face'?'Heel':'Face'}</button>
+      <button class="ghost" onclick="openRepackage()">Repackage</button>
+    </div>
+    ${(c.accolades&&c.accolades.length)?`<div class="flab" style="margin-top:16px;">Accolades</div>
+      <div class="hint" style="line-height:1.9;">${c.accolades.slice(0,10).map(a=>`${a.ico} ${a.txt} <span style="opacity:.6">(Y${a.y})</span>`).join('<br>')}</div>`:''}
+  </div>`;
+
+  // ---- the body ----
+  const chron=c.chronic||[], inj=c.injuries||[];
+  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Body</h3>
+    <div class="grid g3">
+      <div class="tile"><div class="lab">Mileage</div><div class="val">${Math.round(c.wear||0)}</div></div>
+      <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div></div>
+      <div class="tile"><div class="lab">Injuries</div><div class="val">${inj.length}</div></div>
+    </div>
+    ${chron.length?`<div class="flab" style="margin-top:12px;">Permanent damage</div>
+      <div class="hint" style="line-height:1.9;">${chron.map(x=>`🦴 ${x.part} — −${x.pen} ${(ATTRS.find(a=>a[0]===x.attr)||['','?'])[1]} <span style="opacity:.6">(Year ${x.y})</span>`).join('<br>')}</div>`
+      :`<div class="hint" style="margin-top:10px;">Nothing permanent yet. It will come.</div>`}
+    ${inj.length?`<div class="flab" style="margin-top:12px;">Injury history</div>
+      <div class="hint" style="line-height:1.9;">${inj.slice(0,8).map(x=>`🏥 Y${x.y}W${x.w} — ${x.nm} (${x.wk} wks)`).join('<br>')}</div>`:''}
+  </div>`;
+  $('dealBody').innerHTML=h;
+}
+function signDeal(i){
+  const c=G.car, o=c.faOffers[i]; if(!o) return;
+  const pr=promoById(o.promo), old=myPromo();
+  c.deal={ promo:o.promo, years:o.years, weeksLeft:WEEKS_PER_YEAR*o.years, weekly:o.weekly,
+           sched:(c.deal&&c.deal.sched)||'regular', creative:o.creative, merch:o.merch, signedY:c.year };
+  c.freeAgent=false; c.faOffers=null; c.offers=null;
+  if(pr.id!==old.id){
+    // you do not take the belt with you
+    if(c.title){ pushLog(`You had to relinquish the ${c.title} on the way out of ${old.short}.`); c.title=null; c.defenses=0; }
+    c.standing=clamp(48+(o.want-40)*0.20);
+    c.rivalId=null; G.story=null; c.faction=null;
+    pushLog(`You sign with <b>${pr.name}</b> — ${o.years} year${o.years>1?'s':''} at ${money(o.weekly)}/week.`);
+    pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
+    if(promoTierIdx(pr)>promoTierIdx(old)) award(`Signed with ${pr.name}.`,'✍️');
+  } else {
+    pushLog(`You re-sign with <b>${pr.name}</b> at ${money(o.weekly)}/week.`);
+  }
+  save(); go('career'); toast('Deal signed');
+}
+function renegotiate(){
+  const c=G.car, d=c.deal;
+  const fair=dealValue(myPromo(),c.pop,c.rep,c.standing);
+  const ask=Math.round(fair*1.22/10)*10;
+  modal('Renegotiate', `You are on ${money(d.weekly)} a week. Based on what you are drawing, ${money(fair)} is fair — you can push for <b>${money(ask)}</b>.
+    <br><br>They will not enjoy the conversation. Ask and you risk your standing with the office.`,
+    [{label:'Leave it',cls:'ghost',fn:closeModal},
+     {label:'Ask for more',fn:()=>{ closeModal();
+        d.renegotiated=true;
+        const p=clamp(0.30+(c.standing-50)*0.012+(c.pop-40)*0.006+(c.title?0.16:0),0.05,0.92);
+        if(rnd()<p){ d.weekly=ask; c.standing=clamp(c.standing-3);
+          pushInboxItem({ico:'💰',sev:'good',txt:`<b>New terms.</b> ${money(ask)} a week.`});
+          toast('They paid up'); }
+        else { c.standing=clamp(c.standing-9);
+          pushInboxItem({ico:'📄',sev:'bad',txt:'<b>Turned down.</b> The office remembers you asked.'});
+          toast('They said no'); }
+        save(); renderDeal(); }}]);
+}
+function setSchedule(id){ G.car.deal.sched=id; save(); renderDeal(); toast(schedOf(id).name+' it is'); }
+function doTurn(){
+  const c=G.car, w=G.w, to=w.align==='face'?'heel':'face';
+  modal(`Turn ${cap(to)}?`, `Turning is the oldest trick in the business and it works — but the crowd needs a reason.
+    You will lose popularity while they adjust, and gain a completely fresh act.`,
+    [{label:'Not yet',cls:'ghost',fn:closeModal},
+     {label:`Turn ${cap(to)}`,fn:()=>{ closeModal();
+       w.align=to; c.turns=(c.turns||0)+1;
+       const fits=GIMMICKS.filter(g=>g.align===to);
+       const g=fits[Math.floor(rnd()*fits.length)];
+       w.gimmick={id:g.id,name:g.n,heat:88,since:c.year};
+       const drop=clamp(6+c.pop*0.14,4,18);
+       c.pop=clamp(c.pop-drop,1,100); c.standing=clamp(c.standing+4); c.mom=clamp(c.mom+10);
+       pushLog(`You turned ${to}. The new act is <b>${g.n}</b>. The building did not know what to do with itself.`);
+       pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'} — working as ${g.n}.`});
+       award(`Turned ${to} as ${g.n}.`,'🔄');
+       save(); renderDeal(); toast(`You are a ${to} now`); }}]);
+}
+function openRepackage(){
+  const cur=G.w.gimmick?G.w.gimmick.id:null;
+  const opts=GIMMICKS.filter(g=>g.align===G.w.align&&g.id!==cur);
+  const pick=opts.slice(0,6);
+  modal('Repackage', `Same wrestler, brand-new character. Freshness resets, popularity takes a hit while they learn who you are.
+    <div class="grid" style="gap:8px;margin-top:12px;">`+
+    pick.map(g=>`<div class="opt" onclick="doRepackage('${g.id}')"><h4>${g.n}</h4><p>${g.d}</p>
+      <div class="hint">${Object.entries(g.b).map(([k,v])=>`+${v} ${(ATTRS.find(a=>a[0]===k)||['','?'])[1]}`).join(' · ')}</div></div>`).join('')+
+    `</div>`, [{label:'Close',cls:'ghost',fn:closeModal}]);
+}
+function doRepackage(id){
+  closeModal();
+  const c=G.car, w=G.w, g=gimById(id);
+  Object.entries(g.b).forEach(([k,v])=>{ w.attrs[k]=clamp(w.attrs[k]+v); });
+  w.gimmick={id:g.id,name:g.n,heat:86,since:c.year};
+  const drop=clamp(4+c.pop*0.10,3,14);
+  c.pop=clamp(c.pop-drop,1,100);
+  pushLog(`Repackaged as <b>${g.n}</b>. New music, new gear, new everything.`);
+  pushInboxItem({ico:'🎭',sev:'story',txt:`<b>Repackaged.</b> ${w.name} is now ${g.n}.`});
+  save(); renderDeal(); toast('New character: '+g.n);
 }
 
 function renderWorld(){
