@@ -108,7 +108,7 @@
      knowable, and :empty drops the reservation the moment it's built. */
   .path:empty{min-height:234px;}
   .stop{display:flex; align-items:center; gap:12px;}
-  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:#fff; font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
+  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
   .stop:not([style]):first-child .dot{background:var(--green); color:#071426;}
   .stop:not([style]):last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
@@ -461,6 +461,21 @@
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices'), pathEl=document.getElementById('path');
 
+  /* Readable ink for a digit sitting on an arbitrary team colour.
+   * Compare BOTH candidates rather than splitting on a luminance threshold:
+   * a mid-tone like Cincinnati orange (#FB4F14) reads 3.4:1 against white but
+   * 5.3:1 against ink, and any single cutoff gets a band of colours wrong. */
+  function onColorOf(hex){
+    try{
+      var h=String(hex||'').replace('#','');
+      if(h.length!==6) return '#fff';
+      var lin=function(c){ c=parseInt(c,16)/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
+      var L=0.2126*lin(h.substr(0,2))+0.7152*lin(h.substr(2,2))+0.0722*lin(h.substr(4,2));
+      var ratio=function(a,b){ return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); };
+      var WHITE=1, INK=0.00856;                       // relative luminance of #fff / #0A1728
+      return ratio(L,INK) >= ratio(L,WHITE) ? '#0A1728' : '#fff';
+    }catch(e){ return '#fff'; }
+  }
   function renderRound(){
     ensureRounds(idx+6);
     if(idx>=SEQ.length){ finish(); return; }
@@ -470,7 +485,12 @@
     pathEl.innerHTML = teams.map(function(tm,i){
       var tag = i===0 ? '<span class="steptag">First team</span>' : (i===teams.length-1 ? '<span class="steptag last">Most recent</span>' : '');
       var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
-      var st=tc?(' style="--pc:'+tc.p+'"'):'';
+      // The step number sits ON the team colour, and team colours run the whole
+      // range from near-black to near-white — a fixed white digit sat at 3.4:1
+      // on the light ones. Pick the ink from the fill's luminance, the same way
+      // the hub picks its PLAY labels.
+      var ink = tc ? onColorOf(tc.p) : null;
+      var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+'"'):'';
       return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"'+st+'><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
     }).join('') + eraLine(target);
     function eraLine(t){
