@@ -2405,6 +2405,8 @@ h2{font-size:11px;letter-spacing:.04em}
 .gc-kick{font-size:9px;letter-spacing:.03em}
 
 .trule{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:10px 12px;margin:8px 0;border:1px solid rgba(241,208,74,.22);border-radius:9px;background:linear-gradient(180deg,rgba(241,208,74,.06),rgba(6,23,15,.5))}
+/* the split gets the same shape as a rule row but its own class, so it never reads as one of the tour's own rules */
+.lgrule{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:10px 12px;margin:8px 0;border:1px solid rgba(224,86,74,.45);border-radius:9px;background:linear-gradient(180deg,rgba(224,86,74,.08),rgba(6,23,15,.5))}
 .tr-i{font-size:17px;line-height:1.1}
 .tr-n{font:800 14px/1.25 var(--pixel);color:var(--gold)}
 .tr-l{font-size:12.5px;color:var(--oncard);margin-top:2px}
@@ -5162,8 +5164,11 @@ function seasonSchedule(year,seed){
   // and it's on the schedule every year after. Career only.
   if(!S.daily && !S.circuitMode && bracketOnSchedule(year,seed)) list=list.concat([bracketEvt(1)]);
   if(isOlympicYear(year)) list=list.concat([OLYMPICS_EVT]);
-  // the year's team event (Ryder/Presidents) closes the season, only if your nationality is on a team
-  if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
+  // the year's team event (Ryder/Presidents) closes the season, only if your nationality is on a team.
+  // THE BREAKAWAY LEAGUE: once the feud runs hot enough it tears the Nations Cup up and takes its week,
+  // so on those years the national event is replaced outright by Tour versus Frontier.
+  if(!S.daily && leagueCupOnSchedule(year)) list=list.concat([leagueCupEvt()]);
+  else if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
     list=list.concat([{name:te.short, type:'teamcup', wk:38, teamcup:true, teamType:te.type, major:false, big:false, purse:0, noCut:true}]); }
   return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
 }
@@ -5778,7 +5783,11 @@ function ensureWorld(){ if(S.daily) return null;
   if(!S.world){ if(S.careerSeed==null) S.careerSeed=(Math.floor(Math.random()*4294967295))>>>0; S.world=seedWorld(S.careerSeed); }
   return S.world; }
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
-  return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
+  // THE BREAKAWAY LEAGUE: players who signed with the Frontier are gone from the tour's fields. You only
+  // see them again at a major (leagueCrossoverField) or across the ropes at the Unity Cup.
+  const gone=(typeof leagueDefectorSet==='function')?leagueDefectorSet():null;
+  const src=gone ? w.active.filter(g=>!gone.has(g.name)) : w.active;
+  return src.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
 /* ---- Official World Golf Ranking (OWGR) ----
    A rolling, decaying, results-based world ranking. Every player carries `rankPts`: world players
@@ -5865,7 +5874,7 @@ function simHeadlessEvent(evt, players){
   }
   const made=ps.filter(o=>o.made).sort((a,b)=>a.total-b.total), missed=ps.filter(o=>!o.made);
   assignTies(made,false); missed.forEach(o=>{o.pos='CUT';o.pct=0;});
-  const order=made.concat(missed), basePts=evt.major?750:evt.big?600:(evt.oppo?360:500);
+  const order=made.concat(missed), basePts=evt.league?LEAGUE_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500));
   order.forEach(o=>{ o.money=evt.purse*(o.pct||0); o.points=typeof o.pos==='number'?Math.round(basePts*((o.pct||0)/0.18)):0;
     const t=S.season.totals[o.p.name]; if(!t) return;
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
@@ -6208,10 +6217,17 @@ function applyCaptainPairs(setPairs, srcTeam){
 function teamNm(p){ return p.you?(S.name||'You'):p.name; }
 function simTeamEvent(opts){
   opts=opts||{};
-  const year=S.year||1, te=teamEventForYear(year);
+  const year=S.year||1;
+  // THE BREAKAWAY LEAGUE: on a Unity Cup year the sides are not countries, they are allegiances - the
+  // players who stayed against the players who left, and you are on whichever side you play for.
+  const isLg=!!opts.leagueCup;
+  const te=isLg
+    ? {type:'league', regionB:'FRONTIER', nameA:TOUR_SIDE_NAME, nameB:LEAGUE_NAME, short:LEAGUE_CUP_NAME, codeA:'TOUR', codeB:'FRNT'}
+    : teamEventForYear(year);
   const mb=buildPlayer(), me={name:S.name||'You', you:true, skill:mb.skill, nation:playerNation()};
-  const myNat=playerNation(), mySide = myNat==='USA'?'A':(eligibleForTeam(myNat,te.regionB)?'B':null);   // the side your country plays for
-  const A=selectTeam('USA', me), B=selectTeam(te.regionB, me);
+  const myNat=playerNation();
+  const mySide = isLg ? leagueSide() : (myNat==='USA'?'A':(eligibleForTeam(myNat,te.regionB)?'B':null));
+  const A=isLg?selectLeagueTeam('A', me):selectTeam('USA', me), B=isLg?selectLeagueTeam('B', me):selectTeam(te.regionB, me);
   let teamA=A.team, teamB=B.team;
   // captain mode (you're non-playing captain of your side): use the team you assembled instead of the auto squad
   if(opts.captainSide && opts.captainTeam){ if(opts.captainSide==='A') teamA=opts.captainTeam.slice(); else teamB=opts.captainTeam.slice(); }
@@ -14435,9 +14451,14 @@ function startSeason(majorsOnly){
     if(_tourNew && councilSeat()){ _tourVote=_tourNew; _tourNew=null; }
     else if(_tourNew) applyTourChange(_tourNew);
   }catch(e){}
+  // THE BREAKAWAY LEAGUE: form it / run this year's signing wave BEFORE the schedule is built, since a
+  // player who has signed plays an entirely different calendar and the Unity Cup can take a week.
+  let _lgNews=null;
+  try{ if(!S.daily && !S.circuitMode){ _lgNews=leagueSeasonTick(S.year||1); leagueHeatTick(S.year||1); } }catch(e){}
   S.schedule = S.daily ? SCHEDULE.map(e=>({...e}))
              : S.circuitMode ? circuitSchedule(S.careerSeed)
-             : (majorsOnly ? majorsSchedule() : seasonSchedule(S.year||1, S.careerSeed));
+             : (majorsOnly ? majorsSchedule()
+                : (leagueJoined() ? leagueSchedule(S.year||1, S.careerSeed) : seasonSchedule(S.year||1, S.careerSeed)));
   S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
@@ -14451,6 +14472,8 @@ function startSeason(majorsOnly){
     roster=S.fieldRoster;
   } else if(S.circuitMode){
     roster=legendField(CIRCUIT_FIELDSIZE-1);
+  } else if(leagueJoined()){
+    roster=leagueFieldRoster(LEAGUE_FIELD-1);   // the Frontier's own small invitational field
   } else {
     roster=worldField(FIELDSIZE-1);   // living-world field for the current sim year
   }
@@ -14472,12 +14495,17 @@ function startSeason(majorsOnly){
     S.pendingTourVote = brNew ? null : _tourVote;   // the council gets the floor before the season starts
     S.tourVoteResult = null;
   }
+  S.pendingLeagueNews = _lgNews;      // the league forming / this year's signings, announced before week 1
+  S.pendingLeagueOffer = null; S.leagueOfferResult=null;
+  try{ if(!S.daily && !S.circuitMode && leagueOfferDue(S.year||1)) S.pendingLeagueOffer={year:S.year||1, money:leagueOfferMoney()}; }catch(e){}
+  if(S.season){ S.season.lgBeat=0; S.season.lgH2H={w:0,l:0}; }
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   S.legacyFresh=[];   // legacy perks earned THIS season, celebrated on the summary
   S._bannerNet=null; S._bannerFans=null; S._bannerNetDir=0; S._bannerFansDir=0; S._confBar=null; S._respBar=null;   // CS284/285/434/476: reset the banner count-up + arrow-direction + meter-glide baselines so a new season's first render doesn't animate/arrow from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; S.career.story._beatsYr=0; S.career.story.lastBeat=-99; }   // reset the per-season storyline cap (CS225) + the DECISIONS-this-year counter + the stale cross-season gap tracker (lastBeat stored an ABSOLUTE evtIndex from LAST season, which blocked this season's early beats)
   S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0; S.season._lastStopEvt=-99;   // interruption budget + grudge cap (CS295) + off-course money (CS325) + no-back-to-back tracker (CS327)
+  try{ const g=leagueGuaranteeFor(S.year||1); if(g) S.season.sideMoney=(S.season.sideMoney||0)+g; }catch(e){}   // the breakaway contract is GUARANTEED money, paid in yearly instalments (not prize money, so it lands in net)
   { const st=careerStory(); st.dilSeason=0; st._lastDom=null; }   // CS325: reset per-season dilemma cap
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
     const st=careerStory(); const base=(st.confidence!=null?st.confidence:CONF_START);
@@ -14502,6 +14530,9 @@ let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard
 function beginEvent(){
   let evt=S.schedule[S.evtIndex];
   let field=S.season.field, stagger=null;
+  // THE BREAKAWAY LEAGUE: a major is the one week the two sides still meet. Whichever side you play for,
+  // the other side's best are added to the field before the OWGR gate splits it.
+  if(evt.major && !S.daily && !S.circuitMode){ try{ field=leagueCrossoverField(field); }catch(e){} }
   if(evt.playoff){
     // Tour Cup playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
     field=[...S.season.field].sort((a,b)=>(S.season.totals[b.name].points||0)-(S.season.totals[a.name].points||0)).slice(0,evt.cap);
@@ -14523,7 +14554,7 @@ function beginEvent(){
     field=S.season.field.filter(p=>!b32.some(o=>o.name===p.name));
   } else if(evt.limited && !S.daily){
     // OWGR-gated signature/major: split into marquee + opposite-field, sim the tier you DON'T play headlessly.
-    const sp=splitField(S.season.field, evt), oppoEvt=makeOppoEvt(evt);
+    const sp=splitField(field, evt), oppoEvt=makeOppoEvt(evt);
     if(sp.youIn){ simHeadlessEvent(oppoEvt, sp.oppo); field=sp.marquee; }
     else { simHeadlessEvent(evt, sp.marquee); field=sp.oppo; evt=oppoEvt; }
   } else if(evt.guestMajor && !S.daily){
@@ -14943,6 +14974,13 @@ function storyCtx(ce){
     rivalAhead, grudgeW, grudgeL,
     vetName:ppl.vet, youngName:ppl.young, rookieName:ppl.rookie, starName:ppl.star, proName:ppl.pro,
     fans:repFans(), respect:repRespect(),   // CS280 two-axis reputation, for consequence-beat triggers
+    // THE BREAKAWAY LEAGUE: every beat can react to which side of the divide you are on and how hot it runs
+    lgOn:leagueExists(), lgIn:leagueJoined(), lgYrs:(function(){ try{ const L=leagueState(); return L.born?((S.year||1)-L.born):0; }catch(e){ return 0; } })(),
+    lgN:leagueCount(), lgHeat:(function(){ try{ return leagueState().heat||0; }catch(e){ return 0; } })(),
+    lgLeft:(function(){ try{ return leagueState().left||0; }catch(e){ return 0; } })(),
+    lgStar:(function(){ try{ const L=leagueState(); return L.defectors.length?L.defectors[0]:''; }catch(e){ return ''; } })(),
+    lgRivalGone:(function(){ try{ const r=S.career&&S.career.rival; return !!(r&&isDefector(r.name)); }catch(e){ return false; } })(),
+    lgCup:(function(){ try{ return !!leagueState().cupYear; }catch(e){ return false; } })(),
     yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:seasonsPlayed};
 }
 // each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
@@ -15513,6 +15551,300 @@ function councilVote(entry, yes){
 }
 function tourNewsFor(id){ return tourHistory().filter(e=>e.id===id)[0]||null; }
 
+/* ==================== THE BREAKAWAY LEAGUE ====================
+   The biggest branch available to a career: partway through, a rival league forms with money the tour
+   cannot match, and from that moment the two of you are playing different games. You can take the
+   cheque and go, or stay and be the face of the tour they are trying to kill. Either way the world
+   splits around you: the players who leave are gone from your fields, the majors become the only place
+   the two sides meet, and if the feud runs hot enough the tour's own team cup is torn up and replaced
+   with Tour versus Frontier.
+
+   Built on machinery that already ships rather than a parallel simulation: the living world supplies the
+   defectors, seasonSchedule builds the Frontier slate, worldRanking decides who is worth signing,
+   simTeamEvent plays the cup, and the storyline/dilemma engine carries the scenarios. Career only, and
+   inert by construction in the Daily and the Legend Circuit (leagueOn() gates every read).           */
+const LEAGUE_NAME='The Frontier League', LEAGUE_SHORT='Frontier';
+const TOUR_SIDE_NAME='The Tour';
+const LEAGUE_MIN_YEAR=4, LEAGUE_MAX_YEAR=9;      // the year it forms, fixed per save
+const LEAGUE_EVENTS=12;                          // a short, no-cut season: fewer weeks, every one paid
+const LEAGUE_FIELD=48;                           // small invitational fields
+const LEAGUE_PURSE=25e6;                         // per event, far above a tour signature
+const LEAGUE_PTS=0;                              // league events award NO world ranking points, the real cost
+const LEAGUE_CUP_HEAT=55;                        // how hot the feud has to run before the cup is replaced
+const LEAGUE_CUP_NAME='The Unity Cup';
+// how much of the field it takes with it, by year since it formed. It starts as a raid and becomes an
+// institution, but it never guts the tour outright - the majors have to stay worth playing.
+const LEAGUE_WAVE=[6,5,4,3,2,2,1,1];
+const LEAGUE_CONTRACT_YEARS=4;                   // the guarantee is paid in yearly instalments, like the real thing
+// how big it gets varies per career: some breakaways are a raid that fizzles, others take a third of the
+// tour with them. Without this every save ends up with an identically sized league, which is the staleness
+// this whole branch exists to fix.
+const LEAGUE_DEFECT_MIN=12, LEAGUE_DEFECT_MAX=30;
+function leagueMaxDefect(){
+  try{ const s=(S.careerSeed||0)^dHash('lgsize');
+    return LEAGUE_DEFECT_MIN + (mulberry32(s>>>0)()*(LEAGUE_DEFECT_MAX-LEAGUE_DEFECT_MIN+1)|0); }
+  catch(e){ return 22; }
+}
+
+function leagueOn(){ return !S.daily && !S.circuitMode && !!S.career; }
+function leagueState(){
+  const c=(S.career=S.career||{});
+  if(!c.league) c.league={born:0, joined:0, left:0, defectors:[], returned:[], offers:[], heat:0,
+                          cupYear:0, cups:[], seen:{}, folded:0, merged:0, wave:0};
+  const L=c.league;
+  if(!Array.isArray(L.defectors)) L.defectors=[];
+  if(!Array.isArray(L.returned))  L.returned=[];
+  if(!Array.isArray(L.offers))    L.offers=[];
+  if(!Array.isArray(L.cups))      L.cups=[];
+  if(!L.seen) L.seen={};
+  return L;
+}
+// the year it forms, deterministic per save (a structural event, not a fixture), so two careers get
+// different timelines but one career resumes consistently.
+function leagueBornYear(seed){
+  const r=mulberry32((((seed||0)^0x1eaf7e)>>>0));
+  return LEAGUE_MIN_YEAR+Math.floor(r()*(LEAGUE_MAX_YEAR-LEAGUE_MIN_YEAR+1));
+}
+function leagueExists(){ try{ const L=leagueState(); return leagueOn() && L.born>0 && !L.folded; }catch(e){ return false; } }
+function leagueJoined(){ try{ const L=leagueState(); return leagueExists() && L.joined>0 && !L.left; }catch(e){ return false; } }
+// a set of the names currently playing the Frontier, for pulling them out of tour fields
+function leagueDefectorSet(){
+  try{ const L=leagueState(); if(!L.born||L.folded) return null;
+    const s=new Set(L.defectors); L.returned.forEach(n=>s.delete(n)); return s.size?s:null;
+  }catch(e){ return null; }
+}
+function isDefector(name){ const s=leagueDefectorSet(); return !!(s&&s.has(name)); }
+function leagueCount(){ const s=leagueDefectorSet(); return s?s.size:0; }
+
+/* ---- the defection engine ----
+   Who signs is the interesting part. A league buying its way in goes for RANKED players, but not
+   uniformly: it wants a headline name, and it hoovers up the rank-and-file who are one bad season from
+   losing a card. So each wave is drawn from the world by ranking with a seeded weight that peaks at the
+   very top and again outside the elite, and it never touches YOU (you get an offer instead).       */
+function leagueSignWave(year, n){
+  const L=leagueState(), w=ensureWorld(); if(!w) return [];
+  const already=new Set(L.defectors);
+  const rank=worldRanking().filter(x=>!x.you && !already.has(x.name));
+  if(!rank.length) return [];
+  const rng=mulberry32((((S.careerSeed||0)^dHash('league|'+year))>>>0));
+  const room=Math.max(0, leagueMaxDefect()-already.size);
+  n=Math.min(n, room, rank.length);
+  const picked=[];
+  for(let k=0;k<n;k++){
+    // weight by world position: a marquee signing up top, plus the squeezed middle of the field
+    const cand=rank.filter(x=>picked.indexOf(x.name)<0);
+    if(!cand.length) break;
+    const wt=cand.map((x,i)=>{ const r=i+1;
+      const star=Math.exp(-r/9)*1.9;             // the headline names
+      const mid=Math.exp(-Math.pow((r-55)/38,2))*1.0;   // the rank and file with a card to lose
+      return star+mid+0.05; });
+    const tot=wt.reduce((s,x)=>s+x,0); let roll=rng()*tot, i=0;
+    while(i<wt.length-1 && roll>wt[i]){ roll-=wt[i]; i++; }
+    picked.push(cand[i].name);
+  }
+  picked.forEach(n2=>L.defectors.push(n2));
+  return picked;
+}
+// the season boundary: form the league, then run that year's signing wave. Returns what happened so
+// startSeason can announce it.
+function leagueSeasonTick(year){
+  if(!leagueOn()) return null;
+  const L=leagueState();
+  if(!L.born){
+    if(year < leagueBornYear(S.careerSeed)) return null;
+    L.born=year; L.wave=0;
+    const signed=leagueSignWave(year, LEAGUE_WAVE[0]);
+    track('league_formed',{year, signed:signed.length});
+    return {kind:'formed', year, signed};
+  }
+  if(L.folded||L.merged) return null;
+  L.wave=(L.wave||0)+1;
+  const n=LEAGUE_WAVE[Math.min(L.wave, LEAGUE_WAVE.length-1)];
+  const signed=leagueSignWave(year, n);
+  return signed.length ? {kind:'wave', year, signed} : null;
+}
+
+/* ---- what they are willing to pay you ----
+   Scaled to what you are worth to them: a world number one is a brand, a card-bubble journeyman is a
+   body to fill a field. Deliberately enormous next to prize money (a very good tour season nets tens of
+   millions gross) because that IS the offer: certainty, up front, win or lose.                      */
+function leagueOfferMoney(){
+  const c=S.career||{}, wins=c.wins||0, majors=c.majors||0;
+  let rank=120; try{ rank=myWorldRank(); }catch(e){}
+  const fans=(function(){ try{ return careerStory().followers||0; }catch(e){ return 0; } })();
+  let m=14e6;
+  m += Math.max(0, 140-rank)*0.42e6;          // where you sit in the world
+  m += wins*2.2e6 + majors*9e6;               // what you have actually won
+  m += Math.min(26e6, Math.sqrt(Math.max(0,fans))*9e3);    // what you are worth to a broadcast
+  const L=leagueState();
+  m *= 1 + Math.min(0.4, (L.offers.length||0)*0.18);       // they come back richer every time
+  m *= purseMult(S.year||1);
+  return Math.round(m/1e6)*1e6;
+}
+// the guarantee is paid in yearly instalments while the contract runs, so signing is money you can
+// actually feel in your net rather than a headline number on a card.
+function leagueGuaranteeFor(year){
+  if(!leagueOn() || !leagueJoined()) return 0;
+  const L=leagueState();
+  if(!L.signed || !L.joined) return 0;
+  if(year - L.joined >= LEAGUE_CONTRACT_YEARS) return 0;
+  return Math.round(L.signed/LEAGUE_CONTRACT_YEARS);
+}
+// are they interested this season? They want ranked players and winners, they escalate if you say no,
+// and they stop asking once you have signed or are plainly past it.
+function leagueOfferDue(year){
+  if(!leagueExists() || leagueJoined()) return false;
+  const L=leagueState();
+  if(L.left) return year-L.left>=3;                       // you walked out on them once
+  if(year<=L.born) return false;
+  const last=L.offers.length?L.offers[L.offers.length-1].year:-99;
+  if(year-last < (L.offers.length?3:1)) return false;
+  if(L.offers.length>=4) return false;
+  let rank=999; try{ rank=myWorldRank(); }catch(e){}
+  return rank<=70 || (S.career&&(S.career.wins||0)>=1);
+}
+function leagueSign(year, money){
+  const L=leagueState();
+  L.joined=year; L.left=0; L.signed=money;
+  L.offers.push({year, money, accepted:true});
+  leagueHeat(14);
+  try{ careerStory().feed.push({year, txt:`Signed with ${LEAGUE_NAME} for ${fmtShort(money)}.`}); }catch(e){}
+  track('league_join',{year, money});
+}
+function leagueDecline(year, money){
+  const L=leagueState();
+  L.offers.push({year, money, accepted:false});
+  leagueHeat(8);
+  try{ careerStory().feed.push({year, txt:`Turned down ${fmtShort(money)} from ${LEAGUE_NAME}.`}); }catch(e){}
+  track('league_decline',{year, money});
+}
+// coming home. The tour takes you back, but not for nothing: the reinstatement costs you a season of
+// ranking points, which is exactly the thing you spent years not earning.
+function leagueReturn(year){
+  const L=leagueState();
+  L.left=year; L.joined=0;
+  if(S.career) S.career.rankPts=Math.max(0,(S.career.rankPts||0)*0.55);
+  try{ careerStory().feed.push({year, txt:`Came back to ${TOUR_SIDE_NAME}.`}); }catch(e){}
+  track('league_return',{year});
+}
+
+/* ---- the Frontier schedule ----
+   Everything the tour is not: a dozen weeks, no cut, small invitational fields, a purse per event that
+   dwarfs a signature. And no ranking points anywhere on it, which is the bill that arrives later.   */
+const LEAGUE_STOPS=[
+  'Frontier Miami','Frontier London','Frontier Riyadh Invitational','Frontier Singapore','Frontier Adelaide',
+  'Frontier Mexico City','Frontier Chicago','Frontier Valderrama','Frontier Cape Town','Frontier Tokyo',
+  'Frontier Boston','Frontier Dallas','Frontier Seoul','Frontier Dubai','Frontier Rio',
+];
+function leagueEvt(name, wk){ return {name, type:'league', wk, purse:LEAGUE_PURSE, major:false, big:true, league:true, noCut:true}; }
+// which majors a defector can still get into: your own exemptions first, then the world ranking - which
+// is decaying every year you play for no points. This is the whole cost of the cheque, made concrete.
+function leagueMajorOpen(evt){
+  try{ if(playerExempt(evt)) return true; const r=myWorldRank(); return r<=tourEntryCap(evt); }catch(e){ return true; }
+}
+function leagueSchedule(year, seed){
+  const shuffled=seededShuffle(LEAGUE_STOPS, ((seed!=null?seed:0)^0xf0117e)>>>0);
+  const N=shuffled.length, off=(((year||1)-1)*3%N+N)%N;
+  const stops=[]; for(let k=0;k<LEAGUE_EVENTS;k++) stops.push(shuffled[(off+k)%N]);
+  const wks=[2,4,6,9,12,14,17,20,25,29,31,35];
+  let list=stops.map((n,i)=>leagueEvt(n, wks[i]||(2+i*3)));
+  // the majors are the only place the two sides still meet, and only while you can still get in
+  ANCHORS.filter(e=>e.major).forEach(e=>{ if(leagueMajorOpen(e)) list.push({...e}); });
+  if(leagueCupOnSchedule(year)) list=list.concat([leagueCupEvt()]);
+  return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
+}
+// the Frontier's own field: the players who signed, topped up from the world so a small league still
+// plays a full 48. Sorted so the marquee names are the ones you have to beat.
+function leagueFieldRoster(n){
+  const w=ensureWorld(); if(!w) return [];
+  const set=leagueDefectorSet()||new Set();
+  const mk=g=>{ const o={name:g.name, skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o; };
+  const inLeague=w.active.filter(g=>set.has(g.name)).map(mk).sort((a,b)=>b.skill-a.skill);
+  if(inLeague.length>=n) return inLeague.slice(0,n);
+  const rest=w.active.filter(g=>!set.has(g.name)).map(mk).sort((a,b)=>b.skill-a.skill);
+  return inLeague.concat(rest.slice(0, n-inLeague.length));
+}
+// A MAJOR is the crossover week: whichever side you play on, the other side is there too. Tops the
+// field up with the strongest players from across the divide (their season totals may not exist, which
+// finalizeEvent already tolerates, as it does for the Games).
+function leagueCrossoverField(field){
+  const set=leagueDefectorSet(); if(!set||!set.size) return field;
+  const w=ensureWorld(); if(!w) return field;
+  const have=new Set(field.map(p=>p.name));
+  const want=leagueJoined() ? (g=>!set.has(g.name)) : (g=>set.has(g.name));
+  const add=w.active.filter(g=>want(g) && !have.has(g.name))
+    .sort((a,b)=>b.lov-a.lov).slice(0,28)
+    .map(g=>{ const o={you:false, name:g.name, skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o; });
+  return field.concat(add);
+}
+
+/* ---- the feud, measured ----
+   Heat is what turns a business story into a grudge. It rises with time, with every player who walks,
+   and above all with the weeks the two sides actually meet: beating one of them at a major stokes it,
+   losing to one stokes it harder, and the press beats pour petrol on it. Once it is hot enough the
+   tour's own team cup is torn up and replaced with Tour versus Frontier.                            */
+function leagueHeat(add){
+  if(!leagueOn()) return 0;
+  const L=leagueState();
+  if(add) L.heat=Math.max(0, Math.min(100, (L.heat||0)+add));
+  return L.heat||0;
+}
+// the slow burn: the passage of time and the size of the exodus, recomputed each season boundary
+function leagueHeatTick(year){
+  if(!leagueExists()) return 0;
+  const L=leagueState();
+  const yrs=Math.max(0, year-L.born);
+  // a big, long-lived split reaches the cup threshold on its own; a small one only gets there if the
+  // feud is personal (head-to-head weeks at the majors, and your own decisions, add heat on top)
+  const base=Math.min(36, yrs*4.2) + Math.min(26, leagueCount()*1.2);
+  if((L.heat||0)<base) L.heat=base;
+  if(leagueJoined()||L.left) L.heat=Math.min(100,(L.heat||0)+4);   // you are personally part of the story
+  return L.heat||0;
+}
+const LEAGUE_CUP_MIN_GAP=3;   // the feud needs a few seasons behind it before anyone tears up a cup
+function leagueCupDue(year){
+  if(!leagueExists()) return false;
+  const L=leagueState();
+  if(year - L.born < LEAGUE_CUP_MIN_GAP) return false;
+  if((L.heat||0) < LEAGUE_CUP_HEAT) return false;
+  return (year%2===0);        // it takes the Nations Cup's week, so it lands in Nations Cup years
+}
+// it replaces the Nations Cup outright, so the normal team event is suppressed those years
+function leagueCupOnSchedule(year){ return leagueOn() && leagueCupDue(year); }
+function leagueCupEvt(){ return {name:LEAGUE_CUP_NAME, type:'teamcup', wk:38, teamcup:true, teamType:'league',
+  leagueCup:true, major:false, big:false, purse:0, noCut:true}; }
+// which side you are on, or null if you are nobody's problem
+function leagueSide(){ return leagueJoined()?'B':'A'; }
+/* Team selection by ALLEGIANCE instead of nationality. Side A is the tour: its best 12 who did not
+   leave. Side B is the Frontier: its best 12 who did. You get a captain's pick on the bubble exactly
+   as you would for a national team.                                                                */
+function leagueCupPool(side, me){
+  const w=ensureWorld(), L=worldRanking(), set=leagueDefectorSet()||new Set();
+  const want = side==='B' ? (n=>set.has(n)) : (n=>!set.has(n));
+  const mine=leagueSide(), pool=[];
+  for(const x of L){
+    if(x.you){ if(mine===side) pool.push(Object.assign({}, me, {you:true, eo:Math.round(me.skill), nat:playerNation()})); continue; }
+    if(!want(x.name)) continue;
+    const g=w.active.find(a=>a.name===x.name); if(!g) continue;
+    pool.push({name:g.name, eo:Math.round(g.lov), nat:g.nation||'INT', you:false});
+  }
+  return pool;
+}
+function selectLeagueTeam(side, me){
+  const pool=leagueCupPool(side, me), meIdx=pool.findIndex(p=>p.you);
+  const team=pool.slice(0,12).map(p=>Object.assign({}, p));
+  if(meIdx>=12 && meIdx<CUP_BUBBLE) team[11]=Object.assign({}, pool[meIdx], {pick:true});
+  return {team, pool, meIdx, selected:team.some(p=>p.you)};
+}
+// banked at the end of a Unity Cup week: who won, and what it does to the feud
+function leagueCupRecord(res){
+  const L=leagueState(), year=S.year||1;
+  L.cupYear=year;
+  L.cups.push({year, aPts:res.ptA, bPts:res.ptB, winner:res.winner, mine:res.mineWon});
+  leagueHeat(res.mineWon?6:10);   // losing it stings, and stokes it harder
+  track('league_cup',{year, winner:res.winner, mine:!!res.mineWon});
+}
+
 /* ==================== CAREER LEGACY ====================
    The complaint this answers: a career ACCUMULATES numbers but the numbers never DO anything. You could
    win all four majors in one year and the game would hand you an achievement tick and carry on exactly
@@ -15748,13 +16080,16 @@ function applyDilemmaOutcome(o, ctx){ const eff=[];
   if(o.fol){ gainFollowers(o.fol, o.fol<0?0:1500); eff.push({t:'fol',v:o.fol}); }   // CS398: off-course decisions move fans a lot
   if(o.money){ if(S.season) S.season.sideMoney=(S.season.sideMoney||0)+o.money; eff.push({t:'money',v:o.money}); }
   if(o.head){ const s=careerStory(); s.feed.unshift({year:S.year||1,evt:'Career',text:typeof o.head==='function'?o.head(ctx):o.head}); if(s.feed.length>60) s.feed.length=60; }   // CS334: pass ctx so named heads work (was a latent crash)
-  if(o.arc){ seedArc(o.arc.fid, o.arc.in, typeof o.arcData==='function'?o.arcData(ctx):o.arcData); }   // CS326: this decision SEEDS a follow-up story beat later (CS334: dynamic data, e.g. the mentee's name)
+  if(o.arc){ seedArc(o.arc.fid, o.arc.in, typeof o.arcData==='function'?o.arcData(ctx):o.arcData); }
+  // a decision that actually MOVES you across the divide (taking the tour's reinstatement deal). The
+  // schedule is rebuilt at the next season boundary, so this lands cleanly mid-season.
+  if(o.act==='return'){ try{ leagueReturn(S.year||1); seedArc('arc_lg_regret',[6,12],{}); }catch(e){} }   // CS326: this decision SEEDS a follow-up story beat later (CS334: dynamic data, e.g. the mentee's name)
   return eff; }
 // ---- CS326: multi-part story ARCS - a decision seeds a follow-up dilemma that fires later, forming a chain ----
 function careerArcs(){ const c=(S.career=S.career||{}); if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
 function seedArc(fid, inRange, data){ const r=inRange||[3,6]; const wait=r[0]+Math.floor(Math.random()*(r[1]-r[0]+1)); careerArcs().push({fid, wait, data:data||{}}); }
 function tickArcs(){ const a=careerArcs(); for(const x of a) if(x.wait!=null) x.wait--; for(let i=a.length-1;i>=0;i--) if(a[i].wait<-30) a.splice(i,1); }   // prune arcs that could never fire
-function dueArc(ctx){ const arcs=careerArcs(); for(const x of arcs){ if(x.wait<=0){ const f=STORY_ARCS[x.fid]; if(!f) continue; let ok=true; if(f.when){ try{ ok=!!f.when(ctx, x.data); }catch(e){ ok=true; } } if(ok) return {arc:x, beat:f}; } } return null; }
+function dueArc(ctx){ const arcs=careerArcs(); for(const x of arcs){ if(x.wait<=0){ const f=arcDef(x.fid); if(!f) continue; let ok=true; if(f.when){ try{ ok=!!f.when(ctx, x.data); }catch(e){ ok=true; } } if(ok) return {arc:x, beat:f}; } } return null; }
 const STORY_ARCS={
  arc_invest:{ tag:'THE VENTURE', dom:'life',
    title:c=>'Your investment’s first numbers',
@@ -15808,6 +16143,11 @@ const STORY_ARCS={
     {t:'Use it as fuel', s:'Not done yet', outcomes:[
       {p:1.3, tone:'good', text:'The young gun lights a fire under you. Plenty left in the tank.', conf:5, skill:{clu:2}, ev:3, label:'Fired up'}]}]}
 };
+// The league's own arcs are declared far below this point, so they are resolved at CALL time rather than
+// merged into STORY_ARCS here - a const referenced above its declaration is a temporal dead zone throw
+// that takes the whole inline script down at load.
+function arcDef(fid){ if(STORY_ARCS[fid]) return STORY_ARCS[fid];
+  try{ return LEAGUE_ARCS[fid]||null; }catch(e){ return null; } }
 
 // ---- the catalog: {id, tag, when(ctx), title(ctx), body(ctx), choices:[{t,s,sub?,risk?,outcomes:[{p,tone,text,head,skill,ev,conf,fans,respect,fol,money}]}]} ----
 const DILEMMAS=[
@@ -16028,6 +16368,131 @@ const DILEMMAS=[
 ];
 
 // gather the pool of eligible dilemmas (career only) and pick one, respecting a per-season cap + no-repeat.
+/* ==== THE BREAKAWAY LEAGUE: the scenarios ====
+   The league is only a story if it keeps happening to you. These are the beats it generates on BOTH
+   sides of the divide - the press asking you to justify yourself, peers walking, sponsors taking a
+   view, the tour punishing defectors, the majors becoming a battleground, the fans deciding what they
+   think of you, and eventually the two sides being made to shake hands or fight in public. They ride
+   the existing storyline and dilemma engines, so they respect the season interruption budget and the
+   no-back-to-back rule exactly like every other beat.                                              */
+const LEAGUE_STORIES=[
+ // ---- ON TOUR: the loyalist ----
+ {id:'lg_why_stay', tag:'PRESS ROOM', pri:3, when:c=>c.lgOn&&!c.lgIn&&c.lgYrs>=1, title:c=>'“Why are you still here?”',
+  body:c=>`${esc(c.lgN)} players have taken ${esc(LEAGUE_NAME)}'s money. A reporter asks the question everyone in the room is thinking: what are you still doing on a tour that keeps losing its stars?`,
+  ch:[{t:'“This is where records are made”',s:'The purist',tr:'humble',conf:0.4,fol:0.03,r:'You make the case for history over money, and the room writes it down word for word.',head:'Backed the tour over the breakaway money'},
+      {t:'“Pay me and we’ll talk”',s:'Honest about it',tr:'maverick',conf:0.2,fol:0.05,risk:0.3,r:'Blunt, funny, and it lands. Everyone knows you meant it.',rBad:'It reads as a man with one foot out of the door, and the tour notices.',headBad:'Hinted the door was open to the breakaway'},
+      {t:'“Ask them, not me”',s:'Deflect the whole thing',tr:'gritty',conf:0.3,r:'You refuse to be the story. Professional, and a little cold.',head:'Refused to be the tour’s spokesman'}]},
+ {id:'lg_peer_gone', tag:'THE LOCKER ROOM', pri:3, when:c=>c.lgOn&&!c.lgIn&&c.lgN>=3&&!!c.lgStar, title:c=>`${esc(c.lgStar)} is gone`,
+  body:c=>`You find out the same way everyone else does: a press release. ${esc(c.lgStar)}, who you have played a hundred rounds with, has signed with ${esc(LEAGUE_NAME)}. Your phone will not stop.`,
+  ch:[{t:'Wish them well publicly',s:'No hard feelings',tr:'humble',conf:0.3,fol:0.03,r:'You take the high road and the locker room respects it.',head:c=>`Wished ${c.lgStar} well after the defection`},
+      {t:'Call it a betrayal',s:'Say what you think',tr:'brash',conf:0.2,fol:0.09,risk:0.35,r:'The quote runs everywhere. You are now the face of the resistance.',rBad:'It reads as bitter, and a friend stops taking your calls.',headBad:'Torched a former friend over the breakaway'},
+      {t:'Say nothing at all',s:'Not your business',tr:'confident',conf:0.4,r:'You keep your counsel. The story moves on without you in it.'}]},
+ {id:'lg_field_thin', tag:'THE TOUR', pri:2, when:c=>c.lgOn&&!c.lgIn&&c.lgN>=8, title:c=>'“Is this even the best field any more?”',
+  body:c=>`With ${esc(c.lgN)} names gone, a columnist writes that your wins are worth less than they used to be. It is put to you on camera.`,
+  ch:[{t:'“Beat who’s in front of you”',s:'The only answer',tr:'gritty',conf:0.5,r:'Unarguable, and you say it without blinking.',head:'Dismissed the weakened-field talk'},
+      {t:'Admit it stings',s:'Honest',tr:'humble',conf:0.1,fol:0.04,r:'The honesty disarms the room, and wins you a lot of goodwill.',head:'Admitted the defections have hurt the tour'},
+      {t:'“Bring them to the majors, then”',s:'Issue the challenge',tr:'brash',conf:0.3,fol:0.07,risk:0.3,r:'A direct callout. Four weeks a year, you get your answer.',rBad:'You get beaten by one of them within the month and the clip resurfaces.',headBad:'Challenged the breakaway and got a bloody nose'}]},
+ // ---- IN THE LEAGUE: the defector ----
+ {id:'lg_why_go', tag:'PRESS ROOM', pri:4, when:c=>c.lgIn&&c.lgYrs>=0, title:c=>'“Was it just the money?”',
+  body:c=>`Your first press conference as a ${esc(LEAGUE_SHORT)} player. The first question is the only question anyone has: was it about the money?`,
+  ch:[{t:'“It was the money. Obviously.”',s:'Refuse to insult them',tr:'maverick',conf:0.4,fol:0.08,r:'The honesty is so total that even your critics laugh. It plays.',head:'Owned the money question with total honesty'},
+      {t:'“It’s about growing the game”',s:'The company line',tr:'confident',conf:0.1,fol:-0.04,risk:0.4,r:'You deliver it smoothly enough that it almost lands.',rBad:'Nobody buys a word of it and the clip becomes a meme.',headBad:'Got mocked for the growing-the-game line'},
+      {t:'“I have a family”',s:'Make it personal',tr:'humble',conf:0.3,fol:0.03,r:'It stops the room dead. Hard to attack a man for that.',head:'Defended the move as a decision for his family'}]},
+ {id:'lg_locked_out', tag:'THE RANKING', pri:4, when:c=>c.lgIn&&c.lgYrs>=2, title:c=>'The ranking is eating you alive',
+  body:c=>`No ${esc(LEAGUE_SHORT)} event awards a single ranking point, and yours have been decaying for ${esc(c.lgYrs)} seasons. Keep sliding and the majors stop letting you in at all.`,
+  ch:[{t:'Chase every major you can',s:'Play your way back in',tr:'gritty',conf:0.5,r:'You build your whole year around four weeks. Everything else is exhibition.',head:'Built a season around the four majors'},
+      {t:'“The ranking is a broken system”',s:'Attack it publicly',tr:'brash',conf:0.2,fol:0.06,risk:0.35,r:'You lead the argument, and plenty of people agree with you.',rBad:'It reads as excuses from a man who cannot get in on merit.',headBad:'Blamed the ranking system for the lockout'},
+      {t:'Accept it, take the cheque',s:'This was the deal',tr:'maverick',conf:-0.2,fol:0.02,r:'You made your bed knowingly. There is a peace in that.'}]},
+ {id:'lg_fan_turn', tag:'THE GALLERY', pri:3, when:c=>c.lgIn&&c.lgYrs>=1&&c.respect<52, title:c=>'A hostile gallery',
+  body:c=>`You are back at a major and the crowd has opinions. Somebody shouts a number, your signing fee, on your backswing.`,
+  ch:[{t:'Tip the cap and smile',s:'Kill it with charm',tr:'fanFav',conf:0.4,fol:0.06,r:'You win half of them over by the turn. Hard to boo a man enjoying himself.',head:'Charmed a hostile gallery at a major'},
+      {t:'Stare them down',s:'Give it back',tr:'brash',conf:0.2,fol:0.05,risk:0.4,r:'You find another gear out of pure spite and play beautifully.',rBad:'You lose the plot with the crowd and then with your golf.',headBad:'Lost the crowd and the round at a major'},
+      {t:'Block it out entirely',s:'Nothing exists but the ball',tr:'clutch',conf:0.5,r:'You do not hear a thing all day. Ice.',head:'Ignored a hostile gallery all week'}]},
+ // ---- BOTH SIDES ----
+ {id:'lg_h2h_win', tag:'THE MAJORS', pri:4, when:c=>c.lgOn&&c.won&&c.major, title:c=>'You won it with everyone there',
+  body:c=>`Every player who matters, from both sides of the split, was in that field. You beat all of them. There is no asterisk anywhere near this one.`,
+  ch:[{t:'“No excuses left”',s:'Say it plainly',tr:'confident',conf:0.6,fol:0.09,r:'The one week nobody can argue about, and it is yours.',head:'Won a major with both leagues in the field'},
+      {t:'Credit the whole field',s:'Above the fight',tr:'humble',conf:0.4,fol:0.05,r:'You refuse to make it about the war. It elevates you.',head:'Won a major and refused to gloat'},
+      {t:'Aim it at the other side',s:'Twist the knife',tr:'brash',conf:0.3,fol:0.11,risk:0.35,r:'The clip runs on every broadcast for a week.',rBad:'It sours a golden moment and half the room turns on you.',headBad:'Soured a major win with a cheap shot'}]},
+ {id:'lg_peace_talks', tag:'THE BOARDROOM', pri:3, when:c=>c.lgOn&&c.lgYrs>=4&&c.lgHeat>=45, title:c=>'They are talking',
+  body:c=>`Lawyers for both sides have been seen in the same building. Nobody will confirm anything. A reporter asks whether you would welcome peace.`,
+  ch:[{t:'“Everyone wants this over”',s:'Back the deal',tr:'humble',conf:0.3,fol:0.04,r:'You sound like the adult in a room full of children.',head:'Publicly backed a peace deal'},
+      {t:'“Not on their terms”',s:'Hold the line',tr:'gritty',conf:0.4,r:'You are not interested in a settlement that pretends none of it happened.',head:'Refused to accept peace on the other side’s terms'},
+      {t:'“Nobody asked the players”',s:'Say the quiet part',tr:'maverick',conf:0.2,fol:0.07,risk:0.3,r:'You speak for every player who has been talked about rather than to.',rBad:'Both sides brief against you, and you end up with no friends at all.',headBad:'Alienated both sides during the peace talks'}]},
+ {id:'lg_cup_born', tag:'THE UNITY CUP', pri:4, when:c=>c.lgCup, title:c=>`They built a cup out of the argument`,
+  body:c=>`They have torn up the Nations Cup and replaced it with this: twelve who stayed against twelve who left, one week, no nations involved. Everything both sides have said about each other for years, settled on grass.`,
+  ch:[{t:'“Finally. Let’s settle it”',s:'You want it',tr:'confident',conf:0.5,fol:0.07,r:'You have wanted this fixture since the day the split happened.',head:c=>`Called for the ${LEAGUE_CUP_NAME} to settle the split`},
+      {t:'“It’s a circus”',s:'Refuse the framing',tr:'humble',conf:0.2,r:'You say golf did not need a war to be interesting. Plenty agree.',head:'Called the whole feud a circus'},
+      {t:'Promise to end careers',s:'Full heel',tr:'brash',conf:0.3,fol:0.10,risk:0.4,r:'You give the week exactly the pantomime villain it needed.',rBad:'You cannot back it up and the quote follows you all week.',headBad:'Talked big before the Unity Cup and shrank'}]},
+];
+const LEAGUE_DILEMMAS=[
+ // the offer itself is a full set piece (leagueOfferPopup), these are everything around it
+ {id:'dil_lg_recruit', tag:'THE RECRUITER', dom:'league', when:c=>c.lgOn&&c.lgIn&&c.lgYrs>=1&&!!c.proName,
+  title:c=>'They want you to make the call',
+  body:c=>`${esc(LEAGUE_NAME)} wants you to help sign ${esc(c.proName)}. One phone call from a peer, they say, is worth more than any offer letter. There is a finder's fee attached.`,
+  choices:[
+   {t:'Make the call', s:'Take the fee', sub:'Your name on someone else’s decision', risk:true, outcomes:[
+     {p:1.6, tone:'good', text:`${'They sign within a month. The league is delighted, and so is your accountant.'}`, money:900000, fans:4, respect:-4, fol:0.04, head:'Recruited a peer to the breakaway'},
+     {p:1, tone:'bad', text:'They say no, and then tell everyone you asked. The locker room hears about it within a day.', respect:-7, conf:-3, head:'Got caught recruiting for the breakaway'}]},
+   {t:'Refuse to recruit', s:'Play, don’t sell', outcomes:[
+     {p:2, tone:'good', text:'You tell them you signed to play golf, not to work sales. They drop it.', respect:5, conf:2}]}]},
+ {id:'dil_lg_sponsor', tag:'YOUR SPONSOR', dom:'league', when:c=>c.lgOn&&c.lgIn&&c.lgYrs>=0,
+  title:c=>'Your sponsor is uneasy',
+  body:c=>`One of your brands is getting letters about the move. They offer you a choice: a quiet season with no public comment, or you keep talking and they will "reassess".`,
+  choices:[
+   {t:'Go quiet for a season', s:'Protect the deal', outcomes:[
+     {p:2, tone:'good', text:'You say nothing all year. The money keeps arriving and the noise dies down.', money:1500000, fol:-0.05, conf:1}]},
+   {t:'Keep speaking freely', s:'They can walk', sub:'They might', risk:true, outcomes:[
+     {p:1.2, tone:'good', text:'They blink. Your honesty tests better than their lawyers feared.', fans:6, respect:3, fol:0.07, conf:3, head:'Faced down a sponsor over the breakaway'},
+     {p:1, tone:'bad', text:'They walk, publicly, and it costs you real money.', money:-2200000, fans:-3, conf:-3, head:'Lost a sponsor over the breakaway'}]}]},
+ {id:'dil_lg_ban', tag:'THE TOUR', dom:'league', when:c=>c.lgOn&&c.lgIn&&c.lgYrs>=1,
+  title:c=>'The tour bans you from the playoffs',
+  body:c=>`A letter arrives. As a ${esc(LEAGUE_SHORT)} player you are barred from the Tour Cup playoffs and every tour committee. Some of your fellow defectors want to sue.`,
+  choices:[
+   {t:'Join the lawsuit', s:'Fight it in court', sub:'Long, loud and public', risk:true, outcomes:[
+     {p:1.2, tone:'mixed', text:'It grinds on for a year and settles quietly. You won a point nobody remembers.', fol:0.05, respect:-3},
+     {p:1.1, tone:'bad', text:'The discovery process is brutal and every private message you sent is printed.', fans:-6, respect:-6, conf:-4, head:'Buried by a lawsuit against the tour'}]},
+   {t:'Let it go', s:'You made your choice', outcomes:[
+     {p:2, tone:'good', text:'You take the letter, file it, and go back to work. Nobody can call you a hypocrite.', respect:6, conf:2, head:'Accepted the tour’s ban without complaint'}]}]},
+ {id:'dil_lg_return', tag:'A WAY BACK', dom:'league', when:c=>c.lgOn&&c.lgIn&&c.lgYrs>=3,
+  title:c=>'The tour offers a way back',
+  body:c=>`A private call from the tour: serve a suspension, forfeit a season of ranking points, and your card is restored. Your ${esc(LEAGUE_SHORT)} contract has been paid either way.`,
+  choices:[
+   {t:'Take the deal and go home', s:'Back to the tour', sub:'Costs you a season of ranking', outcomes:[
+     {p:2, tone:'good', text:'You take the punishment on the chin and walk back through the door you slammed.',
+      conf:2, respect:8, fol:0.05, head:'Came home to the tour and served the suspension', act:'return'}]},
+   {t:'Stay where the money is', s:'No apologies', outcomes:[
+     {p:2, tone:'good', text:'You tell them you are not sorry, and you are not coming back. That is that.', fans:4, respect:-4, conf:3, head:'Turned down the tour’s reinstatement offer'}]}]},
+ {id:'dil_lg_exhibition', tag:'THE EXHIBITION', dom:'league', when:c=>c.lgOn&&c.lgHeat>=35&&!!c.starName,
+  title:c=>'A prime-time exhibition',
+  body:c=>`A network wants one night, one match: you against ${esc(c.starName)} from the other side of the split. Enormous money, enormous audience, and no way to hide if it goes badly.`,
+  choices:[
+   {t:'Take the match', s:'Prime time', sub:'Win or wear it', risk:true, outcomes:[
+     {p:c=>1+(c.ovr-80)/14, tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
+     {p:1.1, tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'}]},
+   {t:'Decline politely', s:'Not a circus act', outcomes:[
+     {p:2, tone:'good', text:'You tell them your golf is not a wrestling promotion. Respect where it counts.', respect:5}]}]},
+ {id:'dil_lg_boycott', tag:'THE PRESS', dom:'league', when:c=>c.lgOn&&c.lgHeat>=45,
+  title:c=>'A press boycott',
+  body:c=>`Players on your side of the split are refusing to answer any question about the other league. You are asked to hold the line.`,
+  choices:[
+   {t:'Hold the line', s:'Say nothing', outcomes:[
+     {p:2, tone:'mixed', text:'You give a week of non-answers. Solidarity intact, and the press hates every minute of it.', respect:4, fol:-0.03}]},
+   {t:'Break it and talk', s:'Somebody has to', risk:true, outcomes:[
+     {p:1.4, tone:'good', text:'You speak honestly, at length, and it is the only interview anyone reads all week.', fans:8, fol:0.11, conf:3, head:'Broke a press boycott to speak honestly'},
+     {p:1, tone:'bad', text:'Your own side turns on you for breaking ranks.', respect:-7, conf:-3, head:'Broke ranks and lost the locker room'}]}]},
+];
+// the arcs a league decision can seed later
+const LEAGUE_ARCS={
+ arc_lg_regret:{ tag:'SECOND THOUGHTS', dom:'league',
+   title:c=>'Was it worth it?',
+   body:c=>`Two seasons on from the decision, a quiet question in a quiet room: knowing everything you know now, would you do it again?`,
+   choices:[
+    {t:'“Every single time”', s:'No regrets', outcomes:[
+      {p:2, tone:'good', text:'You do not flinch. Whatever else it was, it was YOUR decision.', conf:5, respect:2}]},
+    {t:'Admit the doubt', s:'Be honest', outcomes:[
+      {p:2, tone:'mixed', text:'You admit you think about it. It is the most human you have ever been in public.', fans:7, fol:0.08, conf:-2, head:'Admitted doubts about the breakaway'}]}]},
+};
 function maybeDilemma(ce){
   if(!careerFxOn() || !ce || ce.done) return null;
   const story=careerStory(); story.seenDil=story.seenDil||{};
@@ -16037,7 +16502,7 @@ function maybeDilemma(ce){
   const arc=dueArc(ctx);
   if(arc){ ctx.arc=arc.arc.data; return {beat:arc.beat, ctx, arcRef:arc.arc, isArc:true}; }
   if((story.dilSeason||0) >= DILEMMA_PER_SEASON) return null;
-  let pool=DILEMMAS.filter(d=>{ try{ return d.when(ctx) && (story.seenDil[d.id]==null || (S.evtIndex-story.seenDil[d.id])>DILEMMA_REPEAT_GAP); }catch(e){ return false; } });
+  let pool=DILEMMAS.concat(LEAGUE_DILEMMAS).filter(d=>{ try{ return d.when(ctx) && (story.seenDil[d.id]==null || (S.evtIndex-story.seenDil[d.id])>DILEMMA_REPEAT_GAP); }catch(e){ return false; } });
   // avoid repeating the same domain back-to-back within a season for variety
   if(story._lastDom){ const diff=pool.filter(d=>d.dom!==story._lastDom); if(diff.length) pool=diff; }
   if(!pool.length) return null;
@@ -16068,10 +16533,10 @@ function maybeStoryline(ce){
     if((story.seasonCount||0) >= STORY_PER_SEASON) return null;
   }
   const ctx=storyCtx(ce);
-  let pool=STORYLINES.filter(b=>{ try{ return b.when(ctx); }catch(e){ return false; } })
+  let pool=STORYLINES.concat(LEAGUE_STORIES).filter(b=>{ try{ return b.when(ctx); }catch(e){ return false; } })
     .filter(b=>{ const l=story.seenEvt[b.id]; return l==null || (S.evtIndex-l)>=8; });
   if(!pool.length && guarantee)   // last resort: allow an always-on beat (fan/home/gear), ignoring cooldown
-    pool=STORYLINES.filter(b=>{ try{ return b.when(ctx) && (b.pri||0)===0; }catch(e){ return false; } });
+    pool=STORYLINES.concat(LEAGUE_STORIES).filter(b=>{ try{ return b.when(ctx) && (b.pri||0)===0; }catch(e){ return false; } });
   if(!pool.length) return null;
   if(!guarantee && Math.random()>0.6) return null;   // ~occasional for the 2nd/3rd of the season
   // CS275: prefer the highest-priority (most situational) applicable beat, random among ties, so a
@@ -17783,7 +18248,7 @@ function finalizeEvent(){
   assignTies(made,solo);
   missed.forEach(o=>{o.pos='CUT';o.tied=false;o.pct=0;});
   const order=made.concat(missed);
-  const basePts=evt.major?750:evt.big?600:(evt.oppo?360:500);
+  const basePts=evt.league?LEAGUE_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500));
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
   order.forEach(o=>{const t=S.season.totals[o.p.name]; if(!t) return;   // Olympic field can include players outside the 120-man season totals
@@ -17846,7 +18311,26 @@ function finalizeEvent(){
     // run for it either - but the FEATS still count, you did win those majors.
     if(!S.season.skipped){ try{ tickBriefs(); }catch(e){} }
     try{ checkCareerLegacy(); }catch(e){}
+    try{ const h=leagueMajorH2H(evt, order); if(h) S.season.lgLast=h; }catch(e){}
   }
+}
+/* THE BREAKAWAY LEAGUE: a major is the only week the two sides meet, so it is the week the feud is
+   actually settled. Finishing ahead of the other side's best stokes it; being beaten by them stokes it
+   harder, because that is the result that gets written about all week. */
+function leagueMajorH2H(evt, order){
+  if(!leagueExists() || !evt || !evt.major) return null;
+  const me=order.find(o=>o.p&&o.p.you); if(!me || typeof me.pos!=='number') return null;
+  // the players on the OTHER side of the divide
+  const opp=order.filter(o=>o.p && !o.p.you && typeof o.pos==='number' && (leagueJoined() ? !isDefector(o.p.name) : isDefector(o.p.name)));
+  if(!opp.length) return null;
+  const best=opp.reduce((a,b)=>(b.pos<a.pos?b:a));
+  const ahead=me.pos<best.pos;
+  if(S.season){ S.season.lgH2H=S.season.lgH2H||{w:0,l:0}; if(ahead) S.season.lgH2H.w++; else S.season.lgH2H.l++; }
+  const L=leagueState();
+  L.h2hW=(L.h2hW||0)+(ahead?1:0); L.h2hL=(L.h2hL||0)+(ahead?0:1);
+  leagueHeat(ahead?3:5);
+  if(me.pos===1) leagueHeat(4);
+  return {ahead, best:best.p.name, bestPos:best.pos, myPos:me.pos};
 }
 function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (tie-aware)
   const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
@@ -18199,6 +18683,9 @@ function finishSeasonHeadless(){
 const CUP_THEME={
   ryder:      { bg:'linear-gradient(180deg,#132f52,#0a1d33)', border:'#e8c15a', accent:'#f2d27c', vs:'USA vs Europe',        emoji:'🇺🇸🇪🇺', aCol:'#a33d3d', bCol:'#2b4c9b' },
   presidents: { bg:'linear-gradient(180deg,#26231d,#141311)', border:'#c8ccd4', accent:'#e8ebf0', vs:'USA vs International', emoji:'🇺🇸🌍',  aCol:'#3d6fb5', bCol:'#57492a' },
+  // THE BREAKAWAY LEAGUE: the cup the feud made. Tour green against Frontier crimson, no flags on either
+  // side, because for one week nationality is not what anybody is playing for.
+  league:     { bg:'linear-gradient(180deg,#12261c,#0b1712)', border:'#e0564a', accent:'#ff8f7f', vs:'The Tour vs The Frontier', emoji:'⛳⚔', aCol:'#0f9a72', bCol:'#c2453b' },
 };
 function cupTheme(type){ return CUP_THEME[type]||CUP_THEME.ryder; }
 function ptTxt(n){ const w=Math.floor(n), h=(n-w)>=0.5; return (w||h)?((w?w:'')+(h?'½':'')):'0'; }
@@ -18278,7 +18765,7 @@ function scrSelectionScreen(evt){
 }
 function cupRosterCol(roster, code, name, mine){
   return `<div style="flex:1;min-width:0;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 7px${mine?';box-shadow:inset 0 0 0 2px var(--gold)':''}">
-    <div style="font:800 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:#dce8ff;text-align:center;margin-bottom:7px">${natFlag(code)} ${esc(name)}</div>
+    <div style="font:800 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:#dce8ff;text-align:center;margin-bottom:7px">${FLAG_SVG[code]?natFlag(code)+' ':''}${esc(name)}</div>
     ${roster.map((p,i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3px 2px;font-size:12px;${p.you?'color:var(--gold);font-weight:800':'color:#cfe0ee'}">
       <span class="small muted" style="width:13px;flex:0 0 auto;text-align:right">${i+1}</span>${natFlag(p.nat)}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nm)}${p.pick?' <span class="small" style="color:#7ec8ff">(pick)</span>':''}${p.you?' ★':''}</span></div>`).join('')}
   </div>`;
@@ -18353,7 +18840,7 @@ function captainPairsMap(){
 function scrCaptainPairs(day){
   clearTimeout(seasonTimer); RT.classList.add('major-screen');
   const team=(S.cupPickTeam||[]).slice().sort((a,b)=>b.eo-a.eo);
-  const th=cupTheme(teamEventForYear(S.year||1).type);
+  const th=cupTheme(leagueCupOnSchedule(S.year||1)?'league':teamEventForYear(S.year||1).type);
   const bd=(S.cupPairBuild && S.cupPairBuild.day===day) ? S.cupPairBuild : (S.cupPairBuild={day, pending:null, pairs:[]});
   const natOf=n=>{ const p=team.find(x=>teamNm(x)===n); return p?(p.nation||p.nat):''; };
   const inPair=n=>bd.pairs.findIndex(pr=>pr.indexOf(n)>=0);
@@ -18479,7 +18966,9 @@ function cupDispatchNode(T, day, ra, rb){
 function cupIntroStory(T){
   const mineA=T.mySide==='A'; const myName=cupShortName(cupSideName(T,T.mySide||'A')); const foeName=cupShortName(cupSideName(T, mineA?'B':'A'));
   const rival=cupRivalName(T);
-  let s=`Three days, five sessions, 28 points, and a nation's pride on the line. ${myName} against ${foeName}.`;
+  const lg=(T.type==='league');
+  let s=lg ? `Three days, five sessions, 28 points, and every word both sides have said about each other on the line. ${myName} against ${foeName}.`
+           : `Three days, five sessions, 28 points, and a nation's pride on the line. ${myName} against ${foeName}.`;
   if(rival) s+=` And there is needle, your nemesis ${esc(rival)} lines up for ${foeName}.`;
   return s;
 }
@@ -18522,7 +19011,10 @@ function scrTeamCup(){
   if(S.cupPairPrompt && S.curTeam){ scrCaptainPairs(S.cupPairPrompt); return; }
   // PHASE 3, sim + watch (using your captain team + your chosen pairings if you took the armband)
   if(!S.curTeam || S.curTeam._idx!==S.evtIndex){
-    S.curTeam = (S.cupChoice==='captain' && S.cupPickTeam) ? simTeamEvent({captainSide:myCupSide(), captainTeam:S.cupPickTeam, captainPairs:captainPairsMap()}) : simTeamEvent();
+    const _lgCup=leagueCupOnSchedule(S.year||1);
+    S.curTeam = (S.cupChoice==='captain' && S.cupPickTeam)
+      ? simTeamEvent({captainSide:myCupSide(), captainTeam:S.cupPickTeam, captainPairs:captainPairsMap(), leagueCup:_lgCup})
+      : simTeamEvent({leagueCup:_lgCup});
     S.curTeam._idx=S.evtIndex; S.teamMatchN=0;
     if(S.cupChoice==='captain') S.curTeam._introSeen=true;   // the pick screen was your intro
   }
@@ -18533,16 +19025,20 @@ function scrTeamCup(){
   if(!T._introSeen){
     const mineA=T.mySide==='A', myName=(mineA?T.nameA:T.nameB), usaShort=n=>n.replace('United States','USA');
     const th=cupTheme(T.type);
+    // the league cup is side-vs-side, not nation-vs-nation, so the selection copy has to say so
+    const lgCup=(T.type==='league'), sideNm=usaShort(myName);
+    const madeIt=lgCup?`You're playing for ${esc(sideNm)}`:`🎉 You've made Team ${esc(sideNm)}!`;
+    const missedIt=lgCup?`You just missed the ${esc(sideNm)} twelve`:`So close, you just missed Team ${esc(sideNm)}`;
     add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${th.accent};border-color:${th.border};background:${th.bg}">${th.emoji} ${esc(T.short)} · ${th.vs} · Team Selection</span></div>`));
     if(T.playerSelected){
       const meRow=(mineA?T.rosterA:T.rosterB).find(p=>p.you);
       add($(`<div class="center" style="margin:12px 0 6px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid var(--gold);border-radius:14px;padding:14px 22px;max-width:92vw">
-        <div style="font:800 22px/1.1 var(--body);color:var(--gold)">🎉 You've made Team ${esc(usaShort(myName))}!</div>
-        <div class="small muted" style="margin-top:5px">${meRow&&meRow.pick?"A captain's pick":'Qualified on merit'}${T.meRank?` · ranked #${T.meRank} in your country`:''}. Go and win it for your nation.</div></div></div>`));
+        <div style="font:800 22px/1.1 var(--body);color:var(--gold)">${madeIt}</div>
+        <div class="small muted" style="margin-top:5px">${meRow&&meRow.pick?"A captain's pick":'Qualified on merit'}${T.meRank?` · ranked #${T.meRank} ${lgCup?'on your side of the split':'in your country'}`:''}. ${lgCup?'Go and settle it.':'Go and win it for your nation.'}</div></div></div>`));
     } else {
       add($(`<div class="center" style="margin:12px 0 6px"><div style="display:inline-block;background:#0a2740;border:1px solid #e9a23b;border-radius:14px;padding:13px 20px;max-width:92vw">
-        <div style="font:800 18px/1.15 var(--body);color:var(--oncard)">So close, you just missed Team ${esc(usaShort(myName))}</div>
-        <div class="small muted" style="margin-top:5px">${T.meRank?`You finished #${T.meRank} in your country and the top 12 make the team. `:''}Keep climbing the World Ranking, your nation will be calling soon. Cheer them on this week.</div></div></div>`));
+        <div style="font:800 18px/1.15 var(--body);color:var(--oncard)">${missedIt}</div>
+        <div class="small muted" style="margin-top:5px">${T.meRank?`You finished #${T.meRank} ${lgCup?'on your side':'in your country'} and the top 12 make the team. `:''}Keep climbing the World Ranking, ${lgCup?'your side will need you next time':'your nation will be calling soon'}. Cheer them on this week.</div></div></div>`));
     }
     // CS445: pre-cup storyline / hype (+ rivalry needle if your nemesis is on the other side)
     add($(`<p class="small center" style="max-width:520px;margin:10px auto 2px;color:#bcd0c4;line-height:1.45">${emojifyIcons(cupIntroStory(T))}</p>`));
@@ -18553,7 +19049,8 @@ function scrTeamCup(){
     // if you're not on the team (and not captaining) you aren't involved, jump straight to the result
     const involved = T.playerSelected || T.captain;
     if(involved){
-      const b=$(`<button class="btn goldfill">Watch the ${esc(T.short)} ▸</button>`); b.onclick=()=>{ T._introSeen=true; render(); };
+      // some cup names already carry their article ("The Unity Cup"), so do not print "the the"
+      const b=$(`<button class="btn goldfill">Watch ${/^the /i.test(String(T.short))?'':'the '}${esc(T.short)} ▸</button>`); b.onclick=()=>{ T._introSeen=true; render(); };
       ctrl.appendChild(b);
     } else {
       const total=T.sessions.reduce((n,s)=>n+s.matches.length,0);
@@ -18716,6 +19213,8 @@ function finalizeTeamCup(){
     }
     saveCareerLifetime(cc);
   }
+  // THE BREAKAWAY LEAGUE: a Unity Cup week is banked against the feud, not the nations record
+  if(T.type==='league'){ try{ leagueCupRecord(T); }catch(e){} }
   track('teamcup_done',{type:T.type, won:T.playerWon, captain:T.captain, pts:T.playerRec.pts});
 }
 // live "Race to the Cup" strip: your points rank vs the next cut line (top 70 → 50 → 30 → the Cup)
@@ -18871,6 +19370,144 @@ function scrTourNews(){
   add(f);
 }
 
+
+/* ================= THE BREAKAWAY LEAGUE: the season-boundary set pieces =================
+   Two screens. The news (it has formed / it has taken more of your peers this winter) and the offer
+   (they want YOU, here is the number). Both land before week one, so neither spends the in-season
+   interruption budget. */
+function scrLeagueNews(){
+  const n=S.pendingLeagueNews||{}, L=leagueState();
+  RT.classList.add('major-screen');
+  const red='#ff6b5e';
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ Breaking · Year ${S.year||1}</span></div>`));
+  const names=(n.signed||[]).slice(0,5);
+  if(n.kind==='formed'){
+    add($(`<div class="tnews" style="border-color:rgba(224,86,74,.45)">
+      <div class="tn-kick" style="color:${red}">A rival league launches</div>
+      <h2 class="tn-h">${esc(LEAGUE_NAME)}</h2>
+      <p class="tn-p"><b>Golf has split in two.</b> A new league has launched with money the tour cannot answer: guaranteed contracts, no cuts, twelve weeks a year and a purse per event that dwarfs a signature. ${names.length?`It has already signed <b>${esc(names.join(', '))}</b>${(n.signed.length>names.length)?` and ${n.signed.length-names.length} more`:''}.`:''}</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">Season</span><span class="tn-v">${LEAGUE_EVENTS} events · no cut</span></div>
+        <div><span class="tn-l">Purse</span><span class="tn-v">${fmt(LEAGUE_PURSE*purseMult(S.year||1))} each</span></div>
+        <div><span class="tn-l">Ranking points</span><span class="tn-v" style="color:${red}">None</span></div>
+        <div><span class="tn-l">Signed so far</span><span class="tn-v">${leagueCount()} players</span></div>
+      </div>
+      <p class="tn-p" style="margin-bottom:0"><b>What it means for you:</b> the players who sign are gone from your fields. You will only see them at the majors now, and only for as long as their world ranking lets them in.</p>
+    </div>`));
+  } else {
+    add($(`<div class="tnews" style="border-color:rgba(224,86,74,.45)">
+      <div class="tn-kick" style="color:${red}">The exodus continues</div>
+      <h2 class="tn-h">${esc(n.signed.length)} more sign with ${esc(LEAGUE_SHORT)}</h2>
+      <p class="tn-p">Another winter, another raid. <b>${esc(names.join(', '))}</b>${(n.signed.length>names.length)?` and ${n.signed.length-names.length} others`:''} have signed with ${esc(LEAGUE_NAME)}.</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">Gone this winter</span><span class="tn-v">${n.signed.length}</span></div>
+        <div><span class="tn-l">Now in the league</span><span class="tn-v">${leagueCount()} players</span></div>
+        <div><span class="tn-l">The feud</span><span class="tn-v">${leagueHeatLabel()}</span></div>
+      </div>
+      <p class="tn-p" style="margin-bottom:0">${leagueJoined()?'Your league gets stronger every winter.':'Your fields get thinner every winter. The majors are where you settle it.'}</p>
+    </div>`));
+  }
+  const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">Start the season ▸</button>`);
+  b.onclick=()=>{ S.pendingLeagueNews=null; track('league_news_ack',{kind:n.kind, year:S.year||1}); render(); };
+  add(b);
+}
+
+/* ---- the surfaces: the split has to be visible, not just true ---- */
+function leagueStatusNode(){
+  if(!leagueExists()) return null;
+  const L=leagueState(), joined=leagueJoined(), red='#ff6b5e', teal='#4fd8b6';
+  const col=joined?red:teal;
+  const h2h=(L.h2hW||0)+(L.h2hL||0);
+  const cups=L.cups.length?`${L.cups.filter(c=>c.mine).length}-${L.cups.filter(c=>!c.mine).length} in the ${esc(LEAGUE_CUP_NAME)}`:'';
+  const w=$(`<div class="scout" style="margin-top:12px;text-align:left;border-color:${col}66">
+    <div class="tn-kick" style="text-align:center;color:${col}">${joined?esc(LEAGUE_NAME):'The split'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px">
+      <span class="tag" style="color:${col};border-color:${col}66">${joined?'You play the '+esc(LEAGUE_SHORT):'You stayed on '+esc(TOUR_SIDE_NAME.toLowerCase())}</span>
+      <span class="tag">${leagueCount()} players gone</span>
+      <span class="tag">Feud: ${esc(leagueHeatLabel())}</span>
+      ${h2h?`<span class="tag">Majors head to head ${L.h2hW||0}-${L.h2hL||0}</span>`:''}
+      ${cups?`<span class="tag" style="color:${col};border-color:${col}66">${cups}</span>`:''}
+    </div>
+    <p class="small" style="text-align:center;color:var(--muted);margin:8px 0 0">${joined
+      ? 'No ranking points out here. The majors are the only weeks you meet the tour, and only while your ranking holds.'
+      : (L.left?'You came back. Whatever they say about you now, you play where the records are kept.'
+              : 'They keep buying names. You keep beating whoever turns up.')}</p>
+  </div>`);
+  return w;
+}
+// the career-end retrospective: which side of the biggest thing that happened to golf you ended up on
+function leagueRetroNode(){
+  if(!leagueOn()) return null;
+  const L=(function(){ try{ return leagueState(); }catch(e){ return null; } })();
+  if(!L || !L.born) return null;
+  const joined=L.joined>0, ever=joined||L.left>0;
+  const money=L.signed?fmtShort(L.signed):'';
+  const w=$(`<div class="scout" style="margin-top:14px;text-align:left">
+    <div class="tn-kick" style="text-align:center">The split</div>
+    <p class="small" style="text-align:center;color:var(--muted);margin:2px 0 10px">${esc(LEAGUE_NAME)} launched in Year ${L.born} and took ${leagueCount()} players with it.</p>
+    <div class="tnitem"><div class="tn-yr">Year ${L.born}</div><div><div class="tn-t">⚔ ${esc(LEAGUE_NAME)} launches</div><div class="tn-s">Golf splits in two.</div></div></div>
+    ${ever?`<div class="tnitem"><div class="tn-yr">Year ${L.joined||L.offers.filter(o=>o.accepted).map(o=>o.year)[0]||L.born}</div><div><div class="tn-t">You signed</div><div class="tn-s">${money?money+' guaranteed.':'You took the money.'}</div></div></div>`
+        :`<div class="tnitem"><div class="tn-yr">Year ${L.born}</div><div><div class="tn-t">You stayed</div><div class="tn-s">${L.offers.length?`Turned down ${L.offers.length} offer${L.offers.length>1?'s':''}, the biggest ${fmtShort(Math.max.apply(null,L.offers.map(o=>o.money)))}.`:'They never made you an offer you had to think about.'}</div></div></div>`}
+    ${L.left?`<div class="tnitem"><div class="tn-yr">Year ${L.left}</div><div><div class="tn-t">You came home</div><div class="tn-s">Served the suspension and played on.</div></div></div>`:''}
+    ${L.cups.length?`<div class="tnitem"><div class="tn-yr">${esc(LEAGUE_CUP_NAME)}</div><div><div class="tn-t">${L.cups.filter(c=>c.mine).length}-${L.cups.filter(c=>!c.mine).length}</div><div class="tn-s">The cup the argument built.</div></div></div>`:''}
+    ${((L.h2hW||0)+(L.h2hL||0))?`<div class="tnitem"><div class="tn-yr">Majors</div><div><div class="tn-t">${L.h2hW||0}-${L.h2hL||0} across the divide</div><div class="tn-s">The only weeks both sides showed up.</div></div></div>`:''}
+  </div>`);
+  return w;
+}
+
+function leagueHeatLabel(){
+  const h=(function(){ try{ return leagueState().heat||0; }catch(e){ return 0; } })();
+  return h>=75?'At war':h>=55?'Bitter':h>=35?'Tense':h>=15?'Simmering':'New';
+}
+/* The offer. A number, what it buys, and what it costs, stated plainly on both sides so the decision is
+   informed rather than a coin flip. This is the single biggest branch in the career, so it does not get
+   a toast, it gets the floor. */
+function scrLeagueOffer(){
+  const o=S.pendingLeagueOffer||{}, res=S.leagueOfferResult;
+  const red='#ff6b5e', L=leagueState();
+  RT.classList.add('major-screen');
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ ${esc(LEAGUE_SHORT)} · Year ${S.year||1}</span></div>`));
+  if(!res){
+    const nth=L.offers.length;
+    add($(`<div class="tnews" style="border-color:rgba(224,86,74,.45)">
+      <div class="tn-kick" style="color:${red}">${nth?'They are back, with more':'They want you'}</div>
+      <h2 class="tn-h">${fmtShort(o.money)} guaranteed</h2>
+      <p class="tn-p">${esc(LEAGUE_NAME)} has put a contract in front of you. <b>${fmtShort(o.money)}, guaranteed, whether you win a single event or not</b>, paid over ${LEAGUE_CONTRACT_YEARS} seasons. ${nth?'You have said no before. The number has gone up.':'No cuts, twelve weeks, and a private jet to every one of them.'}</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">You get</span><span class="tn-v" style="color:#35d6a0">${fmtShort(Math.round(o.money/LEAGUE_CONTRACT_YEARS))} a year for ${LEAGUE_CONTRACT_YEARS}</span></div>
+        <div><span class="tn-l">Season</span><span class="tn-v">${LEAGUE_EVENTS} events · no cut</span></div>
+        <div><span class="tn-l">You lose</span><span class="tn-v" style="color:${red}">Ranking points</span></div>
+        <div><span class="tn-l">Also gone</span><span class="tn-v" style="color:${red}">Playoffs · the Cup</span></div>
+      </div>
+      <p class="tn-p"><b>The catch:</b> no ${esc(LEAGUE_SHORT)} event awards a single world ranking point. Your ranking decays from the day you sign, and the majors only let you in while it holds up. Sign, and the four majors are the only weeks you see the tour again.</p>
+      <p class="tn-p" style="margin-bottom:0;color:var(--muted);font-size:13px">Your world ranking today: <b>#${(function(){ try{ return myWorldRank(); }catch(e){ return '-'; } })()}</b>. Exemptions you have already earned travel with you.</p>
+    </div>`));
+    const row=$(`<div style="display:flex;gap:10px;max-width:460px;margin:14px auto 0"></div>`);
+    const sign=$(`<button class="btn" style="flex:1;background:rgba(224,86,74,.15);color:#ff8f7f;border:1.6px solid #c2453b;font-weight:900">Take the money<div class="sub" style="color:#e8a79c">sign with ${esc(LEAGUE_SHORT)}</div></button>`);
+    sign.onclick=()=>{ leagueSign(S.year||1, o.money); S.leagueOfferResult={signed:true, money:o.money};
+      try{ S.schedule=leagueSchedule(S.year||1,S.careerSeed); S.evtIndex=0; }catch(e){}
+      try{ const r=leagueFieldRoster(LEAGUE_FIELD-1).map(g=>Object.assign({you:false},g)); const me=S.season.me;
+        S.season.field=r.concat([me]);
+        r.forEach(p=>{ if(!S.season.totals[p.name]) S.season.totals[p.name]={money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}; });
+      }catch(e){}
+      render(); };
+    const stay=$(`<button class="btn tealsel" style="flex:1">Turn it down<div class="sub">stay on ${esc(TOUR_SIDE_NAME.toLowerCase())}</div></button>`);
+    stay.onclick=()=>{ leagueDecline(S.year||1, o.money); S.leagueOfferResult={signed:false, money:o.money}; render(); };
+    row.appendChild(sign); row.appendChild(stay); add(row);
+  } else {
+    add($(`<div class="tnews" style="border-color:${res.signed?'rgba(224,86,74,.55)':'rgba(15,168,136,.55)'}">
+      <div class="tn-kick" style="color:${res.signed?red:'#4fd8b6'}">${res.signed?'You signed':'You said no'}</div>
+      <h2 class="tn-h">${res.signed?esc(LEAGUE_NAME):'You stay on '+esc(TOUR_SIDE_NAME.toLowerCase())}</h2>
+      <p class="tn-p">${res.signed
+        ? `${fmtShort(res.money)} is yours whatever happens next. From this week you play the ${esc(LEAGUE_SHORT)} schedule, and the majors are the only place you will meet the tour.`
+        : `You turned down ${fmtShort(res.money)}. Whatever else happens this season, you chose the tour, in public, and everyone knows it.`}</p>
+    </div>`));
+    const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">Start the season ▸</button>`);
+    b.onclick=()=>{ S.pendingLeagueOffer=null; S.leagueOfferResult=null; render(); };
+    add(b);
+  }
+}
+
 /* ================= THE TOUR: what this career's tour actually looks like =================
    The force multiplier for everything above. A structural change nobody can read is a silent number
    move, so this is the running record: the rules in force right now, then the history that got here. */
@@ -18909,6 +19546,17 @@ function overlayTourNews(app){
   const rej=(function(){ try{ return (tourState().rej||[]); }catch(e){ return []; } })();
   const h=tourHistory().map(e=>Object.assign({},e,{rej:false})).concat(rej.map(e=>Object.assign({},e,{rej:true})))
             .sort((a,b)=>a.year-b.year).reverse();
+  // THE BREAKAWAY LEAGUE: the biggest thing that happened to the tour belongs in the tour's own record
+  { const lg=(function(){ try{ return leagueExists()?leagueState():null; }catch(e){ return null; } })();
+    if(lg){ const joined=leagueJoined();
+      ov.appendChild($(`<h2 style="margin:22px 0 8px">The split</h2>`));
+      ov.appendChild($(`<div class="lgrule" style="border-color:rgba(224,86,74,.45)">
+        <div class="tr-i">⚔</div><div>
+          <div class="tr-n" style="color:#ff8f7f">${esc(LEAGUE_NAME)}</div>
+          <div class="tr-l">${leagueCount()} players gone · the feud is ${esc(leagueHeatLabel().toLowerCase())}${lg.cups.length?` · ${esc(LEAGUE_CUP_NAME)} ${lg.cups.filter(c=>c.mine).length}-${lg.cups.filter(c=>!c.mine).length}`:''}</div>
+          <div class="tr-y">${joined?`You signed in Year ${lg.joined}`:(lg.left?`You came back in Year ${lg.left}`:`You stayed · launched Year ${lg.born}`)}</div>
+        </div></div>`));
+    } }
   ov.appendChild($(`<h2 style="margin:22px 0 8px">Tour news</h2>`));
   if(!h.length){ ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted)">Nothing has happened yet. Keep playing.</p>`)); }
   else ov.appendChild($(`<div>${h.map(e=>{
@@ -19097,6 +19745,8 @@ function scrSeason(){
   // TOUR NEWS: the league announcing a structural change (the Match Play Championship) gets its own
   // one-time card at the top of the season it lands. Not part of the in-season interruption budget -
   // it fires before the first event, not mid-schedule.
+  if(!S.daily && S.pendingLeagueOffer){ scrLeagueOffer(); return; }
+  if(!S.daily && S.pendingLeagueNews){ scrLeagueNews(); return; }
   if(!S.daily && S.pendingTourVote){ scrCouncilVote(); return; }
   if(!S.daily && S.pendingTourNews){ scrTourNews(); return; }
   // The Match Play Championship: inside the top 32 -> the bracket screen. Miss it and beginEvent runs
@@ -20437,6 +21087,7 @@ function scrSummary(){
     // CS483: the detailed career stat sheet moved to the Analytics tab's Season|Career toggle (mobile fit).
     caC.appendChild($(`<div class="small muted center" style="margin-top:8px">Full career stats → the <b style="color:var(--gold)">Analytics</b> tab (switch it to Career).</div>`));
     { const tl=careerTimelineNode(c); if(tl) hiC.appendChild(tl); }   // CS265 career milestone timeline
+    { const lg=leagueStatusNode(); if(lg) hiC.appendChild(lg); }      // THE BREAKAWAY LEAGUE: where you stand in the split
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
@@ -27773,6 +28424,7 @@ function scrCareerEnd(){
   { const lg=legacyListHTML(); if(lg) add($(lg)); }    // what this career earned, permanently
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
   { const tn=tourRetroNode(); if(tn) add(tn); }        // TOUR ERAS: the tour you actually played in
+  { const lg=leagueRetroNode(); if(lg) add(lg); }      // THE BREAKAWAY LEAGUE: which side you ended up on
   { const sf=storyFeedHTML(); if(sf){ const w=$(`<div style="max-width:520px;margin:0 auto"></div>`); w.innerHTML=emojifyIcons(sf); add(w); } }   // CS225 Career Story
   // career record at the 4 major championships
   const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];

@@ -15224,3 +15224,81 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     `TOUR_CHANGES`, `COUNCIL_YEAR`/`COUNCIL_SWING` (when you get a seat and how much it is worth).
   - STILL UNBUILT from the plan, not requested for this pass: item 6 (Q-School / a feeder tour) and item 7
     (the breakaway league, described in the plan as "the single largest branch available to the career").
+
+- **THE BREAKAWAY LEAGUE: golf splits in two, and you pick a side (owner: "let's do the breakaway league
+  first and implement a ton of different scenarios and storylines that can arise with this league emerging.
+  You can join it, battle against it, and maybe the presidents cup gets replaced with a league vs league cup
+  eventually when the rivalry builds strong enough").** Plan item 7, described in the plan as "the single
+  largest branch available to the career". Somewhere between year 4 and 9 of every career, a rival league
+  launches with money the tour cannot answer, takes a chunk of the field with it, and makes you an offer.
+  Deliberately built on machinery that already exists rather than a parallel simulation: the living world
+  supplies the defectors, `worldRanking()` decides who is worth signing, `simTeamEvent` plays the cup, and
+  the storyline/dilemma engine carries the scenarios.
+  1. **It emerges, and no two careers get the same split.** `leagueBornYear(seed)` fixes the launch year
+     per save (4-9); `leagueSignWave` raids the world ranking with a rank-weighted pull (a marquee name up
+     top plus the squeezed middle of the field) in waves that start as a raid and taper into an institution;
+     and `leagueMaxDefect()` rolls a per-career ceiling of 12-30, so one save sees a raid that fizzles and
+     another sees a third of the tour walk. Measured over 60 careers: 46/60 distinct league shapes (a fixed
+     ceiling had produced an identical 26-player league in all 60 - the staleness this whole branch exists
+     to fix). A defector is filtered out of `worldField`, so your weekly field genuinely thins.
+  2. **The cost is elegant and self-enforcing.** League events award **zero** world ranking points
+     (`LEAGUE_PTS=0`). So a defector's ranking decays from the day they sign, and `leagueMajorOpen()`
+     progressively locks them out of the majors, which are the only weeks the two sides meet at all
+     (`leagueCrossoverField` folds the top 28 of the other side into every major). No punishment system was
+     needed: the ranking already does it.
+  3. **You can join it.** `leagueOfferDue` brings a contract when you are worth one, escalating each time
+     you say no. `scrLeagueOffer` is a full floor screen stating the number, what it buys and what it costs
+     on both sides. Signing rebuilds your schedule in place: `leagueSchedule` is 12 no-cut events at a
+     `LEAGUE_PURSE` that dwarfs a signature, plus whatever majors your ranking still admits you to. Coming
+     home is its own decision (`dil_lg_return` -> `leagueReturn`, which costs 45% of your ranking points).
+  4. **The Nations Cup is replaced by THE UNITY CUP** (the owner's headline ask). A heat meter tracks the
+     feud (`leagueHeatTick` for the passage of time and the size of the exodus, plus heat from every
+     head-to-head major week and from your own decisions); once it is hot enough and the split is a few
+     seasons old, `leagueCupOnSchedule` takes the Nations Cup's week outright and plays twelve who stayed
+     against twelve who left, through the existing `simTeamEvent`. Measured in real play: **12/12 careers
+     see a cup**, first landing around years 8-14 and then on the Nations Cup's own two-year cadence.
+  5. **A ton of scenarios.** 9 storylines, 6 dilemmas and an arc, split by which side you are on: the
+     loyalist gets "why are you still here", a peer defecting, the weakened-field question; the defector
+     gets "was it just the money", the ranking eating them alive, a hostile gallery; both sides get the
+     major they won with everyone there, the peace talks, and the cup being born. The dilemmas are the
+     decisions around the money: being asked to recruit a peer, a nervous sponsor, the tour's ban, the way
+     home, a prime-time exhibition against the other side, a press boycott. `storyCtx` gained the league
+     signals so every beat reads the live state.
+  6. **Surfaces**: a launch/raid news card at the season boundary, the offer floor, a league status block on
+     the summary's Career tab, a "the split" row in the tour news feed, and a retrospective at career end.
+  - **Balance was measured, and three real bugs came out of it.** (a) **The guarantee was never paid** -
+    `leagueSign` stored the number and displayed it, but no money ever reached the career, so six years in
+    the league paid LESS than staying. It is now paid in yearly instalments over `LEAGUE_CONTRACT_YEARS=4`
+    into `S.season.sideMoney` (net, not the prize-money leaderboard, since it is appearance money). (b) The
+    offers were absurd once actually paid ($51m for a journeyman, $733m for a legend); retuned to
+    $21m/$72m/$138m/$241m across journeyman/solid/star/legend. (c) The passive heat ceiling was 52 against a
+    cup threshold of 55, so the cup could never fire on time alone. With all three fixed, the trade is real:
+    same build, same year, six seasons - **$315m in the league against $124m on tour**, for a world ranking
+    sliding 1 -> 8 (and much further for a weaker player, who then loses major access entirely), no
+    playoffs, no Tour Cup and no season awards.
+  - Verified in Playwright, **0 page errors** throughout: a 6-check engine smoke (per-save birth year, the
+    first wave, a bounded growing exodus, defectors leaving your field and reappearing only at a major, the
+    Frontier schedule, escalating offers); a 6-check cup suite; an 8-check end-to-end playing full seasons on
+    BOTH sides (a tour season with the league raiding it, a Frontier season paying enormous money and not one
+    ranking point while the majors still count, a defector's ranking sliding across six simulated seasons,
+    the offer screen, and signing switching you there and then); and an 18-check scenario suite (catalog
+    integrity, no beat firing before the league exists, the two sides getting genuinely different beats, the
+    cup beat waiting for the cup, `storyCtx` carrying live numbers, the merged pools, `arcDef` resolving
+    league arcs, and a beat rendering + answering + moving your reputation, plus the way-home dilemma really
+    leaving the league at a ranking cost). Regressions green (regress_final, tp_final, the 11-tab shop suite,
+    both bracket suites, Career Legacy engine + UI, the council and Tour Eras suites).
+  - **Five test-fixture bugs were found and fixed en route, none of them game bugs**: the league news card
+    correctly preempts the tour news card at a season boundary, which broke the `tour_ui`, `council_test` and
+    `bracket_ui` fixtures until they cleared `S.pendingLeagueNews`/`S.pendingLeagueOffer` (the cards still
+    both show, in sequence); `dil_lg_exhibition` is deliberately open to BOTH sides; and `storyCtx`/
+    `showStoryline`/`showDilemma` take a current-event wrapper and a `{beat, ctx}` object respectively, not
+    the shapes the first draft of the suite passed.
+  - Also fixed while shooting the screens: the league cup was reusing the nations-cup selection copy ("You've
+    made Team The Tour", "win it for your nation", "a nation's pride", "Watch the **the** Unity Cup", and a
+    striped unknown-nation flag placeholder beside TOUR/FRNT). The league cup now reads as side-vs-side; the
+    ordinary Atlantic/Nations Cup copy is verified unchanged.
+  - Tunable: `LEAGUE_MIN_YEAR`/`LEAGUE_MAX_YEAR` (when it arrives), `LEAGUE_DEFECT_MIN`/`_MAX` (how big it
+    gets), `LEAGUE_WAVE` (how fast), `LEAGUE_EVENTS`/`LEAGUE_PURSE`/`LEAGUE_FIELD` (the season it offers),
+    `LEAGUE_CONTRACT_YEARS` + the terms in `leagueOfferMoney` (what signing is worth), `LEAGUE_CUP_HEAT` +
+    the `leagueHeatTick` curve (how hot the feud has to run before the cup replaces the Nations Cup).
+  - STILL UNBUILT from the plan: item 6 (Q-School / a feeder tour).
