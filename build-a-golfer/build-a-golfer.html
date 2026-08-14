@@ -28641,7 +28641,9 @@ function sbInit(){
     sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:RTT_AUTH_KEY}});
     // Fresh auth changes (sign-in / sign-out / token refresh) always apply; the INITIAL
     // restored session is handled by getSession() below so we can honor "remember me".
-    sb.auth.onAuthStateChange((ev,session)=>{ if(ev==='INITIAL_SESSION') return; sbApply(session); });
+    // A null INITIAL_SESSION is ignored (it is not a sign-out), but one carrying a session
+    // must be applied: it is how the session from a Google redirect arrives.
+    sb.auth.onAuthStateChange((ev,session)=>{ if(ev==='INITIAL_SESSION' && !session) return; sbApply(session); });
     // ALWAYS restore a saved session (persistSession keeps it in localStorage) - once you sign in you stay
     // signed in until you physically sign out (sbSignOut clears the token). No "remember me" auto-sign-out:
     // that gate wrongly logged Google users out on every Chrome refresh whenever the flag wasn't set.
