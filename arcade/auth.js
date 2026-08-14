@@ -118,7 +118,9 @@
       sb = rtgSharedClient(SB_URL, SB_ANON);
     } catch (e) { sb = null; return false; }
     sb.auth.onAuthStateChange(function (evt, s) {
-      if (evt === 'INITIAL_SESSION') return;   // getSession() below handles the first read
+      // Only a NULL initial session is ignored; one carrying a session is how a Google
+      // redirect delivers it, and dropping it left the page rendered as signed out.
+      if (evt === 'INITIAL_SESSION' && !s) return;
       // Arrived from a reset email: supabase-js parsed the recovery token into a
       // short-lived session. Flag it so the UI can show "set a new password".
       if (evt === 'PASSWORD_RECOVERY') recovery = true;
