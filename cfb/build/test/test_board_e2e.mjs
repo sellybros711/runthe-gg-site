@@ -34,9 +34,16 @@ const psql = (sql) => execFileSync('psql', ['-X', '-A', '-t', '-d', DB, '-c', sq
     PGPORT: process.env.PGPORT || '5433', PGUSER: process.env.PGUSER || 'postgres' } }).trim();
 
 const browser = await chromium.launch({
+
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: ['--no-sandbox'],
 });
+/* THE ARCADE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off: it
+   writes localStorage on the way in, exactly as ticking the box does. It opens 1.4s after
+   the front page settles and covers the screen, so a suite that idles on the intro and
+   then clicks would be clicking a backdrop. test_arcade_ad.mjs is where the ad itself is
+   checked; everything here is about something else. */
+const NO_ARCADE_AD = () => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} };
 let bad = 0;
 const ok = (name, pass, extra) => {
   if (!pass) bad++;
@@ -111,6 +118,7 @@ async function playSeason(page) {
 
 async function newPage(signedIn) {
   const page = await browser.newPage({ viewport: { width: 600, height: 900 } });
+  await page.addInitScript(NO_ARCADE_AD);
   page.on('pageerror', (e) => { console.log('  PAGE ERROR: ' + e.message); bad++; });
   await page.addInitScript(supabaseStub(signedIn));
   await page.goto('http://localhost:8080/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
@@ -268,6 +276,7 @@ console.log('\n=== a signed-in player finishes a season ===');
 console.log('\n=== a dead board must not break a finished season ===');
 {
   const page = await browser.newPage({ viewport: { width: 600, height: 900 } });
+  await page.addInitScript(NO_ARCADE_AD);
   page.on('pageerror', (e) => { console.log('  PAGE ERROR: ' + e.message); bad++; });
   /* Point the board at a port with nothing on it. Every call fails; nothing else may. */
   await page.addInitScript(supabaseStub(false).replace('http://localhost:5555', 'http://localhost:5999'));

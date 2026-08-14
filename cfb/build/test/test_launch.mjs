@@ -41,9 +41,16 @@ const only = process.argv[3] || null;
 const want = (s) => !only || only === s;
 
 const b = await chromium.launch({
+
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: ['--no-sandbox'],
 });
+/* THE ARCADE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off: it
+   writes localStorage on the way in, exactly as ticking the box does. It opens 1.4s after
+   the front page settles and covers the screen, so a suite that idles on the intro and
+   then clicks would be clicking a backdrop. test_arcade_ad.mjs is where the ad itself is
+   checked; everything here is about something else. */
+const NO_ARCADE_AD = () => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} };
 
 /* A page with the outside world switched off and a log that is watched.
    "Failed to load resource" is the browser narrating a request that failed, and the
@@ -51,6 +58,7 @@ const b = await chromium.launch({
    the run on the refusals this test is making on purpose. */
 async function newPage(vp) {
   const p = await b.newPage({ viewport: vp });
+  await p.addInitScript(NO_ARCADE_AD);
   const errs = [], failed = [];
   await p.route('**/*', (r) => EXTERNAL.test(r.request().url()) ? r.abort() : r.continue());
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));

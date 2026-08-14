@@ -12,10 +12,18 @@
 import { chromium } from 'playwright';
 const SS = process.env.SS || '/tmp/';
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+/* THE ARCADE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off: it
+   writes localStorage on the way in, exactly as ticking the box does. It opens 1.4s after
+   the front page settles and covers the screen, so a suite that idles on the intro and
+   then clicks would be clicking a backdrop. test_arcade_ad.mjs is where the ad itself is
+   checked; everything here is about something else. */
+const NO_ARCADE_AD = () => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} };
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
 const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await p.addInitScript(NO_ARCADE_AD);
 const errs = []; p.on('pageerror', (e) => errs.push(e.message));
 await p.addInitScript(() => { Date.now = () => 1700000000000; Math.random = () => 0.000004; });
 await p.goto('http://localhost:8081/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
