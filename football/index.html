@@ -1078,27 +1078,6 @@ window.GA_ID='G-L29P5MRWKE';
      the one thing here meant to catch the eye, and graying it would leave nothing saying the
      game is coming at all. Which is also why none of this is done with opacity on the card
      -- see the note above .modecard.mc-preview. */
-  /* ---- THE ONE-TIME ANNOUNCEMENT ----
-     The college game's own emerald, on a sheet that is otherwise this game's red and navy,
-     because the whole job of this panel is to say "a different game" and the color is the
-     fastest way to say it. A left rail rather than a full frame: a boxed panel inside a
-     sheet reads as a second sheet. */
-  .xp-pop{border-left:3px solid rgba(16,185,129,.8);padding:2px 0 2px 13px;
-    background:linear-gradient(90deg,rgba(16,185,129,.09),transparent 62%)}
-  .xp-pop .mc-new{margin-left:0}
-  .xp-pop h2{color:#5eead4}
-  /* THE BUTTON IS THE COLLEGE GAME'S GREEN, NOT THIS GAME'S RED.
-     Every other primary button in here starts something in THIS game, and red is what
-     says so. This one leaves for a different game, and dressing it as one of ours made
-     the panel argue with itself: an emerald rail, an emerald heading, and then the same
-     red button that starts a draft. The green is the last thing read before the tap and
-     it is the first thing seen on the page it lands on.
-     Written against the id rather than a new class because there is exactly one of these
-     and a class would imply otherwise. */
-  #b-xp-go{background:linear-gradient(180deg,#34d399,#059669);color:#04241c;
-    box-shadow:0 10px 26px -14px rgba(16,185,129,.9), inset 0 1px 0 rgba(255,255,255,.22)}
-  #b-xp-go:hover{background:linear-gradient(180deg,#4ade80,#10b981)}
-
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -1155,8 +1134,8 @@ window.GA_ID='G-L29P5MRWKE';
   .ggad.ggad-cfb .ggad-tm i{color:#34d399;text-shadow:0 0 10px rgba(16,185,129,.5)}
   .ggad.ggad-cfb .ggad-txt b{color:#5eead4}
   .ggad.ggad-cfb .ggad-go{background:linear-gradient(180deg,#34d399,#059669);color:#04241c}
-  /* The chip rides inside the heading here, so it needs the gap back that .xp-pop and
-     .mc-flag both take away. */
+  /* The chip rides inside the heading here, so it needs the gap back that .mc-flag
+     takes away. */
   .ggad.ggad-cfb .ggad-txt b .mc-new{margin-left:7px;vertical-align:1px}
 
   .cc-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
@@ -5813,135 +5792,6 @@ function paintResultsPromo(){
   }
 }
 
-/* ---- THE PUSH WEEK ----
-   For one week the popup comes up on EVERY sign-in rather than once per account, because
-   launch week is the week it is worth spending, and one telling reaches only the people
-   who happened to open the game that day.
-
-   ONCE EVERY FOUR HOURS, PER ACCOUNT. Not once per page load: a page load is not a
-   visit, and the two come apart exactly where it matters. Somebody who refreshes, or
-   taps back from the college game, or loses the tab to the phone's memory and reopens
-   it, has done nothing that deserves a second telling -- and being shown the same panel
-   five times in five minutes reads as a bug in the game rather than as an advert.
-   Four hours means at most six in a day for somebody who really does come back that
-   often, and once for everybody else.
-
-   AFTER THE WEEK it falls back to once per account for the rest of the campaign rather
-   than stopping dead, so somebody whose first visit is day nine still gets told once.
-   The timestamp is written throughout the week, which is what makes that fallback quiet
-   for everybody who has already had it several times.
-
-   Its own date, not MODES_NEW_UNTIL's, because they are two different lengths of thing:
-   the chip and the badge can sit there for a fortnight without being in the way, and a
-   popup that returns cannot. */
-const CFB_PROMO_EVERY_UNTIL='2026-08-17T00:00:00Z';
-const CFB_PROMO_GAP_MS=4*60*60*1000;
-const promoEveryLogin=()=>{
-  if(!CFB_PROMO_EVERY_UNTIL) return false;
-  const until=Date.parse(CFB_PROMO_EVERY_UNTIL);
-  /* An unparseable date falls back to once per account rather than to every visit: the
-     quieter of the two is the safer thing to fail into. */
-  return isFinite(until)&&Date.now()<until;
-};
-/* Which account has already been shown it on THIS page load. Belt to the timestamp's
-   braces, and the thing that stops the SECOND auth change of a normal load reopening a
-   panel somebody has just closed -- the session lands, then the username, and both are
-   inside the same millisecond as far as a four-hour gap is concerned. Held as a user id
-   rather than a boolean so signing out and in as somebody else still tells them. */
-let cfbPromoShownFor=null;
-
-/* WHEN each account last saw it, as {userId: epochMs}.
-   This used to be a list of ids, which could answer "ever?" and not "how long ago?".
-   A list left behind by that version is still read: an id in it means seen at a time
-   nobody wrote down, which is treated as long ago -- so during the push week they are
-   told again, and after it the once-per-account rule still counts them as told. */
-const CFB_SEEN_KEY='ps_cfb_promo_seen';
-function cfbPromoStore(){
-  try{
-    const raw=JSON.parse(localStorage.getItem(CFB_SEEN_KEY)||'{}');
-    if(Array.isArray(raw)){ const o={}; raw.forEach(id=>{ o[id]=0; }); return o; }
-    return (raw&&typeof raw==='object')?raw:{};
-  }catch(e){ return {}; }
-}
-function cfbPromoLastAt(userId){
-  if(!userId) return null;
-  const v=cfbPromoStore()[userId];
-  return typeof v==='number'&&isFinite(v)?v:(v===undefined?null:0);
-}
-function markCfbPromoSeen(userId){
-  if(!userId) return;
-  try{
-    const o=cfbPromoStore();
-    o[userId]=Date.now();
-    /* A shared browser could otherwise grow this forever. The twenty most recent are
-       kept, because the account least likely to come back is the one longest unseen. */
-    const keys=Object.keys(o).sort((a,b)=>(o[b]||0)-(o[a]||0)).slice(0,20);
-    const out={}; keys.forEach(k=>{ out[k]=o[k]; });
-    localStorage.setItem(CFB_SEEN_KEY,JSON.stringify(out));
-  }catch(e){}
-}
-/* Long enough ago to say again. A stored time in the FUTURE means the clock moved
-   backwards between visits, and the honest answer there is yes: showing a promo once more
-   is a smaller wrong than never showing it again on a machine whose clock is out. */
-function cfbPromoGapPassed(userId){
-  const at=cfbPromoLastAt(userId);
-  if(at===null) return true;
-  const since=Date.now()-at;
-  return since>=CFB_PROMO_GAP_MS||since<0;
-}
-/* Every condition in one place, so the answer to "why did it not show" is one function. */
-function cfbPromoDue(){
-  if(!CFB_LIVE||!modesNewLive()) return false;
-  if(!authState.ready||!authState.signedIn||!authState.userId) return false;
-  /* Once per load whatever week it is, on top of everything below. */
-  if(cfbPromoShownFor===authState.userId) return false;
-  /* Inside the push week, once every four hours. Outside it, once per account ever --
-     which is the same question with an infinite gap, so it is asked as one. */
-  if(promoEveryLogin()){ if(!cfbPromoGapPassed(authState.userId)) return false; }
-  else if(cfbPromoLastAt(authState.userId)!==null) return false;
-  /* The front page, and nothing on top of it. A sheet is already open when somebody is
-     mid sign-up or has just been sent to the club picker, and stacking this on top would
-     replace the thing they asked for with a thing they did not. */
-  if(!$('s-intro').classList.contains('on')) return false;
-  if($('sheet').classList.contains('on')) return false;
-  /* Something else is about to open a sheet the moment the username lands. Wait; this
-     will be re-asked on the next auth change and on the next visit either way. */
-  if(wantModes||wantOneTeam) return false;
-  return true;
-}
-function cfbPromo(){
-  if(!cfbPromoDue()) return;
-  /* Marked BEFORE it is shown, not after it is dismissed. Whatever happens next -- they
-     tap through, they close it, they kill the tab -- they have been told, and a promo that
-     only counts as seen when it is politely dismissed is one that comes back for everybody
-     who ignored it. */
-  markCfbPromoSeen(authState.userId);
-  cfbPromoShownFor=authState.userId;
-  /* `every` on the event, so the two halves of the campaign can be told apart in the
-     numbers rather than showing up as one line that quietly changes rate on the 17th. */
-  ga('cross_promo_shown',{game:'cfb',from:'signin',every:promoEveryLogin()?1:0});
-  $('sheet-in').innerHTML=
-    '<div class="xp-pop">'+
-      '<span class="mc-new">New</span>'+
-      '<h2 class="display" style="font-size:26px;margin:9px 0 6px;line-height:1.1">'+
-        'College Football: Perfect Season</h2>'+
-      '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+
-        'The college edition is out. Spin for a year and a school, sign six players under '+
-        'an NIL budget, and chase a perfect twelve-game season, bowls and the playoff '+
-        'included. Same account, same leaderboards, no sign-up.</p>'+
-    '</div>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-xp-go">Play it</button></div>'+
-    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-xp-no">Maybe later</button></div>';
-  $('sheet-in').dataset.kind='cfbpromo';
-  openSheet();
-  $('b-xp-no').onclick=closeSheet;
-  /* Leaves this page, so it is tracked before it goes. */
-  $('b-xp-go').onclick=()=>{
-    ga('cross_promo_click',{game:'cfb',from:'signin'});
-    location.href=CFB_URL;
-  };
-}
-
 function eraPicker(){
   const eras=Object.keys(E.ERAS);
   $('sheet-in').innerHTML=
@@ -10466,12 +10316,6 @@ function authBoot(){
     }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
-    /* LAST, and on every change rather than only on the transition. The username usually
-       arrives one auth change AFTER signing in, and the two branches above that open a
-       sheet of their own fire on that same later change -- so asking here, after them,
-       is what keeps this from landing on top of a picker somebody actually asked for.
-       cfbPromoDue() re-checks all of it; this is deliberately not the only guard. */
-    cfbPromo();
   });
   a.boot();
 }
