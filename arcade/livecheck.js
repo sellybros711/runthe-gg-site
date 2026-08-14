@@ -299,6 +299,35 @@
   }
   function datedStints(s) { return s.stints.filter(function (st) { return st.start != null; }); }
 
+  /* Positions come in at two grains. Basketball-Reference records a career as
+     G / F / C, MLB's StatsAPI says "Outfielder", and the categories ask for
+     "Point Guard" and "Left Fielder". Knowing someone is a guard neither proves
+     nor disproves that he is a point guard, so:
+       exact match                          -> true
+       we know the specific, want the broad -> true   (a point guard IS a guard)
+       we know the broad, want a specific   -> null   (say so, don't guess)
+     Anything else is a real contradiction and stays false. */
+  var POS_FAMILY = {
+    'Guard': ['Point Guard', 'Shooting Guard'],
+    'Forward': ['Small Forward', 'Power Forward'],
+    'Outfielder': ['Left Fielder', 'Center Fielder', 'Right Fielder'],
+    'Pitcher': ['Starting Pitcher', 'Relief Pitcher'],
+    'Offensive Lineman': ['Offensive Tackle'],
+    'Defensive Lineman': ['Defensive End', 'Defensive Tackle'],
+    'Kicker': ['Place Kicker']
+  };
+  function posMatch(known, want) {
+    if (known.indexOf(want) >= 0) return true;
+    var kids = POS_FAMILY[want];
+    // want is the broad one: any specific we hold under it confirms it
+    if (kids) for (var i = 0; i < kids.length; i++) if (known.indexOf(kids[i]) >= 0) return true;
+    // want is a specific: holding only its family is not an answer either way
+    for (var fam in POS_FAMILY) {
+      if (POS_FAMILY[fam].indexOf(want) >= 0 && known.indexOf(fam) >= 0) return null;
+    }
+    return false;
+  }
+
   // ---------- the verdict ----------
   /* true / false / null, where null means "the facts we have don't settle it". */
   function verdict(s, pr) {
@@ -322,7 +351,7 @@
         return s.teams.length ? s.teams.indexOf(pr.v) >= 0 : null;
 
       case 'pos':
-        if (s.positions.length) return s.positions.indexOf(pr.v) >= 0;
+        if (s.positions.length) return posMatch(s.positions, pr.v);
         return null;
 
       case 'col':
@@ -393,17 +422,21 @@
      it is why an active player's last stint is left open-ended — otherwise a
      current player would read as retired. */
   var OCC_OF = { NFL: 'American football player', MLB: 'baseball player', NBA: 'basketball player' };
+  function split(v) { return String(v == null ? '' : v).split('|').filter(Boolean); }
+
   function fromRegister(rows) {
     var byKey = {};
     rows.forEach(function (r) {
-      var teams = String(r.teams || '').split('|').filter(Boolean).map(function (t) {
+      var teams = split(r.teams).map(function (t) {
         return { name: t, start: r.first_season || null, end: r.active ? null : (r.last_season || null) };
       });
       var prof = {
         found: true, name: r.name, source: 'register',
         occupations: [OCC_OF[r.sport]].filter(Boolean),
-        sports: [], positions: r.pos ? [r.pos] : [],
-        colleges: r.college ? [r.college] : [],
+        // pos and college are '|'-joined for the same reason teams is: a swingman
+        // is listed "F-C" and a transfer went to two schools, and both facts
+        // matter when the answer is graded.
+        sports: [], positions: split(r.pos), colleges: split(r.college),
         awards: [],                       // the register carries no honours
         teams: teams, died: false,
         active: !!r.active               // known, not inferred from stint dates

@@ -26,10 +26,12 @@ create table if not exists player_register (
   -- normalized 'first|last', matching keyOf() in arcade/sportegories.js so the
   -- client can ask with exactly the key it already computes
   name_key      text not null,
+  -- The next three are '|'-joined lists: a swingman is listed "F-C", a player
+  -- can transfer schools, and a career runs through several teams. A delimiter
+  -- rather than an array or JSON so the CSV bulk load has nothing to escape;
+  -- nothing in any of these values contains a pipe.
   pos           text,
   college       text,
-  -- '|'-joined, in career order. A delimiter rather than an array or JSON so
-  -- the CSV bulk load has nothing to escape; no team name contains a pipe.
   teams         text not null default '',
   first_season  smallint,
   last_season   smallint,

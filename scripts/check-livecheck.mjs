@@ -326,6 +326,27 @@ const shaped = LC.shape({
 }, D);
 is(LC.verdict(shaped, { k: 'act' }), true, 'register: an open-ended stint reads as active');
 
+/* ---------- positions come in at two grains ----------
+ * Basketball-Reference records a whole career as G / F / C and the categories
+ * ask for "Point Guard". Knowing a man is a guard is not knowing he is a point
+ * guard — but it is also not grounds for telling him he isn't one, which is the
+ * rejection the player complained about. Broad-vs-specific must be unresolved. */
+const nbaPos = (positions, want) => LC.verdict(LC.shape({
+  found: true, name: 'x', occupations: ['basketball player'], sports: [],
+  positions: positions, colleges: [], awards: [], teams: [], died: false,
+}, D), { k: 'pos', v: want });
+
+is(nbaPos(['Guard'], 'Guard'), true, 'pos: the exact grain confirms');
+is(nbaPos(['Guard'], 'Point Guard'), null, 'pos: a bare Guard cannot settle Point Guard either way');
+is(nbaPos(['Guard'], 'Center'), false, 'pos: a guard is genuinely not a centre');
+is(nbaPos(['Point Guard'], 'Guard'), true, 'pos: a point guard IS a guard');
+is(nbaPos(['Forward', 'Center'], 'Center'), true, 'pos: a swingman satisfies both of his positions');
+is(nbaPos(['Forward', 'Center'], 'Small Forward'), null, 'pos: and still cannot settle the specific one');
+is(nbaPos(['Outfielder'], 'Left Fielder'), null, 'pos: StatsAPI says Outfielder, the category asks which');
+is(nbaPos(['Relief Pitcher'], 'Pitcher'), true, 'pos: a reliever is a pitcher');
+is(nbaPos(['Pitcher'], 'Catcher'), false, 'pos: unrelated positions still contradict');
+is(nbaPos([], 'Guard'), null, 'pos: knowing no position settles nothing');
+
 console.log(bad.length ? bad.map((b) => '  FAIL ' + b).join('\n') : '');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -32,12 +32,18 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60         # ~250 season fetches across three leagues
+    timeout-minutes: 120        # ~440 fetches; the BBRef half is throttled to ~20/min
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      # Fails in seconds if a parser is broken, rather than after a 20-minute
+      # scrape. Neither Basketball-Reference nor Supabase is reachable from a
+      # dev sandbox, so this is where the parsing is actually verified.
+      - name: Check the parsers
+        run: node scripts/check-register.mjs
 
       - name: Fetch the complete registers
         run: |
@@ -62,7 +68,11 @@ jobs:
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
           BEGIN;
           CREATE TEMP TABLE staging (LIKE player_register INCLUDING DEFAULTS) ON COMMIT DROP;
-          \copy staging(id,sport,name,name_key,pos,college,teams,first_season,last_season,active) FROM 'supabase/player_register.csv' WITH (FORMAT csv, HEADER true)
+          -- FORCE_NOT_NULL(teams): COPY reads an empty unquoted CSV field as
+          -- NULL, and a player with no team on record (a September call-up who
+          -- hasn't debuted) writes an empty teams cell. Without this the whole
+          -- load aborts on the NOT NULL constraint.
+          \copy staging(id,sport,name,name_key,pos,college,teams,first_season,last_season,active) FROM 'supabase/player_register.csv' WITH (FORMAT csv, HEADER true, FORCE_NOT_NULL(teams))
           DELETE FROM player_register;
           INSERT INTO player_register SELECT * FROM staging;
           COMMIT;
