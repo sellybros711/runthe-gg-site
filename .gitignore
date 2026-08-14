@@ -8,3 +8,11 @@ node_modules/
 
 # Local data exports (scripts/pull-ps-runs.mjs)
 ps_runs_export.csv
+
+# Browser-test copies of the games, rebuilt from source before every test run.
+# These MUST NOT be committed: the site deploys straight from main, so a tracked
+# football/__test.html would publish a copy of the game at runthe.gg with the real
+# auth client swapped out for a stub. They are build output, not source -- delete
+# them freely, the harness writes them again.
+__test*.html
+__authstub.js
