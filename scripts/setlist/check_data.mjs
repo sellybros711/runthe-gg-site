@@ -194,7 +194,13 @@ for (const [sel, what] of [['.chip.acc', 'role'], ['.chip.seg', 'segue'],
 // Deduped: the jamchart chip has a second rule for its selected state.
 const dyed = [...new Set([...game.matchAll(/\.chip\.([a-z]+)\{[^}]*var\(--dye\)/g)]
   .map(m => m[1]))].sort();
-check(dyed.join(',') === 'jc,rec', 'only the archive chips use tie dye',
+/* THE DYE IS DOWN TO ONE CHIP, and that is the same lesson as the segue arrow
+   and the account pill: it needs room. At 9.5px a five-colour border around
+   four letters is a smudge, so JAMCHART is gold now (the colour the archive
+   already uses for its other flag). RECOMMENDED keeps it because it is not in
+   the draft list at all: it appears once on the playback screen, on its own
+   line, at full badge size. */
+check(dyed.join(',') === 'rec', 'only the archive badge uses tie dye',
   `dyed: ${dyed.join(', ') || 'none'}`);
 
 console.log();
@@ -590,8 +596,11 @@ check(/\.chip\.opens\{/.test(game), 'and styled');
    These are the properties that actually paint. */
 check(/\.song\.finishes\{[^}]*background:/.test(game),
   'a row that lands a segue is filled');
-check(/\.song\.finishes:before\{[^}]*background:var\(--greenT\)/.test(game),
-  'and takes the accent bar');
+/* The accent strip this used to check is gone: the time bar replaced it and
+   carries the role colour now, so the landing state takes the BAR. Asserted
+   with the rest of the time bar below; the property here is just that the row
+   still shouts. */
+check(/\.song\.finishes \.tbar\{/.test(game), 'and takes the bar');
 check(/\.song\.finishes \.t\{[^}]*color:var\(--greenT\)/.test(game),
   'and its title');
 check(!/\.song\.finishes\{border-color:[^;]*;\}/.test(game),
@@ -627,6 +636,47 @@ check(/\.hc-n\{[^}]*font-family:var\(--ui\)/.test(game),
   'the countdown keeps the display face');
 check(/\.showcard \.d\{[^}]*font-family:var\(--ui\)/.test(game),
   'and so does the show date');
+
+/* THE DESCRIPTORS ARE TYPE, AND THE ROW DRAWS ITS OWN LENGTH.
+   Measured across all 6,886 rows of the archive: the MEDIAN row carries one
+   descriptor and 74% carry none or one. The pills were never solving a density
+   problem, so the box came off and the colour stayed. */
+console.log('the descriptors');
+check(/\.chip\{[^}]*background:none/.test(game), 'the base chip has no fill');
+check(/\.chip\{[^}]*padding:0/.test(game), 'and no padding');
+check(/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
+  'descriptors are separated by a middot instead');
+// The role, rarity, monotony and archive words are colour only now.
+for (const k of ['acc', 'rare', 'mono', 'jc'])
+  check(new RegExp(`\\.chip\\.${k}\\{color:var\\(--[a-zA-Z]+\\);\\}`).test(game),
+    `the ${k} descriptor is colour only`);
+/* THE TWO THAT KEEP A FILL are not descriptions of the song, they are a thing
+   the player can do this turn, and they land on a handful of rows at most. */
+check(/\.chip\.seg\{[^}]*background:color-mix/.test(game),
+  'landing a segue keeps its fill');
+check(/\.chip\.sand\{[^}]*background:var\(--green\)/.test(game),
+  'and so does closing a sandwich');
+
+/* THE TIME BAR. Length is the resource the game spends and it was a number you
+   had to convert. The 25 minute scale is measured: 20 clips 7.2% of songs, 25
+   clips 1.4%, 30 clips 0.3%, and at 25 the median fills 41% with p05-p95
+   spanning 17%-84%, so the bar has real range. */
+console.log('the time bar');
+check(/const TBAR_FULL = 25 \* 60;/.test(game), 'the bar scale is 25 minutes');
+check(/class="tbar\$\{/.test(game), 'every row draws one');
+check(/aria-hidden="true"/.test(game) && /class="tbar/.test(game),
+  'and it is hidden from assistive tech, since the clock states the length');
+/* FULL BASIS, PAINTED WIDTH. `.l` is a wrapping flex row, and flexbox breaks on
+   an item's hypothetical main size: sizing the bar with max-width clamps that
+   too, so a short bar rides up beside the title on any row with no sub-line. */
+check(/\.tbar\{[^}]*flex:0 0 100%/.test(game), 'the bar takes a whole line');
+check(/\.tbar\{[^}]*background-size:max\(5px, var\(--w/.test(game),
+  'and varies its paint, not its width');
+check(/\.tbar\.over\{/.test(game), 'the ones that clip say so');
+// It replaced the left accent strip rather than joining it.
+check(!/\.song:before\{/.test(game), 'the left accent strip is gone');
+check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
+  'and the landing state takes the bar');
 
 console.log('copy');
 const stripComments = src => src
