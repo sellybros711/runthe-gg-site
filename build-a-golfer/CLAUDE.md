@@ -15144,3 +15144,83 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   NOTE for the owner: on iOS the flag lives in `sessionStorage`, so a home-screen app that was never fully
   closed still counts as the same session - fully close and reopen it (or use `?arcadead=1`) to see the ad
   again after this deploy.
+
+- **TOUR ERAS + THE PLAYER ADVISORY COUNCIL: the tour itself changes around you, and you get a vote
+  (owner: "let's continue to revamp the game career by the plan you said, but let's not go through with the
+  part about picking your schedule or training. That part is fine. There just needs to be more ways to
+  branch out your career so it's not the same every time and doesn't get stale. This is vital to the games
+  longevity").** Plan items 2, 3 and 5 of "The Tour Expands" (item 1, the Match Play Championship, shipped
+  earlier; item 4, schedule planning + training, was explicitly CUT by the owner). The staleness diagnosis
+  was that every career is played on an IDENTICAL tour: same rules, same purse curve, same card line, same
+  field sizes, every save, forever. So the tour is now a living organization that changes what the game IS,
+  and the changes are announced, permanent and different in every career.
+  1. **16 structural changes (`TOUR_CHANGES`), rolled per career.** Each has a policy `grp` so a later
+     change in the same area SUPERSEDES the earlier one (the tour can swing back), and each rewires a real
+     lever the sim already reads rather than adding a parallel system: the **ball rollback** and the
+     **groove rule** shift `eventWeights` (distance counts for less everywhere / short game and scrambling
+     count for less), **setup hard/easy** shift the scoring mean in `simRound`, the **purse curve** flattens
+     or steepens `PAYOUT` (winner 18% -> 12.54% flat / 26.99% steep, always renormalized to 100%), **field
+     sizes** move the `ENTRY_CAP` gate (signature 50 -> 36 or 64, majors 100 -> 84 or 120), the **card line**
+     moves `CARD_LINE` (100 -> 70 or 125), the **finale** can drop its staggered start, the **Match Play
+     bracket** can expand to 64 or be scrapped entirely, an **event can die** off the rotating schedule for
+     good, and a **major can move to a new rota** with a genuinely different course fit. A pace-of-play
+     crackdown costs a low-Composure player strokes. `tourEff()` memoizes the aggregate; the caches clear on
+     every change.
+  2. **Cadence, measured over 60 careers x 30 years**: 5-12 changes a career (avg 8.3), never in the first
+     two years, never two years running, deterministic per `careerSeed` so a save resumes consistently -
+     and **60/60 unique tours, 0.00% identical pairs**. That is the point of the whole build: two careers
+     are no longer played on the same tour.
+  3. **The changes are FELT, verified deterministically.** Judging a rule on 10 simulated seasons is
+     useless (money-list rank swings +-15 on variance alone, and an early cut of the balance script read
+     the groove rule as HELPING the scrambler purely on noise). Measured instead on effective rating across
+     the real season schedule: the ball rollback costs a bomber **-0.287** and pays a precision build
+     **+0.223**; the groove rule costs the scrambler **-0.277**, the worst of any build, and pays everyone
+     else. The season table agrees where it has the samples to (a bomber's money rank 71.5 -> 91 under the
+     rollback, wins 0.5 -> 0.3, while the surgeon goes 32.2 -> 23.1 and 0.2 -> 0.6 wins).
+  4. **The league news feed** (plan item 2, the "force multiplier": nothing structural is worth building
+     until the player can SEE it happen). A change gets its own announcement card at the season boundary
+     (kicker, headline, what it does, what it means for YOUR build) and a permanent **The Tour** feed in the
+     hamburger menu listing the rules currently in force (sorted by the year they came in) over the full
+     history of everything the organization has done in this career, rejected proposals included. The
+     career-end ceremony gets a retrospective, because "the tour I played in was not the tour you played in"
+     is a thing you say looking back.
+  5. **The Player Advisory Council** (plan item 5). Once you are somebody (year 6+, and either 2 wins, a
+     major, or a genuine world top-40 rank against a real field), a proposal comes to you BEFORE it lands
+     and you vote on it. The vote screen states the proposal, what it does if it passes, and a measured
+     **impact read on your own build** (it runs your ratings through the season's schedule both ways for a
+     weight change, and reads world rank / composure / wins-per-season for the rest), so the call is
+     informed rather than a coin flip. Your seat moves the room by `COUNCIL_SWING=9` points against a
+     deterministic 38-63% base, so **a proposal can pass over your objection and fail despite your
+     support** - a council that always does what you want is just a menu of buffs. A vote that passes
+     resyncs the schedule mid-season boundary (`tourResync`, guarded to fire only before any result is
+     recorded).
+  - **Both sides of the vote carry the same visual weight** (gold "Vote for / pass it" and a new teal
+    `.btn.tealsel` "Vote against / keep it as is"). The first cut had the FOR button as the gold primary
+    and AGAINST as a ghost, which reads as a recommendation, not a vote.
+  - Inert by construction in the Daily and the Legend Circuit (`tourOn()` gates every read), so none of it
+    can leak into a mode where the rules must be identical for everyone.
+  - Verified in Playwright, **0 page errors** throughout: a 22-check engine suite (catalog integrity, every
+    effect moving its own number both ways, supersede-within-a-group while different areas stack, the roll's
+    cadence + determinism + variety, a dead event leaving the schedule for good, a moved major getting a
+    different fit and venue line, and a full season playing out under a changed tour); a 10-check UI suite
+    (the announcement card, acking it starting the season, a stale change id falling through instead of
+    stranding the player, the feed listing rules + history, the honest empty state, and the menu row
+    appearing only once the tour has done something); and an 18-check council suite (eligibility including
+    the ranking route, the room overruling you in both directions, a rejected proposal never entering the
+    rules while a passed one is in force immediately, the impact read being right for a bomber vs a
+    precision build vs a scrambler vs composure, the floor rendering, the vote resolving with a tally that
+    matches the rules actually in force, and a passed schedule change taking effect this season).
+    Regressions green (regress_final's 18-hole daily round + shop sections, tp_final's Tour Pass sweep, the
+    11-tab shop suite, both bracket suites, the Career Legacy engine + UI suites); inline scripts parse
+    clean. Deployed to /golf.
+  - **Three test-fixture bugs were found and fixed en route, none of them game bugs** (worth knowing, since
+    each looked like a regression): the council "journeyman gets no seat" case seeded an OVR-88 bag, which
+    is genuinely world **#12** and SHOULD earn a seat off the ranking route (now seeded at 62, rank 151);
+    the cadence check rolled `maybeTourChange` without ever applying the candidate, but the
+    no-two-years-running gap reads the APPLIED history, so it could never hold (now mirrors the real season
+    flow); and the "different areas stack" check used absolute weight thresholds, which renormalization
+    makes meaningless.
+  - Tunable: `TOUR_CHANCE`/`TOUR_GAP`/`TOUR_MIN_YEAR` (how often the tour moves), the per-change `eff` in
+    `TOUR_CHANGES`, `COUNCIL_YEAR`/`COUNCIL_SWING` (when you get a seat and how much it is worth).
+  - STILL UNBUILT from the plan, not requested for this pass: item 6 (Q-School / a feeder tour) and item 7
+    (the breakaway league, described in the plan as "the single largest branch available to the career").

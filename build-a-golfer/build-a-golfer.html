@@ -999,6 +999,11 @@ window.GA_ID='G-L29P5MRWKE';
   .btn.goldsel{background:rgba(241,208,74,.13); color:var(--gold); border:1.6px solid var(--gold); font-weight:900; box-shadow:0 0 0 3px rgba(241,208,74,.1), 0 4px 14px -8px rgba(154,110,18,.55); text-shadow:none}
   .btn.goldsel .sub{color:var(--gold2)}
   .btn.goldsel:active{transform:translateY(2px)}
+  /* the teal twin of goldsel, for a genuine two-way choice where neither side is the recommended one
+     (the council vote: gold = pass the change, teal = keep the tour as it is) */
+  .btn.tealsel{background:rgba(15,168,136,.15); color:#4fd8b6; border:1.6px solid #12a184; font-weight:900; box-shadow:0 0 0 3px rgba(15,168,136,.1), 0 4px 14px -8px rgba(7,96,95,.55); text-shadow:none}
+  .btn.tealsel .sub{color:#8fe6cd}
+  .btn.tealsel:active{transform:translateY(2px)}
   /* CS483i: lemon-gold gradient number/text utility (Option 3 hero numbers) */
   .goldgrad{background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
   .mintgrad{background:linear-gradient(177deg,#b6f5dd 0%,#5fe6b6 40%,#2fd0a2 66%,#17b7a6 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
@@ -2398,6 +2403,21 @@ window.GA_ID='G-L29P5MRWKE';
 .navtile .nl{font-size:13px}
 h2{font-size:11px;letter-spacing:.04em}
 .gc-kick{font-size:9px;letter-spacing:.03em}
+
+.trule{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:10px 12px;margin:8px 0;border:1px solid rgba(241,208,74,.22);border-radius:9px;background:linear-gradient(180deg,rgba(241,208,74,.06),rgba(6,23,15,.5))}
+.tr-i{font-size:17px;line-height:1.1}
+.tr-n{font:800 14px/1.25 var(--pixel);color:var(--gold)}
+.tr-l{font-size:12.5px;color:var(--oncard);margin-top:2px}
+.tr-y{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.tnitem{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:start;padding:9px 2px;border-bottom:1px solid rgba(241,208,74,.12)}
+.tnitem:last-child{border-bottom:0}
+.tn-yr{font:800 11px/1.4 var(--pixel);letter-spacing:.06em;color:var(--gold);text-transform:uppercase;padding-top:2px}
+.tn-t{font-weight:800;font-size:13.5px;color:var(--oncard)}
+.tn-s{font-size:12.5px;color:var(--muted);margin-top:1px}
+.cvimp{border:1px solid;border-radius:9px;padding:10px 12px;margin:12px 0 10px;background:rgba(0,0,0,.18)}
+.cv-l{font:800 11px/1.3 var(--pixel);letter-spacing:.12em;text-transform:uppercase}
+.cv-t{font-size:13px;color:var(--oncard);margin-top:3px}
+/* end tour news css */
 </style>
 </head>
 <body>
@@ -5131,7 +5151,9 @@ function majorsSchedule(){ return inflatePurses(ANCHORS.filter(e=>e.major),S.yea
 function isOlympicYear(year){ return (year||1)%4===0; }   // every 4 years, first in year 4 (then 8, 12, ...)
 const OLYMPICS_EVT={name:'Summer Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
 function seasonSchedule(year,seed){
-  const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
+  let pool=REG_POOL;
+  try{ const gone=tourDropped(); if(gone.length) pool=REG_POOL.filter(e=>gone.indexOf(e.name)<0); }catch(e){}
+  const shuffled=seededShuffle(pool,((seed!=null?seed:0)^0x5eed1e)>>>0);
   const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
   const off=((((year||1)-1)*REG_STRIDE)%N+N)%N;
   const picks=[]; for(let k=0;k<M;k++) picks.push(shuffled[(off+k)%N]);
@@ -5279,6 +5301,12 @@ const CHOKE_RATE=0.008, CHOKE_CAP=0.30, CHOKE_STROKES=3.2;
 function simRound(eo,clu,{major,big,finalRd,courseAdj}){
   const k=major?SIM.maj:SIM.reg;
   let m=k.base+(courseAdj||0)-skillEdge(eo);
+  // TOUR ERAS: a setup-philosophy change moves the whole tour's scoring, and a pace-of-play crackdown
+  // occasionally docks the slowest (lowest-Composure) players a stroke. Both are field-wide.
+  try{ const te=tourEff(); if(te.any){
+    if(te.score) m+=te.score;
+    if(te.pace && RNG()<clamp((72-clu)*0.0016,0,0.06)) m+=1;
+  } }catch(e){}
   const pressure=(major||big)&&finalRd;
   if(pressure){
     m-=clamp((clu-80)*0.02,-0.4,0.4);
@@ -5337,8 +5365,14 @@ const COURSEFIT={
   'The Links Championship':         {dist:1.328,acc:1.328,app:0.85,sht:1.113,scr:1.113,bnk:1.113,put:1.265,clu:1},  // St Andrews (Old Course)
 };
 function eventWeights(evt){
-  const m=COURSEFIT[evt.name]; if(!m) return CATS;                 // default = neutral base weights
-  const raw=CATS.map(c=>({k:c.k,short:c.short,w:c.w*m[c.k]}));
+  // TOUR ERAS: a rule change (the ball rollback, the groove rule, a setup swing) is applied here as a
+  // multiplier on top of the course's own fit, and a major that has moved rota swaps its fit outright.
+  // Field-wide by construction, so it reshapes who wins rather than handing the player an edge.
+  let tw=null, m=null;
+  try{ const te=tourEff(); if(te.any){ tw=te.w; m=tourFit(evt.name); } }catch(e){}
+  m=m||COURSEFIT[evt.name];
+  if(!m && !tw) return CATS;                                       // default = neutral base weights
+  const raw=CATS.map(c=>({k:c.k,short:c.short,w:c.w*(m?m[c.k]:1)*((tw&&tw[c.k])||1)}));
   const sum=raw.reduce((s,x)=>s+x.w,0);
   return raw.map(x=>({k:x.k,short:x.short,w:x.w/sum}));            // renormalize to 1.0
 }
@@ -5426,6 +5460,7 @@ const EVENT_COURSE={
 // or any future event added without an entry), callers must handle the no-subtitle case.
 function eventCourse(evt){
   if(!evt) return null;
+  try{ const fn=tourEff().fitName; if(fn && fn[evt.name]) return {v:'A new rota', loc:fn[evt.name]}; }catch(e){}
   const c=EVENT_COURSE[evt.name]; if(!c) return null;
   return {v:c.v, loc:c.loc};
 }
@@ -5773,9 +5808,10 @@ function worldRankOfName(name){ const L=worldRanking(); const i=L.findIndex(x=>x
 // Tour Card line: finish inside the top CARD_LINE in the world to keep a full card for next season
 const CARD_LINE=100;
 function cardStatus(rank){ rank=rank||myWorldRank();
-  if(rank<=CARD_LINE-15) return {key:'secure', rank, col:'#35d6a0', label:'Tour Card secured', note:`Comfortably inside the top ${CARD_LINE}`};
-  if(rank<=CARD_LINE)     return {key:'bubble', rank, col:'#F1D04A', label:'Tour Card held · on the bubble', note:`Stay inside the top ${CARD_LINE} to keep your card`};
-  return {key:'lost', rank, col:'#E14A33', label:'Lost your Tour Card', note:`Outside the top ${CARD_LINE} · limited status next season`};
+  const CL=cardLine();
+  if(rank<=CL-15) return {key:'secure', rank, col:'#35d6a0', label:'Tour Card secured', note:`Comfortably inside the top ${CL}`};
+  if(rank<=CL)    return {key:'bubble', rank, col:'#F1D04A', label:'Tour Card held · on the bubble', note:`Stay inside the top ${CL} to keep your card`};
+  return {key:'lost', rank, col:'#E14A33', label:'Lost your Tour Card', note:`Outside the top ${CL} · limited status next season`};
 }
 // end-of-season ranking update: decay everyone, add the year's Tour points (run BEFORE advanceWorld ages the world)
 function updateWorldRanking(){
@@ -5806,7 +5842,7 @@ function playerExempt(evt){ const yr=S.year||1, wl=(S.career&&S.career.winsList)
   return wl.some(w=>(yr-(w.year||0))<=2); }
 // split the season field into the marquee (top entryCap by OWGR, +you if exempt) and the opposite-field rest
 function splitField(field, evt){
-  const cap=evt.entryCap, L=worldRanking(), rankOf={};
+  const cap=tourEntryCap(evt), L=worldRanking(), rankOf={};
   L.forEach((x,i)=>{ rankOf[x.you?'__you__':x.name]=i; });
   const keyOf=p=>p.you?'__you__':p.name, rk=p=>{ const r=rankOf[keyOf(p)]; return r==null?9999:r; };
   const me=field.find(p=>p.you);
@@ -5975,7 +6011,7 @@ function bracketStartYear(seed){
   const r=mulberry32((((seed!=null?seed:0)^0xb2acbeef)>>>0));
   return BRACKET_MIN_YEAR+Math.floor(r()*(BRACKET_MAX_YEAR-BRACKET_MIN_YEAR+1));
 }
-function bracketOnSchedule(year,seed){ return (year||1) >= bracketStartYear(seed); }
+function bracketOnSchedule(year,seed){ return (year||1) >= bracketStartYear(seed) && tourBracketOn(); }
 // NOT built through mkEvt: a `sig` there would inherit the OWGR entry cap + opposite-field split,
 // and the bracket runs its own field logic (top 32, no cut, no stroke play).
 function bracketEvt(year){
@@ -5994,7 +6030,7 @@ function bracketField(){
   const L=worldRanking(), rank={};
   L.forEach((x,i)=>{ rank[x.you?'__you__':x.name]=i; });
   const rk=p=>{ const r=rank[p.you?'__you__':p.name]; return r==null?9999:r; };
-  return S.season.field.slice().sort((a,b)=>rk(a)-rk(b)).slice(0,BRACKET_SIZE);
+  return S.season.field.slice().sort((a,b)=>rk(a)-rk(b)).slice(0,tourBracketSize());
 }
 function bracketQualified(){ return bracketField().some(p=>p.you); }
 function bracketMySeed(){ const f=bracketField(), i=f.findIndex(p=>p.you); return i<0?null:i+1; }
@@ -6017,7 +6053,7 @@ function simBracket(){
   // the player's standing edges apply here exactly as they do in a stroke-play week
   if(!S.daily && !S.circuitMode && S.career){ const me=players.find(o=>o.p.you); if(me){ me.eo+=confEo(); me.eo+=careerFxEo(ew); } }
   const bySeed={}; players.forEach(o=>{ bySeed[o.seed]=o; });
-  let alive=bracketSeedOrder(BRACKET_SIZE).map(s=>bySeed[s]).filter(Boolean);
+  let alive=bracketSeedOrder(tourBracketSize()).map(s=>bySeed[s]).filter(Boolean);
   const rounds=[];
   BRACKET_ROUNDS.forEach((R,ri)=>{
     const matches=[], next=[];
@@ -6058,7 +6094,7 @@ function bracketOrder(B){
   g.forEach(grp=>{
     if(!grp.length) return;
     grp.sort((a,b)=>a.seed-b.seed);
-    let sum=0; for(let k=0;k<grp.length;k++) sum+=(PAYOUT[slot+k]||0);
+    let sum=0; for(let k=0;k<grp.length;k++) sum+=payoutAt(slot+k);
     const each=sum/grp.length, pos=slot+1, tied=grp.length>1;
     grp.forEach(o=>order.push({p:o.p, seed:o.seed, pos, tied, pct:each,
       bres:bracketResShort(o), bfull:bracketResLong(o), path:o.path,
@@ -8748,6 +8784,7 @@ function render(){
     if(S.overlay==='dailydone') overlayDailyDone(app);
     if(S.overlay==='holeshots') overlayHoleShots(app);
     if(S.overlay==='courserecords') overlayCourseRecords(app);
+    if(S.overlay==='tournews') overlayTourNews(app);
     if(S.overlay==='playercard') overlayPlayerCard(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='tourpass') overlayTourPass(app);
@@ -10286,6 +10323,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow(ic('globe'),'Play Online','1v1 & foursomes head-to-head',()=>{ S.overlay=null; render(); openH2H(); }));
   if(wheelEnabled()) play.appendChild(menuRow('🎡','Prize Wheel',(()=>{ if(!signedIn) return 'Sign in to spin'; const a=wheelAvail(); return a>0?(a+' spin'+(a>1?'s':'')+' ready'):'Next free spin at midnight ET'; })(),()=>{ S.overlay=null; render(); openWheel(); }));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
+  if(tourHistory().length) play.appendChild(menuRow('📰','The Tour','Rules in force & tour news',go(()=>{S.overlay='tournews';})));
   play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
   if(passEnabled()) play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
   play.appendChild(menuRow('🏅','Profile',signedIn?'Your trophies, titles & stats':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
@@ -14387,6 +14425,16 @@ function startSeason(majorsOnly){
   // ensure a per-career seed exists before building the schedule so the rotating slate is stable
   // within a save (resume-safe), ensureWorld() also sets this, but the schedule is built first.
   if(!S.daily && S.careerSeed==null) S.careerSeed=(Math.floor(Math.random()*4294967295))>>>0;
+  // TOUR ERAS: roll this season's structural change BEFORE the schedule is built, since a change can
+  // take an event off the calendar or scrap the Match Play Championship outright.
+  // A player with a council seat VOTES on it instead (see councilVote), so it is only applied here for
+  // everybody else. A proposal voted through mid-screen resyncs the schedule via tourResync().
+  let _tourNew=null, _tourVote=null;
+  try{
+    _tourNew=maybeTourChange(S.year||1);
+    if(_tourNew && councilSeat()){ _tourVote=_tourNew; _tourNew=null; }
+    else if(_tourNew) applyTourChange(_tourNew);
+  }catch(e){}
   S.schedule = S.daily ? SCHEDULE.map(e=>({...e}))
              : S.circuitMode ? circuitSchedule(S.careerSeed)
              : (majorsOnly ? majorsSchedule() : seasonSchedule(S.year||1, S.careerSeed));
@@ -14413,7 +14461,17 @@ function startSeason(majorsOnly){
   S.curBracket=null; S._brIdx=null; S.brRound=0; S.season.bracketChampion=null;   // Match Play Championship state
   // TOUR NEWS: the season the tour actually introduces the Match Play Championship gets an announcement
   // card before the first event (once per career, since the start year is fixed per save).
-  S.pendingTourNews=(!S.daily && !S.circuitMode && (S.year||1)===bracketStartYear(S.careerSeed)) ? 'bracket' : null;
+  // TOUR NEWS: the bracket's own arrival, or whatever the tour changed this off-season. The bracket
+  // wins the week if both land, and its year is recorded in the history so the feed lists it too.
+  S.pendingTourNews=null;
+  if(!S.daily && !S.circuitMode){
+    const brNew=(S.year||1)===bracketStartYear(S.careerSeed);
+    if(brNew){ try{ const st=tourState(); if(!st.ch.some(e=>e.id==='bracket')) st.ch.push({id:'bracket', year:S.year||1, arg:null}); }catch(e){} }
+    S.pendingTourNews = brNew ? 'bracket' : (_tourNew ? _tourNew.id : null);
+    S.pendingTourArg = brNew ? null : (_tourNew ? _tourNew.arg : null);
+    S.pendingTourVote = brNew ? null : _tourVote;   // the council gets the floor before the season starts
+    S.tourVoteResult = null;
+  }
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   S.legacyFresh=[];   // legacy perks earned THIS season, celebrated on the summary
   S._bannerNet=null; S._bannerFans=null; S._bannerNetDir=0; S._bannerFansDir=0; S._confBar=null; S._respBar=null;   // CS284/285/434/476: reset the banner count-up + arrow-direction + meter-glide baselines so a new season's first render doesn't animate/arrow from prior values
@@ -14447,7 +14505,7 @@ function beginEvent(){
   if(evt.playoff){
     // Tour Cup playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
     field=[...S.season.field].sort((a,b)=>(S.season.totals[b.name].points||0)-(S.season.totals[a.name].points||0)).slice(0,evt.cap);
-    if(evt.stagger){ stagger={}; field.forEach((p,i)=>{ stagger[p.name]=STAGGER[Math.min(i,STAGGER.length-1)]; }); }
+    if(evt.stagger && !tourEff().noStagger){ stagger={}; field.forEach((p,i)=>{ stagger[p.name]=STAGGER[Math.min(i,STAGGER.length-1)]; }); }
   } else if(evt.olympics && !S.daily){
     // Olympics: country-capped 60-player field by OWGR. If you don't qualify you play a same-week tour stop
     // while the Olympics runs headlessly (still crowning medalists).
@@ -15064,6 +15122,396 @@ const STORYLINES=[
   ch:[{t:'Become the face of the game',s:'Transcend the sport',tr:'showman',fansD:6,respD:1,fan:1,fol:0.1,r:'Billboards, ad breaks, the lot. You’re a household name now.',head:'Became the crossover face of the game'},
       {t:'Keep golf at the center',s:'Stay grounded',tr:'humble',respD:5,fansD:2,conf:0.2,r:'You take the deal but keep the main thing the main thing. Everyone respects it more.',head:'Went global without losing the plot'}]}
 ];
+
+/* ==================== TOUR ERAS: the organization is a character ====================
+   The complaint this answers: the world around your golfer never moves. The schedule is the schedule,
+   the rules are the rules, and the only thing that changes over thirty years is you. So two careers
+   play out on an identical tour and the back half of a save has nothing left to surprise you with.
+
+   So the TOUR itself now changes, per career. A rule lands, a purse curve is rewritten, the fields
+   shrink, a championship is added or scrapped. Every change is announced in the off-season and is then
+   simply TRUE for the rest of the career: you are never asked a question, you wake up in a different
+   tour and have to solve it with the golfer you already built.
+
+   Deliberately layer 1, not another pop-up. The in-season interruption budget stays at 2 (see
+   SEASON_STOP_BUDGET). An announcement fires BEFORE the first event of a season, so it costs the
+   sim nothing, and everything after that is a number that quietly moved.
+
+   The measure of success: two players run thirty years and come back saying "the tour I played in was
+   not the tour you played in".                                                                      */
+
+const TOUR_MIN_YEAR=3;      // the tour leaves a rookie alone while they find their feet
+const TOUR_CHANCE=0.42;     // per eligible season
+const TOUR_GAP=2;           // never two seasons running: a change needs room to be felt
+
+/* Each change carries the numbers it moves (`eff`) and a plain sentence about who it helps and who it
+   hurts (`line`), because a structural change nobody can read is just a silent nerf.
+   `grp` = a policy area. A later change in the same area SUPERSEDES the earlier one, which is what
+   lets the tour swing back: a commissioner who wants lower scores, then one who wants birdies.
+   `arg` (optional, via `pick`) is chosen once when the change lands and stored with it, so a change
+   that names a victim (an event that dies, a major that moves) names the same one forever.        */
+const TOUR_CHANGES=[
+  // ---------------- equipment + setup ----------------
+  {id:'rollback', grp:'ball', cat:'Equipment', icon:'🪨',
+   name:'The Ball Rollback',
+   head:'The tour deadens the golf ball',
+   blurb:'After a decade of argument the tour votes through a distance rollback. Every ball in play is slower off the face from the first event of the season. Everybody loses yardage, but the players who built a career on raw power lose the most, because the rest of their game was never asked to carry them.',
+   eff:{w:{dist:0.86, acc:1.06, app:1.05}},
+   line:'Driving Distance counts for much less everywhere. Accuracy and Approach count for more.'},
+
+  {id:'grooves', grp:'grooves', cat:'Equipment', icon:'⚙',
+   name:'The Groove Rule',
+   head:'Wedge grooves are reined in',
+   blurb:'A new spin limit lands on every wedge in every bag. Balls no longer check out of the rough the way they used to, and the recovery artists who lived off a magic hand around the green find the shot is simply gone.',
+   eff:{w:{sht:0.87, scr:0.87, app:1.06, put:1.04}},
+   line:'Short Game and Scrambling count for less. Approach and Putting matter more.'},
+
+  {id:'setup_hard', grp:'setup', cat:'Setup', icon:'🧱',
+   name:'The Tightening',
+   head:'A new commissioner decides scores are too low',
+   blurb:'Rough goes up, greens speed up, par-5s get stretched and pins move to the corners. The tour spends the next few years scoring worse across the board, and holding it together on a Sunday becomes a skill in itself.',
+   eff:{score:0.55, w:{clu:1.14, acc:1.05}},
+   line:'Every score on tour goes up. Composure and Accuracy matter more.',
+   when:c=>c.grp.setup!=='setup_hard'},
+
+  {id:'setup_easy', grp:'setup', cat:'Setup', icon:'🎯',
+   name:'Birdies Sell Tickets',
+   head:'The tour softens its setups',
+   blurb:'A different regime decides nobody ever bought a ticket to watch a par. Fairways widen, greens soften, pins come back toward the middle and the leaderboards go deep red again.',
+   eff:{score:-0.5, w:{put:1.1, app:1.04}},
+   line:'Scoring gets easier everywhere. Putting and Approach matter more.',
+   when:c=>c.grp.setup!=='setup_easy'},
+
+  {id:'pace', grp:'pace', cat:'Rules', icon:'⏱',
+   name:'The Pace of Play Crackdown',
+   head:'The shot clock arrives',
+   blurb:'Slow play stops being a talking point and starts being a penalty. Officials are told to time groups and to actually apply the stroke, and the players who stand over it the longest are the ones who find out first.',
+   eff:{pace:true},
+   line:'A golfer with weak Composure will occasionally be docked a stroke.'},
+
+  // ---------------- money + access ----------------
+  {id:'purse_flat', grp:'purse', cat:'Money', icon:'⚖',
+   name:'The Flat Purse',
+   head:'The tour protects the rank and file',
+   blurb:'Under pressure from the middle of the membership the tour flattens the pay curve. A win is worth less than it was, and a season of quiet weekend finishes is worth a great deal more.',
+   eff:{payout:0.8},
+   line:'Winners earn less, everyone who makes the cut earns more.',
+   when:c=>c.grp.purse!=='purse_flat'},
+
+  {id:'purse_steep', grp:'purse', cat:'Money', icon:'📈',
+   name:'Winner Takes More',
+   head:'The tour rewards the winners',
+   blurb:'The pendulum swings the other way: the tour steepens the pay curve to make Sunday matter. Win and you are paid like it. Grind out a tie for 30th and you will notice the difference.',
+   eff:{payout:1.28},
+   line:'Winners earn far more, the middle of the field earns less.',
+   when:c=>c.grp.purse!=='purse_steep'},
+
+  {id:'fields_shrink', grp:'fields', cat:'Access', icon:'🔒',
+   name:'The Exemption War',
+   head:'Signature fields shrink',
+   blurb:'The elevated events cut their fields to make the weeks feel bigger. Fewer players, more money each, and a much shorter list of people allowed through the gate. If you are outside the world ranking cut you are playing the opposite-field event for a living.',
+   eff:{entry:{sig:36, major:84}},
+   line:'Signature events invite the top 36 and majors the top 84. Getting in is far harder.',
+   when:c=>c.grp.fields!=='fields_shrink'},
+
+  {id:'fields_open', grp:'fields', cat:'Access', icon:'🔑',
+   name:'The Open Door',
+   head:'The tour widens its fields',
+   blurb:'A backlash against the closed shop: the elevated events are told to let more players in. The weeks are deeper, the cuts are harder, and a player on the fringe of the ranking finally gets a look at the big purses.',
+   eff:{entry:{sig:64, major:120}},
+   line:'Signature events invite the top 64 and majors the top 120. Getting in is easier.',
+   when:c=>c.grp.fields!=='fields_open'},
+
+  {id:'card_tight', grp:'card', cat:'Access', icon:'✂',
+   name:'The Card Squeeze',
+   head:'The Tour Card line moves to 70',
+   blurb:'The tour decides too many players are keeping status on too little golf. The card line moves up thirty places overnight, and a whole tier of careers that were comfortably safe last season are suddenly playing for their jobs.',
+   eff:{card:70},
+   line:'You must finish inside the world top 70 to keep your card.',
+   when:c=>c.grp.card!=='card_tight'},
+
+  {id:'card_loose', grp:'card', cat:'Access', icon:'🛡',
+   name:'The Safety Net',
+   head:'The Tour Card line moves to 125',
+   blurb:'After a run of good players losing status on one bad year, the tour widens the card line and adds a season-long safety net. Careers get longer, and the fringe stops being a cliff edge.',
+   eff:{card:125},
+   line:'You keep your card by finishing inside the world top 125.',
+   when:c=>c.grp.card!=='card_loose'},
+
+  // ---------------- schedule + format ----------------
+  {id:'finale_shootout', grp:'finale', cat:'Format', icon:'🏆',
+   name:'The Straight Shootout',
+   head:'The Cup finale drops the staggered start',
+   blurb:'The season finale scraps starting strokes. Thirty players, four rounds, level pegging, lowest score lifts the Cup. A points leader no longer arrives with a head start, and a hot week in the last event can steal the whole season.',
+   eff:{noStagger:true},
+   line:'The finale is a straight 30-player shootout. No head start for the points leader.'},
+
+  {id:'bracket_expand', grp:'bracket', cat:'Format', icon:'⚔',
+   name:'The Bracket Expands',
+   head:'The Match Play Championship goes to 64',
+   blurb:'The knockout week has been the most watched event on the calendar, so the tour doubles it. Sixty-four players, six rounds, and a first round that finally lets the world number one be ambushed by somebody nobody has heard of.',
+   eff:{bracket:64},
+   line:'The Match Play Championship takes 64 players instead of 32.',
+   when:c=>c.bracket && c.grp.bracket!=='bracket_expand'},
+
+  {id:'bracket_axed', grp:'bracket', cat:'Format', icon:'🗓',
+   name:'The Bracket Is Scrapped',
+   head:'The Match Play Championship is cancelled',
+   blurb:'The sponsors were promised a Sunday with stars in it and got a final between the 19th and 27th seeds. After one board meeting the knockout week is gone from the calendar, and the tour goes back to counting strokes.',
+   eff:{bracket:0},
+   line:'The Match Play Championship is off the schedule.',
+   when:c=>c.bracket && c.grp.bracket!=='bracket_axed' && c.year>=(c.bracketYear||0)+3},
+
+  {id:'event_dies', grp:null, cat:'Schedule', icon:'⚑',
+   pick:(c,rng)=>{ const pool=REG_POOL.map(e=>e.name).filter(n=>!c.dropped.includes(n));
+                   return pool.length>4 ? pool[Math.floor(rng()*pool.length)] : null; },
+   name:a=>'The End of the '+a,
+   head:a=>'A sponsor walks away from the '+a,
+   blurb:a=>'After years of rumor the title sponsor of the '+a+' finally pulls out, and the tour cannot find anybody to take the week. The tournament comes off the schedule for good. Somebody out there has won it and will never get to defend it.',
+   eff:a=>({drop:[a]}),
+   line:a=>'The '+a+' is gone from the rotating schedule.'},
+
+  {id:'major_venue', grp:null, cat:'Schedule', icon:'🌍',
+   pick:(c,rng)=>{ const m=Object.keys(MAJOR_KEYS||{}).filter(n=>!c.moved.includes(n));
+                   return m.length ? m[Math.floor(rng()*m.length)] : null; },
+   name:a=>a+' Moves',
+   head:a=>'A new rota for the '+a,
+   blurb:a=>'The championship committee tears up the venue rota. From this season the '+a+' is played on a completely different kind of golf course, and every player who had the old one figured out has to start again.',
+   eff:a=>({fitSwap:[a]}),
+   line:a=>'The '+a+' now rewards a different kind of golfer.'},
+];
+const TOUR_BY_ID={}; TOUR_CHANGES.forEach(c=>TOUR_BY_ID[c.id]=c);
+
+// A moved major is re-fit toward one of these characters, picked from the change's own stored arg so
+// the same major always lands on the same rota within a career. Reuses the measured COURSEFIT shapes.
+const TOUR_FIT_SWAP=[
+  {n:'a wind-blasted links', f:{dist:1.33,acc:1.33,app:0.85,sht:1.11,scr:1.11,bnk:1.11,put:1.27,clu:1}},
+  {n:'a brutal parkland test', f:{dist:1.26,acc:1.26,app:1.19,sht:1.40,scr:1.40,bnk:1.40,put:1.19,clu:1}},
+  {n:'a short, strategic classic', f:{dist:0.82,acc:1.30,app:1.25,sht:1.15,scr:1.15,bnk:1.05,put:1.15,clu:1}},
+  {n:'a wide-open birdie track', f:{dist:1.25,acc:1.25,app:0.82,sht:0.99,scr:0.99,bnk:0.99,put:1.01,clu:1}},
+];
+
+function tourOn(){ return !S.daily && !S.circuitMode && !!S.career; }
+function tourState(){ const c=(S.career=S.career||{}); if(!c.tour||!Array.isArray(c.tour.ch)) c.tour={ch:[]}; return c.tour; }
+function tourHistory(){ try{ return tourOn()?tourState().ch:[]; }catch(e){ return []; } }
+
+/* The active set: walk the history in order, a later change in a policy area replaces the earlier one.
+   Ungrouped changes (an event dying, a major moving) all stay in force forever.                     */
+function tourActive(){
+  const h=tourHistory(); if(!h.length) return [];
+  const byGrp={}, loose=[];
+  h.forEach(e=>{ const d=TOUR_BY_ID[e.id]; if(!d) return; if(d.grp) byGrp[d.grp]=e; else loose.push(e); });
+  return Object.keys(byGrp).map(g=>byGrp[g]).concat(loose);
+}
+function tourGrpMap(){
+  const m={}; tourHistory().forEach(e=>{ const d=TOUR_BY_ID[e.id]; if(d&&d.grp) m[d.grp]=e.id; }); return m;
+}
+const tourEffOf=(d,arg)=>(typeof d.eff==='function'?d.eff(arg):d.eff)||{};
+const tourTxt=(v,arg)=>(typeof v==='function'?v(arg):v);
+
+/* The aggregate: one object the rest of the game reads. Memoized on the history signature because
+   eventWeights() calls this for every player of every round.                                        */
+var _tourEffCache=null;
+function tourEff(){
+  try{
+    if(!tourOn()) return TOUR_EFF_NONE;
+    const act=tourActive(); if(!act.length) return TOUR_EFF_NONE;
+    const sig=act.map(e=>e.id+':'+(e.arg||'')).join('|');
+    if(_tourEffCache && _tourEffCache.sig===sig) return _tourEffCache.e;
+    const o={w:{}, score:0, payout:1, entry:null, card:null, noStagger:false, pace:false,
+             bracket:null, drop:[], fit:{}, fitName:{}, any:true};
+    act.forEach(e=>{
+      const d=TOUR_BY_ID[e.id]; if(!d) return;
+      const f=tourEffOf(d,e.arg);
+      if(f.w) Object.keys(f.w).forEach(k=>{ o.w[k]=(o.w[k]||1)*f.w[k]; });
+      if(f.score) o.score+=f.score;
+      if(f.payout) o.payout*=f.payout;
+      if(f.entry) o.entry=Object.assign({}, o.entry||{}, f.entry);
+      if(f.card!=null) o.card=f.card;
+      if(f.noStagger) o.noStagger=true;
+      if(f.pace) o.pace=true;
+      if(f.bracket!=null) o.bracket=f.bracket;
+      if(f.drop) o.drop=o.drop.concat(f.drop);
+      if(f.fitSwap) f.fitSwap.forEach(n=>{
+        const sw=TOUR_FIT_SWAP[Math.abs(dHash(String(n)+'|'+e.year))%TOUR_FIT_SWAP.length];
+        o.fit[n]=sw.f; o.fitName[n]=sw.n;
+      });
+    });
+    _tourEffCache={sig,e:o};
+    return o;
+  }catch(err){ return TOUR_EFF_NONE; }
+}
+const TOUR_EFF_NONE={w:{}, score:0, payout:1, entry:null, card:null, noStagger:false, pace:false,
+                     bracket:null, drop:[], fit:{}, fitName:{}, any:false};
+
+/* ---- the accessors the rest of the game calls (all safe outside a career) ---- */
+function tourWeightMul(){ return tourEff().w; }
+function tourScoreAdj(){ return tourEff().score||0; }
+function tourFit(name){ const f=tourEff().fit; return (f&&f[name])||null; }
+function tourEntryCap(evt){
+  const e=tourEff().entry; if(!e||!evt) return evt?evt.entryCap:0;
+  if(evt.major && e.major) return e.major;
+  if(!evt.major && e.sig) return e.sig;
+  return evt.entryCap;
+}
+function cardLine(){ const c=tourEff().card; return c!=null?c:CARD_LINE; }
+function tourBracketSize(){ const b=tourEff().bracket; return (b===null||b===undefined)?BRACKET_SIZE:b; }
+function tourBracketOn(){ return tourEff().bracket!==0; }
+function tourDropped(){ return tourEff().drop||[]; }
+
+// the transformed prize curve: k<1 flattens the pay scale, k>1 steepens it. Renormalized so the same
+// share of the purse is still distributed, only its shape changes.
+var _tourPayCache=null;
+function payoutCurve(){
+  const k=tourEff().payout||1;
+  if(k===1) return PAYOUT;
+  if(_tourPayCache && _tourPayCache.k===k) return _tourPayCache.a;
+  const tot=PAYOUT.reduce((a,b)=>a+b,0);
+  const raw=PAYOUT.map(p=>Math.pow(p,k));
+  const s=raw.reduce((a,b)=>a+b,0);
+  const a=raw.map(p=>p*tot/s);
+  _tourPayCache={k,a};
+  return a;
+}
+function payoutAt(i){ const c=payoutCurve(); return c[i]||0; }
+
+/* ---- the roll: does the tour change anything this season? ---- */
+function tourCtx(year){
+  const h=tourHistory();
+  return {
+    year, grp:tourGrpMap(), ids:h.map(e=>e.id),
+    dropped:h.filter(e=>e.id==='event_dies').map(e=>e.arg).filter(Boolean),
+    moved:h.filter(e=>e.id==='major_venue').map(e=>e.arg).filter(Boolean),
+    bracket:(typeof bracketOnSchedule==='function') && bracketOnSchedule(year,S.careerSeed) && tourBracketOn(),
+    bracketYear:(typeof bracketStartYear==='function')?bracketStartYear(S.careerSeed):99,
+  };
+}
+function maybeTourChange(year){
+  if(!tourOn()) return null;
+  const st=tourState();
+  if(year<TOUR_MIN_YEAR) return null;
+  // the season the Match Play Championship arrives is already that year's tour news, don't stack a
+  // second announcement on top of it
+  try{ if(year===bracketStartYear(S.careerSeed)) return null; }catch(e){}
+  const last=st.ch.length?st.ch[st.ch.length-1].year:-99;
+  if(year-last<TOUR_GAP) return null;
+  const rng=mulberry32((((S.careerSeed||0)^(year*0x9e3779b1)^0x70c4)>>>0));
+  if(rng()>TOUR_CHANCE) return null;
+  const ctx=tourCtx(year);
+  const pool=TOUR_CHANGES.filter(d=>{
+    if(ctx.ids.indexOf(d.id)>=0 && !d.pick) return false;          // a one-shot change fires once
+    if(d.when && !d.when(ctx)) return false;
+    return true;
+  });
+  if(!pool.length) return null;
+  const d=pool[Math.floor(rng()*pool.length)];
+  let arg=null;
+  if(d.pick){ arg=d.pick(ctx,rng); if(!arg) return null; }
+  return {id:d.id, year, arg};                    // a CANDIDATE, it only lands once applied or voted through
+}
+function applyTourChange(entry){
+  if(!entry || !tourOn()) return null;
+  tourState().ch.push(entry);
+  _tourEffCache=null; _tourPayCache=null;
+  track('tour_change',{id:entry.id, year:entry.year, arg:entry.arg||''});
+  return entry;
+}
+
+/* ---------------- THE PLAYER ADVISORY COUNCIL ----------------
+   The same structural change, with a face on it. Once you are established enough that the tour wants
+   you in the room, a proposal is put to a vote instead of simply landing, and you vote on it knowing
+   exactly which way it cuts for the golfer you actually built.
+
+   You are ONE seat, not the commissioner: your vote swings the room by COUNCIL_SWING and no more, so a
+   proposal can pass over your objection and the tour keeps being something that happens TO you. That is
+   the whole point. A council that always does what you want is just a menu of buffs.                */
+const COUNCIL_YEAR=6;        // you have to be somebody before they hand you a seat
+const COUNCIL_SWING=9;       // percentage points your vote moves the room
+function councilSeat(){
+  if(!tourOn()) return false;
+  if((S.year||1)<COUNCIL_YEAR) return false;
+  const c=S.career||{};
+  if((c.wins||0)>=2 || (c.majors||0)>=1) return true;
+  // the ranking route only counts against a real field: in an unseeded world myWorldRank() is 1 by
+  // default, which would hand a seat to somebody who has done nothing.
+  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=40) return true; } }catch(e){}
+  return false;
+}
+// the room's own leaning, before you speak. Deterministic per proposal so it cannot be re-rolled.
+function councilBase(entry){
+  const r=mulberry32((((S.careerSeed||0)^dHash(entry.id+'|'+entry.year))>>>0));
+  return 38+Math.floor(r()*26);            // 38-63%: most proposals are genuinely on the bubble
+}
+/* Which way does this cut for YOUR build? Measured, not guessed: for a rule that reshapes the skill
+   weights we run the player's own ratings through this season's schedule both ways and report the
+   difference in event-effective overall. Everything else is read off the state it actually touches. */
+function tourImpact(entry){
+  const d=TOUR_BY_ID[entry.id]; if(!d) return {dir:0, txt:'No direct effect on your game.'};
+  const f=tourEffOf(d,entry.arg);
+  try{
+    if(f.w){
+      const me=S.season&&S.season.me; const sched=S.schedule||[];
+      if(me && sched.length){
+        let base=0,now=0,n=0;
+        sched.forEach(evt=>{
+          if(evt.teamcup) return;
+          const m=COURSEFIT[evt.name]; const raw=CATS.map(c=>({k:c.k,w:c.w*(m?m[c.k]:1)}));
+          const s1=raw.reduce((a,x)=>a+x.w,0);
+          base+=raw.reduce((a,x)=>a+me[x.k]*(x.w/s1),0);
+          const raw2=CATS.map(c=>({k:c.k,w:c.w*(m?m[c.k]:1)*(f.w[c.k]||1)}));
+          const s2=raw2.reduce((a,x)=>a+x.w,0);
+          now+=raw2.reduce((a,x)=>a+me[x.k]*(x.w/s2),0);
+          n++;
+        });
+        if(n){ const dlt=(now-base)/n;
+          if(Math.abs(dlt)<0.12) return {dir:0, txt:'Barely moves your game either way.'};
+          return {dir:dlt>0?1:-1, txt:(dlt>0?'Worth about +':'Costs you about ')+Math.abs(dlt).toFixed(1)+' of effective rating at a typical event, for the build you have now.'};
+        }
+      }
+      return {dir:0, txt:'Reshapes which skills pay. Hard to call for your build.'};
+    }
+    if(f.payout!=null){
+      const c=S.career||{}, sn=Math.max(1,(c.seasons||[]).length), wpy=(c.wins||0)/sn;
+      const steep=f.payout>1;
+      if(wpy>=0.9) return {dir:steep?1:-1, txt:steep?'You win often enough that a steeper curve pays you more.':'You win often enough that a flatter curve costs you.'};
+      return {dir:steep?-1:1, txt:steep?'You do not win often enough for a steeper curve to pay off.':'A flatter curve pays a player with your finishes more.'};
+    }
+    if(f.entry){
+      const r=myWorldRank()||999, cap=f.entry.sig||50;
+      const inNow=r<=50, inAfter=r<=cap;
+      if(inNow&&!inAfter) return {dir:-1, txt:'You are world number '+r+'. This would put you outside the signature-event cut.'};
+      if(!inNow&&inAfter) return {dir:1, txt:'You are world number '+r+'. This would get you back inside the big fields.'};
+      return {dir:inAfter?0:-1, txt:'You are world number '+r+'. '+(inAfter?'You stay inside either way.':'You are outside the cut either way.')};
+    }
+    if(f.card!=null){
+      const r=myWorldRank()||999;
+      if(r<=f.card-25) return {dir:0, txt:'You are world number '+r+'. Your card is safe either way.'};
+      return {dir:f.card>cardLine()?1:-1, txt:'You are world number '+r+'. '+(f.card>cardLine()?'This widens the net under you.':'This moves the line uncomfortably close to you.')};
+    }
+    if(f.bracket!=null){
+      const r=myWorldRank()||999;
+      if(f.bracket===0) return {dir:r<=32?-1:0, txt:r<=32?'You are inside the 32. This takes a week you qualify for off the calendar.':'You are outside the 32, so it is a week you were not playing anyway.'};
+      return {dir:(r>32&&r<=64)?1:0, txt:(r>32&&r<=64)?'You are world number '+r+'. A 64-player draw would let you in.':'You are already inside the 32.'};
+    }
+    if(f.pace){ const clu=(S.season&&S.season.me&&S.season.me.clu)||80;
+      return {dir:clu>=82?1:-1, txt:'Your Composure is '+Math.round(clu)+'. '+(clu>=82?'You are unlikely to be the one penalized.':'Golfers with your Composure are the ones who get timed.')}; }
+    if(f.noStagger){ return {dir:0, txt:'Helps you if you arrive at the finale outside the top few in points, hurts you if you arrive leading it.'}; }
+    if(f.drop) return {dir:0, txt:'One fewer week on the calendar for everybody.'};
+    if(f.fitSwap) return {dir:0, txt:'A different kind of golfer wins it from now on. Could go either way for you.'};
+  }catch(e){}
+  return {dir:0, txt:'No clear effect on your game.'};
+}
+function councilVote(entry, yes){
+  const st=tourState();
+  const base=councilBase(entry);
+  const tally=Math.max(0,Math.min(100, base+(yes?COUNCIL_SWING:-COUNCIL_SWING)));
+  const passed=tally>50;
+  if(passed) applyTourChange(entry);
+  else { st.rej=st.rej||[]; st.rej.push({id:entry.id, year:entry.year, arg:entry.arg}); }
+  track('council_vote',{id:entry.id, yes:!!yes, passed, tally});
+  return {passed, tally, base, yes:!!yes, withYou:(passed===!!yes)};
+}
+function tourNewsFor(id){ return tourHistory().filter(e=>e.id===id)[0]||null; }
 
 /* ==================== CAREER LEGACY ====================
    The complaint this answers: a career ACCUMULATES numbers but the numbers never DO anything. You could
@@ -16453,7 +16901,7 @@ const SPONSOR_GOAL_POOLS={
     {dk:'top5',      kind:'top5',      d:.58, build:c=>({kind:'top5',      target:c.T(2,'top5'),  label:'Record '+c.T(2,'top5')+' top-5 finishes'})},
     {dk:'scoreAvg',  kind:'scoreAvg',  d:.64, build:c=>({kind:'scoreAvg',  target:0.3, minRounds:30, label:'Season scoring average under +0.3 per round'})},
     {dk:'playoffs',  kind:'ptsRank',   d:.78, build:c=>({kind:'ptsRank',   target:70,             label:'Reach the Playoffs · top 70'})},
-    {dk:'card',      kind:'ptsRank',   d:.90, card:true, build:c=>({kind:'ptsRank', target:CARD_LINE, label:'Keep your Tour Card · top '+CARD_LINE})},
+    {dk:'card',      kind:'ptsRank',   d:.90, card:true, build:c=>({kind:'ptsRank', target:cardLine(), label:'Keep your Tour Card · top '+cardLine()})},
     {dk:'top20',     kind:'topN',      d:.34, build:c=>({kind:'topN', n:20,  target:c.T(5,'top10'), label:'Record '+c.T(5,'top10')+' top-20 finishes'})},
     {dk:'moneyRank', kind:'moneyRank', d:.70, build:c=>({kind:'moneyRank', target:100,             label:'Finish top 100 on the money list'})},
     {dk:'majorT10',  kind:'majorTop10',d:.84, build:c=>({kind:'majorTop10', target:1,              label:'Post a top-10 at a major'})},
@@ -17303,11 +17751,11 @@ function simPlayoff(contenders,major){
 // 1st, so list[0] takes 1st outright and grouping starts from 2nd.
 function assignTies(list,soloFirst){
   let i=0;
-  if(soloFirst && list.length){ list[0].pos=1; list[0].tied=false; list[0].pct=(PAYOUT[0]||0); i=1; }
+  if(soloFirst && list.length){ list[0].pos=1; list[0].tied=false; list[0].pct=payoutAt(0); i=1; }
   while(i<list.length){
     const s=Math.round(list[i].total);
     let j=i; while(j+1<list.length && Math.round(list[j+1].total)===s) j++;
-    const n=j-i+1; let pctSum=0; for(let k=i;k<=j;k++) pctSum+=(PAYOUT[k]||0);
+    const n=j-i+1; let pctSum=0; for(let k=i;k<=j;k++) pctSum+=payoutAt(k);
     const each=pctSum/n;
     for(let k=i;k<=j;k++){ list[k].pos=i+1; list[k].tied=n>1; list[k].pct=each; }
     i=j+1;
@@ -18323,6 +18771,66 @@ function raceToCupNode(byPts, evt){
 /* ================= TOUR NEWS: the league makes a structural change =================
    A one-time card at the top of the season a change lands. Not part of the in-season interruption
    budget, this fires BEFORE the first event rather than stopping the sim mid-schedule.            */
+// A proposal voted through at the top of a season can take an event off the calendar or scrap the
+// bracket, so the schedule is rebuilt. Safe here and only here: the season has not started yet, and
+// S.season.results is indexed by schedule position.
+function tourResync(){
+  try{
+    if(S.daily||S.circuitMode) return;
+    if((S.evtIndex||0)!==0 || (S.season && S.season.results && S.season.results.length)) return;
+    S.schedule=seasonSchedule(S.year||1, S.careerSeed);
+  }catch(e){}
+}
+/* The council floor. Same slot as a tour-news announcement (before the first event), so it costs the
+   in-season interruption budget nothing. */
+function scrCouncilVote(){
+  const p=S.pendingTourVote, d=p&&TOUR_BY_ID[p.id];
+  if(!d){ S.pendingTourVote=null; return scrSeason(); }
+  RT.classList.add('major-screen');
+  const res=S.tourVoteResult;
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--teal);border-color:rgba(47,208,168,.5);background:rgba(47,208,168,.10)">⚖ Player Advisory Council · Year ${S.year||1}</span></div>`));
+  if(!res){
+    const im=tourImpact(p);
+    const col=im.dir>0?'#35d6a0':im.dir<0?'#E14A33':'var(--muted)';
+    const lbl=im.dir>0?'Good for your build':im.dir<0?'Bad for your build':'Neutral for your build';
+    add($(`<div class="tnews">
+      <div class="tn-kick">${esc(d.icon||'')} ${esc(d.cat)} · a proposal is on the table</div>
+      <h2 class="tn-h">${esc(tourTxt(d.name,p.arg))}</h2>
+      <p class="tn-p">${esc(tourTxt(d.blurb,p.arg))}</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">If it passes</span><span class="tn-v">${esc(tourTxt(d.line,p.arg))}</span></div>
+      </div>
+      <div class="cvimp" style="border-color:${col}">
+        <div class="cv-l" style="color:${col}">${lbl}</div>
+        <div class="cv-t">${esc(im.txt)}</div>
+      </div>
+      <p class="tn-p" style="margin-bottom:0;color:var(--muted);font-size:13px">You hold one seat of many. The room votes with or without you.</p>
+    </div>`));
+    const row=$(`<div style="display:flex;gap:10px;max-width:460px;margin:14px auto 0"></div>`);
+    const mk=(txt,yes,cls)=>{ const b=$(`<button class="btn ${cls}" style="flex:1">${txt}</button>`);
+      b.onclick=()=>{ S.tourVoteResult=councilVote(p,yes); if(S.tourVoteResult.passed) tourResync(); render(); }; return b; };
+    // both sides carry the same visual weight: a vote where one option is styled as the primary is a
+    // recommendation, not a vote. Gold = pass the change, teal = keep the tour as it is.
+    row.appendChild(mk('Vote for<div class="sub">pass it</div>',true,'goldsel'));
+    row.appendChild(mk('Vote against<div class="sub">keep it as is</div>',false,'tealsel'));
+    add(row);
+  } else {
+    const ok=res.passed;
+    add($(`<div class="tnews">
+      <div class="tn-kick">The council has voted</div>
+      <h2 class="tn-h" style="color:${ok?'var(--gold)':'var(--muted)'}">${ok?'Passed':'Rejected'}</h2>
+      <p class="tn-p"><b>${esc(tourTxt(d.name,p.arg))}</b> ${ok?'passes the council and is in force from this season.':'is voted down and the tour carries on as it was.'}</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">The room</span><span class="tn-v">${res.tally}% in favor</span></div>
+        <div><span class="tn-l">Your seat</span><span class="tn-v">${res.yes?'For':'Against'}</span></div>
+      </div>
+      <p class="tn-p" style="margin-bottom:0">${res.withYou?'The room went with you.':'The room went against you. You are one seat of many.'}${ok?' '+esc(tourTxt(d.line,p.arg)):''}</p>
+    </div>`));
+    const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">Start the season ▸</button>`);
+    b.onclick=()=>{ S.pendingTourVote=null; S.tourVoteResult=null; render(); };
+    add(b);
+  }
+}
 function scrTourNews(){
   const kind=S.pendingTourNews;
   RT.classList.add('major-screen');
@@ -18340,10 +18848,80 @@ function scrTourNews(){
       </div>
       <p class="tn-p" style="margin-bottom:0">It sits at <b>week ${BRACKET_WK}</b> from now on. Miss the 32 and you play the opposite-field event that week and watch it on TV.</p>
     </div>`));
+  } else {
+    // TOUR ERAS: the tour changed something. Announced once, then simply true for the rest of the career.
+    const d=TOUR_BY_ID[kind], arg=S.pendingTourArg;
+    if(!d){ S.pendingTourNews=null; return scrSeason(); }
+    add($(`<div class="tnews">
+      <div class="tn-kick">${esc(d.icon||'')} ${esc(d.cat)} · the tour announces</div>
+      <h2 class="tn-h">${esc(tourTxt(d.name,arg))}</h2>
+      <p class="tn-p"><b>${esc(tourTxt(d.head,arg))}.</b> ${esc(tourTxt(d.blurb,arg))}</p>
+      <div class="tn-facts">
+        <div><span class="tn-l">In force</span><span class="tn-v">From this season</span></div>
+        <div><span class="tn-l">Applies to</span><span class="tn-v">The whole tour</span></div>
+      </div>
+      <p class="tn-p" style="margin-bottom:0"><b>What it means for you:</b> ${esc(tourTxt(d.line,arg))}</p>
+    </div>`));
   }
   const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">Start the season ▸</button>`);
-  b.onclick=()=>{ S.pendingTourNews=null; track('tour_news_ack',{kind, year:S.year||1}); render(); };
+  b.onclick=()=>{ S.pendingTourNews=null; S.pendingTourArg=null; track('tour_news_ack',{kind, year:S.year||1}); render(); };
   add(b);
+  const f=$(`<button class="btn ghost" style="max-width:420px;margin:9px auto 0">📰 All tour news ▸<span class="sub">Every change the tour has made in your career</span></button>`);
+  f.onclick=()=>{ S.overlay='tournews'; render(); };
+  add(f);
+}
+
+/* ================= THE TOUR: what this career's tour actually looks like =================
+   The force multiplier for everything above. A structural change nobody can read is a silent number
+   move, so this is the running record: the rules in force right now, then the history that got here. */
+function tourRuleRows(){
+  // tourActive() returns group-last-wins order, which reads as scrambled here. The feed is a record, so
+  // it is sorted by the year the rule came in.
+  const act=tourActive().filter(e=>TOUR_BY_ID[e.id]).slice().sort((a,b)=>a.year-b.year);
+  if(!act.length) return '<p class="small" style="text-align:center;color:var(--muted);margin:6px 0 0">The tour is playing by its founding rules. Nothing has changed yet.</p>';
+  return act.map(e=>{ const d=TOUR_BY_ID[e.id];
+    return `<div class="trule"><div class="tr-i">${esc(d.icon||'')}</div><div><div class="tr-n">${esc(tourTxt(d.name,e.arg))}</div>
+      <div class="tr-l">${esc(tourTxt(d.line,e.arg))}</div>
+      <div class="tr-y">In force since Year ${e.year}</div></div></div>`;
+  }).join('');
+}
+// The career-end retrospective. "The tour I played in was not the tour you played in" is a thing you say
+// looking BACK, so the ceremony gets the whole list of what the organization did while you were on it.
+function tourRetroNode(){
+  const h=tourHistory(); if(!h.length) return null;
+  const n=h.length;
+  const w=$(`<div class="scout" style="margin-top:14px;text-align:left">
+    <div class="tn-kick" style="text-align:center">The tour you played in</div>
+    <p class="small" style="text-align:center;color:var(--muted);margin:2px 0 10px">The organization changed ${n} time${n>1?'s':''} while you were on it. No other career saw quite this tour.</p>
+    <div>${h.slice().reverse().map(e=>{
+      if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">A 32-player knockout championship joins the schedule.</div></div></div>`;
+      const d=TOUR_BY_ID[e.id]; if(!d) return '';
+      return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.line,e.arg))}</div></div></div>`;
+    }).join('')}</div></div>`);
+  return w;
+}
+function overlayTourNews(app){
+  const ov=$(`<div class="ov tnov"></div>`);
+  ov.appendChild($(`<h3 style="margin:0 0 2px">The Tour</h3>`));
+  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">The tour changes around you. Every career gets a different one.</p>`));
+  ov.appendChild($(`<h2 style="margin:6px 0 8px">Rules in force</h2>`));
+  ov.appendChild($(`<div>${tourRuleRows()}</div>`));
+  const rej=(function(){ try{ return (tourState().rej||[]); }catch(e){ return []; } })();
+  const h=tourHistory().map(e=>Object.assign({},e,{rej:false})).concat(rej.map(e=>Object.assign({},e,{rej:true})))
+            .sort((a,b)=>a.year-b.year).reverse();
+  ov.appendChild($(`<h2 style="margin:22px 0 8px">Tour news</h2>`));
+  if(!h.length){ ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted)">Nothing has happened yet. Keep playing.</p>`)); }
+  else ov.appendChild($(`<div>${h.map(e=>{
+    if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">The tour adds a 32-player knockout championship.</div></div></div>`;
+    const d=TOUR_BY_ID[e.id]; if(!d) return '';
+    if(e.rej) return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t" style="color:var(--muted)">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">Proposed, and voted down by the council.</div></div></div>`;
+    return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.head,e.arg))}.</div></div></div>`;
+  }).join('')}</div>`));
+  const x=$(`<button class="x" aria-label="Close">✕</button>`); x.onclick=()=>{ S.overlay=null; render(); };
+  ov.appendChild(x);
+  const c=$(`<button class="btn red" style="margin-top:18px">Close</button>`); c.onclick=()=>{ S.overlay=null; render(); };
+  ov.appendChild(c);
+  app.appendChild(ov);
 }
 
 /* ================= THE MATCH PLAY CHAMPIONSHIP screen =================
@@ -18519,6 +19097,7 @@ function scrSeason(){
   // TOUR NEWS: the league announcing a structural change (the Match Play Championship) gets its own
   // one-time card at the top of the season it lands. Not part of the in-season interruption budget -
   // it fires before the first event, not mid-schedule.
+  if(!S.daily && S.pendingTourVote){ scrCouncilVote(); return; }
   if(!S.daily && S.pendingTourNews){ scrTourNews(); return; }
   // The Match Play Championship: inside the top 32 -> the bracket screen. Miss it and beginEvent runs
   // the championship headlessly and gives you the same-week tour stop instead.
@@ -27193,6 +27772,7 @@ function scrCareerEnd(){
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
   { const lg=legacyListHTML(); if(lg) add($(lg)); }    // what this career earned, permanently
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
+  { const tn=tourRetroNode(); if(tn) add(tn); }        // TOUR ERAS: the tour you actually played in
   { const sf=storyFeedHTML(); if(sf){ const w=$(`<div style="max-width:520px;margin:0 auto"></div>`); w.innerHTML=emojifyIcons(sf); add(w); } }   // CS225 Career Story
   // career record at the 4 major championships
   const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
