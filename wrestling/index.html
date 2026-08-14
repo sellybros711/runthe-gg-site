@@ -140,6 +140,94 @@
   .tile-opt .tlock{position:absolute;top:4px;right:5px;font-size:12px;}
   .swrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
 
+  /* ===================== LIVE MATCH ===================== */
+  #s-fight{max-width:1000px;margin:0 auto;}
+  .fhud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;margin-bottom:10px;}
+  .fs .fnm{font-family:var(--display);font-size:19px;letter-spacing:.03em;text-transform:uppercase;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fs.right{text-align:right;}
+  .fbar{height:16px;background:rgba(0,0,0,.55);border:2px solid var(--line);border-radius:4px;overflow:hidden;margin-top:4px;}
+  .fbar i{display:block;height:100%;background:linear-gradient(180deg,#7ddc9f,#3f9b68);transition:width .45s cubic-bezier(.2,.8,.3,1);box-shadow:0 0 12px rgba(91,176,131,.5);}
+  .fbar.rev i{margin-left:auto;background:linear-gradient(180deg,#f0907f,#b53225);box-shadow:0 0 12px rgba(198,57,44,.5);}
+  .fbar i.low{background:linear-gradient(180deg,#f5c46a,#d08b1c)!important;}
+  .fbar i.crit{background:linear-gradient(180deg,#f0907f,#a32a1e)!important;animation:critPulse .6s infinite;}
+  @keyframes critPulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .fsub{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:3px;}
+  .fmid{text-align:center;}
+  .fstip{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);font-weight:800;}
+  .fclock{font-family:var(--display);font-size:24px;color:var(--brandred-bright);line-height:1;}
+
+  .momwrap{margin-bottom:10px;}
+  .momhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);font-weight:800;text-align:center;margin-bottom:3px;}
+  .mombar{position:relative;height:14px;background:rgba(0,0,0,.6);border:2px solid var(--line);border-radius:999px;overflow:hidden;display:flex;}
+  .momfill{height:100%;transition:width .5s cubic-bezier(.2,.9,.25,1);}
+  .momfill.me{background:linear-gradient(90deg,#3f9b68,#7ddc9f);margin-left:auto;}
+  .momfill.opp{background:linear-gradient(90deg,#f0907f,#b53225);}
+  .momtick{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(244,232,219,.55);transform:translateX(-1px);}
+
+  .arena{position:relative;height:300px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:radial-gradient(ellipse at 50% 20%,rgba(198,57,44,.16),transparent 60%),linear-gradient(180deg,#161113,#0b0a0a);}
+  .arena.shake{animation:shk .32s;}
+  @keyframes shk{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
+  .arena .crowd{position:absolute;top:0;left:0;right:0;height:42%;background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);opacity:.5;}
+  .arena .mat{position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(180deg,#3a2b2b,#241a1a);border-top:3px solid #C6392C;}
+  .arena .mat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 26px,transparent 26px 52px);}
+  .arena .ropes{position:absolute;left:0;right:0;bottom:26%;height:34%;pointer-events:none;
+    background:linear-gradient(180deg,transparent 0,transparent 18%,rgba(244,232,219,.34) 18%,rgba(244,232,219,.34) 21%,transparent 21%,transparent 52%,rgba(244,232,219,.30) 52%,rgba(244,232,219,.30) 55%,transparent 55%,transparent 86%,rgba(244,232,219,.26) 86%,rgba(244,232,219,.26) 89%,transparent 89%);}
+
+  .fighter{position:absolute;bottom:6%;width:150px;transition:transform .16s ease-out,filter .16s;z-index:3;}
+  .fighter svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));}
+  .fighter.me{left:20%;animation:bobA 1.5s ease-in-out infinite;}
+  .fighter.opp{right:20%;transform:scaleX(-1);animation:bobB 1.5s ease-in-out infinite;}
+  @keyframes bobA{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes bobB{0%,100%{transform:scaleX(-1) translateY(0)}50%{transform:scaleX(-1) translateY(-5px)}}
+  .fighter.atkA{animation:none!important;transform:translateX(120px) translateY(-8px) scale(1.06)!important;}
+  .fighter.atkB{animation:none!important;transform:scaleX(-1) translateX(120px) translateY(-8px) scale(1.06)!important;}
+  .fighter.hitA{animation:none!important;transform:translateX(-26px) rotate(-9deg)!important;filter:brightness(2.4) saturate(.3);}
+  .fighter.hitB{animation:none!important;transform:scaleX(-1) translateX(-26px) rotate(-9deg)!important;filter:brightness(2.4) saturate(.3);}
+  .fighter.downA{animation:none!important;transform:translateY(28px) rotate(-78deg)!important;}
+  .fighter.downB{animation:none!important;transform:scaleX(-1) translateY(28px) rotate(-78deg)!important;}
+
+  .fxlayer{position:absolute;inset:0;pointer-events:none;z-index:5;}
+  .burst{position:absolute;transform-origin:center;font-family:var(--display);font-size:34px;color:#e0b341;text-shadow:0 0 12px rgba(224,179,65,.8),0 3px 0 #7a2018;animation:burstA .55s ease-out forwards;}
+  @keyframes burstA{0%{transform:scale(.3) rotate(-14deg);opacity:0}30%{transform:scale(1.25) rotate(6deg);opacity:1}100%{transform:scale(1.5) translateY(-30px);opacity:0}}
+  .dmgnum{position:absolute;font-family:var(--mono);font-weight:800;font-size:19px;color:#F4E8DB;text-shadow:0 2px 0 #000;animation:dmgA .8s ease-out forwards;}
+  @keyframes dmgA{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-46px);opacity:0}}
+  .callout{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:var(--display);font-size:40px;letter-spacing:.04em;
+    color:var(--cream);text-transform:uppercase;text-shadow:0 0 22px rgba(198,57,44,.9),0 4px 0 #6d1a13;opacity:0;z-index:6;pointer-events:none;}
+  .callout.show{animation:callA 1.05s ease-out;}
+  @keyframes callA{0%{opacity:0;transform:scale(.5)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
+  .pincount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:120px;color:#fff;
+    text-shadow:0 0 40px rgba(198,57,44,1);opacity:0;z-index:7;pointer-events:none;}
+  .pincount.show{animation:pinA .62s ease-out;}
+  @keyframes pinA{0%{opacity:0;transform:scale(2.2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:8;pointer-events:none;}
+  .flash.go{animation:flashA .3s ease-out;}
+  @keyframes flashA{0%{opacity:.85}100%{opacity:0}}
+
+  .fbottom{margin-top:12px;display:grid;grid-template-columns:1fr;gap:10px;}
+  .flog{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;height:96px;overflow-y:auto;font-size:13.5px;line-height:1.6;}
+  .flog div{opacity:0;animation:logA .3s forwards;}
+  @keyframes logA{to{opacity:1}}
+  .flog b{color:var(--cream);} .flog .hi{color:var(--gold);font-weight:800;}
+  .flog .bad{color:#f0907f;}
+  .fdec{display:none;}
+  .fdec.on{display:block;background:linear-gradient(180deg,rgba(198,57,44,.20),rgba(0,0,0,.25));border:1.5px solid var(--brandred);border-radius:14px;padding:14px;animation:decA .3s ease-out;}
+  @keyframes decA{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+  .dechead{font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;}
+  .decsub{font-size:12.5px;color:var(--text-dim);margin-bottom:10px;}
+  .decgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .decopt{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.12s;}
+  .decopt:hover{border-color:var(--brandred);transform:translateY(-2px);background:rgba(198,57,44,.12);}
+  .decopt .dn{font-weight:800;color:var(--cream);font-size:14px;}
+  .decopt .dd{font-size:12px;color:var(--text-faint);margin-top:3px;}
+  .decopt .dp{font-family:var(--mono);font-size:17px;font-weight:800;margin-top:6px;}
+  .dp.good{color:var(--green);} .dp.mid{color:var(--gold);} .dp.bad{color:#f0907f;}
+  .frow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:flex-end;}
+  @media(max-width:640px){ .arena{height:240px;} .fighter{width:92px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
+
   .log{font-size:13.5px; line-height:1.65; color:var(--text-dim);}
   .log b{color:var(--cream);} .log .pop{color:var(--gold);}
   .hint{color:var(--text-faint); font-size:12.5px;}
@@ -297,6 +385,55 @@
         <div id="carAttrs"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============ LIVE MATCH (Mortal-Kombat style) ============ -->
+<div class="screen" id="s-fight">
+  <div class="fhud">
+    <div class="fs left">
+      <div class="fnm" id="fMeName">YOU</div>
+      <div class="fbar"><i id="hpMe" style="width:100%"></i></div>
+      <div class="fsub" id="fMeSub">—</div>
+    </div>
+    <div class="fmid">
+      <div class="fstip" id="fStip">SINGLES MATCH</div>
+      <div class="fclock" id="fClock">BELL</div>
+    </div>
+    <div class="fs right">
+      <div class="fnm" id="fOppName">OPPONENT</div>
+      <div class="fbar rev"><i id="hpOpp" style="width:100%"></i></div>
+      <div class="fsub" id="fOppSub">—</div>
+    </div>
+  </div>
+
+  <div class="momwrap">
+    <div class="momhead"><span>MOMENTUM</span></div>
+    <div class="mombar">
+      <div class="momfill me" id="momMe"></div>
+      <div class="momfill opp" id="momOpp"></div>
+      <div class="momtick"></div>
+    </div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="ropes"></div>
+    <div class="crowd" id="crowd"></div>
+    <div class="mat"></div>
+    <div class="fighter me" id="fMe"></div>
+    <div class="fighter opp" id="fOpp"></div>
+    <div class="fxlayer" id="fFx"></div>
+    <div class="callout" id="fCall"></div>
+    <div class="pincount" id="fPin"></div>
+  </div>
+
+  <div class="fbottom">
+    <div class="flog" id="fLog"></div>
+    <div class="fdec" id="fDec"></div>
+  </div>
+  <div class="frow">
+    <button class="ghost" id="fSpeed" onclick="cycleSpeed()">Speed 1x</button>
+    <button class="ghost" onclick="skipFight()">Skip to Result</button>
   </div>
 </div>
 
@@ -903,13 +1040,285 @@ function makeOffers(){
 /* ============================================================
    MATCH SIM
    ============================================================ */
+/* ============================================================
+   LIVE MATCH ENGINE — animated, momentum-driven, with decisions
+   ============================================================ */
+let MS=null, FIGHT_SPEED=1;
+const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED));
+function cycleSpeed(){ FIGHT_SPEED = FIGHT_SPEED===1?2:FIGHT_SPEED===2?4:1; $('fSpeed').textContent='Speed '+FIGHT_SPEED+'x'; }
+
+// deterministic pixel look for an opponent, from their id/name
+function oppLook(id,name){
+  let h=0; const src=(id||name||'x')+''; for(let i=0;i<src.length;i++) h=(h*31+src.charCodeAt(i))>>>0;
+  const nx=n=>{ h=(h*1664525+1013904223)>>>0; return Math.floor(h/4294967296*n); };
+  const pool=s=>COSM.filter(c=>c.slot===s).map(c=>c.v);
+  const L=Object.assign({},DEFLOOK);
+  L.skin=PAL.skin[nx(PAL.skin.length)]; L.hair=PAL.hair[nx(PAL.hair.length)];
+  L.gear=PAL.gear[nx(PAL.gear.length)]; L.trim=PAL.trim[nx(PAL.trim.length)];
+  L.hairStyle=pool('hair')[nx(pool('hair').length)];
+  L.face=pool('face')[nx(pool('face').length)];
+  L.attire=pool('attire')[nx(pool('attire').length)];
+  L.boots=pool('boots')[nx(pool('boots').length)];
+  L.acc=pool('acc')[nx(pool('acc').length)];
+  L.pattern=pool('pattern')[nx(pool('pattern').length)];
+  L.build=['lean','athletic','heavy'][nx(3)];
+  if(nx(4)===0) L.mask=['lucha','half','hood'][nx(3)]; else L.mask='none';
+  return L;
+}
+
+function fLog(html,cls){ const el=$('fLog'); const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
+  el.classList.toggle('low',pct<=45&&pct>20); el.classList.toggle('crit',pct<=20); }
+function setMom(){ const m=MS.mom; // -100..100
+  $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
+async function callout(t){ const c=$('fCall'); c.textContent=t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(520); }
+function burst(x,txt){ const l=$('fFx'); const d=document.createElement('div'); d.className='burst'; d.style.left=x+'%'; d.style.top='30%'; d.textContent=txt;
+  l.appendChild(d); setTimeout(()=>d.remove(),700); }
+function dmgNum(x,n){ const l=$('fFx'); const d=document.createElement('div'); d.className='dmgnum'; d.style.left=(x+(rnd()*6-3))+'%'; d.style.top=(30+rnd()*10)+'%'; d.textContent='-'+n;
+  l.appendChild(d); setTimeout(()=>d.remove(),900); }
+function shake(){ const a=$('arena'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),340); }
+async function flashScreen(){ const f=document.createElement('div'); f.className='flash go'; $('arena').appendChild(f); setTimeout(()=>f.remove(),320); }
+
+// one exchange: attacker hits defender
+async function exchange(byMe, mv, dmg, momShift, tag){
+  const A=byMe?$('fMe'):$('fOpp'), D=byMe?$('fOpp'):$('fMe');
+  const aCls=byMe?'atkA':'atkB', dCls=byMe?'hitB':'hitA';
+  A.classList.add(aCls); await sleep(190);
+  D.classList.add(dCls);
+  if(dmg>=26){ shake(); burst(byMe?66:28, tag||'POW!'); }
+  dmgNum(byMe?70:26, Math.round(dmg));
+  await sleep(200);
+  A.classList.remove(aCls); D.classList.remove(dCls);
+  if(byMe) MS.opp.hp=clamp(MS.opp.hp-dmg); else MS.me.hp=clamp(MS.me.hp-dmg);
+  MS.mom=clamp(MS.mom+momShift,-100,100);
+  setBar('hpMe',MS.me.hp); setBar('hpOpp',MS.opp.hp); setMom();
+  fLog(byMe? `<b>${MS.me.name}</b> hits the <span class="hi">${mv}</span>.` : `<b>${MS.opp.name}</b> lands ${mv}.`, byMe?'':'bad');
+  await sleep(260);
+}
+
+// pick a move for the player from their game plan
+function myMove(){
+  const plan=[G.car.plan.a,G.car.plan.b];
+  let pool=G.w.moves.map(moveById).filter(m=>m&&plan.includes(m.cat));
+  if(!pool.length) pool=G.w.moves.map(moveById).filter(Boolean);
+  if(!pool.length) return {name:'a forearm',dmg:12,pop:8,cat:'strike',tier:1};
+  // weight toward stronger moves when you have momentum
+  pool.sort((a,b)=>(b.dmg+b.pop)-(a.dmg+a.pop));
+  const top=Math.max(1,Math.round(pool.length*(MS.mom>25?0.34:MS.mom>-25?0.6:0.9)));
+  return pool[Math.floor(rnd()*top)];
+}
+const OPP_MOVES=['a clothesline','a suplex','a back elbow','a running boot','a snap powerslam','a knee strike','a chop block','a spinebuster','a neckbreaker','a DDT'];
+function oppMove(){ return {name:OPP_MOVES[Math.floor(rnd()*OPP_MOVES.length)], dmg:0}; }
+
+function pct(p){ return Math.round(clamp(p*100,2,97)); }
+function pctCls(p){ return p>=0.66?'good':p>=0.4?'mid':'bad'; }
+
+// present a decision and wait for the player's pick
+function decide(head,sub,opts){
+  return new Promise(res=>{
+    const el=$('fDec'); el.classList.add('on');
+    el.innerHTML=`<div class="dechead">${head}</div><div class="decsub">${sub}</div><div class="decgrid">`+
+      opts.map((o,i)=>`<div class="decopt" data-i="${i}">
+        <div class="dn">${o.name}</div><div class="dd">${o.desc}</div>
+        <div class="dp ${pctCls(o.p)}">${pct(o.p)}% success</div></div>`).join('')+`</div>`;
+    el.querySelectorAll('.decopt').forEach(d=>d.onclick=()=>{
+      el.classList.remove('on'); el.innerHTML='';
+      res(opts[+d.dataset.i]);
+    });
+  });
+}
+
+async function startFight(o){
+  const meOvr=ovr(G.w);
+  MS={ o, mom:0, beat:0, maxBeats:11+Math.floor(rnd()*4), decisions:0, decWon:0, big:0, ended:false,
+       me:{hp:100,name:G.w.name,ovr:meOvr}, opp:{hp:100,name:o.oppName,ovr:o.oppOvr},
+       usedMoves:[], quality:0, finishType:null };
+  $('fMe').innerHTML=wrestlerSVG(G.w.look);
+  $('fOpp').innerHTML=wrestlerSVG(oppLook(o.oppId,o.oppName));
+  $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
+  $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
+  $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
+  $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
+  $('fMe').className='fighter me'; $('fOpp').className='fighter opp';
+  MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  go('fight');
+  $('fClock').textContent='BELL';
+  await sleep(400);
+  await callout('FIGHT!');
+  fLog(`The bell rings — <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
+  runFight();
+}
+
+async function runFight(){
+  const o=MS.o;
+  while(!MS.ended && MS.beat<MS.maxBeats && MS.opp.hp>6 && MS.me.hp>6){
+    MS.beat++;
+    $('fClock').textContent='EXCHANGE '+MS.beat;
+    // who is on top: momentum-weighted
+    const myTurn = rnd() < clamp(0.5+MS.mom/260,0.18,0.86);
+    if(myTurn){
+      const mv=myMove(); MS.usedMoves.push(mv);
+      const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
+      const dmg=clamp(mv.dmg*0.30 + skill*0.10 + rnd()*6, 4, 34);
+      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, mv.tier>=4?'BIG MOVE!':'POW!');
+      MS.quality+=mv.pop*0.14+mv.dmg*0.06;
+    } else {
+      const mv=oppMove();
+      const dmg=clamp(o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06, 4, 30);
+      await exchange(false, mv.name, dmg, -(6+rnd()*5));
+      MS.quality+=4;
+    }
+    // ---- decision triggers ----
+    if(!MS.ended && MS.opp.hp<=34 && MS.mom>12 && !MS.finishTried){ await finishDecision(); }
+    else if(!MS.ended && MS.mom<-38 && MS.beat>=3 && MS.decisions<3){ await comebackDecision(); }
+    else if(!MS.ended && MS.beat===Math.floor(MS.maxBeats/2)){ await midDecision(); }
+  }
+  if(!MS.ended) await endFight(MS.opp.hp<=MS.me.hp);
+}
+
+async function finishDecision(){
+  MS.finishTried=true; MS.decisions++;
+  const fin=G.w.finisher?moveById(G.w.finisher):null;
+  const psy=G.w.attrs.ps, base=0.40+psy*0.004+(MS.mom/380)+((100-MS.opp.hp)/300);
+  const pFin=clamp(base+(fin?0.10:0),0,0.95), pSafe=clamp(base+0.24,0,0.96);
+  const pick=await decide('THEY\'RE DOWN — CALL IT.','Your opponent is reeling. This is the moment.',[
+    {name:fin?fin.name:'Go For The Finish',desc:'End it now. Huge payoff if it lands.',p:pFin,kind:'fin'},
+    {name:'Grind Them Down',desc:'Safer. Keep control, finish later.',p:pSafe,kind:'grind'},
+    {name:'Play To The Crowd',desc:'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003,0,0.92),kind:'crowd'},
+  ]);
+  const ok=rnd()<pick.p;
+  if(pick.kind==='fin'){
+    if(ok){ await flashScreen(); await callout('FINISHER!'); MS.quality+=22; MS.decWon++;
+      fLog(`<span class="hi">${pick.name} connects!</span>`); MS.finishType='finisher';
+      await pinSequence(true); return; }
+    fLog(`<span class="bad">They slipped out of the ${pick.name}!</span>`); MS.mom=clamp(MS.mom-30,-100,100); setMom(); await callout('COUNTERED!');
+  } else if(pick.kind==='grind'){
+    if(ok){ MS.opp.hp=clamp(MS.opp.hp-14); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+16,-100,100); setMom(); MS.decWon++; MS.quality+=8;
+      fLog('You keep the pressure on and wear them down.'); }
+    else { MS.mom=clamp(MS.mom-18,-100,100); setMom(); fLog('<span class="bad">You gave them time to breathe.</span>'); }
+  } else {
+    if(ok){ MS.quality+=16; MS.decWon++; MS.big++; await callout('THE CROWD ERUPTS!'); fLog('<span class="hi">The building is on its feet!</span>'); }
+    else { MS.mom=clamp(MS.mom-26,-100,100); setMom(); fLog('<span class="bad">You showboated — and paid for it.</span>'); }
+  }
+  await sleep(300);
+}
+
+async function comebackDecision(){
+  MS.decisions++;
+  const to=G.w.attrs.to, ch=G.w.attrs.ch, ps=G.w.attrs.ps;
+  const pFire=clamp(0.32+ch*0.005+to*0.002,0,0.93), pCounter=clamp(0.28+ps*0.006,0,0.93), pSurvive=clamp(0.62+to*0.003,0,0.96);
+  const pick=await decide('YOU\'RE IN TROUBLE.','They have all the momentum. How do you turn this around?',[
+    {name:'Fire Up',desc:'Feed off the crowd and rally.',p:pFire,kind:'fire'},
+    {name:'Catch Them Clean',desc:'Time a counter out of nowhere.',p:pCounter,kind:'counter'},
+    {name:'Weather The Storm',desc:'Cover up and survive the run.',p:pSurvive,kind:'survive'},
+  ]);
+  const ok=rnd()<pick.p;
+  if(pick.kind==='fire'){
+    if(ok){ MS.mom=clamp(MS.mom+58,-100,100); setMom(); MS.decWon++; MS.quality+=14; MS.big++;
+      await callout('COMEBACK!'); fLog('<span class="hi">You will not stay down — the crowd is with you!</span>'); }
+    else { MS.me.hp=clamp(MS.me.hp-10); setBar('hpMe',MS.me.hp); fLog('<span class="bad">The rally was cut off.</span>'); }
+  } else if(pick.kind==='counter'){
+    if(ok){ MS.mom=clamp(MS.mom+70,-100,100); setMom(); MS.opp.hp=clamp(MS.opp.hp-16); setBar('hpOpp',MS.opp.hp);
+      MS.decWon++; MS.quality+=18; MS.big++; shake(); await callout('OUT OF NOWHERE!'); fLog('<span class="hi">Caught them flush out of nowhere!</span>'); }
+    else { MS.me.hp=clamp(MS.me.hp-14); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-12,-100,100); setMom(); fLog('<span class="bad">You went for it and ate a big shot.</span>'); }
+  } else {
+    if(ok){ MS.mom=clamp(MS.mom+26,-100,100); setMom(); MS.decWon++; MS.quality+=6; fLog('You cover up and ride it out.'); }
+    else { MS.me.hp=clamp(MS.me.hp-8); setBar('hpMe',MS.me.hp); fLog('<span class="bad">They kept the pressure on.</span>'); }
+  }
+  await sleep(300);
+}
+
+async function midDecision(){
+  MS.decisions++;
+  const ae=G.w.attrs.ae, te=G.w.attrs.te, ch=G.w.attrs.ch;
+  const pick=await decide('SWING THE MATCH.','A window opens. What do you call?',[
+    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006,0,0.93),kind:'risk'},
+    {name:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004,0,0.95),kind:'chain'},
+    {name:'Work The Crowd',desc:'Build heat before the finish.',p:clamp(0.48+ch*0.005,0,0.95),kind:'heat'},
+  ]);
+  const ok=rnd()<pick.p;
+  if(pick.kind==='risk'){
+    if(ok){ MS.opp.hp=clamp(MS.opp.hp-20); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+34,-100,100); setMom();
+      MS.decWon++; MS.quality+=20; MS.big++; shake(); await callout('HIGH RISK PAYS!'); fLog('<span class="hi">They hit it clean — the place came unglued!</span>'); }
+    else { MS.me.hp=clamp(MS.me.hp-18); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-30,-100,100); setMom();
+      await callout('MISSED IT!'); fLog('<span class="bad">Nobody home — you crashed and burned.</span>'); }
+  } else if(pick.kind==='chain'){
+    if(ok){ MS.mom=clamp(MS.mom+20,-100,100); setMom(); MS.decWon++; MS.quality+=10; fLog('A crisp exchange on the mat wins the crowd over.'); }
+    else { MS.mom=clamp(MS.mom-10,-100,100); setMom(); fLog('<span class="bad">The sequence broke down.</span>'); }
+  } else {
+    if(ok){ MS.quality+=13; MS.decWon++; MS.mom=clamp(MS.mom+12,-100,100); setMom(); fLog('<span class="hi">You have them eating out of your hand.</span>'); }
+    else { MS.mom=clamp(MS.mom-14,-100,100); setMom(); fLog('<span class="bad">You lost them for a moment.</span>'); }
+  }
+  await sleep(300);
+}
+
+async function pinSequence(iAmPinning){
+  const target=iAmPinning?$('fOpp'):$('fMe');
+  target.classList.add(iAmPinning?'downB':'downA');
+  await sleep(320);
+  const near = iAmPinning? (MS.opp.hp>16 && rnd()<0.45) : (MS.me.hp>16 && rnd()<0.45);
+  for(let n=1;n<=3;n++){
+    if(near && n===3){
+      $('fPin').textContent='2'; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
+      await sleep(420); await callout('KICKOUT!'); fLog('<span class="hi">A kickout at two and a half!</span>');
+      MS.quality+=10; MS.big++;
+      target.classList.remove('downA','downB');
+      MS.mom=clamp(MS.mom+(iAmPinning?-14:14),-100,100); setMom();
+      await sleep(200); return false;
+    }
+    $('fPin').textContent=n; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
+    await sleep(430);
+  }
+  await endFight(iAmPinning);
+  return true;
+}
+
+async function endFight(iWon){
+  if(MS.ended) return; MS.ended=true;
+  const loser=iWon?$('fOpp'):$('fMe');
+  loser.classList.add(iWon?'downB':'downA');
+  await flashScreen();
+  await callout(iWon?'WINNER!':'DEFEATED');
+  fLog(iWon?`<span class="hi">${MS.me.name} gets the three count!</span>`:`<span class="bad">${MS.opp.name} takes it.</span>`);
+  $('fClock').textContent=iWon?'WIN':'LOSS';
+  await sleep(700);
+  finalizeFight(iWon);
+}
+
+function finalizeFight(iWon){
+  const o=MS.o, a=G.w.attrs;
+  // quality blends the in-match story with the underlying craft
+  const used=MS.usedMoves.length?MS.usedMoves:bestMoves(3);
+  const ars=used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/Math.max(1,used.length);
+  const govt=used.reduce((s,m)=>s+(a[(catById(m.cat)||{attr:'po'}).attr]||0),0)/Math.max(1,used.length);
+  const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
+  const notes=[];
+  let quality = 30 + ars*0.16 + govt*0.16 + a.ps*0.12 + o.oppOvr*0.12 + stipMod + MS.quality*0.42;
+  notes.push(`arsenal ${ars.toFixed(0)} · execution ${govt.toFixed(0)} · psychology ${a.ps}`);
+  notes.push(`in-match moments: ${MS.decWon}/${MS.decisions} nailed${MS.big?` · ${MS.big} big spot${MS.big>1?'s':''}`:''}`);
+  const psychFloor=34+o.mult*6;
+  if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; notes.push(`ring psychology too green → -${p.toFixed(0)}`); }
+  const stamNeed=used.reduce((s,m)=>s+m.stam,0)+o.mult*10;
+  if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.30; quality-=p; notes.push(`gassed late → -${p.toFixed(0)}`); }
+  if(G.car.cond<70){ const p=(70-G.car.cond)*0.20; quality-=p; notes.push(`banged up → -${p.toFixed(0)}`); }
+  if(o.stakes==='title'||o.stakes==='defense'){ quality+=5; notes.push('championship stakes → +5'); }
+  const res={ quality:Math.round(clamp(quality)), win:iWon, notes, used, decWon:MS.decWon, decisions:MS.decisions };
+  applyMatch(o,res);
+  if(G.car.retired){ go('hof'); return; }
+  renderMatch(o,res); go('match');
+}
+
+function skipFight(){
+  if(!MS||MS.ended) return;
+  MS.ended=true;
+  // resolve instantly on the state so far
+  const lead=MS.me.hp-MS.opp.hp+MS.mom*0.3;
+  finalizeFight(lead>=0);
+}
+
 function takeMatch(i){
   const o=G.car.offers[i]; if(!o) return;
-  const res=simMatch(o);
-  applyMatch(o,res);
-  if(G.car.retired){ go('hof'); return; }   // career can end on the year boundary
-  renderMatch(o,res);
-  go('match');
+  startFight(o);
 }
 function simMatch(o){
   const w=G.w, c=G.car, a=w.attrs;
