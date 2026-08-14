@@ -15845,7 +15845,7 @@ function leagueCupRecord(res){
   track('league_cup',{year, winner:res.winner, mine:!!res.mineWon});
 }
 
-/* ==================== CAREER LEGACY ====================
+/* ==================== CAREER TRAITS ====================
    The complaint this answers: a career ACCUMULATES numbers but the numbers never DO anything. You could
    win all four majors in one year and the game would hand you an achievement tick and carry on exactly
    as before. So landmark feats now leave a PERMANENT mark on the career they were earned in - a named
@@ -15864,7 +15864,7 @@ function leagueCupRecord(res){
    ones); when() reads live state and already-earned perks are skipped, so it is safe to run often.
    A mid-season unlock TOASTS and queues its card for the season summary - it never opens a modal
    mid-sim, because the interruption budget is 2 a season by design.                                   */
-const LEGACY_CAPS={changes:3, respins:2, decline:0.62, coin:1.6, fan:1.5, sponsorTier:2};
+const LEGACY_CAPS={changes:3, respins:2, decline:0.62, coin:1.08, fan:1.5, sponsorTier:2};
 const LEGACY_PERKS=[
   // ---- APEX: the two rarest things a golfer can do ----
   {id:'slam', icon:'👑', tier:'apex', name:'The Immortal', feat:'Win all four majors in a single season',
@@ -15883,15 +15883,15 @@ const LEGACY_PERKS=[
    when:c=>c.worldNo1},
   {id:'dynasty', icon:'🔥', tier:'major', name:'Dynasty Year', feat:'Win four times in one season',
    blurb:'A season that stops being a run and starts being an era.',
-   eff:{respins:1, coin:1.10},
+   eff:{respins:1, coin:1.02},
    when:c=>c.seasonWins>=4},
   {id:'streak', icon:'⚡', tier:'major', name:'Untouchable', feat:'Win three tournaments in a row',
    blurb:'The field stops playing the course and starts playing you.',
-   eff:{confFloor:55, coin:1.06},
+   eff:{confFloor:55, coin:1.01},
    when:c=>c.winStreak>=3},
   {id:'cup', icon:'🏆', tier:'major', name:'The Closer', feat:'Win the Tour Cup',
    blurb:'A whole season funnelled into one Sunday, and you took it.',
-   eff:{confFloor:52, coin:1.08},
+   eff:{confFloor:52, coin:1.01},
    when:c=>c.cupChampion},
   {id:'ageless', icon:'⏳', tier:'major', name:'Ageless', feat:'Win a tournament at 40 or older',
    blurb:'The body is supposed to be going. Somebody forgot to tell you.',
@@ -15903,7 +15903,7 @@ const LEGACY_PERKS=[
    when:c=>c.cleanSeason},
   {id:'money', icon:'💰', tier:'major', name:'Money Machine', feat:'Top the money list',
    blurb:'Best year on tour, in the only column the accountants read.',
-   eff:{coin:1.15, sponsorTier:1},
+   eff:{coin:1.02, sponsorTier:1},
    when:c=>c.moneyTitle},
   {id:'prodigy', icon:'🌱', tier:'major', name:'The Prodigy', feat:'Win a major within your first five years',
    blurb:'You did it before anyone had a chance to call you overdue.',
@@ -15911,7 +15911,7 @@ const LEGACY_PERKS=[
    when:c=>c.earlyMajor},
   {id:'beloved', icon:'📣', tier:'major', name:"People's Champion", feat:'Reach 78 popularity',
    blurb:'The gallery moves when you move. Sponsors pay for that and fans give it away.',
-   eff:{fan:1.2, coin:1.06},
+   eff:{fan:1.2},
    when:c=>c.fans>=78},
   {id:'stateman', icon:'🎖️', tier:'major', name:'Elder Statesman', feat:'Reach 78 respect',
    blurb:'The locker room listens when you speak. That buys you room nothing else does.',
@@ -15988,7 +15988,7 @@ function checkCareerLegacy(){
     // the build screen, moves the sim through careerFxEo, and needs no separate plumbing
     if(p.eff.skill) for(const k in p.eff.skill) addFx({k:'skill', skill:k, amt:p.eff.skill[k], ev:null, label:p.name});
     got.push(p);
-    try{ const st=careerStory(); st.feed.unshift({year:S.year||1, evt:'Legacy', text:p.name+' · '+p.feat}); if(st.feed.length>60) st.feed.length=60; }catch(e){}
+    try{ const st=careerStory(); st.feed.unshift({year:S.year||1, evt:'Trait', text:p.name+' · '+p.feat}); if(st.feed.length>60) st.feed.length=60; }catch(e){}
     try{ track('legacy_unlock',{id:p.id, year:S.year||1}); }catch(e){}
   }
   if(got.length){
@@ -16006,7 +16006,7 @@ function legacyFreshNode(){
     return `<div style="padding:14px;border-radius:16px;margin-top:10px;border:1px solid ${apex?'rgba(241,208,74,.75)':'rgba(241,208,74,.42)'};
       background:${apex?'linear-gradient(160deg,rgba(241,208,74,.22),rgba(241,208,74,.05))':'linear-gradient(160deg,rgba(241,208,74,.12),rgba(241,208,74,.03))'};
       ${apex?'box-shadow:0 0 34px rgba(241,208,74,.22)':''}">
-      <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.16em">${apex?'A CAREER-DEFINING YEAR':'LEGACY UNLOCKED'}</div>
+      <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.16em">${apex?'A CAREER-DEFINING YEAR':'TRAIT UNLOCKED'}</div>
       <div style="font-size:34px;line-height:1.1;margin:6px 0 2px">${p.icon}</div>
       <div style="font-family:var(--display);font-size:${apex?26:22}px;color:var(--gold);letter-spacing:.01em">${esc(p.name)}</div>
       <div class="small" style="color:var(--oncard);margin-top:3px;letter-spacing:0">${esc(p.feat)}</div>
@@ -16027,8 +16027,8 @@ function legacyListHTML(){
       <div class="small muted" style="letter-spacing:0">${esc(legacyEffectLine(p))}</div>
     </div></div>`).join('');
   return `<div class="tile" style="max-width:520px;margin:10px auto 0">
-    <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.14em">CAREER LEGACY · ${earned.length} of ${LEGACY_PERKS.length}</div>
-    <div class="small muted" style="margin:2px 0 2px;letter-spacing:0">Permanent perks this golfer earned on the course.</div>
+    <div class="small" style="color:#ffd45e;font-weight:800;letter-spacing:.14em">CAREER TRAITS · ${earned.length} of ${LEGACY_PERKS.length}</div>
+    <div class="small muted" style="margin:2px 0 2px;letter-spacing:0">Permanent traits this golfer earned on the course.</div>
     ${rows}</div>`;
 }
 function legacyEffectLine(p){
@@ -21081,7 +21081,8 @@ function scrSummary(){
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
     ct.appendChild(tile('Top 10s',c.top10+''));
-    const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
+    // guard a season row with no money on it (legacy/partial saves) so the tile can never read $NaN
+    const bestS=(c.seasons||[]).filter(s=>s&&isFinite(s.money)).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     caC.appendChild(ct);
     // CS483: the detailed career stat sheet moved to the Analytics tab's Season|Career toggle (mobile fit).
