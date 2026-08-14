@@ -239,7 +239,7 @@
   .momfill.opp{background:linear-gradient(90deg,#b53225,#f0907f);box-shadow:0 0 10px rgba(198,57,44,.5);}
   .momtick{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(244,232,219,.55);transform:translateX(-1px);}
 
-  .arena{position:relative;height:300px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  .arena{position:relative;height:340px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:radial-gradient(ellipse at 50% 20%,rgba(198,57,44,.16),transparent 60%),linear-gradient(180deg,#161113,#0b0a0a);}
   .arena.shake{animation:shk .32s;}
   @keyframes shk{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
@@ -252,20 +252,33 @@
   .arena .ropes{position:absolute;left:0;right:0;bottom:26%;height:34%;pointer-events:none;
     background:linear-gradient(180deg,transparent 0,transparent 18%,rgba(244,232,219,.34) 18%,rgba(244,232,219,.34) 21%,transparent 21%,transparent 52%,rgba(244,232,219,.30) 52%,rgba(244,232,219,.30) 55%,transparent 55%,transparent 86%,rgba(244,232,219,.26) 86%,rgba(244,232,219,.26) 89%,transparent 89%);}
 
-  .fighter{position:absolute;bottom:6%;width:150px;transition:transform .16s ease-out,filter .16s;z-index:3;}
-  .fighter svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));}
-  .fighter.me{left:20%;animation:bobA 1.5s ease-in-out infinite;}
-  .fighter.opp{right:20%;transform:scaleX(-1);animation:bobB 1.5s ease-in-out infinite;}
-  @keyframes bobA{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-  @keyframes bobB{0%,100%{transform:scaleX(-1) translateY(0)}50%{transform:scaleX(-1) translateY(-5px)}}
-  .fighter.atkA{animation:none!important;transform:translateX(120px) translateY(-8px) scale(1.06)!important;}
-  .fighter.atkB{animation:none!important;transform:scaleX(-1) translateX(120px) translateY(-8px) scale(1.06)!important;}
-  .fighter.hitA{animation:none!important;transform:translateX(-26px) rotate(-9deg)!important;filter:brightness(2.4) saturate(.3);}
-  .fighter.hitB{animation:none!important;transform:scaleX(-1) translateX(-26px) rotate(-9deg)!important;filter:brightness(2.4) saturate(.3);}
-  .fighter.downA{animation:none!important;transform:translateY(28px) rotate(-78deg)!important;}
-  .fighter.downB{animation:none!important;transform:scaleX(-1) translateY(28px) rotate(-78deg)!important;}
+  /* Fighters are positioned from the arena centre and driven entirely from JS,
+     so a move can place one wrestler exactly on top of the other. */
+  .fighter{position:absolute;bottom:4%;left:50%;width:250px;margin-left:-125px;z-index:3;
+    transform-origin:50% 88%;transition:transform .16s ease-out;will-change:transform;}
+  .fighter .fbob{animation:bob 1.7s ease-in-out infinite;transform-origin:50% 90%;}
+  .fighter.busy .fbob{animation:none;}
+  .fighter.up{z-index:4;}
+  .fighter svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  .fighter.hitflash svg{filter:brightness(3) saturate(.15) drop-shadow(0 0 10px rgba(255,255,255,.7));}
+  .fighter.glow svg{filter:drop-shadow(0 0 12px rgba(224,179,65,.95)) drop-shadow(0 5px 7px rgba(0,0,0,.55));}
+  .fighter.red svg{filter:drop-shadow(0 0 12px rgba(198,57,44,.95)) drop-shadow(0 5px 7px rgba(0,0,0,.55));}
 
   .fxlayer{position:absolute;inset:0;pointer-events:none;z-index:5;}
+  /* impact ring, dust puffs and speed lines sell the contact */
+  .ring{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;
+    border:3px solid rgba(255,255,255,.95);animation:ringA .42s ease-out forwards;}
+  @keyframes ringA{0%{transform:scale(.2);opacity:1}100%{transform:scale(6.5);opacity:0}}
+  .spark{position:absolute;width:5px;height:5px;margin:-2px 0 0 -2px;background:#f6d97a;border-radius:1px;animation:sparkA .5s ease-out forwards;}
+  @keyframes sparkA{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+  .dust{position:absolute;height:7px;border-radius:50%;background:rgba(226,205,180,.5);animation:dustA .6s ease-out forwards;}
+  @keyframes dustA{0%{transform:scaleX(.2);opacity:.85}100%{transform:scaleX(2.4) translateY(-9px);opacity:0}}
+  .speed{position:absolute;height:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75));animation:spdA .3s linear forwards;}
+  @keyframes spdA{0%{opacity:.9;transform:scaleX(.3)}100%{opacity:0;transform:scaleX(1.4) translateX(38px)}}
+  .matwave{position:absolute;left:0;right:0;bottom:0;height:34%;background:radial-gradient(ellipse at var(--mx) 0%,rgba(255,255,255,.30),transparent 55%);
+    opacity:0;animation:mwA .45s ease-out forwards;pointer-events:none;}
+  @keyframes mwA{0%{opacity:.9}100%{opacity:0}}
   .burst{position:absolute;transform-origin:center;font-family:var(--display);font-size:34px;color:#e0b341;text-shadow:0 0 12px rgba(224,179,65,.8),0 3px 0 #7a2018;animation:burstA .55s ease-out forwards;}
   @keyframes burstA{0%{transform:scale(.3) rotate(-14deg);opacity:0}30%{transform:scale(1.25) rotate(6deg);opacity:1}100%{transform:scale(1.5) translateY(-30px);opacity:0}}
   .dmgnum{position:absolute;font-family:var(--mono);font-weight:800;font-size:19px;color:#F4E8DB;text-shadow:0 2px 0 #000;animation:dmgA .8s ease-out forwards;}
@@ -301,7 +314,7 @@
   .decopt .dp{font-family:var(--mono);font-size:17px;font-weight:800;margin-top:6px;}
   .dp.good{color:var(--green);} .dp.mid{color:var(--gold);} .dp.bad{color:#f0907f;}
   .frow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:flex-end;}
-  @media(max-width:640px){ .arena{height:240px;} .fighter{width:92px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
+  @media(max-width:640px){ .arena{height:250px;} .fighter{width:176px;margin-left:-88px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
 
   .log{font-size:13.5px; line-height:1.65; color:var(--text-dim);}
   .log b{color:var(--cream);} .log .pop{color:var(--gold);}
@@ -759,226 +772,269 @@ function LIMB(x,y,w,h,c){
   return s;
 }
 
-/* Pixel wrestler — 64x92 sprite grid, front stance, outlined for readability.
-   Light source upper-left. Every part is a shaded box so it reads as a sprite,
-   not a flat diagram. */
+/* ---------------------------------------------------------------
+   SKELETAL POSE SYSTEM
+   The wrestler is a real two-segment rig, not a flat drawing:
+
+     body  (translate + rotate about the hips)
+       +- legL / legR : thigh rotates at the hip, shin nested at the knee
+       +- torso       : rotates at the pelvis, and carries
+            +- armL / armR : upper arm at the shoulder, forearm at the elbow
+            +- head        : rotates at the neck
+
+   A pose is therefore just a bag of joint angles. That is what lets
+   two wrestlers actually perform moves on each other — one can be
+   lifted, folded, bridged or draped over the other instead of just
+   sliding around.
+   --------------------------------------------------------------- */
+const JOINT={
+  shL:[18,31], shR:[46,31], elL:[17,43], elR:[47,43],
+  hipL:[27,53], hipR:[37,53], knL:[27,68], knR:[37,68],
+  neck:[32,26], pelvis:[32,52], root:[32,50]
+};
+/* angles are clockwise degrees. On the screen-left arm/leg a positive
+   angle swings the limb out to the left; the screen-right side mirrors it. */
+const POSES={
+  stand:    {},
+  ready:    { shL:16, elL:-34, shR:-16, elR:34, hipL:5, hipR:-5, body:[0,1,0] },
+  run:      { shL:-44, elL:-46, shR:38, elR:-52, hipL:-30, knL:34, hipR:28, knR:-44, body:[0,-2,-6] },
+  runBack:  { shL:44, elL:46, shR:-38, elR:52, hipL:30, knL:-34, hipR:-28, knR:44, body:[0,-2,6] },
+  grapple:  { shL:100, elL:-44, shR:-100, elR:44, hipL:8, hipR:-8, body:[0,0,0] },
+  lockup:   { shL:112, elL:-30, shR:-112, elR:30, hipL:14, knL:-16, hipR:-10, body:[0,2,-4] },
+  strike:   { shR:-96, elR:-10, shL:22, elL:-42, torso:5, body:[1,0,3] },
+  wind:     { shR:-24, elR:-96, shL:14, elL:-30, torso:-7, body:[-2,0,-4] },
+  chop:     { shR:-146, elR:34, shL:20, elL:-30, torso:4, body:[1,-1,3] },
+  clothes:  { shR:-92, elR:2, shL:-70, elL:6, body:[0,-1,0] },
+  kick:     { hipR:-74, knR:14, shL:28, elL:-32, shR:-34, hipL:6, body:[0,-2,5] },
+  bigboot:  { hipR:-88, knR:4, shL:36, shR:-52, elR:-20, body:[0,-3,7] },
+  stomp:    { hipR:-48, knR:-46, shL:32, shR:-32, body:[0,-1,0] },
+  lift:     { shL:156, elL:-28, shR:-156, elR:28, hipL:10, hipR:-10, body:[0,3,0] },
+  carry:    { shL:128, elL:-46, shR:-128, elR:46, hipL:8, hipR:-8, body:[0,1,0] },
+  press:    { shL:170, elL:-8, shR:-170, elR:8, hipL:6, hipR:-6, body:[0,-1,0] },
+  held:     { body:[0,-24,-80], shL:52, elL:30, shR:-52, elR:-30, hipL:-16, knL:26, hipR:16, knR:-26, head:10 },
+  vert:     { body:[0,-26,174], shL:30, shR:-30, hipL:-10, hipR:10 },
+  prone:    { body:[0,25,-88], shL:58, elL:22, shR:-58, elR:-22, hipL:-10, knL:16, hipR:10, knR:-16, head:-12 },
+  proneUp:  { body:[0,18,-70], shL:40, elL:-52, shR:-40, elR:52, hipL:-30, knL:44, hipR:26, knR:-40, head:-18 },
+  splash:   { body:[0,12,-84], shL:132, elL:-14, shR:-132, elR:14, hipL:-16, hipR:16 },
+  dive:     { body:[0,-14,-70], shL:146, elL:-16, shR:-146, elR:16, hipL:-22, knL:20, hipR:22, knR:-20 },
+  climb:    { body:[0,-24,0], shL:148, elL:-24, shR:-148, elR:24, hipL:20, knL:-44, hipR:-18, knR:42 },
+  kneel:    { body:[0,10,0], hipL:72, knL:-98, hipR:-14, knR:28, shL:32, elL:-24, shR:-32, elR:24 },
+  bridge:   { body:[0,4,-30], shL:-146, elL:-18, shR:146, elR:18, hipL:22, knL:-30, hipR:-18, knR:26, head:-14 },
+  pin:      { body:[0,20,-70], shL:104, elL:-26, shR:-104, elR:26, hipL:-26, knL:52, hipR:24, knR:-48 },
+  submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
+  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:6, hipR:-6, body:[0,-2,0] },
+  celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
+  point:    { shR:-98, elR:-4, shL:22, elL:-40, torso:4, head:4 },
+  stagger:  { body:[0,1,-14], head:9, torso:-6, shL:-42, elL:22, shR:28, elR:-18, hipL:18, knL:-22, hipR:-8 },
+  reel:     { body:[0,0,13], head:-19, torso:7, shL:26, elL:-52, shR:-48, elR:32, hipL:-10, hipR:14, knR:-18 },
+  guard:    { shL:62, elL:-124, shR:-62, elR:124, hipL:10, knL:-14, hipR:-10, body:[0,2,-2] },
+  corner:   { body:[0,2,-9], shL:126, elL:-20, shR:-44, elR:26, hipL:12, knL:-18, head:8 },
+  whip:     { shR:-74, elR:-44, shL:44, elL:-20, torso:7, body:[1,0,6] },
+  ropes:    { shL:150, elL:-18, shR:-150, elR:18, hipL:-8, knL:14, hipR:10, knR:-16, body:[0,1,0] },
+};
+function poseOf(n){ return POSES[n]||POSES.stand; }
+
 function wrestlerSVG(L,opt){
   L=Object.assign({},DEFLOOK,L||{}); opt=opt||{};
+  const p=poseOf(opt.pose);
   const sk=L.skin, skD=shade(sk,-34), skL=shade(sk,22), hair=L.hair, gear=L.gear, trim=L.trim;
   const build=L.build||'athletic';
-  const bw = build==='heavy'?3 : build==='lean'?-2 : 0;   // torso/limb spread
+  const bw = build==='heavy'?3 : build==='lean'?-2 : 0;
   const tightsFull=(L.attire==='tights'||L.attire==='singlet'||L.attire==='bodysuit'||L.attire==='armor');
-  const covered =(L.attire!=='trunks');                    // torso has fabric on it
+  const covered =(L.attire!=='trunks'&&L.attire!=='shorts');
   const legCol = tightsFull? gear : sk;
-  const torsoCol = covered? gear : sk;
   const sleeved = (L.attire==='jacket'||L.attire==='duster');
+  const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
+  // one bucket per rig bone
+  const B={back:'',thighL:'',shinL:'',thighR:'',shinR:'',torso:'',upArmL:'',loArmL:'',upArmR:'',loArmR:'',head:''};
 
-  // ---- outline silhouette (drawn first, 1px halo around every solid box) ----
-  const boxes=[];
-  const add=(x,y,w,h)=>boxes.push([x,y,w,h]);
-  add(24,6,16,15); add(25,20,14,5);                 // head + jaw
-  add(28,24,8,4);                                    // neck
-  add(19-bw,28,26+bw*2,6);                           // shoulders
-  add(21-bw,34,22+bw*2,9);                           // chest
-  add(24,43,16,10);                                  // waist
-  add(14-bw,30,7,13); add(12-bw,43,7,11); add(11-bw,54,8,5);   // left arm
-  add(43+bw,30,7,13); add(45+bw,43,7,11); add(45+bw,54,8,5);   // right arm
-  add(23,52,8,16); add(24,68,7,13);                  // left leg
-  add(33,52,8,16); add(33,68,7,13);                  // right leg
-  add(21,81,11,6); add(32,81,11,6);                  // feet
-  let out=boxes.map(b=>P(b[0]-1,b[1]-1,b[2]+2,b[3]+2,OUTLINE)).join('');
-
-  let s='';
   // ---- entrance aura (behind everything) ----
   if(L.aura&&L.aura!=='none'){
     const A={spark:['#e0b341','#f6d97a'],smoke:['#4a4a52','#6f6f7a'],flame:['#C6392C','#e07b39'],storm:['#3f7fbf','#7dc4e8'],halo:['#e0b341','#f6d97a']}[L.aura]||['#888','#aaa'];
-    if(L.aura==='halo'){ s+=P(26,-1,12,2,A[0])+P(24,0,2,2,A[0])+P(38,0,2,2,A[0])+P(28,-2,8,1,A[1]); }
-    else { for(let i=0;i<9;i++){ const px2=8+((i*57)%50), py=6+((i*31)%74);
-      s+=P(px2,py,2,2,i%2?A[0]:A[1]); } s+=P(6,40,2,10,A[0])+P(56,34,2,12,A[1]); }
+    if(L.aura==='halo'){ B.head+=P(26,-1,12,2,A[0])+P(24,0,2,2,A[0])+P(38,0,2,2,A[0])+P(28,-2,8,1,A[1]); }
+    else { for(let i=0;i<9;i++){ const px2=8+((i*57)%50), py=6+((i*31)%74); B.back+=P(px2,py,2,2,i%2?A[0]:A[1]); }
+      B.back+=P(6,40,2,10,A[0])+P(56,34,2,12,A[1]); }
   }
-  // ---- cape behind body ----
-  if(L.acc==='cape'){ s=P(16-bw,27,32+bw*2,40,OUTLINE)+LIMB(17-bw,28,30+bw*2,38,shade(gear,-46))+s; }
+  if(L.acc==='cape'){ B.back+=P(16-bw,27,32+bw*2,40,OUTLINE)+LIMB(17-bw,28,30+bw*2,38,shade(gear,-46)); }
+  if(L.acc==='wings'){
+    const wl=shade(trim,6), wd=shade(trim,-30);
+    B.back+=P(15-bw,22,4,8,OUTLINE)+P(16-bw,23,3,7,wl)+P(11-bw,26,5,10,OUTLINE)+P(12-bw,27,4,9,wl)
+      +P(7-bw,31,5,10,OUTLINE)+P(8-bw,32,4,9,wd)+P(4-bw,37,4,8,OUTLINE)+P(5-bw,38,3,7,wd)
+      +P(45+bw,22,4,8,OUTLINE)+P(45+bw,23,3,7,wl)+P(48+bw,26,5,10,OUTLINE)+P(48+bw,27,4,9,wl)
+      +P(52+bw,31,5,10,OUTLINE)+P(52+bw,32,4,9,wd)+P(56+bw,37,4,8,OUTLINE)+P(56+bw,38,3,7,wd);
+  }
 
-  // ---- legs ----
-  s+=LIMB(23,52,8,16,legCol)+LIMB(33,52,8,16,legCol);
-  s+=LIMB(24,68,7,13,legCol)+LIMB(33,68,7,13,legCol);
-  if(tightsFull){
-    if(L.pattern==='stripe'){ s+=P(23,52,2,16,trim)+P(39,52,2,16,trim)+P(24,68,2,13,trim)+P(38,68,2,13,trim); }
-    if(L.pattern==='split'){ s+=LIMB(33,52,8,16,trim)+LIMB(33,68,7,13,trim); }
-    if(L.pattern==='stars'){ s+=P(26,58,2,2,trim)+P(35,62,2,2,trim)+P(26,72,2,2,trim)+P(36,74,2,2,trim); }
-    if(L.pattern==='flame'){ s+=P(23,62,8,2,trim)+P(33,62,8,2,trim); }
-    if(L.pattern==='gold'){ s+=P(23,66,8,2,'#e0b341')+P(33,66,8,2,'#e0b341'); }
-  } else { s+=P(24,53,2,14,skL)+P(34,53,2,14,skL); }   // quad highlight
-  // knee pads
-  if(L.boots==='pads'){ s+=P(23,65,9,5,OUTLINE)+LIMB(24,66,7,4,shade(trim,-30))+P(32,65,9,5,OUTLINE)+LIMB(33,66,7,4,shade(trim,-30)); }
-
-  // ---- boots ----
+  // ================= LEGS =================
+  const thighPat=(x)=>{
+    let o='';
+    if(tightsFull){
+      if(L.pattern==='stripe') o+=P(x,52,2,16,trim);
+      if(L.pattern==='stars') o+=P(x+2,58,2,2,trim);
+      if(L.pattern==='gold') o+=P(x,65,8,2,'#e0b341');
+    } else o+=P(x+1,53,2,14,skL);
+    return o;
+  };
+  const shinPat=(x)=>{
+    let o='';
+    if(tightsFull){
+      if(L.pattern==='stripe') o+=P(x+1,68,2,9,trim);
+      if(L.pattern==='stars') o+=P(x+2,72,2,2,trim);
+    }
+    return o;
+  };
+  const splitCol=(tightsFull&&L.pattern==='split')?trim:legCol;
+  B.thighL+=OL(23,52,8,16)+LIMB(23,52,8,16,legCol)+thighPat(23);
+  B.thighR+=OL(33,52,8,16)+LIMB(33,52,8,16,splitCol)+thighPat(33);
+  if(L.boots==='pads'){ B.thighL+=OL(24,64,7,4)+LIMB(24,64,7,4,shade(trim,-30)); B.thighR+=OL(33,64,7,4)+LIMB(33,64,7,4,shade(trim,-30)); }
+  if(L.acc==='knee'){ B.thighL+=OL(24,63,7,5)+LIMB(24,63,7,5,trim); B.thighR+=OL(33,63,7,5)+LIMB(33,63,7,5,trim); }
+  B.shinL+=OL(24,68,7,13)+LIMB(24,68,7,13,legCol)+shinPat(23);
+  B.shinR+=OL(33,68,7,13)+LIMB(33,68,7,13,splitCol)+shinPat(33);
   const bootTop = (L.boots==='tall'||L.boots==='goldboot')?70 : L.boots==='pads'?72 : L.boots==='platform'?68 : L.boots==='wraps'?74 : 77;
-  s+=LIMB(24,bootTop,7,81-bootTop,trim)+LIMB(33,bootTop,7,81-bootTop,trim);
-  s+=P(24,bootTop,7,1,shade(trim,30))+P(33,bootTop,7,1,shade(trim,30));      // cuff
-  if(L.boots==='sneak'){ s+=P(24,76,7,1,shade(trim,-40))+P(33,76,7,1,shade(trim,-40)); }
-  if(L.boots==='wraps'){ for(let y=74;y<81;y+=2){ s+=P(24,y,7,1,shade(trim,-34))+P(33,y,7,1,shade(trim,-34)); } }
-  if(L.boots==='platform'){ s+=P(20,80,13,4,OUTLINE)+LIMB(21,81,11,3,shade(trim,-30))+P(31,80,13,4,OUTLINE)+LIMB(32,81,11,3,shade(trim,-30)); }
-  if(L.boots==='goldboot'){ s+=P(24,70,7,2,'#e0b341')+P(33,70,7,2,'#e0b341')+P(24,77,7,1,'#e0b341')+P(33,77,7,1,'#e0b341'); }
-  s+=LIMB(21,81,11,6,shade(trim,-46))+LIMB(32,81,11,6,shade(trim,-46));      // feet
-  s+=P(21,86,11,1,OUTLINE)+P(32,86,11,1,OUTLINE);
+  const boot=(x)=>{ let o=LIMB(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,7,1,shade(trim,30));
+    if(L.boots==='wraps'){ for(let y=74;y<81;y+=2) o+=P(x,y,7,1,shade(trim,-34)); }
+    if(L.boots==='goldboot') o+=P(x,bootTop,7,2,'#e0b341')+P(x,77,7,1,'#e0b341');
+    return o; };
+  B.shinL+=boot(24); B.shinR+=boot(33);
+  B.shinL+=OL(21,81,11,6)+LIMB(21,81,11,6,shade(trim,-46)); B.shinR+=OL(32,81,11,6)+LIMB(32,81,11,6,shade(trim,-46));
+  if(L.boots==='platform'){ B.shinL+=OL(21,81,11,3)+LIMB(21,81,11,3,shade(trim,-30)); B.shinR+=OL(32,81,11,3)+LIMB(32,81,11,3,shade(trim,-30)); }
 
-  // ---- torso ----
-  s+=LIMB(19-bw,28,26+bw*2,6,covered?gear:sk);                 // shoulders/traps
-  s+=LIMB(21-bw,34,22+bw*2,9,torsoCol);                        // chest
-  s+=LIMB(24,43,16,10,tightsFull||L.attire==='singlet'||L.attire==='tank'?gear:(covered&&L.attire!=='jacket'&&L.attire!=='duster'?gear:sk));
+  // ================= TORSO =================
+  const tX=21-bw, tW=22+bw*2;
+  B.torso+=OL(19-bw,28,26+bw*2,6)+LIMB(19-bw,28,26+bw*2,6,covered?gear:sk);
+  B.torso+=OL(tX,34,tW,9)+LIMB(tX,34,tW,9,covered?gear:sk);
+  B.torso+=OL(24,43,16,10)+LIMB(24,43,16,10,covered?gear:sk);
   if(!covered){
-    s+=P(24,35,7,6,skL)+P(33,35,7,6,skL);                      // pecs
-    s+=P(30,34,1,8,skD);                                       // sternum
-    s+=P(28,44,2,3,skD)+P(34,44,2,3,skD)+P(28,48,2,3,skD)+P(34,48,2,3,skD); // abs
+    B.torso+=P(24,35,7,6,skL)+P(33,35,7,6,skL)+P(30,34,1,8,skD)
+      +P(28,44,2,3,skD)+P(34,44,2,3,skD)+P(28,48,2,3,skD)+P(34,48,2,3,skD);
   } else {
-    if(L.pattern==='split'){ s+=LIMB(32,28,13+bw,6,trim)+LIMB(32,34,11+bw,9,trim); }
-    if(L.pattern==='stripe'){ s+=P(21-bw,34,2,9,trim)+P(40+bw,34,2,9,trim); }
-    if(L.pattern==='flame'){ s+=P(21-bw,40,22+bw*2,2,trim)+P(24,37,4,3,trim)+P(32,37,4,3,trim); }
-    if(L.pattern==='stars'){ s+=P(25,36,3,3,trim)+P(34,38,3,3,trim); }
-    if(L.pattern==='gold'){ s+=P(19-bw,28,26+bw*2,1,'#e0b341')+P(21-bw,42,22+bw*2,1,'#e0b341'); }
-    if(L.pattern==='bolt'){ s+=P(28,34,4,4,trim)+P(31,38,4,4,trim)+P(29,42,4,3,trim); }
-    if(L.pattern==='check'){ for(let cx=0;cx<5;cx++) for(let cy=0;cy<3;cy++) if((cx+cy)%2===0) s+=P(21-bw+cx*4,34+cy*3,4,3,trim); }
-    if(L.pattern==='scales'){ for(let cy=0;cy<4;cy++) for(let cx=0;cx<6;cx++) s+=P(21-bw+cx*4+(cy%2?2:0),34+cy*2,2,2,shade(gear,-32)); }
-    if(L.pattern==='royal'){ s+=P(19-bw,28,26+bw*2,2,'#e0b341')+P(21-bw,41,22+bw*2,2,'#e0b341')+P(30,34,4,8,'#e0b341')+P(31,35,2,6,shade('#e0b341',-30)); }
+    if(L.pattern==='split'){ B.torso+=LIMB(32,28,13+bw,6,trim)+LIMB(32,34,11+bw,9,trim); }
+    if(L.pattern==='stripe'){ B.torso+=P(tX,34,2,9,trim)+P(tX+tW-2,34,2,9,trim); }
+    if(L.pattern==='flame'){ B.torso+=P(tX,40,tW,2,trim)+P(24,37,4,3,trim)+P(32,37,4,3,trim); }
+    if(L.pattern==='stars'){ B.torso+=P(25,36,3,3,trim)+P(34,38,3,3,trim); }
+    if(L.pattern==='gold'){ B.torso+=P(19-bw,28,26+bw*2,1,'#e0b341')+P(tX,42,tW,1,'#e0b341'); }
+    if(L.pattern==='bolt'){ B.torso+=P(28,34,4,4,trim)+P(31,38,4,4,trim)+P(29,42,4,3,trim); }
+    if(L.pattern==='check'){ for(let cx=0;cx<5;cx++) for(let cy=0;cy<3;cy++) if((cx+cy)%2===0) B.torso+=P(tX+cx*4,34+cy*3,4,3,trim); }
+    if(L.pattern==='scales'){ for(let cy=0;cy<4;cy++) for(let cx=0;cx<6;cx++) B.torso+=P(tX+cx*4+(cy%2?2:0),34+cy*2,2,2,shade(gear,-32)); }
+    if(L.pattern==='royal'){ B.torso+=P(19-bw,28,26+bw*2,2,'#e0b341')+P(tX,41,tW,2,'#e0b341')+P(30,34,4,8,'#e0b341'); }
   }
-  if(L.attire==='tank'){ s+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }        // shoulder skin
-  if(L.attire==='vest'){ s+=LIMB(19-bw,28,7,20,shade(gear,-24))+LIMB(36+bw,28,7,20,shade(gear,-24))+P(28,29,8,14,sk); }
-  if(L.attire==='armor'){ s+=P(19-bw,27,26+bw*2,3,'#e0b341')+P(21-bw,33,22+bw*2,2,trim)+P(24,40,16,2,'#e0b341')
-      +P(18-bw,30,4,9,shade(trim,-20))+P(42+bw,30,4,9,shade(trim,-20)); }
-  if(L.attire==='shorts'){ s+=P(22,44,20,13,OUTLINE)+LIMB(23,45,18,11,gear)+P(24,46,3,5,shade(gear,26)); }
-  if(L.attire==='singlet'){ s+=P(22-bw,28,3,6,sk)+P(39+bw,28,3,6,sk); }
-  if(sleeved){ s+=LIMB(19-bw,28,5,16,shade(gear,-30))+LIMB(40+bw,28,5,16,shade(gear,-30))+P(29,34,6,9,sk); }
-  if(L.attire==='duster'){ s+=P(17-bw,44,4,22,OUTLINE)+LIMB(18-bw,44,4,21,shade(gear,-40))+P(43+bw,44,4,22,OUTLINE)+LIMB(44+bw,44,4,21,shade(gear,-40)); }
-
-  // ---- trunks / lower gear (over the waist, so it actually reads) ----
+  if(L.attire==='tank'){ B.torso+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }
+  if(L.attire==='singlet'){ B.torso+=P(22-bw,28,3,6,sk)+P(39+bw,28,3,6,sk); }
+  if(L.attire==='vest'){ B.torso+=LIMB(19-bw,28,7,20,shade(gear,-24))+LIMB(36+bw,28,7,20,shade(gear,-24))+P(28,29,8,14,sk); }
+  if(L.attire==='armor'){ B.torso+=P(19-bw,27,26+bw*2,3,'#e0b341')+P(tX,33,tW,2,trim)+P(24,40,16,2,'#e0b341'); }
+  if(sleeved){ B.torso+=LIMB(19-bw,28,5,16,shade(gear,-30))+LIMB(40+bw,28,5,16,shade(gear,-30))+P(29,34,6,9,sk); }
+  if(L.attire==='duster'){ B.torso+=P(17-bw,44,4,22,OUTLINE)+LIMB(18-bw,44,4,21,shade(gear,-40))+P(43+bw,44,4,22,OUTLINE)+LIMB(44+bw,44,4,21,shade(gear,-40)); }
+  // trunks over the waist
   if(!tightsFull){
-    s+=P(22,44,20,11,OUTLINE)+LIMB(23,45,18,9,gear);
-    if(L.pattern==='stripe'){ s+=P(23,45,2,9,trim)+P(39,45,2,9,trim); }
-    if(L.pattern==='split') s+=LIMB(32,45,9,9,trim);
-    if(L.pattern==='gold') s+=P(23,52,18,2,'#e0b341')+P(23,45,18,1,'#e0b341');
-    if(L.pattern==='stars') s+=P(27,47,2,2,trim)+P(35,49,2,2,trim);
-    if(L.pattern==='flame') s+=P(23,50,18,2,trim);
-    s+=P(24,46,3,4,shade(gear,26));                    // highlight
+    B.torso+=P(22,44,20,11,OUTLINE)+LIMB(23,45,18,9,gear)+P(24,46,3,4,shade(gear,26));
+    if(L.pattern==='stripe'){ B.torso+=P(23,45,2,9,trim)+P(39,45,2,9,trim); }
+    if(L.pattern==='split') B.torso+=LIMB(32,45,9,9,trim);
+    if(L.pattern==='gold') B.torso+=P(23,52,18,2,'#e0b341')+P(23,45,18,1,'#e0b341');
   }
-
-  // ---- tattoos (on skin, under gear edges) ----
   if(L.tattoo&&L.tattoo!=='none'){
-    const ink=shade(sk,-62);
-    if(L.tattoo==='sleeve'||L.tattoo==='full'||L.tattoo==='tribalink'){
-      s+=P(14-bw,31,7,11,ink)+P(12-bw,44,7,9,ink);
-      if(L.tattoo!=='sleeve') s+=P(43+bw,31,7,11,ink)+P(45+bw,44,7,9,ink);
-    }
-    if((L.tattoo==='chest'||L.tattoo==='full'||L.tattoo==='tribalink')&&!covered){
-      s+=P(26,36,12,2,ink)+P(29,38,6,5,ink)+P(24,44,4,2,ink)+P(36,44,4,2,ink);
-    }
-    if(L.tattoo==='tribalink'){ s+=P(25,21,3,3,ink)+P(36,21,3,3,ink)+P(24,54,4,3,ink)+P(36,54,4,3,ink); }
+    const ink2=shade(sk,-62);
+    if((L.tattoo==='chest'||L.tattoo==='full'||L.tattoo==='tribalink')&&!covered)
+      B.torso+=P(26,36,12,2,ink2)+P(29,38,6,5,ink2)+P(24,44,4,2,ink2)+P(36,44,4,2,ink2);
   }
+  if(L.acc==='chain') B.torso+=P(28,28,8,2,'#e0b341')+P(30,30,4,2,'#e0b341')+P(31,32,2,2,shade('#e0b341',-30));
+  if(L.acc==='scarf') B.torso+=P(26,26,12,4,trim)+P(38,29,4,12,shade(trim,-20));
+  if(L.acc==='belt') B.torso+=P(20,43,24,7,OUTLINE)+LIMB(21,44,22,5,shade('#8a5a2b',-10))
+      +LIMB(27,42,10,9,'#e0b341')+P(29,44,6,5,shade('#e0b341',-38))+P(30,45,4,3,'#f6d97a')
+      +P(22,45,4,3,'#e0b341')+P(38,45,4,3,'#e0b341');
 
-  // ---- arms ----
+  // ================= ARMS =================
   const upCol = sleeved? shade(gear,-24) : sk;
-  s+=LIMB(14-bw,30,7,13,upCol)+LIMB(43+bw,30,7,13,upCol);      // biceps
-  if(!sleeved){ s+=P(15-bw,31,2,7,skL)+P(44+bw,31,2,7,skL); }  // bicep highlight
-  s+=LIMB(12-bw,43,7,11,sk)+LIMB(45+bw,43,7,11,sk);            // forearms
-  if(L.acc==='elbow'){ s+=P(12-bw,41,8,4,OUTLINE)+LIMB(13-bw,42,6,3,trim)+P(44+bw,41,8,4,OUTLINE)+LIMB(45+bw,42,6,3,trim); }
-  if(L.acc==='wrist'){ s+=P(12-bw,51,7,3,trim)+P(45+bw,51,7,3,trim); }
-  s+=LIMB(11-bw,54,8,5,sk)+LIMB(45+bw,54,8,5,sk);              // fists
-  s+=P(12-bw,55,2,3,skL)+P(46+bw,55,2,3,skL);
+  const ink=shade(sk,-62), inked=(L.tattoo==='sleeve'||L.tattoo==='full'||L.tattoo==='tribalink');
+  const arm=(side)=>{
+    const ux=side<0?14-bw:43+bw, fx=side<0?13-bw:44+bw, hx=side<0?12-bw:45+bw;
+    let up=OL(ux,30,7,14)+LIMB(ux,30,7,14,upCol);
+    if(!sleeved) up+=P(side<0?ux+1:ux+4,31,2,8,skL);
+    if(inked&&(side<0||L.tattoo!=='sleeve')) up+=P(ux,31,7,12,ink);
+    let lo=OL(fx,43,7,11)+LIMB(fx,43,7,11,sk);
+    if(inked&&(side<0||L.tattoo!=='sleeve')) lo+=P(fx,44,7,9,ink);
+    if(L.acc==='elbow') lo+=OL(fx,42,7,3)+LIMB(fx,42,7,3,trim);
+    if(L.acc==='wrist') lo+=P(fx,51,7,3,trim);
+    lo+=OL(hx,54,8,5)+LIMB(hx,54,8,5,L.acc==='gloves'?shade(trim,-25):sk);
+    return [up,lo];
+  };
+  const aL=arm(-1), aR=arm(1);
+  B.upArmL+=aL[0]; B.loArmL+=aL[1]; B.upArmR+=aR[0]; B.loArmR+=aR[1];
 
-  // ---- neck + head ----
-  s+=LIMB(28,24,8,4,skD);
-  s+=LIMB(24,6,16,15,sk);                                       // skull
-  s+=LIMB(25,20,14,5,sk);                                       // jaw
-  s+=P(22,13,2,5,skD)+P(40,13,2,5,skD);                         // ears
-  s+=P(25,7,3,12,skL);                                          // face highlight
-
-  // ---- mask OR hair+face ----
+  // ================= HEAD =================
+  B.head+=OL(28,24,8,4)+LIMB(28,24,8,4,skD);
+  B.head+=OL(24,6,16,15)+LIMB(24,6,16,15,sk)+OL(25,20,14,5)+LIMB(25,20,14,5,sk);
+  B.head+=P(22,13,2,5,skD)+P(40,13,2,5,skD)+P(25,7,3,12,skL);
   if(L.mask&&L.mask!=='none'){
-    if(L.mask==='lucha'){
-      s+=LIMB(24,6,16,15,gear)+LIMB(25,20,14,4,gear);
-      s+=P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b');         // eye holes
-      s+=P(27,14,3,2,'#F4E8DB')+P(34,14,3,2,'#F4E8DB');
-      s+=P(29,20,6,3,'#0c0b0b');                                 // mouth hole
-      s+=P(24,6,16,2,trim)+P(31,8,2,13,trim);                    // crest + centre stripe
-      s+=P(24,11,4,2,trim)+P(36,11,4,2,trim);
-    }
-    if(L.mask==='half'){ s+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
-    if(L.mask==='hood'){ s+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
-    if(L.mask==='tiger'){ s+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#F4E8DB')+P(33,13,5,4,'#F4E8DB')+P(27,14,2,3,'#1a1a1a')+P(35,14,2,3,'#1a1a1a')
-        +P(24,8,4,2,trim)+P(36,8,4,2,trim)+P(24,12,3,2,trim)+P(37,12,3,2,trim)+P(28,19,8,3,'#1a1a1a')+P(29,20,1,2,'#F4E8DB')+P(34,20,1,2,'#F4E8DB'); }
-    if(L.mask==='skullmask'){ s+=LIMB(24,6,16,16,'#e8dcc0')+P(26,12,5,6,'#1a1a1a')+P(33,12,5,6,'#1a1a1a')+P(30,17,4,3,'#1a1a1a')
-        +P(27,21,10,3,'#1a1a1a')+P(28,21,1,3,'#e8dcc0')+P(31,21,1,3,'#e8dcc0')+P(34,21,1,3,'#e8dcc0'); }
-    if(L.mask==='phantom'){ s+=LIMB(24,6,16,16,'#F4E8DB')+P(26,12,6,5,'#1a1a1a')+P(33,12,6,5,'#1a1a1a')
-        +P(24,6,16,2,gear)+P(31,8,2,14,gear)+P(22,4,5,6,gear)+P(37,4,5,6,gear); }
-    if(L.mask==='demon'){
-      s+=LIMB(24,6,16,16,'#17110f')+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341');
-      s+=P(24,6,16,2,'#C6392C')+P(27,19,10,2,'#C6392C')+P(29,21,6,1,'#C6392C');
-      // horns sweeping up and back off the brow
-      s+=P(22,3,4,4,OUTLINE)+P(23,3,3,4,'#C6392C')+P(21,-1,4,5,OUTLINE)+P(22,0,3,4,shade('#C6392C',18))+P(22,-2,2,3,shade('#C6392C',34));
-      s+=P(38,3,4,4,OUTLINE)+P(38,3,3,4,'#C6392C')+P(41,-1,4,5,OUTLINE)+P(39,0,3,4,shade('#C6392C',18))+P(40,-2,2,3,shade('#C6392C',34));
-    }
+    if(L.mask==='lucha'){ B.head+=LIMB(24,6,16,15,gear)+LIMB(25,20,14,4,gear)+P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b')
+      +P(27,14,3,2,'#F4E8DB')+P(34,14,3,2,'#F4E8DB')+P(29,20,6,3,'#0c0b0b')+P(24,6,16,2,trim)+P(31,8,2,13,trim)+P(24,11,4,2,trim)+P(36,11,4,2,trim); }
+    if(L.mask==='half'){ B.head+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
+    if(L.mask==='hood'){ B.head+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
+    if(L.mask==='tiger'){ B.head+=LIMB(24,6,16,16,gear)+P(26,13,5,4,'#F4E8DB')+P(33,13,5,4,'#F4E8DB')+P(27,14,2,3,'#1a1a1a')+P(35,14,2,3,'#1a1a1a')
+      +P(24,8,4,2,trim)+P(36,8,4,2,trim)+P(24,12,3,2,trim)+P(37,12,3,2,trim)+P(28,19,8,3,'#1a1a1a'); }
+    if(L.mask==='skullmask'){ B.head+=LIMB(24,6,16,16,'#e8dcc0')+P(26,12,5,6,'#1a1a1a')+P(33,12,5,6,'#1a1a1a')+P(30,17,4,3,'#1a1a1a')+P(27,21,10,3,'#1a1a1a'); }
+    if(L.mask==='phantom'){ B.head+=LIMB(24,6,16,16,'#F4E8DB')+P(26,12,6,5,'#1a1a1a')+P(33,12,6,5,'#1a1a1a')+P(24,6,16,2,gear)+P(31,8,2,14,gear)+P(22,4,5,6,gear)+P(37,4,5,6,gear); }
+    if(L.mask==='demon'){ B.head+=LIMB(24,6,16,16,'#17110f')+P(26,13,5,4,'#e0b341')+P(33,13,5,4,'#e0b341')+P(24,6,16,2,'#C6392C')+P(27,19,10,2,'#C6392C')
+      +P(22,3,4,4,OUTLINE)+P(23,3,3,4,'#C6392C')+P(21,-1,4,5,OUTLINE)+P(22,0,3,4,shade('#C6392C',18))
+      +P(38,3,4,4,OUTLINE)+P(38,3,3,4,'#C6392C')+P(41,-1,4,5,OUTLINE)+P(39,0,3,4,shade('#C6392C',18)); }
   } else {
     const hs=L.hairStyle, hD=shade(hair,-36), hL=shade(hair,26);
     if(hs!=='bald'){
-      if(hs==='short'){ s+=LIMB(23,4,18,6,hair)+P(23,10,2,5,hair)+P(39,10,2,5,hair)+P(24,4,7,2,hL); }
-      if(hs==='buzz'){ s+=LIMB(24,5,16,4,hair)+P(25,5,6,1,hL); }
-      if(hs==='long'){ s+=LIMB(23,4,18,6,hair)+LIMB(20,9,4,18,hair)+LIMB(40,9,4,18,hair)+P(24,4,7,2,hL); }
-      if(hs==='pony'){ s+=LIMB(23,4,18,6,hair)+LIMB(40,8,4,14,hair)+P(43,12,3,7,hD)+P(24,4,7,2,hL); }
-      if(hs==='mullet'){ s+=LIMB(23,4,18,5,hair)+P(21,9,3,10,hair)+P(40,9,3,10,hair)+LIMB(26,23,12,7,hair)+P(24,4,6,2,hL); }
-      if(hs==='spiky'){ s+=LIMB(23,5,18,5,hair)+P(24,0,3,6,hair)+P(28,-1,4,7,hair)+P(34,0,3,6,hair)+P(38,2,3,4,hair)+P(28,0,2,3,hL); }
-      if(hs==='afro'){ s+=LIMB(21,-1,22,9,hair)+P(19,2,3,8,hair)+P(42,2,3,8,hair)+P(23,7,4,3,hair)+P(37,7,4,3,hair)+P(23,0,7,3,hL); }
-      if(hs==='mohawk'){ s+=P(23,5,18,4,hD)+P(28,-3,8,10,OUTLINE)+LIMB(29,-2,6,9,hair)+P(30,-2,2,7,hL); }
-      if(hs==='topknot'){ s+=LIMB(23,5,18,5,hair)+LIMB(29,0,6,5,hair)+P(30,0,2,3,hL); }
-      if(hs==='dreads'){ s+=LIMB(23,4,18,6,hair); for(let i=0;i<5;i++) s+=P(21+i*4,9,3,10+((i*5)%8),hair); s+=P(24,4,6,2,hL); }
-      if(hs==='undercut'){ s+=P(23,8,18,3,hD)+LIMB(24,3,16,6,hair)+P(25,3,6,2,hL); }
-      if(hs==='wild'){ s+=LIMB(20,1,24,10,hair)+P(17,5,4,11,hair)+P(43,5,4,11,hair)+P(22,-1,5,4,hair)+P(36,-1,5,4,hair)+P(23,2,7,3,hL); }
-      if(hs==='hornhair'){ s+=LIMB(23,5,18,5,hair)+P(21,-2,5,8,hair)+P(38,-2,5,8,hair)+P(22,-3,3,3,hL)+P(39,-3,3,3,hL); }
-      if(hs==='flames'){ s+=LIMB(23,4,18,6,'#e0b341')+P(24,-1,3,6,'#C6392C')+P(29,-3,4,8,'#e07b39')+P(35,-1,3,6,'#C6392C')+P(30,-3,2,4,'#f6d97a'); }
+      if(hs==='short'){ B.head+=LIMB(23,4,18,6,hair)+P(23,10,2,5,hair)+P(39,10,2,5,hair)+P(24,4,7,2,hL); }
+      if(hs==='buzz'){ B.head+=LIMB(24,5,16,4,hair)+P(25,5,6,1,hL); }
+      if(hs==='long'){ B.head+=LIMB(23,4,18,6,hair)+LIMB(20,9,4,18,hair)+LIMB(40,9,4,18,hair)+P(24,4,7,2,hL); }
+      if(hs==='pony'){ B.head+=LIMB(23,4,18,6,hair)+LIMB(40,8,4,14,hair)+P(43,12,3,7,hD)+P(24,4,7,2,hL); }
+      if(hs==='mullet'){ B.head+=LIMB(23,4,18,5,hair)+P(21,9,3,10,hair)+P(40,9,3,10,hair)+LIMB(26,23,12,7,hair)+P(24,4,6,2,hL); }
+      if(hs==='spiky'){ B.head+=LIMB(23,5,18,5,hair)+P(24,0,3,6,hair)+P(28,-1,4,7,hair)+P(34,0,3,6,hair)+P(38,2,3,4,hair)+P(28,0,2,3,hL); }
+      if(hs==='afro'){ B.head+=LIMB(21,-1,22,9,hair)+P(19,2,3,8,hair)+P(42,2,3,8,hair)+P(23,7,4,3,hair)+P(37,7,4,3,hair)+P(23,0,7,3,hL); }
+      if(hs==='mohawk'){ B.head+=P(23,5,18,4,hD)+P(28,-3,8,10,OUTLINE)+LIMB(29,-2,6,9,hair)+P(30,-2,2,7,hL); }
+      if(hs==='topknot'){ B.head+=LIMB(23,5,18,5,hair)+LIMB(29,0,6,5,hair)+P(30,0,2,3,hL); }
+      if(hs==='dreads'){ B.head+=LIMB(23,4,18,6,hair); for(let i=0;i<5;i++) B.head+=P(21+i*4,9,3,10+((i*5)%8),hair); B.head+=P(24,4,6,2,hL); }
+      if(hs==='undercut'){ B.head+=P(23,8,18,3,hD)+LIMB(24,3,16,6,hair)+P(25,3,6,2,hL); }
+      if(hs==='wild'){ B.head+=LIMB(20,1,24,10,hair)+P(17,5,4,11,hair)+P(43,5,4,11,hair)+P(22,-1,5,4,hair)+P(36,-1,5,4,hair)+P(23,2,7,3,hL); }
+      if(hs==='hornhair'){ B.head+=LIMB(23,5,18,5,hair)+P(21,-2,5,8,hair)+P(38,-2,5,8,hair)+P(22,-3,3,3,hL)+P(39,-3,3,3,hL); }
+      if(hs==='flames'){ B.head+=LIMB(23,4,18,6,'#e0b341')+P(24,-1,3,6,'#C6392C')+P(29,-3,4,8,'#e07b39')+P(35,-1,3,6,'#C6392C'); }
     }
-    // eyes / brows / face
-    s+=P(26,13,4,3,'#F4E8DB')+P(34,13,4,3,'#F4E8DB');
-    s+=P(27,13,2,3,'#1a1a1a')+P(35,13,2,3,'#1a1a1a');
-    s+=P(26,11,4,1,shade(hair,-20))+P(34,11,4,1,shade(hair,-20));   // brows
-    s+=P(31,15,2,4,skD);                                             // nose
-    if(L.face==='beard'){ s+=LIMB(25,19,14,6,hair)+P(24,14,2,6,hair)+P(38,14,2,6,hair)+P(29,21,6,2,hD); }
-    if(L.face==='stache'){ s+=P(28,19,8,2,hair); }
-    if(L.face==='goatee'){ s+=P(29,19,6,2,hair)+P(29,21,6,4,hair); }
-    if(L.face==='warrior'){ s+=P(25,11,5,9,'#C6392C')+P(34,11,5,9,'#C6392C')+P(26,12,2,7,shade('#C6392C',30)); }
-    if(L.face==='skull'){ s+=P(24,6,16,3,'#F4E8DB')+P(25,11,6,6,'#1a1a1a')+P(33,11,6,6,'#1a1a1a')+P(28,19,8,3,'#1a1a1a')+P(29,20,1,2,'#F4E8DB')+P(32,20,1,2,'#F4E8DB'); }
-    if(L.face==='tribal'){ s+=P(24,10,4,11,'#1a1a1a')+P(36,10,4,11,'#1a1a1a')+P(28,6,8,3,'#C6392C')+P(30,21,4,2,'#1a1a1a'); }
-    if(L.face==='mutton'){ s+=P(24,15,3,8,hair)+P(38,15,3,8,hair)+P(26,21,2,3,hair)+P(37,21,2,3,hair); }
-    if(L.face==='scar'){ s+=P(35,10,1,8,shade(sk,-46))+P(34,13,3,1,shade(sk,-46)); }
-    if(L.face==='halfpaint'){ s+=P(24,6,8,17,'#1a1a1a')+P(26,13,4,3,'#F4E8DB')+P(27,13,2,3,'#1a1a1a'); }
-    if(L.face==='venom'){ s+=P(24,9,16,3,'#4a8f76')+P(25,12,5,8,'#1a1a1a')+P(34,12,5,8,'#1a1a1a')+P(28,20,8,2,'#4a8f76')+P(29,21,1,3,'#4a8f76')+P(34,21,1,3,'#4a8f76'); }
-    if(L.face==='none'){ s+=P(29,21,6,1,skD); }                      // mouth line
+    const HURT={reel:1,prone:1,proneUp:1,stagger:1,held:1,vert:1,submit:1,bridge:1};
+    const hurt=!!HURT[opt.pose];
+    B.head+=P(26,13,4,3,'#F4E8DB')+P(34,13,4,3,'#F4E8DB');
+    if(hurt){ B.head+=P(27,14,2,1,'#1a1a1a')+P(35,14,2,1,'#1a1a1a'); }     // squeezed shut
+    else { B.head+=P(27,13,2,3,'#1a1a1a')+P(35,13,2,3,'#1a1a1a'); }
+    B.head+=P(26,11,4,1,shade(hair,-20))+P(34,11,4,1,shade(hair,-20))+P(31,15,2,4,skD);
+    if(L.face==='beard'){ B.head+=LIMB(25,19,14,6,hair)+P(24,14,2,6,hair)+P(38,14,2,6,hair); }
+    if(L.face==='stache'){ B.head+=P(28,19,8,2,hair); }
+    if(L.face==='goatee'){ B.head+=P(29,19,6,2,hair)+P(29,21,6,4,hair); }
+    if(L.face==='mutton'){ B.head+=P(24,15,3,8,hair)+P(38,15,3,8,hair); }
+    if(L.face==='scar'){ B.head+=P(35,10,1,8,shade(sk,-46))+P(34,13,3,1,shade(sk,-46)); }
+    if(L.face==='warrior'){ B.head+=P(25,11,5,9,'#C6392C')+P(34,11,5,9,'#C6392C'); }
+    if(L.face==='halfpaint'){ B.head+=P(24,6,8,17,'#1a1a1a')+P(26,13,4,3,'#F4E8DB')+P(27,13,2,3,'#1a1a1a'); }
+    if(L.face==='skull'){ B.head+=P(24,6,16,3,'#F4E8DB')+P(25,11,6,6,'#1a1a1a')+P(33,11,6,6,'#1a1a1a')+P(28,19,8,3,'#1a1a1a'); }
+    if(L.face==='venom'){ B.head+=P(24,9,16,3,'#4a8f76')+P(25,12,5,8,'#1a1a1a')+P(34,12,5,8,'#1a1a1a')+P(28,20,8,2,'#4a8f76'); }
+    if(L.face==='tribal'){ B.head+=P(24,10,4,11,'#1a1a1a')+P(36,10,4,11,'#1a1a1a')+P(28,6,8,3,'#C6392C'); }
+    if(hurt) B.head+=P(29,21,6,2,'#3a1a14');                                  // open mouth
+    else B.head+=P(29,21,6,1,skD);
+    if(L.tattoo==='tribalink') B.head+=P(25,21,3,3,ink)+P(36,21,3,3,ink);
   }
-  if(L.acc==='knee'){ s+=P(23,64,9,5,OUTLINE)+LIMB(24,65,7,4,trim)+P(32,64,9,5,OUTLINE)+LIMB(33,65,7,4,trim); }
-  if(L.acc==='gloves'){ s+=LIMB(11-bw,54,8,5,shade(trim,-25))+LIMB(45+bw,54,8,5,shade(trim,-25)); }
-  if(L.acc==='bandana'){ s+=P(23,7,18,4,trim)+P(23,7,18,1,shade(trim,25))+P(40,9,4,7,trim); }
-  if(L.acc==='scarf'){ s+=P(26,26,12,4,trim)+P(38,29,4,12,shade(trim,-20)); }
-  if(L.acc==='wings'){
-    const wl=shade(trim,6), wd=shade(trim,-30);
-    // left wing: steps up and out from the shoulder
-    s+=P(15-bw,22,4,8,OUTLINE)+P(16-bw,23,3,7,wl);
-    s+=P(11-bw,26,5,10,OUTLINE)+P(12-bw,27,4,9,wl);
-    s+=P(7-bw,31,5,10,OUTLINE)+P(8-bw,32,4,9,wd);
-    s+=P(4-bw,37,4,8,OUTLINE)+P(5-bw,38,3,7,wd);
-    // right wing (mirrored)
-    s+=P(45+bw,22,4,8,OUTLINE)+P(45+bw,23,3,7,wl);
-    s+=P(48+bw,26,5,10,OUTLINE)+P(48+bw,27,4,9,wl);
-    s+=P(52+bw,31,5,10,OUTLINE)+P(52+bw,32,4,9,wd);
-    s+=P(56+bw,37,4,8,OUTLINE)+P(56+bw,38,3,7,wd);
-  }
-  if(L.acc==='shades'){ s+=P(24,12,17,5,'#0c0b0b')+P(25,13,6,2,'#3d4c57')+P(34,13,6,2,'#2b363e'); }
-  if(L.acc==='chain'){ s+=P(28,28,8,2,'#e0b341')+P(30,30,4,2,'#e0b341')+P(31,32,2,2,shade('#e0b341',-30)); }
-  if(L.acc==='belt'){ s+=P(20,43,24,7,OUTLINE)+LIMB(21,44,22,5,shade('#8a5a2b',-10))
-      +LIMB(27,42,10,9,'#e0b341')+P(29,44,6,5,shade('#e0b341',-38))+P(30,45,4,3,'#f6d97a')
-      +P(22,45,4,3,'#e0b341')+P(38,45,4,3,'#e0b341'); }
+  if(L.acc==='shades') B.head+=P(24,12,17,5,'#0c0b0b')+P(25,13,6,2,'#3d4c57')+P(34,13,6,2,'#2b363e');
+  if(L.acc==='bandana') B.head+=P(23,7,18,4,trim)+P(23,7,18,1,shade(trim,25))+P(40,9,4,7,trim);
 
+  // ---- assemble the rig ----
+  const R=(rot,j,inner)=> rot ? `<g transform="rotate(${rot} ${j[0]} ${j[1]})">${inner}</g>` : inner;
+  const legG=(S)=> R(p['hip'+S]||0, JOINT['hip'+S], B['thigh'+S] + R(p['kn'+S]||0, JOINT['kn'+S], B['shin'+S]));
+  const armG=(S)=> R(p['sh'+S]||0, JOINT['sh'+S], B['upArm'+S] + R(p['el'+S]||0, JOINT['el'+S], B['loArm'+S]));
+  const upper = R(p.torso||0, JOINT.pelvis, B.torso + armG('L') + armG('R') + R(p.head||0, JOINT.neck, B.head));
+  const inner = B.back + legG('L') + legG('R') + upper;
+  const bt = p.body||[0,0,0];
+  const bodyG = (bt[0]||bt[1]||bt[2])
+    ? `<g transform="translate(${bt[0]} ${bt[1]}) rotate(${bt[2]} ${JOINT.root[0]} ${JOINT.root[1]})">${inner}</g>`
+    : inner;
   const t=opt.title?`<title>${opt.title}</title>`:'';
-  // frame: 'full' whole body, 'head' portrait crop, 'legs' lower-body crop
-  const vb = opt.frame==='head' ? '17 -7 30 36' : opt.frame==='legs' ? '14 40 36 50' : '-2 -4 68 94';
-  return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${t}${out}${s}</svg>`;
+  // poses that lay the body out flat need a wider box; the match arena
+  // pins every wrestler to the same box so nobody changes size mid-move.
+  const wide = opt.frame==='action' || Math.abs(bt[2]||0)>=40;
+  const vb = opt.frame==='head' ? '17 -7 30 36'
+           : opt.frame==='legs' ? '14 40 36 50'
+           : wide ? '-24 -14 112 118'
+           : '-6 -8 76 104';
+  return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${t}${bodyG}</svg>`;
 }
 
 /* ============================================================
@@ -1514,28 +1570,275 @@ function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
 function setMom(){ const m=MS.mom; // -100..100
   $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
 async function callout(t){ const c=$('fCall'); c.textContent=t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(520); }
-function burst(x,txt){ const l=$('fFx'); const d=document.createElement('div'); d.className='burst'; d.style.left=x+'%'; d.style.top='30%'; d.textContent=txt;
-  l.appendChild(d); setTimeout(()=>d.remove(),700); }
-function dmgNum(x,n){ const l=$('fFx'); const d=document.createElement('div'); d.className='dmgnum'; d.style.left=(x+(rnd()*6-3))+'%'; d.style.top=(30+rnd()*10)+'%'; d.textContent='-'+n;
-  l.appendChild(d); setTimeout(()=>d.remove(),900); }
 function shake(){ const a=$('arena'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),340); }
 async function flashScreen(){ const f=document.createElement('div'); f.className='flash go'; $('arena').appendChild(f); setTimeout(()=>f.remove(),320); }
 
-// one exchange: attacker hits defender
-async function exchange(byMe, mv, dmg, momShift, tag){
-  const A=byMe?$('fMe'):$('fOpp'), D=byMe?$('fOpp'):$('fMe');
-  const aCls=byMe?'atkA':'atkB', dCls=byMe?'hitB':'hitA';
-  A.classList.add(aCls); await sleep(190);
-  D.classList.add(dCls);
-  if(dmg>=26){ shake(); burst(byMe?66:28, tag||'POW!'); }
-  dmgNum(byMe?70:26, Math.round(dmg));
-  await sleep(200);
-  A.classList.remove(aCls); D.classList.remove(dCls);
-  if(byMe) MS.opp.hp=clamp(MS.opp.hp-dmg); else MS.me.hp=clamp(MS.me.hp-dmg);
-  MS.mom=clamp(MS.mom+momShift,-100,100);
-  setBar('hpMe',MS.me.hp); setBar('hpOpp',MS.opp.hp); setMom();
-  fLog(byMe? `<b>${MS.me.name}</b> hits the <span class="hi">${mv}</span>.` : `<b>${MS.opp.name}</b> lands ${mv}.`, byMe?'':'bad');
-  await sleep(260);
+/* ------------------------------------------------------------------
+   THE STAGE
+   Both wrestlers are absolutely positioned from the centre of the ring
+   and driven entirely from JS, in stage pixels. That is the thing that
+   makes real move animation possible: an attacker can put the other
+   wrestler on his shoulders, over his head, or flat on the mat at an
+   exact spot, instead of the two of them just nudging each other.
+   ------------------------------------------------------------------ */
+const FIG={me:null,opp:null};
+const ST={W:760,home:130,close:80};
+function stageInit(){
+  const A=$('arena'); ST.W=A.clientWidth||760;
+  ST.home=Math.round(ST.W*0.16);
+  ST.close=Math.max(46,ST.home-52);
+  ['me','opp'].forEach(k=>{
+    const el=$(k==='me'?'fMe':'fOpp');
+    el.className='fighter '+k; el.innerHTML='<div class="fbob"></div>';
+    FIG[k]={el, inner:el.firstElementChild, dir:k==='me'?1:-1,
+            home:(k==='me'?-ST.home:ST.home), look:null, pose:null, x:0, up:0, rot:0, sc:1};
+    FIG[k].x=FIG[k].home;
+  });
+}
+function setLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
+function poseSet(k,name){ const f=FIG[k]; if(f.pose===name) return;
+  f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action'}); }
+function atX(k){ return FIG[k].x; }
+function fmv(k,o,ms){
+  const f=FIG[k]; if(!f) return;
+  if(o.pose) poseSet(k,o.pose);
+  if(o.fwd!==undefined) f.x=f.home+f.dir*o.fwd;
+  if(o.x!==undefined) f.x=o.x;
+  if(o.up!==undefined) f.up=o.up;
+  if(o.rot!==undefined) f.rot=o.rot;
+  if(o.sc!==undefined) f.sc=o.sc;
+  f.el.style.transitionDuration=Math.max(0,(ms===undefined?150:ms))/FIGHT_SPEED+'ms';
+  f.el.style.transform=`translate(${f.x.toFixed(1)}px,${(-f.up).toFixed(1)}px) scaleX(${f.dir}) rotate(${f.rot}deg) scale(${f.sc.toFixed(3)})`;
+}
+function busy(on){ ['me','opp'].forEach(k=>FIG[k]&&FIG[k].el.classList.toggle('busy',!!on)); }
+function hitFlash(k,ms){ const f=FIG[k]; f.el.classList.add('hitflash');
+  setTimeout(()=>f.el.classList.remove('hitflash'),(ms||150)/FIGHT_SPEED); }
+
+// ---- effects, all in stage pixels ----
+function fxEl(cls,x,topPct,life){ const d=document.createElement('div'); d.className=cls;
+  d.style.left=`calc(50% + ${Math.round(x)}px)`; d.style.top=topPct+'%';
+  $('fFx').appendChild(d); setTimeout(()=>d.remove(),life||800); return d; }
+function burst(x,txt){ const d=fxEl('burst',x,26,700); d.textContent=txt; d.style.marginLeft='-70px'; d.style.width='140px'; d.style.textAlign='center'; }
+function dmgNum(x,n){ const d=fxEl('dmgnum',x+(rnd()*14-7),30+rnd()*8,900); d.textContent='-'+n; }
+function impact(x,topPct,power){
+  fxEl('ring',x,topPct,500);
+  const n=power>=2?11:6, r=power>=2?58:34;
+  for(let i=0;i<n;i++){ const a=(i/n)*6.2832+rnd(), d=fxEl('spark',x,topPct,560);
+    d.style.setProperty('--dx',(Math.cos(a)*r*(0.6+rnd()*0.7)).toFixed(0)+'px');
+    d.style.setProperty('--dy',(Math.sin(a)*r*(0.6+rnd()*0.7)).toFixed(0)+'px'); }
+}
+function dustAt(k){ const x=atX(k);
+  for(let i=0;i<3;i++){ const d=fxEl('dust',x+(i-1)*26,90,700); d.style.width=(26+i*8)+'px'; d.style.animationDelay=(i*40)+'ms'; } }
+function matWave(k){ const w=document.createElement('div'); w.className='matwave';
+  w.style.setProperty('--mx',`calc(50% + ${Math.round(atX(k))}px)`);
+  $('arena').appendChild(w); setTimeout(()=>w.remove(),500); }
+function speedLines(k){ const f=FIG[k];
+  for(let i=0;i<4;i++){ const d=fxEl('speed',f.x-f.dir*(40+i*16),40+i*9,340);
+    d.style.width=(40+rnd()*28)+'px'; d.style.transform=`scaleX(${f.dir})`; d.style.animationDelay=(i*22)+'ms'; } }
+
+/* ------------------------------------------------------------------
+   MOVE CHOREOGRAPHY
+   One routine per move family. A is the attacker key, D the defender,
+   c.hit(power) fires the impact — damage, bars and the log all land on
+   that beat so the numbers move when the body does.
+   ------------------------------------------------------------------ */
+async function chStrike(A,D,c){
+  const C=ST.close;
+  fmv(A,{pose:'wind',fwd:C*0.35,rot:-4},120); await sleep(125);
+  fmv(A,{pose:'run',fwd:C*0.7},90); await sleep(85);
+  fmv(A,{pose:'strike',fwd:C,rot:3},70); speedLines(A); await sleep(70);
+  c.hit(1); hitFlash(D);
+  fmv(D,{pose:'reel',fwd:-16,rot:9},95); await sleep(170);
+  fmv(D,{pose:'stagger',fwd:-6,rot:0},230); fmv(A,{pose:'ready',fwd:0,rot:0},250); await sleep(230);
+}
+async function chRunner(A,D,c){          // running boot / clothesline — knocks them flat
+  const C=ST.close;
+  fmv(A,{pose:'runBack',fwd:-C*1.1},200); await sleep(210);
+  fmv(A,{pose:'run',fwd:C*0.45},140); speedLines(A); await sleep(130);
+  fmv(A,{pose:rnd()<0.5?'bigboot':'clothes',fwd:C},70); await sleep(70);
+  c.hit(2); hitFlash(D,200);
+  fmv(D,{pose:'reel',fwd:-34,up:18,rot:-26},130); await sleep(140);
+  fmv(D,{pose:'prone',fwd:-50,up:0,rot:0},160); await sleep(160);
+  shake(); dustAt(D); matWave(D);
+  fmv(A,{pose:'ready',fwd:0},280); await sleep(280);
+  fmv(D,{pose:'proneUp',fwd:-26},260); await sleep(230);
+}
+async function chSlam(A,D,c){
+  const C=ST.close, dir=FIG[A].dir;
+  fmv(A,{pose:'grapple',fwd:C*0.95},180); fmv(D,{pose:'guard',fwd:C*0.3},180); await sleep(200);
+  FIG[D].el.classList.add('up');
+  fmv(A,{pose:'lift',fwd:C*0.95},190);
+  fmv(D,{pose:'held',x:atX(A)+dir*6,up:48,rot:0},190); await sleep(250);
+  if(c.big){ fmv(A,{pose:'press',fwd:C*0.95},230); fmv(D,{pose:'held',x:atX(A),up:68},230);
+    await callout('HE HAS HIM UP!'); }
+  fmv(A,{pose:'kneel',fwd:C*0.8},120);
+  fmv(D,{pose:'prone',x:atX(A)+dir*30,up:0,rot:0},120); await sleep(125);
+  c.hit(2); shake(); dustAt(D); matWave(D); hitFlash(D,190); await sleep(280);
+  FIG[D].el.classList.remove('up');
+  fmv(A,{pose:'ready',fwd:0},280); fmv(D,{pose:'proneUp'},280); await sleep(260);
+}
+async function chSuplex(A,D,c){
+  const C=ST.close, dir=FIG[A].dir;
+  fmv(A,{pose:'lockup',fwd:C*0.95},180); fmv(D,{pose:'lockup',fwd:C*0.35},180); await sleep(200);
+  FIG[D].el.classList.add('up');
+  fmv(A,{pose:'lift',fwd:C*0.95},170);
+  fmv(D,{pose:'vert',x:atX(A)+dir*10,up:54,rot:0},210); await sleep(230);
+  fLog('<span class="hint">…holding him up there…</span>');
+  await sleep(340);                                   // the classic vertical hold
+  fmv(A,{pose:'bridge',fwd:C*0.82,rot:-16},150);
+  fmv(D,{pose:'prone',x:atX(A)-dir*44,up:0,rot:0},150); await sleep(155);
+  c.hit(2); shake(); dustAt(D); matWave(D); hitFlash(D,190); await sleep(300);
+  FIG[D].el.classList.remove('up');
+  fmv(A,{pose:'ready',fwd:0,rot:0},290); fmv(D,{pose:'proneUp'},290); await sleep(270);
+}
+async function chAerial(A,D,c){
+  const C=ST.close, dir=FIG[A].dir;
+  fmv(D,{pose:'stagger',fwd:0},180);
+  fmv(A,{pose:'runBack',fwd:-C*1.6},240); await sleep(250);
+  fmv(A,{pose:'climb',fwd:-C*1.6,up:62,sc:0.94},280); await sleep(300);
+  await callout('UP TOP!');
+  fmv(D,{pose:'prone',fwd:-4,rot:0},230); await sleep(200);
+  FIG[A].el.classList.add('up');
+  fmv(A,{pose:'dive',x:atX(D)-dir*46,up:86,sc:1},170); speedLines(A); await sleep(170);
+  fmv(A,{pose:'splash',x:atX(D),up:8},130); await sleep(130);
+  c.hit(2); shake(); dustAt(A); matWave(A); hitFlash(D,200); await sleep(320);
+  FIG[A].el.classList.remove('up');
+  fmv(A,{pose:'ready',fwd:0,up:0,sc:1},300); fmv(D,{pose:'proneUp'},300); await sleep(280);
+}
+async function chSubmission(A,D,c){
+  const C=ST.close, dir=FIG[A].dir;
+  fmv(A,{pose:'grapple',fwd:C*0.85},170); fmv(D,{pose:'guard',fwd:C*0.25},170); await sleep(190);
+  fmv(D,{pose:'prone',fwd:C*0.15,rot:0},160); await sleep(160);
+  fmv(A,{pose:'submit',x:atX(D)-dir*40},160); await sleep(170);
+  c.hit(1); hitFlash(D); await callout('HE HAS IT LOCKED IN!');
+  for(let i=0;i<3;i++){ fmv(A,{sc:1.04},95); fmv(D,{rot:i%2?5:-5},95); await sleep(100);
+    fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
+  fmv(A,{pose:'ready',fwd:0},290); fmv(D,{pose:'proneUp',fwd:0},290); await sleep(270);
+}
+async function chTechnical(A,D,c){
+  const C=ST.close, dir=FIG[A].dir;
+  fmv(A,{pose:'lockup',fwd:C*0.9},170); fmv(D,{pose:'lockup',fwd:C*0.9},170); await sleep(200);
+  fmv(A,{pose:'whip',fwd:C*0.8},120); fmv(D,{pose:'stagger',fwd:C*0.45,rot:-7},120); await sleep(150);
+  fmv(A,{pose:'grapple',fwd:C*0.95},110); fmv(D,{pose:'reel',fwd:C*0.55},110); await sleep(125);
+  fmv(A,{pose:'kneel',fwd:C*0.82},110); fmv(D,{pose:'prone',x:atX(A)+dir*26,up:0,rot:0},110); await sleep(118);
+  c.hit(1); hitFlash(D); dustAt(D); await sleep(260);
+  fmv(A,{pose:'ready',fwd:0},290); fmv(D,{pose:'proneUp'},290); await sleep(250);
+}
+async function chHardcore(A,D,c){
+  const C=ST.close;
+  fmv(A,{pose:'wind',fwd:C*0.6,rot:-7},160); await sleep(170);
+  fmv(A,{pose:'chop',fwd:C,rot:7},60); await sleep(60);
+  c.hit(2); shake(); hitFlash(D,240);
+  fmv(D,{pose:'reel',fwd:-24,up:10,rot:-18},110); await sleep(130);
+  fmv(D,{pose:'prone',fwd:-38,up:0,rot:0},160); dustAt(D); matWave(D); await sleep(240);
+  fmv(A,{pose:'stomp',x:atX(D)-FIG[A].dir*30},150); await sleep(160);
+  shake(); impact(atX(D),72,1); dustAt(D);
+  fmv(A,{pose:'ready',fwd:0,rot:0},280); fmv(D,{pose:'proneUp'},290); await sleep(270);
+}
+async function chShowman(A,D,c){
+  const C=ST.close;
+  fmv(A,{pose:'taunt',fwd:C*0.3},210); FIG[A].el.classList.add('glow');
+  fmv(D,{pose:'stagger',fwd:0},210); await sleep(290);
+  fmv(A,{pose:'point',fwd:C*0.55},150); await sleep(190);
+  fmv(A,{pose:'run',fwd:C*0.8},110); speedLines(A); await sleep(110);
+  fmv(A,{pose:'strike',fwd:C,rot:4},70); await sleep(70);
+  c.hit(1); hitFlash(D); fmv(D,{pose:'reel',fwd:-18,rot:10},100); await sleep(190);
+  FIG[A].el.classList.remove('glow');
+  fmv(A,{pose:'celebrate',fwd:C*0.4},220); fmv(D,{pose:'stagger',fwd:0,rot:0},220); await sleep(250);
+  fmv(A,{pose:'ready',fwd:0},250); await sleep(210);
+}
+const CHOREO={ strike:chStrike, runner:chRunner, slam:chSlam, suplex:chSuplex, aerial:chAerial,
+  submission:chSubmission, technical:chTechnical, hardcore:chHardcore, showman:chShowman };
+
+// everybody back to their corner, carrying how beaten up they are
+async function settle(ms){
+  ['me','opp'].forEach(k=>{
+    const hp=k==='me'?MS.me.hp:MS.opp.hp;
+    fmv(k,{pose:hp<=24?'stagger':'ready',fwd:0,up:0,rot:0,sc:1},ms||300);
+    FIG[k].el.classList.remove('glow','red','up','hitflash');
+  });
+  await sleep(ms||300); busy(false);
+}
+
+// one exchange: attacker performs a real move on the defender
+async function exchange(byMe, mvName, dmg, momShift, tag, cat){
+  const A=byMe?'me':'opp', D=byMe?'opp':'me';
+  busy(true);
+  let applied=false;
+  const apply=()=>{ if(applied) return; applied=true;
+    if(byMe) MS.opp.hp=clamp(MS.opp.hp-dmg); else MS.me.hp=clamp(MS.me.hp-dmg);
+    MS.mom=clamp(MS.mom+momShift,-100,100);
+    setBar('hpMe',MS.me.hp); setBar('hpOpp',MS.opp.hp); setMom();
+    fLog(byMe? `<b>${MS.me.name}</b> hits the <span class="hi">${mvName}</span>.`
+             : `<b>${MS.opp.name}</b> lands ${mvName}.`, byMe?'':'bad'); };
+  const ctx={ big:dmg>=27, hit:(power,quiet)=>{
+    const x=atX(D);
+    dmgNum(x,Math.round(dmg));
+    impact(x+FIG[D].dir*8,34,power);
+    if(power>=2&&!quiet) burst(x,tag||'POW!');
+    apply();
+  }};
+  let key = cat||'strike';
+  if(key==='strike' && (dmg>=25 || rnd()<0.34)) key='runner';
+  await (CHOREO[key]||chStrike)(A,D,ctx);
+  apply();
+  await settle(280);
+}
+
+/* ---- set-piece animations for the big in-match decisions ---- */
+async function spot(key,byMe,tag,power){
+  const A=byMe?'me':'opp', D=byMe?'opp':'me';
+  busy(true);
+  const ctx={ big:power>=2, hit:(p,quiet)=>{ const x=atX(D);
+    impact(x+FIG[D].dir*8,34,p); if(p>=2&&!quiet&&tag) burst(x,tag); } };
+  await (CHOREO[key]||chStrike)(A,D,ctx);
+  await settle(260);
+}
+async function spotEscape(byMe){          // they slide out the back of your finish
+  const A=byMe?'me':'opp', D=byMe?'opp':'me', dir=FIG[A].dir; busy(true);
+  fmv(A,{pose:'grapple',fwd:ST.close*0.9},180); fmv(D,{pose:'guard',fwd:ST.close*0.3},180); await sleep(200);
+  fmv(A,{pose:'lift',fwd:ST.close*0.9},170); await sleep(200);
+  fmv(D,{pose:'run',x:atX(A)-dir*90,up:0},240); await sleep(250);
+  fmv(A,{pose:'stagger',rot:-7},220); await sleep(250);
+  await settle(280);
+}
+async function spotMiss(byMe){            // climb up, and nobody is home
+  const A=byMe?'me':'opp', D=byMe?'opp':'me', dir=FIG[A].dir; busy(true);
+  fmv(D,{pose:'prone',fwd:0,rot:0},220);
+  fmv(A,{pose:'runBack',fwd:-ST.close*1.6},240); await sleep(250);
+  fmv(A,{pose:'climb',fwd:-ST.close*1.6,up:62,sc:0.94},280); await sleep(320);
+  fmv(D,{pose:'proneUp',fwd:ST.close*0.6},230); await sleep(150);
+  FIG[A].el.classList.add('up');
+  fmv(A,{pose:'dive',x:atX(D)-dir*78,up:84,sc:1},170); speedLines(A); await sleep(170);
+  fmv(A,{pose:'prone',x:atX(D)-dir*60,up:0,rot:0},140); await sleep(150);
+  shake(); dustAt(A); matWave(A); hitFlash(A,240); impact(atX(A),72,2);
+  FIG[A].el.classList.remove('up');
+  await sleep(360); await settle(320);
+}
+async function spotFire(byMe){            // hulking up
+  const A=byMe?'me':'opp'; busy(true);
+  FIG[A].el.classList.add('glow');
+  for(let i=0;i<3;i++){ fmv(A,{pose:'stomp',sc:1.03},130); await sleep(140); fmv(A,{pose:'ready',sc:1},130); await sleep(120); }
+  fmv(A,{pose:'celebrate',sc:1.06},220); await sleep(320);
+  FIG[A].el.classList.remove('glow'); await settle(280);
+}
+async function spotGuard(byMe){           // cover up and eat the shots
+  const A=byMe?'me':'opp', D=byMe?'opp':'me'; busy(true);
+  fmv(D,{pose:'guard',fwd:0,rot:0},200); await sleep(160);
+  for(let i=0;i<2;i++){
+    fmv(A,{pose:'strike',fwd:ST.close,rot:3},110); await sleep(115);
+    impact(atX(D)+FIG[D].dir*10,36,1); hitFlash(D,110);
+    fmv(A,{pose:'wind',fwd:ST.close*0.5,rot:-3},130); await sleep(140);
+  }
+  await settle(280);
+}
+async function spotTaunt(byMe,big){       // work the crowd
+  const A=byMe?'me':'opp'; busy(true);
+  FIG[A].el.classList.add('glow');
+  fmv(A,{pose:'taunt',fwd:ST.close*0.3,sc:1.04},240); await sleep(360);
+  fmv(A,{pose:'point',fwd:ST.close*0.5},180); await sleep(260);
+  if(big){ fmv(A,{pose:'celebrate',sc:1.07},220); await sleep(320); }
+  FIG[A].el.classList.remove('glow'); await settle(280);
 }
 
 // pick a move for the player from their game plan
@@ -1549,8 +1852,18 @@ function myMove(){
   const top=Math.max(1,Math.round(pool.length*(MS.mom>25?0.34:MS.mom>-25?0.6:0.9)));
   return pool[Math.floor(rnd()*top)];
 }
-const OPP_MOVES=['a clothesline','a suplex','a back elbow','a running boot','a snap powerslam','a knee strike','a chop block','a spinebuster','a neckbreaker','a DDT'];
-function oppMove(){ return {name:OPP_MOVES[Math.floor(rnd()*OPP_MOVES.length)], dmg:0}; }
+// the opponent's moves carry a family too, so their animations read the same way
+const OPP_MOVES=[
+  {name:'a clothesline',cat:'runner'},   {name:'a belly-to-back suplex',cat:'suplex'},
+  {name:'a back elbow',cat:'strike'},    {name:'a running boot',cat:'runner'},
+  {name:'a snap powerslam',cat:'slam'},  {name:'a knee strike',cat:'strike'},
+  {name:'a chop block',cat:'technical'}, {name:'a spinebuster',cat:'slam'},
+  {name:'a neckbreaker',cat:'technical'},{name:'a DDT',cat:'slam'},
+  {name:'a diving elbow drop',cat:'aerial'}, {name:'an armbar',cat:'submission'},
+  {name:'a vertical suplex',cat:'suplex'},{name:'a chair shot',cat:'hardcore'},
+  {name:'a knife-edge chop',cat:'strike'},{name:'a german suplex',cat:'suplex'},
+];
+function oppMove(){ return OPP_MOVES[Math.floor(rnd()*OPP_MOVES.length)]; }
 
 function pct(p){ return Math.round(clamp(p*100,2,97)); }
 function pctCls(p){ return p>=0.66?'good':p>=0.4?'mid':'bad'; }
@@ -1575,18 +1888,25 @@ async function startFight(o){
   MS={ o, mom:0, beat:0, maxBeats:11+Math.floor(rnd()*4), decisions:0, decWon:0, big:0, ended:false,
        me:{hp:100,name:G.w.name,ovr:meOvr}, opp:{hp:100,name:o.oppName,ovr:o.oppOvr},
        usedMoves:[], quality:0, finishType:null };
-  $('fMe').innerHTML=wrestlerSVG(G.w.look);
   const oc=charById(o.oppId);
-  $('fOpp').innerHTML=wrestlerSVG(oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
   $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
-  $('fMe').className='fighter me'; $('fOpp').className='fighter opp';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   go('fight');
+  stageInit();
+  setLook('me',G.w.look);
+  setLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fClock').textContent='BELL';
-  await sleep(400);
+  // ---- entrances: both wrestlers walk down the aisle and play to the crowd ----
+  busy(true);
+  fmv('me',{pose:'run',fwd:-ST.W*0.62},0); fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
+  await sleep(40);
+  fmv('me',{pose:'run',fwd:0},640); fmv('opp',{pose:'run',fwd:0},640); await sleep(660);
+  fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
+  fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220); busy(false);
+  await sleep(240);
   const ch=charById(o.oppId), r=ch?rel(ch.id):null;
   if(ch){
     const line = (r&&r.respect>=55&&ch.lines.respect) ? ch.lines.respect
@@ -1596,7 +1916,11 @@ async function startFight(o){
     if(r&&r.heat>=45) fLog(`<span class="bad">There is real bad blood here — ${r.matches} previous meeting${r.matches!==1?'s':''}.</span>`);
     await sleep(700);
   }
+  // ---- the lock-up: they meet in the middle before the bell ----
+  busy(true);
+  fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   await callout('FIGHT!');
+  await settle(260);
   fLog(`The bell rings — <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   runFight();
 }
@@ -1612,18 +1936,18 @@ async function runFight(){
       const mv=myMove(); MS.usedMoves.push(mv);
       const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
       const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
-      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, mv.tier>=4?'BIG MOVE!':'POW!');
+      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
     } else {
       const mv=oppMove();
       const dmg=clamp((o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06)*(styleOf().in||1)*facBonus('tough'), 3, 32);
-      await exchange(false, mv.name, dmg, -(6+rnd()*5));
+      await exchange(false, mv.name, dmg, -(6+rnd()*5), null, mv.cat);
       MS.quality+=4;
     }
     // ---- a faction ally can turn the tide ----
     if(!MS.ended && !MS.ally && MS.mom<-30 && myFaction() && rnd()<facBonus('interfere',0)){
       MS.ally=true; const f=myFaction(), mate=facMembers(f).filter(m=>m.id!==MS.o.oppId)[0];
-      if(mate){ shake(); burst(50,'INTERFERENCE!'); await callout(f.name.toUpperCase()+'!');
+      if(mate){ shake(); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
         fLog(`<span class="hi">${mate.name} hits the ring — ${f.name} has your back!</span>`);
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
         MS.quality+=8; await sleep(420); }
@@ -1648,19 +1972,23 @@ async function finishDecision(){
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fin'){
-    if(ok){ await flashScreen(); await callout('FINISHER!'); MS.quality+=22; MS.decWon++;
+    if(ok){ const fc=fin&&fin.cat==='strike'?'runner':(fin?fin.cat:'slam');
+      await flashScreen(); await spot(fc,true,'FINISH!',2);
+      await callout('FINISHER!'); MS.quality+=22; MS.decWon++;
       fLog(`<span class="hi">${pick.name} connects!</span>`); MS.finishType='finisher';
       await pinSequence(true); return; }
+    await spotEscape(true);
     fLog(`<span class="bad">They slipped out of the ${pick.name}!</span>`); MS.mom=clamp(MS.mom-30,-100,100); setMom(); await callout('COUNTERED!');
   } else if(pick.kind==='grind'){
-    if(ok){ MS.opp.hp=clamp(MS.opp.hp-14); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+16,-100,100); setMom(); MS.decWon++; MS.quality+=8;
+    if(ok){ await spot('technical',true,null,1);
+      MS.opp.hp=clamp(MS.opp.hp-14); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+16,-100,100); setMom(); MS.decWon++; MS.quality+=8;
       fLog('You keep the pressure on and wear them down.'); }
-    else { MS.mom=clamp(MS.mom-18,-100,100); setMom(); fLog('<span class="bad">You gave them time to breathe.</span>'); }
+    else { await spotTaunt(false,false); MS.mom=clamp(MS.mom-18,-100,100); setMom(); fLog('<span class="bad">You gave them time to breathe.</span>'); }
   } else {
-    if(ok){ MS.quality+=16; MS.decWon++; MS.big++; await callout('THE CROWD ERUPTS!'); fLog('<span class="hi">The building is on its feet!</span>'); }
-    else { MS.mom=clamp(MS.mom-26,-100,100); setMom(); fLog('<span class="bad">You showboated — and paid for it.</span>'); }
+    if(ok){ await spotTaunt(true,true); MS.quality+=16; MS.decWon++; MS.big++; await callout('THE CROWD ERUPTS!'); fLog('<span class="hi">The building is on its feet!</span>'); }
+    else { await spotTaunt(true,false); await spotGuard(false); MS.mom=clamp(MS.mom-26,-100,100); setMom(); fLog('<span class="bad">You showboated — and paid for it.</span>'); }
   }
-  await sleep(300);
+  await sleep(240);
 }
 
 async function comebackDecision(){
@@ -1674,18 +2002,21 @@ async function comebackDecision(){
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fire'){
-    if(ok){ MS.mom=clamp(MS.mom+58,-100,100); setMom(); MS.decWon++; MS.quality+=14; MS.big++;
+    if(ok){ await spotFire(true); MS.mom=clamp(MS.mom+58,-100,100); setMom(); MS.decWon++; MS.quality+=14; MS.big++;
       await callout('COMEBACK!'); fLog('<span class="hi">You will not stay down — the crowd is with you!</span>'); }
-    else { MS.me.hp=clamp(MS.me.hp-10); setBar('hpMe',MS.me.hp); fLog('<span class="bad">The rally was cut off.</span>'); }
+    else { await spotGuard(false); MS.me.hp=clamp(MS.me.hp-10); setBar('hpMe',MS.me.hp); fLog('<span class="bad">The rally was cut off.</span>'); }
   } else if(pick.kind==='counter'){
-    if(ok){ MS.mom=clamp(MS.mom+70,-100,100); setMom(); MS.opp.hp=clamp(MS.opp.hp-16); setBar('hpOpp',MS.opp.hp);
+    if(ok){ await spot('technical',true,'CAUGHT HIM!',2);
+      MS.mom=clamp(MS.mom+70,-100,100); setMom(); MS.opp.hp=clamp(MS.opp.hp-16); setBar('hpOpp',MS.opp.hp);
       MS.decWon++; MS.quality+=18; MS.big++; shake(); await callout('OUT OF NOWHERE!'); fLog('<span class="hi">Caught them flush out of nowhere!</span>'); }
-    else { MS.me.hp=clamp(MS.me.hp-14); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-12,-100,100); setMom(); fLog('<span class="bad">You went for it and ate a big shot.</span>'); }
+    else { await spot('runner',false,'CUT OFF!',2);
+      MS.me.hp=clamp(MS.me.hp-14); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-12,-100,100); setMom(); fLog('<span class="bad">You went for it and ate a big shot.</span>'); }
   } else {
+    await spotGuard(false);
     if(ok){ MS.mom=clamp(MS.mom+26,-100,100); setMom(); MS.decWon++; MS.quality+=6; fLog('You cover up and ride it out.'); }
     else { MS.me.hp=clamp(MS.me.hp-8); setBar('hpMe',MS.me.hp); fLog('<span class="bad">They kept the pressure on.</span>'); }
   }
-  await sleep(300);
+  await sleep(240);
 }
 
 async function midDecision(){
@@ -1698,45 +2029,61 @@ async function midDecision(){
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='risk'){
-    if(ok){ MS.opp.hp=clamp(MS.opp.hp-20); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+34,-100,100); setMom();
+    if(ok){ await spot('aerial',true,'HIGH RISK!',2);
+      MS.opp.hp=clamp(MS.opp.hp-20); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+34,-100,100); setMom();
       MS.decWon++; MS.quality+=20; MS.big++; shake(); await callout('HIGH RISK PAYS!'); fLog('<span class="hi">They hit it clean — the place came unglued!</span>'); }
-    else { MS.me.hp=clamp(MS.me.hp-18); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-30,-100,100); setMom();
+    else { await spotMiss(true);
+      MS.me.hp=clamp(MS.me.hp-18); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-30,-100,100); setMom();
       await callout('MISSED IT!'); fLog('<span class="bad">Nobody home — you crashed and burned.</span>'); }
   } else if(pick.kind==='chain'){
+    await spot('technical',true,null,1);
     if(ok){ MS.mom=clamp(MS.mom+20,-100,100); setMom(); MS.decWon++; MS.quality+=10; fLog('A crisp exchange on the mat wins the crowd over.'); }
     else { MS.mom=clamp(MS.mom-10,-100,100); setMom(); fLog('<span class="bad">The sequence broke down.</span>'); }
   } else {
+    await spotTaunt(true,ok);
     if(ok){ MS.quality+=13; MS.decWon++; MS.mom=clamp(MS.mom+12,-100,100); setMom(); fLog('<span class="hi">You have them eating out of your hand.</span>'); }
     else { MS.mom=clamp(MS.mom-14,-100,100); setMom(); fLog('<span class="bad">You lost them for a moment.</span>'); }
   }
-  await sleep(300);
+  await sleep(240);
 }
 
 async function pinSequence(iAmPinning){
-  const target=iAmPinning?$('fOpp'):$('fMe');
-  target.classList.add(iAmPinning?'downB':'downA');
-  await sleep(320);
+  const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
+  busy(true);
+  fmv(D,{pose:'prone',fwd:0,up:0,rot:0,sc:1},280); await sleep(260);
+  dustAt(D);
+  FIG[A].el.classList.add('up');
+  fmv(A,{pose:'pin',x:atX(D)-FIG[A].dir*22,up:0,rot:0,sc:1},280); await sleep(320);
   const near = iAmPinning? (MS.opp.hp>16 && rnd()<0.45) : (MS.me.hp>16 && rnd()<0.45);
   for(let n=1;n<=3;n++){
     if(near && n===3){
       $('fPin').textContent='2'; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
-      await sleep(420); await callout('KICKOUT!'); fLog('<span class="hi">A kickout at two and a half!</span>');
+      await sleep(420);
+      // the shoulder comes up
+      fmv(D,{pose:'proneUp',rot:-8},130); await sleep(130);
+      fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},220);
+      await callout('KICKOUT!'); fLog('<span class="hi">A kickout at two and a half!</span>');
       MS.quality+=10; MS.big++;
-      target.classList.remove('downA','downB');
+      FIG[A].el.classList.remove('up');
       MS.mom=clamp(MS.mom+(iAmPinning?-14:14),-100,100); setMom();
-      await sleep(200); return false;
+      await settle(300); return false;
     }
     $('fPin').textContent=n; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
-    await sleep(430);
+    fmv(A,{sc:1.02},110); await sleep(120); fmv(A,{sc:1},110);
+    await sleep(310);
   }
+  FIG[A].el.classList.remove('up');
   await endFight(iAmPinning);
   return true;
 }
 
 async function endFight(iWon){
   if(MS.ended) return; MS.ended=true;
-  const loser=iWon?$('fOpp'):$('fMe');
-  loser.classList.add(iWon?'downB':'downA');
+  const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
+  busy(true);
+  fmv(Lz,{pose:'prone',fwd:0,up:0,rot:0,sc:1},300);
+  fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
+  FIG[W].el.classList.add('glow');
   await flashScreen();
   await callout(iWon?'WINNER!':'DEFEATED');
   fLog(iWon?`<span class="hi">${MS.me.name} gets the three count!</span>`:`<span class="bad">${MS.opp.name} takes it.</span>`);
