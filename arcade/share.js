@@ -21,7 +21,7 @@
     table: 'Number Game', match: 'Daily Match', career: 'Career Path',
     oddone: 'Odd One Out', rankit: 'Rank It', almamater: 'Alma Mater',
     guess: 'Guess the Player', crossword: 'Daily Crossword', wordsearch: 'Word Search',
-    highlow: 'High Low'
+    highlow: 'High Low', sportegories: 'Sportegories'
   };
   // Games with no daily puzzle number (endless / not a shared board).
   var NO_NUMBER = { highlow: 1 };
@@ -125,7 +125,7 @@
   var ACCENT = {
     table: '#F2B632', career: '#48D17A', oddone: '#A982F3', rankit: '#EC5E9C',
     guess: '#F0653A', almamater: '#F2B632', wordsearch: '#37C5D5',
-    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B'
+    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#DA6BE6'
   };
   // Emoji square -> fill on the dark card. Blanks/absent squares become faint
   // panels rather than the glaring white/black they are as text.
@@ -187,7 +187,7 @@
     var tl = (spec.timeline && spec.timeline.length) ? spec.timeline : null;
     var ART = { table:artLadder, oddone:artStreak, career:artPath, almamater:artPennant,
                 rankit:artRank, guess:artDossier, wordsearch:artClock, crossword:artCross,
-                match:artMatch, highlow:artHighLow };
+                match:artMatch, highlow:artHighLow, sportegories:artSportegories };
     if (tl) { drawTimeline(tl, spec.total, top, boxH); }
     else if (ART[spec.key]) { ART[spec.key](spec, top, boxH); handledStat = true; }
     else { drawGrid(spec, top, boxH); }
@@ -317,6 +317,30 @@
       }
     }
     // ---- High Low: the category up top, the streak as a run of calls ----
+    /* Sportegories: the rolled letter IS the day, so it's the hero - then the
+       score, then a tile per category showing which ones you filled. Never the
+       answers themselves, so the card can't spoil the puzzle. */
+    function artSportegories(spec) {
+      var pts = Math.max(0, spec.statInt | 0);
+      var letter = (spec.letter || (spec.stat || '').charAt(0) || '?').toUpperCase();
+      var marks = spec.marks || '';
+      var TS = 150, ty = 330;
+      g.fillStyle = accent; rr((W - TS) / 2, ty, TS, TS, 26); g.fill();
+      g.fillStyle = '#0B1B30'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '400 108px Anton, Impact, sans-serif';
+      g.fillText(letter, W / 2, ty + TS / 2 + 6);
+      g.textBaseline = 'alphabetic';
+      cbig(String(pts), ty + TS + 150, 190, '#F4F7FB');
+      clabel(pts === 1 ? 'point' : 'points', ty + TS + 214);
+      var n = marks.length || 8, r = 24, gap = 20;
+      var tw = n * (r * 2) + (n - 1) * gap, sx = (W - tw) / 2 + r, y = ty + TS + 300;
+      for (var i = 0; i < n; i++) {
+        var hit = marks ? marks.charAt(i) !== '.' : false;
+        g.beginPath(); g.arc(sx + i * (r * 2 + gap), y, r, 0, 7);
+        g.fillStyle = hit ? accent : 'rgba(244,247,251,.16)'; g.fill();
+      }
+    }
+
     function artHighLow(spec) {
       var run = Math.max(0, spec.statInt | 0);
       var m = /·\s*([^·]+?)\s*$/.exec(spec.stat || '');       // "... in a row · Receiving TDs"

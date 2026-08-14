@@ -77,7 +77,7 @@
       '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
-      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--coral,#F06A5F);color:#fff;font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
+      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
     // Pages without a --hero display font (e.g. the crossword) fall back to the
     // body font - bump the title weight there so it still reads as a heading.
     var hero = '';

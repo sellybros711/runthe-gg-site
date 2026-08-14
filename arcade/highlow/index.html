@@ -39,8 +39,8 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
-    --hl:#F5822B; --hlT:#FF9D52;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --hl:#FF8A3D; --hlT:#FF8A3D;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
     --nfl:#5C8CFF; --mlb:#F0685F; --nba:#F2B632;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -50,8 +50,8 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
-    --hlT:#C25E12;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
+    --hlT:#B4530A;
     --nfl:#2358E0; --mlb:#D8452F; --nba:#A87508;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -381,13 +381,14 @@
 <script src="/arcade/rosterstats.js?v=2"></script>
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/board.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=8"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/share.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
@@ -518,7 +519,7 @@
   }
 
   // ---------- state ----------
-  var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0;
+  var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0, runStart=0;
   var run=0, best=0, busy=false, playing=false, charged=false;
 
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
@@ -619,6 +620,7 @@
   function startGame(baseId){
     var e = idMap[baseId]; if(!e || !cat) return;
     baseline=e; run=0; playing=true; busy=false; charged=false;
+    runStart=Date.now();   // real elapsed time is the board's tiebreak
     var s=load(); best=s.best||0;
     document.getElementById('streakN').textContent='0';
     var lbl = cat.label + (cat.note?(' ('+cat.note+')'):'');
@@ -714,7 +716,8 @@
     }, 260);
     try{
       if(run>0 && window.RTG_BOARD && RTG_BOARD.submit){
-        RTG_BOARD.submit(GAME, DATE, { seconds:0, mistakes:0, reveals:0, runLen:run }).then(function(res){
+        var secs = Math.max(1, Math.round((Date.now() - (runStart||Date.now()))/1000));
+        RTG_BOARD.submit(GAME, DATE, { seconds:secs, mistakes:0, reveals:0, runLen:run }).then(function(res){
           if(res && res.streak){ document.getElementById('streakN').textContent=res.streak; }
           renderRealBoard();
         });
@@ -773,6 +776,20 @@
   if(window.RTG_BOARD){
     try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){ if(isMember()){ revealGame(); renderRealBoard(); } }); }catch(e){}
   }
+})();
+</script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there. */
+(function(){
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el, game:'highlow', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'in a row' });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
 </body>

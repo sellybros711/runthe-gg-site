@@ -151,17 +151,64 @@ const POS_BY_SPORT = {};
 PLAYERS.forEach((p) => { if (p.pos && p.sport) (POS_BY_SPORT[p.sport] = POS_BY_SPORT[p.sport] || new Set()).add(p.pos); });
 for (const sp of ['NBA', 'NFL', 'MLB']) {
   for (const ps of [...(POS_BY_SPORT[sp] || [])].sort()) {
-    const n = PLAYERS.filter((p) => p.sport === sp && p.pos === ps).length;
-    if (n >= 25) add(`${sp} ${ps}`, { all: [{ k: 'sport', v: sp }, { k: 'pos', v: ps }] }, 'pos');
+    const base = { all: [{ k: 'sport', v: sp }, { k: 'pos', v: ps }] };
+    const n = PLAYERS.filter((p) => test(p, base)).length;
+    // A bare position is a filter, not a puzzle - "NBA Center" asks nothing.
+    // Keep it only as a wide anchor, and hang the interesting variants off it.
+    if (n >= 25) add(`${sp} ${ps}`, base, 'pos');
+    const hooks = [
+      [`Hall of Fame ${ps}`, { all: [...base.all, { k: 'award', v: 'Hall of Fame' }] }],
+      [`Active ${sp} ${ps}`, { all: [...base.all, { k: 'act' }] }],
+      [`${ps} who played for 3+ teams`, { all: [...base.all, { k: 'teams', min: 3 }] }],
+      [`${ps} who never left one franchise`, { all: [...base.all, { k: 'teamsMax', max: 1 }] }],
+      [`${ps} whose career spanned 3 decades`, { all: [...base.all, { k: 'decades', min: 3 }] }]
+    ];
+    hooks.forEach(([l, pr]) => { if (PLAYERS.filter((p) => test(p, pr)).length >= 14) add(l, pr, 'pos'); });
   }
 }
 // -- franchise (any team with a real body of players)
 const teamCount = {};
 PLAYERS.forEach((p) => p.t.forEach((t) => { teamCount[t] = (teamCount[t] || 0) + 1; }));
-const BIG_TEAMS = Object.entries(teamCount).filter(([, n]) => n >= 60).map(([t]) => t);
+/* Roster sizes differ wildly by sport - an NFL franchise churns through far
+ * more players than an NBA one - so a single cutoff silently made this a
+ * football-and-baseball game. Gate per sport instead. */
+const teamSport = {};
+PLAYERS.forEach((p) => p.t.forEach((t) => {
+  (teamSport[t] = teamSport[t] || {})[p.sport] = (teamSport[t][p.sport] || 0) + 1;
+}));
+const sportOfTeam = (t) => Object.entries(teamSport[t] || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+const TEAM_MIN = { NBA: 38, NFL: 75, MLB: 75 };
+const BIG_TEAMS = Object.entries(teamCount)
+  .filter(([t, n]) => n >= (TEAM_MIN[sportOfTeam(t)] || 999)).map(([t]) => t);
 /* Nicknames are ambiguous once you shorten them ("Red Sox"/"White Sox" both end
  * in "Sox", both New York clubs, both LA clubs), so label with the full name. */
 BIG_TEAMS.forEach((t) => add(`Played for the ${t}`, { k: 'team', v: t }, 'team'));
+/* Franchise x accolade. This is where the pool gets its depth AND its
+ * character: "Hall of Famer who played for the Steelers" is a real question a
+ * fan enjoys, and it multiplies one flat axis (86 franchises) into hundreds of
+ * specific categories. Without these the library leaned on a handful of very
+ * broad categories, and the same few showed up every fourth day. */
+const TEAM_HOOKS = [
+  ['Hall of Fame', (t) => `Hall of Famer who played for the ${t}`],
+  ['NBA All-Star', (t) => `NBA All-Star who played for the ${t}`],
+  ['MLB All-Star', (t) => `MLB All-Star who played for the ${t}`],
+  ['Pro Bowl', (t) => `Pro Bowler who played for the ${t}`]
+];
+BIG_TEAMS.forEach((t) => {
+  TEAM_HOOKS.forEach(([aw, mk]) => {
+    const pr = { all: [{ k: 'team', v: t }, { k: 'award', v: aw }] };
+    if (PLAYERS.filter((p) => test(p, pr)).length >= 12) add(mk(t), pr, 'team');
+  });
+  // the journeyman cut: passed through here, and through plenty of others
+  const jr = { all: [{ k: 'team', v: t }, { k: 'teams', min: 4 }] };
+  if (PLAYERS.filter((p) => test(p, jr)).length >= 14)
+    add(`Played for the ${t} and 3 other franchises`, jr, 'team');
+  // the loyalist cut: this club and nobody else
+  const lo = { all: [{ k: 'team', v: t }, { k: 'teamsMax', max: 1 }] };
+  if (PLAYERS.filter((p) => test(p, lo)).length >= 12)
+    add(`Spent an entire career with the ${t}`, lo, 'team');
+});
+
 // -- two-franchise (only pairs with a real intersection)
 const RIVALS = [
   ['New York Yankees', 'Boston Red Sox'], ['Dallas Cowboys', 'San Francisco 49ers'],
@@ -208,7 +255,21 @@ STAT_STEPS.forEach(([key, label, steps]) => steps.forEach((min) => {
   if (n >= 12) add(`${min.toLocaleString()}+ ${label}`, { k: 'stat', v: key, min }, 'stat');
 }));
 // -- era & status
-[1960, 1970, 1980, 1990, 2000, 2010, 2020].forEach((d) => add(`Played in the ${d}s`, { k: 'decade', v: d }, 'era'));
+/* Bare decades are gone. "Played in the 2010s" matched thousands of players
+ * and filled 10% of every card's slots with the least interesting question the
+ * game can ask. What survives is the SHAPE of a career: spanning two named
+ * decades, or lasting three, or never leaving one town. */
+/* Adjacent pairs are a long career; the non-adjacent ones are a REALLY long
+ * career, and a better question for it. */
+[[1980, 1990], [1990, 2000], [2000, 2010], [2010, 2020],
+ [1980, 2000], [1990, 2010], [2000, 2020]].forEach(([a, b]) =>
+  add(`Played in both the ${a}s and the ${b}s`,
+      { all: [{ k: 'decade', v: a }, { k: 'decade', v: b }] }, 'era'));
+add('Career spanned 3 different decades', { k: 'decades', min: 3 }, 'era');
+add('Career spanned 4 different decades', { k: 'decades', min: 4 }, 'era');
+add('Never played for another franchise', { k: 'teamsMax', max: 1 }, 'journey');
+add('Played for exactly two franchises', { k: 'teamsMax', max: 2 }, 'journey');
+add('Played for 6+ franchises', { k: 'teams', min: 6 }, 'journey');
 add('Active player today', { k: 'act' }, 'era');
 add('#1 overall draft pick', { k: 'draft1' }, 'draft');
 add('Played for 3+ franchises', { k: 'teams', min: 3 }, 'journey');
@@ -228,6 +289,44 @@ const COMBO = [
 ];
 COMBO.forEach(([l, p]) => add(l, p, 'combo'));
 
+/* ---- basketball expansion ----
+ * The generic axes under-serve the NBA: fewer franchises clear any roster
+ * threshold, its counting stats are still thin (the CI job that fills them
+ * keeps coming back empty), and college categories skew football because
+ * football rosters are enormous. So build NBA-scoped categories explicitly. */
+const NBA = { k: 'sport', v: 'NBA' };
+const nbaAdd = (label, pred, tag) => {
+  const n = PLAYERS.filter((p) => test(p, pred)).length;
+  if (n >= 18) add(label, pred, tag);
+};
+[[1980, 1990], [1990, 2000], [2000, 2010], [2010, 2020],
+ [1980, 2000], [1990, 2010], [2000, 2020]].forEach(([a, b]) =>
+  nbaAdd(`NBA player who played in both the ${a}s and the ${b}s`,
+         { all: [NBA, { k: 'decade', v: a }, { k: 'decade', v: b }] }, 'era'));
+nbaAdd('NBA career spanning 3 decades', { all: [NBA, { k: 'decades', min: 3 }] }, 'era');
+nbaAdd('NBA player who never left one franchise', { all: [NBA, { k: 'teamsMax', max: 1 }] }, 'journey');
+// 'NBA All-Star' already exists as a plain award category; adding an
+// NBA-scoped clone put two identical-reading labels in the same pool.
+nbaAdd('NBA Hall of Famer', { all: [NBA, { k: 'award', v: 'Hall of Fame' }] }, 'award');
+nbaAdd('NBA MVP or Finals MVP', { all: [NBA, { k: 'awardRe', v: 'MVP' }] }, 'award');
+nbaAdd('NBA Rookie of the Year', { all: [NBA, { k: 'awardRe', v: 'Rookie of the Year' }] }, 'award');
+['Duke', 'Kentucky', 'North Carolina', 'UCLA', 'Kansas', 'Michigan State', 'Arizona', 'Connecticut', 'Indiana', 'Louisville', 'Syracuse', 'Michigan']
+  .forEach((c) => nbaAdd(`NBA player out of ${c}`, { all: [NBA, { k: 'col', v: c }] }, 'col'));
+Object.keys(CONF).forEach((c) => nbaAdd(`NBA player from ${AN(c)} ${c} school`, { all: [NBA, { k: 'conf', v: c }] }, 'col'));
+nbaAdd('Active NBA player', { all: [NBA, { k: 'act' }] }, 'era');
+nbaAdd('NBA player who played for 3+ teams', { all: [NBA, { k: 'teams', min: 3 }] }, 'journey');
+nbaAdd('NBA player who played for 4+ teams', { all: [NBA, { k: 'teams', min: 4 }] }, 'journey');
+nbaAdd('NBA #1 overall draft pick', { all: [NBA, { k: 'draft1' }] }, 'draft');
+[10000, 15000, 20000].forEach((min) =>
+  nbaAdd(`${min.toLocaleString()}+ career NBA points`, { k: 'stat', v: 'nba_points', min }, 'stat'));
+// marquee NBA franchise pairs
+[['Los Angeles Lakers', 'Boston Celtics'], ['Chicago Bulls', 'New York Knicks'], ['Los Angeles Lakers', 'Miami Heat'],
+ ['Golden State Warriors', 'Brooklyn Nets'], ['Boston Celtics', 'Philadelphia 76ers']]
+  .forEach(([a, b]) => {
+    if (!iT.has(a) || !iT.has(b)) return;
+    nbaAdd(`Played for BOTH the ${a} and the ${b}`, { all: [{ k: 'team', v: a }, { k: 'team', v: b }] }, 'two');
+  });
+
 // ------------------------------------------------------------- evaluate
 function test(p, pr) {
   if (pr.all) return pr.all.every((x) => test(p, x));
@@ -244,6 +343,8 @@ function test(p, pr) {
     case 'act': return p.act === 1;
     case 'draft1': return p.dp === 1;
     case 'teams': return p.t.length >= pr.min;
+    case 'teamsMax': return p.t.length > 0 && p.t.length <= pr.max;
+    case 'decades': return new Set(p.decade).size >= pr.min;
     default: return false;
   }
 }
@@ -255,9 +356,25 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const initialsOf = (p) => { const k = nameKey(p.name); return k ? [...new Set([k.first[0], k.last[0]])] : []; };
 PLAYERS.forEach((p) => { p._i = initialsOf(p); });
 
+/* Which sport a category really belongs to. Most are implicit rather than
+ * declared ("300+ home runs" is MLB; "Played at an SEC school" is nobody's),
+ * so derive it from who actually answers: one sport owning 70%+ of the
+ * recognizable answers makes it that sport's category, otherwise it's ANY.
+ * The daily generator uses this to balance the sport mix. */
+function sportOf(hits) {
+  const known = hits.filter((p) => (p.f || 0) >= FAME_MIN);
+  const base = known.length >= 8 ? known : hits;
+  if (!base.length) return 'ANY';
+  const n = {};
+  base.forEach((p) => { n[p.sport] = (n[p.sport] || 0) + 1; });
+  const [top, cnt] = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+  return cnt / base.length >= 0.7 ? top : 'ANY';
+}
+
 const viability = {};        // catIndex -> { letter: recognizableCount }
 CATS.forEach((c) => {
   const hits = PLAYERS.filter((p) => test(p, c.p));
+  c.s = sportOf(hits);
   const by = {};
   hits.forEach((p) => { if ((p.f || 0) >= FAME_MIN) p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; }); });
   const all = {};
@@ -299,7 +416,7 @@ const payload = {
   fameMin: FAME_MIN, minAnswers: MIN_ANSWERS,
   sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, awards: AWDS, conf: CONF,
   players: compact,
-  cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t })),
+  cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,
   byLetter
@@ -321,6 +438,8 @@ const tiers = [0, 0, 0, 0]; CATS.forEach((c) => tiers[c.t]++);
 console.log('  by tier         anchor ' + tiers[0] + ', mid ' + tiers[1] + ', hard ' + tiers[2] + ', spice ' + tiers[3]);
 const gTag = {}; CATS.forEach((c) => gTag[c.g] = (gTag[c.g] || 0) + 1);
 console.log('  by axis         ' + Object.entries(gTag).map(([k, v]) => k + ':' + v).join(', '));
+const gSp = {}; CATS.forEach((c) => gSp[c.s] = (gSp[c.s] || 0) + 1);
+console.log('  by sport        ' + Object.entries(gSp).sort((a,b)=>b[1]-a[1]).map(([k, v]) => k + ':' + v).join(', '));
 console.log('playable letters  ' + PLAYABLE.length + '  ' + PLAYABLE.join(''));
 console.log('  per letter      ' + LETTERS.filter(L => byLetter[L].length).map((L) => L + ':' + byLetter[L].length).join(' '));
 console.log('data file         ' + (size / 1024).toFixed(0) + ' KB  -> arcade/sportegories-data.js');

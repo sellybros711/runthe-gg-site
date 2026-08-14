@@ -44,12 +44,24 @@
     };
   }
 
+  /* ONE GoTrue client per page. Two Supabase clients sharing a storage key both try to
+     consume the single-use OAuth code when Google redirects back, so whichever loses the
+     race reports a failure and the first Google sign-in appears not to work (the second
+     attempt then succeeds because the session is already stored). board.js and auth.js
+     both need a client, so they share this one. */
+  function rtgSharedClient(url, anon) {
+    try { if (window.__RTG_SB__ && window.__RTG_SB__.__rtgUrl === url) return window.__RTG_SB__; } catch (e) {}
+    var c = window.supabase.createClient(url, anon, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    try { c.__rtgUrl = url; window.__RTG_SB__ = c; } catch (e) {}
+    return c;
+  }
+
   function boot() {
     if (!(window.supabase && window.supabase.createClient)) { offline = true; return false; }
     try {
-      sb = window.supabase.createClient(SB_URL, SB_ANON, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-      });
+      sb = rtgSharedClient(SB_URL, SB_ANON);
     } catch (e) { sb = null; offline = true; return false; }
     sb.auth.onAuthStateChange(function (_evt, s) {
       session = s || null;
@@ -194,6 +206,38 @@
     );
   }
 
+  // ---- how many people posted a result for this game today. int or null. ----
+  // The board only ever shows a handful of rows, so without this a player has no
+  // idea whether 3rd place is out of 4 or out of 400.
+  function playerCount(game, dateStr) {
+    var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
+      '&puzzle_date=eq.' + encodeURIComponent(dateStr) + '&select=id';
+    return withTimeout(
+      fetch(q, { headers: headers({ Prefer: 'count=exact', 'Range-Unit': 'items', Range: '0-0' }) })
+        .then(function (res) {
+          if (!res.ok && res.status !== 206) return fail('count', res);
+          offline = false;
+          var total = parseInt(((res.headers.get('content-range') || '').split('/')[1] || '0'), 10);
+          return isNaN(total) ? 0 : total;
+        })
+    );
+  }
+
+  // ---- the signed-in user's own row for a day, so the board can place them
+  // even when they're nowhere near the top. Row or null. ----
+  function myRun(game, dateStr) {
+    if (!session) return Promise.resolve(null);
+    var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
+      '&puzzle_date=eq.' + encodeURIComponent(dateStr) +
+      '&user_id=eq.' + encodeURIComponent(session.user.id) +
+      '&select=display_name,base_seconds,mistakes,reveals,run_len,score,flawless&limit=1';
+    return withTimeout(
+      fetch(q, { headers: headers() })
+        .then(function (res) { if (!res.ok) return fail('myRun', res); offline = false; return res.json(); })
+        .then(function (a) { return (a && a.length) ? a[0] : null; })
+    );
+  }
+
   // ---- the signed-in user's cloud streak for a game. {streak,best_streak} or null. ----
   function streakOf(game) {
     if (!session) return Promise.resolve(null);
@@ -241,6 +285,39 @@
     );
   }
 
+  // ---- one page of the all-time board, for the leaderboard sheet's endless
+  // scroll. Unlike allTimeBoard() this reports the RAW row count alongside the
+  // scrubbed rows: the caller advances its offset by what the SERVER returned,
+  // not by what survived scrub(), or hiding one test account would make every
+  // later page skip a real player. Resolves {rows, raw} or null (offline). ----
+  function allTimePage(game, limit, offset) {
+    if (!sb) return Promise.resolve(null);
+    var n = limit || 50;
+    return withTimeout(
+      sb.rpc('grid_alltime_board', { p_game: game, p_limit: n, p_offset: offset || 0 })
+        .then(function (r) {
+          if (!r || r.error || !Array.isArray(r.data)) return null;
+          return { rows: scrub(r.data), raw: r.data.length };
+        })
+    );
+  }
+
+  // ---- field size + the signed-in caller's own all-time best and rank, in one
+  // call. The RPC reads auth.uid() itself, so this is safe to call signed-out —
+  // it just comes back with total and nulls. Object or null (offline). ----
+  function allTimeStats(game) {
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(
+      sb.rpc('grid_alltime_stats', { p_game: game })
+        .then(function (r) {
+          if (!r || r.error) return null;
+          var d = r.data;
+          if (Array.isArray(d)) d = d[0];
+          return d || null;
+        })
+    );
+  }
+
   window.RTG_BOARD = {
     boot: boot,
     state: state,
@@ -248,9 +325,13 @@
     submit: submit,
     leaderboard: leaderboard,
     rank: rank,
+    playerCount: playerCount,
+    myRun: myRun,
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,
+    allTimePage: allTimePage,
+    allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }

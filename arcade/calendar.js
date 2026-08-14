@@ -81,7 +81,13 @@
       'a.rtgcal-d.on{position:relative;background:var(--card2,#162B44);border:1px solid var(--line2,rgba(244,247,251,.15));color:var(--ink,#F4F7FB);text-decoration:none;transition:transform .08s,border-color .12s,background .12s;overflow:visible;}',
       'a.rtgcal-d.on:hover{border-color:var(--c,var(--blue,#2F6BFF));background:color-mix(in srgb, var(--c,var(--blue,#2F6BFF)) 16%, var(--card2,#162B44));transform:translateY(-1px);}',
       'a.rtgcal-d.today{border-color:var(--c,var(--blue,#2F6BFF));box-shadow:0 0 0 1px var(--c,var(--blue,#2F6BFF)) inset;}',
-      'a.rtgcal-d.done{border-color:var(--green,#48D17A);background:color-mix(in srgb,var(--green,#48D17A) 14%, var(--card2,#162B44));}',
+      /* A finished day should read as finished from across the grid, so it
+         fills solid rather than wearing a faint tint. */
+      'a.rtgcal-d.done{border-color:var(--green,#48D17A);background:var(--green,#48D17A);color:#06210f;font-weight:900;}',
+      'a.rtgcal-d.done:hover{background:var(--green,#48D17A);border-color:var(--green,#48D17A);transform:translateY(-1px);}',
+      'a.rtgcal-d.done.today{box-shadow:0 0 0 2px var(--c,var(--blue,#2F6BFF)) inset;}',
+      /* the corner tick inverts so it still reads on the filled cell */
+      'a.rtgcal-d.done .rtgcal-ck{background:#06210f;color:var(--green,#48D17A);}',
       '.rtgcal-ck{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:var(--green,#48D17A);color:#06210f;font-size:11px;font-weight:900;line-height:17px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.45);}',
       '.rtgcal-ckdot{display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--green,#48D17A);color:#06210f;font-size:10px;font-weight:900;line-height:15px;text-align:center;vertical-align:-2px;}',
       '.rtgcal-note{text-align:center;color:var(--dim,#7C8DA3);font-size:11px;margin:16px 2px 2px;line-height:1.5;}',

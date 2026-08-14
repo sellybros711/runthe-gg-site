@@ -255,12 +255,32 @@ function openSlotNames(run) {
 
 const TUNING = {
   MAX_DRAWS_PER_TEAM_SEASON: 2,
+  /*
+   * A BOARD HAS TO BE A CHOICE. 2020 was the covid season and half its teams played
+   * six or seven games, so the six-game minimum that keeps a player's weekly variance
+   * honest cut almost everybody off those rosters. Twelve team-seasons came out under
+   * six players, all but one of them from 2020, and the two worst were unplayable: a
+   * player who spun 2020 Wisconsin was offered a quarterback and a tight end and told
+   * to pick, and 2020 Stanford offered three.
+   *
+   * FOUR IS THE FLOOR, and it costs two team-seasons out of 1,372. It is set here and
+   * not by rebuilding the data because lowering the games minimum would weaken every
+   * variance estimate in twenty other seasons to rescue eleven rosters, and because
+   * the rest of the thin ones are worth keeping: four players on 2020 Ohio State is
+   * still a choice, and one of them is Justin Fields.
+   */
+  MIN_BOARD: 4,
 };
 
 function drawable(run, data, limit) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
+  /* Enough men to choose between, before anything about this particular run is asked.
+     canFill below is the other half and moves as the budget does: this one is a
+     property of the team-season and the same on every spin. */
+  const deepEnough = (t) =>
+    (data.playersByTeamSeason[t.team_season_id] ?? []).length >= TUNING.MIN_BOARD;
   /* Matched on the conference the team was in THAT SEASON, which is what makes a
      Pac-12 draft the actual Pac-12 rather than wherever its members ended up. */
   const inConf = run.conference
@@ -268,6 +288,7 @@ function drawable(run, data, limit) {
     : () => true;
   return data.teamSeasons
     .filter(inConf)
+    .filter(deepEnough)
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }

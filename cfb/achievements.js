@@ -93,8 +93,15 @@
    * roster test can ask about schools, seasons, positions and hardware. With no player data
    * to hand the roster-shaped fields come back empty and those tests answer false rather
    * than throwing.
+   *
+   * HOW MANY SEASONS IS NOT HOW MANY ROWS. The board hands back the most recent five
+   * hundred along with how many there really are, so a career of six hundred arrives here
+   * as five hundred rows. Counting rows would cap "finish 500 seasons" at exactly the
+   * fetch size and put "finish 1,000" out of reach for everybody. opts.total is the
+   * server's own count where there is one; local history has none and must not invent
+   * one, because a history trimmed at four hundred has genuinely forgotten the rest.
    */
-  function buildContext(rows, resolve, nowIso) {
+  function buildContext(rows, resolve, nowIso, opts) {
     const asc = rows.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
     const todayKey = dayKey(nowIso || new Date().toISOString()) || '1970-01-01';
     const dayKeys = [];
@@ -118,19 +125,44 @@
     const badgesOf = (p) => (Array.isArray(p.badges) ? p.badges : []);
 
     /* Everyone ever signed, across every season, for the collection badges.
-       Built once here because three tests reading it is three walks otherwise. */
-    const careerSchools = new Set(), careerStates = new Set();
+       Built once here because a dozen tests reading it is a dozen walks otherwise. */
+    const careerSchools = new Set(), careerStates = new Set(), careerConferences = new Set();
+    const careerSeasons = new Set(), careerPlayers = new Set(), careerTeamSeasons = new Set();
+    const careerBadges = new Set(), heismanNames = new Set();
     for (const x of runs) {
       for (const p of x.roster) {
         if (p.school) careerSchools.add(p.school);
         if (p.home_state) careerStates.add(p.home_state);
+        if (p.conference) careerConferences.add(p.conference);
+        if (has(p.season)) careerSeasons.add(Number(p.season));
+        if (p.player_id) careerPlayers.add(String(p.player_id));
+        if (p.team_season_id) careerTeamSeasons.add(p.team_season_id);
+        for (const b of badgesOf(p)) careerBadges.add(b);
+        /* By NAME rather than by row, because a man who won it once can appear in the
+           data for more than one season and the collection counts winners. */
+        if (p.name && awardsOf(p).some((a) => /heisman/i.test(a))) heismanNames.add(p.name);
       }
     }
+
+    /* The longest run of consecutive seasons that answer true. Seasons, not days: this
+       is the shape behind "made the playoff five years running", where the gap that
+       breaks it is a season that missed and not a day nobody played. */
+    const runStreak = (fn) => {
+      let best = 0, run = 0;
+      for (const r of asc) { if (fn(r)) { run++; if (run > best) best = run; } else run = 0; }
+      return best;
+    };
+
+    /* Never below the rows in hand: a stale or wrong count must not make a career look
+       smaller than the seasons already on the table. */
+    const claimed = opts && opts.total != null ? Number(opts.total) : null;
+    const total = claimed !== null && isFinite(claimed)
+      ? Math.max(claimed, rows.length) : rows.length;
 
     return {
       rows: asc,
       runs,
-      total: rows.length,
+      total,
       titles,
       dayKeys,
       todayKey,
@@ -148,8 +180,19 @@
       count: (fn) => asc.filter(fn).length,
       anyRoster: (fn) => runs.some((x) => x.roster.length > 0 && fn(x.roster, x.row)),
       countRoster: (fn) => runs.filter((x) => x.roster.length > 0 && fn(x.roster, x.row)).length,
+      /* Did any single roster ever hold a player carrying this statistical badge.
+         The regexes are anchored at the call site, because "Led FBS in passing yards"
+         and "2nd in FBS in passing yards" are different achievements. */
+      anyBadge: (re) => runs.some((x) => x.roster.some((p) => badgesOf(p).some((b) => re.test(b)))),
+      runStreak,
       careerSchools,
       careerStates,
+      careerConferences,
+      careerSeasons,
+      careerPlayers,
+      careerTeamSeasons,
+      careerBadges,
+      heismanNames,
       awardsOf,
       badgesOf,
       has, isTrue, num,
@@ -160,6 +203,19 @@
      tier drives the color only: bronze, silver, gold, legend.
      group drives which shelf it sits on in the trophy case. */
   const A = (id, name, desc, tier, group, test) => ({ id, name, desc, tier, group, test });
+
+  /* Ten team-seasons a college football fan can place from the id alone. Each one has a
+     badge of its own below and they are counted together for the collector's badge, so
+     the list lives here once rather than being written out twice. */
+  const LANDMARKS = ['USC-2005', 'Texas-2005', 'Boise State-2006', 'Auburn-2010',
+    'Florida State-2013', 'Louisville-2016', 'Oklahoma-2018', 'LSU-2019',
+    'Georgia-2022', 'Michigan-2023'];
+  /* Every home code in the recruiting data that is not a US state or DC: four Canadian
+     provinces, two Bahamian islands and New South Wales. Forty-nine players in all, and
+     they are listed rather than detected because "not one of the fifty" is a rule that
+     would quietly take in Washington DC and turn a passport into a border. */
+  const OVERSEAS = ['ON', 'AB', 'BC', 'PQ', 'BS', 'NSW', 'GB'];
+  const fromTeamSeason = (c, id) => c.anyRoster((ros) => ros.some((p) => p.team_season_id === id));
 
   const CATALOG = [
     /* --- getting started --- */
@@ -309,8 +365,22 @@
     A('rating_videogame', 'Video game numbers', 'Build a team rated 100 or better.',
       'legend', 'Roster craft',
       (c) => (c.best('overall') || 0) >= 100),
-    A('chem_10', 'They just click', 'Finish a season with +10% chemistry or better.', 'gold', 'Roster craft',
-      (c) => (c.best('chemistry_pct') || 0) >= 10),
+    /* A BADGE THAT COULD NOT BE EARNED. This was "+10% chemistry or better" and the
+       engine clamps chemistry at +8%, on a curve that only approaches it: the best a
+       legal roster reaches is +7.9%, and only by taking all six men from one program.
+       Measured rather than reasoned, over every school in the data with the running-back
+       cap and the budget enforced. Three rungs now, anchored on that measurement: the
+       median roster gets about +2.5%, so +4% is a deliberate build and +7% is close to
+       the ceiling. The id changed with the number because nobody could ever have held
+       the old one, so there is no cabinet to disturb. */
+    A('chem_built', 'They just click', 'Finish a season with +4% chemistry or better.',
+      'silver', 'Roster craft',
+      (c) => { const b = c.best('chemistry_pct'); return b !== null && b >= 4; }),
+    A('chem_deep', 'Same page', 'Finish a season with +6% chemistry or better.', 'gold', 'Roster craft',
+      (c) => { const b = c.best('chemistry_pct'); return b !== null && b >= 6; }),
+    A('chem_max', 'Brothers in arms', 'Finish a season with +7% chemistry or better.',
+      'legend', 'Roster craft',
+      (c) => { const b = c.best('chemistry_pct'); return b !== null && b >= 7; }),
     A('chem_negative_ring', 'Strangers with rings', 'Win the title with negative chemistry.',
       'gold', 'Roster craft',
       (c) => c.any((r) => isTrue(r.title_won) && has(r.chemistry_pct) && Number(r.chemistry_pct) < 0)),
@@ -430,6 +500,424 @@
         }
         return false;
       }),
+
+    /* ==========================================================================
+       THE HISTORY SHELF, and the rungs above what was already here.
+
+       Everything in the roster section below keys off something that really
+       happened: a Heisman, a season that led the country in a category, a league
+       that no longer exists, a team a fan can name from the year alone. The rule
+       is the one this file has always had, and it is worth restating because it
+       has been broken here four times: A BADGE THAT CANNOT BE EARNED IS WORSE
+       THAN NO BADGE. Three Heisman badges sat dead in this catalog for months
+       because the awards join had never been run against the shipped player file,
+       and a fourth asked for chemistry the engine clamps below.
+
+       So every simultaneous-roster badge added here was solved against the real
+       pool before it was written down: six slots, at most two running backs, at
+       most two players from any one team-season, and the $11M cap. Two ideas died
+       in that check and are not here. Three Heisman winners at once is $11.2M
+       against an $11M cap, the three cheapest being Troy Smith, Travis Hunter and
+       Mark Ingram, and no arrangement of the other three spots makes it fit.
+       Three running backs on the field is forbidden outright by POSITION_MAX.
+       ========================================================================== */
+
+    /* --- the Heisman --- */
+    A('heisman_qb', 'Stiff-arm pose', 'Sign a Heisman-winning quarterback.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.position === 'QB'
+        && c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    A('heisman_rb', 'Heisman in the backfield', 'Sign a Heisman-winning running back.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.position === 'RB'
+        && c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    A('heisman_wr', 'Heisman on the outside', 'Sign a Heisman-winning receiver.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.position === 'WR'
+        && c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    /* Across your seasons rather than at once, because the cap stops even three from
+       sharing a roster: collecting them is the only way to gather them. */
+    A('heisman_5', 'Heisman collector', 'Sign 5 different Heisman winners across your seasons.',
+      'gold', 'The roster', (c) => c.heismanNames.size >= 5),
+    A('heisman_10', 'Half the ballot', 'Sign 10 different Heisman winners across your seasons.',
+      'legend', 'The roster', (c) => c.heismanNames.size >= 10),
+    A('heisman_all', 'Every stiff-arm', 'Sign all 20 Heisman winners in the game.',
+      'legend', 'The roster', (c) => c.heismanNames.size >= 20),
+    A('heisman_perfect', 'Heisman, unbeaten', 'Go unbeaten with a Heisman winner on the roster.',
+      'legend', 'The roster',
+      (c) => c.anyRoster((ros, r) => isTrue(r.perfect)
+        && ros.some((p) => c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    A('heisman_led', 'Hardware everywhere',
+      'Field a Heisman winner and a player who led the country, at the same time.',
+      'legend', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => c.awardsOf(p).some((a) => /heisman/i.test(a)))
+        && ros.some((p) => c.badgesOf(p).some((b) => /^Led FBS in/.test(b))))),
+
+    /* --- led the country --- */
+    A('led_pass', 'Best arm in the country', 'Sign a player who led FBS in passing yards.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in passing yards$/)),
+    A('led_rush', 'Best legs in the country', 'Sign a player who led FBS in rushing yards.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in rushing yards$/)),
+    A('led_rec', 'Best hands in the country', 'Sign a player who led FBS in receiving yards.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in receiving yards$/)),
+    A('led_pass_td', 'Touchdown machine', 'Sign a player who led FBS in passing touchdowns.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in passing TDs$/)),
+    A('led_rush_td', 'Goal line king', 'Sign a player who led FBS in rushing touchdowns.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in rushing TDs$/)),
+    A('led_rec_td', 'End zone regular', 'Sign a player who led FBS in receiving touchdowns.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in receiving TDs$/)),
+    A('led_catches', 'Chain mover', 'Sign a player who led FBS in catches.',
+      'silver', 'The roster', (c) => c.anyBadge(/^Led FBS in catches$/)),
+    /* Checked: the cheapest three cost $10.3M together, so the other three spots have
+       to come off the very bottom of the market. It fits, but only just. */
+    A('triple_crown', 'Triple crown',
+      'Field players who led FBS in passing, rushing and receiving yards at the same time.',
+      'legend', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const hit = (re) => ros.some((p) => c.badgesOf(p).some((b) => re.test(b)));
+        return hit(/^Led FBS in passing yards$/) && hit(/^Led FBS in rushing yards$/)
+          && hit(/^Led FBS in receiving yards$/);
+      })),
+    A('led_three', 'Three of the best',
+      'Field three players at once who each led the country in something.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.filter((p) =>
+        c.badgesOf(p).some((b) => /^Led FBS in/.test(b))).length >= 3)),
+    A('podium_three', 'Podium sweep',
+      'Field three players at once who each finished top three in the country in something.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.filter((p) =>
+        c.badgesOf(p).some((b) => /^(Led|2nd in|3rd in) FBS/.test(b))).length >= 3)),
+    A('led_five_kinds', 'Led it all',
+      'Sign players who led the country in five different categories across your seasons.',
+      'gold', 'The roster',
+      (c) => [...c.careerBadges].filter((b) => /^Led FBS in/.test(b)).length >= 5),
+
+    /* --- the round numbers a fan knows --- */
+    A('four_thousand', 'Four thousand', 'Sign a 4,000-yard passer.', 'bronze', 'The roster',
+      (c) => c.anyBadge(/^4,000 yard season$/)),
+    A('fifteen_hundred', 'Fifteen hundred', 'Sign a 1,500-yard rusher.', 'bronze', 'The roster',
+      (c) => c.anyBadge(/^1,500 yard season$/)),
+    A('twelve_hundred', 'Twelve hundred', 'Sign a 1,200-yard receiver.', 'bronze', 'The roster',
+      (c) => c.anyBadge(/^1,200 yards receiving$/)),
+    A('eighty_catches', 'Eighty grabs', 'Sign an 80-catch receiver.', 'bronze', 'The roster',
+      (c) => c.anyBadge(/^80 catches$/)),
+    A('thirty_five_td', 'Thirty-five', 'Sign a passer with 35 touchdown throws.',
+      'bronze', 'The roster', (c) => c.anyBadge(/^35 TD passes$/)),
+    A('fifteen_td', 'Fifteen scores', 'Sign a player with 15 touchdowns.', 'bronze', 'The roster',
+      (c) => c.anyBadge(/^15 touchdowns$/)),
+    A('milestone_six', 'Nothing but numbers',
+      'Field six players who have all hit a statistical milestone.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.length >= 6 && ros.every((p) => c.badgesOf(p).length > 0))),
+    A('badges_15', 'Statistician',
+      'Collect 15 different statistical feats on players you have signed.', 'gold', 'The roster',
+      (c) => c.careerBadges.size >= 15),
+
+    /* --- leagues that no longer exist, and one that barely did --- */
+    /* 2009 Cincinnati is the ONLY Big East team-season in the game, ten players deep. The
+       wheel can land on it, and a year re-spin can be aimed at it, and almost nobody will
+       ever think to. That is the badge. */
+    A('big_east', 'The last Big East team',
+      'Sign a player from 2009 Cincinnati, the only Big East team in the game.',
+      'legend', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Big East'))),
+    A('wac', 'Western frontier', 'Sign a player from the old Western Athletic Conference.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Western Athletic'))),
+    A('pac10', 'Before the twelve', 'Sign a player from the old Pac-10.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Pac-10'))),
+    A('realignment', 'Realignment', 'Field a Pac-10 player and a Pac-12 player at the same time.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Pac-10')
+        && ros.some((p) => p.conference === 'Pac-12'))),
+    A('independent', 'No league needed', 'Sign an FBS Independent.', 'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'FBS Independents'))),
+    A('maction', 'MACtion', 'Sign a Mid-American player.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Mid-American'))),
+    A('sunbelt', 'Sun Belt surprise', 'Sign a Sun Belt player.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Sun Belt'))),
+    A('cusa', 'Conference USA', 'Sign a Conference USA player.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Conference USA'))),
+    A('mwc', 'Mountain time', 'Sign a Mountain West player.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'Mountain West'))),
+    A('aac', 'American made', 'Sign an American Athletic player.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.conference === 'American Athletic'))),
+    A('conf_career_10', 'Ten leagues deep',
+      'Sign players from 10 different conferences across your seasons.', 'gold', 'The roster',
+      (c) => c.careerConferences.size >= 10),
+    A('conf_career_all', 'Nobody left out',
+      'Sign a player from all 14 conferences in the game.', 'legend', 'The roster',
+      (c) => c.careerConferences.size >= 14),
+
+    /* --- eras --- */
+    A('season_2025', 'Freshest legs', 'Sign a player from the 2025 season.', 'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => Number(p.season) === 2025))),
+    A('span_20', 'Twenty years apart',
+      'Field a 2005 player and a 2025 player at the same time.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => Number(p.season) === 2005)
+        && ros.some((p) => Number(p.season) === 2025))),
+    A('seasons_10', 'A decade of tape', 'Sign players from 10 different seasons.',
+      'silver', 'The roster', (c) => c.careerSeasons.size >= 10),
+    A('seasons_all', 'Every year on file',
+      'Sign a player from all 21 seasons in the game.', 'legend', 'The roster',
+      (c) => c.careerSeasons.size >= 21),
+
+    /* --- where they are from --- */
+    A('state_three', 'Recruiting pipeline', 'Field three players from the same home state.',
+      'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const n = Object.create(null);
+        for (const p of ros) {
+          if (p.home_state && (n[p.home_state] = (n[p.home_state] || 0) + 1) >= 3) return true;
+        }
+        return false;
+      })),
+    A('state_six', 'One state, one team', 'Field six players from the same home state.',
+      'legend', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const st = ros.map((p) => p.home_state).filter(Boolean);
+        return st.length === ros.length && new Set(st).size === 1;
+      })),
+    A('states_40', 'Forty states', 'Sign players from 40 different home states.',
+      'legend', 'The roster', (c) => c.careerStates.size >= 40),
+    /* Not "outside the fifty states", which would take in the forty-one players from
+       Washington DC and make a badge about a border out of a badge about a passport. */
+    A('overseas', 'Passport recruit',
+      'Sign a player who grew up outside the United States.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => OVERSEAS.indexOf(p.home_state) >= 0))),
+
+    /* --- helmets --- */
+    A('schools_50', 'Fifty helmets', 'Sign players from 50 different schools.',
+      'gold', 'The roster', (c) => c.careerSchools.size >= 50),
+    A('schools_all', 'The whole country', 'Sign a player from all 83 schools in the game.',
+      'legend', 'The roster', (c) => c.careerSchools.size >= 83),
+    A('blue_bloods', 'Blue blood tour',
+      'Sign a player from Alabama, Ohio State, Michigan, Notre Dame, USC, Texas and Oklahoma.',
+      'gold', 'The roster',
+      (c) => ['Alabama', 'Ohio State', 'Michigan', 'Notre Dame', 'USC', 'Texas', 'Oklahoma']
+        .every((s) => c.careerSchools.has(s))),
+    A('players_100', 'Hundred signings', 'Sign 100 different players.', 'silver', 'The roster',
+      (c) => c.careerPlayers.size >= 100),
+    A('players_500', 'Five hundred signings', 'Sign 500 different players.',
+      'gold', 'The roster', (c) => c.careerPlayers.size >= 500),
+
+    /* --- teams a fan can name from the year alone --- */
+    A('ts_usc_2005', 'The Bush push', 'Sign a player from 2005 USC.', 'gold', 'The roster',
+      (c) => fromTeamSeason(c, 'USC-2005')),
+    A('ts_texas_2005', 'Fourth and five', 'Sign a player from 2005 Texas.', 'gold', 'The roster',
+      (c) => fromTeamSeason(c, 'Texas-2005')),
+    A('ts_boise_2006', 'Statue of Liberty', 'Sign a player from 2006 Boise State.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Boise State-2006')),
+    A('ts_auburn_2010', 'Cam\'s year', 'Sign a player from 2010 Auburn.', 'gold', 'The roster',
+      (c) => fromTeamSeason(c, 'Auburn-2010')),
+    A('ts_fsu_2013', 'Famous Jameis', 'Sign a player from 2013 Florida State.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Florida State-2013')),
+    A('ts_louisville_2016', 'Lamar\'s Heisman year', 'Sign a player from 2016 Louisville.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Louisville-2016')),
+    A('ts_oklahoma_2018', 'Air raid at its peak', 'Sign a player from 2018 Oklahoma.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Oklahoma-2018')),
+    A('ts_lsu_2019', 'The best offense there was', 'Sign a player from 2019 LSU.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'LSU-2019')),
+    A('ts_georgia_2022', 'Back to back in Athens', 'Sign a player from 2022 Georgia.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Georgia-2022')),
+    A('ts_michigan_2023', 'The team, the team, the team', 'Sign a player from 2023 Michigan.',
+      'gold', 'The roster', (c) => fromTeamSeason(c, 'Michigan-2023')),
+    A('landmarks_5', 'Chasing history',
+      'Sign a player from five of the game\'s landmark teams.', 'legend', 'The roster',
+      (c) => LANDMARKS.filter((id) => c.careerTeamSeasons.has(id)).length >= 5),
+    A('landmarks_all', 'Every landmark',
+      'Sign a player from all ten of the game\'s landmark teams.', 'legend', 'The roster',
+      (c) => LANDMARKS.every((id) => c.careerTeamSeasons.has(id))),
+
+    /* --- what the formation looks like --- */
+    A('two_te', 'Twelve personnel', 'Field two tight ends at once.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.filter((p) => p.position === 'TE').length >= 2)),
+    A('four_wr', 'Air raid', 'Field four receivers at once.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.filter((p) => p.position === 'WR').length >= 4)),
+    A('two_backs', 'Two-back set', 'Field two running backs at once.', 'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => ros.filter((p) => p.position === 'RB').length >= 2)),
+    A('all_four_positions', 'One of everything',
+      'Field a quarterback, a running back, a receiver and a tight end at once.',
+      'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => ['QB', 'RB', 'WR', 'TE']
+        .every((pos) => ros.some((p) => p.position === pos)))),
+    A('qb_and_target', 'The connection',
+      'Field a quarterback and a receiver off the very same team and season.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => p.position === 'QB'
+        && ros.some((q) => (q.position === 'WR' || q.position === 'TE')
+          && q.team_season_id === p.team_season_id)))),
+
+    /* --- more milestones --- */
+    A('runs_5', 'Second year', 'Finish 5 seasons.', 'bronze', 'Milestones', (c) => c.total >= 5),
+    A('runs_25', 'Settled in', 'Finish 25 seasons.', 'bronze', 'Milestones', (c) => c.total >= 25),
+    A('runs_500', 'Emeritus', 'Finish 500 seasons.', 'legend', 'Milestones', (c) => c.total >= 500),
+    A('runs_1000', 'A thousand Septembers', 'Finish 1,000 seasons.', 'legend', 'Milestones',
+      (c) => c.total >= 1000),
+
+    /* --- more winning --- */
+    A('win_9', 'Winning season', 'Finish a season with 9 wins or more.', 'bronze', 'Winning',
+      (c) => c.any((r) => has(r.wins) && Number(r.wins) >= 9)),
+    A('win_12', 'Twelve-win season', 'Finish a season with 12 wins or more.', 'silver', 'Winning',
+      (c) => c.any((r) => has(r.wins) && Number(r.wins) >= 12)),
+    A('losses_five', 'Rebuilding year', 'Finish a season with 5 losses or more.', 'bronze', 'Winning',
+      (c) => c.any((r) => has(r.losses) && Number(r.losses) >= 5)),
+    A('title_3', 'Three rings', 'Win 3 national championships.', 'silver', 'Winning',
+      (c) => c.titles.length >= 3),
+    A('title_50', 'Half a century of titles', 'Win 50 national championships.', 'legend', 'Winning',
+      (c) => c.titles.length >= 50),
+    A('one_slip', 'One slip', 'Win the title after losing a regular-season game.',
+      'silver', 'Winning',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.reg_losses) && Number(r.reg_losses) >= 1)),
+    A('runner_up_3', 'Always the bridesmaid', 'Lose the national championship game three times.',
+      'gold', 'Winning',
+      (c) => c.count((r) => String(r.eliminated_in || '') === 'CFP Championship') >= 3),
+    A('out_first_round', 'One and done', 'Go out in the first round of the playoff.',
+      'bronze', 'Winning',
+      (c) => c.any((r) => String(r.eliminated_in || '') === 'CFP First Round')),
+    A('out_quarter', 'Quarterfinal exit', 'Go out in the quarterfinals.', 'bronze', 'Winning',
+      (c) => c.any((r) => String(r.eliminated_in || '') === 'CFP Quarterfinal')),
+    A('out_semi', 'One game from the final', 'Go out in the semifinals.', 'silver', 'Winning',
+      (c) => c.any((r) => String(r.eliminated_in || '') === 'CFP Semifinal')),
+    A('every_exit', 'Every way to go out',
+      'Be knocked out in all four playoff rounds across your seasons.', 'gold', 'Winning',
+      (c) => ['CFP First Round', 'CFP Quarterfinal', 'CFP Semifinal', 'CFP Championship']
+        .every((round) => c.any((r) => String(r.eliminated_in || '') === round))),
+    A('perfect_10', 'Ten perfect seasons', 'Put together ten perfect seasons.', 'legend', 'Winning',
+      (c) => c.count((r) => isTrue(r.perfect)) >= 10),
+    A('unbeaten_reg_5', 'Five times unbeaten', 'Finish the regular season 12-0 five times.',
+      'gold', 'Winning',
+      (c) => c.count((r) => has(r.reg_losses) && Number(r.reg_losses) === 0) >= 5),
+    A('playoff_50', 'Fifty trips', 'Make the playoff 50 times.', 'gold', 'Winning',
+      (c) => c.count((r) => isTrue(r.made_playoffs)) >= 50),
+
+    /* --- more bowl season ---
+       Same caveat as the block above: WHICH bowl is only on rows written locally,
+       because the board does not record the name. */
+    A('bowl_lose', 'Wrong end of December', 'Lose a bowl game.', 'bronze', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl) && has(r.bowl_won) && !isTrue(r.bowl_won))),
+    A('bowl_tiers_all', 'All three tiers', 'Win a bowl at every tier.', 'silver', 'Bowls',
+      (c) => ['ny6', 'major', 'minor']
+        .every((t) => c.any((r) => isTrue(r.bowl_won) && r.bowl_tier === t))),
+    A('bowl_spud', 'Blue turf', 'Win the Spud Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'spud_bowl')),
+    A('bowl_diamond', 'Last flight of the year', 'Win the Diamond Head Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'diamond_head_bowl')),
+    A('bowl_paradise', 'Palm trees past the end zone', 'Win the Paradise Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'paradise_bowl')),
+    A('bowl_salute', 'Anchors aweigh', 'Win the Salute Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'salute_bowl')),
+    A('bowl_commonwealth', 'Off the green wall', 'Win the Commonwealth Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'commonwealth_bowl')),
+    A('bowl_frontera', 'Shadow of the Franklins', 'Win the Frontera Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'frontera_bowl')),
+    A('bowl_ballpark', 'Football in the Bronx', 'Win the Ballpark Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'ballpark_bowl')),
+    A('bowls_played_10', 'Bowl season regular', 'Play in 10 different bowls.', 'silver', 'Bowls',
+      (c) => new Set(c.rows.filter((r) => r.bowl_key).map((r) => r.bowl_key)).size >= 10),
+    A('bowl_names_10', 'Ten different trophies', 'Win 10 different bowls.', 'gold', 'Bowls',
+      (c) => new Set(c.rows.filter((r) => isTrue(r.bowl_won) && r.bowl_key)
+        .map((r) => r.bowl_key)).size >= 10),
+    A('bowl_names_20', 'Twenty different trophies', 'Win 20 different bowls.', 'legend', 'Bowls',
+      (c) => new Set(c.rows.filter((r) => isTrue(r.bowl_won) && r.bowl_key)
+        .map((r) => r.bowl_key)).size >= 20),
+    A('bowl_wins_30', 'Bowl institution', 'Win 30 bowl games.', 'legend', 'Bowls',
+      (c) => c.count((r) => isTrue(r.bowl_won)) >= 30),
+
+    /* --- more of the poll --- */
+    A('rank_25', 'Last one in the poll', 'Finish a season ranked 25th.', 'bronze', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) === 25)),
+    A('rank_top5', 'Top five finish', 'Finish a season ranked in the top five.',
+      'silver', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) <= 5)),
+    A('rank_2', 'Second best', 'Finish a season ranked second in the country.',
+      'silver', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) === 2)),
+    A('rank1_5', 'Five times number one', 'Finish first in the country 5 times.',
+      'gold', 'The poll',
+      (c) => c.count((r) => has(r.national_rank) && Number(r.national_rank) === 1) >= 5),
+    A('rank1_25', 'Nobody else gets a turn', 'Finish first in the country 25 times.',
+      'legend', 'The poll',
+      (c) => c.count((r) => has(r.national_rank) && Number(r.national_rank) === 1) >= 25),
+    A('top10_10', 'Perennial contender', 'Finish in the top ten 10 times.', 'gold', 'The poll',
+      (c) => c.count((r) => has(r.national_rank) && Number(r.national_rank) <= 10) >= 10),
+    A('best_win_top3', 'Big scalp', 'Beat a team ranked in the top three.', 'gold', 'The poll',
+      (c) => c.any((r) => has(r.best_win_rank) && Number(r.best_win_rank) <= 3)),
+
+    /* --- more of the conferences --- */
+    A('conf_seasons_10', 'League regular', 'Finish 10 conference draft seasons.',
+      'bronze', 'The conferences',
+      (c) => c.count((r) => /^conf:/.test(String(r.run_mode || ''))) >= 10),
+    A('conf_all_played', 'Toured the country', 'Play a draft in all five conferences.',
+      'silver', 'The conferences',
+      (c) => new Set(c.rows.filter((r) => /^conf:/.test(String(r.run_mode || '')))
+        .map((r) => r.run_mode)).size >= 5),
+    A('conf_playoff', 'League in the field', 'Make the playoff in a conference draft.',
+      'bronze', 'The conferences',
+      (c) => c.any((r) => isTrue(r.made_playoffs) && /^conf:/.test(String(r.run_mode || '')))),
+    A('conf_bowl', 'League bowl win', 'Win a bowl in a conference draft.',
+      'bronze', 'The conferences',
+      (c) => c.any((r) => isTrue(r.bowl_won) && /^conf:/.test(String(r.run_mode || '')))),
+    A('conf_perfect', 'Perfect in league play', 'Put together a perfect season in a conference draft.',
+      'legend', 'The conferences',
+      (c) => c.any((r) => isTrue(r.perfect) && /^conf:/.test(String(r.run_mode || '')))),
+    A('conf_titles_10', 'League dynasty', 'Win 10 titles in conference drafts.',
+      'gold', 'The conferences',
+      (c) => c.count((r) => isTrue(r.title_won) && /^conf:/.test(String(r.run_mode || ''))) >= 10),
+
+    /* --- more roster craft --- */
+    A('rating_stacked', 'Stacked', 'Build a team rated 95 or better.', 'gold', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 95),
+    A('perfect_pct_90', 'Nearly optimal',
+      'Draft 90% of the best possible roster from your six spins.', 'silver', 'Roster craft',
+      (c) => (c.best('perfect_pct') || 0) >= 90),
+    A('spend_under_5', 'Pocket change', 'Finish a season having spent under $5M.',
+      'gold', 'Roster craft',
+      (c) => { const l = c.least('spend_musd'); return l !== null && l < 5; }),
+    A('spend_all', 'Every last dollar', 'Finish a season having spent $10.9M or more.',
+      'bronze', 'Roster craft',
+      (c) => { const b = c.best('spend_musd'); return b !== null && b >= 10.9; }),
+    A('bargain_ultra', 'Under a million a man',
+      'Field six players who each cost $1M or less.', 'gold', 'Roster craft',
+      (c) => c.anyRoster((ros) => ros.length >= 6 && ros.every((p) => Number(p.price_musd) <= 1))),
+    A('two_splash', 'Two big cheques', 'Field two players who each cost $4M or more.',
+      'gold', 'Roster craft',
+      (c) => c.anyRoster((ros) => ros.filter((p) => Number(p.price_musd) >= 4).length >= 2)),
+    A('no_respin_perfect', 'Trusted the wheel', 'Put together a perfect season with no re-spins.',
+      'legend', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.perfect) && has(r.respins) && Number(r.respins) === 0)),
+
+    /* --- more streaks --- */
+    A('streak_60', 'Two months straight', 'Play on 60 days in a row.', 'legend', 'Streaks',
+      (c) => c.play.best >= 60),
+    A('day_5', 'Marathon', 'Finish five seasons in one day.', 'silver', 'Streaks',
+      (c) => {
+        const per = Object.create(null);
+        for (const r of c.rows) {
+          const k = r.created_at ? dayKey(r.created_at) : null;
+          if (k && (per[k] = (per[k] || 0) + 1) >= 5) return true;
+        }
+        return false;
+      }),
+    A('day_10', 'All day', 'Finish ten seasons in one day.', 'gold', 'Streaks',
+      (c) => {
+        const per = Object.create(null);
+        for (const r of c.rows) {
+          const k = r.created_at ? dayKey(r.created_at) : null;
+          if (k && (per[k] = (per[k] || 0) + 1) >= 10) return true;
+        }
+        return false;
+      }),
+    A('four_peat', 'Four in a row', 'Win the title in four straight seasons.', 'legend', 'Streaks',
+      (c) => c.title.best >= 4),
+    A('five_peat', 'Five in a row', 'Win the title in five straight seasons.', 'legend', 'Streaks',
+      (c) => c.title.best >= 5),
+    A('playoff_streak_5', 'Always in the field', 'Make the playoff five seasons running.',
+      'gold', 'Streaks', (c) => c.runStreak((r) => isTrue(r.made_playoffs)) >= 5),
+    A('playoff_streak_10', 'Never out of it', 'Make the playoff ten seasons running.',
+      'legend', 'Streaks', (c) => c.runStreak((r) => isTrue(r.made_playoffs)) >= 10),
+    A('bowl_streak_10', 'Ten straight Decembers', 'Reach a bowl ten seasons running.',
+      'gold', 'Streaks', (c) => c.runStreak((r) => isTrue(r.bowl)) >= 10),
+    A('rank_streak_10', 'Ten years ranked', 'Finish in the top 25 ten seasons running.',
+      'gold', 'Streaks',
+      (c) => c.runStreak((r) => has(r.national_rank) && Number(r.national_rank) <= 25) >= 10),
   ];
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
@@ -441,9 +929,9 @@
    * taking the trophy case down with it: a badge is decoration, and a broken one must not
    * cost somebody the whole panel.
    */
-  function evaluate(rows, resolve, nowIso) {
+  function evaluate(rows, resolve, nowIso, opts) {
     const list = Array.isArray(rows) ? rows : [];
-    const ctx = buildContext(list, resolve, nowIso);
+    const ctx = buildContext(list, resolve, nowIso, opts);
     const earned = [], locked = [];
     for (const a of CATALOG) {
       let ok = false;

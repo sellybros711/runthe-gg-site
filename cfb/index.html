@@ -2207,6 +2207,73 @@ window.GA_ID='G-L29P5MRWKE';
      the NFL card red would be broken to do it. What separates them instead is
      everything else: they are not adjacent, a rule and a heading sit between them,
      the red card breaks the run, and the glyphs are a pennant and a mortarboard. */
+  /* ---- THE NEW STICKER ----
+     Ported from the NFL game, which arrived at this after two measured mistakes that
+     are worth not repeating. Slapped over the top-right corner the way a price
+     sticker goes on a box: out of the flow, off the grid, and tilted, because
+     everything else here is square to the edges and the tilt is what stops the eye.
+     Bright green with the type in near-black: at this size a light-on-dark chip
+     disappears and a dark-on-bright one does not.
+
+     IT BREATHES ON THE GLOW, NOT ON THE SIZE. Scaling it grows its BOX, and with the
+     origin at the top-right that growth goes leftward into whatever text is beside
+     it. A pulsing shadow catches the eye just as well and cannot move an edge. */
+  /* THE CARD HAS TO BE THE POSITIONING CONTEXT. Without this the sticker is absolute
+     against whatever distant ancestor happens to be positioned, and it lands in the
+     right region by luck: it cleared the title and the heading when measured and was
+     still anchored to the wrong element, floating between the card above and this
+     one's heading where it read as the OTHER card's badge. */
+  .modecard{position:relative}
+  .mc-sticker{position:absolute;right:-7px;z-index:3;pointer-events:none;
+    font-family:var(--fn);font-size:12px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;color:#04241c;padding:5px 11px;border-radius:7px;
+    background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
+    border:1.5px solid rgba(255,255,255,.55);
+    box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55);
+    transform:rotate(7deg);transform-origin:100% 0;
+    animation:mcsticker 2.4s ease-in-out infinite}
+  @keyframes mcsticker{
+    0%,100%{box-shadow:0 6px 18px -4px rgba(16,185,129,.85),0 2px 6px rgba(0,0,0,.55)}
+    50%{box-shadow:0 6px 26px -2px rgba(16,185,129,1),0 0 0 4px rgba(16,185,129,.20),
+      0 2px 6px rgba(0,0,0,.55)}}
+  @media (prefers-reduced-motion:reduce){ .mc-sticker{animation:none} }
+  /* ON A CARD it clears the title by sitting ABOVE the first line of type, so the
+     title can be as wide as it likes and the wrap point stops mattering. The section
+     heading above gets the room that overhang needs. */
+  .modecard .mc-sticker{top:-19px}
+  .xpromo:has(.mc-sticker) .xp-h{margin-bottom:20px}
+  /* ON THE INTRO BUTTON it can barely hang at all, and the tilt is why.
+     That button sits 9px under "Draft your team" in a grid. A 19px overhang would
+     obviously land on it, but so did 11px: rotating a 57px-wide box by 7 degrees
+     about its top-right corner lifts the far end, and the BOUNDING RECT grows by
+     width*sin(7deg), about 7px. The sticker was 11px up and reading as 18.
+     Buying vertical room is not an option here: the intro is laid out so every
+     button clears the fold on a phone, and pushing this one down pushes Leaderboard
+     and How to play off the bottom, which is a bug this page has had before. So the
+     overhang has to fit a 7px gap, because a media query tightens .ctas to 7px on
+     anything under 700 wide, which is every phone.
+
+     AND IT CANNOT BUY THAT ROOM. Reserving 3px here for the sticker cost exactly the
+     fold: test_launch measures the front page against a browser-chrome allowance and
+     an iPhone SE went to "slack 88px, need 90". Every button on this page clearing
+     the fold is a thing that has been broken before and asked for specifically, and
+     it outranks a sticker's overhang.
+
+     So the sticker sits INSIDE the button and lets the tilt do the overhanging. Its
+     box top is 2px below the button's, the 7-degree rotation lifts the far corner
+     about 7px, and the rendered rect ends up 5px proud of the button into a 7px gap.
+     It reads as stuck on the corner, it never touches the button above, and the
+     layout does not move by a pixel. */
+  #b-modes{position:relative;overflow:visible}
+  #b-modes .mc-sticker{top:2px;right:-5px}
+  /* AND ON THE NARROWEST PHONE IT HAS TO GIVE WAY TO THE LABEL. At 320 the button's
+     own "More ways to play" runs wide enough that a full-size sticker sits on the
+     last word. The sticker is the thing that can afford to lose a point of type
+     here; the label is what the button is for. */
+  @media(max-width:359px){
+    #b-modes .mc-sticker{font-size:10px;letter-spacing:.05em;padding:4px 7px;right:-7px}
+  }
+
   .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
   .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
   .modecard.mc-alma .mc-title{color:#f2b632}
@@ -2712,7 +2779,7 @@ or endorsed by the NCAA, the CFP or any school.
          the only reason this is markup and not CSS. -->
     <div class="ctas">
       <button class="btn" id="b-play-intro">Draft your team</button>
-      <button class="btn ghost" id="b-modes">More ways to play</button>
+      <button class="btn ghost" id="b-modes">More ways to play<span class="mc-sticker">New</span></button>
       <div class="cta2">
         <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
         <button class="btn ghost sm" id="b-how">How to play</button>
@@ -2741,6 +2808,7 @@ or endorsed by the NCAA, the CFP or any school.
            the same thing in the same place. A sheet rather than a link to a contact page:
            there is no mid-run save, so sending somebody to another page to report a bug
            would throw away the run they are reporting. -->
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0;"><span style="font-size:12px;opacity:.72;">Free to play, funded by players.</span><a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a></div>
       <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
       <div class="follow">
         <a href="/">RunThe.GG</a>
@@ -3182,8 +3250,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=25"></script>
-<script src="run.js?v=11"></script>
-<script src="achievements.js?v=9"></script>
+<script src="run.js?v=12"></script>
+<script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
 <script>
@@ -3214,6 +3282,10 @@ const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const M=(v)=>(v>0&&v<1)?'$'+Math.round(v*1000)+'K':'$'+v.toFixed(1)+'M';
+/* Whole millions, for amounts the RULES define exactly: the cap and the respin
+   fees. NOT for money spent, which is a sum of six prices and lands on 10.9 as
+   often as on 11: rounding it printed a squad that cost $10.9M as $11M, which is
+   the cap-adjacent number a player is watching and the one they would check. */
 const M0=(v)=>'$'+Math.round(v)+'M';
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
@@ -3967,7 +4039,7 @@ function seasonSheet(row,back,mine){
       tile(overall===null?'--':overall.toFixed(1),'Team overall')+
       tile(row.national_rank?'#'+row.national_rank:'--','In the country')+
       tile(chem===null?'--':pc(chem/100),'Chemistry')+
-      tile(spend===null?'--':M0(spend),'Spent')+
+      tile(spend===null?'--':M(spend),'Spent')+
     '</div>'+
     (fppg!==null&&mult!==null&&overall!==null
       ? '<p class="caveat">'+fppg.toFixed(1)+' squad FPPG, '+pc(chem===null?0:chem/100)+
@@ -4404,6 +4476,7 @@ function modeMenu(){
           '<path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>'+
           '<path d="M22 9v5"/>'+
         '</svg></div><div class="mc-title">Alma Mater</div>'+ARROW+'</div>'+
+        '<span class="mc-sticker">New</span>'+
         '<p>A new one every day. Name the college each NBA, NFL or MLB player came '+
         'from, four choices and one right, and it gets harder the longer your run '+
         'lasts.</p>'+
@@ -4972,7 +5045,7 @@ function peekCaseHtml(res){
 }
 
 /* ── THE CABINET ─────────────────────────────────────────────────────
-   IT WAS A FLAT WALL OF NINETY-FIVE CARDS, all eight groups open at once, with no way to
+   IT WAS A FLAT WALL OF CARDS, all eight groups open at once, with no way to
    tell at a glance how far in you were or which of them were the rare ones. Three things
    the NFL game's has had since its cabinet existed, and now this one does:
 
@@ -4980,8 +5053,9 @@ function peekCaseHtml(res){
        far in am I" reads the same way twice.
      A SHELF OF YOUR BEST, gold and legend only and rarest first. A shelf of bronzes is not
        a trophy shelf, so the top two tiers are the only ones on it.
-     GROUPS THAT COLLAPSE, shut by default, with a chevron. Ninety-five cards is four
-       screens of scrolling to reach the last group; eight headings is one.
+     GROUPS THAT COLLAPSE, shut by default, with a chevron. The catalog is past two hundred
+       cards now, which is a dozen screens of scrolling to reach the last group; eight
+       headings is one, whatever the catalog grows to.
 
    NO TILE VARIANT HERE. The NFL cabinet renders its collection badges -- the vintages, the
    thirty-two -- as compact tiles, because a year needs no description line. Nothing in this
@@ -5048,7 +5122,7 @@ function achWire(root){
    them the first time it is opened.
 
    THE FIRST SIGHTING IS RECORDED QUIETLY. Somebody whose case was already full before this
-   shipped would otherwise get ninety-five headlines at once, so the first read marks
+   shipped would otherwise get two hundred headlines at once, so the first read marks
    everything seen without saying anything; only what turns up after that celebrates. */
 const ACH_SEEN_KEY='cfb_ach_seen';
 function achSeen(userId){
@@ -5197,7 +5271,14 @@ function rowFromBoard(r){
 
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString());
+  /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
+     and remembers how many there really are, so a career of six hundred arrives here as
+     five hundred rows. Counting rows would cap "finish 500 seasons" at exactly the fetch
+     size and put "finish 1,000" out of reach for anybody. The true count goes with the
+     board's rows and only with them: local history has none, because a history trimmed
+     at four hundred has genuinely forgotten the rest. */
+  const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet
@@ -5868,7 +5949,7 @@ async function boot(){
        is large enough that the JSON parse is a real part of the wait, and a bar that
        jumped to full while the main thread was still busy would be lying at the one
        moment it matters. */
-    const j=(f)=>fetch(f+'?v=7').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=9').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
     /* The poll is fetched alongside the rest but is allowed to be absent: it is the
        only file the game can run without, and a project that has not run
@@ -5888,7 +5969,7 @@ async function boot(){
        league unranked, which quietly makes five badges unearnable. A missing file
        is loud by comparison. 400 is well under a real poll, which carries about
        twenty seasons of top 25, and well over anything a broken write produces. */
-    fetch('data/cfb_rankings.json?v=7').then(r=>r.ok?r.json():null)
+    fetch('data/cfb_rankings.json?v=9').then(r=>r.ok?r.json():null)
       .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
       .catch(()=>{});
     DATA=R.indexData(pl,tm);
@@ -6586,19 +6667,24 @@ function askSlot(p,choices){
     const left=R.openSlots(run).filter(x=>x!==i).map(x=>E.SLOTS[x]);
     return left.length?'Leaves '+left.join(', ')+' to fill':'Fills your last spot';
   };
+  /* THE COPY IS SHORT AND HAS NO PRONOUN IN IT. It used to read "He can play any of
+     these, and which one he takes decides what is left for your other picks", which is
+     two clauses saying one thing and gets the actor wrong on top: nobody takes a spot,
+     you put him in one. Second person, one sentence, and the dismiss says where it goes
+     rather than "Not yet", which reads like a delay and is really a way back. */
   box.innerHTML='<div class="eyebrow green">Two positions</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Where does '+
       esc(p.name)+' play?</h2>'+
-    '<p class="dim" style="font-size:13.5px;margin:0">He can play any of these, and which '+
-      'one he takes decides what is left for your other picks.</p>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">Pick a spot. The one you use '+
+      'decides what is left for the rest of your picks.</p>'+
     '<div class="slotpick">'+choices.map(i=>
       '<button class="slotopt" data-i="'+i+'">'+
         '<span class="tag" style="'+posPaint(E.SLOTS[i])+'">'+esc(E.SLOTS[i])+'</span>'+
-        '<span class="t"><b>Play him at '+esc(E.SLOTS[i])+'</b>'+
+        '<span class="t"><b>Play at '+esc(E.SLOTS[i])+'</b>'+
         '<span>'+esc(after(i))+'</span></span>'+
         '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">'+
-      'Not yet</button></div>';
+      'Back to the board</button></div>';
   openSheet();
   $('sp-x').onclick=closeSheet;
   box.querySelectorAll('.slotopt').forEach(b=>{ b.onclick=()=>{
@@ -7640,7 +7726,63 @@ function playFeatureBroadcast(cfg){
 /* ── confetti ────────────────────────────────────────────────── */
 const perfNow=()=>(window.performance||Date).now();
 
+/* IT FALLS IN YOUR SCHOOL'S COLOURS. Everything else about the celebration stays
+   the same; only the paint changes.
+
+   A CHIP HAS TO BE VISIBLE AGAINST A DARK SKY, and a lot of real schools lead with
+   navy, maroon or black. Dropped in raw those fall as holes in the screen. This is
+   the same problem textSafe solves for type, at a lower bar: a falling chip is far
+   bigger than a letter, so it needs less lift, and lifting it further than necessary
+   would turn every school pastel and lose the identity the change is for.
+
+   A NEAR-WHITE OR NEAR-BLACK SECOND COLOUR IS A NEUTRAL, NOT A COLOUR. Plenty of
+   schools pair one strong colour with white or black, and using that as the second
+   confetti colour gives half a screen of grey. Where the alt has no real hue, the
+   second colour is derived from the primary instead, exactly as applyTheme already
+   does for the page theme, so the two agree.
+
+   Five entries rather than two, because confetti made of two flat colours reads as
+   two flat colours. The extras are tints of the school's own pair, so the palette
+   stays theirs. */
+const confettiSafe=(hex)=>{ let c=hex; for(let i=0;i<10&&lumOf(c)<0.34;i++) c=shade(c,0.14); return c; };
+const chromaOf=(hex)=>{ const [r,g,b]=_hx(hex); return Math.max(r,g,b)-Math.min(r,g,b); };
+/* BLACK LIFTS TO GREY, AND GREY IS NOT A SCHOOL COLOUR. Running every dark colour
+   through confettiSafe is right for a navy or a maroon, which keep their hue as they
+   come up, and wrong for a black: Iowa and Purdue came out falling in #5d5d5d. Their
+   partner is white, which is what black-and-gold schools actually throw, so an
+   achromatic dark colour becomes white rather than a lifted grey.
+   White stays white for the same reason: plenty of schools are navy and white, and
+   swapping that white for a tint of the navy loses half of who they are. */
+const confettiChip=(hex)=>{
+  if(lumOf(hex)>0.86) return '#ffffff';
+  if(chromaOf(hex)<26&&lumOf(hex)<0.30) return '#ffffff';
+  return confettiSafe(hex);
+};
+function schoolConfetti(){
+  const t=selectedSchool;
+  if(!t||!t.color) return null;
+  try{
+    const chips=[];
+    for(const c of [t.color,t.alt]){ if(!c) continue;
+      const v=confettiChip(c); if(chips.indexOf(v)<0) chips.push(v); }
+    if(!chips.length) return null;
+    /* One usable colour, because the pair collapsed to the same chip: give it a
+       partner derived from the school's own primary rather than a stock colour. */
+    if(chips.length===1){
+      const base=confettiSafe(t.color);
+      chips.push(chips[0]==='#ffffff'?base:shade(base,-0.3));
+    }
+    const A=chips[0],B=chips[1];
+    return [A,B,shade(A,0.28),shade(B,0.22),A==='#ffffff'?shade(B,0.55):shade(A,0.55)];
+  }catch(e){ return null; }
+}
+
 function confettiTheme(perfect){
+  /* The school's colours whenever there is one in force. A perfect season keeps its
+     bigger, longer fall; what made it special was the amount, and the gold was only
+     ever standing in for colours the game did not know. */
+  const sc=schoolConfetti();
+  if(sc) return {colors:sc,count:perfect?200:150,duration:perfect?4200:3400};
   if(perfect) return {colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200};
   return {colors:['#10b981','#34d399','#fcd34d','#ffffff'],count:150,duration:3400};
 }
@@ -7834,7 +7976,7 @@ function paintOver(){
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   $('o-splits').innerHTML=
     split(pc(run.season.chemistry-1),'Chemistry')+
-    split(M0(spendUsed),'Spent')+
+    split(M(spendUsed),'Spent')+
     split(o.seedLabel.replace(/^Season.*/,'None'),'Postseason');
 
   /* Résumé: the conference title, the final ranking, the signature wins. The
@@ -7985,16 +8127,27 @@ function paintOver(){
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
       const spots=kept===E.SLOTS.length?'You picked the best available player at every spot.'
         :kept?'You had '+kept+' of the '+E.SLOTS.length+' spots exactly right.'
-        :'You matched none of the best picks.';
+        :'You matched none of the best picks, so the gap is all in the players, not in how they fit.';
       $('o-miss').innerHTML=
         '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
           '<div class="ptrack"><i style="width:'+share+'%;background:'+sband+'"></i></div>'+
           '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
+        '<p class="caveat" style="margin:0 0 2px">Spot by spot, against the best your same six '+
+        'teams and same '+M0(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when '+
+        'spending less there buys more somewhere else.</p>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Team overall includes chemistry and how the six fit. Your record is '+
-        'this season&rsquo;s result; the best roster&rsquo;s is a projection (it never played) '+
-        'from replaying it against your 12 opponents hundreds of times.</p>';
+        /* THE SENTENCE THIS SECTION EXISTS FOR. Players read a high overall and a
+           strong projection and conclude the best lineup should have won it all. Both
+           records are now averages of hundreds of seasons, so the table compares like
+           with like, and this says out loud what that means: twelve wins typically is
+           not twelve wins guaranteed, and the season they played is one sample. */
+        '<p class="caveat">Team overall includes chemistry and how the six fit, because that is '+
+        'what the simulation scores with. BOTH records are typical ones, from replaying each '+
+        'team against your 12 opponents hundreds of times, because one season is mostly luck: '+
+        'the best roster in the country still loses games, and a team that typically goes 12-1 '+
+        'will sometimes go 9-4. Your six spins stay fixed either way, since a different pick '+
+        'would also have changed what the wheel offered you next.</p>';
     }
   });
 }
@@ -8045,7 +8198,15 @@ function comparison(best){
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
     vs('Team overall',mineRating.toFixed(1),bestRating.toFixed(1),true)+
-    vs('Record',run.outcome.record,theirs.typicalRecord,true)+
+    /* TYPICAL AGAINST TYPICAL, which is the whole point of the row and was the one
+       thing this table got wrong. It used to put YOUR ACTUAL RECORD next to the best
+       roster's PROJECTED one, which is not a comparison: one is a single season and
+       the other is the average of hundreds. A player who went 12-1 with a 105 overall
+       then read a projected 12-1 beside it and concluded the perfect lineup should
+       have won the title, when the honest reading is that both teams win about twelve
+       and the one season they actually played is mostly luck.
+       mine was already being computed here and its record thrown away. */
+    vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
   '</div>';
 }
@@ -8210,7 +8371,7 @@ function drawShareCard(){
   const rb2=(v)=>v>=70?'#4ade80':(v>=50?'#fbbf24':'#f87171');
   stat('TEAM OVERALL',rating.toFixed(1),CARD.W*0.22,rb2(rating),70);
   stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,chem>0.05?'#4ade80':'#e2e8f0');
-  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
+  stat('SPENT','$'+spend.toFixed(1)+'M',CARD.W*0.78,'#e2e8f0');
   B('600',30);x.fillStyle='rgba(255,255,255,.62)';
   centered('Can you draft a better team?',CARD.DARE);
   const label='RUNTHE.GG/CFB';

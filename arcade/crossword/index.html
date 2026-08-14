@@ -49,7 +49,7 @@
   --coral:#F06A5F; --coral-d:#D8452F; --gold:#F2B632; --violet:#A982F3;
   --green:#48D17A; --red:#FF625F; --amber:#F2B632; --blue:#2F6BFF;
   /* text-safe accent variants (meet contrast on the current surface) */
-  --coralT:#F06A5F; --goldT:#F2B632; --redT:#FF625F; --news:#64748B; --newsT:#9CADC0;
+  --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --redT:#FF625F; --news:#64748B; --newsT:#9CADC0;
   /* inverse chrome (toast) */
   --inv-bg:#F4F7FB; --inv-ink:#071426;
   /* primary modal button: steel accent (theme-aware) */
@@ -71,7 +71,7 @@
   --bg:#EEF2F7; --card:#FFFFFF; --panel:#FFFFFF; --panel2:#F1F5FA;
   --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
   --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
-  --coralT:#D8452F; --goldT:#A87508; --redT:#C4372C; --newsT:#46586C;
+  --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --redT:#C4372C; --newsT:#46586C;
   --inv-bg:#0D1B2C; --inv-ink:#F4F7FB;
   --btnP:#33475C; --btnP-ink:#FFFFFF;
   --cream:#0D1B2C; --cream-dim:#51637A; --gold-bright:#D8452F;
@@ -82,13 +82,16 @@
    scrolling and pinch-zoom intact - so fast typing no longer zooms the board. */
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0; padding:0;}
+/* Centring used to be `display:flex` on the body, but the shared top banner is
+   injected as a body child, so it became a flex SIBLING of .wrap and the two
+   laid out side by side - pushing the whole page off-screen on a phone. Centre
+   the wrap with auto margins instead, matching every other game page. */
 body{
   background:var(--bg);
   color:var(--ink); font-family:var(--term); font-size:16px; line-height:1.45; font-weight:500;
   min-height:100dvh; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  display:flex; justify-content:center;
 }
-.wrap{width:100%; max-width:480px; padding:10px 12px 28px; position:relative;}
+.wrap{width:100%; max-width:480px; margin:0 auto; padding:10px 12px 28px; position:relative;}
 button{font-family:inherit; color:inherit; cursor:pointer;}
 .hidden{display:none !important;}
 .pix{font-family:var(--pix); font-weight:800; letter-spacing:.3px;}
@@ -441,8 +444,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/cluebank.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
-<script src="gen.js?v=4"></script>
+<script src="gen.js?v=5"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=2"></script>
 <script src="/arcade/share.js?v=1"></script>
@@ -451,17 +455,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/board.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=8"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=2"></script>
+<script src="/arcade/howto.js?v=3"></script>
 <script>
 (function(){
   "use strict";
@@ -1187,6 +1192,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   } else {
     beginAttempt();
   }
+})();
+</script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there. */
+(function(){
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el, game:'crossword', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
 </body>

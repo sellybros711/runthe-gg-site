@@ -10,7 +10,11 @@
 (function() {
 
 const CONSTANTS = {
-  CAP_MUSD: 245,
+  /* The budget has to say no, or there's no decision in the draft. At $245M
+   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
+   * makes the budget bite hard — you can't afford a star most spins, and a
+   * strong roster takes real draft skill, not just best-available. */
+  CAP_MUSD: 170,
   REGULAR_SEASON_GAMES: 162,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -36,8 +40,8 @@ const CONSTANTS = {
   /* Your opponents are OTHER all-time rosters, not league-average teams.
    * They score more (OPP_OFF_MEAN) and allow less (OPP_DEF_MEAN) than the
    * league baseline. These two numbers are the primary difficulty knobs. */
-  OPP_OFF_MEAN: 5.25,
-  OPP_DEF_MEAN: 3.98,
+  OPP_OFF_MEAN: 5.34,
+  OPP_DEF_MEAN: 3.95,
 
   /* Consistency: how much each side's runs are pulled toward expected value.
    * At 0 pure variance; at 1 deterministic. */
@@ -94,9 +98,9 @@ const SLOT_ELIGIBILITY = {
   '2B': ['2B'],
   '3B': ['3B'],
   SS:  ['SS'],
-  LF:  ['LF'],
-  CF:  ['CF'],
-  RF:  ['RF'],
+  LF:  ['LF', 'OF'],
+  CF:  ['CF', 'OF'],
+  RF:  ['RF', 'OF'],
   DH:  ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'OF', 'IF'],
   SP1: ['SP'],
   SP2: ['SP'],
@@ -243,13 +247,91 @@ function indexData(players) {
   // Build cheapBy for reserve floor calculations
   const cheapBy = buildCheapBy(players);
 
+  // Strength model: every spinnable team-season gets an offense/defense
+  // estimate and a 0-100 rating from its own best lineup. These drive real
+  // opponents (schedule) and national ranking (résumé) — the "how good was
+  // this really" layer that replaces flat win thresholds.
+  const teamStats = {};
+  const ratingTable = [];
+  for (const ts of teamSeasons) {
+    const roster = byTeamSeason[ts.team_season_id];
+    const st = teamStrength(roster);
+    st.rating = overallRating(teamWinPct(st.offense, st.defense));
+    ts.rating = st.rating;
+    ts.offMean = st.offense;
+    ts.defMean = st.defense;
+    teamStats[ts.team_season_id] = st;
+    ratingTable.push(st.rating);
+  }
+  ratingTable.sort((a, b) => a - b);
+  const oppPool = buildOpponentPool(teamSeasons);
+
   return {
     players,
     allPlayers,
     byTeamSeason,
     teamSeasons,
     cheapBy,
+    teamStats,
+    ratingTable,
+    oppPool,
   };
+}
+
+/*
+ * A team-season's implied strength if you drafted its best lineup: top 9
+ * hitters for offense, top 2 starters + closer for run prevention. Uses the
+ * same run-model formulas the season sim uses, so opponents are self-
+ * consistent with your own roster.
+ */
+function teamStrength(players) {
+  const hitters = players.filter(p => p.r === 'b').sort((a, b) => b.w - a.w).slice(0, 9);
+  const sps = players.filter(p => p.r === 'p' && playerPositions(p).includes('SP'))
+    .sort((a, b) => b.w - a.w);
+  const hitWar = hitters.reduce((s, p) => s + p.w, 0);
+  const offense = REPLACEMENT_RPG + hitWar * WAR_TO_RPG;
+
+  const spEra = (sp) => sp ? Math.max(1.6, 5.0 - sp.w * 0.32) : CONSTANTS.FILLER_ERA;
+  const anchorShare = 1 - CONSTANTS.FILLER_IP_SHARE;
+  const staffEra = (spEra(sps[0]) + spEra(sps[1])) / 2 * anchorShare
+    + CONSTANTS.FILLER_ERA * CONSTANTS.FILLER_IP_SHARE;
+  const baseRA = staffEra * 1.08;
+  const defWar = hitters.reduce((s, p) => s + Math.max(0, p.w - 2) * 0.15, 0);
+  const defMod = Math.max(0.85, 1.0 - defWar * 0.005);
+  const defense = baseRA * defMod;
+
+  return { offense, defense, hitWar };
+}
+
+/* Expected win% for an offense/defense pair against the average all-time
+ * opponent (Pythagorean, opponent-quality-adjusted like the real sim). */
+function teamWinPct(offense, defense) {
+  const N = CONSTANTS.OPP_RUNS_MEAN;
+  const rf = offense * (CONSTANTS.OPP_DEF_MEAN / N);
+  const ra = defense * (CONSTANTS.OPP_OFF_MEAN / N);
+  return pythagorean(rf, ra);
+}
+
+/* Map an expected win% to a 0-100 team rating. Calibrated so ~.500 baseball
+ * sits near 50, a 100-win team near 80, and the 116-win record near 98. */
+function overallRating(winPct) {
+  const wins = winPct * CONSTANTS.REGULAR_SEASON_GAMES;
+  const r = (wins - 62) * (100 / 58) + 47;
+  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+}
+
+/* National rank: where a finished season's rating places among all
+ * spinnable team-seasons (1 = best ever). */
+function nationalRank(rating, ratingTable) {
+  if (!ratingTable || !ratingTable.length) return null;
+  // ratingTable is ascending; count how many are strictly better.
+  let lo = 0, hi = ratingTable.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (ratingTable[mid] <= rating) lo = mid + 1; else hi = mid;
+  }
+  const better = ratingTable.length - lo;
+  return better + 1;
 }
 
 /* For each position, the cheapest players sorted by price. */
@@ -277,17 +359,41 @@ function buildCheapBy(players) {
 
 const CHEMISTRY = {
   VALUES: {
+    /* Family is a real, rare, cross-era bond the formula can't infer — the
+     * strongest link, because drafting two brothers is a genuine story. */
+    family:    0.09,
     reunion:   0.08,
-    franchise: 0.04,
-    dp_combo:  0.06,
     battery:   0.07,
+    dp_combo:  0.06,
+    franchise: 0.04,
     /* Era is a weak ambient link — kept small so the deliberate links
-     * (reunion/battery/DP) are what actually move the needle. */
+     * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
   MIN: -0.10,
   MAX: 0.15,
 };
+
+/* Curated real-life relationships (families), loaded from data/chemistry.json.
+ * A symmetric map: player id -> { otherId -> label }. */
+let CURATED_FAMILY = {};
+function setCuratedChemistry(json) {
+  CURATED_FAMILY = {};
+  if (!json || !json.families) return;
+  for (const fam of json.families) {
+    const ids = fam.ids || [];
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        (CURATED_FAMILY[ids[i]] = CURATED_FAMILY[ids[i]] || {})[ids[j]] = fam.label;
+        (CURATED_FAMILY[ids[j]] = CURATED_FAMILY[ids[j]] || {})[ids[i]] = fam.label;
+      }
+    }
+  }
+}
+function familyLink(a, b) {
+  const m = CURATED_FAMILY[a.i];
+  return m && m[b.i] ? m[b.i] : null;
+}
 
 /*
  * Baseball chemistry per GDD §10:
@@ -301,6 +407,12 @@ function pairLinks(a, b) {
   const links = [];
   const sameTeam = a.t === b.t;
   const sameSeason = a.s === b.s;
+
+  // Family: a real relationship across any team or season (e.g. two Alous).
+  const fam = familyLink(a, b);
+  if (fam) {
+    links.push({ type: 'family', value: CHEMISTRY.VALUES.family, label: fam });
+  }
 
   if (sameTeam && sameSeason) {
     links.push({ type: 'reunion', value: CHEMISTRY.VALUES.reunion,
@@ -441,6 +553,73 @@ function rosterRunPrevention(roster, chemMultiplier) {
 }
 
 /*
+ * ROSTER STRUCTURE (shape multiplier).
+ *
+ * WAR sum measures raw talent; structure measures how well that talent is
+ * arranged. A great roster isn't just a pile of WAR — it balances bats and
+ * arms, has no dead slots, and isn't one injury from collapse. This is the
+ * "shape matters as much as talent" layer, applied to offense.
+ *
+ * Three factors, each 1.0 when ideal and <1.0 when off:
+ *  - balance:       hitting/pitching WAR split near ideal
+ *  - floor:         the bottom of the roster isn't near-replacement scrubs
+ *  - concentration: not one boom-or-bust star carrying everything
+ * Damped by SHAPE_STRENGTH so shape modulates rather than dominates, plus a
+ * small archetype bonus for a coherent identity.
+ */
+/* Thresholds are calibrated to real 12-man drafted rosters: median top-player
+ * share ~0.16, bottom-4 share ~0.16, pitching share ~0.25. */
+const STRUCTURE = {
+  MIN: 0.84, MAX: 1.08,
+  CONCENTRATION_START: 0.20, CONCENTRATION_WEIGHT: 0.85,
+  FLOOR_START: 0.10, FLOOR_WEIGHT: 1.15,
+  IDEAL_PITCH_SHARE: 0.26, PITCH_TOLERANCE: 0.08, BALANCE_WEIGHT: 1.05,
+  SHAPE_STRENGTH: 0.55,
+  ARCHETYPE_BONUS: 0.025,
+};
+
+/* Name the roster's identity — flavor for the coach report, plus a small
+ * cohesion bonus when the shape reads as a deliberate build. */
+function detectArchetype(m) {
+  if (m.topShare >= 0.24)
+    return { key: 'one_man_show', name: 'One-Man Show', bonus: 0 };
+  if (m.floorShare >= 0.19 && m.topShare <= 0.17)
+    return { key: 'no_weak_links', name: 'No Weak Links', bonus: STRUCTURE.ARCHETYPE_BONUS };
+  if (m.pitchShare <= 0.19 && m.floorShare >= 0.14)
+    return { key: 'murderers_row', name: "Murderers' Row", bonus: STRUCTURE.ARCHETYPE_BONUS };
+  if (m.pitchShare >= 0.36)
+    return { key: 'aces_wild', name: 'Aces Wild', bonus: STRUCTURE.ARCHETYPE_BONUS * 0.5 };
+  if (m.pitchShare >= 0.22 && m.pitchShare <= 0.30 && m.floorShare >= 0.14 && m.topShare <= 0.19)
+    return { key: 'balanced', name: 'Balanced Contender', bonus: STRUCTURE.ARCHETYPE_BONUS };
+  return { key: 'mixed', name: 'Mixed Bag', bonus: 0 };
+}
+
+function rosterStructure(roster) {
+  const wars = roster.map(p => Math.max(0, p.w));
+  const total = wars.reduce((s, w) => s + w, 0) || 1;
+  const sorted = [...wars].sort((a, b) => b - a);
+
+  const topShare = sorted[0] / total;
+  const floorShare = sorted.slice(-4).reduce((s, w) => s + w, 0) / total;
+  const pitchWar = roster.filter(p => p.r === 'p').reduce((s, p) => s + Math.max(0, p.w), 0);
+  const pitchShare = pitchWar / total;
+
+  const S = STRUCTURE;
+  const conc = 1 - S.CONCENTRATION_WEIGHT * Math.max(0, topShare - S.CONCENTRATION_START);
+  const floor = 1 - S.FLOOR_WEIGHT * Math.max(0, S.FLOOR_START - floorShare);
+  const balance = 1 - S.BALANCE_WEIGHT *
+    Math.max(0, Math.abs(pitchShare - S.IDEAL_PITCH_SHARE) - S.PITCH_TOLERANCE);
+
+  const metrics = { topShare, floorShare, pitchShare };
+  const archetype = detectArchetype(metrics);
+  const shape = Math.max(0.3, conc) * Math.max(0.3, floor) * Math.max(0.3, balance);
+  const multiplier = Math.max(S.MIN, Math.min(S.MAX,
+    1 + (shape - 1) * S.SHAPE_STRENGTH + archetype.bonus));
+
+  return { multiplier, archetype, conc, floor, balance, ...metrics };
+}
+
+/*
  * Closer save conversion rate.
  * Base rate + bonus from closer WAR.
  */
@@ -507,12 +686,69 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
 
 // ─── schedule ────────────────────────────────────────────────────────────────
 
-function generateSchedule(rng, games) {
+/* Opponent scheduling constants — your slate is real all-time teams. */
+const SCHEDULE = {
+  CONTENDER_MIN_RATING: 66,   // the pool a title team faces all year
+  MARQUEE_MIN_RATING: 82,     // elite opponents injected as marquee games
+  MARQUEE_GAMES: 14,          // the gauntlet — why an unbeaten season is rare
+  OPP_GAME_SD: 0.55,          // per-game noise around an opponent's true means
+  // Real teams' run-prevention model floors around ~4.1; scale the pool so
+  // these opponents play at the postseason intensity a title team faces all
+  // year, holding the calibrated difficulty. These are the difficulty dial.
+  OPP_OFF_SCALE: 1.02,
+  OPP_DEF_SCALE: 0.95,
+};
+
+/* Build the pool of real team-seasons your schedule is drawn from. Returns
+ * contenders (the season-long slate) and marquee (elite marquee opponents).
+ * Pass the result to generateSchedule / playRun for real opponents. */
+function buildOpponentPool(teamSeasons) {
+  const contenders = [], marquee = [];
+  for (const t of teamSeasons) {
+    if (typeof t.rating !== 'number') continue;
+    const o = {
+      name: t.display, rating: t.rating,
+      off: t.offMean * SCHEDULE.OPP_OFF_SCALE,
+      def: t.defMean * SCHEDULE.OPP_DEF_SCALE,
+    };
+    if (t.rating >= SCHEDULE.CONTENDER_MIN_RATING) contenders.push(o);
+    if (t.rating >= SCHEDULE.MARQUEE_MIN_RATING) marquee.push(o);
+  }
+  return { contenders, marquee };
+}
+
+function generateSchedule(rng, games, pool) {
   const count = games || CONSTANTS.REGULAR_SEASON_GAMES;
   const schedule = [];
+
+  // Real-opponent path: draw a slate of actual all-time team-seasons, with
+  // MARQUEE_GAMES hardest matchups sprinkled in.
+  if (pool && pool.contenders && pool.contenders.length) {
+    const marqueeSet = new Set();
+    if (pool.marquee && pool.marquee.length) {
+      while (marqueeSet.size < Math.min(SCHEDULE.MARQUEE_GAMES, count)) {
+        marqueeSet.add(Math.floor(rng() * count));
+      }
+    }
+    for (let i = 0; i < count; i++) {
+      const bucket = marqueeSet.has(i) ? pool.marquee : pool.contenders;
+      const opp = bucket[Math.floor(rng() * bucket.length)];
+      const oppOff = Math.max(2.5, opp.off + normal(rng) * SCHEDULE.OPP_GAME_SD);
+      const oppDef = Math.max(2.5, opp.def + normal(rng) * SCHEDULE.OPP_GAME_SD);
+      schedule.push({
+        game: i + 1,
+        oppName: opp.name,
+        oppRating: opp.rating,
+        marquee: marqueeSet.has(i),
+        oppRunsScored: Math.round(oppOff * 100) / 100,
+        oppRunsAllowed: Math.round(oppDef * 100) / 100,
+      });
+    }
+    return schedule;
+  }
+
+  // Fallback: abstract opponents around the all-time-roster baselines.
   for (let i = 0; i < count; i++) {
-    // Opponent strength: how they hit (oppRunsScored) and how they pitch
-    // (oppRunsAllowed), sampled around the all-time-roster baselines.
     const oppOff = Math.max(2.5, CONSTANTS.OPP_OFF_MEAN + normal(rng) * 0.8);
     const oppDef = Math.max(2.5, CONSTANTS.OPP_DEF_MEAN + normal(rng) * 0.7);
     schedule.push({
@@ -563,6 +799,24 @@ function playoffRoundNames(rounds) {
 }
 
 /*
+ * TITLE DIFFICULTY: the deepest rounds are scaled to your team rating, so a
+ * title means you built a great team — not that you got hot in a short
+ * series. A weak team that sneaks into October faces a stiffened opponent in
+ * the LCS and World Series; an all-time roster gets a fair fight. Returns a
+ * multiplier applied to the opponent's scoring (>1 = tougher).
+ */
+const TITLE = {
+  PIVOT: 84,        // rating at/above which the title is a fair fight
+  SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
+  MAX_EDGE: 1.34,
+  SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
+};
+function titleEdge(rating) {
+  if (typeof rating !== 'number') return 1;
+  return Math.max(1, Math.min(TITLE.MAX_EDGE, 1 + (TITLE.PIVOT - rating) * TITLE.SLOPE));
+}
+
+/*
  * Playoff series: best-of-5 for LDS, best-of-7 for LCS and WS.
  * Returns { won, gamesPlayed, seriesScore }.
  */
@@ -586,8 +840,9 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins) {
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating) {
   if (!seed.made) return null;
+  const edge = titleEdge(rating);
 
   const rounds = playoffRoundNames(seed.rounds);
   const results = [];
@@ -608,9 +863,13 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
     if (!alive) break;
 
     const roundName = rounds[i];
-    // Opponents get tougher each round
+    // Opponents get tougher each round, and the deepest rounds are further
+    // stiffened for weaker teams (title difficulty scaled to your rating).
     const roundDifficulty = 1 + i * CONSTANTS.PLAYOFF_ROUND_STEP;
-    const oppRA = defAdj * roundDifficulty;
+    let titleMult = 1;
+    if (roundName === 'World Series') titleMult = edge;
+    else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
+    const oppRA = defAdj * roundDifficulty * titleMult;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
     const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
@@ -632,21 +891,70 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
   return { rounds: results, won };
 }
 
+// ─── coach report (narrative end screen) ─────────────────────────────────────
+
+/*
+ * A human read on the roster: concrete strengths, weaknesses, and a one-line
+ * verdict. Drives the results screen's "coach's take" so a season ends with
+ * words, not just a number. Expects a slot-tagged roster.
+ */
+function coachReport(roster, chem, structure, rating, unspentMusd) {
+  const hitters = roster.filter(p => p.r === 'b');
+  const sp1 = roster.find(p => p._slot === 'SP1');
+  const sp2 = roster.find(p => p._slot === 'SP2');
+  const closer = roster.find(p => p._slot === 'CL');
+  const hitWar = hitters.reduce((s, p) => s + p.w, 0);
+  const spWar = (sp1 ? sp1.w : 0) + (sp2 ? sp2.w : 0);
+  const chemPct = chem ? (chem.multiplier - 1) * 100 : 0;
+  const top = roster.slice().sort((a, b) => b.w - a.w)[0];
+
+  const strengths = [], weaknesses = [];
+  if (hitWar >= 42) strengths.push('Loaded lineup');
+  else if (hitWar < 30) weaknesses.push('Light-hitting lineup');
+  if (spWar >= 14) strengths.push('Ace-anchored rotation');
+  else if (spWar < 8) weaknesses.push('Thin rotation');
+  if (closer && closer.w >= 3) strengths.push('Lights-out bullpen');
+  else if (!closer || closer.w < 1.2) weaknesses.push('Shaky closer');
+  if (chemPct >= 9) strengths.push('Great clubhouse chemistry');
+  else if (chemPct < 1) weaknesses.push('No real chemistry');
+  if (structure && structure.archetype && structure.archetype.key === 'one_man_show')
+    weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
+  if (typeof unspentMusd === 'number' && unspentMusd >= 15)
+    weaknesses.push(`$${unspentMusd.toFixed(0)}M left unspent`);
+  if (structure && structure.archetype && structure.archetype.bonus > 0)
+    strengths.push(structure.archetype.name);
+
+  let verdict;
+  if (rating >= 93) verdict = 'All-time great';
+  else if (rating >= 84) verdict = 'World Series contender';
+  else if (rating >= 72) verdict = 'Playoff team';
+  else if (rating >= 55) verdict = 'Fringe contender';
+  else verdict = 'Rebuilding';
+
+  return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
+}
+
+function lastNameOf(n) {
+  const parts = String(n).trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
 // ─── full season play ────────────────────────────────────────────────────────
 
-function playRun(roster, rng, slotNames) {
+function playRun(roster, rng, slotNames, pool) {
   // Tag each player with their actual slot. slotNames maps roster order to
   // slot names (players draft in random order); without it, fall back to
   // assuming the roster is already in SLOTS order.
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
   const chem = resolveChemistry(tagged);
-  const offense = rosterOffense(tagged, chem.multiplier, 1.0);
+  const structure = rosterStructure(tagged);
+  const offense = rosterOffense(tagged, chem.multiplier, structure.multiplier);
   const defense = rosterRunPrevention(tagged, chem.multiplier);
   const savePct = closerSavePct(tagged);
 
-  // 162-game season
-  const schedule = generateSchedule(rng, CONSTANTS.REGULAR_SEASON_GAMES);
+  // 162-game season vs real all-time opponents (pool) or abstract fallback.
+  const schedule = generateSchedule(rng, CONSTANTS.REGULAR_SEASON_GAMES, pool);
   const seasonGames = [];
   let wins = 0, losses = 0;
   let totalRS = 0, totalRA = 0;
@@ -665,7 +973,8 @@ function playRun(roster, rng, slotNames) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins);
+  const rating = overallRating(teamWinPct(offense, defense));
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
@@ -674,6 +983,8 @@ function playRun(roster, rng, slotNames) {
   return {
     roster: tagged,
     chemistry: chem,
+    structure,
+    rating,
     offense: Math.round(offense * 100) / 100,
     defense: Math.round(defense * 100) / 100,
     savePct: Math.round(savePct * 1000) / 1000,
@@ -725,12 +1036,14 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
-  pairLinks, resolveChemistry,
-  generateSchedule, generatePlayoffs, gameMeans,
+  pairLinks, resolveChemistry, setCuratedChemistry,
+  teamStrength, teamWinPct, overallRating, nationalRank,
+  generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
-  pythagorean, rosterOffense, rosterRunPrevention, closerSavePct,
+  pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
+  coachReport,
   TEAM_COLORS, teamColors,
 };
 

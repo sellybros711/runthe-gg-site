@@ -1,0 +1,20 @@
+{
+  "_note": "Curated real-life baseball relationships that the position/team formula cannot detect. Families link across any team or season. IDs are Baseball-Reference player ids.",
+  "families": [
+    { "label": "DiMaggio brothers", "ids": ["dimagjo01", "dimagdo01", "dimagvi01"] },
+    { "label": "Alou family", "ids": ["aloufe01", "alouma01", "alouje01", "aloumo01"] },
+    { "label": "Niekro brothers", "ids": ["niekrph01", "niekrjo01"] },
+    { "label": "Perry brothers", "ids": ["perryga01", "perryji01"] },
+    { "label": "Waner brothers", "ids": ["wanerpa01", "wanerll01"] },
+    { "label": "Ripken brothers", "ids": ["ripkeca01", "ripkebi01"] },
+    { "label": "Griffeys", "ids": ["griffke01", "griffke02"] },
+    { "label": "Boone family", "ids": ["boonera01", "boonebo01", "boonebr01", "booneaa01"] },
+    { "label": "Molina brothers", "ids": ["molinbe01", "molinjo01", "molinya01"] },
+    { "label": "Upton brothers", "ids": ["uptonbj01", "uptonju01"] },
+    { "label": "Boyer brothers", "ids": ["boyerke01", "boyercl02", "boyercl01"] },
+    { "label": "Dean brothers", "ids": ["deandi01", "deanpa01"] },
+    { "label": "Weaver brothers", "ids": ["weaveje01", "weaveje02"] },
+    { "label": "Vaughn cousins", "ids": ["vaughgr01", "vaughmo01"] },
+    { "label": "Cruz father-son", "ids": ["cruzjo01", "cruzjo02"] }
+  ]
+}

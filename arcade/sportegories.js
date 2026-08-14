@@ -74,6 +74,7 @@
   }
 
   // ---------- predicate evaluation (mirrors the builder) ----------
+  function bitCount(n) { n = n | 0; var c = 0; while (n) { n &= n - 1; c++; } return c; }
   function test(p, pr) {
     if (pr.all) { for (var i = 0; i < pr.all.length; i++) if (!test(p, pr.all[i])) return false; return true; }
     switch (pr.k) {
@@ -89,6 +90,11 @@
       case 'act': return p.act;
       case 'draft1': return p.dp1;
       case 'teams': return p.teams.length >= pr.min;
+      // Loyalty and longevity. A career shape is a far better category than a
+      // decade tag: "never played for another team" is a fact fans argue about,
+      // "played in the 2010s" is just a filter.
+      case 'teamsMax': return p.teams.length > 0 && p.teams.length <= pr.max;
+      case 'decades': return bitCount(p.decBits) >= pr.min;
       default: return false;
     }
   }
@@ -99,7 +105,8 @@
   var PCT_BY_FAME = { 5: 62, 4: 38, 3: 20, 2: 9, 1: 4, 0: 2 };
   function rarityOf(p) {
     var pct = PCT_BY_FAME[Math.max(0, Math.min(5, p.f || 0))];
-    return { pct: pct, bonus: pct >= 40 ? 0 : pct >= 15 ? 1 : 2 };
+    var bonus = pct >= 40 ? 0 : pct >= 15 ? 1 : 2;
+    return { pct: pct, bonus: bonus, tier: bonus === 0 ? 'Common' : bonus === 1 ? 'Uncommon' : 'Rare', est: true };
   }
 
   // ---------- seeded rng ----------
@@ -112,11 +119,47 @@
   // ---------- puzzle generation ----------
   var CATS_PER = 8;
   var LETTER_MIN_CATS = 120;     // don't roll a letter the library can barely serve
-  var TIER_PLAN = [0, 0, 1, 1, 2, 2, 1, 2];   // anchor,anchor,mid,mid,hard,hard,mid,hard
+  var TIER_PLAN = [0, 0, 1, 1, 2, 1, 1, 2];   // 2 anchor, 4 mid, 2 hard
+  /* Sport mix. The library is football-heavy by nature (NFL rosters churn), so
+   * bias the draw toward basketball and away from baseball, and cap any one
+   * sport so a day can't turn into an all-MLB card. */
+  var SPORT_W = { NBA: 2.4, ANY: 1.2, NFL: 1.0, MLB: 0.5 };
+  var SPORT_CAP = { MLB: 2, NFL: 3, NBA: 4, ANY: 3 };
+
+  /* How many letters a category can serve at all.
+   *
+   * Uniform drawing quietly favoured the broadest categories: an era category
+   * is viable for all 25 letters, while "Played for the Cleveland Browns" only
+   * works for the handful of letters that franchise covers. So the broad ones
+   * showed up in every day's option list and ate ~10% of all slots, which is
+   * why one wording kept recurring. Damping by sqrt(breadth) evens that out
+   * without banning anything - a category that fits everywhere is still
+   * eligible everywhere, it just stops crowding out the specific ones. */
+  var _breadth = null;
+  function breadthOf(c) {
+    if (!_breadth) {
+      _breadth = {};
+      var letters = D.letters || [];
+      for (var i = 0; i < letters.length; i++) {
+        var ids = D.byLetter[letters[i]] || [];
+        for (var j = 0; j < ids.length; j++) _breadth[ids[j]] = (_breadth[ids[j]] || 0) + 1;
+      }
+    }
+    return _breadth[c.i] || 1;
+  }
+  function wOf(c) {
+    return (SPORT_W[c.s || 'ANY'] || 1) / Math.sqrt(breadthOf(c));
+  }
 
   function viableFor(L) {
     var l = L.toLowerCase(), ids = D.byLetter[L] || [];
     return ids.map(function (i) { return D.cats[i]; });
+  }
+  /* The letters a puzzle can actually roll — also the wheel's segments, so the
+   * spin shows exactly the pool the draw comes from. */
+  function wheelLetters() {
+    if (!data()) return [];
+    return (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
   }
   function build(seed) {
     if (!data()) return null;
@@ -129,17 +172,27 @@
     var tot = w.reduce(function (a, b) { return a + b; }, 0), roll = r() * tot, L = pick[pick.length - 1];
     for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
     var avail = viableFor(L);
-    var out = [], used = {}, byTag = {};
+    var out = [], used = {}, byTag = {}, bySport = {};
+    function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
+    function draw(opts) {                       // weighted by sport AND breadth
+      var tot = 0, i;
+      for (i = 0; i < opts.length; i++) tot += wOf(opts[i]);
+      var roll = r() * tot;
+      for (i = 0; i < opts.length; i++) { roll -= wOf(opts[i]); if (roll <= 0) return opts[i]; }
+      return opts[opts.length - 1];
+    }
     TIER_PLAN.forEach(function (want) {
       var opts = avail.filter(function (c) {
-        return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2;
+        return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2 && freeSport(c);
       });
-      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && (byTag[c.g] || 0) < 2; });
+      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && (byTag[c.g] || 0) < 2 && freeSport(c); });
+      if (!opts.length) opts = avail.filter(function (c) { return !used[c.i] && freeSport(c); });
       if (!opts.length) opts = avail.filter(function (c) { return !used[c.i]; });
       if (!opts.length) return;
-      var c = opts[Math.floor(r() * opts.length)];
+      var c = draw(opts);
       used[c.i] = 1; byTag[c.g] = (byTag[c.g] || 0) + 1;
-      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
+      bySport[c.s || 'ANY'] = (bySport[c.s || 'ANY'] || 0) + 1;
+      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
     });
     return { letter: L, cats: out, seed: seed };
   }
@@ -214,7 +267,7 @@
 
   return {
     setData: setData, data: function () { return data(); },
-    daily: daily, practice: practice, build: build,
+    daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     test: test, rarityOf: rarityOf, CATS_PER: CATS_PER
   };

@@ -7,20 +7,28 @@
      Kept out of the index so the site is not crawled as a set of near-empty pages. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $245M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
+<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $170M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8">
 <link rel="canonical" href="https://runthe.gg/baseball/">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
-<meta property="og:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
+<meta property="og:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Diamond — draft an all-time MLB roster and chase the perfect season.">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
-<meta name="twitter:description" content="Draft an all-time MLB roster under a $245M cap. Simulate 162 games. Win the World Series.">
+<meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
-"description":"Draft an all-time MLB roster from 1901 to 2025 under a $245M salary cap, then simulate a 162-game season and chase the World Series.",
+"description":"Draft an all-time MLB roster from 1901 to 2025 under a $170M salary cap, then simulate a 162-game season and chase the World Series.",
 "genre":["Sports","Simulation","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
 "playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
@@ -306,10 +314,14 @@ h1,h2,h3{margin:0}
 .sim-feed{max-height:400px;overflow-y:auto;margin:12px 0}
 .sim-game{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
   border-bottom:1px solid rgba(0,0,0,.06);font-family:var(--fn);font-size:13px}
-.sim-game .gnum{color:var(--dim-2);width:36px;font-weight:700}
-.sim-game .gscore{font-weight:700;flex:1;text-align:right}
+.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto}
+.sim-game .gopp{flex:1;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;padding:0 8px}
+.sim-game .gscore{font-weight:800;width:22px;text-align:right;flex:0 0 auto}
 .sim-game .gw{color:var(--green)} .sim-game .gl{color:var(--red)}
-.sim-game .gruns{width:60px;text-align:center}
+.sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
+.sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
+.sim-game.marquee .gopp{color:var(--gold);font-weight:700}
 .sim-progress{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0;justify-content:center}
 .sim-pip{width:5px;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
@@ -357,6 +369,137 @@ h1,h2,h3{margin:0}
 .rslot .rname{font-family:var(--fp);font-size:15px;font-weight:700;flex:1}
 .rslot .rteam{font-family:var(--fn);font-size:10px;color:var(--dim);font-weight:600}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
+.rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
+.rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
+
+/* ─── results v2 ─── */
+.ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
+  border-radius:16px;overflow:hidden;background:var(--grad-panel);
+  border:1px solid rgba(0,0,0,.10);box-shadow:0 4px 16px -6px rgba(0,0,0,.18)}
+.ro-hero.win{border-color:rgba(184,134,11,.55);
+  background:linear-gradient(180deg,#f7efd8,#efe3c6);box-shadow:0 6px 22px -8px rgba(184,134,11,.4)}
+.ro-hero.lose{background:linear-gradient(180deg,#f2ece0,#e9e0d0)}
+.ro-ribbon{display:inline-block;font-family:var(--fn);font-size:10.5px;font-weight:800;
+  letter-spacing:.14em;text-transform:uppercase;color:#7a5c12;background:rgba(184,134,11,.14);
+  border:1px solid rgba(184,134,11,.35);padding:4px 12px;border-radius:99px;margin-bottom:12px}
+.ro-record{font-family:var(--fd);font-size:clamp(48px,15vw,76px);line-height:.95;letter-spacing:.02em}
+.ro-record .w{color:var(--green)} .ro-record .l{color:var(--red)} .ro-record .d{color:var(--dim);margin:0 6px}
+.ro-verdict{font-family:'Righteous',var(--fd);font-size:clamp(18px,5vw,24px);text-transform:uppercase;
+  letter-spacing:.03em;margin-top:8px;color:var(--ink)}
+.ro-verdict.ring{color:var(--gold)}
+.ro-sub{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);margin-top:5px}
+
+.ro-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.ro-cell{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:12px;
+  padding:12px 8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-cell .cv{font-family:var(--fd);font-size:30px;line-height:1;color:var(--ink)}
+.ro-cell .cv .u{font-size:15px;color:var(--dim-2)}
+.ro-cell .cv.gold{color:var(--gold)} .ro-cell .cv.green{color:var(--green)}
+.ro-cell .cl{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+.ro-meter{height:5px;border-radius:99px;background:rgba(0,0,0,.09);margin-top:8px;overflow:hidden}
+.ro-meter i{display:block;height:100%;border-radius:99px;background:var(--grad-gold)}
+
+.ro-coach{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
+  padding:15px 16px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-coach .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+.ro-coach .ceyebrow{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ro-arch{font-family:'Righteous',var(--fd);font-size:14px;color:var(--leather);
+  background:rgba(139,109,76,.12);border:1px solid rgba(139,109,76,.3);
+  padding:3px 11px;border-radius:99px;letter-spacing:.02em}
+.ro-takes{display:flex;flex-direction:column;gap:6px}
+.ro-take{display:flex;align-items:flex-start;gap:8px;font-family:var(--fb);font-size:13px;line-height:1.35}
+.ro-take .ic{flex:0 0 auto;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  font-size:10px;font-weight:800;margin-top:1px;font-family:var(--fn)}
+.ro-take.pos .ic{background:rgba(46,125,50,.16);color:var(--green)}
+.ro-take.neg .ic{background:rgba(192,57,43,.14);color:var(--red)}
+.ro-take .tt{color:var(--ink)}
+.ro-proj{font-family:var(--fn);font-size:12px;color:var(--dim);margin-top:11px;
+  padding-top:11px;border-top:1px solid rgba(0,0,0,.08)}
+.ro-proj b{color:var(--ink);font-weight:800}
+
+.sq-verdict{text-align:center;font-family:'Righteous',var(--fd);font-size:clamp(18px,5.5vw,26px);
+  text-transform:uppercase;letter-spacing:.02em;margin-top:14px;color:var(--leather)}
+.sq-verdict.great{color:var(--gold)}
+.ro-chemlinks{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;justify-content:center}
+.ro-chemlink{font-family:var(--fn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
+  background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
+.ro-chemlink.fam{background:rgba(184,134,11,.14);color:var(--gold);border-color:rgba(184,134,11,.3)}
+
+/* ─── new badges panel (results) ─── */
+.newbadges{background:var(--panel);border:1px solid rgba(184,134,11,.35);border-radius:14px;
+  padding:14px 16px;margin:12px 0;box-shadow:0 2px 8px -2px rgba(184,134,11,.3)}
+.newbadges .nb-hd{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.nb-list{display:flex;flex-direction:column;gap:8px}
+.nb-item{display:flex;align-items:center;gap:10px;animation:nbin .4s ease both}
+@keyframes nbin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.nb-item .bdg-ic{flex:0 0 auto}
+.nb-item .nb-t{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink)}
+.nb-item .nb-d{font-size:11px;color:var(--dim)}
+.newbadges .nb-more{font-size:11px;color:var(--dim-2);margin-top:8px;font-family:var(--fn);font-weight:600}
+.btn.trophy-cta{margin-top:10px}
+
+/* ─── badge medallion ─── */
+.bdg-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+  font-size:15px;border:2px solid rgba(0,0,0,.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
+.bdg-ic.bronze{background:linear-gradient(160deg,#c88a4a,#8a5a2a)}
+.bdg-ic.silver{background:linear-gradient(160deg,#cfd4da,#9aa2ab)}
+.bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
+.bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
+.bdg-ic.off{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+
+/* ─── bottom sheet ─── */
+.sheet{position:fixed;inset:0;z-index:120;display:none}
+.sheet.on{display:block}
+.sheet-scrim{position:absolute;inset:0;background:rgba(30,20,10,.5);animation:scrimin .25s ease}
+@keyframes scrimin{from{opacity:0}to{opacity:1}}
+.sheet-inner{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;
+  background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 30px -8px rgba(0,0,0,.4);animation:sheetup .32s cubic-bezier(.33,1,.68,1)}
+@keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+.sheet-grab{width:40px;height:4px;border-radius:99px;background:rgba(0,0,0,.18);margin:8px auto 4px}
+.sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px}
+.sheet-title{font-family:'Righteous',var(--fd);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.sheet-x{background:none;border:none;font-size:28px;line-height:1;color:var(--dim);cursor:pointer;padding:0 4px}
+@media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
+  bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
+
+/* ─── trophy case ─── */
+.trophy-career{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.trophy-career .stk{background:var(--panel);border:1px solid rgba(0,0,0,.08);border-radius:10px;
+  padding:10px 6px;text-align:center}
+.trophy-career .stk .sv{font-family:var(--fd);font-size:24px;line-height:1;color:var(--ink)}
+.trophy-career .stk .sl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+.trophy-group{margin-bottom:16px}
+.trophy-group .tg-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.trophy-group .tg-name{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim)}
+.trophy-group .tg-count{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
+.trophy-grid{display:flex;flex-direction:column;gap:6px}
+.ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(0,0,0,.07);
+  border-radius:10px;padding:9px 12px}
+.ach.locked{opacity:.62}
+.ach .ach-t{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink)}
+.ach .ach-d{font-size:11px;color:var(--dim);margin-top:1px}
+.trophy-note{text-align:center;font-size:11px;color:var(--dim-2);margin:10px 0 0}
+
+/* ─── position chooser ─── */
+.pos-sub{font-size:13px;color:var(--dim);margin:0 0 12px}
+.pos-opts{display:flex;flex-direction:column;gap:8px}
+.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(0,0,0,.10);
+  border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;
+  transition:border-color .12s,transform .1s}
+.pos-opt:active{transform:scale(.99)}
+.pos-opt.natural{border-color:rgba(46,125,50,.4);box-shadow:0 0 0 1px rgba(46,125,50,.15)}
+.pos-opt .pchip{flex:0 0 auto;min-width:42px;text-align:center;padding:6px 0;border-radius:8px;
+  color:#fff;font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.04em}
+.pos-opt .pmeta{flex:1;min-width:0}
+.pos-opt .pmeta .pname{font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
+.pos-opt .pmeta .pnote{font-size:11px;color:var(--dim-2);margin-top:1px}
+.pos-opt .pgo{font-size:20px;color:var(--dim-2)}
 
 /* ─── era picker ─── */
 .era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
@@ -421,11 +564,13 @@ h1,h2,h3{margin:0}
   <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
+    <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
   </div>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
       href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+      href="/baseball/how-to-play.html">How to play</a><span>&middot;</span><a
       href="/" target="_blank" rel="noopener">More games</a></p>
     <p class="src">WAR data from Baseball-Reference. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
   </footer>
@@ -443,7 +588,7 @@ h1,h2,h3{margin:0}
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). You see the players you can draft from that roster. Fill any open position — you choose the order.</p>
-    <p><b style="color:var(--ink)">Budget.</b> You have $245M to fill all twelve spots. Prices are based on WAR — superstars cost a premium, so you can't stack legends everywhere.</p>
+    <p><b style="color:var(--ink)">Budget.</b> You have $170M to fill all twelve spots. Prices are based on WAR — superstars cost a premium, so you can't stack legends everywhere.</p>
     <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starting pitchers, and a closer. Players must be eligible for the position you slot them into.</p>
     <p><b style="color:var(--ink)">Chemistry.</b> Teammates from the same team-season, franchise loyalists, and batterymates boost your chemistry multiplier.</p>
     <p><b style="color:var(--ink)">Season.</b> Your roster simulates a full 162-game season using real historical WAR. Offense is driven by your hitters, defense by your pitchers and fielders.</p>
@@ -460,7 +605,7 @@ h1,h2,h3{margin:0}
       <span class="eyebrow" id="d-count">Spin 1 of 12</span>
     </div>
     <div class="capline">
-      <div class="amt num" id="c-amt">$245.0M</div>
+      <div class="amt num" id="c-amt">$170.0M</div>
       <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">None</span></div>
     </div>
     <div class="bar"><i id="c-bar" style="width:100%"></i></div>
@@ -487,6 +632,22 @@ h1,h2,h3{margin:0}
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
 </div>
 
+<div class="screen" id="s-squad">
+  <div class="sim-header">
+    <div class="eyebrow">Your roster is set</div>
+    <h2 class="display" style="font-size:30px;margin:4px 0">The squad</h2>
+  </div>
+  <div class="field" id="sq-field"></div>
+  <div class="sq-verdict" id="sq-verdict"></div>
+  <div class="ro-coach" style="margin-top:12px">
+    <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
+    <div class="ro-takes" id="sq-takes"></div>
+    <div class="ro-chemlinks" id="sq-chemlinks"></div>
+  </div>
+  <button class="btn" id="b-playball" style="margin-top:14px">&#9918; Play the season</button>
+  <div style="margin-top:10px"><button class="btn ghost sm" id="b-squad-quit">Quit this run</button></div>
+</div>
+
 <div class="screen" id="s-season">
   <div class="sim-header">
     <div class="eyebrow">162-game season</div>
@@ -510,19 +671,36 @@ h1,h2,h3{margin:0}
 </div>
 
 <div class="screen" id="s-over">
-  <div class="result-card" id="r-card">
-    <div class="rc-title" id="r-title">Season over</div>
-    <div class="rc-record" id="r-record"></div>
-    <div class="rc-outcome" id="r-outcome"></div>
-    <div class="rc-chem" id="r-chem"></div>
+  <div class="ro-hero" id="ro-hero">
+    <div class="ro-ribbon" id="ro-ribbon"></div>
+    <div class="ro-record" id="ro-record"></div>
+    <div class="ro-verdict" id="ro-verdict"></div>
+    <div class="ro-sub" id="ro-sub"></div>
   </div>
   <div id="r-goat" style="display:none"></div>
+
+  <div class="ro-cells">
+    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl">Team rating</div>
+      <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
+    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl">All-time rank</div></div>
+    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl">Draft grade</div></div>
+  </div>
+
+  <div class="ro-coach">
+    <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="ro-arch"></span></div>
+    <div class="ro-takes" id="ro-takes"></div>
+    <div class="ro-proj" id="ro-proj"></div>
+    <div class="ro-chemlinks" id="ro-chemlinks"></div>
+  </div>
+
+  <div id="ro-newbadges"></div>
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
   <div class="share-row">
-    <button class="btn" id="b-share">Share result</button>
+    <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
   <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
+  <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
@@ -533,15 +711,125 @@ h1,h2,h3{margin:0}
 
 </div><!-- .wrap -->
 
-<script src="engine.js?v=4"></script>
-<script src="run.js?v=3"></script>
+<div class="sheet" id="sheet-pos" aria-hidden="true">
+  <div class="sheet-scrim" data-close-pos></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title" id="pos-title">Where to play</h3>
+      <button class="sheet-x" data-close-pos aria-label="Close">&times;</button>
+    </div>
+    <p class="pos-sub" id="pos-sub"></p>
+    <div class="pos-opts" id="pos-opts"></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-trophy" aria-hidden="true">
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Trophy case</h3>
+      <button class="sheet-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="trophy-career" id="trophy-career"></div>
+    <div class="trophy-body" id="trophy-body"></div>
+    <p class="trophy-note">Badges are kept in this browser. Play more seasons to unlock them all.</p>
+  </div>
+</div>
+
+<script src="engine.js?v=6"></script>
+<script src="run.js?v=5"></script>
+<script src="achievements.js?v=1"></script>
 <script>
 (function(){
 'use strict';
 
-const E=window.RTD_ENGINE, R=window.RTD_RUN;
+const E=window.RTD_ENGINE, R=window.RTD_RUN, ACH=window.RTD_ACH;
 let DATA=null, RUN=null, activeTab='ALL', lastChem=1;
 let sortKey='war', sortAsc=false;
+
+/* analytics helper (no-op if GA not present) */
+function ga(ev,params){try{if(window.gtag)window.gtag('event',ev,params||{});}catch(_){}}
+
+/* ─── history persistence (derive-everything: store compact rows only) ─── */
+const HIST_KEY='rtd_history', HIST_MAX=400;
+function loadHistory(){
+  try{const raw=localStorage.getItem(HIST_KEY);const a=raw?JSON.parse(raw):[];return Array.isArray(a)?a:[];}
+  catch(_){return [];}
+}
+function saveHistory(rows){
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(rows.slice(-HIST_MAX)));}catch(_){}
+}
+function rowFromRun(o){
+  const links=(o.chemistry&&o.chemistry.links||[]).filter(l=>l.value>0).map(l=>l.type);
+  let bps=null;try{bps=R.bestPossibleSquad(RUN,DATA);}catch(_){}
+  const last=(RUN.playoffs&&RUN.playoffs.rounds)?RUN.playoffs.rounds[RUN.playoffs.rounds.length-1]:null;
+  return {
+    ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
+    rating:o.rating!=null?Math.round(o.rating):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
+    chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
+    spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
+    efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
+    chemLinks:[...new Set(links)],era:RUN.era||null,
+    eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
+    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
+  };
+}
+let lastNewBadges=[];
+function recordRun(o){
+  if(!ACH){lastNewBadges=[];return;}
+  const prev=loadHistory();
+  const row=rowFromRun(o);
+  try{lastNewBadges=ACH.newlyEarned(prev,row);}catch(_){lastNewBadges=[];}
+  saveHistory(prev.concat([row]));
+  try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
+  lastNewBadges.forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
+}
+function badgeIc(a,earned){
+  const em=a.tier==='legend'?'&#128081;':a.tier==='gold'?'&#127942;':'&#9899;';
+  return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'">'+(earned?em:'&#128274;')+'</span>';
+}
+
+/* ─── new-badges panel on the results screen ─── */
+function paintNewBadges(){
+  const el=$('ro-newbadges');el.innerHTML='';
+  if(!lastNewBadges||!lastNewBadges.length)return;
+  const show=lastNewBadges.slice(0,6);
+  el.innerHTML='<div class="newbadges"><div class="nb-hd">'+lastNewBadges.length+
+    (lastNewBadges.length===1?' badge earned':' badges earned')+'</div><div class="nb-list">'+
+    show.map((a,i)=>'<div class="nb-item" style="animation-delay:'+(i*70)+'ms">'+badgeIc(a,true)+
+      '<div><div class="nb-t">'+esc(a.name)+'</div><div class="nb-d">'+esc(a.desc)+'</div></div></div>').join('')+
+    '</div>'+(lastNewBadges.length>6?'<div class="nb-more">and '+(lastNewBadges.length-6)+' more</div>':'')+'</div>';
+}
+
+/* ─── trophy case ─── */
+function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-hidden','false');}
+function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
+function renderTrophy(){
+  const rows=loadHistory();const ev=ACH.evaluate(rows);
+  const st=ev.stats;
+  $('trophy-career').innerHTML=[
+    ['Seasons',st.runs],['Titles',st.titles],
+    ['Best rank',st.bestRank?('#'+st.bestRank):'—'],['Day streak',ev.play.best],
+  ].map(s=>'<div class="stk"><div class="sv">'+s[1]+'</div><div class="sl">'+s[0]+'</div></div>').join('');
+  const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
+  ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
+  ev.locked.forEach(a=>byGroup[a.group]&&byGroup[a.group].locked.push(a));
+  $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
+    'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
+    ACH.GROUPS.map(g=>{
+      const grp=byGroup[g];const all=grp.earned.concat(grp.locked);
+      return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
+        '</span><span class="tg-count">'+grp.earned.length+'/'+all.length+'</span></div><div class="trophy-grid">'+
+        all.map(a=>{const earned=grp.earned.includes(a);
+          return '<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
+            '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
+        }).join('')+'</div></div>';
+    }).join('');
+}
+function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
 const $=id=>document.getElementById(id);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
@@ -949,6 +1237,11 @@ async function boot(){
     const res=await fetch('data/players.json?v=2');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
+    // Curated real relationships (families) — non-fatal if it fails to load.
+    try{
+      const cres=await fetch('data/chemistry.json?v=1');
+      if(cres.ok) E.setCuratedChemistry(await cres.json());
+    }catch(_){}
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
     if(hasPositions) E.setPositionsAvailable(true);
@@ -974,6 +1267,10 @@ $('b-quit').addEventListener('click',()=>{
 });
 $('b-again').addEventListener('click',()=>{RUN=null;show('s-intro');heroSync();});
 $('b-share').addEventListener('click',shareResult);
+$('b-trophy').addEventListener('click',openTrophy);
+$('b-trophy-2').addEventListener('click',openTrophy);
+document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
+document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
 document.addEventListener('visibilitychange',heroSync);
 
 /* ─── era mode ─── */
@@ -1111,9 +1408,9 @@ function paintOpts(draw){
       const key=tile.dataset.key;
       const p=DATA.allPlayers[key];
       if(!p) return;
-      R.sign(RUN,p);
-      if(RUN.phase===R.PHASES.SEASON) startSeason();
-      else nextSpin();
+      const choices=signChoices(p);
+      if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
+      else openPosChooser(p, choices);
     });
   });
 
@@ -1123,8 +1420,16 @@ function paintOpts(draw){
 function optTile(r,i){
   const p=r.p,block=r.block;
   const pos=p.pp||(p.ep?p.ep.split(';')[0]:'');
-  const slot=R.slotForPlayer(RUN,p);
-  const destSlot=slot!==null?E.SLOTS[slot]:null;
+  // Distinct open positions this player could fill (SP1/SP2 collapsed).
+  let destSlot=null;
+  if(!block){
+    const bases=[];const seen=new Set();
+    for(const idx of R.eligibleOpenSlots(RUN,p)){
+      const bs=E.SLOTS[idx].replace(/[12]$/,'');
+      if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
+    }
+    if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+  }
   let chemHtml='';
   if(!block&&RUN.roster.length>0){
     const preview=R.previewSigning(RUN,p);
@@ -1140,7 +1445,7 @@ function optTile(r,i){
     '<div class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
-    '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot&&!block?' &rarr; '+destSlot:'')+'</div>'+
+    '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
     '<div class="tf"><div class="pts"><b>'+p.w.toFixed(1)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
     '</button>';
 }
@@ -1161,6 +1466,90 @@ function paintRespins(){
     el.innerHTML='';
   }
 }
+
+/* ─── position chooser ─── */
+function slotBase(name){return name.replace(/[12]$/,'');}
+/* Distinct placement choices for a player among open slots. SP1/SP2 collapse
+ * (identical), so the user only chooses between real positions. */
+function signChoices(p){
+  const idxs=R.eligibleOpenSlots(RUN,p);
+  const out=[];const seenSP=new Set();
+  for(const i of idxs){
+    const name=E.SLOTS[i];const base=slotBase(name);
+    if(base==='SP'){if(seenSP.has('SP'))continue;seenSP.add('SP');}
+    const natural=(p.pp===name)||(p.pp&&base===p.pp)||
+      (name==='SP1'&&p.r==='p')||(name==='CL'&&p.r==='p');
+    out.push({slotIdx:i,name,base,natural});
+  }
+  // natural position first, DH last
+  out.sort((a,b)=>{
+    if(a.natural!==b.natural)return a.natural?-1:1;
+    if((a.base==='DH')!==(b.base==='DH'))return a.base==='DH'?1:-1;
+    return 0;
+  });
+  return out;
+}
+function afterSign(){ if(RUN.phase===R.PHASES.SEASON) showSquad(); else nextSpin(); }
+function signPlayer(p,slotIdx){
+  try{R.sign(RUN,p,slotIdx);}catch(e){console.error(e);return;}
+  closeSheet('sheet-pos');
+  afterSign();
+}
+function openPosChooser(p,choices){
+  $('pos-title').textContent=lastName(p.n);
+  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+p.s+' '+p.t+')';
+  $('pos-opts').innerHTML=choices.map((ch,i)=>{
+    const note=ch.base==='DH'?'Designated hitter':ch.natural?'Primary position':
+      (p.r==='p'?'Pitcher':'Also played here');
+    return '<button class="pos-opt'+(ch.natural?' natural':'')+'" data-slot="'+ch.slotIdx+'">'+
+      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+ch.name+'</span>'+
+      '<span class="pmeta"><span class="pname">'+esc(ch.name==='DH'?'Designated Hitter':posLabel(ch.name))+'</span>'+
+      '<span class="pnote">'+note+'</span></span><span class="pgo">&rsaquo;</span></button>';
+  }).join('');
+  $('pos-opts').querySelectorAll('.pos-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>signPlayer(p,parseInt(btn.dataset.slot,10)));
+  });
+  openSheet('sheet-pos');
+}
+function posLabel(name){
+  const L={C:'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',SS:'Shortstop',
+    LF:'Left Field',CF:'Center Field',RF:'Right Field',DH:'Designated Hitter',
+    SP1:'Starting Pitcher',SP2:'Starting Pitcher',CL:'Closer'};
+  return L[name]||name;
+}
+
+/* ─── squad review (no pre-play odds) ─── */
+function showSquad(){
+  show('s-squad');
+  drawField($('sq-field'),false);
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const chem=E.resolveChemistry(tagged);
+  const structure=E.rosterStructure(tagged);
+  const rating=E.overallRating(E.teamWinPct(
+    E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
+    E.rosterRunPrevention(tagged,chem.multiplier)));
+  const cr=E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
+  const vd=$('sq-verdict');
+  vd.textContent=cr.verdict;
+  vd.className='sq-verdict'+(rating>=84?' great':'');
+  $('sq-arch').textContent=(structure.archetype&&structure.archetype.name)||'';
+  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
+  $('sq-takes').innerHTML=takes.length?takes.map(t=>
+    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
+  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+  const links=(chem.links||[]).filter(l=>l.value>0);
+  const uniq=[];const seen=new Set();
+  for(const l of links){if(!seen.has(l.label)){seen.add(l.label);uniq.push(l);}}
+  const chemPct=((chem.multiplier-1)*100).toFixed(1);
+  $('sq-chemlinks').innerHTML=(Math.abs(chem.multiplier-1)>0.0005?
+    '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
+    uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
+}
+$('b-playball').addEventListener('click',()=>startSeason());
+$('b-squad-quit').addEventListener('click',()=>{
+  if(!confirm('Quit this run? Your draft will be lost.'))return;
+  RUN=null;show('s-intro');heroSync();
+});
 
 /* ─── season sim ─── */
 function startSeason(){
@@ -1188,10 +1577,13 @@ function simGame(idx){
   const gp=idx+1;
   $('s-pace').textContent='Game '+gp+' of 162 | On pace for '+Math.round(result.record.wins/gp*162)+' wins';
   const feed=$('s-feed');
-  const row=document.createElement('div');row.className='sim-game';
-  row.innerHTML='<span class="gnum">G'+result.game+'</span><span class="gruns">'+result.yourRuns+' - '+result.oppRuns+'</span><span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
+  const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
+  const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
+  row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
+    '<span class="gruns">'+result.yourRuns+'&ndash;'+result.oppRuns+'</span>'+
+    '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
   feed.insertBefore(row,feed.firstChild);
-  if(feed.children.length>20) feed.removeChild(feed.lastChild);
+  if(feed.children.length>18) feed.removeChild(feed.lastChild);
   const speed=idx<10?120:idx<40?60:idx<100?30:15;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
@@ -1243,41 +1635,73 @@ function startPlayoffs(){
 }
 
 /* ─── result ─── */
+function ordinal(n){
+  const s=['th','st','nd','rd'],v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
+}
 function showResult(){
   show('s-over');
   const o=RUN.outcome;
-  $('r-record').innerHTML='<span style="color:var(--green)">'+o.wins+'</span><span style="color:var(--dim);margin:0 6px">-</span><span style="color:var(--red)">'+o.losses+'</span>';
-  if(o.titleWon){
-    $('r-title').textContent='World Series Champions';
-    $('r-outcome').textContent='You won it all';
-    $('r-outcome').className='rc-outcome ring';
-    $('r-card').style.borderColor='var(--gold)';
-  }else if(o.madePlayoffs){
-    const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
-    $('r-title').textContent='Season over';
-    $('r-outcome').textContent='Eliminated in the '+last.round;
-    $('r-outcome').className='rc-outcome lost';
-    $('r-card').style.borderColor='';
-  }else{
-    $('r-title').textContent='Season over';
-    $('r-outcome').textContent='Missed the playoffs';
-    $('r-outcome').className='rc-outcome lost';
-    $('r-card').style.borderColor='';
-  }
-  const chemPct=((o.chemistry.multiplier-1)*100).toFixed(1);
-  $('r-chem').textContent='Chemistry: '+(o.chemistry.multiplier>=1?'+':'')+chemPct+'%';
-  if(o.chemistry.links.length>0){
-    $('r-chem').textContent+=' ('+o.chemistry.links.slice(0,3).map(l=>l.label).join(', ')+')';
-  }
+  recordRun(o);
+  paintNewBadges();
+  const hero=$('ro-hero');
+
+  // Hero: ribbon (all-time standing), record, verdict
+  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">&ndash;</span><span class="l">'+o.losses+'</span>';
+  const rank=o.allTimeRank;
+  $('ro-ribbon').textContent=rank?(ordinal(rank)+'-greatest team of all time'):'Season complete';
+  const vd=$('ro-verdict');
+  if(o.titleWon){hero.className='ro-hero win';vd.textContent='World Series Champions';vd.className='ro-verdict ring';}
+  else if(o.madePlayoffs){const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
+    hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
+  else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
+  $('ro-sub').textContent=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+
+  // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';
   if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time &mdash; '+o.wins+' wins</div>';}
   else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record &mdash; 116 wins</div>';}
 
+  // Big cells: rating / rank / draft grade
+  const rating=o.rating!=null?Math.round(o.rating):null;
+  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'&mdash;';
+  $('ro-rating-bar').style.width=(rating!=null?Math.max(3,rating):0)+'%';
+  $('ro-rank').textContent=rank?('#'+rank):'&mdash;';
+  const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
+  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'&mdash;';
+
+  // Coach's take
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const cr=E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
+  $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
+  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
+  $('ro-takes').innerHTML=takes.length?takes.map(t=>
+    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
+  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+
+  // Projection line
+  if(RUN&&R.projectSeason){
+    const proj=R.projectSeason(RUN,160);
+    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'&ndash;'+proj.hi+' wins</b> &middot; '+
+      '<b>'+proj.playoffPct+'%</b> playoffs &middot; <b>'+proj.titlePct+'%</b> to win it all';
+  }
+
+  // Chemistry links (family highlighted)
+  const links=(o.chemistry.links||[]).filter(l=>l.value>0);
+  const uniq=[];const seen=new Set();
+  for(const l of links){if(!seen.has(l.label)){seen.add(l.label);uniq.push(l);}}
+  const chemPct=((o.chemistry.multiplier-1)*100).toFixed(1);
+  $('ro-chemlinks').innerHTML=(Math.abs(o.chemistry.multiplier-1)>0.0005?
+    '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
+    uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
+
+  // Stat row
   $('r-stats').innerHTML=[
     {label:'Runs scored',value:o.totalRS},{label:'Runs allowed',value:o.totalRA},
     {label:'R/G',value:(o.totalRS/162).toFixed(1)},{label:'RA/G',value:(o.totalRA/162).toFixed(1)},
   ].map(s=>'<div class="stat-box"><div class="sv">'+s.value+'</div><div class="sl">'+s.label+'</div></div>').join('');
 
+  // Roster with WAR
   const rosterDiv=$('r-roster');
   rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
   const roster=document.createElement('div');roster.className='roster-final';
@@ -1287,28 +1711,162 @@ function showResult(){
     div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="rname">'+esc(p.n)+'</span>'+
       '<span class="rteam">'+p.s+' '+esc(p.t)+'</span>'+
-      '<span class="rprice">'+M(p.p)+'</span>';
+      '<span class="rwar">'+p.w.toFixed(1)+'</span>';
     roster.appendChild(div);
   });
   rosterDiv.appendChild(roster);
+
+  if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
+}
+function gradeFor(pct){
+  if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
+  if(pct>=85)return'B+';if(pct>=80)return'B';if(pct>=74)return'B-';
+  if(pct>=68)return'C+';if(pct>=60)return'C';if(pct>=50)return'D';return'F';
+}
+
+/* ─── confetti ─── */
+function fireConfetti(gold){
+  if(reduceMotion())return;
+  let cv=document.getElementById('confetti-cv');
+  if(!cv){cv=document.createElement('canvas');cv.id='confetti-cv';
+    cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:200';
+    document.body.appendChild(cv);}
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const W=cv.width=innerWidth*dpr,H=cv.height=innerHeight*dpr;
+  const ctx=cv.getContext('2d');
+  const cols=gold?['#e8c840','#f5f0e6','#b8860b','#d4772c']:['#2e7d32','#b8860b','#f5f0e6','#c0392b'];
+  const N=gold?200:150;const parts=[];
+  for(let i=0;i<N;i++)parts.push({
+    x:W*(.5+(Math.random()-.5)*.4),y:H*.2+Math.random()*H*.1,
+    vx:(Math.random()-.5)*10*dpr,vy:(Math.random()*-6-3)*dpr,
+    g:(.22+Math.random()*.16)*dpr,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,
+    sz:(5+Math.random()*6)*dpr,c:cols[i%cols.length],round:Math.random()<.35});
+  const t0=(window.performance||Date).now();const life=gold?4200:3400;
+  (function frame(){
+    const t=(window.performance||Date).now()-t0;
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.vx*=.995;p.rot+=p.vr;
+      const a=Math.max(0,1-t/life);
+      ctx.save();ctx.globalAlpha=a;ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;
+      if(p.round){ctx.beginPath();ctx.arc(0,0,p.sz/2,0,6.28);ctx.fill();}
+      else ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*.6);
+      ctx.restore();
+    }
+    if(t<life)requestAnimationFrame(frame);
+    else{ctx.clearRect(0,0,W,H);cv.remove();}
+  })();
 }
 
 /* ─── share ─── */
-function shareResult(){
+function shareVerdict(o){
+  if(o.isGOAT) return 'Greatest of all time';
+  if(o.titleWon) return 'World Series Champions';
+  if(o.beatRecord) return 'Tied the all-time record';
+  if(o.madePlayoffs){const l=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];return 'Out in the '+l.round;}
+  return 'Missed the playoffs';
+}
+function shareLines(o){
+  const era=RUN.era?' ('+RUN.era+')':'';
+  let t='Run The Diamond'+era+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
+  if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
+  t+='\nCan you draft a better team?\nrunthe.gg/baseball';
+  return t;
+}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawShareCard(o){
+  const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');
+  // vintage cream ground
+  c.fillStyle='#e8dcc8';c.fillRect(0,0,W,H);
+  const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#f0e7d2');g.addColorStop(1,'#e2d4bb');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  // top leather band
+  c.fillStyle='#6b3410';c.fillRect(0,0,W,14);
+  const win=o.titleWon||o.beatRecord;
+  // kicker
+  c.textAlign='center';c.fillStyle='#b8860b';c.font='800 30px Archivo, sans-serif';
+  c.fillText('★  RUN THE DIAMOND  ★',W/2,118);
+  // all-time rank ribbon
+  if(o.allTimeRank){c.fillStyle='#7a5c12';c.font='700 26px Archivo, sans-serif';
+    c.fillText(ordinal(o.allTimeRank).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
+  // record
+  c.font='400 210px "Righteous", Impact, sans-serif';
+  const rec=o.wins+'–'+o.losses;
+  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('–').width, lt=c.measureText(o.losses+'').width;
+  const tot=wt+dt+lt, sx=W/2-tot/2;
+  c.textAlign='left';
+  c.fillStyle='#2e7d32';c.fillText(o.wins+'',sx,368);
+  c.fillStyle='#8a7e6e';c.fillText('–',sx+wt,368);
+  c.fillStyle='#c0392b';c.fillText(o.losses+'',sx+wt+dt,368);
+  c.textAlign='center';
+  // verdict
+  c.fillStyle=win?'#b8860b':'#1a1a1a';c.font='400 62px "Righteous", Impact, sans-serif';
+  c.fillText(shareVerdict(o).toUpperCase(),W/2,452);
+  // three cells
+  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'—','#1a1a1a'],
+    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'—','#b8860b'],
+    ['CHEMISTRY',(o.chemistry.multiplier>=1?'+':'')+((o.chemistry.multiplier-1)*100).toFixed(0)+'%','#2e7d32']];
+  const cw=300,ch=150,gap=30,startx=W/2-(cw*3+gap*2)/2,cy=510;
+  cells.forEach((cell,i)=>{const x=startx+i*(cw+gap);
+    c.fillStyle='#f5f0e6';rr(c,x,cy,cw,ch,18);c.fill();
+    c.strokeStyle='rgba(0,0,0,.10)';c.lineWidth=2;rr(c,x,cy,cw,ch,18);c.stroke();
+    c.fillStyle=cell[2];c.font='400 66px "Righteous", Impact, sans-serif';c.fillText(cell[1]+'',x+cw/2,cy+82);
+    c.fillStyle='#8a7e6e';c.font='800 22px Archivo, sans-serif';c.fillText(cell[0],x+cw/2,cy+124);
+  });
+  // roster (two columns)
+  const roster=RUN.roster.map((p,i)=>({p,slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const order=['C','1B','2B','3B','SS','LF','CF','RF','DH','SP1','SP2','CL'];
+  roster.sort((a,b)=>order.indexOf(a.slot)-order.indexOf(b.slot));
+  const ry=730,rh=88,colw=500,colgap=40,cx0=W/2-(colw*2+colgap)/2;
+  roster.forEach((r,i)=>{const col=i%2,rowi=Math.floor(i/2);
+    const x=cx0+col*(colw+colgap),y=ry+rowi*rh;
+    c.fillStyle='#f5f0e6';rr(c,x,y,colw,rh-14,12);c.fill();
+    // pos chip
+    const pc=posColor(r.slot.replace(/[12]$/,''));
+    c.fillStyle=pc;rr(c,x+16,y+18,86,38,8);c.fill();
+    c.fillStyle='#fff';c.font='800 24px Archivo, sans-serif';c.textAlign='center';
+    c.fillText(r.slot,x+16+43,y+44);
+    c.textAlign='left';c.fillStyle='#1a1a1a';c.font='700 30px "Bitter", Georgia, serif';
+    let nm=r.p.n;if(nm.length>20)nm=nm.slice(0,19)+'…';
+    c.fillText(nm,x+118,y+38);
+    c.fillStyle='#8a7e6e';c.font='600 22px Archivo, sans-serif';
+    c.fillText(r.p.s+' '+r.p.t,x+118,y+64);
+    c.textAlign='right';c.fillStyle='#1a1a1a';c.font='800 28px Archivo, sans-serif';
+    c.fillText(r.p.w.toFixed(1),x+colw-18,y+50);c.textAlign='left';
+  });
+  // footer pill
+  c.textAlign='center';
+  c.fillStyle='#6b3410';rr(c,W/2-190,H-96,380,64,32);c.fill();
+  c.fillStyle='#f0ebe3';c.font='800 30px Archivo, sans-serif';
+  c.fillText('RUNTHE.GG/BASEBALL',W/2,H-54);
+  return cv;
+}
+async function shareResult(){
   if(!RUN||!RUN.outcome) return;
   const o=RUN.outcome;
-  const era=RUN.era?' ('+RUN.era+')':'';
-  let text='Run The Diamond'+era+'\n'+o.wins+'-'+o.losses+'\n';
-  if(o.titleWon) text+='World Series Champions!\n';
-  if(o.isGOAT) text+='Greatest of All Time\n';
-  text+='\nrunthe.gg/baseball';
-  if(navigator.share){navigator.share({text}).catch(()=>{});}
-  else if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>{
-      $('b-share').textContent='Copied!';
-      setTimeout(()=>{$('b-share').textContent='Share result';},2000);
-    });
-  }
+  ga('result_shared',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed'});
+  const text=shareLines(o);
+  const btn=$('b-share');const orig=btn.innerHTML;
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(_){}
+  let file=null;
+  try{
+    const cv=drawShareCard(o);
+    const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+    if(blob) file=new File([blob],'run-the-diamond.png',{type:'image/png'});
+  }catch(e){ console.error('share card',e); }
+  try{
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({text,files:[file]});return;
+    }
+    if(navigator.share){ await navigator.share({text});return; }
+  }catch(e){ if(e&&e.name==='AbortError')return; }
+  // fallback: copy text + download the image
+  try{ if(navigator.clipboard) await navigator.clipboard.writeText(text); }catch(_){}
+  if(file){ const url=URL.createObjectURL(file);const a=document.createElement('a');
+    a.href=url;a.download='run-the-diamond.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+  btn.textContent='Copied!';setTimeout(()=>{btn.innerHTML=orig;},2000);
 }
 
 /* ─── init ─── */

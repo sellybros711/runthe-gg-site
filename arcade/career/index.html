@@ -39,7 +39,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
@@ -48,7 +48,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -114,7 +114,7 @@
   .stop:not([style]):last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
   .stop .tm{font-weight:900; font-size:15.5px; color:var(--ink); min-width:0;}
   .stop .steptag{margin-left:auto; flex:0 0 auto; font-size:8.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); background:var(--card2); border:1px solid var(--line2); border-radius:999px; padding:3px 9px;}
-  .stop .steptag.last{color:var(--greenT); border-color:color-mix(in srgb, var(--green) 45%, transparent);}
+  .stop .steptag.last{color:var(--ink); border-color:color-mix(in srgb, var(--green) 60%, transparent); background:color-mix(in srgb, var(--green) 14%, var(--card2));}
   .stopgap{height:16px; width:26px; display:flex; justify-content:center;}
   .stopgap:before{content:""; width:2px; background:var(--line2);}
   .pathera{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); text-align:center;
@@ -301,20 +301,21 @@
 <script src="/arcade/challenge.js?v=1"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=2"></script>
-<script src="/arcade/mode.js?v=4"></script>
+<script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/archive.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/board.js?v=5"></script>
+<script src="/arcade/leaderboard.js?v=8"></script>
 <script src="/arcade/alltime.js?v=2"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=2"></script>
+<script src="/arcade/howto.js?v=3"></script>
 <script>
 (function(){
   'use strict';
@@ -709,6 +710,8 @@
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderSwitcher();
+    // the board is per-version, so follow the switch
+    try{ if(window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); }catch(e){}
     bootCurrentMode();
     toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
   }
@@ -765,6 +768,32 @@
       renderRealBoard();
     });
   }
+})();
+</script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there. */
+(function(){
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('career'):'career'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('career'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'in a row' });
+  }
+  /* mode.js decides which version's board this is. It can still be parsing
+     when the document is ready, and mounting without it would query the
+     all-sports board first and then switch - a wasted request and a visible
+     flicker on the wrong ranking. Wait briefly for it, then mount regardless
+     so a failed load can never leave the board unmounted. */
+  function ready(){
+    var tries=0;
+    (function wait(){
+      if(window.RTGMode || tries++>40) return go();
+      setTimeout(wait,25);
+    })();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
 })();
 </script>
 </body>

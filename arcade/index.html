@@ -46,8 +46,8 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
-    --hl:#F5822B; --hlT:#FF9D52;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF; --news:#64748B; --newsT:#9CADC0;
+    --hl:#FF8A3D; --hlT:#FF8A3D;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
@@ -56,7 +56,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#C25E12;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --newsT:#46586C; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0; --hlT:#B4530A;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -201,6 +201,51 @@
 
   /* Buy Arcade Card - arcade-cabinet banner: dark cabinet (screen + joystick +
      sports balls) on the left, orange->red gradient with the pitch on the right */
+  /* ---- Locked sport editions strip: makes the NBA/NFL/MLB versions of every game a
+       visible, tangible perk on the hub instead of a padlock a player only meets inside
+       a game. Non-members only; tapping opens the same Card paywall. ---- */
+  .editions{display:none; margin:20px 0 0; padding:15px 14px; border-radius:16px; text-align:center;
+    background:var(--card); border:1px solid var(--line2); box-shadow:var(--shadow);}
+  .editions.show{display:block;}
+  .ed-h{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:17px; color:var(--ink); margin:0 0 3px;}
+  .ed-s{font-size:12.5px; color:var(--mut); font-weight:600; margin:0 0 12px; line-height:1.45;}
+  .ed-row{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; max-width:340px; margin:0 auto;}
+  .ed-chip{appearance:none; cursor:pointer; font-family:var(--f); font-weight:900; font-size:13px;
+    display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 6px; border-radius:12px;
+    color:var(--ec); background:color-mix(in srgb, var(--ec) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--ec) 45%, transparent);}
+  .ed-chip:hover{background:color-mix(in srgb, var(--ec) 20%, transparent);}
+  .ed-chip svg{width:12px; height:12px; flex:0 0 auto; opacity:.85;}
+  .ed-nba{--ec:#F0653A;} .ed-nfl{--ec:#5FA052;} .ed-mlb{--ec:#2F6BFF;}
+
+  /* ---- Hub value banner: the Arcade Card pitch, always visible to non-members.
+       Leads with the 9 -> 36 games hook (the strongest differentiator) and the annual
+       price, so the value is merchandised on the landing surface instead of only
+       appearing as a wall when a free player runs out of plays. ---- */
+  .cardpitch{display:none; margin:22px 0 4px; border-radius:18px; padding:20px 18px; text-align:center;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--coral) 16%, var(--card)), var(--card));
+    border:1px solid color-mix(in srgb, var(--coral) 45%, var(--line2)); box-shadow:var(--shadow);}
+  .cardpitch.show{display:block;}
+  .cp-kicker{font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--coralT); text-transform:uppercase;}
+  .cp-head{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:clamp(24px,6vw,34px); line-height:1.05; margin:9px 0 4px; color:var(--ink);}
+  .cp-head s{color:var(--dim); text-decoration-thickness:2px; margin-right:6px;}
+  .cp-head b{color:var(--coralT); font-weight:400;}
+  .cp-sub{font-size:13.5px; color:var(--mut); font-weight:600; line-height:1.5; max-width:440px; margin:0 auto;}
+  .cp-perks{list-style:none; padding:0; margin:14px auto 0; max-width:330px; text-align:left;
+    display:grid; grid-template-columns:1fr; gap:7px;}
+  .cp-perks li{font-size:13px; font-weight:700; color:var(--ink); display:flex; gap:8px; align-items:flex-start;}
+  .cp-perks li i{color:var(--greenT); font-style:normal; flex:0 0 auto;}
+  .cp-cta{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px;
+    border-radius:13px; padding:14px 22px; min-height:52px; width:100%; max-width:330px; margin:16px auto 0;
+    display:block; background:var(--coral); color:#fff; box-shadow:var(--shadow);}
+  .cp-cta:hover{filter:brightness(1.06);}
+  .cp-price{font-size:12px; color:var(--mut); margin-top:10px; font-weight:700;}
+  .cp-price b{color:var(--ink);}
+  .cp-price s{color:var(--dim);}
+  .cp-save{display:inline-block; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+    color:#20140a; background:var(--gold); border-radius:999px; padding:3px 9px; margin-left:5px;}
   .arcade-buy{display:block; width:100%; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent;}
   .ab-card{display:flex; align-items:stretch; overflow:hidden; border-radius:16px; min-height:96px;
     background:linear-gradient(105deg,#FF9A2E 0%, #FF6A3D 48%, #F0384E 100%);
@@ -259,7 +304,7 @@
   .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
   .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
   #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
-  #pipK{--pc:var(--pink);} #pipA{--pc:var(--gold);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -267,30 +312,30 @@
   .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px;}
   @media (min-width:1100px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
   @media (max-width:640px){ .tiles{gap:11px;} }
-  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
+  .tile{--c:var(--blue); --onC:#fff; position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
-  .tile.match{--c:var(--blue);}
-  .tile.cross{--c:var(--news);}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
-  .tile.word{--c:var(--teal);}
-  .tile.guess{--c:var(--coral);}
-  .tile.table{--c:var(--gold);}
-  .tile.oddone{--c:var(--violet);}
-  .tile.career{--c:var(--green);}
-  .tile.rankit{--c:var(--pink);}
-  .tile.alma{--c:var(--gold);}
-  .tile.highlow{--c:var(--hl);}
+  .tile.match{--c:var(--blue); --onC:#fff;}
+  .tile.cross{--c:var(--news); --onC:#fff;}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
+  .tile.word{--c:var(--teal); --onC:#160B02;}
+  .tile.guess{--c:var(--brand2); --onC:#160B02;}
+  .tile.table{--c:var(--gold); --onC:#160B02;}
+  .tile.oddone{--c:var(--violet); --onC:#160B02;}
+  .tile.career{--c:var(--green); --onC:#160B02;}
+  .tile.rankit{--c:var(--pink); --onC:#160B02;}
+  .tile.alma{--c:var(--moss); --onC:#160B02;}
+  .tile.highlow{--c:var(--brand); --onC:#160B02;}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
   .tile.word .nm{color:var(--tealT);}
-  .tile.guess .nm{color:var(--coralT);}
+  .tile.guess .nm{color:var(--brand2T);}
   .tile.table .nm{color:var(--goldT);}
   .tile.oddone .nm{color:var(--violetT);}
   .tile.career .nm{color:var(--greenT);}
   .tile.rankit .nm{color:var(--pinkT);}
-  .tile.alma .nm{color:var(--goldT);}
-  .tile.highlow .nm{color:var(--hlT);}
+  .tile.alma .nm{color:var(--mossT);}
+  .tile.highlow .nm{color:var(--brandT);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
   .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.highlow{order:10;}
@@ -396,7 +441,7 @@
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
   /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
-  .tile.highlow .badge{background:var(--gold); color:#3a2600; text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
+  .tile.highlow .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
   .tile.highlow .badge svg{width:10px; height:10px;}
   /* High Low tile: Members Only sits just left of the Beta tag, top-right */
   .tile.highlow .tags{position:absolute; top:11px; right:12px; z-index:2; display:inline-flex; align-items:center; gap:6px;}
@@ -415,9 +460,18 @@
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
   .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
-    text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY, shadow keeps it legible on light accents */
-  .tile.cross .play{color:#fff;}   /* neutral silver pill reads better with dark text */
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
+  /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
+     Eight of the ten accents are light, so white text on them sat near 2:1 and
+     leaned entirely on a text-shadow. Blue and slate are the two dark ones and
+     genuinely want white — they keep the shadow, the rest do not need it. */
+  /* High Low is card-only: for non-members the PLAY pill greys out so the tile
+     reads as locked. It stays tappable on purpose - it opens the game page,
+     which is where the Arcade Card offer lives. */
+  .tile.highlow:not(.ismember) .play{background:var(--card3); color:var(--mut); text-shadow:none;
+    border:1px solid var(--line2); animation:none;}
+  .tile.highlow:not(.ismember):hover .play{filter:none; background:var(--card3);}
+  .tile.highlow:not(.ismember) .play .arw{opacity:.6;}
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
@@ -449,7 +503,7 @@
     .tile .badge{top:7px; left:8px; font-size:8.5px; padding:3px 6px;}
     .tile .status{top:7px; right:8px; font-size:8.5px; padding:3px 7px;}
     .tile .body{padding:11px 11px 11px;}
-    .tile .nm{font-size:15px;}
+    .tile .nm{font-size:15px; text-align:center;}
     .tile .desc{display:none;}
     .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
     /* Archive + Leaderboard: two pills can't fit "Leaderboard" in a half-width
@@ -503,13 +557,13 @@
       <main id="puzzles">
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 10 played</span></span>
         </div>
 
         <div class="tiles">
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stM">Ready</span>
+              <span class="status" id="stM">Ready</span>
               <svg viewBox="0 0 56 56"><g>
                 <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
                 <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
@@ -525,7 +579,7 @@
 
           <a class="tile cross" id="cardCross" href="/arcade/crossword/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stC">Ready</span>
+              <span class="status" id="stC">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#cwico)">
@@ -564,7 +618,7 @@
 
           <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stW">Ready</span>
+              <span class="status" id="stW">Ready</span>
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#wsico)">
@@ -597,7 +651,7 @@
 
           <a class="tile guess" id="cardGuess" href="/arcade/guess/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stG">Ready</span>
+              <span class="status" id="stG">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g>
                   <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
@@ -615,7 +669,7 @@
 
           <a class="tile table" id="cardTable" href="/arcade/table/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stT">Ready</span>
+              <span class="status" id="stT">Ready</span>
               <svg viewBox="0 0 56 56" class="jrot">
                 <!-- basketball tank: sleeveless, scoop neck -->
                 <g class="jz a">
@@ -647,7 +701,7 @@
 
           <a class="tile oddone" id="cardOdd" href="/arcade/oddone/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stO">Ready</span>
+              <span class="status" id="stO">Ready</span>
               <svg viewBox="0 0 56 56">
                 <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
                 <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
@@ -662,7 +716,7 @@
 
           <a class="tile career" id="cardCareer" href="/arcade/career/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stR">Ready</span>
+              <span class="status" id="stR">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M12 44 L22 24 L34 34 L46 12"/></g>
                 <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
@@ -677,7 +731,7 @@
 
           <a class="tile rankit" id="cardRank" href="/arcade/rankit/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stK">Ready</span>
+              <span class="status" id="stK">Ready</span>
               <svg viewBox="0 0 56 56">
                 <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
                 <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
@@ -693,7 +747,7 @@
 
           <a class="tile alma" id="cardAlma" href="/arcade/almamater/">
             <span class="cap" aria-hidden="true">
-              <span class="badge">Daily</span><span class="status" id="stA">Ready</span>
+              <span class="status" id="stA">Ready</span>
               <svg viewBox="0 0 56 56">
                 <path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/>
                 <path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/>
@@ -710,7 +764,7 @@
 
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
-              <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Card required</span><span class="tags"><span class="status" id="stH">Members only</span></span>
+              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members only</span>
               <svg viewBox="0 0 56 56">
                 <g class="hlup" fill="#F5822B"><path d="M17 8 L26 22 L8 22 Z"/></g>
                 <g class="hldn" fill="#F5822B" opacity=".62"><path d="M39 48 L48 34 L30 34 Z"/></g>
@@ -726,8 +780,32 @@
 
         <div class="double" id="double">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <span>Clean sweep!<span class="sub">You played all nine of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+          <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
+
+        <section class="editions" id="editions">
+          <h2 class="ed-h">Every game, three more ways</h2>
+          <p class="ed-s">Each daily game also has an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
+          <div class="ed-row">
+            <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
+            <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
+            <button class="ed-chip ed-mlb" type="button" data-ed="MLB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>MLB</button>
+          </div>
+        </section>
+
+        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
+          <div class="cp-kicker">Arcade Card</div>
+          <h2 class="cp-head" id="cp-head"><s>9</s> <b>36 daily games</b></h2>
+          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of every one, plus a members-only game.</p>
+          <ul class="cp-perks">
+            <li><i>&#10003;</i> Unlimited plays, every day</li>
+            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
+            <li><i>&#10003;</i> Higher or Lower, members only</li>
+            <li><i>&#10003;</i> The full archive of past days</li>
+          </ul>
+          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
+          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
+        </section>
 
         <div class="m-links">
           <a href="/">Sign in to save your streak →</a>
@@ -743,6 +821,7 @@
         <a href="https://x.com/RunTheGG" target="_blank" rel="noopener" aria-label="X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3h3l-7 8 8 10h-6l-5-6-5 6H3l8-9L3 3h6l4 5z"/></svg></a>
       </div>
       <a class="h" href="/">RunThe.GG</a> · @RunTheGG
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0;"><span style="font-size:12px;opacity:.72;">Free to play, funded by players.</span><a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a></div>
       <div class="footlinks">
         <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> ·
         <a href="/contact.html">Report a data error</a>
@@ -769,12 +848,12 @@
 <script src="/arcade/favteam.js"></script>
 <script src="/arcade/tokens.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=2"></script>
+<script src="/arcade/board.js?v=5"></script>
 <script src="/arcade/auth.js?v=1"></script>
 <script src="/arcade/mycard.js?v=4"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=3"></script>
-<script src="/arcade/card.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=1"></script>
 <script>
 (function () {
@@ -790,20 +869,15 @@
   }
   applyThemeMeta();
 
-  // ---- Alma Mater card: skin it in the user's favorite college team colors
-  // (set by the College Football game), falling back to the maroon default.
+  // ---- Alma Mater card ----
+  // This used to repaint the tile in whichever college team you had picked,
+  // which is how an arbitrary hex ended up as a button background — with no
+  // team set it fell back to a dark maroon and the PLAY label sat on it at
+  // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
+  // picking your school belongs to a different game.
   function applyFavCard() {
-    if (!window.RTGFavTeam) return;
     var card = document.getElementById('cardAlma'); if (!card) return;
-    var t = RTGFavTeam.resolved();
-    var theme = document.documentElement.getAttribute('data-theme');
-    card.style.setProperty('--c', t.primary);
-    var nm = card.querySelector('.nm'); if (nm) nm.style.color = RTGFavTeam.readable(t.primary, theme);
-    var svg = card.querySelector('.cap svg');
-    if (svg) {
-      [].forEach.call(svg.querySelectorAll('[fill]'), function (el) { if ((el.getAttribute('fill') || '').toLowerCase() !== 'none') el.setAttribute('fill', t.primary); });
-      [].forEach.call(svg.querySelectorAll('[stroke]'), function (el) { if ((el.getAttribute('stroke') || '').toLowerCase() !== 'none') el.setAttribute('stroke', t.primary); });
-    }
+    card.style.removeProperty('--c');
   }
   applyFavCard();
 
@@ -897,7 +971,7 @@
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--goldT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
+      ['Alma',aDone,'var(--mossT)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
     ];
     // Members get a 10th punch: the card-only High Low, "done" once they've
     // played it today (it's endless, so a single play counts).
@@ -1009,15 +1083,50 @@
     });
   })();
 
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0);
-  document.getElementById('dprogT').textContent = n + ' / 9 played';
-  if (n === 9) {
+  // High Low is the tenth game, but only members can play it - so the target
+  // matches the ticket rather than showing non-members a total they can't reach.
+  var isMemberN = false; try { isMemberN = !!(TOK && TOK.hasCard && TOK.hasCard()); } catch (e) {}
+  var hlPlayed = false; try { hlPlayed = isMemberN && TOK && TOK.playsOf && TOK.playsOf('highlow') > 0; } catch (e) {}
+  var hlTile = document.getElementById('cardHigh');
+  if (hlTile && isMemberN) hlTile.classList.add('ismember');
+  var pipH = document.getElementById('pipH');
+  if (pipH) { pipH.style.display = isMemberN ? '' : 'none'; if (hlPlayed) pipH.classList.add('done'); }
+  var total = isMemberN ? 10 : 9;
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (hlPlayed ? 1 : 0);
+  document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
+  if (n === total) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');
     // record the perfect day once (feeds the Arcade Card's achievements)
     if (TOK && TOK.recordPerfect) TOK.recordPerfect();
   }
 })();
+</script>
+<script>
+  /* Hub Card pitch: show to everyone except existing members, and hand off to the
+     canonical paywall in card.js so there is one purchase flow. */
+  (function(){
+    function member(){ try{ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){ return false; } }
+    function sync(){
+      var el=document.getElementById('cardpitch'); if(!el) return;
+      el.classList.toggle('show', !member());
+      var ed=document.getElementById('editions');
+      if(ed) ed.classList.toggle('show', !member());
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.ed-chip'), function(c){
+      c.addEventListener('click', function(){
+        try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
+      });
+    });
+    var btn=document.getElementById('cpGet');
+    if(btn) btn.addEventListener('click', function(){
+      try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
+      location.href='/arcade/archive/';
+    });
+    sync();
+    setTimeout(sync, 1200);          // re-check once the membership state settles
+    window.addEventListener('focus', sync);
+  })();
 </script>
 </body>
 </html>
