@@ -14931,3 +14931,50 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   NOTE on scope: `bag_courserecords` is still a device-level store, but what a guest sees there is the
   GLOBAL course record (name + score) that `crLoad` merges in from the public board, not private profile
   data, so it was deliberately left alone.
+
+- **ARCADE CROSS-PROMO: a once-per-session ad for Run The Arcade on the golf home screen (owner: "Can we
+  add a really good ad on this game promoting the Arcade? It should have a box at the bottom that someone
+  can check if they do not want to see the message again. Users should see it when they go to the homepage
+  of the site for the first time in a session").** A full-screen `.ov` overlay (`S.overlay='arcadead'`)
+  that fires once per browser session when the player lands on the golf HOME screen.
+  - **The ad wears the Arcade's own identity, not golf's**, so it reads as a different product rather than
+    a golf popup: navy `#071426` ground with orange `#FF8A3D` accents (both lifted from `arcade/arcade.css`
+    and the arcade home's `--brand` token, verified against the live files), an "Also from RunThe.GG"
+    kicker with a pulsing dot, a "RUN THE ARCADE" headline in the orange foil, and a panel of all TEN games
+    as chips colour-coded to the arcade's own per-game tokens (Daily Match blueT, Guess the Player coral,
+    Number Game gold, Odd One Out violetT, Rank It pinkT, Career Path green, Word Search teal, High Low
+    brand-orange...). Game names + count checked against `arcade/index.html`, so the list can't be wrong.
+    A 3-stat row (10 Games / Daily new set / Free to play), a "same free RunThe.GG account, your streak
+    carries across the whole site" line (the real cross-sell), the orange **Play the Arcade ↗** CTA, a
+    **Maybe later** ghost, and the opt-out box.
+  - **Opens in a NEW TAB** (`window.open(ARCADE_URL,'_blank','noopener')`, `location.href` fallback), so a
+    career or an in-progress round is never lost - stated on the button ("your round is safe"). Verified in
+    Playwright that the golf tab stays on the title screen after the click.
+  - **"First time in a session"** = a `sessionStorage` flag (`rtt_arcade_ad_seen`) - it survives a reload in
+    the same tab and resets on a genuinely new session, which is what the ask describes; a `localStorage`
+    flag would have been once-ever and a per-day flag would have been a different promise.
+  - **The opt-out box** (`bag_arcade_ad_off`, persistent) sits at the bottom as asked. It persists on
+    CHANGE, not on close, so ticking it then hitting Escape / the ✕ still sticks. Its row is a 46px-tall
+    380px-wide tappable pill (the first cut was a bare 17px checkbox - a poor tap target for the one control
+    the owner explicitly specified); tapping the label text toggles it. A plain dismissal never sets it.
+  - **It queues behind the player's own stuff and never interrupts play.** `maybeArcadeAd()` runs LAST in
+    the title-screen popup chain (welcome pack → season launch → daily login → ad), bails if another
+    overlay is open, if the screen isn't `title`, or if `isNewPlayer()` (a brand-new player gets the CS473
+    3-step onboarding instead of an ad), and does NOT burn the session flag while it's waiting - so a player
+    who sees the welcome gift first still gets the ad on the same visit once the gift clears, and someone
+    mid-round never sees it at all.
+  - Tracked: `arcade_ad_shown` / `arcade_ad_click` / `arcade_ad_dismiss{how}` / `arcade_ad_optout`.
+  Verified in Playwright (19 checks, 0 page errors): it shows on the home screen with the games + CTA +
+  checkbox; dismissing does NOT re-show it later in the same session and does NOT set the opt-out; a NEW
+  browser session shows it again; ticking the box opts out permanently across sessions; a brand-new player
+  gets the onboarding panel and no ad; it waits for the welcome gift without burning the session, then
+  shows once the gift clears; it never fires off the home screen; the CTA opens a second tab at `/arcade/`
+  while golf stays on the title; the desktop layout is bounded with no horizontal overflow; and the opt-out
+  row measures 46×380 with the label text toggling + persisting it. Regressions green (regress_final's full
+  18-hole daily round + shop sections, tp_final's Tour Pass sweep, the 11-tab shop suite); inline scripts
+  parse clean. Deployed to /golf. Tunable: `ARCADE_URL`, `ARCADE_GAMES`, the `.aaov` styling, and the
+  position of `maybeArcadeAd()` in the title popup chain.
+  NOTE on the ask's wording: "the homepage of the site" was read as the golf game's HOME/title screen,
+  since the request was for an ad "on this game". The runthe.gg hub homepage is a separate file
+  (`index.html` on `main`) and was not touched; the same ad could be mirrored there if that's what was
+  meant.
