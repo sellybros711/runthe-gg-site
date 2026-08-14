@@ -15330,3 +15330,72 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     suites). Two `legacy_ui` checks failed first as **stale fixtures** asserting the old "CAREER LEGACY"
     copy (the failure payload showed the correct new text), now updated.
   - Tunable: the `coin:` values in `LEGACY_PERKS` and `LEGACY_CAPS.coin`.
+
+- **THE TOUR CHAMPIONSHIP IS A FIVE-DAY KNOCKOUT YOU CAN PLAY (owner: "the match play championship should
+  replace the format of the final round of the tour championship. I also want to create a brand new bracket
+  animation screen for this kind of tournaments that suspensefully goes one match at a time so you can watch
+  the whole thing play out. Your individual matchups will give you the option to play them or sim them. The
+  bracket animations need to be super smooth"; then, via AskUserQuestion: REMOVE the standalone Match Play
+  week, "the tour championship will be a 5 day tournament with one round each day", and a played match is
+  the full 18 holes shot by shot).** The finale is no longer 72 holes of staggered stroke play: the top 32
+  of the season points race are seeded into a bracket and play one 18-hole match a day for five days. Win
+  and you are through to tomorrow; lose once and your season is over, and the last one standing lifts the
+  Cup. The standalone week-13 Match Play Championship is gone, so the format did not ADD an event, it
+  replaced the finish (`PLAYOFF_EV`'s finale gains `bracket:true`; `stagger` survives as the FALLBACK for
+  the careers whose tour has voted the knockout out through Tour Eras, which reverts the finale to
+  staggered stroke play).
+  - **The engine is incremental, because a match you play yourself decides who you meet next.** The old
+    monolithic `simBracket` became `bracketInit` / `bracketPairs` / `bracketMyPair` / `bracketPlayRound(B,
+    myOverride)` / `bracketDone` / `bracketFinishNow`, so the screen plays ONE round at a time while every
+    headless path (`skipToEnd`, `finishSeasonHeadless`, missing the 32) still runs the whole thing in one
+    go. Seeded by season POINTS, not world ranking, so the year-long Cup race buys the easy side of the draw.
+    `beginEvent`'s bracket branch is checked BEFORE the playoff branch (the finale is both, and playoff won
+    the `else if` chain, so the knockout was being simmed as stroke play - caught by the full-season test).
+  - **The screen** (`scrBracket`): the draw lands first (your seed, your first opponent, the full
+    five-column bracket tree), then each day is Play-or-Sim, then the day REVEALS ONE MATCH AT A TIME -
+    cards animate in and settle IN PLACE (no `render()` during a reveal, so the animation is never
+    interrupted), with your own match held to LAST when you simmed it (all the suspense is yours) and
+    leading when you played it (you already know). Then your run strip, the champion banner + confetti, and
+    Continue. GPU-friendly throughout (transform/opacity only, `isConnected` guards, reduced-motion honoured).
+  - **A played match** (`bracketStartMatch`) borrows the Daily's round plumbing the way a career Moment
+    does: your career build, the event's mapped venue, seeded conditions, the TourTracer, signature-hole
+    decisions - re-skinned with a `vs {opponent}` header and a live MATCH scoreboard (2 UP / ALL SQUARE /
+    holes to play). The opponent's whole 18 is drawn BEFORE you hit a shot, so nothing you do can move it;
+    the match ends the moment it is mathematically over rather than after 18 holes; all square through 18
+    goes to sudden death on the closing holes; and `S.dailyClaimed` is set so the borrowed plumbing can
+    never touch Daily attempts, records or streaks (verified - `bag_daily` is byte-identical after a match).
+    `dailyMode()` now forces the FULL cinematic round for a match as it already did for a Moment: you chose
+    to play it, and the live match status only exists on the tracer's scoreboard.
+  - **Calibration, which turned out to matter a lot.** The two engines weigh skill differently PER HOLE -
+    measured over 40k holes each, the match engine moves 0.0494 strokes a hole per rating point against a
+    1.21 SD, the daily per-hole engine 0.0117 against 0.582, i.e. it differentiates skill about HALF as
+    much. Left alone, PLAYING quietly halved a favourite's edge (an 88 vs an 80 won 82.6% simmed but 68.3%
+    played; the underdog's 17.9% became 31.1%), which would have made playing a trap for exactly the
+    players who reach a finale. `MATCH_SKILL_K=1.9` shifts the opponent by the eo gap so the daily engine
+    reproduces the sim's separation. A UNIFORM shift, not a per-skill stretch: stretching each rating also
+    inflates the shape of their profile, which is its own (underdog-favouring) effect - measured, the
+    uniform shift halved the residual (mean |delta| 3.25 -> 2.00 points). Measured on the PRODUCTION path
+    (`bracketStartMatch` builds the opponent and the pins) with a realistic drafted bag, a played match now
+    tracks a simmed one to a **mean 0.73 of a point** across OVR 94/88/84/80 (max 1.4). The eo gap already
+    carries the course fit and your standing edges (confidence, caddie, career traits), so nothing is
+    double-counted, and your own ratings are never touched - the round you watch is honestly your golfer.
+  - **Two real bugs found by screenshotting rather than by the assertions**: a re-render of an
+    already-settled day BLANKED every match result (the label was only ever injected by the in-place
+    settle, so any later render lost it), and the day's "n of 16" counter never moved while the day
+    revealed (the reveal settles in place and deliberately does not re-render). Both fixed.
+  - Verified in Playwright across five suites, **50 checks, 0 page errors**: the engine (schedule shape,
+    five 18-hole days, points seeding, 16/8/4/2/1 to one champion, the Cup + money + finishing order, and
+    Tour Eras still able to tighten the finale to 16 or revert it to stroke play); the screen (draw -> decide
+    -> a simmed day revealing yours last -> the path strip -> all five days -> champion -> Continue
+    finalizing and advancing); the played match (opponent pre-drawn, the re-skinned header + scoreboard,
+    3&2 / ALL SQUARE / 1 DOWN / at-the-19th all computing correctly, the result reaching the bracket with
+    your match then leading the reveal, and the Daily untouched); the LIVE timer-driven path (an early
+    close-out ending it at 10&8 without reaching 18, all square arming sudden death on a real closing hole
+    and resolving on its own, and an unrigged match playing itself out hole by hole); and the season around
+    it (one result row tagged as a knockout with its own finish text and no fake score, money + points
+    banked, awards settling, and the rail + recap + summary rendering cleanly). Existing regressions green
+    (regress_final, tp_final, the 11-tab shop suite, Career Legacy engine + UI, the council and Tour Eras
+    suites). Deployed to /golf (byte-identical verified; main had no parallel golf edits to adopt).
+  - Tunable: `MATCH_SKILL_K` (the whole calibration), `BRACKET_ROUNDS` (the five days), `bracketSize()` +
+    the Tour Eras `bracket_expand`/`bracket_axed` changes, the reveal pacing constants (`MP_IN`/`MP_HOLD`/
+    `MP_MINE_HOLD`/`MP_AFTER_MINE`).
