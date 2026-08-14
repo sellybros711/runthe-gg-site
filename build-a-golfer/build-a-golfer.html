@@ -4019,22 +4019,46 @@ const ARCADE_AD_OFF='bag_arcade_ad_off';        // "don't show this again" (pers
 function arcadeAdSeenThisSession(){ try{ return sessionStorage.getItem(ARCADE_AD_SESSION)==='1'; }catch(e){ return false; } }
 function arcadeAdMarkSession(){ try{ sessionStorage.setItem(ARCADE_AD_SESSION,'1'); }catch(e){} }
 function arcadeAdOff(){ return !!LS.get(ARCADE_AD_OFF,false); }
+// Count the ad as seen (once per session). Called when it has survived a beat on screen AND on any
+// interaction with it, so acting on it immediately still spends the session's one showing.
+function arcadeAdSeenNow(){ try{
+  if(arcadeAdSeenThisSession()) return;
+  arcadeAdMarkSession(); try{ track('arcade_ad_shown'); }catch(e){}
+}catch(e){} }
 // The 10 Arcade games, with the Arcade's own tile colors, so the ad looks like the product it sells.
 const ARCADE_GAMES=[
   ['Daily Match','#5C8CFF'],['Crossword','#9CADC0'],['Word Search','#37C5D5'],['Guess the Player','#F06A5F'],
   ['Number Game','#F2B632'],['Odd One Out','#B79BF6'],['Career Path','#48D17A'],['Rank It','#F778AE'],
   ['Alma Mater','#96B93C'],['High Low','#FF8A3D']
 ];
-function maybeArcadeAd(){ try{
-  if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
-  if(S.overlay || S.screen!=='title') return;
-  if(typeof isNewPlayer==='function' && isNewPlayer()) return;              // they're mid-onboarding
-  if(typeof welcomePackPending==='function' && welcomePackPending()) return; // the player's own stuff first
-  if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;
-  if(S._loginPending) return;
-  arcadeAdMarkSession();
-  try{ track('arcade_ad_shown'); }catch(e){}
+function maybeArcadeAd(force){ try{
+  if(!force){
+    if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
+    if(S.overlay || S.screen!=='title') return;
+    if(typeof isNewPlayer==='function' && isNewPlayer()) return;              // they're mid-onboarding
+    if(typeof welcomePackPending==='function' && welcomePackPending()) return; // the player's own stuff first
+    if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;
+    if(S._loginPending) return;
+  }
   S.overlay='arcadead'; render();
+  // The title chain fires on a fixed timer, but a signed-in player's popup cascade (welcome pack, login
+  // bonus, coin grant, pass/bucket rewards, purchase check) fires whenever cloudPull() resolves — i.e. at
+  // network latency. If that lands a beat AFTER us it replaces the ad on screen, so only burn the
+  // once-per-session flag once the ad has actually SURVIVED there. Otherwise a player who never saw it
+  // loses it for the whole session; now it just comes back on the next clean title render.
+  setTimeout(function(){ try{
+    if(S.overlay!=='arcadead') return;                                       // stomped — keep it owed
+    arcadeAdSeenNow();
+  }catch(e){} }, 320);
+}catch(e){} }
+// Force the ad from the URL (?arcadead=1 / #arcadead) so it can be checked on a real device without
+// waiting on the session flag or the popup queue. Mirrors practiceCheck's param handling.
+function arcadeAdLinkCheck(){ try{
+  const u=new URL(location.href);
+  let on=(u.searchParams.get('arcadead')==='1');
+  if(!on && /[#&?]arcadead(=1)?($|&)/.test(location.hash||'')) on=true;
+  if(!on) return;
+  setTimeout(function(){ try{ maybeArcadeAd(true); }catch(e){} }, 500);
 }catch(e){} }
 function overlayArcadeAd(screen){
   const chips=ARCADE_GAMES.map(g=>`<span class="aa-chip" style="--c:${g[1]}">${esc(g[0])}</span>`).join('');
@@ -4107,10 +4131,12 @@ function overlayArcadeAd(screen){
   const box=ov.querySelector('.aaoff');
   const remember=()=>{ try{ LS.set(ARCADE_AD_OFF, !!box.checked); }catch(e){} };
   box.onchange=()=>{ remember(); if(box.checked){ try{ track('arcade_ad_optout'); }catch(e){} } };
-  const close=(how)=>{ remember(); try{ track('arcade_ad_dismiss',{how}); }catch(e){} S.overlay=null; render(); };
+  // Acting on the ad counts as seeing it, even inside the 320ms "did it survive" window — otherwise
+  // closing it immediately would leave the flag unburnt and it would pop straight back up.
+  const close=(how)=>{ arcadeAdSeenNow(); remember(); try{ track('arcade_ad_dismiss',{how}); }catch(e){} S.overlay=null; render(); };
   ov.querySelector('.x').onclick=()=>close('x');
   ov.querySelector('.later').onclick=()=>close('later');
-  ov.querySelector('.go').onclick=()=>{ remember(); try{ track('arcade_ad_click'); }catch(e){}
+  ov.querySelector('.go').onclick=()=>{ arcadeAdSeenNow(); remember(); try{ track('arcade_ad_click'); }catch(e){}
     try{ window.open(ARCADE_URL,'_blank','noopener'); }catch(e){ location.href=ARCADE_URL; }
     S.overlay=null; render(); };
   screen.appendChild(ov);
@@ -28631,6 +28657,7 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 try{ practiceCheck(); }catch(e){}   // ?practice=1 → unlimited daily rounds for testing, nothing recorded
+try{ arcadeAdLinkCheck(); }catch(e){}   // ?arcadead=1 → force the Run The Arcade promo (device check)
 try{ refCheck(); }catch(e){}        // CS403: arrived via ?ref=<friend> invite link? stash it for redeem on sign-up
 // If the browser refreshed / the tab was reloaded mid-play (accidental swipe, or iOS discarding the tab
 // under memory pressure), drop straight back into whatever mode was active - daily, career, or online -
