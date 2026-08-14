@@ -22,7 +22,7 @@
     ['almamater', 'Alma Mater'],
     ['guess', 'Guess the Player'],
     ['crossword', 'Daily Crossword'],
-    ['wordsearch', 'Word Search']
+    ['sportegories', 'Sportegories']
   ];
 
   function currentGame() {
@@ -41,7 +41,16 @@
     s.textContent = '.funprog{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#8aa0b8);margin:10px 0 -4px;}' +
       '.funrow{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;margin:10px 0 0;}' +
       '.funhome,.funlb{display:inline-block;margin:0;background:none;border:0;font:800 12px var(--f,system-ui);color:var(--mut,#8aa0b8);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}' +
-      '.funhome:hover,.funlb:hover{color:var(--ink,#F4F7FB);}';
+      '.funhome:hover,.funlb:hover{color:var(--ink,#F4F7FB);}' +
+      // Guest notice: says what actually happened to the score, and offers the
+      // one action that changes it. Quiet, not a second paywall.
+      '.funguest{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;' +
+      'margin:12px 0 0;padding:10px 12px;border:1px solid var(--line2,rgba(255,255,255,.15));' +
+      'border-radius:11px;background:var(--card2,rgba(255,255,255,.04));}' +
+      '.funguest span{font-size:11.5px;font-weight:700;color:var(--mut,#8aa0b8);line-height:1.35;}' +
+      '.funguest button{background:none;border:0;padding:0;cursor:pointer;' +
+      'font:900 11.5px var(--f,system-ui);color:var(--brandT,var(--coralT,#FF8A3D));' +
+      'text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}';
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -62,12 +71,18 @@
       else if (!next) next = g;
     });
     injectCSS();
+    /* Where to hang our own elements. Most games wrap the modal buttons in a
+       row div, so we sit outside that wrapper. Sportegories puts its buttons
+       straight on the sheet, and inserting "outside the wrapper" there means
+       outside the modal entirely — the row rendered off-screen. Anchor on the
+       wrapper only when there is one. */
+    var sheetEl = link.closest ? link.closest('.sheet, .modal') : null;
+    var anchor = (link.parentNode && link.parentNode !== sheetEl) ? link.parentNode : link;
     var prog = document.getElementById('funProg');
     if (!prog) {
       prog = document.createElement('div');
       prog.className = 'funprog'; prog.id = 'funProg';
-      var row = link.parentNode;
-      if (row && row.parentNode) row.parentNode.insertBefore(prog, row);
+      if (anchor.parentNode) anchor.parentNode.insertBefore(prog, anchor);
     }
     // The specific next-game link replaced the generic hub link, so restore a
     // way home: a quiet text link under the button row (skipped on a clean
@@ -78,8 +93,7 @@
     var rowEl = document.getElementById('funRow');
     if (!rowEl) {
       rowEl = document.createElement('div'); rowEl.className = 'funrow'; rowEl.id = 'funRow';
-      var host = link.parentNode;
-      if (host && host.parentNode) host.parentNode.insertBefore(rowEl, host.nextSibling);
+      if (anchor.parentNode) anchor.parentNode.insertBefore(rowEl, anchor.nextSibling);
       var h = document.createElement('a');
       h.className = 'funhome'; h.id = 'funHome'; h.setAttribute('href', '/arcade/'); h.textContent = 'Back to the arcade';
       var lb = document.createElement('button');
@@ -87,6 +101,7 @@
       lb.addEventListener('click', showBoard);
       rowEl.appendChild(h); rowEl.appendChild(lb);
     }
+    guestNotice(rowEl);
     var home = document.getElementById('funHome');
     if (next) {
       prog.textContent = played + ' of ' + GAMES.length + ' played today';
@@ -100,6 +115,35 @@
       if (home) home.style.display = 'none';   // the main button is the way home
     }
   }
+  /* A guest and a cardholder used to get byte-identical result screens — same
+     streak, same "best ever", same Leaderboard button. But board.js submits
+     nothing without a session (grid_submit_run refuses anonymous callers), so
+     a guest was being shown a board they are not on and a streak that lives
+     only in this browser, with nothing saying so.
+     One line, stating both facts, plus the action that fixes them. Signed-in
+     players never see it — their score really is posted. */
+  function isGuest() {
+    try { return !!(window.RTGTokens && RTGTokens.signedIn) && !RTGTokens.signedIn(); }
+    catch (e) { return false; }
+  }
+  function guestNotice(rowEl) {
+    var have = document.getElementById('funGuest');
+    if (!isGuest()) { if (have) have.remove(); return; }
+    if (have || !rowEl || !rowEl.parentNode) return;
+    var box = document.createElement('div');
+    box.className = 'funguest'; box.id = 'funGuest';
+    var msg = document.createElement('span');
+    msg.textContent = 'Playing as a guest — this score stays on this device and isn’t on the leaderboard.';
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = 'Sign in to post it';
+    btn.addEventListener('click', function () {
+      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup'); return; } } catch (e) {}
+      location.href = '/arcade/';
+    });
+    box.appendChild(msg); box.appendChild(btn);
+    rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
+  }
+
   // close the result overlay and reveal today's leaderboard rail
   function showBoard() {
     try {

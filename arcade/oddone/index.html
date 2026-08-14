@@ -31,8 +31,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -243,9 +243,9 @@
     <div class="runbig" id="mRun">0</div>
     <h2>IN A ROW</h2>
     <div class="milestone" id="mMilestone"></div>
-    <div class="rstats">
-      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
-      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
+    <div class="a-runline">
+      <span><b id="mBest">0</b> best ever</span><i></i>
+      <span><b id="mStreak">1</b> day streak</span>
     </div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
@@ -266,25 +266,26 @@
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=2"></script>
-<script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/share.js?v=4"></script>
+<script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=8"></script>
-<script src="/arcade/alltime.js?v=2"></script>
+<script src="/arcade/board.js?v=6"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
+<script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=2"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=3"></script>
+<script src="/arcade/pregame.js?v=3"></script>
+<script src="/arcade/howto.js?v=4"></script>
 <script>
 (function(){
   'use strict';

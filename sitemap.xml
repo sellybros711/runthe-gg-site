@@ -138,11 +138,4 @@
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
-  <url>
-    <loc>https://runthe.gg/arcade/wordsearch/</loc>
-    <lastmod>2026-08-10</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-    <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
-  </url>
 </urlset>

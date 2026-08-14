@@ -54,12 +54,6 @@
       'Tap a cell to switch across/down; clues sit below.',
       'Fastest clean solve tops the board.',
       'Free players get one Reveal; Pro gets unlimited.'
-    ],
-    wordsearch: [
-      "Find the hidden names. Today's theme tells you who they are.",
-      'Drag across letters in any direction, including diagonals and backwards.',
-      'Names only reveal as you find them.',
-      'One Hint highlights a first letter (Pro: unlimited).'
     ]
   };
 

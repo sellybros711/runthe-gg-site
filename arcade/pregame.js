@@ -20,7 +20,7 @@
 
   function gameKey(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   var GAME = gameKey();
-  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, wordsearch:1 };
+  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1 };
   if (!GAME || !KNOWN[GAME]) return;
   if (window.RTGArchive && RTGArchive.active && RTGArchive.active()) return;   // archive practice: no gate
 
@@ -34,7 +34,6 @@
     almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
     guess:      ['Guess the mystery player.', 'Eight tries, with a new clue each round.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
-    wordsearch: ['Find every hidden name in the grid.', 'Beat the clock for a clean run.']
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
@@ -46,7 +45,6 @@
     almamater:  { k:'rtg:almamater:v1', f:'bestRun',    cap:'best run' },
     guess:      { k:'rtg:guess:v1',     f:'bestStreak', cap:'win streak' },
     crossword:  { k:'rtg:cw:v1',        f:'best',       cap:'best time', t:true },
-    wordsearch: { k:'rtg:ws:v1',        f:'best',       cap:'best time', t:true }
   };
 
   var T = window.RTGTokens;
@@ -209,8 +207,8 @@
 
   // Games whose all-time record is a TIME (lower = better); everything else is a
   // RUN length (higher = better). These are exactly the games that submit with no
-  // run_len (grid_runs scores them by time): match, guess, crossword, wordsearch.
-  var TIMED = { match:1, guess:1, crossword:1, wordsearch:1 };
+  // run_len (grid_runs scores them by time): match, guess, crossword.
+  var TIMED = { match:1, guess:1, crossword:1 };
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function fmtDate(s){
     if(!s) return '';

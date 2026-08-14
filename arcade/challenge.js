@@ -57,7 +57,6 @@
     almamater: { unit: 'in a row', dir: 'high' },
     rankit: { unit: 'sets cleared', dir: 'high' },
     guess: { unit: 'guesses', dir: 'low' },
-    wordsearch: { unit: '', dir: 'low', time: true },
     crossword: { unit: '', dir: 'low', time: true },
     match: { unit: '', dir: 'low', time: true }
   };
@@ -223,8 +222,10 @@
   function myMark(sheet) {
     var n = mineInt(sheet);
     if (n != null) return markOf(gameKey(), n);
-    // last resort for a game with no comparable integer: the big number as-is
-    var big = sheet.querySelector('#mRun, #mScore, .rstat .v');
+    // Last resort for a game with no comparable integer: the big number as-is.
+    // .a-rhero is where the headline lives in the games that used to spread
+    // their result across three equal boxes; .rstat is the pre-hero fallback.
+    var big = sheet.querySelector('#mRun, #mScore, .a-rhero .v, .rstat .v');
     return big ? (big.textContent || '').trim().slice(0, MAXMARK) : '';
   }
   function mileSeen(g, n) {

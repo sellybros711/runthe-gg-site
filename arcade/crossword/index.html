@@ -38,8 +38,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
 :root{
   /* dark navy system (matches the Daily Match redesign) */
@@ -217,7 +217,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
-.share-grid{font-family:monospace; font-size:22px; line-height:1.05; letter-spacing:2px; margin:2px 0 16px;}
+/* This page loads Archivo + Rubik only — no Anton — so the shared hero takes
+   the display face this page actually has. Layout comes from .a-rhero /
+   .a-runline in arcade.css, shared with every other game. */
+.modal{--a-heroFont:var(--pix); --a-heroInk:var(--ink);}
 
 /* ---------- dopamine: confetti ---------- */
 .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
@@ -401,12 +404,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="flawless" id="mFlawless"><span class="rib"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless: no reveals</span></div>
     <h2 id="mTitle">Solved!</h2>
     <p id="mSub">Nice grid. Your streak lives another day.</p>
-    <div class="statgrid">
-      <div class="box"><div class="v" id="mTime">0:00</div><div class="k">Time</div></div>
-      <div class="box"><div class="v" id="mStreak">1</div><div class="k">Streak</div></div>
-      <div class="box"><div class="v" id="mBest">1</div><div class="k">Best</div></div>
+    <div class="a-rhero">
+      <div class="v" id="mTime">0:00</div>
+      <div class="k" id="mTimeK">Your time</div>
     </div>
-    <div class="share-grid" id="mShareGrid"></div>
+    <div class="a-runline">
+      <span><b id="mBest">–</b> best</span><i></i>
+      <span><b id="mStreak">0</b> day streak</span><i></i>
+      <span><b id="mAvg">–</b> average</span>
+    </div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mAgain">Play again</button>
@@ -448,25 +454,26 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/data.js?v=1"></script>
 <script src="gen.js?v=5"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=2"></script>
-<script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/share.js?v=4"></script>
+<script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=8"></script>
-<script src="/arcade/alltime.js?v=2"></script>
+<script src="/arcade/board.js?v=6"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
+<script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=2"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=3"></script>
+<script src="/arcade/pregame.js?v=3"></script>
+<script src="/arcade/howto.js?v=4"></script>
 <script>
 (function(){
   "use strict";
@@ -874,8 +881,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
       s.lastDone = today;
       var prevBestT=s.best||0;
-      var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && Math.round(elapsed)<prevBestT);
-      s.best = Math.min(s.best||1e9, Math.round(elapsed));
+      // Store the second the player was SHOWN. fmt() floors, so rounding here
+      // let a 1:18.6 solve display "1:18" and post a 1:19 best — two numbers
+      // that now sit side by side and used to disagree.
+      var shownT=Math.floor(elapsed);
+      var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && shownT<prevBestT);
+      s.best = Math.min(s.best||1e9, shownT);
       s.bestStreak = Math.max(s.bestStreak||0, s.streak);
       // lifetime stats
       s.solves = (s.solves||0)+1;
@@ -894,7 +905,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mTime').textContent = fmt(elapsed);
     document.getElementById('mStreak').textContent = s.streak||1;
     document.getElementById('mBest').textContent = fmt(s.best||elapsed);
-    document.getElementById('mShareGrid').textContent = buildShareGrid();
+    document.getElementById('mTimeK').textContent = 'Your time';
+    var nSolv = s.solves||1;
+    document.getElementById('mAvg').textContent = s.timeSum ? fmt(Math.round(s.timeSum/nSolv)) : fmt(elapsed);
     document.getElementById('yourTm').textContent = fmt(elapsed);
     document.getElementById('yourBest').textContent = fmt(s.best || elapsed);
     document.getElementById('mFlawless').classList.toggle('on', flawless);
@@ -932,17 +945,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  // emoji share grid - 🟨 revealed, 🟩 solved cleanly, ⬛ black
-  function buildShareGrid(){
-    var out=[];
-    for(var r=0;r<N;r++){ var line='';
-      for(var c=0;c<N;c++){ var cell=cells[r][c];
-        line += cell.block ? '⬛' : (cell.revealed ? '🟨' : '🟩');
-      } out.push(line);
-    }
-    return out.join('\n');
-  }
-
   document.getElementById('mAgain').addEventListener('click', function(){
     if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
@@ -950,12 +952,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
 
-  // Share the invite card every game shares (RTGShare.send): the solved grid
-  // becomes the picture, size + time the stat, solve time (lower is better) the
-  // challenge integer. Replaces the old bespoke canvas so Crossword matches the
-  // other eight.
+  // Share the invite card every game shares (RTGShare.send). No emoji board:
+  // a crossword's shape is the puzzle's, not the solver's, and posting it
+  // spoils which squares are blocked while boasting about nothing. The time is
+  // the boast, and the poster already draws its own grid art.
   function shareCrosswordImage(){
-    RTGShare.send({ key:'crossword', date:DATE, grid:buildShareGrid(),
+    RTGShare.send({ key:'crossword', date:DATE,
       stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) });
   }
 
@@ -1123,7 +1125,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mTime').textContent=bestStr;
     document.getElementById('mStreak').textContent=saved.streak||0;
     document.getElementById('mBest').textContent=bestStr;
-    document.getElementById('mShareGrid').textContent='';
+    document.getElementById('mTimeK').textContent='Best time';
+    document.getElementById('mAvg').textContent = (saved.timeSum && saved.solves) ? fmt(Math.round(saved.timeSum/saved.solves)) : '–';
     document.getElementById('mFlawless').classList.remove('on');
     var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
     updateAgainBtn();

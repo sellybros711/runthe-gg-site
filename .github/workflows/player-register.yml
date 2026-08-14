@@ -1,0 +1,73 @@
+name: Rebuild the player register
+
+# The complete "who ever played" register behind Sportegories answer checking.
+# Separate from former.yml on purpose: that job builds the RECOGNIZABLE set the
+# games generate puzzles from, this one builds the COMPLETE set they judge
+# answers against. Different questions, different filters, different sizes.
+#
+# The CSV is ~56k rows and is NOT committed — it goes straight into Supabase and
+# is thrown away, so the repo doesn't carry a multi-megabyte generated file that
+# no page loads.
+#
+# REQUIRED SECRET (already used by sync-wc-players.yml):
+#   SUPABASE_DB_URL — Postgres URI from Supabase → Settings → Database.
+#     Use the Session pooler URI so it resolves from GitHub's IPv4 runners.
+#
+# Run supabase/77_player_register.sql once before the first run of this job.
+
+on:
+  schedule:
+    - cron: '40 11 * * 2'      # Tuesdays, after Monday's roster refresh
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Limit to certain leagues (e.g. nfl or nfl,mlb). Blank = all.'
+        required: false
+        default: ''
+
+concurrency:
+  group: player-register
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60         # ~250 season fetches across three leagues
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch the complete registers
+        run: |
+          if [ -n "${{ inputs.only }}" ]; then
+            node scripts/build-register.mjs --only=${{ inputs.only }}
+          else
+            node scripts/build-register.mjs
+          fi
+
+      - name: Load into Supabase (atomic swap)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set."
+            exit 1
+          fi
+          # Load into a staging table first, then swap in one transaction. A
+          # plain TRUNCATE + \copy would leave the register empty for the length
+          # of the import, and an empty register tells every player they don't
+          # exist — the failure mode this whole thing exists to prevent.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          CREATE TEMP TABLE staging (LIKE player_register INCLUDING DEFAULTS) ON COMMIT DROP;
+          \copy staging(id,sport,name,name_key,pos,college,teams,first_season,last_season,active) FROM 'supabase/player_register.csv' WITH (FORMAT csv, HEADER true)
+          DELETE FROM player_register;
+          INSERT INTO player_register SELECT * FROM staging;
+          COMMIT;
+          SQL
+          echo -n "player_register rows: "
+          psql "$SUPABASE_DB_URL" -At -c "select count(*) from player_register;"
+          echo "by sport:"
+          psql "$SUPABASE_DB_URL" -At -c "select sport, count(*) from player_register group by sport order by 2 desc;"

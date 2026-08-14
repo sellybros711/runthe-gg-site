@@ -181,6 +181,33 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   .a-gametitle__plate{padding-bottom:7px; border-bottom-width:4px;}
 }
 
+/* ---- result screen: one hero, one quiet line -----------------------------
+   Every game ends by telling you one number. Which number differs — a time, a
+   run, guesses used, points — but the shape of the telling shouldn't, and it
+   had drifted: six games led with a 60px hero while Guess and Daily Match
+   split their result across three equal boxes, so the thing you actually
+   earned sat at the same weight as "1 miss".
+
+   The hero is the currency. Everything else is one line under it. This is the
+   Mini's hierarchy, and it collapses a screen that used to need scrolling.
+
+   Font is per-page on purpose: most games load Anton for display type, but the
+   Crossword deliberately ships Archivo + Rubik only, so forcing --hero there
+   would fall through Anton to Impact. Pages that differ set --a-heroFont. */
+.a-rhero{margin:2px 0 12px; text-align:center;}
+.a-rhero .v{font-family:var(--a-heroFont, var(--hero)); font-weight:400;
+  font-size:clamp(48px,16vw,64px); line-height:.92; color:var(--a-heroInk, var(--ink));
+  font-variant-numeric:tabular-nums; letter-spacing:.01em;}
+.a-rhero .k{font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--mut); margin-top:8px;}
+/* Secondary stats: a sentence, not a row of cards. */
+.a-runline{display:flex; align-items:center; justify-content:center; gap:11px; flex-wrap:wrap;
+  margin:0 0 16px; font-size:12px; font-weight:700; color:var(--mut);}
+.a-runline span{display:inline-flex; align-items:baseline; gap:4px;}
+.a-runline b{font-family:var(--a-heroFont, var(--hero)); font-weight:400; font-size:19px;
+  color:var(--ink); font-variant-numeric:tabular-nums; line-height:1;}
+.a-runline i{width:3px; height:3px; border-radius:50%; background:var(--mut); opacity:.5; flex:0 0 auto;}
+
 /* ---- shared focus + reduced motion (scoped to a- components only) --------- */
 .a-btn:focus-visible,.a-card:focus-visible,.a-status:focus-visible,
 .a-panel a:focus-visible,.a-hud a:focus-visible,.a-hud button:focus-visible{

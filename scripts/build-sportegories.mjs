@@ -33,12 +33,43 @@ const R = (p) => readFileSync(path.join(ROOT, p), 'utf8');
 // ---------------------------------------------------------------- load
 const G = {};
 new Function('window', 'self', 'module', R('arcade/match/entities.js'))(G, G, {});
-for (const f of ['arcade/former.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
+for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
   try { new Function('window', 'self', R(f))(G, G); } catch (e) { console.warn('skip ' + f + ': ' + e.message); }
 }
 const CORPUS = G.GRID_ENTITIES || [];
 const FORMER = (G.RTG_FORMER && G.RTG_FORMER.players) || [];
 const AWARDS = (G.RTG_AWARDS && G.RTG_AWARDS.players) || {};
+const ROSTERS = (G.RTG_ROSTERS && G.RTG_ROSTERS.players) || [];
+
+/* Every active pro belongs in here.
+ *
+ * The corpus and the former-players set are both curated for RECOGNITION —
+ * they answer "who would a fan name?" That is the right question for building
+ * a solvable puzzle and the wrong one for judging an answer. Sportegories is a
+ * deep-cuts game: a player who dredges up the Bengals' third-year back should
+ * be rewarded, not told he made the name up. Chase Brown was sitting in
+ * rosters.js the whole time; this file just never opened it.
+ *
+ * These records come in with fame 0, which is exactly right on both counts:
+ * they never enter the solvability promise (that gate is f >= FAME_MIN), and
+ * they score at the top rarity tier when someone does name them. */
+const THIS_YEAR = new Date().getUTCFullYear();
+function fromRoster(p) {
+  // ESPN gives seasons of experience, not a debut year, so the span is
+  // approximate — good enough for "played in the 2020s", not for anything
+  // that turns on an exact year.
+  const exp = Math.max(0, Math.min(30, +p.exp || 0));
+  const decade = [];
+  for (let y = Math.floor((THIS_YEAR - exp) / 10) * 10; y <= THIS_YEAR; y += 10) decade.push(y);
+  return {
+    name: p.n, sport: p.s, pos: p.p || null, t: p.t ? [p.t] : [], col: p.col || null,
+    aw: [], decade, act: 1, f: 0,
+    // A roster is a snapshot of TODAY. It says nothing about the four other
+    // uniforms a ten-year veteran wore, so a one-team record here is not
+    // evidence of a one-team career — see tpart below.
+    tpart: exp > 2 ? 1 : 0
+  };
+}
 
 // ------------------------------------------------------------ normalize
 // Token-wise so "A.J." -> "aj" and "Abdul-Jabbar" -> "abduljabbar".
@@ -69,10 +100,14 @@ function put(e, fromCorpus) {
       name: e.name, sport: e.sport, pos: e.pos || null, t: (e.t || []).slice(),
       col: e.col || null, aw: (e.aw || []).slice(), decade: (e.decade || []).slice(),
       act: e.act === 1 ? 1 : 0, hof: e.hof ? 1 : 0, dp: typeof e.dp === 'number' ? e.dp : null,
-      f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0
+      f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0,
+      tpart: e.tpart ? 1 : 0
     });
     return;
   }
+  // A curated record carries a real career, so it clears the roster snapshot's
+  // "we only know today's team" caveat.
+  if (!e.tpart) cur.tpart = 0;
   // keep the richer record
   if (!cur.pos && e.pos) cur.pos = e.pos;
   if (!cur.col && e.col) cur.col = e.col;
@@ -88,6 +123,7 @@ function put(e, fromCorpus) {
 }
 CORPUS.forEach((e) => put(e, true));
 FORMER.forEach((e) => put(e, false));
+ROSTERS.forEach((p) => put(fromRoster(p), false));
 
 // awards are keyed "SPORT|normalized name"
 for (const [key, val] of Object.entries(AWARDS)) {
@@ -343,7 +379,9 @@ function test(p, pr) {
     case 'act': return p.act === 1;
     case 'draft1': return p.dp === 1;
     case 'teams': return p.t.length >= pr.min;
-    case 'teamsMax': return p.t.length > 0 && p.t.length <= pr.max;
+    // Never counts a roster snapshot: one team listed today is not a career
+    // spent in one town.
+    case 'teamsMax': return !p.tpart && p.t.length > 0 && p.t.length <= pr.max;
     case 'decades': return new Set(p.decade).size >= pr.min;
     default: return false;
   }
@@ -379,8 +417,16 @@ CATS.forEach((c) => {
   hits.forEach((p) => { if ((p.f || 0) >= FAME_MIN) p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; }); });
   const all = {};
   hits.forEach((p) => p._i.forEach((L) => { all[L] = (all[L] || 0) + 1; }));
-  c.n = hits.length;
-  c.t = hits.length >= 250 ? 0 : hits.length >= 80 ? 1 : hits.length >= 20 ? 2 : 3;  // tier
+  /* Tier is a promise about how hard a category FEELS, so it counts the
+     answers a fan could actually produce, not every name in the file. Once the
+     active rosters landed, raw counts stopped meaning anything: "NFL Safety"
+     gained 200 special-teamers nobody can name and would have been relabelled
+     an anchor. Recognizable answers only. */
+  const known = hits.filter((p) => (p.f || 0) >= FAME_MIN);
+  c.n = known.length;
+  // Thresholds re-fit to recognizable counts so the anchor/mid/hard/spice mix
+  // stays what it was before the rosters landed (~10/21/54/15).
+  c.t = known.length >= 203 ? 0 : known.length >= 67 ? 1 : known.length >= 13 ? 2 : 3;  // tier
   viability[c.i] = by;
   c._all = all;
 });
@@ -403,7 +449,7 @@ const compact = PLAYERS.map((p) => {
     p.col ? iC.get(p.col) : -1,
     p.aw.map((a) => iA.get(a)),
     decBits(p.decade),
-    (p.act ? 1 : 0) | (p.dp === 1 ? 2 : 0),
+    (p.act ? 1 : 0) | (p.dp === 1 ? 2 : 0) | (p.tpart ? 4 : 0),
     p.f || 0
   ];
   if (p.st) rec.push(p.st);

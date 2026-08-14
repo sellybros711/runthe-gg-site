@@ -132,7 +132,7 @@
       var out={}, pre='rtg:'+game+':';
       try{
         // matches rtg:<game>:done:<date> and rtg:<game>:pb:<date>, tolerating a
-        // sport-mode segment in between (rtg:wordsearch:nba:pb:<date>). A PB
+        // sport-mode segment in between (rtg:almamater:nba:pb:<date>). A PB
         // implies that day was completed.
         var tail=/:(?:done|pb):(\d{4}-\d{2}-\d{2})$/;
         for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(!k||k.indexOf(pre)!==0) continue;

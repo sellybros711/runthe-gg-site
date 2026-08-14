@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -149,6 +149,12 @@
   /* graded */
   .row.good{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card2));}
   .row.bad{border-left-color:var(--red);}
+  /* Real player, category we can't confirm — neither a green nor a red. */
+  .row.unsure{border-left-color:var(--gold); background:color-mix(in srgb, var(--gold) 7%, var(--card2));}
+  .res .hedge{color:var(--goldT); font-weight:800;}
+  /* Shared --goldT only reaches 3.5:1 on a light card, and this line is the
+     whole explanation for why an answer got nothing — it has to be readable. */
+  :root[data-theme="light"] .res .hedge{color:#7A5100;}
   .res{display:flex; align-items:center; gap:8px; margin-top:7px; font-size:12px; font-weight:700; flex-wrap:wrap;}
   .res .pts{font-family:var(--hero); font-weight:400; font-size:19px; line-height:1; color:var(--greenT);}
   .res .pct{color:var(--mut); font-weight:800; font-size:11px;}
@@ -246,6 +252,7 @@
         <div class="rule"><span class="b">2</span><div>Either name can start with the letter<small>On <b>B</b>, both “Bosh” and “Barry Bonds” work.</small></div></div>
         <div class="rule"><span class="b">3</span><div>Both names matching scores double<small>“Barry Bonds” on B is worth 2 — before rarity.</small></div></div>
         <div class="rule"><span class="b">4</span><div>Rarer answers are worth more<small>And you can’t use the same player twice.</small></div></div>
+        <div class="rule"><span class="b">5</span><div>Deep cuts get looked up<small>Anyone missing from our list is checked against the record books when time’s up.</small></div></div>
       </div>
       <button class="gobtn" id="startBtn" type="button">Start today’s puzzle</button>
       <button class="ghost" id="practiceBtn" type="button">Random practice puzzle</button>
@@ -301,10 +308,10 @@
     <div class="sub-h" id="mSub">Time’s up</div>
     <div class="bigscore" id="mScore">0</div>
     <h2 id="mTitle">POINTS</h2>
-    <div class="rstats">
-      <div class="rstat"><div class="v" id="mFilled">0</div><div class="l">Correct</div></div>
-      <div class="rstat"><div class="v" id="mBonus">0</div><div class="l">Bonus pts</div></div>
-      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
+    <div class="a-runline">
+      <span><b id="mFilled">0</b> correct</span><i></i>
+      <span><b id="mBonus">0</b> bonus</span><i></i>
+      <span><b id="mBest">0</b> best</span>
     </div>
     <button class="abtn go" id="mAgain" type="button">Play again</button>
     <button class="abtn" id="mShare" type="button">Share your card</button>
@@ -314,17 +321,26 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=2"></script>
 <script src="/arcade/calendar.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=8"></script>
-<script src="/arcade/share.js?v=3"></script>
+<script src="/arcade/board.js?v=6"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
+<!-- Sportegories shipped without the shared account chrome, so it had no
+     paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
+     free plays here while every other game gives one. -->
+<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/sportegories-data.js?v=2"></script>
-<script src="/arcade/sportegories.js?v=4"></script>
+<script src="/arcade/sportegories-data.js?v=3"></script>
+<script src="/arcade/sportegories.js?v=7"></script>
+<script src="/arcade/livecheck.js?v=3"></script>
 <script>
 (function(){
   'use strict';
@@ -374,7 +390,7 @@
     });
     $('letterTile').textContent = puz.letter;
     $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
-    $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice.';
+    $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice. Deep cuts get looked up.';
   }
 
   /* Typeahead searches the WHOLE player list, never the category's answers —
@@ -536,6 +552,13 @@
 
   function startPuzzle(daily){
     if(spinning) return;
+    // Same wallet as the rest of the arcade: guest 1 / account 3 / card
+    // unlimited. Archive replays are practice and never charged.
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      toast('No plays left today'); updateAgainBtn();
+      if(window.RTGCard) RTGCard.wall();
+      return;
+    }
     isDaily = daily;
     puz = daily ? SP.daily(pdate()) : SP.practice();
     if(!puz){ toast('Could not build a puzzle'); return; }
@@ -546,6 +569,8 @@
     spinTo(puz.letter, beginPlay);
   }
   function beginPlay(){
+    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt) RTGTokens.startAttempt(GAME);
+    updateAgainBtn();
     clearReveal(); revealDone=null;
     $('tally').classList.remove('on');
     $('doneBtn').style.display='';
@@ -604,13 +629,36 @@
     $('tallyLab').textContent='Scoring your card…';
 
     // resolve everything first, then pace the telling of it
-    var used={}, results=[], total=0, correct=0, bonus=0;
+    var used={}, usedNames={}, results=[], total=0, correct=0, bonus=0;
     puz.cats.forEach(function(c,i){
       var el=inputs[i]; el.disabled=true;
       var r = SP.check(puz, i, el.value, used);
-      if(r.ok){ used[r.player.idx]=1; total+=r.points; correct++; bonus+=(r.points-1); }
+      if(r.ok){ used[r.player.idx]=1; usedNames[nameKey(r.player.name)]=1; total+=r.points; correct++; bonus+=(r.points-1); }
       results.push(r);
     });
+
+    /* Anything our file doesn't know goes out to the live check.
+       This is the difference between "we've never heard of him" and "he isn't
+       real" — a distinction the game got wrong until now. The request goes out
+       here, at the top of the reveal, so it runs under cover of the animation
+       instead of making anyone wait for it. */
+    var liveReady=true, liveWait=null;
+    var pendingLive=[];
+    results.forEach(function(r,i){ if(r && r.live===true) pendingLive.push({ i:i, text:inputs[i].value }); });
+    if(pendingLive.length && window.RTG_LIVECHECK){
+      liveReady=false;
+      RTG_LIVECHECK.resolve(puz, pendingLive, usedNames).then(function(map){
+        Object.keys(map).forEach(function(k){
+          var i=+k, r=map[k]; results[i]=r;
+          if(r.ok){ total+=r.points; correct++; bonus+=(r.points-1); }
+        });
+      })['catch'](function(){ /* fail soft: the corpus verdict stands */ })
+       .then(function(){
+         liveReady=true;
+         results.forEach(function(r,i){ if(r && r.live===true) results[i]={ ok:false, reason:'unknown', msg:'Not in our player list.' }; });
+         if(liveWait){ var f=liveWait; liveWait=null; f(); }
+       });
+    }
 
     var running=0, n=puz.cats.length;
     function paint(i){
@@ -618,7 +666,7 @@
       row.classList.remove('pending');
       var d=row.querySelector('.dots'); if(d) d.remove();
       res.style.display='';
-      row.classList.add(r.ok?'good':'bad','flip');
+      row.classList.add(r.ok?'good':(soft(r)?'unsure':'bad'),'flip');
       if(r.ok){
         running+=r.points;
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
@@ -629,8 +677,9 @@
         sfx(r.points>=3?'win':'lock'); buzz(r.points>=3?[18,40,18]:22);
       } else {
         var why = r.reason==='empty' ? 'No answer' : (r.msg||'Not valid');
+        var hedge = soft(r);
         var also = SP.answersFor(puz, i, 4);
-        res.innerHTML='<span class="why">'+esc(why)+'</span>'+
+        res.innerHTML='<span class="'+(hedge?'hedge':'why')+'">'+esc(why)+'</span>'+
           (also.length?'<span class="also">Could have said: <b>'+also.map(esc).join('</b>, <b>')+'</b></span>':'');
         sfx('wrong');
       }
@@ -696,10 +745,15 @@
     }
     revealDone = function(){                      // skip: land everything now
       clearReveal();
-      for(var i=0;i<n;i++){ var row=$('row'+i);
-        if(!row.classList.contains('good') && !row.classList.contains('bad')) paint(i); }
-      $('tallyN').textContent=total;
-      revealDone=null; finish();
+      var landAll = function(){
+        for(var i=0;i<n;i++){ var row=$('row'+i);
+          if(!row.classList.contains('good') && !row.classList.contains('bad') && !row.classList.contains('unsure')) paint(i); }
+        $('tallyN').textContent=total;
+        revealDone=null; finish();
+      };
+      // Skipping can't skip the network. Land it the moment the answer's back.
+      if(!liveReady){ liveWait=landAll; $('tallyLab').textContent='Checking the record books…'; return; }
+      landAll();
     };
 
     // The last answer gets a longer drumroll than the rest — the card's whole
@@ -711,15 +765,35 @@
     // third the length. Reduced-motion gets the short version too.
     var FAST = (!isDaily) || reduced();
     var HOLD = FAST ? 110 : 300, LAST = FAST ? 240 : 820, GAP = FAST ? 80 : 260;
-    var at=0;
-    for(var i=0;i<n;i++){
-      (function(i, startAt, hold){
-        revealTimers.push(setTimeout(function(){ pend(i); }, startAt));
-        revealTimers.push(setTimeout(function(){ paint(i); }, startAt+hold));
-      })(i, at, i===n-1 ? LAST : HOLD);
-      at += (i===n-1 ? LAST : HOLD) + GAP;
+    /* Stepped rather than pre-scheduled: a row that's still out at the live
+       check has to hold the queue, or it would flip after the rows below it. */
+    function step(i){
+      if(i>=n){
+        revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, FAST?180:480));
+        return;
+      }
+      pend(i);
+      revealTimers.push(setTimeout(function(){
+        if(results[i] && results[i].live===true && !liveReady){
+          $('tallyLab').textContent='Checking the record books…';
+          liveWait=function(){ paint(i); revealTimers.push(setTimeout(function(){ step(i+1); }, GAP)); };
+          return;
+        }
+        paint(i);
+        revealTimers.push(setTimeout(function(){ step(i+1); }, GAP));
+      }, i===n-1 ? LAST : HOLD));
     }
-    revealTimers.push(setTimeout(function(){ revealDone=null; finish(); }, at+(FAST?180:480)));
+    step(0);
+  }
+
+  /* Amber, not red. "We couldn't confirm this" is a statement about our
+     reach, not a ruling that the answer was wrong — only a category we can
+     positively contradict earns a red row. */
+  function soft(r){ return r.reason==='unverified' || r.reason==='unknown'; }
+
+  function nameKey(s){
+    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   }
 
   var toastT=null;
@@ -730,7 +804,23 @@
   $('doneBtn').addEventListener('click', grade);
   $('skipBtn').addEventListener('click', function(){ if(revealDone) revealDone(); });
   $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
-  $('mAgain').addEventListener('click', function(){ startPuzzle(false); });
+  function updateAgainBtn(){
+    var b=$('mAgain'); if(!b) return;
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  // card.js publishes window.RTGCard on DOMContentLoaded, so paint the button's
+  // spent state after that or it falls back to the plain "no plays" label.
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateAgainBtn);
+  else updateAgainBtn();
+  $('mAgain').addEventListener('click', function(){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard) RTGCard.wall(); return;
+    }
+    startPuzzle(false);
+  });
   $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
   $('mShare').addEventListener('click', function(){
     try{

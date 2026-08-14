@@ -59,7 +59,7 @@
         teams: r[3].map(function (x) { return D.teams[x]; }),
         col: r[4] >= 0 ? D.cols[r[4]] : null,
         aw: r[5].map(function (x) { return D.awards[x]; }),
-        decBits: r[6], act: !!(r[7] & 1), dp1: !!(r[7] & 2), f: r[8], st: r[9] || null,
+        decBits: r[6], act: !!(r[7] & 1), dp1: !!(r[7] & 2), tpart: !!(r[7] & 4), f: r[8], st: r[9] || null,
         first: t[0] || '', last: t.length > 1 ? t[t.length - 1] : (t[0] || ''), toks: t
       };
     });
@@ -90,9 +90,60 @@
       // Loyalty and longevity. A career shape is a far better category than a
       // decade tag: "never played for another team" is a fact fans argue about,
       // "played in the 2010s" is just a filter.
-      case 'teamsMax': return p.teams.length > 0 && p.teams.length <= pr.max;
+      // tpart marks a record whose team list came from today's roster only. One
+      // team listed for a ten-year veteran is a snapshot, not a one-town career.
+      case 'teamsMax': return !p.tpart && p.teams.length > 0 && p.teams.length <= pr.max;
       case 'decades': return bitCount(p.decBits) >= pr.min;
       default: return false;
+    }
+  }
+
+  /* Tri-state evaluation: true / false / NULL, where null means a field this
+   * category needs is missing from OUR record — not that the player fails it.
+   *
+   * test() above answers yes/no, which is right for building a puzzle and
+   * wrong for judging an answer. We hold a college for 49% of recognizable
+   * players, an award list for 38%, and a career stat for 12%. Evaluating
+   * those as plain booleans meant "Played college at Virginia" told half the
+   * people who named a correct answer that it "doesn't fit", and a points
+   * threshold told 88% of them. The player is being marked wrong for a hole in
+   * our file.
+   *
+   * Null routes to the live check instead, which can resolve exactly these
+   * fields from a public source (college P69, awards P166, teams P54). So the
+   * game confirms the answer rather than rejecting it.
+   *
+   * Award and stat lists are confirm-only even when present: ours are
+   * incomplete, so a missing Pro Bowl is not evidence it never happened. */
+  function evalTri(p, pr) {
+    if (pr.all) {
+      var unknown = false;
+      for (var i = 0; i < pr.all.length; i++) {
+        var v = evalTri(p, pr.all[i]);
+        if (v === false) return false;          // a real contradiction settles it
+        if (v === null) unknown = true;
+      }
+      return unknown ? null : true;
+    }
+    switch (pr.k) {
+      // always present on every record
+      case 'sport':    return p.sport === pr.v;
+      case 'act':      return !!p.act;
+      case 'decades':  return bitCount(p.decBits) >= pr.min ? true : null;
+      case 'decade':   return p.decBits ? !!(p.decBits & (1 << Math.round((pr.v - D.dec0) / 10))) : null;
+      // present most of the time; absence is not a no
+      case 'pos':      return p.pos ? (p.pos === pr.v) : null;
+      case 'team':     return p.teams.length ? (p.teams.indexOf(pr.v) >= 0) : null;
+      case 'col':      return p.col ? (p.col === pr.v) : null;
+      case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;
+      case 'teams':    return p.teams.length >= pr.min ? true : null;
+      case 'teamsMax': return (!p.tpart && p.teams.length > 0) ? (p.teams.length <= pr.max) : null;
+      // our lists are partial, so they can confirm but never deny
+      case 'award':    return p.aw.indexOf(pr.v) >= 0 ? true : null;
+      case 'awardRe':  return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
+      case 'stat':     return (p.st && p.st[pr.v] != null) ? (p.st[pr.v] >= pr.min) : null;
+      case 'draft1':   return p.dp1 ? true : null;
+      default:         return null;
     }
   }
 
@@ -264,7 +315,9 @@
 
   // ---------- grading ----------
   /* Returns:
-   *   { ok:false, reason:'empty'|'fullname'|'unknown'|'letter'|'category'|'dup', msg }
+   *   { ok:false, reason:'empty'|'fullname'|'letter'|'unknown'|'category'|'dup', msg }
+   *   reason 'unknown' carries live:true — the name is absent from OUR data,
+   *   which livecheck.js can still resolve against the wider world.
    *   { ok:true, player, points, base, allit, rarity:{pct,bonus} } */
   function check(puz, catIndex, text, usedPlayers) {
     if (!data()) return { ok: false, reason: 'nodata', msg: 'Data not loaded.' };
@@ -277,17 +330,34 @@
     var t = trimSuffix(toks);
     if (t.length < 2) return { ok: false, reason: 'fullname', msg: 'Enter the full name — first and last.' };
 
-    var ids = BY_KEY[keyOf(toks)] || [];
-    if (!ids.length) return { ok: false, reason: 'unknown', msg: 'No player by that name.' };
-
-    // letter must lead the first or the last name
+    // Letter first: a wrong letter is wrong whoever they are, and settling it
+    // here means an unknown name only reaches the live check when it could
+    // still have scored.
     if (t[0][0] !== L && t[t.length - 1][0] !== L) {
       return { ok: false, reason: 'letter', msg: 'Needs to start with ' + puz.letter + '.' };
     }
-    // among same-named players, take any that satisfies the category
-    var def = D.cats[cat.i], hit = null;
-    for (var i = 0; i < ids.length; i++) { var p = P[ids[i]]; if (test(p, def.p)) { hit = p; break; } }
-    if (!hit) return { ok: false, reason: 'category', msg: 'Doesn’t fit this category.' };
+
+    /* Absent from our file. This game is about deep cuts, so our file is never
+     * the boundary of who counts — the miss goes to the live check, and even
+     * the fallback wording claims only that WE couldn't confirm them. */
+    var ids = BY_KEY[keyOf(toks)] || [];
+    if (!ids.length) {
+      return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
+    }
+
+    // Among same-named players, take any that satisfies the category. A player
+    // we simply lack a field for is not a wrong answer — send it to the live
+    // check rather than calling it one.
+    var def = D.cats[cat.i], hit = null, unsure = false;
+    for (var i = 0; i < ids.length; i++) {
+      var p = P[ids[i]], v = evalTri(p, def.p);
+      if (v === true) { hit = p; break; }
+      if (v === null) unsure = true;
+    }
+    if (!hit) {
+      if (unsure) return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
+      return { ok: false, reason: 'category', msg: 'Doesn’t fit this category.' };
+    }
     if (usedPlayers && usedPlayers[hit.idx]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
 
     // every name-word starting with the letter is a point ("Barry Bonds" = 2)
@@ -298,6 +368,14 @@
       ok: true, player: { idx: hit.idx, name: hit.name, sport: hit.sport, f: hit.f },
       base: allit, allit: allit, rarity: rar, points: allit + rar.bonus
     };
+  }
+
+  /* How many words of a typed name lead with the puzzle's letter. Exposed so
+   * the live check can score an outside player on the same scale. */
+  function letterHits(puz, text) {
+    var L = puz.letter.toLowerCase(), t = trimSuffix(tokens(text)), n = 0;
+    for (var i = 0; i < t.length; i++) if (t[i][0] === L) n++;
+    return n;
   }
 
   // ---------- typeahead ----------
@@ -332,6 +410,7 @@
     setData: setData, data: function () { return data(); },
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
-    test: test, rarityOf: rarityOf, CATS_PER: CATS_PER
+    letterHits: letterHits,
+    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER
   };
 });
