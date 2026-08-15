@@ -266,6 +266,8 @@
   .fighter .fbob{animation:bob 1.7s ease-in-out infinite;transform-origin:50% 90%;}
   .fighter.busy .fbob{animation:none;}
   .fighter.up{z-index:4;}
+  .fighter.ref{z-index:2;}
+  .fighter.ref.up{z-index:5;}
   .fighter svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   .fighter.hitflash svg{filter:brightness(3) saturate(.15) drop-shadow(0 0 10px rgba(255,255,255,.7));}
@@ -297,6 +299,18 @@
   .pincount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:120px;color:#fff;
     text-shadow:0 0 40px rgba(198,57,44,1);opacity:0;z-index:7;pointer-events:none;}
   .pincount.show{animation:pinA .62s ease-out;}
+  /* the second and third counts land bigger and harder than the first */
+  .pincount.huge{font-size:170px;}
+  .pincount.huge.show{animation:pinB .8s cubic-bezier(.2,1.5,.4,1);}
+  @keyframes pinB{0%{opacity:0;transform:scale(3)}22%{opacity:1;transform:scale(1)}
+    30%{transform:scale(1.06)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.96)}}
+  /* the building holds its breath while the count is on */
+  .arena.tense{box-shadow:inset 0 0 90px 20px rgba(0,0,0,.72);}
+  .arena.tense .crowd{opacity:.85;animation:crowdBuzz .5s steps(2) infinite;}
+  @keyframes crowdBuzz{0%{opacity:.7}100%{opacity:.95}}
+  .slap{position:absolute;width:34px;height:5px;margin-left:-17px;border-radius:3px;
+    background:rgba(255,255,255,.9);animation:slapA .3s ease-out forwards;}
+  @keyframes slapA{0%{transform:scaleX(.2);opacity:1}100%{transform:scaleX(2.6);opacity:0}}
   @keyframes pinA{0%{opacity:0;transform:scale(2.2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
   .flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:8;pointer-events:none;}
   .flash.go{animation:flashA .3s ease-out;}
@@ -595,6 +609,7 @@
     <div class="mat"></div>
     <div class="fighter me" id="fMe"></div>
     <div class="fighter opp" id="fOpp"></div>
+    <div class="fighter ref" id="fRef"></div>
     <div class="fxlayer" id="fFx"></div>
     <div class="callout" id="fCall"></div>
     <div class="pincount" id="fPin"></div>
@@ -1103,6 +1118,17 @@ const POSES={
   corner:   { body:[0,2,-9], shL:126, elL:-20, shR:-44, elR:26, hipL:12, knL:-18, head:8 },
   whip:     { shR:-74, elR:-44, shL:44, elL:-20, torso:7, body:[1,0,6] },
   ropes:    { shL:150, elL:-18, shR:-150, elR:18, hipL:-8, knL:14, hipR:10, knR:-16, body:[0,1,0] },
+  // the winner, arm held aloft by the official
+  raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, body:[0,-1,0] },
+  // ---- the referee ----
+  refIdle:  { shL:22, elL:-40, shR:-22, elR:40, hipL:5, hipR:-5 },
+  refWatch: { body:[0,2,-7], shL:40, elL:-70, shR:-30, elR:50, hipL:12, knL:-14, head:6 },
+  // down on the mat: arm cocked, then slammed flat for the count
+  refUp:    { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-142, elR:26, head:8 },
+  refDown:  { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-14,  elR:6,  head:10 },
+  // hands thrown apart — no, he got the shoulder up
+  refNo:    { body:[0,14,0], hipL:74, knL:-100, hipR:-14, knR:26, shL:96, elL:-16, shR:-96, elR:16, torso:-6 },
+  refRaise: { shR:-174, elR:-6, shL:26, elL:-34, torso:3, body:[0,-1,0] },
 };
 function poseOf(n){ return POSES[n]||POSES.stand; }
 
@@ -1113,11 +1139,11 @@ function wrestlerSVG(L,opt){
   const build=L.build||'athletic';
   const bw = build==='heavy'?3 : build==='lean'?-2 : 0;
   const FULLTIGHTS={tights:1,singlet:1,bodysuit:1,armor:1,gi:1};
-  const BARECHEST={trunks:1,shorts:1,harness:1,sash:1,chaps:1,bodypaint:1};
+  const BARECHEST={trunks:1,shorts:1,harness:1,sash:1,chaps:1,bodypaint:1};   // 'ref' is covered
   const SLEEVED={jacket:1,duster:1,gi:1,robe:1,hoodie:1};
   const tightsFull=!!FULLTIGHTS[L.attire];
   const covered =!BARECHEST[L.attire];
-  const legCol = tightsFull? gear : sk;
+  const legCol = L.attire==='ref' ? '#23232b' : (tightsFull? gear : sk);
   const sleeved = !!SLEEVED[L.attire];
   const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
   /* ---- one-piece body parts ----
@@ -1273,6 +1299,10 @@ function wrestlerSVG(L,opt){
     if(L.pattern==='tigerstripe'){ for(let i=0;i<5;i++){ const sy=30+i*5; B.torso+=P(tX,sy,6,2,'#141414')+P(tX+tW-7,sy+2,7,2,'#141414'); } }
     if(L.pattern==='web'){ B.torso+=P(30,28,2,25,shade(gear,-40))+P(tX,39,tW,2,shade(gear,-40))
       +P(24,31,2,2,shade(gear,-40))+P(37,31,2,2,shade(gear,-40))+P(24,47,2,2,shade(gear,-40))+P(37,47,2,2,shade(gear,-40)); }
+  }
+  if(L.attire==='ref'){                       // referee stripes
+    for(let i=0;i<5;i++) B.torso+=P(tX+1+i*4,28,2,25,'#1e1e24');
+    B.torso+=P(19-bw,28,26+bw*2,2,'#1e1e24')+P(tX,50,tW,3,'#23232b');
   }
   if(L.attire==='tank'){ B.torso+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk); }
   if(L.attire==='crop'){ B.torso+=P(22-bw,28,4,7,sk)+P(38+bw,28,4,7,sk)+LIMB(tX,40,tW,13,sk)
@@ -2207,17 +2237,36 @@ async function flashScreen(){ const f=document.createElement('div'); f.className
    ------------------------------------------------------------------ */
 const FIG={me:null,opp:null};
 const ST={W:760,home:130,close:80};
+// the official — a real third body in the ring
+const REF_LOOK={ skin:'#d29b6e', hair:'#241a12', gear:'#F4E8DB', trim:'#1e1e24',
+  hairStyle:'buzz', face:'none', mask:'none', attire:'ref', boots:'sneak', acc:'none',
+  pattern:'solid', tattoo:'none', aura:'none', build:'lean' };
 function stageInit(){
   const A=$('arena'); ST.W=A.clientWidth||760;
   ST.home=Math.round(ST.W*0.16);
   ST.close=Math.max(46,ST.home-52);
-  ['me','opp'].forEach(k=>{
-    const el=$(k==='me'?'fMe':'fOpp');
+  ['me','opp','ref'].forEach(k=>{
+    const el=$(k==='me'?'fMe':k==='opp'?'fOpp':'fRef');
     el.className='fighter '+k; el.innerHTML='<div class="fbob"></div>';
-    FIG[k]={el, inner:el.firstElementChild, dir:k==='me'?1:-1,
-            home:(k==='me'?-ST.home:ST.home), look:null, pose:null, x:0, up:0, rot:0, sc:1};
+    FIG[k]={el, inner:el.firstElementChild, dir:k==='opp'?-1:1,
+            home:(k==='me'?-ST.home:k==='opp'?ST.home:0), look:null, pose:null, x:0, up:0, rot:0, sc:1};
     FIG[k].x=FIG[k].home;
   });
+  FIG.ref.home=Math.round(ST.W*0.30);           // out of the way until he is needed
+  figLook('ref',REF_LOOK); poseSet('ref','refIdle');
+  fmv('ref',{fwd:0,up:0,rot:0,sc:0.86},0);
+}
+// keep the official near the action without standing in it
+function refTo(x,pose,ms,sc){
+  const f=FIG.ref; if(!f) return;
+  f.dir = x<0 ? 1 : -1;                          // always turned toward the middle
+  fmv('ref',{x,pose:pose||'refWatch',sc:sc||0.86},ms===undefined?420:ms);
+}
+function refDrift(){
+  if(!FIG.ref) return;
+  const mid=(atX('me')+atX('opp'))/2;
+  const side=mid<0?1:-1;
+  refTo(mid+side*Math.round(ST.W*0.20),'refWatch',600);
 }
 function figLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
 function poseSet(k,name){ const f=FIG[k]; if(f.pose===name) return;
@@ -2234,7 +2283,7 @@ function fmv(k,o,ms){
   f.el.style.transitionDuration=Math.max(0,(ms===undefined?150:ms))/FIGHT_SPEED+'ms';
   f.el.style.transform=`translate(${f.x.toFixed(1)}px,${(-f.up).toFixed(1)}px) scaleX(${f.dir}) rotate(${f.rot}deg) scale(${f.sc.toFixed(3)})`;
 }
-function busy(on){ ['me','opp'].forEach(k=>FIG[k]&&FIG[k].el.classList.toggle('busy',!!on)); }
+function busy(on){ ['me','opp','ref'].forEach(k=>FIG[k]&&FIG[k].el.classList.toggle('busy',!!on)); }
 function hitFlash(k,ms){ const f=FIG[k]; f.el.classList.add('hitflash');
   setTimeout(()=>f.el.classList.remove('hitflash'),(ms||150)/FIGHT_SPEED); }
 
@@ -2583,7 +2632,9 @@ async function startFight(o){
   await sleep(40);
   fmv('me',{pose:'run',fwd:0},640); fmv('opp',{pose:'run',fwd:0},640); await sleep(660);
   fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
-  fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220); busy(false);
+  fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220);
+  refTo(Math.round(ST.W*0.30),'refIdle',420,0.86);
+  busy(false);
   await sleep(240);
   const ch=charById(o.oppId), r=ch?rel(ch.id):null;
   if(ch){
@@ -2660,6 +2711,7 @@ async function runFight(){
       lastMove=name; lastCat=isFin?'slam':mv.cat;
     }
     renderLimbs();
+    if(MS.beat%3===0) refDrift();
 
     // ---- a faction ally can turn the tide ----
     if(!MS.ended && !MS.ally && MS.mom<-30 && myFaction() && rnd()<facBonus('interfere',0)){
@@ -2741,6 +2793,7 @@ async function submissionAttempt(byMe, mvName){
   busy(true);
   fmv(D,{pose:'prone',fwd:0,rot:0},200); await sleep(180);
   fmv(A,{pose:'submit',x:atX(D)-FIG[A].dir*40},180); await sleep(190);
+  refTo(atX(D)+(atX(D)<0?1:-1)*58,'refWatch',380,0.88);
   await callout('LOCKED IN!');
   fLog(byMe?`<b>${MS.me.name}</b> wrenches back on the <span class="hi">${bare(mvName)}</span> — right on the ${LIMB_NAME[part]}.`
            :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
@@ -2863,50 +2916,101 @@ async function midDecision(){
   await sleep(240);
 }
 
-/* The referee's count is the most important beat in wrestling. A kickout
-   at one says the move meant nothing; a kickout at two and a half is the
-   loudest noise a building makes all night. */
+/* ---- THE COUNT ----
+   The three count is the most important twelve seconds in wrestling and it
+   has a rhythm: the cover goes on, the referee slides down into position,
+   and only then does the hand come up and slap the mat. ONE. A beat. TWO.
+   A longer beat — that is where the whole building holds its breath — and
+   then either the hand comes down for three, or the shoulder explodes up
+   before it lands and the official throws his arms apart. */
+function showCount(txt,big){
+  const e=$('fPin'); e.textContent=txt;
+  e.className='pincount'+(big?' huge':''); void e.offsetWidth; e.classList.add('show');
+}
+async function refSlap(){                     // the hand comes up, then flat on the mat
+  poseSet('ref','refUp'); FIG.ref.el.style.transitionDuration='0ms';
+  await sleep(140);
+  poseSet('ref','refDown');
+  const x=atX('ref');
+  fxEl('slap',x+FIG.ref.dir*26,84,340);
+  shake();
+}
 async function pinSequence(iAmPinning, three, power, mvName, isFin){
   const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
   busy(true);
-  fmv(D,{pose:'prone',fwd:0,up:0,rot:0,sc:1},240); await sleep(220);
+  const arena=$('arena');
+  // ---- the cover, staged toward the middle of the ring so it reads ----
+  const px=Math.round(atX(D)*0.30);
+  fmv(D,{pose:'prone',x:px,up:0,rot:0,sc:1},280); await sleep(260);
   dustAt(D);
   FIG[A].el.classList.add('up');
-  fmv(A,{pose:'pin',x:atX(D)-FIG[A].dir*22,up:0,rot:0,sc:1},240); await sleep(260);
-  // how far the count gets when it is not a three
+  fmv(A,{pose:'pin',x:px-FIG[A].dir*22,up:0,rot:0,sc:1},280);
+  fLog(`<span class="hint">${iAmPinning?MS.me.name:MS.opp.name} hooks the leg…</span>`);
+  await sleep(300);
+  // ---- the official slides into position ----
+  const side = px < 0 ? 1 : -1;
+  FIG.ref.el.classList.add('up');
+  refTo(px + side*Math.round(ST.W*0.14),'refUp',440,0.9);
+  await sleep(460);
+  arena.classList.add('tense');
+
   const upAt = three?3 : power>50?3 : power>26?2 : 1;
   const nearFall = !three && upAt===3;
-  const showCount=(txt)=>{ const e=$('fPin'); e.textContent=txt; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); };
-  for(let n=1;n<=upAt;n++){
-    if(nearFall && n===3){
-      showCount('2'); await sleep(400);
-      fmv(D,{pose:'proneUp',rot:-8},120); await sleep(120);
-      fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},220);
-      await flashScreen(); await callout('KICKOUT AT TWO AND A HALF!');
-      fLog(`<span class="hi">He got the shoulder up! How did he kick out of the ${bare(mvName)}?!</span>`);
-      MS.nearFalls++; MS.quality+=isFin?15:10; MS.big++;
-      FIG[A].el.classList.remove('up');
-      MS.mom=clamp(MS.mom+(iAmPinning?-12:12),-100,100); setMom();
-      await settle(300); return false;
-    }
-    showCount(n); fmv(A,{sc:1.02},100); await sleep(110); fmv(A,{sc:1},100);
-    await sleep(three?300:250);
+  const counts = nearFall?2:upAt;
+
+  for(let n=1;n<=counts;n++){
+    await refSlap();
+    showCount(n, n>=2);
+    fmv(A,{sc:1.03},90); await sleep(120); fmv(A,{sc:1},90);
+    // the gap before two is longer than the gap before one, and the gap
+    // after two is the longest of all — that is the suspense
+    await sleep(n===1?520:700);
   }
+
+  if(nearFall){
+    // the hand starts down for three and never gets there
+    poseSet('ref','refUp'); await sleep(300);
+    showCount('3', true);                                     // begins to fall…
+    await sleep(150);
+    $('fPin').classList.remove('show');
+    fmv(D,{pose:'proneUp',rot:-10},110);
+    fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
+    poseSet('ref','refNo');
+    await flashScreen(); shake();
+    await callout('KICKOUT!');
+    fLog(`<span class="hi">Shoulder up at two and a half! How did he survive the ${bare(mvName)}?!</span>`);
+    MS.nearFalls++; MS.quality+=isFin?15:10; MS.big++;
+    arena.classList.remove('tense');
+    await sleep(420);
+    FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
+    MS.mom=clamp(MS.mom+(iAmPinning?-12:12),-100,100); setMom();
+    refDrift(); await settle(300); return false;
+  }
+
   if(three){
+    await refSlap();
+    showCount(3, true);
+    await flashScreen();
     MS.finish={type:'pin',by:iAmPinning,move:mvName,fin:isFin};
-    FIG[A].el.classList.remove('up');
+    arena.classList.remove('tense');
+    await sleep(520);
+    FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
     await endFight(iAmPinning);
     return true;
   }
-  // kicked out early — the move simply was not enough
-  fmv(D,{pose:'proneUp',rot:-6},130); await sleep(130);
-  fmv(A,{pose:'stagger',fwd:ST.close*0.4},220);
-  fLog(upAt===1? `<span class="hint">Kicked out at one — that was never finishing anybody.</span>`
-               : `<span class="hint">Shoulder up at two.</span>`);
+
+  // ---- kicked out: the move was not enough ----
+  poseSet('ref','refNo');
+  fmv(D,{pose:'proneUp',rot:-8},120); await sleep(140);
+  fmv(A,{pose:'stagger',fwd:ST.close*0.4},240);
+  fLog(upAt===1? `<span class="hint">Kicked out at one — contemptuous. That was never finishing anybody.</span>`
+               : `<span class="hint">Shoulder up at two, and he is straight back to his feet.</span>`);
   if(upAt===2) MS.quality+=3;
-  FIG[A].el.classList.remove('up');
+  arena.classList.remove('tense');
+  await sleep(300);
+  FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
   MS.mom=clamp(MS.mom+(iAmPinning?-6:6),-100,100); setMom();
-  await settle(260);
+  refDrift(); await settle(280);
   return false;
 }
 
@@ -2914,12 +3018,29 @@ async function endFight(iWon){
   if(MS.ended) return; MS.ended=true;
   const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
   busy(true);
+  $('arena').classList.remove('tense');
   fmv(Lz,{pose:'prone',fwd:0,up:0,rot:0,sc:1},300);
   fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
   FIG[W].el.classList.add('glow');
   await flashScreen();
   const f=MS.finish||{type:'pin',by:iWon};
   await callout(f.type==='sub'?(iWon?'SUBMISSION!':'YOU TAPPED'):iWon?'WINNER!':'DEFEATED');
+  // ---- the official raises the winner's arm ----
+  if(FIG.ref){
+    const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
+    fmv(W,{pose:'ready',x:wx,up:0,rot:0,sc:1},320);
+    FIG.ref.el.classList.remove('up');
+    refTo(wx + (wx<0?1:-1)*Math.round(ST.W*0.13),'refWatch',440,0.86);
+    await sleep(460);
+    poseSet('ref','refRaise');
+    fmv(W,{pose:'raised',sc:1.05},260);
+    await sleep(140);
+    burst(wx,'WINNER');
+    for(let i=0;i<3;i++){                       // arm pumped up, three times
+      fmv(W,{up:6},170); fmv('ref',{up:5},170); await sleep(190);
+      fmv(W,{up:0},170); fmv('ref',{up:0},170); await sleep(180);
+    }
+  }
   fLog(f.type==='sub'
       ? (iWon?`<span class="hi">${MS.opp.name} tapped to the ${bare(f.move)}.</span>`:`<span class="bad">You tapped to the ${bare(f.move)}.</span>`)
       : (iWon?`<span class="hi">Three count — ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
