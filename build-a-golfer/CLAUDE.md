@@ -15693,3 +15693,49 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     tp_final, shoptabs); inline scripts parse (block 0 is the JSON-LD tag, fails identically on baseline).
     NOTE: `mp_ui.mjs` is now a stale fixture - it drives the removed `decide` stage and calls `mpOrder`
     directly; superseded by `br_motion.mjs`.
+
+- **NO CAREER CAN BE STRANDED AGAIN: an escape from any screen that throws, plus the stoppage audit
+  behind it (owner, after the short-cup-side crash report: "Make sure there are no bugs or stoppages like
+  that previous bug").** The reported bug was not really "a cup side was short" - that was just the thing
+  that threw. The BUG was that a career could reach a screen it could never leave: a career screen renders
+  the same throw forever, so "Back to Home" then "Resume" lands straight back on it, and the career ends
+  there. Fixing one crash does not fix that; the next unforeseen throw does it again. So this pass fixed
+  the class, then went looking for the specific vectors.
+  1. **THE ESCAPE HATCH (the systemic fix).** The render-error card now offers, on every career screen,
+     the one step that moves the career PAST it: `season` -> skip the week, `summary` -> continue to next
+     season, `offseason` -> tee off, `qschool` -> skip Q-School and keep the status you finished on. Driven
+     by a `careerEscape` table with a per-screen `ok()` guard, so the button only appears when that step is
+     genuinely available. Every step is NON-DESTRUCTIVE (it advances, it never wipes a save), so tapping
+     one can only ever cost you the screen you could not see anyway; a failure inside the step itself falls
+     back to the title. The two ceremony screens are deliberately left out - that career is already
+     complete and banked, so there is nothing to advance past, and the only "forward" would be destroying
+     it. Daily/H2H screens are untouched (they still just offer Back to Home; a career skip is the wrong
+     tool there).
+  2. **Four stoppage vectors closed around the new knockout finale**, all of the same shape as the
+     original crash: `bracketCommit` refused a round with an undecided slot, which would have hung
+     `bracketFinishNow` in its `while(!bracketDone(B))` loop - a BROWSER HANG, which is worse than a crash
+     because the escape hatch never renders; it now decides the slot rather than refusing the round. An odd
+     field left the last man unpaired and quietly stranded, so he walks through. A missing champion threw
+     on `ch.p.you`. And the recap detail read `order[0].p.name` unguarded - the same unguarded-first-element
+     shape as `pair[0].eo`, i.e. the reported bug waiting to happen on a different screen.
+  3. **A spin sweep over every `while` loop on the career path.** Confirmed `finalizeEvent` has no early
+     return before it sets `ce.done`, so skip-to-end's round loop already terminated - bounded it anyway,
+     so a future edit that adds one cannot hang a skipped season. `momentInfo`'s `alive[0]` is safe by
+     construction (players init `made:true`, and the gate rejects a cut player), so it was left alone
+     rather than padded with a guard that would only hide a future change.
+  - Also fixed while in there: the recap showed the wrong round labels for a 16-man draw (it read the
+    32-man `BRACKET_ROUNDS` by index instead of the round's own short name, which the path entries now
+    carry), and printed a stray comma where a week paid nothing.
+  - Verified in Playwright, **0 page errors** throughout: a new 11-check stress suite (120 full brackets
+    across seeds/builds/sizes all finishing with a champion; short, odd and one-man draws never hanging or
+    throwing; `bracketFinishNow` terminating from any point in the week; the knockout screen surviving 8
+    stale or impossible states; missing the 32 resolving to a screen you can act on; and the hatch itself
+    on a mid-season week, the LAST week of the season, the summary, the off-season and Q-School - each
+    proven to actually move the career on, not just to render a button); a new season soak (10 full seasons
+    plus a Legend Circuit season driven through the UI at every state, no error cards, no stalls, every one
+    reaching its end screen); and a multi-year career soak driving careers season -> summary -> off-season
+    -> Q-School -> next season. Existing regressions green (mp_eng, mp_season, wk_test, cup_crash,
+    news_test, regress_final, tp_final, shoptabs).
+  - The soaks are the useful part of the test work and are worth keeping: they drive the real UI rather
+    than calling engine functions, so they catch exactly the class of bug that started this - a state the
+    engine is perfectly happy with that the SCREEN cannot render.

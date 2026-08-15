@@ -9116,7 +9116,9 @@ let _rendering=false;
    is non-destructive (it advances, it never wipes a save), so tapping it can only ever cost you the screen
    you could not see anyway. The ceremony screens are deliberately absent: that career is already complete
    and banked, so there is nothing left to advance past. ---- */
-const careerEscape={
+// var, not const: reset() runs at load ABOVE this line, and a const read from the temporal dead zone
+// throws (typeof does not save you) - which would be a crash inside the crash handler. Read defensively.
+var careerEscape={
   season:   {label:'Skip this week ▸', sub:'Move the season on and carry on with your career',
              ok:()=>!!(S.season && S.schedule && S.schedule.length), go:()=>advanceEvent()},
   summary:  {label:'Continue your career ▸', sub:'Move on to the next season',
@@ -9268,7 +9270,7 @@ function render(){
     // so "Back to Home" then "Resume" landed straight back on it and the career could not continue (that is
     // exactly what the short-cup-side crash did to a player). Every career screen now offers the step that
     // moves the career PAST it, so however a future screen breaks, the career carries on.
-    let esc_=(!S.daily && careerEscape[S.screen])||null;
+    let esc_=(!S.daily && careerEscape && careerEscape[S.screen])||null;
     try{ if(esc_ && !esc_.ok()) esc_=null; }catch(e){ esc_=null; }
     if(esc_){
       const sk=$(`<button class="btn ghost" style="margin-top:10px">${esc_.label}<span class="sub">${esc_.sub}</span></button>`);
