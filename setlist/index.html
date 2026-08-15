@@ -1176,6 +1176,16 @@
     font-size:9.5px; font-weight:900; letter-spacing:1.1px; text-transform:uppercase;
     color:var(--dim); border:1px solid var(--line2); border-radius:99px;
     padding:2px 6px;}
+  /* The night, and the version's standing when it has one. Small and dim: it
+     is the provenance line under a title, not a competing headline. The
+     standing is the one part allowed to be loud, because it is the brag. */
+  .bdnight{font-size:12px; font-weight:700; color:var(--mut); margin:-2px 0 12px;}
+  .vr.ver{color:var(--goldT); font-weight:900;}
+  .rr-night{display:block; font-size:11.5px; font-weight:600; color:var(--dim);
+    margin-top:3px; line-height:1.4; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; max-width:100%;}
+  .rr-ver{display:inline-block; margin-left:7px; font-weight:900; color:var(--goldT);
+    font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase;}
   .rr-len{font-size:12px; font-weight:700; color:var(--dim);
     font-variant-numeric:tabular-nums; flex:0 0 auto;}
   .rr-pts{font-family:var(--hero); font-size:17px; color:var(--ink);
@@ -1836,6 +1846,51 @@ function fmtDate(d){
   const [y, m, day] = String(d).split('-');
   return `${MONTHS[Number(m) - 1] || ''} ${Number(day)}, ${y}`;
 }
+/* ---------------------------------------------------------------------------
+ * WHICH VERSION THIS IS.
+ * ---------------------------------------------------------------------------
+ * The premise of the game is that you are not picking a SONG, you are picking
+ * one night's take on it, and the archive backs that hard: across the 166 songs
+ * with five or more plays, the longest version is a median of 2.7 times the
+ * shortest and 13.8 times at the 90th percentile. Echo of a Rose runs from 1:00
+ * to 44:24 across 114 plays.
+ *
+ * Everything after the draft screen used to drop that entirely. The scorecard
+ * listed "Echo of a Rose 13:52" with no night attached, and the share card said
+ * "Ran 24:48" without saying whose 24:48 it was.
+ *
+ * dataLoader stamps version_rank / version_of on every performance. These two
+ * helpers turn that into words, and they are deliberately QUIET: a middling
+ * take of a song says nothing at all, because a scorecard where every row
+ * claims to be remarkable is a scorecard where none of them are.
+ */
+function versionNote(perf){
+  const rank = Number(perf && perf.version_rank) || 0;
+  const of = Number(perf && perf.version_of) || 0;
+  if (!rank || !of) return null;
+  // Nothing to be the best of.
+  if (of === 1) return 'The only time they have played it';
+  if (of < 5) return null;
+  if (rank === 1) return `The longest of ${of}`;
+  if (rank <= 3) return `${ordinal(rank)} longest of ${of}`;
+  // A percentile only means something once there is a population.
+  if (of >= 20 && rank <= Math.ceil(of * 0.1)) return `Top 10% of ${of}`;
+  return null;
+}
+/* The night itself, which is worth saying whether or not the version is
+   remarkable: it is the answer to "which one did I get". */
+function whichNight(perf, opts = {}){
+  if (!perf || !perf.show_date) return '';
+  /* THE ROW GETS THE VENUE AND THE SHEET GETS THE CITY. "The Pavilion at Toyota
+     Music Factory, Irving" wraps to two lines in a list row, and seventeen rows
+     doing that is most of a screen spent on addresses. The date and the room are
+     the answer to "which night"; the city is there when you tap through. */
+  const where = opts.full
+    ? [perf.venue, perf.city].filter(Boolean).join(', ')
+    : (perf.venue || perf.city || '');
+  return where ? `${fmtDate(perf.show_date)} · ${where}` : fmtDate(perf.show_date);
+}
+
 function fmtLen(sec){
   const n = Number(sec);
   if (!n) return '';
@@ -1845,9 +1900,14 @@ function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
-/* Only ever used for a run length, which starts at 3 and rarely passes 6. */
+/* IT IS NOT ONLY EVER USED FOR A RUN LENGTH ANY MORE, which is what the note
+   here used to say: "starts at 3 and rarely passes 6", so it special-cased 3
+   and gave everything else "th". True for the monotony chip that owned it.
+   Then the version standing started calling it with 2 and the share card went
+   out saying "2th longest of 11". General now. */
 function ordinal(n){
-  return `${n}${n === 3 ? 'rd' : 'th'}`;
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
 }
 
 /* A sandwich, 11px, drawn rather than described. The chip used to try to be
@@ -2474,7 +2534,12 @@ function songBreakdownHTML(perf, sc, opts = {}){
         <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span>
         <span class="bdop">=</span><span class="bdterm tot"><b>${sc.subtotal}</b></span>
       </div>
-      <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span></div>
+      <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span>${(() => {
+        /* THE STANDING SITS WITH THE OTHER REASONS, because that is what it is:
+           the archive's own answer to "was this a good one to pick". */
+        const v = versionNote(perf);
+        return v ? `<span class="vr ver">${esc(v)}</span>` : '';
+      })()}</div>
       ${perf.jamchart_note ? `<div class="bdnote">${esc(perf.jamchart_note)}</div>` : ''}
     </div>`;
 }
@@ -2553,6 +2618,13 @@ function renderResult(){
               <span class="rr-t">${esc(x.perf.song)}${
                 seg ? `<i class="segout"></i><span class="rr-seg">+${seg.points}</span>` : ''}${
                 roleChip(x.role.name)}</span>
+              <!-- WHICH NIGHT, on every row. The scorecard listed seventeen song
+                   titles as though they were songs; every one of them came off a
+                   different concert, and that is the entire premise. -->
+              <span class="rr-night">${esc(whichNight(x.perf))}${(() => {
+                const v = versionNote(x.perf);
+                return v ? `<b class="rr-ver">${esc(v)}</b>` : '';
+              })()}</span>
             </span>
             <span class="rr-len">${fmtClock(lenOf(x.perf))}</span>
             <span class="rr-pts">${x.score.subtotal}</span>
@@ -2715,6 +2787,7 @@ function openDetail(i){
       <h2>${esc(x.role.name)}</h2>
       <button class="x" type="button" id="detailClose">Close</button>
     </div>
+    <div class="bdnight">${esc(whichNight(x.perf, { full: true }))}</div>
     ${songBreakdownHTML(x.perf, x.score, { hideRole: true })}`;
   document.getElementById('detailSheet').classList.add('on');
 }
@@ -3247,15 +3320,22 @@ function showNotes(sets){
   sets.forEach((songs, si) => (songs || []).forEach(p => {
     const gap = Number(p.show_gap) || 0, len = lenOf(p);
     let note = null, rank = 9;
-    if (gap >= BREADTH_BUSTOUT_GAP){ note = `First in ${gap} shows`; rank = 0; }
+    /* THE VERSION'S STANDING GOES FIRST, ahead of everything else this used to
+       say, because it is the only note that is about WHICH ONE YOU GOT. The
+       archive backs that: across the songs with five or more plays the longest
+       version is a median of 2.7x the shortest. "Ran 24:48" describes a number;
+       "The longest of 96" is a brag, and a brag is what a share card is for. */
+    const ver = versionNote(p);
+    if (ver && Number(p.version_of) >= 5){ note = ver; rank = 0; }
+    else if (gap >= BREADTH_BUSTOUT_GAP){ note = `First in ${gap} shows`; rank = 1; }
     else if (String(p.is_cover) === 'true'){
       note = p.original_artist ? `Originally by ${p.original_artist}` : 'A cover';
-      rank = 1;
+      rank = 2;
     }
     // Reads on its own. It was "29:57 of it", which leant on the song title
     // printed above it, and that title went away when notes became one line.
-    else if (len >= LEN_20MIN){ note = `Ran ${fmtClock(len)}`; rank = 2; }
-    else if (isJamchart(p)){ note = 'Flagged in the archive'; rank = 3; }
+    else if (len >= LEN_20MIN){ note = `Ran ${fmtClock(len)}`; rank = 3; }
+    else if (isJamchart(p)){ note = 'Flagged in the archive'; rank = 4; }
     if (note) found.push({ perf: p, set: si, note, rank });
   }));
   /* Over the cap, drop the least remarkable rather than whatever happened to
@@ -3390,12 +3470,28 @@ async function renderShareCard(r){
       const seg = nxt && String(p.is_segue) === 'true'
         && S.data.segues.has(`${p.song_id}|${nxt.song_id}`);
       const n = noteOf(p);
-      // Reserve the room the marks need before deciding where to truncate.
-      const tail = (n ? 22 : 0) + (seg ? 28 : 0);
+      /* THE RUNNING TIME, and on a card about versions it is not optional.
+         The card listed titles, which describes a set of SONGS; the length is
+         what says which take of each one you got, and across the songs with
+         five or more plays the longest version is a median of 2.7 times the
+         shortest. Right-aligned to the column so the times form a readable
+         edge instead of trailing each title at a different x. */
+      x.font = '700 27px Archivo';
+      const time = fmtClock(lenOf(p));
+      const timeW = x.measureText(time).width;
+      // Reserve the room the marks AND the clock need before truncating.
+      const tail = (n ? 22 : 0) + (seg ? 28 : 0) + timeW + 18;
       x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
       const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
+      /* MEASURED WHILE THE TITLE'S FONT IS STILL SET. Drawing the clock first
+         and measuring after would measure the label at 27px and put the
+         footnote marker inside the title. */
       let tx = cx + x.measureText(label).width + 10;
+      x.textAlign = 'right';
+      x.font = '700 27px Archivo'; x.fillStyle = CARD_MUT;
+      x.fillText(time, cx + width, ly);
+      x.textAlign = 'left';
       if (n){
         // Raised to the cap line, the way a footnote marker sits on paper.
         x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
@@ -3410,7 +3506,10 @@ async function renderShareCard(r){
   const leftEnd = drawSet(S.sets[0], 0, CARD_PAD, y, COL_W);
   const rightEnd = drawSet(S.sets[1], 1, CARD_PAD + COL_W + COL_GAP, y, COL_W);
   let ey = Math.max(leftEnd, rightEnd) + 30;
-  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, CARD_W - CARD_PAD * 2);
+  /* ONE COLUMN WIDE, like the sets above it. Drawn across the full card the
+     encore's titles sat on the left and its clocks on the far right, half a
+     card apart, while every other row had them a few characters apart. */
+  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, COL_W);
 
   // ── show notes, keyed to the numbers on the songs ──
   if (notes.length){
