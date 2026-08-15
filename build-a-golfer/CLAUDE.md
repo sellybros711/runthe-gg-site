@@ -14983,6 +14983,38 @@ allows Google Fonts, or self-host Anton.*
     protects the league cup and any future thin-pool side — but it is now impossible for ANY of them to
     hand a hole to the format.
 
+- **WHAT'S NEW: an in-game newsletter of everything that has landed in career mode (owner: "can we add a
+  new features tab that acts as a type of newsletter in the game that displays all of the new features we
+  added into career mode").** Career mode has grown enormously over the last stretch and almost none of it
+  announced itself: a returning player had no way to learn that the tour now changes around them, that
+  their card can be lost, or that the finale is a five-day knockout. Now there is a record of it.
+  - **`NEWS_ENTRIES`, 16 entries, newest first**, each with a category, an icon, a title, a plain-English
+    blurb of what it is, and a "where to find it" line (the genuinely useful part - "Menu, then The Tour",
+    "Sunday, in contention", "It comes to you"). Covers the week ledger, entry paths, Q-School and The
+    Proving Tour, the knockout finale, Career Traits, the Breakaway League, the Advisory Council, Tour
+    Eras, sponsor briefs, Moments, press conferences and reputation, career dilemmas and arcs, rivalries
+    and grudge matches, the Legend Circuit, team-cup captaincy, and the World Ranking / Tour Card / awards
+    layer. Four colour-coded categories (`NEWS_CATS`: The Tour / Your Career / Team Golf / Playing It).
+    **Shipping a feature is one row at the top of the table** - the unread count, the badges and the pill
+    all derive from it.
+  - **An honest unread count.** `bag_news_seen` holds the ids you have read; opening the tab marks
+    everything read but keeps the ones that WERE unread badged NEW in that view, so the badge clearing
+    never hides what was new. A **brand-new player is seeded as fully read** (`isNewPlayer()`), because
+    they have not MISSED anything - greeting a first-timer with a 16-strong backlog badge would be noise,
+    while an existing player gets the whole backlog, which is the entire point.
+  - **Two entry points, both where people already look**: a `✨ What's New · N` pill beside How to Play on
+    the home screen (pulsing while there is something unread, calm once read), and a row at the top of the
+    ≡ menu's Play section whose subtitle carries the count. No new home banner and no auto-popup - the ask
+    was a tab, and the title screen already queues four popups.
+  - Verified in Playwright (15 checks, 0 page errors): catalog integrity (no duplicate ids, every field
+    present, no em dashes); a returning player sees all 16 unread with the pill pulsing a count, opens it
+    to 16 NEW-badged entries newest-first with their categories and where-to-find lines, and the pill and
+    menu row go calm afterwards; a second visit shows the archive with no false "new" bar; a brand-new
+    player gets no badge but can still read the whole thing; and a feature added LATER shows up as the one
+    new entry for a caught-up player. Regressions green (regress_final, shoptabs, tp_final, the cup-crash
+    suite); inline scripts parse. (arcade_ad's last 2 checks fail on the known stale `bag_arcade_ad_off`
+    fixture, unchanged.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
