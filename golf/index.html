@@ -6074,20 +6074,59 @@ function cupPool(region, me){
 }
 // captain's picks reach down to ~16th in your country, outside that you genuinely miss the team
 const CUP_BUBBLE=16;
+const CUP_TEAM_SIZE=12;
+/* A cup is 12 a side and the whole 28-point format indexes fixed slots (the singles session plays
+   sa[0..11] against sb[0..11]). A side's eligible pool CAN run short in a long career - most sharply a
+   small breakaway league whose defectors retire out of w.active, but also a thin region - and a short side
+   used to hand `undefined` straight to matchScoreFn, which took the entire season screen down with
+   "undefined is not an object (evaluating 'pair[0].eo')" and left the career unplayable at that week.
+   So a side is always topped up to 12: first from the rest of its own pool, then, only if that is still
+   short, from whoever is left in the world. A cup contested by a makeweight is a far better outcome than
+   a career that cannot continue. */
+function fillCupTeam(team, pool){
+  const out=(team||[]).filter(Boolean).slice(0,CUP_TEAM_SIZE);
+  const seen=new Set(out.map(p=>p.name));
+  for(const p of (pool||[])){
+    if(out.length>=CUP_TEAM_SIZE) break;
+    if(!p || seen.has(p.name)) continue;
+    out.push(Object.assign({}, p)); seen.add(p.name);
+  }
+  if(out.length<CUP_TEAM_SIZE){
+    try{ const w=ensureWorld();
+      for(const g of (w.active||[])){
+        if(out.length>=CUP_TEAM_SIZE) break;
+        if(!g || seen.has(g.name)) continue;
+        out.push({name:g.name, eo:Math.round(g.lov), nat:g.nation||'INT', you:false}); seen.add(g.name);
+      } }catch(e){}
+  }
+  // still short only if the world itself is tiny (never in a real save): repeat the last man rather than
+  // leave a hole, since every consumer below indexes a fixed slot
+  while(out.length && out.length<CUP_TEAM_SIZE) out.push(Object.assign({}, out[out.length-1], {you:false, pick:false}));
+  return out;
+}
 // 12-man team: top 12 by OWGR, but YOU still get a captain's pick if you land just outside (on the bubble).
 function selectTeam(region, me){
   const pool=cupPool(region, me), meIdx=pool.findIndex(p=>p.you);
-  const team=pool.slice(0,12).map(p=>Object.assign({}, p));
-  if(meIdx>=12 && meIdx<CUP_BUBBLE) team[11]=Object.assign({}, pool[meIdx], {pick:true});   // bubble captain's pick
+  let team=pool.slice(0,CUP_TEAM_SIZE).map(p=>Object.assign({}, p));
+  if(meIdx>=CUP_TEAM_SIZE && meIdx<CUP_BUBBLE){                       // bubble captain's pick
+    const pick=Object.assign({}, pool[meIdx], {pick:true});
+    // assigning team[11] on a SHORT array left holes (a sparse array reads as undefined at every gap)
+    if(team.length>=CUP_TEAM_SIZE) team[CUP_TEAM_SIZE-1]=pick; else team.push(pick);
+  }
+  team=fillCupTeam(team, pool);
   return {team, pool, meIdx, selected:team.some(p=>p.you)};
 }
 // per-hole integer score (lower=better); foursomes share one ball, fourball takes the better ball.
 // Sigma kept high so match play stays volatile (anyone can win 18 holes), the underdog wins often.
 function holeScore(eo){ return Math.round(gauss()*1.18 - (eo-80)*0.05); }
+// A missing player must never take the season screen down. Every side is filled to 12 above, so this is
+// belt and braces: read a rating defensively and fall back to a tour-average one.
+function matchEo(p){ return (p && isFinite(p.eo)) ? p.eo : 80; }
 function matchScoreFn(format, pair){
-  if(format==='singles') return ()=>holeScore(pair[0].eo);
-  if(format==='fourball') return ()=>Math.min(holeScore(pair[0].eo), holeScore(pair[1].eo));
-  const eo=(pair[0].eo+pair[1].eo)/2; return ()=>holeScore(eo);
+  pair=pair||[];
+  if(format==='singles') return ()=>holeScore(matchEo(pair[0]));
+  if(format==='fourball') return ()=>Math.min(holeScore(matchEo(pair[0])), holeScore(matchEo(pair[1])));
+  const eo=(matchEo(pair[0])+matchEo(pair[1]))/2; return ()=>holeScore(eo);
 }
 // `holes` defaults to 18 (every Cup session), so the team-cup call sites are unchanged. The Tour
 // Championship knockout plays 18 a day for five days, so it passes 18 too.
@@ -6418,7 +6457,9 @@ function cupSessionPairs(team, sess){
   else { play=rotN(others, sess*3).slice(0,8); }
   play.sort((a,b)=>b.eo-a.eo);                         // face like-for-like across the two teams (tier i vs tier i)
   const pat=CUP_PAIR_PATTERNS[sess%CUP_PAIR_PATTERNS.length];
-  return pat.map(([i,j])=>[play[i], play[j]]);
+  // both sides are filled to 12 before this runs, so `play` is 8; drop any pair that somehow can't be
+  // filled rather than sending a hole into the match engine
+  return pat.map(([i,j])=>[play[i], play[j]]).filter(pr=>pr[0]&&pr[1]);
 }
 // CS446: a side's pairs+outcomes from a given session, from that side's perspective (for results-driven
 // re-pairing). outcome = win / loss / half for THIS side.
@@ -6448,9 +6489,9 @@ function cupPairsAfter(team, prior){
   const you=team.find(p=>p.you);
   if(you && !used.has(nm(you))){ const i=pool.findIndex(p=>p.you); if(i>=need){ const me=pool.splice(i,1)[0]; pool.splice(Math.max(0,need-1),0,me); } }
   const pick=pool.slice(0, need).sort((a,b)=>b.eo-a.eo);
-  const half=pick.length/2, fresh=[];
+  const half=Math.floor(pick.length/2), fresh=[];
   for(let i=0;i<half;i++) fresh.push([pick[i], pick[i+half]]);   // strong + steady, fresh partnerships for the split players
-  return kept.concat(fresh);
+  return kept.concat(fresh).filter(pr=>pr[0]&&pr[1]);
 }
 // CS446: each player's win-loss-half record over the given sessions (for the captain's Day-1 form badges).
 function cupPlayerForm(sessions, side){
@@ -6488,6 +6529,10 @@ function simTeamEvent(opts){
   let teamA=A.team, teamB=B.team;
   // captain mode (you're non-playing captain of your side): use the team you assembled instead of the auto squad
   if(opts.captainSide && opts.captainTeam){ if(opts.captainSide==='A') teamA=opts.captainTeam.slice(); else teamB=opts.captainTeam.slice(); }
+  // Whatever assembled them (auto squad, league sides, a captain's picks), both sides ARE 12 by the time
+  // the format indexes them. The 28-point format reads fixed slots, so a short side is not a lesser cup,
+  // it is a crash - and it left one player's career unplayable at that week.
+  teamA=fillCupTeam(teamA, A.pool); teamB=fillCupTeam(teamB, B.pool);
   const myPool = mySide==='A'?A:(mySide==='B'?B:null);
   const roster = side => (side==='A'?teamA:teamB).map(p=>({nm:teamNm(p), nat:p.nation||p.nat, you:!!p.you, pick:!!p.pick}));
   const rosterA=roster('A'), rosterB=roster('B');
@@ -6506,7 +6551,8 @@ function simTeamEvent(opts){
   for(const [title,day,fmt] of SESS){
     const matches=[];
     if(fmt==='singles'){ const sa=[...teamA].sort((a,b)=>b.eo-a.eo), sb=[...teamB].sort((a,b)=>b.eo-a.eo);
-      for(let i=0;i<12;i++) matches.push(simMatch('singles',[sa[i]],[sb[i]])); }
+      const n=Math.min(CUP_TEAM_SIZE, sa.length, sb.length);
+      for(let i=0;i<n;i++) matches.push(simMatch('singles',[sa[i]],[sb[i]])); }
     else {
       // CS446: the opening session is a skill-based lineup; each session after keeps the pairings that are
       // playing well and switches the ones doing poorly (results-driven, not a mechanical rotation). When you
@@ -16128,8 +16174,14 @@ function leagueCupPool(side, me){
 }
 function selectLeagueTeam(side, me){
   const pool=leagueCupPool(side, me), meIdx=pool.findIndex(p=>p.you);
-  const team=pool.slice(0,12).map(p=>Object.assign({}, p));
-  if(meIdx>=12 && meIdx<CUP_BUBBLE) team[11]=Object.assign({}, pool[meIdx], {pick:true});
+  let team=pool.slice(0,CUP_TEAM_SIZE).map(p=>Object.assign({}, p));
+  if(meIdx>=CUP_TEAM_SIZE && meIdx<CUP_BUBBLE){
+    const pick=Object.assign({}, pool[meIdx], {pick:true});
+    if(team.length>=CUP_TEAM_SIZE) team[CUP_TEAM_SIZE-1]=pick; else team.push(pick);
+  }
+  // the Frontier side is the sharpest case of a short pool: it is bounded by how many defected, and its
+  // members retire out of w.active as the career runs on. Top it up rather than hand a hole to the format.
+  team=fillCupTeam(team, pool);
   return {team, pool, meIdx, selected:team.some(p=>p.you)};
 }
 // banked at the end of a Unity Cup week: who won, and what it does to the feud
@@ -19557,22 +19609,25 @@ function scrCaptainPicks(){
   const myName=(mineA?te.nameA:te.nameB).replace('United States','USA');
   const pool=captainPool(), auto=pool.slice(0,6), cands=pool.slice(6,18);   // 6 auto-qualify, pick 6 of the next 12
   const picks=(S.cupPicks=S.cupPicks||[]);
+  // a thin pool (a small nation late in a career) must never leave the captain unable to send a team out:
+  // ask for as many picks as there genuinely are, and the squad is topped up to 12 when it's played
+  const need=Math.min(6, cands.length);
   add($(`<div class="center" style="margin-top:6px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🎖️ Captain · Team ${esc(myName)}</span></div>`));
   add($(`<h2 class="center" style="margin:10px 0 2px;font-size:19px">Pick your team</h2>`));
-  add($(`<p class="small muted center" style="margin:0 0 12px">6 qualified automatically. Choose ${6-picks.length} more captain's pick${6-picks.length===1?'':'s'}.</p>`));
+  add($(`<p class="small muted center" style="margin:0 0 12px">${auto.length} qualified automatically. Choose ${need-picks.length} more captain's pick${need-picks.length===1?'':'s'}.</p>`));
   const autoBox=$(`<div class="scout" style="max-width:520px;margin:0 auto 12px;padding:9px 13px"><div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Automatic qualifiers (top 6)</div>${auto.map((p,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;color:#cfe0ee"><span class="small muted" style="width:14px">${i+1}</span>${natFlag(p.nat)} ${esc(p.name)}<span class="small muted" style="margin-left:auto">OVR ${p.eo}</span></div>`).join('')}</div>`);
   add(autoBox);
-  add($(`<div class="small center" style="margin:2px 0 8px;color:var(--gold);font-weight:800">Captain's picks · ${picks.length}/6</div>`));
+  add($(`<div class="small center" style="margin:2px 0 8px;color:var(--gold);font-weight:800">Captain's picks · ${picks.length}/${need}</div>`));
   const list=$(`<div style="max-width:520px;margin:0 auto"></div>`);
   cands.forEach(p=>{ const on=picks.includes(p.name);
     const row=$(`<button class="btn ${on?'gold':'ghost'}" style="text-align:left;display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:10px 12px">
       <span style="flex:0 0 auto;font-weight:800">${on?'✓':'+'}</span>${natFlag(p.nat)}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="small muted">OVR ${p.eo}</span></button>`);
-    row.onclick=()=>{ const i=picks.indexOf(p.name); if(i>=0)picks.splice(i,1); else if(picks.length<6)picks.push(p.name); render(); };
+    row.onclick=()=>{ const i=picks.indexOf(p.name); if(i>=0)picks.splice(i,1); else if(picks.length<need)picks.push(p.name); render(); };
     list.appendChild(row); });
   add(list);
   const ctrl=$(`<div style="max-width:520px;margin:10px auto 0"></div>`);
-  const done=picks.length===6;
-  const c=$(`<button class="btn ${done?'goldfill':'ghost'}"${done?'':' disabled style="opacity:.55"'}>Send out your team ▸<span class="sub">${done?'Lock in the 12 and watch them go':`Pick ${6-picks.length} more`}</span></button>`);
+  const done=picks.length>=need;
+  const c=$(`<button class="btn ${done?'goldfill':'ghost'}"${done?'':' disabled style="opacity:.55"'}>Send out your team ▸<span class="sub">${done?'Lock in the 12 and watch them go':`Pick ${need-picks.length} more`}</span></button>`);
   if(done) c.onclick=()=>{ const chosen=cands.filter(p=>picks.includes(p.name)); S.cupPickTeam=auto.concat(chosen).map(p=>Object.assign({},p)); render(); };
   ctrl.appendChild(c); add(ctrl);
 }
