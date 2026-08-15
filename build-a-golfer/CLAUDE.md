@@ -14839,6 +14839,49 @@ allows Google Fonts, or self-host Anton.*
   - NEXT in the roadmap: #32 entry paths (the Proving Tour is now the destination a non-exempt entry path
     starts on, and `careerStatus()`/`setCareerStatus()` are the hook), then #33-#37.
 
+- **ENTRY PATHS: five ways to start a career (roadmap item #32).** Every career began identically: 22 years
+  old, a full tour card, the same blank reputation, 30 years ahead of you. So the first ten minutes of a new
+  save were the same ten minutes every time. Turning pro is now a CHOICE between five genuinely different
+  starts, made on its own screen (`scrEntry`) between building your golfer and your first season, and the
+  choice sets your age, your card, your standing, your confidence and how long the career lasts.
+  - **The five.** **The Amateur Champion** (22): a full card, peers who rate you (respect 62), 25k fans and
+    brands who rate you a tier above your record, but confidence starts LOW (46) because everybody expects
+    it. **The Q-School Graduate** (24): plays the six rounds immediately and tees off on whatever status
+    they earn, so the start itself is a competition. **The Mini-Tour Veteran** (26): starts on The Proving
+    Tour with the respect of people who watched you grind (66), an off-season change FLOOR of 2 and an extra
+    re-spin, on a 26-year career. **The Sponsor's Exemption** (21): a full card and a Premium sponsor signed
+    day one (140k fans), and a locker room that thinks you were handed it (respect 28, confidence 42).
+    **The Late Convert** (29): conditional status and +2 to every rating (you can already play), on a
+    23-year career.
+  - **The cost of a late start is LENGTH, not decline.** Decline is CAREER-YEAR anchored, not age anchored
+    (`applyPlayerDecline` gates on `S.year`), so starting at 29 would otherwise have been free. `CAREER_END_AGE
+    =52` makes the start age BE the length (21/22 -> 30 years, 24 -> 28, 26 -> 26, 29 -> 23), which is both
+    the honest cost and a real trade (the Late Convert's +2 buys fewer swings at it). Every path still
+    retires past 50, so the Legend Circuit's age gate is reachable from all five.
+  - **Built on levers that already exist**, not a parallel system: `careerStatus()`/Q-School/The Proving
+    Tour from #31, the two-axis reputation, confidence, followers, the sponsor tiers, OWGR seeding and the
+    off-season budget. 8 `CAREER_MAX_YEARS` display sites now read `careerYears()`.
+  - **Two design corrections during the build, both from reading the systems rather than assuming.** A
+    seeded sponsor OFFER would never have been seen (`computeSponsorOffers()` overwrites `sponsorOffers` at
+    season end and already offers a brand for an empty slot), so the exemption path signs a sponsor outright
+    and the amateur/mini paths carry a standing `sponsorTierAdj` inside `eligibleSponsorTier()` instead. And
+    the off-season bonus was additive, which pushed the mini path to 4 changes; it is now a FLOOR
+    (`Math.max(v, floor)`), so it lifts a struggling young player without inflating an already-good budget.
+  - Verified in Playwright across three suites, **0 page errors**: engine (22 checks - the catalog, length by
+    start age, each path applying its status/reputation/confidence/fans/sponsor/OVR, the off-season floor,
+    Q-School opening AND finishing straight into a season on the status it earned, and retirement landing on
+    the right year); UI (11 checks - the build screen offering "Turn Pro" only for a fresh career, the five
+    cards with their chips and pros/cons, back, picking the mini path starting a 16-event feeder season, and
+    the Q-School path played through the real screen to a season); and a season suite (14 checks - a full
+    year on a path playing to the summary, the record block keeping the path, the Career tab's "How you
+    turned pro" card, the off-season budget, a 23-year career ending at 51 with the ceremony naming the road,
+    and a legacy save with no path defaulting to 22/30 untouched). Regressions green (qs_engine, qs_ui,
+    regress_final, mp_eng, mp_season, legacy_test 21/21, shoptabs); all 5 inline scripts parse.
+  - Deployed to /golf (byte-identical verified; `origin/main` had no parallel golf edits to adopt).
+    Tunable: the `ENTRY_PATHS` table (age/status/reputation/confidence/fans/rankPts/skill/sponsor per path),
+    `CAREER_END_AGE`, and each path's `offFloor`/`offSpins`/`sponsorTierAdj`.
+  - NEXT in the roadmap: #33 a home tour and a global schedule, then #34-#37.
+
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
