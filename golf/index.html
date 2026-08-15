@@ -2516,6 +2516,9 @@ h2{font-size:11px;letter-spacing:.04em}
 .nw-t{font-weight:800;font-size:15px;color:var(--oncard);line-height:1.25}
 .nw-b{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:4px}
 .nw-w{font-size:11px;color:var(--nwc,var(--gold));margin-top:6px;opacity:.85}
+.nw-day{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
+.nw-day:before,.nw-day:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(241,208,74,.35),transparent)}
+.nw-day span{font:800 11px/1 var(--pixel);letter-spacing:.16em;color:var(--gold);white-space:nowrap}
 .nw-bar{border:1px solid color-mix(in srgb, var(--gold) 45%, transparent);background:color-mix(in srgb, var(--gold) 10%, transparent);border-radius:10px;padding:9px 12px;margin:0 0 14px;font-size:12.5px;color:var(--oncard);text-align:center}
 .cvimp{border:1px solid;border-radius:9px;padding:10px 12px;margin:12px 0 10px;background:rgba(0,0,0,.18)}
 .cv-l{font:800 11px/1.3 var(--pixel);letter-spacing:.12em;text-transform:uppercase}
@@ -20354,53 +20357,56 @@ function tourRetroNode(){
    (the unread count, the badges, the pill) is derived.                                                  */
 const NEWS_CATS={tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career',col:'#35d6a0'},
                  team:{name:'Team Golf',col:'#8fd3ff'}, sim:{name:'Playing It',col:'#c99bff'}};
+// Entries are grouped under the date they shipped, so an issue reads as an issue. Everything up to and
+// including the split-cup fix went out together; a later feature just carries its own date string.
+const NEWS_DATE='8/14/26';
 const NEWS_ENTRIES=[
-  {id:'wk-ledger', cat:'sim', icon:'🗞', title:'The week resolves into the page',
+  {id:'wk-ledger', date:NEWS_DATE, cat:'sim', icon:'🗞', title:'The week resolves into the page',
    blurb:'The season no longer buries you in pop-ups. Everything a week paid you, the coins, a sponsor brief delivered, a trait unlocked, settles as rows inside the result card. The big weeks hold a little longer than the quiet ones, and the whole year is kept in a season feed you can scroll back through.',
    where:'Watch any season play out.'},
-  {id:'entry-paths', cat:'career', icon:'🚪', title:'Five ways to turn pro',
+  {id:'entry-paths', date:NEWS_DATE, cat:'career', icon:'🚪', title:'Five ways to turn pro',
    blurb:'Turning pro is a choice now. Amateur champion, Q-School graduate, mini-tour veteran, sponsor’s exemption or late convert, each starting you at a different age with a different card, reputation and confidence. A late start costs you years on tour rather than nothing at all.',
    where:'Build a golfer, then pick your road in.'},
-  {id:'qschool', cat:'career', icon:'🎫', title:'The card can be lost, and won back',
+  {id:'qschool', date:NEWS_DATE, cat:'career', icon:'🎫', title:'The card can be lost, and won back',
    blurb:'Finish outside the line and you drop to conditional status with a thinner schedule. Fall further and you lose the card altogether and play The Proving Tour, sixteen weeks for a fraction of the money. Three roads back: the order of merit, three wins in a season, or six rounds of Q-School.',
    where:'It finds you at the end of a bad year.'},
-  {id:'mp-finale', cat:'tour', icon:'🏆', title:'The finale is a five-day knockout',
+  {id:'mp-finale', date:NEWS_DATE, cat:'tour', icon:'🏆', title:'The finale is a five-day knockout',
    blurb:'The Tour Championship is no longer seventy-two holes of stroke play. The top thirty-two of the points race are seeded and play one eighteen-hole match a day for five days: win and you are through to tomorrow, lose once and your season is over. Your own matches you can play out shot by shot, or sim.',
    where:'The last week of the season.'},
-  {id:'traits', cat:'career', icon:'🎖', title:'Career Traits',
+  {id:'traits', date:NEWS_DATE, cat:'career', icon:'🎖', title:'Career Traits',
    blurb:'Twelve landmark feats leave a permanent mark on the golfer who did them. Win all four majors in a season and you keep the composure, the extra off-season change and the sponsors who treat you two tiers higher for the rest of that career.',
    where:'Season summary, on the Career tab.'},
-  {id:'league', cat:'tour', icon:'⚔', title:'The Breakaway League',
+  {id:'league', date:NEWS_DATE, cat:'tour', icon:'⚔', title:'The Breakaway League',
    blurb:'Somewhere between years four and nine a rival league launches with money the tour cannot answer, and takes a chunk of the field with it. Stay and fight it, or sign: the guarantee is enormous, but their events pay no world ranking points, so the majors slowly close on you. Once the feud runs hot enough the Nations Cup is replaced by the Unity Cup, those who stayed against those who left.',
    where:'It comes to you.'},
-  {id:'council', cat:'tour', icon:'🗳', title:'The Player Advisory Council',
+  {id:'council', date:NEWS_DATE, cat:'tour', icon:'🗳', title:'The Player Advisory Council',
    blurb:'Once you are somebody, a proposal comes to you before it lands and you vote on it, with an honest read on what it would do to your own build. The room can pass it over your objection, or throw it out despite your support.',
    where:'Between seasons, once you have a record.'},
-  {id:'eras', cat:'tour', icon:'📜', title:'The tour changes around you',
+  {id:'eras', date:NEWS_DATE, cat:'tour', icon:'📜', title:'The tour changes around you',
    blurb:'A ball rollback, a groove rule, a flattened purse curve, tighter fields, a moved card line, an event that dies for good, a major on a new rota. Sixteen structural changes roll differently in every career, so no two careers are played on the same tour.',
    where:'Menu, then The Tour.'},
-  {id:'briefs', cat:'career', icon:'🧾', title:'Sponsor briefs',
+  {id:'briefs', date:NEWS_DATE, cat:'career', icon:'🧾', title:'Sponsor briefs',
    blurb:'Your sponsor now asks for something over your next few starts: three top-tens, a low round, beat your rival. Deliver it and it pays in coins and a temporary stat boost, and counts toward the relationship. Miss it and nothing happens, because a punishing sponsor is one you ignore.',
    where:'The strip under the live season screen.'},
-  {id:'moments', cat:'sim', icon:'🔥', title:'Play the Sunday that matters',
+  {id:'moments', date:NEWS_DATE, cat:'sim', icon:'🔥', title:'Play the Sunday that matters',
    blurb:'When you are in the hunt on the final day of a major, the game stops simming and offers you the round hole by hole, with real decisions on the shots that decide it. Every bold call that comes off is worth coins and confidence.',
    where:'Sunday, in contention.'},
-  {id:'rep', cat:'career', icon:'🎤', title:'Press conferences, and a reputation',
+  {id:'rep', date:NEWS_DATE, cat:'career', icon:'🎤', title:'Press conferences, and a reputation',
    blurb:'What you say has a price. Every answer trades Popularity against Respect, and a swaggering one can genuinely backfire. Your following is what sponsors pay for; your standing with the locker room is what steadies you under pressure.',
    where:'A couple of times a season.'},
-  {id:'dilemmas', cat:'career', icon:'⚖', title:'Career decisions, and the stories they start',
+  {id:'dilemmas', date:NEWS_DATE, cat:'career', icon:'⚖', title:'Career decisions, and the stories they start',
    blurb:'An injury scare, a seven-figure appearance fee the week before a major, a swing overhaul, a business you could go all in on. Each choice rolls one of several outcomes, and some of them come back months later as the next chapter.',
    where:'Through the season.'},
-  {id:'rivals', cat:'career', icon:'🥊', title:'Rivalries that find you',
+  {id:'rivals', date:NEWS_DATE, cat:'career', icon:'🥊', title:'Rivalries that find you',
    blurb:'The game watches who you actually battle and, after a few years, crowns a nemesis. Finish a season ahead of them and it is worth something. Catch them in contention on a Sunday and it becomes a Grudge Match, the two of you tracked shot for shot.',
    where:'From year three.'},
-  {id:'circuit', cat:'career', icon:'🕰', title:'The Legend Circuit',
+  {id:'circuit', date:NEWS_DATE, cat:'career', icon:'🕰', title:'The Legend Circuit',
    blurb:'A career does not end at retirement. Play on for up to twelve more seasons against the players you spent thirty years beating, and if you won a major you keep the invitation back to it for as long as the real rules allow.',
    where:'After your last tour season.'},
-  {id:'cups', cat:'team', icon:'🏌', title:'Team cups worth watching',
+  {id:'cups', date:NEWS_DATE, cat:'team', icon:'🏌', title:'Team cups worth watching',
    blurb:'The Atlantic and Nations Cups reveal one match at a time, with a Dispatch between days telling you where the week stands and exactly what Sunday’s singles need. Late in a career you can be offered the captaincy and set the pairings yourself.',
    where:'The last week of the season, most years.'},
-  {id:'realism', cat:'tour', icon:'🌍', title:'A tour that keeps score of you',
+  {id:'realism', date:NEWS_DATE, cat:'tour', icon:'🌍', title:'A tour that keeps score of you',
    blurb:'A rolling World Ranking that decides which fields you are even in, a Tour Card to protect, the Race to the Cup with its cut lines, season awards, and the Games every four years with a medal on the line.',
    where:'Everywhere, all season.'}
 ];
@@ -20431,14 +20437,19 @@ function overlayWhatsNew(app){
   ov.appendChild($(`<h3 style="margin:0 0 2px">What's New</h3>`));
   ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">Everything that has landed in Career Mode, newest first.</p>`));
   if(fresh.size) ov.appendChild($(`<div class="nw-bar"><b style="color:var(--gold)">${fresh.size} new</b> since you last looked.</div>`));
-  ov.appendChild($(`<div>${NEWS_ENTRIES.map(e=>{
-    const c=NEWS_CATS[e.cat]||NEWS_CATS.career, isNew=fresh.has(e.id);
-    return `<div class="nwitem${isNew?' fresh':''}" style="--nwc:${c.col}">
-      <div class="nw-top"><span class="nw-i">${e.icon}</span><span class="nw-cat">${esc(c.name)}</span>${isNew?`<span class="nw-new">NEW</span>`:''}</div>
-      <div class="nw-t">${esc(e.title)}</div>
-      <div class="nw-b">${esc(e.blurb)}</div>
-      <div class="nw-w">▸ ${esc(e.where)}</div></div>`;
-  }).join('')}</div>`));
+  // grouped under the date each batch shipped, so it reads as an issue rather than a flat list
+  const groups=[]; NEWS_ENTRIES.forEach(e=>{ const d=e.date||NEWS_DATE;
+    const g=groups[groups.length-1]; if(g && g.date===d) g.items.push(e); else groups.push({date:d, items:[e]}); });
+  ov.appendChild($(`<div>${groups.map(g=>`
+    <div class="nw-day"><span>${esc(g.date)}</span></div>
+    ${g.items.map(e=>{
+      const c=NEWS_CATS[e.cat]||NEWS_CATS.career, isNew=fresh.has(e.id);
+      return `<div class="nwitem${isNew?' fresh':''}" style="--nwc:${c.col}">
+        <div class="nw-top"><span class="nw-i">${e.icon}</span><span class="nw-cat">${esc(c.name)}</span>${isNew?`<span class="nw-new">NEW</span>`:''}</div>
+        <div class="nw-t">${esc(e.title)}</div>
+        <div class="nw-b">${esc(e.blurb)}</div>
+        <div class="nw-w">▸ ${esc(e.where)}</div></div>`;
+    }).join('')}`).join('')}</div>`));
   ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:14px 0 0">More on the way. Tell us what you want next from the menu, under Send Feedback.</p>`));
   const x=$(`<button class="x" aria-label="Close">✕</button>`); x.onclick=()=>{ S.overlay=null; render(); };
   ov.appendChild(x);
