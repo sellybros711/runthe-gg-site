@@ -19258,7 +19258,7 @@ function skipToEnd(){
     // a bracket week in progress (you're in the 32, mid-reveal): finish it off the books
     { const cur=S.schedule[S.evtIndex];
       if(cur && cur.bracket && !S.daily && bracketQualified()){ bracketFinishNow(S.curBracket); S.curBracket=null; S._brIdx=null; } }
-    while(S.curEvt && !S.curEvt.done) simNextRound();
+    { let g=0; while(S.curEvt && !S.curEvt.done && g++<8) simNextRound(); }   // 4 rounds; bounded so it can never spin
     while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
       const evt=S.schedule[S.evtIndex];
       // The Match Play Championship, simmed: play the bracket out headlessly (you included if you're in
