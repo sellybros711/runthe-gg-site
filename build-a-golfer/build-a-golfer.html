@@ -6287,21 +6287,28 @@ function bracketResolveMine(B, st, override){
 }
 // commit a fully-decided stage: eliminate the losers, advance the winners, record the round
 function bracketCommit(B, st){
-  if(!st || st.slots.some(s=>!s.res)) return null;
+  if(!st) return null;
+  // A slot that somehow reached the commit undecided must never stop the week: decide it here rather
+  // than refuse to commit, because a round that can't be committed is a career stuck on the finale
+  // (bracketFinishNow would spin forever). Belt and braces, same lesson as the short cup side.
+  st.slots.forEach(s=>{ if(!s.res) s.res=bracketDecide(s.A, s.C, st.holes); });
   const matches=[], next=[];
   st.slots.forEach(s=>{
     const A=s.A, C=s.C, win=s.res.win, lose=s.res.lose, label=s.res.label, extra=!!s.res.extra;
     lose.alive=false; lose.out=st.ri;
-    win.path.push({ri:st.ri, opp:lose.p.name, oppSeed:lose.seed, label, extra, won:true});
-    lose.path.push({ri:st.ri, opp:win.p.name, oppSeed:win.seed, label, extra, won:false});
+    win.path.push({ri:st.ri, short:st.short, opp:lose.p.name, oppSeed:lose.seed, label, extra, won:true});
+    lose.path.push({ri:st.ri, short:st.short, opp:win.p.name, oppSeed:win.seed, label, extra, won:false});
     matches.push({aSeed:A.seed, aName:A.p.name, aYou:!!A.p.you, bSeed:C.seed, bName:C.p.name, bYou:!!C.p.you,
       winSeed:win.seed, label, extra, you:!!(A.p.you||C.p.you), youWon:!!win.p.you,
       upset:win.seed>lose.seed+3});
     next.push(win);
   });
   B.rounds.push({name:st.name, short:st.short, holes:st.holes, day:st.day, matches});
+  // an ODD side would leave the last man unpaired and quietly stranded, so he walks through
+  const odd=B.alive.length%2 ? B.alive[B.alive.length-1] : null;
+  if(odd && next.indexOf(odd)<0) next.push(odd);
   B.alive=next;
-  if(B.rounds.length>=B.RDS.length) B.champion=next[0]||B.players[0];
+  if(B.rounds.length>=B.RDS.length || B.alive.length<=1) B.champion=B.alive[0]||B.champion||B.players[0]||null;
   return B.rounds[B.rounds.length-1];
 }
 // Play one round outright (every headless path: skip to end, a season finished without you, the summary).
@@ -9241,6 +9248,27 @@ function render(){
       <p class="small muted center" style="margin:0 0 18px;word-break:break-word">${esc(S.screen)}: ${esc((err&&err.message)||String(err))}</p>
       <button class="btn goldfill" id="rerr-home">Back to Home</button></div>`);
     const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
+    // THE ESCAPE HATCH. A career week that throws used to be a dead end: every render of that week threw
+    // again, so "Back to Home" then "Resume" landed straight back on it and the career could not continue
+    // (that is exactly what the short-cup-side crash did to a player). A season week is now always
+    // skippable, so however a future week breaks, the career carries on.
+    if(S.screen==='season' && !S.daily && S.season && S.schedule && S.schedule.length){
+      const sk=$(`<button class="btn ghost" style="margin-top:10px">Skip this week ▸<span class="sub">Move the season on and carry on with your career</span></button>`);
+      sk.onclick=()=>{
+        try{
+          clearTimeout(seasonTimer); try{ mpClearTimer(); }catch(e){}
+          // drop whatever this week was half-way through, then advance
+          S.curEvt=null; S.curBracket=null; S._brIdx=null; S.brStage='draw'; S.brShown=0; S.brPause=false;
+          S.matchPlay=null; S.mpHoleIdx=null; S.moment=null; S.momentPO=null; S.poW=null;
+          S.pendingLeagueNews=null; S.pendingLeagueOffer=null; S.pendingTourNews=null; S.pendingTourVote=null;
+          S._cupIdx=null; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S.teamMatchN=0;
+          try{ track('week_skipped_after_error',{screen:S.screen, evt:S.evtIndex}); }catch(e){}
+          advanceEvent();
+        }catch(e2){ try{ skipToEnd(); }catch(e3){ S.screen='summary'; } }
+        render();
+      };
+      fb.appendChild(sk);
+    }
     screen.appendChild(fb);
   }
   // Tour Pass level-up: flushed here (once the result screen is actually on screen) rather than from inside
@@ -20762,8 +20790,8 @@ function bracketPathStrip(B){
 }
 function scrBracket(){
   clearTimeout(seasonTimer); mpClearTimer();
-  if(S._brIdx!==S.evtIndex){ S._brIdx=S.evtIndex; S.curBracket=null; S.brStage='draw'; S.brShown=0; S.brMode={}; }
-  if(!S.curBracket){ S.curBracket=bracketInit(); S.brStage='draw'; S.brShown=0; S.brMode={}; }
+  if(S._brIdx!==S.evtIndex){ S._brIdx=S.evtIndex; S.curBracket=null; S.brStage='draw'; S.brShown=0; S.brPause=false; S.brMode={}; }
+  if(!S.curBracket){ S.curBracket=bracketInit(); S.brStage='draw'; S.brShown=0; S.brPause=false; S.brMode={}; }
   const B=S.curBracket, evt=B.evt, you=B.you, reduce=mpReduce();
   RT.classList.add('major-screen');
   const venue=eventCourse(evt);
@@ -20857,7 +20885,7 @@ function scrBracket(){
   const path=bracketPathStrip(B); if(path) W(path);
 
   // ---- the champion ----
-  if(done && S.brStage==='roundEnd'){
+  if(done && S.brStage==='roundEnd' && B.champion && B.champion.p){
     const ch=B.champion, isYou=!!ch.p.you;
     W($(`<div class="bchamp ${isYou?'mine':''}">
       <div class="bc-k">${isYou?'You are the champion' : 'Champion'}</div>
@@ -22825,17 +22853,17 @@ function scrRecap(){
     add(board);
     const bres=results[S.recapEvent].bracket;   // knockout week: no rounds, no to-par
     const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':(me.tied?'T':'')+me.pos);
-    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${bres?esc(me.bfull||''):(me.pos==='CUT'?'missed cut':par(me.score))}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):', '}</span></div>`));
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${bres?esc(me.bfull||''):(me.pos==='CUT'?'missed cut':par(me.score))}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'·'}</span></div>`));
     if(!bres) add(roundsRow(me));
-    else add($(`<div class="bpath" style="margin-top:8px">${(me.path||[]).map((p,i)=>`<div class="bp-c ${p.won?'won':'lost'}"><div class="bp-r">${BRACKET_ROUNDS[p.ri].short}</div><div class="bp-v">${p.won?'✓':'✕'} ${esc(p.label)}</div></div>`).join('')}</div>`));
+    else add($(`<div class="bpath" style="margin-top:8px">${(me.path||[]).map((p,i)=>`<div class="bp-c ${p.won?'won':'lost'}"><div class="bp-r">${esc(p.short||(BRACKET_ROUNDS[p.ri]||{}).short||('R'+(p.ri+1)))}</div><div class="bp-v">${p.won?'✓':'✕'} ${esc(p.label)}</div></div>`).join('')}</div>`));
     if(playoff){
       add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))}, won by <b>${esc(playoff.winner)}</b></div>`));
     }
     const win=order[0];
-    if(me.pos!==1){
+    if(me.pos!==1 && win && win.p){
       const gap=(!bres && me.pos!=='CUT')?(me.score-win.score):null;
-      add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${win.p.name}</b>${bres?' in the final':` at ${par(win.score)}`}${gap!=null?` · you were ${gap} back`:''}</div>`));
-    } else {
+      add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${esc(win.p.name)}</b>${bres?' in the final':` at ${par(win.score)}`}${gap!=null?` · you were ${gap} back`:''}</div>`));
+    } else if(me.pos!==1){ /* no winner row to name: say nothing rather than throw */ } else {
       add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 ${playoff&&playoff.you?'Clutch playoff win, your week.':'Wire-to-wire glory, your week.'}</div>`));
     }
     add($(`<div style="height:14px"></div>`));
