@@ -1051,16 +1051,48 @@ function wrestlerSVG(L,opt){
   const legCol = tightsFull? gear : sk;
   const sleeved = !!SLEEVED[L.attire];
   const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
-  /* The head is a cranium box over a narrower jaw box. Outlining each one
-     separately laid a dark seam straight across the face, so instead we
-     outline the union once and fill it as a single form — the light still
-     comes from the upper left, it just runs the whole height of the head
-     with no join. Masks that cover the full face reuse the same fill. */
-  const HEADOUT = P(23,5,18,17,OUTLINE)+P(24,19,16,7,OUTLINE);
-  const HEADFILL = (c)=> P(24,6,16,15,c)+P(25,20,14,5,c)
-      + P(24,6,1,15,shade(c,22))  + P(25,21,1,4,shade(c,22))    // lit edge
-      + P(39,6,1,15,shade(c,-32)) + P(38,21,1,4,shade(c,-32))   // shadowed edge
-      + P(25,24,14,1,shade(c,-24));                             // under the jaw
+  /* ---- one-piece body parts ----
+     Every part of the wrestler is a stack of boxes — cranium over jaw,
+     shoulders over chest over hips, thigh over shin over foot. Outlining
+     each box on its own laid a dark seam across every one of those joins.
+     PIECE draws a stack as a single silhouette instead: the outline runs
+     around the outside only (including the step where one box overhangs
+     the next), the fill is continuous, and the upper-left light runs the
+     whole height rather than restarting at each box.
+
+     `top`/`bottom:false` leave that end open so two bones can meet flush
+     at a joint — the elbow and knee still articulate, they just do not
+     show a line when the limb is straight. */
+  const PIECE=(boxes,col,o)=>{
+    o=o||{}; const n=boxes.length;
+    let out='', fill='', sh='';
+    boxes.forEach((b,i)=>{
+      const x=b[0], y=b[1], w=b[2], h=b[3], c=b[4]||col;
+      const top=(i===0 && o.top!==false)?1:0;
+      const bot=(i===n-1 && o.bottom!==false)?1:0;
+      out+=P(x-1,y-top,w+2,h+top+bot,OUTLINE);
+      // where this box overhangs the next one, close the silhouette underneath it
+      if(i<n-1){ const nx=boxes[i+1], by=y+h;
+        if(x<nx[0])            out+=P(x-1,by,nx[0]-x+1,1,OUTLINE);
+        if(x+w>nx[0]+nx[2])    out+=P(nx[0]+nx[2],by,(x+w)-(nx[0]+nx[2])+1,1,OUTLINE);
+        // and where the next box is wider, cap its shoulders on top
+        if(nx[0]<x)            out+=P(nx[0]-1,by-1,x-nx[0]+1,1,OUTLINE);
+        if(nx[0]+nx[2]>x+w)    out+=P(x+w,by-1,(nx[0]+nx[2])-(x+w)+1,1,OUTLINE);
+      }
+      fill+=P(x,y,w,h,c);
+      if(w>2) sh+=P(x,y,1,h,shade(c,22))+P(x+w-1,y,1,h,shade(c,-32));
+      // a box that overhangs the next gets an underside shadow on the overhang
+      if(i<n-1){ const nx=boxes[i+1], by=y+h-1;
+        if(x<nx[0])         sh+=P(x,by,nx[0]-x,1,shade(c,-26));
+        if(x+w>nx[0]+nx[2]) sh+=P(nx[0]+nx[2],by,(x+w)-(nx[0]+nx[2]),1,shade(c,-26));
+      }
+    });
+    const L1=boxes[n-1];
+    if(o.bottom!==false && L1[3]>2) sh+=P(L1[0],L1[1]+L1[3]-1,L1[2],1,shade(L1[4]||col,-26));
+    return out+fill+sh;
+  };
+  // the head: cranium over a narrower jaw. Masks that cover the whole face reuse it.
+  const HEAD=(c)=>PIECE([[24,6,16,15],[25,20,14,5]],c);
   // one bucket per rig bone
   const B={back:'',thighL:'',shinL:'',thighR:'',shinR:'',torso:'',upArmL:'',loArmL:'',upArmR:'',loArmR:'',head:''};
 
@@ -1108,25 +1140,31 @@ function wrestlerSVG(L,opt){
     return o;
   };
   const splitCol=(tightsFull&&L.pattern==='split')?trim:legCol;
-  B.thighL+=OL(23,52,8,16)+LIMB(23,52,8,16,legCol)+thighPat(23);
-  B.thighR+=OL(33,52,8,16)+LIMB(33,52,8,16,splitCol)+thighPat(33);
+  const BOOTTOP={tall:70,goldboot:70,spiked:69,pads:72,platform:68,wraps:74,combat:71,cowboy:70,hightop:75,steel:72};
+  const bootTop = L.boots==='barefoot' ? 81 : (BOOTTOP[L.boots]||77);
+  const footCol = L.boots==='barefoot' ? sk : shade(trim,-46);
+  // thigh leaves its bottom open for the knee; the small overhang past the
+  // shin still gets capped so the silhouette stays closed when standing
+  B.thighL+=PIECE([[23,52,8,16]],legCol,{bottom:false})+P(22,68,2,1,OUTLINE)+thighPat(23);
+  B.thighR+=PIECE([[33,52,8,16]],splitCol,{bottom:false})+P(40,68,2,1,OUTLINE)+thighPat(33);
   if(L.attire==='chaps'){ // leather chaps over bare legs
     const ch=shade(gear,-30);
     B.thighL+=OL(22,52,9,16)+LIMB(22,52,9,16,ch)+P(22,54,2,14,shade(trim,-10));
     B.thighR+=OL(33,52,9,16)+LIMB(33,52,9,16,ch)+P(40,54,2,14,shade(trim,-10));
-    B.shinL+=OL(23,68,8,10)+LIMB(23,68,8,10,ch); B.shinR+=OL(33,68,8,10)+LIMB(33,68,8,10,ch);
   }
   if(L.tattoo==='leg'){ const lk=shade(sk,-62);
     if(!tightsFull){ B.thighL+=P(24,55,6,2,lk)+P(25,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
   if(L.boots==='pads'){ B.thighL+=OL(24,64,7,4)+LIMB(24,64,7,4,shade(trim,-30)); B.thighR+=OL(33,64,7,4)+LIMB(33,64,7,4,shade(trim,-30)); }
   if(L.acc==='knee'){ B.thighL+=OL(24,63,7,5)+LIMB(24,63,7,5,trim); B.thighR+=OL(33,63,7,5)+LIMB(33,63,7,5,trim); }
-  B.shinL+=OL(24,68,7,13)+LIMB(24,68,7,13,legCol)+shinPat(23);
-  B.shinR+=OL(33,68,7,13)+LIMB(33,68,7,13,splitCol)+shinPat(33);
-  const BOOTTOP={tall:70,goldboot:70,spiked:69,pads:72,platform:68,wraps:74,combat:71,cowboy:70,hightop:75,steel:72};
-  const bootTop = L.boots==='barefoot' ? 81 : (BOOTTOP[L.boots]||77);
+  // shin and foot are one bone, so they are one silhouette
+  B.shinL+=PIECE([[24,68,7,13],[21,81,11,6,footCol]],legCol,{top:false})+shinPat(23);
+  B.shinR+=PIECE([[33,68,7,13],[32,81,11,6,footCol]],splitCol,{top:false})+shinPat(33);
+  if(L.attire==='chaps'){ const ch=shade(gear,-30);
+    B.shinL+=LIMB(23,68,8,10,ch)+P(22,68,1,10,OUTLINE); B.shinR+=LIMB(33,68,8,10,ch)+P(41,68,1,10,OUTLINE); }
   const boot=(x)=>{
     if(L.boots==='barefoot') return '';
-    let o=LIMB(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,7,1,shade(trim,30));
+    let o=P(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,1,81-bootTop,shade(trim,22))
+      +P(x+6,bootTop,1,81-bootTop,shade(trim,-32))+P(x,bootTop,7,1,shade(trim,30));
     if(L.boots==='wraps'){ for(let y=74;y<81;y+=2) o+=P(x,y,7,1,shade(trim,-34)); }
     if(L.boots==='goldboot') o+=P(x,bootTop,7,2,'#e0b341')+P(x,77,7,1,'#e0b341');
     if(L.boots==='combat'){ for(let y=73;y<81;y+=3) o+=P(x+1,y,5,1,shade(trim,-46)); o+=P(x,bootTop,7,2,shade(trim,-30)); }
@@ -1136,17 +1174,14 @@ function wrestlerSVG(L,opt){
     if(L.boots==='spiked'){ o+=P(x-1,72,2,3,'#c8ced4')+P(x+6,72,2,3,'#c8ced4')+P(x-1,77,2,3,'#c8ced4')+P(x+6,77,2,3,'#c8ced4'); }
     return o; };
   B.shinL+=boot(24); B.shinR+=boot(33);
-  const footCol = L.boots==='barefoot' ? sk : shade(trim,-46);
-  B.shinL+=OL(21,81,11,6)+LIMB(21,81,11,6,footCol); B.shinR+=OL(32,81,11,6)+LIMB(32,81,11,6,footCol);
   if(L.boots==='barefoot'){ B.shinL+=P(21,82,1,3,skD)+P(23,81,1,2,skD)+P(25,81,1,2,skD); B.shinR+=P(42,82,1,3,skD)+P(40,81,1,2,skD)+P(38,81,1,2,skD); }
   if(L.boots==='platform'){ B.shinL+=OL(21,81,11,3)+LIMB(21,81,11,3,shade(trim,-30)); B.shinR+=OL(32,81,11,3)+LIMB(32,81,11,3,shade(trim,-30)); }
   if(L.boots==='cowboy'){ B.shinL+=P(21,85,4,4,OUTLINE)+P(22,85,3,3,shade(trim,-56)); B.shinR+=P(39,85,4,4,OUTLINE)+P(39,85,3,3,shade(trim,-56)); }
 
   // ================= TORSO =================
-  const tX=21-bw, tW=22+bw*2;
-  B.torso+=OL(19-bw,28,26+bw*2,6)+LIMB(19-bw,28,26+bw*2,6,covered?gear:sk);
-  B.torso+=OL(tX,34,tW,9)+LIMB(tX,34,tW,9,covered?gear:sk);
-  B.torso+=OL(24,43,16,10)+LIMB(24,43,16,10,covered?gear:sk);
+  const tX=21-bw, tW=22+bw*2, tCol=covered?gear:sk;
+  // shoulders → chest → hips, drawn as one tapering torso
+  B.torso+=PIECE([[19-bw,28,26+bw*2,6],[tX,34,tW,9],[24,43,16,10]],tCol);
   if(!covered){
     B.torso+=P(24,35,7,6,skL)+P(33,35,7,6,skL)+P(30,34,1,8,skD)
       +P(28,44,2,3,skD)+P(34,44,2,3,skD)+P(28,48,2,3,skD)+P(34,48,2,3,skD);
@@ -1226,17 +1261,20 @@ function wrestlerSVG(L,opt){
   const ink=shade(sk,-62), inked=(L.tattoo==='sleeve'||L.tattoo==='full'||L.tattoo==='tribalink');
   const arm=(side)=>{
     const ux=side<0?14-bw:43+bw, fx=side<0?13-bw:44+bw, hx=side<0?12-bw:45+bw;
-    let up=OL(ux,30,7,14)+LIMB(ux,30,7,14,upCol);
+    const gl=L.acc==='gloves';
+    // the upper arm leaves its bottom open so it meets the forearm flush
+    let up=PIECE([[ux,30,7,14]],upCol,{bottom:false});
     if(!sleeved) up+=P(side<0?ux+1:ux+4,31,2,8,skL);
     if(inked&&(side<0||L.tattoo!=='sleeve')) up+=P(ux,31,7,12,ink);
     if(L.tattoo==='barbwire') up+=P(ux,35,7,3,ink)+P(ux+1,34,2,1,ink)+P(ux+4,38,2,1,ink);
     if(L.acc==='armband') up+=OL(ux,34,7,4)+LIMB(ux,34,7,4,trim)+P(ux,34,7,1,shade(trim,28));
     if(L.acc==='tassels') up+=P(ux-2,41,3,9,trim)+P(ux+6,41,3,9,trim)+P(ux-2,41,9,2,shade(trim,-30));
-    let lo=OL(fx,43,7,11)+LIMB(fx,43,7,11,sk);
+    // forearm and hand are one bone, so they are one silhouette
+    let lo=PIECE([[fx,43,7,11],[hx,54,8,5,gl?shade(trim,-25):sk]],sk,{top:false});
     if(inked&&(side<0||L.tattoo!=='sleeve')) lo+=P(fx,44,7,9,ink);
     if(L.acc==='elbow') lo+=OL(fx,42,7,3)+LIMB(fx,42,7,3,trim);
     if(L.acc==='wrist') lo+=P(fx,51,7,3,trim);
-    lo+=OL(hx,54,8,5)+LIMB(hx,54,8,5,L.acc==='gloves'?shade(trim,-25):sk);
+    if(gl) lo+=P(hx,53,8,1,OUTLINE);              // the glove reads by its cuff
     return [up,lo];
   };
   const aL=arm(-1), aR=arm(1);
@@ -1244,10 +1282,10 @@ function wrestlerSVG(L,opt){
 
   // ================= HEAD =================
   B.head+=OL(28,24,8,4)+LIMB(28,24,8,4,skD);
-  B.head+=HEADOUT+HEADFILL(sk);
+  B.head+=HEAD(sk);
   B.head+=P(22,13,2,5,skD)+P(40,13,2,5,skD)+P(25,7,3,12,skL);
   if(L.mask&&L.mask!=='none'){
-    if(L.mask==='lucha'){ B.head+=HEADFILL(gear)+P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b')
+    if(L.mask==='lucha'){ B.head+=HEAD(gear)+P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b')
       +P(27,14,3,2,'#F4E8DB')+P(34,14,3,2,'#F4E8DB')+P(29,20,6,3,'#0c0b0b')+P(24,6,16,2,trim)+P(31,8,2,13,trim)+P(24,11,4,2,trim)+P(36,11,4,2,trim); }
     if(L.mask==='half'){ B.head+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
     if(L.mask==='hood'){ B.head+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
