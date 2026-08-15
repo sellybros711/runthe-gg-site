@@ -707,6 +707,27 @@ check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
 check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
   'the counts in the copy can be regenerated');
 
+/* WHICH VERSION YOU PICKED, which is the premise of the game and was invisible
+   everywhere after the draft screen. Across the 166 songs with five or more
+   plays the longest version is a median of 2.7x the shortest and 13.8x at the
+   90th percentile; Echo of a Rose runs 1:00 to 44:24 over 114 plays. */
+console.log('the version you picked');
+const loader = read('setlist/dataLoader.js');
+check(/p\.version_rank = rank;/.test(loader), 'the loader ranks every version');
+check(/if \(len !== prev\)/.test(loader), 'and ties share a rank');
+check(/function versionNote\(/.test(game), 'the standing has words');
+check(/function whichNight\(/.test(game), 'and the night has a line');
+// All three surfaces.
+check(/class="rr-night"/.test(game), 'the scorecard row names the night');
+check(/class="bdnight"/.test(game), 'the detail sheet leads with it');
+check(/const ver = versionNote\(p\);/.test(game), 'the share card notes lead with the standing');
+// The card lists performances, so it states their lengths.
+check(/const time = fmtClock\(lenOf\(p\)\);/.test(game),
+  'and the card prints every running time');
+/* ordinal() was written for the monotony run ("starts at 3, rarely passes 6")
+   and special-cased only 3, so the version standing shipped "2th longest". */
+check(!/n === 3 \? 'rd' : 'th'/.test(game), 'ordinal is general, not run-length only');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments
