@@ -14883,6 +14883,61 @@ allows Google Fonts, or self-host Anton.*
   - NEXT in the roadmap: #33 a home tour and a global schedule, then #34-#37.
 
 
+- **THE WEEK RESOLVES INTO THE PAGE, NOT OVER IT (owner, with a screenshot of two overlapping pop-ups
+  during auto sim: "I don't like how there are so many pop ups at the bottom during auto sim. It makes the
+  game too hard to follow and everything goes too fast. How can we fix the simulation so it all feels more
+  designed and involved").** Diagnosed before touching anything: not a tuning problem, THREE bugs
+  compounding.
+  1. **`toast()` had no queue.** Every toast rendered at the identical fixed coordinate
+     (`left:50%; bottom:26px`), so two at once physically overlapped. That is the stack in the screenshot.
+  2. **The same event was reported twice.** A delivered brief calls `awardPlayCoins(rw.coins, brand+' brief')`,
+     which toasts on its own, AND then the brief handler toasted again - with DIFFERENT numbers (1,116 vs
+     850), because the pass/legacy multipliers land on one and not the other, so it read as a contradiction
+     on top of the clutter.
+  3. **The pace outran the messages.** The default pace is 820ms a round + 1250ms between events, so a
+     4-round tournament plays in ~4.5s while the toasts run 3,400-4,600ms - week N was still on screen
+     during week N+1, by construction.
+  Owner picked (AskUserQuestion): a **drama-weighted hold** on each finished week, and **keep the brisk
+  rounds** and spend the new time on results.
+  - **The week ledger.** A week's consequences are RECORDED as it plays (`wkNote(kind, html, weight)` →
+    `S.season.wkLog`) and rendered as rows INSIDE the result card when the tournament resolves
+    (`wkRowsNode`, colour-coded per kind, staggered fade-in), then rolled into a **season feed**
+    (`wkArchive` → `S.season.feed`, a collapsed accordion listing each week's event + finish + its notes) so
+    nothing is lost to a fade. Deliberately no empty feed entry for a week with nothing to say.
+  - **The guard is STRUCTURAL, not a list of call sites.** Per-site routing was whack-a-mole - the first
+    test still caught a stray "+120 Tour Rep" floating mid-sim from a call site I had not enumerated. So
+    `toast()` itself now captures anything raised on the season screen (`wkOn() && screen==='season' &&
+    !S.overlay`) into the ledger; anything added later is caught for free. `opts.force` opts out for the
+    rare thing that must be seen regardless. (The render-error card builds its own element, so it was never
+    affected.) The structured per-site notes for coins/briefs/traits are kept for their kinds + weights.
+  - **`wkOn()` is scoped to the season SCREEN**, which caught a regression the first cut introduced: at the
+    summary the end-of-year payout would have recorded a note that renders nowhere, silently losing the
+    "+N coins" feedback. Off the season screen a toast is the right surface again.
+  - **The double-report is fixed at the source**: `awardPlayCoins` gained a `quiet` flag, the brief captures
+    the RETURNED (actually-paid) amount and reports one row with the true number.
+  - **The hold is weighted**: `wkHoldMs` = 1900ms + 380 per unit of what happened (a note's weight, +3 for a
+    win, +1 for a top-5, +2 for a major), capped at 4200. Measured on the live scheduler: a tournament now
+    takes ~4.4s wall of which the result beat is ~1.9-2.3s (was a flat 1.25s). Rounds untouched, per the
+    owner's call. `Math.max(paceMs().e, hold)` so it can never be shorter than the old pacing.
+  - **Toasts stack** where they still apply: newest at the bottom, older pushed up, capped at 3
+    (`layoutToasts`), so a burst can never smear again.
+  - Skip-to-end and `finishSeasonHeadless` set `_wkQuiet` (skipping is "I don't want to watch this"), and the
+    Daily never touches the ledger.
+  - Verified in Playwright (25 checks, 0 page errors, stable over repeat runs): three toasts stack with
+    **0 overlap** and a 7-toast burst is capped; a real career season auto-sims 4+ events with **ZERO**
+    floating pop-ups; a stray un-enumerated toast is captured while a forced one still shows; a week with
+    news archives into the feed and clears the ledger while a quiet week adds nothing; the rows render
+    inside the result card; the hold ladder rises with each thing that happened and caps; the season-end
+    payout still toasts on the summary; a quiet award adds no duplicate coin row; skip-to-end still reaches
+    the summary and clears the flag. Two of the failures en route were TEST artifacts, not game bugs (the
+    stack test measured before the .18s slide settled; the hold test measured against a real event that
+    already carried its own drama). Regressions green: regress_final, tp_final, shoptabs, legacy_test 21/21,
+    traits_test 13/13, entry_test 22/22, entry_season 14/14, qs_engine, mp_season, lg_e2e. Inline scripts
+    parse (block 0 is the JSON-LD tag, fails identically on baseline).
+  - Deployed to /golf (byte-identical verified; no parallel golf edits to adopt). Tunable: `WK_HOLD_BASE`/
+    `WK_HOLD_STEP`/`WK_HOLD_MAX` (the beat), the per-kind weights in the `wkNote` call sites, `TOAST_MAX`,
+    `WK_MAX_ROWS`/`WK_MAX_FEED`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
