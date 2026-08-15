@@ -14938,6 +14938,51 @@ allows Google Fonts, or self-host Anton.*
     `WK_HOLD_STEP`/`WK_HOLD_MAX` (the beat), the per-kind weights in the `wkNote` call sites, `TOAST_MAX`,
     `WK_MAX_ROWS`/`WK_MAX_FEED`.
 
+- **A SHORT CUP SIDE NO LONGER TAKES THE SEASON SCREEN DOWN (owner forwarded a user report: "I'm playing
+  run the tour and it seems I've come across a screen I can't find a way past and can't continue my career"
+  — the screenshot showed `season: undefined is not an object (evaluating 'pair[0].eo')`. Owner: "Please
+  make sure this doesn't happen").** A blocking crash: the career was stuck on that week with no way past,
+  which is the worst class of bug the game can have.
+  - **Root cause.** A cup is 12 a side and the whole 28-point format indexes FIXED slots (the singles
+    session plays `sa[0..11]` against `sb[0..11]`, `cupSessionPairs` indexes `play[0..7]`), but nothing
+    guaranteed a side actually HAD 12. `selectTeam`/`selectLeagueTeam` just took `pool.slice(0,12)`, so a
+    short eligible pool produced a short team and `undefined` reached `matchScoreFn`, which read
+    `pair[0].eo` and threw — taking the entire season screen down. The sharpest case is the Breakaway
+    League's Unity Cup: the Frontier side is bounded by how many defected (`LEAGUE_DEFECT_MIN=12`) and
+    SHRINKS as those defectors retire out of `w.active` (`leagueCupPool` skips anyone no longer active), so
+    a late-career Unity Cup can field a side of five. `selectTeam` also had a latent sparse-array bug —
+    `team[11]=pick` on a SHORT array creates holes, and every gap reads as `undefined`.
+  - **Reproduced on the DEPLOYED build before fixing anything**, so this is the reported bug and not
+    something adjacent: a career whose defectors have mostly retired throws
+    `TypeError: Cannot read properties of undefined (reading 'eo')` (Chromium's wording of the Safari
+    message in the screenshot) out of `simTeamEvent`; the same fixture on the fix plays out to 28 points.
+  - **Fixed at the point of use, not just at the source.** New `fillCupTeam(team, pool)` tops a side up to
+    12 — first from the rest of its own pool, then from whoever is left in the world, and only if the world
+    itself is tiny does it repeat the last man rather than leave a hole — and filters holes out. It is
+    applied in `selectTeam`, in `selectLeagueTeam`, AND in `simTeamEvent` itself right after the captain
+    override, so however a side was assembled (auto squad, league allegiance, a captain's picks) it IS 12
+    by the time the format indexes it. A cup contested by a makeweight is a far better outcome than a
+    career that cannot continue.
+  - **Belt and braces around it**: `matchScoreFn` reads ratings through `matchEo(p)` (a missing player
+    falls back to a tour-average 80 instead of throwing), the singles session loops `min(12, both sides)`,
+    and `cupSessionPairs`/`cupPairsAfter` drop a pair they can't fill rather than sending a hole into the
+    match engine.
+  - **The captain screen could also strand you**: `scrCaptainPicks` demanded exactly 6 picks from
+    `pool.slice(6,18)`, so a thin pool meant the "Send out your team" button could never enable. It now
+    asks for as many picks as there genuinely are (`need=min(6,cands.length)`), and the squad is topped up
+    to 12 when it's played.
+  - Verified in Playwright (12 checks, 0 page errors): the throw site itself (undefined / empty / half /
+    missing pair all return a finite score); `fillCupTeam` topping up, filling from an empty side, leaving a
+    full side untouched and filtering holes; a genuinely shrunken Frontier pool still fielding 12 with real
+    ratings; the Unity Cup, an ordinary national cup and a short captain squad each playing out to exactly
+    28 points over 5 sessions / 28 matches; and the cup week rendering on the season screen through
+    selection to the final scoreboard with no crash card. Regressions green (lg_cup, lg_e2e, lg_cupreg,
+    mp_season, regress_final, wk_test 25/25, legacy_test 21/21, tp_final, shoptabs); inline scripts parse
+    (block 0 is the JSON-LD tag, fails identically on baseline).
+  - NOTE: national cups were measured healthy (USA 73 / EUROPE 42 / INT 42 eligible), so the fix mainly
+    protects the league cup and any future thin-pool side — but it is now impossible for ANY of them to
+    hand a hole to the format.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
