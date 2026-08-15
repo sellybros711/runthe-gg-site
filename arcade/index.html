@@ -430,14 +430,45 @@
   @keyframes capNode{0%,4%{transform:scale(0)}12%{transform:scale(1.3)}20%,80%{transform:scale(1)}100%{transform:scale(0)}}
 
   /* Crossword: the answer types itself in */
-  .tile.cross .cap svg .cwletters text{animation:capType 6s ease-in-out infinite;}
-  .tile.cross .cap svg .cwletters text:nth-of-type(1){animation-delay:0s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(2){animation-delay:.4s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(3){animation-delay:.8s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(4){animation-delay:1.2s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(5){animation-delay:1.6s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(6){animation-delay:2s}
-  @keyframes capType{0%,5%{opacity:.1}13%{opacity:1}90%{opacity:1}97%,100%{opacity:.1}}
+  /* Each answer holds for a quarter of the cycle. The set fades as a block and
+     the letters type in over it — the two opacities multiply, so one stagger
+     rule per letter gives the typing without a second timeline to keep in sync. */
+  .tile.cross .cap svg .cwset{opacity:0; animation:capSet 13.2s linear infinite;}
+  .tile.cross .cap svg .cwset text{opacity:0; animation:capType 13.2s linear infinite;}
+  .tile.cross .cap svg .cwset:nth-of-type(1){animation-delay:0s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(1){animation-delay:0s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(2){animation-delay:0.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(3){animation-delay:0.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(4){animation-delay:0.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(5){animation-delay:0.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(6){animation-delay:0.5s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(7){animation-delay:0.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(2){animation-delay:3.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(1){animation-delay:3.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(2){animation-delay:3.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(3){animation-delay:3.5s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(4){animation-delay:3.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(5){animation-delay:3.7s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(6){animation-delay:3.8s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(7){animation-delay:3.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(3){animation-delay:6.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(1){animation-delay:6.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(2){animation-delay:6.7s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(3){animation-delay:6.8s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(4){animation-delay:6.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(5){animation-delay:7s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(6){animation-delay:7.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(7){animation-delay:7.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(4){animation-delay:9.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(1){animation-delay:9.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(2){animation-delay:10s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(3){animation-delay:10.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(4){animation-delay:10.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(5){animation-delay:10.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(6){animation-delay:10.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(7){animation-delay:10.5s}
+  @keyframes capSet{0%{opacity:0}2%{opacity:1}22%{opacity:1}25%,100%{opacity:0}}
+  @keyframes capType{0%{opacity:0}2%{opacity:1}25%,100%{opacity:0}}
 
   /* Alma Mater: the mortarboard spins a full turn, then rests */
   .tile.alma .cap svg{transform-box:fill-box; transform-origin:center; animation:capSpin 4.6s ease-in-out infinite;}
@@ -447,9 +478,11 @@
     .tile.match .cap svg rect, .tile.oddone .cap svg .oddx, .tile.rankit .cap svg rect,
     .tile.rankit .cap svg .rknum, .tile.guess .cap svg .gq, .tile.guess .cap svg .gcut,
     .tile.career .cap svg .croute, .tile.career .cap svg .cnode,
-    .tile.cross .cap svg .cwletters text, .tile.alma .cap svg,
+    .tile.cross .cap svg .cwset text, .tile.alma .cap svg,
     .tile.highlow .cap svg .hlup, .tile.highlow .cap svg .hldn{
       animation:none !important; transform:none !important; opacity:1 !important; stroke-dashoffset:0 !important;}
+    .tile.cross .cap svg .cwset{animation:none !important; opacity:0 !important;}
+    .tile.cross .cap svg .cwset:nth-of-type(1){opacity:1 !important;}
   }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
@@ -666,25 +699,21 @@
                 <g clip-path="url(#cwico)">
                   <rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/>
                   <!-- blocked cells cap the two answers; kept 180-degree symmetric -->
-                  <rect x="40" y="4" width="12" height="12" fill="#12202F"/>
                   <rect x="4" y="40" width="12" height="12" fill="#12202F"/>
                   <!-- grid lines -->
                   <g stroke="#CBD5E1" stroke-width="1">
                     <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
                   </g>
-                  <!-- clue numbers -->
-                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#93A1B2">
-                    <text x="6.2" y="9.4">1</text>
-                    <text x="42.2" y="21.4">2</text>
-                  </g>
-                  <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
+                  <!-- Four answers, typed in and swapped: a player across, a
+                       term from their sport down, sharing the corner letter.
+                       All four are in the markup at once and cross-fade, because
+                       CSS cannot rewrite text and the hub should not be running a
+                       timer per tile just to animate an icon. -->
                   <g class="cwletters" font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
-                    <text x="10" y="13.2">R</text>
-                    <text x="22" y="13.2">U</text>
-                    <text x="34" y="13.2">N</text>
-                    <text x="46" y="25.2">T</text>
-                    <text x="46" y="37.2">H</text>
-                    <text x="46" y="49.2">E</text>
+                    <g class="cwset"><text x="10" y="13.2">B</text><text x="22" y="13.2">I</text><text x="34" y="13.2">R</text><text x="46" y="13.2">D</text><text x="46" y="25.2">U</text><text x="46" y="37.2">N</text><text x="46" y="49.2">K</text></g>
+                    <g class="cwset"><text x="10" y="13.2">M</text><text x="22" y="13.2">O</text><text x="34" y="13.2">S</text><text x="46" y="13.2">S</text><text x="46" y="25.2">N</text><text x="46" y="37.2">A</text><text x="46" y="49.2">P</text></g>
+                    <g class="cwset"><text x="10" y="13.2">R</text><text x="22" y="13.2">U</text><text x="34" y="13.2">T</text><text x="46" y="13.2">H</text><text x="46" y="25.2">O</text><text x="46" y="37.2">M</text><text x="46" y="49.2">E</text></g>
+                    <g class="cwset"><text x="10" y="13.2">M</text><text x="22" y="13.2">A</text><text x="34" y="13.2">Y</text><text x="46" y="13.2">S</text><text x="46" y="25.2">L</text><text x="46" y="37.2">A</text><text x="46" y="49.2">M</text></g>
                   </g>
                 </g>
                 <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/>
