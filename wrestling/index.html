@@ -68,6 +68,12 @@
   .g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
   .g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
   .g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  /* small stat tiles pack two-up on a phone rather than one tall column each */
+  @media(max-width:640px){
+    .g3,.g4{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .tile{padding:9px 11px;}
+    .tile .val{font-size:19px;}
+  }
   .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
 
   .tile{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
@@ -328,6 +334,24 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* on a phone the week's decision comes first; the profile follows it */
+  @media(max-width:860px){ .hubgrid .hub-side{order:2;} .hubgrid .hub-main{order:1;} }
+
+  /* pager — one panel at a time instead of endless scroll */
+  .pgr{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+  .pgr-a{flex:none;width:32px;height:32px;padding:0;font-size:19px;line-height:1;border-radius:9px;
+    background:var(--panel);border:1px solid var(--line);color:var(--cream);cursor:pointer;}
+  .pgr-a:hover{border-color:var(--brandred);}
+  .pgr-chips{flex:1;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:1px;}
+  .pgr-chips::-webkit-scrollbar{display:none;}
+  .pgr-c{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--text-dim);
+    border-radius:9px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.12s;}
+  .pgr-c:hover{color:var(--cream);}
+  .pgr-c.on{background:rgba(198,57,44,.16);border-color:var(--brandred);color:var(--cream);}
+  .pgr-n{flex:none;font-family:var(--mono);font-size:11px;color:var(--text-faint);min-width:30px;text-align:right;}
+  .pgr-x{font-family:var(--mono);font-size:10px;opacity:.6;margin-left:3px;}
+  @media(max-width:640px){ .pgr-n{display:none;} .pgr-c{padding:6px 9px;font-size:11.5px;} }
+
   /* archetype picker — the stat line, spelled out and drawn */
   .stylecard .sc-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
   .stylecard .sc-blurb{font-size:12px;color:var(--text-faint);}
@@ -379,6 +403,12 @@
   .toast.show{opacity:1;}
   .navrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .navrow button{padding:7px 13px;font-size:12px;}
+  /* on a phone the nav scrolls sideways rather than eating three rows of screen */
+  @media(max-width:860px){
+    .navrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:12px;padding-bottom:2px;}
+    .navrow::-webkit-scrollbar{display:none;}
+    .navrow button{flex:none;}
+  }
   .beltlogo{width:100%;max-width:420px;height:auto;display:block;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
   @media(max-width:640px){ .topbar h1{font-size:18px;} .hud .value{font-size:14px;} main{padding:16px 12px 90px;} }
 </style>
@@ -469,7 +499,7 @@
       </div>
       <div>
         <div class="flab">Archetype <span class="hint">— your starting stats, and what you grow into</span></div>
-        <div class="grid g2" id="cStyles" style="margin-top:6px;"></div>
+        <div id="cStyles" style="margin-top:6px;"></div>
       </div>
     </div>
     <div class="row" style="margin-top:20px;">
@@ -513,21 +543,18 @@
     <button class="ghost" onclick="go('record')">Record</button>
   </div>
   <h2 id="carTitle">The Grind</h2>
-  <div class="grid g2">
-    <div>
+  <div class="grid g2 hubgrid">
+    <div class="hub-side">
       <div class="avwrap" id="carAv"></div>
       <div class="grid g3" style="margin-top:12px;" id="carTiles"></div>
-      <div id="bizPanel" style="margin-top:12px;"></div>
+      <div id="hubPager" style="margin-top:12px;"></div>
+      <div id="hubPanel"></div>
     </div>
-    <div>
+    <div class="hub-main">
       <div id="storyPanel"></div>
       <div class="card" style="margin-top:12px;">
         <h3 style="margin-top:0;">This Week</h3>
         <div id="weekBody"></div>
-      </div>
-      <div class="card" style="margin-top:12px;">
-        <h3 style="margin-top:0;">Attributes</h3>
-        <div id="carAttrs"></div>
       </div>
     </div>
   </div>
@@ -1572,7 +1599,12 @@ function quickStart(){
    the common baseline — plus how fast each stat will grow. */
 function renderStyles(){
   const max=48;   // the tallest starting stat across all archetypes, for a shared scale
-  $('cStyles').innerHTML=STYLES.map(s=>{
+  // stepping the pager IS the choice — no separate select tap
+  PAGER.arch=Math.max(0,STYLES.findIndex(x=>x.id===CREATE.style));
+  const bar=pagerBar('arch',STYLES.map(s=>s.name),()=>{
+    CREATE.style=STYLES[pagerIdx('arch',STYLES.length)].id; renderStyles();
+  });
+  const card=(s)=>{
     const a=styleAttrs(s), grow=s.grow||{};
     const bars=ATTRS.map(([k,label])=>{
       const base=BASE_ATTRS[k], bonus=(s.b[k]||0), tot=a[k];
@@ -1593,7 +1625,7 @@ function renderStyles(){
     if(decs.length){ const best=Math.round(Math.max.apply(null,decs)*100);
       traits.push(decs.length>=6?`+${best}% on every in-match call`:`+${best}% on key in-match calls`); }
     const cats=Object.keys(s.mast||{}).map(c=>(catById(c)||{name:c}).name);
-    return `<div class="opt stylecard ${CREATE.style===s.id?'sel':''}" onclick="CREATE.style='${s.id}';renderStyles()">
+    return `<div class="opt stylecard sel">
       <div class="sc-top"><h4>${s.name}</h4><span class="sc-blurb">${s.blurb}</span></div>
       <div class="sc-bars">
         <div class="sc-key"><span>Starting stats</span><span>Growth</span></div>
@@ -1603,7 +1635,8 @@ function renderStyles(){
       ${cats.length?`<div class="sc-mast"><b>Learns fastest:</b> ${cats.join(', ')}</div>`:''}
       <div class="perk"><span class="perkn">${s.perk.n}</span> ${s.perk.d}</div>
     </div>`;
-  }).join('');
+  };
+  $('cStyles').innerHTML=bar+card(STYLES[pagerIdx('arch',STYLES.length)]);
 }
 // look editor used by create + locker
 // ---------- visual customizer (tile picker with live mini-previews) ----------
@@ -1720,6 +1753,33 @@ function startPromo(style){
 }
 
 /* ============================================================
+   PAGER
+   ------------------------------------------------------------
+   Long lists become one panel at a time: a row of chips you can
+   tap straight to, arrows to step through, and only the selected
+   panel rendered. On a phone this turns nine screens of scrolling
+   into one.
+   ============================================================ */
+const PAGER={}, PAGERFN={}, PAGERN={};
+function pagerIdx(id,n){ return Math.max(0,Math.min((n||1)-1, PAGER[id]|0)); }
+function pagerSet(id,k){ PAGER[id]=k; const f=PAGERFN[id]; if(f) f();
+  const el=document.querySelector(`[data-pgr="${id}"] .pgr-c.on`); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest',inline:'center'}); }
+function pagerGo(id,d){ const n=PAGERN[id]||1; pagerSet(id, ((PAGER[id]|0)+d+n)%n); }
+// `labels` may be strings or {t:label, c:accent colour}
+function pagerBar(id,labels,fn){
+  PAGERFN[id]=fn; PAGERN[id]=labels.length;
+  const i=pagerIdx(id,labels.length);
+  const chip=(l,k)=>{ const t=typeof l==='string'?l:l.t, c=(typeof l==='object'&&l.c)?l.c:null;
+    return `<button class="pgr-c${k===i?' on':''}"${c&&k===i?` style="border-color:${c};color:${c}"`:''} onclick="pagerSet('${id}',${k})">${t}</button>`; };
+  return `<div class="pgr" data-pgr="${id}">
+    <button class="pgr-a" onclick="pagerGo('${id}',-1)" aria-label="Previous">‹</button>
+    <div class="pgr-chips">${labels.map(chip).join('')}</div>
+    <button class="pgr-a" onclick="pagerGo('${id}',1)" aria-label="Next">›</button>
+    <div class="pgr-n">${i+1}/${labels.length}</div>
+  </div>`;
+}
+
+/* ============================================================
    NAVIGATION / RENDER
    ============================================================ */
 function go(s){
@@ -1795,17 +1855,23 @@ function renderCareer(){
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
     ['Title', c.title?'👑 Held':'—', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
-  // attributes
-  $('carAttrs').innerHTML=ATTRS.map(([k,label])=>{
+  // secondary detail lives behind a pager so the week's decision stays on screen
+  const HUB=['Business','Attributes'];
+  $('hubPager').innerHTML=pagerBar('hub',HUB,renderCareer);
+  $('hubPanel').innerHTML = pagerIdx('hub',HUB.length)===0
+    ? renderBizPanel()
+    : `<div class="card">${renderAttrs()}</div>`;
+  renderStoryPanel();
+  renderWeek();
+}
+function renderAttrs(){
+  return ATTRS.map(([k,label])=>{
     const v=G.w.attrs[k];
     return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:13px;">
       <span style="color:var(--text-dim);font-weight:700;">${label}</span><span class="mono" style="color:var(--cream);font-weight:800;">${Math.round(v)}</span></div>
       <div class="bar"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>
     <div class="perkcard"><div class="pn">${styleOf().name} — ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
-  const bp=$('bizPanel'); if(bp) bp.innerHTML=renderBizPanel();
-  renderStoryPanel();
-  renderWeek();
 }
 function renderStoryPanel(){
   const st=story(), el=$('storyPanel'); if(!el) return;
@@ -3307,33 +3373,39 @@ function spendTP(k){ if(G.w.tp<1) return; G.w.tp--; G.w.attrs[k]=clamp(G.w.attrs
   if(u.length) toast('Unlocked: '+u.map(m=>m.name).join(', ')); }
 
 function renderMoves(){
-  let h=`<div class="grid g2" style="margin-bottom:16px;">`+MCATS.map(c=>{
-    const m=G.w.mastery[c.id]||0, t=masteryTier(c.id), nx=MTIERS.find(x=>x.t===t+1);
-    return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;">
+  // one category at a time — the full list is 120 moves deep
+  const chips=MCATS.map(c=>{
+    const owned=MOVES.filter(m=>m.cat===c.id&&moveUnlocked(m)).length;
+    const all=MOVES.filter(m=>m.cat===c.id).length;
+    return {t:`${c.icon} ${c.name} <span class="pgr-x">${owned}/${all}</span>`};
+  });
+  let h=pagerBar('moves',chips,renderMoves);
+  const c=MCATS[pagerIdx('moves',MCATS.length)];
+  const m0=G.w.mastery[c.id]||0, t=masteryTier(c.id), nx=MTIERS.find(x=>x.t===t+1);
+  h+=`<div class="card" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
       <div style="font-weight:800;color:var(--cream);">${c.icon} ${c.name}
         ${mastMult(c.id)>1.05?`<span class="badge b-leg" style="margin-left:4px;">×${mastMult(c.id).toFixed(1)}</span>`:''}</div>
       <span class="badge b-com">T${t} ${MTIERS[t-1].name}</span></div>
-      <div class="hint" style="margin-top:4px;">Governed by ${ATTRS.find(a=>a[0]===c.attr)[1]} · mastery ${m}${nx?' / '+nx.mastery:''}</div>
-      <div class="bar gd" style="margin-top:6px;"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div></div>`;
-  }).join('')+`</div>`;
-  h+=`<p class="hint">Emphasise a category in your game plan to build its mastery. A move unlocks the moment you clear <b>both</b> its attribute gate and its tier's mastery gate.</p>`;
-  MCATS.forEach(c=>{
-    h+=`<h3>${c.icon} ${c.name} <span class="hint" style="font-family:var(--body);text-transform:none;letter-spacing:0;">— ${c.blurb}</span></h3>`;
-    MTIERS.forEach(tr=>{
-      const list=MOVES.filter(m=>m.cat===c.id&&m.tier===tr.t);
-      if(!list.length) return;
-      h+=`<div style="margin:8px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${tr.color};font-weight:800;">Tier ${tr.t} · ${tr.name}</div>`;
-      list.forEach(m=>{
-        const have=moveUnlocked(m), elig=moveEligible(m);
-        const a=G.w.attrs[c.attr], mast=G.w.mastery[c.id]||0;
-        const need=[]; if(a<m.val) need.push(`${ATTRS.find(x=>x[0]===c.attr)[1]} ${Math.round(a)}/${m.val}`);
-        if(mast<tr.mastery) need.push(`mastery ${mast}/${tr.mastery}`);
-        h+=`<div class="movecard ${have?'have':(need.length?'lock':'next')}">
-          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-            <span class="nm">${have?'✔ ':''}${m.name}${G.w.finisher===m.id?' <span class="badge b-leg">FINISHER</span>':''}</span>
-            <span class="rq">${have?`dmg ${m.dmg} · pop ${m.pop} · stam ${m.stam}`:(need.length?'🔒 '+need.join(' · '):'ready')}</span>
-          </div>${have&&m.tier>=4?`<button class="ghost" style="margin-top:6px;padding:4px 10px;font-size:11px;" onclick="setFinisher('${m.id}')">Set as finisher</button>`:''}</div>`;
-      });
+    <div class="hint" style="margin-top:4px;">${c.blurb}</div>
+    <div class="hint" style="margin-top:6px;">Governed by ${ATTRS.find(a=>a[0]===c.attr)[1]} · mastery ${m0}${nx?' / '+nx.mastery:''}</div>
+    <div class="bar gd" style="margin-top:6px;"><i style="width:${nx?clamp(m0/nx.mastery*100):100}%"></i></div>
+    <div class="hint" style="margin-top:8px;">Emphasise this category in your game plan to build mastery. A move unlocks when you clear <b>both</b> its attribute gate and its tier's mastery gate.</div>
+  </div>`;
+  MTIERS.forEach(tr=>{
+    const list=MOVES.filter(m=>m.cat===c.id&&m.tier===tr.t);
+    if(!list.length) return;
+    h+=`<div style="margin:10px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${tr.color};font-weight:800;">Tier ${tr.t} · ${tr.name}</div>`;
+    list.forEach(m=>{
+      const have=moveUnlocked(m);
+      const a=G.w.attrs[c.attr], mast=G.w.mastery[c.id]||0;
+      const need=[]; if(a<m.val) need.push(`${ATTRS.find(x=>x[0]===c.attr)[1]} ${Math.round(a)}/${m.val}`);
+      if(mast<tr.mastery) need.push(`mastery ${mast}/${tr.mastery}`);
+      h+=`<div class="movecard ${have?'have':(need.length?'lock':'next')}">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span class="nm">${have?'✔ ':''}${m.name}${G.w.finisher===m.id?' <span class="badge b-leg">FINISHER</span>':''}</span>
+          <span class="rq">${have?`dmg ${m.dmg} · pop ${m.pop} · stam ${m.stam}`:(need.length?'🔒 '+need.join(' · '):'ready')}</span>
+        </div>${have&&m.tier>=4?`<button class="ghost" style="margin-top:6px;padding:4px 10px;font-size:11px;" onclick="setFinisher('${m.id}')">Set as finisher</button>`:''}</div>`;
     });
   });
   $('movesBody').innerHTML=h;
@@ -3349,8 +3421,14 @@ function renderMentors(){
   const done=c.milestones||[];
   const era=G.w.era;
   const list=MENTORS.filter(m=>m.era===era||c.rep>=repFor[m.rarity]*2);
+  const RAR_ORDER=['common','rare','epic','legendary'];
+  const groups=RAR_ORDER.filter(r=>list.some(m=>m.rarity===r));
+  const chips=groups.map(r=>({t:`${cap(r)} <span class="pgr-x">${list.filter(m=>m.rarity===r).length}</span>`}));
+  const gi=pagerIdx('mentor',groups.length);
+  const shown=list.filter(m=>m.rarity===groups[gi]);
   $('mentorBody').innerHTML=`<p class="hint">Mentors from <b>${(ERAS.find(e=>e.id===era)||{}).name}</b> open up first; enough reputation earns you a look from anyone. A camp costs 3 weeks of your career.</p>
-  <div class="grid g2" style="margin-top:12px;">`+list.map(m=>{
+  <div style="margin-top:12px;">`+pagerBar('mentor',chips,renderMentors)+`</div>
+  <div class="grid g2">`+shown.map(m=>{
     const req=repFor[m.rarity]||500, ok=c.rep>=req, had=done.includes(m.id);
     return `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
       <div style="font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;">${m.name}</div>
@@ -3383,21 +3461,32 @@ function completeMentor(){
 }
 
 function renderShop(){
-  let h=`<div class="row" style="margin-bottom:14px;"><div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div></div></div>`;
-  h+=`<h3>Packs</h3><div class="grid g3">`+PACKS.map(p=>`<div class="card">
+  const locked=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
+  const slots=[...new Set(locked.map(c=>c.slot))];
+  const chips=['Packs'].concat(slots.map(s=>({t:`${cap(s)} ${'<span class="pgr-x">'+locked.filter(c=>c.slot===s).length+'</span>'}`}))).concat([{t:'Unlocked'}]);
+  let h=`<div class="row" style="margin-bottom:12px;"><div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div></div></div>`;
+  h+=pagerBar('shop',chips,renderShop);
+  const i=pagerIdx('shop',chips.length);
+  if(i===0){
+    h+=`<div class="grid g3">`+PACKS.map(p=>`<div class="card">
       <div style="font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;">${p.name}</div>
       <div class="hint" style="margin:4px 0 10px;">${p.blurb}</div>
       <button ${G.bag.coins<p.price?'disabled':''} onclick="openPack('${p.id}')">${money(p.price)}</button></div>`).join('')+`</div>`;
-  h+=`<h3>Single Items</h3><div class="grid g3">`+COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]).slice(0,24).map(c=>{
-    const r=RAR[c.rarity]||{price:2000};
-    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:6px;">
-      <span style="font-weight:800;color:var(--cream);">${c.name}</span>
-      <span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.rarity}</span></div>
-      <div class="hint" style="margin:4px 0 10px;">${cap(c.slot)}</div>
-      <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${money(r.price)}</button></div>`;
-  }).join('')+`</div>`;
-  const ownedList=COSM.filter(c=>G.bag.owned[c.id]);
-  if(ownedList.length) h+=`<h3>Unlocked</h3><div class="row">`+ownedList.map(c=>`<span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.name}</span>`).join(' ')+`</div>`;
+  } else if(i<=slots.length){
+    const slot=slots[i-1];
+    h+=`<div class="grid g3">`+locked.filter(c=>c.slot===slot).map(c=>{
+      const r=RAR[c.rarity]||{price:2000};
+      return `<div class="card"><div style="display:flex;justify-content:space-between;gap:6px;">
+        <span style="font-weight:800;color:var(--cream);">${c.name}</span>
+        <span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.rarity}</span></div>
+        <div class="hint" style="margin:4px 0 10px;">${cap(c.slot)}</div>
+        <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${money(r.price)}</button></div>`;
+    }).join('')+`</div>`;
+  } else {
+    const ownedList=COSM.filter(c=>G.bag.owned[c.id]);
+    h+= ownedList.length? `<div class="row">`+ownedList.map(c=>`<span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.name}</span>`).join(' ')+`</div>`
+      : `<p class="hint">Nothing unlocked yet. Open a pack.</p>`;
+  }
   $('shopBody').innerHTML=h;
 }
 function buyItem(id){ const c=cosmById(id), r=RAR[c.rarity]; if(G.bag.coins<r.price) return;
@@ -3521,8 +3610,10 @@ function renderDeal(){
     h+=`</div>`;
     $('dealBody').innerHTML=h; return;
   }
-  // ---- under contract ----
-  h+=`<div class="card" style="border-left:3px solid ${p.color}">
+  // ---- under contract: four sections, one at a time ----
+  h+=pagerBar('deal',['Contract','The Road','Character','The Body'],renderDeal);
+  const tab=pagerIdx('deal',4);
+  if(tab===0) h+=`<div class="card" style="border-left:3px solid ${p.color}">
     <h3 style="margin-top:0;">${p.name} <span class="sub2">${p.short} · ${p.region}</span></h3>
     <p class="log">${p.blurb}</p>
     <div class="grid g3" style="margin-top:10px;">
@@ -3536,7 +3627,7 @@ function renderDeal(){
   </div>`;
 
   // ---- the road ----
-  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Road</h3>
+  if(tab===1) h+=`<div class="card"><h3 style="margin-top:0;">The Road</h3>
     <p class="log">How many nights a year you work. It is the biggest trade-off in the business.</p>
     <div class="grid g3" style="margin-top:10px;">`+
     SCHEDULES.map(s=>`<div class="opt ${d.sched===s.id?'on':''}" onclick="setSchedule('${s.id}')">
@@ -3546,7 +3637,7 @@ function renderDeal(){
 
   // ---- the character ----
   const heat=gimHeat();
-  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Character</h3>
+  if(tab===2) h+=`<div class="card"><h3 style="margin-top:0;">The Character</h3>
     <p class="log">You are working as <b>${g?g.name:'—'}</b>, a ${G.w.align}. ${g?gimById(g.id).d:''}</p>
     <div class="bar ${heat<32?'':'g'}" style="margin-top:8px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
     <div class="hint" style="margin-top:4px;">Freshness ${Math.round(heat)}/100 — ${heat<32?'the act is dead, the crowd has stopped reacting':heat<55?'starting to go stale':'still getting a reaction'}</div>
@@ -3561,7 +3652,7 @@ function renderDeal(){
 
   // ---- the body ----
   const chron=c.chronic||[], inj=c.injuries||[];
-  h+=`<div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">The Body</h3>
+  if(tab===3) h+=`<div class="card"><h3 style="margin-top:0;">The Body</h3>
     <div class="grid g3">
       <div class="tile"><div class="lab">Mileage</div><div class="val">${Math.round(c.wear||0)}</div></div>
       <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div></div>
@@ -3653,32 +3744,33 @@ function doRepackage(id){
 }
 
 function renderWorld(){
+  // nine promotions plus the factions is five screens of scroll — show one at a time
   const order=['indie','regional','national','global'];
-  const myTier=tierOf(G.car.rep).id;
-  let h='';
-  order.forEach(t=>{
-    const ps=PROMOS.filter(p=>p.tier===t); if(!ps.length) return;
-    h+=`<h3>${t==='indie'?'Indie Circuit':t==='regional'?'Regional':t==='national'?'National':'Global'}${myTier===t?' <span class="badge b-red">You are here</span>':''}</h3>`;
-    ps.forEach(p=>{
-      const roster=CHARS.filter(c=>c.promo===p.id);
-      h+=`<div class="promocard" style="border-left:4px solid ${p.color}">
-        <div class="ph"><div><span class="pshort" style="color:${p.color}">${p.short}</span> <b>${p.name}</b></div>
-          <span class="hint">${p.region} · ${p.product}</span></div>
-        <div class="pblurb">${p.blurb}</div>
-        <div class="charrow">`+
-        roster.map(c=>{
-          const r=rel(c.id), lb=relLabel(r);
-          return `<div class="charcard" onclick="charProfile('${c.id}')">
-            <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
-            <div class="cnm">${c.name}</div>
-            <div class="cnk">${c.nick}</div>
-            <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
-          </div>`;
-        }).join('')+`</div></div>`;
-    });
-  });
-  // factions
-  h+=`<h3>Factions</h3>`;
+  const promos=order.flatMap(t=>PROMOS.filter(p=>p.tier===t));
+  const here=myPromo().id;
+  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Factions'}]);
+  let h=pagerBar('world',chips,renderWorld);
+  const i=pagerIdx('world',chips.length);
+  if(i<promos.length){
+    const p=promos[i], roster=CHARS.filter(c=>c.promo===p.id);
+    const TN={indie:'Indie Circuit',regional:'Regional',national:'National TV',global:'Global'};
+    h+=`<div class="promocard" style="border-left:4px solid ${p.color}">
+      <div class="ph"><div><span class="pshort" style="color:${p.color}">${p.short}</span> <b>${p.name}</b></div>
+        <span class="hint">${TN[p.tier]} · ${p.region}</span></div>
+      <div class="hint" style="margin-bottom:6px;">${p.product}${p.id===here?' · <span style="color:var(--gold)">you work here</span>':''}</div>
+      <div class="pblurb">${p.blurb}</div>
+      <div class="charrow">`+
+      roster.map(c=>{
+        const r=rel(c.id), lb=relLabel(r);
+        return `<div class="charcard" onclick="charProfile('${c.id}')">
+          <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
+          <div class="cnm">${c.name}</div>
+          <div class="cnk">${c.nick}</div>
+          <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
+        </div>`;
+      }).join('')+`</div></div>`;
+    $('worldBody').innerHTML=h; return;
+  }
   FACTIONS.forEach(f=>{
     const mine=G.car.faction===f.id, lead=charById(f.leader);
     h+=`<div class="promocard" style="border-left:4px solid ${f.color}">
@@ -3730,13 +3822,25 @@ function renderRecord(){
     ['Title Reigns',c.reigns.length],['Moves Known',G.w.moves.length+'/'+MOVES.length],
     ['Years Active',c.year],['Age',c.age],
   ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
-  if(c.reigns.length){ h+=`<h3>Championships</h3>`+c.reigns.map(r=>`<div class="movecard have"><span class="nm">👑 ${r.title}</span> <span class="rq">won Y${r.year} W${r.week}</span></div>`).join(''); }
-  h+=`<h3>Recent Matches</h3>`;
-  h+= G.hist.length? G.hist.slice(0,25).map(m=>`<div class="movecard ${m.win?'have':'lock'}">
-      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' 🏆':''}</span>
-        <span class="rq">Y${m.y} W${m.w} · ${m.stip} · rating ${m.q}</span></div></div>`).join('')
-    : `<p class="hint">No matches yet.</p>`;
+  const acc=c.accolades||[];
+  const chips=[{t:`Matches <span class="pgr-x">${G.hist.length}</span>`},
+               {t:`Titles <span class="pgr-x">${c.reigns.length}</span>`},
+               {t:`Accolades <span class="pgr-x">${acc.length}</span>`}];
+  h+=`<div style="margin-top:14px;">`+pagerBar('rec',chips,renderRecord)+`</div>`;
+  const pg=pagerIdx('rec',chips.length);
+  if(pg===0){
+    h+= G.hist.length? G.hist.slice(0,12).map(m=>`<div class="movecard ${m.win?'have':'lock'}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' 🏆':''}</span>
+          <span class="rq">Y${m.y} W${m.w} · ${m.stip} · rating ${m.q}</span></div></div>`).join('')
+      : `<p class="hint">No matches yet.</p>`;
+  } else if(pg===1){
+    h+= c.reigns.length? c.reigns.map(r=>`<div class="movecard have"><span class="nm">👑 ${r.title}</span> <span class="rq">won Y${r.year} W${r.week}${r.defenses?` · ${r.defenses} defence${r.defenses>1?'s':''}`:''}</span></div>`).join('')
+      : `<p class="hint">No championships yet.</p>`;
+  } else {
+    h+= acc.length? acc.map(a=>`<div class="movecard have"><span class="nm">${a.ico} ${a.txt}</span> <span class="rq">Year ${a.y}</span></div>`).join('')
+      : `<p class="hint">No milestones yet.</p>`;
+  }
   h+=`<div class="row" style="margin-top:18px;"><button onclick="openCard()">View Player Card</button><button class="ghost" onclick="confirmRetire()">Retire</button></div>`;
   $('recBody').innerHTML=h;
 }
