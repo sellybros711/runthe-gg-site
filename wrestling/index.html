@@ -1051,6 +1051,16 @@ function wrestlerSVG(L,opt){
   const legCol = tightsFull? gear : sk;
   const sleeved = !!SLEEVED[L.attire];
   const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
+  /* The head is a cranium box over a narrower jaw box. Outlining each one
+     separately laid a dark seam straight across the face, so instead we
+     outline the union once and fill it as a single form — the light still
+     comes from the upper left, it just runs the whole height of the head
+     with no join. Masks that cover the full face reuse the same fill. */
+  const HEADOUT = P(23,5,18,17,OUTLINE)+P(24,19,16,7,OUTLINE);
+  const HEADFILL = (c)=> P(24,6,16,15,c)+P(25,20,14,5,c)
+      + P(24,6,1,15,shade(c,22))  + P(25,21,1,4,shade(c,22))    // lit edge
+      + P(39,6,1,15,shade(c,-32)) + P(38,21,1,4,shade(c,-32))   // shadowed edge
+      + P(25,24,14,1,shade(c,-24));                             // under the jaw
   // one bucket per rig bone
   const B={back:'',thighL:'',shinL:'',thighR:'',shinR:'',torso:'',upArmL:'',loArmL:'',upArmR:'',loArmR:'',head:''};
 
@@ -1234,10 +1244,10 @@ function wrestlerSVG(L,opt){
 
   // ================= HEAD =================
   B.head+=OL(28,24,8,4)+LIMB(28,24,8,4,skD);
-  B.head+=OL(24,6,16,15)+LIMB(24,6,16,15,sk)+OL(25,20,14,5)+LIMB(25,20,14,5,sk);
+  B.head+=HEADOUT+HEADFILL(sk);
   B.head+=P(22,13,2,5,skD)+P(40,13,2,5,skD)+P(25,7,3,12,skL);
   if(L.mask&&L.mask!=='none'){
-    if(L.mask==='lucha'){ B.head+=LIMB(24,6,16,15,gear)+LIMB(25,20,14,4,gear)+P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b')
+    if(L.mask==='lucha'){ B.head+=HEADFILL(gear)+P(26,13,5,4,'#0c0b0b')+P(33,13,5,4,'#0c0b0b')
       +P(27,14,3,2,'#F4E8DB')+P(34,14,3,2,'#F4E8DB')+P(29,20,6,3,'#0c0b0b')+P(24,6,16,2,trim)+P(31,8,2,13,trim)+P(24,11,4,2,trim)+P(36,11,4,2,trim); }
     if(L.mask==='half'){ B.head+=LIMB(24,6,16,11,gear)+P(26,12,5,4,'#0c0b0b')+P(33,12,5,4,'#0c0b0b')+P(24,6,16,2,trim); }
     if(L.mask==='hood'){ B.head+=LIMB(23,4,18,18,'#1a1a1a')+P(26,13,5,4,'#C6392C')+P(33,13,5,4,'#C6392C')+P(23,4,18,2,'#2a2a2a'); }
