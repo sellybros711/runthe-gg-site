@@ -328,6 +328,27 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* archetype picker — the stat line, spelled out and drawn */
+  .stylecard .sc-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
+  .stylecard .sc-blurb{font-size:12px;color:var(--text-faint);}
+  .sc-bars{margin:10px 0 2px;}
+  .sc-key{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--text-faint);font-weight:800;margin-bottom:5px;}
+  .sbar{display:grid;grid-template-columns:78px 1fr 42px 30px;align-items:center;gap:7px;margin-bottom:4px;}
+  .sbar .sb-l{font-size:11.5px;color:var(--text-dim);}
+  .sbar.up .sb-l{color:var(--cream);font-weight:700;}
+  .sbar .sb-t{position:relative;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;display:block;}
+  .sbar .sb-base{position:absolute;left:0;top:0;bottom:0;background:#6c6257;border-radius:4px;}
+  .sbar .sb-bon{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--brandred),#e0b341);border-radius:0 4px 4px 0;}
+  .sbar .sb-v{font-family:var(--mono);font-size:12px;color:var(--cream);text-align:right;font-weight:700;}
+  .sbar .sb-v em{font-style:normal;color:var(--gold);font-size:10px;margin-left:2px;}
+  .sbar .sb-g{font-family:var(--mono);font-size:10px;color:var(--green);text-align:right;}
+  .sc-traits{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0 2px;}
+  .sc-traits span{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px;padding:3px 7px;font-size:10.5px;color:var(--text-dim);}
+  .sc-mast{font-size:11px;color:var(--text-faint);margin-top:5px;}
+  .sc-mast b{color:var(--text-dim);font-weight:700;}
+  @media(max-width:640px){ .sbar{grid-template-columns:70px 1fr 38px 26px;gap:6px;} }
+
   /* match result — readable at a glance instead of a mono dump */
   .mfinish{background:linear-gradient(180deg,rgba(224,179,65,.13),rgba(0,0,0,.18));border:1px solid rgba(224,179,65,.34);
     border-radius:12px;padding:12px 14px;margin-bottom:12px;}
@@ -447,7 +468,7 @@
         </div>
       </div>
       <div>
-        <div class="flab">Archetype <span class="hint">— shapes your stats, how fast you learn, and how you fight</span></div>
+        <div class="flab">Archetype <span class="hint">— your starting stats, and what you grow into</span></div>
         <div class="grid g2" id="cStyles" style="margin-top:6px;"></div>
       </div>
     </div>
@@ -1470,34 +1491,39 @@ const STYLES=[
   {id:'powerhouse',plan:{a:'slam',b:'strike'},name:'Powerhouse',b:{po:11,to:6},blurb:'Big, strong, hits hard.',
    grow:{po:1.5,to:1.3}, mast:{slam:1.6,strike:1.3}, out:1.18, in:0.88,
    dec:{fin:0.08,grind:0.06},
-   perk:{n:'Heavy Hands',d:'Hit 18% harder, absorb 12% of incoming punishment. Slams & Strikes master fastest.'}},
+   perk:{n:'Heavy Hands',d:'One move can change a match. Nobody shrugs off your offence.'}},
 
   {id:'technician',plan:{a:'submission',b:'technical'},name:'Technician',b:{te:11,ps:6},blurb:'Mat-based and precise.',
    grow:{te:1.5,ps:1.35}, mast:{submission:1.6,suplex:1.4,technical:1.4}, out:1.0, in:0.96,
    dec:{counter:0.14,chain:0.12},
-   perk:{n:'Ring General',d:'Counters and chain sequences land far more often. Submissions, Suplexes & Counters master fastest.'}},
+   perk:{n:'Ring General',d:'Counters and chain sequences land far more often than they should.'}},
 
   {id:'highflyer',plan:{a:'aerial',b:'strike'},name:'High-Flyer',b:{ae:12,st:5},blurb:'Fast, acrobatic, spectacular.',
    grow:{ae:1.6,st:1.25}, mast:{aerial:1.7}, out:1.06, in:1.10,
    dec:{risk:0.16},
-   perk:{n:'Gravity Optional',d:'High-risk spots hit far more often and pop the crowd — but you take 10% more damage.'}},
+   perk:{n:'Gravity Optional',d:'High-risk spots hit far more often, and the building comes apart when they do.'}},
 
   {id:'brawler',plan:{a:'hardcore',b:'strike'},name:'Brawler',b:{to:11,po:6},blurb:'Tough, wild, takes punishment.',
    grow:{to:1.55,po:1.25}, mast:{hardcore:1.7,strike:1.3}, out:1.08, in:0.80,
    dec:{survive:0.14,fire:0.08},
-   perk:{n:'Cast Iron',d:'Take 20% less damage and survive runs others cannot. Hardcore masters fastest.'}},
+   perk:{n:'Cast Iron',d:'You survive stretches that would finish anybody else.'}},
 
   {id:'showman',plan:{a:'showman',b:'strike'},name:'Showman',b:{ch:12,ps:5},blurb:'Born for the microphone.',
    grow:{ch:1.6,ps:1.2}, mast:{showman:1.7}, out:0.96, in:1.0,
    dec:{crowd:0.16,heat:0.14,fire:0.10}, popMult:1.35,
-   perk:{n:'Draws Money',d:'Crowd work almost never fails and you gain popularity 35% faster. Showmanship masters fastest.'}},
+   perk:{n:'Draws Money',d:'Crowd work almost never fails. They came to see you.'}},
 
   {id:'allrounder',plan:{a:'strike',b:'technical'},name:'All-Rounder',b:{ps:5,te:5,ch:5},blurb:'No holes, no shortcuts.',
    grow:{po:1.15,te:1.15,ae:1.15,ch:1.15,ps:1.15,to:1.15,st:1.15}, mast:{}, out:1.0, in:0.94,
    dec:{fin:0.04,grind:0.04,crowd:0.04,counter:0.04,chain:0.04,risk:0.04,survive:0.04,fire:0.04,heat:0.04},
    tpBonus:0.25,
-   perk:{n:'Complete Package',d:'Everything improves 15% faster and you earn 25% more training points. Slight bonus to every in-match decision.'}},
+   perk:{n:'Complete Package',d:'No holes to cover, and an edge on every decision you are asked to make.'}},
 ];
+// every wrestler starts here; the archetype adds on top. Shared so the
+// preview on the create screen is exactly what you end up with.
+const BASE_ATTRS={po:32,te:32,ae:30,ch:30,ps:28,to:34,st:36};
+function styleAttrs(s){ const a=Object.assign({},BASE_ATTRS);
+  Object.entries(s.b).forEach(([k,v])=>a[k]+=v); return a; }
 function styleOf(){ return STYLES.find(x=>x.id===(G&&G.w.style))||STYLES[5]; }
 function styleDec(kind){ const d=styleOf().dec||{}; return d[kind]||0; }
 function growMult(k){ const g=styleOf().grow||{}; return g[k]||1; }
@@ -1525,11 +1551,44 @@ function quickStart(){
     [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate(true);}}]); return; }
   doStartCreate(true);
 }
+/* The archetype cards used to read "+11 PO · +6 TO", which tells you nothing
+   unless you already know the game. They now show the actual starting stat
+   line as bars — spelled out, with the archetype's bonus stacked on top of
+   the common baseline — plus how fast each stat will grow. */
 function renderStyles(){
-  $('cStyles').innerHTML=STYLES.map(s=>`<div class="opt ${CREATE.style===s.id?'sel':''}" onclick="CREATE.style='${s.id}';renderStyles()">
-    <h4>${s.name}</h4>
-    <div class="meta">${Object.entries(s.b).map(([k,v])=>'+'+v+' '+k.toUpperCase()).join(' · ')}</div>
-    <div class="perk"><span class="perkn">${s.perk.n}</span> ${s.perk.d}</div></div>`).join('');
+  const max=48;   // the tallest starting stat across all archetypes, for a shared scale
+  $('cStyles').innerHTML=STYLES.map(s=>{
+    const a=styleAttrs(s), grow=s.grow||{};
+    const bars=ATTRS.map(([k,label])=>{
+      const base=BASE_ATTRS[k], bonus=(s.b[k]||0), tot=a[k];
+      const g=grow[k]||1;
+      return `<div class="sbar ${bonus?'up':''}">
+        <span class="sb-l">${label}</span>
+        <span class="sb-t"><i class="sb-base" style="width:${base/max*100}%"></i>${bonus?`<i class="sb-bon" style="left:${base/max*100}%;width:${bonus/max*100}%"></i>`:''}</span>
+        <span class="sb-v">${tot}${bonus?`<em>+${bonus}</em>`:''}</span>
+        <span class="sb-g">${g>1.05?`×${g.toFixed(2).replace(/0$/,'')}`:''}</span>
+      </div>`;
+    }).join('');
+    const traits=[];
+    if(s.out&&s.out!==1) traits.push(`${s.out>1?'Deals':'Deals'} ${Math.round(Math.abs(s.out-1)*100)}% ${s.out>1?'more':'less'} damage`);
+    if(s.in&&s.in!==1) traits.push(`Takes ${Math.round(Math.abs(s.in-1)*100)}% ${s.in<1?'less':'more'} damage`);
+    if(s.popMult&&s.popMult!==1) traits.push(`Gains fame ${Math.round((s.popMult-1)*100)}% faster`);
+    if(s.tpBonus) traits.push(`+${Math.round(s.tpBonus*100)}% training points`);
+    const decs=Object.values(s.dec||{});
+    if(decs.length){ const best=Math.round(Math.max.apply(null,decs)*100);
+      traits.push(decs.length>=6?`+${best}% on every in-match call`:`+${best}% on key in-match calls`); }
+    const cats=Object.keys(s.mast||{}).map(c=>(catById(c)||{name:c}).name);
+    return `<div class="opt stylecard ${CREATE.style===s.id?'sel':''}" onclick="CREATE.style='${s.id}';renderStyles()">
+      <div class="sc-top"><h4>${s.name}</h4><span class="sc-blurb">${s.blurb}</span></div>
+      <div class="sc-bars">
+        <div class="sc-key"><span>Starting stats</span><span>Growth</span></div>
+        ${bars}
+      </div>
+      ${traits.length?`<div class="sc-traits">${traits.map(t=>`<span>${t}</span>`).join('')}</div>`:''}
+      ${cats.length?`<div class="sc-mast"><b>Learns fastest:</b> ${cats.join(', ')}</div>`:''}
+      <div class="perk"><span class="perkn">${s.perk.n}</span> ${s.perk.d}</div>
+    </div>`;
+  }).join('');
 }
 // look editor used by create + locker
 // ---------- visual customizer (tile picker with live mini-previews) ----------
@@ -1614,8 +1673,7 @@ function gotoStep(n){
 function finishCreate(){
   const name=($('cName').value||'').trim()||'The Rookie';
   const st=STYLES.find(s=>s.id===CREATE.style);
-  const attrs={po:32,te:32,ae:30,ch:30,ps:28,to:34,st:36};
-  Object.entries(st.b).forEach(([k,v])=>attrs[k]+=v);
+  const attrs=styleAttrs(st);
   const mastery={}; MCATS.forEach(c=>mastery[c.id]=0);
   G={ schema:SCHEMA, screen:'career',
     w:{ name, nick:($('cNick').value||'').trim(), align:$('cAlign').value, era:$('cEra').value, style:CREATE.style,
