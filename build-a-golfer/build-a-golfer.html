@@ -6726,7 +6726,7 @@ const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=30, FIELD_RETIRE_AGE=55;
 const DECLINE_START_YEAR=15, DECLINE_FULL_YEAR=42;
 const DECLINE_RAMP_MIN=0.35, DECLINE_RAMP_MAX=2.5;   // per-year severity multiplier: year 15 → year 42
 const DECLINE_RATE={dist:2.1,acc:1.15,app:1.15,sht:0.8,scr:0.8,bnk:0.8,put:0.7,clu:0.25};
-function playerAge(){ return START_AGE + ((S.year||1)-1); }
+function playerAge(){ return (typeof careerStartAge==='function'?careerStartAge():START_AGE) + ((S.year||1)-1); }
 // how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
 function seasonForm(s){ if(!s) return 0; const N=FIELDSIZE||120;
   const rank=s.rank||Math.round(N*0.6), rankScore=1-(rank-1)/Math.max(1,N-1);
@@ -6748,7 +6748,7 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   const ramp=(DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN)) * (typeof legacyDecline==='function'?legacyDecline():1);
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
-function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
+function playerRetires(){ return (S.year||1) >= (typeof careerYears==='function'?careerYears():CAREER_MAX_YEARS); }   // forced at the end of the shelf life your entry path bought you
 // CS384 (owner revision): the off-season always grants 3 RE-SPINS, no matter what. The number of CHANGES
 // you can make varies by LAST SEASON's WINS / MAJORS / EARNINGS + TOUR (world) RANKING (owner: "use the old
 // re-spin parameters for changes"). Thresholds easy to tweak. Works in the Legend Circuit too.
@@ -6756,17 +6756,19 @@ const OFF_RESPINS=3;
 function lastCareerSeason(){ const c=(S.circuitMode&&S.circuitCareer)?S.circuitCareer:S.career;
   return (c&&c.seasons&&c.seasons.length)?c.seasons[c.seasons.length-1]:null; }
 // Legacy perks add to BOTH budgets (a decorated career genuinely gets more room to work in the off-season).
-function offRespins(){ return OFF_RESPINS + (typeof legacyAdd==='function'?legacyAdd('respins'):0); }
+function offRespins(){ return OFF_RESPINS + (typeof legacyAdd==='function'?legacyAdd('respins'):0) + (typeof entryOffSpins==='function'?entryOffSpins():0); }
 function offChanges(){
   const bonus=(typeof legacyAdd==='function')?legacyAdd('changes'):0;
+  const floor=(typeof entryOffFloor==='function')?entryOffFloor():0;   // an entry path guarantees a MINIMUM, it does not stack on top
+  const F=v=>Math.max(v, floor);
   const last=lastCareerSeason();
-  if(!last || last.rank==null) return 1+bonus;               // no prior-season data → a single default change
+  if(!last || last.rank==null) return F(1+bonus);               // no prior-season data → a single default change
   const w=last.wins||0, mj=last.majors||0, r=last.rank;
   let wr=999; try{ wr=myWorldRank(); }catch(e){}
-  if(mj>=1 || w>=2 || wr<=5) return 3+bonus;  // a major / multi-win / world top-5
-  if(w>=1 || r<=10 || wr<=20) return 2+bonus; // a win / top-10 on the money list / world top-20
-  if(r<=40 || wr<=60) return 1+bonus;         // a solid money + ranking season
-  return 0+bonus;                             // a poor season earns none (legacy still counts)
+  if(mj>=1 || w>=2 || wr<=5) return F(3+bonus);  // a major / multi-win / world top-5
+  if(w>=1 || r<=10 || wr<=20) return F(2+bonus); // a win / top-10 on the money list / world top-20
+  if(r<=40 || wr<=60) return F(1+bonus);         // a solid money + ranking season
+  return F(0+bonus);                             // a poor season earns none (legacy still counts)
 }
 // a short human note: re-spins are always 3; changes are earned by last season's finish.
 function offBudgetNote(){
@@ -9085,7 +9087,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,entry:scrEntry,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -10424,7 +10426,7 @@ function overlayConfirmRetire(screen){
       ? `You still have <b>${left} season${left===1?'':'s'} left</b> on the Legend Circuit. Ending it now closes out this run for good, there's no coming back to it.`
       : `This closes out your Legend Circuit run. Your career stats and achievements are always safe.`;
   } else {
-    left=Math.max(0, CAREER_MAX_YEARS-(S.year||1));
+    left=Math.max(0, careerYears()-(S.year||1));
     label='Retire your golfer?';
     body=left>0
       ? `You still have <b>${left} year${left===1?'':'s'} left</b> in this 30-year career. Retiring now ends it for good, there's no coming back to this golfer. Your lifetime stats and achievements carry over untouched.`
@@ -14662,10 +14664,16 @@ function scrBuild(){
     const d=$(`<button class="btn goldfill">Tee off at ${esc(cN)} ▸<span class="sub">Play your round · ${dCondLabel(S.dailyCond||'breezy')}</span></button>`);
     d.onclick=beginDailyRound; right.appendChild(d);
   } else {
-    right.appendChild($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
-    const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
+    // ENTRY PATHS: a brand-new career picks how it turned pro before it plays a shot. A career already
+    // under way (a resumed year-1 save that has one, or any later year) goes straight to the season.
+    const fresh=(!S.circuitMode && (S.year||1)===1 && !(S.career&&S.career.entry));
+    right.appendChild($(`<h2 style="margin:0 0 8px">${fresh?'Turn pro':'Pick your season'}</h2>`));
+    const full=$(fresh
+      ? `<button class="btn red">Turn Pro ▸<span class="sub">Five ways in · it sets your age, your card and how long you have</span></button>`
+      : `<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
     const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
-    full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
+    full.onclick=()=>{ if(fresh){ S.screen='entry'; render(); } else startSeason(false); };
+    maj.onclick=()=>startSeason(true);
     right.appendChild(full); right.appendChild(maj);
     right.appendChild($(`<div class="small muted" style="margin-top:16px;text-align:center;line-height:1.5">⚔️ Rivalries form on their own, battle the field for a few seasons and the player who keeps finishing beside you becomes your nemesis.</div>`));
   }
@@ -15206,7 +15214,7 @@ function storyCtx(ce){
   const age=(typeof playerAge==='function')?playerAge():22;
   const rookie=(S.year||1)===1;
   const veteran=age>=38;
-  const twilight=(S.year||1)>=Math.max(1,CAREER_MAX_YEARS-4);   // last few years of a 30-yr career
+  const twilight=(S.year||1)>=Math.max(1,careerYears()-4);   // last few years of the career, however long it is
   // a fitting brand for the "sponsor comes calling" beat: one tier above your current deal, named for immersion
   let sBrand='a major brand'; try{ const sp=ensureSponsor(), t=Math.min(SPONSOR_TIERS.length-1, sp.tier+1), pool=brandsOfTier(t).filter(b=>b!==sp.brand);
     if(pool.length) sBrand=pool[(S.evtIndex||0)%pool.length]; }catch(e){}
@@ -16254,9 +16262,13 @@ function qFinish(){
     S.career.statusHist.push({year:S.year||1, from, to:out.to, q:true, pos});
     S.career.qSchools=(S.career.qSchools||0)+1;
     if(out.to==='full') S.career.qCards=(S.career.qCards||0)+1; }
+  const wasEntry=!!(S.qs&&S.qs.entry) || !!(S.pendingQ&&S.pendingQ.entry);
   S.pendingQ=null; S.qs=null;
+  track('qschool_done',{pos, to:out.to, entry:wasEntry});
+  // the Q-School ENTRY PATH: this was your way onto the tour, not a season-end reckoning, so the first
+  // season starts right here on whatever you just earned.
+  if(wasEntry){ startSeason(false); return; }
   try{ saveCareer(offseasonResumeExtra()); }catch(e){}
-  track('qschool_done',{pos, to:out.to});
   S.screen='offseason'; render();
 }
 function scrQSchool(){
@@ -16340,6 +16352,110 @@ function statusChangeNode(){
     <div class="small" style="color:var(--oncard)">${esc(c.reason||m.note)}</div>
     ${S.pendingQ?`<div class="small" style="margin-top:6px;color:var(--gold);font-weight:800">Q-School is next. Six rounds for a card.</div>`:''}
   </div>`);
+}
+
+/* ==================== ENTRY PATHS: how you turned pro ====================
+   Every career used to start identically: age 22, a full tour card, eighteen weeks and go. So the first
+   five years of the fiftieth career read exactly like the first five of the first, which is the staleness
+   this whole batch exists to fix. Now the FIRST decision of a career is how you got there, and it sets
+   your age, your card, your standing, what the locker room thinks of you and how long you have.
+
+   Each path is built from levers the game already reads, so none of it is a parallel system: the card
+   itself (careerStatus, straight into the Proving Tour work), age (which now sets the career's LENGTH,
+   see careerYears), the two-axis reputation, fans, confidence, the sponsor slots, the world ranking seed
+   and the off-season budget. Q-School is a path too: you play the six rounds before your first season
+   and start on whatever you earn.                                                                    */
+const CAREER_END_AGE=52;             // everyone plays until about the same age, so the start age IS the length
+const ENTRY_PATHS=[
+  {id:'amateur', name:'The Amateur Champion', kick:'You won the biggest amateur title in the game', col:'#35d6a0',
+   age:22, status:'full',
+   blurb:'The tour hands the winner a card. You arrive with a name, a gallery, and everybody waiting to see whether it travels.',
+   fans:25000, pop:8, resp:12, conf:46, rank:1.35, offFloor:0, offSpins:0, skill:0, sponsorTier:null, sponsorTierAdj:1,
+   good:['Full tour card from week one','Brands rate you a tier above your record','Peers rate you'], bad:['Everybody expects it','Confidence starts low: you have it all to lose']},
+  {id:'qschool', name:'The Q-School Graduate', kick:'Six rounds, right now, for your card', col:'#F1D04A',
+   age:24, status:null,
+   blurb:'Two years of trying and one week that settles it. You play Q-School before your first season and start on exactly what you earn: a card, conditional status, or the second tier.',
+   fans:4000, pop:0, resp:8, conf:58, rank:1, offFloor:2, offSpins:0, skill:0, sponsorTier:null, sponsorTierAdj:0,
+   good:['You learned how to work: never fewer than 2 off-season changes','Nobody doubts you belong'], bad:['Your card is not guaranteed','Two years already gone']},
+  {id:'mini', name:'The Mini-Tour Veteran', kick:'Four years of paying your own entry fees', col:'#E14A33',
+   age:26, status:'proving',
+   blurb:'No card, no exemption, no shortcut. You start on '+PROVING_NAME+' and play your way up the way everybody down there does.',
+   fans:3000, pop:-4, resp:16, conf:55, rank:0.7, offFloor:2, offSpins:1, skill:0, sponsorTier:null, sponsorTierAdj:-1,
+   good:['Never fewer than 2 off-season changes, and +1 re-spin: you are still learning','The locker room respects the graft'], bad:['You start off the tour entirely','Four years of your prime are gone','Brands rate you a tier below']},
+  {id:'exempt', name:"The Sponsor's Exemption", kick:'A brand put you on tour before you earned it', col:'#a24be0',
+   age:21, status:'full',
+   blurb:'Signed young, marketed hard, handed a card. The money is real and so is the audience. So is what the rest of the field thinks about it.',
+   fans:140000, pop:20, resp:-22, conf:42, rank:1.1, offFloor:0, offSpins:0, skill:0, sponsorTier:3, sponsorTierAdj:0,
+   good:['A Premium sponsor signed from day one','A huge audience before you hit a shot','The youngest start there is'], bad:['The locker room thinks you bought it','Respect starts on the floor']},
+  {id:'late', name:'The Late Convert', kick:'Another life first, and then this one', col:'#5bcfe8',
+   age:29, status:'cond',
+   blurb:'You came to golf late and got here on invitations. The game arrived fully formed, which is the one advantage of starting at 29.',
+   fans:18000, pop:10, resp:6, conf:52, rank:0.9, offFloor:0, offSpins:0, skill:2, sponsorTier:null, sponsorTierAdj:0,
+   good:['+2 to every rating: you arrived mature','A story people want to follow'], bad:['Conditional status, a partial schedule','A 23-year career instead of 30']},
+];
+function entryPathById(id){ return ENTRY_PATHS.find(p=>p.id===id)||null; }
+function entryPath(){ return (S.career&&S.career.entry)?entryPathById(S.career.entry):null; }
+function careerStartAge(){ const a=S.career&&S.career.startAge; return (a>0)?a:START_AGE; }
+// The start age IS the career's length: everybody plays to about 52, so turning pro at 29 costs you the
+// seven years you spent elsewhere. Clamped so no path outruns the advertised 30.
+function careerYears(){ return clamp(CAREER_END_AGE-careerStartAge(), 18, CAREER_MAX_YEARS); }
+function entryOffFloor(){ const p=entryPath(); return p?(p.offFloor||0):0; }
+function entryOffSpins(){ const p=entryPath(); return p?(p.offSpins||0):0; }
+
+/* Apply the path and turn pro. Everything is stamped on S.career, which this creates if the first season
+   has not recorded one yet, so a path survives save/resume like any other career state. */
+function applyEntryPath(id){
+  const p=entryPathById(id); if(!p) return false;
+  const c=(S.career=S.career||{});
+  c.entry=p.id; c.startAge=p.age;
+  if(p.skill) CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.round(clamp(sl.value+p.skill,40,99)); });
+  if(p.status) setCareerStatus(p.status);
+  // standing: a champion arrives ranked, a mini-tour graduate does not
+  try{ c.rankPts=Math.round(owgrSeed(myOvrNow())*(p.rank||1)); }catch(e){}
+  // reputation, fans and confidence: who the game thinks you are on day one
+  try{ const st=careerStory(), rp=careerRep();
+    st.followers=Math.max(0, p.fans||FOLLOWERS_START);
+    st.confidence=clamp(p.conf!=null?p.conf:CONF_START, 0, 100);
+    rp.fans=clamp(REP_START.fans+(p.pop||0), 0, 100);
+    rp.respect=clamp(REP_START.respect+(p.resp||0), 0, 100);
+    st.feed=st.feed||[]; st.feed.push({year:1, kind:'entry', txt:p.kick+'.'});
+  }catch(e){}
+  // the sponsor's exemption really is signed, not merely interested
+  try{ const sp=ensureSponsors();
+    if(p.sponsorTier){ const brand=sponsorPick(p.sponsorTier, null, mulberry32(((S.careerSeed||0)^0x5e77)>>>0));
+      if(brand) sp.shirt={brand, tier:p.sponsorTier, rel:1, seasons:0, strikes:0}; }
+  }catch(e){}
+  track('entry_path',{path:p.id, age:p.age, status:p.status||'qschool'});
+  if(p.id==='qschool'){ S.qs=null; S.pendingQ={from:'full', entry:true}; qStart(); if(S.qs) S.qs.entry=true; return true; }
+  startSeason(false); return true;
+}
+
+/* The screen. Shown once, before your first season, and only in career mode. */
+function scrEntry(){
+  add(scrHero('Turn Pro','Five ways in. This one is for the whole career.'));
+  add($(`<div class="lede center" style="max-width:560px;margin:0 auto 14px">How you got here decides your age, your card, your standing and how long you have. Pick the road you actually want to walk.</div>`));
+  ENTRY_PATHS.forEach(p=>{
+    const yrs=clamp(CAREER_END_AGE-p.age,18,CAREER_MAX_YEARS);
+    const stat=p.status?statusMeta(p.status):{label:'Decided at Q-School', col:'#F1D04A'};
+    const chips=[`Age ${p.age}`, `${yrs} seasons`, stat.label].map(t=>`<span class="tag" style="margin:0;font-size:9.5px;padding:3px 7px">${esc(t)}</span>`).join(' ');
+    const b=$(`<button class="scout" style="width:100%;max-width:560px;margin:0 auto 12px;display:block;text-align:left;border-color:${p.col};padding:13px 15px;cursor:pointer">
+      <div style="font:800 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${p.col}">${esc(p.kick)}</div>
+      <div style="font:900 19px/1.2 var(--body);color:var(--oncard);margin:5px 0 6px">${esc(p.name)}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">${chips}</div>
+      <div class="small muted" style="margin-bottom:8px">${esc(p.blurb)}</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="flex:1 1 200px"><div class="small" style="color:#35d6a0;font-weight:800">${p.good.map(g=>'+ '+esc(g)).join('<br>')}</div></div>
+        <div style="flex:1 1 200px"><div class="small" style="color:#E14A33;font-weight:800">${p.bad.map(g=>'- '+esc(g)).join('<br>')}</div></div>
+      </div></button>`);
+    b.onclick=()=>applyEntryPath(p.id); add(b);
+  });
+  const back=$(`<button class="btn ghost" style="max-width:560px;margin:6px auto 0">‹ Back to your golfer</button>`);
+  back.onclick=()=>{ S.screen='build'; render(); }; add(back);
+}
+// a one-line reminder of the road you took, for the summary and the ceremony
+function entryLineHTML(){
+  const p=entryPath(); if(!p) return '';
+  return `<span style="color:${p.col};font-weight:800">${esc(p.name)}</span> · turned pro at ${careerStartAge()}`;
 }
 
 /* ==================== CAREER TRAITS ====================
@@ -16461,7 +16577,7 @@ function legacyCtx(){
     worldNo1: wr===1 || (c.awards&&c.awards.no1>0),
     seasonWins, winStreak:best,
     cupChampion: !!(s&&s.cupYouWon),
-    wonAt40: wl.some(w=>(START_AGE+((w.year||1)-1))>=40) || (seasonWins>0 && playerAge()>=40),
+    wonAt40: wl.some(w=>(careerStartAge()+((w.year||1)-1))>=40) || (seasonWins>0 && playerAge()>=40),
     cleanSeason: !!(t && t.played>=15 && t.made===t.played),
     // the money title is only real once the season's awards are settled, so it reads the awards, not a
     // mid-season money-list lead
@@ -17661,6 +17777,7 @@ function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
 // résumé above what their following alone would earn.
 function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i;
   try{ if(typeof legacyAdd==='function') t+=legacyAdd('sponsorTier'); }catch(e){}
+  try{ const ep=(typeof entryPath==='function')?entryPath():null; if(ep&&ep.sponsorTierAdj) t+=ep.sponsorTierAdj; }catch(e){}
   return Math.max(0, Math.min(SPONSOR_TIERS.length-1, t)); }
 // ensure a committed sponsor relationship exists (migrate a legacy lastContract, else seed an entry deal)
 // CS236: TWO sponsor slots, a HAT sponsor and a SHIRT sponsor. Each is its own deal (own brand, tier,
@@ -19274,7 +19391,7 @@ function cupRosterCol(roster, code, name, mine){
 const CAPTAIN_MIN_APPS=7;
 function captainEligible(){
   if(S.daily) return false; const y=S.year||1;
-  if(y<26||y>CAREER_MAX_YEARS) return false;
+  if(y<Math.max(1,careerYears()-4)||y>careerYears()) return false;   // the last few years of THIS career, whatever length the entry path set
   if(((S.career&&S.career.cup&&S.career.cup.apps)||0) < CAPTAIN_MIN_APPS) return false;
   return playerInTeamEvent(y);
 }
@@ -20399,7 +20516,7 @@ function scrSeason(){
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
-  const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS);
+  const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+careerYears());
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
   // CS285: Confidence is now a HORIZONTAL meter (fits the wrapped second-row space better than a number),
@@ -20756,7 +20873,7 @@ function drawShareCard(cv,info,vals){
   const W=560,H=720,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   let yearLine='';
-  if(info.year && !S.daily) yearLine = S.circuitMode ? ('LEGEND CIRCUIT · YEAR '+info.year) : ('YEAR '+info.year+' OF '+CAREER_MAX_YEARS);
+  if(info.year && !S.daily) yearLine = S.circuitMode ? ('LEGEND CIRCUIT · YEAR '+info.year) : ('YEAR '+info.year+' OF '+careerYears());
   drawPlayerCard(ctx,W,H,{
     look:S.look||DEFLOOK, name:info.name, ovr:info.ovr, net:info.net,
     headline:playerCardHeadline(info), yearLine,
@@ -21366,7 +21483,7 @@ function scrSummary(){
   __cur=hdr;
   // CS483 (owner mobile pass): tighter header (name + year/overall on one compact line) reclaims vertical room on every tab.
   add($(`<h1 class="center" style="font-size:25px;margin:2px 0 1px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin:0 0 6px;font-size:13px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin:0 0 6px;font-size:13px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+careerYears()+' · '))}Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   // CS477 (owner): the Earnings / Net-profit money card now lives on the EARNINGS tab (moC), not Overview.
   __cur=moC;
@@ -21674,6 +21791,9 @@ function scrSummary(){
   const board=$(`<div class="board"></div>`);
   // CS479: top 6 + you (with Full Season Recap moved into the money bar) keeps the Earnings tab on one screen
   // so the Continue button is visible without the scroll-down cue. Full list is in Full Season Recap.
+  { const ep=entryPath(); if(ep) caC.appendChild($(`<div class="scout" style="border-color:${ep.col};padding:11px 13px;margin:0 0 10px">
+    <div style="font:800 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${ep.col}">How you turned pro</div>
+    <div class="small" style="margin-top:5px;color:var(--oncard)">${entryLineHTML()} · a ${careerYears()}-year career</div></div>`)); }
   if(tab==='career'){
     careerList.slice(0,4).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
     if(cRank>4){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
@@ -21746,7 +21866,7 @@ function scrSummary(){
     again.onclick=()=>{reset();render();}; actC.appendChild(again);
     advanceLabel='Build Another Golfer';
   } else {
-    const lastYear=S.circuitMode?circuitOver():((S.year||1)>=CAREER_MAX_YEARS);
+    const lastYear=S.circuitMode?circuitOver():((S.year||1)>=careerYears());
     const declining=pastPeak();
     const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
     if(sbSignedIn()){
@@ -21971,11 +22091,11 @@ function mintLegendToken(){
 function endCareer(reason){
   S._repAnimShown=false;   // let the Tour Rep meter animate once on the career-end ceremony
   S.careerRank=null; S._careerRankLoading=null;   // CS483t: fresh ceremony reloads its leaderboard rank
-  S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 30 years only
+  S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // a full career only, however long the entry path made it
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
-    bestFin: c.best, age:playerAge()}; }   // age at retirement, gates Legend Circuit eligibility (50+)
+    bestFin: c.best, age:playerAge(), maxYears:careerYears(), entry:c.entry||null, startAge:careerStartAge()}; }   // age at retirement, gates Legend Circuit eligibility (50+)
   // ---- lifetime career-completion badges (Hall of Famer + the Career Grand Slam black tee) ----
   try{ const cc=career(); cc.lt=Object.assign(ltDefault(),cc.lt||{}); cc.lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},cc.lt.maj||{});
     cc.lt.careers++;
@@ -28958,7 +29078,7 @@ function careerMilestones(c){
   const seasons=(c.seasons||[]), wins=(c.winsList||[]).slice().sort((a,b)=>a.year-b.year);
   const M=[];
   const firstYear=seasons.length?Math.min(...seasons.map(s=>s.year)):(S.year||1);
-  M.push({year:firstYear, icon:'⛳', title:'Turned Pro', sub:'Rookie season · age '+START_AGE});
+  M.push({year:firstYear, icon:'⛳', title:'Turned Pro', sub:(entryPath()?entryPath().name+' · age '+careerStartAge():'Rookie season · age '+careerStartAge())});
   if(wins.length) M.push({year:wins[0].year, icon:'🏆', title:'First Tour Win', sub:wins[0].name});
   [10,25,50,75].forEach(n=>{ if(wins.length>=n) M.push({year:wins[n-1].year, icon:'🏆', title:n+'th Career Win', sub:'A milestone victory'}); });
   const majW=wins.filter(w=>w.major);
@@ -29057,7 +29177,7 @@ function scrCareerEnd(){
   const c=S.career||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[]};
   const e=S.careerEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
   const ccol=c.net>=0?'#35d6a0':'#E14A33';
-  const full=(e.years>=CAREER_MAX_YEARS);
+  const full=(e.years>=(e.maxYears||CAREER_MAX_YEARS));
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career, hung up the clubs':'🏁 Career complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
@@ -29085,6 +29205,9 @@ function scrCareerEnd(){
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
   { const lg=legacyListHTML(); if(lg) add($(lg)); }    // what this career earned, permanently
+  { const ep=entryPath(); if(ep) add($(`<div class="scout center" style="border-color:${ep.col};padding:11px 13px;margin:0 auto 10px;max-width:520px">
+    <div style="font:800 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${ep.col}">How it started</div>
+    <div class="small" style="margin-top:5px;color:var(--oncard)">${entryLineHTML()}</div></div>`)); }
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
   { const tn=tourRetroNode(); if(tn) add(tn); }        // TOUR ERAS: the tour you actually played in
   { const lg=leagueRetroNode(); if(lg) add(lg); }      // THE BREAKAWAY LEAGUE: which side you ended up on
