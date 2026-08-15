@@ -2885,8 +2885,11 @@ const SEASON_EVENTS=18;
 // the FLAT costs (travel, season overhead) need their own scaled-down figures, or every circuit season
 // would show a guaranteed heavy loss regardless of how well you actually played.
 const CIRCUIT_COSTS={travelPerEvent:8000, seasonFixed:0.5e6};
+// The Proving Tour, same reasoning: a $1m feeder purse is ~1/20 of a tour week, so the FLAT costs need
+// their own second-tier figures or every feeder season is a guaranteed heavy loss however you played.
+const PROVING_COSTS={travelPerEvent:6000, seasonFixed:0.3e6};
 function seasonNet(t){const gross=t.money, caddie=gross*caddieFeePct(), agent=gross*COSTS.agentPct,
-  cc=S.circuitMode?CIRCUIT_COSTS:COSTS,
+  cc=S.circuitMode?CIRCUIT_COSTS:((S.season&&S.season.proving)?PROVING_COSTS:COSTS),
   travel=t.played*cc.travelPerEvent, fixed=cc.seasonFixed*(t.played/SEASON_EVENTS),
   costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
 /* ---- Tee-tier badge system (lifetime, builds up across every season & career) ----
@@ -4736,7 +4739,7 @@ function autoSaveSeason(){
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
       contracts:S.season.contracts, briefs:S.season.briefs, briefsDone:S.season.briefsDone,
-      skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
+      skipped:S.season.skipped, coinRaw0:S.season.coinRaw0, proving:S.season.proving,
       stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney, _lastStopEvt:S.season._lastStopEvt,
       confidence:S.season.confidence, followers0:S.season.followers0 } } });
 }
@@ -5958,7 +5961,7 @@ function simHeadlessEvent(evt, players){
   }
   const made=ps.filter(o=>o.made).sort((a,b)=>a.total-b.total), missed=ps.filter(o=>!o.made);
   assignTies(made,false); missed.forEach(o=>{o.pos='CUT';o.pct=0;});
-  const order=made.concat(missed), basePts=evt.league?LEAGUE_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500));
+  const order=made.concat(missed), basePts=evt.league?LEAGUE_PTS:(evt.proving?PROVING_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500)));
   order.forEach(o=>{ o.money=evt.purse*(o.pct||0); o.points=typeof o.pos==='number'?Math.round(basePts*((o.pct||0)/0.18)):0;
     const t=S.season.totals[o.p.name]; if(!t) return;
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
@@ -9082,7 +9085,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -9649,7 +9652,7 @@ function overlayTournament(screen){
   } else {
     const {evt,order,playoff}=r;
     const me=order.find(o=>o.p&&o.p.you);
-    const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const typeLbl=evt.major?'<span class="major">Major</span>':evt.proving?`<span class="reg" style="color:#E14A33">${PROVING_NAME}</span>`:evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
     const venue=eventCourse(evt);
     ov.appendChild($(`<h3 class="center" style="margin:2px 0 3px;color:${evt.major?'var(--gold)':'var(--oncard)'}">${esc(evt.name)}</h3>`));
     ov.appendChild($(`<div class="center kx" style="margin:0 0 3px">${typeLbl} · ${fmt(evt.purse)} purse</div>`));
@@ -14695,7 +14698,9 @@ function startSeason(majorsOnly){
   S.schedule = S.daily ? SCHEDULE.map(e=>({...e}))
              : S.circuitMode ? circuitSchedule(S.careerSeed)
              : (majorsOnly ? majorsSchedule()
-                : (leagueJoined() ? leagueSchedule(S.year||1, S.careerSeed) : seasonSchedule(S.year||1, S.careerSeed)));
+                : (leagueJoined() ? leagueSchedule(S.year||1, S.careerSeed)
+                  : (onProvingTour() ? provingSchedule(S.year||1, S.careerSeed)
+                    : condSchedule(seasonSchedule(S.year||1, S.careerSeed)))));
   S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
@@ -14711,12 +14716,15 @@ function startSeason(majorsOnly){
     roster=legendField(CIRCUIT_FIELDSIZE-1);
   } else if(leagueJoined()){
     roster=leagueFieldRoster(LEAGUE_FIELD-1);   // the Frontier's own small invitational field
+  } else if(onProvingTour()){
+    roster=provingFieldRoster(PROVING_FIELD-1);   // the second tier: the players the tour left behind
   } else {
     roster=worldField(FIELDSIZE-1);   // living-world field for the current sim year
   }
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
+  S.season.proving=(!S.daily && !S.circuitMode && onProvingTour());   // stamped at the start: the card can flip at season END, the costs must follow the season you actually played
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.curBracket=null; S._brIdx=null; S.brRound=0; S.season.bracketChampion=null;   // Match Play Championship state
   // TOUR NEWS: the season the tour actually introduces the Match Play Championship gets an announcement
@@ -14730,6 +14738,7 @@ function startSeason(majorsOnly){
     S.pendingTourVote = _tourVote;   // the council gets the floor before the season starts
     S.tourVoteResult = null;
   }
+  S.statusChange=null; S.qs=null;     // the card reckoning is a season-END thing; clear last year's card + any stale Q-School
   S.pendingLeagueNews = _lgNews;      // the league forming / this year's signings, announced before week 1
   S.pendingLeagueOffer = null; S.leagueOfferResult=null;
   try{ if(!S.daily && !S.circuitMode && leagueOfferDue(S.year||1)) S.pendingLeagueOffer={year:S.year||1, money:leagueOfferMoney()}; }catch(e){}
@@ -16073,6 +16082,264 @@ function leagueCupRecord(res){
   L.cups.push({year, aPts:res.ptA, bPts:res.ptB, winner:res.winner, mine:res.mineWon});
   leagueHeat(res.mineWon?6:10);   // losing it stings, and stokes it harder
   track('league_cup',{year, winner:res.winner, mine:!!res.mineWon});
+}
+
+/* ==================== Q-SCHOOL AND THE PROVING TOUR ====================
+   A tour card is the thing every career quietly assumed you had. Now it is something you hold, lose and
+   win back, and there is a second tier underneath the tour to lose it TO. Three statuses:
+
+     full     the card you start with. The season you already know.
+     cond     conditional. You keep a card but not a schedule: roughly a third of the ordinary weeks are
+              Monday qualifiers you don't get through, so you are playing for your card on half the starts.
+     proving  you are off the tour entirely and playing THE PROVING TOUR, a sixteen-week second tier with
+              small purses, no majors and its own order of merit.
+
+   Two ways back, exactly as in real golf: finish inside the top PROVING_PROMOTE on the feeder money list,
+   or survive Q-School. Three wins in a feeder season is a battlefield promotion on its own. And a rookie
+   can begin down here, which is what makes the entry paths worth anything.
+
+   Everything reuses the season engine unchanged, the same way the breakaway league does: a different
+   schedule and a different field, nothing more. The line itself moves with the tour (cardLine()), so a
+   career whose tour has voted the card line to 70 is a career where the drop is genuinely near.        */
+const PROVING_NAME='The Proving Tour';
+const PROVING_EVENTS=16;            // sixteen weeks, no majors, no playoffs
+const PROVING_PURSE=1.0;            // $1m an event, about a twentieth of a signature
+const PROVING_FIELD=132;            // a big field for small money
+const PROVING_PTS=120;              // a feeder win is worth a fraction of a tour win in the world ranking
+const PROVING_PROMOTE=26;           // top 26 on the order of merit earn a tour card
+const PROVING_BATTLEFIELD=3;        // three wins in a season promotes you on merit alone
+const DEMOTE_LINE_MULT=1.5;         // outside 1.5x the card line and you are off the tour, not on the bubble
+const COND_MISS=0.42;               // share of ordinary weeks a conditional member fails to get into
+const Q_ROUNDS=6, Q_FIELD=78, Q_FULL=5, Q_COND=25;   // six rounds; top 5 a full card, top 25 conditional
+
+function provingOn(){ return !S.daily && !S.circuitMode && !!S.career; }
+function careerStatus(){ if(!provingOn()) return 'full'; return S.career.status||'full'; }
+function setCareerStatus(k){ if(provingOn()) S.career.status=k; }
+function onProvingTour(){ return careerStatus()==='proving' && !leagueJoined(); }
+function onCondStatus(){ return careerStatus()==='cond' && !leagueJoined(); }
+function demoteLine(){ return Math.round(cardLine()*DEMOTE_LINE_MULT); }
+const STATUS_META={
+  full:{label:'Full Tour Card', col:'#35d6a0', note:'Every week is yours.'},
+  cond:{label:'Conditional Status', col:'#F1D04A', note:'A partial schedule. Play your way back to a full card.'},
+  proving:{label:PROVING_NAME, col:'#E14A33', note:'Off the tour. Top 26 on the order of merit earns a card back.'},
+};
+function statusMeta(k){ return STATUS_META[k||careerStatus()]||STATUS_META.full; }
+
+/* ---- the feeder schedule ---- */
+const PROVING_STOPS=[
+  'Cedar Ridge Classic','Ironbark Open','Nine Mile Championship','Salt Flats Open','Bellwether Classic',
+  'Copper Creek Open','Tallgrass Championship','Harbor Light Classic','Dry Gulch Open','Sable Pines Classic',
+  'Millrace Open','Foxglen Championship','Redstone Classic','Hollow Brook Open','Kettle Valley Classic',
+  'Broken Spoke Open','Wind Gap Championship','Quarryside Classic','Blue Hollow Open','Fairhaven Classic',
+];
+function provingEvt(name,wk){ return {name, type:'proving', wk, purse:PROVING_PURSE*1e6, major:false, big:false, proving:true}; }
+function provingSchedule(year,seed){
+  const shuffled=seededShuffle(PROVING_STOPS, ((seed!=null?seed:0)^0x9c0015)>>>0);
+  const N=shuffled.length, off=((((year||1)-1)*5)%N+N)%N;
+  const list=[];
+  for(let k=0;k<PROVING_EVENTS;k++){
+    const e=provingEvt(shuffled[(off+k)%N], 3+k*2);
+    if(k>=PROVING_EVENTS-2){ e.purse*=2.2; e.name=e.name.replace(/(Classic|Open|Championship)$/,'Finals'); e.big=false; }   // the last two weeks pay double and settle the order of merit
+    list.push(e);
+  }
+  return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
+}
+/* The feeder field: the players the tour's 120-man field leaves behind, topped up with career-seeded
+   feeder pros so a second tier is genuinely deep. Generated per season rather than persisted, because a
+   feeder tour churns its membership every year anyway and none of it needs to survive the off-season.  */
+function provingFieldRoster(n){
+  const w=ensureWorld(); if(!w) return [];
+  const mk=g=>{ const o={name:g.name, skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o; };
+  const sorted=w.active.slice().sort((a,b)=>b.lov-a.lov);
+  const list=sorted.slice(FIELDSIZE).map(mk);   // everyone outside the tour's field
+  const rng=mulberry32((((S.careerSeed||0)^0x7ec0de)+(S.year||1)*0x9e3779b1)>>>0);
+  const used=new Set(w.active.map(g=>g.name).concat(list.map(g=>g.name)));
+  let guard=0;
+  while(list.length<n && guard++<400){
+    const r=genRookie(rng, w.simYear, used); stampLiving(r, w.simYear);
+    const target=66+rng()*11, d=target-r.lov;                     // pull them into the feeder band
+    const o={name:r.name, skill:Math.round(clamp(r.lov+d,52,82))};
+    SKK.forEach(s=>o[s]=Math.round(clamp((r['l_'+s]||70)+d,45,90)));
+    list.push(o);
+  }
+  return list.slice(0,n);
+}
+/* CONDITIONAL STATUS: same tour, far fewer starts. A seeded share of the ordinary weeks are Monday
+   qualifiers you don't get through; the majors, the signature weeks and the playoffs are gated by the
+   ranking already, so they are left exactly as they were. */
+function condSchedule(list){
+  if(!onCondStatus()) return list;
+  const rng=mulberry32((((S.careerSeed||0)^0xc0d17)+(S.year||1)*2654435761)>>>0);
+  const keep=list.filter(e=>{
+    if(e.major||e.big||e.playoff||e.teamcup||e.olympics||e.league) return true;
+    return rng()>COND_MISS;
+  });
+  return keep.length>=6 ? keep : list;   // never leave a season with nothing to play
+}
+function provingWins(){ if(!S.season) return 0; const t=S.season.totals[S.season.me.name]; return t?(t.wins||0):0; }
+
+/* ---- the season-end reckoning ----
+   Run once per season, right after the world ranking settles. Returns a card describing what happened,
+   or null when nothing changed; sets S.pendingQ when the outcome sends you to Q-School.            */
+function resolveCardStatus(rank, moneyRank){
+  if(!provingOn() || leagueJoined()) return null;
+  const from=careerStatus(), CL=cardLine(), DL=demoteLine();
+  let to=from, reason='', q=false;
+  if(from==='proving'){
+    const wins=provingWins();
+    if(wins>=PROVING_BATTLEFIELD){ to='full'; reason=`A battlefield promotion. ${wins} wins on ${PROVING_NAME} and the tour does not make you wait.`; }
+    else if(moneyRank>0 && moneyRank<=PROVING_PROMOTE){ to='full'; reason=`${ord(moneyRank)} on ${PROVING_NAME} order of merit. The top ${PROVING_PROMOTE} earn a tour card.`; }
+    else { to='proving'; reason=`${moneyRank>0?ord(moneyRank):'Outside'} on the order of merit, short of the top ${PROVING_PROMOTE}. Q-School is the other way back.`; q=true; }
+  } else {
+    if(rank<=CL){ to='full'; reason=from==='cond'?`World #${rank}, back inside the top ${CL}. Your full card is restored.`:''; }
+    else if(rank<=DL){ to='cond'; reason=`World #${rank}, outside the top ${CL}. Conditional status: a partial schedule next season, and Q-School if you want the card back sooner.`; q=true; }
+    else { to='proving'; reason=`World #${rank}, outside the top ${DL}. You have lost your tour card. Q-School, or ${PROVING_NAME}.`; q=true; }
+  }
+  const changed=(to!==from);
+  setCareerStatus(to);
+  S.career.statusHist=S.career.statusHist||[];
+  if(changed) S.career.statusHist.push({year:S.year||1, from, to});
+  S.pendingQ = q ? {from, to, rank, moneyRank} : null;
+  if(!changed && !q) return null;
+  return {from, to, reason, changed, q};
+}
+
+/* ---- Q-SCHOOL ----
+   Six rounds, one field, two lines drawn across it. The top Q_FULL earn a full tour card, the top Q_COND
+   conditional status, and everyone else plays The Proving Tour. It is deliberately the LAST thing that
+   happens to a season: you have already seen where you finished, and this is the week that decides what
+   that finish actually costs. Simulated up front so the reveal can be paced round by round with a live
+   card line, the same way the knockout finale reveals a day at a time.                                */
+function qFieldBuild(){
+  const me=buildPlayer();
+  const evt={name:'Q-School', major:false, big:false};
+  const ew=eventWeights(evt);
+  const pool=provingFieldRoster(Q_FIELD-1).map(g=>Object.assign({you:false},g));
+  const all=pool.concat([me]);
+  return all.map(p=>({name:p.name, you:!!p.you, eo:eventOverall(p,ew), clu:p.clu, rounds:[], total:0}));
+}
+function qSimulate(){
+  const f=qFieldBuild();
+  // Six rounds on a course set up to find out who cracks: the closing round carries a major's pressure,
+  // because that is what a card week is.
+  for(let r=0;r<Q_ROUNDS;r++){
+    const courseAdj=gauss()*SIM.reg.csd, finalRd=(r===Q_ROUNDS-1);
+    f.forEach(o=>{ const s=simRound(o.eo,o.clu,{major:false,big:finalRd,finalRd,courseAdj}); o.rounds.push(s); o.total+=s; });
+  }
+  f.sort((a,b)=>a.total-b.total);
+  f.forEach((o,i)=>o.pos=i+1);
+  return f;
+}
+function qStart(){
+  S.qs={field:qSimulate(), shown:0, done:false};
+  S.screen='qschool'; render();
+}
+function qStandings(n){
+  const f=S.qs.field, sh=S.qs.shown;
+  const list=f.map(o=>({name:o.name, you:o.you, total:o.rounds.slice(0,sh).reduce((a,b)=>a+b,0), last:sh?o.rounds[sh-1]:null}))
+    .sort((a,b)=>a.total-b.total);
+  list.forEach((o,i)=>o.pos=i+1);
+  return n?list.slice(0,n):list;
+}
+function qMyPos(){ const l=qStandings(); const i=l.findIndex(x=>x.you); return i<0?l.length:i+1; }
+function qOutcome(pos){
+  if(pos<=Q_FULL) return {to:'full', label:'FULL TOUR CARD', col:'#35d6a0', note:`Top ${Q_FULL} at Q-School. Every week next season is yours.`};
+  if(pos<=Q_COND) return {to:'cond', label:'CONDITIONAL STATUS', col:'#F1D04A', note:`Inside the top ${Q_COND}. A partial schedule, and a card to play your way back to.`};
+  return {to:'proving', label:PROVING_NAME, col:'#E14A33', note:`Outside the top ${Q_COND}. The second tier, and the order of merit, for a year.`};
+}
+function qFinish(){
+  const pos=qMyPos(), out=qOutcome(pos), from=careerStatus();
+  setCareerStatus(out.to);
+  if(S.career){ S.career.statusHist=S.career.statusHist||[];
+    S.career.statusHist.push({year:S.year||1, from, to:out.to, q:true, pos});
+    S.career.qSchools=(S.career.qSchools||0)+1;
+    if(out.to==='full') S.career.qCards=(S.career.qCards||0)+1; }
+  S.pendingQ=null; S.qs=null;
+  try{ saveCareer(offseasonResumeExtra()); }catch(e){}
+  track('qschool_done',{pos, to:out.to});
+  S.screen='offseason'; render();
+}
+function scrQSchool(){
+  const q=S.qs; if(!q){ qStart(); return; }
+  const done=q.shown>=Q_ROUNDS;
+  const pos=qMyPos(), out=qOutcome(pos);
+  add($(`<div class="tag" style="color:#E14A33;border-color:#E14A33">Q-School · ${Q_ROUNDS} rounds</div>`));
+  add($(`<h1 style="margin:2px 0 4px">Q-School</h1>`));
+  add($(`<div class="lede" style="margin-bottom:12px">Six rounds for a tour card. The top ${Q_FULL} earn a full card, the top ${Q_COND} conditional status, everyone else plays ${PROVING_NAME}.</div>`));
+  // your live standing
+  const me=qStandings().find(x=>x.you)||{pos:pos,total:0};
+  add($(`<div class="scout" style="border-color:${out.col};padding:12px 14px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div><div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Your position</div>
+        <div style="font:900 26px/1.1 var(--body);color:${out.col};margin-top:4px">${q.shown?ord(me.pos):'–'}${q.shown?` <span style="font-size:14px;color:var(--muted)">of ${Q_FIELD}</span>`:''}</div></div>
+      <div style="text-align:right"><div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Through ${q.shown}</div>
+        <div class="mono" style="font:900 22px/1.1 var(--body);color:var(--oncard);margin-top:4px">${q.shown?par(Math.round(me.total)):'–'}</div></div>
+    </div>
+    <div class="small" style="margin-top:8px;color:${out.col};font-weight:800">${q.shown?(done?out.label:`On track for ${out.label.toLowerCase()}`):`Top ${Q_FULL} full card · top ${Q_COND} conditional`}</div>
+  </div>`));
+  // the board, with the two lines drawn across it
+  if(q.shown){
+    const rows=qStandings(30).map(o=>{
+      const line=(o.pos===Q_FULL)?'border-bottom:2px solid #35d6a0':(o.pos===Q_COND?'border-bottom:2px solid #F1D04A':'');
+      return `<div class="lb${o.you?' you':''}" style="grid-template-columns:34px 1fr 44px 44px;${line}">
+        <span class="pos">${o.pos}</span><span class="pl" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.name)}</span>
+        <span class="small muted mono" style="align-self:center;text-align:right">${o.last!=null?par(Math.round(o.last)):''}</span>
+        <span class="mono" style="font-weight:800;align-self:center;text-align:right">${par(Math.round(o.total))}</span></div>`;
+    }).join('');
+    add($(`<div class="board" style="margin-bottom:6px">${rows}</div>`));
+    add($(`<div class="small muted" style="margin-bottom:12px">Green line: full card (top ${Q_FULL}). Gold line: conditional status (top ${Q_COND}).</div>`));
+  }
+  if(!done){
+    const b=$(`<button class="btn goldfill" style="max-width:420px;margin:2px auto 0">${q.shown?`Play round ${q.shown+1} ▸`:'Tee off ▸'}<span class="sub">${q.shown?`${Q_ROUNDS-q.shown} rounds to play`:`${Q_ROUNDS} rounds, one card`}</span></button>`);
+    b.onclick=()=>{ S.qs.shown++; render(); }; add(b);
+  } else {
+    add($(`<div class="scout" style="border-color:${out.col};padding:14px;margin-bottom:12px;text-align:center">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Q-School final</div>
+      <div style="font:900 24px/1.15 var(--body);color:${out.col};margin:6px 0 4px">${out.label}</div>
+      <div class="small" style="color:var(--oncard)">Finished ${ord(pos)} of ${Q_FIELD}. ${esc(out.note)}</div></div>`));
+    const b=$(`<button class="btn goldfill" style="max-width:420px;margin:2px auto 0">Continue ▸<span class="sub">On to the off-season</span></button>`);
+    b.onclick=qFinish; add(b);
+  }
+}
+
+/* ---- surfaces: where you are, and what it is costing you ---- */
+function statusStripNode(){
+  if(!provingOn() || leagueJoined() || !S.season) return null;
+  const k=careerStatus(); if(k==='full') return null;   // the default needs no announcing
+  const m=statusMeta(k);
+  let body='';
+  if(k==='proving'){
+    const t=S.season.totals[S.season.me.name]||{}, wins=t.wins||0;
+    const played=(S.season.results||[]).length;
+    if(!played){
+      body=`The order of merit opens this week · top ${PROVING_PROMOTE} earn a tour card, ${PROVING_BATTLEFIELD} wins earns one outright`;
+    } else {
+      // money first, points as the tiebreak, so the field's many $0 players don't sort on array order
+      const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,money:v.money||0,pts:v.points||0}))
+        .sort((a,b)=>(b.money-a.money)||(b.pts-a.pts));
+      const mr=byMoney.findIndex(r=>r.n===S.season.me.name)+1;
+      const safe=(mr>0&&mr<=PROVING_PROMOTE);
+      body=`<b style="color:${safe?'#35d6a0':m.col}">${mr>0?ord(mr):'–'}</b> on the order of merit · top ${PROVING_PROMOTE} earn a tour card`
+        +(wins?` · <b style="color:var(--gold)">${wins}/${PROVING_BATTLEFIELD}</b> wins toward a battlefield promotion`:'');
+    }
+  } else {
+    const starts=S.schedule?S.schedule.length:0, r=myWorldRank();
+    body=`${starts} starts this season · world <b style="color:var(--gold)">#${r}</b> · stay inside the top ${cardLine()} to win your full card back`;
+  }
+  return $(`<div class="scout" style="border-color:${m.col};margin:0 0 12px;padding:10px 13px">
+    <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:${m.col}">${esc(m.label)}</div>
+    <div class="small" style="margin-top:4px;color:var(--oncard)">${body}</div></div>`);
+}
+// the season summary's verdict on your card: promoted, demoted, or heading to Q-School
+function statusChangeNode(){
+  const c=S.statusChange; if(!c) return null;
+  const m=statusMeta(c.to), up=(c.to==='full'&&c.from!=='full');
+  return $(`<div class="scout" style="border-color:${m.col};padding:13px 15px;margin:0 0 12px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m.col}">${up?'Card earned':(c.changed?'Status change':'Your card')}</div>
+    <div style="font:900 19px/1.15 var(--body);color:${m.col};margin:5px 0 4px">${esc(m.label)}</div>
+    <div class="small" style="color:var(--oncard)">${esc(c.reason||m.note)}</div>
+    ${S.pendingQ?`<div class="small" style="margin-top:6px;color:var(--gold);font-weight:800">Q-School is next. Six rounds for a card.</div>`:''}
+  </div>`);
 }
 
 /* ==================== CAREER TRAITS ====================
@@ -18478,7 +18745,7 @@ function finalizeEvent(){
   assignTies(made,solo);
   missed.forEach(o=>{o.pos='CUT';o.tied=false;o.pct=0;});
   const order=made.concat(missed);
-  const basePts=evt.league?LEAGUE_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500));
+  const basePts=evt.league?LEAGUE_PTS:(evt.proving?PROVING_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500)));
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
   order.forEach(o=>{const t=S.season.totals[o.p.name]; if(!t) return;   // Olympic field can include players outside the 120-man season totals
@@ -18598,7 +18865,9 @@ function skipToEnd(){
         continue;
       }
       if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
-      beginEvent(); while(!S.curEvt.done) simNextRound(); }
+      // beginEvent leaves curEvt null when your week has no stroke play at all (the knockout finale you
+      // missed the 32 for): nothing to sim, the bracket already ran headlessly inside it.
+      beginEvent(); while(S.curEvt && !S.curEvt.done) simNextRound(); }
     S.screen='summary'; render();
   } finally { _coinsSuppressToast=false; }
 }
@@ -20125,7 +20394,7 @@ function scrSeason(){
   const byPts=Object.entries(S.season.totals).map(([n,v])=>({n,points:v.points})).sort((a,b)=>b.points-a.points);
   const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
   const NP=byPts.length;
-  const rankTxt=t.played?('#'+tourRank):', ';
+  const rankTxt=t.played?('#'+tourRank):'–';   // no starts yet: a dash, not the stray ', ' this used to print
   // World Rank (OWGR), career-long rolling ranking, stable across the season
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
@@ -20204,6 +20473,7 @@ function scrSeason(){
       glide('cb-conf','_confBar',Math.round(conf)); glide('cb-resp','_respBar',Math.round(rspVal)); }
     else { S._confBar=null; S._respBar=null; } }
   { const rail=seasonRailNode(); if(rail) add(rail); }
+  { const st=statusStripNode(); if(st) add(st); }   // conditional status / the Proving Tour order of merit
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   // CS241: the live tournament (leaderboard + scorecard) now sits right under the season-stat bar so a
   // player watching the sim sees the standings immediately - no scrolling past a wall of Race-to-the-Cup /
@@ -20214,7 +20484,7 @@ function scrSeason(){
     <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.olympics?'<span class="major">🏅 Summer Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.proving?`<span class="reg" style="color:#E14A33">${PROVING_NAME}</span>`:evt.olympics?'<span class="major">🏅 Summer Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -20916,7 +21186,10 @@ function scrSummary(){
     if(!S.daily){ const prevWR=(S.career.lastWorldRank!=null?S.career.lastWorldRank:myWorldRank());
       updateWorldRanking(); const newWR=myWorldRank();
       S.worldRankMove={prev:prevWR, now:newWR, size:worldRankSize()}; S.career.lastWorldRank=newWR;
-      S.career.cardStatus=cardStatus(newWR).key; }
+      S.career.cardStatus=cardStatus(newWR).key;
+      // THE CARD ITSELF: promotion, conditional status, demotion to the Proving Tour, and whether the
+      // year ends with a trip to Q-School. Runs after the ranking settles because it reads the final one.
+      try{ S.statusChange=resolveCardStatus(newWR, moneyRank); }catch(e){ S.statusChange=null; } }
     // ---- Season awards (after the OWGR update so year-end World No.1 is settled) ----
     if(!S.daily){ const aw=computeAwards(); S.seasonAwards=aw;
       if(aw){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));   // money title already tracked via moneyLeaderSeasons
@@ -21175,6 +21448,7 @@ function scrSummary(){
       <div class="v" style="font-size:23px;white-space:nowrap;color:${col}">${v}</div>
       ${sub?`<div class="small muted" style="font-size:9px;margin-top:2px">${sub}</div>`:''}</div>`;
   const sTile=(k,v,sort)=>`<div class="tile lbt" style="padding:9px 5px;text-align:center;position:relative"${clk(sort)}>${goHint(sort)}<div class="k">${k}</div><div class="v" style="font-size:18px;white-space:nowrap">${v}</div></div>`;
+  const statusCard=(!S.daily && !S.circuitMode)?statusChangeNode():null;   // your tour card: earned, held, or lost
   const statHero=$(`<div style="margin:0 0 12px"></div>`);
   // money row: net profit (green/red) + earnings, both prominent + tap → the board ranked by that stat
   statHero.appendChild($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:0 0 8px;gap:8px">
@@ -21332,7 +21606,7 @@ function scrSummary(){
     // a legacy unlock LEADS the summary: it is the rarest thing that can happen in a season and the whole
     // point is that the accomplishment visibly changed the career
     const legacyCard=(!S.daily && !S.circuitMode)?legacyFreshNode():null;
-    [legacyCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
+    [statusCard, legacyCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;
@@ -21610,6 +21884,9 @@ function continueFranchise(){
   // over untouched here and are cleared at season start (finishOffseason) if never acted on.
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
+  // Q-SCHOOL: a season that ended outside the card line (or short of promotion on the Proving Tour) goes
+  // to Q-School before the off-season. Six rounds decide what next season actually is.
+  if(!S.circuitMode && S.pendingQ){ qStart(); return; }
   S.screen='offseason'; render();
 }
 /* ---- Legend Tokens: finish the full 30-year career at an elite level and bank a one-time Daily
@@ -21774,6 +22051,7 @@ function startCircuit(){
 }
 function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ if(S.career) S.career.sponsorOffers=[];   // undecided offers = you passed
+  S.pendingQ=null; S.qs=null;   // a Q-School you never played is a Q-School you skipped: you keep the status you finished with
   track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ S.offConfirm=null; if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ S.offConfirm=null; if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
@@ -21797,6 +22075,16 @@ function scrOffseason(){
   let ovr=82; try{ ovr=Math.round(buildPlayer().skill); }catch(e){}
 
   add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
+
+  // Q-SCHOOL still owed (you refreshed out of it, or resumed the save here). It decides what next season
+  // is, so it stays on offer until it is played, and is cleared for good when the season starts.
+  if(!S.circuitMode && S.pendingQ){
+    const qb=$(`<button class="scout" style="width:100%;max-width:520px;margin:2px auto 12px;display:block;text-align:left;border-color:#E14A33;padding:12px 14px;cursor:pointer">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#E14A33">Q-School</div>
+      <div style="font:900 17px/1.2 var(--body);color:var(--oncard);margin:5px 0 3px">Six rounds for a tour card</div>
+      <div class="small muted">Top ${Q_FULL} earn a full card, top ${Q_COND} conditional. Skip it and you take the status you finished with.</div></button>`);
+    qb.onclick=()=>qStart(); add(qb);
+  }
 
   // SPONSOR OFFER ALERT (owner: offers were getting lost - no alert, and if you never opened the Sponsors
   // tab the offer sat undecided forever). A persistent, unmissable banner at the very top of the off-season
@@ -21932,7 +22220,7 @@ function scrRecap(){
   if(S.recapEvent!=null){
     const {evt,order,playoff}=results[S.recapEvent];
     const me=order.find(o=>o.p.you);
-    const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const typeLbl=evt.major?'<span class="major">Major</span>':evt.proving?`<span class="reg" style="color:#E14A33">${PROVING_NAME}</span>`:evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
     const recapVenue=eventCourse(evt);
     add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
       <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div>${recapVenue?`<div class="kx" style="text-transform:none;letter-spacing:0">📍 ${esc(recapVenue.v)} · ${esc(recapVenue.loc)}</div>`:''}</div>
