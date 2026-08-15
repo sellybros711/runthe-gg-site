@@ -14765,6 +14765,81 @@ allows Google Fonts, or self-host Anton.*
   - Tunable: the `LEGACY_PERKS` effects + `LEGACY_CAPS`, `BRIEF_MAX_PER_SLOT`/`BRIEF_COOLDOWN`, the
     `briefReward` curve, and the `BRIEF_KINDS` pool.
 
+- **Q-SCHOOL AND THE PROVING TOUR: the card can be lost, and won back (roadmap item #31 of the owner's
+  career-depth batch, "the whole thing minus injuries").** Career mode had exactly one status: you were on
+  tour, forever, however badly you played. Now the tour has a line and you can fall below it, which is the
+  first thing in the game that can genuinely go WRONG with a career rather than just go slowly.
+  - **Three statuses.** Finish outside `cardLine()` (100) in the world and you drop to **conditional
+    status**: the same tour with a partial schedule (`condSchedule` drops a seeded ~42% of the ordinary
+    weeks as Monday qualifiers you don't get through, and deliberately leaves the majors, the signature
+    weeks and the playoffs alone since the ranking already gates those). Outside `demoteLine()` (1.5x the
+    card line, so 150) and you lose the card altogether and play **The Proving Tour**: 16 weeks, no majors,
+    no playoffs, $1m a purse, a 132-man second-tier field, and world-ranking points worth a fifth of a tour
+    week (`PROVING_PTS=120`) so a dominant feeder season lifts your ranking without teleporting you back.
+    The line MOVES with the tour, so a career whose Advisory Council has voted the card line to 70 is a
+    career where the drop is genuinely near.
+  - **Three ways back**, so the second tier is a road and not a hole: the **order of merit** (top 26), a
+    **battlefield promotion** (3 wins in a season, granted regardless of the money list - a true mid-season
+    promotion would need the schedule swapped mid-year, which breaks result indexing, so it is honestly
+    worded as "a card next season, earned outright"), or **Q-School**.
+  - **Q-School** is six rounds, one 78-man field, two lines drawn across it (top 5 a full card, top 25
+    conditional, the rest to the Proving Tour), revealed a round at a time with the cut lines live on the
+    board. It runs from `continueFranchise` AFTER the year advances, so a refresh mid-Q-School resumes to
+    the off-season with `S.pendingQ` still owed and an offer card waiting there; `finishOffseason` clears
+    it, so skipping Q-School means keeping the status you finished with.
+  - **Built on the season engine, not beside it**, the same way the breakaway league is: a different
+    `S.schedule` and a different roster, everything else (money, points, awards, OWGR, the summary) reused
+    unchanged. The feeder field is the world's below-the-cut players topped up with `genRookie` pros pulled
+    into a 66-77 band, seeded per (careerSeed, year) so they are deterministic but churn yearly, which is
+    what a feeder tour's membership does anyway.
+  - **Balance, measured over full simulated seasons rather than eyeballed.** The escape line sits right
+    around **OVR 76**, which finishes ~25th on the order of merit and is promoted 3 times in 6 - a genuine
+    bubble. 80 finishes ~7th and is back every time; 72 finishes ~79th and 68 ~102nd, so a weak build has
+    real work to do. Q-School pays a full card 4/10 at OVR 80, 9/10 at 88, and sends 6/10 back down at 76.
+    On the demotion side an OVR 80 holds its card 3/4 (world ~61), 76 lands in the conditional band (~131)
+    and 68 loses it outright 3/4 (~151). Both ladders line up, so the two systems agree about who belongs.
+  - **Three bugs found while building it, all fixed:**
+    1. **`skipToEnd` crashed at the Tour Championship for anyone outside the top 32 of the points race** -
+       `beginEvent` deliberately leaves `S.curEvt` null when your week has no stroke play at all (the
+       knockout you missed), and the loop read `.done` off it. **Reproduced on the DEPLOYED build** at OVR
+       72 and 68 (`finishSeasonHeadless` already had the guard, `skipToEnd` did not), so it was live - and
+       it hit exactly the struggling player this feature is for.
+    2. **A feeder season carried the full tour's flat overhead** ($22k a week travel + $1.4m fixed) against
+       a purse a twentieth the size, so it was a guaranteed heavy loss however you played - the identical
+       bug CS76 fixed for the Legend Circuit. Given its own `PROVING_COSTS` ($6k / $0.3m), which restores
+       the ladder: OVR 84 nets +$1.02m, 80 +$195k, 76 -$173k, 72 -$277k. Stamped on the season at START
+       (`S.season.proving`, carried in the mid-season save) because the card flips at season END.
+    3. **The season banner printed a stray `", "`** for the tour rank before your first start.
+  - **Presentation fixes caught by screenshotting, not by the assertions**: the Q-School board rendered raw
+    simulated floats (`-6.949508196777763`), which also crushed the name column - the rest of the game keeps
+    the float internally and rounds only at display, so the board now does the same via `par(Math.round())`;
+    a feeder week's type label read "Tour event"; and the order-of-merit strip said "132nd" before a single
+    shot had been hit (now it says the order of merit opens this week, and ranks with a points tiebreak so
+    the field's many $0 players don't sort on array order).
+  - Verified in Playwright across four suites, **0 page errors** throughout: an engine suite (status helpers
+    + inert in Daily/Circuit, the 16-week no-major schedule with its deterministic-but-rotating draw, the
+    131-player field never containing the tour's own top 120, the conditional schedule keeping every major/
+    signature/playoff, all six `resolveCardStatus` branches with their `pendingQ` and history, league
+    members exempt, and Q-School's field/rounds/sort/cut boundaries plus a 12-run check that skill decides
+    it - OVR 94 averages 2nd of 78, OVR 70 averages 46th); a UI suite (a real Proving Tour season played to
+    the end banking money and points, a conditional season with 17 starts against a full card's 21, the
+    Q-School screen revealed round by round to its outcome card, `continueFranchise` routing to Q-School,
+    the off-season offer card starting it, `finishOffseason` clearing it, and the summary card); a balance
+    suite (the numbers above); and an economics suite. Regressions green (regress_final's 18-hole daily
+    round + shop sections, mp_eng + mp_season for the knockout finale, legacy_test's 21 checks, the 11-tab
+    shop suite, tp_final's Tour Pass sweep); all 5 inline script blocks parse.
+  - **A stale fixture, not a regression:** `bracket_engine.mjs` fails on `bracketStartYear is not defined` -
+    that function was removed when the standalone Match Play week became the knockout finale, and it is
+    absent from the deployed build too. Superseded by mp_eng/mp_season.
+  - Deployed to /golf (byte-identical verified; `origin/main`'s `golf/index.html` was unchanged since the
+    last golf deploy, so there were no parallel-workstream edits to adopt). Tunable: `PROVING_EVENTS`/
+    `PROVING_PURSE`/`PROVING_FIELD`/`PROVING_PTS`, `PROVING_PROMOTE`/`PROVING_BATTLEFIELD` (how hard the
+    way back is), `DEMOTE_LINE_MULT`/`COND_MISS` (how far you fall and how thin a conditional season is),
+    `Q_ROUNDS`/`Q_FIELD`/`Q_FULL`/`Q_COND`, `PROVING_COSTS`.
+  - NEXT in the roadmap: #32 entry paths (the Proving Tour is now the destination a non-exempt entry path
+    starts on, and `careerStatus()`/`setCareerStatus()` are the hook), then #33-#37.
+
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
