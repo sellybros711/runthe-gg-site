@@ -1690,6 +1690,23 @@ window.GA_ID='G-L29P5MRWKE';
   .rdval{font-family:var(--mono); font-weight:800; font-size:24px; margin-top:7px; color:var(--oncard)}
   .rdcell.empty .rdval{color:var(--muted); opacity:.5}
   .sc-status{margin-top:12px; text-align:center; font:800 12px/1.35 var(--body); letter-spacing:.05em; color:var(--teal)}
+  /* the week's consequences, resolved INTO the result card (they used to float over the leaderboard) */
+  .wkrows{margin-top:11px; padding-top:10px; border-top:1px solid rgba(255,255,255,.1); display:flex; flex-direction:column; gap:6px}
+  .wkrow{font:700 12.5px/1.4 var(--body); color:var(--oncard); background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.07);
+    border-left:3px solid rgba(255,255,255,.18); border-radius:7px; padding:7px 10px; animation:wkIn .32s ease both}
+  .wkrow.wk-coins{border-left-color:var(--gold)} .wkrow.wk-brief{border-left-color:#35d6a0}
+  .wkrow.wk-briefNew{border-left-color:#8fd3ff} .wkrow.wk-trait{border-left-color:#ffd45e; background:rgba(241,208,74,.09)}
+  .wkrows .wkrow:nth-child(2){animation-delay:.09s} .wkrows .wkrow:nth-child(3){animation-delay:.18s}
+  .wkrows .wkrow:nth-child(n+4){animation-delay:.27s}
+  @keyframes wkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* the season feed: the running story, collapsed by default */
+  .feedacc .feedbody{display:flex; flex-direction:column; gap:10px; padding:4px 2px 2px}
+  .feedwk{display:flex; flex-direction:column; gap:5px}
+  .feedhd{display:flex; align-items:baseline; gap:8px; justify-content:space-between}
+  .feedev{font:800 11.5px/1.3 var(--body); letter-spacing:.06em; text-transform:uppercase; color:#cadecf; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .feedfin{font:800 12px/1 var(--mono); flex:0 0 auto}
+  .feedacc .wkrow{animation:none}
+  @media(prefers-reduced-motion:reduce){ .wkrow{animation:none} }
   /* ---- "sweaty" live-sim polish: smooth board glide + per-round moment ---- */
   .lb{transition:box-shadow .3s ease}
   .lb-flash-up{animation:lbUp .95s ease}
@@ -7341,7 +7358,9 @@ function seasonBonusCoins(){
 // REPEATABLE at will - skip-to-end sims one in moments - so it pays the Track at a reduced rate
 // (PASS_XP_SEASON), while the hard-capped daily/spotlight/online faucets pay in full. Without that,
 // season-farming was worth several tiers a run and dwarfed every other way of climbing.
-function awardPlayCoins(n, label, xpMult){ if(!sbSignedIn()||!(n>0)) return 0;
+// quiet: the CALLER reports the payout in its own row (a sponsor brief used to fire this toast AND its own,
+// describing one event twice with two different numbers because the multipliers land on only one of them)
+function awardPlayCoins(n, label, xpMult, quiet){ if(!sbSignedIn()||!(n>0)) return 0;
   // Legacy perks (Money Machine, Dynasty Year...) pay a career better. Applied BEFORE base is captured so
   // the Track earns from it too - it is a career accomplishment, not a purchased multiplier.
   try{ if(typeof legacyMul==='function'){ const lm=legacyMul('coin'); if(lm>1) n=Math.round(n*lm); } }catch(e){}
@@ -7351,7 +7370,10 @@ function awardPlayCoins(n, label, xpMult){ if(!sbSignedIn()||!(n>0)) return 0;
   addBonusCoins(n,{silent:true,nolog:true});
   coinLog(n, label?String(label).replace(/<[^>]*>/g,''):'Played & earned');
   passAddXp(base*PASS_XP_RATE*(xpMult==null?1:xpMult));   // Tour Pass: every play faucet feeds the Track
-  try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+(passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
+  const passTag=passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'';
+  if(quiet){ /* the caller owns the row */ }
+  else if(wkOn()) wkNote('coins', '<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' <span class="muted">'+esc(String(label))+'</span>':'')+passTag, 1);
+  else try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+passTag+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
 // CS471: compact coin display for the tight top banner pill so a 7-digit balance (1,017,520) doesn't push
@@ -11386,11 +11408,38 @@ function startRoll(){
     setTimeout(()=>{ if(el.isConnected){el.textContent=CATS[i].short; el.style.opacity='1';} },180);
   },1700);
 }
-function toast(msg, ms){
-  // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-center), so they don't clash
-  const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px))' : 'calc(26px + var(--botnav-space,0px))';
-  const t=$(`<div role="status" aria-live="polite" style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:70;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
-  document.body.appendChild(t); setTimeout(()=>t.remove(), ms||1800);
+// Toasts STACK. Every toast used to render at the identical fixed coordinate, so two at once physically
+// overlapped (the season sim could fire four in a second and they piled into an unreadable smear). They now
+// queue: newest at the bottom, older ones pushed up, oldest dropped past TOAST_MAX.
+var _toasts=[], TOAST_MAX=3;
+function layoutToasts(){
+  // one base for the whole stack, so a toast that appears while the scroll cue is on screen can't sit at a
+  // different height from the one above it
+  const base = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px))' : 'calc(26px + var(--botnav-space,0px))';
+  let off=0;
+  for(let i=_toasts.length-1;i>=0;i--){
+    const el=_toasts[i]; if(!el.isConnected) continue;
+    el.style.bottom=base;
+    el.style.transform='translateX(-50%) translateY('+(-off)+'px)';
+    off += el.offsetHeight + 8;
+  }
+}
+function toast(msg, ms, opts){
+  // NOTHING floats over the golf. While a season is playing out on the season screen, a toast is a week
+  // consequence by definition, so it is recorded into the week ledger and rendered in the result card
+  // instead. A structural guard, not a list of call sites to keep in sync - anything added later is caught
+  // for free. opts.force is for the rare thing that must be seen regardless (a render error).
+  try{
+    if(!(opts&&opts.force) && typeof wkOn==='function' && wkOn() && S.screen==='season' && !S.overlay){
+      wkNote('note', msg, 1); return;
+    }
+  }catch(e){}
+  const t=$(`<div role="status" aria-live="polite" style="position:fixed;left:50%;transform:translateX(-50%);z-index:70;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .18s ease">${msg}</div>`);
+  document.body.appendChild(t);
+  _toasts.push(t);
+  while(_toasts.length>TOAST_MAX){ const old=_toasts.shift(); try{ old.remove(); }catch(e){} }
+  layoutToasts();
+  setTimeout(()=>{ try{ t.remove(); }catch(e){} _toasts=_toasts.filter(x=>x!==t); layoutToasts(); }, ms||1800);
 }
 
 /* ---------- setup (create your golfer) ---------- */
@@ -16607,7 +16656,9 @@ function checkCareerLegacy(){
   if(got.length){
     // queue the cards for the season summary; a mid-sim unlock gets a toast now and the moment later
     S.legacyFresh=(S.legacyFresh||[]).concat(got.map(p=>p.id));
-    try{ if(S.screen==='season') toast(got.map(p=>`${p.icon} ${p.name} unlocked`).join(' · '), 4200); }catch(e){}
+    got.forEach(p=>{ const row=`${p.icon} <b style="color:#ffd45e">${esc(p.name)}</b> <span class="muted">trait unlocked</span>`;
+      if(wkOn()) wkNote('trait', row, 3);
+      else try{ if(S.screen==='season') toast(row, 4200); }catch(e){} });
   }
   return got;
 }
@@ -18236,7 +18287,8 @@ function tickBriefs(){
       b.state='done'; b.at=S.evtIndex;
       const rw=b.reward||{};
       if(rw.amt) addFx({k:'skill', skill:b.boost, amt:rw.amt, ev:rw.ev, label:b.brand});
-      if(rw.coins) try{ awardPlayCoins(rw.coins, b.brand+' brief'); }catch(e){}
+      // quiet: this brief reports its own payout below, with the amount ACTUALLY paid (multipliers and all)
+      if(rw.coins) try{ b._paid=awardPlayCoins(rw.coins, b.brand+' brief', undefined, true)||rw.coins; }catch(e){ b._paid=rw.coins; }
       S.season.briefsDone=S.season.briefsDone||{};
       S.season.briefsDone[b.slot]=(S.season.briefsDone[b.slot]||0)+1;
       try{ careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Delivered on a ${b.brand} brief`}); }catch(e){}
@@ -18248,9 +18300,11 @@ function tickBriefs(){
     }
   }
   if(finished.length){
-    try{ toast(finished.map(b=>{ const rw=b.reward||{};
-      return `${b.brand} brief delivered · +${coinFmt(rw.coins||0)} coins · +${rw.amt} ${CAT_LABEL[b.boost]||b.boost}`;
-    }).join('<br>'), 4600); }catch(e){}
+    finished.forEach(b=>{ const rw=b.reward||{};
+      const row=`<b style="color:#35d6a0">${esc(b.brand)} brief delivered</b> · <span style="color:#ffd45e;font-weight:800">+${coinFmt(b._paid||rw.coins||0)} coins</span>${rw.amt?` · <span style="color:#35d6a0;font-weight:800">+${rw.amt} ${esc(CAT_LABEL[b.boost]||b.boost)}</span>`:''}`;
+      if(wkOn()) wkNote('brief', row, 2);
+      else try{ toast(row, 4600); }catch(e){}
+    });
   }
   // ---- issue what is missing ----
   const sponsors=(typeof ensureSponsors==='function')?ensureSponsors():{};
@@ -18283,7 +18337,9 @@ function tickBriefs(){
     b.label=k.label(b);
     seasonBriefs().push(b);
     try{ track('brief_issued',{kind:b.kind, slot}); }catch(e){}
-    try{ toast(`${esc(b.brand)} wants something: ${b.label}`, 4200); }catch(e){}
+    { const row=`<span style="color:#8fd3ff;font-weight:800">${esc(b.brand)} wants something</span> · ${esc(b.label)}`;
+      if(wkOn()) wkNote('briefNew', row, 1);
+      else try{ toast(row, 4200); }catch(e){} }
   });
   return finished;
 }
@@ -18956,13 +19012,87 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
   tag(made); cut.forEach(o=>{o._pos='CUT';o._tied=false;});
   return made.concat(cut);
 }
+/* ==================== THE WEEK LEDGER ====================
+   A week's consequences (coins, a sponsor brief landing, a trait unlocking) used to fire as floating
+   pop-ups OVER the leaderboard - the one thing you are meant to be reading - each outliving the ~4.5s
+   tournament that produced it, so they stacked into an unreadable pile. They are now RECORDED as the week
+   plays and rendered as rows INSIDE the result card when the tournament resolves, then rolled into a season
+   feed. Nothing floats over the golf, and nothing is lost when it fades.
+   Auto sim then spends time in PROPORTION to what happened: a routine week gets a short beat, a win or a
+   major or a delivered brief gets a real one. That weighting is what makes the sim read as designed rather
+   than as a timer with notifications bolted on. */
+var _wkQuiet=false;                       // headless / skip-to-end paths record nothing (you chose not to watch)
+const WK_MAX_ROWS=10, WK_MAX_FEED=60;
+const WK_HOLD_BASE=1900, WK_HOLD_STEP=380, WK_HOLD_MAX=4200;
+// the ledger only owns the SEASON SCREEN. Off it (the summary's end-of-year payout, the off-season, a
+// ceremony) a toast is the right surface again, and a note recorded there would render nowhere.
+function wkOn(){ return !!(S.season && S.career && !S.daily && !_wkQuiet && S.screen==='season'); }
+function wkRows(){ if(!S.season) return []; if(!S.season.wkLog) S.season.wkLog=[]; return S.season.wkLog; }
+function wkNote(kind, html, weight){
+  if(!wkOn()) return;
+  const L=wkRows(); L.push({kind, html, w:weight||1});
+  while(L.length>WK_MAX_ROWS) L.shift();
+}
+// how long auto sim holds on the finished week, by how much actually happened
+function wkHoldMs(ce){
+  if(!wkOn()) return 0;
+  let w=0; for(const e of wkRows()) w+=(e.w||1);
+  try{
+    const me=(ce&&ce.done&&ce.order)?ce.order.find(x=>x.p.you):null;
+    if(me && me.pos===1) w+=3;                                  // a win is the moment of the season so far
+    else if(me && me.pos<=5) w+=1;
+    if(ce && ce.evt && (ce.evt.major||ce.evt.guestMajor)) w+=2;
+  }catch(e){}
+  return Math.min(WK_HOLD_MAX, WK_HOLD_BASE + w*WK_HOLD_STEP);
+}
+// the finished week's consequence rows, rendered inside the result card
+function wkRowsNode(){
+  const L=wkRows(); if(!L.length) return null;
+  const wrap=$(`<div class="wkrows"></div>`);
+  L.forEach(e=>wrap.appendChild($(`<div class="wkrow wk-${esc(e.kind)}">${e.html}</div>`)));
+  return wrap;
+}
+// roll the week into the season's running story, so a consequence outlives the beat that announced it
+function wkArchive(){
+  if(!S.season) return;
+  const L=wkRows(); if(!L.length) return;
+  const ce=S.curEvt, evt=ce&&ce.evt;
+  let fin='';
+  try{ const me=(ce&&ce.done&&ce.order)?ce.order.find(x=>x.p.you):null;
+       if(me) fin=(me.pos===1?'WON':(me.tied?'T':'')+me.pos); else if(ce&&ce.done) fin='CUT'; }catch(e){}
+  const f=S.season.feed||(S.season.feed=[]);
+  f.unshift({ev:(evt&&evt.name)||'', wk:(evt&&evt.wk)||0, fin, rows:L.slice()});
+  while(f.length>WK_MAX_FEED) f.pop();
+  S.season.wkLog=[];
+}
+// the season's running story: a collapsed accordion (never permanent chrome), open state remembered
+function seasonFeedNode(){
+  if(!S.season || S.daily) return null;
+  const f=S.season.feed||[]; if(!f.length) return null;
+  const n=f.reduce((a,w)=>a+w.rows.length,0);
+  const det=$(`<details class="acc feedacc"${S.feedOpen?' open':''}>
+    <summary><span style="letter-spacing:.1em;font-size:11.5px;font-weight:800;color:#cadecf">SEASON FEED</span>
+      <span class="small muted" style="margin-left:8px">${f.length} week${f.length===1?'':'s'} · ${n} note${n===1?'':'s'}</span></summary>
+    <div class="feedbody"></div></details>`);
+  det.addEventListener('toggle',()=>{ S.feedOpen=det.open; });
+  const body=det.querySelector('.feedbody');
+  f.slice(0,12).forEach(w=>{
+    const finCol=(w.fin==='WON')?'var(--gold)':(w.fin==='CUT'?'#e07a5f':'var(--oncard)');
+    const blk=$(`<div class="feedwk"><div class="feedhd"><span class="feedev">${esc(w.ev)}</span>${w.fin?`<span class="feedfin" style="color:${finCol}">${esc(w.fin)}</span>`:''}</div></div>`);
+    w.rows.forEach(r=>blk.appendChild($(`<div class="wkrow wk-${esc(r.kind)}">${r.html}</div>`)));
+    body.appendChild(blk);
+  });
+  return det;
+}
 function advanceEvent(){ if(!S.circuitMode && S.career && !S.daily){ tickCareerFx(); tickArcs(); }   // CS325/326: age temp effects + pending story arcs one event (briefs + legacy live in finalizeEvent, which every sim path walks)
+  wkArchive();
   if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; autoSaveSeason(); } }
 function skipToEnd(){
   clearTimeout(seasonTimer);
   if(S.season) S.season.skipped=true;   // simmed to the end → this season earns no coins (play the rounds to earn)
   track('season_skipped',{year:S.year||1,evt:S.evtIndex});
   _coinsSuppressToast=true;   // no per-event "+N coins" toasts while fast-simming a skipped season
+  _wkQuiet=true;              // and no week-ledger rows: skipping is "I don't want to watch this"
   try{
     // a bracket week in progress (you're in the 32, mid-reveal): finish it off the books
     { const cur=S.schedule[S.evtIndex];
@@ -18986,7 +19116,7 @@ function skipToEnd(){
       // missed the 32 for): nothing to sim, the bracket already ran headlessly inside it.
       beginEvent(); while(S.curEvt && !S.curEvt.done) simNextRound(); }
     S.screen='summary'; render();
-  } finally { _coinsSuppressToast=false; }
+  } finally { _coinsSuppressToast=false; _wkQuiet=false; }
 }
 function liveRow(o,pos,you,done,flag){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
@@ -19282,6 +19412,8 @@ function moneyRank(name){
 // simulate the rest of the schedule with no UI (used when the player is eliminated from the
 // playoffs but the world still needs to crown a Cup champion)
 function finishSeasonHeadless(){
+  _wkQuiet=true;   // nothing to watch here, so nothing is recorded for the week ledger
+  try{
   while(true){
     const evt=S.schedule[S.evtIndex];
     const brSkip = evt && evt.bracket && !S.daily && bracketQualified();   // knockout: no stroke-play sim
@@ -19290,6 +19422,7 @@ function finishSeasonHeadless(){
     if(S.evtIndex>=S.schedule.length-1) break;
     S.evtIndex++;
   }
+  } finally { _wkQuiet=false; }
 }
 /* ---------- Ryder/Nations Cup screen: reveal the 5 sessions, running team score ---------- */
 // Each cup gets its own visual identity so it's obvious AT A GLANCE which one is being played:
@@ -20679,6 +20812,9 @@ function scrSeason(){
     <div class="sc-status">${status}${money}</div>
     ${momentHTML(ce._moment, momentFresh)}
   </div>`));
+  // the week RESOLVES into the card: what this tournament changed, as readable rows, in the flow of the
+  // page instead of a stack of pop-ups over the leaderboard
+  if(ce.done){ const wr=wkRowsNode(); if(wr) right.lastChild.appendChild(wr); }
 
   // controls
   const lastEvent=(S.evtIndex>=S.schedule.length-1);
@@ -20720,6 +20856,7 @@ function scrSeason(){
   // accordion - but only while one is running, so it is never permanent chrome.
   if(!S.daily && !S.circuitMode){ const bs=briefStripNode(); if(bs) add(bs); }
   if(!S.daily && !S.circuitMode){ const cn=contractStripNode(); if(cn) add(cn); }
+  { const fn=seasonFeedNode(); if(fn) add(fn); }   // the season's running story, so nothing is lost to a fade
   { const mn=momentumNode(); if(mn) add(mn); }   // CS226 live confidence + following
 
   // ---- smooth "sweaty" motion: FLIP-glide the leaderboard to its new order + count-up the big to-par ----
@@ -20842,7 +20979,9 @@ function scrSeason(){
     const p=paceMs();
     seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, evt.olympics?Math.round(p.r*1.5):p.r);   // the Games play out slower for drama
   } else if(S.autoSim){
-    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, paceMs().e);
+    // hold on the finished week in proportion to what happened (a routine week ~2s, a win at a major with a
+    // brief landing ~4s), so the sim spends its time where the story is instead of on a flat timer
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, Math.max(paceMs().e, wkHoldMs(ce)));
   }
 }
 function roundsRow(o){
