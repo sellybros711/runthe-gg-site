@@ -123,16 +123,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .inforow .size{color:var(--newsT);}
 
 /* ---------- grid ---------- */
-.board-wrap{position:relative; margin-bottom:12px;}
+.board-wrap{position:relative; margin-bottom:12px; container-type:inline-size;}
 .board{display:grid; gap:2px; width:100%; aspect-ratio:1/1;
   background:var(--grid-line); border:2px solid var(--grid-line); border-radius:8px; padding:2px;
   box-shadow:var(--shadow); overflow:hidden;}
-.cell{position:relative; background:var(--cell); border-radius:2px; display:flex; align-items:center; justify-content:center;
+.cell{position:relative; min-width:0; min-height:0; overflow:hidden;
+  background:var(--cell); border-radius:2px; display:flex; align-items:center; justify-content:center;
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
   color:var(--ink); transition:background .12s ease;}
 .cell.block{background:#0b1522; cursor:default;}
 .cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
+.cell .num{font-size:max(calc(17cqw / var(--n,5)), 7px);}
 .cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--ink);}
+.cell .ch{font-size:calc(56cqw / var(--n,5));}
 .cell.inword{background:var(--word);}
 .cell.inword .num{color:rgba(10,20,32,.5);}
 .cell.sel{background:var(--sel); color:var(--ink);}
@@ -189,9 +192,41 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .list li.active .n{color:rgba(10,20,32,.6);}
 .list li.done .t{color:var(--dim); text-decoration:line-through;}
 
+/* On a phone the masthead was eating roughly a third of the screen before the
+   board began: icon row, a 40px wordmark, the info strip and the clue. You know
+   which game you opened; the grid is what you came for. */
+@media (max-width:640px){
+  .a-gametitle{margin:0 0 8px !important;}
+  .a-gametitle__plate{font-size:25px !important; padding-bottom:5px !important; border-bottom-width:3px !important;}
+  .inforow{padding:7px 11px; margin-bottom:9px;}
+  .board-wrap{margin-bottom:10px;}
+}
+
+/* Small phones: the info strip wrapped onto three ragged lines, and the pinned
+   deck ate the last row of the board. Both give back a little. */
+@media (max-width:360px){
+  .inforow{padding:6px 9px; gap:5px;}
+  .inforow .seg{font-size:9px; letter-spacing:.2px;}
+}
+@media (max-height:760px){
+  .playbar{padding-top:7px;}
+  .playbar .cluebar{margin-bottom:6px;}
+  .playbar .cluebar .body{padding:7px 11px;}
+  .playbar .cluebar .txt{font-size:14px;}
+  .playbar .controls{margin-bottom:4px;}
+  .playbar .controls button{padding:8px 4px; font-size:11.5px;}
+  .playbar .key{height:38px;}
+  .playbar .krow{margin-bottom:5px;}
+}
+
 /* ---------- on-screen keyboard ---------- */
-.kbd{position:sticky; bottom:0; padding:8px 0 4px; margin:0 -2px;
-  background:linear-gradient(180deg,transparent, var(--bg) 22%);}
+.kbd{padding:4px 0 0; margin:0 -2px;}
+/* The pinned deck. The board scrolls behind it; this never moves, so the clue
+   is always in view next to the keys that answer it. */
+.playbar{position:sticky; bottom:0; z-index:20; margin:0 -2px; padding:9px 2px calc(4px + env(safe-area-inset-bottom));
+  background:var(--bg); border-top:1px solid var(--line2); box-shadow:0 -10px 22px -14px rgba(0,0,0,.55);}
+.playbar .cluebar{margin-bottom:8px;}
+.playbar .controls{margin-bottom:6px;}
 .krow{display:flex; justify-content:center; gap:5px; margin-bottom:6px;}
 .key{flex:1 1 0; max-width:34px; height:44px; background:var(--card); border:1px solid var(--line2);
   border-radius:8px; font-family:var(--pix); font-weight:800; font-size:15px; color:var(--ink);
@@ -301,21 +336,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         "top   top"
         "title title"
         "info  lb"
-        "clue  lb"
+        "play  lb"
         "board lb"
-        "ctrl  lb"
         "lists lists"
         "foot  foot"; }
     .wrap > .topbar{ grid-area:top; }
     .wrap > .a-gametitle{ grid-area:title; }
     .wrap > .inforow{ grid-area:info; }
-    .wrap > .cluebar{ grid-area:clue; }
+    .wrap > .playbar{ grid-area:play; position:static; margin:0; padding:0;
+      background:none; border-top:0; box-shadow:none; }
     .wrap > .board-wrap{ grid-area:board; }
-    .wrap > .controls{ grid-area:ctrl; }
     .wrap > .lists{ grid-area:lists; }
     .wrap > .lb{ grid-area:lb; align-self:start; margin:0; }
     .wrap > .foot{ grid-area:foot; }
-    .wrap > .kbd{ display:none; }   /* physical keyboard on desktop */
+    .playbar .kbd{ display:none; }   /* physical keyboard on desktop */
   }
   /* the crossword's grey title looked doubled/distorted with the shared hard
      offset shadow - use a clean soft drop instead in both themes */
@@ -352,24 +386,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <span class="seg" id="fillSeg"><small>0% filled</small></span>
   </div>
 
-  <div class="cluebar">
-    <button class="arw" id="prevClue" aria-label="Previous clue">‹</button>
-    <div class="body">
-      <span class="tag" id="clueTag">1 ACROSS</span>
-      <span class="txt" id="clueTxt">–</span>
-    </div>
-    <button class="arw" id="nextClue" aria-label="Next clue">›</button>
-  </div>
 
   <div class="board-wrap">
     <div class="board" id="board" role="grid" aria-label="Crossword grid"></div>
   </div>
 
-  <div class="controls">
-    <button id="btnDir"><svg class="em" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 8h11l-3.5-3.5M17 16H6l3.5 3.5"/></svg> Across</button>
-    <button id="btnCheck"><span class="em">✓</span> Check</button>
-    <button id="btnReveal"><svg class="em" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M1.5 12s3.8-7 10.5-7 10.5 7 10.5 7-3.8 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg> Reveal</button>
-  </div>
 
   <div class="lists">
     <div class="list"><h3>Across</h3><ol id="listA"></ol></div>
@@ -394,7 +415,26 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <div class="foot">A daily crossword inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a></div>
 
   <!-- on-screen keyboard (mobile); physical keyboard also works -->
+  <!-- Everything you act with, pinned together at the bottom: the clue you
+       are answering, the controls, and the keys. The clue used to sit above
+       the board, a screen away from the keyboard you answer it on, and the
+       controls sat underneath where the sticky keyboard covered them. -->
+  <div class="playbar">
+  <div class="cluebar">
+    <button class="arw" id="prevClue" aria-label="Previous clue">‹</button>
+    <div class="body">
+      <span class="tag" id="clueTag">1 ACROSS</span>
+      <span class="txt" id="clueTxt">–</span>
+    </div>
+    <button class="arw" id="nextClue" aria-label="Next clue">›</button>
+  </div>
+  <div class="controls">
+    <button id="btnDir"><svg class="em" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 8h11l-3.5-3.5M17 16H6l3.5 3.5"/></svg> Across</button>
+    <button id="btnCheck"><span class="em">✓</span> Check</button>
+    <button id="btnReveal"><svg class="em" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M1.5 12s3.8-7 10.5-7 10.5 7 10.5 7-3.8 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg> Reveal</button>
+  </div>
   <div class="kbd" id="kbd"></div>
+  </div>
 </div>
 
 <div class="cw-toast" id="cwToast"></div>
@@ -577,7 +617,25 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   // ---- render the board -----------------------------------------------------
   var board = document.getElementById('board');
-  board.style.gridTemplateColumns = 'repeat('+N+',1fr)';
+  board.style.gridTemplateColumns = 'repeat('+N+',minmax(0,1fr))';
+  board.style.gridTemplateRows    = 'repeat('+N+',minmax(0,1fr))';
+  board.style.setProperty('--n', N);   // the glyph scale reads this
+
+  /* Equal tracks still round unequally: a 366px board across nine cells leaves
+     38.44px each, and the browser rounds some edges down, so neighbouring
+     squares differed by a device pixel. Snap the board to a width that divides
+     exactly and every cell is the same integer size. */
+  function sizeBoard(){
+    var avail = board.parentNode.clientWidth;
+    if(!avail) return;
+    var chrome = 2*(N-1) + 4 + 4;              // gaps + padding + border
+    var cell = Math.floor((avail - chrome) / N);
+    if(cell < 1) return;
+    board.style.width = (cell*N + chrome) + 'px';
+  }
+  sizeBoard();
+  var szT; addEventListener('resize', function(){ clearTimeout(szT); szT = setTimeout(sizeBoard, 90); });
+  addEventListener('orientationchange', function(){ setTimeout(sizeBoard, 120); });
   for(var r=0;r<N;r++) for(var c=0;c<N;c++){
     var cell = cells[r][c];
     var d = document.createElement('div');
