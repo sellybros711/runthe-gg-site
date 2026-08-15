@@ -15733,9 +15733,18 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     on a mid-season week, the LAST week of the season, the summary, the off-season and Q-School - each
     proven to actually move the career on, not just to render a button); a new season soak (10 full seasons
     plus a Legend Circuit season driven through the UI at every state, no error cards, no stalls, every one
-    reaching its end screen); and a multi-year career soak driving careers season -> summary -> off-season
-    -> Q-School -> next season. Existing regressions green (mp_eng, mp_season, wk_test, cup_crash,
-    news_test, regress_final, tp_final, shoptabs).
+    reaching its end screen); and a new multi-year career soak (careers driven season -> summary ->
+    off-season -> Q-School -> next season, including two weak builds that lose the card and go through
+    Q-School and the Proving Tour, all reaching their seasons with no error card and no stall). Existing
+    regressions green (mp_eng, mp_season, wk_test, cup_crash, news_test, regress_final, tp_final, shoptabs).
+  - The multi-year soak looked at first like it had found a career-mode LIVELOCK: it never finished a weak
+    build's run. It had not. The harness searched `#app button`, which includes the app BANNER, so on any
+    screen it did not recognise it clicked the menu button and then ping-ponged title <-> menu forever (the
+    state alternates, so a "same state N times" stall detector never fires). Scoping the search to
+    `#app .screen button` - the career's own actions - fixed it, and a direct probe confirmed Q-School plays
+    straight through (Tee off, five rounds, Continue, off-season, with the owed Q-School cleared). Worth
+    recording because the failure mode is a good one to recognise: a UI-driving test that clicks "the first
+    button" will eventually find your chrome, and an A-B loop hides from a repeat detector.
   - The soaks are the useful part of the test work and are worth keeping: they drive the real UI rather
     than calling engine functions, so they catch exactly the class of bug that started this - a state the
     engine is perfectly happy with that the SCREEN cannot render.
