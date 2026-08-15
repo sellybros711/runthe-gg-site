@@ -1432,12 +1432,27 @@ function wrestlerSVG(L,opt){
   if(L.acc==='feather'){ B.head+=P(23,4,18,4,shade(trim,-20));
     for(let i=0;i<5;i++){ const fx3=24+i*4; B.head+=P(fx3,-6+((i%2)?2:0),3,10,i%2?trim:'#C6392C')+P(fx3,-6+((i%2)?2:0),3,3,'#F4E8DB'); } }
 
-  // ---- assemble the rig ----
+  /* ---- assemble the rig ----
+     Every part carries its own outline geometry, which used to draw a black
+     line around each individual limb. Instead we build the rig twice from the
+     same bones: an outline pass first, then every fill on top of it. The union
+     of the outlines is 1px larger than the union of the fills, so the figure
+     ends up with one continuous border around the whole posed silhouette and
+     no seams inside it — whatever the pose. */
+  const OUTB={}, FILB={};
+  Object.keys(B).forEach(k=>{
+    const o=[], f=[];
+    (B[k].match(/<rect[^>]*>/g)||[]).forEach(m=>{ (m.indexOf('fill="'+OUTLINE+'"')>=0?o:f).push(m); });
+    OUTB[k]=o.join(''); FILB[k]=f.join('');
+  });
   const R=(rot,j,inner)=> rot ? `<g transform="rotate(${rot} ${j[0]} ${j[1]})">${inner}</g>` : inner;
-  const legG=(S)=> R(p['hip'+S]||0, JOINT['hip'+S], B['thigh'+S] + R(p['kn'+S]||0, JOINT['kn'+S], B['shin'+S]));
-  const armG=(S)=> R(p['sh'+S]||0, JOINT['sh'+S], B['upArm'+S] + R(p['el'+S]||0, JOINT['el'+S], B['loArm'+S]));
-  const upper = R(p.torso||0, JOINT.pelvis, B.torso + armG('L') + armG('R') + R(p.head||0, JOINT.neck, B.head));
-  const inner = B.back + legG('L') + legG('R') + upper;
+  const rig=(M)=>{
+    const legG=(S)=> R(p['hip'+S]||0, JOINT['hip'+S], M['thigh'+S] + R(p['kn'+S]||0, JOINT['kn'+S], M['shin'+S]));
+    const armG=(S)=> R(p['sh'+S]||0, JOINT['sh'+S], M['upArm'+S] + R(p['el'+S]||0, JOINT['el'+S], M['loArm'+S]));
+    const upper = R(p.torso||0, JOINT.pelvis, M.torso + armG('L') + armG('R') + R(p.head||0, JOINT.neck, M.head));
+    return M.back + legG('L') + legG('R') + upper;
+  };
+  const inner = rig(OUTB) + rig(FILB);
   const bt = p.body||[0,0,0];
   const bodyG = (bt[0]||bt[1]||bt[2])
     ? `<g transform="translate(${bt[0]} ${bt[1]}) rotate(${bt[2]} ${JOINT.root[0]} ${JOINT.root[1]})">${inner}</g>`
