@@ -348,6 +348,49 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* ---- the week's decision, made legible ---- */
+  .advice{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;margin-bottom:14px;
+    border:1px solid var(--line);background:var(--panel);flex-wrap:wrap;}
+  .advice .ad-i{font-size:19px;line-height:1.2;flex:none;}
+  .advice .ad-t{flex:1;min-width:180px;font-size:13.5px;line-height:1.55;color:var(--text);}
+  .advice .ad-b{flex:none;padding:6px 12px;font-size:12px;}
+  .advice.act{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.14),rgba(0,0,0,.2));}
+  .advice.bad{border-color:#c0392b;background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.2));}
+  .advice.warn{border-color:rgba(224,179,65,.5);}
+  .advice.good{border-color:var(--green);background:linear-gradient(180deg,rgba(91,176,131,.12),rgba(0,0,0,.2));}
+
+  .bkg{position:relative;background:var(--panel);border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;cursor:pointer;transition:.14s;}
+  .bkg:hover{border-color:var(--brandred);transform:translateY(-2px);background:rgba(198,57,44,.08);}
+  .bk-tag{position:absolute;top:-9px;left:12px;font-size:9.5px;font-weight:800;letter-spacing:.1em;
+    padding:3px 8px;border-radius:6px;background:#1a1512;border:1px solid var(--line);}
+  .bk-tag.t-gold{color:#e0b341;border-color:#7a5f1c;} .bk-tag.t-green{color:#5bb083;border-color:#2f6b4d;}
+  .bk-tag.t-blue{color:#6aa7c4;border-color:#2f5a6b;}  .bk-tag.t-red{color:#f0907f;border-color:#8a3226;}
+  .bk-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px;}
+  .bk-n{font-family:var(--display);font-size:18px;color:var(--cream);text-transform:uppercase;letter-spacing:.02em;line-height:1.15;}
+  .bk-s{font-size:11.5px;color:var(--text-faint);margin-top:2px;}
+  .bk-ov{text-align:right;flex:none;} .bk-ov span{display:block;font-size:9px;letter-spacing:.12em;color:var(--text-faint);font-weight:800;}
+  .bk-ov b{font-family:var(--mono);font-size:20px;}
+  .bk-obar{height:9px;border-radius:5px;background:#8a3226;overflow:hidden;}
+  .bk-obar .you{display:block;height:100%;background:linear-gradient(90deg,#3f7fbf,#6aa7c4);}
+  .bk-olab{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-faint);margin-top:4px;}
+  .bk-olab b{color:var(--cream);font-family:var(--mono);}
+  .bk-rw{display:flex;flex-wrap:wrap;gap:10px;margin-top:9px;font-size:11.5px;color:var(--text-dim);}
+  .bk-rw b{color:var(--cream);font-family:var(--mono);}
+  .bk-rw .hot b{color:#f0907f;}
+
+  .wk-alt{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;transition:.14s;}
+  .wk-alt:hover{border-color:var(--gold);background:rgba(224,179,65,.08);}
+  .wa-n{font-weight:800;color:var(--cream);font-size:13.5px;}
+  .wa-d{font-size:11.5px;color:var(--text-faint);margin-top:3px;line-height:1.45;}
+
+  .planwhy{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .pw-h{font-size:12.5px;color:var(--cream);font-weight:700;margin-bottom:5px;}
+  .pw-h .hint{font-weight:400;}
+  .goals{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;}
+  .goal{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 11px;}
+  .go-h{display:flex;justify-content:space-between;font-size:12.5px;color:var(--cream);font-weight:700;margin-bottom:5px;}
+  .go-h b{font-family:var(--mono);color:var(--gold);}
+
   /* on a phone the week's decision comes first; the profile follows it */
   @media(max-width:860px){ .hubgrid .hub-side{order:2;} .hubgrid .hub-main{order:1;} }
 
@@ -1766,6 +1809,7 @@ function finishCreate(){
     log:[], hist:[]
   };
   RNG=(name.length*7919+Date.now())>>>0;
+  checkUnlocks();          // you already know everything your ratings allow
   // your first character, chosen to suit the archetype you built
   const fits=GIMMICKS.filter(g=>g.align===G.w.align);
   const g=(fits.length?fits:GIMMICKS)[Math.floor(rnd()*(fits.length||GIMMICKS.length))];
@@ -1936,6 +1980,90 @@ function renderStoryPanel(){
     inbox.map(i=>`<div class="inbox-item sev-${i.sev||'info'}"><span class="ico">${i.ico||'•'}</span><span class="txt">${i.txt}</span></div>`).join('')+`</div>`;
   el.innerHTML=h;
 }
+/* ---- WHAT A BOOKING IS ACTUALLY WORTH ----
+   Three offers that all read "Mid-Card · Standard" are not a decision. These
+   are the numbers behind each one, so the cards can show you what you are
+   choosing between: how likely you are to win it, what it pays, what it does
+   for your career, and how likely it is to hurt you. */
+function offerOdds(o){
+  const w=G.w, c=G.car;
+  const me=ovr(w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
+  let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
+  if(o.stakes==='title') p*=0.82;
+  return clamp(p,0.05,0.95);
+}
+function offerRisk(o){
+  const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
+  const best=bestMoves(5);
+  const mRisk=best.length? best.reduce((s,m)=>s+m.risk,0)/best.length : 0.05;
+  return clamp((mRisk + (o.mult-1)*0.42 + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500)*sc.inj*0.34, 0.01, 0.6);
+}
+function offerRep(o){
+  // a night's work is worth more against a better opponent and under a stipulation
+  const q=44 + o.oppOvr*0.20 + (o.mult-1)*14;
+  return Math.round((q*0.30+6+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
+}
+// the one-line reason to pick each card
+function tagOffers(offs){
+  if(!offs.length) return;
+  const meta=offs.map(o=>({o,p:offerOdds(o),pay:o.purse,rep:offerRep(o),risk:offerRisk(o)}));
+  meta.forEach(m=>m.o._tag=null);
+  const byPay=[...meta].sort((a,b)=>b.pay-a.pay)[0];
+  const byWin=[...meta].sort((a,b)=>b.p-a.p)[0];
+  const byRep=[...meta].sort((a,b)=>b.rep-a.rep)[0];
+  const hardest=[...meta].sort((a,b)=>a.p-b.p)[0];
+  const stakes=meta.find(m=>m.o.stakes==='title'||m.o.stakes==='defense')||meta.find(m=>m.o.stakes==='rivalry'||m.o.stakes==='rival');
+  if(stakes) stakes.o._tag={t:stakes.o.stakes==='defense'?'TITLE DEFENCE':stakes.o.stakes==='title'?'TITLE SHOT':'GRUDGE',c:'gold'};
+  if(!byPay.o._tag && byPay.pay>Math.min(...meta.map(m=>m.pay))*1.25) byPay.o._tag={t:'BIGGEST PAYDAY',c:'green'};
+  if(!byWin.o._tag && byWin.p>=0.55) byWin.o._tag={t:'SAFEST WIN',c:'blue'};
+  if(!hardest.o._tag && hardest.p<=0.42) hardest.o._tag={t:'TOUGHEST TEST',c:'red'};
+  if(!byRep.o._tag && byRep.rep>Math.min(...meta.map(m=>m.rep))*1.3) byRep.o._tag={t:'BEST FOR REP',c:'gold'};
+}
+/* ---- THE ONE THING TO DO NEXT ----
+   The hub should never leave you wondering. This picks the single most
+   useful thing available and says it in a sentence. */
+function weekAdvice(){
+  const c=G.car, w=G.w;
+  if(c.freeAgent) return {ico:'✍️',t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
+  if(c.injWeeks>0) return {ico:'🏥',t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared — working through it makes it worse.`,sev:'bad'};
+  if(w.tp>0) return {ico:'⭐',t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
+  if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury — take the week off.`,sev:'bad'};
+  if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
+  const st=story();
+  if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
+  if(c.deal&&c.deal.weeksLeft<=6) return {ico:'📄',t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
+  const t=workTier(), belt=beltName(t);
+  if(!c.title&&c.pop>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
+  return {ico:'🤼',t:'Pick a match. What you emphasise in your game plan is what you get better at.',sev:'ok'};
+}
+/* what you are working toward, so progress is visible week to week */
+function nextGoals(){
+  const c=G.car, w=G.w, out=[];
+  const ei=TIERS.findIndex(x=>x.id===tierOf(c.rep).id), nx=TIERS[ei+1];
+  if(nx){
+    const repPct=clamp((c.rep-TIERS[ei].rep)/(nx.rep-TIERS[ei].rep)*100);
+    const ovrPct=clamp(ovr(w)/nx.minOvr*100);
+    out.push({l:`Reach ${nx.name}`, sub:`${Math.max(0,Math.round(nx.rep-c.rep))} rep · OVR ${ovr(w)}/${nx.minOvr}`, p:Math.min(repPct,ovrPct)});
+  }
+  // the move you are closest to unlocking
+  let best=null;
+  MOVES.forEach(m=>{
+    if(moveUnlocked(m)) return;
+    const cat=catById(m.cat); if(!cat) return;
+    const tr=MTIERS[m.tier-1]; if(!tr) return;
+    if(moveEligible(m)) return;                      // already earned, just not granted yet
+    const a=w.attrs[cat.attr]||0, mast=w.mastery[m.cat]||0;
+    const p=Math.min(m.val?clamp(a/m.val*100):100, tr.mastery?clamp(mast/tr.mastery*100):100);
+    const need=[]; if(a<m.val) need.push(`${ATTRS.find(x=>x[0]===cat.attr)[1]} ${Math.round(a)}/${m.val}`);
+    if(mast<tr.mastery) need.push(`mastery ${mast}/${tr.mastery}`);
+    if(!best||p>best.p) best={l:`Unlock ${m.name}`, sub:`${cat.name} · ${need.join(' · ')||'ready'}`, p};
+  });
+  if(best) out.push(best);
+  if(!c.title) out.push({l:`Win the ${beltName()}`, sub:`Popularity ${Math.round(c.pop)}/${Math.min(70,18+tierIdx()*16)} to be considered`, p:clamp(c.pop/Math.min(70,18+tierIdx()*16)*100)});
+  else out.push({l:'Defend the title', sub:`${c.defenses||0} successful defence${(c.defenses||0)===1?'':'s'} so far`, p:clamp((c.defenses||0)/5*100)});
+  return out.slice(0,3);
+}
+
 function renderWeek(){
   const c=G.car, el=$('weekBody');
   if(c.freeAgent){
@@ -1961,26 +2089,76 @@ function renderWeek(){
       <button class="big" onclick="doMentorWeek()">Train This Week →</button>`; return;
   }
   if(!c.offers) c.offers=makeOffers();
-  el.innerHTML=`<div class="flab">Game plan — what you emphasise builds mastery</div>
-    <div class="row" style="margin-bottom:12px;">
-      <select onchange="G.car.plan.a=this.value;save()">${MCATS.map(x=>`<option value="${x.id}" ${c.plan.a===x.id?'selected':''}>${x.icon} ${x.name}</option>`).join('')}</select>
-      <select onchange="G.car.plan.b=this.value;save()">${MCATS.map(x=>`<option value="${x.id}" ${c.plan.b===x.id?'selected':''}>${x.icon} ${x.name}</option>`).join('')}</select>
+  tagOffers(c.offers);
+  const adv=weekAdvice();
+  const me=ovr(G.w);
+  const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.icon} ${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
+  const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
+  el.innerHTML=`
+    <div class="advice ${adv.sev}">
+      <span class="ad-i">${adv.ico}</span>
+      <span class="ad-t">${adv.t}</span>
+      ${adv.cta?`<button class="ad-b" onclick="${adv.cta.f}">${adv.cta.l} →</button>`:''}
     </div>
-    <div class="flab">Bookings</div>
-    <div class="grid" style="gap:10px;margin-bottom:12px;">${c.offers.map((o,i)=>`
-      <div class="opt" onclick="takeMatch(${i})">
-        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <h4>${o.oppName}</h4><span class="badge ${o.stakes==='title'?'b-leg':o.stakes==='rival'?'b-red':'b-com'}">${o.stipLabel}</span>
+
+    <div class="flab">Bookings <span class="hint" style="text-transform:none;letter-spacing:0;">— tap one to wrestle it</span></div>
+    <div class="grid" style="gap:10px;margin-bottom:14px;">${c.offers.map((o,i)=>{
+      const p=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
+      const dLab = p>=0.66?'Favoured':p>=0.54?'Slight edge':p>=0.46?'Even':p>=0.34?'Underdog':'Way above you';
+      const dCol = p>=0.54?'var(--green)':p>=0.46?'var(--gold)':'#f0907f';
+      return `<div class="bkg" onclick="takeMatch(${i})">
+        ${o._tag?`<div class="bk-tag t-${o._tag.c}">${o._tag.t}</div>`:''}
+        <div class="bk-h">
+          <div><div class="bk-n">${o.oppName}</div>
+            <div class="bk-s">${o.stipLabel} · ${o.card||'Mid-Card'}</div></div>
+          <div class="bk-ov"><span>OVR</span><b style="color:${dCol}">${o.oppOvr}</b></div>
         </div>
-        <div class="meta">${o.card||'Mid-Card'} · OVR ${o.oppOvr} · purse ${money(o.purse)} · ${o.stakes==='title'?'🏆 TITLE MATCH':o.stakes==='defense'?'🏆 DEFENCE':o.stakes==='rival'?'🔥 Rivalry':'Standard'}</div>
-        <p>${o.blurb}</p>
-      </div>`).join('')}</div>
-    <div class="row">
-      <button class="ghost" onclick="doTrainWeek()">Train (week)</button>
-      <button class="ghost" onclick="doPromoWeek()">Media &amp; Promo</button>
-      <button class="ghost" onclick="doRest()">Rest</button>
+        <div class="bk-odds">
+          <div class="bk-obar"><i class="you" style="width:${Math.round(p*100)}%"></i></div>
+          <div class="bk-olab"><span>You <b>${Math.round(p*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(p*100)}%</b> them</span></div>
+        </div>
+        <div class="bk-rw">
+          <span title="Purse">💰 <b>${money(o.purse)}</b></span>
+          <span title="Reputation">📈 <b>+${rep}</b> rep</span>
+          <span title="Injury risk" class="${risk>0.18?'hot':''}">🩹 <b>${Math.round(risk*100)}%</b> risk</span>
+        </div>
+      </div>`;}).join('')}</div>
+
+    <div class="flab">Or spend the week</div>
+    <div class="grid g3" style="gap:8px;margin-bottom:14px;">
+      <div class="wk-alt" onclick="doTrainWeek()"><div class="wa-n">🏋️ Train</div><div class="wa-d">+45 XP toward a training point. Costs a little condition.</div></div>
+      <div class="wk-alt" onclick="doPromoWeek()"><div class="wa-n">🎤 Media</div><div class="wa-d">+${(1.5+G.w.attrs.ch/45).toFixed(1)} popularity and showmanship mastery.</div></div>
+      <div class="wk-alt" onclick="doRest()"><div class="wa-n">🛌 Rest</div><div class="wa-d">Recover condition and morale. The safest week there is.</div></div>
+    </div>
+
+    <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">— the two things you emphasise in every match</span></div>
+    <div class="row" style="margin-bottom:6px;">
+      <select onchange="setPlan('a',this.value)">${catOpt(c.plan.a,c.plan.b)}</select>
+      <select onchange="setPlan('b',this.value)">${catOpt(c.plan.b,c.plan.a)}</select>
+    </div>
+    <div class="planwhy">
+      ${[catA,catB].map((x,i)=>{
+        const m=G.w.mastery[x.id]||0, t=masteryTier(x.id), nx=MTIERS.find(y=>y.t===t+1);
+        return `<div class="pw"><div class="pw-h">${x.icon} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
+          <div class="bar gd"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div>
+          <div class="hint">Mastery ${m}${nx?` / ${nx.mastery} → Tier ${t+1} moves`:' · maxed'}</div></div>`;
+      }).join('')}
+    </div>
+
+    <div class="flab" style="margin-top:14px;">Working toward</div>
+    <div class="goals">${nextGoals().map(g=>`
+      <div class="goal"><div class="go-h"><span>${g.l}</span><b>${Math.round(g.p)}%</b></div>
+        <div class="bar g"><i style="width:${clamp(g.p)}%"></i></div>
+        <div class="hint">${g.sub}</div></div>`).join('')}</div>
+    <div class="row" style="margin-top:12px;">
       <button class="ghost" onclick="go('deal')">Contract</button>
     </div>`;
+}
+// picking the same category twice wastes half your week, so swap instead
+function setPlan(slot,v){
+  const c=G.car, other=slot==='a'?'b':'a';
+  if(c.plan[other]===v) c.plan[other]=c.plan[slot];
+  c.plan[slot]=v; save(); renderWeek();
 }
 function workHurt(){ G.car.workedHurt=true; G.car.injWeeks=0; G.car.standing=clamp(G.car.standing+3);
   pushLog('You told the doctor you were fine. You are not fine.'); save(); renderCareer();
@@ -2057,9 +2235,9 @@ function makeOffers(){
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
     // your position on the card follows your standing and how hot the act is
+    const draw=(G.car.standing*0.4 + gimHeat()*0.25 + G.car.pop*0.35);
     const card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
-               : (G.car.standing+gimHeat())/2>=64 ? 'Main Event'
-               : (G.car.standing+gimHeat())/2>=44 ? 'Mid-Card' : 'Opener';
+               : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
     const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
@@ -3126,7 +3304,7 @@ function skipFight(){
   // Resolve the REST of the match properly: same odds the live loop would face,
   // nudged by however the match was actually going when you skipped.
   const o=MS.o, c=G.car;
-  const meOvr=ovr(G.w)+c.mom*0.10+(c.streak>0?Math.min(6,c.streak):0);
+  const meOvr=ovr(G.w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-meOvr)/16));
   p += ((MS.me.hp-MS.opp.hp)/100)*0.35 + MS.mom/500;
   if(o.stakes==='title'||o.stakes==='defense') p*=0.82;
@@ -3171,7 +3349,7 @@ function simMatch(o){
   if(o.stakes==='rival'||o.stakes==='rivalry'){ quality+=6; good.push('rivalry heat'); }
   quality=clamp(quality+ (rnd()*8-4));
   // win probability
-  const me=ovr(w)+c.mom*0.10+(c.streak>0?Math.min(6,c.streak):0);
+  const me=ovr(w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
   if(o.stakes==='title') p*=0.82;                 // champs are protected
   const win=rnd()<clamp(p,0.05,0.95);
