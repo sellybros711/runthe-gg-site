@@ -446,11 +446,34 @@ window.GA_ID='G-L29P5MRWKE';
   .mptr+.mptr{border-top:1px solid rgba(255,255,255,.05)}
   .mptr .s{flex:0 0 auto; min-width:15px; text-align:center; font:800 8px/13px var(--body); color:#08200f;
     background:#7e988a; border-radius:3px}
-  .mptr .n{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#89a394}
+  .mptr .n{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#89a394; min-height:13px}
   .mptr.w .n{color:#fff; font-weight:800}
   .mptr.w .s{background:#35d6a0}
   .mptr.you .n{color:var(--gold)}
   .mptr.you .s{background:var(--gold)}
+  /* THE BRACKET IN MOTION: the live column settles a match at a time and the winner flies up into his
+     slot in the next column. Everything below is that movement. */
+  .mptree{max-height:min(62vh,520px); overflow-y:auto; scroll-behavior:smooth}
+  .mptcol.active{position:relative}
+  .mptcol.active .mpth{color:var(--gold)}
+  .mptr .r{flex:0 0 auto; font:800 8.5px/1 var(--body); color:#35d6a0; letter-spacing:.02em}
+  .mptr.l .n{color:#5d7568; text-decoration:line-through; text-decoration-color:rgba(255,255,255,.28)}
+  .mptr.l .s{background:#3d5147; color:#8fa899}
+  .mptr.ghost .n{color:#3f5a4c}
+  .mptr.ghost .s{background:#2b3d33; color:#6f8a7b}
+  .mptm.live{border-color:rgba(255,255,255,.14)}
+  .mptm.live.done{border-color:rgba(53,214,160,.34); background:rgba(53,214,160,.05)}
+  .mptm.mine.done{border-color:rgba(241,208,74,.55); background:rgba(241,208,74,.08)}
+  .mptm.settle{animation:mptSettle .42s ease-out both}
+  @keyframes mptSettle{0%{transform:scale(1.05); box-shadow:0 0 0 2px rgba(255,255,255,.18)}100%{transform:scale(1); box-shadow:none}}
+  .mptm.await{border-color:rgba(241,208,74,.8); background:rgba(241,208,74,.1); animation:mptAwait 1.5s ease-in-out infinite}
+  @keyframes mptAwait{0%,100%{box-shadow:0 0 0 0 rgba(241,208,74,.45)}50%{box-shadow:0 0 0 5px rgba(241,208,74,0)}}
+  .mptr.adv{animation:mptAdv .5s cubic-bezier(.2,1.1,.3,1) both}
+  @keyframes mptAdv{0%{opacity:0; transform:translateX(-14px) scale(.94)}100%{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){
+    .mptm.settle,.mptm.await,.mptr.adv{animation:none !important}
+    .mptree{scroll-behavior:auto}
+  }
   @media(prefers-reduced-motion:reduce){
     .mpcard,.mprow,.mpres,.mpseed{transition:none !important}
     .mplive::after{animation:none; display:none}
@@ -734,6 +757,16 @@ window.GA_ID='G-L29P5MRWKE';
   @media(prefers-reduced-motion:reduce){.dil-rv{opacity:1;animation:none;transform:none}}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  /* What's New reads as a NEWSPAPER, not a second gold button: cream on dark, its own square-ish shape,
+     and a red unread dot rather than the gold pulse, so it never competes with How to Play beside it. */
+  .howtop.news{color:#f4e3c9; border-color:rgba(244,227,201,.42); border-radius:8px; letter-spacing:.1em;
+    background:linear-gradient(180deg,rgba(244,227,201,.10),rgba(0,0,0,.28)); box-shadow:0 4px 11px -4px rgba(0,0,0,.6)}
+  .howtop.news:hover{background:linear-gradient(180deg,rgba(244,227,201,.18),rgba(0,0,0,.28)); border-color:rgba(244,227,201,.7)}
+  .howtop.news:focus-visible{outline-color:#f4e3c9}
+  .howtop.news .nwdot{width:7px; height:7px; border-radius:50%; background:#e5484d; box-shadow:0 0 0 0 rgba(229,72,77,.55);
+    animation:nwdotp 2.2s ease-in-out infinite}
+  @keyframes nwdotp{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.55)}50%{box-shadow:0 0 0 6px rgba(229,72,77,0)}}
+  @media(prefers-reduced-motion:reduce){.howtop.news .nwdot{animation:none}}
   /* Prize Wheel: a compact pill in the hero row instead of a full mode card (owner). The little wheel
      spins and the pill glows only when a spin is actually waiting, so it reads as "there's something
      here for you" without eating a screenful. */
@@ -6225,35 +6258,58 @@ function bracketMyPair(B){
   for(const pr of bracketPairs(B)){ if(pr[0].p.you) return {me:pr[0], opp:pr[1]}; if(pr[1].p.you) return {me:pr[1], opp:pr[0]}; }
   return null;
 }
-// Play one round. `myOverride` ({won,label,extra}) replaces the sim for YOUR match when you played it
-// yourself hole by hole; every other match is simmed exactly as before.
-function bracketPlayRound(B, myOverride){
+/* A round is STAGED before it is played: every match is decided except YOURS, which is held until you
+   have said whether to play it or sim it. That is what lets the bracket screen fill the draw in in front
+   of you and simply STOP when it reaches your match. A staged round touches no bracket state at all
+   (nobody is eliminated, nobody advances) until it is committed, so a half-revealed day can be abandoned,
+   skipped or finished headlessly without ever leaving the bracket in a broken state. */
+function bracketDecide(A,C,holes){
+  const mt=simMatch('singles',[A],[C],holes);
+  if(mt.res==='half'){ const ex=bracketExtra(A,C,holes); return {win:ex.win, lose:ex.lose, label:ex.label, extra:true}; }
+  return mt.res==='B' ? {win:C, lose:A, label:mt.label, extra:false} : {win:A, lose:C, label:mt.label, extra:false};
+}
+function bracketStage(B){
   const ri=B.rounds.length, R=B.RDS[ri]; if(!R) return null;
+  const slots=bracketPairs(B).map(pr=>{
+    const mine=!!(pr[0].p.you||pr[1].p.you);
+    return {A:pr[0], C:pr[1], mine, res: mine?null:bracketDecide(pr[0],pr[1],R.holes)};
+  });
+  return {ri, name:R.name, short:R.short, day:R.day, holes:R.holes, slots};
+}
+function bracketStageMine(st){ return st?st.slots.findIndex(s=>s.mine):-1; }
+// your call has landed: `override` ({won,label,extra}) when you played it, nothing when you simmed it
+function bracketResolveMine(B, st, override){
+  const i=bracketStageMine(st); if(i<0) return;
+  const s=st.slots[i]; if(s.res) return;
+  if(override){ const me=s.A.p.you?s.A:s.C, other=s.A.p.you?s.C:s.A;
+    s.res={win:override.won?me:other, lose:override.won?other:me, label:override.label, extra:!!override.extra}; }
+  else s.res=bracketDecide(s.A, s.C, st.holes);
+}
+// commit a fully-decided stage: eliminate the losers, advance the winners, record the round
+function bracketCommit(B, st){
+  if(!st || st.slots.some(s=>!s.res)) return null;
   const matches=[], next=[];
-  bracketPairs(B).forEach(pr=>{
-    const A=pr[0], C=pr[1];
-    let win=A, lose=C, label='', extra=false;
-    if(myOverride && (A.p.you||C.p.you)){
-      const me=A.p.you?A:C, other=A.p.you?C:A;
-      win=myOverride.won?me:other; lose=myOverride.won?other:me; label=myOverride.label; extra=!!myOverride.extra;
-    } else {
-      const mt=simMatch('singles',[A],[C],R.holes);
-      label=mt.label;
-      if(mt.res==='half'){ const ex=bracketExtra(A,C,R.holes); win=ex.win; lose=ex.lose; label=ex.label; extra=true; }
-      else if(mt.res==='B'){ win=C; lose=A; }
-    }
-    lose.alive=false; lose.out=ri;
-    win.path.push({ri, opp:lose.p.name, oppSeed:lose.seed, label, extra, won:true});
-    lose.path.push({ri, opp:win.p.name, oppSeed:win.seed, label, extra, won:false});
+  st.slots.forEach(s=>{
+    const A=s.A, C=s.C, win=s.res.win, lose=s.res.lose, label=s.res.label, extra=!!s.res.extra;
+    lose.alive=false; lose.out=st.ri;
+    win.path.push({ri:st.ri, opp:lose.p.name, oppSeed:lose.seed, label, extra, won:true});
+    lose.path.push({ri:st.ri, opp:win.p.name, oppSeed:win.seed, label, extra, won:false});
     matches.push({aSeed:A.seed, aName:A.p.name, aYou:!!A.p.you, bSeed:C.seed, bName:C.p.name, bYou:!!C.p.you,
       winSeed:win.seed, label, extra, you:!!(A.p.you||C.p.you), youWon:!!win.p.you,
       upset:win.seed>lose.seed+3});
     next.push(win);
   });
-  B.rounds.push({name:R.name, short:R.short, holes:R.holes, day:R.day, matches});
+  B.rounds.push({name:st.name, short:st.short, holes:st.holes, day:st.day, matches});
   B.alive=next;
   if(B.rounds.length>=B.RDS.length) B.champion=next[0]||B.players[0];
   return B.rounds[B.rounds.length-1];
+}
+// Play one round outright (every headless path: skip to end, a season finished without you, the summary).
+// `myOverride` replaces the sim for YOUR match when you played it yourself hole by hole.
+function bracketPlayRound(B, myOverride){
+  const st=bracketStage(B); if(!st) return null;
+  bracketResolveMine(B, st, myOverride);
+  return bracketCommit(B, st);
 }
 function bracketDone(B){ return !!B && B.rounds.length>=B.RDS.length; }
 // bank a bracket that may be MID-WEEK (the screen plays it a round at a time): finish it, then finalize
@@ -6344,8 +6400,12 @@ function finishMatchRound(){
   if(!mp || !B || !st){ S.matchPlay=null; S.mpHoleIdx=null; S.screen='season'; render(); return; }
   const holes=S.dailyHoles.slice(), evt=B.evt;
   track('bracket_match_done',{round:mp.ri, won:st.won, label:st.label});
-  bracketPlayRound(B, {won:st.won, label:st.label||(st.won?'1 up':'1 up'), extra:st.extras>0});
-  S.brShown=0; S.brStage='reveal';
+  const ovr={won:st.won, label:st.label||'1 up', extra:st.extras>0};
+  // the day is staged and paused ON your match, so drop the result into the held slot and let the
+  // bracket carry on advancing from exactly where it stopped (never restart the day from the top)
+  if(B.stage && bracketStageMine(B.stage)>=0) bracketResolveMine(B, B.stage, ovr);
+  else { B.stage=null; bracketPlayRound(B, ovr); S.brShown=0; }
+  S.brPause=false; S.brStage='reveal';
   // playing it earns what a played Sunday earns (simming forfeits it), exactly like a career Moment
   if(!S.circuitMode && S.career && S.season){
     try{ recordAchEvent({inc:{momentsPlayed:1}}); }catch(e){}
@@ -11364,7 +11424,7 @@ function scrTitle(){
     hb.onclick=openRules; hw.appendChild(hb);
     // the newsletter sits beside How to Play, and pulses with a count while there is something unread
     { const nn=newsUnseenCount();
-      const nb=$(`<button type="button" class="howtop${nn?' hasnew':''}" aria-label="What's New">✨ What's New${nn?' · '+nn:''}</button>`);
+      const nb=$(`<button type="button" class="howtop news" aria-label="What's New${nn?', '+nn+' unread':''}">${nn?'<span class="nwdot"></span>':''}What's New${nn?' · '+nn:''}</button>`);
       nb.onclick=openWhatsNew; hw.appendChild(nb); }
     (head||w).appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
@@ -20534,71 +20594,161 @@ function mpSettle(el, m){
   el.classList.add('done');
   if(m.you) el.classList.add(m.youWon?'won':'lost');
 }
-function mpRunReveal(host, B, ri){
+/* THE REVEAL IS THE BRACKET MOVING. The day's staged matches settle one at a time IN DRAW ORDER, right
+   in the live column - winner lit, loser struck through, the score arriving - and the winner then flies
+   up into his slot in the next column. When it reaches YOUR match it simply STOPS and asks, because a
+   staged round is decided everywhere except there. Everything settles in place (no render() mid-reveal),
+   so the animation is never interrupted; a re-render rebuilds the same state from the stage.            */
+function mpTreeScrollTo(host, el){
+  if(!host || !el) return;
+  try{
+    const hb=host.getBoundingClientRect(), eb=el.getBoundingClientRect();
+    const dx=(eb.left+eb.width/2)-(hb.left+hb.width/2);
+    if(Math.abs(dx)>18) host.scrollLeft=Math.max(0, host.scrollLeft+dx);
+    const pad=26;
+    if(eb.top<hb.top+pad) host.scrollTop=Math.max(0, host.scrollTop-(hb.top+pad-eb.top));
+    else if(eb.bottom>hb.bottom-pad) host.scrollTop=host.scrollTop+(eb.bottom-(hb.bottom-pad));
+  }catch(e){}
+}
+function mpSettleLive(host, inner, st, si, animate){
+  const s=st.slots[si]; if(!s || !s.res) return;
+  const box=inner.querySelector('#mpl-'+si);
+  if(box){
+    const rows=box.querySelectorAll('.mptr'), aWin=s.res.win===s.A;
+    const w=rows[aWin?0:1], l=rows[aWin?1:0];
+    if(w){ w.classList.add('w'); const r=w.querySelector('.r'); if(r) r.textContent=s.res.label; }
+    if(l) l.classList.add('l');
+    box.classList.remove('await'); box.classList.add('done');
+    if(animate){ box.classList.remove('settle'); void box.offsetWidth; box.classList.add('settle'); }
+    if(animate) mpTreeScrollTo(host, box);
+  }
+  const row=inner.querySelector('#'+mpAdvId(st.ri, si));
+  if(row) mpFillRow(row, s.res.win.seed, s.res.win.p.name, !!s.res.win.p.you, animate);
+}
+function mpRunReveal(host, B){
   mpClearTimer();
-  const R=B.rounds[ri]; if(!R) return;
-  const order=mpOrder(R, S.brMode&&S.brMode[ri]==='play'), reduce=mpReduce();
+  const st=B.stage; if(!st) return;
+  const inner=host.querySelector('.mptin'); if(!inner) return;
+  const reduce=mpReduce();
   const step=()=>{
     mpTimer=null;
-    if(!host.isConnected || S.curBracket!==B || S.screen!=='season' || S.brStage!=='reveal') return;
-    const k=S.brShown||0;
-    if(k>=order.length){ S.brStage='roundEnd'; render(); return; }
-    const mi=order[k], m=R.matches[mi], el=host.querySelector('[data-mi="'+mi+'"]');
-    if(!el){ S.brShown=order.length; S.brStage='roundEnd'; render(); return; }
-    el.classList.add('in');
-    mpTimer=setTimeout(()=>{
-      mpTimer=null;
-      if(!el.isConnected || S.brStage!=='reveal') return;
-      mpSettle(el, m);
-      S.brShown=k+1;
-      const cnt=document.getElementById('mpcount');   // the header counts along with the reveal
-      if(cnt) cnt.textContent=(k+1)+' of '+R.matches.length;
-      if(m.you){ try{ sfx(m.youWon?'win':'hole'); buzz(m.youWon?[14,50,14]:12); }catch(e){} }
-      mpTimer=setTimeout(step, reduce?15:(m.you?MP_AFTER_MINE:MP_IN));
-    }, reduce?15:(m.you?MP_MINE_HOLD:MP_HOLD));
+    if(!host.isConnected || S.curBracket!==B || S.screen!=='season' || S.brStage!=='reveal' || S.brPause) return;
+    const si=S.brShown||0;
+    if(si>=st.slots.length){ mpFinishRound(B); return; }
+    const s=st.slots[si];
+    if(s.mine && !s.res){ S.brPause=true; render(); return; }   // STOP: your match is yours to call
+    mpSettleLive(host, inner, st, si, !reduce);
+    S.brShown=si+1;
+    const cnt=document.getElementById('mpcount');   // the header counts along with the reveal
+    if(cnt) cnt.textContent=(si+1)+' of '+st.slots.length;
+    if(s.mine){ const won=!!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
+    mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:MP_IN));
   };
   mpTimer=setTimeout(step, reduce?15:MP_IN);
 }
-// skip the rest of the day: settle everything at once
-function mpSkipRound(B, ri){
+// the day is fully decided: commit it (losers out, winners advance) and hand back to the round-end card
+function mpFinishRound(B){
   mpClearTimer();
-  S.brShown=(B.rounds[ri]||{matches:[]}).matches.length;
-  S.brStage='roundEnd'; render();
+  const st=B.stage;
+  if(st && st.slots.every(s=>s.res)) bracketCommit(B, st);
+  B.stage=null; S.brPause=false; S.brStage='roundEnd'; render();
 }
-/* ---- the bracket tree: every round side by side, played rounds filled in ---- */
-function mpTreeNode(B){
-  const wrap=$(`<details class="acc bdraw"><summary>The full bracket</summary></details>`);
+// stage the next day and start the reveal (every match decided except yours, which the reveal stops at)
+function mpStartDay(B){
+  mpClearTimer();
+  B.stage=bracketStage(B);
+  S.brShown=0; S.brPause=false; S.brStage=B.stage?'reveal':'roundEnd';
+  render();
+}
+// skip the rest of the day: sim whatever is left (your match included) and commit at once
+function mpSkipRound(B){
+  mpClearTimer();
+  const st=B.stage;
+  if(st){
+    bracketResolveMine(B, st);
+    st.slots.forEach(s=>{ if(!s.res) s.res=bracketDecide(s.A, s.C, st.holes); });
+    S.brShown=st.slots.length;
+  }
+  mpFinishRound(B);
+}
+/* ---- THE BRACKET, AND THE BRACKET IS THE SHOW ----
+   Every round side by side. Played rounds are filled in; the day in play is the live column, where a
+   match settles (winner lit, loser struck through, the score arriving) and the winner then ADVANCES into
+   his slot in the next column, which is what you actually watch. Slot addressing is the standard tree:
+   the winner of slot `si` in round `ri` lands in row `si%2` of slot `si>>1` of round `ri+1`, so every
+   pending row carries an id the reveal can fill in.                                                    */
+function mpAdvId(ri,si){ return 'adv-'+ri+'-'+(si>>1)+'-'+(si%2); }
+function mpTreeRow(seed,name,cls,id,res){
+  return `<div class="mptr${cls?' '+cls:''}"${id?' id="'+id+'"':''}><span class="s">${seed}</span>`+
+    `<span class="n">${esc(name)}</span><span class="r">${res||''}</span></div>`;
+}
+function mpTreeSlot(B, st, ri, si, s){
+  // a slot of the LIVE column: both names, undecided until it lands
+  const settled=!!(s.res && (S.brShown||0)>si), mine=s.mine;
+  const rows=[[s.A,0],[s.C,1]].map(([o,row])=>{
+    const won=settled && s.res.win===o;
+    const cls=(settled?(won?'w':'l'):'')+(o.p.you?' you':'');
+    return mpTreeRow(o.seed, o.p.name, cls, null, won?esc(s.res.label):'');
+  }).join('');
+  return `<div class="mptm live${mine?' mine':''}${settled?' done':''}${mine&&!s.res?' await':''}" id="mpl-${si}" data-si="${si}">${rows}</div>`;
+}
+function mpTreeBuild(B, st){
   const box=$(`<div class="mptree"><div class="mptin"></div></div>`), inner=box.querySelector('.mptin');
-  const pend=(!bracketDone(B) && B.alive.length>1) ? bracketPairs(B) : null;
+  const liveRi=st?st.ri:-1;
   B.RDS.forEach((R,ri)=>{
-    const col=$(`<div class="mptcol"><div class="mpth">${esc(R.short)}</div></div>`);
+    const col=$(`<div class="mptcol${ri===liveRi?' active':''}"><div class="mpth">${esc(R.short)}</div></div>`);
     const played=B.rounds[ri];
     if(played){
-      played.matches.forEach(m=>{
+      played.matches.forEach((m,si)=>{
         const aWin=m.winSeed===m.aSeed;
         col.insertAdjacentHTML('beforeend',
-          `<div class="mptm${m.you?' mine':''}">`+
-          `<div class="mptr ${aWin?'w':''}${m.aYou?' you':''}"><span class="s">${m.aSeed}</span><span class="n">${esc(m.aName)}</span></div>`+
-          `<div class="mptr ${aWin?'':'w'}${m.bYou?' you':''}"><span class="s">${m.bSeed}</span><span class="n">${esc(m.bName)}</span></div></div>`);
-      });
-    } else if(ri===B.rounds.length && pend){
-      pend.forEach(pr=>{
-        const mine=pr[0].p.you||pr[1].p.you;
-        col.insertAdjacentHTML('beforeend',
-          `<div class="mptm pend${mine?' mine':''}">`+
-          pr.map(o=>`<div class="mptr${o.p.you?' you':''}"><span class="s">${o.seed}</span><span class="n">${esc(o.p.name)}</span></div>`).join('')+
+          `<div class="mptm done${m.you?' mine':''}" data-si="${si}">`+
+          mpTreeRow(m.aSeed, m.aName, (aWin?'w':'l')+(m.aYou?' you':''), null, aWin?esc(m.label):'')+
+          mpTreeRow(m.bSeed, m.bName, (aWin?'l':'w')+(m.bYou?' you':''), null, aWin?'':esc(m.label))+
           `</div>`);
       });
+    } else if(ri===liveRi){
+      st.slots.forEach((s,si)=>col.insertAdjacentHTML('beforeend', mpTreeSlot(B, st, ri, si, s)));
+    } else if(!st && ri===B.rounds.length){
+      // the next round to be played: the pairings are drawn, the results are not in yet
+      bracketPairs(B).forEach((pr,si)=>col.insertAdjacentHTML('beforeend',
+        `<div class="mptm live${(pr[0].p.you||pr[1].p.you)?' mine':''}" data-si="${si}">`+
+        mpTreeRow(pr[0].seed, pr[0].p.name, pr[0].p.you?'you':'', null, '')+
+        mpTreeRow(pr[1].seed, pr[1].p.name, pr[1].p.you?'you':'', null, '')+`</div>`));
     } else {
-      const n=Math.max(1, (B.RDS.length-ri)>0 ? Math.pow(2, B.RDS.length-1-ri) : 1);
+      // a round still to come: empty slots, each row addressable so a winner can arrive in it
+      const n=Math.max(1, Math.pow(2, B.RDS.length-1-ri));
       for(let k=0;k<n;k++) col.insertAdjacentHTML('beforeend',
-        `<div class="mptm pend"><div class="mptr"><span class="s">·</span><span class="n">&nbsp;</span></div>`+
-        `<div class="mptr"><span class="s">·</span><span class="n">&nbsp;</span></div></div>`);
+        `<div class="mptm pend" data-si="${k}">`+
+        mpTreeRow('·',' ','ghost', mpAdvId(ri-1, k*2), '')+
+        mpTreeRow('·',' ','ghost', mpAdvId(ri-1, k*2+1), '')+`</div>`);
     }
     inner.appendChild(col);
   });
-  wrap.appendChild(box);
-  return wrap;
+  // a round that has ALREADY been played fills the next column from its own results, so a re-render
+  // mid-day (or a later visit) shows the same filled tree the animation left behind
+  B.rounds.forEach((R,ri)=>{ R.matches.forEach((m,si)=>{
+    const row=inner.querySelector('#'+mpAdvId(ri,si)); if(!row) return;
+    const aWin=m.winSeed===m.aSeed;
+    mpFillRow(row, aWin?m.aSeed:m.bSeed, aWin?m.aName:m.bName, aWin?m.aYou:m.bYou, false);
+  }); });
+  // ...and so does the part of the LIVE day already revealed, so a re-render mid-reveal (the pause on
+  // your match is one) rebuilds exactly the tree the animation had left behind
+  if(st) st.slots.forEach((s,si)=>{
+    if(!s.res || si>=(S.brShown||0)) return;
+    const row=inner.querySelector('#'+mpAdvId(st.ri, si));
+    if(row) mpFillRow(row, s.res.win.seed, s.res.win.p.name, !!s.res.win.p.you, false);
+  });
+  return box;
+}
+// drop a winner into his slot in the next round (the advance the whole screen exists to show)
+function mpFillRow(row, seed, name, you, animate){
+  if(!row) return;
+  row.classList.remove('ghost'); if(you) row.classList.add('you');
+  const s=row.querySelector('.s'), n=row.querySelector('.n');
+  if(s) s.textContent=seed; if(n) n.textContent=name;
+  const box=row.closest('.mptm'); if(box) box.classList.remove('pend');
+  if(animate){ row.classList.remove('adv'); void row.offsetWidth; row.classList.add('adv'); }
 }
 /* ---- your run through the week ---- */
 function bracketPathStrip(B){
@@ -20619,6 +20769,12 @@ function scrBracket(){
   const venue=eventCourse(evt);
   const ri=Math.min(B.rounds.length, B.RDS.length-1);   // the day in play
   const done=bracketDone(B);
+  // a day in play always has a stage behind it (a re-entry, or a legacy 'decide' state, restages it)
+  if(S.brStage==='decide'){ S.brStage=B.rounds.length?'roundEnd':'draw'; }
+  if(S.brStage==='reveal' && !B.stage){
+    if(done){ S.brStage='roundEnd'; }
+    else { B.stage=bracketStage(B); S.brShown=Math.min(S.brShown||0, B.stage?B.stage.slots.length:0); if(!B.stage) S.brStage='roundEnd'; }
+  }
 
   // ---- header ----
   add($(`<div class="bhead">
@@ -20639,103 +20795,97 @@ function scrBracket(){
       ${mp?`<div class="bd-opp"><span class="bd-vs">${esc(B.RDS[0].day)} · ${esc(B.RDS[0].name)}</span><div class="bd-oppn"><span class="bm-s">${mp.opp.seed}</span> ${esc(mp.opp.p.name)}</div></div>`:''}
       <p class="bd-p">The season-long points race seeds it, and now it is knockout golf. <b>${B.RDS.length} days, one round a day, 18 holes a match.</b> Win and you are through to tomorrow. Lose once and your season is over. The last one standing lifts the Cup.</p>
     </div>`));
-    W(mpTreeNode(B));
+    W(mpTreeBuild(B, null));
     const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Head to the first tee ▸<span class="sub">${esc(B.RDS[0].day)} · ${B.players.length/2} matches</span></button>`);
-    b.onclick=()=>{ S.brStage='decide'; track('bracket_start',{seed:you?you.seed:null, year:S.year||1}); render(); };
+    b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1}); };
     W(b);
     { const rail=seasonRailNode(); if(rail) add(rail); }
     return;
   }
 
-  // ---- YOUR MATCH: play it or sim it ----
-  if(S.brStage==='decide'){
-    const R=B.RDS[ri], mp=bracketMyPair(B);
-    if(!mp){   // you're out - the rest of the week just plays
-      bracketPlayRound(B); S.brShown=0; S.brStage='reveal'; return scrBracket();
+  // ---- THE DAY: the bracket fills in in front of you, and stops at your match ----
+  const st=B.stage;
+  const R=st ? {day:st.day, name:st.name, holes:st.holes, n:st.slots.length}
+             : (B.rounds[B.rounds.length-1]||{day:'',name:'',n:0});
+  const shown=st?Math.min(S.brShown||0, st.slots.length):(R.matches?R.matches.length:0);
+
+  W($(`<div class="mpday"><div class="mpday-l"><span class="mpday-d">${esc(R.day||'')}</span><span class="mpday-n">${esc(R.name||'')}</span></div><span class="mpday-x" id="mpcount">${st?shown+' of '+st.slots.length:B.alive.length+' left'}</span></div>`));
+
+  // ---- YOUR MATCH: the reveal has reached it and is waiting on you ----
+  if(st && S.brPause){
+    const mi=bracketStageMine(st), s=mi>=0?st.slots[mi]:null;
+    if(s){
+      const me=s.A.p.you?s.A:s.C, opp=s.A.p.you?s.C:s.A;
+      W($(`<div class="mpdec await">
+        <div class="mpdec-k">Your match · ${esc(R.name||'')}</div>
+        <div class="mpdec-vs">
+          <div class="mpdec-p you"><div class="mpdec-nm">${esc(S.name||'You')}</div><div class="mpdec-sd">${ord(me.seed)} seed</div></div>
+          <div class="mpdec-x">vs</div>
+          <div class="mpdec-p"><div class="mpdec-nm">${esc(opp.p.name)}</div><div class="mpdec-sd">${ord(opp.seed)} seed</div></div>
+        </div>
+        <p class="mpdec-p2">The draw is waiting on you. <b>${esc(R.holes)} holes, head to head</b>, or until it is over.</p>
+      </div>`));
+      const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:10px auto 0">⛳ Play the match<span class="sub">Hole by hole, every call is yours</span></button>`);
+      bp.onclick=()=>{ mpClearTimer(); track('bracket_play',{round:st.ri}); bracketStartMatch(B, {me, opp}); };
+      W(bp);
+      const bs=$(`<button class="btn ghost" style="max-width:440px;margin:8px auto 0">Sim the match ▸<span class="sub">Watch the bracket play it out</span></button>`);
+      bs.onclick=()=>{ mpClearTimer(); if(!S.brMode) S.brMode={}; S.brMode[st.ri]='sim';
+        bracketResolveMine(B, st); S.brPause=false; track('bracket_sim',{round:st.ri}); render(); };
+      W(bs);
+      if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brPause) bs.onclick(); }, reduce?60:1600);
     }
-    W($(`<div class="mpday"><div class="mpday-l"><span class="mpday-d">${esc(R.day)}</span><span class="mpday-n">${esc(R.name)}</span></div><span class="mpday-x">${B.alive.length} left</span></div>`));
-    W($(`<div class="mpdec">
-      <div class="mpdec-k">Your match</div>
-      <div class="mpdec-vs">
-        <div class="mpdec-p you"><div class="mpdec-nm">${esc(S.name||'You')}</div><div class="mpdec-sd">${ord(mp.me.seed)} seed</div></div>
-        <div class="mpdec-x">vs</div>
-        <div class="mpdec-p"><div class="mpdec-nm">${esc(mp.opp.p.name)}</div><div class="mpdec-sd">${ord(mp.opp.seed)} seed</div></div>
-      </div>
-      <p class="mpdec-p2">18 holes, head to head. Win the hole, win the hole. <b>${esc(R.holes)} holes or until it is over.</b></p>
-    </div>`));
-    const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:10px auto 0">⛳ Play the match<span class="sub">Hole by hole, every call is yours</span></button>`);
-    bp.onclick=()=>{ track('bracket_play',{round:ri}); bracketStartMatch(B, mp); };
-    W(bp);
-    const bs=$(`<button class="btn ghost" style="max-width:440px;margin:8px auto 0">Sim the match ▸<span class="sub">Watch the day play out</span></button>`);
-    bs.onclick=()=>{ if(!S.brMode) S.brMode={}; S.brMode[ri]='sim'; bracketPlayRound(B); S.brShown=0; S.brStage='reveal'; track('bracket_sim',{round:ri}); render(); };
-    W(bs);
-    W(mpTreeNode(B));
-    if(S.autoSim){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brStage==='decide'){ bs.onclick(); } }, reduce?60:1500); }
-    { const rail=seasonRailNode(); if(rail) add(rail); }
-    return;
   }
 
-  // ---- THE DAY, MATCH BY MATCH ----
-  const pri=B.rounds.length-1, R=B.rounds[pri];
-  if(!R){ S.brStage='draw'; return scrBracket(); }
-  const order=mpOrder(R, S.brMode&&S.brMode[pri]==='play');
-  const revealed=Math.min(S.brShown||0, order.length);
-  const settledSet={}; for(let k=0;k<revealed;k++) settledSet[order[k]]=true;
-
-  W($(`<div class="mpday"><div class="mpday-l"><span class="mpday-d">${esc(R.day)}</span><span class="mpday-n">${esc(R.name)}</span></div><span class="mpday-x" id="mpcount">${revealed} of ${R.matches.length}</span></div>`));
-
-  // your result, called out the moment it lands
-  const my=R.matches.find(m=>m.you);
-  if(my && settledSet[R.matches.indexOf(my)]){
-    const won=my.youWon, opp=my.aYou?{s:my.bSeed,n:my.bName}:{s:my.aSeed,n:my.aName};
-    W($(`<div class="bmine ${won?'w':'l'}">
-      <div class="bmi-k">${won?'You are through':'Your week ends here'}</div>
-      <div class="bmi-r">${won?'WON':'LOST'} <span class="bmi-lab">${esc(my.label)}</span></div>
-      <div class="bmi-o">${won?'beat':'beaten by'} <span class="bm-s">${opp.s}</span> <b>${esc(opp.n)}</b></div>
+  // ---- your result, called out the moment it lands ----
+  const mine=st ? (()=>{ const i=bracketStageMine(st); const s=i>=0?st.slots[i]:null;
+      if(!s||!s.res||i>=(S.brShown||0)) return null;
+      const won=!!s.res.win.p.you, o=won?s.res.lose:s.res.win;
+      return {won, label:s.res.label, s:o.seed, n:o.p.name}; })()
+    : (()=>{ const R2=B.rounds[B.rounds.length-1]; if(!R2) return null;
+      const m=R2.matches.find(x=>x.you); if(!m) return null;
+      const o=m.aYou?{s:m.bSeed,n:m.bName}:{s:m.aSeed,n:m.aName};
+      return {won:!!m.youWon, label:m.label, s:o.s, n:o.n}; })();
+  if(mine) W($(`<div class="bmine ${mine.won?'w':'l'}">
+      <div class="bmi-k">${mine.won?'You are through':'Your week ends here'}</div>
+      <div class="bmi-r">${mine.won?'WON':'LOST'} <span class="bmi-lab">${esc(mine.label)}</span></div>
+      <div class="bmi-o">${mine.won?'beat':'beaten by'} <span class="bm-s">${mine.s}</span> <b>${esc(mine.n)}</b></div>
     </div>`));
-  }
 
-  const list=$(`<div class="mplist"></div>`);
-  list.insertAdjacentHTML('beforeend', order.map(mi=>mpMatchCard(R.matches[mi], mi, !!settledSet[mi])).join(''));
-  W(list);
+  // ---- THE BRACKET ITSELF: the show ----
+  const tree=mpTreeBuild(B, st); W(tree);
 
   const path=bracketPathStrip(B); if(path) W(path);
 
   // ---- the champion ----
   if(done && S.brStage==='roundEnd'){
-    const ch=B.champion, mine=!!ch.p.you;
-    W($(`<div class="bchamp ${mine?'mine':''}">
-      <div class="bc-k">${mine?'You are the champion' : 'Champion'}</div>
+    const ch=B.champion, isYou=!!ch.p.you;
+    W($(`<div class="bchamp ${isYou?'mine':''}">
+      <div class="bc-k">${isYou?'You are the champion' : 'Champion'}</div>
       <div class="bc-n"><span class="bm-s">${ch.seed}</span> ${esc(ch.p.name)}</div>
       <div class="bc-s">${esc(evt.name)} · ${S.year||1} · lifts the Tour Cup</div>
     </div>`));
-    if(mine && !reduce && !B._confetti){ B._confetti=true; try{ setTimeout(()=>{ const cv=document.querySelector('#brconf'); if(cv) confettiRun(cv,{colors:['#F1D04A','#fff8e2','#2fd0a8']}); },60); }catch(e){} }
-    if(mine) add($(`<canvas id="brconf" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>`));
+    if(isYou && !reduce && !B._confetti){ B._confetti=true; try{ setTimeout(()=>{ const cv=document.querySelector('#brconf'); if(cv) confettiRun(cv,{colors:['#F1D04A','#fff8e2','#2fd0a8']}); },60); }catch(e){} }
+    if(isYou) add($(`<canvas id="brconf" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>`));
     if(you){
       const o=bracketOrder(B).find(x=>x.p.you);
       if(o) W($(`<div class="bfin"><span>Your week</span><b>${esc(o.bfull)}</b><span class="bfin-m">${fmt(evt.purse*o.pct)}</span></div>`));
     }
   }
 
-  W(mpTreeNode(B));
-
   // ---- controls ----
   const ctrl=$(`<div class="bctrl"></div>`);
-  if(S.brStage==='reveal'){
+  if(S.brStage==='reveal' && !S.brPause){
     const sk=$(`<button class="btn ghost">Skip to the day's results</button>`);
-    sk.onclick=()=>mpSkipRound(B, pri);
+    sk.onclick=()=>mpSkipRound(B);
     ctrl.appendChild(sk);
-  } else if(!done){
+  } else if(!done && S.brStage==='roundEnd'){
     const nxt=B.RDS[B.rounds.length];
     const alive=B.you && B.you.alive;
-    const b=$(`<button class="btn goldfill">${alive?'Your '+esc(nxt.name)+' ▸':'Play '+esc(nxt.day)+' ▸'}<span class="sub">${esc(nxt.day)} · ${B.alive.length/2} match${B.alive.length/2>1?'es':''}${alive?' · you are in it':''}</span></button>`);
-    b.onclick=()=>{
-      if(B.you && B.you.alive){ S.brStage='decide'; render(); }
-      else { bracketPlayRound(B); S.brShown=0; S.brStage='reveal'; render(); }
-    };
+    const b=$(`<button class="btn goldfill">Play ${esc(nxt.day)} ▸<span class="sub">${esc(nxt.name)} · ${B.alive.length/2} match${B.alive.length/2>1?'es':''}${alive?' · you are in it':''}</span></button>`);
+    b.onclick=()=>mpStartDay(B);
     ctrl.appendChild(b);
     if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brStage==='roundEnd') b.onclick(); }, reduce?60:1500);
-  } else {
+  } else if(done){
     const b=$(`<button class="btn goldfill">Continue ▸<span class="sub">Back to the tour</span></button>`);
     b.onclick=()=>{ finalizeBracket(B); S.curBracket=null; S._brIdx=null; mpClearTimer(); advanceEvent(); render(); };
     ctrl.appendChild(b);
@@ -20743,7 +20893,7 @@ function scrBracket(){
   W(ctrl);
   { const rail=seasonRailNode(); if(rail) add(rail); }
 
-  if(S.brStage==='reveal') mpRunReveal(list, B, pri);
+  if(S.brStage==='reveal' && !S.brPause) mpRunReveal(tree, B);
 }
 
 function seasonRailNode(){

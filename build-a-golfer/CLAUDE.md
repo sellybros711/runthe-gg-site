@@ -15652,3 +15652,44 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   - Tunable: `MATCH_SKILL_K` (the whole calibration), `BRACKET_ROUNDS` (the five days), `bracketSize()` +
     the Tour Eras `bracket_expand`/`bracket_axed` changes, the reveal pacing constants (`MP_IN`/`MP_HOLD`/
     `MP_MINE_HOLD`/`MP_AFTER_MINE`).
+
+- **THE BRACKET IN MOTION: the knockout fills in in front of you and STOPS at your match (owner, with a
+  screenshot of the Tour Championship draw: "the what's new should have a different treatment to the button
+  next to it · I love how this bracket viewer looks and I want the animation to resemble it! I want to see
+  the bracket in motion and the players advancing through · when it gets to your match it needs to stop and
+  give you the option to play or sim").** The finale used to be a full-screen list of match CARDS that
+  appeared one at a time, with the bracket tree a small extra underneath and the Play-or-Sim call on its own
+  separate screen BEFORE the day started. Now the bracket the owner liked IS the animation, and the decision
+  happens inside it.
+  - **A round is STAGED before it is played.** New `bracketStage` / `bracketStageMine` / `bracketResolveMine`
+    / `bracketCommit`: every match of the day is decided EXCEPT yours, and a staged round touches no bracket
+    state at all (nobody eliminated, nobody advanced) until it is committed. That is what lets the screen
+    fill the draw in in front of you and simply stop at your slot without leaving the bracket half-mutated
+    if you walk away. `bracketPlayRound` is now stage → resolve → commit, so every headless path
+    (skip-to-end, a season finished without you, the summary) runs through the same code.
+  - **The reveal drives the TREE.** `mpRunReveal` walks the staged slots in DRAW ORDER and settles each one
+    in the live column in place - winner lit, loser struck through, the score arriving - then flies the
+    winner up into his slot in the next column (`mpFillRow`, every future row carries an addressable id from
+    the standard tree math). Nothing re-renders mid-reveal, so the animation is never interrupted; the tree
+    box is height-capped and auto-scrolls to the settling match, so the page itself never moves.
+  - **It stops at your match.** When the reveal reaches your undecided slot it sets `S.brPause` and renders
+    the Play / Sim card right there, with your slot ringed and pulsing gold in the tree behind it. Sim
+    resolves the held slot and the reveal carries on FROM THERE; Play routes to the hole-by-hole match and
+    `finishMatchRound` drops the result into the same held slot, so the day never restarts from the top. The
+    old separate `decide` stage is gone (a legacy save carrying it is normalized on load).
+  - **A re-render rebuilds exactly what the animation left behind**, which was the one real bug found by
+    testing: `mpTreeBuild` back-filled advances only from COMMITTED rounds, so the pause on your match (which
+    does re-render) silently emptied the next column of the winners already sent up. It now back-fills from
+    the revealed part of the live stage too.
+  - **Ask 1**: the What's New pill is now its own cream "newspaper" treatment with a red pulsing unread dot,
+    clearly distinct from the gold-outline How to Play beside it.
+  - Verified in Playwright (`br_motion`, 15 checks, 0 page errors, stable across repeat runs): the draw shows
+    all 16 real first-round pairings with your slot marked; the reveal stops exactly at your match with
+    nothing committed and every match before it settled AND advanced; a mid seed watches the draw fill in
+    before it stops on him; Sim continues from the pause and commits the day; Skip settles the rest at once;
+    Play opens the match, and the played result lands in the held slot and commits with the day; the week
+    runs out to a champion and Continue finalizes and moves the season on; Auto Sim never strands on your
+    match. Regressions green (mp_eng, mp_season, regress_final, wk_test, cup_crash 12/12, news_test 18/18,
+    tp_final, shoptabs); inline scripts parse (block 0 is the JSON-LD tag, fails identically on baseline).
+    NOTE: `mp_ui.mjs` is now a stale fixture - it drives the removed `decide` stage and calls `mpOrder`
+    directly; superseded by `br_motion.mjs`.
