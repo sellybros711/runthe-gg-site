@@ -15002,11 +15002,14 @@ allows Google Fonts, or self-host Anton.*
     never hides what was new. A **brand-new player is seeded as fully read** (`isNewPlayer()`), because
     they have not MISSED anything - greeting a first-timer with a 16-strong backlog badge would be noise,
     while an existing player gets the whole backlog, which is the entire point.
+  - **Dated as an issue.** Every entry carries a `date` (all 16 stamped `8/14/26`, owner's call) and the
+    list renders GROUPED under a date heading, so it reads as a newsletter issue rather than a flat list.
+    A feature shipped later just carries its own date string and gets its own heading automatically.
   - **Two entry points, both where people already look**: a `✨ What's New · N` pill beside How to Play on
     the home screen (pulsing while there is something unread, calm once read), and a row at the top of the
     ≡ menu's Play section whose subtitle carries the count. No new home banner and no auto-popup - the ask
     was a tab, and the title screen already queues four popups.
-  - Verified in Playwright (15 checks, 0 page errors): catalog integrity (no duplicate ids, every field
+  - Verified in Playwright (18 checks, 0 page errors): catalog integrity (no duplicate ids, every field
     present, no em dashes); a returning player sees all 16 unread with the pill pulsing a count, opens it
     to 16 NEW-badged entries newest-first with their categories and where-to-find lines, and the pill and
     menu row go calm afterwards; a second visit shows the archive with no false "new" bar; a brand-new
