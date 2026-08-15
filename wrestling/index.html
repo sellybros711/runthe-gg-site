@@ -233,6 +233,7 @@
 
   .momwrap{margin-bottom:10px;}
   .momhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);font-weight:800;text-align:center;margin-bottom:3px;}
+  .momsub{letter-spacing:.02em;text-transform:none;font-weight:600;opacity:.65;}
   .mombar{position:relative;height:14px;background:rgba(0,0,0,.6);border:2px solid var(--line);border-radius:999px;overflow:hidden;display:flex;}
   .momfill{height:100%;transition:width .5s cubic-bezier(.2,.9,.25,1);}
   .momfill.me{background:linear-gradient(90deg,#2f6fa8,#7dc4e8);margin-left:auto;box-shadow:0 0 10px rgba(106,167,196,.5);}
@@ -326,6 +327,25 @@
   .injcard .ih{font-family:var(--display);font-size:17px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;}
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
+
+  /* match result — readable at a glance instead of a mono dump */
+  .mfinish{background:linear-gradient(180deg,rgba(224,179,65,.13),rgba(0,0,0,.18));border:1px solid rgba(224,179,65,.34);
+    border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+  .mf-head{font-family:var(--display);font-size:19px;color:var(--cream);letter-spacing:.01em;line-height:1.25;}
+  .mf-sub{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .mstory{font-size:14.5px;line-height:1.7;color:var(--text);margin:0 0 12px;}
+  .mstats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .mstats span{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--text-dim);}
+  .mstats b{color:var(--cream);font-family:var(--mono);}
+  .mlist{list-style:none;margin:0 0 8px;padding:0;}
+  .mlist li{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.6;padding:3px 0;color:var(--text-dim);}
+  .mlist .i{flex:none;font-size:10px;line-height:1.9;}
+  .mlist.good .i{color:var(--green);} .mlist.bad .i{color:#f0907f;}
+  .mmoves{font-size:13px;line-height:1.9;color:var(--text-dim);}
+  .mmoves .x{font-family:var(--mono);color:var(--gold);font-weight:700;}
+  .fphase{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:3px;}
+  .flog .phase{color:var(--gold);font-weight:800;letter-spacing:.04em;}
+  .fs .lm{color:#f0907f;}
 
   .log{font-size:13.5px; line-height:1.65; color:var(--text-dim);}
   .log b{color:var(--cream);} .log .pop{color:var(--gold);}
@@ -502,7 +522,8 @@
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
-      <div class="fclock" id="fClock">BELL</div>
+      <div class="fclock" id="fClock">0:00</div>
+      <div class="fphase" id="fPhase">BELL</div>
     </div>
     <div class="fs right">
       <div class="fnm" id="fOppName">OPPONENT</div>
@@ -512,7 +533,7 @@
   </div>
 
   <div class="momwrap">
-    <div class="momhead"><span>MOMENTUM</span></div>
+    <div class="momhead"><span>MOMENTUM</span> <span class="momsub">— the bars above are damage taken, not lives</span></div>
     <div class="mombar">
       <div class="momfill me" id="momMe"></div>
       <div class="momfill opp" id="momOpp"></div>
@@ -2005,7 +2026,7 @@ function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; G.car.inbox.unshift(it)
 /* ============================================================
    LIVE MATCH ENGINE — animated, momentum-driven, with decisions
    ============================================================ */
-let MS=null, FIGHT_SPEED=1;
+let MS=null, FIGHT_SPEED=1, FIGHT_GEN=0;
 const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED));
 function cycleSpeed(){ FIGHT_SPEED = FIGHT_SPEED===1?2:FIGHT_SPEED===2?4:1; $('fSpeed').textContent='Speed '+FIGHT_SPEED+'x'; }
 
@@ -2064,7 +2085,7 @@ function poseSet(k,name){ const f=FIG[k]; if(f.pose===name) return;
   f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action'}); }
 function atX(k){ return FIG[k].x; }
 function fmv(k,o,ms){
-  const f=FIG[k]; if(!f) return;
+  const f=FIG[k]; if(!f||f.x==null) return;   // a stale call from a finished match
   if(o.pose) poseSet(k,o.pose);
   if(o.fwd!==undefined) f.x=f.home+f.dir*o.fwd;
   if(o.x!==undefined) f.x=o.x;
@@ -2305,17 +2326,52 @@ async function spotTaunt(byMe,big){       // work the crowd
   FIG[A].el.classList.remove('glow'); await settle(280);
 }
 
-// pick a move for the player from their game plan
+/* ============================================================
+   MATCH PSYCHOLOGY
+   ------------------------------------------------------------
+   A wrestling match is not a fight. It is a story the whole
+   business agrees on: feel each other out, the babyface shines,
+   the heel cuts him off and works a body part, hope spots, the
+   comeback, then a finish stretch of near-falls. And it ends the
+   way real matches end — a three count, a tap-out, a count-out
+   or a disqualification. Never because a health bar hit zero.
+   ============================================================ */
+const PHASES=[
+  {id:'feel',   name:'Feeling Out',    beats:2, tier:[1,2], say:'They circle, and lock up clean.'},
+  {id:'shine',  name:'The Shine',      beats:3, tier:[1,3], say:'Early control — and the crowd is with it.'},
+  {id:'heat',   name:'The Heat',       beats:4, tier:[1,3], say:'The cut-off. Now the body part gets worked.'},
+  {id:'come',   name:'The Comeback',   beats:3, tier:[2,4], say:'The building senses it turning.'},
+  {id:'stretch',name:'Finish Stretch', beats:99,tier:[3,5], say:'Signatures, near-falls, and somebody has to lose.'},
+];
+function phaseNow(){ return PHASES[Math.min(MS.phase,PHASES.length-1)]; }
+// which body part a move family punishes; submissions and mat work go
+// wherever the wrestler has decided to focus
+const LIMB_HIT={strike:'head',runner:'head',slam:'back',suplex:'back',aerial:'back',hardcore:'head',showman:'head'};
+const LIMB_NAME={head:'head & neck',arm:'left arm',leg:'left knee',back:'back'};
+function newLimbs(){ return {head:0,arm:0,leg:0,back:0}; }
+function limbFor(cat,worker){ return LIMB_HIT[cat] || worker.target || 'leg'; }
+function worstLimb(w){ let k='head',v=-1; Object.keys(w.limb).forEach(x=>{ if(w.limb[x]>v){v=w.limb[x];k=x;} }); return v>18?k:null; }
+function bare(n){ return String(n||'').replace(/^(an?|the)\s+/i,''); }
+function clockStr(){ const m=Math.floor(MS.clock/60), s=MS.clock%60; return `${m}:${s<10?'0':''}${s}`; }
+
+// pick a move: escalating through the match, never the same one twice running
 function myMove(){
-  const plan=[G.car.plan.a,G.car.plan.b];
-  let pool=G.w.moves.map(moveById).filter(m=>m&&plan.includes(m.cat));
-  if(!pool.length) pool=G.w.moves.map(moveById).filter(Boolean);
-  if(!pool.length) return {name:'a forearm',dmg:12,pop:8,cat:'strike',tier:1};
-  // weight toward stronger moves when you have momentum
-  pool.sort((a,b)=>(b.dmg+b.pop)-(a.dmg+a.pop));
-  const top=Math.max(1,Math.round(pool.length*(MS.mom>25?0.34:MS.mom>-25?0.6:0.9)));
-  return pool[Math.floor(rnd()*top)];
+  const ph=phaseNow(), plan=[G.car.plan.a,G.car.plan.b];
+  const all=G.w.moves.map(moveById).filter(Boolean);
+  if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
+  const planned=all.filter(m=>plan.includes(m.cat));
+  let pool=planned.length>=3?planned:all;
+  // fundamentals early, signatures late — you do not open with your finisher
+  let band=pool.filter(m=>m.tier>=ph.tier[0]&&m.tier<=ph.tier[1]);
+  if(ph.id!=='stretch') band=band.filter(m=>m.id!==G.w.finisher);
+  if(!band.length) band=pool.filter(m=>m.tier<=ph.tier[1]);
+  if(!band.length) band=pool;
+  // calling the same move eight times is the surest sign of a fake match
+  const recent=MS.recent||[];
+  const fresh=band.filter(m=>!recent.includes(m.id));
+  return (fresh.length?fresh:band)[Math.floor(rnd()*(fresh.length?fresh.length:band.length))];
 }
+function noteMove(id){ MS.recent=MS.recent||[]; MS.recent.unshift(id); if(MS.recent.length>4) MS.recent.pop(); }
 // the opponent's moves carry a family too, so their animations read the same way
 const OPP_MOVES=[
   {name:'a clothesline',cat:'runner'},   {name:'a belly-to-back suplex',cat:'suplex'},
@@ -2327,7 +2383,17 @@ const OPP_MOVES=[
   {name:'a vertical suplex',cat:'suplex'},{name:'a chair shot',cat:'hardcore'},
   {name:'a knife-edge chop',cat:'strike'},{name:'a german suplex',cat:'suplex'},
 ];
-function oppMove(){ return OPP_MOVES[Math.floor(rnd()*OPP_MOVES.length)]; }
+function oppMove(){
+  const ph=phaseNow();
+  const tierOf2=m=>({strike:1,runner:2,technical:2,submission:3,suplex:3,slam:3,aerial:4,hardcore:4})[m.cat]||2;
+  let band=OPP_MOVES.filter(m=>tierOf2(m)<=ph.tier[1]);
+  if(!band.length) band=OPP_MOVES;
+  const recent=MS.oppRecent||[];
+  const fresh=band.filter(m=>!recent.includes(m.name));
+  const pick2=(fresh.length?fresh:band)[Math.floor(rnd()*(fresh.length?fresh.length:band.length))];
+  MS.oppRecent=[pick2.name].concat(recent).slice(0,4);
+  return pick2;
+}
 
 function pct(p){ return Math.round(clamp(p*100,2,97)); }
 function pctCls(p){ return p>=0.66?'good':p>=0.4?'mid':'bad'; }
@@ -2349,9 +2415,18 @@ function decide(head,sub,opts){
 
 async function startFight(o){
   const meOvr=ovr(G.w);
-  MS={ o, mom:0, beat:0, maxBeats:11+Math.floor(rnd()*4), decisions:0, decWon:0, big:0, ended:false,
-       me:{hp:100,name:G.w.name,ovr:meOvr}, opp:{hp:100,name:o.oppName,ovr:o.oppOvr},
-       usedMoves:[], quality:0, finishType:null };
+  const oc0=charById(o.oppId);
+  const meFace=G.w.align==='face', oppFace=oc0?(oc0.align!=='heel'):!meFace;
+  if(MS) MS.ended=true;
+  MS={ o, gen:(FIGHT_GEN=(FIGHT_GEN||0)+1), mom:0, beat:0, decisions:0, decWon:0, big:0, ended:false,
+       me:{hp:100,name:G.w.name,ovr:meOvr,limb:newLimbs(),target:null},
+       opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
+       usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
+       phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
+       clock:0, timeLimit:(o.stakes==='title'||o.stakes==='defense')?1800:1200,
+       // in a face-vs-heel match the babyface shines and the heel cuts him off
+       shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
+  chooseTarget(MS.me); chooseTarget(MS.opp);
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
@@ -2389,25 +2464,64 @@ async function startFight(o){
   runFight();
 }
 
+// who is meant to be on top for this stretch of the match
+function phaseTurn(ph){
+  const momP=clamp(0.5+MS.mom/260,0.15,0.85);
+  if(ph.id==='shine')   return rnd() < (MS.shineMe?0.74:0.26);
+  if(ph.id==='heat')    return rnd() < (MS.shineMe?0.14:0.86);
+  if(ph.id==='come')    return rnd() < (MS.shineMe?0.72:0.28);
+  // the finish stretch is both of them trading — nobody gets to run away with it
+  return rnd() < clamp(0.5+MS.mom/340,0.24,0.76);
+}
+async function announcePhase(ph){
+  $('fPhase').textContent=ph.name.toUpperCase();
+  fLog(`<span class="phase">— ${ph.name} —</span> <span class="hint">${ph.say}</span>`);
+  if(ph.id==='heat'||ph.id==='stretch') await sleep(240);
+}
+// a wrestler picks a body part and works it. That is the whole craft.
+function chooseTarget(w){
+  if(w.target) return w.target;
+  w.target=['leg','arm','back','head'][Math.floor(rnd()*4)];
+  return w.target;
+}
+
 async function runFight(){
-  const o=MS.o;
-  while(!MS.ended && MS.beat<MS.maxBeats && MS.opp.hp>6 && MS.me.hp>6){
-    MS.beat++;
-    $('fClock').textContent='EXCHANGE '+MS.beat;
-    // who is on top: momentum-weighted
-    const myTurn = rnd() < clamp(0.5+MS.mom/260,0.18,0.86);
+  const o=MS.o, gen=MS.gen;
+  while(!MS.ended && MS.gen===gen){
+    const ph=phaseNow();
+    if(MS.phaseBeat===0) await announcePhase(ph);
+    if(MS.ended) break;
+    MS.phaseBeat++; MS.beat++;
+    if(ph.id==='stretch') MS.stretch++;
+    MS.clock+=34+Math.floor(rnd()*30);
+    $('fClock').textContent=clockStr();
+
+    const myTurn=phaseTurn(ph);
+    let lastMove=null, lastCat=null, byMe=myTurn, isFin=false;
     if(myTurn){
-      const mv=myMove(); MS.usedMoves.push(mv);
+      const mv=myMove(); MS.usedMoves.push(mv); noteMove(mv.id);
       const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
       const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
-      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
+      isFin = mv.id===G.w.finisher || mv.tier>=5;
+      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
+      hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
+      lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
     } else {
       const mv=oppMove();
-      const dmg=clamp((o.oppOvr*0.20 + rnd()*8 - G.w.attrs.to*0.06)*(styleOf().in||1)*facBonus('tough'), 3, 32);
-      await exchange(false, mv.name, dmg, -(6+rnd()*5), null, mv.cat);
-      MS.quality+=4;
+      // they have a finisher too, and they save it for the stretch
+      isFin = ph.id==='stretch' && !MS.oppFinUsed && rnd()<0.38;
+      const name = isFin ? (charById(o.oppId)||{}).finisher || 'their finisher' : mv.name;
+      if(isFin) MS.oppFinUsed=true;
+      const dmg=clamp((o.oppOvr*0.30 + rnd()*7 - G.w.attrs.to*0.05)*(isFin?1.9:1)*(styleOf().in||1)*facBonus('tough'), 3, 46);
+      await exchange(false, name, dmg, -(6+rnd()*5), isFin?'FINISHER!':null, isFin?'slam':mv.cat);
+      hurtLimb(MS.me, isFin?'head':limbFor(mv.cat, MS.opp), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
+      if(isFin) MS.oppFinHit=(MS.oppFinHit||0)+1;
+      MS.quality+=isFin?9:4;
+      lastMove=name; lastCat=isFin?'slam':mv.cat;
     }
+    renderLimbs();
+
     // ---- a faction ally can turn the tide ----
     if(!MS.ended && !MS.ally && MS.mom<-30 && myFaction() && rnd()<facBonus('interfere',0)){
       MS.ally=true; const f=myFaction(), mate=facMembers(f).filter(m=>m.id!==MS.o.oppId)[0];
@@ -2416,12 +2530,109 @@ async function runFight(){
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
         MS.quality+=8; await sleep(420); }
     }
-    // ---- decision triggers ----
-    if(!MS.ended && MS.opp.hp<=34 && MS.mom>12 && !MS.finishTried){ await finishDecision(); }
-    else if(!MS.ended && MS.mom<-38 && MS.beat>=3 && MS.decisions<3){ await comebackDecision(); }
-    else if(!MS.ended && MS.beat===Math.floor(MS.maxBeats/2)){ await midDecision(); }
+
+    // ---- the finish is attempted, not accumulated ----
+    if(!MS.ended && lastCat==='submission' && rnd()<(MS.phase>=3?0.85:0.5)){
+      await submissionAttempt(byMe, lastMove);
+    } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
+      await coverAttempt(byMe, lastMove, isFin);
+    }
+
+    // ---- decisions land on the story beats where they belong ----
+    if(!MS.ended && ph.id==='stretch' && !MS.finishTried && MS.stretch>=2){ await finishDecision(); }
+    else if(!MS.ended && ph.id==='heat' && MS.phaseBeat===2 && MS.decisions<3){ await comebackDecision(); }
+    else if(!MS.ended && ph.id==='shine' && MS.phaseBeat===2){ await midDecision(); }
+
+    // ---- advance the story ----
+    if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
+    // ---- the bell can beat you ----
+    if(!MS.ended && MS.clock>=MS.timeLimit){ await timeLimitDraw(); }
+    if(!MS.ended && MS.stretch>26){ await timeLimitDraw(); }   // safety net
   }
-  if(!MS.ended) await endFight(MS.opp.hp<=MS.me.hp);
+}
+
+function hurtLimb(w,part,amt){ w.limb[part]=clamp((w.limb[part]||0)+amt*0.55,0,100); }
+function renderLimbs(){
+  const f=(w)=>{ const l=worstLimb(w); return l? `${LIMB_NAME[l]} ${Math.round(w.limb[l])}%` : 'no damage'; };
+  const a=$('fMeSub'), b=$('fOppSub');
+  if(a) a.innerHTML=`OVR ${MS.me.ovr} · <span class="lm">${f(MS.me)}</span>`;
+  if(b) b.innerHTML=`OVR ${MS.opp.ovr} · <span class="lm">${f(MS.opp)}</span>`;
+}
+
+/* ---- COVERS AND NEAR-FALLS ----
+   You do not win a wrestling match by grinding someone to zero. You
+   win by covering them at the right moment, and the whole drama is in
+   whether the shoulder comes up at one, two, or two and a half. */
+function coverChance(byMe,isFin){
+  const D=byMe?MS.opp:MS.me;
+  if(isFin) return 0.96;                       // you always cover after a finisher
+  let p=((100-D.hp)-34)/150;
+  if(MS.phase>=4) p+=0.26;
+  if(MS.phase<=1) p-=0.20;
+  return clamp(p,0,0.85);
+}
+async function coverAttempt(byMe, mvName, isFin){
+  MS.covers++;
+  const A=byMe?'me':'opp', D=byMe?'opp':'me';
+  const Dm=byMe?MS.opp:MS.me;
+  const tough = byMe ? MS.o.oppOvr*0.36 : (G.w.attrs.to*0.26+G.w.attrs.st*0.10);
+  const fins = byMe ? MS.finisherHit : (MS.oppFinHit||0);
+  let power = (100-Dm.hp)*0.78 + Dm.limb.head*0.75 + Dm.limb.back*0.55
+            + (isFin?42:0) + fins*13 + MS.phase*6 + MS.stretch*2.6 - tough;
+  // nobody loses to a body slam four minutes in
+  if(MS.beat<6 && !isFin) power=Math.min(power,34);
+  if(MS.phase<3 && !isFin) power=Math.min(power,52);
+  let p3=clamp((power-70)/58,0,0.92);
+  // The finish belongs at the finish. Before the stretch a fall only comes
+  // off a finisher, and even then it is a genuine upset.
+  if(MS.phase<4) p3 *= isFin ? 0.30 : 0;
+  const three=rnd()<p3;
+  await pinSequence(byMe, three, power, mvName, isFin);
+}
+
+/* ---- SUBMISSIONS ----
+   Early, they are a rest hold and a rope break. Late, with the limb
+   properly worked, they end matches. */
+async function submissionAttempt(byMe, mvName){
+  const A=byMe?'me':'opp', D=byMe?'opp':'me';
+  const Dm=byMe?MS.opp:MS.me, Am=byMe?MS.me:MS.opp;
+  const part=chooseTarget(Am);
+  const tough = byMe ? MS.o.oppOvr*0.22 : (G.w.attrs.to*0.30);
+  const power = (Dm.limb[part]||0)*1.15 + (100-Dm.hp)*0.42 + MS.phase*7 + MS.stretch*3 - tough;
+  busy(true);
+  fmv(D,{pose:'prone',fwd:0,rot:0},200); await sleep(180);
+  fmv(A,{pose:'submit',x:atX(D)-FIG[A].dir*40},180); await sleep(190);
+  await callout('LOCKED IN!');
+  fLog(byMe?`<b>${MS.me.name}</b> wrenches back on the <span class="hi">${bare(mvName)}</span> — right on the ${LIMB_NAME[part]}.`
+           :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
+  for(let i=0;i<3;i++){ fmv(A,{sc:1.05},95); fmv(D,{rot:i%2?6:-6},95); await sleep(110); fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
+  const pTap=clamp((power-58)/56,0,0.88);
+  if(MS.phase>=3 && rnd()<pTap){
+    await callout('TAP! TAP! TAP!');
+    fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
+    MS.finish={type:'sub',by:byMe,move:mvName,part};
+    MS.quality+=16;
+    await endFight(byMe); return;
+  }
+  // the escape — a rope break early, fighting out late
+  const ropes = MS.phase<3 || rnd()<0.55;
+  if(ropes){ fLog(`<span class="hint">…a foot on the bottom rope. The hold has to be broken.</span>`); }
+  else { fLog(`<span class="hint">…and they fight all the way out of it.</span>`); MS.nearFalls++; MS.quality+=3; }
+  MS.mom=clamp(MS.mom+(byMe?6:-6),-100,100); setMom();
+  await settle(280);
+}
+
+async function timeLimitDraw(){
+  if(MS.ended) return;
+  MS.finish={type:'draw'};
+  MS.ended=true;
+  await callout('TIME LIMIT!');
+  fLog(`<span class="hi">The bell. ${Math.floor(MS.timeLimit/60)}-minute time limit — it is a draw.</span>`);
+  $('fClock').textContent='DRAW';
+  busy(true);
+  fmv('me',{pose:'stagger',fwd:0},300); fmv('opp',{pose:'stagger',fwd:0},300);
+  await sleep(1100);
+  finalizeFight(null);
 }
 
 async function finishDecision(){
@@ -2438,9 +2649,11 @@ async function finishDecision(){
   if(pick.kind==='fin'){
     if(ok){ const fc=fin&&fin.cat==='strike'?'runner':(fin?fin.cat:'slam');
       await flashScreen(); await spot(fc,true,'FINISH!',2);
-      await callout('FINISHER!'); MS.quality+=22; MS.decWon++;
-      fLog(`<span class="hi">${pick.name} connects!</span>`); MS.finishType='finisher';
-      await pinSequence(true); return; }
+      await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++;
+      fLog(`<span class="hi">${pick.name} connects flush!</span>`);
+      hurtLimb(MS.opp,'head',26); renderLimbs();
+      // even the finisher does not guarantee three — it just makes it likely
+      await coverAttempt(true, pick.name, true); return; }
     await spotEscape(true);
     fLog(`<span class="bad">They slipped out of the ${pick.name}!</span>`); MS.mom=clamp(MS.mom-30,-100,100); setMom(); await callout('COUNTERED!');
   } else if(pick.kind==='grind'){
@@ -2511,34 +2724,51 @@ async function midDecision(){
   await sleep(240);
 }
 
-async function pinSequence(iAmPinning){
+/* The referee's count is the most important beat in wrestling. A kickout
+   at one says the move meant nothing; a kickout at two and a half is the
+   loudest noise a building makes all night. */
+async function pinSequence(iAmPinning, three, power, mvName, isFin){
   const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
   busy(true);
-  fmv(D,{pose:'prone',fwd:0,up:0,rot:0,sc:1},280); await sleep(260);
+  fmv(D,{pose:'prone',fwd:0,up:0,rot:0,sc:1},240); await sleep(220);
   dustAt(D);
   FIG[A].el.classList.add('up');
-  fmv(A,{pose:'pin',x:atX(D)-FIG[A].dir*22,up:0,rot:0,sc:1},280); await sleep(320);
-  const near = iAmPinning? (MS.opp.hp>16 && rnd()<0.45) : (MS.me.hp>16 && rnd()<0.45);
-  for(let n=1;n<=3;n++){
-    if(near && n===3){
-      $('fPin').textContent='2'; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
-      await sleep(420);
-      // the shoulder comes up
-      fmv(D,{pose:'proneUp',rot:-8},130); await sleep(130);
+  fmv(A,{pose:'pin',x:atX(D)-FIG[A].dir*22,up:0,rot:0,sc:1},240); await sleep(260);
+  // how far the count gets when it is not a three
+  const upAt = three?3 : power>50?3 : power>26?2 : 1;
+  const nearFall = !three && upAt===3;
+  const showCount=(txt)=>{ const e=$('fPin'); e.textContent=txt; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); };
+  for(let n=1;n<=upAt;n++){
+    if(nearFall && n===3){
+      showCount('2'); await sleep(400);
+      fmv(D,{pose:'proneUp',rot:-8},120); await sleep(120);
       fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},220);
-      await callout('KICKOUT!'); fLog('<span class="hi">A kickout at two and a half!</span>');
-      MS.quality+=10; MS.big++;
+      await flashScreen(); await callout('KICKOUT AT TWO AND A HALF!');
+      fLog(`<span class="hi">He got the shoulder up! How did he kick out of the ${bare(mvName)}?!</span>`);
+      MS.nearFalls++; MS.quality+=isFin?15:10; MS.big++;
       FIG[A].el.classList.remove('up');
-      MS.mom=clamp(MS.mom+(iAmPinning?-14:14),-100,100); setMom();
+      MS.mom=clamp(MS.mom+(iAmPinning?-12:12),-100,100); setMom();
       await settle(300); return false;
     }
-    $('fPin').textContent=n; $('fPin').classList.remove('show'); void $('fPin').offsetWidth; $('fPin').classList.add('show');
-    fmv(A,{sc:1.02},110); await sleep(120); fmv(A,{sc:1},110);
-    await sleep(310);
+    showCount(n); fmv(A,{sc:1.02},100); await sleep(110); fmv(A,{sc:1},100);
+    await sleep(three?300:250);
   }
+  if(three){
+    MS.finish={type:'pin',by:iAmPinning,move:mvName,fin:isFin};
+    FIG[A].el.classList.remove('up');
+    await endFight(iAmPinning);
+    return true;
+  }
+  // kicked out early — the move simply was not enough
+  fmv(D,{pose:'proneUp',rot:-6},130); await sleep(130);
+  fmv(A,{pose:'stagger',fwd:ST.close*0.4},220);
+  fLog(upAt===1? `<span class="hint">Kicked out at one — that was never finishing anybody.</span>`
+               : `<span class="hint">Shoulder up at two.</span>`);
+  if(upAt===2) MS.quality+=3;
   FIG[A].el.classList.remove('up');
-  await endFight(iAmPinning);
-  return true;
+  MS.mom=clamp(MS.mom+(iAmPinning?-6:6),-100,100); setMom();
+  await settle(260);
+  return false;
 }
 
 async function endFight(iWon){
@@ -2549,9 +2779,14 @@ async function endFight(iWon){
   fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
   FIG[W].el.classList.add('glow');
   await flashScreen();
-  await callout(iWon?'WINNER!':'DEFEATED');
-  fLog(iWon?`<span class="hi">${MS.me.name} gets the three count!</span>`:`<span class="bad">${MS.opp.name} takes it.</span>`);
-  $('fClock').textContent=iWon?'WIN':'LOSS';
+  const f=MS.finish||{type:'pin',by:iWon};
+  await callout(f.type==='sub'?(iWon?'SUBMISSION!':'YOU TAPPED'):iWon?'WINNER!':'DEFEATED');
+  fLog(f.type==='sub'
+      ? (iWon?`<span class="hi">${MS.opp.name} tapped to the ${bare(f.move)}.</span>`:`<span class="bad">You tapped to the ${bare(f.move)}.</span>`)
+      : (iWon?`<span class="hi">Three count — ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
+             :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`));
+  fLog(`<span class="hint">Time of the fall: ${clockStr()}${MS.nearFalls?` · ${MS.nearFalls} near-fall${MS.nearFalls>1?'s':''}`:''}</span>`);
+  $('fClock').textContent=clockStr();
   const pc=charById(MS.o.oppId);
   if(pc){
     const pr=rel(pc.id);
@@ -2570,20 +2805,59 @@ function finalizeFight(iWon){
   const ars=used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/Math.max(1,used.length);
   const govt=used.reduce((s,m)=>s+(a[(catById(m.cat)||{attr:'po'}).attr]||0),0)/Math.max(1,used.length);
   const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
-  const notes=[];
-  let quality = 30 + ars*0.16 + govt*0.16 + a.ps*0.12 + o.oppOvr*0.12 + stipMod + MS.quality*0.42;
-  notes.push(`arsenal ${ars.toFixed(0)} · execution ${govt.toFixed(0)} · psychology ${a.ps}`);
-  notes.push(`in-match moments: ${MS.decWon}/${MS.decisions} nailed${MS.big?` · ${MS.big} big spot${MS.big>1?'s':''}`:''}`);
+  const good=[], bad=[];
+  // normalise the running tally to a reference-length match — a long match is
+  // not automatically a better one, and a short one is not automatically worse
+  const paceQ = MS.quality * (14/Math.max(11,MS.beat));
+  // Craft is what makes a match good; the night's story modifies it. A green
+  // wrestler cannot produce a classic just by being in a long match.
+  const craft = ars*0.26 + govt*0.30 + a.ps*0.22 + o.oppOvr*0.18;
+  let quality = 12 + craft*0.62 + paceQ*0.14 + stipMod;
+  // ---- the things that actually make a match good ----
+  const nf=MS.nearFalls||0;
+  if(nf){ const b=Math.min(9,nf*3); quality+=b; good.push(`${nf} near-fall${nf>1?'s':''} the crowd bought`); }
+  const variety=new Set(used.map(m=>m.id)).size;
+  if(used.length>=4){
+    const vr=variety/used.length;
+    if(vr>=0.7){ quality+=4; good.push('a varied, well-paced match'); }
+    else if(vr<0.4){ const p=8; quality-=p; bad.push(`repetitive — you called the same spots over and over`); }
+  }
+  const lm=worstLimb(MS.opp);
+  if(lm && MS.opp.limb[lm]>=45){ quality+=5; good.push(`you picked a body part (${LIMB_NAME[lm]}) and stayed on it`); }
+  if(MS.finish&&MS.finish.type==='sub'&&MS.finish.by){ quality+=3; good.push('the submission paid off the limb work'); }
+  if(MS.clock<330){ const p=6; quality-=p; bad.push('over too quickly to build to anything'); }
+  if(MS.decisions){
+    const line=`${MS.decWon}/${MS.decisions} big moments nailed${MS.big?` · ${MS.big} big spot${MS.big>1?'s':''}`:''}`;
+    (MS.decWon*2>=MS.decisions?good:bad).push(line);
+  }
+  if(!nf && MS.beat>8){ quality-=5; bad.push('no near-falls — nothing the crowd could believe in'); }
+  // ---- the things holding you back ----
   const psychFloor=34+o.mult*6;
-  if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; notes.push(`ring psychology too green → -${p.toFixed(0)}`); }
+  if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; bad.push(`ring psychology too green (${a.ps} vs ${Math.round(psychFloor)} needed)`); }
   const stamNeed=used.reduce((s,m)=>s+m.stam,0)+o.mult*10;
-  if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.30; quality-=p; notes.push(`gassed late → -${p.toFixed(0)}`); }
-  if(G.car.cond<70){ const p=(70-G.car.cond)*0.20; quality-=p; notes.push(`banged up → -${p.toFixed(0)}`); }
-  if(o.stakes==='title'||o.stakes==='defense'){ quality+=5; notes.push('championship stakes → +5'); }
-  const res={ quality:Math.round(clamp(quality)), win:iWon, notes, used, decWon:MS.decWon, decisions:MS.decisions };
+  if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.30; quality-=p; bad.push(`gassed late (stamina ${a.st} vs ${Math.round(stamNeed)} needed)`); }
+  if(G.car.cond<70){ const p=(70-G.car.cond)*0.20; quality-=p; bad.push(`working banged up (condition ${Math.round(G.car.cond)})`); }
+  if(o.stakes==='title'||o.stakes==='defense'){ quality+=5; good.push('championship stakes'); }
+  const res={ quality:Math.round(clamp(quality)), win:iWon, good, bad, used,
+    decWon:MS.decWon, decisions:MS.decisions, finish:MS.finish||{type:'pin',by:iWon},
+    time:clockStr(), nearFalls:nf, limb:lm, draw:iWon===null };
   applyMatch(o,res);
   if(G.car.retired){ go('hof'); return; }
   renderMatch(o,res); go('match');
+}
+// "Forearm Smash ×8" instead of listing it eight times
+function groupMoves(used){
+  const n=new Map();
+  used.forEach(m=>n.set(m.name,(n.get(m.name)||0)+1));
+  return [...n.entries()].sort((a,b)=>b[1]-a[1])
+    .map(([nm,c])=>c>1?`${nm} <span class="x">×${c}</span>`:nm).join(' · ');
+}
+function finishLine(res){
+  const f=res.finish||{};
+  if(res.draw||f.type==='draw') return `Time-limit draw at ${res.time}`;
+  const who=f.by?'You':(MS&&MS.opp?MS.opp.name:'They');
+  if(f.type==='sub') return `${who} won by submission at ${res.time} — the ${bare(f.move)}`;
+  return `${who} won by pinfall at ${res.time}${f.move?` — after the ${bare(f.move)}`:''}`;
 }
 
 function skipFight(){
@@ -2596,8 +2870,16 @@ function skipFight(){
   let p=1/(1+Math.pow(10,(o.oppOvr-meOvr)/16));
   p += ((MS.me.hp-MS.opp.hp)/100)*0.35 + MS.mom/500;
   if(o.stakes==='title'||o.stakes==='defense') p*=0.82;
-  MS.quality += Math.max(0,MS.maxBeats-MS.beat)*2.6;   // the unseen exchanges still happened
-  finalizeFight(rnd()<clamp(p,0.05,0.95));
+  const rest=Math.max(0,9-MS.beat);
+  MS.quality += rest*2.6;                              // the unseen exchanges still happened
+  MS.clock += rest*46 + 120;
+  MS.nearFalls += 1+Math.floor(rnd()*2);
+  const win=rnd()<clamp(p,0.05,0.95);
+  // it still has to end the way a wrestling match ends
+  const fin=(win?MS.usedMoves.filter(m=>m.tier>=4).pop():null)||MS.usedMoves[MS.usedMoves.length-1];
+  MS.finish={type:(fin&&fin.cat==='submission')?'sub':'pin',by:win,move:fin?fin.name:'a cover',
+             fin:!!(fin&&fin.tier>=4),part:(win?MS.me:MS.opp).target};
+  finalizeFight(win);
 }
 
 function takeMatch(i){
@@ -2619,45 +2901,55 @@ function simMatch(o){
   // Scale: a competent rookie match lands ~48-52, a great one 80+. The base floor
   // represents simply being a trained professional in front of a paying crowd.
   let quality = 30 + ars*0.22 + govt*0.20 + a.ps*0.14 + o.oppOvr*0.14 + stipMod;
-  const notes=[];
-  notes.push(`arsenal ${ars.toFixed(0)} · execution ${govt.toFixed(0)} · psychology ${a.ps}`);
-  if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; notes.push(`ring psychology too green → -${p.toFixed(0)}`); }
+  const good=[], bad=[];
+  if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; bad.push(`ring psychology too green (${a.ps} vs ${Math.round(psychFloor)} needed)`); }
   const stamNeed=used.reduce((s,m)=>s+m.stam,0)+o.mult*10;
-  if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.35; quality-=p; notes.push(`gassed late → -${p.toFixed(0)}`); }
-  if(c.cond<70){ const p=(70-c.cond)*0.22; quality-=p; notes.push(`banged up (cond ${Math.round(c.cond)}) → -${p.toFixed(0)}`); }
+  if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.35; quality-=p; bad.push(`gassed late (stamina ${a.st} vs ${Math.round(stamNeed)} needed)`); }
+  if(c.cond<70){ const p=(70-c.cond)*0.22; quality-=p; bad.push(`working banged up (condition ${Math.round(c.cond)})`); }
   const crowd=(c.pop*0.5+a.ch*0.5); quality += (crowd-40)*0.10;
-  if(o.stakes==='title'){ quality+=5; notes.push('championship stakes → +5'); }
-  if(o.stakes==='rival'){ quality+=6; notes.push('rivalry heat → +6'); }
+  if(o.stakes==='title'||o.stakes==='defense'){ quality+=5; good.push('championship stakes'); }
+  if(o.stakes==='rival'||o.stakes==='rivalry'){ quality+=6; good.push('rivalry heat'); }
   quality=clamp(quality+ (rnd()*8-4));
   // win probability
   const me=ovr(w)+c.mom*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
   if(o.stakes==='title') p*=0.82;                 // champs are protected
   const win=rnd()<clamp(p,0.05,0.95);
-  return {quality:Math.round(quality), win, notes, used, p};
+  // even an unwatched match finishes the way wrestling matches finish
+  const finMv=(win?used.filter(m=>m.tier>=4)[0]:null)||used[0];
+  const sub = finMv && finMv.cat==='submission';
+  const secs=420+Math.floor(rnd()*600);
+  const nf=1+Math.floor(rnd()*3);
+  if(nf) { quality+=Math.min(10,nf*3.5); good.push(`${nf} near-fall${nf>1?'s':''} the crowd bought`); }
+  return {quality:Math.round(clamp(quality)), win, good, bad, used, p,
+    nearFalls:nf, time:`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`,
+    finish:{type:sub?'sub':'pin',by:win,move:finMv?finMv.name:'a cover',fin:!!(finMv&&finMv.tier>=4)}};
 }
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
-  // record
-  if(res.win){ c.rec.w++; c.streak=c.streak>=0?c.streak+1:1; } else { c.rec.l++; c.streak=c.streak<=0?c.streak-1:-1; }
+  // record — a time-limit draw is neither a win nor a loss
+  const draw=res.draw||res.win===null;
+  if(draw){ c.rec.d=(c.rec.d||0)+1; c.streak=0; }
+  else if(res.win){ c.rec.w++; c.streak=c.streak>=0?c.streak+1:1; }
+  else { c.rec.l++; c.streak=c.streak<=0?c.streak-1:-1; }
   // rewards
   const qf=res.quality/70;
-  const coins=Math.round(o.purse*(res.win?1.15:0.85)*clamp(qf,0.4,1.4)*sc.pay);
+  const coins=Math.round(o.purse*(draw?1:res.win?1.15:0.85)*clamp(qf,0.4,1.4)*sc.pay);
   G.bag.coins+=coins; c.earnings+=coins;
   // ---- standing with the office: they care about the show you put on ----
-  const standDelta=(res.quality-58)*0.16 + (res.win?0.6:-0.2)
+  const standDelta=(res.quality-58)*0.16 + (draw?0.2:res.win?0.6:-0.2)
     + (o.stakes==='title'||o.stakes==='defense'?1.4:0) + (c.workedHurt?-1.6:0);
   c.standing=clamp((c.standing||50)+standDelta);
   // ---- the character: a strong night refreshes the act, a flat one drains it ----
-  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + (res.quality-56)*0.13 + (res.win?0.8:-0.4), 0, 100);
-  const repGain=Math.round((res.quality*0.30+(res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
+  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + (res.quality-56)*0.13 + (draw?0.2:res.win?0.8:-0.4), 0, 100);
+  const repGain=Math.round((res.quality*0.30+(draw?5:res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
-  const popGain=((res.quality-50)/6 + (res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
+  const popGain=((res.quality-50)/6 + (draw?0.7:res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
   const popCeil=Math.min(100,([38,64,85,100][tierIdx()]||38)+4);
   c.pop=clamp(c.pop+popGain,1,popCeil);
-  c.mom=clamp(c.mom+(res.win?7:-6)+(res.quality-55)/8);
+  c.mom=clamp(c.mom+(draw?1:res.win?7:-6)+(res.quality-55)/8);
   c.cond=clamp(c.cond-(6+o.mult*5+(res.quality>75?3:0)));
   // XP → training points; mastery in the categories you emphasised
   const xp=Math.round(24+res.quality*0.7+(o.stakes==='title'?25:0));
@@ -2671,7 +2963,8 @@ function applyMatch(o,res){
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
   else if(o.stakes==='defense'){
-    if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
+    if(draw){ titleMsg=`Time-limit draw — you retain the ${c.title}.`; }
+    else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
@@ -2701,7 +2994,7 @@ function applyMatch(o,res){
   }
   // ---- relationship with this character ----
   const R=rel(o.oppId); R.met=true; R.matches++;
-  if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
+  if(draw){ R.respect+=6; R.heat+=3; } else if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
   if(res.quality>=70) R.respect+=8;
   if(res.quality>=82) R.respect+=7;
   if(o.stakes==='title'||o.stakes==='defense') R.heat+=6;
@@ -2723,14 +3016,33 @@ function applyMatch(o,res){
   advanceWeek();
 }
 function renderMatch(o,res){
-  $('mTitle').innerHTML=`${res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>'} vs ${o.oppName}`;
+  const draw=res.draw||res.win===null;
+  $('mTitle').innerHTML=(draw?'<span style="color:var(--gold)">DRAW</span>'
+    :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
   const cardOf=(l,v,c)=>`<div class="tile"><div class="lab">${l}</div><div class="val" ${c?`style="color:${c}"`:''}>${v}</div></div>`;
+  const pg=+res.popGain||0;
   $('mTiles').innerHTML=cardOf('Match Rating',res.quality,res.quality>=75?'var(--gold)':res.quality>=55?'var(--green)':'#f0907f')
-    +cardOf('Purse',money(res.coins))+cardOf('Reputation','+'+res.repGain)+cardOf('Popularity',(res.popGain>=0?'+':'')+res.popGain.toFixed(1));
-  $('mBody').innerHTML=`<p><b>${o.stipLabel}</b> · ${o.oppName} (OVR ${o.oppOvr})</p>
-    <p>${matchStory(o,res)}</p>
-    <div class="hint" style="margin-top:10px;font-family:var(--mono);">${res.notes.join('<br>')}</div>
-    <div style="margin-top:10px;" class="hint">Moves called: ${res.used.map(m=>m.name).join(', ')}</div>`;
+    +cardOf('Purse',money(res.coins||0))+cardOf('Reputation','+'+(res.repGain||0))+cardOf('Popularity',(pg>=0?'+':'')+pg.toFixed(1));
+
+  const rowsOf=(items,cls,ico)=>items.length
+    ? `<ul class="mlist ${cls}">${items.map(t=>`<li><span class="i">${ico}</span>${t}</li>`).join('')}</ul>` : '';
+  $('mBody').innerHTML=`
+    <div class="mfinish">
+      <div class="mf-head">${finishLine(res)}</div>
+      <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
+    </div>
+    <p class="mstory">${matchStory(o,res)}</p>
+    <div class="mstats">
+      <span><b>${res.time||'—'}</b> time</span>
+      <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
+      <span><b>${res.used.length}</b> moves called</span>
+      ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]}</b></span>`:''}
+    </div>
+    ${rowsOf(res.good||[],'good','▲')}
+    ${rowsOf(res.bad||[],'bad','▼')}
+    <div class="flab" style="margin-top:14px;">The card they called</div>
+    <div class="mmoves">${groupMoves(res.used)}</div>`;
+
   let rw=`<p>+${res.xp} XP · +mastery in ${catById(G.car.plan.a).name}</p>`;
   if(res.titleMsg) rw+=`<p style="color:var(--gold);font-weight:800;">🏆 ${res.titleMsg}</p>`;
   if(res.injMsg) rw+=`<p style="color:#f0907f;">🏥 ${res.injMsg}</p>`;
@@ -2739,11 +3051,16 @@ function renderMatch(o,res){
   $('mRewards').innerHTML=rw;
 }
 function matchStory(o,res){
-  const q=res.quality, n=o.oppName;
+  const q=res.quality, n=o.oppName, f=res.finish||{};
   const open=q>=80?`You and ${n} tore the house down.`:q>=62?`A strong outing with ${n}.`:q>=45?`A solid, workmanlike match with ${n}.`:`It never clicked with ${n}.`;
-  const mid=res.win?` You found the opening and got the win.`:` ${n} had an answer when it mattered.`;
+  let mid;
+  if(res.draw||res.win===null) mid=` Neither of you could put it away before the bell.`;
+  else if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  else if(res.win) mid=f.fin?` The finisher did it — three seconds later it was over.`:` You caught them flat and stole the three.`;
+  else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
+  const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
   const end=q>=75?' The crowd was still buzzing on the way out.':q<45?' The room was quiet by the finish.':'';
-  return open+mid+end;
+  return open+mid+nf+end;
 }
 
 /* ============================================================
