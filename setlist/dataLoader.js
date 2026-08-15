@@ -204,6 +204,7 @@ export function loadBand(csvText) {
   for (const takes of byySong.values()) {
     takes.sort((a, b) => (Number(b.length_sec) || 0) - (Number(a.length_sec) || 0));
     const of = takes.length;
+    const med = Number(takes[Math.floor(of / 2)].length_sec) || 0;
     /* TIES SHARE A RANK, so two identical 8:12 takes are both "4th of 30"
        rather than one of them being arbitrarily 5th. */
     let rank = 0, prev = null;
@@ -212,6 +213,11 @@ export function loadBand(csvText) {
       if (len !== prev) { rank = i + 1; prev = len; }
       p.version_rank = rank;
       p.version_of = of;
+      /* THE TYPICAL LENGTH, so a rank can gain a feel. "3rd longest of 60"
+         says where it sits; "usually 19:46, you got 29:38" says what that
+         MEANS. Median rather than mean because a single 44-minute outlier
+         drags an average somewhere no real version lives. */
+      p.version_median = med;
     });
   }
 
