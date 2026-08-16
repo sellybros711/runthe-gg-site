@@ -20604,7 +20604,10 @@ function overlayTourNews(app){
    Five days, one bracket round a day. Each day the tour hands you your match and you decide whether to
    PLAY it hole by hole or hand it to the sim; then the day's matches land ONE AT A TIME, yours last, so
    the draw fills in in front of you and you find out who you have next by watching it happen.       */
-const MP_IN=110, MP_HOLD=430, MP_MINE_HOLD=1150, MP_AFTER_MINE=620;
+// Reveal pacing. A match landing every 110ms read as a flicker, not a bracket filling in: a 16-match
+// round was over in under two seconds. These are the beats you actually watch, so they are slow enough
+// to follow a name across the draw, and Skip is always there for anyone who would rather not.
+const MP_FIRST=520, MP_IN=430, MP_HOLD=430, MP_MINE_HOLD=1150, MP_AFTER_MINE=1250;
 let mpTimer=null;
 function mpClearTimer(){ if(mpTimer){ clearTimeout(mpTimer); mpTimer=null; } }
 function mpReduce(){ try{ return matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){ return false; } }
@@ -20647,13 +20650,23 @@ function mpSettle(el, m){
    up into his slot in the next column. When it reaches YOUR match it simply STOPS and asks, because a
    staged round is decided everywhere except there. Everything settles in place (no render() mid-reveal),
    so the animation is never interrupted; a re-render rebuilds the same state from the stage.            */
-function mpTreeScrollTo(host, el){
+/* Keep the settling match in view WITHOUT chasing it. The first version re-centred the tree on both axes
+   for every match, so on a phone (where the tree scrolls in both directions) the whole board lurched
+   sixteen times a round. Two rules fix it: only move when the match is genuinely off screen, and only
+   move sideways when the ROUND changes - every match in a round shares a column, so the horizontal
+   position should be set once and then left alone. */
+function mpTreeScrollTo(host, el, ri){
   if(!host || !el) return;
   try{
     const hb=host.getBoundingClientRect(), eb=el.getBoundingClientRect();
-    const dx=(eb.left+eb.width/2)-(hb.left+hb.width/2);
-    if(Math.abs(dx)>18) host.scrollLeft=Math.max(0, host.scrollLeft+dx);
-    const pad=26;
+    // sideways: once per round, and only if the column is not already comfortably in frame
+    if(host._mpCol!==ri){
+      host._mpCol=ri;
+      const dx=(eb.left+eb.width/2)-(hb.left+hb.width/2);
+      if(eb.left<hb.left+8 || eb.right>hb.right-8) host.scrollLeft=Math.max(0, host.scrollLeft+dx);
+    }
+    // vertically: nudge just far enough to bring it inside, never to recentre it
+    const pad=24;
     if(eb.top<hb.top+pad) host.scrollTop=Math.max(0, host.scrollTop-(hb.top+pad-eb.top));
     else if(eb.bottom>hb.bottom-pad) host.scrollTop=host.scrollTop+(eb.bottom-(hb.bottom-pad));
   }catch(e){}
@@ -20668,7 +20681,7 @@ function mpSettleLive(host, inner, st, si, animate){
     if(l) l.classList.add('l');
     box.classList.remove('await'); box.classList.add('done');
     if(animate){ box.classList.remove('settle'); void box.offsetWidth; box.classList.add('settle'); }
-    if(animate) mpTreeScrollTo(host, box);
+    if(animate) mpTreeScrollTo(host, box, st.ri);
   }
   const row=inner.querySelector('#'+mpAdvId(st.ri, si));
   if(row) mpFillRow(row, s.res.win.seed, s.res.win.p.name, !!s.res.win.p.you, animate);
@@ -20692,7 +20705,7 @@ function mpRunReveal(host, B){
     if(s.mine){ const won=!!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
     mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:MP_IN));
   };
-  mpTimer=setTimeout(step, reduce?15:MP_IN);
+  mpTimer=setTimeout(step, reduce?15:MP_FIRST);
 }
 // the day is fully decided: commit it (losers out, winners advance) and hand back to the round-end card
 function mpFinishRound(B){
@@ -20880,7 +20893,9 @@ function scrBracket(){
       bs.onclick=()=>{ mpClearTimer(); if(!S.brMode) S.brMode={}; S.brMode[st.ri]='sim';
         bracketResolveMine(B, st); S.brPause=false; track('bracket_sim',{round:st.ri}); render(); };
       W(bs);
-      if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brPause) bs.onclick(); }, reduce?60:1600);
+      // Auto Sim deliberately does NOT answer this one. It auto-advances the tour so you are not clicking
+      // through weeks you do not care about; your own match in a knockout is the opposite of that, and a
+      // 1.6s timer that picked Sim for you meant you never got the chance to play it.
     }
   }
 
@@ -20932,7 +20947,8 @@ function scrBracket(){
     const b=$(`<button class="btn goldfill">Play ${esc(nxt.day)} ▸<span class="sub">${esc(nxt.name)} · ${B.alive.length/2} match${B.alive.length/2>1?'es':''}${alive?' · you are in it':''}</span></button>`);
     b.onclick=()=>mpStartDay(B);
     ctrl.appendChild(b);
-    if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brStage==='roundEnd') b.onclick(); }, reduce?60:1500);
+    // long enough to read the day's result and see who you drew next before the next day starts
+    if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brStage==='roundEnd') b.onclick(); }, reduce?60:2800);
   } else if(done){
     const b=$(`<button class="btn goldfill">Continue ▸<span class="sub">Back to the tour</span></button>`);
     b.onclick=()=>{ finalizeBracket(B); S.curBracket=null; S._brIdx=null; mpClearTimer(); advanceEvent(); render(); };
