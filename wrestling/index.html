@@ -574,6 +574,69 @@
   .mlist.good .i{color:var(--green);} .mlist.bad .i{color:#f0907f;}
   .mmoves{font-size:13px;line-height:1.9;color:var(--text-dim);}
   .mmoves .x{font-family:var(--mono);color:var(--gold);font-weight:700;}
+
+  /* ---- the payoff, made to feel like one: stars, ceremonies, count-ups ---- */
+  .starbox{text-align:center;padding:14px 10px 12px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.10));}
+  .starbox .sb-lab{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .starrow{display:flex;justify-content:center;gap:5px;margin:8px 0 5px;}
+  .star{position:relative;width:34px;height:34px;opacity:0;transform:scale(2.2) rotate(-14deg);
+    animation:starIn .32s cubic-bezier(.2,1.6,.4,1) forwards;}
+  .star>svg{position:absolute;inset:0;width:34px;height:34px;}
+  .star .sf{position:absolute;inset:0;overflow:hidden;}
+  .star .sf svg{position:absolute;left:0;top:0;width:34px;height:34px;}
+  @keyframes starIn{to{opacity:1;transform:scale(1) rotate(0);}}
+  .sb-num{font-family:var(--mono);font-size:15px;color:var(--cream);font-weight:700;}
+  .sb-band{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  .starbox.classic{border-color:rgba(224,179,65,.6);background:linear-gradient(180deg,rgba(224,179,65,.16),rgba(0,0,0,.2));}
+  .starbox.classic .sb-band{color:var(--gold);font-weight:800;}
+
+  .champbanner{position:relative;overflow:hidden;text-align:center;margin-bottom:12px;padding:13px 12px;border-radius:12px;
+    border:1.5px solid rgba(224,179,65,.65);background:linear-gradient(180deg,rgba(224,179,65,.20),rgba(0,0,0,.28));
+    animation:bannerIn .5s cubic-bezier(.2,1.4,.4,1);}
+  .champbanner .cb-kick{font-size:10.5px;letter-spacing:.30em;color:var(--gold);font-weight:800;text-transform:uppercase;}
+  .champbanner .cb-t{font-family:var(--display);font-size:clamp(21px,4.6vw,30px);color:var(--cream);text-transform:uppercase;line-height:1.12;margin-top:3px;}
+  .champbanner.lost{border-color:rgba(198,57,44,.55);background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.28));}
+  .champbanner.lost .cb-kick{color:#f0907f;}
+  .champbanner::after{content:"";position:absolute;top:0;bottom:0;width:46%;left:-60%;transform:skewX(-18deg);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sheen 1.5s .35s ease-out 2;}
+  @keyframes sheen{to{left:135%;}}
+  @keyframes bannerIn{from{opacity:0;transform:translateY(-10px) scale(.96);}}
+
+  .paychips{display:flex;flex-wrap:wrap;gap:8px;}
+  .pchip{opacity:0;transform:translateY(8px) scale(.9);animation:chipIn .3s cubic-bezier(.2,1.5,.4,1) forwards;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12.5px;color:var(--text-dim);}
+  .pchip b{color:var(--cream);font-family:var(--mono);}
+  .pchip.gold{border-color:rgba(224,179,65,.5);color:var(--gold);} .pchip.gold b{color:var(--gold);}
+  .pchip.red{border-color:rgba(198,57,44,.5);color:#f0907f;}
+  @keyframes chipIn{to{opacity:1;transform:none;}}
+  .xpwrap{margin-top:12px;}
+  .xpbar{height:8px;border-radius:99px;background:rgba(0,0,0,.4);border:1px solid var(--line);overflow:hidden;}
+  .xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brandred),var(--gold));
+    transition:width .9s cubic-bezier(.3,1,.4,1);}
+  .unlockcard{position:relative;overflow:hidden;margin-top:10px;border:1.5px solid rgba(91,176,131,.55);border-radius:12px;
+    padding:11px 13px;background:linear-gradient(180deg,rgba(91,176,131,.12),rgba(0,0,0,.22));
+    opacity:0;animation:chipIn .4s .5s cubic-bezier(.2,1.5,.4,1) forwards;}
+  .unlockcard .uk{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--green);font-weight:800;}
+  .unlockcard .un{font-family:var(--display);font-size:20px;color:var(--cream);text-transform:uppercase;margin-top:2px;}
+  .unlockcard .us{font-size:11.5px;color:var(--text-dim);}
+  .streakchip{background:linear-gradient(180deg,rgba(224,120,50,.18),rgba(0,0,0,.2));border:1px solid rgba(224,140,60,.55)!important;
+    color:#f0b060!important;font-weight:800;}
+
+  .confetti{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:130;}
+  .confetti i{position:absolute;top:-14px;border-radius:1px;animation:confF linear forwards;}
+  @keyframes confF{to{transform:translateY(106vh) rotate(620deg);}}
+  .momentback{position:fixed;inset:0;background:rgba(6,5,5,.84);z-index:110;display:none;align-items:center;justify-content:center;padding:18px;}
+  .momentback.open{display:flex;}
+  .momentcard{text-align:center;max-width:400px;width:100%;border:1.5px solid rgba(224,179,65,.55);border-radius:18px;
+    padding:26px 20px 20px;background:linear-gradient(180deg,rgba(224,179,65,.14),rgba(0,0,0,.3)),var(--panel);
+    animation:momentIn .45s cubic-bezier(.2,1.5,.4,1);}
+  .momentcard .mo-i{font-size:44px;line-height:1;}
+  .momentcard .mo-k{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:10px;}
+  .momentcard .mo-t{font-family:var(--display);font-size:24px;color:var(--cream);text-transform:uppercase;line-height:1.18;margin:6px 0 16px;}
+  @keyframes momentIn{from{opacity:0;transform:scale(.7);}}
+  @keyframes statPop{0%{transform:scale(1);}35%{transform:scale(1.45);color:var(--gold);}100%{transform:scale(1);}}
+  .statpop{display:inline-block;animation:statPop .8s ease;}
   .fphase{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:3px;}
   .flog .phase{color:var(--gold);font-weight:800;letter-spacing:.04em;}
   .fs .lm{color:#f0907f;}
@@ -1010,6 +1073,12 @@
   <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div></div></div>
 
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
+<div class="momentback" id="momentBack"><div class="momentcard">
+  <div class="mo-i" id="moIco">🏅</div>
+  <div class="mo-k">Career Milestone</div>
+  <div class="mo-t" id="moTitle"></div>
+  <button class="big" onclick="nextMoment()">Continue</button>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script src="roster.js"></script>
@@ -1361,6 +1430,75 @@ function award(txt,ico){
   c.accolades.unshift({txt,ico:ico||'🏅',y:c.year,w:c.week});
   pushInboxItem({ico:ico||'🏅',sev:'good',txt:`<b>Career milestone.</b> ${txt}`});
   pushLog(`${ico||'🏅'} ${txt}`);
+  queueMoment(ico||'🏅',txt);
+}
+/* ---------- MOMENTS: milestones deserve a spotlight, not an inbox row ---------- */
+let MOMENT_Q=[];
+function queueMoment(ico,txt){ MOMENT_Q.push({ico,txt}); }
+function showMoments(){
+  if(!MOMENT_Q.length) return;
+  const back=$('momentBack'); if(back.classList.contains('open')) return;
+  const m=MOMENT_Q[0];
+  $('moIco').textContent=m.ico; $('moTitle').innerHTML=m.txt;
+  back.classList.add('open');
+  confetti(70);
+}
+function nextMoment(){
+  MOMENT_Q.shift(); $('momentBack').classList.remove('open');
+  if(MOMENT_Q.length) setTimeout(showMoments,280);
+}
+/* gold and crimson from the rafters (display only, so Math.random is fine) */
+function confetti(n,cols){
+  cols=cols||['#E0B341','#C6392C','#F4E8DB','#5bb083'];
+  const ov=document.createElement('div'); ov.className='confetti';
+  for(let i=0;i<(n||80);i++){
+    const p=document.createElement('i');
+    const sz=4+Math.random()*5;
+    p.style.left=(Math.random()*100)+'%';
+    p.style.width=sz+'px'; p.style.height=(sz*0.55)+'px';
+    p.style.background=cols[i%cols.length];
+    p.style.animationDelay=(Math.random()*0.55)+'s';
+    p.style.animationDuration=(1.2+Math.random()*1.0)+'s';
+    ov.appendChild(p);
+  }
+  document.body.appendChild(ov);
+  setTimeout(()=>ov.remove(),3000);
+}
+/* numbers that tick up land harder than numbers that sit there */
+function countUp(el,to,opt){
+  opt=opt||{}; const ms=opt.ms||750, from=opt.from||0;
+  const fmt=opt.fmt||(v=>Math.round(v).toLocaleString());
+  if(!el) return;
+  const t0=performance.now();
+  const step=t=>{
+    const k=Math.min(1,(t-t0)/ms), e=1-Math.pow(1-k,3);
+    el.textContent=fmt(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+/* ---------- STAR RATINGS: how wrestling actually keeps score ---------- */
+const STARP='M17 1.8 L21.8 11.6 L32.5 13.1 L24.7 20.7 L26.6 31.4 L17 26.3 L7.4 31.4 L9.3 20.7 L1.5 13.1 L12.2 11.6 Z';
+function starsOf(q){ return Math.round(clamp((q-30)/14,0,5)*4)/4; }
+function starBand(s){
+  return s>=5   ? 'A perfect match. They will talk about this forever.'
+       : s>=4.75? 'An instant classic.'
+       : s>=4   ? 'A great match.'
+       : s>=3   ? 'A very good night.'
+       : s>=2   ? 'A solid outing.'
+       : s>=1   ? 'Rough. The crowd drifted.'
+       :          'A dud. Best forgotten.';
+}
+function starRowHTML(s){
+  let h='';
+  for(let i=0;i<5;i++){
+    const f=clamp(s-i,0,1);
+    h+=`<span class="star" style="animation-delay:${(0.15+i*0.14).toFixed(2)}s">
+      <svg viewBox="0 0 34 34"><path d="${STARP}" fill="rgba(244,232,219,.12)" stroke="rgba(244,232,219,.28)" stroke-width="1.2"/></svg>
+      <span class="sf" style="width:${(f*100).toFixed(0)}%"><svg viewBox="0 0 34 34"><path d="${STARP}" fill="#E0B341" stroke="#c69732" stroke-width="1.2"/></svg></span>
+    </span>`;
+  }
+  return h;
 }
 function checkMilestones(res){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
@@ -1394,6 +1532,7 @@ function modal(title,body,btns){ $('modalTitle').textContent=title; $('modalBody
   (btns||[{label:'OK',fn:closeModal}]).forEach(x=>{const el=document.createElement('button'); el.textContent=x.label; if(x.cls)el.className=x.cls; el.onclick=x.fn; b.appendChild(el);}); $('modalBack').classList.add('open'); }
 function closeModal(){ $('modalBack').classList.remove('open'); }
 $('modalBack').addEventListener('click',e=>{ if(e.target===$('modalBack')) closeModal(); });
+$('momentBack').addEventListener('click',e=>{ if(e.target===$('momentBack')) nextMoment(); });
 $('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard(); });
 
 /* ---------- data helpers ---------- */
@@ -2464,7 +2603,16 @@ function refreshHud(){ if(!G) return;
   $('tbSub').textContent=(G.w.nick? '"'+G.w.nick+'" · ':'')+tierOf(G.car.rep).name;
   $('hYW').textContent=G.car.year+'·'+G.car.week;
   $('hAge').textContent=G.car.age;
-  $('hOvr').textContent=ovr(G.w);
+  // getting better is worth a beat of celebration
+  const o=ovr(G.w), c=G.car;
+  if(c._seenOvr==null) c._seenOvr=o;
+  if(o>c._seenOvr){
+    [50,60,70,80,90].forEach(t=>{ if(c._seenOvr<t&&o>=t) award(`Broke ${t} overall.`,'📈'); });
+    c._seenOvr=o;
+    const el=$('hOvr'); el.classList.remove('statpop'); void el.offsetWidth; el.classList.add('statpop');
+    toast('Overall up: '+o);
+  } else if(o<c._seenOvr) c._seenOvr=o;     // decline passes without comment
+  $('hOvr').textContent=o;
   $('hPop').textContent=Math.round(G.car.pop);
   $('hCoins').textContent=G.bag.coins.toLocaleString();
 }
@@ -2584,7 +2732,9 @@ function renderCareer(){
         ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`; })()],
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
-    ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
+    ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`,
+      c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">🔥 ${c.streak}-match win streak</div>`
+      :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
     ['Title', c.title?'👑 Held':'-', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
@@ -2595,6 +2745,7 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
+  setTimeout(showMoments,400);       // milestones earned outside a match pop here
 }
 function renderAttrs(){
   return ATTRS.map(([k,label])=>{
@@ -3834,6 +3985,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
     poseSet('ref','refNo');
     await flashScreen(); shake();
+    burst(px,'2.9!!');
     await callout('KICKOUT!');
     fLog(`<span class="hi">Shoulder up at two and a half! How did he survive the ${bare(mvName)}?!</span>`);
     MS.nearFalls++; MS.quality+=isFin?15:10; MS.big++;
@@ -4141,17 +4293,44 @@ function applyMatch(o,res){
   advanceWeek();
 }
 function renderMatch(o,res){
+  const c=G.car;
   const draw=res.draw||res.win===null;
   $('mTitle').innerHTML=(draw?'<span style="color:var(--gold)">DRAW</span>'
     :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
-  const cardOf=(l,v,c)=>`<div class="tile"><div class="lab">${l}</div><div class="val" ${c?`style="color:${c}"`:''}>${v}</div></div>`;
-  const pg=+res.popGain||0;
-  $('mTiles').innerHTML=cardOf('Match Rating',res.quality,res.quality>=75?'var(--gold)':res.quality>=55?'var(--green)':'#f0907f')
-    +cardOf('Purse',money(res.coins||0))+cardOf('Reputation','+'+(res.repGain||0))+cardOf('Popularity',(pg>=0?'+':'')+pg.toFixed(1));
 
+  // every number in the tiles ticks up instead of sitting there
+  const tileOf=(l,id,col)=>`<div class="tile"><div class="lab">${l}</div><div class="val" id="${id}" ${col?`style="color:${col}"`:''}>0</div></div>`;
+  const pg=+res.popGain||0;
+  $('mTiles').innerHTML=tileOf('Purse','mtPurse')
+    +tileOf('Reputation','mtRep','var(--green)')
+    +tileOf('Popularity','mtPop',pg>=0?'var(--green)':'#f0907f')
+    +tileOf('XP','mtXp');
+  countUp($('mtPurse'),res.coins||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
+  countUp($('mtRep'),res.repGain||0,{fmt:v=>'+'+Math.round(v)});
+  countUp($('mtPop'),pg,{fmt:v=>(v>=0?'+':'')+v.toFixed(1)});
+  countUp($('mtXp'),res.xp||0,{fmt:v=>'+'+Math.round(v)});
+
+  // ---- the championship ceremony, called the way a ring announcer calls it ----
+  let banner='';
+  if(o.stakes==='title'&&res.win)
+    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.title||beltName(workTier())}</div></div>`;
+  else if(o.stakes==='defense'&&(res.win||draw))
+    banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.title}<span style="color:var(--gold)"> · defence #${c.defenses||0}</span></div></div>`;
+  else if(o.stakes==='defense')
+    banner=`<div class="champbanner lost"><div class="cb-kick">Title lost</div><div class="cb-t">${o.oppName} takes the belt</div></div>`;
+
+  // ---- the star rating is the hero: it is how wrestling keeps score ----
+  const s=starsOf(res.quality), classic=s>=4.75;
+  const starLine=(s.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'★';
   const rowsOf=(items,cls,ico)=>items.length
     ? `<ul class="mlist ${cls}">${items.map(t=>`<li><span class="i">${ico}</span>${t}</li>`).join('')}</ul>` : '';
-  $('mBody').innerHTML=`
+  $('mBody').innerHTML=banner+`
+    <div class="starbox${classic?' classic':''}">
+      <div class="sb-lab">Match Rating</div>
+      <div class="starrow">${starRowHTML(s)}</div>
+      <div class="sb-num"><span id="sbNum">0</span><span style="color:var(--text-faint)">/100</span> · ${starLine}</div>
+      <div class="sb-band">${starBand(s)}</div>
+    </div>
     <div class="mfinish">
       <div class="mf-head">${finishLine(res)}</div>
       <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
@@ -4161,19 +4340,38 @@ function renderMatch(o,res){
       <span><b>${res.time||'-'}</b> time</span>
       <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
       <span><b>${res.used.length}</b> moves called</span>
-      ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]}</b></span>`:''}
+      ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]||res.limb}</b></span>`:''}
+      ${res.win&&c.streak>=2?`<span class="streakchip">🔥 ${c.streak} straight</span>`:''}
     </div>
     ${rowsOf(res.good||[],'good','▲')}
     ${rowsOf(res.bad||[],'bad','▼')}
     <div class="flab" style="margin-top:14px;">The card they called</div>
     <div class="mmoves">${groupMoves(res.used)}</div>`;
+  countUp($('sbNum'),res.quality,{ms:950});
 
-  let rw=`<p>+${res.xp} XP · +mastery in ${catById(G.car.plan.a).name}</p>`;
-  if(res.titleMsg) rw+=`<p style="color:var(--gold);font-weight:800;">🏆 ${res.titleMsg}</p>`;
-  if(res.injMsg) rw+=`<p style="color:#f0907f;">🏥 ${res.injMsg}</p>`;
-  if(res.unlocked.length) rw+=`<p style="color:var(--green);font-weight:700;">🔓 Unlocked: ${res.unlocked.map(m=>m.name+' <span class="hint">('+catById(m.cat).name+' T'+m.tier+')</span>').join(', ')}</p>`;
-  if(G.w.tp>0) rw+=`<p class="hint">You have ${G.w.tp} training point${G.w.tp>1?'s':''} to spend.</p>`;
+  // ---- payoff: chips that land one after another, then the XP bar fills ----
+  const chips=[];
+  chips.push(`<b>+${res.xp}</b> XP`);
+  chips.push(`+mastery · ${catById(c.plan.a).name}`);
+  if(G.w.tp>0) chips.push({t:`<b>${G.w.tp}</b> training point${G.w.tp>1?'s':''} ready to spend`,cls:'gold'});
+  if(res.injMsg) chips.push({t:`🏥 ${res.injMsg}`,cls:'red'});
+  let rw=`<div class="paychips">`+chips.map((ch,i)=>{
+    const t=ch.t||ch, cls=ch.cls||'';
+    return `<span class="pchip ${cls}" style="animation-delay:${(0.2+i*0.14).toFixed(2)}s">${t}</span>`;
+  }).join('')+`</div>`;
+  rw+=`<div class="xpwrap"><div class="hint" style="margin-bottom:4px;">Next training point · ${G.w.xp}/100</div>
+    <div class="xpbar"><i id="mXpFill"></i></div></div>`;
+  (res.unlocked||[]).forEach(m=>{
+    rw+=`<div class="unlockcard"><div class="uk">New move unlocked</div><div class="un">${m.name}</div>
+      <div class="us">${catById(m.cat).name} · Tier ${m.tier}${m.tier>=4?' · finisher material':''}</div></div>`;
+  });
   $('mRewards').innerHTML=rw;
+  setTimeout(()=>{ const e=$('mXpFill'); if(e) e.style.width=clamp(G.w.xp,0,100)+'%'; },120);
+
+  // the room celebrates with you
+  if(o.stakes==='title'&&res.win) confetti(150);
+  else if(classic) confetti(100);
+  setTimeout(showMoments,750);
 }
 function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
