@@ -27,7 +27,7 @@
   // How-to-play (2-3 short lines each).
   var RULES = {
     table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
-    match:      ['Sort 20 names into 5 hidden groups of four.', 'Find them all before six mistakes.'],
+    match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
     career:     ['Name the athlete from their team-by-team path.', 'One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
     rankit:     ['Drag the five into the right order.', 'Two tries per set; clear it and get another.'],

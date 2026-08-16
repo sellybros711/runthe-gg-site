@@ -8,10 +8,10 @@
 
   var CONTENT = {
     match: [
-      'Twenty names hide five secret groups of four.',
+      'Sixteen names hide four secret groups of four.',
       'A group can be a team, a jersey number, a surname, any shared thread.',
       'Build a group of four and lock it in. "One away" means three belong together.',
-      'Six wrong guesses ends the day. Solve all five groups to keep your streak.'
+      'Four wrong guesses ends the day. Solve all four groups to keep your streak.'
     ],
     table: [
       'Two athletes, one question: who wore the higher jersey number?',

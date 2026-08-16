@@ -19,20 +19,20 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
+<meta name="description" content="Sort 16 sports names into four hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Daily Match: Sports Connections" />
-<meta property="og:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta property="og:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta property="og:url" content="https://runthe.gg/arcade/match/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Daily Match: Sports Connections" />
-<meta name="twitter:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta name="twitter:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -227,7 +227,7 @@
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
-  /* The pool (20 name tiles) and the board (5 racks) are both built by JS, so
+  /* The pool (16 name tiles) and the board (4 racks) are both built by JS, so
      for the first second of every visit they were zero-height and everything
      under them - the group header, the whole sidebar - sat near the top of the
      page and then got thrown 800px down when the puzzle mounted. That single
@@ -499,9 +499,10 @@
   .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
   .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); }
 
-  /* the pick-four grid: 5 across on desktop (fills the wider column), 4 across on
-     phones. Names wrap; fitPool() shrinks any that don't fit. */
-  .pool{ grid-template-columns:repeat(5,1fr); gap:8px; }
+  /* the pick-four grid: four across at every width, so sixteen tiles form a
+     square and every row is a candidate group. Five across would leave a
+     ragged row of one. Names wrap; fitPool() shrinks any that don't fit. */
+  .pool{ grid-template-columns:repeat(4,1fr); gap:8px; }
   .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
   /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
      so the longest word fits, then the name wraps at the space onto two lines */
@@ -558,7 +559,7 @@
   <div class="app">
     <main class="gameCol">
       <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
-      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 16 sports names into four hidden groups of four.</span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
@@ -572,7 +573,7 @@
           <span class="mlab">Guesses left</span>
           <div class="dots" id="dotsM"></div>
         </div>
-        <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
+        <div class="mprog" id="progressM"><b>0</b> / 4 solved</div>
       </div>
 
       <!-- solved groups stack here, the category name sitting above its four -->
@@ -605,7 +606,7 @@
           <span class="sLabel">Guesses left</span>
           <div class="dots" id="dots"></div>
         </div>
-        <div class="progress" id="progress"><b>0</b> / 5 groups solved</div>
+        <div class="progress" id="progress"><b>0</b> / 4 groups solved</div>
       </div>
 
       <div class="card actionsCard">
@@ -626,10 +627,10 @@
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
+          <li><b>Find the four hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
           <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
           <li>The easiest group's name is <b>revealed free</b> to get you rolling.</li>
-          <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Four misses and your board's done.</li>
         </ol>
       </details>
 
@@ -714,7 +715,7 @@
   <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=2"></script>
-  <script src="generator.js?v=13"></script>
+  <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
 <script src="/arcade/share.js?v=4"></script>
@@ -733,19 +734,19 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=2"></script>
+<script src="/arcade/calendar.js?v=3"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=3"></script>
-<script src="/arcade/howto.js?v=5"></script>
+<script src="/arcade/pregame.js?v=4"></script>
+<script src="/arcade/howto.js?v=6"></script>
   <script>
   (function () {
     'use strict';
     if (window.RTGHowto) RTGHowto.init('match');
-    /* 20 names a board, the widest surface in the arcade, and until now the
+    /* 16 names a board, the widest surface in the arcade, and until now the
        only gate was the category maths - which cares whether a group is
        solvable, not whether you have heard of anyone in it. Over half the
        names it showed were unrecognisable. The recognisable pool still yields
-       337 viable categories against the 5 a board needs, so nothing is lost
+       337 viable categories against the 4 a board needs, so nothing is lost
        but the journeymen. */
     var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
     if (window.RTG_KNOWN) {
@@ -754,11 +755,11 @@
     }
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
-    var CATS = 5;                       // categories per board
-    var MISTAKE_LIMIT = 6;             // wrong guesses (a hint spends one); the 6th ends the board
+    var CATS = 4;                       // categories per board (16 tiles)
+    var MISTAKE_LIMIT = 4;             // wrong guesses (a hint spends one); the 4th ends the board
 
     // group accent palette by lane order: teal, gold, coral, purple, blue
-    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3', '#2F6BFF'];
+    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3'];
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -838,7 +839,7 @@
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3, sport: SPORTFILTER } });
+      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3, sport: SPORTFILTER, cats: CATS } });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -885,7 +886,7 @@
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; sel = []; lastMissSet = ''; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
-      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has 20 tiles, so the count-based guard in render() wouldn't catch it)
+      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has the same tile count, so the count-based guard in render() wouldn't catch it)
       // free foothold: reveal the easiest group's name to start (no guess cost)
       if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
     }
@@ -1083,7 +1084,7 @@
             ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
             : 'Those four do share something real, but this board needs one in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
         } else {
           registerMiss(ids);
         }
@@ -1199,7 +1200,7 @@
             ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
             : 'Those four do share something real, but this board needs one of them in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
         } else {
           registerMiss(laneIdx, ids);
         }
@@ -1402,11 +1403,11 @@
       if (r.won) {
         head.textContent = 'BOARD CLEARED!';
         head.style.color = lightUI ? '#17A34A' : '#48D17A';
-        document.getElementById('resVerdict').textContent = 'All 5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
+        document.getElementById('resVerdict').textContent = 'All ' + CATS + ' groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
       } else {
         head.textContent = 'OUT OF GUESSES';
         head.style.color = lightUI ? '#D8452F' : '#F06A5F';
-        document.getElementById('resVerdict').textContent = solveOrder.length + ' of 5 groups found';
+        document.getElementById('resVerdict').textContent = solveOrder.length + ' of ' + CATS + ' groups found';
       }
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
@@ -1445,8 +1446,8 @@
       var r = window._lastResult || {};
       var grid = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var stat = r.won
-        ? ('\uD83E\uDDE9 5/5 \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : ('\uD83E\uDDE9 ' + solveOrder.length + '/5 groups');
+        ? ('\uD83E\uDDE9 ' + CATS + '/' + CATS + ' \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('\uD83E\uDDE9 ' + solveOrder.length + '/' + CATS + ' groups');
       if (r.streak) stat += ' \u00B7 streak ' + r.streak;
       // Solve timeline for the image card: each group as a dot on a time bar at
       // the second it locked, plus a splits list below. Colors only - no category
@@ -1552,7 +1553,7 @@
     // ---- play-token economy: main subtitle label + Play again ----
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
-      var base = 'Sort 20 sports names into five hidden groups of four.';
+      var base = 'Tap four names that belong together. Find all four groups before four mistakes.';
       if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
       ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label(GAME) + ' today') : '');
     }

@@ -19,7 +19,9 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // board shape: 5 categories x GROUP_SIZE tiles each
+  // board shape: CATS categories x GROUP_SIZE tiles each. CATS is a build
+  // option rather than a constant so the board size is a product decision,
+  // not a number buried three functions deep.
   var GROUP_SIZE = 4;
 
   /* ---- deterministic RNG (identical puzzle per date, dry-runnable) --------- */
@@ -249,9 +251,10 @@
      board, not a rule about correctness, so a sport edition drops it to one. */
   function pickCategories(cats, rng, opts) {
     var minLead = (opts && opts.sport) ? 1 : 2;
+    var want = (opts && opts.cats) || 5;
     for (var attempt = 0; attempt < 200; attempt++) {
       var order = shuffle(cats, rng), chosen = [], fams = {}, names = {}, niche = 0;
-      for (var i = 0; i < order.length && chosen.length < 5; i++) {
+      for (var i = 0; i < order.length && chosen.length < want; i++) {
         var c = order[i];
         if ((fams[c.family] || 0) >= (FAM_CAP[c.family] || DEFAULT_FAM_CAP)) continue;
         if (names[c.name]) continue;                                  // no two lanes with the same label
@@ -267,7 +270,7 @@
         chosen.push(c); fams[c.family] = (fams[c.family] || 0) + 1; names[c.name] = 1;
         if (isNiche) niche++;
       }
-      if (chosen.length < 5) continue;
+      if (chosen.length < want) continue;
       if (Object.keys(fams).length < MIN_FAMILIES) continue;
       var lead = {}; chosen.forEach(function (c) { if (c.sport !== 'multi') lead[c.sport] = 1; });
       if (Object.keys(lead).length < minLead) continue;
@@ -330,7 +333,7 @@
 
   // FAIRNESS GUARD 2: categories salient enough that players will group by
   // them. A board must not contain 4+ tiles sharing one of these unless it IS
-  // one of the board's five groups — "all four played for the Dodgers" must
+  // one of the board's own groups — "all four played for the Dodgers" must
   // never be a wrong answer even when the Dodgers aren't a lane today.
   // (Broad facts — decade, nationality, HOF — are exempt or boards would be
   // impossible; nobody groups four names as "played in the 2010s" first.)
@@ -379,7 +382,7 @@
     var entMap = {}; entities.forEach(function (e) { entMap[e.id] = e; });
     var allCats = enumerate(entities);
     var cats = viable(allCats, opts);
-    if (cats.length < 5) return null;
+    if (cats.length < (opts.cats || 5)) return null;
     var best = null;
     for (var attempt = 0; attempt < 200; attempt++) {
       var chosen = pickCategories(cats, rng, opts); if (!chosen) continue;
@@ -414,7 +417,7 @@
         : sources.entities;
       var d = buildFromDB(dateStr, ents, o);
       if (d) return d;
-      d = buildFromDB(dateStr, ents, { anchors: 1, avgFame: 2.0, sport: o.sport });
+      d = buildFromDB(dateStr, ents, { anchors: 1, avgFame: 2.0, sport: o.sport, cats: o.cats });
       if (d) return d;
     }
     if (sources.bank && sources.bank.length) return generateDaily(dateStr, sources.bank);
