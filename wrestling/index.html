@@ -348,6 +348,85 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* ---- home: a live ring with a different card every visit ---- */
+  .homering{position:relative;height:250px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:radial-gradient(ellipse at 50% 18%,rgba(198,57,44,.18),transparent 62%),linear-gradient(180deg,#171113,#0b0a0a);}
+  .homering .hr-crowd{position:absolute;top:0;left:0;right:0;height:44%;opacity:.42;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
+      repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);}
+  .homering .hr-mat{position:absolute;left:0;right:0;bottom:0;height:32%;
+    background:linear-gradient(180deg,#3a2b2b,#241a1a);border-top:3px solid #C6392C;}
+  .homering .hr-mat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 26px,transparent 26px 52px);}
+  .homering .hr-ropes{position:absolute;left:0;right:0;bottom:24%;height:34%;pointer-events:none;z-index:4;
+    background:linear-gradient(180deg,transparent 0,transparent 18%,rgba(244,232,219,.30) 18%,rgba(244,232,219,.30) 21%,transparent 21%,transparent 52%,rgba(244,232,219,.26) 52%,rgba(244,232,219,.26) 55%,transparent 55%,transparent 86%,rgba(244,232,219,.22) 86%,rgba(244,232,219,.22) 89%,transparent 89%);}
+  .hr-cast{position:absolute;inset:0;z-index:3;}
+  .hr-fig{position:absolute;bottom:4%;width:150px;margin-left:-75px;}
+  .hr-fig svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));}
+  .hr-fig .hr-bob{animation:bob 1.9s ease-in-out infinite;transform-origin:50% 90%;}
+  .hr-cap{position:absolute;left:0;right:0;top:10px;text-align:center;z-index:6;pointer-events:none;}
+  .hr-stip{display:block;font-family:var(--display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.9);}
+  .hr-names{display:block;font-size:12px;color:var(--cream);opacity:.9;margin-top:2px;text-shadow:0 2px 6px rgba(0,0,0,.9);}
+  @media(max-width:640px){ .homering{height:200px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;} .hr-names{font-size:11px;} }
+
+  /* ---- home: start / resume ---- */
+  .startcard{margin-top:16px;text-align:center;}
+  .sc-kick{font-family:var(--display);font-size:clamp(24px,5.6vw,34px);color:var(--cream);text-transform:uppercase;letter-spacing:.02em;line-height:1.1;}
+  .sc-sub{font-size:13px;color:var(--text-dim);margin:6px 0 14px;}
+  .resumecard{display:block;width:100%;text-align:left;margin-top:16px;cursor:pointer;
+    background:linear-gradient(180deg,rgba(224,179,65,.12),rgba(0,0,0,.25));border:1.5px solid rgba(224,179,65,.45);
+    border-radius:16px;padding:14px 16px;transition:.14s;color:inherit;font:inherit;}
+  .resumecard:hover{border-color:var(--gold);transform:translateY(-2px);}
+  .rc-top{display:flex;gap:12px;align-items:center;}
+  .rc-fig{width:62px;flex:none;} .rc-fig svg{width:100%;height:auto;image-rendering:pixelated;display:block;}
+  .rc-kick{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .rc-name{font-family:var(--display);font-size:23px;color:var(--cream);text-transform:uppercase;line-height:1.1;}
+  .rc-sub{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+  .rc-ovr{margin-left:auto;text-align:center;flex:none;}
+  .rc-ovr b{display:block;font-family:var(--mono);font-size:27px;color:var(--cream);line-height:1;}
+  .rc-ovr span{font-size:9px;letter-spacing:.14em;color:var(--text-faint);font-weight:800;}
+  .rc-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;}
+  .rc-stat{background:rgba(0,0,0,.30);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-dim);}
+  .rc-stat b{color:var(--cream);font-family:var(--mono);}
+  .rc-go{margin-left:auto;align-self:center;color:var(--gold);font-weight:800;font-size:12px;}
+
+  /* ---- start screen: pick how you want to be made ---- */
+  .starthead{text-align:center;margin:6px 0 4px;}
+  .starthead .sh-k{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--brandred);font-weight:800;}
+  .starthead h2{margin:4px 0 2px;}
+  .starthead .sh-s{font-size:13px;color:var(--text-dim);}
+  .pathwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px auto 0;max-width:860px;}
+  .pathcard{display:flex;flex-direction:column;text-align:left;cursor:pointer;color:var(--text);
+    font-family:var(--body);font-weight:600;text-transform:none;letter-spacing:0;
+    background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:0;overflow:hidden;transition:.15s;}
+  .pathcard:hover{transform:translateY(-3px);background:var(--panel);color:var(--text);}
+  .pathcard.quick:hover{border-color:var(--brandred);box-shadow:0 10px 26px -14px rgba(198,57,44,.8);}
+  .pathcard.full:hover{border-color:var(--gold);box-shadow:0 10px 26px -14px rgba(224,179,65,.8);}
+  .pc-art{position:relative;height:126px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);}
+  .pathcard.quick .pc-art{background:radial-gradient(ellipse at 50% 120%,rgba(198,57,44,.34),transparent 68%),#141011;}
+  .pathcard.full  .pc-art{background:radial-gradient(ellipse at 50% 120%,rgba(224,179,65,.24),transparent 68%),#141011;}
+  .pc-art svg{height:100px;width:auto;display:block;}
+  .pc-time{position:absolute;top:9px;right:9px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:var(--cream);}
+  .pc-body{padding:13px 15px 15px;display:flex;flex-direction:column;flex:1;}
+  .pc-kick{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;}
+  .pathcard.quick .pc-kick{color:var(--brandred);} .pathcard.full .pc-kick{color:var(--gold);}
+  .pc-name{font-family:var(--display);font-size:26px;color:var(--cream);text-transform:uppercase;line-height:1.08;margin-top:2px;}
+  .pc-lede{font-size:12.5px;color:var(--text-dim);margin:5px 0 10px;}
+  .pc-list{list-style:none;padding:0;margin:0 0 13px;display:flex;flex-direction:column;gap:7px;}
+  .pc-list li{position:relative;padding-left:19px;font-size:12.5px;color:var(--text);line-height:1.4;}
+  .pc-list li::before{content:"";position:absolute;left:2px;top:6px;width:7px;height:7px;transform:rotate(45deg);
+    background:var(--brandred);border-radius:1px;}
+  .pathcard.full .pc-list li::before{background:var(--gold);}
+  .pc-list li b{color:var(--cream);}
+  .pc-cta{margin-top:auto;display:block;text-align:center;padding:12px 18px;border-radius:999px;
+    border:1.5px solid var(--brandred);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.18));
+    color:var(--cream);font-size:14px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;transition:.14s;}
+  .pathcard.full .pc-cta{border-color:var(--gold);color:var(--gold);}
+  .pathcard.quick:hover .pc-cta{background:var(--brandred);color:#fff;}
+  .pathcard.full:hover .pc-cta{background:var(--gold);color:#17130c;}
+  @media(max-width:720px){ .pathwrap{grid-template-columns:1fr;gap:12px;} .pc-art{height:104px;} .pc-art svg{height:82px;} .pc-name{font-size:23px;} }
+
   /* ---- locker room ---- */
   .crewcard{background:var(--panel);border:1.5px solid var(--line);border-radius:13px;padding:11px 13px;}
   .crewcard.open{border-color:rgba(224,179,65,.5);}
@@ -569,16 +648,105 @@
       <text class="rtr-wmred" x="540" y="252" text-anchor="middle" font-size="62" letter-spacing="2">THE</text>
       <text class="rtr-wm" x="540" y="352" text-anchor="middle" font-size="96">ROPES</text>
     </svg>
-    <div style="font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:10px 0 4px;">Build A Wrestler · Career Simulator</div>
-    <p style="max-width:640px;color:var(--text-dim);">Create a rookie, break into the business, and live a full career. Every attribute point and every move in your arsenal is <b>earned</b> in the ring — never bought. Coins only buy the look.</p>
-    <div id="homeCont"></div>
-    <div class="row" style="margin-top:18px;">
-      <button class="big" onclick="quickStart()">⚡ Quick Start</button>
-      <button class="ghost big" onclick="startCreate()">Create In Detail</button>
+    <div style="font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:10px 0 10px;">Build A Wrestler · Career Simulator</div>
+
+    <!-- the ring: a different card every time you land here -->
+    <div class="homering" id="homeRing">
+      <div class="hr-ropes"></div><div class="hr-crowd"></div><div class="hr-mat"></div>
+      <div class="hr-cast" id="hrCast"></div>
+      <div class="hr-cap"><span class="hr-stip" id="hrStip">—</span><span class="hr-names" id="hrNames">—</span></div>
     </div>
-    <p class="hint" style="margin-top:8px;">Quick Start rolls you a wrestler and drops you straight into your first match — you can restyle any time in the Locker.</p>
-    <div class="row" style="margin-top:14px;">
+
+    <div id="homeCont"></div>
+    <div class="row" style="margin-top:14px;justify-content:center;">
       <button class="ghost" style="padding:6px 12px;font-size:11px;" onclick="location.href='booking/'">Promotion Booking Sim →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ START: PICK YOUR PATH ============ -->
+<div class="screen" id="s-start">
+  <div style="max-width:900px;margin:6px auto;">
+    <div class="starthead">
+      <div class="sh-k">New Career</div>
+      <h2>How Do You Want To Be Made?</h2>
+      <div class="sh-s">Both paths start you in the same place — a developmental deal on the independents. Only the amount of say you get up front changes.</div>
+    </div>
+
+    <div class="pathwrap">
+
+      <!-- QUICK -->
+      <button class="pathcard quick" onclick="quickStart()">
+        <div class="pc-art">
+          <span class="pc-time">~10 sec</span>
+          <svg viewBox="0 0 170 126" role="img" aria-label="Quick setup">
+            <g stroke="#C6392C" stroke-width="5" stroke-linecap="round" opacity=".75">
+              <line x1="6" y1="42" x2="40" y2="42"/><line x1="0" y1="63" x2="34" y2="63"/><line x1="8" y1="84" x2="42" y2="84"/>
+            </g>
+            <path d="M112 8 L160 35 L160 91 L112 118 L64 91 L64 35 Z" fill="#100d0d" stroke="#F4E8DB" stroke-width="4.5" stroke-linejoin="round"/>
+            <path d="M112 21 L149 42 L149 84 L112 105 L75 84 L75 42 Z" fill="none" stroke="#F4E8DB" stroke-width="1.6" opacity=".55"/>
+            <path d="M120 34 L98 66 H112 L104 92 L128 58 H113 Z" fill="#C6392C" stroke="#C6392C" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="112" cy="14" r="3" fill="#F4E8DB"/><circle cx="112" cy="112" r="3" fill="#F4E8DB"/>
+          </svg>
+        </div>
+        <div class="pc-body">
+          <div class="pc-kick">Path One</div>
+          <div class="pc-name">Quick Setup</div>
+          <div class="pc-lede">We book you. Bell rings in ten seconds.</div>
+          <ul class="pc-list">
+            <li><b>Ring name and nickname</b> rolled for you from the name generator.</li>
+            <li><b>A full look</b> — hair, face, gear, boots, colours, body build — assembled at random from the starter wardrobe.</li>
+            <li><b>An archetype picked at random</b>, which sets your starting stats, how fast each one grows, and which moves come easy.</li>
+            <li><b>Alignment, era and first gimmick</b> chosen to match, plus the indie promotion that best fits your style.</li>
+            <li><b>Straight into week 1</b> — no menus, no steps. You land on the career hub with a contract already signed.</li>
+            <li>Everything is still editable later: the <b>Locker Room</b> re-styles your look any week, and your character can turn at any time.</li>
+          </ul>
+          <span class="pc-cta">Book Me Now</span>
+        </div>
+      </button>
+
+      <!-- FULL -->
+      <button class="pathcard full" onclick="startCreate()">
+        <div class="pc-art">
+          <span class="pc-time">~3 min</span>
+          <svg viewBox="0 0 170 126" role="img" aria-label="Full setup">
+            <g stroke="#E0B341" stroke-width=".9" opacity=".28">
+              <line x1="18" y1="6" x2="18" y2="120"/><line x1="52" y1="6" x2="52" y2="120"/><line x1="86" y1="6" x2="86" y2="120"/><line x1="120" y1="6" x2="120" y2="120"/><line x1="154" y1="6" x2="154" y2="120"/>
+              <line x1="8" y1="20" x2="162" y2="20"/><line x1="8" y1="50" x2="162" y2="50"/><line x1="8" y1="80" x2="162" y2="80"/><line x1="8" y1="110" x2="162" y2="110"/>
+            </g>
+            <g fill="none" stroke="#F4E8DB" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+              <rect x="74" y="14" width="22" height="21" rx="1"/>
+              <path d="M79 35 V41"/><path d="M91 35 V41"/>
+              <path d="M68 41 H102 L106 62 L100 62 V82 H70 V62 L64 62 Z"/>
+              <path d="M64 60 L56 82 L58 94"/><path d="M106 60 L114 82 L112 94"/>
+              <path d="M74 82 V104 L71 117"/><path d="M96 82 V104 L99 117"/>
+            </g>
+            <g stroke="#E0B341" stroke-width="2" fill="none">
+              <path d="M40 16 H32 V38"/><path d="M130 16 H138 V38"/><path d="M40 116 H32 V94"/><path d="M130 116 H138 V94"/>
+              <line x1="34" y1="66" x2="46" y2="66" stroke-dasharray="4 3"/><line x1="124" y1="66" x2="136" y2="66" stroke-dasharray="4 3"/>
+            </g>
+            <circle cx="85" cy="28" r="1.8" fill="#C6392C"/><circle cx="85" cy="67" r="1.8" fill="#C6392C"/>
+          </svg>
+        </div>
+        <div class="pc-body">
+          <div class="pc-kick">Path Two</div>
+          <div class="pc-name">Full Setup</div>
+          <div class="pc-lede">Two steps. You draw every line yourself.</div>
+          <ul class="pc-list">
+            <li><b>Step 1 — Who you are.</b> Ring name, nickname, and the <b>era</b> you break into, which colours how the business treats you.</li>
+            <li><b>Alignment</b>: babyface, heel or tweener — your starting crowd lean, and the gimmick you debut with.</li>
+            <li><b>Archetype</b>, chosen from all eight with their full stat lines side by side, so you can see exactly what you're trading away.</li>
+            <li><b>Step 2 — Your look.</b> Face, hair, facial hair, mask, gear, kneepads, boots and accessories, each with its own colour palette.</li>
+            <li><b>Body build</b> — lean, athletic or heavy — and a live pixel preview that updates on every tap.</li>
+            <li>Roughly <b>three minutes</b> if you're picky, under one if you use the dice on each panel.</li>
+          </ul>
+          <span class="pc-cta">Design My Wrestler →</span>
+        </div>
+      </button>
+
+    </div>
+    <div class="row" style="margin-top:14px;justify-content:center;">
+      <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('home')">← Back</button>
     </div>
   </div>
 </div>
@@ -589,7 +757,7 @@
 
   <!-- STEP 1 -->
   <div id="createStep1">
-    <h2>Who Are You? <span class="sub2">30 seconds — everything else is earned in the ring</span></h2>
+    <h2>Who Are You? <span class="sub2">Step 1 of 2 — everything else is earned in the ring</span></h2>
     <div class="grid g2">
       <div class="card">
         <label class="fld"><div class="flab">Ring Name</div>
@@ -612,7 +780,7 @@
     <div class="row" style="margin-top:20px;">
       <button class="big" onclick="gotoStep(2)">Next: Your Look →</button>
       <button class="ghost" onclick="finishCreate()">Skip &amp; Debut Now</button>
-      <button class="ghost" onclick="go('home')">Back</button>
+      <button class="ghost" onclick="go('start')">Back</button>
     </div>
   </div>
 
@@ -2047,21 +2215,36 @@ function startCreate(){
     [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate();}}]); return; }
   doStartCreate();
 }
-function doStartCreate(quick){
+function doStartCreate(){
   CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
   $('cEra').innerHTML=ERAS.map(e=>`<option value="${e.id}">${e.name} (${e.years})</option>`).join('');
   renderStyles();
   go('create'); gotoStep(1);
   if(!$('cName').value) rollName();
-  if(quick){ // Quick Start: randomise the look and a style, land on step 1 ready to debut
-    LOOKCTX={bodyId:'cCustom',avId:'cAvWrap',L:CREATE.look,ownedOnly:true};
-    randomizeLook(); CREATE.style=STYLES[Math.floor(Math.random()*STYLES.length)].id; renderStyles();
-  }
+}
+/* Quick Setup: the whole character is rolled and the contract is signed in one
+   press. No steps, no menus — you land on the career hub in week 1. */
+const NICKS=['The Ace','Machine','The Hammer','Bad News','Prime Time','The Outlaw','Ironheart','Skywalker','The Cobra','Kingmaker','Nightmare','The Bruiser'];
+function doQuickStart(){
+  G=null;                            // nothing from a previous career leaks into the roll
+  CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
+  $('cEra').innerHTML=ERAS.map(e=>`<option value="${e.id}">${e.name} (${e.years})</option>`).join('');
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  rollName();
+  $('cNick').value = Math.random()<0.55 ? pick(NICKS) : '';
+  $('cAlign').value = pick(['face','face','heel','heel','tweener']);
+  $('cEra').value = pick(ERAS).id;
+  CREATE.style = pick(STYLES).id;
+  renderStyles();
+  LOOKCTX={bodyId:'cCustom',avId:'cAvWrap',L:CREATE.look,ownedOnly:true};
+  randomizeLook();
+  finishCreate();                    // signs the deal and lands on the career hub
+  toast('Rolled: '+STYLES.find(s=>s.id===CREATE.style).name+' · straight to week 1');
 }
 function quickStart(){
-  if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career.',
-    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate(true);}}]); return; }
-  doStartCreate(true);
+  if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career. This cannot be undone.',
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doQuickStart();}}]); return; }
+  doQuickStart();
 }
 /* The archetype cards used to read "+11 PO · +6 TO", which tells you nothing
    unless you already know the game. They now show the actual starting stat
@@ -2258,7 +2441,7 @@ function go(s){
   if(G) G.screen=s;
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('s-'+s); if(el) el.classList.add('active');
-  $('topbar').style.display=(G&&s!=='home'&&s!=='create')?'flex':'none';
+  $('topbar').style.display=(G&&s!=='home'&&s!=='create'&&s!=='start')?'flex':'none';
   window.scrollTo(0,0);
   if(G){ refreshHud();
     if(s==='career') renderCareer();
@@ -2285,16 +2468,88 @@ function refreshHud(){ if(!G) return;
   $('hPop').textContent=Math.round(G.car.pop);
   $('hCoins').textContent=G.bag.coins.toLocaleString();
 }
+/* ---- THE RING ON THE FRONT PAGE ----
+   A different card every time you land here: a singles match, a tag match,
+   a six-man, a rumble. Drawn from the same roster and the same pixel rig the
+   game itself uses, so the front page is showing you the actual game. */
+const HOME_CARDS=[
+  {n:2, stip:'Singles Match',      pose:['lockup','lockup']},
+  {n:2, stip:'Grudge Match',       pose:['strike','reel']},
+  {n:2, stip:'Steel Cage',         pose:['clothes','guard']},
+  {n:2, stip:'Submission Match',   pose:['grapple','kneel']},
+  {n:2, stip:'Last Man Standing',  pose:['stagger','point']},
+  {n:2, stip:'Championship Match', pose:['point','taunt']},
+  {n:4, stip:'Tag Team Match',     pose:['ready','lockup','lockup','ready']},
+  {n:4, stip:'Tornado Tag Match',  pose:['strike','reel','chop','guard']},
+  {n:6, stip:'Six-Man Tag',        pose:['taunt','ready','grapple','grapple','ready','point']},
+  {n:8, stip:'Royal Rumble',       pose:['ready','grapple','grapple','reel','strike','taunt','guard','ready']},
+  {n:5, stip:'Battle Royal',       pose:['grapple','reel','strike','ready','taunt']},
+  {n:3, stip:'Triple Threat',      pose:['grapple','ready','strike']},
+];
+function homeRing(){
+  const wrap=$('hrCast'); if(!wrap) return;
+  const card=HOME_CARDS[Math.floor(Math.random()*HOME_CARDS.length)];
+  // pull real characters, and drop the player in when they have a career
+  const pool=CHARS.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const save=load();
+  const cast=[];
+  if(save && Math.random()<0.55) cast.push({name:save.w.name,look:save.w.look,you:true});
+  pool.slice(0,card.n-cast.length).forEach(c=>cast.push({name:c.name,look:c.look}));
+  while(cast.length<card.n) cast.push({name:'—',look:oppLook('h'+cast.length,'x')});
+  // lay them across the ring, biggest at the front
+  const n=cast.length;
+  // a two-man match works the middle of the ring; a rumble fills it corner to corner
+  const pad=n<=2?38:n<=3?24:n<=4?16:11, span=100-pad*2;
+  wrap.innerHTML=cast.map((c,i)=>{
+    const t=n===1?0.5:(i/(n-1));
+    const left=pad+t*span;                                // % across the ring
+    const depth=(i%2)?0.92:1;                             // slight back row
+    const flip=left>50?-1:1;
+    return `<div class="hr-fig" style="left:${left}%;transform:scale(${depth});z-index:${10-i};">
+      <div class="hr-bob" style="animation-delay:${(i*0.23).toFixed(2)}s;transform:scaleX(${flip})">
+        ${wrestlerSVG(c.look,{pose:card.pose[i%card.pose.length]})}</div></div>`;
+  }).join('');
+  $('hrStip').textContent=card.stip;
+  $('hrNames').textContent=cast.map(c=>c.you?`${c.name} (you)`:c.name).join('  ·  ');
+}
 function renderHome(){
+  homeRing();
   const s=load(); const el=$('homeCont');
-  if(!s){ el.innerHTML=''; return; }
-  el.innerHTML=`<div class="card" style="margin-top:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
-    <div style="display:flex;gap:12px;align-items:center;">
-      <div style="width:70px;">${wrestlerSVG(s.w.look)}</div>
-      <div><div style="font-family:var(--display);font-size:22px;color:var(--cream);text-transform:uppercase;">${s.w.name}</div>
-      <div class="hint">Year ${s.car.year} · Age ${s.car.age} · ${tierOf(s.car.rep).name} · ${s.car.rec.w}-${s.car.rec.l}</div></div>
-    </div>
-    <button class="big" onclick="continueCareer()">Continue Career</button></div>`;
+  if(!s){
+    el.innerHTML=`<div class="startcard">
+      <div class="sc-kick">Start your journey to greatness</div>
+      <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring — never bought.</div>
+      <button class="big" style="font-size:17px;padding:14px 30px;" onclick="go('start')">Start Career →</button>
+    </div>`;
+    return;
+  }
+  const c=s.car, w=s.w;
+  const promo=(window.RTR_PROMOS||[]).find(p=>p.id===(c.deal&&c.deal.promo)) || {short:'',name:'Independent'};
+  const earned=TIERS.filter(t=>c.rep>=t.rep).pop()||TIERS[0];
+  const ovrNow=ovr(w);
+  el.innerHTML=`
+    <button class="resumecard" onclick="continueCareer()">
+      <div class="rc-top">
+        <div class="rc-fig">${wrestlerSVG(w.look)}</div>
+        <div style="min-width:0;">
+          <div class="rc-kick">Continue Career</div>
+          <div class="rc-name">${w.name}</div>
+          <div class="rc-sub">${promo.short?promo.short+' · ':''}${earned.name} · Year ${c.year}, age ${c.age}</div>
+        </div>
+        <div class="rc-ovr"><b>${ovrNow}</b><span>OVR</span></div>
+      </div>
+      <div class="rc-stats">
+        <span class="rc-stat"><b>${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</b> record</span>
+        <span class="rc-stat"><b>${c.reigns.length}</b> title${c.reigns.length===1?'':'s'}</span>
+        <span class="rc-stat"><b>${Math.round(c.reaction==null?c.pop:c.reaction)}</b> crowd</span>
+        ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">👑 Champion</span>`:''}
+        <span class="rc-go">Resume ▸</span>
+      </div>
+    </button>
+    <div class="row" style="margin-top:12px;justify-content:center;">
+      <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
+    </div>`;
 }
 // mentor-taught moves live on the save; fold them back into the catalogue on load
 function mergeCustomMoves(){ (G.w.custom||[]).forEach(mv=>{ if(!MOVES.find(x=>x.id===mv.id)) MOVES.push(mv); }); }
