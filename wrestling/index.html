@@ -349,8 +349,33 @@
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
   /* ---- home: a live ring with a different card every visit ---- */
-  .homering{position:relative;height:250px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  .homewrap{max-width:920px;margin:0 auto;padding-bottom:30px;}
+  .homehero{position:relative;text-align:center;padding:16px 0 4px;}
+  .homehero::before{content:"";position:absolute;left:50%;top:-40px;transform:translateX(-50%);width:min(720px,96vw);height:320px;
+    background:radial-gradient(ellipse at 50% 30%,rgba(198,57,44,.16),transparent 62%),
+               radial-gradient(ellipse at 50% 10%,rgba(244,232,219,.06),transparent 55%);
+    pointer-events:none;}
+  .homehero .beltlogo{position:relative;margin:0 auto;animation:beltFloat 5.5s ease-in-out infinite;}
+  @keyframes beltFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .home-kick{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 16px;}
+  .home-kick span{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-faint);font-weight:800;white-space:nowrap;}
+  .home-kick::before,.home-kick::after{content:"";height:2px;width:min(110px,16vw);border-radius:2px;
+    background:linear-gradient(90deg,transparent,rgba(198,57,44,.65));}
+  .home-kick::after{background:linear-gradient(90deg,rgba(198,57,44,.65),transparent);}
+  .homering{position:relative;height:272px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 18px 44px -22px rgba(0,0,0,.9);
     background:radial-gradient(ellipse at 50% 18%,rgba(198,57,44,.18),transparent 62%),linear-gradient(180deg,#171113,#0b0a0a);}
+  .homering .hr-lights{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(ellipse 34% 62% at 26% -8%,rgba(244,232,219,.11),transparent 70%),
+               radial-gradient(ellipse 34% 62% at 74% -8%,rgba(244,232,219,.11),transparent 70%),
+               radial-gradient(ellipse 60% 40% at 50% 108%,rgba(198,57,44,.10),transparent 70%);}
+  .homering .hr-post{position:absolute;bottom:22%;width:8px;height:37%;z-index:3;border-radius:3px 3px 0 0;
+    background:linear-gradient(180deg,#4a4038,#2b2420);box-shadow:0 0 0 1px rgba(0,0,0,.4);}
+  .homering .hr-post.l{left:3.4%;} .homering .hr-post.r{right:3.4%;}
+  .homering .hr-post::before{content:"";position:absolute;left:-3px;right:-3px;top:-7px;height:14px;border-radius:7px;background:var(--brandred);
+    box-shadow:0 16px 0 -1px rgba(198,57,44,.75),0 32px 0 -2px rgba(198,57,44,.55);}
+  .hr-tonight{display:inline-block;background:var(--brandred);color:#fff;font-size:8.5px;letter-spacing:.24em;
+    padding:3px 10px 2px;border-radius:99px;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
   .homering .hr-crowd{position:absolute;top:0;left:0;right:0;height:44%;opacity:.42;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
       repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);}
@@ -367,12 +392,22 @@
   .hr-stip{display:block;font-family:var(--display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.9);}
   .hr-names{display:block;font-size:12px;color:var(--cream);opacity:.9;margin-top:2px;text-shadow:0 2px 6px rgba(0,0,0,.9);}
-  @media(max-width:640px){ .homering{height:200px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;} .hr-names{font-size:11px;} }
+  @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;} .hr-names{font-size:11px;}
+    .homering .hr-post{width:6px;} .home-kick span{font-size:10px;letter-spacing:.2em;} }
 
   /* ---- home: start / resume ---- */
-  .startcard{margin-top:16px;text-align:center;}
-  .sc-kick{font-family:var(--display);font-size:clamp(24px,5.6vw,34px);color:var(--cream);text-transform:uppercase;letter-spacing:.02em;line-height:1.1;}
-  .sc-sub{font-size:13px;color:var(--text-dim);margin:6px 0 14px;}
+  .startcard{margin-top:26px;text-align:center;}
+  .sc-kick{font-family:var(--display);font-size:clamp(30px,6.4vw,46px);color:var(--cream);text-transform:uppercase;letter-spacing:.02em;line-height:1.08;
+    text-shadow:0 4px 22px rgba(198,57,44,.35);}
+  .sc-sub{font-size:13.5px;color:var(--text-dim);margin:10px auto 20px;max-width:560px;}
+  .btnglow{animation:btnGlow 2.4s ease-in-out infinite;}
+  @keyframes btnGlow{0%,100%{box-shadow:0 0 0 0 rgba(198,57,44,.0),0 8px 26px -10px rgba(198,57,44,.55);}
+    50%{box-shadow:0 0 0 3px rgba(198,57,44,.22),0 8px 32px -8px rgba(198,57,44,.85);}}
+  .featstrip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px;}
+  .feat{min-width:120px;padding:11px 16px 10px;border:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.18));}
+  .feat b{display:block;font-family:var(--mono);font-size:21px;color:var(--gold);line-height:1.1;}
+  .feat span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
   .resumecard{display:block;width:100%;text-align:left;margin-top:16px;cursor:pointer;
     background:linear-gradient(180deg,rgba(224,179,65,.12),rgba(0,0,0,.25));border:1.5px solid rgba(224,179,65,.45);
     border-radius:16px;padding:14px 16px;transition:.14s;color:inherit;font:inherit;}
@@ -705,7 +740,8 @@
 <main>
 <!-- ============ HOME ============ -->
 <div class="screen active" id="s-home">
-  <div style="max-width:900px;margin:10px auto;">
+  <div class="homewrap">
+    <div class="homehero">
     <svg class="beltlogo" viewBox="0 0 1080 470" role="img" aria-label="Run The Ropes">
       <defs><style>
         .rtr-plate{fill:#100d0d;stroke:#F4E8DB;stroke-width:7;stroke-linejoin:round;}
@@ -734,17 +770,20 @@
       <text class="rtr-wmred" x="540" y="252" text-anchor="middle" font-size="62" letter-spacing="2">THE</text>
       <text class="rtr-wm" x="540" y="352" text-anchor="middle" font-size="96">ROPES</text>
     </svg>
-    <div style="font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:10px 0 10px;">Build A Wrestler · Career Simulator</div>
+    <div class="home-kick"><span>Build A Wrestler · Career Simulator</span></div>
+    </div>
 
     <!-- the ring: a different card every time you land here -->
     <div class="homering" id="homeRing">
+      <div class="hr-lights"></div>
       <div class="hr-ropes"></div><div class="hr-crowd"></div><div class="hr-mat"></div>
+      <div class="hr-post l"></div><div class="hr-post r"></div>
       <div class="hr-cast" id="hrCast"></div>
-      <div class="hr-cap"><span class="hr-stip" id="hrStip">-</span><span class="hr-names" id="hrNames">-</span></div>
+      <div class="hr-cap"><span class="hr-tonight">Tonight</span><span class="hr-stip" id="hrStip">-</span><span class="hr-names" id="hrNames">-</span></div>
     </div>
 
     <div id="homeCont"></div>
-    <div class="row" style="margin-top:14px;justify-content:center;">
+    <div class="row" style="margin-top:18px;justify-content:center;">
       <button class="ghost" style="padding:6px 12px;font-size:11px;" onclick="location.href='booking/'">Promotion Booking Sim →</button>
     </div>
   </div>
@@ -2746,9 +2785,15 @@ function renderHome(){
   const s=load(); const el=$('homeCont');
   if(!s){
     el.innerHTML=`<div class="startcard">
-      <div class="sc-kick">Start your journey to greatness</div>
+      <div class="sc-kick">Start your journey<br>to greatness</div>
       <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
-      <button class="big" style="font-size:17px;padding:14px 30px;" onclick="go('start')">Start Career →</button>
+      <button class="big btnglow" style="font-size:18px;padding:15px 36px;" onclick="go('start')">Start Career →</button>
+      <div class="featstrip">
+        <div class="feat"><b>${MOVES.length}</b><span>moves to earn</span></div>
+        <div class="feat"><b>${CHARS.length}</b><span>rivals to face</span></div>
+        <div class="feat"><b>${PROMOS.length}</b><span>promotions</span></div>
+        <div class="feat"><b>${COSM.length}</b><span>gear items</span></div>
+      </div>
     </div>`;
     return;
   }
