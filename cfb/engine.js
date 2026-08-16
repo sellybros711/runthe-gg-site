@@ -1104,6 +1104,93 @@ function rosterStructure(roster) {
     schemeBonus, shape, shapeDamped };
 }
 
+/*
+ * WHAT EACH PART OF THE SHAPE IS COSTING, in the same percent the squad panel already
+ * prints at the top of the coach's take.
+ *
+ * WHY THIS EXISTS. The report card used to score its four meters with curves invented in
+ * the page, with different tolerances from the ones above: the run and pass meter used a
+ * span of 0.20 where balance() uses a tolerance of 0.12, so on 15.5% of drafted rosters
+ * it drew a red bar for a split the engine charges NOTHING for. Measured, not guessed:
+ * cfb/build/test/probe_report.mjs. A bar that says "weak" about something the game does
+ * not act on teaches a player to distrust the whole panel.
+ *
+ * So the page no longer scores anything. shape is a product of four factors, so for any
+ * one of them, putting it right and leaving the rest alone moves the multiplier by
+ * shape * (1/f - 1) * SHAPE_STRENGTH. That is a straight answer to "what is this line
+ * costing me", it is the same unit on all four lines, and it is the same unit as the
+ * headline. Zero means this part of the roster is costing nothing at all.
+ *
+ * `pass` is the odd one only in what it is made of: the other three are single factors,
+ * while this is base = effective/total, whose whole shortfall is the receiving points a
+ * quarterback who does not throw leaves on the floor. Which is why it is named for the
+ * passing game and not for the quarterback: a run-first quarterback with no receivers to
+ * strand costs nothing here, and the panel should say so rather than calling the best
+ * rushing season in the game a weakness.
+ */
+/*
+ * SIGNED, because three of these four can only cost and one of them can pay. balance,
+ * concentration and floor are capped at 1 and only ever subtract, but base runs past it:
+ * qbSupport is clamped to [0.62, 1.18], so a quarterback with a real arm lifts the
+ * receivers ABOVE their own numbers. Measured over 2,100 drafts, the passing line is
+ * worth -4.0% at the 5th percentile and +11.6% at the 95th, so clamping the gain away
+ * would have hidden the single biggest thing a good quarterback does for a roster. A
+ * negative number here means this part of the roster is paying you.
+ *
+ * AND THEY ADD UP, which took a second try. The obvious way to price a line is "what
+ * would fixing this one be worth", holding the others where they are. Each of those is
+ * true on its own and they do NOT sum to the whole, because shape is a PRODUCT: measure
+ * each factor against a shape the other three have already dragged down and every one of
+ * them comes out too small. Over 400 drafts the four fell short of the real shortfall by
+ * up to 14 points, which is exactly the arithmetic a player would try and find broken.
+ *
+ * A product is a sum of logs, so the split happens there: each factor's share of the
+ * shortfall is its share of -ln(f). That sums to the whole by construction, at the ends
+ * of the scale as well, because it divides up the shortfall the engine ACTUALLY has
+ * after damping and clamping rather than a modelled one.
+ */
+function structureCosts(st) {
+  const none = { pass: 0, balance: 0, concentration: 0, floor: 0 };
+  if (!st || !st.total) return none;
+  const fl = Math.max(0.3, st.floor);
+  const rest = st.balance * st.concentration * fl;
+  const base = rest ? st.shape / rest : 1;
+  const parts = { pass: base, balance: st.balance, concentration: st.concentration, floor: fl };
+
+  /* What the roster gives up against a shape that costs nothing, which is 1 plus whatever
+     the scheme pays. Read off the multiplier itself, so damping and the clamp are both
+     already in it. */
+  const shortfall = (1 + (st.schemeBonus || 0)) - st.multiplier;
+
+  const w = {}; let sum = 0;
+  for (const k of Object.keys(parts)) {
+    const f = parts[k];
+    w[k] = f > 0 ? -Math.log(f) : 0;
+    sum += w[k];
+  }
+  /* Nothing to divide, or a total so near zero that a share of it is noise being
+     amplified. Either way there is no story to tell and every line reads as free. */
+  if (!isFinite(sum) || Math.abs(sum) < 1e-6 || Math.abs(shortfall) < 1e-9) return none;
+
+  const out = {};
+  for (const k of Object.keys(parts)) out[k] = shortfall * (w[k] / sum);
+  return out;
+}
+
+/*
+ * THE THREE WORDS, AND WHERE THEY SIT. Set on cost rather than on each metric's own
+ * scale, so "OK" means the same thing on every line. 1.2% of a team's scoring is under a
+ * point a game on a good roster and is not worth calling a weakness; past 4% it is a real
+ * part of why a team underperforms the six names on it. Over 2,100 drafted rosters that
+ * puts 12% to 32% of them in Weak on any one line and roughly half in Strong, which is
+ * the shape a report card should have: praise that costs something to earn, and a
+ * warning that means the game is really taking points off you.
+ */
+const REPORT_BANDS = { ok: 0.012, weak: 0.040 };
+function reportBand(cost) {
+  return cost < REPORT_BANDS.ok ? 'strong' : cost < REPORT_BANDS.weak ? 'ok' : 'weak';
+}
+
 // ─── coach report ───────────────────────────────────────────────────────────
 
 function coachReport(roster, chemResult) {
@@ -1846,7 +1933,7 @@ const publicAPI = {
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
-  rosterStructure, STRUCTURE, coachReport,
+  rosterStructure, STRUCTURE, coachReport, structureCosts, reportBand, REPORT_BANDS,
   selectBowl, BOWLS, bowlKey, bowlName, MARGIN_GAIN,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {

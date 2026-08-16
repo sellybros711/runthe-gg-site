@@ -1,7 +1,7 @@
 /* Former-player ingestion pipeline -> arcade/former.js (window.RTG_FORMER).
  *
  * Builds a large, shared dataset of RECOGNIZABLE former players that the
- * combinatorial games (Career, Table, Odd One, Match, Crossword, Word Search)
+ * combinatorial games (Career, Table, Odd One, Match, Crossword)
  * merge in alongside the hand-curated corpus (entities.js) and the live
  * current rosters (rosters.js). Run by .github/workflows/former.yml on a
  * schedule (Actions runners have open network); also runnable locally:

@@ -38,8 +38,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44;
@@ -296,6 +296,19 @@
   /* ---- play zone (right) ---- */
   .zone-head{display:flex; align-items:baseline; gap:12px; margin:2px 2px 15px; flex-wrap:wrap;}
   .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
+  /* Says the quiet part out loud. "Rank It", "Odd One Out", "Daily Match" are
+     the names of puzzles, not of sports puzzles, and nothing above the fold
+     used to establish which one this is, you found out by playing. */
+  .zone-head .kicker{flex:0 0 100%; display:flex; align-items:center; gap:7px;
+    font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--mut); margin-bottom:7px;}
+  .zone-head .kicker b{font-weight:900; color:var(--brandT,var(--coralT));}
+  .zone-head .kicker i{display:inline-flex; gap:5px; font-style:normal;}
+  .zone-head .kicker svg{width:15px; height:15px; display:block;}
+  .zone-head .kicker .l1{color:var(--goldT);}
+  .zone-head .kicker .l2{color:var(--coralT);}
+  .zone-head .kicker .l3{color:var(--greenT);}
+  @media (max-width:640px){ .zone-head .kicker{font-size:10px; letter-spacing:.08em; gap:6px;} }
   .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
   .dprog .pips{display:flex; gap:5px;}
   .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
@@ -304,7 +317,7 @@
   .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
   .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
   #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
-  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipW{--pc:var(--teal);} #pipH{--pc:var(--hl,#F5822B);} #pipS{--pc:var(--spg,#DA6BE6);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipH{--pc:var(--hl,#F5822B);} #pipS{--pc:var(--spg,#DA6BE6);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -317,7 +330,6 @@
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .tile.match{--c:var(--blue); --onC:#fff;}
   .tile.cross{--c:var(--news); --onC:#fff;}   /* black-and-white newsprint: the crossword's own identity, not Guess's coral */
-  .tile.word{--c:var(--teal); --onC:#160B02;}
   .tile.guess{--c:var(--brand2); --onC:#160B02;}
   .tile.table{--c:var(--gold); --onC:#160B02;}
   .tile.oddone{--c:var(--violet); --onC:#160B02;}
@@ -329,7 +341,6 @@
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
-  .tile.word .nm{color:var(--tealT);}
   .tile.guess .nm{color:var(--brand2T);}
   .tile.table .nm{color:var(--goldT);}
   .tile.oddone .nm{color:var(--violetT);}
@@ -339,8 +350,19 @@
   .tile.highlow .nm{color:var(--brandT);}
   .tile.spg .nm{color:var(--spgT,#DA6BE6);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
-  .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;} .tile.spg{order:10;} .tile.highlow{order:11;}
+  /* Two groups, not one wall of ten. The split is the one the games already
+     make in their own descriptions: five you solve once and are done for the
+     day, five that keep going until you miss. Knowing which kind a game is
+     before you read its name is most of the "what even is this" problem. */
+  .tsec{grid-column:1 / -1; margin:6px 0 -4px;}
+  .tsec:first-child{margin-top:0;}
+  .tsec b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.07em;
+    text-transform:uppercase; font-size:14px; color:var(--ink);}
+  .tsec span{display:block; font-size:12px; color:var(--mut); margin-top:2px;}
+  .tsec.daily{order:0;}
+  .tile.match{order:1;} .tile.cross{order:2;} .tile.spg{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
+  .tsec.run{order:6;}
+  .tile.table{order:7;} .tile.career{order:8;} .tile.oddone{order:9;} .tile.alma{order:10;} .tile.highlow{order:11;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -361,9 +383,7 @@
      different periods so the grid feels alive, not synchronized. All disabled under
      prefers-reduced-motion (override at the bottom). SVG transforms need
      transform-box:fill-box so the origin is the element, not the SVG viewport. */
-  .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
-  .tile.guess .cap svg rect, .tile.word .cap svg .wsdiag, .tile.career .cap svg circle{
-    transform-box:fill-box; transform-origin:center;}
+  .tile.match .cap svg rect{transform-box:fill-box; transform-origin:center;}
 
   /* Daily Match: the tiles settle in a diagonal wave */
   .tile.match .cap svg rect{animation:capPop 5.6s ease-in-out infinite;}
@@ -379,69 +399,94 @@
   @keyframes capPop{0%,66%,100%{transform:scale(1)}10%{transform:scale(1.16)}}
 
   /* Odd One Out: the odd shape can't sit still */
-  .tile.oddone .cap svg rect{animation:capOdd 4.2s ease-in-out infinite;}
+  .tile.oddone .cap svg .oddx{transform-box:fill-box; transform-origin:center; animation:capOdd 4.2s ease-in-out infinite;}
   @keyframes capOdd{0%,52%,100%{transform:scale(1) rotate(0)}66%{transform:scale(1.22) rotate(-7deg)}82%{transform:scale(1.22) rotate(7deg)}}
 
   /* Rank It: bars grow into order, left to right */
-  .tile.rankit .cap svg rect{transform-origin:left center; animation:capRank 5s ease-in-out infinite;}
+  /* The rostrum builds from its base, in finishing order: second, first, third. */
+  .tile.rankit .cap svg rect{transform-box:fill-box; transform-origin:bottom center; animation:capRank 5s ease-in-out infinite;}
   .tile.rankit .cap svg rect:nth-of-type(1){animation-delay:0s}
-  .tile.rankit .cap svg rect:nth-of-type(2){animation-delay:.18s}
-  .tile.rankit .cap svg rect:nth-of-type(3){animation-delay:.36s}
-  @keyframes capRank{0%{transform:scaleX(.16)}20%,72%{transform:scaleX(1)}100%{transform:scaleX(.16)}}
+  .tile.rankit .cap svg rect:nth-of-type(2){animation-delay:.16s}
+  .tile.rankit .cap svg rect:nth-of-type(3){animation-delay:.32s}
+  .tile.rankit .cap svg .rknum{animation:capRkNum 5s ease-in-out infinite;}
+  @keyframes capRank{0%{transform:scaleY(.08)}20%,72%{transform:scaleY(1)}100%{transform:scaleY(.08)}}
+  @keyframes capRkNum{0%,12%{opacity:0}26%,72%{opacity:.95}100%{opacity:0}}
 
   /* Guess the Player: the row flips to reveal */
-  .tile.guess .cap svg rect{animation:capFlip 5.4s ease-in-out infinite;}
-  .tile.guess .cap svg rect:nth-of-type(1){animation-delay:0s}
-  .tile.guess .cap svg rect:nth-of-type(2){animation-delay:.07s}
-  .tile.guess .cap svg rect:nth-of-type(3){animation-delay:.14s}
-  .tile.guess .cap svg rect:nth-of-type(4){animation-delay:.21s}
-  .tile.guess .cap svg rect:nth-of-type(5){animation-delay:.28s}
-  .tile.guess .cap svg rect:nth-of-type(6){animation-delay:.35s}
-  .tile.guess .cap svg rect:nth-of-type(7){animation-delay:.42s}
-  .tile.guess .cap svg rect:nth-of-type(8){animation-delay:.49s}
-  .tile.guess .cap svg rect:nth-of-type(9){animation-delay:.56s}
-  .tile.guess .cap svg rect:nth-of-type(10){animation-delay:.63s}
-  .tile.guess .cap svg rect:nth-of-type(11){animation-delay:.70s}
-  .tile.guess .cap svg rect:nth-of-type(12){animation-delay:.77s}
-  @keyframes capFlip{0%,42%,100%{transform:scaleX(1)}50%{transform:scaleX(.08)}58%{transform:scaleX(1)}}
-
-  /* Word Search: the hidden word is found — cells light up down the diagonal */
-  .tile.word .cap svg .wsdiag{opacity:.38; animation:capDiag 4.2s ease-in-out infinite;}   /* per-cell delay set inline */
-  @keyframes capDiag{0%,100%{opacity:.38;transform:scale(.88)}20%{opacity:1;transform:scale(1.16)}52%{opacity:1;transform:scale(1)}80%{opacity:.38;transform:scale(.88)}}
+  /* The tick under the chin is the reveal: the silhouette resolves from a
+     question mark into an identified player, once per cycle. */
+  .tile.guess .cap svg .gq{transform-box:fill-box; transform-origin:center; animation:capQ 5.4s ease-in-out infinite;}
+  .tile.guess .cap svg .gcut{opacity:0; animation:capSolved 5.4s ease-in-out infinite;}
+  @keyframes capQ{0%,54%{opacity:1; transform:scale(1)}62%{opacity:0; transform:scale(.5)}94%{opacity:0; transform:scale(.5)}100%{opacity:1; transform:scale(1)}}
+  @keyframes capSolved{0%,58%{opacity:0; transform:scale(.5)}68%,92%{opacity:1; transform:scale(1)}100%{opacity:0; transform:scale(.5)}}
 
   /* Career Path: the trend line draws, then the nodes pop along it */
-  .tile.career .cap svg path{stroke-dasharray:1; animation:capDraw 6s ease-in-out infinite;}
+  .tile.career .cap svg .croute path{stroke-dasharray:1; animation:capDraw 6s ease-in-out infinite;}
   @keyframes capDraw{0%{stroke-dashoffset:1}28%,74%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
-  .tile.career .cap svg circle{animation:capNode 6s ease-in-out infinite;}
-  .tile.career .cap svg circle:nth-of-type(1){animation-delay:.2s}
-  .tile.career .cap svg circle:nth-of-type(2){animation-delay:.8s}
-  .tile.career .cap svg circle:nth-of-type(3){animation-delay:1.3s}
-  .tile.career .cap svg circle:nth-of-type(4){animation-delay:1.8s}
+  .tile.career .cap svg .cnode{transform-box:fill-box; transform-origin:center; animation:capNode 6s ease-in-out infinite;}
+  .tile.career .cap svg .cnode:nth-of-type(2){animation-delay:.2s}
+  .tile.career .cap svg .cnode:nth-of-type(3){animation-delay:.8s}
+  .tile.career .cap svg .cnode:nth-of-type(4){animation-delay:1.3s}
   @keyframes capNode{0%,4%{transform:scale(0)}12%{transform:scale(1.3)}20%,80%{transform:scale(1)}100%{transform:scale(0)}}
 
   /* Crossword: the answer types itself in */
-  .tile.cross .cap svg .cwletters text{animation:capType 6s ease-in-out infinite;}
-  .tile.cross .cap svg .cwletters text:nth-of-type(1){animation-delay:0s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(2){animation-delay:.4s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(3){animation-delay:.8s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(4){animation-delay:1.2s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(5){animation-delay:1.6s}
-  .tile.cross .cap svg .cwletters text:nth-of-type(6){animation-delay:2s}
-  @keyframes capType{0%,5%{opacity:.1}13%{opacity:1}90%{opacity:1}97%,100%{opacity:.1}}
+  /* Each answer holds for a quarter of the cycle. The set fades as a block and
+     the letters type in over it, the two opacities multiply, so one stagger
+     rule per letter gives the typing without a second timeline to keep in sync. */
+  .tile.cross .cap svg .cwset{opacity:0; animation:capSet 13.2s linear infinite;}
+  .tile.cross .cap svg .cwset text{opacity:0; animation:capType 13.2s linear infinite;}
+  .tile.cross .cap svg .cwset:nth-of-type(1){animation-delay:0s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(1){animation-delay:0s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(2){animation-delay:0.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(3){animation-delay:0.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(4){animation-delay:0.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(5){animation-delay:0.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(6){animation-delay:0.5s}
+  .tile.cross .cap svg .cwset:nth-of-type(1) text:nth-of-type(7){animation-delay:0.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(2){animation-delay:3.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(1){animation-delay:3.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(2){animation-delay:3.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(3){animation-delay:3.5s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(4){animation-delay:3.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(5){animation-delay:3.7s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(6){animation-delay:3.8s}
+  .tile.cross .cap svg .cwset:nth-of-type(2) text:nth-of-type(7){animation-delay:3.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(3){animation-delay:6.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(1){animation-delay:6.6s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(2){animation-delay:6.7s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(3){animation-delay:6.8s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(4){animation-delay:6.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(5){animation-delay:7s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(6){animation-delay:7.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(3) text:nth-of-type(7){animation-delay:7.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(4){animation-delay:9.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(1){animation-delay:9.9s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(2){animation-delay:10s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(3){animation-delay:10.1s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(4){animation-delay:10.2s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(5){animation-delay:10.3s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(6){animation-delay:10.4s}
+  .tile.cross .cap svg .cwset:nth-of-type(4) text:nth-of-type(7){animation-delay:10.5s}
+  @keyframes capSet{0%{opacity:0}2%{opacity:1}22%{opacity:1}25%,100%{opacity:0}}
+  @keyframes capType{0%{opacity:0}2%{opacity:1}25%,100%{opacity:0}}
 
   /* Alma Mater: the mortarboard spins a full turn, then rests */
   .tile.alma .cap svg{transform-box:fill-box; transform-origin:center; animation:capSpin 4.6s ease-in-out infinite;}
   @keyframes capSpin{0%,26%{transform:rotate(0)}74%,100%{transform:rotate(360deg)}}
 
   @media (prefers-reduced-motion:reduce){
-    .tile.match .cap svg rect, .tile.oddone .cap svg rect, .tile.rankit .cap svg rect,
-    .tile.guess .cap svg rect, .tile.word .cap svg .wsdiag, .tile.career .cap svg path,
-    .tile.career .cap svg circle, .tile.cross .cap svg .cwletters text, .tile.alma .cap svg,
+    .tile.match .cap svg rect, .tile.oddone .cap svg .oddx, .tile.rankit .cap svg rect,
+    .tile.rankit .cap svg .rknum, .tile.guess .cap svg .gq, .tile.guess .cap svg .gcut,
+    .tile.career .cap svg .croute, .tile.career .cap svg .cnode,
+    .tile.cross .cap svg .cwset text, .tile.alma .cap svg,
     .tile.highlow .cap svg .hlup, .tile.highlow .cap svg .hldn{
       animation:none !important; transform:none !important; opacity:1 !important; stroke-dashoffset:0 !important;}
+    .tile.cross .cap svg .cwset{animation:none !important; opacity:0 !important;}
+    .tile.cross .cap svg .cwset:nth-of-type(1){opacity:1 !important;}
   }
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
+  .tile .badge .bshort{display:none;}   /* the narrow-row wording; see the mobile block */
   /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
   .tile.highlow .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
   .tile.highlow .badge svg{width:10px; height:10px;}
@@ -461,12 +506,19 @@
   .tile .body{display:flex; flex-direction:column; flex:1; padding:15px 15px 15px;}
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
-  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
+  /* How long it takes, next to the button. The one thing a games hub can tell
+     you that the name and the blurb can't, and the question you actually ask
+     when you're deciding on a phone: have I got time for this right now. */
+  .tile .foot{margin-top:auto;}
+  .tile .tmeta{display:block; font-size:10.5px; font-weight:900; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--dim,var(--mut)); margin:0 0 9px; text-align:center;}
+  .tile.archive .tmeta{display:none;}   /* the split Archive/Leaderboard pill needs the room */
+  .tile .play{border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
   /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
      Eight of the ten accents are light, so white text on them sat near 2:1 and
      leaned entirely on a text-shadow. Blue and slate are the two dark ones and
-     genuinely want white — they keep the shadow, the rest do not need it. */
+     genuinely want white, they keep the shadow, the rest do not need it. */
   /* High Low is card-only: for non-members the PLAY pill greys out so the tile
      reads as locked. It stays tappable on purpose - it opens the game page,
      which is where the Arcade Card offer lives. */
@@ -497,21 +549,61 @@
   .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, var(--card2));}
   .tile .play.split .half svg{width:15px; height:15px; flex:0 0 auto;}
   .tile.archive.cross .play.split .half{color:var(--coralT); border-color:var(--coral);}
-  /* mobile: 2-up compact cards (cap + title + PLAY) */
+  /* Mobile: one game per row, and the row says what the game is.
+     This used to be a 2-up grid of squares, which left each card about 176px
+     wide, too narrow for a sentence, so the description was simply switched
+     off. That is what made the hub unreadable: ten abstract icons, ten names
+     like "Alma Mater" and "Odd One Out", and no way to learn what any of them
+     were without opening all ten. A full-width row has room for the blurb that
+     was already written, so it shows it. */
   @media (max-width:640px){
-    .tile{border-radius:14px;}
-    .tile .cap{height:76px;}
+    .tiles{grid-template-columns:1fr; gap:10px;}
+    .tile{flex-direction:row; align-items:stretch; border-radius:14px;}
+    .tile:hover{transform:none;}          /* no hover on touch; the lift only caused jitter */
+    /* The cap becomes a colour spine down the left: same per-game identity and
+       the same animated mark, in a fifth of the height. */
+    .tile .cap{flex:0 0 86px; height:auto; position:static;}
+    .tile .cap svg{width:50px; height:50px;}
+    .tile .cap svg.jrot{width:54px; height:54px;}
+    /* cap is static on mobile, so these two now anchor to the row itself */
+    .tile .badge{top:auto; bottom:6px; left:6px; font-size:8px; padding:3px 5px; letter-spacing:.06em;}
+    .tile .status{top:9px; right:10px; font-size:8.5px; padding:3px 7px;}
+    .tile .body{padding:11px 12px 11px 13px; justify-content:center; min-width:0;}
+    /* Only the title runs under the status chip, so only the title is inset. */
+    .tile .nm{font-size:16.5px; text-align:left; padding-right:58px;}
+    /* Every blurb is written to land inside two lines at this width, so rows
+       come out even. The clamp is a backstop for a blurb that grows later, and
+       it sits at three rather than two on purpose: an uneven row is a much
+       smaller problem than a sentence cut off at "Find the…", which just reads
+       as broken. On a 320px screen most of them do need the third line. */
+    .tile .desc{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+      overflow:hidden; font-size:12.5px; line-height:1.42; margin:4px 0 0;}
+    .tile .foot{display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:8px; margin-top:8px;}
+    .tile .tmeta{margin:0; text-align:left; font-size:10px;}
+    /* The whole row is the link, so the button no longer has to be the tap
+       target, it shrinks to a chip and stops being the loudest thing on the
+       screen ten times over. */
+    .tile .play{min-height:33px; padding:0 15px; font-size:12.5px; flex:0 0 auto;}
+    /* Archive + Leaderboard: two pills need the full row width, so they take it
+       and the time chip stands down. */
+    .tile .play.split{flex:1 1 100%; gap:7px;}
+    .tile .play.split .half{flex:1 1 0; min-height:34px; font-size:12px; letter-spacing:.01em; padding:0 8px;}
+    /* "Members only" doesn't fit an 86px spine; the short form does. */
+    .tile .badge .bfull{display:none;}
+    .tile .badge .bshort{display:inline;}
+  }
+  /* iPhone SE and the small Androids: give the sentence back the width the
+     colour spine was taking, so most blurbs still land in two lines. */
+  @media (max-width:360px){
+    .tile .cap{flex:0 0 68px;}
     .tile .cap svg{width:42px; height:42px;}
-    .tile .badge{top:7px; left:8px; font-size:8.5px; padding:3px 6px;}
-    .tile .status{top:7px; right:8px; font-size:8.5px; padding:3px 7px;}
-    .tile .body{padding:11px 11px 11px;}
-    .tile .nm{font-size:15px; text-align:center;}
-    .tile .desc{display:none;}
-    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
-    /* Archive + Leaderboard: two pills can't fit "Leaderboard" in a half-width
-       2-up card, so stack them full-width on mobile instead of clipping. */
-    .tile .play.split{flex-direction:column; gap:7px;}
-    .tile .play.split .half{width:100%; flex:0 0 auto; min-height:38px; font-size:12.5px; letter-spacing:.01em;}
+    .tile .cap svg.jrot{width:46px; height:46px;}
+    .tile .body{padding:11px 10px 11px 11px;}
+    .tile .nm{font-size:15.5px; padding-right:52px;}
+    .tile .desc{font-size:12px;}
+    .tile .tmeta{font-size:9.5px; letter-spacing:.06em;}
+    .tile .play{padding:0 13px; font-size:12px;}
   }
 
   /* ---- daily double banner (all solved) ---- */
@@ -558,11 +650,22 @@
            from the top banner; the hub is games-first, edge to edge) -->
       <main id="puzzles">
         <div class="zone-head">
-          <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 11 played</span></span>
+          <span class="kicker">
+            <i aria-hidden="true">
+              <svg class="l1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.4 5.4c3.4 3 3.4 10.2 0 13.2M18.6 5.4c-3.4 3-3.4 10.2 0 13.2"/></svg>
+              <svg class="l2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 4c4.5 0 8 3.5 8 8s-3.5 8-8 8-8-3.5-8-8 3.5-8 8-8z" transform="rotate(-38 12 12) scale(1 .62) translate(0 7.4)"/><path d="M9.5 14.5 14.5 9.5M10.8 11.2l1.4 1.4M12.4 9.6l1.4 1.4"/></svg>
+              <svg class="l3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M6.2 5.6c2.4 3.6 2.4 9.2 0 12.8M17.8 5.6c-2.4 3.6-2.4 9.2 0 12.8"/></svg>
+            </i>
+            <span>Daily <b>sports</b> puzzles &middot; NBA &middot; NFL &middot; MLB</span>
+          </span>
+          <span class="day">Today's Games</span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
+          <div class="tsec daily"><b>Daily puzzles</b><span>One solve each, then you're done until tomorrow.</span></div>
+          <div class="tsec run"><b>Streak games</b><span>Keep answering until you miss. How far can you get?</span></div>
+
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" aria-hidden="true">
               <span class="status" id="stM">Ready</span>
@@ -570,12 +673,21 @@
                 <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
                 <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
                 <rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/>
+                <!-- three of the nine name what is being sorted -->
+                <g fill="none" stroke="#fff" stroke-width="1.5" opacity=".92">
+                  <g><circle cx="9.5" cy="9.5" r="5"/><path d="M4.5 9.5h10M9.5 4.5v10"/></g>
+                  <g transform="rotate(-38 28 28)"><ellipse cx="28" cy="28" rx="5.6" ry="3.7"/><path d="M25.6 28h4.8"/></g>
+                  <g><circle cx="46.5" cy="46.5" r="5"/><path d="M43 43.4c1.6 2.2 1.6 4 0 6.2M50 43.4c-1.6 2.2-1.6 4 0 6.2"/></g>
+                </g>
               </g></svg>
             </span>
             <span class="body">
               <span class="nm">Daily Match</span>
-              <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</span>
-              <span class="play" id="playM">PLAY <span class="arw">→</span></span>
+              <span class="desc" id="descM">Tap four names that belong together. Find all four groups before four mistakes.</span>
+              <span class="foot">
+                <span class="tmeta">About 3 min</span>
+                <span class="play" id="playM">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -587,25 +699,21 @@
                 <g clip-path="url(#cwico)">
                   <rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/>
                   <!-- blocked cells cap the two answers; kept 180-degree symmetric -->
-                  <rect x="40" y="4" width="12" height="12" fill="#12202F"/>
                   <rect x="4" y="40" width="12" height="12" fill="#12202F"/>
                   <!-- grid lines -->
                   <g stroke="#CBD5E1" stroke-width="1">
                     <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
                   </g>
-                  <!-- clue numbers -->
-                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#93A1B2">
-                    <text x="6.2" y="9.4">1</text>
-                    <text x="42.2" y="21.4">2</text>
-                  </g>
-                  <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
+                  <!-- Four answers, typed in and swapped: a player across, a
+                       term from their sport down, sharing the corner letter.
+                       All four are in the markup at once and cross-fade, because
+                       CSS cannot rewrite text and the hub should not be running a
+                       timer per tile just to animate an icon. -->
                   <g class="cwletters" font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
-                    <text x="10" y="13.2">R</text>
-                    <text x="22" y="13.2">U</text>
-                    <text x="34" y="13.2">N</text>
-                    <text x="46" y="25.2">T</text>
-                    <text x="46" y="37.2">H</text>
-                    <text x="46" y="49.2">E</text>
+                    <g class="cwset"><text x="10" y="13.2">B</text><text x="22" y="13.2">I</text><text x="34" y="13.2">R</text><text x="46" y="13.2">D</text><text x="46" y="25.2">U</text><text x="46" y="37.2">N</text><text x="46" y="49.2">K</text></g>
+                    <g class="cwset"><text x="10" y="13.2">M</text><text x="22" y="13.2">O</text><text x="34" y="13.2">S</text><text x="46" y="13.2">S</text><text x="46" y="25.2">N</text><text x="46" y="37.2">A</text><text x="46" y="49.2">P</text></g>
+                    <g class="cwset"><text x="10" y="13.2">R</text><text x="22" y="13.2">U</text><text x="34" y="13.2">T</text><text x="46" y="13.2">H</text><text x="46" y="25.2">O</text><text x="46" y="37.2">M</text><text x="46" y="49.2">E</text></g>
+                    <g class="cwset"><text x="10" y="13.2">M</text><text x="22" y="13.2">A</text><text x="34" y="13.2">Y</text><text x="46" y="13.2">S</text><text x="46" y="25.2">L</text><text x="46" y="37.2">A</text><text x="46" y="49.2">M</text></g>
                   </g>
                 </g>
                 <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/>
@@ -613,59 +721,39 @@
             </span>
             <span class="body">
               <span class="nm">Daily Crossword</span>
-              <span class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</span>
-              <span class="play" id="playC">PLAY <span class="arw">→</span></span>
+              <span class="desc">Fill the grid from sports clues. Fastest clean solve tops the board.</span>
+              <span class="foot">
+                <span class="tmeta">About 3 min</span>
+                <span class="play" id="playC">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
-          <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
-            <span class="cap" aria-hidden="true">
-              <span class="status" id="stW">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
-                <g clip-path="url(#wsico)">
-                  <rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/>
-                  <g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
-                  <!-- teal diagonal 'found word' WIN -->
-                  <rect class="wsdiag" x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect class="wsdiag" x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.22s"/>
-                  <rect class="wsdiag" x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5" style="animation-delay:.44s"/>
-                  <g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle">
-                    <text x="10" y="13" fill="#06333A">W</text>
-                    <text x="22" y="25" fill="#06333A">I</text>
-                    <text x="34" y="37" fill="#06333A">N</text>
-                    <g fill="#7FA8B0">
-                      <text x="34" y="13">R</text><text x="46" y="13">T</text>
-                      <text x="10" y="37">S</text><text x="46" y="37">E</text>
-                      <text x="10" y="49">A</text><text x="22" y="49">D</text><text x="34" y="49">L</text><text x="46" y="49">O</text>
-                    </g>
-                  </g>
-                </g>
-                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Daily Word Search</span>
-              <span class="desc">Find every hidden name from today's theme. Beat the clock for a flawless run.</span>
-              <span class="play" id="playW">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
+          
           <a class="tile guess" id="cardGuess" href="/arcade/guess/">
             <span class="cap" aria-hidden="true">
               <span class="status" id="stG">Ready</span>
               <svg viewBox="0 0 56 56">
-                <g>
-                  <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
-                  <rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/>
-                  <rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/>
+                <!-- a head over a JERSEY, not over round shoulders: head-plus-shoulders
+                     is the universal account-profile glyph and read as one. The scoop
+                     neck and sleeve flares are what make it an athlete. The mark over
+                     the face says you don't know which athlete yet, and resolves to a
+                     tick once a cycle. -->
+                <g fill="#F06A5F">
+                  <circle cx="28" cy="16.5" r="10"/>
+                  <path d="M20 27.5 L8.6 32.3 C6.7 33.1 5.7 35.2 6.5 37.2 L10 46 L16.5 43.6 V53 H39.5 V43.6 L46 46 L49.5 37.2 C50.3 35.2 49.3 33.1 47.4 32.3 L36 27.5 C34.4 31.1 31.4 33.2 28 33.2 C24.6 33.2 21.6 31.1 20 27.5 Z"/>
                 </g>
+                <g class="gq"><text x="28" y="24.5" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="21" font-weight="900" fill="#fff">?</text></g>
+                <path class="gcut" d="M21.8 17 26.6 22.2 34.8 11.6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
             <span class="body">
               <span class="nm">Guess the Player</span>
-              <span class="desc">One mystery athlete a day. Crack it in eight guesses from the clues.</span>
-              <span class="play" id="playG">PLAY <span class="arw">→</span></span>
+              <span class="desc">Name the mystery player from any era in eight guesses. Tiles compare careers.</span>
+              <span class="foot">
+                <span class="tmeta">About 2 min</span>
+                <span class="play" id="playG">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -696,8 +784,11 @@
             </span>
             <span class="body">
               <span class="nm">Number Game</span>
-              <span class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</span>
-              <span class="play" id="playT">PLAY <span class="arw">→</span></span>
+              <span class="desc">One player, one club. Type the number they wore. Within two still counts.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playT">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -705,14 +796,21 @@
             <span class="cap" aria-hidden="true">
               <span class="status" id="stO">Ready</span>
               <svg viewBox="0 0 56 56">
-                <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
-                <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
+                <!-- three basketballs and a football: the mechanic (three alike, one not)
+                     drawn in the subject, so the tile reads as sport at a glance -->
+                <g class="oball"><circle cx="16" cy="16" r="8" fill="#A982F3"/><g stroke="#fff" stroke-width="1.3" fill="none" opacity=".62"><path d="M8 16h16M16 8v16"/><path d="M10.6 10.6c3.1 3 3.1 7.8 0 10.8M21.4 10.6c-3.1 3-3.1 7.8 0 10.8"/></g></g>
+                <g class="oball"><circle cx="40" cy="16" r="8" fill="#A982F3"/><g stroke="#fff" stroke-width="1.3" fill="none" opacity=".62"><path d="M32 16h16M40 8v16"/><path d="M34.6 10.6c3.1 3 3.1 7.8 0 10.8M45.4 10.6c-3.1 3-3.1 7.8 0 10.8"/></g></g>
+                <g class="oball"><circle cx="16" cy="40" r="8" fill="#A982F3"/><g stroke="#fff" stroke-width="1.3" fill="none" opacity=".62"><path d="M8 40h16M16 32v16"/><path d="M10.6 34.6c3.1 3 3.1 7.8 0 10.8M21.4 34.6c-3.1 3-3.1 7.8 0 10.8"/></g></g>
+                <g class="oddx"><g transform="rotate(-38 40 40)"><ellipse cx="40" cy="40" rx="10" ry="6.6" fill="#F06A5F"/><g stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".8"><path d="M36 40h8"/><path d="M37.6 38.2v3.6M40 38v4M42.4 38.2v3.6"/></g></g></g>
               </svg>
             </span>
             <span class="body">
               <span class="nm">Odd One Out</span>
-              <span class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</span>
-              <span class="play" id="playO">PLAY <span class="arw">→</span></span>
+              <span class="desc">Five names, four share something. Tap the odd one, then name what links the rest.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playO">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -720,14 +818,21 @@
             <span class="cap" aria-hidden="true">
               <span class="status" id="stR">Ready</span>
               <svg viewBox="0 0 56 56">
-                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M12 44 L22 24 L34 34 L46 12"/></g>
-                <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
+                <!-- a run of team crests, not a line chart: the zig-zag on its own
+                     read as a stock ticker, which is the wrong sport entirely -->
+                <g class="croute" fill="none" stroke="#48D17A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".5"><path pathLength="1" d="M11 40 L28 29 L45 17"/></g>
+                <g class="cnode"><path transform="translate(11 40)" d="M0 -9 L8.4 -6 V1.6 C8.4 6.2 4.6 9.4 0 11 C-4.6 9.4 -8.4 6.2 -8.4 1.6 V-6 Z" fill="#48D17A"/></g>
+                <g class="cnode"><path transform="translate(28 29)" d="M0 -9 L8.4 -6 V1.6 C8.4 6.2 4.6 9.4 0 11 C-4.6 9.4 -8.4 6.2 -8.4 1.6 V-6 Z" fill="#48D17A"/></g>
+                <g class="cnode"><path transform="translate(45 17)" d="M0 -9 L8.4 -6 V1.6 C8.4 6.2 4.6 9.4 0 11 C-4.6 9.4 -8.4 6.2 -8.4 1.6 V-6 Z" fill="#48D17A"/></g>
               </svg>
             </span>
             <span class="body">
               <span class="nm">Career Path</span>
-              <span class="desc">Name the athlete from their team-by-team journey. How many in a row?</span>
-              <span class="play" id="playR">PLAY <span class="arw">→</span></span>
+              <span class="desc">A career unfolds one team at a time. Type the player early for more points.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playR">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -735,15 +840,23 @@
             <span class="cap" aria-hidden="true">
               <span class="status" id="stK">Ready</span>
               <svg viewBox="0 0 56 56">
-                <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
-                <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
-                <rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/>
+                <!-- a podium, not a bar chart: three bars sliding out read as data, and
+                     1-2-3 on a rostrum reads as finishing order -->
+                <rect x="4" y="28" width="15" height="22" rx="2.5" fill="#F65C9C" opacity=".52"/>
+                <rect x="20.5" y="17" width="15" height="33" rx="2.5" fill="#F65C9C"/>
+                <rect x="37" y="34" width="15" height="16" rx="2.5" fill="#F65C9C" opacity=".74"/>
+                <g class="rknum" font-family="Anton, Impact, sans-serif" font-size="12" text-anchor="middle" fill="#fff" opacity=".95">
+                  <text x="11.5" y="42">2</text><text x="28" y="34">1</text><text x="44.5" y="46">3</text>
+                </g>
               </svg>
             </span>
             <span class="body">
               <span class="nm">Rank It</span>
-              <span class="desc">Put five athletes in the right order by a career stat or era. Two tries per set; clear it and get another.</span>
-              <span class="play" id="playK">PLAY <span class="arw">→</span></span>
+              <span class="desc">Rank five players by a career stat, most at the top. Five tries, fewest wins.</span>
+              <span class="foot">
+                <span class="tmeta">About 2 min</span>
+                <span class="play" id="playK">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -759,8 +872,11 @@
             </span>
             <span class="body">
               <span class="nm">Alma Mater</span>
-              <span class="desc">Name the college each player came from. Four choices, one right. How far can you run?</span>
-              <span class="play" id="playA">PLAY <span class="arw">→</span></span>
+              <span class="desc">Where did this player go to college? Type the school for full points.</span>
+              <span class="foot">
+                <span class="tmeta">About 1 min</span>
+                <span class="play" id="playA">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
@@ -768,30 +884,44 @@
             <span class="cap" aria-hidden="true">
               <span class="status" id="stS">Ready</span>
               <svg viewBox="0 0 56 56">
-                <circle cx="28" cy="24" r="15" fill="none" stroke="#DA6BE6" stroke-width="3"/>
-                <g font-family="Anton, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#DA6BE6"><text x="28" y="30">S</text></g>
-                <g fill="#DA6BE6" opacity=".55"><rect x="12" y="44" width="10" height="4" rx="2"/><rect x="23" y="44" width="10" height="4" rx="2"/><rect x="34" y="44" width="10" height="4" rx="2"/></g>
+                <!-- the game is a letter crossed with a sport, so the mark is
+                     exactly that: one letter tile, one ball, both big enough to
+                     read at icon size -->
+                <rect x="3" y="15" width="25" height="27" rx="5" fill="none" stroke="#DA6BE6" stroke-width="3"/>
+                <g font-family="Anton, Impact, sans-serif" font-size="19" text-anchor="middle" fill="#DA6BE6"><text x="15.5" y="35.5">S</text></g>
+                <g fill="none" stroke="#DA6BE6" stroke-width="2.6">
+                  <circle cx="41" cy="28.5" r="12"/>
+                  <path d="M29 28.5h24M41 16.5v24M33 19.4c4.6 4.6 4.6 13.6 0 18.2M49 19.4c-4.6 4.6-4.6 13.6 0 18.2"/>
+                </g>
               </svg>
             </span>
             <span class="body">
               <span class="nm">Sportegories</span>
-              <span class="desc">One letter, eight categories, two minutes. Name a player for every one.</span>
-              <span class="play" id="playS">PLAY <span class="arw">→</span></span>
+              <span class="desc">One letter, eight categories, two minutes. Type a full name for each.</span>
+              <span class="foot">
+                <span class="tmeta">2 min, timed</span>
+                <span class="play" id="playS">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
 
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
-              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members only</span>
+              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="bfull">Members only</span><span class="bshort">Card</span></span>
               <svg viewBox="0 0 56 56">
-                <g class="hlup" fill="#F5822B"><path d="M17 8 L26 22 L8 22 Z"/></g>
-                <g class="hldn" fill="#F5822B" opacity=".62"><path d="M39 48 L48 34 L30 34 Z"/></g>
+                <g class="hlup" fill="#F5822B"><path d="M14 6 L22 19 L6 19 Z"/></g>
+                <g class="hldn" fill="#F5822B" opacity=".62"><path d="M42 50 L50 37 L34 37 Z"/></g>
+                <!-- the number is the point: you are calling a stat, not a shape -->
+                <text x="28" y="34" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="19" fill="#F5822B">27.4</text>
               </svg>
             </span>
             <span class="body">
               <span class="nm">High Low</span>
-              <span class="desc">Pick a stat, then call every next player higher or lower. Endless. Card members only.</span>
-              <span class="play" id="playH">PLAY <span class="arw">→</span></span>
+              <span class="desc">Pick a stat, then call whether each next player is higher or lower.</span>
+              <span class="foot">
+                <span class="tmeta">Endless</span>
+                <span class="play" id="playH">PLAY <span class="arw">→</span></span>
+              </span>
             </span>
           </a>
         </div>
@@ -803,7 +933,7 @@
 
         <section class="editions" id="editions">
           <h2 class="ed-h">Five games, three more ways</h2>
-          <p class="ed-s">Alma Mater, Career Path, Guess the Player, Rank It and Word Search each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
+          <p class="ed-s">Daily Match, Alma Mater, Career Path, Guess the Player and Rank It each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
           <div class="ed-row">
             <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
             <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
@@ -813,8 +943,8 @@
 
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>10</s> <b>26 daily games</b></h2>
-          <p class="cp-sub">Your free Arcade is 10 games a day. The Card unlocks an NBA, NFL and MLB edition of five of them, plus a members-only game.</p>
+          <h2 class="cp-head" id="cp-head"><s>9</s> <b>22 daily games</b></h2>
+          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of four of them, plus a members-only game.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
@@ -857,22 +987,22 @@
     <a href="/arcade/almamater/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-4 10 4-10 4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/><path d="M22 9v5"/></svg>Alma Mater</a>
     <a href="/arcade/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
     <a href="/arcade/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
-    <a href="/arcade/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
-    <a href="/arcade/highlow/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>High Low</a>
+        <a href="/arcade/highlow/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>High Low</a>
     <a href="/arcade/archive/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Archive</a>
   </nav>
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
+<script src="/arcade/board.js?v=7"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=10"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -889,7 +1019,7 @@
 
   // ---- Alma Mater card ----
   // This used to repaint the tile in whichever college team you had picked,
-  // which is how an arbitrary hex ended up as a button background — with no
+  // which is how an arbitrary hex ended up as a button background, with no
   // team set it fell back to a dark maroon and the PLAY label sat on it at
   // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
   // picking your school belongs to a different game.
@@ -975,7 +1105,6 @@
   var mRes = null; try { mRes = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
   var mDone = !!mRes;
   var cDone = (cw.lastDone === t);
-  var wDone = (ws.lastDone === t);
   var gDone = (gs.lastDone === t);
   var tDone = (ts.lastDone === t);
   var oDone = (os.lastDone === t);
@@ -991,9 +1120,9 @@
     var GAMES=[
       ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
       ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Search',wDone,'var(--tealT)'],['Crossword',cDone,'var(--newsT)']
+      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Crossword',cDone,'var(--newsT)']
     ];
-    // Members get a 10th punch: the card-only High Low, "done" once they've
+    // Members get one more punch: the card-only High Low, "done" once they've
     // played it today (it's endless, so a single play counts).
     var isMember=false; try{ isMember=!!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){}
     var hlDone=false; try{ hlDone=isMember && window.RTGTokens && RTGTokens.playsOf && RTGTokens.playsOf('highlow')>0; }catch(e){}
@@ -1005,7 +1134,7 @@
     css.textContent=
       // ticket body: dashed rim + a notched "torn edge" on each side, like a
       // stub ripped off the roll. The notches are just two masked circles.
-      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:0 0 14px; box-shadow:var(--shadow);}'+
+      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:18px 0 0; box-shadow:var(--shadow);}'+
       '.aticket:before,.aticket:after{content:""; position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+';}'+
       '.aticket:before{left:-9px; transform:translateY(-50%);}'+
       '.aticket:after{right:-9px; transform:translateY(-50%);}'+
@@ -1025,8 +1154,14 @@
     el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / '+N+' punched</span><button class="tk-share" type="button">Share</button></div>'+
       '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
       (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL '+N+' CLEARED \u2605</div>':'');
+    /* Below the games, not above them. As the first thing on the page it was a
+       punch-card of nine names you had not learned yet, the most overwhelming
+       possible opening. It is a record of what you've done, so it belongs after
+       the doing; the dot row in the zone head already carries the count up top. */
     var host=document.getElementById('puzzles');
-    if(host) host.insertBefore(el, host.firstChild);
+    var after=host && host.querySelector('.tiles');
+    if(after) after.parentNode.insertBefore(el, after.nextSibling);
+    else if(host) host.appendChild(el);
     el.querySelector('.tk-share').addEventListener('click', function(){
       var bar=GAMES.map(function(x){return x[1]?'\ud83c\udfab':'\u2b1c';}).join('');
       var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / '+N+' games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
@@ -1077,7 +1212,6 @@
 
   mark('cardMatch', 'pipM', 'stM', 'playM', mDone, (mRes && mRes.grade) ? ('Solved · ' + mRes.grade) : 'Solved', 'match');
   mark('cardCross', 'pipC', 'stC', 'playC', cDone, 'Solved', 'crossword');
-  mark('cardWord',  'pipW', 'stW', 'playW', wDone, 'Solved', 'wordsearch');
   mark('cardGuess', 'pipG', 'stG', 'playG', gDone, (gs.last && gs.last.won === false) ? 'Missed' : 'Solved', 'guess');
   mark('cardTable', 'pipT', 'stT', 'playT', tDone, runText(ts), 'table');
   mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
@@ -1112,10 +1246,10 @@
   if (hlTile && isMemberN) hlTile.classList.add('ismember');
   var pipH = document.getElementById('pipH');
   if (pipH) { pipH.style.display = isMemberN ? '' : 'none'; if (hlPlayed) pipH.classList.add('done'); }
-  // 10 free games now that Sportegories is live; the 11th is members-only, so
-  // non-members are never shown a total they cannot reach.
-  var total = isMemberN ? 11 : 10;
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
+  // Nine free games; the tenth is members-only, so non-members are never
+  // shown a total they cannot reach.
+  var total = isMemberN ? 10 : 9;
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
   if (n === total) {
     document.getElementById('dprog').classList.add('all');

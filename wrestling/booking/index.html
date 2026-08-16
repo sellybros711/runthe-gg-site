@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheRopes: Wrestling Booking Sim</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0b0a0c" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0a0c'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%F0%9F%A4%BC%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800;900&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Palette from the RUN THE ROPES belt logo: cream + red on near-black */
+    --cream:#F4E8DB; --oncard:#F4E8DB; --ink:#0c0b0b;
+    /* brand accent is now the belt red (was gold); "gold" vars kept as names */
+    --gold:#C6392C; --gold2:#9e2a20; --gold-bright:#F4E8DB;
+    --red:#C6392C; --red2:#8f231b; --green:#5bb083; --blue:#6aa7c4; --purple:#b08ac6;
+    --brandred:#C6392C; --brandred-bright:#e05446;
+    --text:#F2EADD; --text-dim:#cabda8; --text-faint:#9b917f; --muted:#cabda8;
+    --panel:rgba(255,255,255,.045); --panel-raised:rgba(255,255,255,.075);
+    --card:rgba(255,255,255,.045); --line:rgba(244,232,219,.13);
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --serif:'Cinzel','Times New Roman',Georgia,serif;
+    --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --pagebg:
+      radial-gradient(1200px 520px at 50% -6%, rgba(198,57,44,.20), transparent 60%),
+      radial-gradient(900px 600px at 50% 118%, rgba(198,57,44,.12), transparent 66%),
+      radial-gradient(700px 500px at 12% 8%, rgba(255,255,255,.04), transparent 60%),
+      linear-gradient(180deg,#151113,#0c0b0b 58%);
+    --bg:#0c0b0b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;overscroll-behavior-y:none;}
+  body{background:var(--bg); color:var(--text); font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--pagebg);pointer-events:none;}
+  .impact{font-family:var(--display); letter-spacing:.02em;}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+
+  /* ---- masthead: cream arena band ---- */
+  .masthead{background:linear-gradient(180deg, rgba(244,232,214,.97), rgba(240,224,200,.93)); border-bottom:3px solid var(--gold); padding:12px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; position:sticky; top:0; z-index:40; box-shadow:0 8px 26px -14px rgba(0,0,0,.8);}
+  .masthead h1{font-family:var(--display); letter-spacing:.02em; font-size:30px; margin:0; color:#17130c; line-height:.9; text-transform:uppercase;}
+  .masthead .sub{font-family:var(--body); font-size:10px; letter-spacing:.28em; color:#8a6a1e; text-transform:uppercase; margin-top:3px; font-weight:800;}
+  .hud{display:flex; gap:16px; font-family:var(--mono); font-size:13px; align-items:center;}
+  .hud .cell{text-align:right;}
+  .hud .label{color:#94764a; font-size:9px; letter-spacing:.12em; text-transform:uppercase; font-weight:700;}
+  .hud .value{color:#17130c; font-size:17px; font-weight:800;}
+  .hud .value.warn{color:var(--red2);}
+
+  /* ---- tab bar ---- */
+  .tabs{display:flex; gap:2px; padding:0 12px; background:rgba(11,10,12,.92); backdrop-filter:blur(6px); border-bottom:1px solid var(--line); overflow-x:auto; position:sticky; top:57px; z-index:30;}
+  .tab{padding:12px 15px; cursor:pointer; color:var(--text-dim); font-family:var(--body); font-weight:800; font-size:12px; letter-spacing:.08em; text-transform:uppercase; border-bottom:3px solid transparent; white-space:nowrap; position:relative;}
+  .tab.active{color:var(--gold-bright); border-bottom-color:var(--gold);}
+  .tab:hover{color:var(--cream);}
+  .tab .pip{position:absolute; top:7px; right:4px; background:var(--red); color:#fff; font-size:9px; font-family:var(--mono); min-width:15px; height:15px; line-height:15px; text-align:center; border-radius:8px; padding:0 3px;}
+
+  main{padding:20px 20px 90px; max-width:1180px; margin:0 auto;}
+  .panel{display:none;} .panel.active{display:block;}
+  h2{font-family:var(--display); letter-spacing:.02em; text-transform:uppercase; color:var(--oncard); font-size:24px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:0; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  h2 .sub2{font-family:var(--body); font-size:12px; letter-spacing:0; text-transform:none; color:var(--text-faint); font-weight:600;}
+  h3{font-family:var(--body);}
+
+  .card-row{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:7px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .card-row.hurt{opacity:.72; border-left:3px solid var(--red);}
+  .card-row.champ{border-left:3px solid var(--gold);}
+  .worker-name{font-family:var(--body); font-weight:800; min-width:150px; color:var(--cream);}
+  .worker-name .champ-belt{color:var(--gold-bright); margin-left:4px;}
+  .badge{font-family:var(--body); font-size:10px; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; white-space:nowrap;}
+  .badge.face{background:rgba(79,174,126,.2); color:var(--green);}
+  .badge.heel{background:rgba(225,74,51,.2); color:#f08a76;}
+  .badge.tweener{background:rgba(176,138,198,.2); color:#c7abda;}
+  .badge.promo{background:rgba(244,232,219,.12); color:var(--cream);}
+  .badge.hurt{background:rgba(225,74,51,.34); color:#f5b3a6;}
+  .badge.tier{background:rgba(244,227,201,.08); color:var(--text-dim);}
+  .stat-mini{font-family:var(--mono); font-size:12px; color:var(--text-dim); white-space:nowrap;}
+  .bar-track{width:52px; height:6px; background:rgba(0,0,0,.45); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:4px;}
+  .bar-fill{height:100%; background:var(--gold);}
+  .bar-fill.mo{background:var(--green);} .bar-fill.cond{background:var(--blue);} .bar-fill.mor{background:var(--purple);}
+
+  button{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.18)); border:1.5px solid var(--gold); color:var(--gold-bright); padding:7px 14px; border-radius:999px; cursor:pointer; font-family:var(--body); font-size:12px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; transition:all .12s;}
+  button:hover{background:var(--gold); color:#17130c;}
+  button.danger{border-color:var(--red); color:#f08a76;} button.danger:hover{background:var(--red); color:#fff;}
+  button.ghost{border-color:var(--line); color:var(--text-dim); background:transparent;} button.ghost:hover{background:rgba(244,227,201,.08); color:var(--cream);}
+  button.big{padding:12px 26px; font-size:14px;}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  button:disabled:hover{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.18)); color:var(--gold-bright);}
+  select,input{background:rgba(0,0,0,.32); border:1px solid var(--line); color:var(--text); padding:9px 11px; border-radius:8px; font-size:14px; font-family:var(--body); font-weight:600;}
+  select{cursor:pointer;}
+  input[type=text]{width:240px; max-width:100%;}
+  select:focus,input:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
+  label.fld{display:block;}
+  .stat-mini.fldlab{margin-bottom:5px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); font-weight:700;}
+
+  .builder-box{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px;}
+  .row-wrap{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
+  .build-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px; align-items:end;}
+  .build-grid .fld select{width:100%;}
+  .build-full{grid-column:1 / -1;}
+  .participant-list{width:100%; min-height:230px; font-size:14px; line-height:1.5;}
+  .participant-list option{padding:6px 8px; border-radius:5px;}
+  .participant-list option:checked{background:var(--brandred) linear-gradient(0deg,var(--brandred),var(--brandred)); color:#fff; font-weight:700;}
+  .section-head{margin:18px 0 10px; color:var(--cream); font-family:var(--display); font-size:18px; letter-spacing:.03em; text-transform:uppercase;}
+  .segment-ticket{background:var(--panel-raised); border:1px dashed var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
+  .vs-line{font-family:var(--display); letter-spacing:.02em; font-size:15px; color:var(--cream);}
+  .rating-dial{font-family:var(--mono); font-weight:800; font-size:18px; padding:4px 10px; border-radius:8px; min-width:46px; text-align:center; display:inline-block;}
+  .r-elite{background:rgba(244,232,219,.16); color:var(--cream);}
+  .r-good{background:rgba(79,174,126,.2); color:var(--green);}
+  .r-mid{background:rgba(244,227,201,.1); color:var(--text-dim);}
+  .r-bad{background:rgba(225,74,51,.2); color:#f08a76;}
+  .breakdown{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:4px; line-height:1.6;}
+  .breakdown .pos{color:var(--green);} .breakdown .neg{color:#f08a76;}
+  .empty-note{color:var(--text-faint); font-size:13px; font-style:italic; padding:20px 0;}
+  .fa-price{color:var(--gold); font-family:var(--mono); font-size:12px;}
+  .warn{color:#f08a76; font-size:12px; margin-top:6px;}
+  .road-note{color:var(--gold-bright); font-size:12px; margin-top:6px; font-style:italic;}
+  .recap-block{background:var(--panel); border-left:3px solid var(--gold); padding:12px 16px; margin-bottom:12px; border-radius:0 10px 10px 0;}
+  .recap-block h3{margin:0 0 6px; color:var(--gold-bright); font-size:16px; font-family:var(--display); letter-spacing:.02em;}
+  .scroll-list{max-height:64vh; overflow-y:auto; padding-right:4px;}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;}
+
+  .inbox-item{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--blue); border-radius:10px; padding:10px 14px; margin-bottom:7px; font-size:13px; display:flex; gap:10px; align-items:flex-start;}
+  .inbox-item.sev-bad{border-left-color:var(--red);}
+  .inbox-item.sev-good{border-left-color:var(--green);}
+  .inbox-item.sev-story{border-left-color:var(--gold);}
+  .inbox-item .ico{font-size:18px; line-height:1.2;}
+  .inbox-item .txt b{color:var(--gold-bright);}
+  .prose{color:var(--text); font-size:13.5px; line-height:1.62;}
+  .prose em{color:var(--gold-bright); font-style:italic;}
+
+  .feud-card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin-bottom:10px;}
+  .feud-card .heads{font-family:var(--display); font-size:17px; letter-spacing:.02em; color:var(--cream);}
+  .heat-track{height:8px; background:rgba(0,0,0,.45); border-radius:4px; overflow:hidden; margin:8px 0 4px;}
+  .heat-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--gold-bright));}
+  .title-card{background:var(--panel); border:1px solid var(--gold); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .title-card .tname{font-family:var(--serif); font-weight:800; font-size:19px; letter-spacing:.01em; color:var(--gold-bright);}
+  .stat-tile{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+
+  .center-screen{max-width:960px; margin:26px auto; padding:0 20px;}
+  .promo-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; margin-top:20px;}
+  .promo-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; cursor:pointer; transition:border-color .15s, transform .1s;}
+  .promo-card:hover{border-color:var(--gold); transform:translateY(-2px);}
+  .promo-card h3{margin:0 0 6px; font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); font-size:26px; text-transform:uppercase;}
+  .promo-card .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
+  .promo-card .roster-count{color:var(--text-dim); font-size:12px; margin-top:6px;}
+  .mode-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; margin-top:12px;}
+  .mode-card{background:var(--panel); border:1.5px solid var(--line); border-radius:14px; padding:18px 20px; cursor:pointer; transition:border-color .15s, transform .1s;}
+  .mode-card:hover{transform:translateY(-2px);}
+  .mode-card.selected{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 10px 30px -16px rgba(198,57,44,.6);}
+  .mode-card h3{margin:0 0 2px; font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); font-size:24px; text-transform:uppercase;}
+  .mode-card .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em;}
+  .mode-card p{font-size:13px; color:var(--text-dim); margin:10px 0 8px; line-height:1.5;}
+  .mode-card ul{margin:0; padding-left:18px; font-size:12px; color:var(--text-dim);} .mode-card li{margin:2px 0;}
+  .mode-pill{display:inline-block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:2px 8px; border-radius:999px; font-weight:800; font-family:var(--body); vertical-align:middle;}
+  /* scorecard */
+  .score-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:6px 0 12px;}
+  .score-cell{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .score-cell .lab{font-family:var(--body); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+  .score-cell .val{font-family:var(--mono); font-size:22px; font-weight:800; margin-top:4px; color:var(--cream);}
+  .score-cell .dlt{font-family:var(--mono); font-size:11px; margin-top:2px;}
+  .dlt.up{color:var(--green);} .dlt.down{color:#f08a76;} .dlt.flat{color:var(--text-faint);}
+  .grade-badge{font-family:var(--display); font-size:44px; line-height:1; padding:6px 16px; border-radius:12px; display:inline-block;}
+  .beta-tag{display:inline-block; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:3px 9px; border-radius:999px; font-weight:800; vertical-align:middle; margin-left:10px; font-family:var(--body);}
+  .continue-bar{background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:16px 18px; margin:18px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+  .belt-logo{width:100%; max-width:480px; height:auto; display:block; filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
+  .brandmark{font-family:var(--display); text-transform:uppercase; letter-spacing:.02em; font-size:40px; line-height:.9;}
+  .brandmark .r{color:var(--cream);} .brandmark .t{color:var(--gold);} .brandmark .g{color:var(--cream);}
+
+  .modal-back{position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+  .modal-back.open{display:flex;}
+  .modal{background:#1a1712; border:1px solid var(--gold); border-radius:14px; padding:22px; max-width:480px; width:100%; box-shadow:0 20px 60px -20px rgba(0,0,0,.9);}
+  .modal h3{font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); margin:0 0 12px; text-transform:uppercase; font-size:20px;}
+  .modal .btn-row{display:flex; gap:10px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap;}
+  .modal .prose{margin:0;}
+
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1a1712; border:1px solid var(--gold); color:var(--gold-bright); padding:10px 18px; border-radius:999px; font-size:13px; z-index:200; opacity:0; transition:opacity .25s; pointer-events:none; font-weight:700;}
+  .toast.show{opacity:1;}
+  .hint{color:var(--text-faint); font-size:12px;}
+  a{color:var(--gold);}
+  @media (max-width:640px){
+    .masthead h1{font-size:22px;} .hud{gap:12px;} .hud .value{font-size:15px;}
+    .worker-name{min-width:110px;} main{padding:16px 12px 90px;}
+    .tabs{top:56px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ START SCREEN ============ -->
+<div id="startScreen" class="center-screen">
+  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <svg class="belt-logo" viewBox="0 0 1080 470" role="img" aria-label="Run The Ropes">
+      <defs><style>
+        .rtr-plate{fill:#100d0d;stroke:#F4E8DB;stroke-width:7;stroke-linejoin:round;}
+        .rtr-inner{fill:none;stroke:#F4E8DB;stroke-width:2.5;stroke-linejoin:round;opacity:.85;}
+        .rtr-rope{stroke:#C6392C;stroke-width:12;stroke-linecap:round;stroke-dasharray:14 9;}
+        .rtr-snap{fill:#F4E8DB;}
+        .rtr-wm{font-family:'Anton',Impact,sans-serif;fill:#F4E8DB;}
+        .rtr-wmred{font-family:'Anton',Impact,sans-serif;fill:#C6392C;}
+        .rtr-acc{stroke:#C6392C;stroke-width:10;stroke-linecap:round;fill:none;}
+      </style></defs>
+      <!-- connecting straps (drawn first, behind plates) -->
+      <path class="rtr-plate" d="M300 192 L392 206 L392 264 L300 278 Z"/>
+      <path class="rtr-plate" d="M780 192 L688 206 L688 264 L780 278 Z"/>
+      <!-- left side plate -->
+      <path class="rtr-plate" d="M200 120 L300 176 L300 294 L200 350 L100 294 L100 176 Z"/>
+      <path class="rtr-inner" d="M200 142 L282 188 L282 282 L200 328 L118 282 L118 188 Z"/>
+      <circle class="rtr-snap" cx="200" cy="152" r="6"/><circle class="rtr-snap" cx="200" cy="318" r="6"/>
+      <line class="rtr-rope" x1="140" y1="205" x2="260" y2="205"/>
+      <line class="rtr-rope" x1="140" y1="235" x2="260" y2="235"/>
+      <line class="rtr-rope" x1="140" y1="265" x2="260" y2="265"/>
+      <!-- right side plate -->
+      <path class="rtr-plate" d="M880 120 L980 176 L980 294 L880 350 L780 294 L780 176 Z"/>
+      <path class="rtr-inner" d="M880 142 L962 188 L962 282 L880 328 L798 282 L798 188 Z"/>
+      <circle class="rtr-snap" cx="880" cy="152" r="6"/><circle class="rtr-snap" cx="880" cy="318" r="6"/>
+      <line class="rtr-rope" x1="820" y1="205" x2="940" y2="205"/>
+      <line class="rtr-rope" x1="820" y1="235" x2="940" y2="235"/>
+      <line class="rtr-rope" x1="820" y1="265" x2="940" y2="265"/>
+      <!-- center plate -->
+      <path class="rtr-plate" d="M462 55 H618 L690 127 V343 L618 415 H462 L390 343 V127 Z"/>
+      <path class="rtr-inner" d="M472 74 H608 L671 137 V333 L608 396 H472 L409 333 V137 Z"/>
+      <path class="rtr-acc" d="M498 106 L540 92 L582 106"/>
+      <path class="rtr-acc" d="M498 364 L540 378 L582 364"/>
+      <text class="rtr-wm"    x="540" y="192" text-anchor="middle" font-size="96" letter-spacing="1">RUN</text>
+      <line class="rtr-acc" x1="452" y1="228" x2="494" y2="228" stroke-width="8"/>
+      <line class="rtr-acc" x1="586" y1="228" x2="628" y2="228" stroke-width="8"/>
+      <text class="rtr-wmred" x="540" y="252" text-anchor="middle" font-size="62" letter-spacing="2">THE</text>
+      <text class="rtr-wm"    x="540" y="352" text-anchor="middle" font-size="96" letter-spacing="1">ROPES</text>
+    </svg>
+    <span class="beta-tag" style="align-self:flex-start;">Beta</span>
+  </div>
+  <div style="color:var(--text-faint); font-size:12px; letter-spacing:.24em; text-transform:uppercase; margin:8px 0 6px; font-weight:800;">Wrestling Booking Sim · Career Mode</div>
+  <p class="hint" style="max-width:640px;">Take control of a wrestling promotion. Sign and poach talent, book weekly shows, run feuds, defend championships, and grow your company. Every rating is deterministic and fully inspectable: no random bombs, just booking decisions with visible consequences.</p>
+
+  <div id="continueBar" class="continue-bar" style="display:none;">
+    <div>
+      <div class="impact" style="font-size:18px; color:var(--gold-bright);" id="continuePromo">-</div>
+      <div class="stat-mini" id="continueMeta">-</div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="big" onclick="continueCareer()">Continue Career</button>
+      <button class="ghost danger" onclick="confirmDeleteSave()">Delete</button>
+    </div>
+  </div>
+
+  <div style="color:var(--text-dim); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-top:22px;">1 · Choose your mode</div>
+  <div class="mode-grid" id="modeGrid">
+    <div class="mode-card selected" data-mode="quick" onclick="selectMode('quick')">
+      <h3>Quick Mode</h3>
+      <div class="meta">GM-style · pick-up-and-play</div>
+      <p>Draft a card, book the show, hit your grade. A fixed weekly budget keeps spending simple. Focus on the booking, not the spreadsheet.</p>
+      <ul><li>Weekly spending allowance</li><li>Auto venue &amp; ticketing</li><li>Streamlined scorecard</li></ul>
+    </div>
+    <div class="mode-card" data-mode="junkie" onclick="selectMode('junkie')">
+      <h3>Wrestling Junkie</h3>
+      <div class="meta">Deep sim · run the whole company</div>
+      <p>The full experience. Real budget and P&amp;L, venues and ticket pricing, TV deals, contracts, feuds, stables, managers: every lever of running a promotion.</p>
+      <ul><li>Full budget &amp; line-item finances</li><li>Pick venues &amp; set ticket prices</li><li>Deep multi-category grading</li></ul>
+    </div>
+  </div>
+
+  <div style="color:var(--text-dim); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-top:22px;">2 · Choose your promotion</div>
+  <div class="promo-grid" id="promoGrid"></div>
+</div>
+
+<!-- ============ GAME SHELL ============ -->
+<div id="gameShell" style="display:none;">
+  <div class="masthead">
+    <div>
+      <h1 id="promoName">WWE</h1>
+      <div class="sub">RunTheRopes · <span id="hudMode">Booking Sim</span></div>
+    </div>
+    <div class="hud">
+      <div class="cell"><div class="label">Year · Week</div><div class="value" id="hudWeek">1</div></div>
+      <div class="cell"><div class="label">Cash</div><div class="value" id="hudCash">$0</div></div>
+      <div class="cell"><div class="label">TV</div><div class="value" id="hudTv">-</div></div>
+      <div class="cell"><div class="label">Roster</div><div class="value" id="hudRoster">0</div></div>
+      <div class="cell"><div class="label">Popularity</div><div class="value" id="hudPop">0</div></div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabBar">
+    <div class="tab active" data-tab="inbox">Inbox</div>
+    <div class="tab" data-tab="roster">Roster</div>
+    <div class="tab" data-tab="build">Build Show</div>
+    <div class="tab" data-tab="feuds">Feuds</div>
+    <div class="tab" data-tab="stables">Stables</div>
+    <div class="tab" data-tab="personnel">Managers</div>
+    <div class="tab" data-tab="titles">Titles</div>
+    <div class="tab" data-tab="history">History</div>
+    <div class="tab" data-tab="market">Market</div>
+    <div class="tab" data-tab="world">World</div>
+    <div class="tab" data-tab="finances">Finances</div>
+    <div class="tab" data-tab="editor">Editor</div>
+  </div>
+
+  <main>
+    <!-- INBOX -->
+    <div class="panel active" id="panel-inbox">
+      <h2>Inbox <span class="sub2" id="inboxWeekLbl">Week 1</span></h2>
+      <div id="inboxList"></div>
+      <div style="margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="big" onclick="goBuild()">Book This Week's Show →</button>
+        <button class="ghost" onclick="advanceWeek()">Advance Week (skip show)</button>
+        <span class="hint" id="autosaveNote">Progress saves automatically.</span>
+      </div>
+    </div>
+
+    <!-- ROSTER -->
+    <div class="panel" id="panel-roster">
+      <h2>Your Roster <span class="sub2" id="payrollLbl"></span></h2>
+      <div style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="rosterFilter" placeholder="Filter by name..." oninput="renderRoster()">
+        <select id="rosterSort" onchange="renderRoster()">
+          <option value="overness">Sort: Overness</option>
+          <option value="momentum">Sort: Momentum</option>
+          <option value="inRing">Sort: In-Ring</option>
+          <option value="psych">Sort: Psychology</option>
+          <option value="salary">Sort: Salary</option>
+          <option value="age">Sort: Age</option>
+        </select>
+      </div>
+      <div class="scroll-list" id="rosterList"></div>
+    </div>
+
+    <!-- BUILD -->
+    <div class="panel" id="panel-build">
+      <h2>Build This Week's Show <span class="sub2" id="buildWeekLbl"></span></h2>
+      <div class="builder-box">
+        <div class="build-grid">
+          <label class="fld">
+            <div class="stat-mini fldlab">Segment Type</div>
+            <select id="segType" onchange="onSegTypeChange()">
+              <option value="singles">Singles Match</option>
+              <option value="tag">Tag Team Match</option>
+              <option value="triple">Triple Threat</option>
+              <option value="fatal4">Fatal 4-Way</option>
+              <option value="ladder">Ladder Match</option>
+              <option value="cage">Steel Cage</option>
+              <option value="hardcore">Hardcore Match</option>
+              <option value="promo">Promo / Angle</option>
+            </select>
+          </label>
+          <label class="fld">
+            <div class="stat-mini fldlab">Intent</div>
+            <select id="segIntent">
+              <option value="standard">Standard match</option>
+              <option value="showcase">Showcase a star</option>
+              <option value="elevate">Elevate a rising talent</option>
+              <option value="bury">Bury someone</option>
+            </select>
+          </label>
+          <label class="fld build-full">
+            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">(click to select; hold Ctrl / Cmd (or ⇧) to pick more)</span></div>
+            <select id="segWorkers" class="participant-list" multiple size="9"></select>
+          </label>
+          <label class="fld">
+            <div class="stat-mini fldlab">Winner</div>
+            <select id="segWinner"><option value="">(no winner set)</option></select>
+          </label>
+          <label class="fld">
+            <div class="stat-mini fldlab">Title on the Line</div>
+            <select id="segTitle"><option value="">(none)</option></select>
+          </label>
+          <label class="fld">
+            <div class="stat-mini fldlab">Feud</div>
+            <select id="segFeud"><option value="">(none)</option></select>
+          </label>
+        </div>
+        <div class="warn" id="builderWarn"></div>
+        <div class="road-note" id="roadNote"></div>
+        <button class="big" style="margin-top:14px;" onclick="addSegment()">+ Add Segment to Card</button>
+      </div>
+
+      <h3 class="section-head">Tonight's Card</h3>
+      <div id="cardList"></div>
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="big" id="runShowBtn" onclick="runShow()" disabled>Run Show &amp; Advance Week ▶</button>
+        <button class="ghost" onclick="clearCard()">Clear Card</button>
+      </div>
+    </div>
+
+    <!-- FEUDS -->
+    <div class="panel" id="panel-feuds">
+      <h2>Feuds &amp; Storylines <span class="sub2">heat builds when rivals are booked together</span></h2>
+      <div class="builder-box">
+        <div class="row-wrap">
+          <label class="fld"><div class="stat-mini fldlab">WRESTLER A</div><select id="feudA"></select></label>
+          <label class="fld"><div class="stat-mini fldlab">WRESTLER B</div><select id="feudB"></select></label>
+          <button onclick="createFeud()">Start Feud</button>
+        </div>
+        <div class="warn" id="feudWarn"></div>
+      </div>
+      <div id="feudList"></div>
+    </div>
+
+    <!-- STABLES -->
+    <div class="panel" id="panel-stables">
+      <h2>Tag Teams &amp; Stables <span class="sub2">chemistry builds when a unit is booked together</span></h2>
+      <div class="builder-box">
+        <div class="row-wrap">
+          <label class="fld"><div class="stat-mini fldlab">Type</div>
+            <select id="teamType"><option value="tag">Tag Team</option><option value="stable">Stable</option></select></label>
+          <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="teamName" placeholder="e.g. The Bloodline"></label>
+          <label class="fld"><div class="stat-mini fldlab">Members (pick 2+)</div>
+            <select id="teamMembers" multiple size="6" style="min-width:230px;"></select></label>
+          <label class="fld"><div class="stat-mini fldlab">Manager (optional)</div>
+            <select id="teamManager"><option value="">(none)</option></select></label>
+          <button onclick="createTeam()">Form Unit</button>
+        </div>
+        <div class="warn" id="teamWarn"></div>
+      </div>
+      <div id="teamList"></div>
+    </div>
+
+    <!-- PERSONALITIES / MANAGERS -->
+    <div class="panel" id="panel-personnel">
+      <h2>Managers, Legends &amp; GM <span class="sub2">pair a mouthpiece with a wrestler or stable</span></h2>
+      <div id="personnelList"></div>
+    </div>
+
+    <!-- TITLES -->
+    <div class="panel" id="panel-titles">
+      <h2>Championships <span class="sub2">a title changes hands only when the champion is pinned</span></h2>
+      <div id="titleList"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel" id="panel-history">
+      <h2>Show History</h2>
+      <div class="scroll-list" id="historyList"></div>
+    </div>
+
+    <!-- MARKET -->
+    <div class="panel" id="panel-market">
+      <h2>Talent Market <span class="sub2">free agents &amp; cross-promotion poaching</span></h2>
+      <div style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="marketFilter" placeholder="Filter by name..." oninput="renderMarket()">
+        <select id="marketPromoFilter" onchange="renderMarket()"></select>
+      </div>
+      <div class="scroll-list" id="marketList"></div>
+    </div>
+
+    <!-- WORLD / RIVALS -->
+    <div class="panel" id="panel-world">
+      <h2>The Wrestling World <span class="sub2">rival promotions book their own shows every week</span></h2>
+      <div id="worldList"></div>
+    </div>
+
+    <!-- FINANCES -->
+    <div class="panel" id="panel-finances">
+      <h2>Finances &amp; Company</h2>
+      <div id="financeGrid"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div class="panel" id="panel-editor">
+      <h2>Worker Editor <span class="sub2">retune any wrestler: changes save with your career</span></h2>
+      <div class="builder-box">
+        <label class="fld" style="margin-bottom:12px;">
+          <div class="stat-mini fldlab">Wrestler</div>
+          <select id="editPick" onchange="loadEditWorker()" style="min-width:280px;"></select>
+        </label>
+        <div id="editFields"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal + toast -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h3 id="modalTitle">Confirm</h3>
+    <div id="modalBody"></div>
+    <div class="btn-row" id="modalBtns"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../roster.js"></script>
+<script src="../corrections.js"></script>
+<script src="../personalities.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   RunTheRopes: Booking Terminal (Beta)
+   Deterministic career-mode wrestling sim. Single save, localStorage.
+   Data source: roster.js (window.RTR_ROSTER, 286 real workers, v0.1 to retune)
+   ============================================================ */
+
+const SAVE_KEY = 'rtr_save_v1';
+const SCHEMA = 1;
+
+const PROMO_META = {
+  WWE:     { cash: 3000000, popW: 0.65, perfW: 0.35, tierLabel: 'International',        product: 'Sports-Entertainment' },
+  AEW:     { cash: 1500000, popW: 0.50, perfW: 0.50, tierLabel: 'International',        product: 'Workrate / Spectacle' },
+  TNA:     { cash: 350000,  popW: 0.45, perfW: 0.55, tierLabel: 'National',            product: 'X-Division Athletic' },
+  AAA:     { cash: 300000,  popW: 0.55, perfW: 0.45, tierLabel: 'National (Lucha)',    product: 'Lucha Libre' },
+  ROH:     { cash: 150000,  popW: 0.40, perfW: 0.60, tierLabel: 'Regional',            product: 'Pure Wrestling' },
+  NJPW:    { cash: 450000,  popW: 0.40, perfW: 0.60, tierLabel: 'International (Puro)', product: 'Strong Style' },
+  Stardom: { cash: 200000,  popW: 0.45, perfW: 0.55, tierLabel: 'National (Joshi)',    product: 'Joshi' },
+  TJPW:    { cash: 100000,  popW: 0.50, perfW: 0.50, tierLabel: 'Regional (Joshi)',    product: 'Joshi / Idol' },
+};
+
+// ---------- Premium Live Events (PPVs) ----------
+// Every 4th week is a big event: the spectacle scales up, feuds pay off, and
+// PPV buys are a major payday that scales with the promotion's TV tier.
+const PPV_EVERY = 4;
+const PPV_NAMES = {
+  WWE:['WrestleMania','Backlash','Money in the Bank','SummerSlam','Bad Blood','Survivor Series','Royal Rumble','Elimination Chamber'],
+  AEW:['Revolution','Double or Nothing','All Out','WrestleDream','Full Gear','Worlds End','Grand Slam','Forbidden Door'],
+  TNA:['Hard to Kill','Rebellion','Under Siege','Slammiversary','Emergence','Bound for Glory','Turning Point','Genesis'],
+  AAA:['Rey de Reyes','Verano de Escandalo','Triplemania','Heroes Inmortales','Guerra de Titanes'],
+  ROH:['Supercard of Honor','Best in the World','Death Before Dishonor','Final Battle'],
+  NJPW:['Wrestle Kingdom','New Beginning','Dominion','G1 Climax Final','Destruction','Power Struggle'],
+  Stardom:['Supreme Fight','Cinderella Tournament','Grand Prix','5STAR Grand Prix','Dream Queendom'],
+  TJPW:['Tokyo Princess Cup','Summer Sun Princess','Grand Princess','Wrestle Princess'],
+};
+function isPpvWeek(){ return S && S.week % PPV_EVERY === 0; }
+function nextPpvWeek(){ return isPpvWeek() ? S.week : (Math.floor(S.week/PPV_EVERY)+1)*PPV_EVERY; }
+function weeksToPpv(){ return nextPpvWeek() - S.week; }
+function ppvName(forWeek){
+  const wk = forWeek || S.week;
+  const names = PPV_NAMES[S.promo.name] || ['Supershow'];
+  return names[(Math.floor((wk-1)/PPV_EVERY)) % names.length];
+}
+function venueIndex(id){ return VENUES.findIndex(v=>v.id===id); }
+// which venue the show actually runs in. Junkie honours the player's pick;
+// Quick auto-scales, bumping up for a big event.
+function effectiveVenue(ppv){
+  if(S.mode==='junkie') return currentVenue();
+  let idx = venueIndex(S.promo.venue);
+  if(ppv) idx = Math.min(VENUES.length-1, idx+2);
+  return VENUES[idx] || VENUES[0];
+}
+
+// Match/segment tuning: inspectable constants, not hardcoded logic
+const typeMeta = {
+  singles:  { label:'Singles Match',   floor:50, condCost:8,  minP:2, maxP:2, injRisk:1.0, perf:'inRing' },
+  tag:      { label:'Tag Team Match',  floor:45, condCost:5,  minP:4, maxP:6, injRisk:0.8, perf:'inRing' },
+  triple:   { label:'Triple Threat',   floor:50, condCost:9,  minP:3, maxP:3, injRisk:1.1, perf:'inRing' },
+  fatal4:   { label:'Fatal 4-Way',     floor:52, condCost:10, minP:4, maxP:4, injRisk:1.2, perf:'inRing' },
+  ladder:   { label:'Ladder Match',    floor:60, condCost:16, minP:2, maxP:6, injRisk:2.2, perf:'inRing' },
+  cage:     { label:'Steel Cage',      floor:58, condCost:14, minP:2, maxP:2, injRisk:1.8, perf:'inRing' },
+  hardcore: { label:'Hardcore Match',  floor:40, condCost:16, minP:2, maxP:4, injRisk:2.0, perf:'inRing' },
+  promo:    { label:'Promo / Angle',   floor:0,  condCost:2,  minP:1, maxP:6, injRisk:0.0, perf:'ent'    },
+};
+
+// ---------- Modes, venues & finances ----------
+// Venue ladder: capacity + fixed running cost. Junkie mode picks; Quick auto-selects.
+const VENUES = [
+  { id:'club',    name:'Club / Armory',   cap:1200,  cost:15000   },
+  { id:'theater', name:'Theater',         cap:3500,  cost:50000   },
+  { id:'ballroom',name:'Ballroom / Expo', cap:6500,  cost:110000  },
+  { id:'arena_s', name:'Small Arena',     cap:11000, cost:240000  },
+  { id:'arena',   name:'Arena',           cap:18000, cost:520000  },
+  { id:'dome',    name:'Stadium / Dome',  cap:48000, cost:1500000 },
+];
+function venueById(id){ return VENUES.find(v=>v.id===id) || VENUES[0]; }
+// default venue + weekly budget by promotion size tier
+const TIER_SETUP = {
+  'International':              { venue:'arena',   tvDeal:2000000, budget:900000, price:65 },
+  'International (Puro)':       { venue:'arena_s', tvDeal:430000,  budget:360000, price:55 },
+  'National':                  { venue:'ballroom',tvDeal:135000,  budget:200000, price:45 },
+  'National (Lucha)':          { venue:'ballroom',tvDeal:95000,   budget:170000, price:38 },
+  'National (Joshi)':          { venue:'theater', tvDeal:70000,   budget:130000, price:42 },
+  'Regional':                  { venue:'theater', tvDeal:28000,   budget:90000,  price:40 },
+  'Regional (Joshi)':          { venue:'theater', tvDeal:30000,   budget:80000,  price:38 },
+};
+function tierSetup(label){ return TIER_SETUP[label] || TIER_SETUP['Regional']; }
+
+// Realistic weekly salary = market value (steep overness curve) scaled by the
+// promotion's pay tier. A big-promotion top star earns ~$90k/wk; the same
+// overness in a regional/joshi fed earns a fraction of that. This is what
+// keeps small promos lean (cheap rosters) yet able to gamble on talent at
+// their own scale, while stars stay expensive inside the big brands.
+const PAY_FACTOR = {
+  'International':1.0, 'International (Puro)':0.55,
+  'National':0.42, 'National (Lucha)':0.42, 'National (Joshi)':0.35,
+  'Regional':0.35, 'Regional (Joshi)':0.26,
+};
+function payFactor(tierLabel){ return PAY_FACTOR[tierLabel] != null ? PAY_FACTOR[tierLabel] : 0.5; }
+function marketSalary(overness, tierLabel){
+  const x = Math.max(0, Math.min(100, overness))/100;
+  const base = 1000 + Math.pow(x,4)*110000;
+  return Math.max(800, Math.round(base * payFactor(tierLabel) / 250) * 250);
+}
+
+// ---------- Aging & career progression ----------
+// A worker's in-ring skill composite: the number that grows toward a hidden
+// potential in youth and erodes in decline.
+function skillComposite(w){ return w.inRing*0.42 + w.psych*0.30 + w.ent*0.28; }
+// Hidden ceiling for the composite, derived from current level + age headroom.
+function derivePotential(w){
+  const lvl = skillComposite(w);
+  const s = seededRand((w.id||'w')+'-pot');
+  let head;
+  if(w.age<=22) head = 12 + s*26;      // raw prospects: big upside
+  else if(w.age<=26) head = 6 + s*18;
+  else if(w.age<=30) head = 1 + s*9;
+  else head = -1 + s*3;                // at or past peak
+  return Math.round(clamp(lvl + head, 42, 99));
+}
+function derivePeakAge(w){ return 28 + Math.floor(seededRand((w.id||'w')+'-peak')*6); } // 28-33
+function careerStage(w){
+  if(w.age < w.peakAge) return skillComposite(w) < (w.potential-3) ? 'developing' : 'prime';
+  if(w.age <= w.peakAge+3) return 'prime';
+  return 'declining';
+}
+function retireChance(age){
+  if(age<39) return 0;
+  if(age<42) return 0.02;
+  if(age<45) return 0.05;
+  if(age<48) return 0.11;
+  if(age<51) return 0.22;
+  if(age<54) return 0.38;
+  return 0.55;
+}
+// one year of attribute movement for a wrestler
+function ageDrift(w, year){
+  const stage = careerStage(w);
+  if(stage==='developing'){
+    const lvl = skillComposite(w);
+    if(lvl < w.potential){
+      const g = Math.min(w.potential - lvl, 1.4 + seededRand(w.id+'-g'+year)*2.8);
+      w.inRing=clamp(w.inRing+g*0.5); w.psych=clamp(w.psych+g*0.3); w.ent=clamp(w.ent+g*0.25);
+      w.phys=clamp(w.phys+g*0.15); w.overness=clamp(w.overness+g*0.35);
+      return {kind:'up', amt:g};
+    }
+  } else if(stage==='declining'){
+    const past = Math.max(0, w.age-(w.peakAge+3));
+    const dropBase = w.age>=45 ? 3.2 : w.age>=40 ? 2.0 : 1.1;
+    const d = dropBase + past*0.25 + seededRand(w.id+'-d'+year)*1.1;
+    w.phys=clamp(w.phys-d*0.65); w.inRing=clamp(w.inRing-d*0.42);
+    w.psych=clamp(w.psych-d*0.10); w.ent=clamp(w.ent-d*0.16); w.overness=clamp(w.overness-d*0.30);
+    return {kind:'down', amt:d};
+  }
+  return {kind:'flat', amt:0};
+}
+function wasEverChampion(id){ return S.titles.some(t=>(t.lineage||[]).some(l=>l.id===id)); }
+function removeWorkerEverywhere(id){
+  let i=S.roster.findIndex(w=>w.id===id); if(i>-1) S.roster.splice(i,1);
+  i=S.pool.findIndex(w=>w.id===id); if(i>-1) S.pool.splice(i,1);
+  S.feuds=S.feuds.filter(f=>f.a!==id && f.b!==id);
+  S.teams.forEach(t=>{ t.memberIds=t.memberIds.filter(m=>m!==id); });
+  S.teams=S.teams.filter(t=>t.memberIds.length>=2);
+  S.titles.forEach(t=>{ if(t.holderIds && t.holderIds.includes(id)) vacateTitle(t); });
+  detachPersonRefs(id);
+}
+function retireWorker(w, summary){
+  const wasYours = S.roster.includes(w);
+  const notable = w.potential>=80 || w.overness>=72 || wasEverChampion(w.id);
+  removeWorkerEverywhere(w.id);
+  summary.retired.push({name:w.name, age:w.age, wasYours, over:Math.round(w.overness), notable});
+  if(notable){ // a big career comes back as a hireable legend/manager
+    const legend = normalizeWorker({
+      id:'leg_'+w.id, name:w.name, promotion:'Free Agent', tier:'legend', align:w.align||'tweener',
+      inRing:0, psych:Math.round(clamp(w.psych)), ent:Math.round(clamp(w.ent)), phys:0,
+      overness:Math.round(clamp(w.overness+6)), momentum:55, condition:90, morale:75, age:w.age,
+      salary:Math.round((1000+w.ent*180)/500)*500, role:'manager', retired:true,
+      canGM:w.psych>=72, mgrBonus:Math.round(clamp(w.ent*0.6+w.psych*0.4)), contractWeeks:0,
+    });
+    S.pool.push(legend);
+  }
+}
+const P_FIRST=['Axel','Rico','Dante','Kai','Zane','Bryce','Cole','Nico','Rhys','Beau','Jax','Milo','Remy','Dex','Ash','Leo','Cass','Nova','Reese','Iris','Mika','Sage','Rue','Kane','Vince','Tex','Enzo','Sol','Nyla','Willow','Skye','Cora','Devi','Bex','Juno','Rae'];
+const P_LAST=['Kade','Vaughn','Sterling','Cruz','Ryker','Steele','Blaze','Knox','Frost','Vale','Sinclair','Marsh','Quinn','Hale','Doyle','Reyes','Storm','Kruger','Wilder','Banks','Cross','Lane','Voss','Ridge','Nash','Bishop','Fox','Payne','Rain','Wolfe'];
+function spawnProspect(i){
+  S.prospectSeq=(S.prospectSeq||0)+1;
+  const sd='prosp'+S.year+'-'+i;
+  const name=P_FIRST[Math.floor(seededRand(sd+'f')*P_FIRST.length)]+' '+P_LAST[Math.floor(seededRand(sd+'l')*P_LAST.length)];
+  const age=19+Math.floor(seededRand(sd+'a')*5);
+  const base=42+seededRand(sd+'b')*16;
+  const w=normalizeWorker({ id:'pr'+S.prospectSeq, name, promotion:'Free Agent', tier:'prospect',
+    align: seededRand(sd+'al')<0.5?'face':'heel',
+    inRing:Math.round(base+seededRand(sd+'r')*6), psych:Math.round(base-4+seededRand(sd+'p')*6),
+    ent:Math.round(base-2+seededRand(sd+'e')*8), phys:Math.round(base+2+seededRand(sd+'ph')*8),
+    overness:Math.round(28+seededRand(sd+'o')*14), momentum:55, condition:92, morale:75,
+    age, salary:0, role:'wrestler', contractWeeks:0 });
+  S.pool.push(w);
+  return {name:w.name, age, pot:w.potential};
+}
+function runAnnualProgression(){
+  const summary={retired:[], breakouts:[], prospects:[]};
+  const active=[...S.roster,...S.pool].filter(w=>w.role!=='manager' && !w.retired);
+  active.forEach(w=>{
+    w.age+=1;
+    const dr=ageDrift(w, S.year);
+    if(dr.kind==='up' && dr.amt>=2.4 && w.overness>=52) summary.breakouts.push({name:w.name, promo:w.promotion, over:Math.round(w.overness)});
+  });
+  [...S.roster,...S.pool].filter(w=>w.role==='manager').forEach(m=>m.age+=1);
+  // retirements (snapshot list first, retireWorker mutates the arrays)
+  active.slice().forEach(w=>{
+    if(!S.roster.includes(w) && !S.pool.includes(w)) return;
+    const forced = w.age>=40 && skillComposite(w)<42;
+    if(forced || seededRand(w.id+'-ret'+S.year) < retireChance(w.age)) retireWorker(w, summary);
+  });
+  const nP=5+Math.floor(seededRand('nprosp'+S.year)*4); // 5-8 new prospects/year
+  for(let i=0;i<nP;i++) summary.prospects.push(spawnProspect(i));
+  return summary;
+}
+function pushYearSummary(inbox, ys){
+  inbox.push({ico:'📅', sev:'story', txt:`<b>Year ${S.year} begins.</b> ${ys.prospects.length} fresh prospects entered the scene, ${ys.retired.length} veteran${ys.retired.length!==1?'s':''} hung up the boots.`});
+  ys.retired.filter(r=>r.wasYours || r.notable).slice(0,5).forEach(r=>{
+    inbox.push({ico:'🎖️', sev: r.wasYours?'bad':'info', txt:`<b>${r.name}</b> retired at ${r.age}${r.notable?', a legend of the business, now available to hire as a manager/GM':''}.${r.wasYours?' They were on your roster.':''}`});
+  });
+  const bo=ys.breakouts.sort((a,b)=>b.over-a.over).slice(0,3);
+  if(bo.length) inbox.push({ico:'📈', sev:'good', txt:`Breakout year for ${bo.map(b=>`<b>${b.name}</b>`).join(', ')}, rising fast.`});
+  const topProsp=ys.prospects.sort((a,b)=>b.pot-a.pot)[0];
+  if(topProsp) inbox.push({ico:'🌱', sev:'story', txt:`Hot prospect <b>${topProsp.name}</b> (age ${topProsp.age}) is turning heads on the indies. Sign them before a rival does.`});
+}
+
+let selectedMode = 'quick';
+function selectMode(m){
+  selectedMode = m;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected', c.dataset.mode===m));
+}
+
+// ---------- Game state ----------
+let S = null; // the whole save object
+
+function applyCorrection(w){
+  const c = (window.RTR_CORRECTIONS || {})[w.id];
+  if(c) Object.assign(w, c);
+  return w;
+}
+
+function freshState(promoName, mode){
+  const meta = PROMO_META[promoName];
+  const setup = tierSetup(meta.tierLabel);
+  const all = window.RTR_ROSTER.map(w => applyCorrection(JSON.parse(JSON.stringify(w))));
+  const roster = all.filter(w => w.promotion === promoName).map(normalizeWorker);
+  const pool   = all.filter(w => w.promotion !== promoName).map(normalizeWorker);
+  // add the free-agent / legend / manager talent pool
+  (window.RTR_PERSONALITIES || []).forEach(pw=>{
+    pool.push(normalizeWorker(Object.assign({ promotion:'Free Agent', momentum:55, condition:90, morale:75 }, JSON.parse(JSON.stringify(pw)))));
+  });
+  // realistic salaries: recompute every wrestler's pay from overness × their
+  // promotion's pay tier (managers keep authored appearance fees).
+  roster.forEach(w=>{ if(w.role !== 'manager') w.salary = marketSalary(w.overness, meta.tierLabel); });
+  pool.forEach(w=>{ if(w.role !== 'manager'){
+    const tl = (PROMO_META[w.promotion]||{}).tierLabel || 'National'; // FAs → mid scale
+    w.salary = marketSalary(w.overness, tl);
+  }});
+  // stagger signed-roster contract lengths so they don't all expire at once
+  roster.forEach(w=>{ w.contractWeeks = 44 + (idNum(w.id) % 60); w.expiryWarned = false; });
+  pool.forEach(w=>{ w.contractWeeks = 0; }); // rivals/FAs: not player-tracked until signed
+  return {
+    schema: SCHEMA,
+    mode: (mode === 'junkie' ? 'junkie' : 'quick'),
+    promo: { name: promoName, cash: meta.cash, popW: meta.popW, perfW: meta.perfW,
+             tierLabel: meta.tierLabel, product: meta.product, gmId: null,
+             venue: setup.venue, ticketPrice: setup.price, tvDeal: setup.tvDeal, budget: setup.budget },
+    week: 1, year: 1, prospectSeq: 0,
+    roster, pool,
+    card: [],
+    history: [],
+    feuds: [],
+    teams: [],
+    titles: defaultTitles(promoName, roster),
+    rivalRatings: {},
+    metrics: { tvRating: null, attendance: null, lastNet: null, grade: null, spentThisWeek: 0, peakTv: 0 },
+    inbox: [{ ico:'📋', sev:'story', txt:`Welcome to <b>${promoName}</b>. Book your first show to get the crowd invested.` }],
+    seq: 1,
+  };
+}
+function idNum(id){ return parseInt((id||'w0').replace(/\D/g,''),10) || 0; }
+
+function normalizeWorker(w){
+  if(w.align === undefined) w.align = 'tweener';
+  if(w.momentum === undefined) w.momentum = 55;
+  if(w.condition === undefined) w.condition = 90;
+  if(w.morale === undefined) w.morale = 75;
+  if(w.injWeeks === undefined) w.injWeeks = 0;
+  if(w.weeksIdle === undefined) w.weeksIdle = 0;
+  if(w.contractWeeks === undefined) w.contractWeeks = 0;
+  if(w.expiryWarned === undefined) w.expiryWarned = false;
+  if(w.role === undefined) w.role = 'wrestler';
+  if(w.retired === undefined) w.retired = false;
+  if(w.mgrBonus === undefined) w.mgrBonus = 0;
+  if(w.canGM === undefined) w.canGM = false;
+  if(w.managerId === undefined) w.managerId = null; // wrestler's assigned manager
+  if(w.peakAge === undefined) w.peakAge = derivePeakAge(w);
+  if(w.potential === undefined) w.potential = derivePotential(w);
+  return w;
+}
+function isManager(w){ return w && w.role === 'manager'; }
+function stageBadge(w){
+  if(isManager(w)) return `<span class="badge tier" title="age ${w.age}">${w.age}</span>`;
+  const st = careerStage(w);
+  const m = { developing:['▲','#5bb083','Rising'], prime:['●','var(--cream)','Prime'], declining:['▼','#e0554a','Declining'] }[st];
+  return `<span class="badge tier" title="${m[2]} · age ${w.age}" style="color:${m[1]}">${m[0]} ${w.age}</span>`;
+}
+function myManagers(){ return S.roster.filter(isManager); }
+function myWrestlers(){ return S.roster.filter(w=>!isManager(w)); }
+
+function defaultTitles(promoName, roster){
+  // Seed a world title + tag titles, held by the promotion's top workers
+  const byOver = [...roster].sort((a,b)=>b.overness-a.overness);
+  const worldChamp = byOver[0];
+  const titles = [{
+    id: 't_world', name: worldTitleName(promoName), rank: 'world',
+    holderId: worldChamp ? worldChamp.id : null,
+    holderIds: worldChamp ? [worldChamp.id] : [],
+    reignWeek: 1, defenses: 0,
+    lineage: worldChamp ? [{ id: worldChamp.id, name: worldChamp.name, week: 1 }] : [],
+  }];
+  return titles;
+}
+function worldTitleName(p){
+  const map = { WWE:'Undisputed Championship', AEW:'World Championship', TNA:'World Championship',
+    AAA:'Mega Championship', ROH:'World Championship', NJPW:'IWGP World Heavyweight Championship',
+    Stardom:'World of Stardom Championship', TJPW:'Princess of Princess Championship' };
+  return map[p] || 'World Championship';
+}
+
+// ---------- Persistence ----------
+let saveTimer = null;
+function save(){
+  if(!S) return;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
+  catch(e){ console.warn('save failed', e); }
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
+function loadSave(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(!obj || obj.schema !== SCHEMA) return null;
+    return obj;
+  } catch(e){ return null; }
+}
+function deleteSave(){ localStorage.removeItem(SAVE_KEY); }
+
+// ---------- Small helpers ----------
+const $ = id => document.getElementById(id);
+function byId(id){ return S.roster.find(w=>w.id===id) || S.pool.find(w=>w.id===id); }
+function rosterById(id){ return S.roster.find(w=>w.id===id); }
+function money(n){ return '$' + Math.round(n).toLocaleString(); }
+function clamp(v, lo=0, hi=100){ return Math.max(lo, Math.min(hi, v)); }
+function bar(val, cls){ return `<span class="bar-track"><span class="bar-fill ${cls||''}" style="width:${clamp(val)}%"></span></span>`; }
+function ratingClass(r){ if(r>=85) return 'r-elite'; if(r>=65) return 'r-good'; if(r>=45) return 'r-mid'; return 'r-bad'; }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+function nextId(prefix){ S.seq = (S.seq||0)+1; return prefix + S.seq; }
+
+// Deterministic pseudo-random from a seed string (no Math.random, so it is reproducible)
+function seededRand(seed){
+  let h = 2166136261;
+  for(let i=0;i<seed.length;i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h = (h >>> 0);
+  return (h % 100000) / 100000; // 0..1
+}
+
+// ---------- Start screen ----------
+function renderStartScreen(){
+  const existing = loadSave();
+  const bar = $('continueBar');
+  if(existing){
+    bar.style.display = 'flex';
+    $('continuePromo').textContent = existing.promo.name;
+    const champ = existing.titles && existing.titles[0] && existing.titles[0].holderId
+      ? (existing.roster.find(w=>w.id===existing.titles[0].holderId) || {}).name : null;
+    $('continueMeta').textContent = `Week ${existing.week} · ${existing.roster.length} on roster · ${money(existing.promo.cash)}` + (champ?` · Champ: ${champ}`:'');
+  } else {
+    bar.style.display = 'none';
+  }
+  const grid = $('promoGrid');
+  const promos = Object.keys(PROMO_META);
+  grid.innerHTML = promos.map(p=>{
+    const count = window.RTR_ROSTER.filter(w=>w.promotion===p).length;
+    const meta = PROMO_META[p];
+    return `<div class="promo-card" onclick="startCareer('${p}')">
+      <h3>${p}</h3>
+      <div class="meta">${meta.tierLabel} · ${meta.product}</div>
+      <div class="meta">Starting cash: ${money(meta.cash)}</div>
+      <div class="roster-count">${count} wrestlers under contract</div>
+    </div>`;
+  }).join('');
+}
+
+function startCareer(p){
+  const existing = loadSave();
+  if(existing){
+    openModal('Start a new career?', `This will erase your current save (<b>${existing.promo.name}</b>, Week ${existing.week}). This can't be undone.`,
+      [{label:'Cancel', cls:'ghost', fn:closeModal},
+       {label:'Erase & Start', cls:'danger', fn:()=>{ closeModal(); doStart(p); }}]);
+    return;
+  }
+  doStart(p);
+}
+function doStart(p){
+  S = freshState(p, selectedMode);
+  save();
+  enterGame();
+}
+function continueCareer(){
+  const existing = loadSave();
+  if(!existing){ renderStartScreen(); return; }
+  S = existing;
+  // migrate any missing fields
+  S.roster.forEach(normalizeWorker); S.pool.forEach(normalizeWorker);
+  if(!S.feuds) S.feuds = []; if(!S.titles) S.titles = []; if(!S.inbox) S.inbox = [];
+  if(!S.teams) S.teams = []; if(!S.rivalRatings) S.rivalRatings = {};
+  if(S.promo.gmId === undefined) S.promo.gmId = null;
+  if(!S.mode) S.mode = 'junkie';
+  if(!S.year) S.year = 1; if(S.prospectSeq===undefined) S.prospectSeq = 0;
+  if(!S.metrics) S.metrics = { tvRating:null, attendance:null, lastNet:null, grade:null, spentThisWeek:0, peakTv:0 };
+  if(S.promo.venue === undefined){ const su=tierSetup(S.promo.tierLabel);
+    S.promo.venue=su.venue; S.promo.ticketPrice=su.price; S.promo.tvDeal=su.tvDeal; S.promo.budget=su.budget; }
+  enterGame();
+}
+function confirmDeleteSave(){
+  openModal('Delete this save?', `Your ${loadSave()?.promo.name || ''} career will be permanently deleted.`,
+    [{label:'Cancel', cls:'ghost', fn:closeModal},
+     {label:'Delete', cls:'danger', fn:()=>{ deleteSave(); closeModal(); renderStartScreen(); toast('Save deleted'); }}]);
+}
+
+function enterGame(){
+  $('startScreen').style.display = 'none';
+  $('gameShell').style.display = 'block';
+  window.scrollTo(0,0);
+  populateMarketPromoFilter();
+  renderAll();
+  switchTab('inbox');
+}
+
+function renderAll(){
+  refreshHud(); renderInbox(); renderRoster(); renderBuildSelectors(); renderCard();
+  renderFeuds(); renderStables(); renderPersonalities(); renderTitles(); renderHistory(); renderMarket();
+  renderWorld(); renderFinances(); renderEditor();
+  updateTabPips();
+}
+
+// ---------- HUD ----------
+function refreshHud(){
+  $('promoName').textContent = S.promo.name;
+  $('hudWeek').textContent = `Y${S.year||1} · W${((S.week-1)%52)+1}`;
+  const cashEl = $('hudCash'); cashEl.textContent = money(S.promo.cash);
+  cashEl.classList.toggle('warn', S.promo.cash < 0);
+  $('hudRoster').textContent = S.roster.length;
+  const ws = myWrestlers();
+  const pop = ws.length ? Math.round(ws.reduce((s,w)=>s+w.overness,0)/ws.length) : 0;
+  $('hudPop').textContent = pop;
+  $('hudTv').textContent = (S.metrics && S.metrics.tvRating!=null) ? S.metrics.tvRating : '-';
+  const modeEl = $('hudMode');
+  if(modeEl) modeEl.innerHTML = (S.mode==='junkie'?'Wrestling Junkie':'Quick Mode') + (S.mode==='quick'?` · <span class="mono" style="color:#94764a">${money(budgetLeft())} budget</span>`:'');
+  $('payrollLbl').textContent = 'Weekly payroll: ' + money(S.roster.reduce((s,w)=>s+w.salary,0));
+}
+
+// ---------- Tabs ----------
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  $('panel-'+name).classList.add('active');
+  if(name==='finances') renderFinances();
+  window.scrollTo(0, 0);
+}
+document.getElementById('tabBar').addEventListener('click', e=>{
+  const tab = e.target.closest('.tab'); if(tab) switchTab(tab.dataset.tab);
+});
+function goBuild(){ switchTab('build'); }
+function updateTabPips(){
+  const tab = document.querySelector('.tab[data-tab="inbox"]');
+  const n = S.inbox.length;
+  let pip = tab.querySelector('.pip');
+  if(n>0){ if(!pip){ pip=document.createElement('span'); pip.className='pip'; tab.appendChild(pip);} pip.textContent = n>9?'9+':n; }
+  else if(pip){ pip.remove(); }
+}
+
+// ---------- Inbox ----------
+function renderInbox(){
+  $('inboxWeekLbl').textContent = 'Week '+S.week;
+  const el = $('inboxList');
+  if(!S.inbox.length){ el.innerHTML = '<div class="empty-note">Inbox clear. Book a show and advance the week.</div>'; return; }
+  el.innerHTML = S.inbox.map(it=>`<div class="inbox-item sev-${it.sev||'info'}">
+      <div class="ico">${it.ico||'•'}</div><div class="txt">${it.txt}</div></div>`).join('');
+}
+function pushInbox(item){ S.inbox.push(item); }
+
+// ---------- Roster ----------
+function alignBadge(w){ return `<span class="badge ${w.align}">${w.align}</span>`; }
+function heldTitle(id){ return S.titles.find(t=>t.holderIds && t.holderIds.includes(id)); }
+
+function renderRoster(){
+  const filter = ($('rosterFilter')?.value || '').toLowerCase();
+  const sortKey = $('rosterSort')?.value || 'overness';
+  const list = S.roster.filter(w=>w.name.toLowerCase().includes(filter))
+    .sort((a,b)=> (b[sortKey]||0) - (a[sortKey]||0));
+  $('rosterList').innerHTML = list.map(w=>{
+    if(isManager(w)){
+      const gmTag = gm() && gm().id===w.id ? ' <span class="badge promo">GM</span>' : '';
+      return `<div class="card-row">
+        <div class="worker-name">${w.name}${gmTag}</div>
+        <span class="badge ${w.retired?'promo':'tier'}">${w.retired?'Legend':'Manager'}</span>
+        <div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div>
+        <div class="stat-mini">MGR ${w.mgrBonus}${bar(w.mgrBonus)}</div>
+        <div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>
+        <div class="stat-mini">${money(w.salary)}/wk</div>
+        <div class="stat-mini" style="color:${w.contractWeeks<=12?'#f08a76':'var(--text-faint)'}">📄 ${w.contractWeeks}w</div>
+        ${w.contractWeeks<=20?`<button class="ghost" onclick="resignWorker('${w.id}')">Re-sign</button>`:''}
+        <button class="danger" onclick="releaseWorker('${w.id}')">Release</button>
+      </div>`;
+    }
+    const t = heldTitle(w.id);
+    const hurt = w.injWeeks > 0;
+    const mgr = w.managerId ? byId(w.managerId) : null;
+    return `<div class="card-row ${hurt?'hurt':''} ${t?'champ':''}">
+      <div class="worker-name">${w.name}${t?` <span class="champ-belt" title="${t.name}">🏆</span>`:''}</div>
+      ${alignBadge(w)}
+      <span class="badge tier">${w.tier||''}</span>
+      ${stageBadge(w)}
+      ${mgr?`<span class="badge promo" title="Managed by ${mgr.name}">🎤 ${mgr.name}</span>`:''}
+      ${hurt?`<span class="badge hurt">Injured ${w.injWeeks}w</span>`:''}
+      <div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div>
+      <div class="stat-mini">PSY ${w.psych}${bar(w.psych)}</div>
+      <div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div>
+      <div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>
+      <div class="stat-mini">MOM ${Math.round(w.momentum)}${bar(w.momentum,'mo')}</div>
+      <div class="stat-mini">CND ${Math.round(w.condition)}${bar(w.condition,'cond')}</div>
+      <div class="stat-mini">MOR ${Math.round(w.morale)}${bar(w.morale,'mor')}</div>
+      <div class="stat-mini">${money(w.salary)}/wk</div>
+      <div class="stat-mini" style="color:${w.contractWeeks<=12?'#f08a76':'var(--text-faint)'}">📄 ${w.contractWeeks}w left</div>
+      ${w.contractWeeks<=20?`<button class="ghost" onclick="resignWorker('${w.id}')">Re-sign</button>`:''}
+      <button class="ghost" onclick="cycleAlign('${w.id}')">Turn</button>
+      <button class="danger" onclick="releaseWorker('${w.id}')">Release</button>
+    </div>`;
+  }).join('') || '<div class="empty-note">No wrestlers match that filter.</div>';
+}
+
+function resignWorker(id){
+  const w = rosterById(id); if(!w) return;
+  const cost = Math.round(w.salary*4);
+  openModal('Re-sign '+w.name+'?', `Extend their deal by 52 weeks for a <b>${money(cost)}</b> signing cost. Their current deal has ${w.contractWeeks} week${w.contractWeeks!==1?'s':''} left.`,
+    [{label:'Cancel', cls:'ghost', fn:closeModal},
+     {label:`Pay ${money(cost)}`, cls:'', fn:()=>{
+        if(S.promo.cash < cost){ toast("Can't afford that."); closeModal(); return; }
+        if(!canSpend(cost)){ toast(`Over budget. ${money(budgetLeft())} left this week.`); closeModal(); return; }
+        S.promo.cash -= cost; recordSpend(cost); w.contractWeeks += 52; w.expiryWarned=false; w.morale=clamp(w.morale+5);
+        closeModal(); renderAll(); scheduleSave(); toast(w.name+' re-signed (+52w)');
+     }}]);
+}
+
+function cycleAlign(id){
+  const w = rosterById(id); if(!w) return;
+  const order = ['face','tweener','heel'];
+  w.align = order[(order.indexOf(w.align)+1) % 3];
+  renderRoster(); scheduleSave();
+}
+
+function releaseWorker(id){
+  const w = rosterById(id); if(!w) return;
+  openModal('Release '+w.name+'?', `They'll enter the free-agent pool and a rival can sign them immediately. Releasing a popular star can hurt locker-room morale.`,
+    [{label:'Cancel', cls:'ghost', fn:closeModal},
+     {label:'Release', cls:'danger', fn:()=>{ closeModal(); doRelease(id); }}]);
+}
+function doRelease(id){
+  const idx = S.roster.findIndex(w=>w.id===id); if(idx===-1) return;
+  const w = S.roster.splice(idx,1)[0];
+  w.promotion = 'Free Agent';
+  S.pool.push(w);
+  // morale hit if releasing someone over
+  if(w.overness >= 70){ S.roster.forEach(o=>o.morale = clamp(o.morale-4)); }
+  // clean up feuds/titles/manager refs referencing them
+  S.feuds = S.feuds.filter(f=> f.a!==id && f.b!==id);
+  S.titles.forEach(t=>{ if(t.holderIds && t.holderIds.includes(id)){ vacateTitle(t); } });
+  if(S.promo.gmId===id) S.promo.gmId=null;                 // was the GM
+  S.roster.forEach(o=>{ if(o.managerId===id) o.managerId=null; }); // was someone's manager
+  S.teams.forEach(t=>{ if(t.managerId===id) t.managerId=null; });
+  w.managerId = null;                                       // released wrestler loses their manager link
+  renderAll(); scheduleSave(); toast(w.name+' released');
+}
+
+// ---------- Build selectors ----------
+function availableRoster(){ return S.roster.filter(w=>w.injWeeks<=0 && !isManager(w)); }
+function onSegTypeChange(){ updateRoadNote(); }
+
+function renderBuildSelectors(){
+  const venInfo = S.mode==='junkie' ? ` · ${effectiveVenue(isPpvWeek()).name} · ${money(S.promo.ticketPrice)}/ticket` : '';
+  $('buildWeekLbl').innerHTML = isPpvWeek()
+    ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">🔴 Premium Live Event</span> ${ppvName()} · Week ${S.week}${venInfo}`
+    : `Week ${S.week} · next big event in ${weeksToPpv()} wk${weeksToPpv()!==1?'s':''}${venInfo}`;
+  const runBtn = $('runShowBtn'); if(runBtn) runBtn.innerHTML = isPpvWeek()? `Run ${ppvName()} ▶` : 'Run Show &amp; Advance Week ▶';
+  const avail = availableRoster();
+  $('segWorkers').innerHTML = avail.sort((a,b)=>b.overness-a.overness)
+    .map(w=>`<option value="${w.id}">${w.name}  ·  ${w.align}  ·  OVR ${Math.round(w.overness)}</option>`).join('');
+  $('segWinner').innerHTML = '<option value="">(no winner set)</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  $('segTitle').innerHTML = '<option value="">(none)</option>' + S.titles.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  $('segFeud').innerHTML = '<option value="">(none)</option>' + S.feuds.map(f=>`<option value="${f.id}">${nm(f.a)} vs ${nm(f.b)} (heat ${Math.round(f.heat)})</option>`).join('');
+  // feud selectors (wrestlers only)
+  const wrestlers = myWrestlers();
+  $('feudA').innerHTML = wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  $('feudB').innerHTML = wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  renderTeamSelectors();
+  updateRoadNote();
+}
+function nm(id){ const w=byId(id); return w?w.name:'?'; }
+
+function selectedWorkerIds(){ return Array.from($('segWorkers').selectedOptions).map(o=>o.value); }
+
+// Road-agent advisory: a natural-language warning before committing, deterministic
+function updateRoadNote(){
+  const type = $('segType').value;
+  const ids = selectedWorkerIds();
+  const note = $('roadNote');
+  if(!ids.length){ note.textContent=''; return; }
+  const ws = ids.map(byId).filter(Boolean);
+  const meta = typeMeta[type];
+  const msgs = [];
+  if(type!=='promo'){
+    const topPsych = Math.max(...ws.map(w=>w.psych));
+    if(topPsych < meta.floor) msgs.push(`⚠ Nobody here can carry the psychology for a ${meta.label.toLowerCase()} (top psych ${topPsych}, floor ${meta.floor}). Expect a structural penalty.`);
+    if(ws.every(w=>w.inRing<55)) msgs.push('⚠ Two low in-ring workers. This match will drag.');
+    const lowCond = ws.filter(w=>w.condition<60);
+    if(lowCond.length) msgs.push(`⚠ ${lowCond.map(w=>w.name).join(', ')} ${lowCond.length>1?'are':'is'} worn down. Fatigue will cost you.`);
+    if(meta.injRisk>=1.8) msgs.push(`⚠ High-risk stipulation (${meta.label}). Real injury chance, especially on low condition.`);
+    const rookie = ws.find(w=>w.age<27), vet = ws.find(w=>w.psych>=80);
+    if(rookie && vet) msgs.push(`✓ ${vet.name} can carry ${rookie.name}. Good developmental pairing.`);
+  }
+  note.innerHTML = msgs.join('<br>');
+}
+['segType','segWorkers'].forEach(id=>document.addEventListener('DOMContentLoaded',()=>{}));
+
+function addSegment(){
+  const type = $('segType').value;
+  const ids = selectedWorkerIds();
+  const intent = $('segIntent').value;
+  const winner = type==='promo' ? '' : $('segWinner').value; // promos have no winner
+  const titleId = type==='promo' ? '' : $('segTitle').value; // no title on a promo
+  const feudId = $('segFeud').value;
+  const warn = $('builderWarn'); warn.textContent = '';
+  const meta = typeMeta[type];
+
+  if(ids.length < meta.minP || ids.length > meta.maxP){
+    warn.textContent = `${meta.label} needs ${meta.minP===meta.maxP?meta.minP:meta.minP+'-'+meta.maxP} participants (you picked ${ids.length}).`;
+    return;
+  }
+  if(winner && !ids.includes(winner)){ warn.textContent = 'Winner must be one of the participants.'; return; }
+  if(titleId){
+    const t = S.titles.find(x=>x.id===titleId);
+    // require current champion in the match for a title defense
+    if(t && t.holderIds.length && !t.holderIds.some(h=>ids.includes(h))){
+      warn.textContent = `The champion (${t.holderIds.map(nm).join(' & ')}) must be in the match to defend ${t.name}.`;
+      return;
+    }
+  }
+  S.card.push({ type, ids, intent, winner, titleId, feudId });
+  $('segWorkers').selectedIndex = -1;
+  $('segWinner').value = ''; $('segTitle').value = ''; $('segFeud').value = '';
+  $('roadNote').textContent = '';
+  renderCard(); scheduleSave();
+}
+
+function clearCard(){ S.card=[]; renderCard(); scheduleSave(); }
+function removeSegment(i){ S.card.splice(i,1); renderCard(); scheduleSave(); }
+
+function renderCard(){
+  const el = $('cardList');
+  $('runShowBtn').disabled = S.card.length===0;
+  if(!S.card.length){ el.innerHTML = '<div class="empty-note">No segments booked yet. Add matches and angles above.</div>'; return; }
+  el.innerHTML = S.card.map((seg,i)=>{
+    const names = seg.ids.map(nm).join(seg.type==='promo'?' & ':' vs. ');
+    const t = seg.titleId ? S.titles.find(x=>x.id===seg.titleId) : null;
+    const f = seg.feudId ? S.feuds.find(x=>x.id===seg.feudId) : null;
+    const tags = [];
+    if(t) tags.push(`🏆 ${t.name}`);
+    if(f) tags.push(`🔥 feud`);
+    if(seg.winner) tags.push('W: '+nm(seg.winner));
+    tags.push('intent: '+seg.intent);
+    return `<div class="segment-ticket">
+      <div>
+        <div class="vs-line">${i+1}. ${typeMeta[seg.type].label}: ${names}</div>
+        <div class="stat-mini">${tags.join(' · ')}</div>
+      </div>
+      <button class="danger" onclick="removeSegment(${i})">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+// ---------- RATING ENGINE (deterministic, inspectable) ----------
+function calcSegmentRating(seg){
+  const ws = seg.ids.map(byId).filter(Boolean);
+  const meta = typeMeta[seg.type];
+  const isPromo = seg.type==='promo';
+  const avgPop = ws.reduce((s,w)=>s+w.overness,0)/ws.length;
+  const perfKey = meta.perf;
+  const avgPerf = ws.reduce((s,w)=>s+w[perfKey],0)/ws.length;
+
+  let base = avgPop*S.promo.popW + avgPerf*S.promo.perfW;
+  const notes = [];
+  notes.push({t:`base = ${avgPop.toFixed(1)}(pop)×${S.promo.popW} + ${avgPerf.toFixed(1)}(${isPromo?'ent':'ring'})×${S.promo.perfW} = ${base.toFixed(1)}`});
+
+  // Step 2: psychology gate (matches only)
+  const topPsych = Math.max(...ws.map(w=>w.psych));
+  if(!isPromo && topPsych < meta.floor){
+    const penalty = (meta.floor - topPsych)*0.6;
+    base -= penalty; notes.push({t:`psychology gate: top psych ${topPsych} < floor ${meta.floor} → -${penalty.toFixed(1)}`, k:'neg'});
+  }
+  // Step 3: construction modifiers
+  if(!isPromo && ws.every(w=>w.inRing<55)){ base -= 8; notes.push({t:'weak in-ring pairing → -8', k:'neg'}); }
+  if(!isPromo){
+    const rookie = ws.some(w=>w.age<27), vetPsych = ws.some(w=>w.psych>=80);
+    if(rookie && vetPsych){ base += 5; notes.push({t:'veteran-carry bonus → +5', k:'pos'}); }
+  }
+  const avgCond = ws.reduce((s,w)=>s+w.condition,0)/ws.length;
+  if(!isPromo && avgCond < 60){ const p=(60-avgCond)*0.3; base-=p; notes.push({t:`fatigue: avg condition ${avgCond.toFixed(0)} < 60 → -${p.toFixed(1)}`, k:'neg'}); }
+  // momentum factor
+  const avgMom = ws.reduce((s,w)=>s+w.momentum,0)/ws.length;
+  const momBonus = (avgMom-50)*0.15; base += momBonus;
+  notes.push({t:`momentum: (${avgMom.toFixed(0)}-50)×0.15 = ${momBonus>=0?'+':''}${momBonus.toFixed(1)}`, k: momBonus>=0?'pos':'neg'});
+  // intent
+  if(seg.intent==='bury'){ base-=4; notes.push({t:'intent bury → -4', k:'neg'}); }
+  if(seg.intent==='showcase'){ base+=3; notes.push({t:'intent showcase → +3', k:'pos'}); }
+  if(seg.intent==='elevate'){ base+=1; notes.push({t:'intent elevate → +1', k:'pos'}); }
+
+  // Step 4: feud / heat (sub-linear diminishing returns; amplified at big events)
+  if(seg.feudId){
+    const f = S.feuds.find(x=>x.id===seg.feudId);
+    if(f){ let hb = 14 * Math.log10(1 + f.heat/10); if(isPpvWeek()) hb *= 1.5; base += hb;
+      notes.push({t:`feud heat ${Math.round(f.heat)} → +${hb.toFixed(1)}`, k:'pos'}); }
+  }
+  // Title match adds stakes
+  if(seg.titleId){ base += 4; notes.push({t:'championship on the line → +4', k:'pos'}); }
+  // Big-event spectacle
+  if(isPpvWeek()){ base += 5; notes.push({t:'premium live event → +5', k:'pos'}); }
+
+  // Team chemistry: a cohesive tag team / stable in the match performs better
+  if(!isPromo){
+    const team = dominantTeam(seg.ids);
+    if(team){ const cb = 3 + (team.chemistry-50)*0.12; base += cb;
+      notes.push({t:`${team.name} chemistry ${Math.round(team.chemistry)} → ${cb>=0?'+':''}${cb.toFixed(1)}`, k: cb>=0?'pos':'neg'}); }
+  }
+
+  // Manager at ringside: a great mouthpiece lifts the segment (more on the mic)
+  const mgr = bestManagerFor(seg.ids);
+  if(mgr){ const mb = (isPromo?0.11:0.07)*mgr.mgrBonus; base += mb;
+    notes.push({t:`${mgr.name} at ringside → +${mb.toFixed(1)}`, k:'pos'}); }
+
+  const final = Math.round(clamp(base));
+  return { final, notes, ws, avgPop };
+}
+
+// ---------- Run show ----------
+// ---------- Show scoring & finances (crowd, TV, tickets, P&L) ----------
+function currentVenue(){ return venueById(S.promo.venue); }
+function weeklyPayroll(){ return S.roster.reduce((s,w)=>s+w.salary,0); }
+function letterGrade(x){ if(x>=90)return'A+'; if(x>=85)return'A'; if(x>=80)return'A-'; if(x>=74)return'B+'; if(x>=68)return'B'; if(x>=62)return'B-'; if(x>=56)return'C+'; if(x>=50)return'C'; if(x>=44)return'C-'; if(x>=38)return'D'; return'F'; }
+function gradeColor(g){ const c=g[0]; if(c==='A')return'var(--gold-bright)'; if(c==='B')return'var(--green)'; if(c==='C')return'var(--text-dim)'; return'#f08a76'; }
+
+function computeShowMetrics(showRating, results, ppv){
+  const ws = myWrestlers();
+  const pop = ws.length ? ws.reduce((s,w)=>s+w.overness,0)/ws.length : 40;
+  const main = results[results.length-1];
+  const starPower = main ? (main.seg.ids.map(byId).filter(Boolean).reduce((s,w)=>s+w.overness,0)/main.seg.ids.length) : pop;
+  const setup = tierSetup(S.promo.tierLabel);
+  const venue = effectiveVenue(ppv);
+  const capacity = venue.cap;
+
+  // demand from star power (fans come for the top of the card), show quality,
+  // and overall popularity. A big event draws a premium crowd.
+  const demand = clamp(((starPower*0.45 + showRating*0.35 + pop*0.20)/100) * (ppv?1.32:1.18), 0, 1.25);
+  // ticket price sensitivity: ~1.0 at the tier's baseline price, cheaper fills more
+  const price = S.promo.ticketPrice;
+  const priceFactor = clamp(1.5 - (price/setup.price)*0.5, 0.4, 1.25);
+  const sellThrough = clamp(demand * priceFactor, 0, 1);
+  const attendance = Math.round(capacity * sellThrough);
+  const gate = attendance * price;
+
+  // TV rating: 0-100 appeal index, nudged by last week's trend
+  const trend = S.metrics.tvRating!=null ? (S.metrics.tvRating-55)*0.15 : 0;
+  const tvRating = Math.round(clamp(pop*0.5 + showRating*0.32 + starPower*0.18 + trend + (ppv?4:0), 0, 100));
+  const tvRevenue = Math.round(S.promo.tvDeal * (0.7 + tvRating/100*0.6));
+  const merch = Math.round(attendance * (pop/100) * (ppv?24:14));
+
+  // PPV buys: the big payday, scaling with appeal and the promotion's TV tier
+  let ppvRevenue = 0, ppvBuys = 0;
+  if(ppv){
+    const topHeat = S.feuds.reduce((m,f)=>Math.max(m,f.heat),0);
+    const appeal = clamp(pop*0.5 + showRating*0.35 + starPower*0.15 + topHeat*0.08, 0, 100);
+    ppvRevenue = Math.round(S.promo.tvDeal * (0.6 + appeal/100 * 2.8));
+    ppvBuys = Math.round(ppvRevenue / 42);
+  }
+
+  const payroll = weeklyPayroll();
+  const production = Math.round(venue.cost*0.35 + capacity*2) + (ppv?Math.round(venue.cost*0.3):0);
+  const venueCost = venue.cost;
+  const overhead = Math.round(ws.length * 900 + 8000); // staff, travel, office
+  const revenue = gate + tvRevenue + merch + ppvRevenue;
+  const costs = payroll + production + venueCost + overhead;
+  const net = revenue - costs;
+
+  // grade blends crowd, TV, sell-through and profitability
+  const profitScore = clamp(52 + (net/(costs+1))*45, 0, 100);
+  const composite = showRating*0.40 + tvRating*0.25 + sellThrough*100*0.20 + profitScore*0.15;
+  return { crowd:showRating, tvRating, attendance, capacity, sellThrough, gate, tvRevenue, merch,
+           ppv:!!ppv, ppvRevenue, ppvBuys, eventName: ppv?ppvName():null,
+           payroll, production, venueCost, overhead, revenue, costs, net, profitScore, composite,
+           grade:letterGrade(composite), venueName:venue.name, ticketPrice:price };
+}
+
+function showScorecard(M, deltas){
+  const dArrow = (v,invBad)=> v>0 ? `<span class="dlt up">▲ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : v<0 ? `<span class="dlt down">▼ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : `<span class="dlt flat">-</span>`;
+  const netCls = M.net>=0?'up':'down';
+  const junkie = S.mode==='junkie';
+  const cells = [
+    ['Crowd', M.crowd, dArrow(deltas.crowd)],
+    ['TV Rating', M.tvRating, dArrow(deltas.tvRating)],
+    ['Attendance', `${M.attendance.toLocaleString()}`, `<span class="dlt flat">${Math.round(M.sellThrough*100)}% of ${M.capacity.toLocaleString()}</span>`],
+    ['Gate', money(M.gate), dArrow(deltas.attendance)+' fans'],
+  ];
+  if(M.ppv){ cells.push(['PPV Buys', M.ppvBuys.toLocaleString(), `<span class="dlt up">${money(M.ppvRevenue)}</span>`]); }
+  if(junkie){
+    cells.push(['TV Money', money(M.tvRevenue), '<span class="dlt flat">weekly deal</span>']);
+    cells.push(['Merch', money(M.merch), '<span class="dlt flat">at the venue</span>']);
+  }
+  cells.push(['Net Profit', `<span style="color:${M.net>=0?'var(--green)':'#f08a76'}">${money(M.net)}</span>`, dArrow(deltas.net)]);
+  const title = M.ppv ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">Premium Live Event</span> ${M.eventName}` : `Week ${S.week} Show Grade`;
+  let body = `<div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      <span class="grade-badge" style="background:rgba(255,255,255,.05); color:${gradeColor(M.grade)}; border:1px solid ${gradeColor(M.grade)}">${M.grade}</span>
+      <div><div class="vs-line">${title}</div>
+      <div class="stat-mini">${M.venueName} · ${money(S.promo.ticketPrice)}/ticket · ${M.attendance.toLocaleString()} in the building</div></div>
+    </div>
+    <div class="score-grid">${cells.map(([l,v,d])=>`<div class="score-cell"><div class="lab">${l}</div><div class="val">${v}</div><div>${d}</div></div>`).join('')}</div>`;
+  if(!junkie){ body += `<div class="hint">Quick Mode: venue &amp; pricing are handled for you. Switch to Wrestling Junkie for full budget control.</div>`; }
+  openModal(M.ppv?'Event Results':'Show Results', body, [{label:'Continue', cls:'', fn:()=>{ closeModal(); switchTab('inbox'); }}]);
+}
+
+function runShow(){
+  if(!S.card.length) return;
+  const ppv = isPpvWeek();
+  const swing = ppv ? 1.7 : 1; // big events move the needle harder
+  const results = S.card.map(seg=>({seg, r: calcSegmentRating(seg)}));
+  // show rating: weighted, main event heaviest
+  const n = results.length;
+  const weights = results.map((_,i)=> 1 + (i/Math.max(1,n-1))*1.5); // opener 1.0 → main ~2.5
+  const totalW = weights.reduce((a,b)=>a+b,0);
+  const showRating = Math.round(results.reduce((s,res,i)=>s+res.r.final*weights[i],0)/totalW);
+
+  const events = []; // storyline notes for this show recap
+  const usedIds = new Set();
+
+  results.forEach(({seg,r})=>{
+    const meta = typeMeta[seg.type];
+    seg.ids.forEach(id=>usedIds.add(id));
+    r.ws.forEach(w=>{
+      const isWinner = seg.winner===w.id;
+      const delta = (r.final-60)/8 * swing;
+      w.overness = clamp(w.overness + (isWinner || !seg.winner ? delta : delta/2));
+      w.momentum = clamp(w.momentum + (isWinner ? 6*swing : (seg.intent==='bury' ? -8 : -2)));
+      w.condition = clamp(w.condition - meta.condCost, 0, 100);
+      w.morale = clamp(w.morale + (seg.intent==='bury' && !isWinner ? -6 : 1));
+      w.weeksIdle = 0;
+    });
+    // team chemistry build when a unit is booked together
+    const dt = dominantTeam(seg.ids);
+    if(dt){ dt.chemistry = clamp(dt.chemistry + 3, 0, 100); }
+    // feud heat build
+    if(seg.feudId){
+      const f = S.feuds.find(x=>x.id===seg.feudId);
+      if(f){
+        // A hot feud paying off in a big-event match is a blow-off: huge payoff,
+        // then the story resets so it doesn't run forever.
+        if(ppv && f.heat>=70 && seg.winner){
+          const win = byId(seg.winner);
+          if(win){ win.overness = clamp(win.overness + 6); win.momentum = clamp(win.momentum + 12); }
+          f.heat = 22; f.blowoffReady = false; f.beats.push({week:S.week, type:seg.type, rating:r.final, winner:nm(seg.winner), blowoff:true});
+          events.push({ico:'🎇', sev:'good', txt:`Blow-off! <b>${nm(seg.winner)}</b> settles the score with ${nm(f.a)===nm(seg.winner)?nm(f.b):nm(f.a)} at ${ppvName()}. A defining moment.`});
+        } else {
+          const gain = (6 + (r.final-55)*0.25 + (seg.winner?3:0)) * (ppv?1.4:1);
+          f.heat = clamp(f.heat + Math.max(2,gain), 0, 100);
+          f.beats.push({week:S.week, type:seg.type, rating:r.final, winner: seg.winner?nm(seg.winner):null});
+          if(f.heat>=80 && !f.blowoffReady){ f.blowoffReady = true;
+            events.push({ico:'🔥', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is white-hot (heat ${Math.round(f.heat)}). It's blow-off time. Pay it off at the next big event.`}); }
+        }
+      }
+    }
+    // title change: only if current champion is pinned (i.e., a holder is a participant and NOT the winner, winner takes it)
+    if(seg.titleId && seg.winner){
+      const t = S.titles.find(x=>x.id===seg.titleId);
+      if(t){
+        const champInMatch = t.holderIds.some(h=>seg.ids.includes(h));
+        const winnerIsChamp = t.holderIds.includes(seg.winner);
+        if(champInMatch && !winnerIsChamp){
+          // title changes hands
+          const newChamp = byId(seg.winner);
+          t.holderId = seg.winner; t.holderIds = [seg.winner];
+          t.reignWeek = S.week; t.defenses = 0;
+          t.lineage.push({id:seg.winner, name:newChamp.name, week:S.week});
+          newChamp.momentum = clamp(newChamp.momentum+10); newChamp.overness = clamp(newChamp.overness+2);
+          events.push({ico:'🏆', sev:'good', txt:`NEW CHAMPION: <b>${newChamp.name}</b> captures the ${t.name}!`});
+        } else if(winnerIsChamp){
+          t.defenses += 1;
+          events.push({ico:'🏆', sev:'info', txt:`<b>${nm(seg.winner)}</b> retains the ${t.name} (defense #${t.defenses}).`});
+        }
+      }
+    }
+  });
+
+  // Multi-category scorecard + finances (crowd, TV, gate, net…)
+  const M = computeShowMetrics(showRating, results, ppv);
+  const prev = S.metrics;
+  const deltas = {
+    crowd: (prev.lastCrowd!=null)? showRating-prev.lastCrowd : 0,
+    tvRating: (prev.tvRating!=null)? M.tvRating-prev.tvRating : 0,
+    attendance: (prev.attendance!=null)? M.attendance-prev.attendance : 0,
+    net: (prev.lastNet!=null)? M.net-prev.lastNet : 0,
+  };
+  S.promo.cash += M.net;
+  S.metrics = { tvRating:M.tvRating, attendance:M.attendance, lastNet:M.net, lastCrowd:showRating,
+                grade:M.grade, spentThisWeek:0, peakTv:Math.max(prev.peakTv||0, M.tvRating) };
+
+  const column = generateColumn(showRating, results, events);
+  S.history.unshift({ week:S.week, showRating, revenue:M.net, metrics:M, deltas, column, ppv, eventName:M.eventName,
+    segs: results.map(({seg,r})=>({
+      type:seg.type, names: seg.ids.map(nm), rating:r.final,
+      notes:r.notes, winner: seg.winner?nm(seg.winner):null,
+      flavor: segFlavor(seg, r),
+      title: seg.titleId?(S.titles.find(t=>t.id===seg.titleId)||{}).name:null,
+    })), events });
+
+  // injury roll for this card (needs worker ids, which live in results)
+  const injMsgs = [];
+  const justInjured = new Set();
+  applyInjuriesForCard(results, injMsgs, justInjured);
+
+  S.card = [];
+  // advance the week (this show counts as the week's activity)
+  weeklyTick(usedIds, {showRating, revenue:M.net, metrics:M, events, extraInbox: injMsgs, justInjured});
+  showScorecard(M, deltas);
+}
+
+// ---------- Weekly tick ----------
+function advanceWeek(){
+  // advancing without a show, everyone idle
+  weeklyTick(new Set(), {showRating:null, revenue:0, events:[], extraInbox:[], justInjured:new Set()});
+  switchTab('inbox');
+}
+
+function weeklyTick(usedIds, showInfo){
+  const startInbox = (showInfo.extraInbox||[]).slice();
+  const justInjured = showInfo.justInjured || new Set();
+  // 1. financial settlement.
+  //    If a show ran, its net P&L (incl. payroll) was already applied in runShow.
+  //    A dark/no-show week still pays salaries and takes a slice of TV money.
+  const payroll = weeklyPayroll();
+  if(!showInfo.metrics){
+    const tvIdle = Math.round(S.promo.tvDeal*0.55);
+    S.promo.cash += tvIdle - payroll;
+  }
+
+  // GM passive: a hired GM lifts morale baseline and sharpens the business
+  const theGM = gm();
+  const gmMoraleBase = theGM ? 72 + theGM.mgrBonus*0.06 : 72; // up to ~78
+  // 2. decay / regen + idle tracking (managers don't wrestle → no ring wear/idle penalty)
+  S.roster.forEach(w=>{
+    if(!isManager(w)){
+      const used = usedIds.has(w.id);
+      if(!used){
+        w.weeksIdle = (w.weeksIdle||0)+1;
+        w.momentum += (50 - w.momentum)*0.2;       // momentum decays toward baseline
+        w.condition = clamp(w.condition + 12, 0, 100); // rest heals
+        if(w.weeksIdle>=3){ w.morale = clamp(w.morale-3); w.overness = clamp(w.overness-0.5); }
+      }
+      if(w.injWeeks>0 && !justInjured.has(w.id)){ w.injWeeks--; if(w.injWeeks===0) startInbox.push({ico:'🟢', sev:'good', txt:`<b>${w.name}</b> is cleared to return from injury.`}); }
+    }
+    w.morale += (gmMoraleBase - w.morale)*0.12;    // morale drifts to (GM-boosted) baseline
+  });
+
+  // 3b. contracts: tick down, warn, expire to free agency
+  const expired = [];
+  S.roster.forEach(w=>{
+    w.contractWeeks = Math.max(0, (w.contractWeeks||0) - 1);
+    if(w.contractWeeks<=12 && w.contractWeeks>0 && !w.expiryWarned){
+      w.expiryWarned = true;
+      startInbox.push({ico:'📄', sev:'story', txt:`<b>${w.name}</b>'s contract expires in ${w.contractWeeks} weeks. Re-sign them before a rival makes an offer.`});
+    }
+    if(w.contractWeeks<=0) expired.push(w);
+  });
+  expired.forEach(w=>{
+    const idx=S.roster.findIndex(x=>x.id===w.id);
+    if(idx>-1){ S.roster.splice(idx,1); w.promotion='Free Agent';
+      S.feuds=S.feuds.filter(f=>f.a!==w.id&&f.b!==w.id);
+      S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
+      S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+      detachPersonRefs(w.id);
+      S.pool.push(w);
+      startInbox.push({ico:'📄', sev:'bad', txt:`<b>${w.name}</b>'s ${isManager(w)?'deal':'contract'} expired and they left.`});
+    }
+  });
+  S.teams = S.teams.filter(t=>t.memberIds.length>=2); // dissolve broken units
+
+  // 4. feud fatigue: long cold feuds cool off
+  S.feuds.forEach(f=>{
+    const usedThisWeek = usedIds.has(f.a) && usedIds.has(f.b);
+    if(!usedThisWeek){ f.heat = clamp(f.heat - 3, 0, 100); f.coldWeeks=(f.coldWeeks||0)+1; }
+    else f.coldWeeks = 0;
+  });
+
+  // 5. morale departures: very unhappy workers may walk to a rival
+  const leavers = [];
+  S.roster.forEach(w=>{
+    if(w.morale < 25){
+      const r = seededRand(`${w.id}-${S.week}-leave`);
+      if(r < 0.35){ leavers.push(w); }
+    }
+  });
+  leavers.forEach(w=>{
+    const idx = S.roster.findIndex(x=>x.id===w.id);
+    if(idx>-1){ S.roster.splice(idx,1); w.promotion='Free Agent'; S.pool.push(w);
+      S.feuds = S.feuds.filter(f=>f.a!==w.id && f.b!==w.id);
+      S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
+      S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+      detachPersonRefs(w.id);
+      startInbox.push({ico:'🚪', sev:'bad', txt:`<b>${w.name}</b> walked out over how they were being booked and left the promotion.`}); }
+  });
+
+  // 6. AI rival promotions: they book their own shows, sign free agents, and poach
+  aiRivalMoves(startInbox);
+  simulateRivalShows();
+  rivalsSignFreeAgents(startInbox);
+
+  // 7. contract-expiry-ish morale flags
+  S.roster.forEach(w=>{
+    if(w.morale < 35 && w.overness >= 65){ /* surfaced below */ }
+  });
+  const unhappyStars = S.roster.filter(w=>w.morale<35 && w.overness>=65);
+  if(unhappyStars.length){
+    startInbox.push({ico:'😤', sev:'bad', txt:`Locker-room unrest: <b>${unhappyStars.slice(0,3).map(w=>w.name).join(', ')}</b>${unhappyStars.length>3?' and others':''} ${unhappyStars.length>1?'are':'is'} unhappy with their booking.`});
+  }
+  if(S.promo.cash < 0){
+    startInbox.push({ico:'💸', sev:'bad', txt:`You're in the red (${money(S.promo.cash)}). Cut payroll or book bigger shows.`});
+  }
+
+  // finalize: bump week, build the new inbox
+  S.week += 1;
+  if(S.metrics) S.metrics.spentThisWeek = 0; // Quick-mode allowance refreshes
+  // annual progression at each in-world year boundary (52-week years)
+  let yearSummary = null;
+  if(S.week>1 && (S.week-1) % 52 === 0){ S.year += 1; yearSummary = runAnnualProgression(); }
+  const inbox = [];
+  if(showInfo.metrics){
+    const M = showInfo.metrics;
+    inbox.push({ico: M.ppv?'🎇':'⭐', sev: M.composite>=68?'good':(M.composite>=50?'story':'bad'),
+      txt:`${M.ppv?`<b>${M.eventName}</b> graded`:`Last week graded`} <b>${M.grade}</b>. Crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats${M.ppv?`, ${M.ppvBuys.toLocaleString()} buys`:''}, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
+    (showInfo.events||[]).forEach(e=>inbox.push(e));
+  } else {
+    inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Salaries of ${money(payroll)} still went out (TV money softened the hit).`});
+  }
+  if(yearSummary) pushYearSummary(inbox, yearSummary);
+  startInbox.forEach(i=>inbox.push(i));
+  // big-event countdown
+  const wtp = weeksToPpv();
+  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT: your Premium Live Event. Book the biggest card you can and pay off your hottest feuds.`});
+  else if(wtp<=2) inbox.push({ico:'📅', sev:'story', txt:`<b>${ppvName(nextPpvWeek())}</b> is ${wtp} week${wtp!==1?'s':''} away. Build heat now so the big show delivers.`});
+  // feud blow-off nudges
+  S.feuds.filter(f=>f.blowoffReady && f.coldWeeks>=2).forEach(f=>{
+    inbox.push({ico:'🥊', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is cooling off (heat ${Math.round(f.heat)}). Pay it off before the crowd checks out.`});
+  });
+  S.inbox = inbox;
+
+  save();
+  renderAll();
+}
+
+// AI rivals: occasionally poach an idle/unhappy star, and re-sign free agents so pool stays lively
+function aiRivalMoves(startInbox){
+  // rival signs one of your unhappy idle stars occasionally (wrestlers only)
+  const targets = S.roster.filter(w=>!isManager(w) && w.morale<30 && (w.weeksIdle||0)>=2 && w.overness>=60);
+  targets.forEach(w=>{
+    const r = seededRand(`${w.id}-${S.week}-poach`);
+    if(r<0.2){
+      const idx=S.roster.findIndex(x=>x.id===w.id);
+      if(idx>-1){ S.roster.splice(idx,1);
+        const rival = pickRivalPromo();
+        w.promotion=rival; S.pool.push(w);
+        S.feuds=S.feuds.filter(f=>f.a!==w.id&&f.b!==w.id);
+        S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
+        S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+        detachPersonRefs(w.id);
+        startInbox.push({ico:'📡', sev:'bad', txt:`<b>${rival}</b> poached <b>${w.name}</b> right out from under you. They were unhappy and idle.`});
+      }
+    }
+  });
+}
+function pickRivalPromo(){
+  const promos = Object.keys(PROMO_META).filter(p=>p!==S.promo.name);
+  return promos[Math.floor(seededRand('rival'+S.week)*promos.length)];
+}
+
+// ---------- injuries: proper version invoked from runShow via history ----------
+function applyInjuriesForCard(results, startInbox, justInjured){
+  results.forEach(({seg},si)=>{
+    const meta = typeMeta[seg.type];
+    if(meta.injRisk<=0) return;
+    seg.ids.forEach(id=>{
+      const w = byId(id); if(!w || w.injWeeks>0 || justInjured.has(w.id)) return;
+      const condFactor = (100 - w.condition)/100;   // worn down = riskier
+      const physFactor = (100 - w.phys)/140;
+      const baseRate = 0.012 * meta.injRisk;
+      const chance = baseRate + condFactor*0.05*meta.injRisk + physFactor*0.02;
+      const r = seededRand(`${w.id}-${S.week}-inj-${seg.type}-${si}`);
+      if(r < chance){
+        const weeks = 1 + Math.floor(seededRand(`${w.id}-${S.week}-dur`)*8); // 1-8 weeks
+        w.injWeeks = weeks; w.condition = clamp(w.condition-15,0,100);
+        justInjured.add(w.id);
+        startInbox.push({ico:'🏥', sev:'bad', txt:`<b>${w.name}</b> was injured in the ${meta.label.toLowerCase()} and is out ~${weeks} week${weeks>1?'s':''}.`});
+      }
+    });
+  });
+}
+
+// ---------- Feuds ----------
+function createFeud(){
+  const a = $('feudA').value, b = $('feudB').value;
+  const warn = $('feudWarn'); warn.textContent='';
+  if(a===b){ warn.textContent='Pick two different wrestlers.'; return; }
+  if(S.feuds.some(f=>(f.a===a&&f.b===b)||(f.a===b&&f.b===a))){ warn.textContent='These two are already feuding.'; return; }
+  S.feuds.push({ id:nextId('f_'), a, b, heat:20, beats:[], blowoffReady:false, coldWeeks:0, startWeek:S.week });
+  renderFeuds(); renderBuildSelectors(); scheduleSave(); toast('Feud started: '+nm(a)+' vs '+nm(b));
+}
+function endFeud(id){
+  S.feuds = S.feuds.filter(f=>f.id!==id);
+  renderFeuds(); renderBuildSelectors(); scheduleSave();
+}
+function renderFeuds(){
+  const el = $('feudList');
+  if(!S.feuds.length){ el.innerHTML='<div class="empty-note">No active feuds. Start one above: booked rivals build heat, and heat makes their matches hit harder.</div>'; return; }
+  el.innerHTML = S.feuds.map(f=>{
+    const beats = f.beats.slice(-4).map(b=>`W${b.week}: ${typeMeta[b.type]?typeMeta[b.type].label:b.type} (${b.rating})${b.winner?' → '+b.winner:''}`).join('<br>');
+    return `<div class="feud-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="heads">${nm(f.a)} <span style="color:var(--red)">vs</span> ${nm(f.b)}</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          ${f.blowoffReady?'<span class="badge promo">Blow-off ready</span>':''}
+          <button class="ghost" onclick="endFeud('${f.id}')">End</button>
+        </div>
+      </div>
+      <div class="heat-track"><div class="heat-fill" style="width:${clamp(f.heat)}%"></div></div>
+      <div class="stat-mini">Heat ${Math.round(f.heat)}/100 · started week ${f.startWeek} · ${f.beats.length} beat${f.beats.length!==1?'s':''}</div>
+      <div class="prose" style="margin-top:6px;">${generatePromo(f)}</div>
+      ${beats?`<div class="breakdown" style="margin-top:6px;">${beats}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ---------- Tag teams & stables ----------
+function teamOf(id){ return S.teams.find(t=>t.memberIds.includes(id)); }
+// the team best represented in a match (>=2 members present)
+function dominantTeam(ids){
+  let best=null, bestN=0;
+  S.teams.forEach(t=>{ const n=t.memberIds.filter(m=>ids.includes(m)).length; if(n>=2 && n>bestN){best=t; bestN=n;} });
+  return best;
+}
+function createTeam(){
+  const type=$('teamType').value, name=($('teamName').value||'').trim();
+  const ids=Array.from($('teamMembers').selectedOptions).map(o=>o.value);
+  const warn=$('teamWarn'); warn.textContent='';
+  if(!name){ warn.textContent='Give the unit a name.'; return; }
+  if(ids.length<2){ warn.textContent='Pick at least 2 members.'; return; }
+  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2-3 members; use a stable for larger groups.'; return; }
+  S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week, managerId: $('teamManager').value||null });
+  $('teamName').value=''; $('teamMembers').selectedIndex=-1; $('teamManager').value='';
+  renderStables(); renderBuildSelectors(); scheduleSave(); toast((type==='tag'?'Tag team':'Stable')+' formed: '+name);
+}
+function breakUpTeam(id){
+  const t=S.teams.find(x=>x.id===id); if(!t) return;
+  const members=t.memberIds.slice();
+  openModal('Break up '+t.name+'?', t.type==='stable'
+      ? `Stable breakups are storyline gold. Turn two members against each other to spin off a feud?`
+      : `Split this team? The two can be turned into rivals.`,
+    [{label:'Just disband', cls:'ghost', fn:()=>{ closeModal(); doBreak(id,false); }},
+     {label:'Disband + start feud', cls:'', fn:()=>{ closeModal(); doBreak(id,true); }}]);
+}
+function doBreak(id, feud){
+  const t=S.teams.find(x=>x.id===id); if(!t) return;
+  const m=t.memberIds.slice();
+  S.teams=S.teams.filter(x=>x.id!==id);
+  if(feud && m.length>=2){
+    const a=m[0], b=m[1];
+    if(!S.feuds.some(f=>(f.a===a&&f.b===b)||(f.a===b&&f.b===a))){
+      S.feuds.push({id:nextId('f_'), a, b, heat:45, beats:[], blowoffReady:false, coldWeeks:0, startWeek:S.week});
+      pushInbox({ico:'💥', sev:'story', txt:`<b>${t.name}</b> imploded. <b>${nm(a)}</b> turned on <b>${nm(b)}</b>. A red-hot feud is born.`});
+    }
+  }
+  renderAll(); scheduleSave(); toast(t.name+' disbanded');
+}
+function renderStables(){
+  const el=$('teamList');
+  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No units yet. Form a tag team or stable above: booked together, they build chemistry that boosts their matches; break a stable up for an instant feud.</div>'; return; }
+  el.innerHTML=S.teams.map(t=>{
+    const members=t.memberIds.map(nm).join(', ');
+    return `<div class="feud-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="heads">${t.name} <span class="badge ${t.type==='stable'?'promo':'tier'}">${t.type}</span></div>
+        <button class="ghost danger" onclick="breakUpTeam('${t.id}')">Break Up</button>
+      </div>
+      <div class="heat-track"><div class="heat-fill" style="width:${clamp(t.chemistry)}%; background:linear-gradient(90deg,var(--blue),var(--gold-bright));"></div></div>
+      <div class="stat-mini">Chemistry ${Math.round(t.chemistry)}/100 · ${members}</div>
+    </div>`;
+  }).join('');
+}
+function renderTeamSelectors(){
+  const avail=availableRoster();
+  $('teamMembers').innerHTML=avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  const tm=$('teamManager'); if(tm) tm.innerHTML='<option value="">(none)</option>'+myManagers().map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+}
+
+// ---------- Managers, legends & GM ----------
+// best (highest-mgrBonus) manager attached to anyone in a segment, via
+// a wrestler's personal manager or their dominant team's manager
+function bestManagerFor(ids){
+  const mgrs = [];
+  ids.forEach(id=>{ const w=byId(id); if(w && w.managerId){ const m=byId(w.managerId); if(m && S.roster.includes(m)) mgrs.push(m); } });
+  const team = dominantTeam(ids);
+  if(team && team.managerId){ const m=byId(team.managerId); if(m && S.roster.includes(m)) mgrs.push(m); }
+  if(!mgrs.length) return null;
+  return mgrs.sort((a,b)=>b.mgrBonus-a.mgrBonus)[0];
+}
+function gm(){ return S.promo.gmId ? byId(S.promo.gmId) : null; }
+// Quick mode: a weekly spending allowance caps signings/re-signs.
+function budgetLeft(){ return S.mode==='quick' ? Math.max(0, S.promo.budget - (S.metrics.spentThisWeek||0)) : Infinity; }
+function canSpend(cost){ return cost <= budgetLeft(); }
+function recordSpend(cost){ if(S.mode==='quick') S.metrics.spentThisWeek = (S.metrics.spentThisWeek||0) + cost; }
+// clear any GM/manager links pointing at a departing person id
+function detachPersonRefs(id){
+  if(S.promo.gmId===id) S.promo.gmId=null;
+  S.roster.forEach(o=>{ if(o.managerId===id) o.managerId=null; });
+  S.teams.forEach(t=>{ if(t.managerId===id) t.managerId=null; });
+}
+function assignManager(mgrId, clientId){
+  // clientId can be a wrestler id or a team id (tm_...)
+  const m = byId(mgrId); if(!m) return;
+  if(clientId==='' ){ /* unassign handled by caller */ }
+  if(clientId.startsWith && clientId.startsWith('tm_')){
+    const t=S.teams.find(x=>x.id===clientId); if(t) t.managerId=mgrId;
+  } else {
+    const w=rosterById(clientId); if(w) w.managerId=mgrId;
+  }
+  renderAll(); scheduleSave(); toast(m.name+' assigned');
+}
+function unassignManagerFrom(kind,id){
+  if(kind==='w'){ const w=rosterById(id); if(w) w.managerId=null; }
+  else { const t=S.teams.find(x=>x.id===id); if(t) t.managerId=null; }
+  renderAll(); scheduleSave();
+}
+function setGM(id){ S.promo.gmId = id||null; renderAll(); scheduleSave(); toast(id?byId(id).name+' hired as GM':'GM removed'); }
+
+function renderPersonalities(){
+  const el=$('personnelList');
+  const mgrs=myManagers();
+  const g=gm();
+  const wrestlers=myWrestlers();
+  // GM section
+  let html = `<div class="builder-box"><div class="vs-line" style="margin-bottom:8px;">General Manager</div>`;
+  const gmEligible = mgrs.filter(m=>m.canGM);
+  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM lifts locker-room morale and sharpens the business: a small company-wide edge each week.</div>`;
+  html += `<select id="gmPick" onchange="setGM(this.value)"><option value="">(no GM)</option>` +
+    gmEligible.map(m=>`<option value="${m.id}" ${g&&g.id===m.id?'selected':''}>${m.name} (mgr ${m.mgrBonus})</option>`).join('') + `</select>`;
+  if(!gmEligible.length) html += `<div class="hint" style="margin-top:6px;">Sign a legend or a booking-minded manager (Heyman, Callis, Cornette…) from the Market to fill this role.</div>`;
+  html += `</div>`;
+
+  // Managers on roster + assignment
+  if(!mgrs.length){
+    html += `<div class="empty-note">No managers or legends signed. Head to the Market: legends and famous managers sit in the free-agent pool. Pair one with a wrestler or a stable to boost their segments and heat.</div>`;
+  } else {
+    html += mgrs.map(m=>{
+      const clients = wrestlers.filter(w=>w.managerId===m.id).map(w=>w.name)
+        .concat(S.teams.filter(t=>t.managerId===m.id).map(t=>t.name+' (stable)'));
+      const opts = `<option value="">(assign to…)</option>`
+        + `<optgroup label="Wrestlers">`+wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('')+`</optgroup>`
+        + (S.teams.length?`<optgroup label="Stables">`+S.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')+`</optgroup>`:``);
+      return `<div class="feud-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="heads">${m.name} <span class="badge ${m.retired?'promo':'tier'}">${m.retired?'Legend':'Manager'}</span> <span class="badge tier">MGR ${m.mgrBonus}</span></div>
+          <div>${money(m.salary)}/wk</div>
+        </div>
+        <div class="stat-mini" style="margin:6px 0;">Managing: ${clients.length?clients.join(', '):'<span style="color:var(--text-faint)">nobody yet</span>'}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select onchange="if(this.value){assignManager('${m.id}',this.value); this.value='';}">${opts}</select>
+        </div>
+      </div>`;
+    }).join('');
+    // show current pairings with unassign
+    const paired = wrestlers.filter(w=>w.managerId).map(w=>`<span class="badge tier" style="margin:2px;">${w.name} ← ${nm(w.managerId)} <a href="#" onclick="unassignManagerFrom('w','${w.id}');return false;" style="color:#f08a76;">✕</a></span>`)
+      .concat(S.teams.filter(t=>t.managerId).map(t=>`<span class="badge tier" style="margin:2px;">${t.name} ← ${nm(t.managerId)} <a href="#" onclick="unassignManagerFrom('t','${t.id}');return false;" style="color:#f08a76;">✕</a></span>`));
+    if(paired.length) html += `<div style="margin-top:10px;"><div class="stat-mini" style="margin-bottom:4px;">CURRENT PAIRINGS</div>${paired.join(' ')}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ---------- AI rival promotions ----------
+function promoRoster(name){ return S.pool.filter(w=>w.promotion===name); }
+function simulateRivalShows(){
+  Object.keys(PROMO_META).filter(p=>p!==S.promo.name).forEach(p=>{
+    const r=promoRoster(p); if(!r.length) return;
+    const top=[...r].sort((a,b)=>b.overness-a.overness).slice(0,6);
+    const meta=PROMO_META[p];
+    const avgPop=top.reduce((s,w)=>s+w.overness,0)/top.length;
+    const avgPerf=top.reduce((s,w)=>s+w.inRing,0)/top.length;
+    const jitter=(seededRand(p+S.week)-0.5)*8;
+    const rating=Math.round(clamp(avgPop*meta.popW + avgPerf*meta.perfW + jitter));
+    S.rivalRatings[p]=rating;
+    // their workers drift: a strong show lifts momentum/overness slightly
+    top.forEach(w=>{
+      w.momentum = clamp(w.momentum + (rating-60)/12);
+      w.overness = clamp(w.overness + (rating-62)/40);
+    });
+    r.forEach(w=>{ if(!top.includes(w)) w.momentum = clamp(w.momentum + (50-w.momentum)*0.15); });
+  });
+}
+function rivalsSignFreeAgents(startInbox){
+  const fas=S.pool.filter(w=>w.promotion==='Free Agent' && !isManager(w)).sort((a,b)=>b.overness-a.overness);
+  fas.forEach(w=>{
+    if(w.overness<62) return;
+    const r=seededRand(`${w.id}-${S.week}-fasign`);
+    if(r<0.4){ const promo=pickRivalPromo(); w.promotion=promo;
+      // (silent: only notify if it was a notable name)
+      if(w.overness>=75) startInbox.push({ico:'✍️', sev:'info', txt:`<b>${promo}</b> signed free agent <b>${w.name}</b>.`});
+    }
+  });
+}
+function renderWorld(){
+  const el=$('worldList');
+  const rows=Object.keys(PROMO_META).map(p=>{
+    const isYou=p===S.promo.name;
+    const r=isYou?null:promoRoster(p);
+    const youW = isYou?myWrestlers():null;
+    const size=isYou?youW.length:(r?r.length:0);
+    const avgOver=isYou
+      ? (youW.length?youW.reduce((s,w)=>s+w.overness,0)/youW.length:0)
+      : (r&&r.length?r.reduce((s,w)=>s+w.overness,0)/r.length:0);
+    const lastRating=isYou?(S.history[0]?S.history[0].showRating:null):(S.rivalRatings[p]??null);
+    return {p, isYou, size, avgOver, lastRating, tier:PROMO_META[p].tierLabel};
+  }).sort((a,b)=>b.avgOver-a.avgOver);
+  el.innerHTML = `<div class="grid2">` + rows.map((row,i)=>`
+    <div class="stat-tile" style="${row.isYou?'border-color:var(--gold);':''}">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <div class="vs-line">#${i+1} ${row.p}${row.isYou?' <span class="badge promo">You</span>':''}</div>
+        <div class="mono" style="color:var(--gold-bright); font-size:18px;">${Math.round(row.avgOver)}</div>
+      </div>
+      <div class="stat-mini" style="margin-top:4px;">${row.tier} · ${row.size} roster</div>
+      <div class="stat-mini">Last show: ${row.lastRating!=null?`<span class="rating-dial ${ratingClass(row.lastRating)}" style="font-size:12px; padding:1px 6px;">${row.lastRating}</span>`:'-'}</div>
+    </div>`).join('') + `</div>`;
+}
+
+// ---------- Titles ----------
+function vacateTitle(t){
+  t.holderId=null; t.holderIds=[]; t.reignWeek=S.week; t.defenses=0;
+  t.lineage.push({id:null, name:'VACANT', week:S.week});
+}
+function renderTitles(){
+  const el = $('titleList');
+  el.innerHTML = S.titles.map(t=>{
+    const holder = t.holderIds.length ? t.holderIds.map(nm).join(' & ') : '<span style="color:var(--text-faint)">VACANT</span>';
+    const reignLen = t.holderIds.length ? (S.week - t.reignWeek) : 0;
+    const lineage = t.lineage.slice(-6).reverse().map(l=>`W${l.week}: ${l.name}`).join('  ·  ');
+    return `<div class="title-card">
+      <div class="tname">🏆 ${t.name}</div>
+      <div style="margin-top:6px;">Champion: <b>${holder}</b>${t.holderIds.length?` · ${reignLen} week reign · ${t.defenses} defense${t.defenses!==1?'s':''}`:''}</div>
+      <div class="breakdown" style="margin-top:8px;">Lineage: ${lineage}</div>
+    </div>`;
+  }).join('') || '<div class="empty-note">No championships.</div>';
+}
+
+// ---------- History ----------
+function renderHistory(){
+  const el = $('historyList');
+  if(!S.history.length){ el.innerHTML='<div class="empty-note">No shows run yet.</div>'; return; }
+  el.innerHTML = S.history.map(h=>`
+    <div class="recap-block">
+      <h3>${h.ppv?`🎇 ${h.eventName} · `:`Week ${h.week} · `}${h.metrics?`<span style="color:${gradeColor(h.metrics.grade)}">${h.metrics.grade}</span> · `:''}Crowd <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span>${h.metrics?` · TV ${h.metrics.tvRating} · ${h.metrics.attendance.toLocaleString()} fans${h.ppv?` · ${h.metrics.ppvBuys.toLocaleString()} buys`:''} · net ${h.metrics.net>=0?'+':''}${money(h.metrics.net)}`:` · ${money(h.revenue)}`}</h3>
+      ${h.column?`<div class="prose" style="margin:2px 0 10px;"><em>Dirt sheet:</em> ${h.column}</div>`:''}
+      ${(h.events&&h.events.length)?`<div style="margin:4px 0 8px;">${h.events.map(e=>`<div class="stat-mini">${e.ico||''} ${e.txt}</div>`).join('')}</div>`:''}
+      ${h.segs.map(s=>{
+        const names = s.names.join(s.type==='promo'?' & ':' vs. ');
+        const noteHtml = (s.notes||[]).map(n=>`<span class="${n.k==='pos'?'pos':n.k==='neg'?'neg':''}">${n.t}</span>`).join('<br>');
+        return `<div style="margin-top:10px;">
+          <span class="vs-line">${typeMeta[s.type]?typeMeta[s.type].label:s.type}: ${names}</span>
+          <span class="rating-dial ${ratingClass(s.rating)}" style="margin-left:8px;">${s.rating}</span>
+          ${s.title?`<span class="badge promo" style="margin-left:6px;">🏆 ${s.title}</span>`:''}
+          ${s.winner?`<span class="stat-mini" style="margin-left:6px;">def. → ${s.winner}</span>`:''}
+          ${s.flavor?`<div class="prose" style="margin-top:2px;">${s.flavor}</div>`:''}
+          <div class="breakdown">${noteHtml}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+function dirtSheet(r){
+  if(r>=85) return 'The dirt sheets are raving: an instant classic.';
+  if(r>=70) return 'A strong night that got people talking.';
+  if(r>=55) return 'A solid, if unspectacular, show.';
+  if(r>=40) return 'Columnists shrugged. Forgettable.';
+  return 'Panned online as a creative low point.';
+}
+
+/* ============================================================
+   NARRATIVE LAYER (deterministic "generative shell")
+   Reads finalized deterministic results and writes in-world prose.
+   Template-driven for a keyless, offline, single-player build. The
+   seam is intentional: swap generateColumn/segFlavor/generatePromo
+   for an LLM call (feeding the same result objects as the prompt) and
+   nothing about game balance changes. Outcomes are already decided.
+   ============================================================ */
+function pick(arr, seed){ return arr[Math.floor(seededRand(seed)*arr.length)]; }
+function verbFor(rating, seed){
+  if(rating>=82) return pick(['tore the house down','delivered a classic','stole the show','had the crowd on their feet'], seed);
+  if(rating>=66) return pick(['turned in a strong outing','clicked well','kept the crowd hot','went over well'], seed);
+  if(rating>=48) return pick(['had a serviceable match','did enough','kept things moving'], seed);
+  return pick(['struggled to connect','fell flat','lost the crowd','never got going'], seed);
+}
+function segFlavor(seg, r){
+  const names = seg.ids.map(nm);
+  const seed = seg.ids.join('')+S.week+seg.type;
+  const label = (typeMeta[seg.type]?typeMeta[seg.type].label:seg.type).toLowerCase();
+  if(seg.type==='promo'){
+    return `${names.join(' & ')} grabbed the mic; the segment ${verbFor(r.final, seed)}.`;
+  }
+  let s = `In the ${label}, ${names.join(' and ')} ${verbFor(r.final, seed)}`;
+  if(seg.winner) s += `, with ${nm(seg.winner)} standing tall`;
+  s += '.';
+  return s;
+}
+function generateColumn(showRating, results, events){
+  const seed = 'col'+S.week+showRating;
+  const opener = showRating>=78 ? pick(['A statement night for','One of the best cards in a while from','The crowd went home happy after'], seed)
+    : showRating>=58 ? pick(['A steady week for',`Business as usual for`,'A watchable night from'], seed)
+    : pick(['A rough week for',`Questions are being asked about the booking at`,'A night to forget for'], seed);
+  const me = results[results.length-1];
+  const meLine = me ? `The main event saw ${me.seg.ids.map(nm).join(me.seg.type==='promo'?' & ':' vs. ')} ${verbFor(me.r.final, seed+'me')} (${me.r.final}).` : '';
+  let e = '';
+  const titleChange = events.find(x=>/NEW CHAMPION/.test(x.txt));
+  const blow = events.find(x=>/blow-off/.test(x.txt));
+  if(titleChange) e += ' '+titleChange.txt.replace(/<\/?b>/g,'').replace('NEW CHAMPION: ','New champion crowned: ');
+  else if(blow) e += ' '+blow.txt.replace(/<\/?b>/g,'');
+  return `${opener} ${S.promo.name}. ${meLine}${e} ${dirtSheet(showRating)}`;
+}
+function generatePromo(f){
+  const A=nm(f.a), B=nm(f.b);
+  const wa=byId(f.a), wb=byId(f.b);
+  const heel = wa && wa.align==='heel' ? A : (wb && wb.align==='heel' ? B : A);
+  const face = heel===A ? B : A;
+  const seed = f.id+S.week;
+  if(f.heat>=75) return `"${A}, ${B}. This ends at the top of the card, and everyone knows it."`;
+  if(f.heat>=45) return pick([
+    `"${heel} thinks this is over. ${face} has other ideas."`,
+    `"Every week ${heel} runs their mouth, and every week ${face} is still standing."`,
+    `"${A} and ${B} can't stand the sight of each other, and the crowd can feel it."`,
+  ], seed);
+  return pick([
+    `"There's history here between ${A} and ${B}, and it's only just starting to boil."`,
+    `"${face} has ${heel} in their sights."`,
+  ], seed);
+}
+
+// ---------- Market ----------
+function populateMarketPromoFilter(){
+  const sel = $('marketPromoFilter');
+  const promos = [...new Set(S.pool.map(w=>w.promotion))].sort();
+  sel.innerHTML = '<option value="">All promotions</option>' + promos.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+function poachInfo(w){
+  const isFA = w.promotion==='Free Agent';
+  const mult = isFA ? 1 : (PROMO_META[w.promotion] ? 2.2 : 1.5);
+  return { isFA, bonus: Math.round(w.salary*mult) };
+}
+function renderMarket(){
+  const filter = ($('marketFilter')?.value||'').toLowerCase();
+  const promoFilter = $('marketPromoFilter').value;
+  let list = S.pool.filter(w=>w.name.toLowerCase().includes(filter));
+  if(promoFilter) list = list.filter(w=>w.promotion===promoFilter);
+  list = list.sort((a,b)=>b.overness-a.overness).slice(0,150);
+  $('marketList').innerHTML = list.map(w=>{
+    const {isFA, bonus} = poachInfo(w);
+    const canAfford = S.promo.cash >= bonus;
+    const mg = isManager(w);
+    const roleBadge = mg ? `<span class="badge promo">${w.retired?'Legend':'Manager'}</span>` : `<span class="badge promo">${w.promotion}</span>`;
+    const stats = mg
+      ? `<div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div><div class="stat-mini">MGR ${w.mgrBonus}${bar(w.mgrBonus)}</div><div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>${w.canGM?'<span class="badge tier">can GM</span>':''}`
+      : `<div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div><div class="stat-mini">PSY ${w.psych}${bar(w.psych)}</div><div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div><div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>`;
+    const label = mg ? 'Hire' : (isFA?'Sign':'Poach');
+    return `<div class="card-row">
+      <div class="worker-name">${w.name}</div>
+      ${roleBadge}
+      ${mg?'':alignBadge(w)}
+      ${stats}
+      <div class="fa-price">${mg?'Hire fee':(isFA?'Signing bonus':'Poach fee')} ${money(bonus)} · ${money(w.salary)}/wk</div>
+      <button onclick="signWorker('${w.id}')" ${canAfford?'':'disabled'}>${label}</button>
+    </div>`;
+  }).join('') || '<div class="empty-note">No wrestlers match that filter.</div>';
+}
+function signWorker(id){
+  const idx = S.pool.findIndex(w=>w.id===id); if(idx===-1) return;
+  const w = S.pool[idx];
+  const {isFA, bonus} = poachInfo(w);
+  if(S.promo.cash < bonus){ toast("Can't afford that."); return; }
+  if(!canSpend(bonus)){ toast(`Over budget. ${money(budgetLeft())} left this week.`); return; }
+  S.promo.cash -= bonus; recordSpend(bonus);
+  S.pool.splice(idx,1);
+  const from = w.promotion;
+  w.promotion = S.promo.name; w.morale = clamp(Math.max(w.morale, 70)); w.weeksIdle=0;
+  w.contractWeeks = 52; w.expiryWarned = false;
+  if(!isManager(w)) w.salary = marketSalary(w.overness, S.promo.tierLabel); // pay at your scale
+  S.roster.push(w);
+  renderAll(); scheduleSave();
+  toast(`${isManager(w)?'Hired':(isFA?'Signed':'Poached')} ${w.name}${(isFA||isManager(w))?'':' from '+from}`);
+}
+
+// ---------- Finances ----------
+function renderFinances(){
+  const payroll = weeklyPayroll();
+  const injured = S.roster.filter(w=>w.injWeeks>0).length;
+  const m = S.metrics;
+  const junkie = S.mode==='junkie';
+  const grid = $('financeGrid');
+
+  const cells = [
+    ['Mode', junkie?'Wrestling Junkie':'Quick Mode', 'var(--gold-bright)'],
+    ['Cash on hand', money(S.promo.cash), S.promo.cash<0?'var(--red)':'var(--gold-bright)'],
+    ['Weekly payroll', money(payroll)+' /wk', 'var(--text)'],
+    ['Last TV rating', m.tvRating!=null?m.tvRating:'-', 'var(--text)'],
+    ['Last attendance', m.attendance!=null?m.attendance.toLocaleString():'-', 'var(--text)'],
+    ['Last grade', m.grade||'-', m.grade?gradeColor(m.grade):'var(--text)'],
+    ['Last net', m.lastNet!=null?money(m.lastNet):'-', (m.lastNet||0)>=0?'var(--green)':'#f08a76'],
+    ['Peak TV', m.peakTv||0, 'var(--text)'],
+    ['Promotion tier', S.promo.tierLabel, 'var(--text)'],
+  ];
+  if(!junkie){
+    cells.push(['Weekly budget', money(budgetLeft())+' left', budgetLeft()>0?'var(--green)':'#f08a76']);
+  }
+  let html = `<div class="grid2">` + cells.map(([l,v,c])=>`<div class="stat-tile">
+      <div class="stat-mini" style="text-transform:uppercase; letter-spacing:1px;">${l}</div>
+      <div style="font-size:22px; font-family:var(--mono); color:${c}; margin-top:4px;">${v}</div>
+    </div>`).join('') + `</div>`;
+
+  // Junkie: venue + ticket-price controls that feed the show P&L
+  if(junkie){
+    const v = currentVenue();
+    html += `<div class="builder-box" style="margin-top:14px;">
+      <div class="vs-line" style="margin-bottom:8px;">Show Setup &amp; Budget</div>
+      <div class="row-wrap">
+        <label class="fld"><div class="stat-mini fldlab">Venue (capacity · cost)</div>
+          <select onchange="setVenue(this.value)">${VENUES.map(x=>`<option value="${x.id}" ${x.id===S.promo.venue?'selected':''}>${x.name} · ${x.cap.toLocaleString()} · ${money(x.cost)}</option>`).join('')}</select></label>
+        <label class="fld"><div class="stat-mini fldlab">Ticket price <span class="mono" style="color:var(--gold-bright)">${money(S.promo.ticketPrice)}</span></div>
+          <input type="range" min="10" max="250" step="5" value="${S.promo.ticketPrice}" oninput="setTicket(this.value)"></label>
+        <div class="stat-mini">TV deal: ${money(S.promo.tvDeal)}/wk · Product: ${S.promo.product}</div>
+      </div>
+      <div class="hint" style="margin-top:8px;">Bigger venues cost more but seat more fans; pricing too high thins the crowd. The show grade weighs crowd, TV, sell-through and profit.</div>
+    </div>`;
+    // last show P&L breakdown
+    if(S.history[0] && S.history[0].metrics){
+      const M=S.history[0].metrics;
+      const line=(l,v,pos)=>`<div style="display:flex; justify-content:space-between;"><span class="stat-mini">${l}</span><span class="mono" style="color:${pos?'var(--green)':'#f08a76'}">${pos?'+':'−'}${money(Math.abs(v))}</span></div>`;
+      html += `<div class="builder-box" style="margin-top:12px;"><div class="vs-line" style="margin-bottom:8px;">Last Show P&amp;L: Week ${S.history[0].week}</div>
+        ${line('Gate ('+M.attendance.toLocaleString()+' × '+money(M.ticketPrice)+')',M.gate,true)}
+        ${line('TV money',M.tvRevenue,true)}
+        ${line('Merch',M.merch,true)}
+        ${line('Payroll',M.payroll,false)}
+        ${line('Venue',M.venueCost,false)}
+        ${line('Production',M.production,false)}
+        ${line('Overhead',M.overhead||0,false)}
+        <div style="display:flex; justify-content:space-between; border-top:1px solid var(--line); margin-top:6px; padding-top:6px;"><span class="vs-line">Net</span><span class="mono" style="font-size:16px; color:${M.net>=0?'var(--green)':'#f08a76'}">${M.net>=0?'+':''}${money(M.net)}</span></div>
+      </div>`;
+    }
+  }
+  grid.innerHTML = html;
+}
+function setVenue(id){ S.promo.venue=id; renderFinances(); renderBuildSelectors(); scheduleSave(); }
+function setTicket(v){ S.promo.ticketPrice=Number(v); renderFinances(); scheduleSave(); }
+
+// ---------- Editor ----------
+const EDIT_STATS = [
+  ['inRing','In-Ring'],['psych','Psychology'],['ent','Entertainment'],['phys','Physical'],
+  ['overness','Overness'],['momentum','Momentum'],['condition','Condition'],['morale','Morale'],
+  ['age','Age'],['salary','Salary $/wk'],
+];
+function allWorkersSorted(){
+  return [...S.roster.map(w=>({w,loc:'roster'})), ...S.pool.map(w=>({w,loc:'pool'}))]
+    .sort((a,b)=> a.w.name.localeCompare(b.w.name));
+}
+function renderEditor(){
+  const sel = $('editPick');
+  const prev = sel.value;
+  sel.innerHTML = allWorkersSorted().map(({w,loc})=>
+    `<option value="${w.id}">${w.name} · ${loc==='roster'?S.promo.name:w.promotion}</option>`).join('');
+  if(prev && byId(prev)) sel.value = prev;
+  loadEditWorker();
+}
+function loadEditWorker(){
+  const id = $('editPick').value;
+  const w = byId(id);
+  const box = $('editFields');
+  if(!w){ box.innerHTML = '<div class="empty-note">No wrestler selected.</div>'; return; }
+  const maxFor = k => (k==='salary'?200000:(k==='age'?70:100));
+  box.innerHTML = `
+    <div class="row-wrap" style="margin-bottom:12px;">
+      <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="ed_name" value="${w.name.replace(/"/g,'&quot;')}"></label>
+      <label class="fld"><div class="stat-mini fldlab">Alignment</div>
+        <select id="ed_align">${['face','tweener','heel'].map(a=>`<option value="${a}" ${w.align===a?'selected':''}>${a}</option>`).join('')}</select></label>
+      <label class="fld"><div class="stat-mini fldlab">Tier</div>
+        <select id="ed_tier">${['elite','upper','mid','lower'].map(t=>`<option value="${t}" ${w.tier===t?'selected':''}>${t}</option>`).join('')}</select></label>
+    </div>
+    <div class="grid2">
+      ${EDIT_STATS.map(([k,lbl])=>`<label class="fld stat-tile">
+        <div class="stat-mini fldlab">${lbl} <span class="mono" id="edv_${k}" style="color:var(--gold-bright)">${Math.round(w[k])}</span></div>
+        <input type="range" min="0" max="${maxFor(k)}" step="${k==='salary'?500:1}" value="${Math.round(w[k])}" id="ed_${k}"
+          oninput="document.getElementById('edv_${k}').textContent = this.value">
+      </label>`).join('')}
+    </div>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="saveEditWorker('${w.id}')">Save Changes</button>
+      <span class="hint">Edits apply immediately and persist in this career's save.</span>
+    </div>`;
+}
+function saveEditWorker(id){
+  const w = byId(id); if(!w) return;
+  w.name = ($('ed_name').value||w.name).trim();
+  w.align = $('ed_align').value; w.tier = $('ed_tier').value;
+  EDIT_STATS.forEach(([k])=>{ const el=$('ed_'+k); if(el) w[k] = Number(el.value); });
+  save(); renderAll();
+  toast(w.name+' updated');
+}
+
+// ---------- Modal ----------
+function openModal(title, bodyHtml, btns){
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = bodyHtml;
+  $('modalBtns').innerHTML = '';
+  btns.forEach(b=>{ const el=document.createElement('button'); el.textContent=b.label;
+    if(b.cls) el.className=b.cls; el.onclick=b.fn; $('modalBtns').appendChild(el); });
+  $('modalBack').classList.add('open');
+}
+function closeModal(){ $('modalBack').classList.remove('open'); }
+$('modalBack').addEventListener('click', e=>{ if(e.target===$('modalBack')) closeModal(); });
+
+// hook live road-agent note updates
+document.addEventListener('change', e=>{ if(e.target.id==='segType'||e.target.id==='segWorkers') updateRoadNote(); });
+document.addEventListener('click', e=>{ if(e.target.id==='segWorkers') updateRoadNote(); });
+
+// ---------- INIT ----------
+renderStartScreen();
+</script>
+</body>
+</html>

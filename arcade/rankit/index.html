@@ -31,8 +31,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -118,35 +118,74 @@
   /* Five fixed-height rank slots, always. Holding their space before the JS
      builds them stops the Check-order button and the leaderboard from being
      shoved 400px down the page a second after first paint. */
-  .rows:empty{min-height:412px;}
+  .rows:empty{min-height:476px;}   /* 5 rows of 88 + 4 gaps of 9 */
   /* a rank slot = a detached number block on the left + the draggable card */
   /* The card body scrolls the page (touch-action:pan-y); on touch, only the
-     number block (.rord) grabs to reorder — so you can scroll past the list on
+     number block (.rord) grabs to reorder, so you can scroll past the list on
      mobile. Desktop still drags anywhere on the card. Arrows work everywhere. */
   .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:pan-y; transition:transform .12s;}
   .ritem .rord{touch-action:none;}
   .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
   .rord{flex:0 0 auto; width:40px; align-self:stretch; display:flex; align-items:center; justify-content:center; border-radius:11px; background:var(--card2); border:1px solid var(--line2); font-family:var(--hero); font-weight:400; font-size:19px; color:var(--mut);}
-  .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
+  /* Three tracks: the name, the revealed value, the arrows. The value used to
+     be absolutely positioned into a 64px box that overhung the name's reserved
+     padding, so "36,928 pts" wrapped to two lines and printed straight through
+     the name. In a grid it cannot: the value takes the width it needs and the
+     name column gives way.
+     The name is left-aligned rather than centred on the row. Centring cost it
+     a second reserved gutter to balance the arrows, and at 23px uppercase that
+     gutter was the difference between MITCH RICHMOND and MITCH RIC... */
+  .rrow{flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto 34px; align-items:center; gap:8px;
+    background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; position:relative;
+    transition:border-color .15s, background .15s, box-shadow .15s;}
+  /* At reveal nothing can be moved any more, so the arrows go and their space
+     becomes the value's. */
+  .rrow.show-era{grid-template-columns:minmax(0,1fr) auto;}
+  .rrow.show-era .ctrl{display:none;}
   .ritem.dragging .rrow{box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); opacity:.98;}
   .rrow .ctrl button{cursor:pointer;}
   /* name spans the full card and centres on its true midpoint; the arrows and
      the (hidden until reveal) value sit in reserved right-side gutters so the
      name is always dead-centre regardless of them. */
-  .rmeta{flex:1; min-width:0; text-align:center; padding:0 46px;}
+  /* Fixed height, contents centred: a one-line name and a two-line name make
+     the same row. Rows have to be uniform because the drag maths moves by a
+     single row-height step, and because .rows reserves their space up front. */
+  .rmeta{min-width:0; text-align:left; height:62px; display:flex; flex-direction:column; justify-content:center;}
   /* white-space:nowrap is what makes the ellipsis actually fire - without it a
      long name wrapped to a second line instead of truncating, which both broke
      the intended truncation and made every row's height depend on the viewport
      width. Rows are now a fixed height, which is also what lets .rows reserve
      its space below. */
-  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
-  .rrow .era{position:absolute; right:50px; top:50%; transform:translateY(-50%); font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; text-align:right; max-width:64px;}
-  .rrow.show-era .era{opacity:1;}
-  .rrow .ctrl{position:absolute; right:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:3px;}
-  .rrow .ctrl button{width:30px; height:22px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
+  /* Two lines, not an ellipsis. At 23px uppercase, SHAQUILLE O'NEAL needs 225px
+     and no phone row has it, so nowrap meant every long name in the game read
+     as SHAQUILLE... - which is most of the names worth ranking. */
+  .rmeta .nm{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden;}
+  .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* Explicit tracks. Without them the hidden value drops out of the flow and
+     the arrows slide into column 2, leaving the fixed 34px column standing
+     empty at the end of every row - 42px of the name's width, spent on nothing. */
+  .rrow .rmeta{grid-column:1;} .rrow .era{grid-column:2;} .rrow .ctrl{grid-column:3;}
+  .rrow.show-era .ctrl{grid-column:auto;}
+  .rrow .era{display:none; font-size:12.5px; font-weight:900; letter-spacing:.02em; color:var(--pinkT);
+    text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .rrow.show-era .era{display:block; animation:eraIn .25s ease;}
+  @keyframes eraIn{from{opacity:0; transform:translateX(6px);}to{opacity:1; transform:none;}}
+  .rrow .ctrl{display:flex; flex-direction:column; gap:4px;}
+  .rrow .ctrl button{width:34px; height:26px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
   .rrow .ctrl button:hover{color:var(--ink); border-color:var(--pink);}
   .rrow .ctrl button:disabled{opacity:.3; cursor:default;}
+  /* TAP TO SWAP. Dragging on a phone meant hitting a 40px grip and holding it
+     steady past four other rows, and the arrows moved one place per press, so
+     sending the bottom name to the top was four separate taps. Tapping the two
+     names you want to trade is one gesture, works anywhere on the card, and
+     needs no aim at all. Drag and the arrows both still work. */
+  .rrow.picked{border-color:var(--pink); background:color-mix(in srgb, var(--pink) 12%, var(--card));
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--pink) 45%, transparent), var(--shadow);}
+  .ritem.picked .rord{background:var(--pink); color:#20101a; border-color:transparent;}
+  /* while one is held, the rest step back so the target reads as a choice */
+  .rows.picking .ritem:not(.picked) .rrow{opacity:.62;}
   .rrow.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 13%, var(--card));}
   .rrow.correct .ord{background:var(--green); color:#071426;}
   .rrow.wrong{border-color:color-mix(in srgb, var(--red) 55%, transparent);}
@@ -268,7 +307,8 @@
     background:color-mix(in srgb, var(--ink) 4%, var(--card));
     box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); }
   .ritem.dragging .rrow{ box-shadow:9px 9px 0 rgba(7,20,38,.32); }
-  .rmeta .nm{ font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.02em; line-height:1; text-transform:uppercase; }
+  .rmeta .nm{ font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.02em; line-height:1.06; text-transform:uppercase; }
+  @media (max-width:470px){ .rmeta .nm{ font-size:20px; } }
   .rmeta .sub{ letter-spacing:.08em; margin-top:5px; }
   .rrow .ctrl button{ border-width:2px; border-radius:4px; }
   .rrow.correct{ border-left-color:var(--green); }
@@ -320,15 +360,15 @@
   <div class="a-gametitle" style="--a-tc:var(--pink)"><span class="a-gametitle__plate">Rank <b>It</b></span></div>
 
   <div class="runbar">
-    <div class="big" id="runN">–</div>
+    <div class="big" id="runN">-</div>
     <div class="rl"><span class="k">Tries used today</span><span class="pips" id="triePips" aria-label="Attempts"></span></div>
-    <div class="best"><span class="n" id="bestRun">–</span><span class="c">Best</span></div>
+    <div class="best"><span class="n" id="bestRun">-</span><span class="c">Best</span></div>
   </div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
-  <div class="lead"><span class="k" id="axisLabel">Today’s ranking</span><span class="v" id="prompt">Rank by the era they starred in, <b>earliest</b> era at the top.</span></div>
+  <div class="lead"><span class="k" id="axisLabel">Today’s ranking</span><span class="v" id="prompt">Rank these five by a career stat, <b>most</b> at the top.</span></div>
 
-  <div class="axis"><span id="axTop">↑ Earliest</span><span id="axBot">Most recent ↓</span></div>
+  <div class="axis"><span id="axTop">↑ Most</span><span id="axBot">Fewest ↓</span></div>
   <div class="rkfb" id="rkFeedback" aria-live="polite"></div>
   <div class="rows" id="rows"></div>
 
@@ -338,8 +378,8 @@
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your tries today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Fewest ever</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your tries today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Fewest ever</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -360,9 +400,9 @@
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">TRIES USED</h2>
     <div class="milestone" id="mMilestone"></div>
-    <div class="rstats">
-      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
-      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
+    <div class="a-runline">
+      <span><b id="mBest">0</b> best ever</span><i></i>
+      <span><b id="mStreak">1</b> day streak</span>
     </div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
@@ -381,30 +421,31 @@
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
-<script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=2"></script>
-<script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/share.js?v=4"></script>
+<script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=8"></script>
-<script src="/arcade/alltime.js?v=2"></script>
+<script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
+<script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=10"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=3"></script>
+<script src="/arcade/pregame.js?v=11"></script>
+<script src="/arcade/howto.js?v=13"></script>
 <script>
 (function(){
   'use strict';
@@ -487,17 +528,23 @@
         else if(g===relaxAt[1]) minGap = 1.10;
         else if(g===relaxAt[2]) minGap = 1.05;
       }
-      var picked=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
+      // Sorted ascending only to test the adjacent-gap rule; the BOARD always
+      // reads most-first. A puzzle that flips which end is "the top" makes
+      // people re-learn the question every day and mis-sort a set they had
+      // right in their head - the direction is fixed so the only thing being
+      // asked is the ranking itself.
+      var asc=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
         .sort(function(a,b){ return a.v-b.v; });
       var ok=true;
-      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*minGap){ ok=false; break; } }
+      for(var i=1;i<COUNT;i++){ if(asc[i].v < asc[i-1].v*minGap){ ok=false; break; } }
       if(!ok) continue;
+      var picked=asc.slice().reverse();
       var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
       return {
         cat:cat, answer:picked.map(function(p){ return p.e; }),
         key:function(e){ return vmap[e.id]; },
-        lead:'Rank by '+cfg.label+', <b>fewest</b> at the top.',
-        axisTop:'Fewest', axisBot:'Most',
+        lead:'Rank by '+cfg.label+', <b>most</b> at the top.',
+        axisTop:'Most', axisBot:'Fewest',
         val:function(e){ return Number(vmap[e.id]).toLocaleString('en-US')+' '+cfg.unit; }
       };
     }
@@ -540,6 +587,8 @@
   var order=[], setTries=0;   // two tries per set: first blind (count only), second decisive
   var CUR=null;    // the set actually dealt on screen; check() always compares against THIS object
   var drag=null;   // in-flight drag gesture; committed on release or right before a check
+  var pickedIdx=null;  // the row lifted by tap-to-swap, waiting for its partner
+  var tapLock=0;       // swallows the click a finished drag can leave behind
   var rowsEl=document.getElementById('rows');
 
   function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
@@ -551,11 +600,12 @@
   }
   function render(){
     var S=CUR||curSet();
+    rowsEl.classList.toggle('picking', pickedIdx!==null && !done && !busy);
     rowsEl.innerHTML = order.map(function(e,i){
-      var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(reveal?' show-era':'');
+      var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(reveal?' show-era':'')+(pickedIdx===i?' picked':'');
       var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(e.t&&e.t[0]);
       var st=tc?(' style="--tp:'+tc.p+'"'):'';
-      return '<div class="ritem">'+
+      return '<div class="ritem'+(pickedIdx===i?' picked':'')+'">'+
         '<span class="rord">'+(i+1)+'</span>'+
         '<div class="'+cls+'"'+st+'>'+
           '<div class="rmeta"><span class="nm">'+esc(e.name)+'</span><span class="sub">'+esc(metaLine(e))+'</span></div>'+
@@ -566,7 +616,21 @@
       '</div>';
     }).join('');
     [].forEach.call(rowsEl.querySelectorAll('button[data-mv]'), function(b){ b.addEventListener('click', function(){ move(+b.dataset.mv, +b.dataset.dir); }); });
+    [].forEach.call(rowsEl.querySelectorAll('.ritem'), function(item, i){
+      item.addEventListener('click', function(ev){ if(ev.target.closest('.ctrl')) return; tapRow(i); });
+    });
     attachDrag();
+  }
+  // Pick one up, tap where it should go, they trade places. Tapping the held
+  // row again puts it back down.
+  function tapRow(i){
+    if(done||busy||drag||Date.now()<tapLock) return;
+    startIfNeeded();
+    if(pickedIdx===null || pickedIdx===i){ pickedIdx = (pickedIdx===i ? null : i); render(); updateHint(); return; }
+    var t=order[pickedIdx]; order[pickedIdx]=order[i]; order[i]=t;
+    pickedIdx=null; lastCheck=null;              // clear stale feedback after a move
+    if(window.RTGSound) RTGSound.place();
+    render(); updateHint();
   }
   // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback.
   // The gesture lives in `drag` and is committed into `order` in exactly one
@@ -609,8 +673,10 @@
           try{ item.releasePointerCapture(e.pointerId); }catch(_){}
           item.removeEventListener('pointermove',mv); item.removeEventListener('pointerup',up); item.removeEventListener('pointercancel',up);
           var moved=commitDrag();
-          if(moved && window.RTGSound) RTGSound.place();
-          render();
+          // Only re-render when the drag actually moved something. A plain
+          // click also runs this path, and tearing down the row before the
+          // click dispatches would swallow every tap-to-swap on desktop.
+          if(moved){ if(window.RTGSound) RTGSound.place(); pickedIdx=null; tapLock=Date.now()+250; render(); }
         }
         item.addEventListener('pointermove',mv); item.addEventListener('pointerup',up); item.addEventListener('pointercancel',up);
       });
@@ -620,7 +686,7 @@
     if(done||busy||drag) return; var j=i+dir; if(j<0||j>=order.length) return;
     startIfNeeded();
     var t=order[i]; order[i]=order[j]; order[j]=t;
-    lastCheck=null;                                // clear stale feedback after a move
+    lastCheck=null; pickedIdx=null;                // clear stale feedback after a move
     if(window.RTGSound) RTGSound.place();
     render();
   }
@@ -633,16 +699,16 @@
       h+='<i class="'+cls+'"></i>';
     }
     el.innerHTML=h;
-    var rn=document.getElementById('runN'); if(rn && !done) rn.textContent = tries||'–';
+    var rn=document.getElementById('runN'); if(rn && !done) rn.textContent = tries||'-';
   }
 
   function startSet(){
     var S=CUR=curSet();
     order=shuffle(S.answer);
     for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
-    lastCheck=null; reveal=false; setTries=0; tries=0; solved=false; renderTries();
+    lastCheck=null; reveal=false; setTries=0; tries=0; solved=false; pickedIdx=null; hintNote=''; renderTries();
     var fb0=document.getElementById('rkFeedback'); if(fb0){ fb0.className='rkfb'; fb0.innerHTML=''; }
-    var hl0=document.getElementById('hintline'); if(hl0) hl0.innerHTML='Drag a row or use the arrows to reorder, then check. Five tries to get all five right.';
+    updateHint();
     var cb0=document.getElementById('checkBtn'); if(cb0){ cb0.textContent='Check order'; cb0.disabled=false; }
     document.getElementById('axisLabel').textContent='Today’s ranking';
     document.getElementById('prompt').innerHTML=S.lead;
@@ -699,8 +765,9 @@
       var fb=document.getElementById('rkFeedback');
       if(fb){ fb.className='rkfb on'; fb.innerHTML='<span class="big">'+nRight+' / '+order.length+'</span><span class="cap">in the right spot. '+left+' '+(left===1?'try':'tries')+' left. Which ones? That’s for you to figure out.</span>';
         try{ fb.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }
-      var h=document.getElementById('hintline');
-      if(h) h.innerHTML=left===1?'Last try. Reorder and check again.':'Reorder and check again.';
+      pickedIdx=null;
+      hintNote = left===1 ? 'Last try.' : '';
+      updateHint();
       var cb=document.getElementById('checkBtn'); if(cb) cb.textContent=(left===1?'Check (last try)':'Check order');
       var rowsWrap=document.getElementById('rows'); if(rowsWrap){ rowsWrap.classList.remove('rk-nudge'); void rowsWrap.offsetWidth; rowsWrap.classList.add('rk-nudge'); }
       return;
@@ -737,10 +804,14 @@
       tries:tries, order:order.map(function(e){ return e.id; }), log:ANSLOG.slice() })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  // set by check() so "Last try" survives the next tap, which re-renders the hint
+  var hintNote='';
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Drag a row or use the arrows to reorder, then check. · Archive practice'; return; }
+    if(pickedIdx!==null && !done){ h.textContent='Now tap the player they should swap with.'; return; }
+    var base=(hintNote?hintNote+' ':'')+'Tap two players to swap them, or drag by the number.';
+    if(ARCHIVE){ h.textContent=base+' · Archive practice'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
-    h.textContent='Drag a row or use the arrows to reorder, then check. Five tries.'+lbl; }
+    h.textContent=base+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily run of sets; every replay is a fresh random run.
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
@@ -748,7 +819,7 @@
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
     SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
     run=0; tries=0; solved=false; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false; ANSLOG=[]; ENDSLOTS=null;
-    document.getElementById('runN').textContent='–';
+    document.getElementById('runN').textContent='-';
     document.getElementById('checkBtn').disabled=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     startSet(); updateHint();
@@ -836,13 +907,13 @@
   function showEnd(s, locked){
     var t = locked ? (s.last?s.last.tries:0) : tries;
     var ok = locked ? !!(s.last && s.last.solved) : solved;
-    var shown = ok ? String(t) : '—';
+    var shown = ok ? String(t) : '-';
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('checkBtn').disabled=true;
     document.getElementById('runN').textContent=shown;
-    document.getElementById('bestRun').textContent=s.bestTries||'–';
+    document.getElementById('bestRun').textContent=s.bestTries||'-';
     document.getElementById('mRun').textContent=shown;
-    document.getElementById('mBest').textContent=s.bestTries||'—';
+    document.getElementById('mBest').textContent=s.bestTries||'-';
     document.getElementById('mStreak').textContent=s.streak||0;
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
@@ -861,8 +932,8 @@
     document.getElementById('mTitle').textContent = ok ? 'TRIES USED' : 'NOT SOLVED';
     document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.'
       : (ok ? ('Solved in '+t+' '+(t===1?'try':'tries')+'.') : 'Out of tries. Back tomorrow.');
-    document.getElementById('yourTm').textContent = ok ? (t+' '+(t===1?'try':'tries')) : '–';
-    document.getElementById('yourBest').textContent = s.bestTries ? (s.bestTries+' '+(s.bestTries===1?'try':'tries')) : '–';
+    document.getElementById('yourTm').textContent = ok ? (t+' '+(t===1?'try':'tries')) : '-';
+    document.getElementById('yourBest').textContent = s.bestTries ? (s.bestTries+' '+(s.bestTries===1?'try':'tries')) : '-';
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); // Confetti for solving it, scaled to how few tries it took.
       if(!locked && attemptFirst && ok){ confetti(t<=2?140:(t<=3?110:70), t<=2); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -979,9 +1050,9 @@
   function bootCurrentMode(){
     var saved=load();
     document.getElementById('streakN').textContent=saved.streak||0;
-    document.getElementById('bestRun').textContent=saved.bestTries||'–';
+    document.getElementById('bestRun').textContent=saved.bestTries||'-';
     document.getElementById('yourBest').textContent=saved.bestTries
-      ? (saved.bestTries+' '+(saved.bestTries===1?'try':'tries')) : '–';
+      ? (saved.bestTries+' '+(saved.bestTries===1?'try':'tries')) : '-';
     var RES=loadResume();
     var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
     if(!ARCHIVE && RES && !canResume) clearResume();

@@ -886,7 +886,7 @@
       renderAcct();
       maybeDuoResume();   // refresh-safe: rejoin an in-progress two-devices race
     }
-    sb.auth.onAuthStateChange(function(ev,session){ if(ev==='INITIAL_SESSION') return; apply(session); });
+    sb.auth.onAuthStateChange(function(ev,session){ if(ev==='INITIAL_SESSION' && !session) return; apply(session); });
     sb.auth.getSession().then(function(r){ apply(r.data && r.data.session); }).catch(function(){});
   }
   function renderAcct(){

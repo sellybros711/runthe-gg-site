@@ -1,0 +1,35 @@
+name: Dash check
+
+# Em dashes and en dashes are banned in the wrestling game. See CLAUDE.md.
+# Runnable locally with the exact same command:
+#   node scripts/check-dashes.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'wrestling/**'
+      - 'scripts/check-dashes.mjs'
+      - '.github/workflows/dash-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'wrestling/**'
+      - 'scripts/check-dashes.mjs'
+      - '.github/workflows/dash-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: dash-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-dashes.mjs

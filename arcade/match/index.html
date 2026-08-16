@@ -19,27 +19,27 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
+<meta name="description" content="Sort 16 sports names into four hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Daily Match: Sports Connections" />
-<meta property="og:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta property="og:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta property="og:url" content="https://runthe.gg/arcade/match/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Daily Match: Sports Connections" />
-<meta name="twitter:description" content="Twenty names hide five secret groups of four. Find them all before six mistakes." />
+<meta name="twitter:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
@@ -122,6 +122,24 @@
   .chip.coins .n{color:var(--goldT);}
 
   /* ---------------- lead card (description, below the topbar) ---------------- */
+  /* Arcade Card version switcher: change sport without leaving the game.
+     Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the board
+     below gets shoved down mid-boot. :empty retires the reservation the
+     instant the real buttons arrive. */
+  .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
+  .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut);
+    font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase;
+    border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer;
+    transition:color .12s, border-color .12s, background .12s;}
+  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
+  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
   .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px;
     padding:11px 15px; box-shadow:var(--shadow); margin:0 0 var(--sp-2);}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
@@ -209,7 +227,7 @@
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
-  /* The pool (20 name tiles) and the board (5 racks) are both built by JS, so
+  /* The pool (16 name tiles) and the board (4 racks) are both built by JS, so
      for the first second of every visit they were zero-height and everything
      under them - the group header, the whole sidebar - sat near the top of the
      page and then got thrown 800px down when the puzzle mounted. That single
@@ -481,9 +499,10 @@
   .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
   .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); }
 
-  /* the pick-four grid: 5 across on desktop (fills the wider column), 4 across on
-     phones. Names wrap; fitPool() shrinks any that don't fit. */
-  .pool{ grid-template-columns:repeat(5,1fr); gap:8px; }
+  /* the pick-four grid: four across at every width, so sixteen tiles form a
+     square and every row is a candidate group. Five across would leave a
+     ragged row of one. Names wrap; fitPool() shrinks any that don't fit. */
+  .pool{ grid-template-columns:repeat(4,1fr); gap:8px; }
   .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
   /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
      so the longest word fits, then the name wraps at the space onto two lines */
@@ -539,7 +558,8 @@
 
   <div class="app">
     <main class="gameCol">
-      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+      <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">-</span></span><span class="v explain">Tap four names that belong together. Find all four groups before four mistakes.</span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
@@ -553,7 +573,7 @@
           <span class="mlab">Guesses left</span>
           <div class="dots" id="dotsM"></div>
         </div>
-        <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
+        <div class="mprog" id="progressM"><b>0</b> / 4 solved</div>
       </div>
 
       <!-- solved groups stack here, the category name sitting above its four -->
@@ -569,7 +589,7 @@
           Shuffle
         </button>
       </div>
-      <div class="pool pool-hold" id="pool" role="list" aria-label="Names — tap to select four"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Names, tap to select four"></div>
 
       <div class="submitbar" id="submitbar">
         <button class="submit-ghost" id="btnDeselect" type="button" disabled>Deselect all</button>
@@ -586,7 +606,7 @@
           <span class="sLabel">Guesses left</span>
           <div class="dots" id="dots"></div>
         </div>
-        <div class="progress" id="progress"><b>0</b> / 5 groups solved</div>
+        <div class="progress" id="progress"><b>0</b> / 4 groups solved</div>
       </div>
 
       <div class="card actionsCard">
@@ -607,17 +627,17 @@
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
+          <li><b>Find the four hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
           <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
           <li>The easiest group's name is <b>revealed free</b> to get you rolling.</li>
-          <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Four misses and your board's done.</li>
         </ol>
       </details>
 
       <div class="card mlb" id="lb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
-          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">-</span></div>
           <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
         </div>
         <div class="lb-sample" id="mlbSample">
@@ -639,10 +659,13 @@
         <div class="g" id="resGrade">BOARD CLEARED!</div>
         <div class="verdict" id="resVerdict"></div>
       </div>
-      <div class="rstats">
-        <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
-        <div class="rstat"><div class="v" id="resMiss">0</div><div class="l">Misses</div></div>
-        <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
+      <div class="a-rhero">
+        <div class="v" id="resTime">0:00</div>
+        <div class="k">Your time</div>
+      </div>
+      <div class="a-runline">
+        <span><b id="resMiss">0</b> misses</span><i></i>
+        <span><b id="resStreak">1</b> day streak</span>
       </div>
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
@@ -691,40 +714,52 @@
 <script src="/arcade/stars.js?v=1"></script>
   <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
-<script src="/arcade/data.js?v=1"></script>
-  <script src="generator.js?v=12"></script>
+<script src="/arcade/data.js?v=2"></script>
+  <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=2"></script>
-<script src="/arcade/share.js?v=1"></script>
-<script src="/arcade/challenge.js?v=1"></script>
+<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/share.js?v=4"></script>
+<script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=2"></script>
+  <script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/mode.js?v=6"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=5"></script>
-<script src="/arcade/leaderboard.js?v=8"></script>
-<script src="/arcade/alltime.js?v=2"></script>
+  <script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/leaderboard.js?v=6"></script>
+<script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=10"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=2"></script>
-<script src="/arcade/howto.js?v=3"></script>
+<script src="/arcade/pregame.js?v=11"></script>
+<script src="/arcade/howto.js?v=13"></script>
   <script>
   (function () {
     'use strict';
     if (window.RTGHowto) RTGHowto.init('match');
+    /* 16 names a board, the widest surface in the arcade, and until now the
+       only gate was the category maths - which cares whether a group is
+       solvable, not whether you have heard of anyone in it. Over half the
+       names it showed were unrecognisable. The recognisable pool still yields
+       337 viable categories against the 4 a board needs, so nothing is lost
+       but the journeymen. */
     var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
+    if (window.RTG_KNOWN) {
+      var _known = ENT.filter(RTG_KNOWN);
+      if (_known.length > 400) ENT = _known;   // never strand the game if the overlay failed to load
+    }
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
-    var CATS = 5;                       // categories per board
-    var MISTAKE_LIMIT = 6;             // wrong guesses (a hint spends one); the 6th ends the board
+    var CATS = 4;                       // categories per board (16 tiles)
+    var MISTAKE_LIMIT = 4;             // wrong guesses (a hint spends one); the 4th ends the board
 
     // group accent palette by lane order: teal, gold, coral, purple, blue
-    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3', '#2F6BFF'];
+    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3'];
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -733,6 +768,15 @@
     }
     var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
     var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
+
+    /* Sport editions (Arcade Card). Each is its own daily board, its own
+       leaderboard and its own streak, keyed 'match_nba' / 'match_nfl' /
+       'match_mlb' by mode.js; 'all' keeps the bare 'match' key so every
+       existing board, streak and save carries over untouched. Free players and
+       the archive silently stay on 'all'. */
+    var GAME_BASE = 'match';
+    var MODE = 'all', SPORTFILTER = null, GAME = GAME_BASE;
+    function modeSuffix() { return MODE === 'all' ? '' : ('_' + MODE); }
 
     // ---- tester mode: removed for public launch ----
     // The old ?test=1 backdoor gave unlimited plays + fresh boards. It's now
@@ -745,25 +789,29 @@
     // same board for the leaderboard. Replays reseed randomly for a fresh board.
     var servedDaily = false;                           // true once the daily board has been served this session
     var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
-    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
+    function boardSeed() {
+      if (replaySeed) return replaySeed;
+      var d = TESTER ? (DATE + '#' + boardNo) : DATE;
+      return MODE === 'all' ? d : (MODE + '-' + d);
+    }
 
     // ---- streak ----
     // The arcade has no coin economy; the game is about building the longest
     // daily streak. Streak is per-game (this Daily Match).
-    function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
+    function streakGet() { return parseInt(LS.getItem('grid_match_streak' + modeSuffix()) || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
     var GRADE_KEYS = ['A+', 'A', 'B', 'C', 'D', 'F'];
     function statsGet() {
       var s = null;
-      try { s = JSON.parse(LS.getItem('grid_match_stats')); } catch (e) { s = null; }
+      try { s = JSON.parse(LS.getItem('grid_match_stats' + modeSuffix())); } catch (e) { s = null; }
       if (!s || typeof s !== 'object') s = {};
       s.played = s.played | 0; s.wins = s.wins | 0; s.perfects = s.perfects | 0; s.best = s.best | 0;
       if (!s.grades || typeof s.grades !== 'object') s.grades = {};
       if (s.best < streakGet()) s.best = streakGet();  // keep best in sync with a running streak
       return s;
     }
-    function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
+    function statsSet(s) { LS.setItem('grid_match_stats' + modeSuffix(), JSON.stringify(s)); }
     function renderWallet() {
       document.getElementById('streakVal').textContent = streakGet();
     }
@@ -791,7 +839,7 @@
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3 } });
+      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3, sport: SPORTFILTER, cats: CATS } });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -806,12 +854,12 @@
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
-    function resultKey() { return 'grid_match_result_' + DATE; }
+    function resultKey() { return 'grid_match_result' + modeSuffix() + '_' + DATE; }
     function savedResult() { if (ARCHIVE) return null; try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }   // archive: always a fresh play
 
     // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
     // Snapshot only during the charged first (ranked) play; never in archive or tester mode. ----
-    var RESUME_KEY = 'rtg:resume:match';
+    var RESUME_KEY = 'rtg:resume:match';   // re-keyed per edition by configureMode()
     function resumeSave() {
       if (ARCHIVE || TESTER || !attemptFirst || done) return;
       try {
@@ -838,7 +886,7 @@
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; sel = []; lastMissSet = ''; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
-      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has 20 tiles, so the count-based guard in render() wouldn't catch it)
+      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has the same tile count, so the count-based guard in render() wouldn't catch it)
       // free foothold: reveal the easiest group's name to start (no guess cost)
       if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
     }
@@ -847,7 +895,7 @@
     var boardEl = document.getElementById('board'), poolEl = document.getElementById('pool');
 
     // A selectable name in the pool. No drag/drop (that trapped touch-scroll on
-    // mobile) — you tap to toggle it into your selection of four, then Submit.
+    // mobile): you tap to toggle it into your selection of four, then Submit.
     function tileEl(tid) {
       var t = byId[tid];
       var isSel = sel.indexOf(tid) >= 0;
@@ -1036,7 +1084,7 @@
             ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
             : 'Those four do share something real, but this board needs one in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
         } else {
           registerMiss(ids);
         }
@@ -1104,7 +1152,7 @@
     function startIfNeeded() {
       if (started || done) return;
       // charge one play-token the first time this attempt truly begins (first tile placement/move)
-      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
+      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt(GAME) : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
@@ -1152,7 +1200,7 @@
             ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
             : 'Those four do share something real, but this board needs one of them in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
         } else {
           registerMiss(laneIdx, ids);
         }
@@ -1247,7 +1295,7 @@
       if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
       lastMissSet = ids.slice().sort().join(',');   // block re-submitting the identical four
-      feedback(close ? 'One away — 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
+      feedback(close ? 'One away. 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
       shakeSelected();
       popDot(mistakes - 1);
       renderDots();
@@ -1280,15 +1328,15 @@
 
       // streak: completion-based (win or lose), one per calendar day.
       // ARCHIVE plays are practice: never touch streak/stats/coins/result save.
-      var last = LS.getItem('grid_match_lastplayed');
+      var last = LS.getItem('grid_match_lastplayed' + modeSuffix());
       var s = streakGet();
       var freshDay = (!ARCHIVE && last !== DATE);
       if (freshDay) {
         var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
         var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
         s = (last === ystr) ? s + 1 : 1;
-        LS.setItem('grid_match_streak', String(s));
-        LS.setItem('grid_match_lastplayed', DATE);
+        LS.setItem('grid_match_streak' + modeSuffix(), String(s));
+        LS.setItem('grid_match_lastplayed' + modeSuffix(), DATE);
 
         // lifetime stats (once per calendar day, same guard as the streak)
         var st = statsGet();
@@ -1310,13 +1358,13 @@
       // time only; the server score formula adds its own per-mistake penalty. ----
       if (won && attemptFirst && !ARCHIVE && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
-        RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+        RTG_BOARD.submit(GAME, DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
       if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
-        RTGArchive.recordBest('match', Math.round(finalTime), { higherIsBetter:false, label:'sec' });
+        RTGArchive.recordBest(GAME, Math.round(finalTime), { higherIsBetter:false, label:'sec' });
       }
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
@@ -1355,11 +1403,11 @@
       if (r.won) {
         head.textContent = 'BOARD CLEARED!';
         head.style.color = lightUI ? '#17A34A' : '#48D17A';
-        document.getElementById('resVerdict').textContent = 'All 5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
+        document.getElementById('resVerdict').textContent = 'All ' + CATS + ' groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
       } else {
         head.textContent = 'OUT OF GUESSES';
         head.style.color = lightUI ? '#D8452F' : '#F06A5F';
-        document.getElementById('resVerdict').textContent = solveOrder.length + ' of 5 groups found';
+        document.getElementById('resVerdict').textContent = solveOrder.length + ' of ' + CATS + ' groups found';
       }
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
@@ -1398,8 +1446,8 @@
       var r = window._lastResult || {};
       var grid = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var stat = r.won
-        ? ('\uD83E\uDDE9 5/5 \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : ('\uD83E\uDDE9 ' + solveOrder.length + '/5 groups');
+        ? ('\uD83E\uDDE9 ' + CATS + '/' + CATS + ' \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('\uD83E\uDDE9 ' + solveOrder.length + '/' + CATS + ' groups');
       if (r.streak) stat += ' \u00B7 streak ' + r.streak;
       // Solve timeline for the image card: each group as a dot on a time bar at
       // the second it locked, plus a splits list below. Colors only - no category
@@ -1505,18 +1553,18 @@
     // ---- play-token economy: main subtitle label + Play again ----
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
-      var base = 'Sort 20 sports names into five hidden groups of four.';
+      var base = 'Tap four names that belong together. Find all four groups before four mistakes.';
       if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
-      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
+      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label(GAME) + ' today') : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.
-      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('match') > 0);
+      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME) > 0);
       if (isReplay) { resumeClear(); replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
       else { replaySeed = null; servedDaily = true; }
       // fresh solve state; no token charged until first interaction. Rebuild the
@@ -1533,7 +1581,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
@@ -1607,13 +1655,13 @@
       // refresh landed mid-way through the charged ranked attempt: restore it
       // instead of burning the play (only when today isn't already finished).
       var resume = resumeLoad();
-      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf('match') > 0) {
+      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf(GAME) > 0) {
         if (restoreAttempt(resume)) return;
         resumeClear();   // stale / corrupt snapshot: fall through to the normal flow
       }
       // out of plays for today -> keep the locked / review state.
       // ARCHIVE always starts a fresh playable past-day board (no lock, no restore).
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) {
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) {
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
@@ -1777,14 +1825,76 @@
       if (toastT) clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('on'); }, 1800);
     }
 
+    // ---- sport editions: config, switcher, boot ----
+    function configureMode(mode) {
+      MODE = (window.RTGMode && mode) ? mode : 'all';
+      SPORTFILTER = (window.RTGMode ? RTGMode.sportOf(MODE) : null);
+      GAME = (window.RTGMode ? RTGMode.key(GAME_BASE, MODE) : GAME_BASE);
+      RESUME_KEY = 'rtg:resume:' + GAME;
+    }
+    function renderSwitcher() {
+      var el = document.getElementById('modesw'); if (!el) return;
+      if (ARCHIVE || !(window.RTGMode && RTGMode.eligible())) {
+        // A past day is always the mixed board, the same as every other game's
+        // archive, so the row goes entirely rather than sitting there inert.
+        el.classList.add('hidden'); if (ARCHIVE) el.classList.add('gone'); el.innerHTML = ''; return;
+      }
+      el.classList.remove('hidden'); el.classList.remove('gone');
+      el.innerHTML = RTGMode.MODES.map(function (m) {
+        var lab = m.k === 'all' ? 'All' : m.label;
+        return '<button type="button" role="tab" data-m="' + m.k + '" aria-selected="' + (m.k === MODE) + '"' +
+               ' class="' + (m.k === MODE ? 'on' : '') + '">' + lab + '</button>';
+      }).join('');
+      [].forEach.call(el.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { switchMode(b.dataset.m); });
+      });
+    }
+    function switchMode(mode) {
+      if (!window.RTGMode || mode === MODE) return;
+      try { LS.setItem('rtg:mode:' + GAME_BASE, mode); } catch (e) {}
+      // keep this edition's half-finished board so switching back resumes it
+      // (resumeSave() is itself a no-op unless this was the ranked attempt)
+      if (started) resumeSave();
+      if (tick) { clearInterval(tick); tick = null; }
+      configureMode(mode);
+      servedDaily = false; replaySeed = null;
+      var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
+      var sc = document.getElementById('scrim'); if (sc) sc.classList.add('hidden');
+      renderSwitcher();
+      try { if (window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); } catch (e) {}
+      buildDay(); renderWallet(); boot();
+      renderMatchBoard();
+      toast((mode === 'all' ? 'All Sports' : (RTGMode.sportOf(mode) || mode)) + ' version');
+    }
+    function startWith(mode) {
+      configureMode(mode); renderSwitcher();
+      buildDay(); renderWallet(); boot();
+    }
+    /* Resume beats the picker: if one edition has a charged, unfinished board
+       from earlier today, drop straight back into it rather than asking again
+       and stranding the play that was already spent on it. */
+    function activeResumeMode() {
+      var cands = (window.RTGMode && RTGMode.eligible() && !ARCHIVE) ? ['all', 'nba', 'nfl', 'mlb'] : ['all'];
+      for (var i = 0; i < cands.length; i++) {
+        var m = cands[i], g = (window.RTGMode ? RTGMode.key(GAME_BASE, m) : GAME_BASE);
+        var r; try { r = JSON.parse(LS.getItem('rtg:resume:' + g)); } catch (e) { r = null; }
+        if (!(r && r.d === DATE)) continue;
+        if (!(window.RTGTokens && RTGTokens.playsOf(g) > 0)) continue;
+        return m;
+      }
+      return null;
+    }
+
     // ---- go ----
     if (TESTER) {
       document.getElementById('testerBanner').hidden = false;
       document.getElementById('btnNew').style.display = '';
     }
-    buildDay();
-    renderWallet();
-    boot();
+    var rmode = activeResumeMode();
+    if (rmode) startWith(rmode);
+    else if (window.RTGMode && RTGMode.eligible() && !ARCHIVE) {
+      RTGMode.choose(GAME_BASE, { title: 'Daily Match' }).then(startWith);
+    } else startWith('all');
 
     // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
     (function initYou() {
@@ -1794,7 +1904,7 @@
     })();
     function renderMatchBoard() {
       if (!window.RTG_BOARD) return;
-      RTG_BOARD.leaderboard('match', DATE, 5).then(function (rows) {
+      RTG_BOARD.leaderboard(GAME, DATE, 5).then(function (rows) {
         if (rows === null) return;                       // offline: keep the Sample board
         var pill = document.querySelector('.mlb-pill'); if (pill) pill.textContent = 'Live';
         var samp = document.getElementById('mlbSample');
@@ -1818,7 +1928,7 @@
       RTG_BOARD.boot();
       RTG_BOARD.onChange(function (st) {
         if (st.signedIn) {
-          RTG_BOARD.streakOf('match').then(function (cs) {
+          RTG_BOARD.streakOf(GAME).then(function (cs) {
             if (cs) {
               document.getElementById('streakVal').textContent = cs.streak || 0;
               var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = cs.streak || 0;
@@ -1839,7 +1949,10 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:'match', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
+    RTG_LB.mount({ el:el,
+      game:function(){ return window.RTGMode?RTGMode.boardKey(GAME_BASE):GAME_BASE; },
+      variant:function(){ return window.RTGMode?RTGMode.boardLabel(GAME_BASE):null; },
+      date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();

@@ -1,0 +1,103 @@
+name: Rebuild the player register
+
+# The complete "who ever played" register behind Sportegories answer checking.
+# Separate from former.yml on purpose: that job builds the RECOGNIZABLE set the
+# games generate puzzles from, this one builds the COMPLETE set they judge
+# answers against. Different questions, different filters, different sizes.
+#
+# The CSV is ~56k rows and is NOT committed — it goes straight into Supabase and
+# is thrown away, so the repo doesn't carry a multi-megabyte generated file that
+# no page loads.
+#
+# REQUIRED SECRET (already used by sync-wc-players.yml):
+#   SUPABASE_DB_URL — Postgres URI from Supabase → Settings → Database.
+#     Use the Session pooler URI so it resolves from GitHub's IPv4 runners.
+#
+# Run supabase/77_player_register.sql once before the first run of this job.
+
+on:
+  schedule:
+    - cron: '40 11 * * 2'      # Tuesdays, after Monday's roster refresh
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Limit to certain leagues (e.g. nfl or nfl,mlb). Blank = all.'
+        required: false
+        default: ''
+
+concurrency:
+  group: player-register
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120        # ~440 fetches; the BBRef half is throttled to ~20/min
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Fails in seconds if a parser is broken, rather than after a 20-minute
+      # scrape. Neither Basketball-Reference nor Supabase is reachable from a
+      # dev sandbox, so this is where the parsing is actually verified.
+      - name: Check the parsers
+        run: node scripts/check-register.mjs
+
+      - name: Fetch the complete registers
+        run: |
+          if [ -n "${{ inputs.only }}" ]; then
+            node scripts/build-register.mjs --only=${{ inputs.only }}
+          else
+            node scripts/build-register.mjs
+          fi
+
+      - name: Load into Supabase (atomic swap)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set."
+            exit 1
+          fi
+          # Load into a staging table first, then swap in one transaction. A
+          # plain TRUNCATE + \copy would leave the register empty for the length
+          # of the import, and an empty register tells every player they don't
+          # exist — the failure mode this whole thing exists to prevent.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          CREATE TEMP TABLE staging (LIKE player_register INCLUDING DEFAULTS) ON COMMIT DROP;
+          -- FORCE_NOT_NULL(teams): COPY reads an empty unquoted CSV field as
+          -- NULL, and a player with no team on record (a September call-up who
+          -- hasn't debuted) writes an empty teams cell. Without this the whole
+          -- load aborts on the NOT NULL constraint.
+          \copy staging(id,sport,name,name_key,pos,college,teams,first_season,last_season,active) FROM 'supabase/player_register.csv' WITH (FORMAT csv, HEADER true, FORCE_NOT_NULL(teams))
+          DELETE FROM player_register;
+          INSERT INTO player_register SELECT * FROM staging;
+          COMMIT;
+          SQL
+          echo -n "player_register rows: "
+          psql "$SUPABASE_DB_URL" -At -c "select count(*) from player_register;"
+          echo "by sport:"
+          psql "$SUPABASE_DB_URL" -At -c "select sport, count(*) from player_register group by sport order by 2 desc;"
+
+          # Position GRAIN, not just row count. The NBA half is scraped from a
+          # career index that only says G / F / C, and a bare "Guard" cannot
+          # settle a "Shooting Guard" category either way — which is how a real
+          # shooting guard scored nothing. The season pages carry the specific
+          # position; this is the check that they actually landed. If
+          # `specific` collapses toward zero, the season pass is parsing but not
+          # resolving, and Sportegories quietly goes back to shrugging.
+          echo "NBA position grain (specific must dominate):"
+          psql "$SUPABASE_DB_URL" -At -F $'\t' -c "
+            select
+              count(*) filter (where pos ~ 'Point Guard|Shooting Guard|Small Forward|Power Forward') as specific,
+              count(*) filter (where pos is not null and pos !~ 'Point|Shooting|Small|Power')        as family_only,
+              count(*) filter (where pos is null)                                                    as no_position
+            from player_register where sport = 'NBA';"
+          echo "sample:"
+          psql "$SUPABASE_DB_URL" -At -F $'\t' -c "
+            select name, pos from player_register
+             where sport = 'NBA' and pos is not null
+             order by last_season desc nulls last, name limit 8;"

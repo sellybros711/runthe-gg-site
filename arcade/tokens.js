@@ -27,7 +27,7 @@
   'use strict';
   var LS = window.localStorage;
   var KEY = 'runthegrid_tokens_v3';
-  var GAMES = ['table','match','career','oddone','rankit','guess','almamater','crossword','wordsearch'];
+  var GAMES = ['table','match','career','oddone','rankit','guess','almamater','crossword'];
 
   // Tier caps.
   var GUEST_DAILY = 1;

@@ -1,28 +1,28 @@
 /* ============================================================
-   RunTheRopes — Free Agents, Legends & Managers (v0.1)
+   RunTheRopes: Free Agents, Legends & Managers (v0.1)
    ------------------------------------------------------------
    A curated talent pool layered into the free-agent market at
    career start. Three kinds, all signable by any promotion:
 
-   - role:'wrestler'  — notable free agents / part-timers you can
+   - role:'wrestler'  = notable free agents / part-timers you can
                         sign and book like anyone else.
-   - role:'manager'   — famous mouthpieces (Heyman, Callis, Cornette…)
+   - role:'manager'   = famous mouthpieces (Heyman, Callis, Cornette…)
                         who don't wrestle but can be paired with a
                         wrestler or a stable to boost their segments,
                         heat, and overness. canGM ones can also run
                         your company for a passive bonus.
-   - retired legends  — modelled as role:'manager' with retired:true;
+   - retired legends  = modelled as role:'manager' with retired:true;
                         they can't wrestle but make elite managers/GMs.
 
    Fields mirror the worker schema so they drop straight into the
    pool. mgrBonus (0-100) drives a manager's on-screen effect.
-   Fantasy pool — availability is kayfabe, tune freely in the Editor.
+   Fantasy pool: availability is kayfabe, tune freely in the Editor.
    (Out of respect, recently-passed figures are omitted.)
    ============================================================ */
 window.RTR_PERSONALITIES = [
   // ---------------- Free-agent wrestlers ----------------
   // Recently-released, indie, deathmatch and lucha names not on the eight
-  // rosters. Salaries here are placeholders — a realistic market-salary model
+  // rosters. Salaries here are placeholders; a realistic market-salary model
   // (overness-based) recomputes every wrestler's pay at career start.
   { id:'fa01', name:'Karrion Kross',   tier:'mid',   align:'heel',    inRing:66, psych:64, ent:76, phys:82, overness:64, age:40, salary:15000, role:'wrestler' },
   { id:'fa02', name:'Scarlett',        tier:'lower', align:'heel',    inRing:54, psych:56, ent:72, phys:62, overness:56, age:34, salary:9000,  role:'wrestler' },

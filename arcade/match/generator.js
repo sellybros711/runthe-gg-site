@@ -19,7 +19,9 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // board shape: 5 categories x GROUP_SIZE tiles each
+  // board shape: CATS categories x GROUP_SIZE tiles each. CATS is a build
+  // option rather than a constant so the board size is a product decision,
+  // not a number buried three functions deep.
   var GROUP_SIZE = 4;
 
   /* ---- deterministic RNG (identical puzzle per date, dry-runnable) --------- */
@@ -242,10 +244,17 @@
   // groups (teams, jersey numbers, decades, draft classes, nationalities, …).
   var FAM_CAP = { wordplay: 1 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
   var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
-  function pickCategories(cats, rng) {
+  /* opts.sport: a single-sport edition (the Arcade Card's NBA/NFL/MLB versions
+     of Daily Match). Every category on such a board leads with the same sport,
+     so the ">= 2 distinct lead sports" rule below can never be satisfied and
+     the build would fail every time. It is a rule about variety on a mixed
+     board, not a rule about correctness, so a sport edition drops it to one. */
+  function pickCategories(cats, rng, opts) {
+    var minLead = (opts && opts.sport) ? 1 : 2;
+    var want = (opts && opts.cats) || 5;
     for (var attempt = 0; attempt < 200; attempt++) {
       var order = shuffle(cats, rng), chosen = [], fams = {}, names = {}, niche = 0;
-      for (var i = 0; i < order.length && chosen.length < 5; i++) {
+      for (var i = 0; i < order.length && chosen.length < want; i++) {
         var c = order[i];
         if ((fams[c.family] || 0) >= (FAM_CAP[c.family] || DEFAULT_FAM_CAP)) continue;
         if (names[c.name]) continue;                                  // no two lanes with the same label
@@ -261,10 +270,10 @@
         chosen.push(c); fams[c.family] = (fams[c.family] || 0) + 1; names[c.name] = 1;
         if (isNiche) niche++;
       }
-      if (chosen.length < 5) continue;
+      if (chosen.length < want) continue;
       if (Object.keys(fams).length < MIN_FAMILIES) continue;
       var lead = {}; chosen.forEach(function (c) { if (c.sport !== 'multi') lead[c.sport] = 1; });
-      if (Object.keys(lead).length < 2) continue;
+      if (Object.keys(lead).length < minLead) continue;
       return chosen;
     }
     return null;
@@ -324,7 +333,7 @@
 
   // FAIRNESS GUARD 2: categories salient enough that players will group by
   // them. A board must not contain 4+ tiles sharing one of these unless it IS
-  // one of the board's five groups — "all four played for the Dodgers" must
+  // one of the board's own groups — "all four played for the Dodgers" must
   // never be a wrong answer even when the Dodgers aren't a lane today.
   // (Broad facts — decade, nationality, HOF — are exempt or boards would be
   // impossible; nobody groups four names as "played in the 2010s" first.)
@@ -373,10 +382,10 @@
     var entMap = {}; entities.forEach(function (e) { entMap[e.id] = e; });
     var allCats = enumerate(entities);
     var cats = viable(allCats, opts);
-    if (cats.length < 5) return null;
+    if (cats.length < (opts.cats || 5)) return null;
     var best = null;
     for (var attempt = 0; attempt < 200; attempt++) {
-      var chosen = pickCategories(cats, rng); if (!chosen) continue;
+      var chosen = pickCategories(cats, rng, opts); if (!chosen) continue;
       var sol = assignBoard(chosen, rng, entMap); if (!sol) continue;
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
@@ -397,10 +406,18 @@
   // so it's only used if explicitly passed AND the DB path yields nothing.)
   function daily(dateStr, sources) {
     sources = sources || {};
+    var o = sources.opts || {};
     if (sources.entities) {
-      var d = buildFromDB(dateStr, sources.entities, sources.opts);
+      // A sport edition is the same build against a smaller pool. Filtering here
+      // rather than at the call site keeps the retry below honest: it has to
+      // carry the sport too, or a stubborn day would quietly serve a mixed board
+      // inside the NBA-only version.
+      var ents = o.sport
+        ? sources.entities.filter(function (e) { return e.sport === o.sport; })
+        : sources.entities;
+      var d = buildFromDB(dateStr, ents, o);
       if (d) return d;
-      d = buildFromDB(dateStr, sources.entities, { anchors: 1, avgFame: 2.0 });
+      d = buildFromDB(dateStr, ents, { anchors: 1, avgFame: 2.0, sport: o.sport, cats: o.cats });
       if (d) return d;
     }
     if (sources.bank && sources.bank.length) return generateDaily(dateStr, sources.bank);

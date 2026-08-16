@@ -1176,6 +1176,19 @@
     font-size:9.5px; font-weight:900; letter-spacing:1.1px; text-transform:uppercase;
     color:var(--dim); border:1px solid var(--line2); border-radius:99px;
     padding:2px 6px;}
+  /* The night, and the version's standing when it has one. Small and dim: it
+     is the provenance line under a title, not a competing headline. The
+     standing is the one part allowed to be loud, because it is the brag. */
+  .bdmed{font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.55;
+    margin-top:9px;}
+  .bdmed b{color:var(--ink); font-weight:900;}
+  .bdnight{font-size:12px; font-weight:700; color:var(--mut); margin:-2px 0 12px;}
+  .vr.ver{color:var(--goldT); font-weight:900;}
+  .rr-night{display:block; font-size:11.5px; font-weight:600; color:var(--dim);
+    margin-top:3px; line-height:1.4; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; max-width:100%;}
+  .rr-ver{display:inline-block; margin-left:7px; font-weight:900; color:var(--goldT);
+    font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase;}
   .rr-len{font-size:12px; font-weight:700; color:var(--dim);
     font-variant-numeric:tabular-nums; flex:0 0 auto;}
   .rr-pts{font-family:var(--hero); font-size:17px; color:var(--ink);
@@ -1542,6 +1555,37 @@
     font-weight:600; font-size:13.5px; line-height:1.6;}
 
   /* ---- the profile ---- */
+  /* ---- the shows you were at, as a fan artifact ---- */
+  /* The block is dropped straight into a bare .card, which carries no padding of
+     its own, so without this the band name and the "14x" sit ON the border. */
+  .fanband{padding:14px 15px 15px;}
+  .fanband + .fanband{border-top:1px solid var(--line);}
+  .fanhd{font-family:var(--hero); font-size:22px; text-transform:uppercase;
+    letter-spacing:.02em; margin:0 0 12px;}
+  .fanwait{font-size:13px; font-weight:600; color:var(--dim); line-height:1.55;}
+  /* The headline number, because "129 of 367 songs heard live" is the thing a
+     tracker actually wants and nothing else can tell them. */
+  .fanbig{margin:var(--sp-2) 0 var(--sp-1);}
+  .fanbig > b{font-family:var(--hero); font-size:44px; line-height:1;
+    font-variant-numeric:tabular-nums; color:var(--tealT);}
+  .fanbig > i{font-style:normal; font-size:13px; font-weight:800; color:var(--mut);
+    margin-left:9px;}
+  .fanbar{height:6px; border-radius:99px; background:var(--card3); overflow:hidden;
+    margin:12px 0 7px;}
+  .fanbar > span{display:block; height:100%; border-radius:99px; background:var(--teal);}
+  .fanfine{font-size:12px; font-weight:600; color:var(--dim);}
+  .fanlist{margin-top:var(--sp-2);}
+  .fanrow{display:flex; align-items:baseline; gap:10px; padding:9px 0;
+    border-bottom:1px solid var(--line); font-size:13.5px;}
+  .fanrow:last-child{border-bottom:0;}
+  /* 80px, not 74: "Seen most" measures 74 exactly, and the trailing letter-space
+     tips it over its own column and onto a second line. */
+  .fanrow i{font-style:normal; flex:0 0 80px; white-space:nowrap;
+    font-size:10px; font-weight:900;
+    letter-spacing:1.4px; text-transform:uppercase; color:var(--dim);}
+  .fanrow b{flex:1; min-width:0; font-weight:800;}
+  .fanrow span{font-family:var(--hero); font-size:16px; color:var(--ink);}
+
   .pstats{display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
     background:var(--line); border-radius:var(--r-md); overflow:hidden;
     margin:0 0 var(--sp-2);}
@@ -1774,7 +1818,7 @@ import { loadBand, setLabel, setRank } from './dataLoader.js?v=38';
 // scripts/setlist/make_sample.mjs. Real bands come from the ingester.
 const BANDS = [
   { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
-    note: '655 shows from the elgoose.net archive' },
+    note: '656 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
     note: 'Made-up data, for testing', sample: true },
 ];
@@ -1836,6 +1880,51 @@ function fmtDate(d){
   const [y, m, day] = String(d).split('-');
   return `${MONTHS[Number(m) - 1] || ''} ${Number(day)}, ${y}`;
 }
+/* ---------------------------------------------------------------------------
+ * WHICH VERSION THIS IS.
+ * ---------------------------------------------------------------------------
+ * The premise of the game is that you are not picking a SONG, you are picking
+ * one night's take on it, and the archive backs that hard: across the 166 songs
+ * with five or more plays, the longest version is a median of 2.7 times the
+ * shortest and 13.8 times at the 90th percentile. Echo of a Rose runs from 1:00
+ * to 44:24 across 114 plays.
+ *
+ * Everything after the draft screen used to drop that entirely. The scorecard
+ * listed "Echo of a Rose 13:52" with no night attached, and the share card said
+ * "Ran 24:48" without saying whose 24:48 it was.
+ *
+ * dataLoader stamps version_rank / version_of on every performance. These two
+ * helpers turn that into words, and they are deliberately QUIET: a middling
+ * take of a song says nothing at all, because a scorecard where every row
+ * claims to be remarkable is a scorecard where none of them are.
+ */
+function versionNote(perf){
+  const rank = Number(perf && perf.version_rank) || 0;
+  const of = Number(perf && perf.version_of) || 0;
+  if (!rank || !of) return null;
+  // Nothing to be the best of.
+  if (of === 1) return 'The only time they have played it';
+  if (of < 5) return null;
+  if (rank === 1) return `The longest of ${of}`;
+  if (rank <= 3) return `${ordinal(rank)} longest of ${of}`;
+  // A percentile only means something once there is a population.
+  if (of >= 20 && rank <= Math.ceil(of * 0.1)) return `Top 10% of ${of}`;
+  return null;
+}
+/* The night itself, which is worth saying whether or not the version is
+   remarkable: it is the answer to "which one did I get". */
+function whichNight(perf, opts = {}){
+  if (!perf || !perf.show_date) return '';
+  /* THE ROW GETS THE VENUE AND THE SHEET GETS THE CITY. "The Pavilion at Toyota
+     Music Factory, Irving" wraps to two lines in a list row, and seventeen rows
+     doing that is most of a screen spent on addresses. The date and the room are
+     the answer to "which night"; the city is there when you tap through. */
+  const where = opts.full
+    ? [perf.venue, perf.city].filter(Boolean).join(', ')
+    : (perf.venue || perf.city || '');
+  return where ? `${fmtDate(perf.show_date)} · ${where}` : fmtDate(perf.show_date);
+}
+
 function fmtLen(sec){
   const n = Number(sec);
   if (!n) return '';
@@ -1845,9 +1934,14 @@ function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
-/* Only ever used for a run length, which starts at 3 and rarely passes 6. */
+/* IT IS NOT ONLY EVER USED FOR A RUN LENGTH ANY MORE, which is what the note
+   here used to say: "starts at 3 and rarely passes 6", so it special-cased 3
+   and gave everything else "th". True for the monotony chip that owned it.
+   Then the version standing started calling it with 2 and the share card went
+   out saying "2th longest of 11". General now. */
 function ordinal(n){
-  return `${n}${n === 3 ? 'rd' : 'th'}`;
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
 }
 
 /* A sandwich, 11px, drawn rather than described. The chip used to try to be
@@ -2474,7 +2568,25 @@ function songBreakdownHTML(perf, sc, opts = {}){
         <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span>
         <span class="bdop">=</span><span class="bdterm tot"><b>${sc.subtotal}</b></span>
       </div>
-      <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span></div>
+      <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span>${(() => {
+        /* THE STANDING SITS WITH THE OTHER REASONS, because that is what it is:
+           the archive's own answer to "was this a good one to pick". */
+        const v = versionNote(perf);
+        return v ? `<span class="vr ver">${esc(v)}</span>` : '';
+      })()}</div>
+      ${(() => {
+        /* HOW THIS ONE COMPARES, which is the question a rank raises and does
+           not answer. Only shown once there are enough siblings for a median to
+           mean anything, and only when this take is actually away from it. */
+        const med = Number(perf.version_median) || 0;
+        const len = lenOf(perf), of = Number(perf.version_of) || 0;
+        if (!med || of < 5 || !len) return '';
+        const d = len / med;
+        if (d > 0.85 && d < 1.18) return `<div class="bdmed">About the usual length for
+          this one (${fmtClock(med)} across ${of} plays).</div>`;
+        return `<div class="bdmed">Usually <b>${fmtClock(med)}</b> across ${of} plays.
+          You got <b>${fmtClock(len)}</b>.</div>`;
+      })()}
       ${perf.jamchart_note ? `<div class="bdnote">${esc(perf.jamchart_note)}</div>` : ''}
     </div>`;
 }
@@ -2553,6 +2665,13 @@ function renderResult(){
               <span class="rr-t">${esc(x.perf.song)}${
                 seg ? `<i class="segout"></i><span class="rr-seg">+${seg.points}</span>` : ''}${
                 roleChip(x.role.name)}</span>
+              <!-- WHICH NIGHT, on every row. The scorecard listed seventeen song
+                   titles as though they were songs; every one of them came off a
+                   different concert, and that is the entire premise. -->
+              <span class="rr-night">${esc(whichNight(x.perf))}${(() => {
+                const v = versionNote(x.perf);
+                return v ? `<b class="rr-ver">${esc(v)}</b>` : '';
+              })()}</span>
             </span>
             <span class="rr-len">${fmtClock(lenOf(x.perf))}</span>
             <span class="rr-pts">${x.score.subtotal}</span>
@@ -2715,6 +2834,7 @@ function openDetail(i){
       <h2>${esc(x.role.name)}</h2>
       <button class="x" type="button" id="detailClose">Close</button>
     </div>
+    <div class="bdnight">${esc(whichNight(x.perf, { full: true }))}</div>
     ${songBreakdownHTML(x.perf, x.score, { hideRole: true })}`;
   document.getElementById('detailSheet').classList.add('on');
 }
@@ -2781,6 +2901,93 @@ function toggleThere(bandId, showId){
   return now;
 }
 function attendedCount(bandId){ return attendedSet(bandId).size; }
+
+/* ---------------------------------------------------------------------------
+ * WHAT THE SHOWS YOU WERE AT ADD UP TO.
+ * ---------------------------------------------------------------------------
+ * The marked list was a count and nothing else. But the archive knows what was
+ * PLAYED on each of those nights, so the moment a fan marks the shows they went
+ * to, the game can tell them things nothing else can: how many of the band's
+ * songs they have actually heard live, which one they have seen most, how many
+ * are still out there.
+ *
+ * Measured against the real archive, this is not a thin feature. 656 shows, 367
+ * distinct songs:
+ *
+ *     10 shows attended  ->  83 songs seen, 284 never
+ *     25 shows           -> 129 seen, 238 never
+ *    100 shows           -> 220 seen, 147 never
+ *
+ * A 25-show fan is a third of the way through the catalogue and has 238 left to
+ * catch. That is a collection, and it is a collection out of their own life
+ * rather than out of the game.
+ *
+ * Entirely client side, off data already loaded, and it works signed out.
+ * Returns null when the band's CSV is not loaded, since the profile screen can
+ * be reached without ever starting a draft.
+ */
+/* THE ARCHIVE, WITHOUT HAVING TO DRAFT FIRST.
+ * The stats below need the band's CSV, and the profile is reachable straight
+ * off the home screen, so on that path S.data is null and the headline number
+ * -- the whole point of the panel -- silently degrades to "draft a night
+ * first". Which is a strange thing to tell somebody looking at a list of shows
+ * they went to.
+ *
+ * So the profile fetches it itself, once, into a cache the draft never touches.
+ * fetchBand already memoises per band, so the second visit and the first draft
+ * both come straight back.
+ */
+const FAN_DATA = new Map();
+/* IN FLIGHT IS ITS OWN SET, not a null in the cache. Marking the cache to claim
+   the work made fanData's own `has` check return that null straight back, so the
+   fetch it was guarding never ran and the panel sat on its fallback forever. */
+const FAN_FETCHING = new Set();
+async function fanData(bandId){
+  if (S.data && S.band && S.band.id === bandId) return S.data;
+  if (FAN_DATA.has(bandId)) return FAN_DATA.get(bandId);
+  const band = BANDS.find(b => b.id === bandId);
+  if (!band) return null;
+  try {
+    const d = await fetchBand(band);
+    FAN_DATA.set(bandId, d);
+    return d;
+  } catch (e) { return null; }
+}
+
+function attendanceStats(bandId){
+  const ids = attendedSet(bandId);
+  if (!ids.size) return null;
+  const data = (S.data && S.band && S.band.id === bandId ? S.data : null)
+    || FAN_DATA.get(bandId) || null;
+  const base = { shows: ids.size, songsSeen: null, songsTotal: null };
+  if (!data) return base;               // counted, but nothing to count against
+
+  const mine = data.shows.filter(sh => ids.has(String(sh.show_id)));
+  if (!mine.length) return base;
+  const seen = new Map();               // song -> times seen
+  const seenIds = new Set();
+  for (const sh of mine) for (const p of sh.songs) {
+    if (!p.song_id) continue;
+    seenIds.add(p.song_id);
+    seen.set(p.song, (seen.get(p.song) || 0) + 1);
+  }
+  const allIds = new Set(data.shows.flatMap(sh => sh.songs.map(p => p.song_id)).filter(Boolean));
+  const dates = mine.map(sh => sh.show_date).sort();
+  const top = [...seen].sort((a, b) => b[1] - a[1])[0];
+  return {
+    shows: mine.length,
+    /* The marked list can outrun the loaded archive: a show id survives in
+       localStorage after a data refresh drops it. Reported rather than hidden,
+       because a count that silently shrinks is worse than one that explains. */
+    unmatched: ids.size - mine.length,
+    songsSeen: seenIds.size,
+    songsTotal: allIds.size,
+    venues: new Set(mine.map(sh => (sh.songs[0] || {}).venue).filter(Boolean)).size,
+    years: new Set(dates.map(d => String(d).slice(0, 4))).size,
+    first: dates[0], last: dates[dates.length - 1],
+    mostSeen: top ? { song: top[0], times: top[1] } : null,
+  };
+}
 /** Replace one band's list wholesale. Only the sync calls this. */
 function attendedReplace(bandId, ids){
   const all = attendedAll();
@@ -3247,15 +3454,22 @@ function showNotes(sets){
   sets.forEach((songs, si) => (songs || []).forEach(p => {
     const gap = Number(p.show_gap) || 0, len = lenOf(p);
     let note = null, rank = 9;
-    if (gap >= BREADTH_BUSTOUT_GAP){ note = `First in ${gap} shows`; rank = 0; }
+    /* THE VERSION'S STANDING GOES FIRST, ahead of everything else this used to
+       say, because it is the only note that is about WHICH ONE YOU GOT. The
+       archive backs that: across the songs with five or more plays the longest
+       version is a median of 2.7x the shortest. "Ran 24:48" describes a number;
+       "The longest of 96" is a brag, and a brag is what a share card is for. */
+    const ver = versionNote(p);
+    if (ver && Number(p.version_of) >= 5){ note = ver; rank = 0; }
+    else if (gap >= BREADTH_BUSTOUT_GAP){ note = `First in ${gap} shows`; rank = 1; }
     else if (String(p.is_cover) === 'true'){
       note = p.original_artist ? `Originally by ${p.original_artist}` : 'A cover';
-      rank = 1;
+      rank = 2;
     }
     // Reads on its own. It was "29:57 of it", which leant on the song title
     // printed above it, and that title went away when notes became one line.
-    else if (len >= LEN_20MIN){ note = `Ran ${fmtClock(len)}`; rank = 2; }
-    else if (isJamchart(p)){ note = 'Flagged in the archive'; rank = 3; }
+    else if (len >= LEN_20MIN){ note = `Ran ${fmtClock(len)}`; rank = 3; }
+    else if (isJamchart(p)){ note = 'Flagged in the archive'; rank = 4; }
     if (note) found.push({ perf: p, set: si, note, rank });
   }));
   /* Over the cap, drop the least remarkable rather than whatever happened to
@@ -3390,12 +3604,28 @@ async function renderShareCard(r){
       const seg = nxt && String(p.is_segue) === 'true'
         && S.data.segues.has(`${p.song_id}|${nxt.song_id}`);
       const n = noteOf(p);
-      // Reserve the room the marks need before deciding where to truncate.
-      const tail = (n ? 22 : 0) + (seg ? 28 : 0);
+      /* THE RUNNING TIME, and on a card about versions it is not optional.
+         The card listed titles, which describes a set of SONGS; the length is
+         what says which take of each one you got, and across the songs with
+         five or more plays the longest version is a median of 2.7 times the
+         shortest. Right-aligned to the column so the times form a readable
+         edge instead of trailing each title at a different x. */
+      x.font = '700 27px Archivo';
+      const time = fmtClock(lenOf(p));
+      const timeW = x.measureText(time).width;
+      // Reserve the room the marks AND the clock need before truncating.
+      const tail = (n ? 22 : 0) + (seg ? 28 : 0) + timeW + 18;
       x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
       const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
+      /* MEASURED WHILE THE TITLE'S FONT IS STILL SET. Drawing the clock first
+         and measuring after would measure the label at 27px and put the
+         footnote marker inside the title. */
       let tx = cx + x.measureText(label).width + 10;
+      x.textAlign = 'right';
+      x.font = '700 27px Archivo'; x.fillStyle = CARD_MUT;
+      x.fillText(time, cx + width, ly);
+      x.textAlign = 'left';
       if (n){
         // Raised to the cap line, the way a footnote marker sits on paper.
         x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
@@ -3410,7 +3640,10 @@ async function renderShareCard(r){
   const leftEnd = drawSet(S.sets[0], 0, CARD_PAD, y, COL_W);
   const rightEnd = drawSet(S.sets[1], 1, CARD_PAD + COL_W + COL_GAP, y, COL_W);
   let ey = Math.max(leftEnd, rightEnd) + 30;
-  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, CARD_W - CARD_PAD * 2);
+  /* ONE COLUMN WIDE, like the sets above it. Drawn across the full card the
+     encore's titles sat on the left and its clocks on the far right, half a
+     card apart, while every other row had them a few characters apart. */
+  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, COL_W);
 
   // ── show notes, keyed to the numbers on the songs ──
   if (notes.length){
@@ -4003,6 +4236,18 @@ async function loadProfile(){
 
 function renderProfile(){
   if (ME.signedIn && PROFILE.loadedFor !== ME.userId && !PROFILE.busy) loadProfile();
+  /* Fetch the archive for any band with marked shows we cannot yet count
+     against, then repaint. Guarded so one failed fetch does not loop. */
+  for (const b of BANDS){
+    if (b.sample || !attendedCount(b.id)) continue;
+    if (attendanceStats(b.id).songsSeen !== null) continue;
+    if (FAN_DATA.has(b.id) || FAN_FETCHING.has(b.id)) continue;
+    FAN_FETCHING.add(b.id);
+    fanData(b.id).then(d => {
+      if (d) FAN_DATA.set(b.id, d);
+      if (S.screen === 'profile') render();
+    });
+  }
 
   const rows = PROFILE.rows || [];
   const best = rows.reduce((m, r) => Math.max(m, r.total || 0), 0);
@@ -4037,13 +4282,42 @@ function renderProfile(){
               `<span class="pcard ${won.has(id) ? 'got' : ''}">${esc(label)}</span>`).join('')}</div>`;
 
   const were = BANDS.filter(b => !b.sample).map(b => {
-    const n = attendedCount(b.id);
-    return `<div class="brow plain">
+    const st = attendanceStats(b.id);
+    if (!st) return `<div class="fanband"><div class="brow plain">
       <div class="who"><div class="nm">${esc(b.label)}</div>
-        <div class="sub">${n ? `${n} show${n === 1 ? '' : 's'} you were at`
-          : 'No shows marked yet'}</div></div>
-      <div class="val">${n}<i>marked</i></div>
-    </div>`;
+        <div class="sub">No shows marked yet</div></div>
+      <div class="val">0<i>marked</i></div>
+    </div></div>`;
+    /* THE HEADLINE IS SONGS, NOT SHOWS. Anybody can count their shows; only
+       this can tell them how much of the catalogue they have actually heard,
+       because only this knows what was played on each of those nights. */
+    const pct = st.songsTotal ? Math.round(100 * st.songsSeen / st.songsTotal) : 0;
+    return `
+      <div class="fanband">
+      <div class="fanhd">${esc(b.label)}</div>
+      ${st.songsSeen === null
+        ? `<div class="fanwait">${st.shows} show${st.shows === 1 ? '' : 's'} marked.
+             Draft a night to work out what you have heard.</div>`
+        : `
+        <div class="pstats">
+          <div class="pstat"><b>${st.shows}</b><span>Shows</span></div>
+          <div class="pstat"><b>${st.venues}</b><span>Venues</span></div>
+          <div class="pstat"><b>${st.years}</b><span>Years</span></div>
+        </div>
+        <div class="fanbig">
+          <b>${st.songsSeen}</b><i>of ${st.songsTotal} songs heard live</i>
+          <div class="fanbar"><span style="width:${pct}%"></span></div>
+          <div class="fanfine">${st.songsTotal - st.songsSeen} still out there.</div>
+        </div>
+        <div class="fanlist">
+          ${st.mostSeen ? `<div class="fanrow"><i>Seen most</i>
+            <b>${esc(st.mostSeen.song)}</b><span>${st.mostSeen.times}x</span></div>` : ''}
+          <div class="fanrow"><i>First</i><b>${esc(fmtDate(st.first))}</b></div>
+          <div class="fanrow"><i>Latest</i><b>${esc(fmtDate(st.last))}</b></div>
+        </div>
+        ${st.unmatched ? `<div class="fanfine">${st.unmatched} marked show${
+          st.unmatched === 1 ? ' is' : 's are'} no longer in the archive.</div>` : ''}`}
+      </div>`;
   }).join('');
 
   app.innerHTML = `

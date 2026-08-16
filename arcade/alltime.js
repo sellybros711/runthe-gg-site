@@ -4,7 +4,7 @@
  * It reads RTG_BOARD.allTimeBoard(game) - the same public RPC the cardholder
  * pregame screen uses - and shows each player's BEST result ever with the DATE
  * they set it. Run games (table/career/oddone/rankit/almamater) show the longest
- * run; the timed games (match/guess/crossword/wordsearch) show the fastest time.
+ * run; the timed games (match/guess/crossword) show the fastest time.
  *
  * Fails soft in every direction: no #lb, no RTG_BOARD, RPC not deployed, or
  * offline - the block just doesn't appear (or shows a quiet "unavailable"). It
@@ -29,7 +29,6 @@
     match:      { timed: true },
     guess:      { timed: true },
     crossword:  { timed: true },
-    wordsearch: { timed: true }
   };
   var C = GAME && CFG[GAME];
   if (!C) return;

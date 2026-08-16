@@ -20,33 +20,30 @@
   // the same product. `cls` matches the hub's .tile.<cls> accent rules.
   var GAMES = [
     { key:'table',      path:'table',      cls:'table',  name:'Number Game',    accent:'var(--gold)',
-      desc:'Higher or lower? Tap the bigger number and run as many as you can.',
+      desc:'One player, one club: name the number they wore.',
       icon:'<svg viewBox="0 0 56 56"><rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/><rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/><g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g></svg>' },
     { key:'match',      path:'match',      cls:'match',  name:'Daily Match',      accent:'var(--blue)',
-      desc:'Sort 20 names into five hidden groups of four.',
+      desc:'Tap four names that belong together. Find all four groups before four mistakes.',
       icon:'<svg viewBox="0 0 56 56"><g><rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/></g></svg>' },
     { key:'career',     path:'career',     cls:'career', name:'Career Path',      accent:'var(--green)',
-      desc:'Name the athlete from their team-by-team journey.',
+      desc:'A career, one team at a time. Type the name early for more points.',
       icon:'<svg viewBox="0 0 56 56"><g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g><g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g></svg>' },
     { key:'oddone',     path:'oddone',     cls:'oddone', name:'Odd One Out',      accent:'var(--violet)',
-      desc:'Four names share a connection, one doesn’t. Spot it.',
+      desc:'Four names share a connection, one doesn’t. Spot it, then name it.',
       icon:'<svg viewBox="0 0 56 56"><circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/><rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/></svg>' },
     { key:'rankit',     path:'rankit',     cls:'rankit', name:'Rank It',          accent:'var(--pink)',
-      desc:'Put five athletes in the right order by a career stat or era.',
+      desc:'Put five athletes in order by a career stat, most at the top.',
       icon:'<svg viewBox="0 0 56 56"><rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/><rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/><rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/></svg>' },
     { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)',
-      desc:'Name the college each player came from. Four choices, one right.',
+      desc:'Name the college each player came from. Type it, or take four choices.',
       icon:'<svg viewBox="0 0 56 56"><path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/><path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/><path d="M52 22 v11" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/><circle cx="52" cy="35" r="2.6" fill="#F2B632"/></svg>' },
     { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)',
-      desc:'One mystery athlete a day. Crack it in eight guesses.',
+      desc:'One mystery athlete from any era. Crack it in eight guesses.',
       icon:'<svg viewBox="0 0 56 56"><g><rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/></g></svg>' },
     { key:'crossword',  path:'crossword',  cls:'cross',  name:'Daily Crossword',  accent:'var(--news,#64748B)',
       desc:'A sports mini crossword. Beat the clock for a flawless solve.',
       icon:'<svg viewBox="0 0 56 56"><defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs><g clip-path="url(#cwico)"><rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/><rect x="40" y="4" width="12" height="12" fill="#12202F"/><rect x="4" y="40" width="12" height="12" fill="#12202F"/><g stroke="#CBD5E1" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g><g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle"><text x="10" y="13.2">R</text><text x="22" y="13.2">U</text><text x="34" y="13.2">N</text><text x="46" y="25.2">T</text><text x="46" y="37.2">H</text><text x="46" y="49.2">E</text></g></g><rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/></svg>' },
-    { key:'wordsearch', path:'wordsearch', cls:'word',   name:'Daily Word Search',accent:'var(--teal)',
-      desc:'Find every hidden name from today’s theme.',
-      icon:'<svg viewBox="0 0 56 56"><defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs><g clip-path="url(#wsico)"><rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/><g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g><rect x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/><rect x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5"/><rect x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5"/><g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle"><text x="10" y="13" fill="#06333A">W</text><text x="22" y="25" fill="#06333A">I</text><text x="34" y="37" fill="#06333A">N</text></g></g><rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/></svg>' }
-    ,{ key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)',
+    { key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)',
       desc:'One letter, eight categories, two minutes.',
       icon:'<svg viewBox="0 0 56 56"><rect x="4" y="4" width="48" height="48" rx="8" fill="#F7E9FB"/><rect x="4" y="4" width="48" height="48" rx="8" fill="none" stroke="#DA6BE6" stroke-width="2"/><g font-family="Anton, Impact, sans-serif" font-size="26" text-anchor="middle"><text x="28" y="37" fill="#DA6BE6">S</text></g><g fill="#DA6BE6" opacity=".55"><rect x="10" y="44" width="9" height="3" rx="1.5"/><rect x="23.5" y="44" width="9" height="3" rx="1.5"/><rect x="37" y="44" width="9" height="3" rx="1.5"/></g></svg>' }
   ];
@@ -165,7 +162,7 @@
     ensure();
     scrim.querySelector('.rtgcal').style.setProperty('--c', g.accent);
     // unique-ify any clipPath ids so the modal icon can’t collide with a same
-    // icon already on the page (crossword/wordsearch use id-based clipPaths)
+    // icon already on the page (crossword uses an id-based clipPath)
     $('rtgcalIco').innerHTML = g.icon.replace(/(cwico|wsico)/g, '$1M');
     $('rtgcalNm').textContent = g.name;
     $('rtgcalSub').textContent = 'Pick a past day to play';

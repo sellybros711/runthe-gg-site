@@ -31,8 +31,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -102,8 +102,8 @@
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .tile.table{--c:var(--gold); --onC:#160B02;} .tile.match{--c:var(--blue); --onC:#fff;} .tile.career{--c:var(--green); --onC:#160B02;} .tile.oddone{--c:var(--violet); --onC:#160B02;}
-  .tile.rankit{--c:var(--pink); --onC:#160B02;} .tile.alma{--c:var(--moss); --onC:#160B02;} .tile.guess{--c:var(--brand2); --onC:#160B02;} .tile.cross{--c:#AAB6C4; --onC:#160B02;} .tile.word{--c:var(--teal); --onC:#160B02;}
-  .tile.match .nm{color:var(--blueT);} .tile.cross .nm{color:var(--ink);} .tile.word .nm{color:var(--tealT);}
+  .tile.rankit{--c:var(--pink); --onC:#160B02;} .tile.alma{--c:var(--moss); --onC:#160B02;} .tile.guess{--c:var(--brand2); --onC:#160B02;} .tile.cross{--c:#AAB6C4; --onC:#160B02;}
+  .tile.match .nm{color:var(--blueT);} .tile.cross .nm{color:var(--ink);}
   .tile.guess .nm{color:var(--coralT);} .tile.table .nm{color:var(--goldT);} .tile.oddone .nm{color:var(--violetT);}
   .tile.career .nm{color:var(--greenT);} .tile.rankit .nm{color:var(--pinkT);} .tile.alma .nm{color:var(--goldT);}
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
@@ -152,16 +152,17 @@
   <div class="foot">Part of <b>Run The Arcade</b> · <a href="/arcade/">Today's puzzles</a> · <a href="/">RunThe.GG</a><br><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/contact.html">Report a data error</a></div>
 </div>
 
-<script src="/arcade/tokens.js?v=2"></script>
+<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=5"></script>
+<script src="/arcade/board.js?v=7"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=4"></script>
+<script src="/arcade/mycard.js?v=6"></script>
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=1"></script>
+<script src="/arcade/calendar.js?v=10"></script>
 <script>
 (function(){
   // days of archive since launch; drives the gate's concrete pitch
@@ -180,8 +181,7 @@
     {k:'rankit', path:'rankit', name:'Rank It', c:'var(--pink)'},
     {k:'almamater', path:'almamater', name:'Alma Mater', c:'var(--gold)'},
     {k:'guess', path:'guess', name:'Guess the Player', c:'var(--coral)'},
-    {k:'crossword', path:'crossword', name:'Daily Crossword', c:'var(--gray)'},
-    {k:'wordsearch', path:'wordsearch', name:'Word Search', c:'var(--teal)'}
+    {k:'crossword', path:'crossword', name:'Daily Crossword', c:'var(--gray)'}
   ];
 
   function isPro(){ return !!(window.RTGTokens && RTGTokens.isPro && RTGTokens.isPro()); }

@@ -69,9 +69,17 @@
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
-      if (session) { syncPro(); return Promise.all([loadName(), loadFav()]).then(fire); }
+      if (session) { syncPro(); return Promise.all([loadName(), loadFav()]).then(fire).then(flush); }
       fire();
     }).catch(fire);
+
+    /* Anything that didn't reach the server gets another go the moment the
+       conditions that broke it change: the network comes back, or the tab does
+       (which on a phone is usually the same moment). */
+    try {
+      window.addEventListener('online', function () { flush(); });
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) flush(); });
+    } catch (e) {}
     return true;
   }
 
@@ -146,6 +154,58 @@
     }).catch(function () { lastError = { where: where, status: res.status }; return null; });
   }
 
+  /* ---- the outbox -------------------------------------------------------
+   * A finished run used to get exactly one attempt to reach the server, with
+   * an 8s ceiling, and any failure resolved to null in silence: no row, no
+   * retry, no word to the player. On a phone that hands off between wifi and
+   * cell mid-request that is a coin flip, which is exactly what "sometimes my
+   * name isn't on the board" looks like from the outside.
+   *
+   * So a run that doesn't land is kept and re-sent: on the next page load, on
+   * reconnect, and when the tab comes back to the foreground.
+   *
+   * Only ever for failures that a later attempt could actually fix. The RPC
+   * rejects some runs on purpose — an unknown game key, a date outside the
+   * window, an implausible time, a free account past its daily ranked cap —
+   * and those are decisions, not accidents. Re-sending them would spin
+   * forever, so a 4xx is dropped and remembered in lastError instead.
+   */
+  var OUTBOX = 'rtg:lbq:v1', OUTMAX = 20;
+  function outRead() {
+    try { var a = JSON.parse(localStorage.getItem(OUTBOX)); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function outWrite(a) {
+    try { localStorage.setItem(OUTBOX, JSON.stringify(a.slice(-OUTMAX))); } catch (e) {}
+  }
+  function outAdd(run) {
+    var a = outRead();
+    // one entry per game+date: a replay supersedes the run queued before it
+    a = a.filter(function (r) { return !(r.game === run.game && r.date === run.date); });
+    a.push(run); outWrite(a);
+  }
+  function outDrop(run) {
+    outWrite(outRead().filter(function (r) { return !(r.game === run.game && r.date === run.date); }));
+  }
+  function pending() { return outRead().length; }
+
+  function post(run) {
+    var body = JSON.stringify({
+      p_game: run.game, p_date: run.date, p_seconds: run.seconds,
+      p_mistakes: run.mistakes, p_reveals: run.reveals, p_run_len: run.runLen
+    });
+    // `null` here means "no answer" (timeout/network) — worth another try.
+    // `false` means the server answered and said no — never worth retrying.
+    return withTimeout(
+      fetch(REST + 'rpc/grid_submit_run', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: body })
+        .then(function (res) {
+          if (res.ok) { offline = false; return res.json(); }
+          if (res.status >= 500 || res.status === 429) return fail('submit', res);   // transient → null
+          return fail('submit', res).then(function () { return false; });            // refused → false
+        })
+    );
+  }
+
   // ---- submit a completed run. Returns {streak, best_streak} or null. ----
   function submit(game, dateStr, opts) {
     if (!session) return Promise.resolve(null);   // signed-in only; guests keep local
@@ -155,17 +215,43 @@
     // the run that refusal covers must not reach the leaderboard.
     try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
     opts = opts || {};
-    var body = JSON.stringify({
-      p_game: game, p_date: dateStr,
-      p_seconds: Math.max(0, Math.round(opts.seconds || 0)),
-      p_mistakes: opts.mistakes || 0,
-      p_reveals: opts.reveals || 0,
-      p_run_len: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen)))
+    var run = {
+      game: game, date: dateStr,
+      seconds: Math.max(0, Math.round(opts.seconds || 0)),
+      mistakes: opts.mistakes || 0,
+      reveals: opts.reveals || 0,
+      runLen: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen)))
+    };
+    return post(run).then(function (r) {
+      if (r === false) return null;               // server refused; nothing to retry
+      if (r) return r;
+      return post(run).then(function (r2) {       // one immediate retry, then queue
+        if (r2 === false) return null;
+        if (r2) return r2;
+        outAdd(run); flush.scheduled = false;
+        return null;
+      });
     });
-    return withTimeout(
-      fetch(REST + 'rpc/grid_submit_run', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: body })
-        .then(function (res) { if (!res.ok) return fail('submit', res); offline = false; return res.json(); })
-    );
+  }
+
+  // Re-send anything still queued. Serial, so a long queue can't fan out.
+  function flush() {
+    if (!session || flush.busy) return Promise.resolve(0);
+    var q = outRead();
+    if (!q.length) return Promise.resolve(0);
+    flush.busy = true;
+    var sent = 0;
+    return q.reduce(function (chain, run) {
+      return chain.then(function () {
+        return post(run).then(function (r) {
+          if (r || r === false) { outDrop(run); if (r) sent++; }   // landed, or refused for good
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      flush.busy = false;
+      if (sent) fire();
+      return sent;
+    }, function () { flush.busy = false; return 0; });
   }
 
   // Names kept off every public board (test accounts). Case-insensitive.
@@ -221,6 +307,39 @@
           return isNaN(total) ? 0 : total;
         })
     );
+  }
+
+  /* ---- the complete player register (supabase/77_player_register.sql) ----
+   * Sportegories' own file is curated for recognition and always will be — it
+   * has to be small enough to ship. This is the other half: every player who
+   * ever appeared, kept server-side because it is ~56k rows and 4MB+ in the
+   * client encoding. Takes normalized "first|last" keys, one card's worth at a
+   * time; the RPC caps at ten. Works signed-out — it is public sports data. */
+  /* An answer we could not settle is a hole in the register with a name on it.
+     Fire-and-forget, deliberately: the game never waits on this and never shows
+     an error for it, because a failed report must not cost anyone a point. */
+  function logGap(row) {
+    try {
+      return fetch(REST + 'answer_gaps', {
+        method: 'POST',
+        headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+        body: JSON.stringify(row)
+      })['catch'](function () {});
+    } catch (e) { return Promise.resolve(); }
+  }
+
+  function registerLookup(keys) {
+    if (!keys || !keys.length) return Promise.resolve([]);
+    return withTimeout(
+      fetch(REST + 'rpc/player_lookup', {
+        method: 'POST',
+        headers: headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ p_keys: keys.slice(0, 10) })
+      }).then(function (res) {
+        if (!res.ok) return fail('register', res);
+        offline = false; return res.json();
+      })
+    ).then(function (r) { return Array.isArray(r) ? r : []; });
   }
 
   // ---- the signed-in user's own row for a day, so the board can place them
@@ -323,10 +442,14 @@
     state: state,
     onChange: function (fn) { listeners.push(fn); if (sb || offline) fn(state()); },
     submit: submit,
+    flush: flush,
+    pending: pending,
     leaderboard: leaderboard,
     rank: rank,
     playerCount: playerCount,
     myRun: myRun,
+    registerLookup: registerLookup,
+    logGap: logGap,
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,

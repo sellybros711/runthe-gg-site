@@ -716,7 +716,7 @@ window.GA_ID='G-L29P5MRWKE';
           <div class="slot-wrap" aria-hidden="true">
             <div class="slot">
               <div class="slot-top">RUN THE ARCADE</div>
-              <div class="slot-frame"><div class="slot-reel" data-names="Daily Match|Crossword|Word Search|Odd One Out|Alma Mater|Career|Rank It|Guess|High Low|The Table"></div><div class="slot-line"></div><div class="slot-glass"></div></div>
+              <div class="slot-frame"><div class="slot-reel" data-names="Daily Match|Crossword|Sportegories|Odd One Out|Alma Mater|Career|Rank It|Guess|High Low|The Table"></div><div class="slot-line"></div><div class="slot-glass"></div></div>
             </div>
           </div>
         </div>
@@ -1270,7 +1270,13 @@ window.GA_ID='G-L29P5MRWKE';
     }catch(e){ sb=null; return; }
     // Fresh sign-in / sign-out / refresh keeps the game stores in sync.
     sb.auth.onAuthStateChange(function(evt,session){
-      if(evt==='INITIAL_SESSION') return;                 // handled by getSession() below
+      // INITIAL_SESSION carries the session recovered from storage AND the one minted
+      // from an OAuth redirect. Discarding it outright meant a Google return could land
+      // after getSession() had already read "signed out", so the page stayed rendered as
+      // logged out until the next click. Apply it whenever it carries a session; a NULL
+      // INITIAL_SESSION is still ignored, because treating it as a sign-out would purge
+      // the cross-game bridge on an ordinary signed-out visit.
+      if(evt==='INITIAL_SESSION' && !session) return;
       if(session) bridgeSession(); else bridgeClear();
       var oauth=false; try{ oauth=!!localStorage.getItem('rtp_oauth_pending'); if(oauth){ localStorage.removeItem('rtp_oauth_pending'); localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
       applySession(session).then(function(){
@@ -1280,6 +1286,25 @@ window.GA_ID='G-L29P5MRWKE';
       });
     });
     sb.auth.getSession().then(function(r){ applySession(r.data && r.data.session); }).catch(function(){});
+    /* Safety net for the Google round trip. The redirect back carries the session in the
+       URL, and supabase-js exchanges it asynchronously, so a single read on load can still
+       land first and paint the page signed out. If we arrived from an OAuth redirect (or
+       with a sign-in pending) and we are still showing signed out, re-read a few times and
+       apply whatever turns up. Idempotent: applySession just re-renders. */
+    try{
+      var _cb=/[#&?](access_token|code|refresh_token)=/.test((location.hash||'')+(location.search||''));
+      var _pend=false; try{ _pend=!!localStorage.getItem('rtp_oauth_pending'); }catch(e){}
+      if(_cb||_pend){
+        var _tries=0;
+        var _poll=setInterval(function(){
+          if(user||_tries++>=6){ clearInterval(_poll); return; }
+          sb.auth.getSession().then(function(r){
+            var s=r&&r.data&&r.data.session;
+            if(s&&!user){ clearInterval(_poll); applySession(s); }
+          }).catch(function(){});
+        },500);
+      }
+    }catch(e){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();

@@ -11,7 +11,7 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7504 performances · 655 shows · 366 songs**, 2014–2026.
+As of the last run: **7516 performances · 656 shows · 367 songs**, 2014–2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
 
 ### Two things that will silently corrupt a run

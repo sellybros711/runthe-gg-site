@@ -175,6 +175,52 @@ export function loadBand(csvText) {
     partners.get(a).add(b);
   }
 
+  /* ---------------------------------------------------------------------
+   * WHICH VERSION THIS IS, which is the thing the game is actually about.
+   * ---------------------------------------------------------------------
+   * You do not pick "Echo of a Rose". You pick the one from a particular
+   * night, and across 114 plays that song runs anywhere from 1:00 to 44:24.
+   * Measured across the 166 songs with five or more plays, the longest
+   * version of a song is a MEDIAN of 2.7 times the shortest, and 13.8 times
+   * at the 90th percentile. "You played Echo of a Rose" says almost nothing;
+   * "you played the 44 minute one" is the whole story.
+   *
+   * So every performance learns where it sits among its own siblings: its
+   * rank by length, out of how many. Computed once here, off the same rows
+   * the rest of the loader walks, rather than by the UI on every render.
+   *
+   * Rank 1 is the LONGEST. Songs played once get {rank:1, of:1}, which the UI
+   * reads as "nothing to compare it to" rather than "the best ever".
+   */
+  const byySong = new Map();
+  for (const show of shows) {
+    for (const p of show.songs) {
+      const len = Number(p.length_sec) || 0;
+      if (!p.song_id || !len) continue;
+      if (!byySong.has(p.song_id)) byySong.set(p.song_id, []);
+      byySong.get(p.song_id).push(p);
+    }
+  }
+  for (const takes of byySong.values()) {
+    takes.sort((a, b) => (Number(b.length_sec) || 0) - (Number(a.length_sec) || 0));
+    const of = takes.length;
+    const med = Number(takes[Math.floor(of / 2)].length_sec) || 0;
+    /* TIES SHARE A RANK, so two identical 8:12 takes are both "4th of 30"
+       rather than one of them being arbitrarily 5th. */
+    let rank = 0, prev = null;
+    takes.forEach((p, i) => {
+      const len = Number(p.length_sec) || 0;
+      if (len !== prev) { rank = i + 1; prev = len; }
+      p.version_rank = rank;
+      p.version_of = of;
+      /* THE TYPICAL LENGTH, so a rank can gain a feel. "3rd longest of 60"
+         says where it sits; "usually 19:46, you got 29:38" says what that
+         MEANS. Median rather than mean because a single 44-minute outlier
+         drags an average somewhere no real version lives. */
+      p.version_median = med;
+    });
+  }
+
   return { shows, segues, segueCounts, partners, performances: rows.length };
 }
 

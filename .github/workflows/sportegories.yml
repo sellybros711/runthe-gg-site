@@ -1,0 +1,41 @@
+name: Rebuild Sportegories corpus
+on:
+  schedule:
+    - cron: '30 12 * * *'   # daily, after the roster/former refreshes have landed
+  workflow_dispatch: {}
+permissions:
+  contents: write
+
+# arcade/sportegories-data.js is DERIVED from rosters.js, former.js, awards.js
+# and the stats files. Those each refresh on their own schedule, and until this
+# job existed nothing rebuilt the corpus afterwards — so a rookie could sign on
+# Monday, land in rosters.js, and still be unknown to the game months later.
+#
+# This is deliberately a job of its own rather than a step bolted onto each
+# refresh. Those workflows push to main and recover from races by rebasing,
+# which only stays clean because no two of them write the same file. One writer
+# for the generated file keeps that property true. A push-triggered run would
+# be tidier still, but a push made with GITHUB_TOKEN doesn't trigger workflows,
+# so a daily cron is what actually runs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/build-sportegories.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "roster-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arcade/sportegories-data.js
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Rebuild Sportegories corpus from refreshed rosters"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing onto latest main (attempt $i)"
+              git pull --rebase origin main || exit 1
+            done
+          }

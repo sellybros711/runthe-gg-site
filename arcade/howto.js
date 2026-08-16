@@ -8,58 +8,52 @@
 
   var CONTENT = {
     match: [
-      'Twenty names hide five secret groups of four.',
+      'Sixteen names hide four secret groups of four.',
       'A group can be a team, a jersey number, a surname, any shared thread.',
       'Build a group of four and lock it in. "One away" means three belong together.',
-      'Six wrong guesses ends the day. Solve all five groups to keep your streak.'
+      'Four wrong guesses ends the day. Solve all four groups to keep your streak.'
     ],
     table: [
-      'Two athletes, one question: who wore the higher jersey number?',
-      'Tap your pick and the numbers reveal instantly.',
-      'Every correct pick extends your run. You get one save; a second miss ends it.',
-      'The run gets tougher: later pairs wear closer numbers.'
+      'One player, one club, one question: what number did they wear there?',
+      'Type it. Exact is a bullseye; within two still counts, because a digit out is remembering, not guessing.',
+      'You get one save; a second real miss ends the run.',
+      'It opens on household names and works down into the deep cuts.'
     ],
     career: [
-      "We show a career's team stops, in order, first to last.",
-      'Four names. Tap the athlete who took that exact path.',
-      'Each correct answer extends your run; one wrong ends it.',
-      'Decoys get sneakier the deeper you go.'
+      "We show a career one team at a time, first club first.",
+      'No multiple choice: type who it is.',
+      'Type the name. Off one team it is 5 points, off two or three it is 3, and down from there.',
+      'Stuck? Take four names instead, for one point. A wrong answer ends your run.'
     ],
     oddone: [
       'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
-      "Tap the one that doesn't belong.",
-      'Right: the four light green and your run grows. Wrong: run over.',
-      'The connection is revealed either way.'
+      "Tap the one that doesn't belong. That is worth a point.",
+      'Then name the connection itself for a second point. Spotting it is luck; saying why is knowing.',
+      'One wrong spot ends the run. A wrong link just costs you the bonus.'
     ],
     rankit: [
       'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',
-      'Drag (or arrow) them into order, then hit Check.',
-      'All five right clears the set and deals a new one. Any wrong ends the run.',
-      'Real values reveal after every check.'
+      'Most at the top, always. Tap two names to swap them, then hit Check.',
+      'One puzzle a day, five tries at it. Fewest tries wins the board.',
+      'Real values reveal after every check, so each try tells you something.'
     ],
     guess: [
-      'One current NBA, NFL, or MLB player. The sport is given.',
-      'Type any player from that sport; tiles show how close you are on team, position, age and number.',
+      'One NBA, NFL or MLB player from any era. The sport is given.',
+      'Type any player from that sport; tiles compare careers, not this season: position, franchises, debut decade, college and honours.',
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a clue for a hint.'
     ],
     almamater: [
       'One NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Tap the right school from four choices.',
-      'Each correct pick extends your run; one wrong ends it.',
-      'Famous names start you off; the deeper you go, the tougher the picks.'
+      'Type the school. UNC, North Carolina and University of North Carolina all count.',
+      'Typing it is 2 points. Stuck? Take four choices for 1.',
+      'One wrong school ends the run. A spelling we do not recognise costs nothing.'
     ],
     crossword: [
       'A quick sports mini. Type into the grid.',
       'Tap a cell to switch across/down; clues sit below.',
       'Fastest clean solve tops the board.',
       'Free players get one Reveal; Pro gets unlimited.'
-    ],
-    wordsearch: [
-      "Find the hidden names. Today's theme tells you who they are.",
-      'Drag across letters in any direction, including diagonals and backwards.',
-      'Names only reveal as you find them.',
-      'One Hint highlights a first letter (Pro: unlimited).'
     ]
   };
 

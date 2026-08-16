@@ -16,7 +16,7 @@
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
-const PAGES = ['', 'match/', 'crossword/', 'wordsearch/', 'guess/', 'table/',
+const PAGES = ['', 'match/', 'crossword/', 'guess/', 'table/',
                'oddone/', 'career/', 'rankit/', 'almamater/', 'highlow/', 'archive/'];
 
 const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell' });

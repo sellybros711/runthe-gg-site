@@ -20,33 +20,31 @@
 
   function gameKey(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   var GAME = gameKey();
-  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, wordsearch:1 };
+  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1 };
   if (!GAME || !KNOWN[GAME]) return;
   if (window.RTGArchive && RTGArchive.active && RTGArchive.active()) return;   // archive practice: no gate
 
   // How-to-play (2-3 short lines each).
   var RULES = {
-    table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
-    match:      ['Sort 20 names into 5 hidden groups of four.', 'Find them all before six mistakes.'],
-    career:     ['Name the athlete from their team-by-team path.', 'One miss ends your run.'],
-    oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
-    rankit:     ['Drag the five into the right order.', 'Two tries per set; clear it and get another.'],
-    almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
-    guess:      ['Guess the mystery player.', 'Eight tries, with a new clue each round.'],
+    table:      ['What number did they wear for that club?', 'Type it. Within two counts. One save, then the run ends.'],
+    match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
+    career:     ['A career, revealed one team at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
+    oddone:     ['Four names share a connection, one doesn’t.', 'Spot it for a point, then name the link for another.'],
+    rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
+    almamater:  ['Name the college each player attended.', 'Type it for 2 points, take four choices for 1.'],
+    guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
-    wordsearch: ['Find every hidden name in the grid.', 'Beat the clock for a clean run.']
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
     table:      { k:'rtg:table:v1',     f:'bestRun',    cap:'best run' },
     match:      { k:'grid_match_stats', f:'best',       cap:'best streak' },
-    career:     { k:'rtg:career:v1',    f:'bestRun',    cap:'best run' },
+    career:     { k:'rtg:career:v1',    f:'bestRun',    cap:'best score' },
     oddone:     { k:'rtg:oddone:v1',    f:'bestRun',    cap:'best run' },
     rankit:     { k:'rtg:rankit:v2',    f:'bestRun',    cap:'sets cleared' },
     almamater:  { k:'rtg:almamater:v1', f:'bestRun',    cap:'best run' },
     guess:      { k:'rtg:guess:v1',     f:'bestStreak', cap:'win streak' },
     crossword:  { k:'rtg:cw:v1',        f:'best',       cap:'best time', t:true },
-    wordsearch: { k:'rtg:ws:v1',        f:'best',       cap:'best time', t:true }
   };
 
   var T = window.RTGTokens;
@@ -114,7 +112,7 @@
   try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
   function build(){
     // One click to play: if the player can play right now (cardholder, or has
-    // plays left), don't gate at all — land them straight on a ready board.
+    // plays left), don't gate at all: land them straight on a ready board.
     // The token is still charged on first interaction, and each game shows the
     // paywall itself if the server later says they're out. The overlay now only
     // appears when they're already out of plays.
@@ -209,8 +207,8 @@
 
   // Games whose all-time record is a TIME (lower = better); everything else is a
   // RUN length (higher = better). These are exactly the games that submit with no
-  // run_len (grid_runs scores them by time): match, guess, crossword, wordsearch.
-  var TIMED = { match:1, guess:1, crossword:1, wordsearch:1 };
+  // run_len (grid_runs scores them by time): match, guess, crossword.
+  var TIMED = { match:1, guess:1, crossword:1 };
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function fmtDate(s){
     if(!s) return '';

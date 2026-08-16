@@ -1,31 +1,31 @@
 /* ============================================================
-   RunTheRopes — Ratings Corrections Overlay (v0.3)
+   RunTheRopes: Ratings Corrections Overlay (v0.3)
    ------------------------------------------------------------
    roster.js holds the raw v0.1 tier-estimated import. This file
    layers auditable accuracy corrections on top of it, applied at
    career creation. Keeping corrections separate (rather than
    rewriting the raw import) makes every retune reviewable and
-   reversible — the "canonical dataset + versioned corrections"
+   reversible: the "canonical dataset + versioned corrections"
    model from the design doc.
 
    Coverage (v0.3): a deep pass across ALL eight promotions.
-   - Ages are real (approx., 2026) — the raw import randomized them.
+   - Ages are real (approx., 2026). The raw import randomized them.
    - Headline stats (inRing/psych/ent/phys/overness) recalibrated
      toward kayfabe workrate / character / physical reputation.
    Rating philosophy (0-100):
-     inRing  — match quality/workrate: elite 88-96, great 82-88,
+     inRing   = match quality/workrate: elite 88-96, great 82-88,
                strong 74-82, solid 64-74, limited <64.
-     psych   — ring IQ/storytelling: masters 86-94, strong 76-86,
+     psych    = ring IQ/storytelling: masters 86-94, strong 76-86,
                average 64-76, low <64.
-     ent     — charisma/mic/character: top 90-96, great 82-90,
+     ent      = charisma/mic/character: top 90-96, great 82-90,
                good 72-82, average 60-72, weak <60.
-     phys    — power/athleticism/durability.
-     overness — promotion-relative popularity; light touch.
+     phys     = power/athleticism/durability.
+     overness = promotion-relative popularity; light touch.
    Only changed fields are listed. A handful of very obscure /
    lower-card names are left at v0.1 (tune them in the Editor).
    Known data quirks: a duplicate "Dominik Mysterio" and
    "Jordynne Grace" appear across promotions in the raw import, and
-   a few placeholder lower-card names — left as-is (rename/retune
+   a few placeholder lower-card names, left as-is (rename/retune
    in the Editor if you want to diverge from the source).
    ============================================================ */
 window.RTR_CORRECTIONS = {

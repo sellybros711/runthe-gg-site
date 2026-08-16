@@ -678,6 +678,103 @@ check(!/\.song:before\{/.test(game), 'the left accent strip is gone');
 check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
   'and the landing state takes the bar');
 
+/* THE REFRESH RUNS ITSELF, and these guard the parts that make that safe.
+   A refresh is not an append: crowd_rating is derived from the jamchart
+   standings, so one new show restates ~4,000 of 7,500 rows. The commit diff can
+   never be the control, so the gates are. */
+console.log('the automatic refresh');
+const wf = read('.github/workflows/setlist-data.yml');
+check(/cron:/.test(wf), 'the refresh is scheduled');
+/* --strict IS THE WHOLE SAFETY STORY. Without it the ingester warns about a
+   throttled year, a truncated year or a jamchart outage and still exits 0,
+   which for an unattended job means committing a broken file over a good one. */
+check(/ingest_band\.mjs --strict/.test(wf), 'and fetches in strict mode');
+check(/const STRICT = process\.argv\.includes\('--strict'\)/.test(read('scripts/setlist/ingest_band.mjs')),
+  'which the ingester implements');
+check(/if \(STRICT && degraded\.length\)/.test(read('scripts/setlist/ingest_band.mjs')),
+  'and exits non-zero on a degraded run');
+// All four gates run before anything is committed.
+for (const [step, why] of [
+  ['sync_counts.mjs', 'the copy follows the counts'],
+  ['data_drift.mjs', 'the drift is inside bounds'],
+  ['check_data.mjs', 'this net runs'],
+  ['verify-scoring.mjs', 'the scoring spec runs'],
+]) check(wf.includes(step), `before committing, ${why}`);
+check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
+  'and the commit comes after every gate');
+/* sync_counts exists because check_data asserts the home screen's archive size
+   against the file, so every SUCCESSFUL refresh would otherwise fail here. */
+check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
+  'the counts in the copy can be regenerated');
+
+/* WHICH VERSION YOU PICKED, which is the premise of the game and was invisible
+   everywhere after the draft screen. Across the 166 songs with five or more
+   plays the longest version is a median of 2.7x the shortest and 13.8x at the
+   90th percentile; Echo of a Rose runs 1:00 to 44:24 over 114 plays. */
+console.log('the version you picked');
+const loader = read('setlist/dataLoader.js');
+check(/p\.version_rank = rank;/.test(loader), 'the loader ranks every version');
+check(/if \(len !== prev\)/.test(loader), 'and ties share a rank');
+check(/function versionNote\(/.test(game), 'the standing has words');
+check(/function whichNight\(/.test(game), 'and the night has a line');
+// All three surfaces.
+check(/class="rr-night"/.test(game), 'the scorecard row names the night');
+check(/class="bdnight"/.test(game), 'the detail sheet leads with it');
+check(/const ver = versionNote\(p\);/.test(game), 'the share card notes lead with the standing');
+// The card lists performances, so it states their lengths.
+check(/const time = fmtClock\(lenOf\(p\)\);/.test(game),
+  'and the card prints every running time');
+/* ordinal() was written for the monotony run ("starts at 3, rarely passes 6")
+   and special-cased only 3, so the version standing shipped "2th longest". */
+check(!/n === 3 \? 'rd' : 'th'/.test(game), 'ordinal is general, not run-length only');
+
+/* THE PROFILE, FOR THE PEOPLE WHO TRACK THIS ALREADY. A show count is something
+   anybody can keep on their own; what only this can say is how much of the
+   catalogue those nights actually covered, because only this knows what was
+   played on each of them. Measured against the archive: 25 marked shows reach
+   129 of 367 songs, and 100 shows still leave 147 unheard, so the number moves
+   for years and is worth stating. */
+console.log('the fan profile');
+check(/function attendanceStats\(/.test(gameBare), 'the marked shows are turned into stats');
+for (const field of ['songsSeen', 'songsTotal', 'venues', 'years', 'mostSeen'])
+  check(new RegExp(`\\b${field}\\b`).test(gameBare), `stats carry ${field}`);
+/* THE HEADLINE IS SONGS, NOT SHOWS. If this ever regresses to a show count the
+   panel says nothing the player could not already count themselves. */
+check(/songs heard live/.test(gameBare), 'the headline counts songs, not shows');
+check(/class="fanbar"/.test(gameBare), 'and shows the catalogue as a bar');
+/* A show id outlives a data refresh that drops it, so the marked list can
+   outrun the archive. Said out loud rather than quietly subtracted. */
+check(/\bunmatched\b/.test(gameBare), 'shows that fell out of the archive are reported');
+
+/* THE PROFILE LOADS THE ARCHIVE ITSELF. Reached from the home screen there has
+   never been a draft, so S.data is empty and the panel used to degrade to a
+   bare count on exactly the path most players take. */
+check(/const FAN_DATA = new Map\(\)/.test(gameBare), 'the profile caches the archive it fetches');
+/* IN FLIGHT IS ITS OWN SET. Claiming the work by writing null into the cache
+   made fanData's own `has` check hand that null straight back, so the fetch it
+   was guarding never ran. The two must not be the same store. */
+check(/const FAN_FETCHING = new Set\(\)/.test(gameBare),
+  'in-flight bands are tracked apart from the cache');
+check(/FAN_FETCHING\.add\(/.test(gameBare) && !/FAN_DATA\.set\([^,]+, null\)/.test(gameBare),
+  'the in-flight claim never writes null into the cache');
+
+/* HOW THIS VERSION COMPARED, which needs the song's typical length and not just
+   its rank: "9th longest of 62" does not say whether it was a jam or a radio
+   cut. Median rather than mean because the long tail is the whole point. */
+check(/p\.version_median = med;/.test(read('setlist/dataLoader.js')),
+  'the loader carries each song\'s typical length');
+check(/class="bdmed"/.test(gameBare), 'and the detail sheet compares this take to it');
+
+/* THE BLOCK SITS IN A BARE .card, which carries no padding, so without its own
+   the band name and the play count are printed ON the border. */
+check(/\.fanband\{[^}]*padding:/.test(gameBare), 'the fan block has its own padding');
+/* "Seen most" measures 74px at this size and tracking, so a 74px column wraps it
+   onto a second line and knocks its whole row out of alignment. */
+const fanLabel = gameBare.match(/\.fanrow i\{[^}]*\}/s);
+check(!!fanLabel && /white-space:nowrap/.test(fanLabel[0]), 'the row labels do not wrap');
+check(!!fanLabel && Number((fanLabel[0].match(/flex:0 0 (\d+)px/) || [])[1]) >= 80,
+  'and the label column is wide enough for the longest of them');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments

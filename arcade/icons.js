@@ -30,11 +30,9 @@
     almamater: '<path d="M6 3.5v17"/><path d="M6 4.5 L20 8 L6 11.5 Z"/>',
     // Daily Crossword - scoreboard grid (one filled cell)
     crossword: '<rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16"/><rect x="4" y="4" width="8" height="8" fill="currentColor" stroke="none" opacity=".9"/>',
-    // Daily Word Search - magnifier over letters
-    wordsearch: '<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 L20 20"/><path d="M8 10h4M10 8v4"/>'
   };
   // route hub cards through the same keys the games use
-  var ALIAS = { word: 'wordsearch', cross: 'crossword', odd: 'oddone', alma: 'almamater' };
+  var ALIAS = { cross: 'crossword', odd: 'oddone', alma: 'almamater' };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 

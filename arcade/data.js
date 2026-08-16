@@ -199,4 +199,53 @@
     });
     S.matched = { icons: iconHit, stars: starHit };
   }
+
+  /* ------------------------------------------------------------------
+   * RTG_KNOWN — one answer to "would a fan recognise this name?"
+   *
+   * Every game had its own copy of this test and they all shared a flaw:
+   * the fallback accepted LONGEVITY. `f >= 4` plus eight notable seasons
+   * sounds like a credential until you notice f=4 is 5,048 of the 5,965
+   * entities — it is the default bucket, not a signal — and that lasting
+   * eight years in the NFL describes 2,625 players, most of them linemen
+   * nobody outside their own city could name. That is how Bill Conaty,
+   * Jerome Pathon and Brynden Trawick ended up as answers.
+   *
+   * Longevity is not fame. The fallback now asks for an actual accolade,
+   * which is the thing that makes a name stick.
+   * ---------------------------------------------------------------- */
+  /* An accolade is not one thing. MVP, All-Pro, a Hall of Fame plaque or a
+     ring make a name stick in any sport. A Pro Bowl does not, on its own:
+     the NFL sends about ninety players a year and most of them are linemen.
+     But it cannot simply be discounted either — for a lot of genuinely famous
+     quarterbacks it is the only tag this corpus carries, and dropping it took
+     Russell Wilson, Tony Romo, Trevor Lawrence and Brock Purdy with it.
+     Position is what separates the two cases. A Pro Bowl quarterback is a
+     household name; a Pro Bowl guard is not, however good he was. */
+  var STRONG = /\b(MVP|All-Pro|Hall of Fame|Super Bowl|Rookie of the Year|Defensive Player|Offensive Player|Cy Young|Gold Glove|Silver Slugger|Triple Crown|Scoring Champ|Batting Title|Sixth Man|Most Improved|Finals|Olympic)\b/i;
+  var ALLSTAR = /\b(All-Star)\b/i;
+  var PROBOWL = /\bPro Bowl\b/i;
+  var NFL_SKILL = /^(Quarterback|Running Back|Wide Receiver|Tight End)$/i;
+
+  root.RTG_KNOWN = function (e) {
+    if (!e) return false;
+    if (e.star) return true;                       // curated stars.js overlay
+    if ((e.f | 0) >= 5) return true;               // icon tier
+    if (e.hof) return true;
+    var aw = (e.aw || []).concat(e.ml || []).join('|');
+    if (STRONG.test(aw)) return true;
+    if (e.sport === 'NFL') return PROBOWL.test(aw) && NFL_SKILL.test(e.pos || '');
+    return ALLSTAR.test(aw) || PROBOWL.test(aw);
+  };
+
+  /* A little more room, for decoy piles and categories that would otherwise
+     starve: a real accolade OR a long modern-era career. Still far tighter
+     than the bare f>=4 every game used to use, since f=4 is 85% of the file. */
+  root.RTG_KNOWN_LOOSE = function (e) {
+    if (!e) return false;
+    if (root.RTG_KNOWN(e)) return true;
+    var d = e.decade;
+    if (!d || !d.length || d[d.length - 1] < 1990) return false;
+    return (e.ns | 0) >= 8;
+  };
 })(typeof self !== 'undefined' ? self : this);
