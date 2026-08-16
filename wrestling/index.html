@@ -348,6 +348,17 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* ---- locker room ---- */
+  .crewcard{background:var(--panel);border:1.5px solid var(--line);border-radius:13px;padding:11px 13px;}
+  .crewcard.open{border-color:rgba(224,179,65,.5);}
+  .cc-h{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
+  .cc-av{width:42px;flex:none;} .cc-av svg{width:100%;height:auto;image-rendering:pixelated;display:block;}
+  .cc-n{font-family:var(--display);font-size:16px;color:var(--cream);text-transform:uppercase;line-height:1.15;}
+  .cc-r{font-size:11px;color:var(--text-faint);margin-top:2px;}
+  .cc-r .badge{margin-right:4px;}
+  .cc-l{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);margin-bottom:4px;}
+  .cc-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+
   /* ---- promo segment: speech over the wrestlers, crowd meter above ---- */
   .phud{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;}
   .ph-n{font-family:var(--display);font-size:22px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;}
@@ -634,6 +645,7 @@
     <button class="ghost" onclick="go('locker')">Locker</button>
     <button class="ghost" onclick="go('shop')">Pro Shop</button>
     <button class="ghost" onclick="openCard()">My Card</button>
+    <button class="ghost" onclick="go('crew')">Locker Room</button>
     <button class="ghost" onclick="go('deal')">Business</button>
     <button class="ghost" onclick="go('world')">World</button>
     <button class="ghost" onclick="go('record')">Record</button>
@@ -762,6 +774,13 @@
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
   <h2>Pro Shop <span class="sub2">cosmetics only — skills are earned, never sold</span></h2>
   <div id="shopBody"></div>
+</div>
+
+<!-- ============ LOCKER ROOM ============ -->
+<div class="screen" id="s-crew">
+  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <h2>The Locker Room <span class="sub2">who has your back, and who wants it broken</span></h2>
+  <div id="crewBody"></div>
 </div>
 
 <!-- ============ PROMO SEGMENT ============ -->
@@ -1296,6 +1315,136 @@ function relLabel(r){
   if(r.matches>0) return {t:'Acquainted',c:'var(--text-dim)'};
   return {t:'Never Met',c:'var(--text-faint)'};
 }
+/* ============================================================
+   THE LOCKER ROOM
+   ------------------------------------------------------------
+   Alliances, tag teams, stables — and the fact that every one of
+   them is something you can walk out on. In this business the
+   most valuable thing a partner has is your back, and the most
+   valuable moment a wrestler has is the night he decides not to
+   give it to them.
+
+   The whole thing runs off two numbers you already build up in
+   matches and promos: respect (do they rate you) and loyalty
+   (would they stay). Everything else is presentation.
+   ============================================================ */
+function allies(){ return (G.car.allies = G.car.allies || []); }              // [{id,since,loyalty,tag,teamName}]
+function allyOf(id){ return allies().find(a=>a.id===id); }
+function isAlly(id){ return !!allyOf(id); }
+function myTeam(){ const a=allies().find(x=>x.tag); return a? {ally:a,name:a.teamName,mate:charById(a.id)} : null; }
+function myStable(){ return G.car.stable||null; }                            // {name,members:[id],founded}
+function stableMembers(){ const s=myStable(); return s? s.members.map(charById).filter(Boolean):[]; }
+// how likely they are to stay with you. Winning together and treating them
+// well keeps it up; losing, ignoring them and hogging the spotlight does not.
+function loyaltyOf(id){ const a=allyOf(id); return a? clamp(a.loyalty,0,100) : 0; }
+function loyaltyLabel(v){
+  if(v>=78) return {t:'Would take a bullet',c:'var(--green)'};
+  if(v>=55) return {t:'Solid',c:'#7dc4a4'};
+  if(v>=35) return {t:'Wavering',c:'var(--gold)'};
+  if(v>=18) return {t:'Looking for the exit',c:'#e08a6a'};
+  return {t:'About to turn on you',c:'#f0907f'};
+}
+// can you ask? real wrestling logic — they have to rate you first
+function canAlly(id){ const R=rel(id); return !isAlly(id) && R.respect>=55 && R.heat<40; }
+function canTag(id){ const a=allyOf(id); return a && !a.tag && !myTeam(); }
+function canStable(){ return !myStable() && allies().length>=2; }
+
+const TEAM_WORDS=[['The','Brotherhood'],['The','Syndicate'],['The','Outfit'],['The','Pact'],['The','Firm'],
+  ['Blood','Money'],['The','Reckoning'],['Iron','Union'],['The','Cartel'],['Hostile','Takeover']];
+function suggestTeamName(mate){
+  const w=TEAM_WORDS[Math.floor(rnd()*TEAM_WORDS.length)];
+  return rnd()<0.4 ? `${G.w.name.split(' ')[0]} & ${mate.name.split(' ')[0]}` : `${w[0]} ${w[1]}`;
+}
+function formAlliance(id){
+  const c=charById(id); if(!c||isAlly(id)) return;
+  allies().push({id,since:c_now(),loyalty:58+Math.round(rel(id).respect*0.25),tag:false,teamName:null});
+  rel(id).respect=clamp(rel(id).respect+8,0,100);
+  pushLog(`<b>${c.name}</b> has your back from here.`);
+  pushInboxItem({ico:'🤝',sev:'good',txt:`<b>Alliance.</b> ${c.name} is in your corner.`});
+  award(`Formed an alliance with ${c.name}.`,'🤝');
+}
+function c_now(){ return G.car.year*100+G.car.week; }
+function formTeam(id,name){
+  const a=allyOf(id), c=charById(id); if(!a||!c) return;
+  a.tag=true; a.teamName=name||suggestTeamName(c);
+  a.loyalty=clamp(a.loyalty+8,0,100);
+  G.car.teamRec=G.car.teamRec||{w:0,l:0};
+  pushLog(`<b>${a.teamName}</b> — you and ${c.name} are a tag team.`);
+  pushInboxItem({ico:'👯',sev:'good',txt:`<b>${a.teamName}.</b> You and ${c.name} are a team now.`});
+  award(`Formed ${a.teamName} with ${c.name}.`,'👯');
+}
+function foundStable(name){
+  if(!canStable()) return;
+  G.car.stable={name:name||('The '+TEAM_WORDS[Math.floor(rnd()*TEAM_WORDS.length)][1]),
+    members:allies().slice(0,4).map(a=>a.id), founded:c_now()};
+  allies().forEach(a=>a.loyalty=clamp(a.loyalty+6,0,100));
+  G.car.reaction=clamp(reactionOf()+5,0,100);
+  pushLog(`<b>${G.car.stable.name}</b> is formed. ${stableMembers().map(m=>m.name).join(', ')} stand with you.`);
+  pushInboxItem({ico:'🛡️',sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable — ${G.car.stable.members.length} strong.`});
+  award(`Founded ${G.car.stable.name}.`,'🛡️');
+}
+// the moment the whole thing exists for
+function betray(id){
+  const c=charById(id), a=allyOf(id); if(!c) return;
+  const was=myTeam()&&myTeam().ally===a ? a.teamName : (myStable()?myStable().name:'the alliance');
+  G.car.allies=allies().filter(x=>x.id!==id);
+  const s=myStable();
+  if(s){ s.members=s.members.filter(x=>x!==id); if(s.members.length<1) G.car.stable=null; }
+  const R=rel(id);
+  R.heat=100; R.respect=clamp(R.respect-45,0,100); R.betrayed=true;
+  // this is the loudest thing a wrestler can do
+  G.car.reaction=clamp(reactionOf()+16,0,100);
+  G.car.lean=clamp((G.car.lean||0)-34,-100,100);
+  G.car.voice=[]; pushVoice(-1); pushVoice(-1);      // you have declared what you are
+  G.car.mom=clamp(G.car.mom+16);
+  if(G.w.align==='face') completeTurn('heel',`You turned on ${c.name} in front of everybody.`);
+  startStory(id,'will not forget what you did.');
+  pushLog(`<b>You turned on ${c.name}.</b> ${was} is finished, and the building will be talking about it for a year.`);
+  pushInboxItem({ico:'🔪',sev:'story',txt:`<b>The betrayal.</b> You turned on ${c.name}. Nobody saw it coming.`});
+  award(`Betrayed ${c.name}.`,'🔪');
+  // the rest of the locker room notices
+  allies().forEach(x=>x.loyalty=clamp(x.loyalty-22,0,100));
+}
+// and it can happen to you
+function checkBetrayal(){
+  const list=allies(); if(!list.length) return null;
+  for(const a of list){
+    if(a.loyalty>=18) continue;
+    if(rnd()>0.30) continue;
+    const c=charById(a.id); if(!c) continue;
+    G.car.allies=list.filter(x=>x.id!==a.id);
+    const s=myStable(); if(s){ s.members=s.members.filter(x=>x!==a.id); if(!s.members.length) G.car.stable=null; }
+    const R=rel(a.id); R.heat=clamp(R.heat+55,0,100); R.respect=clamp(R.respect-25,0,100); R.betrayedMe=true;
+    G.car.reaction=clamp(reactionOf()+7,0,100);
+    G.car.mom=clamp(G.car.mom-14);
+    if(!story()) startStory(a.id,'was never really with you.');
+    pushInboxItem({ico:'🔪',sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
+    pushLog(`<b>${c.name} turned on you.</b> Every camera in the building caught it.`);
+    return c;
+  }
+  return null;
+}
+// treating people well is what keeps them
+function nudgeLoyalty(id,d){ const a=allyOf(id); if(a) a.loyalty=clamp(a.loyalty+d,0,100); }
+function weeklyLoyalty(){
+  const c=G.car;
+  allies().forEach(a=>{
+    const ch=charById(a.id);
+    // they drift away if you are losing, if nobody cares about you, or if you
+    // have become the kind of wrestler they did not sign up to stand next to
+    let d=-0.7;
+    if(c.streak>0) d+=1.0;
+    if(c.streak<-2) d-=1.8;
+    if(a.tag) d+=0.6;
+    if(c.title) d+=0.4;
+    if(reactionOf()>60) d+=0.5;
+    if(reactionOf()<28) d-=0.9;
+    if(ch && ch.align && G.w.align!=='tweener' && ch.align!==G.w.align) d-=1.1;
+    if(rel(a.id).heat>=45) d-=1.2;
+    a.loyalty=clamp(a.loyalty+d,0,100);
+  });
+}
+
 function charsForTier(tier){
   const order=['indie','regional','national','global'], i=order.indexOf(tier);
   let list=CHARS.filter(c=>charTier(c)===tier);
@@ -2120,6 +2269,7 @@ function go(s){
     if(s==='shop') renderShop();
     if(s==='world') renderWorld();
     if(s==='deal') renderDeal();
+    if(s==='crew') renderCrew();
     if(s==='record') renderRecord();
     if(s==='hof') renderHof();
     save();
@@ -2289,6 +2439,12 @@ function weekAdvice(){
   if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back on the mic.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'warn'};
   const st=story();
   if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
+  const _weak=allies().find(a=>a.loyalty<25);
+  if(_weak){ const wc=charById(_weak.id);
+    return {ico:'🔪',t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn — and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
+  if(canStable()) return {ico:'🛡️',t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+  const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
+  if(_cand) return {ico:'🤝',t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   if(c.deal&&c.deal.weeksLeft<=6) return {ico:'📄',t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   const t=workTier(), belt=beltName(t);
   if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
@@ -2475,7 +2631,11 @@ function makeOffers(){
     let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
-    const st=stips[Math.floor(rnd()*stips.length)];
+    let st=stips[Math.floor(rnd()*stips.length)];
+    // a tag team gets booked as a tag team
+    const _tm=myTeam();
+    if(_tm && rnd()<0.55) st=['Tag Team Match','tag',0.9];
+    else if(!_tm && st[1]==='tag') st=stips[0];
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
     // it — promoters book you tougher as you get better — so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
@@ -2500,6 +2660,7 @@ function makeOffers(){
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
     const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
+      tag: st[1]==='tag' && !!myTeam(),
       blurb: stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
             : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
@@ -3152,8 +3313,11 @@ async function runFight(){
     if(MS.beat%3===0) refDrift();
 
     // ---- a faction ally can turn the tide ----
-    if(!MS.ended && !MS.ally && MS.mom<-30 && myFaction() && rnd()<facBonus('interfere',0)){
-      MS.ally=true; const f=myFaction(), mate=facMembers(f).filter(m=>m.id!==MS.o.oppId)[0];
+    if(!MS.ended && !MS.ally && MS.mom<-30 && (myFaction()||myStable()) && rnd()<(myStable()?0.30:facBonus('interfere',0))){
+      MS.ally=true;
+      const _st=myStable();
+      const f=_st? {name:_st.name} : myFaction();
+      const mate=(_st? stableMembers() : facMembers(myFaction())).filter(m=>m.id!==MS.o.oppId)[0];
       if(mate){ shake(); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
         fLog(`<span class="hi">${mate.name} hits the ring — ${f.name} has your back!</span>`);
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
@@ -3709,6 +3873,11 @@ function applyMatch(o,res){
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef — there is real respect there now.`); }
   // unlocks
   const unlocked=checkUnlocks();
+  if(o.tag && myTeam()){
+    c.teamRec=c.teamRec||{w:0,l:0};
+    if(draw){} else if(res.win){ c.teamRec.w++; nudgeLoyalty(myTeam().ally.id,4); }
+    else { c.teamRec.l++; nudgeLoyalty(myTeam().ally.id,-3); }
+  }
   res.oppName=o.oppName; checkMilestones(res);
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
@@ -3802,6 +3971,8 @@ function advanceWeek(){
     c.injWeeks--;
     if(c.injWeeks<=0 && c.hurt) healUp();
   }
+  weeklyLoyalty();
+  const turned=checkBetrayal();
   if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   save();
@@ -4496,6 +4667,118 @@ function openPromoPicker(){
       <div class="po-d">${x.why}</div></div>`;
   });
   modal('Cut a promo',h+`</div>`,[{label:'Not this week',cls:'ghost',fn:closeModal}]);
+}
+
+/* The locker room, presented so a newcomer can read it in one pass:
+   who is with you, how solid they are, and the one thing you can do
+   about each of them. The numbers are there for anyone who wants them. */
+function renderCrew(){
+  const c=G.car, team=myTeam(), st=myStable();
+  let h='';
+  // ---- what you have ----
+  h+=`<div class="grid g3" style="margin-bottom:14px;">
+    ${[['Allies',allies().length],['Tag team',team?team.name:'—'],['Stable',st?st.name:'—'],
+       ['Team record',c.teamRec?`${c.teamRec.w}-${c.teamRec.l}`:'0-0']]
+      .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val" style="font-size:${String(v).length>9?'15px':'22px'}">${v}</div></div>`).join('')}</div>`;
+
+  // ---- the one thing to do ----
+  const cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id));
+  if(!allies().length&&!cand.length){
+    h+=`<div class="advice ok"><span class="ad-i">🤝</span><span class="ad-t">Nobody in this locker room rates you enough yet. Wrestle them, or get on the mic and show them respect — an alliance opens up at 55 respect.</span>
+      <button class="ad-b" onclick="openPromoPicker()">Cut a promo →</button></div>`;
+  } else if(cand.length){
+    h+=`<div class="advice act"><span class="ad-i">🤝</span><span class="ad-t"><b>${cand[0].name}</b> rates you enough to work together. That is how tag teams and stables start.</span>
+      <button class="ad-b" onclick="askAlly('${cand[0].id}')">Ask them →</button></div>`;
+  } else if(canStable()){
+    h+=`<div class="advice act"><span class="ad-i">🛡️</span><span class="ad-t">You have ${allies().length} people behind you. That is enough to put a name on it and form a stable.</span>
+      <button class="ad-b" onclick="askStable()">Found a stable →</button></div>`;
+  }
+
+  // ---- your people ----
+  h+=`<div class="flab">With you</div>`;
+  if(!allies().length) h+=`<p class="hint" style="margin-bottom:14px;">Nobody yet.</p>`;
+  else h+=`<div class="grid g2" style="gap:10px;margin-bottom:16px;">`+allies().map(a=>{
+    const ch=charById(a.id); if(!ch) return '';
+    const L=loyaltyLabel(a.loyalty), R=rel(a.id);
+    return `<div class="crewcard">
+      <div class="cc-h">
+        <div class="cc-av">${wrestlerSVG(ch.look,{frame:'head'})}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="cc-n">${ch.name}</div>
+          <div class="cc-r">${a.tag?`<span class="badge b-leg">${a.teamName}</span>`:''}${st&&st.members.includes(a.id)?`<span class="badge b-com">${st.name}</span>`:''}</div>
+        </div>
+      </div>
+      <div class="cc-l"><span>Loyalty</span><b style="color:${L.c}">${L.t}</b></div>
+      <div class="bar ${a.loyalty>=55?'g':''}"><i style="width:${a.loyalty}%;${a.loyalty<35?'background:#c0392b':''}"></i></div>
+      <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} · ${R.wins||0}-${R.losses||0} against them</div>
+      <div class="row" style="margin-top:9px;gap:6px;">
+        ${canTag(a.id)?`<button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="askTeam('${a.id}')">Form a tag team</button>`:''}
+        <button class="ghost" style="padding:5px 10px;font-size:11px;border-color:#8a3226;color:#f0907f;" onclick="askBetray('${a.id}')">Turn on them</button>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+
+  // ---- who wants you ----
+  const roster=CHARS.filter(x=>x.promo===myPromo().id&&!isAlly(x.id));
+  h+=`<div class="flab">The rest of the locker room</div>
+    <div class="grid g2" style="gap:10px;">`+roster.map(ch=>{
+    const R=rel(ch.id), lb=relLabel(R);
+    const ok=canAlly(ch.id);
+    return `<div class="crewcard ${ok?'open':''}">
+      <div class="cc-h">
+        <div class="cc-av">${wrestlerSVG(ch.look,{frame:'head'})}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="cc-n">${ch.name}</div>
+          <div class="cc-r" style="color:${lb.c}">${lb.t}${R.betrayed?' · you betrayed them':''}${R.betrayedMe?' · they betrayed you':''}</div>
+        </div>
+      </div>
+      <div class="cc-two">
+        <div><div class="hint">Respect ${Math.round(R.respect)}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
+        <div><div class="hint">Bad blood ${Math.round(R.heat)}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
+      </div>
+      <div class="row" style="margin-top:9px;gap:6px;">
+        ${ok?`<button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>`
+            :`<span class="hint">${R.heat>=40?'Too much bad blood':'Needs 55 respect'} — wrestle them or talk to them</span>`}
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+  $('crewBody').innerHTML=h;
+}
+function askAlly(id){
+  const c=charById(id);
+  modal('Work together?',`<p class="log">${c.name} rates you. An alliance means somebody in your corner — and later, a tag team or a stable.</p>
+    <p class="hint">They will stay as long as you keep winning and keep using them. Let them drift and they will walk, or worse.</p>`,
+    [{label:'Not yet',cls:'ghost',fn:closeModal},
+     {label:'Shake on it',fn:()=>{closeModal(); formAlliance(id); save(); renderCrew(); toast(c.name+' is with you');}}]);
+}
+function askTeam(id){
+  const c=charById(id), sug=suggestTeamName(c);
+  modal('Form a tag team',`<p class="log">You and ${c.name} against the world. Tag matches will start appearing on your card.</p>
+    <div class="flab" style="margin-top:10px;">Team name</div>
+    <input type="text" id="teamName" maxlength="28" value="${sug}">`,
+    [{label:'Cancel',cls:'ghost',fn:closeModal},
+     {label:'Make it official',fn:()=>{const n=($('teamName')&&$('teamName').value||'').trim()||sug;
+       closeModal(); formTeam(id,n); save(); renderCrew(); toast(n+' are a team');}}]);
+}
+function askStable(){
+  const sug='The '+TEAM_WORDS[Math.floor(rnd()*TEAM_WORDS.length)][1];
+  modal('Found a stable',`<p class="log">${allies().map(a=>(charById(a.id)||{}).name).filter(Boolean).join(', ')} stand with you. Give it a name and it becomes a force in this company.</p>
+    <p class="hint">A stable gets you numbers at ringside — and gives everybody in it something to betray.</p>
+    <div class="flab" style="margin-top:10px;">Stable name</div>
+    <input type="text" id="stableName" maxlength="28" value="${sug}">`,
+    [{label:'Cancel',cls:'ghost',fn:closeModal},
+     {label:'Found it',fn:()=>{const n=($('stableName')&&$('stableName').value||'').trim()||sug;
+       closeModal(); foundStable(n); save(); renderCrew(); toast(n+' is born');}}]);
+}
+function askBetray(id){
+  const c=charById(id), a=allyOf(id);
+  modal(`Turn on ${c.name}?`,
+    `<p class="log">This is the loudest thing a wrestler can do. ${a&&a.tag?`${a.teamName} ends tonight.`:''} The building will talk about it for a year — and ${c.name} will never let it go.</p>
+     <ul class="mlist bad"><li><span class="i">▼</span>Huge reaction, and it turns you heel if you are not one already</li>
+     <li><span class="i">▼</span>${c.name} becomes your bitterest rival, permanently</li>
+     <li><span class="i">▼</span>Everybody else in your corner trusts you a lot less</li></ul>`,
+    [{label:'Keep the faith',cls:'ghost',fn:closeModal},
+     {label:'Do it',fn:()=>{closeModal(); betray(id); save(); renderCrew(); toast('You turned on '+c.name);}}]);
 }
 
 function renderDeal(){
