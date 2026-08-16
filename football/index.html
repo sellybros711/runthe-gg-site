@@ -8328,24 +8328,44 @@ function buildTimeline(script,pace){
    THEM drives advance toward 0 (right→left). */
 
 function generateDrives(script,rng){
-  const GAME=3600,drives=[],ticks=[];
+  const GAME=3600,HALF=1800,drives=[],ticks=[];
   for(const e of script) ticks.push({sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points});
-  let pos='you',at=20+Math.floor(rng()*10),t=0;
+  /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
+     stayed with whoever had it when the second quarter ran out and play carried straight on
+     into the third, so a team could finish the half with a punt and open the second half
+     receiving its own kickoff. Modelled as a tick in the same list as the scores, which is
+     also what stops a drive being drawn straight through the interval. */
+  ticks.push({sec:HALF,half:true});
+  ticks.sort((a,b)=>a.sec-b.sec);
+
+  /* THE TOSS, AND THE DEFERRAL THAT FOLLOWS IT. Possession opened with 'you' in every game
+     ever played here, which is its own small lie -- you cannot lose a coin toss. Whoever
+     takes the opening kickoff, the other side takes the second-half one: that is the whole
+     point of deferring, and it is why the second half starts with a kickoff going the other
+     way. Drawn first so the two halves can never disagree about who received what. */
+  const youReceiveFirst=rng()<0.5;
+  const secondHalfReceiver=youReceiveFirst?'them':'you';
+  let pos=youReceiveFirst?'you':'them',t=0;
   const flip=()=>{pos=pos==='you'?'them':'you';};
   const youKO=()=>18+Math.floor(rng()*12);
   const themKO=()=>82-Math.floor(rng()*12);
+  let at=pos==='you'?youKO():themKO();
 
   for(let i=0;i<=ticks.length;i++){
     const ns=i<ticks.length?ticks[i]:null;
     const tE=ns?ns.sec:GAME,gap=tE-t;
     if(gap<5){
-      if(ns){
+      if(ns&&ns.half){
+        /* A score in the last seconds of the half still hands the ball over at the
+           interval, so the kickoff wins over whatever the score just set up. */
+        pos=secondHalfReceiver;at=pos==='you'?youKO():themKO();
+      }else if(ns){
         if(ns.kind==='SAFETY'){pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;}
         else{pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();}
       }
       t=tE;continue;
     }
-    const scorePoss=ns?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
+    const scorePoss=(ns&&!ns.half)?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
     let filler=Math.max(0,Math.round(gap/220)-1+(rng()<0.45?1:0));
     if(scorePoss){
       const af=filler%2===0?pos:(pos==='you'?'them':'you');
@@ -8394,6 +8414,11 @@ function generateDrives(script,rng){
         flip();
       }
     }
+    /* THE KICKOFF THAT OPENS THE SECOND HALF, applied after the first half's last drive has
+       been drawn and before anything in the third quarter is. Whoever did not receive the
+       opening kickoff receives this one, wherever the ball happened to be when the half
+       ended. */
+    if(ns&&ns.half){pos=secondHalfReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
   return drives;
