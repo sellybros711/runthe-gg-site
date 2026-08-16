@@ -32,7 +32,7 @@
     oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
     rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
     almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
-    guess:      ['Guess the mystery player.', 'Eight tries, with a new clue each round.'],
+    guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.

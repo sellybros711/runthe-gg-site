@@ -559,7 +559,7 @@
   <div class="app">
     <main class="gameCol">
       <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
-      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 16 sports names into four hidden groups of four.</span></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">-</span></span><span class="v explain">Tap four names that belong together. Find all four groups before four mistakes.</span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
@@ -589,7 +589,7 @@
           Shuffle
         </button>
       </div>
-      <div class="pool pool-hold" id="pool" role="list" aria-label="Names — tap to select four"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Names, tap to select four"></div>
 
       <div class="submitbar" id="submitbar">
         <button class="submit-ghost" id="btnDeselect" type="button" disabled>Deselect all</button>
@@ -637,7 +637,7 @@
       <div class="card mlb" id="lb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
-          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">-</span></div>
           <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
         </div>
         <div class="lb-sample" id="mlbSample">
@@ -734,10 +734,10 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=6"></script>
+<script src="/arcade/calendar.js?v=7"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=7"></script>
-<script src="/arcade/howto.js?v=9"></script>
+<script src="/arcade/pregame.js?v=8"></script>
+<script src="/arcade/howto.js?v=10"></script>
   <script>
   (function () {
     'use strict';
@@ -895,7 +895,7 @@
     var boardEl = document.getElementById('board'), poolEl = document.getElementById('pool');
 
     // A selectable name in the pool. No drag/drop (that trapped touch-scroll on
-    // mobile) — you tap to toggle it into your selection of four, then Submit.
+    // mobile): you tap to toggle it into your selection of four, then Submit.
     function tileEl(tid) {
       var t = byId[tid];
       var isSel = sel.indexOf(tid) >= 0;
@@ -1295,7 +1295,7 @@
       if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
       lastMissSet = ids.slice().sort().join(',');   // block re-submitting the identical four
-      feedback(close ? 'One away — 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
+      feedback(close ? 'One away. 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
       shakeSelected();
       popDot(mistakes - 1);
       renderDots();

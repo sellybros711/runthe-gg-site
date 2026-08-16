@@ -38,7 +38,7 @@
       desc:'Name the college each player came from. Four choices, one right.',
       icon:'<svg viewBox="0 0 56 56"><path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/><path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/><path d="M52 22 v11" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/><circle cx="52" cy="35" r="2.6" fill="#F2B632"/></svg>' },
     { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)',
-      desc:'One mystery athlete a day. Crack it in eight guesses.',
+      desc:'One mystery athlete from any era. Crack it in eight guesses.',
       icon:'<svg viewBox="0 0 56 56"><g><rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/></g></svg>' },
     { key:'crossword',  path:'crossword',  cls:'cross',  name:'Daily Crossword',  accent:'var(--news,#64748B)',
       desc:'A sports mini crossword. Beat the clock for a flawless solve.',

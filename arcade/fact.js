@@ -74,7 +74,7 @@
     { kind: 'teams', weight: 8, make: function (e) {
       var t = uniq(e.t);
       if (t.length !== 1 || (e.ns || 0) < 9) return null;
-      return num(e.ns) + ' seasons, one uniform: the ' + t[0] + '.';
+      return cap(num(e.ns)) + ' seasons, one uniform: the ' + t[0] + '.';
     } },
     { kind: 'decade', weight: 7, make: function (e) {
       var d = e.decade || [];
@@ -120,7 +120,7 @@
     } },
     { kind: 'seasons', weight: 3, make: function (e) {
       if ((e.ns || 0) < 16) return null;
-      return num(e.ns) + ' seasons in the ' + (LEAGUE[e.sport] || e.sport) + '.';
+      return cap(num(e.ns)) + ' seasons in the ' + (LEAGUE[e.sport] || e.sport) + '.';
     } },
     { kind: 'teams', weight: 3, make: function (e) {
       var t = uniq(e.t);

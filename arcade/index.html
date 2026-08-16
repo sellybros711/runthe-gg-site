@@ -298,7 +298,7 @@
   .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
   /* Says the quiet part out loud. "Rank It", "Odd One Out", "Daily Match" are
      the names of puzzles, not of sports puzzles, and nothing above the fold
-     used to establish which one this is — you found out by playing. */
+     used to establish which one this is, you found out by playing. */
   .zone-head .kicker{flex:0 0 100%; display:flex; align-items:center; gap:7px;
     font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
     color:var(--mut); margin-bottom:7px;}
@@ -431,7 +431,7 @@
 
   /* Crossword: the answer types itself in */
   /* Each answer holds for a quarter of the cycle. The set fades as a block and
-     the letters type in over it — the two opacities multiply, so one stagger
+     the letters type in over it, the two opacities multiply, so one stagger
      rule per letter gives the typing without a second timeline to keep in sync. */
   .tile.cross .cap svg .cwset{opacity:0; animation:capSet 13.2s linear infinite;}
   .tile.cross .cap svg .cwset text{opacity:0; animation:capType 13.2s linear infinite;}
@@ -518,7 +518,7 @@
   /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
      Eight of the ten accents are light, so white text on them sat near 2:1 and
      leaned entirely on a text-shadow. Blue and slate are the two dark ones and
-     genuinely want white — they keep the shadow, the rest do not need it. */
+     genuinely want white, they keep the shadow, the rest do not need it. */
   /* High Low is card-only: for non-members the PLAY pill greys out so the tile
      reads as locked. It stays tappable on purpose - it opens the game page,
      which is where the Arcade Card offer lives. */
@@ -551,7 +551,7 @@
   .tile.archive.cross .play.split .half{color:var(--coralT); border-color:var(--coral);}
   /* Mobile: one game per row, and the row says what the game is.
      This used to be a 2-up grid of squares, which left each card about 176px
-     wide — too narrow for a sentence, so the description was simply switched
+     wide, too narrow for a sentence, so the description was simply switched
      off. That is what made the hub unreadable: ten abstract icons, ten names
      like "Alma Mater" and "Odd One Out", and no way to learn what any of them
      were without opening all ten. A full-width row has room for the blurb that
@@ -582,7 +582,7 @@
       flex-wrap:wrap; gap:8px; margin-top:8px;}
     .tile .tmeta{margin:0; text-align:left; font-size:10px;}
     /* The whole row is the link, so the button no longer has to be the tap
-       target — it shrinks to a chip and stops being the loudest thing on the
+       target, it shrinks to a chip and stops being the loudest thing on the
        screen ten times over. */
     .tile .play{min-height:33px; padding:0 15px; font-size:12.5px; flex:0 0 auto;}
     /* Archive + Leaderboard: two pills need the full row width, so they take it
@@ -749,7 +749,7 @@
             </span>
             <span class="body">
               <span class="nm">Guess the Player</span>
-              <span class="desc">Name the mystery player in eight guesses. Each guess narrows it down.</span>
+              <span class="desc">Name the mystery player from any era in eight guesses. Tiles compare careers.</span>
               <span class="foot">
                 <span class="tmeta">About 2 min</span>
                 <span class="play" id="playG">PLAY <span class="arw">→</span></span>
@@ -1002,7 +1002,7 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=6"></script>
+<script src="/arcade/calendar.js?v=7"></script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -1019,7 +1019,7 @@
 
   // ---- Alma Mater card ----
   // This used to repaint the tile in whichever college team you had picked,
-  // which is how an arbitrary hex ended up as a button background — with no
+  // which is how an arbitrary hex ended up as a button background, with no
   // team set it fell back to a dark maroon and the PLAY label sat on it at
   // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
   // picking your school belongs to a different game.
@@ -1155,7 +1155,7 @@
       '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
       (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL '+N+' CLEARED \u2605</div>':'');
     /* Below the games, not above them. As the first thing on the page it was a
-       punch-card of nine names you had not learned yet — the most overwhelming
+       punch-card of nine names you had not learned yet, the most overwhelming
        possible opening. It is a record of what you've done, so it belongs after
        the doing; the dot row in the zone head already carries the count up top. */
     var host=document.getElementById('puzzles');

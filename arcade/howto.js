@@ -38,8 +38,8 @@
       'Real values reveal after every check, so each try tells you something.'
     ],
     guess: [
-      'One current NBA, NFL, or MLB player. The sport is given.',
-      'Type any player from that sport; tiles show how close you are on team, position, age and number.',
+      'One NBA, NFL or MLB player from any era. The sport is given.',
+      'Type any player from that sport; tiles compare careers, not this season: position, franchises, debut decade, college and honours.',
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a clue for a hint.'
     ],

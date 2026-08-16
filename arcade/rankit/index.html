@@ -121,7 +121,7 @@
   .rows:empty{min-height:476px;}   /* 5 rows of 88 + 4 gaps of 9 */
   /* a rank slot = a detached number block on the left + the draggable card */
   /* The card body scrolls the page (touch-action:pan-y); on touch, only the
-     number block (.rord) grabs to reorder — so you can scroll past the list on
+     number block (.rord) grabs to reorder, so you can scroll past the list on
      mobile. Desktop still drags anywhere on the card. Arrows work everywhere. */
   .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:pan-y; transition:transform .12s;}
   .ritem .rord{touch-action:none;}
@@ -360,9 +360,9 @@
   <div class="a-gametitle" style="--a-tc:var(--pink)"><span class="a-gametitle__plate">Rank <b>It</b></span></div>
 
   <div class="runbar">
-    <div class="big" id="runN">–</div>
+    <div class="big" id="runN">-</div>
     <div class="rl"><span class="k">Tries used today</span><span class="pips" id="triePips" aria-label="Attempts"></span></div>
-    <div class="best"><span class="n" id="bestRun">–</span><span class="c">Best</span></div>
+    <div class="best"><span class="n" id="bestRun">-</span><span class="c">Best</span></div>
   </div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
@@ -378,8 +378,8 @@
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your tries today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Fewest ever</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your tries today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Fewest ever</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -442,10 +442,10 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=6"></script>
+<script src="/arcade/calendar.js?v=7"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=7"></script>
-<script src="/arcade/howto.js?v=9"></script>
+<script src="/arcade/pregame.js?v=8"></script>
+<script src="/arcade/howto.js?v=10"></script>
 <script>
 (function(){
   'use strict';
@@ -699,7 +699,7 @@
       h+='<i class="'+cls+'"></i>';
     }
     el.innerHTML=h;
-    var rn=document.getElementById('runN'); if(rn && !done) rn.textContent = tries||'–';
+    var rn=document.getElementById('runN'); if(rn && !done) rn.textContent = tries||'-';
   }
 
   function startSet(){
@@ -819,7 +819,7 @@
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
     SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH);
     run=0; tries=0; solved=false; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false; ANSLOG=[]; ENDSLOTS=null;
-    document.getElementById('runN').textContent='–';
+    document.getElementById('runN').textContent='-';
     document.getElementById('checkBtn').disabled=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     startSet(); updateHint();
@@ -907,13 +907,13 @@
   function showEnd(s, locked){
     var t = locked ? (s.last?s.last.tries:0) : tries;
     var ok = locked ? !!(s.last && s.last.solved) : solved;
-    var shown = ok ? String(t) : '—';
+    var shown = ok ? String(t) : '-';
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('checkBtn').disabled=true;
     document.getElementById('runN').textContent=shown;
-    document.getElementById('bestRun').textContent=s.bestTries||'–';
+    document.getElementById('bestRun').textContent=s.bestTries||'-';
     document.getElementById('mRun').textContent=shown;
-    document.getElementById('mBest').textContent=s.bestTries||'—';
+    document.getElementById('mBest').textContent=s.bestTries||'-';
     document.getElementById('mStreak').textContent=s.streak||0;
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
@@ -932,8 +932,8 @@
     document.getElementById('mTitle').textContent = ok ? 'TRIES USED' : 'NOT SOLVED';
     document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.'
       : (ok ? ('Solved in '+t+' '+(t===1?'try':'tries')+'.') : 'Out of tries. Back tomorrow.');
-    document.getElementById('yourTm').textContent = ok ? (t+' '+(t===1?'try':'tries')) : '–';
-    document.getElementById('yourBest').textContent = s.bestTries ? (s.bestTries+' '+(s.bestTries===1?'try':'tries')) : '–';
+    document.getElementById('yourTm').textContent = ok ? (t+' '+(t===1?'try':'tries')) : '-';
+    document.getElementById('yourBest').textContent = s.bestTries ? (s.bestTries+' '+(s.bestTries===1?'try':'tries')) : '-';
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); // Confetti for solving it, scaled to how few tries it took.
       if(!locked && attemptFirst && ok){ confetti(t<=2?140:(t<=3?110:70), t<=2); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -1050,9 +1050,9 @@
   function bootCurrentMode(){
     var saved=load();
     document.getElementById('streakN').textContent=saved.streak||0;
-    document.getElementById('bestRun').textContent=saved.bestTries||'–';
+    document.getElementById('bestRun').textContent=saved.bestTries||'-';
     document.getElementById('yourBest').textContent=saved.bestTries
-      ? (saved.bestTries+' '+(saved.bestTries===1?'try':'tries')) : '–';
+      ? (saved.bestTries+' '+(saved.bestTries===1?'try':'tries')) : '-';
     var RES=loadResume();
     var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
     if(!ARCHIVE && RES && !canResume) clearResume();
