@@ -622,7 +622,7 @@ function scoreParts(total, rng) {
  * points. Feeding it the real shares directly gave 26.1/31.3/18.8/23.8 against a real
  * 21/29/22/28. Solved back through that error, these land the points within a point.
  */
-const QUARTER_SCORING_SHARE = [0.165, 0.262, 0.251, 0.322];
+const QUARTER_SCORING_SHARE = [0.21, 0.29, 0.22, 0.28];
 
 /* The cumulative version, and a map from a 0..1 position to an elapsed second. Piecewise
    linear: find the quarter the position lands in, then place it proportionally inside that
@@ -643,35 +643,91 @@ function scoreTimeAt(u, QSEC) {
 
 function scoringScript(you, them, rng) {
   const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
-  const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
-  const tParts = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  /* MIX EACH SIDE'S OWN SCORES BEFORE ANYTHING ELSE TOUCHES THEM. scoreParts walks a
+     composition and emits the kinds in groups -- every touchdown, then every field goal --
+     so 24 always came out as four sevens before its field goal, never a field goal between
+     two of them. Two teams whose scoring is each sorted by value, alternated against each
+     other, produce a running score that barely wobbles: it is the second reason the lead
+     stopped changing, and the less obvious one. The composition still decides WHAT was
+     scored; this only decides the order they arrive in, which the composition never had a
+     view on. */
+  const shuffle = (a) => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const s = a[i]; a[i] = a[j]; a[j] = s;
+    }
+    return a;
+  };
+  const yParts = shuffle(scoreParts(you, rng).map((k) => ({ ...k, team: 'you' })));
+  const tParts = shuffle(scoreParts(them, rng).map((k) => ({ ...k, team: 'them' })));
   if (!yParts.length && !tParts.length) return [];
 
   const margin = you - them;
   const winner = margin >= 0 ? 'you' : 'them';
   /* The score that settled a one-possession game is the winner's last one, held back to
      land in the closing minutes where a broadcast would have shown it. */
+  /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
+     of them meant the winner had almost always been behind just before it, so 70.6% of
+     games featured a comeback against something nearer 55% in real football. Plenty of
+     three-point wins are led wire to wire and the loser simply never answers. */
+  const CLINCHER_CHANCE = 0.6;
   let clincher = null;
-  if (margin !== 0 && Math.abs(margin) <= 8) {
+  if (margin !== 0 && Math.abs(margin) <= 8 && rng() < CLINCHER_CHANCE) {
     clincher = (winner === 'you' ? yParts : tParts).pop();
   }
 
   /* INTERLEAVE THE POSSESSIONS. A real game trades the ball back and forth, so the same
-     team almost never scores three times running: between two scores the other side has
-     had it. Greedy - give the next score to whoever has more left, but force a change after
-     two in a row while the other team still has one to give. This is what was missing
-     before, when three of one team's scores could land in a row with no answer between. */
+     team rarely scores three times running: between two scores the other side has had it.
+     But it was doing that job far too well. Handing the next score to whoever had more
+     left, and forcing a change after two, produced a strict alternation whenever the two
+     sides had the same number of scores -- and a strict alternation means the side that
+     scores first is very often ahead from the first whistle to the last. Measured over
+     18,000 games the lead changed 0.54 times a game, against something nearer 2.4 in real
+     football. Nobody came back, because the shape of the script never let them.
+     So: still weighted by who has scores left, and still leaning against a third in a row,
+     but drawn rather than decided. A run of two is common, three happens, and the trailing
+     side can string enough together to go ahead. */
+  const RUN_DAMP = 0.3;
+  /* AND THE TRAILING SIDE IS LIKELIER TO SCORE NEXT, which is the part a shuffle cannot
+     reach. Weighting only by scores remaining gives a uniformly random interleaving, and a
+     uniformly random interleaving tracks the final score proportionally: a team that ends
+     up winning 27-24 spends most of an evenly-dealt game in front. Real football does not
+     deal evenly, because the two sides react to the scoreboard -- the side behind opens up
+     and goes for it, the side ahead runs the clock and takes the field goal. That feedback
+     is most of why real leads change hands about 2.4 times a game and a proportional deal
+     manages 1.5. Scaled by how big the lead is and capped, so a two-score deficit pulls
+     harder than a field goal without ever becoming a rule. */
+  const TRAIL_PULL = 0.16, TRAIL_CAP = 0.3;
+  /* AND IT ONLY APPLIES WHERE IT IS TRUE. Feeding every game the same feedback bought lead
+     changes and paid for them in comebacks: 1.8 a game, but the eventual winner had trailed
+     in 69% of them against about 55% in real football. The two are the same dial as long as
+     every game oscillates equally, and real football does not -- a three-score win is
+     usually led wire to wire and a three-point win is a seesaw. Real scoreboards put nearly
+     all their lead changes in the close games and almost none in the rest, so the pull is
+     scaled by how close this one finishes. Blowouts settle early and stay settled. */
+  const closeness = Math.max(0, 1 - Math.abs(margin) / 20);
   const y = yParts.slice(), t = tParts.slice(), order = [];
+  let ordY = 0, ordT = 0;
   while (y.length || t.length) {
-    const a = order.length;
-    const twoSame = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
     let takeYou;
     if (!t.length) takeYou = true;
     else if (!y.length) takeYou = false;
-    else if (twoSame === 'you') takeYou = false;
-    else if (twoSame === 'them') takeYou = true;
-    else takeYou = y.length >= t.length;
-    order.push((takeYou ? y : t).shift());
+    else {
+      const a = order.length;
+      const run = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
+      let p = y.length / (y.length + t.length);
+      if (run === 'you') p *= RUN_DAMP;
+      else if (run === 'them') p = 1 - (1 - p) * RUN_DAMP;
+      const lead = ordY - ordT;
+      if (lead !== 0) {
+        const pull = Math.min(TRAIL_CAP, Math.abs(lead) * TRAIL_PULL) * closeness;
+        p = lead > 0 ? p * (1 - pull) : p + (1 - p) * pull;
+      }
+      takeYou = rng() < p;
+    }
+    const next = (takeYou ? y : t).shift();
+    if (next.team === 'you') ordY += next.points; else ordT += next.points;
+    order.push(next);
   }
   if (clincher) order.push(clincher);
 

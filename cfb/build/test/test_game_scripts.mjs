@@ -1,15 +1,14 @@
 /* The game script: not just what the final score was, but how it got there.
  *
- *   node football/build/test/test_game_scripts.mjs
+ *   node cfb/build/test/test_game_scripts.mjs
  *
  * test_scorelines.mjs checks the FINAL is a real one. This checks the story that reaches
- * it, which had no coverage at all and had drifted into a shape football never has.
- *
- * Measured over 18,000 scripts before any of it was fixed: the fourth quarter was the
- * QUIETEST at 17% of the points and the first was the loudest at 32%, so every game opened
- * with a bang and trailed off; and the lead changed hands 0.60 times a game against
- * something nearer 2.4 in real football, because the placer alternated the two sides so
- * evenly that whoever scored first was usually ahead from the first whistle to the last.
+ * it. This game was running the NFL one's pre-fix code, and had the same faults: measured
+ * over 20,000 scripts the fourth quarter was the QUIETEST at 19% of the points and the
+ * first was the loudest at 30%, so every game opened with a bang and trailed off, and the
+ * lead changed hands 0.85 times a game against something nearer 2.4 in real football. Two causes, both since fixed -- the placer handed each score an even slice
+ * of the hour, and the late-field-goal guard only ever moved kicks EARLIER, so points
+ * drained forwards on every pass and nothing ever moved back.
  *
  * Scores are drawn straight from the real-pair table rather than played out, because the
  * script generator takes a final and nothing else: feeding it real finals tests it over
@@ -22,8 +21,8 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../..');
-const E = require(path.join(ROOT, 'football/engine.js'));
-const cal = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data/display_calibration.json'), 'utf8'));
+const E = require(path.join(ROOT, 'cfb/engine.js'));
+const cal = JSON.parse(fs.readFileSync(path.join(ROOT, 'cfb/data/cfb_display_calibration.json'), 'utf8'));
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -48,7 +47,7 @@ let closeLeads = 0, closeGames = 0, blowLeads = 0, blowGames = 0;
 
 for (let i = 0; i < N; i++) {
   const [you, them] = drawFinal();
-  const sc = E.scoringScript(you, them, rng);
+  const sc = E.scoringScript(you, them, you > them, rng);
   scripts++;
   if (!sc.length) { if (you + them > 0) emptyButScored++; continue; }
 
@@ -121,9 +120,14 @@ console.log('\n=== and the lead has to change hands ===');
    it -- 7-0, 7-7, 7-14 is one lead change, and treating the tie as a reset misses it.
    Judged on the close games: real football puts nearly all its lead changes there and
    almost none in blowouts, so an average over everything mostly measures the blowout mix. */
+/* A HIGHER BAR THAN THE NFL FILE'S 1.8, because college scores more often -- about ten
+   scoring plays a game against the NFL's eight and a bit, with two-point tries and safeties
+   on top -- and more scores means more chances to cross. The old placer already cleared 1.8
+   here on volume alone while the lead still changed hands only 0.85 times over a whole
+   game, so 1.8 would have been a bar this code could not fail. */
 ok('close games change hands about as often as real ones',
-  closeLeads / Math.max(1, closeGames) >= 1.8,
-  (closeLeads / Math.max(1, closeGames)).toFixed(2) + ' in games inside one score, real ~2.4');
+  closeLeads / Math.max(1, closeGames) >= 2.4,
+  (closeLeads / Math.max(1, closeGames)).toFixed(2) + ' in games inside one score');
 ok('blowouts settle and stay settled',
   blowLeads / Math.max(1, blowGames) < 1.2,
   (blowLeads / Math.max(1, blowGames)).toFixed(2) + ' in games decided by 17+');

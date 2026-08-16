@@ -347,49 +347,129 @@ function scoreParts(total, rng) {
   return out;
 }
 
+/**
+ * WHEN POINTS ACTUALLY GET SCORED, as each quarter's share of a game's scoring. The second
+ * quarter and the fourth carry the game because both end in a drive played against the
+ * clock; the first is two teams feeling each other out and the third is the one after the
+ * interval.
+ *
+ * This game had it close to backwards, the same way the NFL one did: the placer handed
+ * every score an even slice of the hour, and the late-field-goal guard below only ever
+ * moved kicks EARLIER, so points drained forwards on every pass and the fourth quarter
+ * ended up the quietest.
+ *
+ * THE SHARES ARE THE NFL'S. College clock rules are not the same -- the clock stops on
+ * first downs, which lends the closing minutes of each half even more scoring -- but there
+ * is no college quarter-by-quarter reference in this repo to calibrate against, and the
+ * shape is the same in both codes. Borrowed knowingly rather than invented precisely.
+ */
+const QUARTER_SCORING_SHARE = [0.21, 0.29, 0.22, 0.28];
+const QUARTER_SCORING_CDF = (() => {
+  const c = [0];
+  for (const sh of QUARTER_SCORING_SHARE) c.push(c[c.length - 1] + sh);
+  return c;
+})();
+function scoreTimeAt(u, QSEC) {
+  const pr = Math.max(0, Math.min(0.999999, u));
+  let q = 0;
+  while (q < 3 && pr >= QUARTER_SCORING_CDF[q + 1]) q++;
+  const lo = QUARTER_SCORING_CDF[q], span = QUARTER_SCORING_CDF[q + 1] - lo;
+  return (q + (span > 0 ? (pr - lo) / span : 0)) * QSEC;
+}
+
 function scoringScript(you, them, won, rng) {
   const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
-  const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
-  const tParts = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  /* MIX EACH SIDE'S OWN SCORES. scoreParts walks a composition and emits the kinds in
+     groups -- every touchdown, then every field goal, then the odd safety -- so a team's
+     scoring arrived sorted by value and never mixed. Two teams each sorted by value,
+     alternated against each other, give a running score that barely wobbles, which is half
+     of why the lead stopped changing hands. */
+  const shuffle = (a) => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const sw = a[i]; a[i] = a[j]; a[j] = sw;
+    }
+    return a;
+  };
+  const yParts = shuffle(scoreParts(you, rng).map((k) => ({ ...k, team: 'you' })));
+  const tParts = shuffle(scoreParts(them, rng).map((k) => ({ ...k, team: 'them' })));
   if (!yParts.length && !tParts.length) return [];
 
   const margin = you - them;
   const winner = margin >= 0 ? 'you' : 'them';
+  /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
+     of them left the winner having been behind just beforehand in almost every close game,
+     which is far more comebacks than really happen. */
+  const CLINCHER_CHANCE = 0.6;
   let clincher = null;
-  if (margin !== 0 && Math.abs(margin) <= 8) {
+  if (margin !== 0 && Math.abs(margin) <= 8 && rng() < CLINCHER_CHANCE) {
     clincher = (winner === 'you' ? yParts : tParts).pop();
   }
 
+  /* INTERLEAVE THE POSSESSIONS -- but drawn, not decided. Handing the next score to
+     whoever had more left, and forcing a change after two, produced a strict alternation
+     whenever both sides had the same number of scores, and a strict alternation means the
+     side that scores first is usually ahead from the first whistle to the last.
+     THE TRAILING SIDE IS LIKELIER TO SCORE NEXT, which a shuffle alone cannot reach:
+     weighting only by scores remaining is a uniformly random interleaving, and that tracks
+     the final proportionally, so the eventual winner spends most of the game in front. Real
+     football reacts to the scoreboard -- the side behind opens up, the side ahead runs the
+     clock. SCALED BY HOW CLOSE THE GAME FINISHES, because that feedback is not equally
+     true everywhere: a three-score win is led wire to wire, a three-point win is a seesaw,
+     and real scoreboards put nearly all their lead changes in the close ones. */
+  const RUN_DAMP = 0.3, TRAIL_PULL = 0.16, TRAIL_CAP = 0.3;
+  const closeness = Math.max(0, 1 - Math.abs(margin) / 20);
   const y = yParts.slice(), t = tParts.slice(), order = [];
+  let ordY = 0, ordT = 0;
   while (y.length || t.length) {
-    const a = order.length;
-    const twoSame = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
     let takeYou;
     if (!t.length) takeYou = true;
     else if (!y.length) takeYou = false;
-    else if (twoSame === 'you') takeYou = false;
-    else if (twoSame === 'them') takeYou = true;
-    else takeYou = y.length >= t.length;
-    order.push((takeYou ? y : t).shift());
+    else {
+      const a = order.length;
+      const run = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
+      let pr = y.length / (y.length + t.length);
+      if (run === 'you') pr *= RUN_DAMP;
+      else if (run === 'them') pr = 1 - (1 - pr) * RUN_DAMP;
+      const lead = ordY - ordT;
+      if (lead !== 0) {
+        const pull = Math.min(TRAIL_CAP, Math.abs(lead) * TRAIL_PULL) * closeness;
+        pr = lead > 0 ? pr * (1 - pull) : pr + (1 - pr) * pull;
+      }
+      takeYou = rng() < pr;
+    }
+    const next = (takeYou ? y : t).shift();
+    if (next.team === 'you') ordY += next.points; else ordT += next.points;
+    order.push(next);
   }
   if (clincher) order.push(clincher);
 
   const n = order.length;
   const el = [];
+  /* The others fill the share the clincher does not, so the top of the fourth is reachable
+     in every game rather than only the close ones. */
+  const spread = clincher ? n - 1 : n;
+  const top = clincher ? 0.93 : 1;
   for (let i = 0; i < n; i++) {
     if (clincher && i === n - 1) { el.push(GAME - (25 + Math.floor(rng() * (5 * 60)))); continue; }
-    const lo = (i / n) * GAME, span = GAME / n;
-    el.push(lo + span * (0.15 + rng() * 0.7));
+    el.push(scoreTimeAt(top * (i + 0.15 + rng() * 0.7) / spread, QSEC));
   }
 
   const quarterOf = (t0) => Math.min(QUARTERS - 1, Math.floor(t0 / QSEC));
+  /* Three minutes left: past here a field goal that still leaves you behind has spent the
+     possession you needed. Before it, the same kick is ordinary game management -- a team
+     down six with ten minutes to go kicks and makes it a one-score game. Banning the whole
+     quarter cost realism twice, because every kick it caught was then moved earlier. */
+  const LATE_FG_CUTOFF = GAME - 180;
+  const LATE_FG_SHARE = QUARTER_SCORING_CDF[3] +
+    ((LATE_FG_CUTOFF - 3 * QSEC) / QSEC) * QUARTER_SCORING_SHARE[3];
   const badLateFG = () => {
     const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
     let ry = 0, rt = 0;
     for (const i of idx) {
       const e = order[i];
       const behind = e.team === 'you' ? rt - ry : ry - rt;
-      if (e.kind === 'FIELD GOAL' && quarterOf(el[i]) === QUARTERS - 1 && behind > 3) return i;
+      if (e.kind === 'FIELD GOAL' && el[i] >= LATE_FG_CUTOFF && behind > 3) return i;
       if (e.team === 'you') ry += e.points; else rt += e.points;
     }
     return -1;
@@ -397,12 +477,19 @@ function scoringScript(you, them, won, rng) {
   for (let guard = 0; guard < n + 4; guard++) {
     const bad = badLateFG();
     if (bad < 0) break;
-    el[bad] = Math.floor(rng() * (3 * QSEC));
+    el[bad] = Math.floor(scoreTimeAt(rng() * LATE_FG_SHARE, QSEC));
   }
 
   const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
   const secs = idx.map((i) => Math.max(1, Math.min(GAME - 1, Math.floor(el[i]))));
-  for (let i = 1; i < secs.length; i++) if (secs[i] <= secs[i - 1]) secs[i] = Math.min(GAME - 1, secs[i - 1] + 1);
+  for (let i = 0; i < secs.length; i++) {
+    if (i > 0 && secs[i] <= secs[i - 1]) secs[i] = secs[i - 1] + 1;
+    /* An exact quarter boundary displays as the second after it: the clock below is time
+       REMAINING clamped to QSEC-1, so an elapsed 45:00 and 45:01 both print "14:59 in the
+       fourth". The distinct-seconds rule above dedupes ELAPSED time and cannot see it. */
+    if (secs[i] % QSEC === 0) secs[i] += 1;
+    secs[i] = Math.min(GAME - 1, secs[i]);
+  }
 
   let ry = 0, rt = 0;
   return idx.map((i, k) => {
