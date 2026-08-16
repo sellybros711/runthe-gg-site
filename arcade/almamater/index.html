@@ -12,7 +12,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Alma Mater: a daily sports streak game. Name the college each NBA, NFL or MLB player came from. Four choices, one right. Easy to start, tougher as your run grows." />
+<meta name="description" content="Alma Mater: a daily sports streak game. Type the college each NBA, NFL or MLB player came from. Two points for typing it, one if you take the four choices." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -110,7 +110,27 @@
   /* Held so the JS fill doesn't throw the hint line and leaderboard down the
      page a second after first paint - a fixed-count list, so its height is
      knowable, and :empty drops the reservation the moment it's built. */
-  .choices:empty{min-height:196px;}
+  /* A class rule beats the UA [hidden] rule, so the unused four-school grid
+     would otherwise reserve its height under every typed round. */
+  .choices[hidden]{display:none;}
+  .answerbar{display:flex; gap:9px; margin:0 0 12px;}
+  .answerin{flex:1; min-width:0; font-family:var(--f); font-size:16px; font-weight:700; color:var(--ink);
+    background:var(--card); border:2px solid var(--line2); border-radius:12px; padding:13px 14px; min-height:52px;}
+  .answerin::placeholder{color:var(--mut); font-weight:600;}
+  .answerin:focus{border-color:var(--gold); outline:none;}
+  .answerin:disabled{opacity:.7;}
+  .answergo{flex:0 0 auto; appearance:none; border:0; border-radius:12px; background:var(--gold); color:#20160B;
+    font-family:var(--f); font-weight:900; font-size:15px; padding:0 20px; min-height:52px; cursor:pointer;}
+  .answergo:hover:not(:disabled){filter:brightness(1.06);}
+  .answergo:disabled{background:var(--card2); color:var(--mut); cursor:default;}
+  .bailbtn{display:block; width:100%; appearance:none; background:transparent; border:1px dashed var(--line2);
+    border-radius:12px; color:var(--mut); font-family:var(--f); font-weight:800; font-size:12.5px;
+    padding:11px; min-height:44px; cursor:pointer; margin-bottom:12px;}
+  .bailbtn:hover:not(:disabled){color:var(--ink); border-color:var(--gold);}
+  .bailbtn[hidden]{display:none;}
+  .factline{min-height:18px; text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
+    color:var(--mut); margin:12px 2px 0;}
+  .factline.on{color:var(--ink);}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:26px 18px; font-weight:900; font-size:18.5px; color:var(--ink); cursor:pointer; text-align:center; min-height:92px; display:flex; align-items:center; justify-content:center; line-height:1.2; transition:transform .08s, border-color .15s, background .15s;}
   .choice:hover{border-color:var(--gold);}
   .choice:active{transform:scale(.99);}
@@ -213,28 +233,34 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">Name the college. One wrong ends your run.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Type it for 2, take four choices for 1. One wrong ends your run.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="prompt">Where did they go to college?</div>
   <div class="pcard"><div class="plab" id="pMeta">&nbsp;</div><div class="pname" id="pName">&nbsp;</div></div>
+  <form class="answerbar" id="answerbar" autocomplete="off">
+    <input class="answerin" id="answerIn" type="text" placeholder="Name the school" aria-label="Name the school" />
+    <button class="answergo" id="answerGo" type="submit">Answer</button>
+  </form>
   <div class="subprompt" id="subprompt"></div>
-  <div class="choices" id="choices"></div>
-  <div class="hintline" id="hintline">Tap the school they played for.</div>
+  <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four schools (worth 1)</button>
+  <div class="choices" id="choices" hidden></div>
+  <div class="factline" id="factline" aria-live="polite"></div>
+  <div class="hintline" id="hintline">Type the school. Four choices are there if you need them.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your score today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Best score</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
-      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">17 in a row</span></div>
-      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">13 in a row</span></div>
-      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">10 in a row</span></div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">26 points</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">19 points</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">14 points</span></div>
     </div>
     <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
   </div>
@@ -247,7 +273,7 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
-    <h2>IN A ROW</h2>
+    <h2>POINTS</h2>
     <div class="milestone" id="mMilestone"></div>
     <div class="a-runline">
       <span><b id="mBest">0</b> best ever</span><i></i>
@@ -291,10 +317,12 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=8"></script>
+<script src="/arcade/calendar.js?v=9"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=9"></script>
-<script src="/arcade/howto.js?v=11"></script>
+<script src="/arcade/pregame.js?v=10"></script>
+<script src="/arcade/howto.js?v=12"></script>
+<script src="/arcade/type.js?v=1"></script>
+<script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -453,31 +481,115 @@
 
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices');
+  /* The pool rows are trimmed down to what the round needs, so the fact line
+     looks the full record back up by name and sport. */
+  var FACT_BY_NAME={};
+  ENT.forEach(function(e){ if(e && e.name) FACT_BY_NAME[e.name+'|'+e.sport]=e; });
 
+  /* TYPE IT, DO NOT TAP IT.
+     Four schools tested whether you recognised the right one out of four, which
+     is a 25% floor and a much smaller question than "where did this player go
+     to college". Typing has no floor. The four are still there behind a button
+     for a round you genuinely cannot place, and taking them halves the round to
+     one point. */
+  var bailed=false;
+  var answerIn=document.getElementById('answerIn'), answerGo=document.getElementById('answerGo'),
+      bailBtn=document.getElementById('bailBtn'), factEl=document.getElementById('factline');
+  function setAnswerEnabled(on){
+    answerIn.disabled=!on; answerGo.disabled=!on;
+    bailBtn.disabled=!on; bailBtn.hidden = !on || bailed;
+    document.getElementById('answerbar').hidden = bailed;
+  }
   function renderRound(){
     if(idx>=SEQ.length){ finish(); return; }
     document.getElementById('subprompt').textContent='';
+    if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
     var r=SEQ[idx];
+    bailed=false; answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
+    setAnswerEnabled(true);
     document.getElementById('pMeta').textContent=[r.sport, r.team].filter(Boolean).join(' · ')||r.sport;
     document.getElementById('pName').textContent=r.name;
-    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(c)+'</button>'; }).join('');
-    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(+bt.dataset.i, bt); }); });
   }
-  function pick(i, bt){
-    if(done||busy) return; busy=true; startIfNeeded();
-    var r=SEQ[idx], right=r.opts[i]===r.col;
-    var btns=choicesEl.querySelectorAll('.choice');
-    [].forEach.call(btns, function(b){ if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim'); });
-    if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); document.getElementById('subprompt').textContent='It was '+r.col+'.'; }
+  function bail(){
+    if(done||busy||bailed) return;
+    var r=SEQ[idx]; if(!r) return;
+    startIfNeeded();
+    bailed=true;
+    choicesEl.hidden=false;
+    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(c)+'</button>'; }).join('');
+    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
+    setAnswerEnabled(true);
+    document.getElementById('subprompt').textContent='One of these four. Worth 1.';
+    saveResume();
+  }
+  bailBtn.addEventListener('click', bail);
+
+  /* A school we have never heard of is a spelling problem, not a wrong answer.
+     Only naming a REAL, DIFFERENT school counts against you, so a typo cannot
+     end a run. */
+  var COL_KEYS=null;
+  function knownSchool(text){
+    if(!window.RTGType) return true;
+    if(!COL_KEYS){ COL_KEYS={}; ENT.forEach(function(e){ if(e && e.col) COL_KEYS[RTGType.schoolKey(e.col)]=1; }); }
+    var k=RTGType.schoolKey(text);
+    return !!(k && COL_KEYS[k]);
+  }
+  function submitTyped(){
+    if(done||busy||bailed) return;
+    var r=SEQ[idx]; if(!r) return;
+    var text=answerIn.value;
+    if(!text.trim()) return;
+    var right = window.RTGType ? RTGType.sameCollege(text, r.col) : (text.trim().toLowerCase()===String(r.col).toLowerCase());
+    if(!right && !knownSchool(text)){
+      document.getElementById('subprompt').textContent='No school by that name here. Check the spelling and try again.';
+      if(window.RTGSound && RTGSound.soft) RTGSound.soft();
+      return;
+    }
+    startIfNeeded();
+    resolve(right, null);
+  }
+  document.getElementById('answerbar').addEventListener('submit', function(e){ e.preventDefault(); submitTyped(); });
+  if(window.RTGType){
+    RTGType.mount(answerIn, {
+      source: RTGType.collegeSource(ENT),
+      accent: 'var(--gold)',
+      onPick: function(){ submitTyped(); },
+      onSubmit: function(){ submitTyped(); }
+    });
+  }
+
+  function showFact(r){
+    if(!factEl) return;
+    var e = FACT_BY_NAME[r.name+'|'+r.sport];
+    // The round just asked about the college, so a college fact would be a
+    // restatement rather than something new.
+    var line = (e && window.RTGFact) ? RTGFact.of(e, { seed: idx, skip:{ col:1 } }) : null;
+    factEl.textContent = line || '';
+    factEl.classList.toggle('on', !!line);
+  }
+  function resolve(right, bt){
+    if(done||busy) return; busy=true;
+    var r=SEQ[idx], got = bailed ? 1 : 2;
+    setAnswerEnabled(false);
+    if(bailed){
+      [].forEach.call(choicesEl.querySelectorAll('.choice'), function(b){
+        if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim');
+      });
+      if(bt && !right){ bt.classList.remove('dim'); bt.classList.add('wrong'); }
+    }
+    showFact(r);
     if(right){
-      ANSLOG.push('c');
-      run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
+      ANSLOG.push(String(got));
+      run+=got; document.getElementById('runN').textContent=run;
+      document.getElementById('subprompt').textContent='+'+got+(got===1?' point. ':' points. ')+r.col+'.';
+      if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 820);
+      setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
+      document.getElementById('subprompt').textContent='It was '+r.col+'.';
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1100);
+      setTimeout(function(){ finish(); }, 2000);
     }
   }
 
@@ -486,9 +598,9 @@
     started=true; startTs=performance.now(); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the school they played for. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the school. Four choices are there if you need them. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
-    h.textContent='Tap the school they played for.'+lbl; }
+    h.textContent='Type the school. Four choices are there if you need them.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
@@ -499,6 +611,7 @@
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';
     renderRound(); updateHint();
+    try{ answerIn.focus(); }catch(_){}
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token or replaying
@@ -512,6 +625,7 @@
     document.getElementById('runN').textContent=run;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     renderRound(); updateHint();
+    if(r.bailed) bail();          // come back to the four you had already paid for
     toast('Resumed your run');
   }
   function updateAgainBtn(){
@@ -528,7 +642,7 @@
   // RESUME_KEY is mode-keyed (set by configureMode).
   function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
   function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
-    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run })); }catch(e){} }
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, bailed:(bailed?1:0) })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
   // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
@@ -555,7 +669,7 @@
     PREVBEST=s.bestRun||0;
     NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
-    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'points' });
     save(s);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
@@ -586,7 +700,7 @@
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    document.getElementById('yourTm').textContent = run+' in a row';
+    document.getElementById('yourTm').textContent = run+' points';
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -612,7 +726,7 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var stat=(run>0?'🔥 ':'')+run+' in a row';
+    var stat=(run>0?'🔥 ':'')+run+' points';
     RTGShare.send({ key:'almamater', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
   });
 
@@ -634,7 +748,7 @@
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
   // Alma Mater owns its color. This used to repaint the whole game in whichever
   // college team you had picked, which meant an arbitrary hex ended up as a
-  // button background — with no team set it fell back to a dark maroon and the
+  // button background, with no team set it fell back to a dark maroon and the
   // shared paywall put near-black text on it at 1.61:1. Picking your school is
   // a different game's job; here the accent is the game's own moss.
   function applyFav(){
@@ -655,7 +769,7 @@
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
         else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
           samp.innerHTML=h;
         }
       }
@@ -730,6 +844,7 @@
       done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
       document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
       if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
+      setAnswerEnabled(false);
     } else { beginAttempt(); }
     // refresh the board panel + signed-in streak for this version
     if(window.RTG_BOARD){
@@ -782,7 +897,7 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('almamater'):'almamater'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('almamater'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'in a row' });
+    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('almamater'):'almamater'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('almamater'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'points' });
   }
   /* mode.js decides which version's board this is. It can still be parsing
      when the document is ready, and mounting without it would query the

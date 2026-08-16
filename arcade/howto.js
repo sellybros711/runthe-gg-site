@@ -45,9 +45,9 @@
     ],
     almamater: [
       'One NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Tap the right school from four choices.',
-      'Each correct pick extends your run; one wrong ends it.',
-      'Famous names start you off; the deeper you go, the tougher the picks.'
+      'Type the school. UNC, North Carolina and University of North Carolina all count.',
+      'Typing it is 2 points. Stuck? Take four choices for 1.',
+      'One wrong school ends the run. A spelling we do not recognise costs nothing.'
     ],
     crossword: [
       'A quick sports mini. Type into the grid.',

@@ -31,7 +31,7 @@
     career:     ['A career, revealed one team at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Spot it for a point, then name the link for another.'],
     rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
-    almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
+    almamater:  ['Name the college each player attended.', 'Type it for 2 points, take four choices for 1.'],
     guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
   };

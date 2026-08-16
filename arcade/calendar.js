@@ -35,7 +35,7 @@
       desc:'Put five athletes in order by a career stat, most at the top.',
       icon:'<svg viewBox="0 0 56 56"><rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/><rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/><rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/></svg>' },
     { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)',
-      desc:'Name the college each player came from. Four choices, one right.',
+      desc:'Name the college each player came from. Type it, or take four choices.',
       icon:'<svg viewBox="0 0 56 56"><path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/><path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/><path d="M52 22 v11" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/><circle cx="52" cy="35" r="2.6" fill="#F2B632"/></svg>' },
     { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)',
       desc:'One mystery athlete from any era. Crack it in eight guesses.',
