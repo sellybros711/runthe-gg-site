@@ -713,7 +713,7 @@
 <script src="/arcade/stars.js?v=1"></script>
   <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
-<script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/data.js?v=2"></script>
   <script src="generator.js?v=13"></script>
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
@@ -741,7 +741,17 @@
   (function () {
     'use strict';
     if (window.RTGHowto) RTGHowto.init('match');
+    /* 20 names a board, the widest surface in the arcade, and until now the
+       only gate was the category maths - which cares whether a group is
+       solvable, not whether you have heard of anyone in it. Over half the
+       names it showed were unrecognisable. The recognisable pool still yields
+       337 viable categories against the 5 a board needs, so nothing is lost
+       but the journeymen. */
     var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
+    if (window.RTG_KNOWN) {
+      var _known = ENT.filter(RTG_KNOWN);
+      if (_known.length > 400) ENT = _known;   // never strand the game if the overlay failed to load
+    }
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
     var CATS = 5;                       // categories per board

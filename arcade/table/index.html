@@ -305,7 +305,7 @@
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
-<script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/jerseys.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=2"></script>
@@ -360,12 +360,11 @@
   // otherwise fall back to modern-era + career credentials.
   function hiqStar(e){
     if(!TEAM_SPORTS[e.sport] || !e.j || !e.j.length) return false;
-    if(e.star) return true;
-    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
-    var f=e.f||0;
-    if(f<4) return false;
-    if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
-    return (e.ns||0)>=8;
+    // Both names in a round are on screen at once, so one unknown ruins the
+    // round: you are not comparing two players, you are guessing. The shared
+    // strict test replaces a fallback that accepted longevity - which is how
+    // Ryan Sims and Jerome Pathon got in.
+    return window.RTG_KNOWN ? RTG_KNOWN(e) : !!e.star;
   }
   // Each CARD is a jersey STINT: one (team, year-range, number) span, so the
   // number the round asks about is never ambiguous (a player who wore two

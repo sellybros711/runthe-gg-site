@@ -293,7 +293,7 @@
 <script src="/arcade/stars.js?v=1"></script>
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
-<script src="/arcade/data.js?v=1"></script>
+<script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=1"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
@@ -350,15 +350,23 @@
   // journeyman never sneaks in.
   function careerStar(e){
     if(!TEAM_SPORTS[e.sport] || !e.t || e.t.length<2) return false;
-    if(e.star) return true;
-    var d=e.decade; if(!d || !d.length || d[d.length-1]<1990) return false;
-    var f=e.f||0;
-    if(f<4) return false;
-    if(e.sport==='NFL') return e.hp===1 && (e.ns||0)>=8;
-    return (e.ns||0)>=8;
+    // The answer here IS a player's name, so the bar is the strict one: a
+    // curated star, an icon, a Hall of Famer or a real accolade. The old
+    // fallback took "high pick who lasted eight years", which is how Bill
+    // Conaty and Al Wallace became answers - 79% of the names this game put on
+    // screen were people a fan could not be expected to name.
+    return window.RTG_KNOWN ? RTG_KNOWN(e) : !!e.star;
   }
   var POOL = ENT.filter(careerStar);
-  var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0) >= (e.sport==='NFL'?4:3)){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
+  // The three DECOYS are on screen next to the answer, so they are as much of
+  // the puzzle as the answer is. This list was gated on f>=4 (NFL) / f>=3 —
+  // effectively no gate at all — so fixing only the answer pool above left the
+  // game still showing three unknown names per round. Same bar for all four.
+  var bySport={}; ENT.forEach(function(e){
+    if(TEAM_SPORTS[e.sport] && (window.RTG_KNOWN ? RTG_KNOWN(e) : (e.f||0)>=5)){
+      (bySport[e.sport]=bySport[e.sport]||[]).push(e);
+    }
+  });
 
   function poolForMode(){ return SPORTFILTER ? POOL.filter(function(e){ return e.sport===SPORTFILTER; }) : POOL; }
 
