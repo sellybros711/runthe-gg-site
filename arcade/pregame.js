@@ -28,7 +28,7 @@
   var RULES = {
     table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
     match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
-    career:     ['Name the athlete from their team-by-team path.', 'One miss ends your run.'],
+    career:     ['A career, revealed one team at a time.', 'Name them off the first club for 3 points. One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
     rankit:     ['Drag the five into the right order.', 'Two tries per set; clear it and get another.'],
     almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
@@ -39,7 +39,7 @@
   var BEST = {
     table:      { k:'rtg:table:v1',     f:'bestRun',    cap:'best run' },
     match:      { k:'grid_match_stats', f:'best',       cap:'best streak' },
-    career:     { k:'rtg:career:v1',    f:'bestRun',    cap:'best run' },
+    career:     { k:'rtg:career:v1',    f:'bestRun',    cap:'best score' },
     oddone:     { k:'rtg:oddone:v1',    f:'bestRun',    cap:'best run' },
     rankit:     { k:'rtg:rankit:v2',    f:'bestRun',    cap:'sets cleared' },
     almamater:  { k:'rtg:almamater:v1', f:'bestRun',    cap:'best run' },

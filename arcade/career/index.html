@@ -12,7 +12,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Career Path: a daily sports streak game. Guess the athlete from their team-by-team journey and see how many you can name in a row." />
+<meta name="description" content="Career Path: a daily sports streak game. A career is revealed one team at a time — name the athlete off the first team for 3 points, or take another clue for fewer." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -117,7 +117,27 @@
   .stop .steptag.last{color:var(--ink); border-color:color-mix(in srgb, var(--green) 60%, transparent); background:color-mix(in srgb, var(--green) 14%, var(--card2));}
   .stopgap{height:16px; width:26px; display:flex; justify-content:center;}
   .stopgap:before{content:""; width:2px; background:var(--line2);}
-  .pathera{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); text-align:center;
+  /* A stop that hasn't been earned yet. It still takes up its row, so the card
+     is the same height on stop 1 as on stop 6 - the path grows into space that
+     was always there instead of shoving the answers down the page every time
+     you ask for another clue. Showing HOW MANY are left is deliberate: "three
+     more teams to come" is itself a clue, and a career of unknown length would
+     make the 3-point call a coin flip. */
+  /* out-specifies the :not([style]):first/last-child dot tints above */
+  .path .stop.veiled .dot{background:var(--card); border-style:dashed; border-color:var(--line2); color:var(--line2); text-shadow:none;}
+  .path .stop.veiled .tm{color:var(--line2); letter-spacing:.18em; font-size:14px;}
+  .revealbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line2);}
+  .revealbtn{flex:0 0 auto; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
+    font-family:var(--f); font-weight:900; font-size:12.5px; border-radius:999px; padding:10px 16px; min-height:40px; cursor:pointer;
+    transition:border-color .15s, background .15s, opacity .15s;}
+  .revealbtn:hover:not(:disabled){border-color:var(--green);}
+  .revealbtn:disabled{opacity:.4; cursor:default;}
+  .worth{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut);}
+  .worth b{font-family:var(--hero); font-weight:400; font-size:19px; letter-spacing:.02em; color:var(--greenT); vertical-align:-2px; margin:0 2px;}
+  .worth.spent b{color:var(--mut);}
+  /* the era line sits between the path and the reveal bar, which now owns the
+     divider - two stacked dashed rules read as a mistake */
+  .pathera{margin-top:14px; text-align:center;
     font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--mut);}
   .pathera b{color:var(--greenT); font-weight:900; letter-spacing:.09em;}
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
@@ -236,30 +256,37 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One wrong ends your run. How far can you go?</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off one team for 3. One wrong ends your run.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="prompt">Whose career path is this?</div>
-  <div class="pathcard"><div class="plab">Career teams · in order</div><div class="path" id="path"></div></div>
+  <div class="pathcard">
+    <div class="plab">Career teams · in order</div>
+    <div class="path" id="path"></div>
+    <div class="revealbar" id="revealbar">
+      <button class="revealbtn" type="button" id="revealBtn">Show next team</button>
+      <span class="worth" id="worth">Worth <b>3</b></span>
+    </div>
+  </div>
   <div class="subprompt" id="subprompt"></div>
   <div class="choices" id="choices"></div>
-  <div class="hintline" id="hintline">Tap the athlete who took this path.</div>
+  <div class="hintline" id="hintline">Name them now, or show another team for fewer points.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your score today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Best score</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
-      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">16 in a row</span></div>
-      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">12 in a row</span></div>
-      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">9 in a row</span></div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">41 points</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">28 points</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">19 points</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
+    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your score.</div>
   </div>
 
   <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
@@ -270,7 +297,7 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
-    <h2>IN A ROW</h2>
+    <h2>POINTS</h2>
     <div class="milestone" id="mMilestone"></div>
     <div class="a-runline">
       <span><b id="mBest">0</b> best ever</span><i></i>
@@ -313,10 +340,10 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=3"></script>
+<script src="/arcade/calendar.js?v=4"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=4"></script>
-<script src="/arcade/howto.js?v=6"></script>
+<script src="/arcade/pregame.js?v=5"></script>
+<script src="/arcade/howto.js?v=7"></script>
 <script>
 (function(){
   'use strict';
@@ -467,7 +494,8 @@
     for(var i=0;i<add.length;i++) SEQ.push(add[i]);
   }
 
-  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
+  // run is POINTS now, not careers; solved counts the careers behind them
+  var idx=0, run=0, solved=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices'), pathEl=document.getElementById('path');
 
   /* Readable ink for a digit sitting on an arbitrary team colour.
@@ -485,22 +513,33 @@
       return ratio(L,INK) >= ratio(L,WHITE) ? '#0A1728' : '#fff';
     }catch(e){ return '#fff'; }
   }
-  function renderRound(){
-    ensureRounds(idx+6);
-    if(idx>=SEQ.length){ finish(); return; }
-    document.getElementById('subprompt').textContent='';
-    var r=SEQ[idx], target=byId[r.target];
-    var teams=target.t;
+  /* THE ROUND: a career arrives one team at a time.
+     Seeing the whole path and picking from four names was a lookup with the
+     answer already half-given - there was no moment in it. Now the first team
+     is all you get, and every extra team you ask for costs you: name them off
+     one club for 3, off two or three for 2, off four or more for 1. The whole
+     game is that decision, taken twenty times, and it is the same tension
+     Framed and Wordle run on. A wrong answer still ends the day, so calling it
+     early is a gamble, not a free optimisation. */
+  var shown=1;
+  function worthOf(n){ return n<=1 ? 3 : (n<=3 ? 2 : 1); }
+  function stopsOf(t){ return (t.t||[]).length; }
+  function drawPath(target, all){
+    var teams=target.t, lim = all ? teams.length : Math.min(shown, teams.length);
     pathEl.innerHTML = teams.map(function(tm,i){
-      var tag = i===0 ? '<span class="steptag">First team</span>' : (i===teams.length-1 ? '<span class="steptag last">Most recent</span>' : '');
-      var tc=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
+      var veiled = i>=lim;
+      var tag = i===0 ? '<span class="steptag">First team</span>'
+              : (i===teams.length-1 && !veiled ? '<span class="steptag last">Most recent</span>' : '');
+      var tc=!veiled && window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
       // The step number sits ON the team colour, and team colours run the whole
       // range from near-black to near-white — a fixed white digit sat at 3.4:1
       // on the light ones. Pick the ink from the fill's luminance, the same way
       // the hub picks its PLAY labels.
       var ink = tc ? onColorOf(tc.p) : null;
       var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+'"'):'';
-      return (i>0?'<div class="stopgap"></div>':'') + '<div class="stop"'+st+'><span class="dot">'+(i+1)+'</span><span class="tm">'+esc(tm)+'</span>'+tag+'</div>';
+      var body = veiled ? '<span class="tm">? ? ?</span>' : '<span class="tm">'+esc(tm)+'</span>'+tag;
+      return (i>0?'<div class="stopgap"></div>':'')
+           + '<div class="stop'+(veiled?' veiled':'')+'"'+st+'><span class="dot">'+(i+1)+'</span>'+body+'</div>';
     }).join('') + eraLine(target);
     function eraLine(t){
       // era clue: a short path (two recorded stints) can be almost anyone, so
@@ -510,27 +549,58 @@
       var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s–'+d[d.length-1]+'s');
       return '<div class="pathera">Played in the <b>'+era+'</b></div>';
     }
+  }
+  function drawWorth(target, spent){
+    var w=document.getElementById('worth'), b=document.getElementById('revealBtn');
+    var last = shown>=stopsOf(target);
+    if(w){ w.innerHTML='Worth <b>'+worthOf(shown)+'</b>'+(worthOf(shown)===1?' point':' points'); w.classList.toggle('spent', !!spent); }
+    if(b){ b.disabled = !!spent || last; b.textContent = last ? 'That is the whole career' : 'Show next team'; }
+  }
+  function renderRound(){
+    ensureRounds(idx+6);
+    if(idx>=SEQ.length){ finish(); return; }
+    document.getElementById('subprompt').textContent='';
+    var r=SEQ[idx], target=byId[r.target];
+    shown=1;
+    drawPath(target, false); drawWorth(target, false);
     choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
   }
+  function revealNext(){
+    if(done||busy) return;
+    var r=SEQ[idx]; if(!r) return;
+    var target=byId[r.target];
+    if(shown>=stopsOf(target)) return;
+    startIfNeeded();                       // asking for a clue starts the clock
+    shown++;
+    drawPath(target, false); drawWorth(target, false);
+    if(window.RTGSound) RTGSound.place();      // a clue arriving, not an answer landing
+    saveResume();
+  }
+  document.getElementById('revealBtn').addEventListener('click', revealNext);
   function pick(id, bt){
     if(done||busy) return; busy=true; startIfNeeded();
-    var r=SEQ[idx], right=id===r.target;
+    var r=SEQ[idx], target=byId[r.target], right=id===r.target, got=worthOf(shown);
     var btns=choicesEl.querySelectorAll('.choice');
+    // whatever happens, the career finishes telling itself - you always get to
+    // see the rest of the path you were betting on
+    drawPath(target, true); drawWorth(target, true);
     // reveal the full answer: the correct path goes green, every other option
     // goes red, and the one you tapped is tagged so you can see how you did.
     [].forEach.call(btns, function(b){ b.classList.add(b.dataset.id===r.target ? 'correct' : 'wrong'); });
     bt.classList.add('you');
     if(!right){ document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
     if(right){
-      ANSLOG.push('c');
-      run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
+      ANSLOG.push(String(got));
+      run+=got; solved++; document.getElementById('runN').textContent=run;
+      document.getElementById('subprompt').textContent = got===3 ? 'Off one team. +3.' : ('+'+got+(got===1?' point':' points'));
+      if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 1050);
+      setTimeout(function(){ busy=false; renderRound(); }, 1250);
     } else {
       ANSLOG.push('x');
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1300);
+      setTimeout(function(){ finish(); }, 1600);
     }
   }
 
@@ -540,14 +610,14 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the athlete who took this path. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Name them now, or show another team for fewer points. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
-    h.textContent='Tap the athlete who took this path.'+lbl; }
+    h.textContent='Name them now, or show another team for fewer points.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(BATCH); } else { seedDaily(); SEQ=buildRounds(BATCH); servedDaily=true; }
-    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
+    idx=0; run=0; solved=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     document.getElementById('runN').textContent='0';
     document.getElementById('subprompt').textContent='';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -563,11 +633,15 @@
     ensureRounds((r.idx|0)+6);
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
     run=Math.max(0, r.run|0);
+    solved=Math.max(0, r.solved|0);
     done=false; busy=false; charged=true; attemptFirst=true; started=true;
     startTs=performance.now()-Math.max(0, r.elapsed|0)*1000;
     document.getElementById('runN').textContent=run;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     renderRound(); updateHint();
+    // come back to the clues you had already paid for, not to a fresh first team
+    var rr=SEQ[idx];
+    if(rr && (r.shown|0)>1){ shown=Math.min(r.shown|0, stopsOf(byId[rr.target])); drawPath(byId[rr.target], false); drawWorth(byId[rr.target], false); }
     toast('Resumed your run');
   }
   function updateAgainBtn(){
@@ -585,7 +659,7 @@
   // RESUME_KEY is mode-keyed (set by configureMode).
   function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
   function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
-    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run })); }catch(e){} }
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, solved:solved, shown:shown })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
   // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
@@ -612,7 +686,7 @@
     PREVBEST=s.bestRun||0;
     NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
-    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'points' });
     save(s);
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
@@ -631,9 +705,9 @@
     document.getElementById('mStreak').textContent=s.streak||0;
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
-    if(locked) sub='Your run today';
+    if(locked) sub='Your score today';
     else if(!attemptFirst) sub='Practice run, not ranked';
-    else if(run>=ROUNDS) sub='You named them all!';
+    else if(solved>=ROUNDS) sub='You named them all!';
     else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
@@ -643,7 +717,7 @@
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg> '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    document.getElementById('yourTm').textContent = run+' in a row';
+    document.getElementById('yourTm').textContent = run+' points';
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -658,7 +732,10 @@
     // square that ended it, and (Number Game) an amber square where the save absorbed
     // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
     function shareGrid(){
-      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      // Now the squares carry the bet as well as the result: green is a career
+      // named off one team, yellow off two or three, orange off the full path.
+      // A row of green says something a row of identical ticks never could.
+      var MAP={'3':'\ud83d\udfe9', '2':'\ud83d\udfe8', '1':'\ud83d\udfe7', c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
       if(!ANSLOG.length) return '\u2b1c';
       var out='', n=0;
       for(var i=0;i<ANSLOG.length && i<60;i++){
@@ -669,7 +746,7 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var stat=(run>0?'🔥 ':'')+run+' in a row';
+    var stat=(run>0?'🔥 ':'')+run+' points';
     RTGShare.send({ key:'career', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
   });
 
@@ -698,14 +775,14 @@
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a score today.</div>'; }
         else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: most points today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
     });
   }
 
@@ -761,6 +838,7 @@
       done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
       document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
       if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
+      var rb=document.getElementById('revealBtn'); if(rb) rb.disabled=true;
     } else { beginAttempt(); }
     if(window.RTG_BOARD){
       renderRealBoard();
@@ -808,7 +886,7 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('career'):'career'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('career'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'in a row' });
+    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('career'):'career'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('career'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'points' });
   }
   /* mode.js decides which version's board this is. It can still be parsing
      when the document is ready, and mounting without it would query the

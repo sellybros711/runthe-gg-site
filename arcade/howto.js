@@ -20,10 +20,10 @@
       'The run gets tougher: later pairs wear closer numbers.'
     ],
     career: [
-      "We show a career's team stops, in order, first to last.",
-      'Four names. Tap the athlete who took that exact path.',
-      'Each correct answer extends your run; one wrong ends it.',
-      'Decoys get sneakier the deeper you go.'
+      "We show a career one team at a time, first club first.",
+      'Four names. Tap the athlete who took that path.',
+      'Name them off one team for 3 points, two or three for 2, the full path for 1.',
+      'One wrong answer ends your run, so calling it early is a gamble.'
     ],
     oddone: [
       'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
