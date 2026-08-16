@@ -1007,7 +1007,40 @@ function turnProgress(){
   if(Math.sign(v)!==want) return {p:0,to:null};
   return {p:clamp(Math.abs(v)/0.5*Math.min(1,voiceLog().length/3),0,1)/1, to: want>0?'face':'heel'};
 }
-function crowdShift(hostile,intensity,charisma){
+/* ---- WHO YOU ARE TALKING ABOUT ----
+   The same words are worth wildly different amounts depending on the room's
+   opinion of the person you aim them at. Threatening a beloved babyface is
+   how a heel gets truly hated. Threatening somebody the crowd already wants
+   dead does nothing for you — you are doing their work for them. */
+function charLean(c){
+  if(!c) return 0;
+  const base = c.align==='heel' ? -58 : c.align==='face' ? 58 : 0;
+  const over = clamp((c.over||50),0,100)/100;
+  return clamp(base*(0.45+over*0.75), -100, 100);
+}
+function targetMod(hostile,target){
+  if(!target||!hostile) return {m:1,lean:0,why:''};
+  const tl=charLean(target)/100;                 // -1 hated .. +1 beloved
+  if(hostile<0){
+    const m=clamp(1+tl*0.5,0.55,1.55);
+    return {m, lean:0, why: tl>0.3?'going after somebody they love':tl<-0.3?'kicking a man they already hate':''};
+  }
+  // standing beside somebody rubs off on you, for better or worse
+  const m=clamp(1+tl*0.32,0.68,1.35);
+  return {m, lean:tl*3.2, why: tl>0.3?'siding with a favourite':tl<-0.3?'cosying up to a villain':''};
+}
+/* ---- REPETITION ----
+   Any trick stops working once they have seen it. This is what stops cheap
+   heat, pandering and turn-teases from being infinite free reaction. */
+function recentKinds(){ return (G.car.kinds = G.car.kinds || []); }
+function noveltyMod(kind){
+  const n=recentKinds().filter(x=>x===kind).length;
+  return {m:clamp(1-n*0.24,0.25,1), n};
+}
+function pushKind(k){ const r=recentKinds(); r.unshift(k); if(r.length>6) r.pop(); }
+
+function crowdShift(hostile,intensity,charisma,opt){
+  opt=opt||{};
   const c=G.car;
   const ch=(charisma==null?G.w.attrs.ch:charisma)/100;
   const drift = hostile<0 ? -1 : hostile>0 ? 1 : 0;
@@ -1024,19 +1057,50 @@ function crowdShift(hostile,intensity,charisma){
     // history, the alignment you are billed as IS the steady thing you are
     // breaking from — so a debut heel turn still lands.
     const v=voiceLog();
-    const steady = v.length===0 ||
-      (v.length>=2 && v.slice(0,3).every(x=>!Math.sign(x)||Math.sign(x)===Math.sign(v[0])));
+    const steady = v.length<=1 ||
+      v.slice(0,3).every(x=>!Math.sign(x)||Math.sign(x)===Math.sign(v[0]));
     if(intensity>=0.58 && steady && flip<0.34){ gain*=1.25; mode='swerve'; }
     else { gain*=0.45; mode='wobble'; }                   // a half-hearted flip just confuses them
   }
+  // ---- a tease is not a turn. You are playing with them, and they know it. ----
+  const kind=opt.kind||'';
+  let leanMul=1, voiceIt=true, notes=[];
+  if(kind==='tease'){
+    mode='tease'; gain*=1.4; leanMul=0.3; voiceIt=false;   // no turn progress from a tease
+    // teasing sets up a real turn later, and the payoff is bigger for it
+    c.teased={dir:drift, at:c.year*100+c.week};
+  }
+  if(kind==='cheap'||kind==='pander'){
+    mode=kind; gain*=0.8; leanMul=1.5;                     // fast reaction, shallow
+    c.standing=clamp((c.standing||50)-1.6);
+    notes.push(kind==='cheap'?'cheap heat':'a cheap pop');
+  }
+  if(kind==='shoot'){
+    mode='shoot'; gain*=1.55; leanMul=1.3;
+    c.standing=clamp((c.standing||50)-5);
+    notes.push('the office will not enjoy that');
+  }
+  // a turn you set up beforehand pays off harder than one out of nowhere
+  if(mode==='swerve' && c.teased && c.teased.dir===drift && (c.year*100+c.week)-c.teased.at<=8){
+    gain*=1.3; notes.push('you had been setting this up for weeks'); c.teased=null;
+  }
   // changing your mind over and over drains everything, whichever way you go
   gain *= (1 - flip*0.6);
-  if(flip>=0.5) mode='flipflop';
+  if(flip>=0.5 && mode!=='tease' && drift && recent && drift!==recent) mode='flipflop';
+  // A trick stops working once they have seen it. This is about the devices —
+  // teases, cheap heat, shooting — not about staying in character, which is
+  // supposed to be repetitive.
+  if(kind){
+    const nov=noveltyMod(kind);
+    gain*=nov.m;
+    if(nov.n>=2) notes.push('they have seen this from you before');
+    pushKind(kind);
+  }
 
-  pushVoice(hostile);
+  if(voiceIt) pushVoice(hostile);
   c.reaction=clamp((c.reaction==null?c.pop:c.reaction) + gain - (mode==='flipflop'?2.2:mode==='wobble'?1.2:0), 0, 100);
-  c.lean=clamp((c.lean||0) + drift*intensity*(6+ch*7)*(mode==='swerve'?1.4:1), -100, 100);
-  return {gain:Math.round(gain), mode, consistent:mode==='committed'||mode==='swerve'};
+  c.lean=clamp((c.lean||0) + drift*intensity*(6+ch*7)*(mode==='swerve'?1.4:1)*leanMul + (opt.leanNudge||0), -100, 100);
+  return {gain:Math.round(gain), mode, notes, consistent:mode!=='wobble'&&mode!=='flipflop'};
 }
 // a turn completes when you have committed to it, not the moment you swerve
 function completeTurn(to,why){
@@ -1055,6 +1119,7 @@ function completeTurn(to,why){
   return g;
 }
 function maybeTurn(){
+  if(voiceFlip()>=0.5) return null;          // nobody turns while they are flip-flopping
   const t=turnProgress();
   if(t.to && t.p>=1 && voiceLog().length>=3) return completeTurn(t.to,'You leaned all the way into it and never blinked.');
   return null;
@@ -4095,6 +4160,15 @@ function drawCard(){
    ============================================================ */
 let PM=null;
 
+const PROMO_NOTE={
+  teaseHeel:'Play with them. Huge reaction, no commitment — and it sets up a real turn later.',
+  teaseFace:'Play with them. Huge reaction, no commitment — and it sets up a real turn later.',
+  cheap:'Instant boos. Shallow, and the office notices.',
+  pander:'An easy pop. Shallow, and the office notices.',
+  shoot:'Break character and say the real thing. Enormous reaction, and your standing takes the hit.',
+  ally:'Offer to work together. Builds respect instead of heat.',
+  challenge:'Put yourself in the title picture while it is fresh.',
+};
 const PROMO_LINES={
   callout:{k:'CALL THEM OUT',c:'heel',host:-0.8,int:0.85,lines:[
     o=>`${o}. You have been ducking me for weeks and everybody in this building knows it.`,
@@ -4128,19 +4202,49 @@ const PROMO_LINES={
     o=>`${o} — this business is easier with somebody watching your back. Mine is available.`,
     o=>`I have been on the wrong end of a numbers game one too many times. ${o}, so have you.`,
     o=>`We can keep tearing lumps out of each other, ${o}, or we can go after the people who deserve it.`]},
+  // ---- playing with them ----
+  teaseHeel:{k:'TEASE GOING BAD',c:'heel',host:-0.75,int:0.8,kind:'tease',lines:[
+    ()=>`Do you know what I have thought about lately? How much easier all of this would be if I stopped caring about any of you.`,
+    o=>`Maybe ${o} has the right idea. Maybe the only mistake I ever made was playing fair.`,
+    ()=>`One of these nights I am going to stop being the man you want me to be. Not tonight. But one of these nights.`]},
+  teaseFace:{k:'TEASE GOING GOOD',c:'face',host:0.75,int:0.8,kind:'tease',lines:[
+    ()=>`You have booed me in this building for two years. And tonight, for one second, some of you nearly cheered. I heard it.`,
+    o=>`${o} thinks he knows what I am. So do you. Neither of you has any idea.`,
+    ()=>`I could stand here and give you exactly what you want. Would you even take it?`]},
+  cheap:{k:'CHEAP HEAT',c:'heel',host:-0.85,int:0.75,kind:'cheap',lines:[
+    ()=>`I have wrestled all over the world, and this is comfortably the worst town I have ever set foot in.`,
+    ()=>`Look at you. Every single one of you settled for this life. I did not.`,
+    ()=>`I would tell you all to go home, but frankly you have nothing to go home to.`]},
+  pander:{k:'CHEAP POP',c:'face',host:0.8,int:0.7,kind:'pander',lines:[
+    ()=>`It is great to be right here, in this town, with all of you tonight!`,
+    ()=>`You people are the loudest crowd on this entire tour and you know it!`,
+    ()=>`I have been all over the world, and there is nowhere I would rather be than right here!`]},
+  shoot:{k:'BREAK KAYFABE',c:'cool',host:-0.35,int:1,kind:'shoot',lines:[
+    ()=>`I am going to stop pretending for a minute. Everybody backstage knows who has been held down around here, and everybody knows why.`,
+    o=>`They will fine me for this. ${o} is not the problem. The people writing this are.`,
+    ()=>`You paid for a show. I am going to give you the truth instead, and we will both live with it.`]},
   challenge:{k:'DEMAND A TITLE SHOT',c:'crowd',host:-0.3,int:0.9,lines:[
     o=>`I have beaten everybody they have put in front of me. ${o} is holding the only thing I want.`,
     ()=>`I am done waiting my turn. Put the championship in front of me and watch what happens.`,
     o=>`${o} can keep the belt warm. I am coming for it.`]},
 };
 function promoKinds(target,mode){
-  const base=['boast','cool'];
-  if(mode==='title') return ['challenge','boast','callout','cool'];
-  if(mode==='crowd') return ['rally','boast','mock','cool'];
-  if(!target) return ['rally'].concat(base);
-  const R=rel(target.id);
-  const k=['callout','mock','threat','respect','cool','boast'];
-  if(R.respect>=45||R.matches>=2) k.push('ally');
+  const l=leanOf(), established=Math.abs(l)>=32;
+  const k=[];
+  if(mode==='title') k.push('challenge','boast','callout','cool');
+  else if(mode==='crowd') k.push('rally','boast','mock','cool');
+  else if(!target) k.push('rally','boast','cool');
+  else {
+    k.push('callout','mock','threat','respect','cool','boast');
+    const R=rel(target.id);
+    if(R.respect>=45||R.matches>=2) k.push('ally');
+  }
+  // You can only play with a crowd that has already made its mind up about
+  // you. Nobody is shocked when a man they have no opinion of acts out.
+  if(established) k.push(l>0?'teaseHeel':'teaseFace');
+  // the shortcuts, always available and always cheapening
+  k.push(l<=0?'cheap':'pander');
+  if(G.w.attrs.ch>=55) k.push('shoot');
   return k;
 }
 
@@ -4240,7 +4344,8 @@ function pmChoices(){
     const pay=JSON.stringify({k,line}).replace(/"/g,'&quot;');
     return `<div class="pmopt" onclick="pmSay('${encodeURIComponent(JSON.stringify({k,line}))}')">
       <div class="po-k k-${d.c}">${d.k}</div>
-      <div class="po-t">“${line}”</div></div>`;
+      <div class="po-t">“${line}”</div>
+      ${PROMO_NOTE[k]?`<div class="po-d">${PROMO_NOTE[k]}</div>`:''}</div>`;
   }).join('');
   $('pmChoices').innerHTML=`<div class="grid" style="gap:9px;">${html}</div>
     <div class="flab" style="margin-top:12px;">Or say it your own way</div>
@@ -4262,13 +4367,18 @@ async function pmSay(payload){
   const t=PM.target;
   const read = k==='custom' ? readPromoLine(line,t)
     : (()=>{ const d=PROMO_LINES[k];
-        return {hostile:d.host,intensity:d.int,crowd:(k==='rally'||k==='boast'),specific:k!=='cool'&&k!=='boast',wantsTitle:k==='challenge',words:14}; })();
+        return {hostile:d.host,intensity:d.int,crowd:(k==='rally'||k==='boast'||k==='cheap'||k==='pander'),
+                specific:k!=='cool'&&k!=='boast'&&k!=='cheap'&&k!=='pander',wantsTitle:k==='challenge',
+                kind:d.kind||'',words:14}; })();
 
   fmv('me',{pose:read.intensity>0.7?'point':'taunt',fwd:0},220);
   pmBubble('me',G.w.name,line);
   await sleep(1500);
 
-  const sh=crowdShift(read.hostile,read.intensity,G.w.attrs.ch);
+  // who you aimed it at changes what it is worth
+  const tm=targetMod(read.hostile,t);
+  const sh=crowdShift(read.hostile,read.intensity*tm.m,G.w.attrs.ch,{kind:read.kind,leanNudge:tm.lean});
+  if(tm.why) sh.notes.push(tm.why);
   PM.hostile+=read.hostile; PM.intensity+=read.intensity;
   if(read.specific) PM.specifics++;
   if(read.crowd) PM.crowdWork++;
@@ -4276,17 +4386,27 @@ async function pmSay(payload){
   pmMeter();
   const loud=read.intensity>0.65;
   if(sh.mode==='swerve'){ await flashScreen(); await pmCall('WHAT?!','#e0b341'); }
+  else if(sh.mode==='tease') await pmCall('OOOOOH…','#e0b341');
+  else if(sh.mode==='shoot'){ await flashScreen(); await pmCall('HE JUST SAID THAT','#C6392C'); }
+  else if(sh.mode==='cheap') await pmCall('BOOOOO!','#f0907f');
+  else if(sh.mode==='pander') await pmCall('cheap pop','#5bb083');
   else if(sh.mode==='flipflop') await pmCall('…they have stopped believing you','#8a8177');
   else if(sh.mode==='wobble') await pmCall('…muted','#8a8177');
   else if(read.hostile<=-0.45) await pmCall(loud?'BOOOOO!':'boos','#f0907f');
   else if(read.hostile>=0.45) await pmCall(loud?'HUGE POP!':'cheers','#5bb083');
   else await pmCall('the room listens','#e0b341');
-  const extra=`${read.specific?' · you made it personal':''}${read.crowd?' · you spoke to the room':''}`;
+  const extra=[read.specific?'you made it personal':'',read.crowd?'you spoke to the room':'']
+    .concat(sh.notes||[]).filter(Boolean);
+  const tail=extra.length?` · ${extra.join(' · ')}`:'';
   pmLog(
-    sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned — reaction +${sh.gain}. Keep going and this becomes a turn.</span>`
+    sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned — reaction +${sh.gain}${tail}. Keep going and this becomes a turn.</span>`
+  : sh.mode==='tease'    ? `<span class="hi">You dangled it in front of them and pulled it away — reaction +${sh.gain}${tail}. They will remember that if you ever mean it.</span>`
+  : sh.mode==='shoot'    ? `<span class="hi">The room has gone completely silent, then very loud — reaction +${sh.gain}${tail}.</span>`
+  : sh.mode==='cheap'    ? `<span class="hint">Instant heat, and worth nothing to anybody who matters — reaction +${sh.gain}${tail}.</span>`
+  : sh.mode==='pander'   ? `<span class="hint">They pop for it because they always do — reaction +${sh.gain}${tail}.</span>`
   : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously — +${sh.gain}.</span>`
   : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
-  :                        `<span class="hint">They bite — reaction +${sh.gain}${extra}.</span>`);
+  :                        `<span class="hint">They bite — reaction +${sh.gain}${tail}.</span>`);
   // a turn completes when you have stayed with it
   const turned=maybeTurn();
   if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
