@@ -135,25 +135,15 @@
   /* Suggestion dropdown. Lives on <body> and is positioned to the focused row,
      so it is never clipped by a scrolling ancestor and can flip above the
      field when the on-screen keyboard eats the space below. */
-  .sugbox{position:fixed; z-index:90; background:var(--card2); border:1.5px solid var(--sp);
-    border-radius:11px; box-shadow:0 18px 40px -14px rgba(0,0,0,.7); overflow:hidden;
-    max-height:min(46vh,290px); overflow-y:auto; -webkit-overflow-scrolling:touch;}
-  .sugbox[hidden]{display:none;}
-  .sugitem{display:block; width:100%; text-align:left; appearance:none; border:0; cursor:pointer;
-    background:transparent; font-family:var(--f); font-size:15px; font-weight:700; color:var(--ink);
-    padding:12px 13px; min-height:46px; border-top:1px solid var(--line);}
-  .sugitem:first-child{border-top:0;}
-  .sugitem.on,.sugitem:hover{background:color-mix(in srgb, var(--sp) 18%, var(--card2));}
-  .sugitem:active{background:color-mix(in srgb, var(--sp) 28%, var(--card2));}
   .row input:disabled{opacity:.85;}
   /* graded */
   .row.good{border-left-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card2));}
   .row.bad{border-left-color:var(--red);}
-  /* Real player, category we can't confirm — neither a green nor a red. */
+  /* Real player, category we can't confirm, neither a green nor a red. */
   .row.unsure{border-left-color:var(--gold); background:color-mix(in srgb, var(--gold) 7%, var(--card2));}
   .res .hedge{color:var(--goldT); font-weight:800;}
   /* Shared --goldT only reaches 3.5:1 on a light card, and this line is the
-     whole explanation for why an answer got nothing — it has to be readable. */
+     whole explanation for why an answer got nothing, it has to be readable. */
   :root[data-theme="light"] .res .hedge{color:#7A5100;}
   .res{display:flex; align-items:center; gap:8px; margin-top:7px; font-size:12px; font-weight:700; flex-wrap:wrap;}
   .res .pts{font-family:var(--hero); font-weight:400; font-size:19px; line-height:1; color:var(--greenT);}
@@ -248,9 +238,9 @@
       <h1>Sport<b>egories</b></h1>
       <p>One letter. Eight sports categories. Two minutes to fill in a player for each.</p>
       <div class="rules">
-        <div class="rule"><span class="b">1</span><div>Answer with a player's <b>full name</b><small>“Chris” won’t count — “Chris Bosh” will.</small></div></div>
+        <div class="rule"><span class="b">1</span><div>Answer with a player's <b>full name</b><small>“Chris” won’t count, “Chris Bosh” will.</small></div></div>
         <div class="rule"><span class="b">2</span><div>Either name can start with the letter<small>On <b>B</b>, both “Bosh” and “Barry Bonds” work.</small></div></div>
-        <div class="rule"><span class="b">3</span><div>Both names matching scores double<small>“Barry Bonds” on B is worth 2 — before rarity.</small></div></div>
+        <div class="rule"><span class="b">3</span><div>Both names matching scores double<small>“Barry Bonds” on B is worth 2, before rarity.</small></div></div>
         <div class="rule"><span class="b">4</span><div>Rarer answers are worth more<small>And you can’t use the same player twice.</small></div></div>
         <div class="rule"><span class="b">5</span><div>Deep cuts get looked up<small>Anyone missing from our list is checked against the record books when time’s up.</small></div></div>
       </div>
@@ -277,7 +267,7 @@
   <section class="panel" id="panelPlay">
     <div class="board">
       <div class="lethead">
-        <div class="letter" id="letterTile">–</div>
+        <div class="letter" id="letterTile">-</div>
         <div class="li">
           <div class="k" id="modeLab">Today’s letter</div>
           <div class="v">Name a player for each category whose <b>first or last name</b> starts with it.</div>
@@ -339,6 +329,7 @@
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=3"></script>
+<script src="/arcade/type.js?v=2"></script>
 <script src="/arcade/sportegories.js?v=7"></script>
 <script src="/arcade/livecheck.js?v=5"></script>
 <script>
@@ -374,110 +365,39 @@
     puz.cats.forEach(function(c, i){
       var row=document.createElement('div'); row.className='row'; row.id='row'+i;
       row.innerHTML='<div class="cl"><span>'+esc(c.label)+'</span><span class="tier">'+TIER_NAME[c.tier]+'</span></div>'+
-        '<input type="text" id="in'+i+'" autocomplete="off" autocorrect="off" spellcheck="false" '+
-        'autocapitalize="words" placeholder="Full name…" aria-label="'+esc(c.label)+'" '+
-        'role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="sugbox" />'+
+        '<input type="text" id="in'+i+'" placeholder="Full name…" aria-label="'+esc(c.label)+'" />'+
         '<div class="res" id="res'+i+'" style="display:none"></div>';
       host.appendChild(row);
       var el=row.querySelector('input'); inputs.push(el);
-      el.addEventListener('input', onType);
-      el.addEventListener('focus', onType);
-      el.addEventListener('blur', function(){ setTimeout(closeSug, 140); });
-      el.addEventListener('keydown', function(e){
-        if(sugKey(e)) return;                 // arrows / Enter belong to the list first
-        if(e.key==='Enter'){ e.preventDefault(); var n=inputs[i+1]; if(n) n.focus(); else grade(); }
-      });
+      /* One typeahead for the whole arcade. This page grew the original and
+         three other games copied it; the copies are gone and the fixes that
+         matter on a phone (following the field when iOS scrolls it clear of
+         the keyboard, measuring against the visual viewport, keeping Safari's
+         AutoFill Contact bar off a field that obviously wants a person's name)
+         now land everywhere at once. */
+      if(window.RTGType){
+        RTGType.mount(el, {
+          source: function(q, n){ return SP.suggest(q, n); },
+          accent: 'var(--sp)',
+          head: 'Any player, any league',
+          clear: false,                       // eight rows of clear buttons is clutter
+          onPick: function(){ var nx=inputs[i+1]; if(nx) nx.focus(); else el.blur(); },
+          onSubmit: function(){ var nx=inputs[i+1]; if(nx) nx.focus(); else grade(); }
+        });
+      }
     });
     $('letterTile').textContent = puz.letter;
     $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
     $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice. Deep cuts get looked up.';
   }
 
-  /* Typeahead searches the WHOLE player list, never the category's answers —
-     a category-aware suggester would hand over the answer. */
-  /* A real dropdown, not a <datalist>. This game is two minutes of typing full
-     player names on a phone, so the suggester IS the interface. Native datalist
-     renders as a cramped strip on iOS, can't be styled, can't be tapped
-     reliably, and gives no keyboard affordance — every one of which costs
-     seconds a player does not have. This one anchors under the focused row,
-     is tappable, arrow-key navigable, and jumps to the next category the
-     moment you pick, so a whole answer is one tap. */
-  var sugT=null, sugBox=null, sugItems=[], sugIx=-1, sugFor=null;
-
-  function ensureSugBox(){
-    if(sugBox) return sugBox;
-    sugBox=document.createElement('div');
-    sugBox.className='sugbox'; sugBox.id='sugbox';
-    sugBox.setAttribute('role','listbox');
-    sugBox.hidden=true;
-    document.body.appendChild(sugBox);
-    // pointerdown beats blur, so the tap lands before the field closes the list
-    sugBox.addEventListener('pointerdown', function(ev){
-      var b=ev.target.closest('.sugitem'); if(!b) return;
-      ev.preventDefault();
-      pickSug(parseInt(b.getAttribute('data-i'),10));
-    });
-    return sugBox;
-  }
-  function closeSug(){
-    if(!sugBox||sugBox.hidden) return;
-    sugBox.hidden=true; sugItems=[]; sugIx=-1;
-    if(sugFor) sugFor.setAttribute('aria-expanded','false');
-    sugFor=null;
-  }
-  function placeSug(el){
-    var r=el.getBoundingClientRect();
-    sugBox.style.left=Math.round(r.left)+'px';
-    sugBox.style.width=Math.round(r.width)+'px';
-    // flip above when the keyboard leaves no room below
-    var below=window.innerHeight-r.bottom;
-    if(below < 150 && r.top > below){
-      sugBox.style.top=''; sugBox.style.bottom=Math.round(window.innerHeight-r.top+6)+'px';
-    } else {
-      sugBox.style.bottom=''; sugBox.style.top=Math.round(r.bottom+6)+'px';
-    }
-  }
-  function paintSug(){
-    sugBox.innerHTML = sugItems.map(function(n,i){
-      return '<button type="button" class="sugitem'+(i===sugIx?' on':'')+'" data-i="'+i+'" role="option" '+
-             'aria-selected="'+(i===sugIx)+'" tabindex="-1">'+esc(n)+'</button>';
-    }).join('');
-  }
-  function pickSug(i){
-    if(!sugFor||i<0||i>=sugItems.length) return;
-    var el=sugFor, ix=inputs.indexOf(el);
-    el.value=sugItems[i];
-    closeSug();
-    var nxt=inputs[ix+1];
-    if(nxt) nxt.focus(); else el.blur();
-  }
-  function sugKey(e){
-    if(!sugBox||sugBox.hidden||!sugItems.length) return false;
-    if(e.key==='ArrowDown'){ e.preventDefault(); sugIx=(sugIx+1)%sugItems.length; paintSug(); return true; }
-    if(e.key==='ArrowUp'){ e.preventDefault(); sugIx=(sugIx-1+sugItems.length)%sugItems.length; paintSug(); return true; }
-    if(e.key==='Escape'){ closeSug(); return true; }
-    if(e.key==='Enter' && sugIx>=0){ e.preventDefault(); pickSug(sugIx); return true; }
-    return false;
-  }
-  function onType(e){
-    var el=e.target, v=el.value;
-    if(sugT) clearTimeout(sugT);
-    sugT=setTimeout(function(){
-      if(document.activeElement!==el) return;
-      var list=SP.suggest(v, 7);
-      if(!list.length){ closeSug(); return; }
-      ensureSugBox();
-      sugItems=list; sugIx=-1; sugFor=el;
-      el.setAttribute('aria-expanded','true');
-      paintSug(); sugBox.hidden=false; placeSug(el);
-    }, 80);
-  }
-  window.addEventListener('resize', function(){ if(sugFor && sugBox && !sugBox.hidden) placeSug(sugFor); });
-  window.addEventListener('scroll', function(){ if(sugFor && sugBox && !sugBox.hidden) placeSug(sugFor); }, true);
+  /* The typeahead used to live here, ~90 lines of it, and three other games
+     shipped their own copy. It is arcade/type.js now: one implementation, so a
+     phone fix lands in every game at once. render() mounts it per row above. */
 
   /* ---------- the wheel ----------
      The letter is already decided (date-seeded), so the spin is animated to
-     land on it rather than deciding anything — the segments are the real
+     land on it rather than deciding anything, the segments are the real
      rollable pool, so what you watch is what could have happened. */
   var WHEEL = [], spinning = false;
   function reduced(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
@@ -501,7 +421,7 @@
       ctx.fillStyle = (i===hi) ? A : (i%2 ? C1 : C2);
       ctx.fill();
       ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=2; ctx.stroke();
-      // Letters sit upright rather than rotating with the segment — radial text
+      // Letters sit upright rather than rotating with the segment, radial text
       // reads upside-down across the whole left half of the wheel.
       var mid=a0+seg/2, lr=R*0.76;
       ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -615,7 +535,7 @@
   }
 
   /* The card used to resolve all at once. Now each answer gets a beat of
-     "checking" before it flips, with the score ticking up beside it — the
+     "checking" before it flips, with the score ticking up beside it, the
      scoring IS the payoff, so it's paced rather than dumped. */
   var revealTimers=[], revealDone=null;
   function clearReveal(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
@@ -639,7 +559,7 @@
 
     /* Anything our file doesn't know goes out to the live check.
        This is the difference between "we've never heard of him" and "he isn't
-       real" — a distinction the game got wrong until now. The request goes out
+       real", a distinction the game got wrong until now. The request goes out
        here, at the top of the reveal, so it runs under cover of the animation
        instead of making anyone wait for it. */
     var liveReady=true, liveWait=null;
@@ -674,7 +594,7 @@
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
           (r.allit>1?'<span class="allit">×'+r.allit+' letter bonus</span>':'')+
           (r.unverified
-            ? '<span class="pct">Counted — we couldn’t double-check this one</span>'
+            ? '<span class="pct">Counted, we couldn’t double-check this one</span>'
             : '<span class="pct">'+r.rarity.tier+' · est. '+r.rarity.pct+'%</span>');
         var tn=$('tallyN'); countTo(tn, running, 320);
         tn.classList.remove('bump'); void tn.offsetWidth; tn.classList.add('bump');
@@ -703,7 +623,7 @@
       $('tally').classList.remove('on');
       var st=load(); var prevBest=st.best||0; var best=Math.max(prevBest, total);
       if(isDaily && !ARCHIVE){ st.best=best; st.last={d:today(), score:total, correct:correct}; save(st); }
-      // A personal best is a personal best, even set in practice — and without
+      // A personal best is a personal best, even set in practice, and without
       // persisting it, the same practice score would re-trigger the new-best
       // confetti every single time it was matched.
       else if(best>prevBest){ st.best=best; save(st); }
@@ -760,12 +680,12 @@
       landAll();
     };
 
-    // The last answer gets a longer drumroll than the rest — the card's whole
+    // The last answer gets a longer drumroll than the rest, the card's whole
     // score often turns on it, so it earns the extra beat.
     //
     // The daily is a once-a-day event and can carry a 5.5s reveal. Practice is
     // the replay loop, where the same ceremony a fourth time in ten minutes is
-    // just a wall between you and the next card — so it runs at roughly a
+    // just a wall between you and the next card, so it runs at roughly a
     // third the length. Reduced-motion gets the short version too.
     var FAST = (!isDaily) || reduced();
     var HOLD = FAST ? 110 : 300, LAST = FAST ? 240 : 820, GAP = FAST ? 80 : 260;
@@ -791,7 +711,7 @@
   }
 
   /* Amber, not red. "We couldn't confirm this" is a statement about our
-     reach, not a ruling that the answer was wrong — only a category we can
+     reach, not a ruling that the answer was wrong, only a category we can
      positively contradict earns a red row. */
   function soft(r){ return r.reason==='unverified' || r.reason==='unknown'; }
 

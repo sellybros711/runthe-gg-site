@@ -61,10 +61,17 @@ is(T.sameCollege('mi', 'Michigan'), false, 'a fragment is not an answer');
 
 // ------------------------------------------------------------ suggester ----
 const ps = T.playerSource(KNOWN);
-is(ps('lebr', 7)[0], 'LeBron James', 'suggest by first name');
-ok(ps('jord', 7).includes('Michael Jordan'), 'suggest by last name');
-is(ps('l', 7).length, 0, 'a single letter suggests nothing');
-ok(ps('gri', 7).length > 1, 'a common prefix returns several');
+const vals = (q) => ps(q, 8).map((x) => (x && x.value) || x);
+is(vals('lebr')[0], 'LeBron James', 'suggest by first name');
+ok(vals('jord').includes('Michael Jordan'), 'suggest by last name');
+is(ps('l', 8).length, 0, 'a single letter suggests nothing');
+ok(vals('gri').length > 1, 'a common prefix returns several');
+// A surname match is what someone reaching for a half-remembered name types,
+// so it has to outrank a first-name match on the same letters.
+ok(vals('jordan')[0] === 'Michael Jordan', 'surname matches rank first');
+// The league rides along, because two players share a name more often than
+// you would think.
+is(ps('lebr', 8)[0].sub, 'NBA', 'suggestions carry their league');
 const cs = T.collegeSource(ENT);
 is(cs('mich', 7)[0], 'Michigan', 'most-attended school ranks first');
 ok(cs('mich', 7).includes('Michigan State'), 'and the neighbours are offered too');

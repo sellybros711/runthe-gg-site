@@ -281,11 +281,11 @@
   <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
   <div class="playzone">
     <div class="versus" id="versus"></div>
-    <form class="answerbar" id="answerbar" autocomplete="off" novalidate>
-      <input class="answerin" id="answerIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2"
+    <div class="answerbar" id="answerbar">
+      <input class="answerin" id="answerIn" type="text" inputmode="numeric" maxlength="2"
              placeholder="00" aria-label="The jersey number they wore" />
-      <button class="answergo" id="answerGo" type="submit">Call it</button>
-    </form>
+      <button class="answergo" id="answerGo" type="button">Call it</button>
+    </div>
     <div class="subprompt" id="subprompt"></div>
     <div class="factline" id="factline" aria-live="polite"></div>
     <div class="hintline" id="hintline">Type the number. Within two still counts.</div>
@@ -361,6 +361,7 @@
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=12"></script>
 <script src="/arcade/howto.js?v=15"></script>
+<script src="/arcade/type.js?v=2"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
@@ -515,7 +516,10 @@
     startIfNeeded();
     resolve(parseInt(raw,10));
   }
-  document.getElementById('answerbar').addEventListener('submit', function(e){ e.preventDefault(); submitTyped(); });
+  answerGo.addEventListener('click', submitTyped);
+  answerIn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitTyped(); } });
+  // no suggester here, but the field still wants iOS to leave it alone
+  if(window.RTGType) RTGType.harden(answerIn);
   function showFact(p){
     if(!factEl) return;
     var e=FACT_BY_ID[p.id];
