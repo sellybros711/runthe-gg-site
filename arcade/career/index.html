@@ -106,7 +106,7 @@
   /* Held so the JS fill doesn't throw the hint line and leaderboard down the
      page a second after first paint - a fixed-count list, so its height is
      knowable, and :empty drops the reservation the moment it's built. */
-  .path:empty{min-height:234px;}
+  .path:empty{min-height:196px;}
   .stop{display:flex; align-items:center; gap:12px;}
   .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
@@ -159,11 +159,23 @@
     color:var(--mut); margin:12px 2px 0;}
   .factline.on{color:var(--ink);}
   .factline b{color:var(--greenT); font-weight:900;}
-  /* the era line sits between the path and the reveal bar, which now owns the
-     divider - two stacked dashed rules read as a mistake */
-  .pathera{margin-top:14px; text-align:center;
-    font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--mut);}
-  .pathera b{color:var(--greenT); font-weight:900; letter-spacing:.09em;}
+  /* The free facts, above the path and there from the first second: position,
+     college, era. A first club on its own is a very thin place to start naming
+     someone from, and these are the three things a scout's file would open
+     with. None of them is the answer, and none is what the path reveal spends
+     its points on, so they cost nothing. */
+  /* Two rows' worth of height, always. Half the pool has no college on file,
+     so the row is three chips on one round and two on the next, and letting it
+     wrap or not moved the answer field 36px between rounds. */
+  .scout{display:flex; flex-wrap:wrap; justify-content:center; align-content:flex-start;
+    gap:7px; margin:0 0 15px; min-height:69px;}
+  .scout .sc{display:inline-flex; align-items:baseline; gap:6px; background:var(--card2);
+    border:1px solid var(--line2); border-radius:999px; padding:6px 12px;}
+  .scout .sc i{font-style:normal; font-size:8.5px; font-weight:900; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--mut);}
+  .scout .sc b{font-size:12.5px; font-weight:900; color:var(--ink); letter-spacing:.01em;}
+  .scout .sc.era b{color:var(--greenT);}
+  .scout:empty{display:none;}
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
   /* A class rule beats the UA's [hidden]{display:none}, so without this the
@@ -289,7 +301,8 @@
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="prompt">Whose career path is this?</div>
   <div class="pathcard">
-    <div class="plab">Career teams · in order</div>
+    <div class="plab">Scouting file</div>
+    <div class="scout" id="scout"></div>
     <div class="path" id="path"></div>
     <div class="revealbar" id="revealbar">
       <button class="revealbtn" type="button" id="revealBtn">Show next team</button>
@@ -375,7 +388,7 @@
 <script src="/arcade/calendar.js?v=10"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=11"></script>
-<script src="/arcade/howto.js?v=13"></script>
+<script src="/arcade/howto.js?v=14"></script>
 <script src="/arcade/type.js?v=1"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
@@ -578,15 +591,25 @@
       var body = veiled ? '<span class="tm">? ? ?</span>' : '<span class="tm">'+esc(tm)+'</span>'+tag;
       return (i>0?'<div class="stopgap"></div>':'')
            + '<div class="stop'+(veiled?' veiled':'')+'"'+st+'><span class="dot">'+(i+1)+'</span>'+body+'</div>';
-    }).join('') + eraLine(target);
-    function eraLine(t){
-      // era clue: a short path (two recorded stints) can be almost anyone, so
-      // anchor it in time - narrows the guess to contemporaries without naming
-      // anything the decoy logic depends on (decoys share sport, not era).
-      var d=t.decade||[]; if(!d.length) return '';
+    }).join('');
+  }
+  /* Position, college and era, free and up front. The path used to open on a
+     single club and nothing else, which is a very thin place to start naming
+     someone from: half the corpus first played for the Yankees or the Cowboys.
+     The era anchors them among contemporaries, and the college is often the
+     fact that actually triggers the name. It is 50% of the career pool, so
+     position carries the row on its own when we hold no school. */
+  function drawScout(t){
+    var el=document.getElementById('scout'); if(!el) return;
+    var bits=[];
+    if(t.pos) bits.push('<span class="sc"><i>Pos</i><b>'+esc(t.pos)+'</b></span>');
+    if(t.col) bits.push('<span class="sc"><i>College</i><b>'+esc(t.col)+'</b></span>');
+    var d=t.decade||[];
+    if(d.length){
       var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s-'+d[d.length-1]+'s');
-      return '<div class="pathera">Played in the <b>'+era+'</b></div>';
+      bits.push('<span class="sc era"><i>Era</i><b>'+esc(era)+'</b></span>');
     }
+    el.innerHTML=bits.join('');
   }
   function drawWorth(target, spent){
     var w=document.getElementById('worth'), b=document.getElementById('revealBtn');
@@ -611,7 +634,7 @@
     shown=1; bailed=false;
     answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
     setAnswerEnabled(true);
-    drawPath(target, false); drawWorth(target, false);
+    drawScout(target); drawPath(target, false); drawWorth(target, false);
   }
   function revealNext(){
     if(done||busy) return;
@@ -766,6 +789,7 @@
     var rr=SEQ[idx];
     if(rr){
       if((r.shown|0)>1) shown=Math.min(r.shown|0, stopsOf(byId[rr.target]));
+      drawScout(byId[rr.target]);
       if(r.bailed) bail(); else { drawPath(byId[rr.target], false); drawWorth(byId[rr.target], false); }
     }
     toast('Resumed your run');
