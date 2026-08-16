@@ -27,9 +27,9 @@
     ],
     oddone: [
       'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
-      "Tap the one that doesn't belong.",
-      'Right: the four light green and your run grows. Wrong: run over.',
-      'The connection is revealed either way.'
+      "Tap the one that doesn't belong. That is worth a point.",
+      'Then name the connection itself for a second point. Spotting it is luck; saying why is knowing.',
+      'One wrong spot ends the run. A wrong link just costs you the bonus.'
     ],
     rankit: [
       'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',

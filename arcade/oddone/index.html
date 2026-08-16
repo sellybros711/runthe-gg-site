@@ -12,7 +12,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Odd One Out: a daily sports streak game. Four names share a connection, one doesn't. Spot the odd one and see how many you can get in a row." />
+<meta name="description" content="Odd One Out: a daily sports streak game. Four names share a connection, one doesn't. Spot the odd one, then name the link for a bonus point." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -111,6 +111,11 @@
   .whyskip{display:block; margin:9px auto 0; background:none; border:0; font:800 12px var(--f); color:var(--mut); cursor:pointer; text-decoration:underline; text-underline-offset:3px; padding:6px;}
   .whyskip:hover{color:var(--ink);}
   @media (prefers-reduced-motion:reduce){ .whybar i{animation:none;} }
+  /* a line of real history on the odd one out, so the round leaves you with
+     something about a player and not just a verdict */
+  .factline{min-height:18px; text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
+    color:var(--mut); margin:12px 2px 0;}
+  .factline.on{color:var(--ink);}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -209,26 +214,27 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One wrong ends your run. How far can you go?</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Spot it for 1, name the link for 1 more. One wrong ends your run.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
   <div class="prompt">Four share a connection. Which is the odd one out?</div>
   <div class="subprompt" id="subprompt"></div>
   <div class="choices" id="choices"></div>
-  <div class="hintline" id="hintline">Tap the name that doesn't belong.</div>
+  <div class="factline" id="factline" aria-live="polite"></div>
+  <div class="hintline" id="hintline">Tap the name that doesn't belong, then name the link.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your score today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Best score</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
-      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">18 in a row</span></div>
-      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">15 in a row</span></div>
-      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">11 in a row</span></div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">31 points</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">24 points</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">17 points</span></div>
     </div>
     <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
   </div>
@@ -241,7 +247,7 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <div class="sub-h" id="mSub">Your run ended</div>
     <div class="runbig" id="mRun">0</div>
-    <h2>IN A ROW</h2>
+    <h2>POINTS</h2>
     <div class="milestone" id="mMilestone"></div>
     <div class="a-runline">
       <span><b id="mBest">0</b> best ever</span><i></i>
@@ -282,10 +288,11 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=7"></script>
+<script src="/arcade/calendar.js?v=8"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=8"></script>
-<script src="/arcade/howto.js?v=10"></script>
+<script src="/arcade/pregame.js?v=9"></script>
+<script src="/arcade/howto.js?v=11"></script>
+<script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -352,7 +359,7 @@
 
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
   function famPlural(f){ return /man$/i.test(f) ? f.slice(0,-3)+'men' : f+'s'; }
-  // "'90s" style for 1950–1990; full year ("1920s", "2000s") elsewhere so e.g.
+  // "'90s" style for 1950-1990; full year ("1920s", "2000s") elsewhere so e.g.
   // the 1900s can't be misread as the 2000s.
   function decLabel(d){ return (d>=1950&&d<2000) ? '’'+String(d).slice(2)+'s' : d+'s'; }
   function farFromDecade(e,d){ var ds=e.decade||[]; if(!ds.length) return false;
@@ -508,6 +515,7 @@
   function renderRound(){
     if(idx>=SEQ.length){ finish(); return; }
     var sp=document.getElementById('subprompt'); sp.textContent=''; sp.classList.remove('big');
+    var fx=document.getElementById('factline'); if(fx){ fx.textContent=''; fx.classList.remove('on'); }
     var r=SEQ[idx];
     choicesEl.innerHTML=r.five.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
@@ -525,33 +533,44 @@
     if(!right){ bt.classList.add('mypick'); }   // you tapped one of the four
     var conn=document.getElementById('subprompt');
     conn.classList.add('big');
-    var msg;
-    if(r.type==='p'){ msg='The four are all <b class="team">'+esc(r.conn)+'</b>.'; }
-    else if(r.type==='d'){ msg='The four all starred in <b class="team">'+esc(r.conn)+'</b>.'; }
-    else if(r.type==='h'){ msg='The four are all <b class="team">Hall of Famers</b>.'; }
-    else { msg='The four all share <b class="team">'+esc(r.team)+'</b>.'; }
-    conn.innerHTML=(right?'<b class="ok">✓ Correct!</b> ':'<b class="no">✗ Not quite.</b> ')+msg;
     if(right){
       ANSLOG.push('c');
-      run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
-      saveResume();
-      // The bonus used to fire after EVERY correct answer, which put 2.4s of
-      // forced waiting between you and the next round, twenty rounds deep. It
-      // reads as a reward the first time and as a toll the fifth. Now it shows
-      // up on your first spot (so it's discovered) and every fourth after that;
-      // the rest of the time you get the connection line and go.
-      if(run===1 || run%4===0) setTimeout(function(){ askWhy(r); }, 1000);
-      else setTimeout(function(){ busy=false; renderRound(); }, 1100);
+      run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock();
+      /* THE CONNECTION IS NOW THE SECOND QUESTION, SO IT CANNOT BE ANNOUNCED
+         HERE. Spotting the odd one out of five is one in five on a pure guess,
+         and a lot of correct answers were luck. Naming why the other four
+         belong together is the part that proves you actually knew, so it is
+         worth a point of its own and the link stays hidden until it is asked. */
+      conn.innerHTML='<b class="ok">✓ Spot on.</b> Now: what links the other four?';
+      setTimeout(function(){ askWhy(r); }, 620);
     } else {
       ANSLOG.push('x');
+      conn.innerHTML='<b class="no">✗ Not quite.</b> '+connMsg(r);
+      showFact(byId[r.odd]);
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1600);
+      setTimeout(function(){ finish(); }, 2200);
     }
   }
+  function connMsg(r){
+    if(r.type==='p') return 'The four are all <b class="team">'+esc(r.conn)+'</b>.';
+    if(r.type==='d') return 'The four all starred in <b class="team">'+esc(r.conn)+'</b>.';
+    if(r.type==='h') return 'The four are all <b class="team">Hall of Famers</b>.';
+    return 'The four all share <b class="team">'+esc(r.team)+'</b>.';
+  }
+  /* One line of real history on the odd one out, so the round leaves you with
+     something about a player rather than just a verdict. */
+  function showFact(e){
+    var el=document.getElementById('factline'); if(!el) return;
+    var line = (e && window.RTGFact) ? RTGFact.of(e, { seed: idx }) : null;
+    el.textContent = line || '';
+    el.classList.toggle('on', !!line);
+  }
 
-  // Bonus after a correct spot: name WHY the four are linked. No points - it's a
-  // quick insight beat that reinforces the connection. Decoys are verified false
-  // against the four, and this never affects the run or streak.
+  /* The second question, and the one that carries the knowledge. Worth a point,
+     which is what makes it a question rather than a flourish: a round is 2 if
+     you saw the odd one AND could say why, 1 if you only pointed. Decoys are
+     verified false against the four, so the wrong answers are genuinely wrong
+     rather than arguable. */
   function whyTrueLabel(r){
     if(r.type==='t') return 'All played for '+r.team;
     if(r.type==='p') return 'All '+r.conn;
@@ -573,30 +592,44 @@
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
     ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
     var opts = shuffle([trueLab].concat(decoys));
-    var WAIT=3600;
-    choicesEl.innerHTML = '<div class="whyq">Bonus: why are they linked?</div>' +
-      '<div class="whybar" aria-hidden="true" style="--whyms:'+WAIT+'ms"><i></i></div>' +
+    /* No countdown bar. It was there to stop an optional flourish from feeling
+       like a toll; now the question is worth a point, and putting a clock on a
+       scoring question just makes people panic-tap. Take as long as you like,
+       or skip. */
+    choicesEl.innerHTML = '<div class="whyq">What links the other four? <b>+1</b></div>' +
       opts.map(function(l){ return '<button class="choice why" type="button" data-l="'+esc(l)+'">'+esc(l)+'</button>'; }).join('') +
-      '<button class="whyskip" type="button" id="whySkip">Skip →</button>';
+      '<button class="whyskip" type="button" id="whySkip">Skip, take the 1 point</button>';
     var tapped=false, advanced=false, timer=0;
-    function go(){ if(advanced) return; advanced=true; clearTimeout(timer); busy=false; renderRound(); }
+    function go(){ if(advanced) return; advanced=true; clearTimeout(timer); idx++; saveResume(); busy=false; renderRound(); }
     [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(b){
       b.addEventListener('click', function(){
         if(tapped) return; tapped=true;
-        clearTimeout(timer);
-        var bar=choicesEl.querySelector('.whybar'); if(bar) bar.remove();
         var ok=b.dataset.l===trueLab;
         [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(x){
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
           if(x===b && !ok) x.classList.add('wrong');
         });
-        if(ok){ toast('Right! You knew why!'); if(window.RTGSound) RTGSound.lock(); }
-        else { toast('The link: '+trueLab); }
-        timer=setTimeout(go, 850);
+        var conn=document.getElementById('subprompt');
+        if(ok){
+          run++; document.getElementById('runN').textContent=run;
+          ANSLOG[ANSLOG.length-1]='b';                       // both halves: a full round
+          if(window.RTGSound) RTGSound.lock();
+          conn.innerHTML='<b class="ok">✓ And you knew why.</b> +1';
+        } else {
+          conn.innerHTML='<b class="no">✗ The link was:</b> '+esc(trueLab)+'.';
+          if(window.RTGSound) RTGSound.soft && RTGSound.soft();
+        }
+        showFact(byId[r.odd]);
+        timer=setTimeout(go, ok?1500:2100);
       });
     });
-    var sk=document.getElementById('whySkip'); if(sk) sk.addEventListener('click', go);
-    timer=setTimeout(go, WAIT);   // ignored → just move on
+    var sk=document.getElementById('whySkip');
+    if(sk) sk.addEventListener('click', function(){
+      if(tapped) return; tapped=true;
+      document.getElementById('subprompt').innerHTML='<b class="no">The link was:</b> '+esc(trueLab)+'.';
+      showFact(byId[r.odd]);
+      timer=setTimeout(go, 1600);
+    });
   }
 
   function startIfNeeded(){ if(started||done) return;
@@ -676,7 +709,7 @@
     NEWBEST=(!ARCHIVE && attemptFirst && run>0 && run>PREVBEST);
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     save(s);
-    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'in a row' });
+    if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest && run>0) RTGArchive.recordBest(GAME, run, { label:'points' });
     showEnd(s, false);
     if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
@@ -706,7 +739,7 @@
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    document.getElementById('yourTm').textContent = run+' in a row';
+    document.getElementById('yourTm').textContent = run+' points';
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -721,7 +754,8 @@
     // square that ended it, and (Number Game) an amber square where the save absorbed
     // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
     function shareGrid(){
-      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      // green = spotted it AND named the link, yellow = spotted only, red = the miss
+      var MAP={b:'\ud83d\udfe9', c:'\ud83d\udfe8', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
       if(!ANSLOG.length) return '\u2b1c';
       var out='', n=0;
       for(var i=0;i<ANSLOG.length && i<60;i++){
@@ -732,7 +766,7 @@
       return out;
     }
   document.getElementById('mShare').addEventListener('click', function(){
-    var stat=(run>0?'🔥 ':'')+run+' in a row';
+    var stat=(run>0?'🔥 ':'')+run+' points';
     RTGShare.send({ key:'oddone', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
   });
 
@@ -764,7 +798,7 @@
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
         else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
           samp.innerHTML=h;
         }
       }
@@ -804,7 +838,7 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:'oddone', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'in a row' });
+    RTG_LB.mount({ el:el, game:'oddone', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'run', unit:'points' });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();

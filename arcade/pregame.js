@@ -29,7 +29,7 @@
     table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
     match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
     career:     ['A career, revealed one team at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
-    oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
+    oddone:     ['Four names share a connection, one doesn’t.', 'Spot it for a point, then name the link for another.'],
     rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
     almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
     guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
