@@ -32,7 +32,7 @@
       desc:'Four names share a connection, one doesn’t. Spot it.',
       icon:'<svg viewBox="0 0 56 56"><circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/><rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/></svg>' },
     { key:'rankit',     path:'rankit',     cls:'rankit', name:'Rank It',          accent:'var(--pink)',
-      desc:'Put five athletes in the right order by a career stat or era.',
+      desc:'Put five athletes in order by a career stat, most at the top.',
       icon:'<svg viewBox="0 0 56 56"><rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/><rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/><rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/></svg>' },
     { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)',
       desc:'Name the college each player came from. Four choices, one right.',
