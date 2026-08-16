@@ -348,6 +348,45 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* ---- promo segment: speech over the wrestlers, crowd meter above ---- */
+  .phud{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;}
+  .ph-n{font-family:var(--display);font-size:22px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;}
+  .ph-s{font-size:12px;color:var(--text-dim);}
+  .ph-r{flex:1;min-width:220px;max-width:460px;}
+  .crowdmeter .cm-lab{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:4px;}
+  .crowdmeter .cm-lab span:nth-child(2){color:var(--gold);}
+  .cm-bar{position:relative;height:13px;border-radius:7px;overflow:hidden;
+    background:linear-gradient(90deg,#8a3226 0%,#5a4a3a 46%,#5a4a3a 54%,#2f6b4d 100%);}
+  .cm-bar i{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.55);width:100%;transition:width .45s ease;}
+  .cm-tick{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.3);}
+  .cm-bar b{position:absolute;top:-3px;width:6px;height:19px;border-radius:3px;background:var(--cream);
+    box-shadow:0 0 8px rgba(0,0,0,.9);margin-left:-3px;transition:left .45s ease;left:50%;}
+  .arena.promo{height:270px;}
+  .bubble{position:absolute;max-width:44%;background:#F4E8DB;color:#1a1512;border-radius:13px;
+    padding:9px 13px;font-size:13.5px;line-height:1.45;font-weight:600;z-index:6;
+    box-shadow:0 6px 16px rgba(0,0,0,.6);opacity:0;transform:translateY(8px) scale(.94);
+    transition:opacity .18s,transform .18s;pointer-events:none;}
+  .bubble.show{opacity:1;transform:none;}
+  .bubble::after{content:"";position:absolute;bottom:-8px;border:9px solid transparent;border-top-color:#F4E8DB;border-bottom:0;}
+  .bubble.me{left:3%;top:6%;} .bubble.me::after{left:22px;}
+  .bubble.opp{right:3%;top:6%;background:#e6d2c6;} .bubble.opp::after{right:22px;border-top-color:#e6d2c6;}
+  .bubble .who{display:block;font-family:var(--display);font-size:10.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:#8a5a2b;margin-bottom:2px;}
+  .crowdcall{position:absolute;left:0;right:0;top:44%;text-align:center;font-family:var(--display);
+    font-size:30px;letter-spacing:.05em;text-transform:uppercase;opacity:0;z-index:7;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.8);}
+  .crowdcall.show{animation:callA 1.15s ease-out;}
+  .pmbottom{margin-top:12px;display:grid;gap:10px;}
+  .pmopt{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.13s;}
+  .pmopt:hover{border-color:var(--brandred);background:rgba(198,57,44,.10);transform:translateY(-2px);}
+  .pmopt .po-k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:3px;}
+  .pmopt .po-t{font-size:13.5px;color:var(--cream);line-height:1.45;}
+  .pmopt .po-d{font-size:11px;color:var(--text-faint);margin-top:4px;}
+  .k-heel{color:#f0907f;} .k-face{color:#5bb083;} .k-cool{color:#6aa7c4;} .k-crowd{color:#e0b341;}
+  .pmwrite{display:flex;gap:8px;margin-top:2px;}
+  .pmwrite input{flex:1;}
+  @media(max-width:640px){ .arena.promo{height:220px;} .bubble{max-width:52%;font-size:12.5px;padding:8px 10px;} }
+
   /* ---- the week's decision, made legible ---- */
   .advice{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;margin-bottom:14px;
     border:1px solid var(--line);background:var(--panel);flex-wrap:wrap;}
@@ -725,6 +764,32 @@
   <div id="shopBody"></div>
 </div>
 
+<!-- ============ PROMO SEGMENT ============ -->
+<div class="screen" id="s-promo">
+  <div class="phud">
+    <div class="ph-l"><div class="ph-n" id="pmTitle">LIVE MIC</div><div class="ph-s" id="pmSub">—</div></div>
+    <div class="ph-r">
+      <div class="crowdmeter">
+        <div class="cm-lab"><span>BOOS</span><span id="cmReact">REACTION 0</span><span>CHEERS</span></div>
+        <div class="cm-bar"><i id="cmFill"></i><span class="cm-tick"></span><b id="cmDot"></b></div>
+      </div>
+    </div>
+  </div>
+  <div class="arena promo" id="pmArena">
+    <div class="ropes"></div><div class="crowd" id="pmCrowd"></div><div class="mat"></div>
+    <div class="fighter me" id="pMe"></div>
+    <div class="fighter opp" id="pOpp"></div>
+    <div class="bubble me" id="pBubMe"></div>
+    <div class="bubble opp" id="pBubOpp"></div>
+    <div class="fxlayer" id="pFx"></div>
+    <div class="crowdcall" id="pCall"></div>
+  </div>
+  <div class="pmbottom">
+    <div class="flog" id="pmLog"></div>
+    <div id="pmChoices"></div>
+  </div>
+</div>
+
 <!-- ============ CONTRACT / THE BUSINESS ============ -->
 <div class="screen" id="s-deal">
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
@@ -878,6 +943,51 @@ function merchWeekly(){
 }
 function gimHeat(){ return G&&G.w.gimmick? clamp(G.w.gimmick.heat,0,100):60; }
 function gimStale(){ return gimHeat()<32; }
+
+/* ---- THE CROWD ----
+   Popularity is not one number. A crowd that hates you loudly is worth more
+   than a crowd that likes you politely, and both are worth vastly more than a
+   crowd that has decided it does not care. So we track two things:
+
+     reaction  0..100   how loud they are. This is what "over" actually means,
+                        and it is what moves you up the card.
+     lean   -100..100   booed at one end, cheered at the other.
+
+   A heel with reaction 85 and lean -80 is a main-eventer. A face with
+   reaction 20 and lean +10 is a guy the crowd sits on their hands for. */
+function reactionOf(){ return G? clamp(G.car.reaction==null?G.car.pop:G.car.reaction,0,100):0; }
+function leanOf(){ return G? clamp(G.car.lean||0,-100,100):0; }
+function crowdAlign(){ const l=leanOf(); return l<=-22?'heel':l>=22?'face':'tweener'; }
+// working against what the crowd has decided you are is the fastest way to go cold
+function alignMismatch(){
+  const want=G.w.align, got=crowdAlign();
+  if(want==='tweener'||got==='tweener') return 0;
+  return want===got?0:1;
+}
+function crowdLabel(){
+  const r=reactionOf(), l=leanOf();
+  if(r<22) return {t:'Nobody reacts',d:'They are not invested either way. This is the worst place to be.',c:'#8a8177'};
+  if(l<=-55) return {t:'Genuinely hated',d:'Real heat. They pay to see you get beaten.',c:'#f0907f'};
+  if(l<=-22) return {t:'Booed',d:'The crowd is against you, and loud about it.',c:'#e08a6a'};
+  if(l>=55)  return {t:'Beloved',d:'They are behind you all the way.',c:'#5bb083'};
+  if(l>=22)  return {t:'Cheered',d:'The crowd is with you.',c:'#7dc4a4'};
+  return {t:'Split crowd',d:'Half boo, half cheer. Nobody is sure what you are.',c:'#e0b341'};
+}
+// how the crowd moves after a moment: `hostile` -1..1, `intensity` 0..1
+function crowdShift(hostile,intensity,charisma){
+  const c=G.car;
+  const ch=(charisma==null?G.w.attrs.ch:charisma)/100;
+  // heat is heat — hostile or beloved, as long as you committed to it
+  const commitment=Math.abs(hostile);
+  const gain=(intensity*(0.55+commitment*0.45)*(0.6+ch*0.9))*7;
+  // pushing the crowd against what you claim to be confuses them
+  const drift = hostile<0 ? -1 : hostile>0 ? 1 : 0;
+  const wants = G.w.align==='heel'? -1 : G.w.align==='face'? 1 : drift;
+  const consistent = drift===0 || drift===wants;
+  c.reaction=clamp((c.reaction==null?c.pop:c.reaction) + (consistent?gain:gain*0.25) - (consistent?0:1.6), 0, 100);
+  c.lean=clamp((c.lean||0) + drift*intensity*(6+ch*7), -100, 100);
+  return {gain:Math.round(consistent?gain:gain*0.25), consistent};
+}
 
 /* free-agency offers, generated from who actually wants you */
 function freeAgentOffers(){
@@ -1077,6 +1187,8 @@ function migrate(o){
     c.deal.weekly=Math.round([420,1500,5200,17000][ti]*(1+(c.pop||5)/100));
   }
   if(c.standing==null) c.standing=50;
+  if(c.reaction==null) c.reaction=c.pop||5;
+  if(c.lean==null) c.lean=(w.align==='heel'?-30:w.align==='face'?30:0);
   if(c.wear==null) c.wear=(c.year||1)*11;
   c.injuries=c.injuries||[]; c.accolades=c.accolades||[]; c.yearLog=c.yearLog||[];
   c.chronic=c.chronic||[]; if(c.turns==null) c.turns=0;
@@ -1803,8 +1915,9 @@ function finishCreate(){
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
           plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[],
           // --- the working life ---
-          deal:{ promo:startPromo(CREATE.style), years:1, weeksLeft:WEEKS_PER_YEAR, weekly:0, sched:'regular', creative:false, merch:0.06, signedY:1 },
-          standing:50, wear:0, injuries:[], hurt:null, accolades:[], yearLog:[], turns:0 },
+          deal:{ promo:startingPromotion(CREATE.style), years:1, weeksLeft:WEEKS_PER_YEAR, weekly:0, sched:'regular', creative:false, merch:0.06, signedY:1 },
+          standing:50, wear:0, injuries:[], hurt:null, accolades:[], yearLog:[], turns:0,
+          reaction:5, lean:($('cAlign').value==='heel'?-14:$('cAlign').value==='face'?14:0), promos:[] },
     bag:{ coins:1500, owned:{}, shards:0 },
     log:[], hist:[]
   };
@@ -1819,7 +1932,7 @@ function finishCreate(){
   save(); go('career'); toast('Welcome to the business, '+name);
 }
 // the indie that takes a chance on a rookie of your type
-function startPromo(style){
+function startingPromotion(style){
   const indies=PROMOS.filter(p=>p.tier==='indie');
   const best=indies.map(p=>({p,f:(PRODUCT_FIT[p.product]||{})[style]||0}))
                    .sort((a,b)=>b.f-a.f);
@@ -1923,7 +2036,9 @@ function renderCareer(){
     : `<div class="bar gd"><i style="width:100%"></i></div><div class="hint" style="margin-top:3px;">Rep is there — you need OVR ${nextEarn.minOvr} (you are ${ovr(G.w)}).</div>`;
   $('carTiles').innerHTML=[
     ['Reputation', Math.round(c.rep), repHint],
-    ['Popularity', Math.round(c.pop), `<div class="bar"><i style="width:${clamp(c.pop)}%"></i></div>`],
+    ['Crowd', Math.round(reactionOf()), (()=>{ const cl=crowdLabel(), l=leanOf();
+      return `<div class="cm-bar" style="height:9px;margin-top:5px;"><i style="width:${100-reactionOf()}%"></i><span class="cm-tick"></span><b style="left:${(l+100)/2}%;top:-2px;height:13px;width:5px;"></b></div>
+        <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>`; })()],
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
@@ -2029,11 +2144,13 @@ function weekAdvice(){
   if(w.tp>0) return {ico:'⭐',t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
   if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury — take the week off.`,sev:'bad'};
   if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way — and indifference is worse than being hated. Get on the microphone and give them something.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back on the mic.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'warn'};
   const st=story();
   if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
   if(c.deal&&c.deal.weeksLeft<=6) return {ico:'📄',t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   const t=workTier(), belt=beltName(t);
-  if(!c.title&&c.pop>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
+  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
   return {ico:'🤼',t:'Pick a match. What you emphasise in your game plan is what you get better at.',sev:'ok'};
 }
 /* what you are working toward, so progress is visible week to week */
@@ -2059,7 +2176,8 @@ function nextGoals(){
     if(!best||p>best.p) best={l:`Unlock ${m.name}`, sub:`${cat.name} · ${need.join(' · ')||'ready'}`, p};
   });
   if(best) out.push(best);
-  if(!c.title) out.push({l:`Win the ${beltName()}`, sub:`Popularity ${Math.round(c.pop)}/${Math.min(70,18+tierIdx()*16)} to be considered`, p:clamp(c.pop/Math.min(70,18+tierIdx()*16)*100)});
+  if(!c.title){ const need=Math.min(70,18+tierIdx()*16);
+    out.push({l:`Win the ${beltName()}`, sub:`Crowd reaction ${Math.round(reactionOf())}/${need} to be considered`, p:clamp(reactionOf()/need*100)}); }
   else out.push({l:'Defend the title', sub:`${c.defenses||0} successful defence${(c.defenses||0)===1?'':'s'} so far`, p:clamp((c.defenses||0)/5*100)});
   return out.slice(0,3);
 }
@@ -2127,7 +2245,7 @@ function renderWeek(){
     <div class="flab">Or spend the week</div>
     <div class="grid g3" style="gap:8px;margin-bottom:14px;">
       <div class="wk-alt" onclick="doTrainWeek()"><div class="wa-n">🏋️ Train</div><div class="wa-d">+45 XP toward a training point. Costs a little condition.</div></div>
-      <div class="wk-alt" onclick="doPromoWeek()"><div class="wa-n">🎤 Media</div><div class="wa-d">+${(1.5+G.w.attrs.ch/45).toFixed(1)} popularity and showmanship mastery.</div></div>
+      <div class="wk-alt" onclick="openPromoPicker()"><div class="wa-n">🎤 Cut a promo</div><div class="wa-d">Live mic. Build a feud, an alliance, or your own character — and move the crowd.</div></div>
       <div class="wk-alt" onclick="doRest()"><div class="wa-n">🛌 Rest</div><div class="wa-d">Recover condition and morale. The safest week there is.</div></div>
     </div>
 
@@ -2229,13 +2347,13 @@ function makeOffers(){
     // trusts — being good is not enough on its own.
     const trusted=G.car.standing>=52 && gimHeat()>=40;
     if(i===2 && holds && rnd()<0.78) stakes='defense';
-    else if(i===2 && !holds && trusted && G.car.pop>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
+    else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
     // your position on the card follows your standing and how hot the act is
-    const draw=(G.car.standing*0.4 + gimHeat()*0.25 + G.car.pop*0.35);
+    const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionOf()*0.44);
     const card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
@@ -2419,12 +2537,13 @@ const ST={W:760,home:130,close:80};
 const REF_LOOK={ skin:'#d29b6e', hair:'#241a12', gear:'#F4E8DB', trim:'#1e1e24',
   hairStyle:'buzz', face:'none', mask:'none', attire:'ref', boots:'sneak', acc:'none',
   pattern:'solid', tattoo:'none', aura:'none', build:'lean' };
-function stageInit(){
-  const A=$('arena'); ST.W=A.clientWidth||760;
+function stageInit(arenaId){
+  const A=$(arenaId||'arena'); ST.W=A.clientWidth||760;
   ST.home=Math.round(ST.W*0.16);
   ST.close=Math.max(46,ST.home-52);
+  const PROMO = (arenaId==='pmArena');
   ['me','opp','ref'].forEach(k=>{
-    const el=$(k==='me'?'fMe':k==='opp'?'fOpp':'fRef');
+    const el=$(PROMO ? (k==='me'?'pMe':k==='opp'?'pOpp':'fRef') : (k==='me'?'fMe':k==='opp'?'fOpp':'fRef'));
     el.className='fighter '+k; el.innerHTML='<div class="fbob"></div>';
     FIG[k]={el, inner:el.firstElementChild, dir:k==='opp'?-1:1,
             home:(k==='me'?-ST.home:k==='opp'?ST.home:0), look:null, pose:null, x:0, up:0, rot:0, sc:1};
@@ -3387,6 +3506,9 @@ function applyMatch(o,res){
   const popGain=((res.quality-50)/6 + (draw?0.7:res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
   const popCeil=Math.min(100,([38,64,85,100][tierIdx()]||38)+4);
   c.pop=clamp(c.pop+popGain,1,popCeil);
+  // the room reacts to the match too, in whichever direction you are working
+  c.reaction=clamp((c.reaction==null?c.pop:c.reaction)+popGain*1.1 - alignMismatch()*0.8, 0, popCeil);
+  c.lean=clamp((c.lean||0) + (G.w.align==='heel'?-1:G.w.align==='face'?1:0)*(0.6+(res.quality-50)/60), -100, 100);
   c.mom=clamp(c.mom+(draw?1:res.win?7:-6)+(res.quality-55)/8);
   c.cond=clamp(c.cond-(6+o.mult*5+(res.quality>75?3:0)));
   // XP → training points; mastery in the categories you emphasised
@@ -3530,6 +3652,10 @@ function advanceWeek(){
   // fame can't outrun the stage you work on — drift toward the tier's ceiling
   const ceil=[38,64,85,100][tierIdx()]||38;
   if(c.pop>ceil) c.pop=Math.max(ceil,c.pop-(c.pop-ceil)*0.09);
+  if(c.reaction==null) c.reaction=c.pop;
+  if(c.reaction>ceil) c.reaction=Math.max(ceil,c.reaction-(c.reaction-ceil)*0.09);
+  c.reaction=clamp(c.reaction-0.35-alignMismatch()*0.5,0,100);      // silence creeps back in
+  c.lean=(c.lean||0)*0.985;
   // ---- healing ----
   if(c.injWeeks>0){
     c.injWeeks--;
@@ -3592,11 +3718,6 @@ function doTrainWeek(){ const w=G.w;
   G.car.cond=clamp(G.car.cond-3);
   const u=checkUnlocks(); advanceWeek();
   toast('Training week: +45 XP'+(u.length?' · unlocked '+u.length+' move(s)':'')); go('career'); }
-function doPromoWeek(){ const c=G.car, w=G.w;
-  const gain=1.5+w.attrs.ch/45; c.pop=clamp(c.pop+gain);
-  w.mastery.showman=(w.mastery.showman||0)+14;
-  const u=checkUnlocks(); advanceWeek();
-  toast('Media week: +'+gain.toFixed(1)+' popularity'+(u.length?' · '+u.length+' unlocked':'')); go('career'); }
 function doMentorWeek(){ const c=G.car;
   c.mentorWeeks--; c.cond=clamp(c.cond-4);
   if(c.mentorWeeks<=0){ completeMentor(); } else { advanceWeek(); toast(c.mentorWeeks+' weeks left in camp'); go('career'); }
@@ -3883,8 +4004,292 @@ function drawCard(){
 }
 
 /* ============================================================
-   THE BUSINESS — contract, road schedule, repackaging
+   PROMOS
+   ------------------------------------------------------------
+   Ring time. On a week you are not wrestling you can take the
+   microphone, and what you say is what builds the feuds, the
+   friendships and — most of all — the crowd's opinion of you.
+
+   You can pick a line or write your own. There is no language
+   model behind this: the writer reads your line for tone —
+   how hostile it is, how hard it commits, whether you spoke to
+   the crowd, and whether you referenced anything true about the
+   person in front of you — and the character answers in their
+   own voice from that reading.
    ============================================================ */
+let PM=null;
+
+const PROMO_LINES={
+  callout:{k:'CALL THEM OUT',c:'heel',host:-0.8,int:0.85,lines:[
+    o=>`${o}. You have been ducking me for weeks and everybody in this building knows it.`,
+    o=>`I am not leaving this ring until ${o} comes out here and faces me like a professional.`,
+    o=>`${o}, you and me. No excuses left.`]},
+  mock:{k:'MOCK THEM',c:'heel',host:-1,int:0.7,lines:[
+    o=>`I have seen tribute acts with more to offer than ${o}.`,
+    o=>`${o} is exactly what this place deserves. That is not a compliment to either of you.`,
+    o=>`They keep telling me ${o} is a threat. I keep waiting to feel threatened.`]},
+  boast:{k:'BOAST',c:'heel',host:-0.4,int:0.75,lines:[
+    ()=>`Look around. Every one of you paid to watch me, and every one of you knows why.`,
+    ()=>`I am not the future of this business. I am the reason it still has one.`,
+    ()=>`There is nobody in that locker room on my level. There has not been for a long time.`]},
+  respect:{k:'SHOW RESPECT',c:'face',host:0.7,int:0.55,lines:[
+    o=>`${o} is the toughest opponent I have ever had. I mean that.`,
+    o=>`Whatever happens between us, ${o} has earned every bit of it.`,
+    o=>`I do not have to like ${o} to respect what they can do.`]},
+  rally:{k:'RALLY THE CROWD',c:'face',host:0.9,int:0.9,lines:[
+    ()=>`Every single one of you got up this morning and went to work. So did I. That is why we understand each other.`,
+    ()=>`I do not do this for a belt. I do it for the noise you make when I walk out here.`,
+    ()=>`They can book me anywhere on the card. You will still be standing.`]},
+  threat:{k:'THREATEN',c:'heel',host:-0.95,int:1,lines:[
+    o=>`${o}, I am going to hurt you. Not beat you. Hurt you.`,
+    o=>`When this is finished, ${o} is going to need somebody to drive them home.`,
+    o=>`I gave ${o} a chance to walk away. That offer has expired.`]},
+  cool:{k:'PLAY IT COOL',c:'cool',host:-0.1,int:0.4,lines:[
+    o=>`${o} can say whatever they like. I will be in the ring on Friday either way.`,
+    ()=>`I am not here to talk. I am here because they gave me a microphone and it would be rude not to.`,
+    o=>`No threats. No promises. Just a match with ${o}, and we will see.`]},
+  ally:{k:'OFFER AN ALLIANCE',c:'face',host:0.85,int:0.6,lines:[
+    o=>`${o} — this business is easier with somebody watching your back. Mine is available.`,
+    o=>`I have been on the wrong end of a numbers game one too many times. ${o}, so have you.`,
+    o=>`We can keep tearing lumps out of each other, ${o}, or we can go after the people who deserve it.`]},
+  challenge:{k:'DEMAND A TITLE SHOT',c:'crowd',host:-0.3,int:0.9,lines:[
+    o=>`I have beaten everybody they have put in front of me. ${o} is holding the only thing I want.`,
+    ()=>`I am done waiting my turn. Put the championship in front of me and watch what happens.`,
+    o=>`${o} can keep the belt warm. I am coming for it.`]},
+};
+function promoKinds(target,mode){
+  const base=['boast','cool'];
+  if(mode==='title') return ['challenge','boast','callout','cool'];
+  if(mode==='crowd') return ['rally','boast','mock','cool'];
+  if(!target) return ['rally'].concat(base);
+  const R=rel(target.id);
+  const k=['callout','mock','threat','respect','cool','boast'];
+  if(R.respect>=45||R.matches>=2) k.push('ally');
+  return k;
+}
+
+/* ---- reading a written line ----
+   Not a language model. A tone reader: hostility, how hard you committed,
+   whether you spoke to the room, and whether you said anything that is
+   actually true about the person standing across from you. */
+const TONE={
+  hostile:['destroy','kill','hurt','break','end you','finish','beat','smash','ruin','pathetic','coward','joke','nobody','washed','trash','garbage','embarrass','bury','shut up','overrated','fraud','disgrace','hate'],
+  warm:['respect','honour','honor','earned','proud','thank','brother','sister','friend','together','admire','learned','grateful','the best'],
+  boast:['i am the','im the','greatest','best in','nobody can','every one of you','look at me','the man','the reason','carry this'],
+  crowd:['you people','this town','everybody here','all of you','every one of you','you fans','this crowd','tonight','each of you','the people'],
+  title:['championship','the belt','the title','champion','gold'],
+};
+function readPromoLine(txt,target){
+  const t=(txt||'').toLowerCase();
+  const has=(arr)=>arr.reduce((n,w)=>n+(t.indexOf(w)>=0?1:0),0);
+  const h=has(TONE.hostile), w=has(TONE.warm), b=has(TONE.boast);
+  const crowd=has(TONE.crowd)>0, wantsTitle=has(TONE.title)>0;
+  // hostility runs -1 (venomous) .. +1 (warm)
+  let hostile=clamp((w*0.5 - h*0.5 - b*0.18),-1,1);
+  if(!h&&!w&&!b) hostile = G.w.align==='heel'?-0.25:0.2;
+  // commitment: length, punctuation, shouting
+  const words=t.split(/\s+/).filter(Boolean).length;
+  const shout=(txt.match(/[A-Z]{3,}/g)||[]).length + (txt.match(/!/g)||[]).length;
+  let intensity=clamp(0.30 + Math.min(words,34)/38 + Math.min(shout,4)*0.09 + (h+w+b)*0.08, 0.1, 1);
+  // did you say anything specific about them?
+  let specific=false;
+  if(target){
+    const bits=[target.name,target.nick||''].join(' ').toLowerCase().split(/[\s,'"]+/).filter(x=>x.length>3);
+    (target.traits||[]).forEach(x=>bits.push(String(x).toLowerCase()));
+    specific=bits.some(x=>x&&t.indexOf(x)>=0);
+  }
+  if(specific) intensity=clamp(intensity+0.10,0.1,1);   // naming them shows you did the work
+  return {hostile,intensity,crowd,specific,wantsTitle,words};
+}
+// the character answers you, in their voice, according to how you came at them
+function promoReply(target,read){
+  if(!target) return null;
+  const L=target.lines||{};
+  const pick=(a)=>Array.isArray(a)&&a.length? a[Math.floor(rnd()*a.length)] : null;
+  if(read.hostile>=0.45){
+    return pick(L.respect) || pick(L.lose) || `You will not hear me argue with any of that.`;
+  }
+  if(read.hostile<=-0.55){
+    const t=pick(L.taunt);
+    return t ? t : `Say it again to my face and see what it costs you.`;
+  }
+  return pick(L.taunt) || pick(L.win) || `Talk is cheap. I will see you out there.`;
+}
+
+/* ---- running the segment ---- */
+function pmLog(h,cls){ const el=$('pmLog'); const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=h; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+function pmBubble(who,name,txt){
+  const el=$(who==='me'?'pBubMe':'pBubOpp');
+  el.innerHTML=`<span class="who">${name}</span>${txt}`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+function pmClearBubbles(){ $('pBubMe').classList.remove('show'); $('pBubOpp').classList.remove('show'); }
+function pmMeter(){
+  const r=reactionOf(), l=leanOf();
+  $('cmReact').textContent='REACTION '+Math.round(r);
+  $('cmFill').style.width=(100-r)+'%';
+  $('cmDot').style.left=((l+100)/2)+'%';
+}
+async function pmCall(t,col){
+  const c=$('pCall'); c.textContent=t; c.style.color=col||'var(--gold)';
+  c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(720);
+}
+function beginPromo(mode,targetId){
+  const target=targetId?charById(targetId):null;
+  PM={mode,target,beat:0,maxBeats:3,score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,done:false};
+  go('promo');
+  stageInit('pmArena');                           // same rig and ring as a match
+  figLook('me',G.w.look);
+  if(target){ figLook('opp',target.look); FIG.opp.el.style.display=''; }
+  else FIG.opp.el.style.display='none';
+  FIG.ref.el.style.display='none';
+  // stand them closer than a match — this is a face-to-face, not a lock-up
+  const step=Math.round(ST.home*0.42);
+  fmv('me',{pose:'point',fwd:target?step:Math.round(ST.home*0.9),up:0,rot:0,sc:1},0);
+  if(target) fmv('opp',{pose:'ready',fwd:step,up:0,rot:0,sc:1},0);
+  $('pmTitle').textContent = target? `${G.w.name} · ${target.name}` : 'LIVE MIC';
+  $('pmSub').textContent = mode==='title'? 'Calling for a championship match'
+    : mode==='crowd'? 'Open mic — character work'
+    : target? `Face to face with ${target.name}` : '';
+  $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
+  pmLog(`<span class="hint">The music cuts. You have the microphone${target?` — and ${target.name} is already out here.`:'.'}</span>`);
+  pmChoices();
+}
+function pmChoices(){
+  if(PM.done) return;
+  const t=PM.target, oppName=t?t.name:'them';
+  const html=promoKinds(t,PM.mode).map(k=>{
+    const d=PROMO_LINES[k]; if(!d) return '';
+    const line=d.lines[Math.floor(rnd()*d.lines.length)](oppName);
+    const pay=JSON.stringify({k,line}).replace(/"/g,'&quot;');
+    return `<div class="pmopt" onclick="pmSay('${encodeURIComponent(JSON.stringify({k,line}))}')">
+      <div class="po-k k-${d.c}">${d.k}</div>
+      <div class="po-t">“${line}”</div></div>`;
+  }).join('');
+  $('pmChoices').innerHTML=`<div class="grid" style="gap:9px;">${html}</div>
+    <div class="flab" style="margin-top:12px;">Or say it your own way</div>
+    <div class="pmwrite">
+      <input type="text" id="pmCustom" maxlength="180" placeholder="Write your own line…" onkeydown="if(event.key==='Enter')pmCustom()">
+      <button onclick="pmCustom()">Say it</button>
+    </div>
+    <div class="hint" style="margin-top:5px;">The room reads your tone — how hard you commit, whether you speak to <i>them</i>, and whether what you say about ${oppName} is actually true.</div>`;
+}
+function pmCustom(){
+  const el=$('pmCustom'), v=(el&&el.value||'').trim();
+  if(v.length<4){ toast('Say a bit more than that'); return; }
+  pmSay(encodeURIComponent(JSON.stringify({k:'custom',line:v})));
+}
+async function pmSay(payload){
+  if(PM.done) return;
+  const {k,line}=JSON.parse(decodeURIComponent(payload));
+  $('pmChoices').innerHTML='<div class="hint">…</div>';
+  const t=PM.target;
+  const read = k==='custom' ? readPromoLine(line,t)
+    : (()=>{ const d=PROMO_LINES[k];
+        return {hostile:d.host,intensity:d.int,crowd:(k==='rally'||k==='boast'),specific:k!=='cool'&&k!=='boast',wantsTitle:k==='challenge',words:14}; })();
+
+  fmv('me',{pose:read.intensity>0.7?'point':'taunt',fwd:0},220);
+  pmBubble('me',G.w.name,line);
+  await sleep(1500);
+
+  const sh=crowdShift(read.hostile,read.intensity,G.w.attrs.ch);
+  PM.hostile+=read.hostile; PM.intensity+=read.intensity;
+  if(read.specific) PM.specifics++;
+  if(read.crowd) PM.crowdWork++;
+  PM.score += read.intensity*(read.specific?1.35:1)*(sh.consistent?1:0.4)*(0.6+G.w.attrs.ch/140);
+  pmMeter();
+  const loud=read.intensity>0.65;
+  if(!sh.consistent) await pmCall('…silence','#8a8177');
+  else if(read.hostile<=-0.45) await pmCall(loud?'BOOOOO!':'boos','#f0907f');
+  else if(read.hostile>=0.45) await pmCall(loud?'HUGE POP!':'cheers','#5bb083');
+  else await pmCall('the room listens','#e0b341');
+  pmLog(sh.consistent
+    ? `<span class="hint">They bite — reaction +${sh.gain}${read.specific?' · you made it personal':''}${read.crowd?' · you spoke to the room':''}.</span>`
+    : `<span class="bad">That did not fit who they think you are. It fell flat.</span>`);
+
+  if(t){
+    const reply=promoReply(t,read);
+    fmv('opp',{pose:read.hostile<=-0.45?'point':'ready',fwd:0},220);
+    pmBubble('opp',t.name,reply);
+    const R=rel(t.id); R.met=true;
+    if(read.hostile<=-0.4){ R.heat=clamp(R.heat+(8+read.intensity*10),0,100); R.respect=clamp(R.respect-2,0,100); }
+    else if(read.hostile>=0.4){ R.respect=clamp(R.respect+(7+read.intensity*8),0,100); R.heat=clamp(R.heat-4,0,100); }
+    if(k==='ally') R.respect=clamp(R.respect+10,0,100);
+    await sleep(1750);
+  }
+  pmClearBubbles();
+  PM.beat++;
+  if(PM.beat>=PM.maxBeats) return pmFinish();
+  pmChoices();
+}
+async function pmFinish(){
+  PM.done=true;
+  const c=G.car, w=G.w, t=PM.target;
+  const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4, 0, 100);
+  c.pop=clamp(c.pop+q*0.035,1,100);
+  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + 6 + q*0.10, 0, 100);
+  w.mastery.showman=(w.mastery.showman||0)+Math.round(8+q*0.12);
+  c.rep+=Math.round(20+q*0.9);
+  c.standing=clamp(c.standing+(q>=60?1.6:q<35?-1:0.4));
+  w.xp+=Math.round(18+q*0.35); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
+  const cl=crowdLabel();
+  fmv('me',{pose:q>=60?'celebrate':'ready',fwd:0},280);
+  await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
+  pmLog(`<b>Segment rating ${Math.round(q)}.</b> <span class="hint">Reaction ${Math.round(reactionOf())} · ${cl.t}</span>`);
+  if(t){
+    const R=rel(t.id);
+    if(!c.rivalId && !story() && R.heat>=40){
+      startStory(t.id,'has heard enough out of you.');
+      pmLog(`<span class="hi">You have started something with ${t.name}. That is a feud now.</span>`);
+    } else if(R.respect>=62){
+      pmLog(`<span class="hi">${t.name} respects you — there is an alliance in this if you keep at it.</span>`);
+    } else {
+      pmLog(`<span class="hint">${t.name}: bad blood ${Math.round(R.heat)} · respect ${Math.round(R.respect)}.</span>`);
+    }
+  }
+  if(PM.mode==='title'){ c.titleCall=c.year*100+c.week; pmLog(`<span class="hi">The office heard you. A title shot is more likely while that is fresh.</span>`); }
+  pushInboxItem({ico:'🎤',sev:q>=60?'good':'info',txt:`<b>Promo segment.</b> Rated ${Math.round(q)} · ${cl.t.toLowerCase()}.`});
+  c.promos=c.promos||[]; c.promos.unshift({y:c.year,w:c.week,q:Math.round(q),t:t?t.name:'the crowd'});
+  if(c.promos.length>20) c.promos.pop();
+  checkUnlocks();
+  await sleep(700);
+  $('pmChoices').innerHTML=`<button class="big" onclick="pmDone()">Back to the Hub →</button>`;
+}
+function pmDone(){
+  if(FIG.ref) FIG.ref.el.style.display='';
+  if(FIG.opp) FIG.opp.el.style.display='';
+  advanceWeek(); save(); go('career');
+}
+// who is worth talking about this week
+function promoTargets(){
+  const me=myPromo(), out=[];
+  const st=story(); if(st){ const c=charById(st.charId); if(c) out.push({c,why:'Your active feud — this is how you build it'}); }
+  if(G.car.rivalId && (!st||st.charId!==G.car.rivalId)){ const c=charById(G.car.rivalId); if(c) out.push({c,why:'Your rival'}); }
+  const house=CHARS.filter(x=>x.promo===me.id && !out.some(o=>o.c.id===x.id));
+  house.sort((a,b)=>{ const ra=rel(a.id), rb=rel(b.id); return (rb.matches*2+rb.heat/12)-(ra.matches*2+ra.heat/12); });
+  house.slice(0,4).forEach(c=>{ const R=rel(c.id);
+    out.push({c,why:R.matches?`${R.wins}-${R.losses} against them · bad blood ${Math.round(R.heat)} · respect ${Math.round(R.respect)}`:'You have never crossed paths'}); });
+  return out;
+}
+function openPromoPicker(){
+  const belt=beltName(workTier());
+  let h=`<p class="log">A week off the card is ring time. Get on the microphone and build something.</p>
+  <div class="grid" style="gap:9px;margin-top:12px;">
+    <div class="pmopt" onclick="closeModal();beginPromo('crowd',null)">
+      <div class="po-k k-crowd">OPEN MIC</div><div class="po-t">Talk to the crowd</div>
+      <div class="po-d">No opponent — pure character work. The fastest way to freshen a stale act.</div></div>`;
+  if(!G.car.title) h+=`<div class="pmopt" onclick="closeModal();beginPromo('title',null)">
+      <div class="po-k k-crowd">CHALLENGE</div><div class="po-t">Demand a shot at the ${belt}</div>
+      <div class="po-d">Puts you in the title picture while it is fresh.</div></div>`;
+  promoTargets().forEach(x=>{
+    h+=`<div class="pmopt" onclick="closeModal();beginPromo('face','${x.c.id}')">
+      <div class="po-k k-heel">CONFRONT</div>
+      <div class="po-t">${x.c.name} <span class="hint">“${x.c.nick}”</span></div>
+      <div class="po-d">${x.why}</div></div>`;
+  });
+  modal('Cut a promo',h+`</div>`,[{label:'Not this week',cls:'ghost',fn:closeModal}]);
+}
+
 function renderDeal(){
   const c=G.car, d=c.deal, p=myPromo(), g=G.w.gimmick;
   let h='';
