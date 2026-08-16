@@ -716,6 +716,55 @@
     .navrow::-webkit-scrollbar{display:none;}
     .navrow button{flex:none;}
   }
+  /* ---- five groups up top, siblings underneath ---- */
+  .subnav{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 16px;}
+  .subnav button{padding:5px 12px;font-size:11px;border-color:transparent;background:transparent;color:var(--text-faint);
+    border-radius:8px;letter-spacing:.08em;}
+  .subnav button:hover{background:rgba(244,232,219,.07);color:var(--cream);}
+  .subnav button.on{color:var(--gold);background:rgba(224,179,65,.11);border-color:rgba(224,179,65,.4);}
+  @media(max-width:860px){
+    .subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+    .subnav::-webkit-scrollbar{display:none;} .subnav button{flex:none;}
+  }
+  .navhelp{margin-left:auto;border-color:rgba(224,179,65,.45)!important;color:var(--gold)!important;
+    padding:7px 12px!important;font-size:12px!important;}
+  @media(max-width:860px){ .navhelp{margin-left:0;} }
+
+  /* ---- the guided tour: spotlight, arrow, card ---- */
+  .tourback{position:fixed;inset:0;z-index:150;display:none;}
+  .tourback.open{display:block;}
+  .tourhole{position:absolute;border-radius:12px;border:2px solid var(--gold);pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(4,3,3,.84),0 0 26px 4px rgba(224,179,65,.5);
+    transition:top .32s cubic-bezier(.3,1,.4,1),left .32s cubic-bezier(.3,1,.4,1),width .32s,height .32s;}
+  .tourhole.hidden{opacity:0;box-shadow:0 0 0 9999px rgba(4,3,3,.84);}
+  .tourarrow{position:absolute;width:64px;height:64px;pointer-events:none;color:var(--gold);
+    filter:drop-shadow(0 3px 10px rgba(0,0,0,.8));transition:top .32s cubic-bezier(.3,1,.4,1),left .32s cubic-bezier(.3,1,.4,1);}
+  .tourarrow svg{width:100%;height:100%;display:block;}
+  .tourarrow.d-up{animation:arrUp 1.1s ease-in-out infinite;}
+  .tourarrow.d-down{animation:arrDown 1.1s ease-in-out infinite;}
+  @keyframes arrUp{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+  @keyframes arrDown{0%,100%{transform:translateY(0);}50%{transform:translateY(9px);}}
+  .tourcard{position:absolute;width:min(360px,calc(100vw - 28px));background:#171313;
+    border:1.5px solid rgba(224,179,65,.6);border-radius:14px;padding:15px 17px 14px;
+    box-shadow:0 18px 50px -14px rgba(0,0,0,.95);
+    transition:top .32s cubic-bezier(.3,1,.4,1),left .32s cubic-bezier(.3,1,.4,1);}
+  .tourcard .tk{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .tourcard .tt{font-family:var(--display);font-size:21px;color:var(--cream);text-transform:uppercase;line-height:1.14;margin:5px 0 6px;}
+  .tourcard .tb{font-size:13px;line-height:1.6;color:var(--text-dim);}
+  .tourcard .tb b{color:var(--cream);}
+  .tourcard .trow{display:flex;gap:8px;align-items:center;margin-top:13px;}
+  .tourcard .trow button{padding:8px 15px;font-size:12px;}
+  .tourdots{display:flex;gap:4px;margin-right:auto;}
+  .tourdots i{width:6px;height:6px;border-radius:99px;background:rgba(244,232,219,.22);}
+  .tourdots i.on{background:var(--gold);}
+  .tourgoal{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:9px;background:rgba(0,0,0,.28);}
+  .tourgoal .gl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .tourgoal .gv{font-size:13px;color:var(--cream);font-weight:700;margin-top:2px;}
+  .tourgoal .gs{font-size:11.5px;color:var(--text-dim);margin-top:1px;}
+  .tourgoal.go{border-color:rgba(198,57,44,.55);background:linear-gradient(180deg,rgba(198,57,44,.14),rgba(0,0,0,.25));}
+  .tourgoal.go .gl{color:#f0907f;}
+
   .beltlogo{width:100%;max-width:420px;height:auto;display:block;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
   @media(max-width:640px){ .topbar h1{font-size:18px;} .hud .value{font-size:14px;} main{padding:16px 12px 90px;} }
 </style>
@@ -930,19 +979,7 @@
 
 <!-- ============ CAREER HUB ============ -->
 <div class="screen" id="s-career">
-  <div class="navrow">
-    <button onclick="go('career')">Hub</button>
-    <button class="ghost" onclick="go('moves')">Arsenal</button>
-    <button class="ghost" onclick="go('train')">Training</button>
-    <button class="ghost" onclick="go('mentors')">Mentors</button>
-    <button class="ghost" onclick="go('locker')">Locker</button>
-    <button class="ghost" onclick="go('shop')">Pro Shop</button>
-    <button class="ghost" onclick="openCard()">My Card</button>
-    <button class="ghost" onclick="go('crew')">Locker Room</button>
-    <button class="ghost" onclick="go('deal')">Business</button>
-    <button class="ghost" onclick="go('world')">World</button>
-    <button class="ghost" onclick="go('record')">Record</button>
-  </div>
+  <div class="gnav" data-scr="career"></div>
   <h2 id="carTitle">The Grind</h2>
   <div class="grid g2 hubgrid">
     <div class="hub-side">
@@ -1027,28 +1064,28 @@
 
 <!-- ============ ARSENAL / MOVES ============ -->
 <div class="screen" id="s-moves">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="moves"></div>
   <h2>Arsenal <span class="sub2">unlock by hitting the attribute + mastery gates</span></h2>
   <div id="movesBody"></div>
 </div>
 
 <!-- ============ TRAINING ============ -->
 <div class="screen" id="s-train">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="train"></div>
   <h2>Training <span class="sub2" id="tpLbl"></span></h2>
   <div id="trainBody"></div>
 </div>
 
 <!-- ============ MENTORS ============ -->
 <div class="screen" id="s-mentors">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="mentors"></div>
   <h2>Mentors <span class="sub2">train under a legend to earn their signature</span></h2>
   <div id="mentorBody"></div>
 </div>
 
 <!-- ============ LOCKER ============ -->
 <div class="screen" id="s-locker">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="locker"></div>
   <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Pro Shop</span></h2>
   <div class="custom-wrap">
     <div>
@@ -1064,14 +1101,14 @@
 
 <!-- ============ SHOP ============ -->
 <div class="screen" id="s-shop">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="shop"></div>
   <h2>Pro Shop <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
   <div id="shopBody"></div>
 </div>
 
 <!-- ============ LOCKER ROOM ============ -->
 <div class="screen" id="s-crew">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="crew"></div>
   <h2>The Locker Room <span class="sub2">who has your back, and who wants it broken</span></h2>
   <div id="crewBody"></div>
 </div>
@@ -1104,21 +1141,21 @@
 
 <!-- ============ CONTRACT / THE BUSINESS ============ -->
 <div class="screen" id="s-deal">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="deal"></div>
   <h2>The Business <span class="sub2">your deal, your schedule, your character</span></h2>
   <div id="dealBody"></div>
 </div>
 
 <!-- ============ WORLD ============ -->
 <div class="screen" id="s-world">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="world"></div>
   <h2>The World <span class="sub2">nine promotions · everyone you'll meet on the way up</span></h2>
   <div id="worldBody"></div>
 </div>
 
 <!-- ============ RECORD ============ -->
 <div class="screen" id="s-record">
-  <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
+  <div class="gnav" data-scr="record"></div>
   <h2>Career Record</h2>
   <div id="recBody"></div>
 </div>
@@ -1143,6 +1180,12 @@
   <button class="big" onclick="nextMoment()">Continue</button>
 </div></div>
 <div class="momentback" id="ceremonyBack"><div class="momentcard" id="ceremonyCard" style="max-width:470px;"></div></div>
+<div class="tourback" id="tourBack">
+  <div class="tourhole" id="tourHole"></div>
+  <div class="tourarrow" id="tourArrow"><svg viewBox="0 0 64 64"><path d="M32 4 L32 52 M32 60 L14 38 M32 60 L50 38"
+    fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="tourcard" id="tourCard"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="roster.js"></script>
@@ -2695,10 +2738,138 @@ function pagerBar(id,labels,fn){
 /* ============================================================
    NAVIGATION / RENDER
    ============================================================ */
+/* ---- NAVIGATION GROUPS ----
+   Eleven top-level tabs was a wall. They collapse into five things you
+   actually think about (this week, getting better, how you look, who is
+   out there, where your career stands), with the siblings on a second
+   row once you are inside a group. */
+const NAVG=[
+  {id:'hub',    label:'Hub',    subs:[['career','Hub']]},
+  {id:'skills', label:'Skills', subs:[['moves','Arsenal'],['train','Training'],['mentors','Mentors']]},
+  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Pro Shop'],['card','My Card']]},
+  {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['world','The World']]},
+  {id:'legacy', label:'Career', subs:[['deal','Business'],['record','Record']]},
+];
+function groupOf(scr){ return NAVG.find(g=>g.subs.some(s=>s[0]===scr)); }
+function goGroup(id){ const g=NAVG.find(x=>x.id===id); if(g) go(g.subs[0][0]); }
+function navHTML(scr){
+  const g=groupOf(scr)||NAVG[0];
+  let h=`<div class="navrow">`+NAVG.map(x=>
+    `<button class="${x.id===g.id?'':'ghost'}" data-nav="${x.id}" onclick="goGroup('${x.id}')">${x.label}</button>`).join('')
+    +`<button class="ghost navhelp" onclick="startTour()" title="How to play">? Help</button></div>`;
+  if(g.subs.length>1) h+=`<div class="subnav">`+g.subs.map(s=>
+    `<button class="${s[0]===scr?'on':''}" onclick="${s[0]==='card'?'openCard()':`go('${s[0]}')`}">${s[1]}</button>`).join('')+`</div>`;
+  return h;
+}
+function paintNav(s){ const sc=$('s-'+s); if(!sc) return;
+  const el=sc.querySelector('.gnav'); if(el) el.innerHTML=navHTML(s); }
+
+/* ============================================================
+   THE GUIDED TOUR
+   ------------------------------------------------------------
+   A spotlight on the real interface with an arrow pointing at it.
+   It runs itself once on your first week and lives behind the Help
+   button after that. The last card is the part that actually
+   matters: your goals, your next step, and where to go first.
+   ============================================================ */
+const TOUR=[
+  {sel:'#weekBody .advice', title:'This is your week',
+   body:'Every week you do exactly one thing. <b>Take a match</b>, or spend the week on <b>training</b>, a <b>promo</b>, or <b>rest</b>. Then the week rolls over and you choose again.'},
+  {sel:'#weekBody .bkg', title:'Read the bookings',
+   body:'Each offer shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> it pays, and the <b>injury risk</b>. Tap one to wrestle it. Tough opponents pay more and rate higher.'},
+  {sel:'#carTiles', title:'Your vitals',
+   body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react (being hated counts, being ignored does not). <b>Condition</b> drops as you work and invites injury when it is low.'},
+  {sel:'[data-nav="skills"]', title:'Skills: get better',
+   body:'Matches earn <b>XP</b>, which becomes <b>training points</b>. Spend them here to raise attributes, which unlocks new <b>moves</b> in your Arsenal. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher.'},
+  {sel:'[data-nav="gear"]', title:'Gear: how you look',
+   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Pro Shop</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge with.'},
+  {sel:'[data-nav="roster"]', title:'Roster: who is out there',
+   body:'The <b>Locker Room</b> is your allies, your tag team, your stable, and everyone with a grudge. <b>The World</b> is all nine promotions and the wrestlers on them.'},
+  {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
+   body:'<b>Business</b> holds your contract, your schedule, your character and your injuries. <b>Record</b> is every match, title reign and accolade you have earned.'},
+  {sel:null, title:'Where to start', goals:true},
+];
+let TOUR_I=-1;
+function startTour(){ TOUR_I=0; if(G&&G.screen!=='career') go('career'); setTimeout(()=>tourStep(0),120); }
+function endTour(){ TOUR_I=-1; $('tourBack').classList.remove('open');
+  if(G){ G.car.tourDone=true; save(); } }
+function tourNext(){ tourStep(TOUR_I+1); }
+function tourStep(i){
+  if(i>=TOUR.length){ endTour(); return; }
+  TOUR_I=i;
+  const st=TOUR[i], back=$('tourBack'), hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
+  back.classList.add('open');
+  const last=i===TOUR.length-1;
+  card.innerHTML=`
+    <div class="tk"><span>Step ${i+1} of ${TOUR.length}</span><span>How to play</span></div>
+    <div class="tt">${st.title}</div>
+    ${st.body?`<div class="tb">${st.body}</div>`:''}
+    ${st.goals?tourGoalsHTML():''}
+    <div class="trow">
+      <span class="tourdots">${TOUR.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</span>
+      ${i>0?`<button class="ghost" onclick="tourStep(${i-1})">Back</button>`:''}
+      ${last?`<button onclick="endTour()">Got it</button>`
+            :`<button class="ghost" onclick="endTour()">Skip</button><button onclick="tourNext()">Next</button>`}
+    </div>`;
+  const el=st.sel?document.querySelector(st.sel):null;
+  if(el){
+    if(el.scrollIntoView) el.scrollIntoView({block:'center',inline:'center',behavior:'auto'});
+    setTimeout(()=>placeTour(el),60);
+  } else placeTour(null);
+}
+function placeTour(el){
+  const hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
+  const VW=window.innerWidth, VH=window.innerHeight, pad=8;
+  if(!el){
+    hole.classList.add('hidden'); arrow.style.display='none';
+    card.style.left=Math.round((VW-card.offsetWidth)/2)+'px';
+    card.style.top=Math.round(Math.max(12,(VH-card.offsetHeight)/2))+'px';
+    return;
+  }
+  hole.classList.remove('hidden'); arrow.style.display='block';
+  const r=el.getBoundingClientRect();
+  const hx=Math.max(4,r.left-pad), hy=Math.max(4,r.top-pad);
+  const hw=Math.min(VW-8,r.width+pad*2);
+  // a target taller than the screen would spotlight everything, which is nothing
+  const hh=Math.min(VH*0.55, r.height+pad*2);
+  hole.style.left=hx+'px'; hole.style.top=hy+'px';
+  hole.style.width=hw+'px'; hole.style.height=hh+'px';
+  // the card goes wherever there is more room, and the arrow points back at the target
+  const cw=card.offsetWidth, ch=card.offsetHeight, aH=64;
+  const below=VH-(hy+hh), above=hy;
+  const down = below < above;                        // true: card above, arrow points down
+  let cy = down ? hy-aH-ch-6 : hy+hh+aH+6;
+  cy=Math.max(10,Math.min(VH-ch-10,cy));
+  let cx=r.left+r.width/2-cw/2;
+  cx=Math.max(10,Math.min(VW-cw-10,cx));
+  card.style.left=Math.round(cx)+'px'; card.style.top=Math.round(cy)+'px';
+  arrow.className='tourarrow '+(down?'d-down':'d-up');
+  arrow.style.transform=down?'rotate(0deg)':'rotate(180deg)';
+  arrow.style.left=Math.round(Math.max(8,Math.min(VW-72,r.left+r.width/2-32)))+'px';
+  arrow.style.top=Math.round(down?Math.max(4,hy-aH-2):hy+hh+2)+'px';
+}
+// the closing card: what you are working toward and the single best next move
+function tourGoalsHTML(){
+  if(!G) return '';
+  const a=weekAdvice(), goals=nextGoals();
+  let h=`<div class="tb">Here is where your career stands right now.</div>`;
+  h+=`<div class="tourgoal go"><div class="gl">Do this first</div>
+    <div class="gv">${a.ico} ${a.cta?a.cta.l:'Take a match'}</div>
+    <div class="gs">${a.t}</div></div>`;
+  goals.slice(0,2).forEach(g=>{
+    h+=`<div class="tourgoal"><div class="gl">Working toward</div>
+      <div class="gv">${g.l}</div><div class="gs">${g.sub}</div></div>`;
+  });
+  return h;
+}
+window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=TOUR[TOUR_I];
+  placeTour(st&&st.sel?document.querySelector(st.sel):null); } });
+
 function go(s){
   if(G) G.screen=s;
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('s-'+s); if(el) el.classList.add('active');
+  paintNav(s);
   $('topbar').style.display=(G&&s!=='home'&&s!=='create'&&s!=='start')?'flex':'none';
   window.scrollTo(0,0);
   if(G){ refreshHud();
@@ -2870,6 +3041,8 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
+  // the manual runs itself once, on the first week you ever see
+  if(!c.tourDone && TOUR_I<0){ setTimeout(startTour,420); return; }
   setTimeout(()=>{ if(!showCeremony()) showMoments(); },400);   // podium first, then moments
 }
 function renderAttrs(){
