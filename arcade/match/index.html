@@ -122,6 +122,24 @@
   .chip.coins .n{color:var(--goldT);}
 
   /* ---------------- lead card (description, below the topbar) ---------------- */
+  /* Arcade Card version switcher: change sport without leaving the game.
+     Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the board
+     below gets shoved down mid-boot. :empty retires the reservation the
+     instant the real buttons arrive. */
+  .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
+  .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut);
+    font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase;
+    border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer;
+    transition:color .12s, border-color .12s, background .12s;}
+  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
+  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
   .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px;
     padding:11px 15px; box-shadow:var(--shadow); margin:0 0 var(--sp-2);}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
@@ -539,6 +557,7 @@
 
   <div class="app">
     <main class="gameCol">
+      <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
       <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
@@ -695,13 +714,14 @@
   <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=1"></script>
-  <script src="generator.js?v=12"></script>
+  <script src="generator.js?v=13"></script>
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
   <script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -738,6 +758,15 @@
     var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
     var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
 
+    /* Sport editions (Arcade Card). Each is its own daily board, its own
+       leaderboard and its own streak, keyed 'match_nba' / 'match_nfl' /
+       'match_mlb' by mode.js; 'all' keeps the bare 'match' key so every
+       existing board, streak and save carries over untouched. Free players and
+       the archive silently stay on 'all'. */
+    var GAME_BASE = 'match';
+    var MODE = 'all', SPORTFILTER = null, GAME = GAME_BASE;
+    function modeSuffix() { return MODE === 'all' ? '' : ('_' + MODE); }
+
     // ---- tester mode: removed for public launch ----
     // The old ?test=1 backdoor gave unlimited plays + fresh boards. It's now
     // permanently off (entitlement is the real Arcade Card). Any stale flag from
@@ -749,25 +778,29 @@
     // same board for the leaderboard. Replays reseed randomly for a fresh board.
     var servedDaily = false;                           // true once the daily board has been served this session
     var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
-    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
+    function boardSeed() {
+      if (replaySeed) return replaySeed;
+      var d = TESTER ? (DATE + '#' + boardNo) : DATE;
+      return MODE === 'all' ? d : (MODE + '-' + d);
+    }
 
     // ---- streak ----
     // The arcade has no coin economy; the game is about building the longest
     // daily streak. Streak is per-game (this Daily Match).
-    function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
+    function streakGet() { return parseInt(LS.getItem('grid_match_streak' + modeSuffix()) || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
     var GRADE_KEYS = ['A+', 'A', 'B', 'C', 'D', 'F'];
     function statsGet() {
       var s = null;
-      try { s = JSON.parse(LS.getItem('grid_match_stats')); } catch (e) { s = null; }
+      try { s = JSON.parse(LS.getItem('grid_match_stats' + modeSuffix())); } catch (e) { s = null; }
       if (!s || typeof s !== 'object') s = {};
       s.played = s.played | 0; s.wins = s.wins | 0; s.perfects = s.perfects | 0; s.best = s.best | 0;
       if (!s.grades || typeof s.grades !== 'object') s.grades = {};
       if (s.best < streakGet()) s.best = streakGet();  // keep best in sync with a running streak
       return s;
     }
-    function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
+    function statsSet(s) { LS.setItem('grid_match_stats' + modeSuffix(), JSON.stringify(s)); }
     function renderWallet() {
       document.getElementById('streakVal').textContent = streakGet();
     }
@@ -795,7 +828,7 @@
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3 } });
+      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3, sport: SPORTFILTER } });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -810,12 +843,12 @@
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
-    function resultKey() { return 'grid_match_result_' + DATE; }
+    function resultKey() { return 'grid_match_result' + modeSuffix() + '_' + DATE; }
     function savedResult() { if (ARCHIVE) return null; try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }   // archive: always a fresh play
 
     // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
     // Snapshot only during the charged first (ranked) play; never in archive or tester mode. ----
-    var RESUME_KEY = 'rtg:resume:match';
+    var RESUME_KEY = 'rtg:resume:match';   // re-keyed per edition by configureMode()
     function resumeSave() {
       if (ARCHIVE || TESTER || !attemptFirst || done) return;
       try {
@@ -1108,7 +1141,7 @@
     function startIfNeeded() {
       if (started || done) return;
       // charge one play-token the first time this attempt truly begins (first tile placement/move)
-      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
+      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt(GAME) : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
@@ -1284,15 +1317,15 @@
 
       // streak: completion-based (win or lose), one per calendar day.
       // ARCHIVE plays are practice: never touch streak/stats/coins/result save.
-      var last = LS.getItem('grid_match_lastplayed');
+      var last = LS.getItem('grid_match_lastplayed' + modeSuffix());
       var s = streakGet();
       var freshDay = (!ARCHIVE && last !== DATE);
       if (freshDay) {
         var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
         var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
         s = (last === ystr) ? s + 1 : 1;
-        LS.setItem('grid_match_streak', String(s));
-        LS.setItem('grid_match_lastplayed', DATE);
+        LS.setItem('grid_match_streak' + modeSuffix(), String(s));
+        LS.setItem('grid_match_lastplayed' + modeSuffix(), DATE);
 
         // lifetime stats (once per calendar day, same guard as the streak)
         var st = statsGet();
@@ -1314,13 +1347,13 @@
       // time only; the server score formula adds its own per-mistake penalty. ----
       if (won && attemptFirst && !ARCHIVE && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
-        RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+        RTG_BOARD.submit(GAME, DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
       if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
-        RTGArchive.recordBest('match', Math.round(finalTime), { higherIsBetter:false, label:'sec' });
+        RTGArchive.recordBest(GAME, Math.round(finalTime), { higherIsBetter:false, label:'sec' });
       }
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
@@ -1511,16 +1544,16 @@
       var ex = document.querySelector('.explain'); if (!ex) return;
       var base = 'Sort 20 sports names into five hidden groups of four.';
       if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
-      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
+      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label(GAME) + ' today') : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.
-      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('match') > 0);
+      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME) > 0);
       if (isReplay) { resumeClear(); replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
       else { replaySeed = null; servedDaily = true; }
       // fresh solve state; no token charged until first interaction. Rebuild the
@@ -1537,7 +1570,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
@@ -1611,13 +1644,13 @@
       // refresh landed mid-way through the charged ranked attempt: restore it
       // instead of burning the play (only when today isn't already finished).
       var resume = resumeLoad();
-      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf('match') > 0) {
+      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf(GAME) > 0) {
         if (restoreAttempt(resume)) return;
         resumeClear();   // stale / corrupt snapshot: fall through to the normal flow
       }
       // out of plays for today -> keep the locked / review state.
       // ARCHIVE always starts a fresh playable past-day board (no lock, no restore).
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) {
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) {
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
@@ -1781,14 +1814,76 @@
       if (toastT) clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('on'); }, 1800);
     }
 
+    // ---- sport editions: config, switcher, boot ----
+    function configureMode(mode) {
+      MODE = (window.RTGMode && mode) ? mode : 'all';
+      SPORTFILTER = (window.RTGMode ? RTGMode.sportOf(MODE) : null);
+      GAME = (window.RTGMode ? RTGMode.key(GAME_BASE, MODE) : GAME_BASE);
+      RESUME_KEY = 'rtg:resume:' + GAME;
+    }
+    function renderSwitcher() {
+      var el = document.getElementById('modesw'); if (!el) return;
+      if (ARCHIVE || !(window.RTGMode && RTGMode.eligible())) {
+        // A past day is always the mixed board, the same as every other game's
+        // archive, so the row goes entirely rather than sitting there inert.
+        el.classList.add('hidden'); if (ARCHIVE) el.classList.add('gone'); el.innerHTML = ''; return;
+      }
+      el.classList.remove('hidden'); el.classList.remove('gone');
+      el.innerHTML = RTGMode.MODES.map(function (m) {
+        var lab = m.k === 'all' ? 'All' : m.label;
+        return '<button type="button" role="tab" data-m="' + m.k + '" aria-selected="' + (m.k === MODE) + '"' +
+               ' class="' + (m.k === MODE ? 'on' : '') + '">' + lab + '</button>';
+      }).join('');
+      [].forEach.call(el.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { switchMode(b.dataset.m); });
+      });
+    }
+    function switchMode(mode) {
+      if (!window.RTGMode || mode === MODE) return;
+      try { LS.setItem('rtg:mode:' + GAME_BASE, mode); } catch (e) {}
+      // keep this edition's half-finished board so switching back resumes it
+      // (resumeSave() is itself a no-op unless this was the ranked attempt)
+      if (started) resumeSave();
+      if (tick) { clearInterval(tick); tick = null; }
+      configureMode(mode);
+      servedDaily = false; replaySeed = null;
+      var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
+      var sc = document.getElementById('scrim'); if (sc) sc.classList.add('hidden');
+      renderSwitcher();
+      try { if (window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); } catch (e) {}
+      buildDay(); renderWallet(); boot();
+      renderMatchBoard();
+      toast((mode === 'all' ? 'All Sports' : (RTGMode.sportOf(mode) || mode)) + ' version');
+    }
+    function startWith(mode) {
+      configureMode(mode); renderSwitcher();
+      buildDay(); renderWallet(); boot();
+    }
+    /* Resume beats the picker: if one edition has a charged, unfinished board
+       from earlier today, drop straight back into it rather than asking again
+       and stranding the play that was already spent on it. */
+    function activeResumeMode() {
+      var cands = (window.RTGMode && RTGMode.eligible() && !ARCHIVE) ? ['all', 'nba', 'nfl', 'mlb'] : ['all'];
+      for (var i = 0; i < cands.length; i++) {
+        var m = cands[i], g = (window.RTGMode ? RTGMode.key(GAME_BASE, m) : GAME_BASE);
+        var r; try { r = JSON.parse(LS.getItem('rtg:resume:' + g)); } catch (e) { r = null; }
+        if (!(r && r.d === DATE)) continue;
+        if (!(window.RTGTokens && RTGTokens.playsOf(g) > 0)) continue;
+        return m;
+      }
+      return null;
+    }
+
     // ---- go ----
     if (TESTER) {
       document.getElementById('testerBanner').hidden = false;
       document.getElementById('btnNew').style.display = '';
     }
-    buildDay();
-    renderWallet();
-    boot();
+    var rmode = activeResumeMode();
+    if (rmode) startWith(rmode);
+    else if (window.RTGMode && RTGMode.eligible() && !ARCHIVE) {
+      RTGMode.choose(GAME_BASE, { title: 'Daily Match' }).then(startWith);
+    } else startWith('all');
 
     // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
     (function initYou() {
@@ -1798,7 +1893,7 @@
     })();
     function renderMatchBoard() {
       if (!window.RTG_BOARD) return;
-      RTG_BOARD.leaderboard('match', DATE, 5).then(function (rows) {
+      RTG_BOARD.leaderboard(GAME, DATE, 5).then(function (rows) {
         if (rows === null) return;                       // offline: keep the Sample board
         var pill = document.querySelector('.mlb-pill'); if (pill) pill.textContent = 'Live';
         var samp = document.getElementById('mlbSample');
@@ -1822,7 +1917,7 @@
       RTG_BOARD.boot();
       RTG_BOARD.onChange(function (st) {
         if (st.signedIn) {
-          RTG_BOARD.streakOf('match').then(function (cs) {
+          RTG_BOARD.streakOf(GAME).then(function (cs) {
             if (cs) {
               document.getElementById('streakVal').textContent = cs.streak || 0;
               var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = cs.streak || 0;
@@ -1843,7 +1938,10 @@
   function go(){
     var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
     if(!el||!window.RTG_LB) return;
-    RTG_LB.mount({ el:el, game:'match', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
+    RTG_LB.mount({ el:el,
+      game:function(){ return window.RTGMode?RTGMode.boardKey(GAME_BASE):GAME_BASE; },
+      variant:function(){ return window.RTGMode?RTGMode.boardLabel(GAME_BASE):null; },
+      date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();

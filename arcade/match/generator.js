@@ -242,7 +242,13 @@
   // groups (teams, jersey numbers, decades, draft classes, nationalities, …).
   var FAM_CAP = { wordplay: 1 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
   var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
-  function pickCategories(cats, rng) {
+  /* opts.sport: a single-sport edition (the Arcade Card's NBA/NFL/MLB versions
+     of Daily Match). Every category on such a board leads with the same sport,
+     so the ">= 2 distinct lead sports" rule below can never be satisfied and
+     the build would fail every time. It is a rule about variety on a mixed
+     board, not a rule about correctness, so a sport edition drops it to one. */
+  function pickCategories(cats, rng, opts) {
+    var minLead = (opts && opts.sport) ? 1 : 2;
     for (var attempt = 0; attempt < 200; attempt++) {
       var order = shuffle(cats, rng), chosen = [], fams = {}, names = {}, niche = 0;
       for (var i = 0; i < order.length && chosen.length < 5; i++) {
@@ -264,7 +270,7 @@
       if (chosen.length < 5) continue;
       if (Object.keys(fams).length < MIN_FAMILIES) continue;
       var lead = {}; chosen.forEach(function (c) { if (c.sport !== 'multi') lead[c.sport] = 1; });
-      if (Object.keys(lead).length < 2) continue;
+      if (Object.keys(lead).length < minLead) continue;
       return chosen;
     }
     return null;
@@ -376,7 +382,7 @@
     if (cats.length < 5) return null;
     var best = null;
     for (var attempt = 0; attempt < 200; attempt++) {
-      var chosen = pickCategories(cats, rng); if (!chosen) continue;
+      var chosen = pickCategories(cats, rng, opts); if (!chosen) continue;
       var sol = assignBoard(chosen, rng, entMap); if (!sol) continue;
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
@@ -397,10 +403,18 @@
   // so it's only used if explicitly passed AND the DB path yields nothing.)
   function daily(dateStr, sources) {
     sources = sources || {};
+    var o = sources.opts || {};
     if (sources.entities) {
-      var d = buildFromDB(dateStr, sources.entities, sources.opts);
+      // A sport edition is the same build against a smaller pool. Filtering here
+      // rather than at the call site keeps the retry below honest: it has to
+      // carry the sport too, or a stubborn day would quietly serve a mixed board
+      // inside the NBA-only version.
+      var ents = o.sport
+        ? sources.entities.filter(function (e) { return e.sport === o.sport; })
+        : sources.entities;
+      var d = buildFromDB(dateStr, ents, o);
       if (d) return d;
-      d = buildFromDB(dateStr, sources.entities, { anchors: 1, avgFame: 2.0 });
+      d = buildFromDB(dateStr, ents, { anchors: 1, avgFame: 2.0, sport: o.sport });
       if (d) return d;
     }
     if (sources.bank && sources.bank.length) return generateDaily(dateStr, sources.bank);
