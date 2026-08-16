@@ -598,6 +598,49 @@ function scoreParts(total, rng) {
  * winner's last points inside the closing minutes, because that is the game a
  * broadcast would have shown you, and a blowout spreads its scores earlier.
  */
+/**
+ * WHEN POINTS ACTUALLY GET SCORED, as each quarter's share of a game's scoring.
+ *
+ * Real football is not flat and it is not front-loaded: the second quarter and the fourth
+ * carry the game because both end in a drive played against the clock, while the first is
+ * two teams feeling each other out and the third is the one after the interval.
+ *
+ * This game had it close to backwards. Measured over 18,000 scripts, the fourth quarter was
+ * the QUIETEST at 17% of the points and the first was the loudest at 32%, so a game opened
+ * with a bang and trailed off -- the one shape football never has. Two things caused it and
+ * neither was a decision: the spreader below handed every score an even slice of the hour
+ * (25/25/25/25 on its own, confirmed in isolation), and the late-field-goal guard further
+ * down only ever moves a kick EARLIER, so points drained forwards on every pass and nothing
+ * ever moved back.
+ *
+ * Shares rather than a formula because that is what the thing being copied is.
+ *
+ * THESE ARE NOT THE TARGET SHARES THEMSELVES, they are what the placer has to be fed to
+ * produce them. It places SCORES and the thing being matched is POINTS, and the two differ
+ * because the kinds are not spread evenly: field goals cluster where the guard below moves
+ * them, so a quarter given a share of the scores comes out with a different share of the
+ * points. Feeding it the real shares directly gave 26.1/31.3/18.8/23.8 against a real
+ * 21/29/22/28. Solved back through that error, these land the points within a point.
+ */
+const QUARTER_SCORING_SHARE = [0.165, 0.262, 0.251, 0.322];
+
+/* The cumulative version, and a map from a 0..1 position to an elapsed second. Piecewise
+   linear: find the quarter the position lands in, then place it proportionally inside that
+   quarter. Feeding it a uniform position gives back the shares above. */
+const QUARTER_SCORING_CDF = (() => {
+  const c = [0];
+  for (const s of QUARTER_SCORING_SHARE) c.push(c[c.length - 1] + s);
+  return c;                                   // [0, .21, .50, .72, 1]
+})();
+function scoreTimeAt(u, QSEC) {
+  const p = Math.max(0, Math.min(0.999999, u));
+  let q = 0;
+  while (q < 3 && p >= QUARTER_SCORING_CDF[q + 1]) q++;
+  const lo = QUARTER_SCORING_CDF[q], span = QUARTER_SCORING_CDF[q + 1] - lo;
+  const within = span > 0 ? (p - lo) / span : 0;
+  return (q + within) * QSEC;
+}
+
 function scoringScript(you, them, rng) {
   const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
   const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
@@ -640,10 +683,19 @@ function scoringScript(you, them, rng) {
      five minutes, never at 0:00. A touch back-loaded by giving later slots to later scores. */
   const n = order.length;
   const el = [];
+  /* THE OTHER SCORES FILL THE SHARE THE CLINCHER DOES NOT. Slicing all n slots evenly and
+     then lifting the last one out to the closing minutes left the rest spread over about
+     85% of the scoring mass, so the top of the fourth quarter was reachable only by the
+     clincher -- and only the 55% of games close enough to have one. Spreading the others
+     across everything up to where the clincher sits fills it in every game. */
+  const spread = clincher ? n - 1 : n;
+  const top = clincher ? 0.93 : 1;
   for (let i = 0; i < n; i++) {
     if (clincher && i === n - 1) { el.push(GAME - (25 + Math.floor(rng() * (5 * 60)))); continue; }
-    const lo = (i / n) * GAME, span = GAME / n;
-    el.push(lo + span * (0.15 + rng() * 0.7));
+    /* Each score still takes its own slice, so two never share a clock and no quarter sits
+       empty; the slice is now measured in SCORING SHARE rather than in seconds, so the
+       quarters fill the way real ones do instead of evenly. */
+    el.push(scoreTimeAt(top * (i + 0.15 + rng() * 0.7) / spread, QSEC));
   }
 
   /* Same honesty rule as before, now on the timeline: a team down by more than a field goal
@@ -651,13 +703,27 @@ function scoringScript(you, them, rng) {
      Move any such kick to an earlier point in the game and settle. Only ever moves a kick
      earlier, so the count of offenders falls each pass. */
   const quarterOf = (t0) => Math.min(QUARTERS - 1, Math.floor(t0 / QSEC));
+  /* Three minutes left: past here a field goal that still leaves you behind has spent the
+     possession you needed. Before it, the same kick is ordinary game management. */
+  const LATE_FG_CUTOFF = GAME - 180;
+  /* Where that cutoff falls in scoring-share terms, so a relocated kick can be redrawn
+     through the same shape as everything else instead of flat across the early game. */
+  const LATE_FG_SHARE = QUARTER_SCORING_CDF[3] +
+    ((LATE_FG_CUTOFF - 3 * QSEC) / QSEC) * QUARTER_SCORING_SHARE[3];
   const badLateFG = () => {
     const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
     let ry = 0, rt = 0;
     for (const i of idx) {
       const e = order[i];
       const behind = e.team === 'you' ? rt - ry : ry - rt;
-      if (e.kind === 'FIELD GOAL' && quarterOf(el[i]) === QUARTERS - 1 && behind > 3) return i;
+      /* THE CLOSING MINUTES, NOT THE WHOLE QUARTER. The rule used to cover all fifteen,
+         which is not how the game is coached: a team down six or nine with ten minutes
+         left kicks the field goal and makes it a one-score game, and that is a normal
+         Sunday. What no side does is kick with the clock nearly gone and still need
+         another possession afterwards. Banning the whole quarter also cost realism twice
+         over, because every kick it caught was moved earlier and the fourth quarter was
+         already the emptiest one. */
+      if (e.kind === 'FIELD GOAL' && el[i] >= LATE_FG_CUTOFF && behind > 3) return i;
       if (e.team === 'you') ry += e.points; else rt += e.points;
     }
     return -1;
@@ -665,7 +731,11 @@ function scoringScript(you, them, rng) {
   for (let guard = 0; guard < n + 4; guard++) {
     const bad = badLateFG();
     if (bad < 0) break;
-    el[bad] = Math.floor(rng() * (3 * QSEC));   // somewhere in the first three quarters
+    /* Anywhere before the cutoff, drawn through the same scoring shape rather than flat.
+       Flat across the opening 45 minutes was the second half of the front-loading: every
+       relocated kick landed uniformly early, so each pass pushed more points towards the
+       start of the game and none of them ever came back. */
+    el[bad] = Math.floor(scoreTimeAt(rng() * LATE_FG_SHARE, QSEC));
   }
 
   /* Sort into time order and force the clocks a whole second apart, on the ROUNDED seconds
@@ -673,7 +743,17 @@ function scoringScript(you, them, rng) {
      the same displayed clock. */
   const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
   const secs = idx.map((i) => Math.max(1, Math.min(GAME - 1, Math.floor(el[i]))));
-  for (let i = 1; i < secs.length; i++) if (secs[i] <= secs[i - 1]) secs[i] = Math.min(GAME - 1, secs[i - 1] + 1);
+  for (let i = 0; i < secs.length; i++) {
+    if (i > 0 && secs[i] <= secs[i - 1]) secs[i] = secs[i - 1] + 1;
+    /* AN EXACT QUARTER BOUNDARY DISPLAYS AS THE SECOND AFTER IT. The clock below is
+       time REMAINING, clamped to QSEC-1, so an elapsed time of exactly 45:00 and one of
+       45:01 both come out as "14:59 in the fourth" -- two scores on one clock, which the
+       distinct-seconds rule above was written to prevent and could not see, because the
+       collision happens after the clamp rather than before it. Rare while scores were
+       spread evenly; no longer rare now they cluster where real scoring does. */
+    if (secs[i] % QSEC === 0) secs[i] += 1;
+    secs[i] = Math.min(GAME - 1, secs[i]);
+  }
 
   let ry = 0, rt = 0;
   return idx.map((i, k) => {
@@ -2416,6 +2496,30 @@ function valueAt(table, p) {
  * and 41-38 comes up rarely, exactly as often as football produces them.
  */
 const SCORELINE_TOLERANCE = { margin: 4.5, points: 5.0 };
+
+/*
+ * THE REAL FREQUENCY OF A SCORELINE PULLS AT FULL STRENGTH, and it was measured before it
+ * was left alone. The count looks like it double-counts the NFL's own shape, because the
+ * margin and points targets below are already drawn through the real CDFs; damping it to
+ * n^0.25 does widen the distribution. It is still wrong. Over 18,000 games on cap-legal
+ * rosters, against the 6,967 real ones in display_calibration.json:
+ *
+ *                        n^1.0    n^0.25     real
+ *     margin of exactly 3  14.9%     7.8%    14.9%
+ *     games inside a score 51.6%    46.5%    50.7%
+ *     a team reaching 31   21.3%    25.0%    20.9%
+ *
+ * At full strength the three-point margin lands exactly, because the lumpiness of real
+ * scoring -- the spike at 3, the one at 7 -- lives in how often those finals happened and
+ * nowhere else. Damping the count smooths precisely the feature worth keeping.
+ *
+ * The first pass at this measured 8.79 for a real 10.66 and concluded the tails were a
+ * third too thin. That harness built rosters from a uniformly random eligible player per
+ * slot with no salary cap, which samples weak, frequently illegal teams nobody fields; on
+ * cap-legal rosters the same figure is 9.65. Any future look at this needs rosters built
+ * the way build/04-display.mjs builds them, or it will measure a population that does not
+ * play the game.
+ */
 
 /**
  * Turn an internal fantasy-space result into a football-looking scoreline.
