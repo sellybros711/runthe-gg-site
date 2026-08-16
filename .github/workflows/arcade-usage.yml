@@ -1,0 +1,151 @@
+name: Arcade usage report
+
+# Read-only. Answers the questions you cannot answer by playing the games
+# yourself: which of them anyone actually plays, how many a person plays in a
+# sitting, whether they come back, and whether the boards are landing at a
+# difficulty people can finish.
+#
+# It exists because "the arcade is overwhelming and too hard" is a hypothesis,
+# and the arcade has been recording every finished run since launch. This turns
+# that into numbers before anything gets redesigned on a hunch.
+#
+# Only SELECTs. It never writes, and it never fails the run on a bad number —
+# there is nothing here to break, only things to read.
+#
+# Actions → Arcade usage report → Run workflow. Uses the same SUPABASE_DB_URL
+# secret as the other data jobs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Window in days (default 30)'
+        required: false
+        default: '30'
+  schedule:
+    - cron: '20 13 * * 1'   # Mondays, so there is a weekly read on the trend
+
+concurrency:
+  group: arcade-usage
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Query arcade usage
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DAYS: ${{ inputs.days || '30' }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set."; exit 1
+          fi
+          # The window goes straight into the SQL, so keep it to digits.
+          DAYS="$(printf '%s' "$DAYS" | tr -cd '0-9')"; [ -n "$DAYS" ] || DAYS=30
+          Q() { psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -P pager=off -X -c "$1"; }
+
+          echo "════════ ARCADE USAGE — last $DAYS days ════════"
+          echo ""
+          echo "── 1. Is anyone here? ──"
+          Q "select
+               count(*)                                   as runs,
+               count(distinct user_id)                    as players,
+               count(distinct puzzle_date)                as active_days,
+               min(puzzle_date)                           as first_day,
+               max(puzzle_date)                           as last_day
+             from grid_runs
+             where puzzle_date >= current_date - $DAYS;"
+
+          echo "── 2. Which games get played, and which are dead weight? ──"
+          # The whole 'too many options' question. A game nobody finishes is not
+          # a choice being offered, it is a wall being added to the hub.
+          Q "select
+               regexp_replace(game,'_(nba|nfl|mlb)\$','')  as base_game,
+               count(*)                                    as runs,
+               count(distinct user_id)                     as players,
+               round(100.0*count(*)/nullif(sum(count(*)) over (),0),1) as pct_of_runs
+             from grid_runs
+             where puzzle_date >= current_date - $DAYS
+             group by 1 order by runs desc;"
+
+          echo "── 3. Sport editions: does the Arcade Card's headline feature get used? ──"
+          Q "select
+               case when game ~ '_(nba|nfl|mlb)\$'
+                    then regexp_replace(game,'^.*_','') else 'all (mixed)' end as edition,
+               count(*) as runs, count(distinct user_id) as players
+             from grid_runs
+             where puzzle_date >= current_date - $DAYS
+             group by 1 order by runs desc;"
+
+          echo "── 4. How many games does one person play in a day? ──"
+          # If this is overwhelmingly 1, the hub is not converting a visit into a
+          # session and the other eight games may as well not be on the page.
+          Q "with per_day as (
+               select user_id, puzzle_date, count(distinct game) g
+               from grid_runs where puzzle_date >= current_date - $DAYS
+               group by 1,2)
+             select g as games_that_day, count(*) as player_days,
+                    round(100.0*count(*)/nullif(sum(count(*)) over (),0),1) as pct
+             from per_day group by 1 order by 1;"
+
+          echo "── 5. Do they come back? ──"
+          Q "with d as (select distinct user_id, puzzle_date from grid_runs
+                        where puzzle_date >= current_date - $DAYS)
+             select
+               count(*) filter (where nxt = 1)            as returned_next_day,
+               count(*) filter (where nxt between 2 and 7) as returned_within_week,
+               count(*) filter (where nxt is null)         as never_returned,
+               round(100.0*count(*) filter (where nxt = 1)/nullif(count(*),0),1) as pct_next_day
+             from (select user_id, puzzle_date,
+                          (lead(puzzle_date) over (partition by user_id order by puzzle_date)
+                           - puzzle_date) as nxt from d) x;"
+
+          echo "── 6. How many days in a row are people managing? ──"
+          Q "select case when best_streak = 0 then '0'
+                         when best_streak = 1 then '1'
+                         when best_streak between 2 and 3  then '2-3'
+                         when best_streak between 4 and 7  then '4-7'
+                         when best_streak between 8 and 30 then '8-30'
+                         else '31+' end as best_streak_band,
+                    count(*) as players
+             from grid_streaks group by 1
+             order by min(best_streak);"
+
+          echo "── 7. Difficulty: are the streak games ending immediately? ──"
+          # run_len is how many they got right in a row before missing. A pile-up
+          # at 0-2 is not a hard game, it is a game that never starts.
+          Q "select regexp_replace(game,'_(nba|nfl|mlb)\$','') as base_game,
+                    count(*) as runs,
+                    round(avg(run_len),1) as avg_run,
+                    percentile_disc(0.5) within group (order by run_len) as median_run,
+                    count(*) filter (where run_len <= 2) as runs_ending_by_2,
+                    round(100.0*count(*) filter (where run_len <= 2)/nullif(count(*),0),1) as pct_ending_by_2
+             from grid_runs
+             where puzzle_date >= current_date - $DAYS and run_len is not null
+             group by 1 order by runs desc;"
+
+          echo "── 8. Difficulty: are the timed games being finished cleanly? ──"
+          Q "select regexp_replace(game,'_(nba|nfl|mlb)\$','') as base_game,
+                    count(*) as runs,
+                    round(avg(base_seconds)) as avg_seconds,
+                    round(avg(mistakes),2) as avg_mistakes,
+                    round(100.0*count(*) filter (where flawless)/nullif(count(*),0),1) as pct_flawless
+             from grid_runs
+             where puzzle_date >= current_date - $DAYS and run_len is null
+             group by 1 order by runs desc;"
+
+          echo "── 9. New faces vs regulars, by week ──"
+          Q "with firsts as (select user_id, min(puzzle_date) f from grid_runs group by 1)
+             select date_trunc('week', g.puzzle_date)::date as week,
+                    count(distinct g.user_id) as players,
+                    count(distinct g.user_id) filter (where f.f >= date_trunc('week', g.puzzle_date)::date) as first_timers
+             from grid_runs g join firsts f using (user_id)
+             where g.puzzle_date >= current_date - $DAYS
+             group by 1 order by 1;"
+
+          echo ""
+          echo "Read 2 and 4 together: they are the 'too many options' question."
+          echo "Read 6 and 7 together: they are the 'too hard' question."
