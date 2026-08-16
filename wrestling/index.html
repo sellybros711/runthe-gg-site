@@ -637,6 +637,29 @@
   @keyframes momentIn{from{opacity:0;transform:scale(.7);}}
   @keyframes statPop{0%{transform:scale(1);}35%{transform:scale(1.45);color:var(--gold);}100%{transform:scale(1);}}
   .statpop{display:inline-block;animation:statPop .8s ease;}
+  .momentcard .mo-s{font-size:12.5px;color:var(--text-dim);margin:-10px 0 16px;}
+
+  /* the dirt sheet weighs in on the big nights */
+  .dirtsheet{position:relative;margin:0 0 12px;padding:11px 14px 10px;border-left:3px solid var(--gold);
+    border-radius:0 10px 10px 0;background:linear-gradient(180deg,rgba(244,232,219,.05),rgba(0,0,0,.14));
+    opacity:0;animation:chipIn .4s .45s cubic-bezier(.2,1.5,.4,1) forwards;}
+  .dirtsheet .dq{font-style:italic;font-size:13.5px;line-height:1.65;color:var(--text);}
+  .dirtsheet .ds{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-top:6px;}
+
+  /* the feud panel flares when the story moves */
+  .storycard .bar i{transition:width .8s cubic-bezier(.3,1,.4,1);}
+  .storycard.advanced{animation:feudPulse 1.15s ease .1s;}
+  @keyframes feudPulse{0%{box-shadow:0 0 0 0 rgba(198,57,44,.65);}100%{box-shadow:0 0 0 16px transparent;}}
+
+  /* pack luck insurance */
+  .pitycard{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 13px;
+    background:linear-gradient(180deg,rgba(176,138,198,.10),rgba(0,0,0,.18));}
+  .pitycard.hot{border-color:rgba(176,138,198,.6);}
+  .pitycard .pl{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#b08ac6;font-weight:800;}
+  .pitycard .pt{font-size:12.5px;color:var(--text-dim);margin:3px 0 7px;}
+  .pitycard.hot .pt{color:#cbaade;font-weight:700;}
+  .pitybar{height:7px;border-radius:99px;background:rgba(0,0,0,.4);border:1px solid var(--line);overflow:hidden;}
+  .pitybar i{display:block;height:100%;background:linear-gradient(90deg,#7a5b96,#b08ac6);transition:width .5s ease;}
   .fphase{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:3px;}
   .flog .phase{color:var(--gold);font-weight:800;letter-spacing:.04em;}
   .fs .lm{color:#f0907f;}
@@ -1075,10 +1098,12 @@
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
 <div class="momentback" id="momentBack"><div class="momentcard">
   <div class="mo-i" id="moIco">🏅</div>
-  <div class="mo-k">Career Milestone</div>
+  <div class="mo-k" id="moKick">Career Milestone</div>
   <div class="mo-t" id="moTitle"></div>
+  <div class="mo-s" id="moSub" style="display:none;"></div>
   <button class="big" onclick="nextMoment()">Continue</button>
 </div></div>
+<div class="momentback" id="ceremonyBack"><div class="momentcard" id="ceremonyCard" style="max-width:470px;"></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="roster.js"></script>
@@ -1424,22 +1449,26 @@ const PRODUCT_FIT={
 };
 
 /* ---------- ACCOLADES ---------- */
-function award(txt,ico){
+function award(txt,ico,quiet){
   const c=G.car; c.accolades=c.accolades||[];
   if(c.accolades.some(a=>a.txt===txt)) return;
   c.accolades.unshift({txt,ico:ico||'🏅',y:c.year,w:c.week});
   pushInboxItem({ico:ico||'🏅',sev:'good',txt:`<b>Career milestone.</b> ${txt}`});
   pushLog(`${ico||'🏅'} ${txt}`);
-  queueMoment(ico||'🏅',txt);
+  if(!quiet) queueMoment(ico||'🏅',txt);   // quiet: a bigger ceremony is covering it
 }
 /* ---------- MOMENTS: milestones deserve a spotlight, not an inbox row ---------- */
 let MOMENT_Q=[];
-function queueMoment(ico,txt){ MOMENT_Q.push({ico,txt}); }
+function queueMoment(ico,txt,opt){ MOMENT_Q.push({ico,txt,kick:opt&&opt.kick,sub:opt&&opt.sub}); }
 function showMoments(){
   if(!MOMENT_Q.length) return;
   const back=$('momentBack'); if(back.classList.contains('open')) return;
+  if($('ceremonyBack').classList.contains('open')) return;
   const m=MOMENT_Q[0];
-  $('moIco').textContent=m.ico; $('moTitle').innerHTML=m.txt;
+  $('moIco').textContent=m.ico;
+  $('moKick').textContent=m.kick||'Career Milestone';
+  $('moTitle').innerHTML=m.txt;
+  const s=$('moSub'); s.innerHTML=m.sub||''; s.style.display=m.sub?'block':'none';
   back.classList.add('open');
   confetti(70);
 }
@@ -1447,6 +1476,37 @@ function nextMoment(){
   MOMENT_Q.shift(); $('momentBack').classList.remove('open');
   if(MOMENT_Q.length) setTimeout(showMoments,280);
 }
+/* ---------- THE YEAR-END AWARDS: a podium, not a log line ---------- */
+function showCeremony(){
+  const c=G.car, pc=c.pendingCeremony;
+  if(!pc) return false;
+  const golds=[];
+  if(pc.moty) golds.push(`🏆 Match of the Year · vs ${pc.best.opp}`);
+  if(pc.woty) golds.push('👑 Wrestler of the Year');
+  if(pc.rookie) golds.push('🌟 Rookie of the Year');
+  const rows=[];
+  rows.push(`📅 <b>${pc.matches}</b> match${pc.matches===1?'':'es'} · went <b>${pc.w}-${pc.l}${pc.d?'-'+pc.d:''}</b>`);
+  if(pc.best) rows.push(`⭐ Best night: <b>${pc.best.q}</b> (${starsOf(pc.best.q)}★) vs ${pc.best.opp}`);
+  rows.push(`📈 Average rating <b>${pc.avg}</b>`);
+  if(pc.growth&&pc.growth.length)
+    rows.push(`🏋️ The body, one year on: ${pc.growth.map(g=>`<b style="color:${g[1]>0?'var(--green)':'#f0907f'}">${g[1]>0?'+':''}${g[1]}</b> ${g[0]}`).join(' · ')}`);
+  $('ceremonyCard').innerHTML=`
+    <div class="mo-k" style="text-align:center;">The Year-End Awards</div>
+    <div class="mo-t" style="text-align:center;">Year ${pc.y} in review</div>
+    ${golds.map((t,i)=>`<div class="pchip gold" style="display:block;text-align:center;font-size:14px;padding:9px 12px;animation-delay:${(0.25+i*0.22).toFixed(2)}s">${t}</div>`).join('')}
+    ${golds.length?'':'<div class="hint" style="text-align:center;">No hardware this year. The tape does not lie; get better.</div>'}
+    <div class="paychips" style="flex-direction:column;margin-top:10px;">
+      ${rows.map((t,i)=>`<span class="pchip" style="animation-delay:${(0.35+golds.length*0.22+i*0.15).toFixed(2)}s">${t}</span>`).join('')}
+    </div>
+    <div class="row" style="justify-content:center;margin-top:16px;">
+      <button class="big" onclick="closeCeremony()">On to Year ${c.year} →</button>
+    </div>`;
+  $('ceremonyBack').classList.add('open');
+  if(golds.length) confetti(130);
+  delete c.pendingCeremony; save();
+  return true;
+}
+function closeCeremony(){ $('ceremonyBack').classList.remove('open'); setTimeout(showMoments,260); }
 /* gold and crimson from the rafters (display only, so Math.random is fine) */
 function confetti(n,cols){
   cols=cols||['#E0B341','#C6392C','#F4E8DB','#5bb083'];
@@ -1499,6 +1559,26 @@ function starRowHTML(s){
     </span>`;
   }
   return h;
+}
+/* ---------- THE DIRT SHEET: the press only writes when there is a story ---------- */
+function pressQuote(o,res,s){
+  const c=G.car, me=G.w.name, opp=o.oppName;
+  const starTxt=(s.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'★';
+  if(o.stakes==='title'&&res.win)
+    return `${me} finally has the big one, and earned it the hard way. Nobody in the building sat down for the last five minutes.`;
+  if(o.stakes==='defense'&&!res.win&&!res.draw)
+    return `The reign is over. No shame in it: ${opp} was simply better tonight, and everybody in the room knew it.`;
+  if(s>=4.75)
+    return `${starTxt} from this desk, and we do not hand those out. ${me} and ${opp} just started the Match of the Year conversation.`;
+  if(s>=4)
+    return `${opp} brought everything and ${me} had an answer for all of it. ${starTxt}. Go out of your way to see this one.`;
+  if(res.win && o.oppOvr>=ovr(G.w)+8)
+    return `Not one person in the press row picked ${me} tonight. The office notices results like that.`;
+  if(res.win && c.streak>=5)
+    return `That is ${c.streak} straight for ${me}. Book them stronger, or somebody else will.`;
+  if(res.quality<=30)
+    return `We sat through all ${res.time} of ${me} and ${opp} so you do not have to. You are welcome.`;
+  return null;
 }
 function checkMilestones(res){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
@@ -2745,7 +2825,7 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
-  setTimeout(showMoments,400);       // milestones earned outside a match pop here
+  setTimeout(()=>{ if(!showCeremony()) showMoments(); },400);   // podium first, then moments
 }
 function renderAttrs(){
   return ATTRS.map(([k,label])=>{
@@ -2774,20 +2854,31 @@ function renderStoryPanel(){
         <div class="cnk">${m.id===f.leader?'Leader':'Ally'}</div></div>`).join('')+`</div>
       <div class="hint" style="margin-top:8px;color:var(--gold);">${f.perk}</div></div>`;
   }
+  // the panel flares once when the story moves, so escalation is felt, not archived
+  let feudAdv=false, feudFrom=0;
   if(st){
     const c=charById(st.charId), R=rel(st.charId), stg=STORY_STAGES[st.stage];
-    h+=`<div class="storycard">
+    const key=st.charId+':'+st.stage, seen=G.car._feudSeen;
+    feudAdv = seen!==key;
+    feudFrom = (seen&&String(seen).split(':')[0]===st.charId && st.stage>0) ? ((st.stage-1)/3)*100 : 0;
+    G.car._feudSeen=key;
+    h+=`<div class="storycard" id="feudCard">
       <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
         <div><div class="st">Feud · ${stg.name}</div>
         <div class="sn">${G.w.name} vs ${c.name}</div>
         <div class="hint">${stg.label}</div></div></div>
-      <div class="bar" style="margin-top:8px;"><i style="width:${(st.stage/3)*100}%;background:var(--brandred)"></i></div>
+      <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(st.stage/3)*100)}%;background:var(--brandred)"></i></div>
       <div class="hint" style="margin-top:4px;">Bad blood ${Math.round(R.heat)} · ${R.wins}-${R.losses} against them${st.stage>=3?' · <b style="color:var(--gold)">BLOW-OFF AVAILABLE</b>':''}</div>
     </div>`;
   }
   if(inbox.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">Recent</div>`+
     inbox.map(i=>`<div class="inbox-item sev-${i.sev||'info'}"><span class="ico">${i.ico||'•'}</span><span class="txt">${i.txt}</span></div>`).join('')+`</div>`;
   el.innerHTML=h;
+  if(st&&feudAdv){
+    const card=$('feudCard'), bar=$('feudBar');
+    if(card){ card.classList.add('advanced'); }
+    if(bar) setTimeout(()=>{ bar.style.width=((story()?story().stage:0)/3)*100+'%'; },80);
+  }
 }
 /* ---- WHAT A BOOKING IS ACTUALLY WORTH ----
    Three offers that all read "Mid-Card · Standard" are not a decision. These
@@ -4336,6 +4427,7 @@ function renderMatch(o,res){
       <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
     </div>
     <p class="mstory">${matchStory(o,res)}</p>
+    ${(q=>q?`<div class="dirtsheet"><div class="dq">"${q}"</div><div class="ds">The Ropes Report · Year ${c.year}, Week ${c.week}</div></div>`:'')(pressQuote(o,res,s))}
     <div class="mstats">
       <span><b>${res.time||'-'}</b> time</span>
       <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
@@ -4496,6 +4588,7 @@ function yearEnd(){
   const mileage=(c.wear||0)/100;
   const declineAge=Math.max(29, 35 - Math.floor(mileage*1.6));
   const peak=Math.max(26, 31 - Math.floor(mileage));
+  const preAttrs={}; ATTRS.forEach(([k])=>preAttrs[k]=w.attrs[k]);
   ATTRS.forEach(([k])=>{
     const g = (c.age<26 ? 1.4 : c.age<peak ? 0.8 : 0) * growMult(k);
     if(g) w.attrs[k]=clamp(w.attrs[k]+(k==='ps'?g+0.4:g));
@@ -4508,16 +4601,25 @@ function yearEnd(){
   c.pop=clamp(c.pop-1.5,1,100);
   checkUnlocks();
   // ---- awards season ----
+  // The awards themselves play out at the ceremony (showCeremony), so the
+  // three award() calls here are quiet: they still log and count, they just
+  // do not double up as spotlight moments.
   const yl=c.yearLog||[];
   if(yl.length){
     const best=yl.reduce((a,b)=>b.q>a.q?b:a);
     const avg=yl.reduce((s,m)=>s+m.q,0)/yl.length;
     c.awards=c.awards||[];
+    let moty=false, woty=false, rookie=false;
     if(best.q>=88){ c.awards.unshift({y:c.year,t:'Match of the Year',d:`vs ${best.opp} (${best.q})`});
-      award(`Match of the Year vs ${best.opp}.`,'⭐'); c.pop=clamp(c.pop+3,1,100); c.rep+=380; }
+      award(`Match of the Year vs ${best.opp}.`,'⭐',true); c.pop=clamp(c.pop+3,1,100); c.rep+=380; moty=true; }
     if(avg>=78 && c.pop>=68 && yl.length>=8){ c.awards.unshift({y:c.year,t:'Wrestler of the Year',d:`avg ${avg.toFixed(0)} across ${yl.length} matches`});
-      award('Wrestler of the Year.','👑'); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); }
-    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟'); c.rep+=260; }
+      award('Wrestler of the Year.','👑',true); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); woty=true; }
+    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟',true); c.rep+=260; rookie=true; }
+    const growth=ATTRS.map(([k,label])=>[label,Math.round((w.attrs[k]-preAttrs[k])*10)/10])
+      .filter(g=>Math.abs(g[1])>=0.5);
+    c.pendingCeremony={ y:c.year-1, matches:yl.length,
+      w:yl.filter(m=>m.win).length, l:yl.filter(m=>m.win===false).length, d:yl.filter(m=>m.win==null).length,
+      best:{opp:best.opp,q:best.q}, avg:Math.round(avg), growth, moty, woty, rookie };
   }
   c.yearLog=[];
   const msgs=[`<b>Year ${c.year}</b> begins. You're ${c.age}.`];
@@ -4649,7 +4751,11 @@ function renderShop(){
   const locked=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
   const slots=[...new Set(locked.map(c=>c.slot))];
   const chips=['Packs'].concat(slots.map(s=>({t:`${cap(s)} ${'<span class="pgr-x">'+locked.filter(c=>c.slot===s).length+'</span>'}`}))).concat([{t:'Unlocked'}]);
-  let h=`<div class="row" style="margin-bottom:12px;"><div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div></div></div>`;
+  let h=`<div class="row" style="margin-bottom:12px;">
+    <div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div></div>
+    <div class="tile"><div class="lab">Shards</div><div class="val" style="color:#b08ac6">${G.bag.shards||0}</div>
+      <div class="hint">forge any item, no luck involved</div></div>
+  </div>`;
   h+=pagerBar('shop',chips,renderShop);
   const i=pagerIdx('shop',chips.length);
   if(i===0){
@@ -4657,15 +4763,26 @@ function renderShop(){
       <div style="font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;">${p.name}</div>
       <div class="hint" style="margin:4px 0 10px;">${p.blurb}</div>
       <button ${G.bag.coins<p.price?'disabled':''} onclick="openPack('${p.id}')">${money(p.price)}</button></div>`).join('')+`</div>`;
+    // luck insurance: the counter that makes a cold streak bearable
+    const pity=G.bag.pity||0, hot=pity>=4;
+    h+=`<div class="pitycard${hot?' hot':''}">
+      <div class="pl">Pack luck insurance</div>
+      <div class="pt">${hot?'Your next pack carries a guaranteed Epic or better.'
+        :`An Epic or better is guaranteed within ${5-pity} pack${5-pity===1?'':'s'}. Every pack also drops +2 shards.`}</div>
+      <div class="pitybar"><i style="width:${Math.min(100,pity/5*100)}%"></i></div></div>`;
   } else if(i<=slots.length){
     const slot=slots[i-1];
     h+=`<div class="grid g3">`+locked.filter(c=>c.slot===slot).map(c=>{
       const r=RAR[c.rarity]||{price:2000};
+      const sc=SHARD_COST[c.rarity]||8, canForge=(G.bag.shards||0)>=sc;
       return `<div class="card"><div style="display:flex;justify-content:space-between;gap:6px;">
         <span style="font-weight:800;color:var(--cream);">${c.name}</span>
         <span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.rarity}</span></div>
         <div class="hint" style="margin:4px 0 10px;">${cap(c.slot)}</div>
-        <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${money(r.price)}</button></div>`;
+        <div class="row" style="gap:6px;">
+          <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${money(r.price)}</button>
+          <button class="ghost" ${canForge?'':'disabled'} onclick="craftItem('${c.id}')" title="Forge with shards" style="${canForge?'border-color:rgba(176,138,198,.6);color:#cbaade;':''}">${sc} shards</button>
+        </div></div>`;
     }).join('')+`</div>`;
   } else {
     const ownedList=COSM.filter(c=>G.bag.owned[c.id]);
@@ -4709,19 +4826,33 @@ function openPack(pid){
   const p=PACKS.find(x=>x.id===pid); if(!p||G.bag.coins<p.price) return;
   G.bag.coins-=p.price;
   const pool=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
-  const got=[];
+  const got=[], order=['common','rare','epic','legendary'];
+  const pity=G.bag.pity||0;                 // 5th dry pack is guaranteed epic or better
   for(let i=0;i<p.n;i++){
     let r=rnd()-p.boost; let rar = r<0.02?'legendary': r<0.12?'epic': r<0.38?'rare':'common';
-    if(i===0&&p.floor){ const order=['common','rare','epic','legendary'];
-      if(order.indexOf(rar)<order.indexOf(p.floor)) rar=p.floor; }
+    if(i===0&&p.floor){ if(order.indexOf(rar)<order.indexOf(p.floor)) rar=p.floor; }
+    if(i===0&&pity>=4&&order.indexOf(rar)<2) rar='epic';
     const cands=pool.filter(c=>c.rarity===rar&&!got.includes(c));
     const item=cands.length?cands[Math.floor(rnd()*cands.length)]:(pool.filter(c=>!got.includes(c))[0]);
     if(item){ got.push(item); G.bag.owned[item.id]=true; }
     else { G.bag.shards+=(RAR[rar]||{shards:1}).shards; }
   }
+  G.bag.pity = got.some(c=>c.rarity==='epic'||c.rarity==='legendary') ? 0 : pity+1;
+  G.bag.shards=(G.bag.shards||0)+2;         // every wrapper is worth a little forge dust
   save(); refreshHud(); renderShop();
   if(got.length) revealPack(p,got);
   else modal(p.name,`<p class="log">Everything in this pack was already yours, converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
+}
+/* the forge: shards buy the exact item you want, no luck involved */
+const SHARD_COST=window.RTR_SHARD_COST||{common:4,rare:8,epic:16,legendary:32};
+function craftItem(id){
+  const c=cosmById(id); if(!c) return;
+  const cost=SHARD_COST[c.rarity]||8;
+  if((G.bag.shards||0)<cost) return;
+  G.bag.shards-=cost; G.bag.owned[id]=true;
+  save(); renderShop(); refreshHud();
+  toast('Forged: '+c.name);
+  if(c.rarity==='epic'||c.rarity==='legendary') confetti(70,['#b08ac6','#E0B341','#F4E8DB']);
 }
 
 /* ---------- Player Card: a flippable trading card of your wrestler ---------- */
@@ -5327,7 +5458,10 @@ function signDeal(i){
     c.rivalId=null; G.story=null; c.faction=null;
     pushLog(`You sign with <b>${pr.name}</b>, ${o.years} year${o.years>1?'s':''} at ${money(o.weekly)}/week.`);
     pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
-    if(promoTierIdx(pr)>promoTierIdx(old)) award(`Signed with ${pr.name}.`,'✍️');
+    const stepUp=promoTierIdx(pr)>promoTierIdx(old);
+    if(stepUp) award(`Signed with ${pr.name}.`,'✍️',true);   // the signing moment below covers it
+    queueMoment('🖋️', pr.name, {kick:'Contract signed',
+      sub:`${o.years} year${o.years>1?'s':''} · ${money(o.weekly)} a week guaranteed${stepUp?' · a step up the ladder':''}`});
   } else {
     pushLog(`You re-sign with <b>${pr.name}</b> at ${money(o.weekly)}/week.`);
   }
