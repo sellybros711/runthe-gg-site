@@ -15783,3 +15783,47 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     auto sim reaches your match and waits, and Sim hands the day back. Worth remembering that a green suite
     can be green about the wrong thing.
   - Regressions green (br_motion 16/16, br_stress 11/11, mp_season, season_soak, regress_final).
+
+- **ANIMATION AUDIT: four animations were driving layout instead of the compositor, and one of them was
+  the iOS drift bug waiting to happen again (owner: "let's make sure all animations are clean and smooth
+  and the sim works functionally").** Audited every animation in the game rather than eyeballing the ones
+  that looked wrong - a CSSOM sweep of all 1,996 style rules and 96 keyframes (with the six lazily-injected
+  stylesheets forced open first, since most of them only exist once their surface has been opened), then a
+  runtime pass measuring what is actually running while the game plays. Four genuine faults, all the same
+  class: an animation driving a property the browser must lay out or repaint every frame rather than one
+  the compositor can hand to the GPU.
+  1. **The rating web's pulse ring animated the SVG `r` attribute, forever.** `r` is geometry, so every
+     frame repainted the whole radar - on the draft and off-season screens, which are exactly the screens
+     you sit on while you think. Now it scales (`transform-box:fill-box` + `non-scaling-stroke`, so the ring
+     stays 2.2px as it grows), which is the idiom its own sibling `.dr-sheen` was already using two lines
+     above it.
+  2. **The pack-reveal burst grew its `width`/`height` from 10px to 560px** - a box that lays out and paints
+     on every frame, during the single moment the player is most closely watching. Drawn at full size and
+     scaled from 0.018 instead; visually identical.
+  3. **The Tour Pass buy button's sheen animated `left`, infinitely**, on the page whose entire job is
+     selling. Moved to `translateX` (500% of the sheen's own 38% width is the same 190% of the button it
+     used to travel).
+  4. **The scroll cue was the file's LAST `position:fixed` element carrying a transform** - and it
+     TRANSITIONED it. That is the exact ingredient behind the bottom-nav drift this game has chased down six
+     times (CS306/329/430/439/472): a transform on a fixed element makes iOS anchor it to the DOCUMENT, so
+     it rides up the page mid-scroll. Nothing had reported it yet, which is the point of auditing rather
+     than waiting. Re-centred the house-proven way (`left:0; right:0; margin:0 auto`, opacity only - the
+     same pattern `toast()` and `selectionPopup` already use), so it cannot happen.
+  - The CSSOM sweep found a real trap worth recording: in modern Chromium EVERY `CSSStyleRule` has an
+    (empty) `cssRules` list because of CSS nesting, so the obvious `if(r.cssRules){recurse; continue}`
+    silently skips every style rule in the file - the first run reported 0 animation uses across 1,856
+    rules. Dispatch on `constructor.name`, not on the presence of `cssRules`.
+  - **The sim itself was verified end to end, not assumed**: a quick-mode daily plays its 18 holes to the
+    result (65s) and a full-mode round to 159s; a season sims out to its summary ($3.1M over 19 of 21 weeks
+    - the missing week is the Atlantic Cup, which correctly files no stroke-play row); the career carries
+    into year 2; the scroll cue stays pinned while the page scrolls; NOTHING one-shot is left running once a
+    round settles (0 finite animations); and reduced motion plays and finishes a round with near-nothing
+    animating. Pack wheel, player-card flip, the knockout reveal and the win celebration were each measured
+    live (9/9), and the swing cross-fade holds a summed opacity of exactly 1 across 1,000 samples, so it
+    cannot dim between frames.
+  - Regressions green (br_feel 6/6, br_motion 16/16, br_stress 11/11, regress_final's 18-hole round);
+    **0 page errors** everywhere.
+  - Worth knowing for the next audit: the golfer is an SVG `<image>`, not an `<img>`; a bare arrow function
+    passed to `page.evaluate` as a STRING needs its invoking `()`; `beginDailyRound()` throws unless
+    `startDailyChallenge()` set the course up first; and a round that looks stalled is usually a
+    signature-hole decision correctly waiting for a click.
