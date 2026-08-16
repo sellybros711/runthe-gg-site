@@ -962,7 +962,10 @@ function crowdAlign(){ const l=leanOf(); return l<=-22?'heel':l>=22?'face':'twee
 function alignMismatch(){
   const want=G.w.align, got=crowdAlign();
   if(want==='tweener'||got==='tweener') return 0;
-  return want===got?0:1;
+  if(want===got) return 0;
+  // if you are deliberately working toward a turn, this is a story, not a problem
+  if(turnProgress().to) return 0;
+  return 1;
 }
 function crowdLabel(){
   const r=reactionOf(), l=leanOf();
@@ -974,19 +977,87 @@ function crowdLabel(){
   return {t:'Split crowd',d:'Half boo, half cheer. Nobody is sure what you are.',c:'#e0b341'};
 }
 // how the crowd moves after a moment: `hostile` -1..1, `intensity` 0..1
+/* ---- YOUR VOICE ----
+   What matters is not whether you are behaving like the alignment on your
+   contract — it is whether you are committing to something. A babyface who
+   cuts one vicious promo has not made a mistake; he has started a heel turn,
+   and the building knows it. What kills you is doing it and then going back,
+   and then doing it again. Nobody can get behind a man who changes every week. */
+function voiceLog(){ return (G.car.voice = G.car.voice || []); }
+function pushVoice(h){ const v=voiceLog(); v.unshift(+h.toFixed(2)); if(v.length>6) v.pop(); }
+function voiceAvg(){ const v=voiceLog();
+  if(!v.length) return G.w.align==='heel'?-0.5:G.w.align==='face'?0.5:0;
+  return v.reduce((a,b)=>a+b,0)/v.length;
+}
+// how often you have changed your mind lately, 0..1
+function voiceFlip(){
+  const v=voiceLog(); if(v.length<3) return 0;
+  let flips=0, n=0;
+  for(let i=1;i<v.length;i++){
+    const a=Math.sign(v[i-1]), b=Math.sign(v[i]);
+    if(a&&b){ n++; if(a!==b) flips++; }
+  }
+  return n? flips/n : 0;
+}
+// how far through a turn you are, 0..1, and which way it is heading
+function turnProgress(){
+  const billed=G.w.align, v=voiceAvg();
+  if(billed==='tweener') return {p:0,to:null};
+  const want = billed==='heel'? 1 : -1;                 // the direction that would be a turn
+  if(Math.sign(v)!==want) return {p:0,to:null};
+  return {p:clamp(Math.abs(v)/0.5*Math.min(1,voiceLog().length/3),0,1)/1, to: want>0?'face':'heel'};
+}
 function crowdShift(hostile,intensity,charisma){
   const c=G.car;
   const ch=(charisma==null?G.w.attrs.ch:charisma)/100;
-  // heat is heat — hostile or beloved, as long as you committed to it
-  const commitment=Math.abs(hostile);
-  const gain=(intensity*(0.55+commitment*0.45)*(0.6+ch*0.9))*7;
-  // pushing the crowd against what you claim to be confuses them
   const drift = hostile<0 ? -1 : hostile>0 ? 1 : 0;
-  const wants = G.w.align==='heel'? -1 : G.w.align==='face'? 1 : drift;
-  const consistent = drift===0 || drift===wants;
-  c.reaction=clamp((c.reaction==null?c.pop:c.reaction) + (consistent?gain:gain*0.25) - (consistent?0:1.6), 0, 100);
-  c.lean=clamp((c.lean||0) + drift*intensity*(6+ch*7), -100, 100);
-  return {gain:Math.round(consistent?gain:gain*0.25), consistent};
+  const recent = Math.sign(voiceAvg());
+  const flip = voiceFlip();
+  // heat is heat, whichever direction you commit to
+  const commitment=Math.abs(hostile);
+  let gain=(intensity*(0.55+commitment*0.45)*(0.6+ch*0.9))*7;
+
+  let mode='committed';
+  if(drift && recent && drift!==recent){
+    // you have swerved off what you have been doing
+    // A swerve only shocks them if you had been steady up to now. With no
+    // history, the alignment you are billed as IS the steady thing you are
+    // breaking from — so a debut heel turn still lands.
+    const v=voiceLog();
+    const steady = v.length===0 ||
+      (v.length>=2 && v.slice(0,3).every(x=>!Math.sign(x)||Math.sign(x)===Math.sign(v[0])));
+    if(intensity>=0.58 && steady && flip<0.34){ gain*=1.25; mode='swerve'; }
+    else { gain*=0.45; mode='wobble'; }                   // a half-hearted flip just confuses them
+  }
+  // changing your mind over and over drains everything, whichever way you go
+  gain *= (1 - flip*0.6);
+  if(flip>=0.5) mode='flipflop';
+
+  pushVoice(hostile);
+  c.reaction=clamp((c.reaction==null?c.pop:c.reaction) + gain - (mode==='flipflop'?2.2:mode==='wobble'?1.2:0), 0, 100);
+  c.lean=clamp((c.lean||0) + drift*intensity*(6+ch*7)*(mode==='swerve'?1.4:1), -100, 100);
+  return {gain:Math.round(gain), mode, consistent:mode==='committed'||mode==='swerve'};
+}
+// a turn completes when you have committed to it, not the moment you swerve
+function completeTurn(to,why){
+  const c=G.car, w=G.w;
+  w.align=to; c.turns=(c.turns||0)+1;
+  const fits=GIMMICKS.filter(g=>g.align===to);
+  const g=fits[Math.floor(rnd()*fits.length)]||GIMMICKS[0];
+  w.gimmick={id:g.id,name:g.n,heat:90,since:c.year};
+  c.reaction=clamp(reactionOf()+9,0,100);
+  c.lean=clamp((c.lean||0)+(to==='heel'?-18:18),-100,100);
+  c.standing=clamp(c.standing+5); c.mom=clamp(c.mom+12);
+  c.voice=[];                                            // the slate is clean from here
+  pushLog(`<b>The turn is complete.</b> ${why} ${w.name} is a ${to} now, working as <b>${g.n}</b>.`);
+  pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'} — working as ${g.n}.`});
+  award(`Turned ${to} as ${g.n}.`,'🔄');
+  return g;
+}
+function maybeTurn(){
+  const t=turnProgress();
+  if(t.to && t.p>=1 && voiceLog().length>=3) return completeTurn(t.to,'You leaned all the way into it and never blinked.');
+  return null;
 }
 
 /* free-agency offers, generated from who actually wants you */
@@ -2037,8 +2108,10 @@ function renderCareer(){
   $('carTiles').innerHTML=[
     ['Reputation', Math.round(c.rep), repHint],
     ['Crowd', Math.round(reactionOf()), (()=>{ const cl=crowdLabel(), l=leanOf();
+      const tp=turnProgress();
       return `<div class="cm-bar" style="height:9px;margin-top:5px;"><i style="width:${100-reactionOf()}%"></i><span class="cm-tick"></span><b style="left:${(l+100)/2}%;top:-2px;height:13px;width:5px;"></b></div>
-        <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>`; })()],
+        <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>
+        ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`; })()],
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
@@ -2145,6 +2218,9 @@ function weekAdvice(){
   if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury — take the week off.`,sev:'bad'};
   if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
   if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way — and indifference is worse than being hated. Get on the microphone and give them something.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it — the crowd cannot get behind somebody who changes every time they hold a microphone.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  const tp=turnProgress();
+  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. Another promo in that voice and the turn is complete — ${Math.round(tp.p*100)}% of the way there.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'act'};
   if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back on the mic.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'warn'};
   const st=story();
   if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
@@ -4199,13 +4275,25 @@ async function pmSay(payload){
   PM.score += read.intensity*(read.specific?1.35:1)*(sh.consistent?1:0.4)*(0.6+G.w.attrs.ch/140);
   pmMeter();
   const loud=read.intensity>0.65;
-  if(!sh.consistent) await pmCall('…silence','#8a8177');
+  if(sh.mode==='swerve'){ await flashScreen(); await pmCall('WHAT?!','#e0b341'); }
+  else if(sh.mode==='flipflop') await pmCall('…they have stopped believing you','#8a8177');
+  else if(sh.mode==='wobble') await pmCall('…muted','#8a8177');
   else if(read.hostile<=-0.45) await pmCall(loud?'BOOOOO!':'boos','#f0907f');
   else if(read.hostile>=0.45) await pmCall(loud?'HUGE POP!':'cheers','#5bb083');
   else await pmCall('the room listens','#e0b341');
-  pmLog(sh.consistent
-    ? `<span class="hint">They bite — reaction +${sh.gain}${read.specific?' · you made it personal':''}${read.crowd?' · you spoke to the room':''}.</span>`
-    : `<span class="bad">That did not fit who they think you are. It fell flat.</span>`);
+  const extra=`${read.specific?' · you made it personal':''}${read.crowd?' · you spoke to the room':''}`;
+  pmLog(
+    sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned — reaction +${sh.gain}. Keep going and this becomes a turn.</span>`
+  : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously — +${sh.gain}.</span>`
+  : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
+  :                        `<span class="hint">They bite — reaction +${sh.gain}${extra}.</span>`);
+  // a turn completes when you have stayed with it
+  const turned=maybeTurn();
+  if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
+    pmLog(`<span class="hi"><b>${G.w.name} has turned ${G.w.align}.</b> New act: ${turned.n}.</span>`);
+    fmv('me',{pose:'celebrate'},240); }
+  else { const tp=turnProgress();
+    if(tp.to&&tp.p>0.3) pmLog(`<span class="hint">You are talking like a ${tp.to}. ${Math.round(tp.p*100)}% of the way to a ${tp.to} turn — stay with it.</span>`); }
 
   if(t){
     const reply=promoReply(t,read);
@@ -4417,7 +4505,7 @@ function doTurn(){
        w.align=to; c.turns=(c.turns||0)+1;
        const fits=GIMMICKS.filter(g=>g.align===to);
        const g=fits[Math.floor(rnd()*fits.length)];
-       w.gimmick={id:g.id,name:g.n,heat:88,since:c.year};
+       w.gimmick={id:g.id,name:g.n,heat:88,since:c.year}; c.voice=[];
        const drop=clamp(6+c.pop*0.14,4,18);
        c.pop=clamp(c.pop-drop,1,100); c.standing=clamp(c.standing+4); c.mom=clamp(c.mom+10);
        pushLog(`You turned ${to}. The new act is <b>${g.n}</b>. The building did not know what to do with itself.`);
