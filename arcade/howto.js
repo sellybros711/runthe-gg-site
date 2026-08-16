@@ -21,9 +21,9 @@
     ],
     career: [
       "We show a career one team at a time, first club first.",
-      'Four names. Tap the athlete who took that path.',
-      'Name them off one team for 3 points, two or three for 2, the full path for 1.',
-      'One wrong answer ends your run, so calling it early is a gamble.'
+      'No multiple choice: type who it is.',
+      'Type the name. Off one team it is 5 points, off two or three it is 3, and down from there.',
+      'Stuck? Take four names instead, for one point. A wrong answer ends your run.'
     ],
     oddone: [
       'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',

@@ -28,7 +28,7 @@
   var RULES = {
     table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
     match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
-    career:     ['A career, revealed one team at a time.', 'Name them off the first club for 3 points. One miss ends your run.'],
+    career:     ['A career, revealed one team at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Pick the odd one out to keep the run alive.'],
     rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
     almamater:  ['Pick the college each player attended.', 'One miss ends your run.'],
@@ -112,7 +112,7 @@
   try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
   function build(){
     // One click to play: if the player can play right now (cardholder, or has
-    // plays left), don't gate at all — land them straight on a ready board.
+    // plays left), don't gate at all: land them straight on a ready board.
     // The token is still charged on first interaction, and each game shows the
     // paywall itself if the server later says they're out. The overlay now only
     // appears when they're already out of plays.

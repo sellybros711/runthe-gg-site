@@ -12,7 +12,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Career Path: a daily sports streak game. A career is revealed one team at a time — name the athlete off the first team for 3 points, or take another clue for fewer." />
+<meta name="description" content="Career Path: a daily sports streak game. A career is revealed one team at a time. Type the name off the first club for 5 points, or take another clue for fewer." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -135,6 +135,30 @@
   .worth{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut);}
   .worth b{font-family:var(--hero); font-weight:400; font-size:19px; letter-spacing:.02em; color:var(--greenT); vertical-align:-2px; margin:0 2px;}
   .worth.spent b{color:var(--mut);}
+  /* the answer line: typing is the primary way in now, so it sits directly
+     under the path and is the thing your eye lands on after reading it */
+  .answerbar{display:flex; gap:9px; margin:0 0 12px;}
+  .answerin{flex:1; min-width:0; font-family:var(--f); font-size:16px; font-weight:700; color:var(--ink);
+    background:var(--card); border:2px solid var(--line2); border-radius:12px; padding:13px 14px; min-height:52px;}
+  .answerin::placeholder{color:var(--mut); font-weight:600;}
+  .answerin:focus{border-color:var(--green); outline:none;}
+  .answerin:disabled{opacity:.7;}
+  .answergo{flex:0 0 auto; appearance:none; border:0; border-radius:12px; background:var(--green); color:#071426;
+    font-family:var(--f); font-weight:900; font-size:15px; padding:0 20px; min-height:52px; cursor:pointer;}
+  .answergo:hover:not(:disabled){filter:brightness(1.06);}
+  .answergo:disabled{background:var(--card2); color:var(--mut); cursor:default;}
+  /* The way out for a blank. Deliberately plain and deliberately priced: it is
+     the difference between a hard round and a stuck one. */
+  .bailbtn{display:block; width:100%; appearance:none; background:transparent; border:1px dashed var(--line2);
+    border-radius:12px; color:var(--mut); font-family:var(--f); font-weight:800; font-size:12.5px;
+    padding:11px; min-height:44px; cursor:pointer; margin-bottom:12px;}
+  .bailbtn:hover:not(:disabled){color:var(--ink); border-color:var(--green);}
+  .bailbtn[hidden]{display:none;}
+  /* one line of real history after every answer, right or wrong */
+  .factline{min-height:18px; text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
+    color:var(--mut); margin:12px 2px 0;}
+  .factline.on{color:var(--ink);}
+  .factline b{color:var(--greenT); font-weight:900;}
   /* the era line sits between the path and the reveal bar, which now owns the
      divider - two stacked dashed rules read as a mistake */
   .pathera{margin-top:14px; text-align:center;
@@ -142,10 +166,12 @@
   .pathera b{color:var(--greenT); font-weight:900; letter-spacing:.09em;}
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
-  /* Held so the JS fill doesn't throw the hint line and leaderboard down the
-     page a second after first paint - a fixed-count list, so its height is
-     knowable, and :empty drops the reservation the moment it's built. */
-  .choices:empty{min-height:283px;}
+  /* A class rule beats the UA's [hidden]{display:none}, so without this the
+     four names reserve 283px of blank page under every round they are not
+     being used in - which is now most of them. They no longer need the old
+     :empty height reservation either: they appear mid-round on request, not
+     on first paint, so there is no layout shift to hold space against. */
+  .choices[hidden]{display:none;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s; min-height:64px;}
   .choice:hover{border-color:var(--green);}
   .choice:active{transform:scale(.995);}
@@ -256,7 +282,7 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off one team for 3. One wrong ends your run.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off one team for 5. One wrong ends your run.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -267,18 +293,24 @@
     <div class="path" id="path"></div>
     <div class="revealbar" id="revealbar">
       <button class="revealbtn" type="button" id="revealBtn">Show next team</button>
-      <span class="worth" id="worth">Worth <b>3</b></span>
+      <span class="worth" id="worth">Worth <b>5</b></span>
     </div>
   </div>
+  <form class="answerbar" id="answerbar" autocomplete="off">
+    <input class="answerin" id="answerIn" type="text" inputmode="text" placeholder="Name the player" aria-label="Name the player" />
+    <button class="answergo" id="answerGo" type="submit">Call it</button>
+  </form>
   <div class="subprompt" id="subprompt"></div>
-  <div class="choices" id="choices"></div>
-  <div class="hintline" id="hintline">Name them now, or show another team for fewer points.</div>
+  <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four names (worth 1)</button>
+  <div class="choices" id="choices" hidden></div>
+  <div class="factline" id="factline" aria-live="polite"></div>
+  <div class="hintline" id="hintline">Type the name to call it. Every extra team you ask for is worth less.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your score today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best score</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your score today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Best score</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -340,10 +372,12 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=5"></script>
+<script src="/arcade/calendar.js?v=6"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=6"></script>
-<script src="/arcade/howto.js?v=8"></script>
+<script src="/arcade/pregame.js?v=7"></script>
+<script src="/arcade/howto.js?v=9"></script>
+<script src="/arcade/type.js?v=1"></script>
+<script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -386,8 +420,8 @@
   }
   var POOL = ENT.filter(careerStar);
   // The three DECOYS are on screen next to the answer, so they are as much of
-  // the puzzle as the answer is. This list was gated on f>=4 (NFL) / f>=3 —
-  // effectively no gate at all — so fixing only the answer pool above left the
+  // the puzzle as the answer is. This list was gated on f>=4 (NFL) / f>=3,
+  // effectively no gate at all, so fixing only the answer pool above left the
   // game still showing three unknown names per round. Same bar for all four.
   var bySport={}; ENT.forEach(function(e){
     if(TEAM_SPORTS[e.sport] && (window.RTG_KNOWN ? RTG_KNOWN(e) : (e.f||0)>=5)){
@@ -513,16 +547,20 @@
       return ratio(L,INK) >= ratio(L,WHITE) ? '#0A1728' : '#fff';
     }catch(e){ return '#fff'; }
   }
-  /* THE ROUND: a career arrives one team at a time.
+  /* THE ROUND: a career arrives one team at a time, and you type the name.
      Seeing the whole path and picking from four names was a lookup with the
-     answer already half-given - there was no moment in it. Now the first team
-     is all you get, and every extra team you ask for costs you: name them off
-     one club for 3, off two or three for 2, off four or more for 1. The whole
-     game is that decision, taken twenty times, and it is the same tension
-     Framed and Wordle run on. A wrong answer still ends the day, so calling it
-     early is a gamble, not a free optimisation. */
-  var shown=1;
-  function worthOf(n){ return n<=1 ? 3 : (n<=3 ? 2 : 1); }
+     answer already 25% given away. Now the first club is all you get and the
+     answer is a name you have to produce, which is a different question
+     entirely: not "which of these four" but "who is this". Every extra team
+     you ask for costs you - off one club it is 5, off two or three it is 3,
+     and it decays from there - so the whole game is the decision to call it
+     now or take one more clue.
+     The four names still exist, but as the way out of a blank rather than the
+     way in, and they cost the round down to a single point. Without them a
+     round you simply cannot place is a dead end that ends your day; with them
+     it is a bad round you play through. */
+  var shown=1, bailed=false;
+  function worthOf(n){ return bailed ? 1 : (n<=1 ? 5 : (n<=3 ? 3 : (n<=5 ? 2 : 1))); }
   function stopsOf(t){ return (t.t||[]).length; }
   function drawPath(target, all){
     var teams=target.t, lim = all ? teams.length : Math.min(shown, teams.length);
@@ -532,7 +570,7 @@
               : (i===teams.length-1 && !veiled ? '<span class="steptag last">Most recent</span>' : '');
       var tc=!veiled && window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(tm);
       // The step number sits ON the team colour, and team colours run the whole
-      // range from near-black to near-white — a fixed white digit sat at 3.4:1
+      // range from near-black to near-white, and a fixed white digit sat at 3.4:1
       // on the light ones. Pick the ink from the fill's luminance, the same way
       // the hub picks its PLAY labels.
       var ink = tc ? onColorOf(tc.p) : null;
@@ -546,25 +584,34 @@
       // anchor it in time - narrows the guess to contemporaries without naming
       // anything the decoy logic depends on (decoys share sport, not era).
       var d=t.decade||[]; if(!d.length) return '';
-      var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s–'+d[d.length-1]+'s');
+      var era = d[0]===d[d.length-1] ? (d[0]+'s') : (d[0]+'s-'+d[d.length-1]+'s');
       return '<div class="pathera">Played in the <b>'+era+'</b></div>';
     }
   }
   function drawWorth(target, spent){
     var w=document.getElementById('worth'), b=document.getElementById('revealBtn');
     var last = shown>=stopsOf(target);
-    if(w){ w.innerHTML='Worth <b>'+worthOf(shown)+'</b>'+(worthOf(shown)===1?' point':' points'); w.classList.toggle('spent', !!spent); }
-    if(b){ b.disabled = !!spent || last; b.textContent = last ? 'That is the whole career' : 'Show next team'; }
+    var v=worthOf(shown);
+    if(w){ w.innerHTML='Worth <b>'+v+'</b>'+(v===1?' point':' points'); w.classList.toggle('spent', !!spent); }
+    if(b){ b.disabled = !!spent || last || bailed; b.textContent = last ? 'That is the whole career' : 'Show next team'; }
+  }
+  var answerIn=document.getElementById('answerIn'), answerGo=document.getElementById('answerGo'),
+      bailBtn=document.getElementById('bailBtn'), factEl=document.getElementById('factline');
+  function setAnswerEnabled(on){
+    answerIn.disabled=!on; answerGo.disabled=!on;
+    bailBtn.disabled=!on; bailBtn.hidden = !on || bailed;
+    document.getElementById('answerbar').hidden = bailed;
   }
   function renderRound(){
     ensureRounds(idx+6);
     if(idx>=SEQ.length){ finish(); return; }
     document.getElementById('subprompt').textContent='';
+    if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
     var r=SEQ[idx], target=byId[r.target];
-    shown=1;
+    shown=1; bailed=false;
+    answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
+    setAnswerEnabled(true);
     drawPath(target, false); drawWorth(target, false);
-    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
-    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
   }
   function revealNext(){
     if(done||busy) return;
@@ -578,29 +625,104 @@
     saveResume();
   }
   document.getElementById('revealBtn').addEventListener('click', revealNext);
-  function pick(id, bt){
-    if(done||busy) return; busy=true; startIfNeeded();
-    var r=SEQ[idx], target=byId[r.target], right=id===r.target, got=worthOf(shown);
-    var btns=choicesEl.querySelectorAll('.choice');
+
+  /* The way out. Spending it drops the round to one point and swaps the text
+     field for the old four names, so a career you genuinely cannot place stops
+     being the thing that ends your day. */
+  function bail(){
+    if(done||busy||bailed) return;
+    var r=SEQ[idx]; if(!r) return;
+    startIfNeeded();
+    bailed=true;
+    var target=byId[r.target];
+    choicesEl.hidden=false;
+    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
+    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(bt.dataset.id===r.target, bt); }); });
+    setAnswerEnabled(true);
+    drawWorth(target, false);
+    document.getElementById('subprompt').textContent='One of these four. Worth 1.';
+    saveResume();
+  }
+  bailBtn.addEventListener('click', bail);
+
+  /* A typed answer is graded in three states, not two. A name we have never
+     heard of is a spelling problem, not a wrong answer, and ending someone's
+     run over a typo would be indefensible - so only naming a REAL OTHER
+     PLAYER counts as being wrong. */
+  var NAME_KEYS=null;
+  function knownName(text){
+    if(!window.RTGType) return true;
+    if(!NAME_KEYS){ NAME_KEYS={}; ENT.forEach(function(e){ var k=RTGType.nameKey(e.name); if(k) NAME_KEYS[k]=1; }); }
+    var k=RTGType.nameKey(text);
+    return !!(k && NAME_KEYS[k]);
+  }
+  function submitTyped(){
+    if(done||busy||bailed) return;
+    var r=SEQ[idx]; if(!r) return;
+    var text=answerIn.value, target=byId[r.target];
+    if(!text.trim()){ return; }
+    if(window.RTGType && !RTGType.hasFullName(text)){
+      document.getElementById('subprompt').textContent='First name and last name, please.';
+      return;
+    }
+    var right = window.RTGType ? RTGType.sameName(text, target.name) : (text.trim().toLowerCase()===target.name.toLowerCase());
+    if(!right && !knownName(text)){
+      document.getElementById('subprompt').textContent='No player by that name here. Check the spelling and try again.';
+      if(window.RTGSound) RTGSound.soft && RTGSound.soft();
+      return;                                   // costs nothing: it is not an answer yet
+    }
+    startIfNeeded();
+    resolve(right, null);
+  }
+  document.getElementById('answerbar').addEventListener('submit', function(e){ e.preventDefault(); submitTyped(); });
+  /* The suggester searches every recognisable player, never the round's four
+     names: one that knew the answer would be handing it over. */
+  if(window.RTGType){
+    RTGType.mount(answerIn, {
+      source: RTGType.playerSource(ENT.filter(function(e){ return window.RTG_KNOWN ? RTG_KNOWN(e) : (e.f||0)>=4; })),
+      accent: 'var(--green)',
+      onPick: function(){ submitTyped(); },
+      onSubmit: function(){ submitTyped(); }
+    });
+  }
+
+  /* One line of real history under every result, right or wrong. Teams are
+     suppressed because the round just finished showing them. */
+  function showFact(target){
+    if(!factEl) return;
+    var line = window.RTGFact ? RTGFact.of(target, { seed: idx, skip: { teams:1 } }) : null;
+    if(!line){ factEl.textContent=''; factEl.classList.remove('on'); return; }
+    factEl.textContent=line; factEl.classList.add('on');
+  }
+  function resolve(right, bt){
+    if(done||busy) return; busy=true;
+    var r=SEQ[idx], target=byId[r.target], got=worthOf(shown);
+    setAnswerEnabled(false);
     // whatever happens, the career finishes telling itself - you always get to
     // see the rest of the path you were betting on
     drawPath(target, true); drawWorth(target, true);
-    // reveal the full answer: the correct path goes green, every other option
-    // goes red, and the one you tapped is tagged so you can see how you did.
-    [].forEach.call(btns, function(b){ b.classList.add(b.dataset.id===r.target ? 'correct' : 'wrong'); });
-    bt.classList.add('you');
-    if(!right){ document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
+    if(bailed){
+      // reveal the full answer: the correct name goes green, every other option
+      // goes red, and the one you tapped is tagged so you can see how you did.
+      [].forEach.call(choicesEl.querySelectorAll('.choice'), function(b){
+        b.classList.add(b.dataset.id===r.target ? 'correct' : 'wrong');
+      });
+      if(bt) bt.classList.add('you');
+    }
+    showFact(target);
     if(right){
       ANSLOG.push(String(got));
       run+=got; solved++; document.getElementById('runN').textContent=run;
-      document.getElementById('subprompt').textContent = got===3 ? 'Off one team. +3.' : ('+'+got+(got===1?' point':' points'));
+      document.getElementById('subprompt').textContent =
+        (got>=5 ? 'Off one team. +5.' : ('+'+got+(got===1?' point':' points'))) + ' It was ' + target.name + '.';
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 1250);
+      setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1900);
     } else {
       ANSLOG.push('x');
+      document.getElementById('subprompt').textContent='It was '+target.name+'.';
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1600);
+      setTimeout(function(){ finish(); }, 2400);
     }
   }
 
@@ -623,6 +745,7 @@
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';
     renderRound(); updateHint();
+    try{ answerIn.focus(); }catch(_){}
   }
   // Resume an interrupted ranked run: rebuild today's deterministic rounds and
   // fast-forward to the saved position without re-charging a token, replaying
@@ -641,7 +764,10 @@
     renderRound(); updateHint();
     // come back to the clues you had already paid for, not to a fresh first team
     var rr=SEQ[idx];
-    if(rr && (r.shown|0)>1){ shown=Math.min(r.shown|0, stopsOf(byId[rr.target])); drawPath(byId[rr.target], false); drawWorth(byId[rr.target], false); }
+    if(rr){
+      if((r.shown|0)>1) shown=Math.min(r.shown|0, stopsOf(byId[rr.target]));
+      if(r.bailed) bail(); else { drawPath(byId[rr.target], false); drawWorth(byId[rr.target], false); }
+    }
     toast('Resumed your run');
   }
   function updateAgainBtn(){
@@ -659,7 +785,7 @@
   // RESUME_KEY is mode-keyed (set by configureMode).
   function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
   function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
-    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, solved:solved, shown:shown })); }catch(e){} }
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, solved:solved, shown:shown, bailed:(bailed?1:0) })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
   // Dopamine state for the end modal: captured at finish-time, consumed by showEnd.
@@ -839,6 +965,7 @@
       document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
       if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
       var rb=document.getElementById('revealBtn'); if(rb) rb.disabled=true;
+      setAnswerEnabled(false);
     } else { beginAttempt(); }
     if(window.RTG_BOARD){
       renderRealBoard();
