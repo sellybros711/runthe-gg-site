@@ -26,7 +26,7 @@
       desc:'Tap four names that belong together. Find all four groups before four mistakes.',
       icon:'<svg viewBox="0 0 56 56"><g><rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/></g></svg>' },
     { key:'career',     path:'career',     cls:'career', name:'Career Path',      accent:'var(--green)',
-      desc:'A career, one team at a time. Type the name early for more points.',
+      desc:'Three clubs or more, revealed one at a time. Type the name early for more points.',
       icon:'<svg viewBox="0 0 56 56"><g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g><g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g></svg>' },
     { key:'oddone',     path:'oddone',     cls:'oddone', name:'Odd One Out',      accent:'var(--violet)',
       desc:'Four names share a connection, one doesn’t. Spot it, then name it.',

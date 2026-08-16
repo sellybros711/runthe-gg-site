@@ -12,7 +12,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Career Path: a daily sports streak game. A career is revealed one team at a time. Type the name off the first club for 5 points, or take another clue for fewer." />
+<meta name="description" content="Career Path: a daily sports streak game. Every answer played for three franchises or more, revealed one club at a time. Type the name off the first club for 5 points." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -385,10 +385,10 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=10"></script>
+<script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=11"></script>
-<script src="/arcade/howto.js?v=14"></script>
+<script src="/arcade/pregame.js?v=12"></script>
+<script src="/arcade/howto.js?v=15"></script>
 <script src="/arcade/type.js?v=1"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
@@ -422,8 +422,20 @@
   // .star (from stars.js overlay) is the primary "recognizable" signal;
   // otherwise fall back to modern-era + career credentials so an uncurated
   // journeyman never sneaks in.
+  /* THREE FRANCHISES MINIMUM.
+     A two-club career is barely a path: the first team plus the scouting file
+     is most of the answer already, and the reveal has nothing left to spend
+     its points on. Three or more is what makes the mechanic work, and it also
+     gives the game an identity: this is the well-travelled-career game.
+     Counted as DISTINCT franchises, not stops, so a there-and-back career
+     (Portland, Milwaukee, Portland) is the two-club career it actually is. */
+  function franchiseCount(e){
+    var seen={}, n=0;
+    (e.t||[]).forEach(function(t){ if(t && !seen[t]){ seen[t]=1; n++; } });
+    return n;
+  }
   function careerStar(e){
-    if(!TEAM_SPORTS[e.sport] || !e.t || e.t.length<2) return false;
+    if(!TEAM_SPORTS[e.sport] || franchiseCount(e) < 3) return false;
     // The answer here IS a player's name, so the bar is the strict one: a
     // curated star, an icon, a Hall of Famer or a real accolade. The old
     // fallback took "high pick who lasted eight years", which is how Bill

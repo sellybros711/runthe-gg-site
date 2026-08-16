@@ -20,9 +20,9 @@
       'It opens on household names and works down into the deep cuts.'
     ],
     career: [
-      'You get the scouting file free: position, college and era.',
-      'Then the career arrives one club at a time, first team first. No multiple choice: type who it is.',
-      'Name them off the first club and it is 5 points, off two or three it is 3, and down from there.',
+      'Well-travelled careers only: every answer played for at least three franchises.',
+      'You get the scouting file free: position, college and era. Then the clubs arrive one at a time, first team first.',
+      'No multiple choice: type who it is. Off the first club it is 5 points, off two or three it is 3, and down from there.',
       'Stuck? Take four names instead, for one point. A wrong answer ends your run.'
     ],
     oddone: [
