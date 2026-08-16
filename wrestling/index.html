@@ -765,6 +765,28 @@
   .tourgoal.go{border-color:rgba(198,57,44,.55);background:linear-gradient(180deg,rgba(198,57,44,.14),rgba(0,0,0,.25));}
   .tourgoal.go .gl{color:#f0907f;}
 
+  /* ---- the rulebook ---- */
+  .rulechips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid var(--line);}
+  .rulechip{padding:4px 10px!important;font-size:10.5px!important;letter-spacing:.06em!important;
+    border-color:transparent!important;background:rgba(244,232,219,.05)!important;color:var(--text-faint)!important;border-radius:8px!important;}
+  .rulechip:hover{color:var(--cream)!important;background:rgba(244,232,219,.11)!important;}
+  .rulechip.on{color:var(--gold)!important;background:rgba(224,179,65,.13)!important;border-color:rgba(224,179,65,.45)!important;}
+  .rulesec .log{margin:0 0 10px;}
+  .ruleul{list-style:none;padding:0;margin:0 0 11px;}
+  .ruleul li{position:relative;padding-left:17px;font-size:13px;line-height:1.6;color:var(--text-dim);margin-bottom:6px;}
+  .ruleul li::before{content:"";position:absolute;left:2px;top:7px;width:6px;height:6px;transform:rotate(45deg);
+    background:var(--brandred);border-radius:1px;}
+  .ruleul li b{color:var(--cream);}
+  .rulecall{border-left:3px solid var(--gold);border-radius:0 9px 9px 0;padding:9px 12px;margin:0 0 11px;
+    background:linear-gradient(180deg,rgba(224,179,65,.11),rgba(0,0,0,.16));font-size:13px;line-height:1.6;color:var(--text);}
+  .rulecall b{color:var(--gold);}
+  .ruletbl{width:100%;border-collapse:collapse;margin:0 0 11px;font-size:12.5px;}
+  .ruletbl th{text-align:left;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);
+    font-weight:800;padding:0 8px 5px 0;border-bottom:1px solid var(--line);}
+  .ruletbl td{padding:6px 8px 6px 0;border-bottom:1px solid rgba(244,232,219,.06);color:var(--text-dim);}
+  .ruletbl td:first-child{color:var(--cream);font-weight:700;}
+  .ruletbl td:not(:first-child){font-family:var(--mono);}
+
   .beltlogo{width:100%;max-width:420px;height:auto;display:block;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
   @media(max-width:640px){ .topbar h1{font-size:18px;} .hud .value{font-size:14px;} main{padding:16px 12px 90px;} }
 </style>
@@ -2756,7 +2778,7 @@ function navHTML(scr){
   const g=groupOf(scr)||NAVG[0];
   let h=`<div class="navrow">`+NAVG.map(x=>
     `<button class="${x.id===g.id?'':'ghost'}" data-nav="${x.id}" onclick="goGroup('${x.id}')">${x.label}</button>`).join('')
-    +`<button class="ghost navhelp" onclick="startTour()" title="How to play">? Help</button></div>`;
+    +`<button class="ghost navhelp" onclick="openHelp()" title="How to play">? Help</button></div>`;
   if(g.subs.length>1) h+=`<div class="subnav">`+g.subs.map(s=>
     `<button class="${s[0]===scr?'on':''}" onclick="${s[0]==='card'?'openCard()':`go('${s[0]}')`}">${s[1]}</button>`).join('')+`</div>`;
   return h;
@@ -2772,41 +2794,61 @@ function paintNav(s){ const sc=$('s-'+s); if(!sc) return;
    button after that. The last card is the part that actually
    matters: your goals, your next step, and where to go first.
    ============================================================ */
-const TOUR=[
+const TOURS={
+ hub:[
   {sel:'#weekBody .advice', title:'This is your week',
-   body:'Every week you do exactly one thing. <b>Take a match</b>, or spend the week on <b>training</b>, a <b>promo</b>, or <b>rest</b>. Then the week rolls over and you choose again.'},
+   body:'Every week you do exactly one thing. <b>Take a match</b>, or spend the week on <b>training</b>, a <b>promo</b>, or <b>rest</b>. Then the week rolls over and you choose again. Forty weeks make a year.'},
   {sel:'#weekBody .bkg', title:'Read the bookings',
-   body:'Each offer shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> it pays, and the <b>injury risk</b>. Tap one to wrestle it. Tough opponents pay more and rate higher.'},
+   body:'Each offer shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> it pays, and the <b>injury risk</b>. Tap one to wrestle it.'},
+  {sel:'#weekBody .bkg', title:'Winning is not the point',
+   body:'This surprises everybody. You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. Take the hard match against the better opponent: that is how you get noticed.'},
+  {sel:'#weekBody select', title:'Your game plan',
+   body:'These two picks are what you <b>emphasise in every match</b>. They decide which move categories you build <b>mastery</b> in, and mastery is what unlocks your better moves. Change them whenever you want to grow in a new direction.'},
   {sel:'#carTiles', title:'Your vitals',
-   body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react (being hated counts, being ignored does not). <b>Condition</b> drops as you work and invites injury when it is low.'},
+   body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react, and being <i>hated</i> counts just as much as being loved (being <i>ignored</i> is the killer). <b>Condition</b> drops as you work, and working hurt is how careers end early.'},
+  {sel:'.hud', title:'The clock is running',
+   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30</b>, then decline, and the more road miles you put on the sooner that starts. You can retire from <b>36</b>. This career has an ending, so bank your prime.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
-   body:'Matches earn <b>XP</b>, which becomes <b>training points</b>. Spend them here to raise attributes, which unlocks new <b>moves</b> in your Arsenal. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher.'},
+   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
-   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Pro Shop</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge with.'},
+   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Pro Shop</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge exactly what you want with.'},
   {sel:'[data-nav="roster"]', title:'Roster: who is out there',
-   body:'The <b>Locker Room</b> is your allies, your tag team, your stable, and everyone with a grudge. <b>The World</b> is all nine promotions and the wrestlers on them.'},
+   body:'The <b>Locker Room</b> is your allies, tag team, stable, and everyone with a grudge. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
   {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
    body:'<b>Business</b> holds your contract, your schedule, your character and your injuries. <b>Record</b> is every match, title reign and accolade you have earned.'},
   {sel:null, title:'Where to start', goals:true},
-];
-let TOUR_I=-1;
-function startTour(){ TOUR_I=0; if(G&&G.screen!=='career') go('career'); setTimeout(()=>tourStep(0),120); }
-function endTour(){ TOUR_I=-1; $('tourBack').classList.remove('open');
-  if(G){ G.car.tourDone=true; save(); } }
+ ],
+ // fires the first time a match asks you to call a spot, while the match is paused
+ dec:[
+  {sel:'#fDec', title:'This is where you play',
+   body:'The wrestling calls itself. <b>These moments are yours.</b> Each option shows its real chance of coming off. Hitting a big spot sends the crowd up and lifts the match rating; missing one costs you. Pick one to continue.'},
+ ],
+};
+let TOURN='hub', TOUR_I=-1;
+function startTour(name){
+  TOURN=TOURS[name]?name:'hub'; TOUR_I=0;
+  if(TOURN==='hub'&&G&&G.screen!=='career') go('career');
+  setTimeout(()=>tourStep(0),120);
+}
+function endTour(){
+  const n=TOURN; TOUR_I=-1; $('tourBack').classList.remove('open');
+  if(G){ if(n==='hub') G.car.tourDone=true; if(n==='dec') G.car.decSeen=true; save(); }
+}
 function tourNext(){ tourStep(TOUR_I+1); }
 function tourStep(i){
-  if(i>=TOUR.length){ endTour(); return; }
+  const T=TOURS[TOURN]||TOURS.hub;
+  if(i>=T.length){ endTour(); return; }
   TOUR_I=i;
-  const st=TOUR[i], back=$('tourBack'), hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
+  const st=T[i], back=$('tourBack'), hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
   back.classList.add('open');
-  const last=i===TOUR.length-1;
+  const last=i===T.length-1;
   card.innerHTML=`
-    <div class="tk"><span>Step ${i+1} of ${TOUR.length}</span><span>How to play</span></div>
+    <div class="tk"><span>${T.length>1?`Step ${i+1} of ${T.length}`:'How to play'}</span><span>${T.length>1?'How to play':''}</span></div>
     <div class="tt">${st.title}</div>
     ${st.body?`<div class="tb">${st.body}</div>`:''}
     ${st.goals?tourGoalsHTML():''}
     <div class="trow">
-      <span class="tourdots">${TOUR.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</span>
+      <span class="tourdots">${T.length>1?T.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join(''):''}</span>
       ${i>0?`<button class="ghost" onclick="tourStep(${i-1})">Back</button>`:''}
       ${last?`<button onclick="endTour()">Got it</button>`
             :`<button class="ghost" onclick="endTour()">Skip</button><button onclick="tourNext()">Next</button>`}
@@ -2860,12 +2902,116 @@ function tourGoalsHTML(){
     h+=`<div class="tourgoal"><div class="gl">Working toward</div>
       <div class="gv">${g.l}</div><div class="gs">${g.sub}</div></div>`;
   });
+  h+=`<div class="tb" style="margin-top:10px;">Everything in depth lives in the <b>Rulebook</b>, under the Help button.</div>`;
   return h;
 }
-window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=TOUR[TOUR_I];
+window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=(TOURS[TOURN]||TOURS.hub)[TOUR_I];
   placeTour(st&&st.sel?document.querySelector(st.sel):null); } });
 
+/* ============================================================
+   THE RULEBOOK
+   ------------------------------------------------------------
+   The tour teaches the loop. This is the manual for everything
+   underneath it, with the real numbers out of the engine so a
+   player can plan against them instead of guessing.
+   ============================================================ */
+const RULES=[
+ {n:'The Week', h:`
+  <p class="log">A career runs <b>40 weeks a year</b>. Each week you do exactly one thing, then the week rolls over.</p>
+  <ul class="ruleul">
+    <li><b>Take a match.</b> Three offers a week. This is how you earn almost everything.</li>
+    <li><b>Train.</b> +45 XP, costs a little condition. Good when you are close to a training point or an unlock.</li>
+    <li><b>Cut a promo.</b> No match, but you build feuds, alliances and your character, and you move the crowd.</li>
+    <li><b>Rest.</b> Recovers condition and morale. The safest week there is.</li>
+  </ul>
+  <p class="log">Your <b>downside guarantee</b> pays every week whether you wrestle or not, so a rest week is never free money lost.</p>`},
+ {n:'Matches', h:`
+  <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
+  <ul class="ruleul">
+    <li><b>Pinfall.</b> A cover, a referee count, and a kickout at one, two or two and a half. Only a finisher in the closing stretch is likely to get three.</li>
+    <li><b>Submission.</b> Work a limb all night and the hold pays it off.</li>
+    <li><b>Time-limit draw.</b> Neither a win nor a loss on your record.</li>
+  </ul>
+  <p class="log">The bars at the top are <b>damage taken</b>, not lives. Nobody loses by running out of health. <b>Momentum</b> in the middle is who is in control right now.</p>
+  <p class="log">A match moves through phases: the feeling-out, the shine, the heat, the comeback, the finish stretch. Big moves only land late, because you do not open with your finisher.</p>
+  <p class="log">Every so often the match stops and asks you to <b>call a spot</b>. Each option shows its real success chance. This is the only part you directly control, and it is where match ratings are made.</p>`},
+ {n:'Match Rating', h:`
+  <p class="log">Every match is scored <b>0 to 100</b> and shown as a <b>star rating</b> out of five. This is the number your whole career runs on.</p>
+  <div class="rulecall"><b>Winning is not the point.</b> A <b>90-rated loss</b> pays more reputation, more standing with the office and more popularity than a <b>50-rated win</b>. Ducking hard opponents is the slowest way to the top.</div>
+  <p class="log"><b>Raises it:</b> near-falls the crowd buys, a varied match, picking one body part and staying on it, nailing the spots you are asked to call, championship stakes, and simply being good (your craft and your opponent's).</p>
+  <p class="log"><b>Kills it:</b> calling the same spots over and over, no near-falls, a match over in under five minutes, ring psychology below what the tier demands, gassing late on low stamina, and working banged up.</p>`},
+ {n:'Getting Better', h:`
+  <p class="log">Nothing is bought. Everything is earned in the ring.</p>
+  <ul class="ruleul">
+    <li><b>XP</b> comes from matches and training weeks. Every <b>100 XP</b> is one <b>training point</b>.</li>
+    <li><b>Training points</b> raise attributes: Power, Technique, Aerial, Charisma, Psychology, Toughness, Stamina.</li>
+    <li><b>Mastery</b> builds in the two categories in your <b>game plan</b>, every match, automatically.</li>
+    <li><b>Moves unlock</b> when you hit both an attribute gate and a mastery gate. Tiers run Fundamentals (0 mastery), Refined (70), Advanced (200), Signature (420), Finisher (750).</li>
+    <li><b>Mentors</b> cost three weeks of your career and hand you a legend's signature move plus a permanent attribute boost.</li>
+  </ul>
+  <p class="log">Attributes also grow on their own each year until your mid twenties, then stop, then decline. Spend your prime wisely.</p>`},
+ {n:'Crowd & Character', h:`
+  <p class="log">The crowd is measured on <b>two separate axes</b>, and confusing them is the most common mistake.</p>
+  <ul class="ruleul">
+    <li><b>Reaction (0 to 100)</b> is how <i>loud</i> they are. This is what gets you moved up the card.</li>
+    <li><b>Lean (booed to cheered)</b> is <i>which way</i> they are loud.</li>
+  </ul>
+  <div class="rulecall">A building that hates you is worth exactly as much as a building that loves you. A building that does not care is worth nothing. Silence is the only bad outcome.</div>
+  <p class="log">You are a <b>babyface</b>, a <b>heel</b> or a <b>tweener</b>. Cut promos against your own alignment often enough and you <b>turn</b>, which is a real career move. But the crowd can only get behind somebody consistent: say three different things in three weeks and they stop taking you seriously.</p>
+  <p class="log">You can also <b>tease</b> a turn, work <b>cheap heat</b>, <b>pander</b>, or <b>shoot</b>. All of them pop a crowd once. None of them work twice in a row.</p>
+  <p class="log">Your <b>gimmick</b> has freshness that decays every week. When the act goes cold the office wants a repackage or a turn.</p>`},
+ {n:'The Locker Room', h:`
+  <p class="log">Everyone on the roster tracks two numbers about you: <b>respect</b> (they rate you) and <b>heat</b> (bad blood).</p>
+  <ul class="ruleul">
+    <li><b>Alliances</b> open at <b>55 respect</b> with under 40 heat. Wrestle them or talk to them to get there.</li>
+    <li><b>Tag teams and stables</b> grow out of alliances, and give you numbers at ringside.</li>
+    <li><b>Loyalty</b> erodes on losing streaks, cold crowds and mismatched alignments. Let it fall far enough and <b>they turn on you</b> without warning.</li>
+    <li><b>You can betray them first.</b> It is the loudest thing a wrestler can do: a huge reaction, an instant heel turn, and an enemy for life.</li>
+  </ul>
+  <p class="log">Repeated bad blood with one opponent starts a <b>feud</b>, which escalates over several matches to a blow-off you can settle in respect or in blood.</p>`},
+ {n:'The Business', h:`
+  <p class="log">You are an employee before you are a star.</p>
+  <ul class="ruleul">
+    <li><b>Standing with the office</b> is what they think of you. Great matches raise it; working hurt and no-showing quality lowers it. It decides how well you get booked.</li>
+    <li><b>Your contract</b> has a weekly downside, a merch cut and a length. You can renegotiate, but asking costs standing if they say no.</li>
+    <li><b>Schedule</b> trades pay and exposure against wear and injury risk.</li>
+    <li><b>Injuries</b> cost you real weeks and take an attribute hit. Serious ones can leave permanent damage. Working hurt makes all of it worse.</li>
+    <li><b>Mileage</b> never resets. It is what decides how early you decline.</li>
+  </ul>`},
+ {n:'The Climb', h:`
+  <p class="log">Four tiers. Reputation opens the door and your overall decides whether you can walk through it.</p>
+  <table class="ruletbl">
+    <tr><th>Tier</th><th>Reputation</th><th>Overall</th></tr>
+    <tr><td>Indie Circuit</td><td>0</td><td>any</td></tr>
+    <tr><td>Regional Scene</td><td>1,400</td><td>44</td></tr>
+    <tr><td>National TV</td><td>5,200</td><td>59</td></tr>
+    <tr><td>Global Main Event</td><td>14,000</td><td>70</td></tr>
+  </table>
+  <p class="log"><b>Championships</b> come to whoever the crowd reacts to, so build the reaction first. Title matches are harder than they look (your odds take a real hit) but pay a large reputation bonus win or lose.</p>
+  <p class="log"><b>Fame is tier-relative.</b> Tearing it up on the independents does not make you a household name; popularity drifts back toward the ceiling of the stage you actually work on.</p>
+  <p class="log">At year end there are <b>awards</b>: Match of the Year, Wrestler of the Year, Rookie of the Year. At the end there is a <b>Hall of Fame</b> that reads back everything you did.</p>`},
+];
+function openRules(i){
+  i=Math.max(0,Math.min(RULES.length-1,i|0));
+  const chips=RULES.map((r,k)=>`<button class="rulechip ${k===i?'on':''}" onclick="openRules(${k})">${r.n}</button>`).join('');
+  modal('The Rulebook', `<div class="rulechips">${chips}</div><div class="rulesec">${RULES[i].h}</div>`,
+    [ i>0?{label:'← '+RULES[i-1].n,cls:'ghost',fn:()=>openRules(i-1)}:null,
+      i<RULES.length-1?{label:RULES[i+1].n+' →',fn:()=>openRules(i+1)}:{label:'Done',fn:closeModal}
+    ].filter(Boolean));
+}
+function openHelp(){
+  modal('Help', `<p class="log">New here, or want the detail?</p>`,
+    [{label:'Replay walkthrough',cls:'ghost',fn:()=>{closeModal(); startTour('hub');}},
+     {label:'Open the Rulebook',fn:()=>{closeModal(); openRules(0);}}]);
+}
+// a modal you can await, so the game can pause and explain itself before it starts
+function tell(title,body,label){
+  return new Promise(res=>modal(title,body,[{label:label||'Got it',fn:()=>{closeModal(); res();}}]));
+}
+
 function go(s){
+  // the walkthrough is anchored to the hub; leaving it must not strand the overlay
+  if(TOUR_I>=0 && TOURN==='hub' && s!=='career') endTour();
   if(G) G.screen=s;
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('s-'+s); if(el) el.classList.add('active');
@@ -3041,8 +3187,12 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
-  // the manual runs itself once, on the first week you ever see
-  if(!c.tourDone && TOUR_I<0){ setTimeout(startTour,420); return; }
+  // the manual runs itself once, on the first week you ever see. Re-check on
+  // fire: anything can happen in the 420ms, including the player skipping it.
+  if(!c.tourDone && TOUR_I<0){
+    setTimeout(()=>{ if(G && !G.car.tourDone && TOUR_I<0 && G.screen==='career') startTour('hub'); },420);
+    return;
+  }
   setTimeout(()=>{ if(!showCeremony()) showMoments(); },400);   // podium first, then moments
 }
 function renderAttrs(){
@@ -3912,10 +4062,26 @@ function decide(head,sub,opts){
       el.classList.remove('on'); el.innerHTML='';
       res(opts[+d.dataset.i]);
     });
+    // the match is already paused here waiting on this promise, so the first
+    // time it happens is the safe moment to explain what a spot even is
+    if(G&&!G.car.decSeen){ setTimeout(()=>startTour('dec'),260); }
   });
 }
 
 async function startFight(o){
+  // your first ever match: say what is about to happen before the bell, not after
+  if(!G.car.seenFight){
+    G.car.seenFight=true; save();
+    await tell('Your first match', `
+      <p class="log">The match wrestles itself out live. A few things to watch:</p>
+      <ul class="ruleul">
+        <li>The bars up top are <b>damage taken</b>, not lives. Nobody loses by running out of health.</li>
+        <li>Matches end by <b>pinfall</b>, <b>submission</b> or the <b>time limit</b>, exactly like the real thing.</li>
+        <li><b>Momentum</b> in the middle is who is in control right now.</li>
+        <li>Now and then it will stop and ask you to <b>call a spot</b>. That is your part.</li>
+      </ul>
+      <p class="log">Remember: you are scored on <b>how good the match is</b>, not just whether you win.</p>`, 'Ring the bell');
+  }
   const meOvr=ovr(G.w);
   const oc0=charById(o.oppId);
   const meFace=G.w.align==='face', oppFace=oc0?(oc0.align!=='heel'):!meFace;
