@@ -15748,3 +15748,38 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   - The soaks are the useful part of the test work and are worth keeping: they drive the real UI rather
     than calling engine functions, so they catch exactly the class of bug that started this - a state the
     engine is perfectly happy with that the SCREEN cannot render.
+
+- **The knockout reveal: Auto Sim stops stealing your match, the day is paced to be watched, and the
+  board stops lurching on mobile (owner: "it jumps around a lot on mobile and the autoplay overrides the
+  playoff sim so you don't have time to click play on your round. It also sims the games too fast").**
+  Three separate faults, all in the reveal:
+  1. **Auto Sim answered your match for you.** The pause branch armed a 1.6s timer that clicked "Sim the
+     match", so Play was never realistically clickable - and because it then carried straight on, two more
+     rounds were gone before you looked up. Reproduced on the deployed build: nine seconds after the day
+     started it was already on Day 3, quarter-finals, with no Play button anywhere. The timer is gone. Auto
+     Sim exists so you are not clicking through weeks you do not care about; your own match in a knockout is
+     the opposite of that, so it now waits, however long you take. Choosing Sim hands the rest of the day
+     straight back to Auto Sim.
+  2. **The day was four times too fast.** A match landed every 110ms, so a 16-match round was over in 1.8
+     seconds - a flicker, not a bracket filling in. Now `MP_FIRST=520`, `MP_IN=430` (a round runs ~7s, slow
+     enough to follow a name across the draw), `MP_AFTER_MINE=1250`, and the day-to-day auto-advance 1500 ->
+     2800 so there is time to read the result and see who you drew next. Skip is still one tap for anyone
+     who would rather not watch.
+  3. **The board lurched on a phone.** The auto-scroll re-centred the tree on BOTH axes for every single
+     match; on a phone, where the tree scrolls in both directions, that is sixteen lurches a round, each one
+     a smooth scroll interrupted by the next. Two rules fix it: only move when the match is genuinely off
+     screen (never just to recentre), and only move sideways when the ROUND changes, since every match in a
+     round shares a column. The pacing fix does most of the work here too - at 430ms each scroll finishes
+     before the next begins.
+  - Verified in Playwright at a real phone viewport (390x844): a new 6-check feel suite - Auto Sim still
+    waiting on your match with Play offered nine seconds in and your match undecided, Play genuinely
+    starting the hole-by-hole round from there, the round paced over several seconds, and the tree making at
+    most one sideways move per round and not scrolling on every match. The same suite run against the
+    DEPLOYED build fails exactly where the owner said it would (auto sim already at Day 3 with no Play
+    button; 110ms a match), so it pins the report rather than something adjacent. Screenshots confirm the
+    pause holds unchanged nine seconds apart under Auto Sim.
+  - **A test had encoded the bug**: br_motion asserted "auto sim plays the days through without stranding on
+    your match", which is precisely the behaviour being complained about. Rewritten to the real contract -
+    auto sim reaches your match and waits, and Sim hands the day back. Worth remembering that a green suite
+    can be green about the wrong thing.
+  - Regressions green (br_motion 16/16, br_stress 11/11, mp_season, season_soak, regress_final).
