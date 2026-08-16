@@ -81,3 +81,23 @@ jobs:
           psql "$SUPABASE_DB_URL" -At -c "select count(*) from player_register;"
           echo "by sport:"
           psql "$SUPABASE_DB_URL" -At -c "select sport, count(*) from player_register group by sport order by 2 desc;"
+
+          # Position GRAIN, not just row count. The NBA half is scraped from a
+          # career index that only says G / F / C, and a bare "Guard" cannot
+          # settle a "Shooting Guard" category either way — which is how a real
+          # shooting guard scored nothing. The season pages carry the specific
+          # position; this is the check that they actually landed. If
+          # `specific` collapses toward zero, the season pass is parsing but not
+          # resolving, and Sportegories quietly goes back to shrugging.
+          echo "NBA position grain (specific must dominate):"
+          psql "$SUPABASE_DB_URL" -At -F $'\t' -c "
+            select
+              count(*) filter (where pos ~ 'Point Guard|Shooting Guard|Small Forward|Power Forward') as specific,
+              count(*) filter (where pos is not null and pos !~ 'Point|Shooting|Small|Power')        as family_only,
+              count(*) filter (where pos is null)                                                    as no_position
+            from player_register where sport = 'NBA';"
+          echo "sample:"
+          psql "$SUPABASE_DB_URL" -At -F $'\t' -c "
+            select name, pos from player_register
+             where sport = 'NBA' and pos is not null
+             order by last_season desc nulls last, name limit 8;"
