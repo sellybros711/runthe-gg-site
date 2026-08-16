@@ -1,7 +1,7 @@
 /* ============================================================
-   RunTheRopes — Build-A-Wrestler: Cosmetics, Packs & Store (v1)
+   RunTheRopes: Build-A-Wrestler Cosmetics, Packs & Store (v1)
    ------------------------------------------------------------
-   Everything here is drawn procedurally by the pixel renderer —
+   Everything here is drawn procedurally by the pixel renderer,
    no image assets. Items unlock via the Pro Shop (coins) or by
    opening packs earned through your career.
 
@@ -84,14 +84,14 @@ window.RTR_COSMETICS = [
   { id:'g_gold',    slot:'pattern', name:'Gold Trim',    rarity:'legendary', v:'gold'},
 ];
 
-// Colour swatches available to every wrestler (free — colour is expression, not paywalled)
+// Colour swatches available to every wrestler (free: colour is expression, not paywalled)
 window.RTR_PALETTE = {
   skin: ['#f3d3b3','#e8bd95','#d29b6e','#b2764a','#8a5533','#5d3a22'],
   hair: ['#241a12','#4a2f1b','#8a5a2b','#c99b3d','#e8dcc0','#b03a2e','#3b6ea5','#7a3f9d','#e0e0e0','#22c2a8'],
   gear: ['#C6392C','#e0b341','#2f7fbf','#3aa濃','#5bb083','#7a3f9d','#e07b39','#F4E8DB','#1a1a1a','#d2687a','#2fbfa8','#8a1c1c'],
   trim: ['#F4E8DB','#e0b341','#1a1a1a','#C6392C','#2fbfa8','#7a3f9d'],
 };
-// (sanitise any typo'd swatch at load — keeps the picker safe)
+// (sanitise any typo'd swatch at load, which keeps the picker safe)
 window.RTR_PALETTE.gear = window.RTR_PALETTE.gear.filter(c=>/^#[0-9a-fA-F]{6}$/.test(c));
 
 // ---------- expanded catalogue (v2): more of everything + two new slots ----------

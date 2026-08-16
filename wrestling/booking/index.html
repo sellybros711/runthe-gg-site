@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunTheRopes — Wrestling Booking Sim</title>
+<title>RunTheRopes: Wrestling Booking Sim</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#0b0a0c" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0a0c'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%F0%9F%A4%BC%3C/text%3E%3C/svg%3E" />
@@ -231,12 +231,12 @@
     <span class="beta-tag" style="align-self:flex-start;">Beta</span>
   </div>
   <div style="color:var(--text-faint); font-size:12px; letter-spacing:.24em; text-transform:uppercase; margin:8px 0 6px; font-weight:800;">Wrestling Booking Sim · Career Mode</div>
-  <p class="hint" style="max-width:640px;">Take control of a wrestling promotion. Sign and poach talent, book weekly shows, run feuds, defend championships, and grow your company. Every rating is deterministic and fully inspectable — no random bombs, just booking decisions with visible consequences.</p>
+  <p class="hint" style="max-width:640px;">Take control of a wrestling promotion. Sign and poach talent, book weekly shows, run feuds, defend championships, and grow your company. Every rating is deterministic and fully inspectable: no random bombs, just booking decisions with visible consequences.</p>
 
   <div id="continueBar" class="continue-bar" style="display:none;">
     <div>
-      <div class="impact" style="font-size:18px; color:var(--gold-bright);" id="continuePromo">—</div>
-      <div class="stat-mini" id="continueMeta">—</div>
+      <div class="impact" style="font-size:18px; color:var(--gold-bright);" id="continuePromo">-</div>
+      <div class="stat-mini" id="continueMeta">-</div>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="big" onclick="continueCareer()">Continue Career</button>
@@ -249,13 +249,13 @@
     <div class="mode-card selected" data-mode="quick" onclick="selectMode('quick')">
       <h3>Quick Mode</h3>
       <div class="meta">GM-style · pick-up-and-play</div>
-      <p>Draft a card, book the show, hit your grade. A fixed weekly budget keeps spending simple — focus on the booking, not the spreadsheet.</p>
+      <p>Draft a card, book the show, hit your grade. A fixed weekly budget keeps spending simple. Focus on the booking, not the spreadsheet.</p>
       <ul><li>Weekly spending allowance</li><li>Auto venue &amp; ticketing</li><li>Streamlined scorecard</li></ul>
     </div>
     <div class="mode-card" data-mode="junkie" onclick="selectMode('junkie')">
       <h3>Wrestling Junkie</h3>
       <div class="meta">Deep sim · run the whole company</div>
-      <p>The full experience. Real budget and P&amp;L, venues and ticket pricing, TV deals, contracts, feuds, stables, managers — every lever of running a promotion.</p>
+      <p>The full experience. Real budget and P&amp;L, venues and ticket pricing, TV deals, contracts, feuds, stables, managers: every lever of running a promotion.</p>
       <ul><li>Full budget &amp; line-item finances</li><li>Pick venues &amp; set ticket prices</li><li>Deep multi-category grading</li></ul>
     </div>
   </div>
@@ -274,7 +274,7 @@
     <div class="hud">
       <div class="cell"><div class="label">Year · Week</div><div class="value" id="hudWeek">1</div></div>
       <div class="cell"><div class="label">Cash</div><div class="value" id="hudCash">$0</div></div>
-      <div class="cell"><div class="label">TV</div><div class="value" id="hudTv">—</div></div>
+      <div class="cell"><div class="label">TV</div><div class="value" id="hudTv">-</div></div>
       <div class="cell"><div class="label">Roster</div><div class="value" id="hudRoster">0</div></div>
       <div class="cell"><div class="label">Popularity</div><div class="value" id="hudPop">0</div></div>
     </div>
@@ -352,20 +352,20 @@
             </select>
           </label>
           <label class="fld build-full">
-            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">— click to select; hold Ctrl / Cmd (or ⇧) to pick more</span></div>
+            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">(click to select; hold Ctrl / Cmd (or ⇧) to pick more)</span></div>
             <select id="segWorkers" class="participant-list" multiple size="9"></select>
           </label>
           <label class="fld">
             <div class="stat-mini fldlab">Winner</div>
-            <select id="segWinner"><option value="">— no winner set —</option></select>
+            <select id="segWinner"><option value="">(no winner set)</option></select>
           </label>
           <label class="fld">
             <div class="stat-mini fldlab">Title on the Line</div>
-            <select id="segTitle"><option value="">— none —</option></select>
+            <select id="segTitle"><option value="">(none)</option></select>
           </label>
           <label class="fld">
             <div class="stat-mini fldlab">Feud</div>
-            <select id="segFeud"><option value="">— none —</option></select>
+            <select id="segFeud"><option value="">(none)</option></select>
           </label>
         </div>
         <div class="warn" id="builderWarn"></div>
@@ -406,7 +406,7 @@
           <label class="fld"><div class="stat-mini fldlab">Members (pick 2+)</div>
             <select id="teamMembers" multiple size="6" style="min-width:230px;"></select></label>
           <label class="fld"><div class="stat-mini fldlab">Manager (optional)</div>
-            <select id="teamManager"><option value="">— none —</option></select></label>
+            <select id="teamManager"><option value="">(none)</option></select></label>
           <button onclick="createTeam()">Form Unit</button>
         </div>
         <div class="warn" id="teamWarn"></div>
@@ -456,7 +456,7 @@
 
     <!-- EDITOR -->
     <div class="panel" id="panel-editor">
-      <h2>Worker Editor <span class="sub2">retune any wrestler — changes save with your career</span></h2>
+      <h2>Worker Editor <span class="sub2">retune any wrestler: changes save with your career</span></h2>
       <div class="builder-box">
         <label class="fld" style="margin-bottom:12px;">
           <div class="stat-mini fldlab">Wrestler</div>
@@ -484,7 +484,7 @@
 <script>
 "use strict";
 /* ============================================================
-   RunTheRopes — Booking Terminal (Beta)
+   RunTheRopes: Booking Terminal (Beta)
    Deterministic career-mode wrestling sim. Single save, localStorage.
    Data source: roster.js (window.RTR_ROSTER, 286 real workers, v0.1 to retune)
    ============================================================ */
@@ -526,7 +526,7 @@ function ppvName(forWeek){
   return names[(Math.floor((wk-1)/PPV_EVERY)) % names.length];
 }
 function venueIndex(id){ return VENUES.findIndex(v=>v.id===id); }
-// which venue the show actually runs in — Junkie honours the player's pick;
+// which venue the show actually runs in. Junkie honours the player's pick;
 // Quick auto-scales, bumping up for a big event.
 function effectiveVenue(ppv){
   if(S.mode==='junkie') return currentVenue();
@@ -535,7 +535,7 @@ function effectiveVenue(ppv){
   return VENUES[idx] || VENUES[0];
 }
 
-// Match/segment tuning — inspectable constants, not hardcoded logic
+// Match/segment tuning: inspectable constants, not hardcoded logic
 const typeMeta = {
   singles:  { label:'Singles Match',   floor:50, condCost:8,  minP:2, maxP:2, injRisk:1.0, perf:'inRing' },
   tag:      { label:'Tag Team Match',  floor:45, condCost:5,  minP:4, maxP:6, injRisk:0.8, perf:'inRing' },
@@ -588,7 +588,7 @@ function marketSalary(overness, tierLabel){
 }
 
 // ---------- Aging & career progression ----------
-// A worker's in-ring skill composite — the number that grows toward a hidden
+// A worker's in-ring skill composite: the number that grows toward a hidden
 // potential in youth and erodes in decline.
 function skillComposite(w){ return w.inRing*0.42 + w.psych*0.30 + w.ent*0.28; }
 // Hidden ceiling for the composite, derived from current level + age headroom.
@@ -690,7 +690,7 @@ function runAnnualProgression(){
     if(dr.kind==='up' && dr.amt>=2.4 && w.overness>=52) summary.breakouts.push({name:w.name, promo:w.promotion, over:Math.round(w.overness)});
   });
   [...S.roster,...S.pool].filter(w=>w.role==='manager').forEach(m=>m.age+=1);
-  // retirements (snapshot list first — retireWorker mutates the arrays)
+  // retirements (snapshot list first, retireWorker mutates the arrays)
   active.slice().forEach(w=>{
     if(!S.roster.includes(w) && !S.pool.includes(w)) return;
     const forced = w.age>=40 && skillComposite(w)<42;
@@ -703,12 +703,12 @@ function runAnnualProgression(){
 function pushYearSummary(inbox, ys){
   inbox.push({ico:'📅', sev:'story', txt:`<b>Year ${S.year} begins.</b> ${ys.prospects.length} fresh prospects entered the scene, ${ys.retired.length} veteran${ys.retired.length!==1?'s':''} hung up the boots.`});
   ys.retired.filter(r=>r.wasYours || r.notable).slice(0,5).forEach(r=>{
-    inbox.push({ico:'🎖️', sev: r.wasYours?'bad':'info', txt:`<b>${r.name}</b> retired at ${r.age}${r.notable?' — a legend of the business, now available to hire as a manager/GM':''}.${r.wasYours?' They were on your roster.':''}`});
+    inbox.push({ico:'🎖️', sev: r.wasYours?'bad':'info', txt:`<b>${r.name}</b> retired at ${r.age}${r.notable?', a legend of the business, now available to hire as a manager/GM':''}.${r.wasYours?' They were on your roster.':''}`});
   });
   const bo=ys.breakouts.sort((a,b)=>b.over-a.over).slice(0,3);
-  if(bo.length) inbox.push({ico:'📈', sev:'good', txt:`Breakout year for ${bo.map(b=>`<b>${b.name}</b>`).join(', ')} — rising fast.`});
+  if(bo.length) inbox.push({ico:'📈', sev:'good', txt:`Breakout year for ${bo.map(b=>`<b>${b.name}</b>`).join(', ')}, rising fast.`});
   const topProsp=ys.prospects.sort((a,b)=>b.pot-a.pot)[0];
-  if(topProsp) inbox.push({ico:'🌱', sev:'story', txt:`Hot prospect <b>${topProsp.name}</b> (age ${topProsp.age}) is turning heads on the indies — sign them before a rival does.`});
+  if(topProsp) inbox.push({ico:'🌱', sev:'story', txt:`Hot prospect <b>${topProsp.name}</b> (age ${topProsp.age}) is turning heads on the indies. Sign them before a rival does.`});
 }
 
 let selectedMode = 'quick';
@@ -845,7 +845,7 @@ function ratingClass(r){ if(r>=85) return 'r-elite'; if(r>=65) return 'r-good'; 
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function nextId(prefix){ S.seq = (S.seq||0)+1; return prefix + S.seq; }
 
-// Deterministic pseudo-random from a seed string (no Math.random — reproducible)
+// Deterministic pseudo-random from a seed string (no Math.random, so it is reproducible)
 function seededRand(seed){
   let h = 2166136261;
   for(let i=0;i<seed.length;i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -943,7 +943,7 @@ function refreshHud(){
   const ws = myWrestlers();
   const pop = ws.length ? Math.round(ws.reduce((s,w)=>s+w.overness,0)/ws.length) : 0;
   $('hudPop').textContent = pop;
-  $('hudTv').textContent = (S.metrics && S.metrics.tvRating!=null) ? S.metrics.tvRating : '—';
+  $('hudTv').textContent = (S.metrics && S.metrics.tvRating!=null) ? S.metrics.tvRating : '-';
   const modeEl = $('hudMode');
   if(modeEl) modeEl.innerHTML = (S.mode==='junkie'?'Wrestling Junkie':'Quick Mode') + (S.mode==='quick'?` · <span class="mono" style="color:#94764a">${money(budgetLeft())} budget</span>`:'');
   $('payrollLbl').textContent = 'Weekly payroll: ' + money(S.roster.reduce((s,w)=>s+w.salary,0));
@@ -1036,7 +1036,7 @@ function resignWorker(id){
     [{label:'Cancel', cls:'ghost', fn:closeModal},
      {label:`Pay ${money(cost)}`, cls:'', fn:()=>{
         if(S.promo.cash < cost){ toast("Can't afford that."); closeModal(); return; }
-        if(!canSpend(cost)){ toast(`Over budget — ${money(budgetLeft())} left this week.`); closeModal(); return; }
+        if(!canSpend(cost)){ toast(`Over budget. ${money(budgetLeft())} left this week.`); closeModal(); return; }
         S.promo.cash -= cost; recordSpend(cost); w.contractWeeks += 52; w.expiryWarned=false; w.morale=clamp(w.morale+5);
         closeModal(); renderAll(); scheduleSave(); toast(w.name+' re-signed (+52w)');
      }}]);
@@ -1085,9 +1085,9 @@ function renderBuildSelectors(){
   const avail = availableRoster();
   $('segWorkers').innerHTML = avail.sort((a,b)=>b.overness-a.overness)
     .map(w=>`<option value="${w.id}">${w.name}  ·  ${w.align}  ·  OVR ${Math.round(w.overness)}</option>`).join('');
-  $('segWinner').innerHTML = '<option value="">— no winner set —</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
-  $('segTitle').innerHTML = '<option value="">— none —</option>' + S.titles.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
-  $('segFeud').innerHTML = '<option value="">— none —</option>' + S.feuds.map(f=>`<option value="${f.id}">${nm(f.a)} vs ${nm(f.b)} (heat ${Math.round(f.heat)})</option>`).join('');
+  $('segWinner').innerHTML = '<option value="">(no winner set)</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  $('segTitle').innerHTML = '<option value="">(none)</option>' + S.titles.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  $('segFeud').innerHTML = '<option value="">(none)</option>' + S.feuds.map(f=>`<option value="${f.id}">${nm(f.a)} vs ${nm(f.b)} (heat ${Math.round(f.heat)})</option>`).join('');
   // feud selectors (wrestlers only)
   const wrestlers = myWrestlers();
   $('feudA').innerHTML = wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
@@ -1099,7 +1099,7 @@ function nm(id){ const w=byId(id); return w?w.name:'?'; }
 
 function selectedWorkerIds(){ return Array.from($('segWorkers').selectedOptions).map(o=>o.value); }
 
-// Road-agent advisory (natural-language warning before committing) — deterministic
+// Road-agent advisory: a natural-language warning before committing, deterministic
 function updateRoadNote(){
   const type = $('segType').value;
   const ids = selectedWorkerIds();
@@ -1110,13 +1110,13 @@ function updateRoadNote(){
   const msgs = [];
   if(type!=='promo'){
     const topPsych = Math.max(...ws.map(w=>w.psych));
-    if(topPsych < meta.floor) msgs.push(`⚠ Nobody here can carry the psychology for a ${meta.label.toLowerCase()} (top psych ${topPsych}, floor ${meta.floor}) — expect a structural penalty.`);
-    if(ws.every(w=>w.inRing<55)) msgs.push('⚠ Two low in-ring workers — this match will drag.');
+    if(topPsych < meta.floor) msgs.push(`⚠ Nobody here can carry the psychology for a ${meta.label.toLowerCase()} (top psych ${topPsych}, floor ${meta.floor}). Expect a structural penalty.`);
+    if(ws.every(w=>w.inRing<55)) msgs.push('⚠ Two low in-ring workers. This match will drag.');
     const lowCond = ws.filter(w=>w.condition<60);
-    if(lowCond.length) msgs.push(`⚠ ${lowCond.map(w=>w.name).join(', ')} ${lowCond.length>1?'are':'is'} worn down — fatigue will cost you.`);
-    if(meta.injRisk>=1.8) msgs.push(`⚠ High-risk stipulation (${meta.label}) — real injury chance, especially on low condition.`);
+    if(lowCond.length) msgs.push(`⚠ ${lowCond.map(w=>w.name).join(', ')} ${lowCond.length>1?'are':'is'} worn down. Fatigue will cost you.`);
+    if(meta.injRisk>=1.8) msgs.push(`⚠ High-risk stipulation (${meta.label}). Real injury chance, especially on low condition.`);
     const rookie = ws.find(w=>w.age<27), vet = ws.find(w=>w.psych>=80);
-    if(rookie && vet) msgs.push(`✓ ${vet.name} can carry ${rookie.name} — good developmental pairing.`);
+    if(rookie && vet) msgs.push(`✓ ${vet.name} can carry ${rookie.name}. Good developmental pairing.`);
   }
   note.innerHTML = msgs.join('<br>');
 }
@@ -1133,7 +1133,7 @@ function addSegment(){
   const meta = typeMeta[type];
 
   if(ids.length < meta.minP || ids.length > meta.maxP){
-    warn.textContent = `${meta.label} needs ${meta.minP===meta.maxP?meta.minP:meta.minP+'–'+meta.maxP} participants (you picked ${ids.length}).`;
+    warn.textContent = `${meta.label} needs ${meta.minP===meta.maxP?meta.minP:meta.minP+'-'+meta.maxP} participants (you picked ${ids.length}).`;
     return;
   }
   if(winner && !ids.includes(winner)){ warn.textContent = 'Winner must be one of the participants.'; return; }
@@ -1191,13 +1191,13 @@ function calcSegmentRating(seg){
   const notes = [];
   notes.push({t:`base = ${avgPop.toFixed(1)}(pop)×${S.promo.popW} + ${avgPerf.toFixed(1)}(${isPromo?'ent':'ring'})×${S.promo.perfW} = ${base.toFixed(1)}`});
 
-  // Step 2 — psychology gate (matches only)
+  // Step 2: psychology gate (matches only)
   const topPsych = Math.max(...ws.map(w=>w.psych));
   if(!isPromo && topPsych < meta.floor){
     const penalty = (meta.floor - topPsych)*0.6;
     base -= penalty; notes.push({t:`psychology gate: top psych ${topPsych} < floor ${meta.floor} → -${penalty.toFixed(1)}`, k:'neg'});
   }
-  // Step 3 — construction modifiers
+  // Step 3: construction modifiers
   if(!isPromo && ws.every(w=>w.inRing<55)){ base -= 8; notes.push({t:'weak in-ring pairing → -8', k:'neg'}); }
   if(!isPromo){
     const rookie = ws.some(w=>w.age<27), vetPsych = ws.some(w=>w.psych>=80);
@@ -1214,7 +1214,7 @@ function calcSegmentRating(seg){
   if(seg.intent==='showcase'){ base+=3; notes.push({t:'intent showcase → +3', k:'pos'}); }
   if(seg.intent==='elevate'){ base+=1; notes.push({t:'intent elevate → +1', k:'pos'}); }
 
-  // Step 4 — feud / heat (sub-linear diminishing returns; amplified at big events)
+  // Step 4: feud / heat (sub-linear diminishing returns; amplified at big events)
   if(seg.feudId){
     const f = S.feuds.find(x=>x.id===seg.feudId);
     if(f){ let hb = 14 * Math.log10(1 + f.heat/10); if(isPpvWeek()) hb *= 1.5; base += hb;
@@ -1225,14 +1225,14 @@ function calcSegmentRating(seg){
   // Big-event spectacle
   if(isPpvWeek()){ base += 5; notes.push({t:'premium live event → +5', k:'pos'}); }
 
-  // Team chemistry — a cohesive tag team / stable in the match performs better
+  // Team chemistry: a cohesive tag team / stable in the match performs better
   if(!isPromo){
     const team = dominantTeam(seg.ids);
     if(team){ const cb = 3 + (team.chemistry-50)*0.12; base += cb;
       notes.push({t:`${team.name} chemistry ${Math.round(team.chemistry)} → ${cb>=0?'+':''}${cb.toFixed(1)}`, k: cb>=0?'pos':'neg'}); }
   }
 
-  // Manager at ringside — a great mouthpiece lifts the segment (more on the mic)
+  // Manager at ringside: a great mouthpiece lifts the segment (more on the mic)
   const mgr = bestManagerFor(seg.ids);
   if(mgr){ const mb = (isPromo?0.11:0.07)*mgr.mgrBonus; base += mb;
     notes.push({t:`${mgr.name} at ringside → +${mb.toFixed(1)}`, k:'pos'}); }
@@ -1260,7 +1260,7 @@ function computeShowMetrics(showRating, results, ppv){
   // demand from star power (fans come for the top of the card), show quality,
   // and overall popularity. A big event draws a premium crowd.
   const demand = clamp(((starPower*0.45 + showRating*0.35 + pop*0.20)/100) * (ppv?1.32:1.18), 0, 1.25);
-  // ticket price sensitivity — ~1.0 at the tier's baseline price, cheaper fills more
+  // ticket price sensitivity: ~1.0 at the tier's baseline price, cheaper fills more
   const price = S.promo.ticketPrice;
   const priceFactor = clamp(1.5 - (price/setup.price)*0.5, 0.4, 1.25);
   const sellThrough = clamp(demand * priceFactor, 0, 1);
@@ -1273,7 +1273,7 @@ function computeShowMetrics(showRating, results, ppv){
   const tvRevenue = Math.round(S.promo.tvDeal * (0.7 + tvRating/100*0.6));
   const merch = Math.round(attendance * (pop/100) * (ppv?24:14));
 
-  // PPV buys — the big payday, scaling with appeal and the promotion's TV tier
+  // PPV buys: the big payday, scaling with appeal and the promotion's TV tier
   let ppvRevenue = 0, ppvBuys = 0;
   if(ppv){
     const topHeat = S.feuds.reduce((m,f)=>Math.max(m,f.heat),0);
@@ -1300,7 +1300,7 @@ function computeShowMetrics(showRating, results, ppv){
 }
 
 function showScorecard(M, deltas){
-  const dArrow = (v,invBad)=> v>0 ? `<span class="dlt up">▲ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : v<0 ? `<span class="dlt down">▼ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : `<span class="dlt flat">—</span>`;
+  const dArrow = (v,invBad)=> v>0 ? `<span class="dlt up">▲ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : v<0 ? `<span class="dlt down">▼ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : `<span class="dlt flat">-</span>`;
   const netCls = M.net>=0?'up':'down';
   const junkie = S.mode==='junkie';
   const cells = [
@@ -1365,13 +1365,13 @@ function runShow(){
           const win = byId(seg.winner);
           if(win){ win.overness = clamp(win.overness + 6); win.momentum = clamp(win.momentum + 12); }
           f.heat = 22; f.blowoffReady = false; f.beats.push({week:S.week, type:seg.type, rating:r.final, winner:nm(seg.winner), blowoff:true});
-          events.push({ico:'🎇', sev:'good', txt:`Blow-off! <b>${nm(seg.winner)}</b> settles the score with ${nm(f.a)===nm(seg.winner)?nm(f.b):nm(f.a)} at ${ppvName()} — a defining moment.`});
+          events.push({ico:'🎇', sev:'good', txt:`Blow-off! <b>${nm(seg.winner)}</b> settles the score with ${nm(f.a)===nm(seg.winner)?nm(f.b):nm(f.a)} at ${ppvName()}. A defining moment.`});
         } else {
           const gain = (6 + (r.final-55)*0.25 + (seg.winner?3:0)) * (ppv?1.4:1);
           f.heat = clamp(f.heat + Math.max(2,gain), 0, 100);
           f.beats.push({week:S.week, type:seg.type, rating:r.final, winner: seg.winner?nm(seg.winner):null});
           if(f.heat>=80 && !f.blowoffReady){ f.blowoffReady = true;
-            events.push({ico:'🔥', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is white-hot (heat ${Math.round(f.heat)}). It's blow-off time — pay it off at the next big event.`}); }
+            events.push({ico:'🔥', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is white-hot (heat ${Math.round(f.heat)}). It's blow-off time. Pay it off at the next big event.`}); }
         }
       }
     }
@@ -1432,7 +1432,7 @@ function runShow(){
 
 // ---------- Weekly tick ----------
 function advanceWeek(){
-  // advancing without a show — everyone idle
+  // advancing without a show, everyone idle
   weeklyTick(new Set(), {showRating:null, revenue:0, events:[], extraInbox:[], justInjured:new Set()});
   switchTab('inbox');
 }
@@ -1449,7 +1449,7 @@ function weeklyTick(usedIds, showInfo){
     S.promo.cash += tvIdle - payroll;
   }
 
-  // GM passive — a hired GM lifts morale baseline and sharpens the business
+  // GM passive: a hired GM lifts morale baseline and sharpens the business
   const theGM = gm();
   const gmMoraleBase = theGM ? 72 + theGM.mgrBonus*0.06 : 72; // up to ~78
   // 2. decay / regen + idle tracking (managers don't wrestle → no ring wear/idle penalty)
@@ -1467,7 +1467,7 @@ function weeklyTick(usedIds, showInfo){
     w.morale += (gmMoraleBase - w.morale)*0.12;    // morale drifts to (GM-boosted) baseline
   });
 
-  // 3b. contracts — tick down, warn, expire to free agency
+  // 3b. contracts: tick down, warn, expire to free agency
   const expired = [];
   S.roster.forEach(w=>{
     w.contractWeeks = Math.max(0, (w.contractWeeks||0) - 1);
@@ -1490,14 +1490,14 @@ function weeklyTick(usedIds, showInfo){
   });
   S.teams = S.teams.filter(t=>t.memberIds.length>=2); // dissolve broken units
 
-  // 4. feud fatigue — long cold feuds cool off
+  // 4. feud fatigue: long cold feuds cool off
   S.feuds.forEach(f=>{
     const usedThisWeek = usedIds.has(f.a) && usedIds.has(f.b);
     if(!usedThisWeek){ f.heat = clamp(f.heat - 3, 0, 100); f.coldWeeks=(f.coldWeeks||0)+1; }
     else f.coldWeeks = 0;
   });
 
-  // 5. morale departures — very unhappy workers may walk to a rival
+  // 5. morale departures: very unhappy workers may walk to a rival
   const leavers = [];
   S.roster.forEach(w=>{
     if(w.morale < 25){
@@ -1515,7 +1515,7 @@ function weeklyTick(usedIds, showInfo){
       startInbox.push({ico:'🚪', sev:'bad', txt:`<b>${w.name}</b> walked out over how they were being booked and left the promotion.`}); }
   });
 
-  // 6. AI rival promotions — they book their own shows, sign free agents, and poach
+  // 6. AI rival promotions: they book their own shows, sign free agents, and poach
   aiRivalMoves(startInbox);
   simulateRivalShows();
   rivalsSignFreeAgents(startInbox);
@@ -1542,7 +1542,7 @@ function weeklyTick(usedIds, showInfo){
   if(showInfo.metrics){
     const M = showInfo.metrics;
     inbox.push({ico: M.ppv?'🎇':'⭐', sev: M.composite>=68?'good':(M.composite>=50?'story':'bad'),
-      txt:`${M.ppv?`<b>${M.eventName}</b> graded`:`Last week graded`} <b>${M.grade}</b> — crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats${M.ppv?`, ${M.ppvBuys.toLocaleString()} buys`:''}, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
+      txt:`${M.ppv?`<b>${M.eventName}</b> graded`:`Last week graded`} <b>${M.grade}</b>. Crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats${M.ppv?`, ${M.ppvBuys.toLocaleString()} buys`:''}, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
     (showInfo.events||[]).forEach(e=>inbox.push(e));
   } else {
     inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Salaries of ${money(payroll)} still went out (TV money softened the hit).`});
@@ -1551,7 +1551,7 @@ function weeklyTick(usedIds, showInfo){
   startInbox.forEach(i=>inbox.push(i));
   // big-event countdown
   const wtp = weeksToPpv();
-  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT — your Premium Live Event. Book the biggest card you can and pay off your hottest feuds.`});
+  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT: your Premium Live Event. Book the biggest card you can and pay off your hottest feuds.`});
   else if(wtp<=2) inbox.push({ico:'📅', sev:'story', txt:`<b>${ppvName(nextPpvWeek())}</b> is ${wtp} week${wtp!==1?'s':''} away. Build heat now so the big show delivers.`});
   // feud blow-off nudges
   S.feuds.filter(f=>f.blowoffReady && f.coldWeeks>=2).forEach(f=>{
@@ -1578,7 +1578,7 @@ function aiRivalMoves(startInbox){
         S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
         S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
         detachPersonRefs(w.id);
-        startInbox.push({ico:'📡', sev:'bad', txt:`<b>${rival}</b> poached <b>${w.name}</b> right out from under you — they were unhappy and idle.`});
+        startInbox.push({ico:'📡', sev:'bad', txt:`<b>${rival}</b> poached <b>${w.name}</b> right out from under you. They were unhappy and idle.`});
       }
     }
   });
@@ -1601,7 +1601,7 @@ function applyInjuriesForCard(results, startInbox, justInjured){
       const chance = baseRate + condFactor*0.05*meta.injRisk + physFactor*0.02;
       const r = seededRand(`${w.id}-${S.week}-inj-${seg.type}-${si}`);
       if(r < chance){
-        const weeks = 1 + Math.floor(seededRand(`${w.id}-${S.week}-dur`)*8); // 1–8 weeks
+        const weeks = 1 + Math.floor(seededRand(`${w.id}-${S.week}-dur`)*8); // 1-8 weeks
         w.injWeeks = weeks; w.condition = clamp(w.condition-15,0,100);
         justInjured.add(w.id);
         startInbox.push({ico:'🏥', sev:'bad', txt:`<b>${w.name}</b> was injured in the ${meta.label.toLowerCase()} and is out ~${weeks} week${weeks>1?'s':''}.`});
@@ -1625,7 +1625,7 @@ function endFeud(id){
 }
 function renderFeuds(){
   const el = $('feudList');
-  if(!S.feuds.length){ el.innerHTML='<div class="empty-note">No active feuds. Start one above — booked rivals build heat, and heat makes their matches hit harder.</div>'; return; }
+  if(!S.feuds.length){ el.innerHTML='<div class="empty-note">No active feuds. Start one above: booked rivals build heat, and heat makes their matches hit harder.</div>'; return; }
   el.innerHTML = S.feuds.map(f=>{
     const beats = f.beats.slice(-4).map(b=>`W${b.week}: ${typeMeta[b.type]?typeMeta[b.type].label:b.type} (${b.rating})${b.winner?' → '+b.winner:''}`).join('<br>');
     return `<div class="feud-card">
@@ -1658,7 +1658,7 @@ function createTeam(){
   const warn=$('teamWarn'); warn.textContent='';
   if(!name){ warn.textContent='Give the unit a name.'; return; }
   if(ids.length<2){ warn.textContent='Pick at least 2 members.'; return; }
-  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2–3 members; use a stable for larger groups.'; return; }
+  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2-3 members; use a stable for larger groups.'; return; }
   S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week, managerId: $('teamManager').value||null });
   $('teamName').value=''; $('teamMembers').selectedIndex=-1; $('teamManager').value='';
   renderStables(); renderBuildSelectors(); scheduleSave(); toast((type==='tag'?'Tag team':'Stable')+' formed: '+name);
@@ -1680,14 +1680,14 @@ function doBreak(id, feud){
     const a=m[0], b=m[1];
     if(!S.feuds.some(f=>(f.a===a&&f.b===b)||(f.a===b&&f.b===a))){
       S.feuds.push({id:nextId('f_'), a, b, heat:45, beats:[], blowoffReady:false, coldWeeks:0, startWeek:S.week});
-      pushInbox({ico:'💥', sev:'story', txt:`<b>${t.name}</b> imploded — <b>${nm(a)}</b> turned on <b>${nm(b)}</b>. A red-hot feud is born.`});
+      pushInbox({ico:'💥', sev:'story', txt:`<b>${t.name}</b> imploded. <b>${nm(a)}</b> turned on <b>${nm(b)}</b>. A red-hot feud is born.`});
     }
   }
   renderAll(); scheduleSave(); toast(t.name+' disbanded');
 }
 function renderStables(){
   const el=$('teamList');
-  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No units yet. Form a tag team or stable above — booked together, they build chemistry that boosts their matches; break a stable up for an instant feud.</div>'; return; }
+  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No units yet. Form a tag team or stable above: booked together, they build chemistry that boosts their matches; break a stable up for an instant feud.</div>'; return; }
   el.innerHTML=S.teams.map(t=>{
     const members=t.memberIds.map(nm).join(', ');
     return `<div class="feud-card">
@@ -1703,7 +1703,7 @@ function renderStables(){
 function renderTeamSelectors(){
   const avail=availableRoster();
   $('teamMembers').innerHTML=avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
-  const tm=$('teamManager'); if(tm) tm.innerHTML='<option value="">— none —</option>'+myManagers().map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  const tm=$('teamManager'); if(tm) tm.innerHTML='<option value="">(none)</option>'+myManagers().map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
 }
 
 // ---------- Managers, legends & GM ----------
@@ -1754,20 +1754,20 @@ function renderPersonalities(){
   // GM section
   let html = `<div class="builder-box"><div class="vs-line" style="margin-bottom:8px;">General Manager</div>`;
   const gmEligible = mgrs.filter(m=>m.canGM);
-  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM lifts locker-room morale and sharpens the business — a small company-wide edge each week.</div>`;
-  html += `<select id="gmPick" onchange="setGM(this.value)"><option value="">— no GM —</option>` +
+  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM lifts locker-room morale and sharpens the business: a small company-wide edge each week.</div>`;
+  html += `<select id="gmPick" onchange="setGM(this.value)"><option value="">(no GM)</option>` +
     gmEligible.map(m=>`<option value="${m.id}" ${g&&g.id===m.id?'selected':''}>${m.name} (mgr ${m.mgrBonus})</option>`).join('') + `</select>`;
   if(!gmEligible.length) html += `<div class="hint" style="margin-top:6px;">Sign a legend or a booking-minded manager (Heyman, Callis, Cornette…) from the Market to fill this role.</div>`;
   html += `</div>`;
 
   // Managers on roster + assignment
   if(!mgrs.length){
-    html += `<div class="empty-note">No managers or legends signed. Head to the Market — legends and famous managers sit in the free-agent pool. Pair one with a wrestler or a stable to boost their segments and heat.</div>`;
+    html += `<div class="empty-note">No managers or legends signed. Head to the Market: legends and famous managers sit in the free-agent pool. Pair one with a wrestler or a stable to boost their segments and heat.</div>`;
   } else {
     html += mgrs.map(m=>{
       const clients = wrestlers.filter(w=>w.managerId===m.id).map(w=>w.name)
         .concat(S.teams.filter(t=>t.managerId===m.id).map(t=>t.name+' (stable)'));
-      const opts = `<option value="">— assign to… —</option>`
+      const opts = `<option value="">(assign to…)</option>`
         + `<optgroup label="Wrestlers">`+wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('')+`</optgroup>`
         + (S.teams.length?`<optgroup label="Stables">`+S.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')+`</optgroup>`:``);
       return `<div class="feud-card">
@@ -1815,7 +1815,7 @@ function rivalsSignFreeAgents(startInbox){
     if(w.overness<62) return;
     const r=seededRand(`${w.id}-${S.week}-fasign`);
     if(r<0.4){ const promo=pickRivalPromo(); w.promotion=promo;
-      // (silent — only notify if it was a notable name)
+      // (silent: only notify if it was a notable name)
       if(w.overness>=75) startInbox.push({ico:'✍️', sev:'info', txt:`<b>${promo}</b> signed free agent <b>${w.name}</b>.`});
     }
   });
@@ -1840,7 +1840,7 @@ function renderWorld(){
         <div class="mono" style="color:var(--gold-bright); font-size:18px;">${Math.round(row.avgOver)}</div>
       </div>
       <div class="stat-mini" style="margin-top:4px;">${row.tier} · ${row.size} roster</div>
-      <div class="stat-mini">Last show: ${row.lastRating!=null?`<span class="rating-dial ${ratingClass(row.lastRating)}" style="font-size:12px; padding:1px 6px;">${row.lastRating}</span>`:'—'}</div>
+      <div class="stat-mini">Last show: ${row.lastRating!=null?`<span class="rating-dial ${ratingClass(row.lastRating)}" style="font-size:12px; padding:1px 6px;">${row.lastRating}</span>`:'-'}</div>
     </div>`).join('') + `</div>`;
 }
 
@@ -1888,7 +1888,7 @@ function renderHistory(){
   `).join('');
 }
 function dirtSheet(r){
-  if(r>=85) return 'The dirt sheets are raving — an instant classic.';
+  if(r>=85) return 'The dirt sheets are raving: an instant classic.';
   if(r>=70) return 'A strong night that got people talking.';
   if(r>=55) return 'A solid, if unspectacular, show.';
   if(r>=40) return 'Columnists shrugged. Forgettable.';
@@ -1901,7 +1901,7 @@ function dirtSheet(r){
    Template-driven for a keyless, offline, single-player build. The
    seam is intentional: swap generateColumn/segFlavor/generatePromo
    for an LLM call (feeding the same result objects as the prompt) and
-   nothing about game balance changes — outcomes are already decided.
+   nothing about game balance changes. Outcomes are already decided.
    ============================================================ */
 function pick(arr, seed){ return arr[Math.floor(seededRand(seed)*arr.length)]; }
 function verbFor(rating, seed){
@@ -1932,7 +1932,7 @@ function generateColumn(showRating, results, events){
   let e = '';
   const titleChange = events.find(x=>/NEW CHAMPION/.test(x.txt));
   const blow = events.find(x=>/blow-off/.test(x.txt));
-  if(titleChange) e += ' '+titleChange.txt.replace(/<\/?b>/g,'').replace('NEW CHAMPION: ','New champion crowned — ');
+  if(titleChange) e += ' '+titleChange.txt.replace(/<\/?b>/g,'').replace('NEW CHAMPION: ','New champion crowned: ');
   else if(blow) e += ' '+blow.txt.replace(/<\/?b>/g,'');
   return `${opener} ${S.promo.name}. ${meLine}${e} ${dirtSheet(showRating)}`;
 }
@@ -1942,11 +1942,11 @@ function generatePromo(f){
   const heel = wa && wa.align==='heel' ? A : (wb && wb.align==='heel' ? B : A);
   const face = heel===A ? B : A;
   const seed = f.id+S.week;
-  if(f.heat>=75) return `"${A}, ${B} — this ends at the top of the card, and everyone knows it."`;
+  if(f.heat>=75) return `"${A}, ${B}. This ends at the top of the card, and everyone knows it."`;
   if(f.heat>=45) return pick([
     `"${heel} thinks this is over. ${face} has other ideas."`,
     `"Every week ${heel} runs their mouth, and every week ${face} is still standing."`,
-    `"${A} and ${B} can't stand the sight of each other — and the crowd can feel it."`,
+    `"${A} and ${B} can't stand the sight of each other, and the crowd can feel it."`,
   ], seed);
   return pick([
     `"There's history here between ${A} and ${B}, and it's only just starting to boil."`,
@@ -1995,7 +1995,7 @@ function signWorker(id){
   const w = S.pool[idx];
   const {isFA, bonus} = poachInfo(w);
   if(S.promo.cash < bonus){ toast("Can't afford that."); return; }
-  if(!canSpend(bonus)){ toast(`Over budget — ${money(budgetLeft())} left this week.`); return; }
+  if(!canSpend(bonus)){ toast(`Over budget. ${money(budgetLeft())} left this week.`); return; }
   S.promo.cash -= bonus; recordSpend(bonus);
   S.pool.splice(idx,1);
   const from = w.promotion;
@@ -2019,10 +2019,10 @@ function renderFinances(){
     ['Mode', junkie?'Wrestling Junkie':'Quick Mode', 'var(--gold-bright)'],
     ['Cash on hand', money(S.promo.cash), S.promo.cash<0?'var(--red)':'var(--gold-bright)'],
     ['Weekly payroll', money(payroll)+' /wk', 'var(--text)'],
-    ['Last TV rating', m.tvRating!=null?m.tvRating:'—', 'var(--text)'],
-    ['Last attendance', m.attendance!=null?m.attendance.toLocaleString():'—', 'var(--text)'],
-    ['Last grade', m.grade||'—', m.grade?gradeColor(m.grade):'var(--text)'],
-    ['Last net', m.lastNet!=null?money(m.lastNet):'—', (m.lastNet||0)>=0?'var(--green)':'#f08a76'],
+    ['Last TV rating', m.tvRating!=null?m.tvRating:'-', 'var(--text)'],
+    ['Last attendance', m.attendance!=null?m.attendance.toLocaleString():'-', 'var(--text)'],
+    ['Last grade', m.grade||'-', m.grade?gradeColor(m.grade):'var(--text)'],
+    ['Last net', m.lastNet!=null?money(m.lastNet):'-', (m.lastNet||0)>=0?'var(--green)':'#f08a76'],
     ['Peak TV', m.peakTv||0, 'var(--text)'],
     ['Promotion tier', S.promo.tierLabel, 'var(--text)'],
   ];
@@ -2041,7 +2041,7 @@ function renderFinances(){
       <div class="vs-line" style="margin-bottom:8px;">Show Setup &amp; Budget</div>
       <div class="row-wrap">
         <label class="fld"><div class="stat-mini fldlab">Venue (capacity · cost)</div>
-          <select onchange="setVenue(this.value)">${VENUES.map(x=>`<option value="${x.id}" ${x.id===S.promo.venue?'selected':''}>${x.name} — ${x.cap.toLocaleString()} · ${money(x.cost)}</option>`).join('')}</select></label>
+          <select onchange="setVenue(this.value)">${VENUES.map(x=>`<option value="${x.id}" ${x.id===S.promo.venue?'selected':''}>${x.name} · ${x.cap.toLocaleString()} · ${money(x.cost)}</option>`).join('')}</select></label>
         <label class="fld"><div class="stat-mini fldlab">Ticket price <span class="mono" style="color:var(--gold-bright)">${money(S.promo.ticketPrice)}</span></div>
           <input type="range" min="10" max="250" step="5" value="${S.promo.ticketPrice}" oninput="setTicket(this.value)"></label>
         <div class="stat-mini">TV deal: ${money(S.promo.tvDeal)}/wk · Product: ${S.promo.product}</div>
@@ -2052,7 +2052,7 @@ function renderFinances(){
     if(S.history[0] && S.history[0].metrics){
       const M=S.history[0].metrics;
       const line=(l,v,pos)=>`<div style="display:flex; justify-content:space-between;"><span class="stat-mini">${l}</span><span class="mono" style="color:${pos?'var(--green)':'#f08a76'}">${pos?'+':'−'}${money(Math.abs(v))}</span></div>`;
-      html += `<div class="builder-box" style="margin-top:12px;"><div class="vs-line" style="margin-bottom:8px;">Last Show P&amp;L — Week ${S.history[0].week}</div>
+      html += `<div class="builder-box" style="margin-top:12px;"><div class="vs-line" style="margin-bottom:8px;">Last Show P&amp;L: Week ${S.history[0].week}</div>
         ${line('Gate ('+M.attendance.toLocaleString()+' × '+money(M.ticketPrice)+')',M.gate,true)}
         ${line('TV money',M.tvRevenue,true)}
         ${line('Merch',M.merch,true)}
@@ -2083,7 +2083,7 @@ function renderEditor(){
   const sel = $('editPick');
   const prev = sel.value;
   sel.innerHTML = allWorkersSorted().map(({w,loc})=>
-    `<option value="${w.id}">${w.name} — ${loc==='roster'?S.promo.name:w.promotion}</option>`).join('');
+    `<option value="${w.id}">${w.name} · ${loc==='roster'?S.promo.name:w.promotion}</option>`).join('');
   if(prev && byId(prev)) sel.value = prev;
   loadEditWorker();
 }

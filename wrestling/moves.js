@@ -1,7 +1,7 @@
 /* ============================================================
-   RunTheRopes — Build-A-Wrestler: Move Catalogue (v1)
+   RunTheRopes: Build-A-Wrestler Move Catalogue (v1)
    ------------------------------------------------------------
-   Every move in the game is EARNED in career mode — never bought.
+   Every move in the game is EARNED in career mode, never bought.
    You unlock a move when you meet BOTH gates:
      • the governing attribute threshold (req.attr / req.val)
      • category mastery, which grows by USING that category in matches

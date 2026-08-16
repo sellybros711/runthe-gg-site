@@ -1,12 +1,12 @@
 /* ============================================================
-   RunTheRopes — Build-A-Wrestler: Mentors (v1)
+   RunTheRopes: Build-A-Wrestler Mentors (v1)
    ------------------------------------------------------------
    Legends of each era are MENTORS, not a draft pool. As your
    career progresses you unlock the right to train under them
    (gated by reputation + the era you came up in). Completing a
    mentorship is a multi-week career investment that pays out:
-     • attr — a permanent boost to their signature strengths
-     • move — you are TAUGHT their signature move
+     • attr: a permanent boost to their signature strengths
+     • move: you are TAUGHT their signature move
 
    Nothing here is purchasable. Mentorships are earned by
    climbing the card, exactly like attributes and moves.

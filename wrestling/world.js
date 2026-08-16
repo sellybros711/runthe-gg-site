@@ -1,5 +1,5 @@
 /* ============================================================
-   RunTheRopes — The World (v1)
+   RunTheRopes: The World (v1)
    ------------------------------------------------------------
    A wholly fictional wrestling universe: leagues you climb and
    characters you'll come to love or hate.
@@ -22,7 +22,7 @@ window.RTR_PROMOS = [
     blurb:'Armories, county fairs and a forty-year-old lineage. They still call it rasslin\' here.' },
   { id:'scw',    short:'SCW',  name:'Sunset Coast Wrestling',         tier:'regional', region:'California, USA',
     color:'#d2687a', product:'Flash & Spectacle',
-    blurb:'Beachfront shows, neon lights and more cameras than seats. Style over substance — usually.' },
+    blurb:'Beachfront shows, neon lights and more cameras than seats. Style over substance, usually.' },
   { id:'rose',   short:'CR',   name:'Crimson Rose',                   tier:'regional', region:'Osaka, Japan',
     color:'#c0455f', product:'Joshi',
     blurb:'Fierce, fast and unforgiving. The toughest women\'s wrestling on the planet, run out of a converted cinema.' },
@@ -96,7 +96,7 @@ window.RTR_CHARS = [
     gimmick:'A cold, patient submission specialist who publicly rates every opponent out of ten and never gives above a four.',
     traits:['technical','condescending','patient'],
     look:L('#8a5533','#241a12','#5bb083','#e0b341',{hairStyle:'topknot',face:'goatee',attire:'tights',boots:'tall',pattern:'gold'}),
-    lines:{ taunt:['I have watched your tape. Generously — a three out of ten.','You wrestle like someone described wrestling to you over the phone.'],
+    lines:{ taunt:['I have watched your tape. Generously, a three out of ten.','You wrestle like someone described wrestling to you over the phone.'],
             win:['I have revised my score. You are a two.'], lose:['...I will be revising my notes.'],
             respect:['Seven out of ten. I have never given a seven. Do not ask again.'] } },
 
@@ -201,11 +201,11 @@ window.RTR_CHARS = [
     look:L('#d29b6e','#b03a2e','#3f7fbf','#e0b341',{hairStyle:'pony',attire:'singlet',boots:'tall',acc:'elbow',pattern:'stripe'}),
     lines:{ taunt:['You are number nine on my list. That is not an insult. It is a schedule.','Nothing personal. Everything professional.'],
             win:['Crossed off. Next.'], lose:['You just moved up the list. Congratulations, I suppose.'],
-            respect:['I am taking your name off the list. Not because you beat me — because I would rather have you beside me.'] } },
+            respect:['I am taking your name off the list. Not because you beat me, but because I would rather have you beside me.'] } },
 
   { id:'c_osei', name:'Prince Osei', nick:'The Crown', promo:'acw', align:'face', over:72,
     style:'powerhouse', attrs:{po:88,te:64,ae:48,ch:80,ps:70,to:80,st:70}, finisher:'Coronation Slam',
-    gimmick:'Carries himself like actual royalty because he genuinely is — a deposed heir who chose the ring over the palace.',
+    gimmick:'Carries himself like actual royalty because he genuinely is: a deposed heir who chose the ring over the palace.',
     traits:['regal','powerful','beloved'],
     look:L('#5d3a22','#241a12','#e0b341','#7a3f9d',{hairStyle:'short',face:'beard',attire:'trunks',boots:'tall',acc:'cape',pattern:'gold',build:'heavy'}),
     lines:{ taunt:['I gave up a throne for this ring. Understand what that means.','Kneeling is optional. Falling is not.'],
@@ -217,7 +217,7 @@ window.RTR_CHARS = [
     gimmick:'Genuinely does not appear to feel pain and is visibly delighted about it. Laughs during chair shots. His own.',
     traits:['unhinged','iron','violent'],
     look:L('#e8bd95','#241a12','#8a1c1c','#1a1a1a',{hairStyle:'bald',face:'skull',attire:'trunks',boots:'tall',acc:'elbow',build:'heavy'}),
-    lines:{ taunt:['Hit me. No — HARDER. I am not joking, I want you to.','They took my licence in two states. Two! Guess which ones!'],
+    lines:{ taunt:['Hit me. No, HARDER. I am not joking, I want you to.','They took my licence in two states. Two! Guess which ones!'],
             win:['That is IT? That is all you had?'], lose:['HA! HA HA! Do it again!'],
             respect:['You hit me properly. Nobody hits me properly any more.'] } },
 
@@ -265,7 +265,7 @@ window.RTR_CHARS = [
     traits:['legacy','beloved','agile'],
     look:L('#b2764a','#241a12','#e0b341','#c0392b',{mask:'lucha',attire:'tights',boots:'tall',acc:'cape',pattern:'gold'}),
     lines:{ taunt:['My grandfather wore this mask. My father wore this mask. You will not take it.','In this building we do not walk. We fly.'],
-            win:['The mask stays. It always stays.'], lose:['You were magnificent. The mask stays — but you were magnificent.'],
+            win:['The mask stays. It always stays.'], lose:['You were magnificent. The mask stays, but you were magnificent.'],
             respect:['You honour the tradition. Come, fly with us.'] } },
 
   { id:'c_sangre', name:'Sangre Nueva', nick:'New Blood', promo:'eterna', align:'heel', over:57,
@@ -289,7 +289,7 @@ window.RTR_CHARS = [
   // ================= COLOSSUS (global) =================
   { id:'c_kaiser', name:'Duke Kaiser', nick:'The Kingmaker', promo:'cwf', align:'heel', over:92,
     style:'technician', attrs:{po:76,te:92,ae:52,ch:90,ps:94,to:74,st:78}, finisher:'The Coronation',
-    gimmick:'Nine-time world champion who genuinely believes he does not beat opponents — he DECIDES which of them get to matter.',
+    gimmick:'Nine-time world champion who genuinely believes he does not beat opponents. He DECIDES which of them get to matter.',
     traits:['elite','political','arrogant','ace'],
     look:L('#f3d3b3','#e8dcc0','#c0392b','#e0b341',{hairStyle:'swoop',face:'goatee',attire:'duster',boots:'tall',acc:'belt',pattern:'gold'}),
     lines:{ taunt:['You should be thanking me for the exposure. Most people pay for this.','I do not beat people. I decide who matters. Tonight I have decided you do not.'],
@@ -302,7 +302,7 @@ window.RTR_CHARS = [
     traits:['ace','respected','principled','beloved'],
     look:L('#8a5533','#241a12','#F4E8DB','#e0b341',{hairStyle:'topknot',attire:'singlet',boots:'tall',acc:'wrist',pattern:'gold'}),
     lines:{ taunt:['I am not here to humble you. I am here to find out what you are.','Wrestle me clean. You may not get the chance again.'],
-            win:['Get up. You belong here — you just are not finished.'], lose:['Then it is yours. Carry it better than I did.'],
+            win:['Get up. You belong here, you just are not finished.'], lose:['Then it is yours. Carry it better than I did.'],
             respect:['I have been waiting a long time for someone to hand this to. Do not make me regret it.'] } },
 
   { id:'c_ozzy', name:'Ozzy Vance', nick:'The People\'s Migraine', promo:'cwf', align:'heel', over:84,
@@ -352,7 +352,7 @@ window.RTR_CHARS = [
 
   { id:'c_grange', name:'Bishop Grange', nick:'The Gatekeeper', promo:'cwf', align:'tweener', over:76,
     style:'technician', attrs:{po:68,te:86,ae:40,ch:74,ps:90,to:72,st:64}, finisher:'The Verdict',
-    gimmick:'Never won the big one and never will. His entire purpose is deciding who is ready — and he is brutally, famously honest about it.',
+    gimmick:'Never won the big one and never will. His entire purpose is deciding who is ready, and he is brutally, famously honest about it.',
     traits:['veteran','gatekeeper','honest','respected'],
     look:L('#5d3a22','#e8dcc0','#5e7f8a','#F4E8DB',{hairStyle:'short',face:'beard',attire:'singlet',boots:'tall',acc:'wrist'}),
     lines:{ taunt:['Everybody has to come through me. Nobody has ever liked it.','I am not the mountain, kid. I am the door. And it is shut.'],
@@ -364,7 +364,7 @@ window.RTR_CHARS = [
 window.RTR_REL_DEFAULT = { respect:0, heat:0, matches:0, wins:0, losses:0, met:false };
 
 /* ============================================================
-   FACTIONS — the groups that run each locker room
+   FACTIONS: the groups that run each locker room
    ------------------------------------------------------------
    You can be recruited into one once its leader respects you.
    Membership brings allies (who interfere on your behalf), a
@@ -381,19 +381,19 @@ window.RTR_FACTIONS = [
   { id:'f_family', name:'The Grit City Family', promo:'gcw', color:'#a8602c', align:'tweener',
     leader:'c_slade', members:['c_trash','c_cutler'], rivals:['f_syndicate'],
     blurb:'Not a stable so much as a congregation. They bled in the same bingo hall and they do not forget who showed up.',
-    perk:'Your people have your back in the ugly matches — and you take less punishment.',
+    perk:'Your people have your back in the ugly matches, and you take less punishment.',
     bonus:{ interfere:0.26, tough:0.88, rep:1.08 } },
 
   { id:'f_syndicate', name:'The Sunset Syndicate', promo:'scw', color:'#d2687a', align:'heel',
     leader:'c_kip', members:['c_mimi'], rivals:['f_family'],
     blurb:'Matching jackets, a publicist, and a shared belief that the spotlight is a finite resource.',
-    perk:'Constant camera time — popularity climbs much faster while you are with them.',
+    perk:'Constant camera time: popularity climbs much faster while you are with them.',
     bonus:{ interfere:0.22, pop:1.45 } },
 
   { id:'f_dojo', name:'The Iron Blossom Dojo', promo:'kaiju', color:'#4a8f76', align:'face',
     leader:'c_ryu', members:['c_sora','c_mori'], rivals:['f_court'],
     blurb:'A training hall first and a faction second. You are not recruited so much as accepted.',
-    perk:'Relentless drilling — you build move mastery considerably faster.',
+    perk:'Relentless drilling: you build move mastery considerably faster.',
     bonus:{ mastery:1.4, rep:1.1 } },
 
   { id:'f_eternos', name:'Los Eternos', promo:'eterna', color:'#d99a2b', align:'face',
@@ -405,6 +405,6 @@ window.RTR_FACTIONS = [
   { id:'f_gate', name:'The Gatekeepers', promo:'acw', color:'#5e7f8a', align:'tweener',
     leader:'c_grange', members:['c_tank'], rivals:['f_court'],
     blurb:'Two men who never won the big one and decide, quietly, who gets to. The most powerful people nobody books.',
-    perk:'Veteran counsel — training points go further and your ring psychology grows faster.',
+    perk:'Veteran counsel: training points go further and your ring psychology grows faster.',
     bonus:{ tp:0.35, psy:1.5 } },
 ];

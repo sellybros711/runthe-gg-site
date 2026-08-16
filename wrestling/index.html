@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunTheRopes — Build A Wrestler</title>
+<title>RunTheRopes: Build A Wrestler</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#0c0b0b" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0b0b'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%F0%9F%A4%BC%3C/text%3E%3C/svg%3E" />
@@ -523,7 +523,7 @@
   /* on a phone the week's decision comes first; the profile follows it */
   @media(max-width:860px){ .hubgrid .hub-side{order:2;} .hubgrid .hub-main{order:1;} }
 
-  /* pager — one panel at a time instead of endless scroll */
+  /* pager: one panel at a time instead of endless scroll */
   .pgr{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
   .pgr-a{flex:none;width:32px;height:32px;padding:0;font-size:19px;line-height:1;border-radius:9px;
     background:var(--panel);border:1px solid var(--line);color:var(--cream);cursor:pointer;}
@@ -538,7 +538,7 @@
   .pgr-x{font-family:var(--mono);font-size:10px;opacity:.6;margin-left:3px;}
   @media(max-width:640px){ .pgr-n{display:none;} .pgr-c{padding:6px 9px;font-size:11.5px;} }
 
-  /* archetype picker — the stat line, spelled out and drawn */
+  /* archetype picker: the stat line, spelled out and drawn */
   .stylecard .sc-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
   .stylecard .sc-blurb{font-size:12px;color:var(--text-faint);}
   .sc-bars{margin:10px 0 2px;}
@@ -559,7 +559,7 @@
   .sc-mast b{color:var(--text-dim);font-weight:700;}
   @media(max-width:640px){ .sbar{grid-template-columns:70px 1fr 38px 26px;gap:6px;} }
 
-  /* match result — readable at a glance instead of a mono dump */
+  /* match result: readable at a glance instead of a mono dump */
   .mfinish{background:linear-gradient(180deg,rgba(224,179,65,.13),rgba(0,0,0,.18));border:1px solid rgba(224,179,65,.34);
     border-radius:12px;padding:12px 14px;margin-bottom:12px;}
   .mf-head{font-family:var(--display);font-size:19px;color:var(--cream);letter-spacing:.01em;line-height:1.25;}
@@ -604,7 +604,7 @@
 <!-- ============ TOP BAR ============ -->
 <div class="topbar" id="topbar" style="display:none;">
   <div>
-    <h1 id="tbName">—</h1>
+    <h1 id="tbName">-</h1>
     <div class="sub" id="tbSub">RunTheRopes · Career</div>
   </div>
   <div class="hud">
@@ -654,7 +654,7 @@
     <div class="homering" id="homeRing">
       <div class="hr-ropes"></div><div class="hr-crowd"></div><div class="hr-mat"></div>
       <div class="hr-cast" id="hrCast"></div>
-      <div class="hr-cap"><span class="hr-stip" id="hrStip">—</span><span class="hr-names" id="hrNames">—</span></div>
+      <div class="hr-cap"><span class="hr-stip" id="hrStip">-</span><span class="hr-names" id="hrNames">-</span></div>
     </div>
 
     <div id="homeCont"></div>
@@ -670,7 +670,7 @@
     <div class="starthead">
       <div class="sh-k">New Career</div>
       <h2>How Do You Want To Be Made?</h2>
-      <div class="sh-s">Both paths start you in the same place — a developmental deal on the independents. Only the amount of say you get up front changes.</div>
+      <div class="sh-s">Both paths start you in the same place: a developmental deal on the independents. Only the amount of say you get up front changes.</div>
     </div>
 
     <div class="pathwrap">
@@ -695,10 +695,10 @@
           <div class="pc-lede">We book you. Bell rings in ten seconds.</div>
           <ul class="pc-list">
             <li><b>Ring name and nickname</b> rolled for you from the name generator.</li>
-            <li><b>A full look</b> — hair, face, gear, boots, colours, body build — assembled at random from the starter wardrobe.</li>
+            <li><b>A full look</b>: hair, face, gear, boots, colours and body build, assembled at random from the starter wardrobe.</li>
             <li><b>An archetype picked at random</b>, which sets your starting stats, how fast each one grows, and which moves come easy.</li>
             <li><b>Alignment, era and first gimmick</b> chosen to match, plus the indie promotion that best fits your style.</li>
-            <li><b>Straight into week 1</b> — no menus, no steps. You land on the career hub with a contract already signed.</li>
+            <li><b>Straight into week 1</b>. No menus, no steps. You land on the career hub with a contract already signed.</li>
             <li>Everything is still editable later: the <b>Locker Room</b> re-styles your look any week, and your character can turn at any time.</li>
           </ul>
           <span class="pc-cta">Book Me Now</span>
@@ -733,11 +733,11 @@
           <div class="pc-name">Full Setup</div>
           <div class="pc-lede">Two steps. You draw every line yourself.</div>
           <ul class="pc-list">
-            <li><b>Step 1 — Who you are.</b> Ring name, nickname, and the <b>era</b> you break into, which colours how the business treats you.</li>
-            <li><b>Alignment</b>: babyface, heel or tweener — your starting crowd lean, and the gimmick you debut with.</li>
+            <li><b>Step 1. Who you are.</b> Ring name, nickname, and the <b>era</b> you break into, which colours how the business treats you.</li>
+            <li><b>Alignment</b>: babyface, heel or tweener. This sets your starting crowd lean, and the gimmick you debut with.</li>
             <li><b>Archetype</b>, chosen from all eight with their full stat lines side by side, so you can see exactly what you're trading away.</li>
-            <li><b>Step 2 — Your look.</b> Face, hair, facial hair, mask, gear, kneepads, boots and accessories, each with its own colour palette.</li>
-            <li><b>Body build</b> — lean, athletic or heavy — and a live pixel preview that updates on every tap.</li>
+            <li><b>Step 2. Your look.</b> Face, hair, facial hair, mask, gear, kneepads, boots and accessories, each with its own colour palette.</li>
+            <li><b>Body build</b>: lean, athletic or heavy, plus a live pixel preview that updates on every tap.</li>
             <li>Roughly <b>three minutes</b> if you're picky, under one if you use the dice on each panel.</li>
           </ul>
           <span class="pc-cta">Design My Wrestler →</span>
@@ -757,7 +757,7 @@
 
   <!-- STEP 1 -->
   <div id="createStep1">
-    <h2>Who Are You? <span class="sub2">Step 1 of 2 — everything else is earned in the ring</span></h2>
+    <h2>Who Are You? <span class="sub2">Step 1 of 2. Everything else is earned in the ring</span></h2>
     <div class="grid g2">
       <div class="card">
         <label class="fld"><div class="flab">Ring Name</div>
@@ -768,12 +768,12 @@
         <label class="fld"><div class="flab">Nickname <span class="hint">(optional)</span></div><input type="text" id="cNick" placeholder="The Alley Cat" maxlength="26"></label>
         <div class="grid g2" style="gap:10px;">
           <label class="fld"><div class="flab">Alignment</div>
-            <select id="cAlign"><option value="face">Face — fan favourite</option><option value="heel">Heel — villain</option><option value="tweener">Tweener</option></select></label>
+            <select id="cAlign"><option value="face">Face (fan favourite)</option><option value="heel">Heel (villain)</option><option value="tweener">Tweener</option></select></label>
           <label class="fld"><div class="flab">Came Up In</div><select id="cEra"></select></label>
         </div>
       </div>
       <div>
-        <div class="flab">Archetype <span class="hint">— your starting stats, and what you grow into</span></div>
+        <div class="flab">Archetype <span class="hint">your starting stats, and what you grow into</span></div>
         <div id="cStyles" style="margin-top:6px;"></div>
       </div>
     </div>
@@ -842,7 +842,7 @@
     <div class="fs left">
       <div class="fnm" id="fMeName">YOU</div>
       <div class="fbar"><i id="hpMe" style="width:100%"></i></div>
-      <div class="fsub" id="fMeSub">—</div>
+      <div class="fsub" id="fMeSub">-</div>
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
@@ -852,12 +852,12 @@
     <div class="fs right">
       <div class="fnm" id="fOppName">OPPONENT</div>
       <div class="fbar rev"><i id="hpOpp" style="width:100%"></i></div>
-      <div class="fsub" id="fOppSub">—</div>
+      <div class="fsub" id="fOppSub">-</div>
     </div>
   </div>
 
   <div class="momwrap">
-    <div class="momhead"><span>MOMENTUM</span> <span class="momsub">— the bars above are damage taken, not lives</span></div>
+    <div class="momhead"><span>MOMENTUM</span> <span class="momsub">(the bars above are damage taken, not lives)</span></div>
     <div class="mombar">
       <div class="momfill me" id="momMe"></div>
       <div class="momfill opp" id="momOpp"></div>
@@ -940,7 +940,7 @@
 <!-- ============ SHOP ============ -->
 <div class="screen" id="s-shop">
   <div class="navrow"><button class="ghost" onclick="go('career')">← Hub</button></div>
-  <h2>Pro Shop <span class="sub2">cosmetics only — skills are earned, never sold</span></h2>
+  <h2>Pro Shop <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
   <div id="shopBody"></div>
 </div>
 
@@ -954,7 +954,7 @@
 <!-- ============ PROMO SEGMENT ============ -->
 <div class="screen" id="s-promo">
   <div class="phud">
-    <div class="ph-l"><div class="ph-n" id="pmTitle">LIVE MIC</div><div class="ph-s" id="pmSub">—</div></div>
+    <div class="ph-l"><div class="ph-n" id="pmTitle">LIVE MIC</div><div class="ph-s" id="pmSub">-</div></div>
     <div class="ph-r">
       <div class="crowdmeter">
         <div class="cm-lab"><span>BOOS</span><span id="cmReact">REACTION 0</span><span>CHEERS</span></div>
@@ -1021,14 +1021,14 @@
 <script>
 "use strict";
 /* ============================================================
-   RunTheRopes — Build A Wrestler (career simulator)
+   RunTheRopes: Build A Wrestler (career simulator)
    Single save, localStorage. Attributes + moves are EARNED.
    ============================================================ */
 const SAVE='rtr_baw_v1', SCHEMA=1;
 const WEEKS_PER_YEAR=40;
 const ATTRS=[['po','Power'],['te','Technique'],['ae','Aerial'],['ch','Charisma'],['ps','Psychology'],['to','Toughness'],['st','Stamina']];
 // `base` = the effective level of opposition at that tier. `minOvr` means you are
-// never promoted past your actual ability — reputation opens the door, but you have
+// never promoted past your actual ability. Reputation opens the door, but you have
 // to be good enough to walk through it, or you'd be fed to the wolves nightly.
 const TIERS=[
   {id:'indie',   name:'Indie Circuit',  rep:0,    minOvr:0,  base:34, purse:[250,800],    oppLo:28, oppHi:52, title:'Indie Championship'},
@@ -1054,7 +1054,7 @@ const SCHEDULES=[
   {id:'light',  name:'Light Loop',   dates:'~80 dates/yr',  pay:0.72, pop:0.70, wear:0.52, inj:0.58,
    blurb:'TV and weekends only. Your body lasts. Your push crawls.'},
   {id:'regular',name:'Full-Time',    dates:'~155 dates/yr', pay:1.00, pop:1.00, wear:1.00, inj:1.00,
-   blurb:'The standard loop — four or five nights a week, driving between them.'},
+   blurb:'The standard loop: four or five nights a week, driving between them.'},
   {id:'heavy',  name:'Every Town',   dates:'~235 dates/yr', pay:1.34, pop:1.32, wear:1.70, inj:1.58,
    blurb:'Every building, every night. You get over fast and you break down faster.'},
 ];
@@ -1107,7 +1107,7 @@ function myDeal(){ return G&&G.car.deal; }
 function myPromo(){ const d=myDeal(); return (d&&promoById(d.promo))||PROMOS[0]; }
 function promoTierIdx(p){ return Math.max(0,TIERS.findIndex(t=>t.id===(p||myPromo()).tier)); }
 // The tier you actually work is the lower of what you have earned and
-// what your promotion can offer — you cannot main-event a stadium on an
+// what your promotion can offer. You cannot main-event a stadium on an
 // indie deal, however good you get.
 function workTier(){
   const earned=TIERS.findIndex(t=>t.id===tierOf(G.car.rep).id);
@@ -1166,7 +1166,7 @@ function crowdLabel(){
 // how the crowd moves after a moment: `hostile` -1..1, `intensity` 0..1
 /* ---- YOUR VOICE ----
    What matters is not whether you are behaving like the alignment on your
-   contract — it is whether you are committing to something. A babyface who
+   contract. It is whether you are committing to something. A babyface who
    cuts one vicious promo has not made a mistake; he has started a heel turn,
    and the building knows it. What kills you is doing it and then going back,
    and then doing it again. Nobody can get behind a man who changes every week. */
@@ -1198,7 +1198,7 @@ function turnProgress(){
    The same words are worth wildly different amounts depending on the room's
    opinion of the person you aim them at. Threatening a beloved babyface is
    how a heel gets truly hated. Threatening somebody the crowd already wants
-   dead does nothing for you — you are doing their work for them. */
+   dead does nothing for you. You are doing their work for them. */
 function charLean(c){
   if(!c) return 0;
   const base = c.align==='heel' ? -58 : c.align==='face' ? 58 : 0;
@@ -1242,7 +1242,7 @@ function crowdShift(hostile,intensity,charisma,opt){
     // you have swerved off what you have been doing
     // A swerve only shocks them if you had been steady up to now. With no
     // history, the alignment you are billed as IS the steady thing you are
-    // breaking from — so a debut heel turn still lands.
+    // breaking from, so a debut heel turn still lands.
     const v=voiceLog();
     const steady = v.length<=1 ||
       v.slice(0,3).every(x=>!Math.sign(x)||Math.sign(x)===Math.sign(v[0]));
@@ -1274,8 +1274,8 @@ function crowdShift(hostile,intensity,charisma,opt){
   // changing your mind over and over drains everything, whichever way you go
   gain *= (1 - flip*0.6);
   if(flip>=0.5 && mode!=='tease' && drift && recent && drift!==recent) mode='flipflop';
-  // A trick stops working once they have seen it. This is about the devices —
-  // teases, cheap heat, shooting — not about staying in character, which is
+  // A trick stops working once they have seen it. This is about the devices
+  // (teases, cheap heat, shooting), not about staying in character, which is
   // supposed to be repetitive.
   if(kind){
     const nov=noveltyMod(kind);
@@ -1301,7 +1301,7 @@ function completeTurn(to,why){
   c.standing=clamp(c.standing+5); c.mom=clamp(c.mom+12);
   c.voice=[];                                            // the slate is clean from here
   pushLog(`<b>The turn is complete.</b> ${why} ${w.name} is a ${to} now, working as <b>${g.n}</b>.`);
-  pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'} — working as ${g.n}.`});
+  pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
   award(`Turned ${to} as ${g.n}.`,'🔄');
   return g;
 }
@@ -1340,7 +1340,7 @@ function freeAgentOffers(){
   o.sort((a,b)=>b.want-a.want);
   return o.slice(0,5);
 }
-// which products favour which archetypes — this is why the same wrestler
+// which products favour which archetypes. This is why the same wrestler
 // is a main-eventer in one company and a mid-carder in another
 const PRODUCT_FIT={
   'Hardcore / Deathmatch':{brawler:2,powerhouse:1,heel:1},
@@ -1465,7 +1465,7 @@ function leaveFaction(betray){
 }
 function confirmLeave(){
   const f=myFaction(); if(!f) return;
-  modal('Leave '+f.name+'?','How you go matters. Walking out costs you a little standing; turning on them makes enemies for life — and a career-defining moment.',
+  modal('Leave '+f.name+'?','How you go matters. Walking out costs you a little standing; turning on them makes enemies for life, and a career-defining moment.',
     [{label:'Cancel',cls:'ghost',fn:closeModal},
      {label:'Walk away',cls:'ghost',fn:()=>{closeModal(); leaveFaction(false);}},
      {label:'Betray them',fn:()=>{closeModal(); leaveFaction(true);}}]);
@@ -1473,7 +1473,7 @@ function confirmLeave(){
 function charById(id){ return CHARS.find(c=>c.id===id); }
 function promoById(id){ return PROMOS.find(p=>p.id===id); }
 function charTier(c){ const p=promoById(c.promo); return p?p.tier:'indie'; }
-// relationship with a character — respect (they rate you) and heat (bad blood)
+// relationship with a character: respect (they rate you) and heat (bad blood)
 function rel(id){ G.rel=G.rel||{}; if(!G.rel[id]) G.rel[id]=Object.assign({},window.RTR_REL_DEFAULT); return G.rel[id]; }
 function relLabel(r){
   if(r.heat>=55) return {t:'Bitter Rival',c:'#f0907f'};
@@ -1486,7 +1486,7 @@ function relLabel(r){
 /* ============================================================
    THE LOCKER ROOM
    ------------------------------------------------------------
-   Alliances, tag teams, stables — and the fact that every one of
+   Alliances, tag teams, stables, and the fact that every one of
    them is something you can walk out on. In this business the
    most valuable thing a partner has is your back, and the most
    valuable moment a wrestler has is the night he decides not to
@@ -1512,7 +1512,7 @@ function loyaltyLabel(v){
   if(v>=18) return {t:'Looking for the exit',c:'#e08a6a'};
   return {t:'About to turn on you',c:'#f0907f'};
 }
-// can you ask? real wrestling logic — they have to rate you first
+// can you ask? real wrestling logic: they have to rate you first
 function canAlly(id){ const R=rel(id); return !isAlly(id) && R.respect>=55 && R.heat<40; }
 function canTag(id){ const a=allyOf(id); return a && !a.tag && !myTeam(); }
 function canStable(){ return !myStable() && allies().length>=2; }
@@ -1537,7 +1537,7 @@ function formTeam(id,name){
   a.tag=true; a.teamName=name||suggestTeamName(c);
   a.loyalty=clamp(a.loyalty+8,0,100);
   G.car.teamRec=G.car.teamRec||{w:0,l:0};
-  pushLog(`<b>${a.teamName}</b> — you and ${c.name} are a tag team.`);
+  pushLog(`<b>${a.teamName}</b>. You and ${c.name} are a tag team.`);
   pushInboxItem({ico:'👯',sev:'good',txt:`<b>${a.teamName}.</b> You and ${c.name} are a team now.`});
   award(`Formed ${a.teamName} with ${c.name}.`,'👯');
 }
@@ -1548,7 +1548,7 @@ function foundStable(name){
   allies().forEach(a=>a.loyalty=clamp(a.loyalty+6,0,100));
   G.car.reaction=clamp(reactionOf()+5,0,100);
   pushLog(`<b>${G.car.stable.name}</b> is formed. ${stableMembers().map(m=>m.name).join(', ')} stand with you.`);
-  pushInboxItem({ico:'🛡️',sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable — ${G.car.stable.members.length} strong.`});
+  pushInboxItem({ico:'🛡️',sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable, ${G.car.stable.members.length} strong.`});
   award(`Founded ${G.car.stable.name}.`,'🛡️');
 }
 // the moment the whole thing exists for
@@ -1652,7 +1652,7 @@ function migrate(o){
 function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) id=t.id; }); return id; }
 
 /* ============================================================
-   PIXEL WRESTLER RENDERER  (pure SVG rects — no assets)
+   PIXEL WRESTLER RENDERER  (pure SVG rects, no assets)
    ============================================================ */const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
   hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic', tattoo:'none', aura:'none' };
 const OUTLINE='#120f0f';
@@ -1678,7 +1678,7 @@ function LIMB(x,y,w,h,c){
             +- head        : rotates at the neck
 
    A pose is therefore just a bag of joint angles. That is what lets
-   two wrestlers actually perform moves on each other — one can be
+   two wrestlers actually perform moves on each other: one can be
    lifted, folded, bridged or draped over the other instead of just
    sliding around.
    --------------------------------------------------------------- */
@@ -1734,7 +1734,7 @@ const POSES={
   // down on the mat: arm cocked, then slammed flat for the count
   refUp:    { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-142, elR:26, head:8 },
   refDown:  { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-14,  elR:6,  head:10 },
-  // hands thrown apart — no, he got the shoulder up
+  // hands thrown apart: no, he got the shoulder up
   refNo:    { body:[0,14,0], hipL:74, knL:-100, hipR:-14, knR:26, shL:96, elL:-16, shR:-96, elR:16, torso:-6 },
   refRaise: { shR:-174, elR:-6, shL:26, elL:-34, torso:3, body:[0,-1,0] },
 };
@@ -1755,7 +1755,7 @@ function wrestlerSVG(L,opt){
   const sleeved = !!SLEEVED[L.attire];
   const OL=(x,y,w,h)=>P(x-1,y-1,w+2,h+2,OUTLINE);
   /* ---- one-piece body parts ----
-     Every part of the wrestler is a stack of boxes — cranium over jaw,
+     Every part of the wrestler is a stack of boxes: cranium over jaw,
      shoulders over chest over hips, thigh over shin over foot. Outlining
      each box on its own laid a dark seam across every one of those joins.
      PIECE draws a stack as a single silhouette instead: the outline runs
@@ -1764,7 +1764,7 @@ function wrestlerSVG(L,opt){
      whole height rather than restarting at each box.
 
      `top`/`bottom:false` leave that end open so two bones can meet flush
-     at a joint — the elbow and knee still articulate, they just do not
+     at a joint. The elbow and knee still articulate, they just do not
      show a line when the limb is straight. */
   const PIECE=(boxes,col,o)=>{
     o=o||{}; const n=boxes.length;
@@ -2103,7 +2103,7 @@ function wrestlerSVG(L,opt){
      same bones: an outline pass first, then every fill on top of it. The union
      of the outlines is 1px larger than the union of the fills, so the figure
      ends up with one continuous border around the whole posed silhouette and
-     no seams inside it — whatever the pose. */
+     no seams inside it, whatever the pose. */
   const OUTB={}, FILB={};
   Object.keys(B).forEach(k=>{
     const o=[], f=[];
@@ -2161,12 +2161,12 @@ function arsenalScore(){ const b=bestMoves(6); if(!b.length) return 20;
    NEW CAREER
    ============================================================ */
 /* Archetypes are a real identity, not a stat tilt. Each one changes:
-     b     — starting attributes
-     grow  — how fast training + natural growth raise each attribute
-     mast  — how fast you build mastery in your signature move categories
-     out/in— damage dealt / taken in the live match
-     dec   — bonus success odds on the in-match decisions you're built for
-     perk  — the named passive, surfaced in the UI                        */
+     b     = starting attributes
+     grow  = how fast training + natural growth raise each attribute
+     mast  = how fast you build mastery in your signature move categories
+     out/in= damage dealt / taken in the live match
+     dec   = bonus success odds on the in-match decisions you're built for
+     perk  = the named passive, surfaced in the UI                        */
 const STYLES=[
   {id:'powerhouse',plan:{a:'slam',b:'strike'},name:'Powerhouse',b:{po:11,to:6},blurb:'Big, strong, hits hard.',
    grow:{po:1.5,to:1.3}, mast:{slam:1.6,strike:1.3}, out:1.18, in:0.88,
@@ -2223,7 +2223,7 @@ function doStartCreate(){
   if(!$('cName').value) rollName();
 }
 /* Quick Setup: the whole character is rolled and the contract is signed in one
-   press. No steps, no menus — you land on the career hub in week 1. */
+   press. No steps, no menus. You land on the career hub in week 1. */
 const NICKS=['The Ace','Machine','The Hammer','Bad News','Prime Time','The Outlaw','Ironheart','Skywalker','The Cobra','Kingmaker','Nightmare','The Bruiser'];
 function doQuickStart(){
   G=null;                            // nothing from a previous career leaks into the roll
@@ -2248,11 +2248,11 @@ function quickStart(){
 }
 /* The archetype cards used to read "+11 PO · +6 TO", which tells you nothing
    unless you already know the game. They now show the actual starting stat
-   line as bars — spelled out, with the archetype's bonus stacked on top of
-   the common baseline — plus how fast each stat will grow. */
+   line as bars: spelled out, with the archetype's bonus stacked on top of
+   the common baseline, plus how fast each stat will grow. */
 function renderStyles(){
   const max=48;   // the tallest starting stat across all archetypes, for a shared scale
-  // stepping the pager IS the choice — no separate select tap
+  // stepping the pager IS the choice, no separate select tap
   PAGER.arch=Math.max(0,STYLES.findIndex(x=>x.id===CREATE.style));
   const bar=pagerBar('arch',STYLES.map(s=>s.name),()=>{
     CREATE.style=STYLES[pagerIdx('arch',STYLES.length)].id; renderStyles();
@@ -2496,7 +2496,7 @@ function homeRing(){
   const cast=[];
   if(save && Math.random()<0.55) cast.push({name:save.w.name,look:save.w.look,you:true});
   pool.slice(0,card.n-cast.length).forEach(c=>cast.push({name:c.name,look:c.look}));
-  while(cast.length<card.n) cast.push({name:'—',look:oppLook('h'+cast.length,'x')});
+  while(cast.length<card.n) cast.push({name:'-',look:oppLook('h'+cast.length,'x')});
   // lay them across the ring, biggest at the front
   const n=cast.length;
   // a two-man match works the middle of the ring; a rumble fills it corner to corner
@@ -2519,7 +2519,7 @@ function renderHome(){
   if(!s){
     el.innerHTML=`<div class="startcard">
       <div class="sc-kick">Start your journey to greatness</div>
-      <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring — never bought.</div>
+      <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
       <button class="big" style="font-size:17px;padding:14px 30px;" onclick="go('start')">Start Career →</button>
     </div>`;
     return;
@@ -2572,9 +2572,9 @@ function renderCareer(){
   const et=TIERS[ei], nextEarn=TIERS[ei+1];
   const repPct=nextEarn? clamp((c.rep-et.rep)/(nextEarn.rep-et.rep)*100):100;
   const repHint = !nextEarn ? '<div class="hint">Top of the business</div>'
-    : ei>ti ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;color:var(--gold)">You have outgrown ${myPromo().short} — a bigger company would put you on ${earned.name}.</div>`
+    : ei>ti ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;color:var(--gold)">You have outgrown ${myPromo().short}. A bigger company would put you on ${earned.name}.</div>`
     : c.rep<nextEarn.rep ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;">${Math.max(0,Math.round(nextEarn.rep-c.rep))} rep to ${nextEarn.name}</div>`
-    : `<div class="bar gd"><i style="width:100%"></i></div><div class="hint" style="margin-top:3px;">Rep is there — you need OVR ${nextEarn.minOvr} (you are ${ovr(G.w)}).</div>`;
+    : `<div class="bar gd"><i style="width:100%"></i></div><div class="hint" style="margin-top:3px;">Rep is there. You need OVR ${nextEarn.minOvr} (you are ${ovr(G.w)}).</div>`;
   $('carTiles').innerHTML=[
     ['Reputation', Math.round(c.rep), repHint],
     ['Crowd', Math.round(reactionOf()), (()=>{ const cl=crowdLabel(), l=leanOf();
@@ -2585,7 +2585,7 @@ function renderCareer(){
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`, c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
-    ['Title', c.title?'👑 Held':'—', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
+    ['Title', c.title?'👑 Held':'-', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
   const HUB=['Business','Attributes'];
@@ -2603,7 +2603,7 @@ function renderAttrs(){
       <span style="color:var(--text-dim);font-weight:700;">${label}</span><span class="mono" style="color:var(--cream);font-weight:800;">${Math.round(v)}</span></div>
       <div class="bar"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`<div class="hint" style="margin-top:10px;">Training points: <b style="color:var(--gold)">${G.w.tp}</b> · <a href="#" onclick="go('train');return false;">spend them</a></div>
-    <div class="perkcard"><div class="pn">${styleOf().name} — ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
+    <div class="perkcard"><div class="pn">${styleOf().name}: ${styleOf().perk.n}</div><div class="pd">${styleOf().perk.d}</div></div>`;
 }
 function renderStoryPanel(){
   const st=story(), el=$('storyPanel'); if(!el) return;
@@ -2683,20 +2683,20 @@ function tagOffers(offs){
 function weekAdvice(){
   const c=G.car, w=G.w;
   if(c.freeAgent) return {ico:'✍️',t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
-  if(c.injWeeks>0) return {ico:'🏥',t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared — working through it makes it worse.`,sev:'bad'};
+  if(c.injWeeks>0) return {ico:'🏥',t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared. Working through it makes it worse.`,sev:'bad'};
   if(w.tp>0) return {ico:'⭐',t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
-  if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury — take the week off.`,sev:'bad'};
+  if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
   if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
-  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way — and indifference is worse than being hated. Get on the microphone and give them something.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
-  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it — the crowd cannot get behind somebody who changes every time they hold a microphone.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way, and indifference is worse than being hated. Get on the microphone and give them something.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
   const tp=turnProgress();
-  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. Another promo in that voice and the turn is complete — ${Math.round(tp.p*100)}% of the way there.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'act'};
+  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. Another promo in that voice and the turn is complete. You are ${Math.round(tp.p*100)}% of the way there.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'act'};
   if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back on the mic.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'warn'};
   const st=story();
   if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
   const _weak=allies().find(a=>a.loyalty<25);
   if(_weak){ const wc=charById(_weak.id);
-    return {ico:'🔪',t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn — and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
+    return {ico:'🔪',t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn, and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
   if(canStable()) return {ico:'🛡️',t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
   if(_cand) return {ico:'🤝',t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
@@ -2755,7 +2755,7 @@ function renderWeek(){
   }
   if(c.mentorWeeks>0){
     const m=MENTORS.find(x=>x.id===c.mentor);
-    el.innerHTML=`<p class="log">You're in camp with <b>${m?m.name:'a mentor'}</b> — ${c.mentorWeeks} week${c.mentorWeeks>1?'s':''} to go.</p>
+    el.innerHTML=`<p class="log">You're in camp with <b>${m?m.name:'a mentor'}</b>, ${c.mentorWeeks} week${c.mentorWeeks>1?'s':''} to go.</p>
       <button class="big" onclick="doMentorWeek()">Train This Week →</button>`; return;
   }
   if(!c.offers) c.offers=makeOffers();
@@ -2771,7 +2771,7 @@ function renderWeek(){
       ${adv.cta?`<button class="ad-b" onclick="${adv.cta.f}">${adv.cta.l} →</button>`:''}
     </div>
 
-    <div class="flab">Bookings <span class="hint" style="text-transform:none;letter-spacing:0;">— tap one to wrestle it</span></div>
+    <div class="flab">Bookings <span class="hint" style="text-transform:none;letter-spacing:0;">(tap one to wrestle it)</span></div>
     <div class="grid" style="gap:10px;margin-bottom:14px;">${c.offers.map((o,i)=>{
       const p=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
       const dLab = p>=0.66?'Favoured':p>=0.54?'Slight edge':p>=0.46?'Even':p>=0.34?'Underdog':'Way above you';
@@ -2797,11 +2797,11 @@ function renderWeek(){
     <div class="flab">Or spend the week</div>
     <div class="grid g3" style="gap:8px;margin-bottom:14px;">
       <div class="wk-alt" onclick="doTrainWeek()"><div class="wa-n">🏋️ Train</div><div class="wa-d">+45 XP toward a training point. Costs a little condition.</div></div>
-      <div class="wk-alt" onclick="openPromoPicker()"><div class="wa-n">🎤 Cut a promo</div><div class="wa-d">Live mic. Build a feud, an alliance, or your own character — and move the crowd.</div></div>
+      <div class="wk-alt" onclick="openPromoPicker()"><div class="wa-n">🎤 Cut a promo</div><div class="wa-d">Live mic. Build a feud, an alliance, or your own character, and move the crowd.</div></div>
       <div class="wk-alt" onclick="doRest()"><div class="wa-n">🛌 Rest</div><div class="wa-d">Recover condition and morale. The safest week there is.</div></div>
     </div>
 
-    <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">— the two things you emphasise in every match</span></div>
+    <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasise in every match)</span></div>
     <div class="row" style="margin-bottom:6px;">
       <select onchange="setPlan('a',this.value)">${catOpt(c.plan.a,c.plan.b)}</select>
       <select onchange="setPlan('b',this.value)">${catOpt(c.plan.b,c.plan.a)}</select>
@@ -2850,9 +2850,9 @@ function renderBizPanel(){
     </div>
     <div class="bizcard">
       <div class="bl">The act</div>
-      <div class="bv" style="font-size:17px;">${g?g.name:'—'}</div>
+      <div class="bv" style="font-size:17px;">${g?g.name:'-'}</div>
       <div class="bs">${cap(G.w.align)} · ${c.turns||0} turn${(c.turns||0)===1?'':'s'}</div>
-      <div class="hint" style="margin-top:6px;">Freshness ${Math.round(heat)}${heat<32?' — <b style="color:#f0907f">stale</b>':heat>72?' — <b style="color:var(--green)">hot</b>':''}</div>
+      <div class="hint" style="margin-top:6px;">Freshness ${Math.round(heat)}${heat<32?', <b style="color:#f0907f">stale</b>':heat>72?', <b style="color:var(--green)">hot</b>':''}</div>
       <div class="bar ${heat<32?'':'g'}" style="margin-top:6px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
     </div>
     <div class="bizcard">
@@ -2892,7 +2892,7 @@ function makeOffers(){
     if(_tm && rnd()<0.55) st=['Tag Team Match','tag',0.9];
     else if(!_tm && st[1]==='tag') st=stips[0];
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
-    // it — promoters book you tougher as you get better — so matches stay competitive
+    // it: promoters book you tougher as you get better, so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
     const mid=55, me=ovr(G.w);
     const anchor=t.base+Math.max(0,me-t.base)*0.72;
@@ -2900,7 +2900,7 @@ function makeOffers(){
     let stakes='standard';
     const belt=beltName(t), holds = G.car.title===belt;
     // The office only puts the belt on someone the crowd wants and the office
-    // trusts — being good is not enough on its own.
+    // trusts. Being good is not enough on its own.
     const trusted=G.car.standing>=52 && gimHeat()>=40;
     if(i===2 && holds && rnd()<0.78) stakes='defense';
     else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
@@ -2920,7 +2920,7 @@ function makeOffers(){
             : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
-            : `${card} — a ${st[0].toLowerCase()} against ${opp.name}.` });
+            : `${card}: a ${st[0].toLowerCase()} against ${opp.name}.` });
   }
   return offs;
 }
@@ -2929,12 +2929,12 @@ function makeOffers(){
    MATCH SIM
    ============================================================ */
 /* ============================================================
-   RIVALRY STORYLINES — multi-match arcs with backstage moments
+   RIVALRY STORYLINES: multi-match arcs with backstage moments
    ------------------------------------------------------------
    A feud runs through five stages. Each stage escalates the
    stipulation, the stakes and the personal edge, and fires
    backstage moments where you choose how to respond. Your
-   choices move respect / bad blood / popularity — and decide
+   choices move respect / bad blood / popularity, and decide
    whether it ends in a handshake or a lifelong grudge.
    ============================================================ */
 const STORY_STAGES=[
@@ -2951,7 +2951,7 @@ function startStory(charId,reason){
   const c=charById(charId); if(!c) return;
   G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year };
   G.car.rivalId=charId; G.car.offers=null;   // rebook the week around the feud
-  pushLog(`<b>${c.name}</b> — ${reason}`);
+  pushLog(`<b>${c.name}</b>: ${reason}`);
   pushInboxItem({ico:'🔥',sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
 }
 function advanceStory(){
@@ -2970,7 +2970,7 @@ function endStory(resolution){
   if(resolution==='respect'){
     R.respect=clamp(R.respect+30,0,100); R.heat=clamp(R.heat-40,0,100);
     pushInboxItem({ico:'🤝',sev:'good',txt:`You and <b>${c.name}</b> shake on it. That one will be remembered.`});
-    pushLog(`Settled it with <b>${c.name}</b> — and earned their respect.`);
+    pushLog(`Settled it with <b>${c.name}</b>, and earned their respect.`);
   } else {
     R.heat=clamp(R.heat+20,0,100);
     pushInboxItem({ico:'🩸',sev:'bad',txt:`<b>${c.name}</b> will never let this go. Neither will you.`});
@@ -2979,7 +2979,7 @@ function endStory(resolution){
   R.cooldown=(G.car.year*1000+G.car.week)+45;   // this one is settled for a good while
   R.heat=Math.min(R.heat,resolution==='respect'?12:34);
   G.car.pop=clamp(G.car.pop+6,1,100);
-  G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Blow-off with ${c.name} — ${resolution==='respect'?'settled with respect':'settled in blood'}`});
+  G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Blow-off with ${c.name}: ${resolution==='respect'?'settled with respect':'settled in blood'}`});
   G.story=null; G.car.rivalId=null;
 }
 
@@ -2995,7 +2995,7 @@ function backstageEvent(){
       body:`You never saw them coming. <span class="say">"${taunt}"</span>`,
       opts:[
         {n:'Fight back right there',d:'No cameras, no referee.',fx:{heat:14,pop:2,cond:-8},say:'You swing first and you do not stop.'},
-        {n:'Take it — and remember',d:'Let it build.',fx:{heat:8,respect:-2,mom:8},say:'You take the beating and file it away.'},
+        {n:'Take it, and remember',d:'Let it build.',fx:{heat:8,respect:-2,mom:8},say:'You take the beating and file it away.'},
         {n:'Grab a mic and call them out',d:'Make it public.',fx:{heat:12,pop:5},say:'You drag it in front of the cameras where it belongs.'}]},
     { head:`${c.name} buries you in an interview`,
       body:`They were asked about you. It was not kind. <span class="say">"${taunt}"</span>`,
@@ -3014,9 +3014,9 @@ function backstageEvent(){
       opts:[
         {n:'Shake it',d:'End the war early.',fx:{heat:-24,respect:18},say:'You shake. Whatever this was, it cools.',resolve:'respect'},
         {n:'Slap the hand away',d:'This is not over.',fx:{heat:22,respect:-10,pop:4},say:'You slap the hand down. Now it is war.'},
-        {n:'Shake — then blindside them',d:'Ruthless, and the crowd will hate it.',fx:{heat:30,respect:-20,pop:6},say:'You shake, then put them through a table. Nobody saw that coming.'}]},
+        {n:'Shake, then blindside them',d:'Ruthless, and the crowd will hate it.',fx:{heat:30,respect:-20,pop:6},say:'You shake, then put them through a table. Nobody saw that coming.'}]},
   ];
-  const avail = st.stage>=1 ? POOL : POOL.slice(0,3);   // no early truce — let it build first
+  const avail = st.stage>=1 ? POOL : POOL.slice(0,3);   // no early truce, let it build first
   const ev=avail[Math.floor(rnd()*avail.length)];
   const stg=STORY_STAGES[st.stage];
   modal(`${stg.name.toUpperCase()} · ${ev.head}`,
@@ -3033,7 +3033,7 @@ function backstageEvent(){
       if(f.cond) G.car.cond=clamp(G.car.cond+f.cond);
       if(f.mom) G.car.mom=clamp(G.car.mom+f.mom);
       st.beats.push({week:G.car.week,head:ev.head,choice:o.n});
-      G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`${ev.head} — you ${o.n.toLowerCase()}`});
+      G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`${ev.head}: you ${o.n.toLowerCase()}`});
       closeModal();
       if(o.resolve){ endStory(o.resolve); }
       else if(st.stage<3) advanceStory();
@@ -3046,7 +3046,7 @@ function backstageEvent(){
 function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
 
 /* ============================================================
-   LIVE MATCH ENGINE — animated, momentum-driven, with decisions
+   LIVE MATCH ENGINE: animated, momentum-driven, with decisions
    ============================================================ */
 let MS=null, FIGHT_SPEED=1, FIGHT_GEN=0;
 const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED));
@@ -3090,7 +3090,7 @@ async function flashScreen(){ const f=document.createElement('div'); f.className
    ------------------------------------------------------------------ */
 const FIG={me:null,opp:null};
 const ST={W:760,home:130,close:80};
-// the official — a real third body in the ring
+// the official: a real third body in the ring
 const REF_LOOK={ skin:'#d29b6e', hair:'#241a12', gear:'#F4E8DB', trim:'#1e1e24',
   hairStyle:'buzz', face:'none', mask:'none', attire:'ref', boots:'sneak', acc:'none',
   pattern:'solid', tattoo:'none', aura:'none', build:'lean' };
@@ -3166,7 +3166,7 @@ function speedLines(k){ const f=FIG[k];
 /* ------------------------------------------------------------------
    MOVE CHOREOGRAPHY
    One routine per move family. A is the attacker key, D the defender,
-   c.hit(power) fires the impact — damage, bars and the log all land on
+   c.hit(power) fires the impact: damage, bars and the log all land on
    that beat so the numbers move when the body does.
    ------------------------------------------------------------------ */
 async function chStrike(A,D,c){
@@ -3178,7 +3178,7 @@ async function chStrike(A,D,c){
   fmv(D,{pose:'reel',fwd:-16,rot:9},95); await sleep(170);
   fmv(D,{pose:'stagger',fwd:-6,rot:0},230); fmv(A,{pose:'ready',fwd:0,rot:0},250); await sleep(230);
 }
-async function chRunner(A,D,c){          // running boot / clothesline — knocks them flat
+async function chRunner(A,D,c){          // running boot / clothesline, knocks them flat
   const C=ST.close;
   fmv(A,{pose:'runBack',fwd:-C*1.1},200); await sleep(210);
   fmv(A,{pose:'run',fwd:C*0.45},140); speedLines(A); await sleep(130);
@@ -3375,12 +3375,12 @@ async function spotTaunt(byMe,big){       // work the crowd
    business agrees on: feel each other out, the babyface shines,
    the heel cuts him off and works a body part, hope spots, the
    comeback, then a finish stretch of near-falls. And it ends the
-   way real matches end — a three count, a tap-out, a count-out
+   way real matches end: a three count, a tap-out, a count-out
    or a disqualification. Never because a health bar hit zero.
    ============================================================ */
 const PHASES=[
   {id:'feel',   name:'Feeling Out',    beats:2, tier:[1,2], say:'They circle, and lock up clean.'},
-  {id:'shine',  name:'The Shine',      beats:3, tier:[1,3], say:'Early control — and the crowd is with it.'},
+  {id:'shine',  name:'The Shine',      beats:3, tier:[1,3], say:'Early control, and the crowd is with it.'},
   {id:'heat',   name:'The Heat',       beats:4, tier:[1,3], say:'The cut-off. Now the body part gets worked.'},
   {id:'come',   name:'The Comeback',   beats:3, tier:[2,4], say:'The building senses it turning.'},
   {id:'stretch',name:'Finish Stretch', beats:99,tier:[3,5], say:'Signatures, near-falls, and somebody has to lose.'},
@@ -3403,7 +3403,7 @@ function myMove(){
   if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
   const planned=all.filter(m=>plan.includes(m.cat));
   let pool=planned.length>=3?planned:all;
-  // fundamentals early, signatures late — you do not open with your finisher
+  // fundamentals early, signatures late. You do not open with your finisher
   let band=pool.filter(m=>m.tier>=ph.tier[0]&&m.tier<=ph.tier[1]);
   if(ph.id!=='stretch') band=band.filter(m=>m.id!==G.w.finisher);
   if(!band.length) band=pool.filter(m=>m.tier<=ph.tier[1]);
@@ -3496,7 +3496,7 @@ async function startFight(o){
                : ch.lines.taunt[Math.floor(rnd()*ch.lines.taunt.length)];
     const say = Array.isArray(line)? line[0] : line;
     fLog(`<b>${ch.name}</b> <span class="hint">(${ch.nick})</span>: <span class="say">"${say}"</span>`);
-    if(r&&r.heat>=45) fLog(`<span class="bad">There is real bad blood here — ${r.matches} previous meeting${r.matches!==1?'s':''}.</span>`);
+    if(r&&r.heat>=45) fLog(`<span class="bad">There is real bad blood here: ${r.matches} previous meeting${r.matches!==1?'s':''}.</span>`);
     await sleep(700);
   }
   // ---- the lock-up: they meet in the middle before the bell ----
@@ -3504,7 +3504,7 @@ async function startFight(o){
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   await callout('FIGHT!');
   await settle(260);
-  fLog(`The bell rings — <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
+  fLog(`The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   runFight();
 }
 
@@ -3514,12 +3514,12 @@ function phaseTurn(ph){
   if(ph.id==='shine')   return rnd() < (MS.shineMe?0.74:0.26);
   if(ph.id==='heat')    return rnd() < (MS.shineMe?0.14:0.86);
   if(ph.id==='come')    return rnd() < (MS.shineMe?0.72:0.28);
-  // the finish stretch is both of them trading — nobody gets to run away with it
+  // the finish stretch is both of them trading. Nobody gets to run away with it
   return rnd() < clamp(0.5+MS.mom/340,0.24,0.76);
 }
 async function announcePhase(ph){
   $('fPhase').textContent=ph.name.toUpperCase();
-  fLog(`<span class="phase">— ${ph.name} —</span> <span class="hint">${ph.say}</span>`);
+  fLog(`<span class="phase">· ${ph.name} ·</span> <span class="hint">${ph.say}</span>`);
   if(ph.id==='heat'||ph.id==='stretch') await sleep(240);
 }
 // a wrestler picks a body part and works it. That is the whole craft.
@@ -3574,7 +3574,7 @@ async function runFight(){
       const f=_st? {name:_st.name} : myFaction();
       const mate=(_st? stableMembers() : facMembers(myFaction())).filter(m=>m.id!==MS.o.oppId)[0];
       if(mate){ shake(); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
-        fLog(`<span class="hi">${mate.name} hits the ring — ${f.name} has your back!</span>`);
+        fLog(`<span class="hi">${mate.name} hits the ring. ${f.name} has your back!</span>`);
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
         MS.quality+=8; await sleep(420); }
     }
@@ -3652,7 +3652,7 @@ async function submissionAttempt(byMe, mvName){
   fmv(A,{pose:'submit',x:atX(D)-FIG[A].dir*40},180); await sleep(190);
   refTo(atX(D)+(atX(D)<0?1:-1)*58,'refWatch',380,0.88);
   await callout('LOCKED IN!');
-  fLog(byMe?`<b>${MS.me.name}</b> wrenches back on the <span class="hi">${bare(mvName)}</span> — right on the ${LIMB_NAME[part]}.`
+  fLog(byMe?`<b>${MS.me.name}</b> wrenches back on the <span class="hi">${bare(mvName)}</span>, right on the ${LIMB_NAME[part]}.`
            :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
   for(let i=0;i<3;i++){ fmv(A,{sc:1.05},95); fmv(D,{rot:i%2?6:-6},95); await sleep(110); fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
   const pTap=clamp((power-58)/56,0,0.88);
@@ -3663,7 +3663,7 @@ async function submissionAttempt(byMe, mvName){
     MS.quality+=16;
     await endFight(byMe); return;
   }
-  // the escape — a rope break early, fighting out late
+  // the escape: a rope break early, fighting out late
   const ropes = MS.phase<3 || rnd()<0.55;
   if(ropes){ fLog(`<span class="hint">…a foot on the bottom rope. The hold has to be broken.</span>`); }
   else { fLog(`<span class="hint">…and they fight all the way out of it.</span>`); MS.nearFalls++; MS.quality+=3; }
@@ -3676,7 +3676,7 @@ async function timeLimitDraw(){
   MS.finish={type:'draw'};
   MS.ended=true;
   await callout('TIME LIMIT!');
-  fLog(`<span class="hi">The bell. ${Math.floor(MS.timeLimit/60)}-minute time limit — it is a draw.</span>`);
+  fLog(`<span class="hi">The bell. ${Math.floor(MS.timeLimit/60)}-minute time limit. It is a draw.</span>`);
   $('fClock').textContent='DRAW';
   busy(true);
   fmv('me',{pose:'stagger',fwd:0},300); fmv('opp',{pose:'stagger',fwd:0},300);
@@ -3689,7 +3689,7 @@ async function finishDecision(){
   const fin=G.w.finisher?moveById(G.w.finisher):null;
   const psy=G.w.attrs.ps, base=0.40+psy*0.004+(MS.mom/380)+((100-MS.opp.hp)/300);
   const pFin=clamp(base+(fin?0.10:0)+styleDec('fin'),0,0.95), pSafe=clamp(base+0.24+styleDec('grind'),0,0.96);
-  const pick=await decide('THEY\'RE DOWN — CALL IT.','Your opponent is reeling. This is the moment.',[
+  const pick=await decide('THEY\'RE DOWN. CALL IT.','Your opponent is reeling. This is the moment.',[
     {name:fin?fin.name:'Go For The Finish',desc:'End it now. Huge payoff if it lands.',p:pFin,kind:'fin'},
     {name:'Grind Them Down',desc:'Safer. Keep control, finish later.',p:pSafe,kind:'grind'},
     {name:'Play To The Crowd',desc:'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003+styleDec('crowd'),0,0.92),kind:'crowd'},
@@ -3701,7 +3701,7 @@ async function finishDecision(){
       await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++;
       fLog(`<span class="hi">${pick.name} connects flush!</span>`);
       hurtLimb(MS.opp,'head',26); renderLimbs();
-      // even the finisher does not guarantee three — it just makes it likely
+      // even the finisher does not guarantee three. It just makes it likely
       await coverAttempt(true, pick.name, true); return; }
     await spotEscape(true);
     fLog(`<span class="bad">They slipped out of the ${pick.name}!</span>`); MS.mom=clamp(MS.mom-30,-100,100); setMom(); await callout('COUNTERED!');
@@ -3712,7 +3712,7 @@ async function finishDecision(){
     else { await spotTaunt(false,false); MS.mom=clamp(MS.mom-18,-100,100); setMom(); fLog('<span class="bad">You gave them time to breathe.</span>'); }
   } else {
     if(ok){ await spotTaunt(true,true); MS.quality+=16; MS.decWon++; MS.big++; await callout('THE CROWD ERUPTS!'); fLog('<span class="hi">The building is on its feet!</span>'); }
-    else { await spotTaunt(true,false); await spotGuard(false); MS.mom=clamp(MS.mom-26,-100,100); setMom(); fLog('<span class="bad">You showboated — and paid for it.</span>'); }
+    else { await spotTaunt(true,false); await spotGuard(false); MS.mom=clamp(MS.mom-26,-100,100); setMom(); fLog('<span class="bad">You showboated, and paid for it.</span>'); }
   }
   await sleep(240);
 }
@@ -3729,7 +3729,7 @@ async function comebackDecision(){
   const ok=rnd()<pick.p;
   if(pick.kind==='fire'){
     if(ok){ await spotFire(true); MS.mom=clamp(MS.mom+58,-100,100); setMom(); MS.decWon++; MS.quality+=14; MS.big++;
-      await callout('COMEBACK!'); fLog('<span class="hi">You will not stay down — the crowd is with you!</span>'); }
+      await callout('COMEBACK!'); fLog('<span class="hi">You will not stay down. The crowd is with you!</span>'); }
     else { await spotGuard(false); MS.me.hp=clamp(MS.me.hp-10); setBar('hpMe',MS.me.hp); fLog('<span class="bad">The rally was cut off.</span>'); }
   } else if(pick.kind==='counter'){
     if(ok){ await spot('technical',true,'CAUGHT HIM!',2);
@@ -3757,10 +3757,10 @@ async function midDecision(){
   if(pick.kind==='risk'){
     if(ok){ await spot('aerial',true,'HIGH RISK!',2);
       MS.opp.hp=clamp(MS.opp.hp-20); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+34,-100,100); setMom();
-      MS.decWon++; MS.quality+=20; MS.big++; shake(); await callout('HIGH RISK PAYS!'); fLog('<span class="hi">They hit it clean — the place came unglued!</span>'); }
+      MS.decWon++; MS.quality+=20; MS.big++; shake(); await callout('HIGH RISK PAYS!'); fLog('<span class="hi">They hit it clean. The place came unglued!</span>'); }
     else { await spotMiss(true);
       MS.me.hp=clamp(MS.me.hp-18); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-30,-100,100); setMom();
-      await callout('MISSED IT!'); fLog('<span class="bad">Nobody home — you crashed and burned.</span>'); }
+      await callout('MISSED IT!'); fLog('<span class="bad">Nobody home. You crashed and burned.</span>'); }
   } else if(pick.kind==='chain'){
     await spot('technical',true,null,1);
     if(ok){ MS.mom=clamp(MS.mom+20,-100,100); setMom(); MS.decWon++; MS.quality+=10; fLog('A crisp exchange on the mat wins the crowd over.'); }
@@ -3777,7 +3777,7 @@ async function midDecision(){
    The three count is the most important twelve seconds in wrestling and it
    has a rhythm: the cover goes on, the referee slides down into position,
    and only then does the hand come up and slap the mat. ONE. A beat. TWO.
-   A longer beat — that is where the whole building holds its breath — and
+   A longer beat is where the whole building holds its breath, and
    then either the hand comes down for three, or the shoulder explodes up
    before it lands and the official throws his arms apart. */
 function showCount(txt,big){
@@ -3820,7 +3820,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     showCount(n, n>=2);
     fmv(A,{sc:1.03},90); await sleep(120); fmv(A,{sc:1},90);
     // the gap before two is longer than the gap before one, and the gap
-    // after two is the longest of all — that is the suspense
+    // after two is the longest of all. That is the suspense
     await sleep(n===1?520:700);
   }
 
@@ -3860,7 +3860,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   poseSet('ref','refNo');
   fmv(D,{pose:'proneUp',rot:-8},120); await sleep(140);
   fmv(A,{pose:'stagger',fwd:ST.close*0.4},240);
-  fLog(upAt===1? `<span class="hint">Kicked out at one — contemptuous. That was never finishing anybody.</span>`
+  fLog(upAt===1? `<span class="hint">Kicked out at one. Contemptuous. That was never finishing anybody.</span>`
                : `<span class="hint">Shoulder up at two, and he is straight back to his feet.</span>`);
   if(upAt===2) MS.quality+=3;
   arena.classList.remove('tense');
@@ -3900,7 +3900,7 @@ async function endFight(iWon){
   }
   fLog(f.type==='sub'
       ? (iWon?`<span class="hi">${MS.opp.name} tapped to the ${bare(f.move)}.</span>`:`<span class="bad">You tapped to the ${bare(f.move)}.</span>`)
-      : (iWon?`<span class="hi">Three count — ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
+      : (iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
              :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`));
   fLog(`<span class="hint">Time of the fall: ${clockStr()}${MS.nearFalls?` · ${MS.nearFalls} near-fall${MS.nearFalls>1?'s':''}`:''}</span>`);
   $('fClock').textContent=clockStr();
@@ -3923,7 +3923,7 @@ function finalizeFight(iWon){
   const govt=used.reduce((s,m)=>s+(a[(catById(m.cat)||{attr:'po'}).attr]||0),0)/Math.max(1,used.length);
   const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
   const good=[], bad=[];
-  // normalise the running tally to a reference-length match — a long match is
+  // normalise the running tally to a reference-length match: a long match is
   // not automatically a better one, and a short one is not automatically worse
   const paceQ = MS.quality * (14/Math.max(11,MS.beat));
   // Craft is what makes a match good; the night's story modifies it. A green
@@ -3937,7 +3937,7 @@ function finalizeFight(iWon){
   if(used.length>=4){
     const vr=variety/used.length;
     if(vr>=0.7){ quality+=4; good.push('a varied, well-paced match'); }
-    else if(vr<0.4){ const p=8; quality-=p; bad.push(`repetitive — you called the same spots over and over`); }
+    else if(vr<0.4){ const p=8; quality-=p; bad.push(`repetitive: you called the same spots over and over`); }
   }
   const lm=worstLimb(MS.opp);
   if(lm && MS.opp.limb[lm]>=45){ quality+=5; good.push(`you picked a body part (${LIMB_NAME[lm]}) and stayed on it`); }
@@ -3947,7 +3947,7 @@ function finalizeFight(iWon){
     const line=`${MS.decWon}/${MS.decisions} big moments nailed${MS.big?` · ${MS.big} big spot${MS.big>1?'s':''}`:''}`;
     (MS.decWon*2>=MS.decisions?good:bad).push(line);
   }
-  if(!nf && MS.beat>8){ quality-=5; bad.push('no near-falls — nothing the crowd could believe in'); }
+  if(!nf && MS.beat>8){ quality-=5; bad.push('no near-falls: nothing the crowd could believe in'); }
   // ---- the things holding you back ----
   const psychFloor=34+o.mult*6;
   if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; bad.push(`ring psychology too green (${a.ps} vs ${Math.round(psychFloor)} needed)`); }
@@ -3973,8 +3973,8 @@ function finishLine(res){
   const f=res.finish||{};
   if(res.draw||f.type==='draw') return `Time-limit draw at ${res.time}`;
   const who=f.by?'You':(MS&&MS.opp?MS.opp.name:'They');
-  if(f.type==='sub') return `${who} won by submission at ${res.time} — the ${bare(f.move)}`;
-  return `${who} won by pinfall at ${res.time}${f.move?` — after the ${bare(f.move)}`:''}`;
+  if(f.type==='sub') return `${who} won by submission at ${res.time} with the ${bare(f.move)}`;
+  return `${who} won by pinfall at ${res.time}${f.move?`, after the ${bare(f.move)}`:''}`;
 }
 
 function skipFight(){
@@ -4013,7 +4013,7 @@ function simMatch(o){
   const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
   // execution: governing attrs of the categories used
   const govt=used.length? used.reduce((s,m)=>s+(a[catById(m.cat).attr]||0),0)/used.length : 30;
-  // psychology gate — a match needs a storyteller
+  // psychology gate: a match needs a storyteller
   const psychFloor=34+o.mult*6;
   // Scale: a competent rookie match lands ~48-52, a great one 80+. The base floor
   // represents simply being a trained professional in front of a paying crowd.
@@ -4044,7 +4044,7 @@ function simMatch(o){
 }
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
-  // record — a time-limit draw is neither a win nor a loss
+  // record: a time-limit draw is neither a win nor a loss
   const draw=res.draw||res.win===null;
   if(draw){ c.rec.d=(c.rec.d||0)+1; c.streak=0; }
   else if(res.win){ c.rec.w++; c.streak=c.streak>=0?c.streak+1:1; }
@@ -4083,7 +4083,7 @@ function applyMatch(o,res){
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
   else if(o.stakes==='defense'){
-    if(draw){ titleMsg=`Time-limit draw — you retain the ${c.title}.`; }
+    if(draw){ titleMsg=`Time-limit draw. You retain the ${c.title}.`; }
     else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
@@ -4096,11 +4096,11 @@ function applyMatch(o,res){
     + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500) * sc.inj * (c.workedHurt?2.2:1);
   if(rnd()<risk*0.34){
     const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
-    injMsg=`You suffered <b>${h.nm}</b> — out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
+    injMsg=`You suffered <b>${h.nm}</b>, out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
     pushInboxItem({ico:'🏥',sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
   } else if(c.workedHurt && c.hurt){
     c.injWeeks+=rint(1,3);
-    injMsg=`You got through it, but working hurt cost you — the ${c.hurt.part.toLowerCase()} needs longer.`;
+    injMsg=`You got through it, but working hurt cost you. The ${c.hurt.part.toLowerCase()} needs longer.`;
   }
   c.workedHurt=false;
   // ---- storyline progression ----
@@ -4125,7 +4125,7 @@ function applyMatch(o,res){
     startStory(o.oppId, res.win?'is sick of losing to you.':'has your number, and they know it.'); }
   else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
     const rc=charById(o.oppId);
-    if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef — there is real respect there now.`); }
+    if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef. There is real respect there now.`); }
   // unlocks
   const unlocked=checkUnlocks();
   if(o.tag && myTeam()){
@@ -4158,7 +4158,7 @@ function renderMatch(o,res){
     </div>
     <p class="mstory">${matchStory(o,res)}</p>
     <div class="mstats">
-      <span><b>${res.time||'—'}</b> time</span>
+      <span><b>${res.time||'-'}</b> time</span>
       <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
       <span><b>${res.used.length}</b> moves called</span>
       ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]}</b></span>`:''}
@@ -4181,7 +4181,7 @@ function matchStory(o,res){
   let mid;
   if(res.draw||res.win===null) mid=` Neither of you could put it away before the bell.`;
   else if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
-  else if(res.win) mid=f.fin?` The finisher did it — three seconds later it was over.`:` You caught them flat and stole the three.`;
+  else if(res.win) mid=f.fin?` The finisher did it. Three seconds later it was over.`:` You caught them flat and stole the three.`;
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
   const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
   const end=q>=75?' The crowd was still buzzing on the way out.':q<45?' The room was quiet by the finish.':'';
@@ -4211,10 +4211,10 @@ function advanceWeek(){
     const g=G.w.gimmick;
     g.heat=clamp(g.heat - (0.55+sc.pop*0.35) + (c.pop>60?0.18:0), 0, 100);
     if(g.heat<30 && !c._staleWarned){ c._staleWarned=true;
-      pushInboxItem({ico:'📉',sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new — repackage or turn.`}); }
+      pushInboxItem({ico:'📉',sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new: repackage or turn.`}); }
     if(g.heat>=45) c._staleWarned=false;
   }
-  // fame can't outrun the stage you work on — drift toward the tier's ceiling
+  // fame can't outrun the stage you work on, drift toward the tier's ceiling
   const ceil=[38,64,85,100][tierIdx()]||38;
   if(c.pop>ceil) c.pop=Math.max(ceil,c.pop-(c.pop-ceil)*0.09);
   if(c.reaction==null) c.reaction=c.pop;
@@ -4233,7 +4233,7 @@ function advanceWeek(){
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
 }
-// come back from an injury — the attribute hit lifts, but not always all of it
+// come back from an injury: the attribute hit lifts, but not always all of it
 function healUp(){
   const c=G.car, h=c.hurt; if(!h) return;
   const def=injById(h.id)||INJURIES[0];
@@ -4244,7 +4244,7 @@ function healUp(){
     back=h.pen-keep;
     c.chronic=c.chronic||[];
     c.chronic.push({part:def.part,attr:def.attr,pen:keep,y:c.year});
-    msg+=` The ${def.part.toLowerCase()} never fully came back — you carry it from here.`;
+    msg+=` The ${def.part.toLowerCase()} never fully came back. You carry it from here.`;
   }
   G.w.attrs[def.attr]=clamp(G.w.attrs[def.attr]+back);
   c.hurt=null;
@@ -4292,7 +4292,7 @@ function doMentorWeek(){ const c=G.car;
 function yearEnd(){
   const c=G.car, w=G.w;
   c.age++;
-  // Aging is not just the calendar — it is mileage. Two wrestlers the same age
+  // Aging is not just the calendar. It is mileage. Two wrestlers the same age
   // decline at different rates depending on how hard they worked the road and
   // how much of their body they left in the ring.
   const mileage=(c.wear||0)/100;
@@ -4316,7 +4316,7 @@ function yearEnd(){
     const avg=yl.reduce((s,m)=>s+m.q,0)/yl.length;
     c.awards=c.awards||[];
     if(best.q>=88){ c.awards.unshift({y:c.year,t:'Match of the Year',d:`vs ${best.opp} (${best.q})`});
-      award(`Match of the Year — vs ${best.opp}.`,'⭐'); c.pop=clamp(c.pop+3,1,100); c.rep+=380; }
+      award(`Match of the Year vs ${best.opp}.`,'⭐'); c.pop=clamp(c.pop+3,1,100); c.rep+=380; }
     if(avg>=78 && c.pop>=68 && yl.length>=8){ c.awards.unshift({y:c.year,t:'Wrestler of the Year',d:`avg ${avg.toFixed(0)} across ${yl.length} matches`});
       award('Wrestler of the Year.','👑'); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); }
     if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟'); c.rep+=260; }
@@ -4348,7 +4348,7 @@ function renderTrain(){
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
       <div class="bar" style="margin-top:8px;"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`</div>
-  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until about 30, then decline — so bank your prime.</p>`;
+  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until about 30, then decline, so bank your prime.</p>`;
 }
 function gateHint(k){
   const cats=MCATS.filter(c=>c.attr===k).map(c=>c.name);
@@ -4360,7 +4360,7 @@ function spendTP(k){ if(G.w.tp<1) return; G.w.tp--; G.w.attrs[k]=clamp(G.w.attrs
   if(u.length) toast('Unlocked: '+u.map(m=>m.name).join(', ')); }
 
 function renderMoves(){
-  // one category at a time — the full list is 120 moves deep
+  // one category at a time: the full list is 120 moves deep
   const chips=MCATS.map(c=>{
     const owned=MOVES.filter(m=>m.cat===c.id&&moveUnlocked(m)).length;
     const all=MOVES.filter(m=>m.cat===c.id).length;
@@ -4402,7 +4402,7 @@ function setFinisher(id){ G.w.finisher=id; save(); renderMoves(); toast('Finishe
 function renderMentors(){
   const c=G.car;
   if(c.mentorWeeks>0){ const m=MENTORS.find(x=>x.id===c.mentor);
-    $('mentorBody').innerHTML=`<div class="card"><h3 style="margin-top:0;">In camp with ${m?m.name:'—'}</h3>
+    $('mentorBody').innerHTML=`<div class="card"><h3 style="margin-top:0;">In camp with ${m?m.name:'-'}</h3>
       <p class="log">${c.mentorWeeks} week(s) remaining. Use the hub to train each week.</p></div>`; return; }
   const repFor={common:400,rare:1500,epic:4500,legendary:12000};
   const done=c.milestones||[];
@@ -4523,10 +4523,10 @@ function openPack(pid){
   }
   save(); refreshHud(); renderShop();
   if(got.length) revealPack(p,got);
-  else modal(p.name,`<p class="log">Everything in this pack was already yours — converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
+  else modal(p.name,`<p class="log">Everything in this pack was already yours, converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
 }
 
-/* ---------- Player Card — a flippable trading card of your wrestler ---------- */
+/* ---------- Player Card: a flippable trading card of your wrestler ---------- */
 const CARD_FRAMES={ indie:{c:'#a8602c',label:'Indie Circuit'}, regional:{c:'#b6a894',label:'Regional'},
                     national:{c:'#6aa7c4',label:'National'}, global:{c:'#e0b341',label:'Global'} };
 let CARD_FLIPPED=false;
@@ -4575,20 +4575,20 @@ function drawCard(){
    ------------------------------------------------------------
    Ring time. On a week you are not wrestling you can take the
    microphone, and what you say is what builds the feuds, the
-   friendships and — most of all — the crowd's opinion of you.
+   friendships and, most of all, the crowd's opinion of you.
 
    You can pick a line or write your own. There is no language
-   model behind this: the writer reads your line for tone —
+   model behind this: the writer reads your line for tone:
    how hostile it is, how hard it commits, whether you spoke to
    the crowd, and whether you referenced anything true about the
-   person in front of you — and the character answers in their
+   person in front of you, and the character answers in their
    own voice from that reading.
    ============================================================ */
 let PM=null;
 
 const PROMO_NOTE={
-  teaseHeel:'Play with them. Huge reaction, no commitment — and it sets up a real turn later.',
-  teaseFace:'Play with them. Huge reaction, no commitment — and it sets up a real turn later.',
+  teaseHeel:'Play with them. Huge reaction, no commitment, and it sets up a real turn later.',
+  teaseFace:'Play with them. Huge reaction, no commitment, and it sets up a real turn later.',
   cheap:'Instant boos. Shallow, and the office notices.',
   pander:'An easy pop. Shallow, and the office notices.',
   shoot:'Break character and say the real thing. Enormous reaction, and your standing takes the hit.',
@@ -4625,7 +4625,7 @@ const PROMO_LINES={
     ()=>`I am not here to talk. I am here because they gave me a microphone and it would be rude not to.`,
     o=>`No threats. No promises. Just a match with ${o}, and we will see.`]},
   ally:{k:'OFFER AN ALLIANCE',c:'face',host:0.85,int:0.6,lines:[
-    o=>`${o} — this business is easier with somebody watching your back. Mine is available.`,
+    o=>`${o}, this business is easier with somebody watching your back. Mine is available.`,
     o=>`I have been on the wrong end of a numbers game one too many times. ${o}, so have you.`,
     o=>`We can keep tearing lumps out of each other, ${o}, or we can go after the people who deserve it.`]},
   // ---- playing with them ----
@@ -4749,16 +4749,16 @@ function beginPromo(mode,targetId){
   if(target){ figLook('opp',target.look); FIG.opp.el.style.display=''; }
   else FIG.opp.el.style.display='none';
   FIG.ref.el.style.display='none';
-  // stand them closer than a match — this is a face-to-face, not a lock-up
+  // stand them closer than a match: this is a face-to-face, not a lock-up
   const step=Math.round(ST.home*0.42);
   fmv('me',{pose:'point',fwd:target?step:Math.round(ST.home*0.9),up:0,rot:0,sc:1},0);
   if(target) fmv('opp',{pose:'ready',fwd:step,up:0,rot:0,sc:1},0);
   $('pmTitle').textContent = target? `${G.w.name} · ${target.name}` : 'LIVE MIC';
   $('pmSub').textContent = mode==='title'? 'Calling for a championship match'
-    : mode==='crowd'? 'Open mic — character work'
+    : mode==='crowd'? 'Open mic: character work'
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
-  pmLog(`<span class="hint">The music cuts. You have the microphone${target?` — and ${target.name} is already out here.`:'.'}</span>`);
+  pmLog(`<span class="hint">The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}</span>`);
   pmChoices();
 }
 function pmChoices(){
@@ -4779,7 +4779,7 @@ function pmChoices(){
       <input type="text" id="pmCustom" maxlength="180" placeholder="Write your own line…" onkeydown="if(event.key==='Enter')pmCustom()">
       <button onclick="pmCustom()">Say it</button>
     </div>
-    <div class="hint" style="margin-top:5px;">The room reads your tone — how hard you commit, whether you speak to <i>them</i>, and whether what you say about ${oppName} is actually true.</div>`;
+    <div class="hint" style="margin-top:5px;">The room reads your tone: how hard you commit, whether you speak to <i>them</i>, and whether what you say about ${oppName} is actually true.</div>`;
 }
 function pmCustom(){
   const el=$('pmCustom'), v=(el&&el.value||'').trim();
@@ -4825,21 +4825,21 @@ async function pmSay(payload){
     .concat(sh.notes||[]).filter(Boolean);
   const tail=extra.length?` · ${extra.join(' · ')}`:'';
   pmLog(
-    sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned — reaction +${sh.gain}${tail}. Keep going and this becomes a turn.</span>`
-  : sh.mode==='tease'    ? `<span class="hi">You dangled it in front of them and pulled it away — reaction +${sh.gain}${tail}. They will remember that if you ever mean it.</span>`
-  : sh.mode==='shoot'    ? `<span class="hi">The room has gone completely silent, then very loud — reaction +${sh.gain}${tail}.</span>`
-  : sh.mode==='cheap'    ? `<span class="hint">Instant heat, and worth nothing to anybody who matters — reaction +${sh.gain}${tail}.</span>`
-  : sh.mode==='pander'   ? `<span class="hint">They pop for it because they always do — reaction +${sh.gain}${tail}.</span>`
-  : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously — +${sh.gain}.</span>`
+    sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned. Reaction +${sh.gain}${tail}. Keep going and this becomes a turn.</span>`
+  : sh.mode==='tease'    ? `<span class="hi">You dangled it in front of them and pulled it away. Reaction +${sh.gain}${tail}. They will remember that if you ever mean it.</span>`
+  : sh.mode==='shoot'    ? `<span class="hi">The room has gone completely silent, then very loud. Reaction +${sh.gain}${tail}.</span>`
+  : sh.mode==='cheap'    ? `<span class="hint">Instant heat, and worth nothing to anybody who matters. Reaction +${sh.gain}${tail}.</span>`
+  : sh.mode==='pander'   ? `<span class="hint">They pop for it because they always do. Reaction +${sh.gain}${tail}.</span>`
+  : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously. Reaction +${sh.gain}.</span>`
   : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
-  :                        `<span class="hint">They bite — reaction +${sh.gain}${tail}.</span>`);
+  :                        `<span class="hint">They bite. Reaction +${sh.gain}${tail}.</span>`);
   // a turn completes when you have stayed with it
   const turned=maybeTurn();
   if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
     pmLog(`<span class="hi"><b>${G.w.name} has turned ${G.w.align}.</b> New act: ${turned.n}.</span>`);
     fmv('me',{pose:'celebrate'},240); }
   else { const tp=turnProgress();
-    if(tp.to&&tp.p>0.3) pmLog(`<span class="hint">You are talking like a ${tp.to}. ${Math.round(tp.p*100)}% of the way to a ${tp.to} turn — stay with it.</span>`); }
+    if(tp.to&&tp.p>0.3) pmLog(`<span class="hint">You are talking like a ${tp.to}. ${Math.round(tp.p*100)}% of the way to a ${tp.to} turn. Stay with it.</span>`); }
 
   if(t){
     const reply=promoReply(t,read);
@@ -4876,7 +4876,7 @@ async function pmFinish(){
       startStory(t.id,'has heard enough out of you.');
       pmLog(`<span class="hi">You have started something with ${t.name}. That is a feud now.</span>`);
     } else if(R.respect>=62){
-      pmLog(`<span class="hi">${t.name} respects you — there is an alliance in this if you keep at it.</span>`);
+      pmLog(`<span class="hi">${t.name} respects you. There is an alliance in this if you keep at it.</span>`);
     } else {
       pmLog(`<span class="hint">${t.name}: bad blood ${Math.round(R.heat)} · respect ${Math.round(R.respect)}.</span>`);
     }
@@ -4897,7 +4897,7 @@ function pmDone(){
 // who is worth talking about this week
 function promoTargets(){
   const me=myPromo(), out=[];
-  const st=story(); if(st){ const c=charById(st.charId); if(c) out.push({c,why:'Your active feud — this is how you build it'}); }
+  const st=story(); if(st){ const c=charById(st.charId); if(c) out.push({c,why:'Your active feud: this is how you build it'}); }
   if(G.car.rivalId && (!st||st.charId!==G.car.rivalId)){ const c=charById(G.car.rivalId); if(c) out.push({c,why:'Your rival'}); }
   const house=CHARS.filter(x=>x.promo===me.id && !out.some(o=>o.c.id===x.id));
   house.sort((a,b)=>{ const ra=rel(a.id), rb=rel(b.id); return (rb.matches*2+rb.heat/12)-(ra.matches*2+ra.heat/12); });
@@ -4911,7 +4911,7 @@ function openPromoPicker(){
   <div class="grid" style="gap:9px;margin-top:12px;">
     <div class="pmopt" onclick="closeModal();beginPromo('crowd',null)">
       <div class="po-k k-crowd">OPEN MIC</div><div class="po-t">Talk to the crowd</div>
-      <div class="po-d">No opponent — pure character work. The fastest way to freshen a stale act.</div></div>`;
+      <div class="po-d">No opponent, pure character work. The fastest way to freshen a stale act.</div></div>`;
   if(!G.car.title) h+=`<div class="pmopt" onclick="closeModal();beginPromo('title',null)">
       <div class="po-k k-crowd">CHALLENGE</div><div class="po-t">Demand a shot at the ${belt}</div>
       <div class="po-d">Puts you in the title picture while it is fresh.</div></div>`;
@@ -4932,14 +4932,14 @@ function renderCrew(){
   let h='';
   // ---- what you have ----
   h+=`<div class="grid g3" style="margin-bottom:14px;">
-    ${[['Allies',allies().length],['Tag team',team?team.name:'—'],['Stable',st?st.name:'—'],
+    ${[['Allies',allies().length],['Tag team',team?team.name:'-'],['Stable',st?st.name:'-'],
        ['Team record',c.teamRec?`${c.teamRec.w}-${c.teamRec.l}`:'0-0']]
       .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val" style="font-size:${String(v).length>9?'15px':'22px'}">${v}</div></div>`).join('')}</div>`;
 
   // ---- the one thing to do ----
   const cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id));
   if(!allies().length&&!cand.length){
-    h+=`<div class="advice ok"><span class="ad-i">🤝</span><span class="ad-t">Nobody in this locker room rates you enough yet. Wrestle them, or get on the mic and show them respect — an alliance opens up at 55 respect.</span>
+    h+=`<div class="advice ok"><span class="ad-i">🤝</span><span class="ad-t">Nobody in this locker room rates you enough yet. Wrestle them, or get on the mic and show them respect. An alliance opens up at 55 respect.</span>
       <button class="ad-b" onclick="openPromoPicker()">Cut a promo →</button></div>`;
   } else if(cand.length){
     h+=`<div class="advice act"><span class="ad-i">🤝</span><span class="ad-t"><b>${cand[0].name}</b> rates you enough to work together. That is how tag teams and stables start.</span>
@@ -4993,7 +4993,7 @@ function renderCrew(){
       </div>
       <div class="row" style="margin-top:9px;gap:6px;">
         ${ok?`<button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>`
-            :`<span class="hint">${R.heat>=40?'Too much bad blood':'Needs 55 respect'} — wrestle them or talk to them</span>`}
+            :`<span class="hint">${R.heat>=40?'Too much bad blood':'Needs 55 respect'}. Wrestle them or talk to them</span>`}
       </div>
     </div>`;
   }).join('')+`</div>`;
@@ -5001,7 +5001,7 @@ function renderCrew(){
 }
 function askAlly(id){
   const c=charById(id);
-  modal('Work together?',`<p class="log">${c.name} rates you. An alliance means somebody in your corner — and later, a tag team or a stable.</p>
+  modal('Work together?',`<p class="log">${c.name} rates you. An alliance means somebody in your corner, and later, a tag team or a stable.</p>
     <p class="hint">They will stay as long as you keep winning and keep using them. Let them drift and they will walk, or worse.</p>`,
     [{label:'Not yet',cls:'ghost',fn:closeModal},
      {label:'Shake on it',fn:()=>{closeModal(); formAlliance(id); save(); renderCrew(); toast(c.name+' is with you');}}]);
@@ -5018,7 +5018,7 @@ function askTeam(id){
 function askStable(){
   const sug='The '+TEAM_WORDS[Math.floor(rnd()*TEAM_WORDS.length)][1];
   modal('Found a stable',`<p class="log">${allies().map(a=>(charById(a.id)||{}).name).filter(Boolean).join(', ')} stand with you. Give it a name and it becomes a force in this company.</p>
-    <p class="hint">A stable gets you numbers at ringside — and gives everybody in it something to betray.</p>
+    <p class="hint">A stable gets you numbers at ringside, and gives everybody in it something to betray.</p>
     <div class="flab" style="margin-top:10px;">Stable name</div>
     <input type="text" id="stableName" maxlength="28" value="${sug}">`,
     [{label:'Cancel',cls:'ghost',fn:closeModal},
@@ -5028,7 +5028,7 @@ function askStable(){
 function askBetray(id){
   const c=charById(id), a=allyOf(id);
   modal(`Turn on ${c.name}?`,
-    `<p class="log">This is the loudest thing a wrestler can do. ${a&&a.tag?`${a.teamName} ends tonight.`:''} The building will talk about it for a year — and ${c.name} will never let it go.</p>
+    `<p class="log">This is the loudest thing a wrestler can do. ${a&&a.tag?`${a.teamName} ends tonight.`:''} The building will talk about it for a year, and ${c.name} will never let it go.</p>
      <ul class="mlist bad"><li><span class="i">▼</span>Huge reaction, and it turns you heel if you are not one already</li>
      <li><span class="i">▼</span>${c.name} becomes your bitterest rival, permanently</li>
      <li><span class="i">▼</span>Everybody else in your corner trusts you a lot less</li></ul>`,
@@ -5053,7 +5053,7 @@ function renderDeal(){
           <h4>${pr.name}</h4>
           <span class="badge ${up?'b-leg':'b-com'}">${cap(pr.tier)}${up?' · STEP UP':''}</span></div>
         <div class="meta">${money(o.weekly)}/week · ${o.years} year${o.years>1?'s':''} · ${Math.round(o.merch*100)}% merch${o.creative?' · creative control':''}</div>
-        <p>${o.pitch} <span class="hint">${pr.product} — ${pr.blurb}</span></p>
+        <p>${o.pitch} <span class="hint">${pr.product}: ${pr.blurb}</span></p>
         <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money(o.weekly*WEEKS_PER_YEAR*o.years)}</b> · interest ${o.want}</div>
       </div>`;
     });
@@ -5088,9 +5088,9 @@ function renderDeal(){
   // ---- the character ----
   const heat=gimHeat();
   if(tab===2) h+=`<div class="card"><h3 style="margin-top:0;">The Character</h3>
-    <p class="log">You are working as <b>${g?g.name:'—'}</b>, a ${G.w.align}. ${g?gimById(g.id).d:''}</p>
+    <p class="log">You are working as <b>${g?g.name:'-'}</b>, a ${G.w.align}. ${g?gimById(g.id).d:''}</p>
     <div class="bar ${heat<32?'':'g'}" style="margin-top:8px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
-    <div class="hint" style="margin-top:4px;">Freshness ${Math.round(heat)}/100 — ${heat<32?'the act is dead, the crowd has stopped reacting':heat<55?'starting to go stale':'still getting a reaction'}</div>
+    <div class="hint" style="margin-top:4px;">Freshness ${Math.round(heat)}/100: ${heat<32?'the act is dead, the crowd has stopped reacting':heat<55?'starting to go stale':'still getting a reaction'}</div>
     <p class="log" style="margin-top:12px;">A turn or a repackage resets the character. It costs you popularity in the short term and buys you a new run.</p>
     <div class="row" style="margin-top:8px;">
       <button onclick="doTurn()">Turn ${G.w.align==='face'?'Heel':'Face'}</button>
@@ -5109,10 +5109,10 @@ function renderDeal(){
       <div class="tile"><div class="lab">Injuries</div><div class="val">${inj.length}</div></div>
     </div>
     ${chron.length?`<div class="flab" style="margin-top:12px;">Permanent damage</div>
-      <div class="hint" style="line-height:1.9;">${chron.map(x=>`🦴 ${x.part} — −${x.pen} ${(ATTRS.find(a=>a[0]===x.attr)||['','?'])[1]} <span style="opacity:.6">(Year ${x.y})</span>`).join('<br>')}</div>`
+      <div class="hint" style="line-height:1.9;">${chron.map(x=>`🦴 ${x.part}: −${x.pen} ${(ATTRS.find(a=>a[0]===x.attr)||['','?'])[1]} <span style="opacity:.6">(Year ${x.y})</span>`).join('<br>')}</div>`
       :`<div class="hint" style="margin-top:10px;">Nothing permanent yet. It will come.</div>`}
     ${inj.length?`<div class="flab" style="margin-top:12px;">Injury history</div>
-      <div class="hint" style="line-height:1.9;">${inj.slice(0,8).map(x=>`🏥 Y${x.y}W${x.w} — ${x.nm} (${x.wk} wks)`).join('<br>')}</div>`:''}
+      <div class="hint" style="line-height:1.9;">${inj.slice(0,8).map(x=>`🏥 Y${x.y}W${x.w}: ${x.nm} (${x.wk} wks)`).join('<br>')}</div>`:''}
   </div>`;
   $('dealBody').innerHTML=h;
 }
@@ -5127,7 +5127,7 @@ function signDeal(i){
     if(c.title){ pushLog(`You had to relinquish the ${c.title} on the way out of ${old.short}.`); c.title=null; c.defenses=0; }
     c.standing=clamp(48+(o.want-40)*0.20);
     c.rivalId=null; G.story=null; c.faction=null;
-    pushLog(`You sign with <b>${pr.name}</b> — ${o.years} year${o.years>1?'s':''} at ${money(o.weekly)}/week.`);
+    pushLog(`You sign with <b>${pr.name}</b>, ${o.years} year${o.years>1?'s':''} at ${money(o.weekly)}/week.`);
     pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
     if(promoTierIdx(pr)>promoTierIdx(old)) award(`Signed with ${pr.name}.`,'✍️');
   } else {
@@ -5139,7 +5139,7 @@ function renegotiate(){
   const c=G.car, d=c.deal;
   const fair=dealValue(myPromo(),c.pop,c.rep,c.standing);
   const ask=Math.round(fair*1.22/10)*10;
-  modal('Renegotiate', `You are on ${money(d.weekly)} a week. Based on what you are drawing, ${money(fair)} is fair — you can push for <b>${money(ask)}</b>.
+  modal('Renegotiate', `You are on ${money(d.weekly)} a week. Based on what you are drawing, ${money(fair)} is fair. You can push for <b>${money(ask)}</b>.
     <br><br>They will not enjoy the conversation. Ask and you risk your standing with the office.`,
     [{label:'Leave it',cls:'ghost',fn:closeModal},
      {label:'Ask for more',fn:()=>{ closeModal();
@@ -5156,7 +5156,7 @@ function renegotiate(){
 function setSchedule(id){ G.car.deal.sched=id; save(); renderDeal(); toast(schedOf(id).name+' it is'); }
 function doTurn(){
   const c=G.car, w=G.w, to=w.align==='face'?'heel':'face';
-  modal(`Turn ${cap(to)}?`, `Turning is the oldest trick in the business and it works — but the crowd needs a reason.
+  modal(`Turn ${cap(to)}?`, `Turning is the oldest trick in the business and it works, but the crowd needs a reason.
     You will lose popularity while they adjust, and gain a completely fresh act.`,
     [{label:'Not yet',cls:'ghost',fn:closeModal},
      {label:`Turn ${cap(to)}`,fn:()=>{ closeModal();
@@ -5167,7 +5167,7 @@ function doTurn(){
        const drop=clamp(6+c.pop*0.14,4,18);
        c.pop=clamp(c.pop-drop,1,100); c.standing=clamp(c.standing+4); c.mom=clamp(c.mom+10);
        pushLog(`You turned ${to}. The new act is <b>${g.n}</b>. The building did not know what to do with itself.`);
-       pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'} — working as ${g.n}.`});
+       pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
        award(`Turned ${to} as ${g.n}.`,'🔄');
        save(); renderDeal(); toast(`You are a ${to} now`); }}]);
 }
@@ -5194,7 +5194,7 @@ function doRepackage(id){
 }
 
 function renderWorld(){
-  // nine promotions plus the factions is five screens of scroll — show one at a time
+  // nine promotions plus the factions is five screens of scroll, so show one at a time
   const order=['indie','regional','national','global'];
   const promos=order.flatMap(t=>PROMOS.filter(p=>p.tier===t));
   const here=myPromo().id;
@@ -5225,7 +5225,7 @@ function renderWorld(){
     const mine=G.car.faction===f.id, lead=charById(f.leader);
     h+=`<div class="promocard" style="border-left:4px solid ${f.color}">
       <div class="ph"><div><span class="pshort" style="color:${f.color}">${f.name}</span>${mine?' <span class="badge b-red">Your faction</span>':''}</div>
-        <span class="hint">${(promoById(f.promo)||{}).short||''} · led by ${lead?lead.name:'—'}</span></div>
+        <span class="hint">${(promoById(f.promo)||{}).short||''} · led by ${lead?lead.name:'-'}</span></div>
       <div class="pblurb">${f.blurb}</div>
       <div class="hint" style="color:var(--gold);margin-bottom:8px;">${f.perk}</div>
       <div class="charrow">`+facMembers(f).map(m=>{
@@ -5267,7 +5267,7 @@ function charProfile(id){
 function renderRecord(){
   const c=G.car;
   let h=`<div class="grid g4">`+[
-    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)+'%':'—'],
+    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)+'%':'-'],
     ['Career Earnings',money(c.earnings)],['Reputation',Math.round(c.rep)],
     ['Title Reigns',c.reigns.length],['Moves Known',G.w.moves.length+'/'+MOVES.length],
     ['Years Active',c.year],['Age',c.age],
@@ -5313,7 +5313,7 @@ function renderHof(){
         <div class="tile"><div class="lab">Legacy Score</div><div class="val">${legacy}</div></div>
       </div>
       ${inducted?`<p style="color:var(--gold);font-weight:800;margin-top:12px;">🏛️ Inducted into the Hall of Immortals.</p>`
-        :`<p class="hint" style="margin-top:12px;">Fell short of the Hall — build a bigger legend next time.</p>`}
+        :`<p class="hint" style="margin-top:12px;">Fell short of the Hall. Build a bigger legend next time.</p>`}
     </div>
     <div class="grid g2" style="margin-top:12px;">${[
       ['Record',`${c.rec.w}-${c.rec.l}`],['Titles',c.reigns.length],['Earnings',money(c.earnings)],
