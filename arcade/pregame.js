@@ -26,7 +26,7 @@
 
   // How-to-play (2-3 short lines each).
   var RULES = {
-    table:      ['Tap the bigger number.', 'One wrong pick ends the run. How far can you go?'],
+    table:      ['What number did they wear for that club?', 'Type it. Within two counts. One save, then the run ends.'],
     match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
     career:     ['A career, revealed one team at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
     oddone:     ['Four names share a connection, one doesn’t.', 'Spot it for a point, then name the link for another.'],

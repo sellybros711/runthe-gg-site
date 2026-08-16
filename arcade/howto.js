@@ -14,10 +14,10 @@
       'Four wrong guesses ends the day. Solve all four groups to keep your streak.'
     ],
     table: [
-      'Two athletes, one question: who wore the higher jersey number?',
-      'Tap your pick and the numbers reveal instantly.',
-      'Every correct pick extends your run. You get one save; a second miss ends it.',
-      'The run gets tougher: later pairs wear closer numbers.'
+      'One player, one club, one question: what number did they wear there?',
+      'Type it. Exact is a bullseye; within two still counts, because a digit out is remembering, not guessing.',
+      'You get one save; a second real miss ends the run.',
+      'It opens on household names and works down into the deep cuts.'
     ],
     career: [
       "We show a career one team at a time, first club first.",

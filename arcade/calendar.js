@@ -20,7 +20,7 @@
   // the same product. `cls` matches the hub's .tile.<cls> accent rules.
   var GAMES = [
     { key:'table',      path:'table',      cls:'table',  name:'Number Game',    accent:'var(--gold)',
-      desc:'Higher or lower? Tap the bigger number and run as many as you can.',
+      desc:'One player, one club: name the number they wore.',
       icon:'<svg viewBox="0 0 56 56"><rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/><rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/><g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g></svg>' },
     { key:'match',      path:'match',      cls:'match',  name:'Daily Match',      accent:'var(--blue)',
       desc:'Tap four names that belong together. Find all four groups before four mistakes.',

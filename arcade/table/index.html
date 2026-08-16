@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Number Game: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
+<meta name="description" content="Number Game: a daily sports recall streak. One player, one club, one question: what number did they wear? Type it and see how far you can go." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Number Game: Daily Sports Streak Game" />
-<meta property="og:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta property="og:description" content="One player, one question: what number did they wear? Type it and see how far you can go." />
 <meta property="og:url" content="https://runthe.gg/arcade/table/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Number Game: Daily Sports Streak Game" />
-<meta name="twitter:description" content="Two athletes, one question: who wore the higher number? See how far you can go." />
+<meta name="twitter:description" content="One player, one question: what number did they wear? Type it and see how far you can go." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/table/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -139,6 +139,31 @@
   .pcard.revealed .tap{display:none;}
   .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:clamp(40px,6vh,54px); height:clamp(40px,6vh,54px); border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:clamp(16px,2.4vh,20px); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
   @media (min-width:520px){ .versus{grid-template-columns:1fr 1fr; grid-auto-rows:auto; gap:clamp(14px,2vh,22px);} .pcard{min-height:150px;} }
+  /* One card, not two: the question is recall now, not a comparison. The
+     versus grid stretched its rows to fill a tall playzone, which was right
+     for a pair and made a single card 800px of empty colour, so the solo card
+     stops growing and the typing sits directly under it. */
+  .versus:has(.pcard.solo){flex:0 0 auto; grid-auto-rows:auto;}
+  .pcard.solo{grid-column:1 / -1; max-width:none; min-height:0; cursor:default;
+    padding:clamp(20px,3vh,30px) 16px; gap:8px;}
+  .pcard.solo:hover{transform:none; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); border-color:var(--line2); border-top-color:var(--tp,var(--gold));}
+  .pcard.solo .num{font-family:var(--hero,var(--f)); font-size:clamp(34px,6vh,52px); line-height:1; color:var(--goldT); margin-top:4px;}
+  .answerbar{display:flex; gap:9px; margin:14px 0 0; justify-content:center;}
+  .answerin{width:110px; text-align:center; font-family:var(--hero,var(--f)); font-weight:400; font-size:30px;
+    letter-spacing:.06em; color:var(--ink); background:var(--card); border:2px solid var(--line2);
+    border-radius:12px; padding:6px 10px; min-height:58px;}
+  .answerin::placeholder{color:var(--line2);}
+  .answerin:focus{border-color:var(--gold); outline:none;}
+  .answerin:disabled{opacity:.75;}
+  .answergo{flex:0 0 auto; appearance:none; border:0; border-radius:12px; background:var(--gold); color:#20160B;
+    font-family:var(--f); font-weight:900; font-size:15px; padding:0 22px; min-height:58px; cursor:pointer;}
+  .answergo:hover:not(:disabled){filter:brightness(1.06);}
+  .answergo:disabled{background:var(--card2); color:var(--mut); cursor:default;}
+  .subprompt{min-height:20px; text-align:center; font-size:13.5px; font-weight:800; color:var(--mut); margin:10px 2px 0;}
+  .subprompt.good{color:var(--greenT,#48D17A);} .subprompt.near{color:var(--goldT,#F2B632);} .subprompt.bad{color:var(--redT,#F06A5F);}
+  .factline{min-height:18px; text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
+    color:var(--mut); margin:10px 2px 0;}
+  .factline.on{color:var(--ink);}
 
   .hintline{text-align:center; font-size:12px; color:var(--mut); margin:clamp(14px,2vh,22px) 0 2px; font-weight:700; flex:0 0 auto;}
 
@@ -248,22 +273,29 @@
 
   <div class="runbar">
     <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
-    <div class="rl"><span class="v" id="runSub">One save resets you to 0 but keeps you playing. A second miss ends the run.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
+    <div class="rl"><span class="v" id="runSub">Exact is a bullseye. Within two still counts. One save, then the run ends.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
     <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
-  <div class="prompt">Who wore the higher jersey number?</div>
+  <div class="prompt">What number did they wear?</div>
   <div class="ladder" aria-label="Round progress"><span class="rd" id="ladderRd">Round 1 / 40</span><div class="bar"><i id="ladderBar"></i></div><span class="zone" id="ladderZone"></span></div>
   <div class="playzone">
     <div class="versus" id="versus"></div>
-    <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
+    <form class="answerbar" id="answerbar" autocomplete="off" novalidate>
+      <input class="answerin" id="answerIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2"
+             placeholder="00" aria-label="The jersey number they wore" />
+      <button class="answergo" id="answerGo" type="submit">Call it</button>
+    </form>
+    <div class="subprompt" id="subprompt"></div>
+    <div class="factline" id="factline" aria-live="polite"></div>
+    <div class="hintline" id="hintline">Type the number. Within two still counts.</div>
   </div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -325,10 +357,11 @@
 <script src="/arcade/topbanner.js?v=3"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
-<script src="/arcade/calendar.js?v=9"></script>
+<script src="/arcade/calendar.js?v=10"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=10"></script>
-<script src="/arcade/howto.js?v=12"></script>
+<script src="/arcade/pregame.js?v=11"></script>
+<script src="/arcade/howto.js?v=13"></script>
+<script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -385,26 +418,34 @@
   ENT.filter(hiqStar).forEach(function(e){
     var ss = _stintsByName[e.sport+'|'+_nkey(e.name)]; if(!ss) return;
     ss.forEach(function(s){
-      POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num });
+      POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num, f:(e.f||0), star:!!e.star });
     });
   });
   function jn(e){ return e.num; }
+  // pool rows are stints, not records; the fact line needs the record back
+  var FACT_BY_ID={}; ENT.forEach(function(e){ if(e && e.id) FACT_BY_ID[e.id]=e; });
 
-  // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
+  /* ONE PLAYER, ONE QUESTION: what number did they wear there?
+     Higher-or-lower was a coin flip with a memory assist. You could run a long
+     streak on instinct without knowing a single jersey number, because half the
+     time the guess was simply right. Naming the number is pure recall and has
+     no floor at all, which is what this arcade is supposed to be testing.
+     A round is one jersey stint: a player, a club, and the years, because
+     plenty of careers carry two or three different numbers and the question
+     has to have exactly one answer. */
   function buildRounds(){
-    var out=[], last=null, guard=0;
-    while(out.length<ROUNDS && guard<12000){ guard++;
-      var a=POOL[ri(POOL.length)], b=POOL[ri(POOL.length)];
-      if(!a||!b||a.id===b.id) continue;
-      // The run gets harder as it grows: early pairs are far apart (easy call),
-      // later pairs are forced CLOSE together (a real gut check). We cap the
-      // allowed number gap and shrink that cap as the streak climbs.
-      var d=Math.abs(jn(a)-jn(b)); if(d<1) continue;
+    var out=[], seen={}, guard=0;
+    while(out.length<ROUNDS && guard<20000){ guard++;
+      var a=POOL[ri(POOL.length)];
+      if(!a) continue;
+      if(seen[a.id]) continue;                 // never the same player twice in a day
+      // The run escalates: it opens on the household names and works down into
+      // the deeper cuts, so the first few rounds are winnable on memory alone.
       var n=out.length;
-      var maxGap = n<8 ? 99 : n<16 ? 45 : n<24 ? 28 : n<32 ? 16 : 9;
-      if(d>maxGap) continue;
-      if(last && (a.id===last[0]||a.id===last[1]||b.id===last[0]||b.id===last[1])) continue;
-      out.push([a,b]); last=[a.id,b.id];
+      var minFame = n<8 ? 5 : n<18 ? 4 : n<28 ? 3 : 0;
+      if((a.f||0) < minFame) continue;
+      seen[a.id]=1;
+      out.push(a);
     }
     return out;
   }
@@ -418,9 +459,9 @@
     else { p.textContent='Save used'; p.classList.add('used'); } }
 
   // Each card is one jersey stint: the exact team + the exact years he wore the
-  // revealed number there. An en-dash range (2003–2010), or a single year when
+  // revealed number there. A hyphenated range (2003-2010), or a single year when
   // the stint was one season. This is what makes the number unambiguous.
-  function yearRange(e){ return (e.y0 && e.y1 && e.y0!==e.y1) ? (e.y0+'–'+e.y1) : ('' + (e.y0||e.y1||'')); }
+  function yearRange(e){ return (e.y0 && e.y1 && e.y0!==e.y1) ? (e.y0+'-'+e.y1) : ('' + (e.y0||e.y1||'')); }
   // one team on top, the exact year-range beneath it
   function metaHTML(e){ var o='';
     if(e.team) o+='<span class="tm">'+esc(e.team)+'</span>';
@@ -444,50 +485,87 @@
     var z = idx>=40 ? ['ENDLESS','hot'] : idx>=32 ? ['GUT CHECK','hot'] : idx>=24 ? ['TIGHT CALLS',''] : idx>=16 ? ['HEATING UP',''] : ['',''];
     zn.textContent=z[0]; zn.className='zone'+(z[1]?' '+z[1]:'');
   }
+  var answerIn=document.getElementById('answerIn'), answerGo=document.getElementById('answerGo'),
+      factEl=document.getElementById('factline'), subEl=document.getElementById('subprompt');
+  var bulls=0;                                // exact calls, the thing worth bragging about
+  function setAnswerEnabled(on){ answerIn.disabled=!on; answerGo.disabled=!on; }
   function renderRound(){
     if(idx>=SEQ.length){ finish(); return; }
-    var pair=SEQ[idx];
+    var p=SEQ[idx];
     renderLadder();
+    subEl.textContent=''; subEl.className='subprompt';
+    if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
+    answerIn.value=''; setAnswerEnabled(true);
     vs.innerHTML =
-      // real <button>s: the game's only action has to be keyboard-reachable,
-      // and :focus-visible never applied to the old click-handler divs
-      '<button type="button" class="pcard" data-s="0"'+teamStyle(pair[0])+' aria-label="Pick '+esc(pair[0].name)+' as the higher jersey number"><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+metaHTML(pair[0])+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></button>'+
-      '<div class="vs" aria-hidden="true">VS</div>'+
-      '<button type="button" class="pcard" data-s="1"'+teamStyle(pair[1])+' aria-label="Pick '+esc(pair[1].name)+' as the higher jersey number"><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+metaHTML(pair[1])+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></button>';
-    [].forEach.call(vs.querySelectorAll('.pcard'), function(c){ c.addEventListener('click', function(){ pick(+c.dataset.s); }); });
+      '<div class="pcard solo"'+teamStyle(p)+'><span class="nm">'+esc(p.name)+'</span>'+
+      '<span class="meta">'+metaHTML(p)+'</span>'+
+      '<span class="num" id="n0">?</span></div>';
+    try{ answerIn.focus({preventScroll:true}); }catch(_){ }
   }
-  function pick(side){
-    if(done||busy) return; busy=true; startIfNeeded();
-    var pair=SEQ[idx], ja=jn(pair[0]), jb=jn(pair[1]);
-    var correct = ja>jb ? 0 : 1;   // gap guarantees ja!==jb
-    var cards=vs.querySelectorAll('.pcard');
-    document.getElementById('n0').textContent='#'+ja; document.getElementById('n1').textContent='#'+jb;
-    cards[0].classList.add('revealed'); cards[1].classList.add('revealed');
-    var right = side===correct;
-    cards[correct].classList.add('correct'); if(!right) cards[side].classList.add('wrong'); else cards[side===0?1:0].classList.add('dim');
-    if(right){
-      ANSLOG.push('c');
+  /* Within two counts. A jersey number is 0 to 99, so landing inside a
+     three-wide window by luck is 3%: it is not a guess, it is knowing roughly
+     and misremembering by a digit. Exact is a bullseye and is what the share
+     grid brags about. */
+  function submitTyped(){
+    if(done||busy) return;
+    var raw=answerIn.value.trim();
+    if(!/^\d{1,2}$/.test(raw)){
+      subEl.textContent='Type a number from 0 to 99.'; return;
+    }
+    startIfNeeded();
+    resolve(parseInt(raw,10));
+  }
+  document.getElementById('answerbar').addEventListener('submit', function(e){ e.preventDefault(); submitTyped(); });
+  function showFact(p){
+    if(!factEl) return;
+    var e=FACT_BY_ID[p.id];
+    // The round IS the jersey number, so a jersey fact would just repeat it.
+    var line=(e && window.RTGFact) ? RTGFact.of(e, { seed: idx, skip:{ jersey:1 } }) : null;
+    factEl.textContent=line||'';
+    factEl.classList.toggle('on', !!line);
+  }
+  function resolve(said){
+    busy=true;
+    var p=SEQ[idx], real=jn(p), off=Math.abs(said-real);
+    setAnswerEnabled(false);
+    var card=vs.querySelector('.pcard');
+    document.getElementById('n0').textContent='#'+real;
+    if(card) card.classList.add('revealed');
+    showFact(p);
+    if(off===0){
+      ANSLOG.push('c'); bulls++;
+      if(card) card.classList.add('correct');
+      subEl.textContent='Bullseye. '+real+'.'; subEl.className='subprompt good';
       run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.lock();
-      idx++;
-      saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 720);
+      idx++; saveResume();
+      setTimeout(function(){ busy=false; renderRound(); }, 1300);
+    } else if(off<=2){
+      ANSLOG.push('h');                       // close enough: the run lives
+      if(card) card.classList.add('correct');
+      subEl.textContent='Close. It was '+real+', you said '+said+'. That counts.';
+      subEl.className='subprompt near';
+      run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
+      if(window.RTGSound && RTGSound.soft) RTGSound.soft();
+      idx++; saveResume();
+      setTimeout(function(){ busy=false; renderRound(); }, 1700);
     } else if(shield){
       ANSLOG.push('s');   // saved: the shield ate this miss
       // Your one save: this miss doesn't end the run, but it resets your in-a-row
       // back to 0 - your best (the peak you reached) is banked and keeps standing.
-      // Numbers stay revealed so you can read them, then play continues.
+      if(card) card.classList.add('wrong');
       shield=false; updateShieldPill();
+      subEl.textContent='It was '+real+'. Saved, back to 0.'; subEl.className='subprompt bad';
       run=0; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.soft();
-      toast('Saved. Back to 0, keep going');
-      idx++;
-      saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 1400);
+      idx++; saveResume();
+      setTimeout(function(){ busy=false; renderRound(); }, 2000);
     } else {
       ANSLOG.push('x');
+      if(card) card.classList.add('wrong');
+      subEl.textContent='It was '+real+'.'; subEl.className='subprompt bad';
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 950);
+      setTimeout(function(){ finish(); }, 2200);
     }
   }
 
@@ -497,15 +575,15 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the player you think wore the higher number. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the number. Within two still counts. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
-    h.textContent='Tap the player you think wore the higher number.'+lbl; }
+    h.textContent='Type the number. Within two still counts.'+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily board; every replay is a fresh random board.
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
-    idx=0; run=0; peak=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
+    idx=0; run=0; peak=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[]; bulls=0;
     shield=true; updateShieldPill();
     document.getElementById('runN').textContent='0';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -622,7 +700,9 @@
     // square that ended it, and (Number Game) an amber square where the save absorbed
     // a miss. Wraps at 10 per line so a long run reads as a block, not a smear.
     function shareGrid(){
-      var MAP={c:'\ud83d\udfe9', x:'\ud83d\udfe5', s:'\ud83d\udfe8', h:'\ud83d\udfe8'};
+      // green = called it exactly, yellow = within two or the save absorbing a miss,
+      // red = the one that ended it
+      var MAP={c:'\ud83d\udfe9', h:'\ud83d\udfe8', s:'\ud83d\udfe8', x:'\ud83d\udfe5'};
       if(!ANSLOG.length) return '\u2b1c';
       var out='', n=0;
       for(var i=0;i<ANSLOG.length && i<60;i++){
@@ -634,7 +714,7 @@
     }
   document.getElementById('mShare').addEventListener('click', function(){
     var score=Math.max(run, peak);
-    var stat=(score>0?'🔥 ':'')+score+' in a row';
+    var stat=(score>0?'🔥 ':'')+score+' in a row'+(bulls?(' · '+bulls+' exact'):'');
     RTGShare.send({ key:'table', date:DATE, grid:shareGrid(), stat:stat, statInt:score });
   });
 
