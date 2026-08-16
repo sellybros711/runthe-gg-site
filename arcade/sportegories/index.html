@@ -327,7 +327,7 @@
 <script src="/arcade/archive.js?v=2"></script>
 <script src="/arcade/calendar.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=6"></script>
+<script src="/arcade/board.js?v=7"></script>
 <script src="/arcade/leaderboard.js?v=6"></script>
 <!-- Sportegories shipped without the shared account chrome, so it had no
      paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
@@ -340,7 +340,7 @@
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=3"></script>
 <script src="/arcade/sportegories.js?v=7"></script>
-<script src="/arcade/livecheck.js?v=4"></script>
+<script src="/arcade/livecheck.js?v=5"></script>
 <script>
 (function(){
   'use strict';
@@ -669,9 +669,13 @@
       row.classList.add(r.ok?'good':(soft(r)?'unsure':'bad'),'flip');
       if(r.ok){
         running+=r.points;
+        // An answer we counted without being able to double-check says so
+        // rather than borrowing a rarity estimate it has no basis for.
         res.innerHTML='<span class="pts">+'+r.points+'</span>'+
           (r.allit>1?'<span class="allit">×'+r.allit+' letter bonus</span>':'')+
-          '<span class="pct">'+r.rarity.tier+' · est. '+r.rarity.pct+'%</span>';
+          (r.unverified
+            ? '<span class="pct">Counted — we couldn’t double-check this one</span>'
+            : '<span class="pct">'+r.rarity.tier+' · est. '+r.rarity.pct+'%</span>');
         var tn=$('tallyN'); countTo(tn, running, 320);
         tn.classList.remove('bump'); void tn.offsetWidth; tn.classList.add('bump');
         sfx(r.points>=3?'win':'lock'); buzz(r.points>=3?[18,40,18]:22);

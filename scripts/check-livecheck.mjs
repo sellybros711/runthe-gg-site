@@ -347,6 +347,48 @@ is(nbaPos(['Relief Pitcher'], 'Pitcher'), true, 'pos: a reliever is a pitcher');
 is(nbaPos(['Pitcher'], 'Catcher'), false, 'pos: unrelated positions still contradict');
 is(nbaPos([], 'Guard'), null, 'pos: knowing no position settles nothing');
 
+/* ---------- an answer we cannot fully check should not score nothing ----------
+ * The screenshot that started this: Rodney McGruder, a real NBA shooting guard,
+ * entered for "NBA Shooting Guard" and given 0 with "we couldn't verify this
+ * category". He is a guard; our register only knew the family. That is our data
+ * falling short, not his knowledge, and 0 reads as the game being broken.
+ *
+ * But it cannot be a blanket yes. Award predicates are confirm-only BY DESIGN,
+ * because award data is too incomplete to ever say no — so treating their null
+ * as a pass would hand a free point to any real player for "Hall of Fame
+ * Center". The line is whether we hold partial evidence and confirmed
+ * something else. */
+const gapsFor = (positions, pred) => {
+  const shaped = LC.shape({ found: true, name: 'x', occupations: ['basketball player'], sports: [],
+    positions: positions, colleges: [], awards: [], teams: [], died: false }, D);
+  const g = {};
+  const v = LC.verdict(shaped, pred, g);
+  return { v: v, soft: LC.softPass(g) };
+};
+const SPORT_NBA = { k: 'sport', v: 'NBA' };
+
+// the real case: sport confirmed, only the position grain unresolved
+let r = gapsFor(['Guard'], { all: [SPORT_NBA, { k: 'pos', v: 'Shooting Guard' }] });
+is(r.v, null, 'soft: a bare Guard still cannot confirm Shooting Guard');
+is(r.soft, true, 'soft: but the sport checked out and the gap is a position — count it');
+
+// the abuse case: nothing about an award can ever come back false
+r = gapsFor(['Guard'], { all: [SPORT_NBA, { k: 'pos', v: 'Guard' }, { k: 'award', v: 'Hall of Fame' }] });
+is(r.v, null, 'soft: an unlisted award leaves the clause unresolved');
+is(r.soft, false, 'soft: and an award gap is NOT forgiven, or every real player scores on it');
+
+// stats are the same shape of problem
+r = gapsFor(['Guard'], { all: [SPORT_NBA, { k: 'stat', v: 'points', min: 20000 }] });
+is(r.soft, false, 'soft: a stat gap is not forgiven either');
+
+// a contradiction is still a contradiction
+r = gapsFor(['Center'], { all: [SPORT_NBA, { k: 'pos', v: 'Point Guard' }] });
+is(r.v, false, 'soft: a centre is not a point guard, and no leniency applies');
+
+// and "they are a real athlete" on its own must never be enough
+r = gapsFor([], { all: [{ k: 'col', v: 'USC' }] });
+is(r.soft, false, 'soft: nothing confirmed and nothing known — no free point');
+
 console.log(bad.length ? bad.map((b) => '  FAIL ' + b).join('\n') : '');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -16,7 +16,7 @@
 process.env.REGISTER_SELFTEST = '1';       // import the parsers, don't run the job
 process.env.BBR_WAIT = '0';                // and don't throttle a stubbed fetch
 const { _test } = await import('../scripts/build-register.mjs');
-const { bbrRows, cell, links, posNBA, nameKey, csvCell, buildNBA, REG } = _test;
+const { bbrRows, cell, links, posNBA, mergePos, nameKey, csvCell, buildNBA, REG } = _test;
 
 let pass = 0, fail = 0;
 const bad = [];
@@ -63,6 +63,21 @@ is(posNBA('C'), 'Center', 'pos: a centre is a Center');
 is(posNBA('G-F'), 'Guard|Forward', 'pos: order follows the listing');
 is(posNBA(''), null, 'pos: nothing in, nothing out');
 is(posNBA('DH'), null, 'pos: an unrecognised code is dropped, not passed through raw');
+is(posNBA('SG'), 'Shooting Guard', 'pos: the season pages name the specific position');
+is(posNBA('PG-SG'), 'Point Guard|Shooting Guard', 'pos: a combo keeps both');
+
+/* The index says "Guard" for a whole career; the season pages say which kind.
+ * Keeping both would read as two positions to the grader, and keeping only the
+ * family is what made "NBA Shooting Guard" unanswerable: a bare Guard can
+ * neither confirm nor deny it, so a real shooting guard scored nothing. The
+ * specific one replaces the family it belongs to. */
+is(mergePos(['Guard', 'Shooting Guard']), 'Shooting Guard', 'merge: specific replaces its own family');
+is(mergePos(['Guard', 'Point Guard', 'Shooting Guard']), 'Point Guard|Shooting Guard', 'merge: two specifics, family gone');
+is(mergePos(['Guard', 'Forward']), 'Guard|Forward', 'merge: nothing specific, both families stay');
+is(mergePos(['Forward', 'Center', 'Power Forward']), 'Center|Power Forward',
+   'merge: only the family that was resolved is dropped — Center is not a Forward');
+is(mergePos(['Guard', 'Guard']), 'Guard', 'merge: dedupes');
+is(mergePos([]), null, 'merge: nothing in, nothing out');
 
 /* ---------- per-season totals: and for whom ----------
  * BBRef renamed the team column from team_id to team_name_abbr in its 2024
@@ -71,10 +86,10 @@ is(posNBA('DH'), null, 'pos: an unrecognised code is dropped, not passed through
  * of his real ones; the league-average footer row carries no player slug. */
 const TOTALS = `
 <table class="stats_table" id="totals_stats"><tbody>
-<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">2TM</td><td data-stat="pts">700</td></tr>
-<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">ATL</td><td data-stat="pts">400</td></tr>
-<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">LAC</td><td data-stat="pts">300</td></tr>
-<tr><th scope="row" data-append-csv="abdelal01" data-stat="player"><a href="/players/a/abdelal01.html">Alaa Abdelnaby</a></th><td data-stat="team_id">POR</td><td data-stat="pts">200</td></tr>
+<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">2TM</td><td data-stat="pos">SG</td><td data-stat="pts">700</td></tr>
+<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">ATL</td><td data-stat="pos">SG</td><td data-stat="pts">400</td></tr>
+<tr><th scope="row" data-append-csv="bogdabo01" data-stat="player"><a href="/players/b/bogdabo01.html">Bogdan Bogdanovic</a></th><td data-stat="team_name_abbr">LAC</td><td data-stat="pos">SG</td><td data-stat="pts">300</td></tr>
+<tr><th scope="row" data-append-csv="abdelal01" data-stat="player"><a href="/players/a/abdelal01.html">Alaa Abdelnaby</a></th><td data-stat="team_id">POR</td><td data-stat="pos">PF</td><td data-stat="pts">200</td></tr>
 <tr><td data-stat="player">League Average</td><td data-stat="team_id"></td><td data-stat="pts">100</td></tr>
 </tbody></table>`;
 
@@ -144,7 +159,8 @@ is(players, 3, 'walk: the index is the register — three players from one lette
 const alaa = REG.get('nba:abdelal01');
 is(alaa && alaa.name, 'Alaa Abdelnaby', 'walk: the player survives the walk');
 is(alaa && alaa.name_key, 'alaa|abdelnaby', 'walk: keyed the way the client will ask');
-is(alaa && alaa.pos, 'Forward|Center', 'walk: both halves of F-C are kept');
+is(alaa && alaa.pos, 'Center|Power Forward',
+   'walk: the season page resolved F into Power Forward, so the family goes and Center stays');
 is(alaa && alaa.college, 'Duke', 'walk: college carried through');
 is(alaa && alaa.teams, ['Portland Trail Blazers'], 'walk: pass 2 attached the team, via the pre-2024 column');
 is(alaa && alaa.first, 1991, 'walk: the index career span is not overwritten by the one season we stubbed');

@@ -315,6 +315,19 @@
    * ever appeared, kept server-side because it is ~56k rows and 4MB+ in the
    * client encoding. Takes normalized "first|last" keys, one card's worth at a
    * time; the RPC caps at ten. Works signed-out — it is public sports data. */
+  /* An answer we could not settle is a hole in the register with a name on it.
+     Fire-and-forget, deliberately: the game never waits on this and never shows
+     an error for it, because a failed report must not cost anyone a point. */
+  function logGap(row) {
+    try {
+      return fetch(REST + 'answer_gaps', {
+        method: 'POST',
+        headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+        body: JSON.stringify(row)
+      })['catch'](function () {});
+    } catch (e) { return Promise.resolve(); }
+  }
+
   function registerLookup(keys) {
     if (!keys || !keys.length) return Promise.resolve([]);
     return withTimeout(
@@ -436,6 +449,7 @@
     playerCount: playerCount,
     myRun: myRun,
     registerLookup: registerLookup,
+    logGap: logGap,
     streakOf: streakOf,
     streakBoard: streakBoard,
     allTimeBoard: allTimeBoard,

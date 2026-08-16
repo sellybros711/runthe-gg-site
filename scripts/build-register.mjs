@@ -108,7 +108,9 @@ function add(rec) {
     // otherwise leak out as a career that ran from the year 9999.
     if (rec.first) cur.first = Math.min(cur.first || rec.first, rec.first);
     if (rec.last) cur.last = Math.max(cur.last || rec.last, rec.last);
-    cur.pos = cur.pos || rec.pos;
+    // positions accumulate: a season page may know the specific one the career
+    // index only knew the family of
+    if (rec.pos) cur.pos = mergePos(String(cur.pos || '').split('|').concat(rec.pos.split('|')));
     cur.college = cur.college || rec.college;
     return;
   }
@@ -258,9 +260,34 @@ function links(r, name) {
    Split rather than collapse: an F-C genuinely is both a forward and a centre,
    and arcade/livecheck.js knows that a bare "Guard" can't settle a "Point
    Guard" category either way. */
-const NBA_POS = { G: 'Guard', F: 'Forward', C: 'Center' };
+/* Two grains live in these pages. The A-Z index states a career as G / F / C;
+   the per-season totals name the actual position, PG / SG / SF / PF / C, for
+   every modern season. The categories ask for "NBA Shooting Guard", and a bare
+   "Guard" cannot settle that either way — so an answer like Rodney McGruder
+   came back as a real player we could not verify, and scored nothing. Take the
+   specific grain wherever the season pages offer it. */
+const NBA_POS = {
+  PG: 'Point Guard', SG: 'Shooting Guard', SF: 'Small Forward', PF: 'Power Forward',
+  G: 'Guard', F: 'Forward', C: 'Center',
+};
+const SPECIFIC_POS = { 'Point Guard': 1, 'Shooting Guard': 1, 'Small Forward': 1, 'Power Forward': 1 };
 const posNBA = (p) => String(p || '').split(/[-\/]/)
   .map((x) => NBA_POS[x.trim().toUpperCase()]).filter(Boolean).join('|') || null;
+/* Merge what the season pages saw into what the index said. A specific
+   position always beats the family it belongs to — "Shooting Guard" replaces
+   "Guard" rather than sitting beside it — because the pair reads as two
+   different positions to the grader. */
+const FAMILY_OF = { 'Point Guard': 'Guard', 'Shooting Guard': 'Guard',
+                    'Small Forward': 'Forward', 'Power Forward': 'Forward' };
+function mergePos(list) {
+  const seen = [];
+  list.filter(Boolean).forEach((p) => { if (seen.indexOf(p) < 0) seen.push(p); });
+  const specific = seen.filter((p) => SPECIFIC_POS[p]);
+  if (!specific.length) return seen.join('|') || null;
+  const covered = {};
+  specific.forEach((p) => { covered[FAMILY_OF[p]] = 1; });
+  return seen.filter((p) => SPECIFIC_POS[p] || !covered[p]).join('|') || null;
+}
 
 async function bbr(url) {
   const html = await get(url, {
@@ -329,11 +356,12 @@ async function buildNBA() {
       const name = teamName[abbr];
       if (!name) continue;
       hits++;
-      // Teams only. The index already stated the career span, and it is the
-      // authority: a season page can name a year the index doesn't cover (a
-      // player listed on a roster who never appeared), and taking the wider of
-      // the two would quietly stretch careers.
-      add({ id: 'nba:' + r.slug, sport: 'NBA', name: bySlug.get(r.slug), teams: [name], first: null, last: null });
+      // Teams and the season's position. The index already stated the career
+      // span, and it is the authority: a season page can name a year the index
+      // doesn't cover (a player listed on a roster who never appeared), and
+      // taking the wider of the two would quietly stretch careers.
+      add({ id: 'nba:' + r.slug, sport: 'NBA', name: bySlug.get(r.slug),
+            teams: [name], pos: posNBA(cell(r, 'pos')), first: null, last: null });
     }
     if (!hits) console.warn(`::warning::NBA ${y} totals matched no players to a team.`);
   }
@@ -351,7 +379,7 @@ const csvCell = (v) => {
    BBRef markup. Neither Basketball-Reference nor Supabase is reachable from the
    dev sandbox, so a fixture is the only way to catch a scrape that silently
    returns nothing before it reaches a workflow run. */
-export const _test = { bbrRows, cell, links, posNBA, nameKey, parseCSV, decode, csvCell, buildNBA, REG };
+export const _test = { bbrRows, cell, links, posNBA, mergePos, nameKey, parseCSV, decode, csvCell, buildNBA, REG };
 if (process.env.REGISTER_SELFTEST) { /* parsers only — no network, no CSV */ }
 else await main();
 

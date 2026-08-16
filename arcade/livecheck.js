@@ -330,16 +330,43 @@
 
   // ---------- the verdict ----------
   /* true / false / null, where null means "the facts we have don't settle it". */
-  function verdict(s, pr) {
+  /* Which predicates can be given the benefit of the doubt, and which cannot.
+     A gap on a POSITION or a COLLEGE means we hold partial evidence and simply
+     cannot resolve the last step — we know he is a guard, the category wants a
+     shooting guard. A gap on an AWARD means the opposite: award data is so
+     incomplete that those predicates are confirm-only by design, so `null` is
+     their normal state and accepting it would hand a free point to any real
+     player for "Hall of Fame Center". Same for stats. */
+  var SOFT_GAP = { pos: 1, col: 1, conf: 1, team: 1, teams: 1, teamsMax: 1, decades: 1, act: 1 };
+
+  function verdict(s, pr, gaps) {
     if (pr.all) {
       var unknown = false;
       for (var i = 0; i < pr.all.length; i++) {
-        var v = verdict(s, pr.all[i]);
+        var v = verdict(s, pr.all[i], gaps);
         if (v === false) return false;          // one contradiction sinks the whole clause
         if (v === null) unknown = true;
       }
       return unknown ? null : true;
     }
+    if (gaps) gaps.seen = (gaps.seen || 0) + 1;
+    var _v = predicate(s, pr);
+    if (_v === null && gaps) { (gaps.kinds || (gaps.kinds = [])).push(pr.k); }
+    if (_v === true && gaps) gaps.confirmed = (gaps.confirmed || 0) + 1;
+    return _v;
+  }
+
+  /* Whether an unresolved clause deserves the point anyway: every gap has to be
+     a soft one, and we must have positively confirmed something else about the
+     player — otherwise "real athlete" alone would satisfy any category. */
+  function softPass(gaps) {
+    if (!gaps || !gaps.kinds || !gaps.kinds.length) return false;
+    if (!gaps.confirmed) return false;
+    for (var i = 0; i < gaps.kinds.length; i++) if (!SOFT_GAP[gaps.kinds[i]]) return false;
+    return true;
+  }
+
+  function predicate(s, pr) {
     switch (pr.k) {
       case 'sport':
         if (s.sports.length) return s.sports.indexOf(pr.v) >= 0;
@@ -448,6 +475,42 @@
     return byKey;
   }
 
+  /* Every unresolved answer is a hole in the register with a name on it, and
+     the player just told us where it is. Fire-and-forget: the game never waits
+     on this and never shows an error for it — a failed report must not cost
+     anyone a point. Dedup per session so one card can't spam a category. */
+  var _sent = {};
+  function D_LABEL(i) {
+    try {
+      var SP = _engine || (typeof window !== 'undefined' && window.RTG_SPORTEGORIES) || null;
+      var D = SP && SP.data();
+      return (D && D.cats[i] && D.cats[i].l) || String(i);
+    } catch (e) { return String(i); }
+  }
+  var _reportUrl = '/api/answer-gap';
+  function setReportUrl(u) { _reportUrl = u; }
+  function report(text, puz, i, kind, gapKinds) {
+    try {
+      var cat = puz && puz.cats && puz.cats[i];
+      var k = kind + '|' + String(text).toLowerCase() + '|' + (cat ? cat.i : '?');
+      if (_sent[k]) return; _sent[k] = 1;
+      var row = {
+        answer: String(text || '').slice(0, 60),
+        category: cat && D_LABEL(cat.i),
+        letter: puz ? puz.letter : null,
+        kind: kind,                         // 'soft' (counted) or 'unverified' (not)
+        gaps: (gapKinds || []).slice(0, 6).join(',')
+      };
+      // board.js already holds the anon key and the REST base, so there is no
+      // second endpoint to keep alive; the fallback is only for tests.
+      var B = (typeof window !== 'undefined' && window.RTG_BOARD) || null;
+      if (B && B.logGap) { B.logGap(row); return; }
+      var f = fetchFn(); if (!f) return;
+      f(_reportUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row) })['catch'](function () {});
+    } catch (e) {}
+  }
+
   function lookup(names) {
     var want = [], out = {};
     names.forEach(function (n) {
@@ -549,15 +612,36 @@
           out[p.i] = { ok: false, reason: 'dup', live: 'dup', msg: 'Already used this player.' };
           return;
         }
-        var v = verdict(s, D.cats[puz.cats[p.i].i].p);
+        var gaps = {};
+        var v = verdict(s, D.cats[puz.cats[p.i].i].p, gaps);
         if (v === false) {
           out[p.i] = { ok: false, reason: 'category', live: 'no',
             msg: 'Doesn’t fit this category.' };
           return;
         }
+        /* Scoring nothing for an answer that is probably right is the worst of
+           the three outcomes: it reads as the game being broken, and it is our
+           data that fell short, not the player's knowledge. So when every gap
+           is a soft one and we confirmed something else about them, give the
+           point — and record it, because that answer is exactly the row the
+           register is missing. */
+        if (v === null && softPass(gaps)) {
+          var mk = SP.letterHits(puz, p.text);
+          used[nk] = 1;
+          out[p.i] = {
+            ok: true, live: 'soft', unverified: true,
+            player: { idx: -1, name: s.name || p.text, sport: s.sports[0] || s.occSports[0] || null, f: 0, key: nk },
+            base: mk, allit: mk, points: mk,
+            rarity: { pct: 20, bonus: 0, tier: 'Counted', est: true, live: true },
+            msg: 'Counted — we couldn’t double-check this one.'
+          };
+          report(p.text, puz, p.i, 'soft', gaps.kinds);
+          return;
+        }
         if (v === null) {
           out[p.i] = { ok: false, reason: 'unverified', live: 'maybe',
             msg: 'Real player — we couldn’t verify this category.' };
+          report(p.text, puz, p.i, 'unverified', gaps.kinds);
           return;
         }
         used[nk] = 1;                           // two of these can't be the same person either
@@ -576,6 +660,7 @@
   }
 
   return {
+    softPass: softPass, setReportUrl: setReportUrl,
     resolve: resolve, lookup: lookup, verdict: verdict, shape: shape,
     collegesFor: collegesFor, colCore: colCore,
     setFetch: function (f) { _fetch = f; },
