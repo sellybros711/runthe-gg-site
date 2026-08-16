@@ -34,8 +34,8 @@
     rankit: [
       'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',
       'Drag (or arrow) them into order, then hit Check.',
-      'All five right clears the set and deals a new one. Any wrong ends the run.',
-      'Real values reveal after every check.'
+      'One puzzle a day, five tries at it. Fewest tries wins the board.',
+      'Real values reveal after every check, so each try tells you something.'
     ],
     guess: [
       'One current NBA, NFL, or MLB player. The sport is given.',
