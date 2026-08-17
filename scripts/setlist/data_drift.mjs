@@ -3,25 +3,22 @@
  *   node scripts/setlist/data_drift.mjs                  # working tree vs HEAD
  *   node scripts/setlist/data_drift.mjs old.csv new.csv  # two files
  *
- * WHAT THIS IS FOR, and why "read the diff" is not the answer.
- * A refresh is not an append. crowd_rating is DERIVED: the most-jamcharted song
- * sets a ceiling of 75 and everything else scales by square root beneath it, so
- * one new show restates nearly every song's esteem. Role tags are inferred from
- * each song's whole history, so new plays move those thresholds too. Measured on
- * a real one-show refresh:
+ * WHAT THIS IS FOR.
+ * A refresh appends, and these assertions are what keep it that way.
  *
- *     crowd_rating changed on 3,877 of 7,504 rows
- *     tags on 559 · is_jamchart on 128 · jamchart_note on 115
- *     esteem moved by a median of 1 point, p95 of 3, max of 44
+ * It did not always. crowd_rating is DERIVED, and it used to scale against the
+ * CURRENT LEADER's jamchart tally, so the moment the top song gained an entry
+ * the divisor moved and every other song's esteem moved with it, having done
+ * nothing. Measured on today's data, 9 of the 99 rated songs shift when the
+ * leader alone gains one. That is what made a refresh a thousands-of-lines diff
+ * nobody could read.
  *
- * So a weekly refresh is a four-thousand-line diff by construction, and nobody
- * is going to read it. The control cannot be review; it has to be assertions.
- *
- * The max of 44 is fine and expected: that is a song being written up for the
- * first time and joining the scale. What would NOT be fine is the whole scale
- * moving at once, which is what a jamchart outage or a changed field name looks
- * like, and that shows up in the MEDIAN rather than the max. Hence the gate
- * below is on the median, plus the two counts that must never go backwards.
+ * The ceiling is pinned now (ESTEEM_FULL in ingest_band.mjs), so a song's
+ * esteem is a fact about that song. The gates below hold the line: counts may
+ * only grow, the old rows must all still be there, the esteem scale must not
+ * shift under the archive, and derived values may only move for songs whose own
+ * history moved. A wider change is a regeneration, which is a deliberate act
+ * and not something a scheduled job does to everybody overnight.
  */
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -51,7 +48,9 @@ const showsOf = rows => new Set(rows.map(r => r.show_id)).size;
 let failures = 0;
 const ok = m => console.log(`  ok    ${m}`);
 const fail = m => { failures++; console.error(`  FAIL  ${m}`); };
-const check = (c, m) => c ? ok(m) : fail(m);
+/* The detail matters more here than in an interactive tool: this runs
+   unattended and its log is the only thing anybody will have to go on. */
+const check = (c, m, detail) => c ? ok(m) : fail(`${m}${detail ? `: ${detail}` : ''}`);
 
 const oldShows = showsOf(oldRows), newShows = showsOf(newRows);
 console.log(`was ${oldRows.length} performances / ${oldShows} shows`);
@@ -87,6 +86,56 @@ console.log(`\nesteem moved on ${moves.length} of ${paired} paired rows` +
   (moves.length ? `: median ${med}, p95 ${moves[Math.floor(moves.length * 0.95)]}, max ${moves[moves.length - 1]}` : ''));
 check(med <= MEDIAN_ESTEEM_LIMIT,
   `the esteem scale held steady (median move ${med}, limit ${MEDIAN_ESTEEM_LIMIT})`);
+
+/* ── A REFRESH ADDS A SHOW. IT DOES NOT RESTATE THE ARCHIVE. ─────────────────
+ *
+ * Two of the columns are DERIVED per song and denormalised onto every row of
+ * that song, so a change in how they are derived rewrites thousands of rows at
+ * once. crowd_rating used to be scaled against the current leader's jamchart
+ * tally, which meant one song being written up moved every other song's
+ * esteem: 9 of 99 rated songs shifted when the leader alone gained an entry,
+ * having done nothing. That is what made a one-show refresh an unreviewable
+ * diff and re-sent the whole 1.2MB archive to every returning player.
+ *
+ * The ceiling is pinned now, so a song's esteem is a fact about that song. This
+ * gate is what keeps it that way: derived values may only move for songs whose
+ * OWN inputs moved. A curator writing up an old version legitimately moves that
+ * song and nothing else; anything wider is a regeneration, which is a
+ * deliberate act and not something a cron job does overnight.
+ */
+{
+  const bySong = rows => {
+    const m = new Map();
+    for (const r of rows) {
+      if (!r.song_id) continue;
+      let s = m.get(r.song_id);
+      if (!s) m.set(r.song_id, s = { esteem: r.crowd_rating, tags: r.tags, plays: 0, charted: 0 });
+      s.plays++;
+      if (r.is_jamchart === 'true') s.charted += 1 + (r.is_recommended === 'true' ? 2 : 0);
+    }
+    return m;
+  };
+  const was = bySong(oldRows), now = bySong(newRows);
+  const movedEsteem = [], movedTags = [], unexplained = [];
+  for (const [id, a] of now) {
+    const b = was.get(id);
+    if (!b) continue;                       // a new song has nothing to drift from
+    const inputsMoved = a.charted !== b.charted || a.plays !== b.plays;
+    if (a.esteem !== b.esteem) {
+      movedEsteem.push(id);
+      if (!inputsMoved) unexplained.push(`${id} esteem ${b.esteem} to ${a.esteem}`);
+    }
+    if (a.tags !== b.tags) {
+      movedTags.push(id);
+      if (!inputsMoved) unexplained.push(`${id} tags "${b.tags}" to "${a.tags}"`);
+    }
+  }
+  console.log(`\nderived values moved on ${movedEsteem.length} song(s) for esteem, ` +
+    `${movedTags.length} for tags, of ${now.size}`);
+  check(!unexplained.length,
+    'every derived change belongs to a song whose own history changed',
+    unexplained.length ? `${unexplained.length} unexplained, e.g. ${unexplained[0]}` : '');
+}
 
 /* The one that catches a jamchart outage outright: the column going blank is
    how every song ends up scoring identically. */

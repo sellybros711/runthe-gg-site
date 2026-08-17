@@ -17,18 +17,21 @@ name: Refresh setlist data
 # The trade this schedule makes, stated plainly: the jamcharts and the
 # "recommended" flags that drive song esteem are curated by hand AFTER a show
 # and take days to settle, so a show refreshed the next morning arrives with
-# its esteem provisional. That is fine and self correcting, because a refresh
-# is not an append and every later run restates it.
+# its esteem provisional. That is fine and self correcting: when a curator does
+# write that version up, the next run moves THAT SONG's esteem and leaves the
+# rest of the archive alone.
 #
-# A REFRESH IS NOT AN APPEND, which is the thing to understand before touching
-# this. crowd_rating is derived -- the most-jamcharted song sets a ceiling of 75
-# and the rest scale beneath it -- so one new show restates nearly every song's
-# esteem, and role tags shift too because they are inferred from each song's
-# whole history. A one-show refresh really does rewrite ~4,000 of 7,500 lines.
+# A REFRESH IS AN APPEND, and it is worth saying because it was not always and
+# the comments here used to say the opposite. crowd_rating is derived, and it
+# was scaled against the CURRENT LEADER's jamchart tally, so one song being
+# written up moved every other song's esteem and a one-show refresh rewrote
+# thousands of lines. The ceiling is pinned now: a song's esteem is a fact about
+# that song, and adding a show touches the rows it adds plus any song a curator
+# actually wrote up.
 #
-# That means the commit diff is not the control and never can be. The control is
-# the four gates below, in this order, and NOTHING is committed unless all four
-# pass:
+# So the diff IS readable now, and data_drift enforces that it stays that way:
+# derived values may only move for songs whose own history moved. The four gates
+# below still run in this order, and NOTHING is committed unless all four pass:
 #
 #   1. ingest --strict    the fetch itself was clean: no throttled year, no
 #                         truncated year, no jamchart outage. Without --strict
