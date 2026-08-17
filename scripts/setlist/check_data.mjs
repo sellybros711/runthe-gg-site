@@ -680,9 +680,11 @@ check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
   'and the landing state takes the bar');
 
 /* THE REFRESH RUNS ITSELF, and these guard the parts that make that safe.
-   A refresh is not an append: crowd_rating is derived from the jamchart
-   standings, so one new show restates ~4,000 of 7,500 rows. The commit diff can
-   never be the control, so the gates are. */
+   A refresh appends. crowd_rating is derived, and while it was scaled against
+   the current leader's tally one new write-up moved every song, so a refresh
+   rewrote thousands of rows and the diff could not be the control. The ceiling
+   is pinned now and data_drift enforces the rest, so the gates guard a diff a
+   person can actually read. */
 console.log('the automatic refresh');
 const wf = read('.github/workflows/setlist-data.yml');
 check(/cron:/.test(wf), 'the refresh is scheduled');
@@ -707,6 +709,38 @@ check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
    against the file, so every SUCCESSFUL refresh would otherwise fail here. */
 check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
   'the counts in the copy can be regenerated');
+
+/* A REFRESH APPENDS, and the pinned esteem ceiling is what makes that true.
+   Scaling against the current leader's tally meant one song being written up
+   moved every other song: 9 of the 99 rated songs shift when the leader alone
+   gains an entry. That churn rewrote thousands of rows per refresh, which made
+   the diff unreviewable and re-sent the whole 1.2MB archive to every returning
+   player every day. */
+{
+  const ing = read('scripts/setlist/ingest_band.mjs');
+  check(/const ESTEEM_FULL = \d+;/.test(ing), 'the esteem ceiling is a pinned constant');
+  check(/Math\.min\(n, ESTEEM_FULL\) \/ ESTEEM_FULL/.test(ing),
+    'and esteem is scaled against it, clamped rather than rescaled');
+  check(!/Math\.max\(1, \.\.\.tally\.values\(\)\)/.test(ing),
+    'nothing scales against the current leader any more');
+  /* THE PIN MUST STILL COVER THE DATA. Past it every top song shares the
+     ceiling, which is honest but compresses the scale, and re-anchoring is a
+     deliberate regeneration. Reported rather than failed: the day Goose passes
+     it must not be the day the nightly refresh starts failing. */
+  const full = Number((ing.match(/const ESTEEM_FULL = (\d+);/) || [])[1]);
+  const tally = new Map();
+  for (const r of parseCSV(read('setlist/data/goose.csv'))) {
+    if (r.is_jamchart !== 'true' || !r.song_id) continue;
+    tally.set(r.song_id, (tally.get(r.song_id) || 0) + 1 + (r.is_recommended === 'true' ? 2 : 0));
+  }
+  const lead = Math.max(0, ...tally.values());
+  console.log(`  info  top jamchart tally is ${lead}, ceiling pinned at ${full}` +
+    (lead > full ? ' — past it, songs now share the top. Re-anchor when convenient.' : ''));
+}
+/* And the gate that keeps it honest once pinned. */
+check(/every derived change belongs to a song whose own history changed/
+  .test(read('scripts/setlist/data_drift.mjs')),
+  'a refresh may not move derived values for songs that did not change');
 /* AND ITS PATCHES MUST COMPOSE. DATA_CONTRACT is patched twice, once for the
    performance counts and once for the show table's. When each patch computed
    its result from the copy on disk and the writes were replayed at the end,
