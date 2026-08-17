@@ -1078,6 +1078,78 @@ window.GA_ID='G-L29P5MRWKE';
      the one thing here meant to catch the eye, and graying it would leave nothing saying the
      game is coming at all. Which is also why none of this is done with opacity on the card
      -- see the note above .modecard.mc-preview. */
+  /* ---- THE FIRST RUN GUIDE ----
+     Nothing on the front page told a new player what the game was. The slot reels and the
+     field are the biggest things on screen and are decoration; the salary cap, which is the
+     whole puzzle, was never mentioned anywhere; and How to play sat behind a tap nobody
+     takes. This says it once, in front of everything, and then never again.
+     The scrim covers the page but NOT the button it points at: that one is lifted above it
+     and stays live, so the guide can be finished by doing the thing it is asking for. */
+  /* FOUR PANES ROUND A HOLE, not one sheet with the button lifted through it. Raising
+     #b-start above the scrim on z-index does nothing: it sits inside an ancestor that
+     already makes a stacking context, so its z-index is only ever measured against its
+     siblings and the scrim stayed on top. Cutting the hole instead means there is no
+     element over the button at all, which no stacking rule can undo. */
+  .frg{position:fixed;inset:0;z-index:70;pointer-events:none;
+    animation:frgIn .22s ease both}
+  .frg-pane{position:absolute;background:rgba(4,8,16,.86);backdrop-filter:blur(3px);
+    pointer-events:auto}
+  .frg-panel,.frg-arrow,.frg-hint{pointer-events:auto}
+  .frg[hidden]{display:none}
+  @keyframes frgIn{from{opacity:0}to{opacity:1}}
+  .frg-panel{position:absolute;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));
+    background:linear-gradient(180deg,#16233a,#101a2c);border:1px solid var(--line-2);
+    border-radius:14px;padding:14px 15px 12px;box-shadow:0 26px 60px -22px #000}
+  .frg-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    color:#f87171}
+  .frg-panel h2{font-family:var(--fd);font-size:22px;line-height:1.04;margin:6px 0 8px;
+    color:var(--ink)}
+  .frg-steps{list-style:none;margin:0 0 11px;padding:0;counter-reset:frg}
+  .frg-steps li{position:relative;padding-left:26px;margin-bottom:7px;font-size:13px;
+    line-height:1.42;color:var(--dim);counter-increment:frg}
+  .frg-steps li:before{content:counter(frg);position:absolute;left:0;top:0;width:19px;height:19px;
+    border-radius:50%;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.5);
+    color:#fca5a5;font-size:11px;font-weight:800;display:flex;align-items:center;
+    justify-content:center}
+  .frg-goal{font-size:13.5px;line-height:1.45;color:var(--ink);background:rgba(239,68,68,.09);
+    border-left:3px solid rgba(239,68,68,.75);border-radius:0 8px 8px 0;padding:8px 10px;
+    margin:0 0 9px}
+  .frg-goal b{color:#fca5a5}
+  .frg-later{font-size:12px;line-height:1.45;color:var(--dim-2);margin:0}
+  .frg-x{width:100%;margin-top:10px}
+  /* BIG, because it is the one instruction on the screen. */
+  .frg-arrow{position:absolute;left:50%;transform:translateX(-50%);width:58px;height:66px;
+    color:#ef4444;animation:frgNudge 1.15s ease-in-out infinite;
+    filter:drop-shadow(0 7px 16px rgba(239,68,68,.75))}
+  .frg-arrow svg{width:58px;height:66px;display:block}
+  @keyframes frgNudge{0%,100%{transform:translateX(-50%) translateY(-5px)}
+    50%{transform:translateX(-50%) translateY(4px)}}
+  .frg-hint{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#fca5a5}
+  #b-start.frg-lift{position:relative;
+    box-shadow:0 0 0 3px rgba(239,68,68,.55),0 0 34px -4px rgba(239,68,68,.85)}
+  /* SHORT SCREENS GIVE WAY rather than pushing the panel off the top. At 320x568 the full
+     panel plus the arrow plus the button does not fit in the viewport at any offset, and a
+     guide whose own text is above the fold is worse than a terser one. */
+  .frg.tight .frg-panel{padding:12px 13px 11px}
+  .frg.tight .frg-panel h2{font-size:19px;margin:5px 0 7px}
+  .frg.tight .frg-steps li{font-size:12.5px;margin-bottom:6px;line-height:1.38}
+  .frg.tight .frg-goal{font-size:12.5px;padding:7px 9px;margin-bottom:8px}
+  .frg.tight .frg-later{display:none}
+  .frg.tight .frg-x{margin-top:9px}
+  /* At the smallest size the arrow shrinks and the label goes: the button it is pointing at
+     already says Start a run, so "START HERE" above it is the most repeatable thing on the
+     panel and the first thing that can be spared. */
+  .frg.tight .frg-arrow{width:42px;height:48px}
+  .frg.tight .frg-arrow svg{width:42px;height:48px}
+  .frg.tight .frg-hint{display:none}
+  /* AND THE PANEL CAN ALWAYS SCROLL ITSELF. Fitting by tuning font sizes works until a
+     screen nobody tested turns up; capping the height against the space actually available
+     means the layout cannot overlap the arrow whatever the viewport does. */
+  .frg-panel{overflow:auto;-webkit-overflow-scrolling:touch}
+  @media (prefers-reduced-motion: reduce){
+    .frg{animation:none} .frg-arrow{animation:none}}
+
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -4532,6 +4604,35 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="headline" id="headline"></div>
+<!-- The first run guide. Once per browser, on the very first visit. -->
+<div class="frg" id="frg" hidden>
+  <div class="frg-pane" id="frg-t"></div><div class="frg-pane" id="frg-b"></div>
+  <div class="frg-pane" id="frg-l"></div><div class="frg-pane" id="frg-r"></div>
+  <div class="frg-panel" id="frg-panel">
+    <div class="frg-eyebrow">First time here</div>
+    <h2>Draft six players, then play a season</h2>
+    <ol class="frg-steps">
+      <li>Spin for a year and a team, then take one player from it. Six times, filling
+        QB, RB, two WR, TE and a flex.</li>
+      <li>All six have to fit under a $140M salary cap. That is the puzzle: the last pick
+        is always the hard one.</li>
+      <li>Then the season plays itself. Seventeen games, and the playoffs if you make it.</li>
+    </ol>
+    <p class="frg-goal">Your goal: <b>win all 17 and the Super Bowl.</b> That is a perfect
+      season. It is meant to be very hard, and almost nobody gets there first try.</p>
+    <p class="frg-later">Everything else (the other modes, the leaderboard, your profile)
+      can wait until you have played one.</p>
+    <button class="btn ghost sm frg-x" id="frg-x" type="button">Got it</button>
+  </div>
+  <div class="frg-hint" id="frg-hint">Start here</div>
+  <div class="frg-arrow" id="frg-arrow" aria-hidden="true">
+    <svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 3 V41"/><path d="M8 28 L22 43 L36 28"/>
+    </svg>
+  </div>
+</div>
+
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=51"></script>
@@ -5053,7 +5154,9 @@ async function boot(){
        whether it is opening a sheet of its own, and this must not get there first.
        askArcadeAd() re-reads the screen and the sheet when the timer fires, so the delay
        is politeness rather than the actual guard. */
-    setTimeout(askArcadeAd,1200);
+    /* The guide first, and only ever to somebody who has never started a run. The arcade
+       ad checks for it and stands down, so the two can share the same beat. */
+    setTimeout(()=>{ firstRunGuide(); askArcadeAd(); },1200);
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -5801,6 +5904,120 @@ function paintResultsPromo(){
   }
 }
 
+/* ---- THE FIRST RUN GUIDE ----
+   Shown once per browser, to somebody who has never started a run here. It is the only
+   thing in the game that interrupts before the player has done anything, so it earns that
+   by being the only thing that explains the game at all.
+
+   IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
+   over it, so the way out of the guide is the thing the guide is telling you to do. Got it
+   dismisses without starting, for somebody who wants to look around first. */
+const FRG_KEY='ps_seen_guide';
+function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
+function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
+function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
+
+/* Laid out against the button's real position rather than a guessed offset, because the
+   front page reflows a long way between a 320 phone and a desktop. Panel above the arrow,
+   arrow above the button, and if there is no room above (short screens) the whole lot goes
+   below it instead. */
+function frgPlace(){
+  const wrap=$('frg'), panel=$('frg-panel'), arrow=$('frg-arrow'), hint=$('frg-hint'),
+        btn=$('b-start');
+  if(!wrap||!panel||!btn||wrap.hidden) return;
+  const b=btn.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
+
+  /* The hole, with a little air round the button so the glow is not clipped by its own
+     scrim. Four panes: above, below, and the two strips either side of it. */
+  const PAD=6;
+  const hx=Math.max(0,b.left-PAD), hy=Math.max(0,b.top-PAD);
+  const hw=Math.min(W,b.right+PAD)-hx, hh=Math.min(H,b.bottom+PAD)-hy;
+  const px=(el,l,t,w2,h2)=>{ const e=$(el); if(!e) return;
+    e.style.left=l+'px'; e.style.top=t+'px'; e.style.width=Math.max(0,w2)+'px';
+    e.style.height=Math.max(0,h2)+'px'; };
+  px('frg-t',0,0,W,hy);
+  px('frg-b',0,hy+hh,W,H-(hy+hh));
+  px('frg-l',0,hy,hx,hh);
+  px('frg-r',hx+hw,hy,W-(hx+hw),hh);
+
+  const GAP=10;
+  /* Read off the DOM rather than hard-coded, so the tight rules above cannot silently
+     disagree with the arithmetic that places them. */
+  const measure=()=>({ARROW:arrow.offsetHeight||66, HINT:(hint.offsetHeight||0)+(hint.offsetHeight?4:0)});
+  const fits=()=>{
+    const m=measure(), ph=panel.scrollHeight;
+    return { ph, ...m,
+      above: b.top>=ph+GAP+m.ARROW+m.HINT+GAP,
+      below: H-b.bottom>=ph+GAP+m.ARROW+m.HINT+GAP };
+  };
+  let f=fits();
+  if(!f.above&&!f.below){ wrap.classList.add('tight'); f=fits(); }
+  else { wrap.classList.remove('tight'); f=fits(); }
+
+  if(f.above||!f.below){
+    const arrowTop=b.top-GAP-f.ARROW;
+    arrow.style.top=arrowTop+'px';
+    arrow.style.transform='translateX(-50%)';
+    const hintTop=arrowTop-f.HINT;
+    if(hint) hint.style.top=(hintTop+2)+'px';
+    /* The room left over is what the panel gets, and it scrolls inside it if the copy is
+       longer than that. Nothing can end up underneath the arrow. */
+    const room=Math.max(80,hintTop-GAP-8);
+    panel.style.maxHeight=room+'px';
+    panel.style.top=Math.max(8,hintTop-GAP-Math.min(f.ph,room))+'px';
+  }else{
+    const arrowTop=b.bottom+GAP;
+    arrow.style.top=arrowTop+'px';
+    arrow.style.transform='translateX(-50%) rotate(180deg)';
+    const hintTop=arrowTop+f.ARROW+2;
+    if(hint) hint.style.top=hintTop+'px';
+    const panelTop=hintTop+f.HINT+GAP;
+    const room=Math.max(80,H-panelTop-8);
+    panel.style.maxHeight=room+'px';
+    panel.style.top=panelTop+'px';
+  }
+}
+
+function frgClose(){
+  const el=$('frg'); if(!el) return;
+  el.hidden=true;
+  $('b-start').classList.remove('frg-lift');
+  frgMark();
+  window.removeEventListener('resize',frgPlace);
+  window.removeEventListener('scroll',frgPlace);
+}
+function firstRunGuide(){
+  if(frgSeen()) return false;
+  if(!$('s-intro').classList.contains('on')) return false;
+  if($('sheet').classList.contains('on')) return false;
+  if(wantModes||wantOneTeam) return false;
+  const el=$('frg'); if(!el) return false;
+  /* The button has to be on screen for an arrow to point at it. */
+  try{ $('b-start').scrollIntoView({block:'end',behavior:'auto'}); }catch(e){}
+  el.hidden=false;
+  $('b-start').classList.add('frg-lift');
+  frgPlace();
+  requestAnimationFrame(frgPlace);
+  /* THE PANEL IS NOT ITS FINAL HEIGHT WHEN IT IS FIRST MEASURED. The display face arrives
+     with the web font and the panel grows once it lands, which put its own bottom edge over
+     the arrow it had just positioned.
+     A ResizeObserver is the obvious answer and the wrong one here: frgPlace writes
+     max-height on the very box it would be watching, so the observer retriggers itself and
+     the browser reports "ResizeObserver loop completed with undelivered notifications" --
+     which this game catches and shows the player as "Something broke". Waiting on the font
+     itself asks the actual question and cannot loop. */
+  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(frgPlace); }catch(e){}
+  setTimeout(frgPlace,300);
+  window.addEventListener('resize',frgPlace);
+  window.addEventListener('scroll',frgPlace,{passive:true});
+  ga('first_run_guide_shown');
+  $('frg-x').onclick=()=>{ ga('first_run_guide_dismissed'); frgClose(); };
+  /* Tapping the button both starts the run and finishes the guide; the button's own
+     handler still runs, because the guide never covered it. */
+  $('b-start').addEventListener('click',frgClose,{once:true});
+  return true;
+}
+
 /* ---- RUN THE ARCADE ----
    The panel itself is /assets/arcade-ad.js: one look and one set of storage keys for every
    surface on the site, so ticking "don't show this again" anywhere silences it everywhere
@@ -5810,6 +6027,10 @@ function askArcadeAd(){
   const A=window.RTG_ARCADE_AD; if(!A) return;
   if(A.forced()){ A.show({from:'football'}); return; }
   if(!A.due()) return;
+  /* NOT OVER THE GUIDE. Somebody being told how to play this game for the first time does
+     not also want to be sold a different one; the guide is once per browser and the ad is
+     once per session, so the ad simply comes back next visit. */
+  if(frgUp()) return;
   /* The front page, and nothing on top of it. A challenge link takes over the first
      screen, and a sheet is already open when somebody is mid sign-up or has been sent to
      the club picker; covering either would replace the thing they asked for with a thing
