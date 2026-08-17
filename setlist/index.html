@@ -1801,7 +1801,32 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .fanbar{height:6px; border-radius:99px; background:var(--card3); overflow:hidden;
     margin:12px 0 7px;}
   .fanbar > span{display:block; height:100%; border-radius:99px; background:var(--teal);}
-  .fanfine{font-size:12px; font-weight:600; color:var(--dim);}
+  .fanfine{font-size:12px; font-weight:600; color:var(--dim); line-height:1.5;}
+  /* The footnote about which shows have setlists follows a list, so it needs
+     air or it reads as another row of it. */
+  .fwant + .fanfine, .fanlist + .fanfine{margin-top:11px;}
+  /* The counting stats, as a wrapping grid rather than more rows: these are
+     six short numbers and a list of them would be six lines of mostly space. */
+  .ftiles{display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--line); border-radius:var(--r-md); overflow:hidden;
+    margin-top:var(--sp-2);}
+  .ftile{background:var(--card2); padding:10px 6px; text-align:center; min-width:0;}
+  .ftile b{display:block; font-family:var(--ui); font-size:19px; line-height:1.05;
+    color:var(--ink); font-variant-numeric:tabular-nums;}
+  .ftile span{display:block; font-size:9.5px; font-weight:800; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--dim); margin-top:3px; line-height:1.25;}
+
+  /* WHAT THE BAND KEEPS PLAYING WHILE YOU ARE NOT IN THE ROOM, which is the
+     one a tracker actually wants and the inverse of everything above it. */
+  .fwant{margin-top:var(--sp-2); padding-top:11px; border-top:1px solid var(--line);}
+  .fw-hd{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--dim); margin-bottom:6px;}
+  .fw-row{display:flex; align-items:baseline; gap:10px; padding:4px 0; font-size:13px;}
+  .fw-row b{flex:1; min-width:0; font-weight:800; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;}
+  .fw-row span{flex:0 0 auto; font-size:11.5px; font-weight:700; color:var(--dim);
+    font-variant-numeric:tabular-nums;}
+
   .fanlist{margin-top:var(--sp-2);}
   .fanrow{display:flex; align-items:baseline; gap:10px; padding:9px 0;
     border-bottom:1px solid var(--line); font-size:13.5px;}
@@ -1811,8 +1836,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .fanrow i{font-style:normal; flex:0 0 80px; white-space:nowrap;
     font-size:10px; font-weight:900;
     letter-spacing:1.4px; text-transform:uppercase; color:var(--dim);}
-  .fanrow b{flex:1; min-width:0; font-weight:800;}
-  .fanrow span{font-family:var(--hero); font-size:16px; color:var(--ink);}
+  /* Song titles are arbitrarily long and the value beside them is now a phrase
+     rather than "14x", so at 320px the title has to give way with an ellipsis
+     instead of being clipped through a letter. */
+  .fanrow b{flex:1; min-width:0; font-weight:800;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* The body face, not the slab. This column held "14x" when it was written and
+     now holds "72-show gap" and "2 nights"; a phrase set in Alfa Slab shouts
+     over the label and the song title either side of it. */
+  .fanrow span{flex:0 0 auto; font-size:12.5px; font-weight:800; color:var(--mut);
+    font-variant-numeric:tabular-nums;}
 
   .pstats{display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
     background:var(--line); border-radius:var(--r-md); overflow:hidden;
@@ -3467,39 +3500,115 @@ async function fanData(bandId){
   } catch (e) { return null; }
 }
 
+/* WHAT YOU SAW, and the split that had to be made before any of it was right.
+ *
+ * A SHOW YOU WENT TO IS NOT THE SAME THING AS A SETLIST SOMEBODY TYPED UP.
+ * 168 of the 827 played shows the browser offers, one in five, have no setlist
+ * in the archive: nobody transcribed them. The browser is right to let those be
+ * ticked, and said so. This function was not: it counted only shows it could
+ * find in the SETLIST archive, so somebody who marked twelve nights saw ten,
+ * and the four it dropped were reported as "no longer in the archive", which is
+ * not what happened to them.
+ *
+ * So the two questions have two sources now. How many shows, where, and when
+ * come from the SHOW TABLE, which knows every night the band played. What was
+ * played to you comes from the archive, which only knows the ones somebody
+ * wrote down. Anything song-level is honestly labelled as covering the subset.
+ */
 function attendanceStats(bandId){
   const ids = attendedSet(bandId);
   if (!ids.size) return null;
+
+  const table = TOUR_STATE.rows;
   const data = (S.data && S.band && S.band.id === bandId ? S.data : null)
     || FAN_DATA.get(bandId) || null;
-  const base = { shows: ids.size, songsSeen: null, songsTotal: null };
-  if (!data) return base;               // counted, but nothing to count against
 
-  const mine = data.shows.filter(sh => ids.has(String(sh.show_id)));
-  if (!mine.length) return base;
-  const seen = new Map();               // song -> times seen
-  const seenIds = new Set();
-  for (const sh of mine) for (const p of sh.songs) {
-    if (!p.song_id) continue;
-    seenIds.add(p.song_id);
-    seen.set(p.song, (seen.get(p.song) || 0) + 1);
-  }
-  const allIds = new Set(data.shows.flatMap(sh => sh.songs.map(p => p.song_id)).filter(Boolean));
-  const dates = mine.map(sh => sh.show_date).sort();
-  const top = [...seen].sort((a, b) => b[1] - a[1])[0];
-  return {
-    shows: mine.length,
-    /* The marked list can outrun the loaded archive: a show id survives in
-       localStorage after a data refresh drops it. Reported rather than hidden,
-       because a count that silently shrinks is worse than one that explains. */
-    unmatched: ids.size - mine.length,
-    songsSeen: seenIds.size,
-    songsTotal: allIds.size,
-    venues: new Set(mine.map(sh => (sh.songs[0] || {}).venue).filter(Boolean)).size,
-    years: new Set(dates.map(d => String(d).slice(0, 4))).size,
-    first: dates[0], last: dates[dates.length - 1],
-    mostSeen: top ? { song: top[0], times: top[1] } : null,
+  // The show table is the authority on shows. Without it, all we have is a count.
+  if (!table) return { shows: ids.size, songsSeen: null, songsTotal: null, partial: true };
+
+  const mine = table.filter(r => ids.has(r.show_id));
+  if (!mine.length) return { shows: ids.size, songsSeen: null, songsTotal: null, partial: true };
+
+  const tally = arr => {
+    const m = new Map();
+    for (const x of arr) if (x) m.set(x, (m.get(x) || 0) + 1);
+    return [...m].sort((a, b) => b[1] - a[1]);
   };
+  const dates = mine.map(r => r.show_date).sort();
+  const venues = tally(mine.map(r => r.venue));
+  const years = tally(mine.map(r => r.year));
+  const allTours = new Set(table.map(r => r.tour).filter(Boolean));
+
+  const out = {
+    shows: mine.length,
+    /* A marked id the show table has never heard of really has gone: that only
+       happens when elgoose drops a date it once listed. Distinct from a show
+       with no setlist, which is present and simply untranscribed. */
+    unmatched: ids.size - mine.length,
+    venues: venues.length,
+    cities: new Set(mine.map(r => r.city).filter(Boolean)).size,
+    states: new Set(mine.map(r => r.state).filter(Boolean)).size,
+    countries: new Set(mine.map(r => r.country).filter(Boolean)).size,
+    years: years.length,
+    first: dates[0], last: dates[dates.length - 1],
+    // Only a repeat is worth calling a favourite venue.
+    topVenue: venues[0] && venues[0][1] > 1 ? { venue: venues[0][0], times: venues[0][1] } : null,
+    bigYear: years[0] ? { year: years[0][0], shows: years[0][1] } : null,
+    tours: new Set(mine.map(r => r.tour).filter(Boolean)).size,
+    toursTotal: allTours.size,
+    songsSeen: null, songsTotal: null,
+  };
+
+  if (!data) return out;                // shows counted; songs need the archive
+
+  const byId = new Map(data.shows.map(s => [String(s.show_id), s]));
+  const withSet = mine.filter(r => byId.has(r.show_id));
+  const perf = withSet.flatMap(r => byId.get(r.show_id).songs);
+  out.withSetlist = withSet.length;
+  if (!perf.length) return out;
+
+  const seenIds = new Set(), seenTitles = new Map();
+  let secs = 0, segues = 0, jams = 0, debuts = 0;
+  const covers = new Set();
+  let longest = null, rarest = null;
+  for (const p of perf) {
+    if (p.song_id) seenIds.add(p.song_id);
+    seenTitles.set(p.song, (seenTitles.get(p.song) || 0) + 1);
+    const len = Number(p.length_sec) || 0;
+    secs += len;
+    if (String(p.is_segue) === 'true') segues++;
+    if (String(p.is_jamchart) === 'true') jams++;
+    if (String(p.is_cover) === 'true') covers.add(p.song);
+    if (Number(p.times_played) === 1) debuts++;
+    if (len && (!longest || len > Number(longest.length_sec))) longest = p;
+    const gap = Number(p.show_gap) || 0;
+    if (gap && (!rarest || gap > Number(rarest.show_gap))) rarest = p;
+  }
+
+  /* THE ONE A TRACKER ACTUALLY WANTS: not what you have seen, but what the
+     band keeps playing while you are not in the room. */
+  const playCount = new Map();
+  for (const sh of data.shows) for (const p of sh.songs) {
+    if (p.song) playCount.set(p.song, (playCount.get(p.song) || 0) + 1);
+  }
+  const wanted = [...playCount]
+    .filter(([song]) => !seenTitles.has(song))
+    .sort((a, b) => b[1] - a[1]).slice(0, 4)
+    .map(([song, plays]) => ({ song, plays }));
+
+  const top = [...seenTitles].sort((a, b) => b[1] - a[1])[0];
+  return Object.assign(out, {
+    songsSeen: seenIds.size,
+    songsTotal: new Set(data.shows.flatMap(s => s.songs.map(p => p.song_id)).filter(Boolean)).size,
+    performances: perf.length,
+    seconds: secs,
+    segues, jamcharts: jams, debuts,
+    covers: covers.size,
+    longest: longest ? { song: longest.song, len: Number(longest.length_sec) } : null,
+    rarest: rarest ? { song: rarest.song, gap: Number(rarest.show_gap) } : null,
+    mostSeen: top ? { song: top[0], times: top[1] } : null,
+    wanted,
+  });
 }
 /** Replace one band's list wholesale. Only the sync calls this. */
 function attendedReplace(bandId, ids){
@@ -4794,7 +4903,12 @@ async function loadTourRows(){
     TOUR_STATE.error = e.message;
   } finally {
     TOUR_STATE.loading = false;
-    if (S.screen === 'tour' || S.screen === 'browse') render();
+    /* THE PROFILE IS IN THIS LIST TOO, and leaving it out was a race that only
+       showed up as a flake: the profile counts its shows from this table, and
+       whichever of the table and the archive landed second had to repaint. The
+       archive's own fetch does, so if the table arrived after it the screen sat
+       on a half-built panel forever. */
+    if (S.screen === 'tour' || S.screen === 'browse' || S.screen === 'profile') render();
   }
 }
 
@@ -5108,6 +5222,11 @@ async function loadProfile(){
 
 function renderProfile(){
   if (ME.signedIn && PROFILE.loadedFor !== ME.userId && !PROFILE.busy) loadProfile();
+  /* THE SHOW TABLE IS WHAT COUNTS THE SHOWS. One in five played shows has no
+     setlist typed up, so counting them out of the archive undercounted every
+     profile; the table knows every night the band played. 72KB, and it repaints
+     when it lands. */
+  loadTourRows();
   /* Fetch the archive for any band with marked shows we cannot yet count
      against, then repaint. Guarded so one failed fetch does not loop. */
   for (const b of BANDS){
@@ -5164,31 +5283,83 @@ function renderProfile(){
        this can tell them how much of the catalogue they have actually heard,
        because only this knows what was played on each of those nights. */
     const pct = st.songsTotal ? Math.round(100 * st.songsSeen / st.songsTotal) : 0;
+    const hours = st.seconds ? Math.floor(st.seconds / 3600) : 0;
+    const mins = st.seconds ? Math.round(st.seconds % 3600 / 60) : 0;
+
+    // A tile only appears when it has something to say.
+    const tiles = st.songsSeen === null ? [] : [
+      /* Two words at most. A third of a 390px screen is not wide enough for
+         "songs played to you", which clipped to "SONGS PLAYED TO" over "YOU". */
+      st.seconds ? [hours ? `${hours}h ${mins}m` : `${mins}m`, 'of music'] : null,
+      st.performances ? [st.performances, 'song plays'] : null,
+      st.segues ? [st.segues, 'segues'] : null,
+      st.jamcharts ? [st.jamcharts, 'jamcharts'] : null,
+      st.covers ? [st.covers, 'covers'] : null,
+      st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts'] : null,
+    ].filter(Boolean);
+
+    const rows = st.songsSeen === null ? [] : [
+      st.rarest && st.rarest.gap > 20
+        ? ['Rarest catch', st.rarest.song, `${st.rarest.gap}-show gap`] : null,
+      st.longest ? ['Longest', st.longest.song, fmtClock(st.longest.len)] : null,
+      st.mostSeen ? ['Seen most', st.mostSeen.song, `${st.mostSeen.times}x`] : null,
+      st.topVenue ? ['Most at', st.topVenue.venue, `${st.topVenue.times} nights`] : null,
+      st.bigYear && st.bigYear.shows > 1
+        ? ['Biggest year', st.bigYear.year, `${st.bigYear.shows} shows`] : null,
+      st.tours ? ['Tours caught', `${st.tours} of ${st.toursTotal}`, ''] : null,
+      ['First', fmtDate(st.first), ''],
+      ['Latest', fmtDate(st.last), ''],
+    ].filter(Boolean);
+
     return `
       <div class="fanband">
       <div class="fanhd">${esc(b.label)}</div>
+
+      <div class="pstats">
+        <div class="pstat"><b>${st.shows}</b><span>Shows</span></div>
+        <div class="pstat"><b>${st.venues}</b><span>Venues</span></div>
+        <div class="pstat"><b>${st.years}</b><span>Years</span></div>
+      </div>
+      <div class="pstats" style="margin-top:1px">
+        <div class="pstat"><b>${st.cities}</b><span>Cities</span></div>
+        <div class="pstat"><b>${st.states || st.countries}</b><span>${
+          st.states ? 'States' : 'Countries'}</span></div>
+        <div class="pstat"><b>${st.tours}</b><span>Tours</span></div>
+      </div>
+
       ${st.songsSeen === null
-        ? `<div class="fanwait">${st.shows} show${st.shows === 1 ? '' : 's'} marked.
-             Draft a night to work out what you have heard.</div>`
+        ? `<div class="fanwait">Working out what was played to you...</div>`
         : `
-        <div class="pstats">
-          <div class="pstat"><b>${st.shows}</b><span>Shows</span></div>
-          <div class="pstat"><b>${st.venues}</b><span>Venues</span></div>
-          <div class="pstat"><b>${st.years}</b><span>Years</span></div>
-        </div>
         <div class="fanbig">
           <b>${st.songsSeen}</b><i>of ${st.songsTotal} songs heard live</i>
           <div class="fanbar"><span style="width:${pct}%"></span></div>
           <div class="fanfine">${st.songsTotal - st.songsSeen} still out there.</div>
         </div>
+
+        <div class="ftiles">${tiles.map(([v, k]) =>
+          `<div class="ftile"><b>${esc(String(v))}</b><span>${esc(k)}</span></div>`).join('')}</div>
+
         <div class="fanlist">
-          ${st.mostSeen ? `<div class="fanrow"><i>Seen most</i>
-            <b>${esc(st.mostSeen.song)}</b><span>${st.mostSeen.times}x</span></div>` : ''}
-          <div class="fanrow"><i>First</i><b>${esc(fmtDate(st.first))}</b></div>
-          <div class="fanrow"><i>Latest</i><b>${esc(fmtDate(st.last))}</b></div>
+          ${rows.map(([k, v, extra]) => `<div class="fanrow"><i>${esc(k)}</i>
+            <b>${esc(String(v))}</b>${extra ? `<span>${esc(extra)}</span>` : ''}</div>`).join('')}
         </div>
-        ${st.unmatched ? `<div class="fanfine">${st.unmatched} marked show${
-          st.unmatched === 1 ? ' is' : 's are'} no longer in the archive.</div>` : ''}`}
+
+        ${st.wanted && st.wanted.length ? `<div class="fwant">
+          <div class="fw-hd">Most played, never seen</div>
+          ${st.wanted.map(w => `<div class="fw-row"><b>${esc(w.song)}</b>
+            <span>${w.plays} play${w.plays === 1 ? '' : 's'}</span></div>`).join('')}
+        </div>` : ''}
+
+        ${/* NOT "no longer in the archive", which is what this used to say and
+              is not what happened. One in five played shows has no setlist
+              typed up; those nights are real and counted above, they just
+              cannot say what was played. */''}
+        ${st.withSetlist !== undefined && st.withSetlist < st.shows
+          ? `<div class="fanfine">Songs are counted from the ${st.withSetlist} of your
+              ${st.shows} shows with a setlist on elgoose. The other ${
+              st.shows - st.withSetlist} still count as shows you were at.</div>` : ''}`}
+      ${st.unmatched ? `<div class="fanfine">${st.unmatched} marked show${
+        st.unmatched === 1 ? ' is' : 's are'} no longer listed by elgoose.</div>` : ''}
       </div>`;
   }).join('');
 

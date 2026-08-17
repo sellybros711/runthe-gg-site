@@ -774,6 +774,69 @@ check(/class="fanbar"/.test(gameBare), 'and shows the catalogue as a bar');
    outrun the archive. Said out loud rather than quietly subtracted. */
 check(/\bunmatched\b/.test(gameBare), 'shows that fell out of the archive are reported');
 
+/* A SHOW YOU WENT TO IS NOT THE SAME THING AS A SETLIST SOMEBODY TYPED UP, and
+   conflating them was a reported bug: twelve marked shows showed as ten. One in
+   five played shows has no setlist in the archive, the browser rightly lets
+   those be ticked, and the profile counted only the ones it could find in the
+   SETLIST archive. The dropped ones were then reported as "no longer in the
+   archive", which is not what happened to them. */
+{
+  // Parsed here, not reused from the show table section: that is declared
+  // further down the file and this would read it before it exists.
+  const table = parseCSV(read('setlist/data/goose_shows.csv'));
+  const played = table.filter(r => r.show_date < new Date().toISOString().slice(0, 10));
+  const noSet = played.filter(r => r.has_setlist !== 'true').length;
+  check(noSet > 50, `played shows with no setlist exist to be miscounted (${noSet})`);
+}
+check(/const table = TOUR_STATE\.rows;/.test(gameBare),
+  'the show table is what counts your shows');
+check(/const mine = table\.filter\(r => ids\.has\(r\.show_id\)\)/.test(gameBare),
+  'and every marked show it knows about is counted');
+/* Song-level stats can only come from the shows that were transcribed, so the
+   panel says which subset they cover rather than quietly shrinking the total. */
+check(/out\.withSetlist = withSet\.length/.test(gameBare),
+  'songs are counted from the transcribed subset');
+check(/Songs are counted from the \$\{st\.withSetlist\} of your/.test(gameBare),
+  'and the panel says so out loud');
+check(!/no longer in the archive/.test(gameBare),
+  'an untranscribed show is not called missing');
+/* THE PROFILE HAS TO REPAINT WHEN THE TABLE LANDS. It reads two files and
+   whichever arrives second must trigger the render; leaving the profile out of
+   that list left the panel half built whenever the table lost the race. */
+check(/S\.screen === 'tour' \|\| S\.screen === 'browse' \|\| S\.screen === 'profile'/.test(gameBare),
+  'the profile repaints when the show table arrives');
+check(/^\s*loadTourRows\(\);$/m.test(gameBare.slice(gameBare.indexOf('function renderProfile'),
+  gameBare.indexOf('function renderProfile') + 700)),
+  'and asks for it in the first place');
+
+/* THE STATS THEMSELVES. Measured on a real 12-show profile: 17h 7m of music,
+   131 song plays, 44 segues, 20 jamcharts, 19 covers, a 72-show-gap bustout
+   and a 27:39 Animal. */
+for (const [key, what] of [
+  ['seconds', 'how long you have stood there'],
+  ['segues', 'segues witnessed'],
+  ['jamcharts', 'jamchart versions caught'],
+  ['covers', 'covers heard'],
+  ['debuts', 'debuts caught'],
+  ['rarest', 'the rarest thing you caught'],
+  ['longest', 'the longest version you saw'],
+  ['topVenue', 'the venue you go to most'],
+  ['bigYear', 'your biggest year'],
+  ['tours', 'tours caught'],
+]) check(new RegExp(`\\b${key}\\b`).test(gameBare), `the profile knows ${what}`);
+/* THE INVERSE, which is the one a tracker actually wants: not what you have
+   seen but what the band keeps playing while you are not in the room. */
+check(/const wanted = \[\.\.\.playCount\]/.test(gameBare)
+  && /\.filter\(\(\[song\]\) => !seenTitles\.has\(song\)\)/.test(gameBare),
+  'and what it keeps playing without you');
+check(/Most played, never seen/.test(gameBare), 'which is shown');
+// A venue seen once is not a favourite, and a one-show year is not a big year.
+check(/venues\[0\]\[1\] > 1 \? \{ venue/.test(gameBare),
+  'a venue only counts as a favourite on a repeat');
+/* Two words at most in a tile label: a third of a 390px screen clipped
+   "songs played to you" to "SONGS PLAYED TO" over "YOU". */
+check(!/'songs played to you'/.test(gameBare), 'tile labels fit their tile');
+
 /* THE PROFILE LOADS THE ARCHIVE ITSELF. Reached from the home screen there has
    never been a draft, so S.data is empty and the panel used to degrade to a
    bare count on exactly the path most players take. */
