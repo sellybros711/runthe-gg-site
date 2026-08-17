@@ -216,6 +216,24 @@
   .foot{margin-top:22px; text-align:center; font-size:11.5px; color:var(--dim); line-height:1.6;}
   .foot a{color:var(--mut); text-decoration:underline;}
 </style>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
+     game can be reported on its own. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Sportegories'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -344,7 +362,8 @@
 <script src="/arcade/dayroll.js?v=1"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=2"></script>
-<script src="/arcade/calendar.js?v=12"></script>
+<script src="/arcade/gamemarks.js?v=1"></script>
+<script src="/arcade/calendar.js?v=13"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=11"></script>
 <script src="/arcade/leaderboard.js?v=13"></script>
@@ -359,12 +378,12 @@
 <script src="/arcade/share.js?v=6"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/sportegories-data.js?v=4"></script>
+<script src="/arcade/sportegories-data.js?v=8"></script>
 <script src="/arcade/type.js?v=2"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=2"></script>
-<script src="/arcade/sportegories.js?v=8"></script>
-<script src="/arcade/livecheck.js?v=6"></script>
+<script src="/arcade/sportegories.js?v=9"></script>
+<script src="/arcade/livecheck.js?v=7"></script>
 <script>
 (function(){
   'use strict';

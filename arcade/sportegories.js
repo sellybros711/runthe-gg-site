@@ -362,7 +362,16 @@
       if (unsure) return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
       return { ok: false, reason: 'category', msg: 'Doesn’t fit this category.' };
     }
-    if (usedPlayers && usedPlayers[hit.idx]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
+    /* One name, one answer. Now that a name can be several people (the Bills
+       quarterback and the Jaguars linebacker are both Josh Allen), an index
+       check would let the same typed text score in two categories by matching
+       a different man each time. The player wrote it once, so any same-named
+       record already used settles it. */
+    if (usedPlayers) {
+      for (var u = 0; u < ids.length; u++) {
+        if (usedPlayers[ids[u]]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
+      }
+    }
 
     // every name-word starting with the letter is a point ("Barry Bonds" = 2)
     var allit = 0;

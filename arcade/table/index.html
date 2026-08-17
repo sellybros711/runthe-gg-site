@@ -258,6 +258,24 @@
     .foot{grid-area:foot; margin-top:18px;}
   }
 </style>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
+     game can be reported on its own. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Number Game'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -370,9 +388,9 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=1"></script>
-<script src="/arcade/stars.js?v=1"></script>
+<script src="/arcade/stars.js?v=3"></script>
 <script src="/arcade/awards.js?v=1"></script>
-<script src="/arcade/supplement.js?v=1"></script>
+<script src="/arcade/supplement.js?v=4"></script>
 <script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/jerseys.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
@@ -394,7 +412,8 @@
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=14"></script>
-<script src="/arcade/calendar.js?v=12"></script>
+<script src="/arcade/gamemarks.js?v=1"></script>
+<script src="/arcade/calendar.js?v=13"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=14"></script>
 <script src="/arcade/howto.js?v=16"></script>

@@ -1,856 +1,856 @@
-show_id,show_date,year,tour_id,tour,venue,city,state,country,has_setlist
-1605930400,2014-09-27,2014,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,false
-1616038942,2014-10-24,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,false
-1613690100,2014-10-25,2014,1,,Tavern On Seven,Norwalk,CT,USA,false
-1613690131,2014-11-21,2014,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1616038775,2014-11-26,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,true
-1613690543,2014-12-20,2014,13,Goosemas I,Factory Underground Studio,Norwalk,CT,USA,true
-1616038744,2014-12-23,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,true
-1601959537,2015-01-16,2015,1,,Viva Zapata,Westport,CT,USA,true
-1613701736,2015-01-17,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616038703,2015-01-20,2015,1,,Wonder Bar,Allston,MA,USA,false
-1616038160,2015-02-20,2015,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,true
-1614304412,2015-03-07,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1684862246,2015-03-11,2015,1,,Stella Blues,New Haven,CT,USA,false
-1616037808,2015-03-14,2015,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,true
-1743797147,2015-03-15,2015,1,,Bella Luna Restaurant and Milky Way Lounge,Jamaica Plain,MA,USA,false
-1616037734,2015-04-16,2015,1,,Radio Bean,Burlington,VT,USA,false
-1616037488,2015-04-18,2015,1,,Tavern On Seven,Norwalk,CT,USA,true
-1614304463,2015-05-02,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1683570770,2015-05-07,2015,1,,Church of Boston,Boston,MA,USA,false
-1616037453,2015-05-21,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false
-1616037430,2015-05-23,2015,1,,Stella Blues,New Haven,CT,USA,false
-1616037413,2015-05-28,2015,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false
-1614304594,2015-06-06,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616037386,2015-06-12,2015,1,,Bradford's Grill & Tavern,Norwalk,CT,USA,false
-1616037305,2015-06-17,2015,1,,The Acoustic,Bridgeport,CT,USA,true
-1743793096,2015-06-26,2015,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false
-1712707675,2015-06-27,2015,1,,Jones Jam,Wilton,CT,USA,false
-1724179919,2015-08-09,2015,1,,Wonder Bar,Asbury Park,NJ,USA,false
-1616037273,2015-08-11,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false
-1616037254,2015-08-18,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,true
-1616037233,2015-08-25,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false
-1616037215,2015-09-04,2015,1,,Tavern On Seven,Norwalk,CT,USA,false
-1614304613,2015-09-18,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1743526614,2015-09-19,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1743792240,2015-09-26,2015,1,,Stella Blues,New Haven,CT,USA,true
-1698084503,2015-10-01,2015,1,,The Acoustic,Bridgeport,CT,USA,true
-1616037170,2015-10-09,2015,1,,Creatures of the Night,Adams,TN,USA,false
-1616037160,2015-10-10,2015,1,,Creatures of the Night,Adams,TN,USA,false
-1614304635,2015-11-13,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1614304669,2015-12-04,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616036851,2015-12-19,2015,12,Goosemas II,Factory Underground Studio,Norwalk,CT,USA,true
-1705934210,2016-01-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true
-1616036815,2016-01-28,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false
-1743796790,2016-02-19,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false
-1743797293,2016-03-08,2016,1,,Electric Haze,Worcester,MA,USA,false
-1743797308,2016-03-15,2016,1,,Electric Haze,Worcester,MA,USA,false
-1616036792,2016-03-17,2016,1,,Viva Zapata,Westport,CT,USA,false
-1616036774,2016-03-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true
-1743797250,2016-03-22,2016,1,,Electric Haze,Worcester,MA,USA,false
-1616036749,2016-03-26,2016,1,,Rock n Roll Resort,Kerhonkson,NY,USA,true
-1616036730,2016-03-29,2016,1,,Electric Haze,Worcester,MA,USA,false
-1743797320,2016-03-29,2016,1,,Electric Haze,Worcester,MA,USA,false
-1614304693,2016-04-15,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1616036658,2016-04-16,2016,1,,Stella Blues,New Haven,CT,USA,true
-1616036639,2016-04-20,2016,1,,Loft,Norwalk,CT,USA,true
-1616036597,2016-04-27,2016,1,,BRYAC Black Rock,Bridgeport,CT,USA,false
-1616036563,2016-04-29,2016,1,,King Neptune's Pub,Lake George,NY,USA,false
-1616036545,2016-05-01,2016,1,,Electric Haze,Worcester,MA,USA,false
-1616036521,2016-05-05,2016,1,,BRYAC Black Rock,Bridgeport,CT,USA,false
-1686327822,2016-06-17,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true
-1616036413,2016-07-09,2016,1,,Soupstock Music and Arts Festival,Shelton,CT,USA,false
-1689369871,2016-07-09,2016,1,,Viva Zapata,Westport,CT,USA,true
-1689370609,2016-07-14,2016,1,,Stella Blues,New Haven,CT,USA,true
-1616036331,2016-07-19,2016,1,,Viva Zapata,Westport,CT,USA,false
-1614304713,2016-07-29,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616036210,2016-08-06,2016,1,,Backwoods Pondfest,Peru,NY,USA,true
-1616035556,2016-08-12,2016,1,,Rebirth Arts Festival,Easton,CT,USA,true
-1692375765,2016-08-18,2016,1,,King Neptune's Pub,Lake George,NY,USA,true
-1724194043,2016-08-19,2016,1,,The Red Door,Watertown,CT,USA,false
-1614304730,2016-08-20,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1724194002,2016-08-21,2016,1,,The Spread South Norwalk,Norwalk,CT,USA,false
-1724194134,2016-08-25,2016,1,,Radio Bean,Burlington,VT,USA,true
-1614304757,2016-09-16,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616034465,2016-10-01,2016,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1648264582,2016-10-09,2016,1,,Night Shift Brewery,Everett,MA,USA,true
-1614304775,2016-10-22,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1616034399,2016-10-23,2016,1,,Vinyl Street Cafe,Fairfield,CT,USA,true
-1616034271,2016-10-28,2016,1,,King Neptune's Pub,Lake George,NY,USA,false
-1616034250,2016-10-29,2016,1,,Space Ballroom,Hamden,CT,USA,false
-1743794784,2016-10-29,2016,1,,Space Ballroom,Hamden,CT,USA,true
-1616034229,2016-10-30,2016,1,,The Spread South Norwalk,Norwalk,CT,USA,false
-1616034185,2016-11-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true
-1614304915,2016-11-23,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1616032614,2016-12-16,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true
-1616032595,2016-12-21,2016,1,,Space Ballroom,Hamden,CT,USA,false
-1615962879,2016-12-23,2016,11,Goosemas III,Factory Underground Studio,Norwalk,CT,USA,false
-1615962804,2016-12-30,2016,1,,Arch Street Tavern,Hartford,CT,USA,false
-1615962713,2017-01-13,2017,1,,Space Ballroom,Hamden,CT,USA,true
-1615962491,2017-01-18,2017,1,,Alchemy,Providence,RI,USA,true
-1616032462,2017-01-20,2017,1,,Penuche's Music Hall,Manchester,NH,USA,false
-1615962104,2017-01-28,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true
-1615961779,2017-02-07,2017,1,,Brooklyn Bowl,Brooklyn,NY,USA,false
-1615961762,2017-02-08,2017,1,,Nectar's,Burlington,VT,USA,true
-1615961746,2017-02-10,2017,1,,Gypsy Sally's,Washington,DC,USA,true
-1615961722,2017-02-11,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true
-1615961700,2017-02-16,2017,1,,Space Ballroom,Hamden,CT,USA,false
-1615961673,2017-02-23,2017,1,,The Haunt,Ithaca,NY,USA,false
-1615961649,2017-02-24,2017,1,,Ocean Mist,Wakefield,RI,USA,false
-1615961628,2017-02-25,2017,1,,Arch Street Tavern,Hartford,CT,USA,true
-1615961596,2017-03-10,2017,1,,Nectar's,Burlington,VT,USA,false
-1615961581,2017-03-11,2017,1,,Monopole,Plattsburgh,NY,USA,false
-1615961556,2017-03-17,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,false
-1615961542,2017-03-18,2017,1,,Snug Harbor,New Paltz,NY,USA,false
-1616030483,2017-03-23,2017,24,Spring Tour 2017,Wonder Bar,Asbury Park,NJ,USA,false
-1615961468,2017-03-24,2017,1,,The Acoustic,Bridgeport,CT,USA,true
-1743798013,2017-03-25,2017,1,,The Iron Horse,Northampton,MA,USA,true
-1616030004,2017-03-31,2017,24,Spring Tour 2017,Rock n Roll Resort,Kerhonkson,NY,USA,false
-1616029967,2017-04-01,2017,24,Spring Tour 2017,American Beauty,New York,NY,USA,true
-1615961421,2017-04-07,2017,24,Spring Tour 2017,Funk 'n Waffles,Syracuse,NY,USA,false
-1616029886,2017-04-08,2017,24,Spring Tour 2017,The Wherehouse,Newburgh,NY,USA,false
-1616029821,2017-04-13,2017,24,Spring Tour 2017,Brown Hotel Music Club & Grill,Indiana,PA,USA,false
-1615961392,2017-04-14,2017,24,Spring Tour 2017,King's Rook Club,Erie,PA,USA,false
-1615961369,2017-04-27,2017,24,Spring Tour 2017,Arch Street Tavern,Hartford,CT,USA,false
-1679182964,2017-04-29,2017,1,,Snug Harbor,New Paltz,NY,USA,true
-1615961344,2017-05-05,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,false
-1615961328,2017-05-06,2017,24,Spring Tour 2017,Nectar's,Burlington,VT,USA,false
-1615961143,2017-05-10,2017,24,Spring Tour 2017,The Warehouse at FTC,Fairfield,CT,USA,true
-1615961108,2017-05-17,2017,24,Spring Tour 2017,Woodlands Tavern,Columbus,OH,USA,false
-1616029688,2017-05-18,2017,24,Spring Tour 2017,Stanley's Pub,Cincinnati,OH,USA,false
-1615961069,2017-05-19,2017,24,Spring Tour 2017,Lamasco Bar,Evansville,IN,USA,true
-1669048356,2017-05-20,2017,1,,Carnton Plantation,Franklin,TN,USA,true
-1615961047,2017-05-31,2017,24,Spring Tour 2017,The 8x10,Baltimore,MD,USA,false
-1615961017,2017-06-01,2017,1,,Bullfrog Brewery,Williamsport,PA,USA,false
-1615960999,2017-06-02,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false
-1616029589,2017-06-03,2017,24,Spring Tour 2017,Paddy's Beach Club,Westerly,RI,USA,false
-1615960973,2017-06-07,2017,1,,StageOne at FTC,Fairfield,CT,USA,true
-1615960939,2017-06-10,2017,1,,Soupstock Music and Arts Festival,Shelton,CT,USA,false
-1616028256,2017-06-15,2017,21,Throw 'Em To The Wolves Tour 2017,Mad Tea Party Jam,Artemas,PA,USA,false
-1615960852,2017-06-22,2017,21,Throw 'Em To The Wolves Tour 2017,Doc Taylor's,Virginia Beach,VA,USA,false
-1616028057,2017-06-23,2017,21,Throw 'Em To The Wolves Tour 2017,Blue Side Tavern,Frederick,MD,USA,false
-1616027988,2017-06-24,2017,21,Throw 'Em To The Wolves Tour 2017,Shadefest Music Festival,Avenue,MD,USA,false
-1616027894,2017-06-27,2017,21,Throw 'Em To The Wolves Tour 2017,The Pour House Music Hall,Raleigh,NC,USA,false
-1616027822,2017-06-28,2017,21,Throw 'Em To The Wolves Tour 2017,Gottrocks,Greenville,SC,USA,false
-1616027743,2017-06-30,2017,21,Throw 'Em To The Wolves Tour 2017,The Thirsty Turtle,Macon,GA,USA,false
-1616027620,2017-07-01,2017,21,Throw 'Em To The Wolves Tour 2017,Barrelhouse South,Savannah,GA,USA,false
-1616027534,2017-07-03,2017,21,Throw 'Em To The Wolves Tour 2017,Tiki Hut,Hilton Head,SC,USA,false
-1615960608,2017-07-05,2017,21,Throw 'Em To The Wolves Tour 2017,Guanabanas Restaurant,Jupiter,FL,USA,false
-1616027453,2017-07-07,2017,21,Throw 'Em To The Wolves Tour 2017,Funky Buddha Lounge,Boca Raton,FL,USA,false
-1615873444,2017-07-08,2017,21,Throw 'Em To The Wolves Tour 2017,Dunedin Brewery,Dunedin,FL,USA,true
-1615960408,2017-07-12,2017,21,Throw 'Em To The Wolves Tour 2017,The Charleston Pour House,Charleston,SC,USA,true
-1615875210,2017-07-13,2017,21,Throw 'Em To The Wolves Tour 2017,The Evening Muse,Charlotte,NC,USA,true
-1615960115,2017-07-14,2017,21,Throw 'Em To The Wolves Tour 2017,The Whiskey,Wilmington,NC,USA,true
-1615959437,2017-07-15,2017,21,Throw 'Em To The Wolves Tour 2017,Sierra Nevada Brewing Co.,Fletcher,NC,USA,true
-1615959401,2017-07-20,2017,1,,Nectar's,Burlington,VT,USA,false
-1615959385,2017-07-21,2017,1,,Jerry Jam,Bath,NH,USA,false
-1615959360,2017-07-30,2017,1,,Bayley Beach,Rowayton,CT,USA,false
-1615959323,2017-08-03,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false
-1616026265,2017-08-04,2017,21,Throw 'Em To The Wolves Tour 2017,Strange Brew Pub,Norwich,CT,USA,false
-1615959304,2017-08-05,2017,1,,SoNo Arts Festival,Norwalk,CT,USA,false
-1615959282,2017-08-10,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false
-1616025999,2017-08-11,2017,21,Throw 'Em To The Wolves Tour 2017,Triumph Brewing Company of New Hope,New Hope,PA,USA,false
-1616025916,2017-08-12,2017,21,Throw 'Em To The Wolves Tour 2017,Yasgur Road Campground,Bethel,NY,USA,false
-1615959262,2017-08-17,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false
-1615875482,2017-08-19,2017,1,,The Acoustic,Bridgeport,CT,USA,true
-1615959210,2017-08-24,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false
-1616024595,2017-08-25,2017,21,Throw 'Em To The Wolves Tour 2017,Rock The Dock,Lake George,NY,USA,false
-1616024356,2017-08-26,2017,21,Throw 'Em To The Wolves Tour 2017,Knitting Factory Brooklyn,Brooklyn,NY,USA,false
-1615959161,2017-08-31,2017,21,Throw 'Em To The Wolves Tour 2017,Putnam Den,Saratoga Springs,NY,USA,false
-1615958881,2017-09-01,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true
-1616024264,2017-09-08,2017,1,,Great North Music and Arts Festival,Minot,ME,USA,false
-1615958718,2017-09-22,2017,22,Fall Tour 2017,Bullfrog Brewery,Williamsport,PA,USA,false
-1615958603,2017-09-23,2017,22,Fall Tour 2017,Hometown Get Down,Clarksburg,MD,USA,true
-1615958523,2017-09-26,2017,1,,Snug Harbor,New Paltz,NY,USA,false
-1615958438,2017-09-30,2017,1,,Middle East Restaurant and Club,Cambridge,MA,USA,false
-1615956261,2017-10-02,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true
-1615956241,2017-10-11,2017,1,,Alchemy,Providence,RI,USA,false
-1615956098,2017-10-13,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false
-1615956067,2017-10-21,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true
-1615954994,2017-10-24,2017,1,,Brooklyn Bowl,Brooklyn,NY,USA,true
-1615954913,2017-10-26,2017,1,,Funk 'n Waffles,Syracuse,NY,USA,false
-1615954516,2017-10-27,2017,1,,Monopole,Plattsburgh,NY,USA,false
-1615954376,2017-10-31,2017,1,,Gypsy Sally's,Washington,DC,USA,true
-1615954304,2017-11-01,2017,1,,The Stanhope House,Stanhope,NJ,USA,true
-1615953621,2017-11-02,2017,1,,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true
-1615874908,2017-11-03,2017,1,,The Hollow Bar & Kitchen,Albany,NY,USA,true
-1614305805,2017-11-04,2017,1,,Arch Street Tavern,Hartford,CT,USA,true
-1615872297,2017-11-09,2017,1,,Wall Street Theater,Norwalk,CT,USA,true
-1615872051,2017-11-10,2017,1,,Nectar's,Burlington,VT,USA,true
-1743794986,2017-11-11,2017,22,Fall Tour 2017,Ocean Mist,Wakefield,RI,USA,false
-1615951011,2017-11-15,2017,1,,The 8x10,Baltimore,MD,USA,false
-1615874562,2017-11-16,2017,1,,Doc Taylor's,Virginia Beach,VA,USA,false
-1615875859,2017-11-17,2017,1,,The Whiskey,Wilmington,NC,USA,false
-1743795076,2017-11-18,2017,1,,Crossbones Tavern,Greenville,NC,USA,false
-1614304934,2017-11-22,2017,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false
-1615876087,2017-11-30,2017,1,,The One Stop at Asheville Music Hall,Asheville,NC,USA,false
-1615949626,2017-12-01,2017,1,,The Hummingbird Stage & Taproom,Macon,GA,USA,false
-1615949604,2017-12-02,2017,1,,The Charleston Pour House,Charleston,SC,USA,false
-1615949521,2017-12-07,2017,1,,The Funky Biscuit,Boca Raton,FL,USA,true
-1615949336,2017-12-08,2017,1,,Guanabanas Restaurant,Jupiter,FL,USA,true
-1615874497,2017-12-09,2017,1,,Dunedin Brewery,Dunedin,FL,USA,false
-1615874177,2017-12-16,2017,1,,Still Partners,Sea Cliff,NY,USA,false
-1615871919,2017-12-23,2017,10,Goosemas IV,Factory Underground Studio,Norwalk,CT,USA,true
-1615871887,2017-12-30,2017,1,,The Hollow Bar & Kitchen,Albany,NY,USA,false
-1615871866,2017-12-31,2017,1,,The Acoustic,Bridgeport,CT,USA,true
-1615871514,2018-01-12,2018,15,Winter Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,false
-1615871447,2018-01-13,2018,15,Winter Tour 2018,El Club,Detroit,MI,USA,true
-1615871324,2018-01-14,2018,15,Winter Tour 2018,Grog Shop,Cleveland Heights,OH,USA,true
-1615871188,2018-01-17,2018,15,Winter Tour 2018,Mr. Smalls Theatre,Millvale,PA,USA,true
-1615869147,2018-01-18,2018,15,Winter Tour 2018,Buffalo Iron Works,Buffalo,NY,USA,true
-1615344775,2018-01-19,2018,15,Winter Tour 2018,Westcott Theater,Syracuse,NY,USA,true
-1615871039,2018-01-20,2018,15,Winter Tour 2018,Chameleon Club,Lancaster,PA,USA,true
-1615870461,2018-01-23,2018,15,Winter Tour 2018,The Met,Pawtucket,RI,USA,true
-1615870141,2018-01-26,2018,15,Winter Tour 2018,Arch Street Tavern,Hartford,CT,USA,false
-1615870089,2018-01-27,2018,15,Winter Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,false
-1615866380,2018-02-02,2018,15,Winter Tour 2018,Octave,Covington,KY,USA,true
-1615869951,2018-02-03,2018,15,Winter Tour 2018,Lamasco Bar,Evansville,IN,USA,false
-1615869729,2018-02-06,2018,18,Colorado Tour 2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,false
-1615869651,2018-02-07,2018,18,Colorado Tour 2018,Hodi's Half Note,Fort Collins,CO,USA,false
-1615868549,2018-02-08,2018,18,Colorado Tour 2018,Globe Hall,Denver,CO,USA,true
-1615868053,2018-02-09,2018,18,Colorado Tour 2018,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true
-1615430866,2018-02-10,2018,18,Colorado Tour 2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,true
-1615867879,2018-02-14,2018,15,Winter Tour 2018,Woodlands Tavern,Columbus,OH,USA,true
-1615866914,2018-02-15,2018,15,Winter Tour 2018,Octave,Covington,KY,USA,true
-1615865221,2018-02-16,2018,15,Winter Tour 2018,King's Rook Club,Erie,PA,USA,false
-1615865145,2018-02-17,2018,15,Winter Tour 2018,The Range,Ithaca,NY,USA,false
-1615865059,2018-02-23,2018,15,Winter Tour 2018,Snug Harbor,New Paltz,NY,USA,false
-1615864906,2018-02-24,2018,15,Winter Tour 2018,The Main Pub,Manchester,CT,USA,false
-1615861481,2018-03-15,2018,15,Winter Tour 2018,Flour City Station,Rochester,NY,USA,true
-1615861349,2018-03-16,2018,15,Winter Tour 2018,River Street Jazz Cafe,Plains,PA,USA,true
-1615775085,2018-03-17,2018,15,Winter Tour 2018,Finger Lakes Live,Geneva,NY,USA,false
-1615774962,2018-03-23,2018,17,Spring Tour 2018,Viva Zapata,Westport,CT,USA,false
-1615774859,2018-03-30,2018,17,Spring Tour 2018,Putnam Den,Saratoga Springs,NY,USA,true
-1666379523,2018-04-04,2018,17,Spring Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,true
-1615774222,2018-04-06,2018,17,Spring Tour 2018,Nectar's,Burlington,VT,USA,true
-1615774195,2018-04-07,2018,17,Spring Tour 2018,The Java Barn,Canton,NY,USA,false
-1615774169,2018-04-11,2018,17,Spring Tour 2018,Silk City,Philadelphia,PA,USA,false
-1615773981,2018-04-12,2018,17,Spring Tour 2018,DROM,New York,NY,USA,false
-1615773877,2018-04-13,2018,17,Spring Tour 2018,Hawks and Reed Performing Arts Center,Greenfield,MA,USA,false
-1615773784,2018-04-14,2018,17,Spring Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,false
-1615773760,2018-04-19,2018,17,Spring Tour 2018,Doc Taylor's,Virginia Beach,VA,USA,false
-1615773564,2018-04-20,2018,17,Spring Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true
-1615772927,2018-04-21,2018,17,Spring Tour 2018,Cattivo,Pittsburgh,PA,USA,true
-1715183087,2018-04-28,2018,17,Spring Tour 2018,Chi Psi Yard Sale,Lexington,VA,USA,false
-1615772358,2018-05-03,2018,17,Spring Tour 2018,Jewel Nightclub,Manchester,NH,USA,true
-1615347480,2018-05-04,2018,17,Spring Tour 2018,Wall Street Theater,Norwalk,CT,USA,true
-1615771555,2018-05-05,2018,17,Spring Tour 2018,The Hollow Bar & Kitchen,Albany,NY,USA,false
-1615771361,2018-05-10,2018,17,Spring Tour 2018,The Warehouse at FTC,Fairfield,CT,USA,true
-1615771130,2018-05-11,2018,17,Spring Tour 2018,Nectar's,Burlington,VT,USA,false
-1615771109,2018-05-12,2018,17,Spring Tour 2018,Mountain Sky,Jermyn,PA,USA,false
-1615621983,2018-05-30,2018,1,,Beachland Ballroom & Tavern,Cleveland,OH,USA,false
-1615621791,2018-05-31,2018,1,,SoHi Sound Studios,Columbus,OH,USA,false
-1615424118,2018-06-01,2018,20,Summer Tour 2018,Octave,Covington,KY,USA,true
-1615349454,2018-06-02,2018,20,Summer Tour 2018,Octave,Covington,KY,USA,true
-1615621607,2018-06-05,2018,20,Summer Tour 2018,Tap Shack,Duck,NC,USA,false
-1615621231,2018-06-06,2018,20,Summer Tour 2018,Mike Dianna's Grill Room,Corolla,NC,USA,false
-1615620985,2018-06-07,2018,20,Summer Tour 2018,Pearl Street Warehouse,Washington,DC,USA,false
-1615620964,2018-06-08,2018,20,Summer Tour 2018,Dogfish Head Brewings & Eats,Rehoboth Beach,DE,USA,false
-1615617709,2018-06-10,2018,20,Summer Tour 2018,Disc Jam Music Festival,Stephentown,NY,USA,true
-1615617365,2018-06-12,2018,20,Summer Tour 2018,Cocalico Street,Ephrata,PA,USA,false
-1615608463,2018-06-15,2018,20,Summer Tour 2018,Space Ballroom,Hamden,CT,USA,true
-1615340285,2018-06-21,2018,1,,Pizza in the Park,Stamford,CT,USA,true
-1615617190,2018-06-28,2018,20,Summer Tour 2018,The Vault Music Hall & Pub at Greasy Luck,New Bedford,MA,USA,false
-1615617110,2018-06-30,2018,20,Summer Tour 2018,Bleachers,Bristol,CT,USA,true
-1615432626,2018-07-05,2018,20,Summer Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true
-1615617005,2018-07-06,2018,20,Summer Tour 2018,Bullfrog Brewery,Williamsport,PA,USA,false
-1615602893,2018-07-12,2018,20,Summer Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true
-1615616784,2018-07-13,2018,20,Summer Tour 2018,Nectar's,Burlington,VT,USA,false
-1615616600,2018-07-19,2018,20,Summer Tour 2018,Levitt Pavilion,Westport,CT,USA,false
-1615615296,2018-07-22,2018,20,Summer Tour 2018,Jerry Jam,Bath,NH,USA,true
-1615614366,2018-07-29,2018,20,Summer Tour 2018,Bayley Beach,Rowayton,CT,USA,true
-1615613879,2018-08-02,2018,20,Summer Tour 2018,Doc Taylor's,Virginia Beach,VA,USA,true
-1615613325,2018-08-03,2018,20,Summer Tour 2018,The Whiskey,Wilmington,NC,USA,true
-1615613210,2018-08-04,2018,20,Summer Tour 2018,Sierra Nevada Brewing Co.,Fletcher,NC,USA,true
-1724180052,2018-08-05,2018,20,Summer Tour 2018,The Beach House Resort,Hilton Head,SC,USA,false
-1724193532,2018-08-07,2018,20,Summer Tour 2018,The Beach House Resort,Hilton Head,SC,USA,false
-1615613134,2018-08-08,2018,20,Summer Tour 2018,Tap Shack,Duck,NC,USA,false
-1615613070,2018-08-09,2018,20,Summer Tour 2018,Shadefest Music Festival,Elkins,WV,USA,false
-1615612682,2018-08-10,2018,20,Summer Tour 2018,B Chord Brewing Company,Round Hill,VA,USA,false
-1615612651,2018-08-31,2018,20,Summer Tour 2018,Town Ballroom,Buffalo,NY,USA,false
-1615611809,2018-09-01,2018,20,Summer Tour 2018,The Haunt,Ithaca,NY,USA,true
-1615611336,2018-09-02,2018,20,Summer Tour 2018,King Neptune's Pub,Lake George,NY,USA,false
-1615611162,2018-09-08,2018,20,Summer Tour 2018,Gumpas Pond,Pelham,NH,USA,true
-1615431281,2018-09-20,2018,20,Summer Tour 2018,Resonance Music & Arts Festival,Thornville,OH,USA,true
-1615345471,2018-09-21,2018,1,,Resonance Music & Arts Festival,Thornville,OH,USA,true
-1615602672,2018-09-22,2018,20,Summer Tour 2018,Resonance Music & Arts Festival,Thornville,OH,USA,true
-1615350239,2018-09-29,2018,19,Fall Tour 2018,Soupstock Music and Arts Festival,Shelton,CT,USA,true
-1715183104,2018-10-05,2018,19,Fall Tour 2018,Chi Psi Yard Sale,Lexington,VA,USA,false
-1615611008,2018-10-07,2018,19,Fall Tour 2018,Harry Brown's Farm,Starks,ME,USA,false
-1615609980,2018-10-11,2018,19,Fall Tour 2018,Ukrainian Homestead,Lehighton,PA,USA,false
-1615609781,2018-10-12,2018,19,Fall Tour 2018,Just Joshin' Music Festival,Amston,CT,USA,true
-1615427966,2018-10-26,2018,19,Fall Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true
-1615603769,2018-10-27,2018,19,Fall Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true
-1743794882,2018-11-08,2018,19,Fall Tour 2018,118 North,Wayne,PA,USA,false
-1615601971,2018-11-09,2018,19,Fall Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,false
-1615601742,2018-11-10,2018,19,Fall Tour 2018,Flour City Station,Rochester,NY,USA,true
-1615600342,2018-11-15,2018,19,Fall Tour 2018,123 Pleasant Street,Morgantown,WV,USA,true
-1615430308,2018-11-16,2018,19,Fall Tour 2018,Octave,Covington,KY,USA,true
-1615002805,2018-11-17,2018,1,,Madison Live!,Covington,KY,USA,true
-1614304965,2018-11-21,2018,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1615427110,2018-11-29,2018,19,Fall Tour 2018,Paradise Rock Club,Boston,MA,USA,true
-1615426517,2018-11-30,2018,19,Fall Tour 2018,Nectar's,Burlington,VT,USA,true
-1615423629,2018-12-01,2018,19,Fall Tour 2018,Jay Peak Resort,Jay,VT,USA,true
-1615349092,2018-12-08,2018,1,,Nietzsche's,Buffalo,NY,USA,true
-1615340173,2018-12-11,2018,1,,The Waiting Room Lounge,Omaha,NE,USA,true
-1615338365,2018-12-12,2018,1,,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true
-1615337213,2018-12-13,2018,1,,HI-FI Indy,Indianapolis,IN,USA,true
-1615003067,2018-12-14,2018,19,Fall Tour 2018,Madison Live!,Covington,KY,USA,true
-1615002449,2018-12-15,2018,1,,Woodlands Tavern,Columbus,OH,USA,true
-1615001663,2018-12-22,2018,9,Goosemas V,Cantiki SoNo,Norwalk,CT,USA,true
-1614326388,2019-01-25,2019,16,Winter Tour 2019,The Cubby Bear,Chicago,IL,USA,true
-1614325989,2019-01-26,2019,16,Winter Tour 2019,Kenny's Westside Pub,Peoria,IL,USA,true
-1614325540,2019-01-31,2019,16,Winter Tour 2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,true
-1614325187,2019-02-01,2019,16,Winter Tour 2019,The Eldo,Crested Butte,CO,USA,true
-1614324720,2019-02-02,2019,16,Winter Tour 2019,Bluebird Theater,Denver,CO,USA,true
-1614324369,2019-02-07,2019,16,Winter Tour 2019,Intrinzik,Montrose,CO,USA,true
-1614323611,2019-02-08,2019,16,Winter Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true
-1614321503,2019-02-14,2019,16,Winter Tour 2019,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true
-1614319723,2019-02-15,2019,16,Winter Tour 2019,Octave,Covington,KY,USA,true
-1614318775,2019-02-22,2019,16,Winter Tour 2019,Sprout Music Collective,West Chester,PA,USA,true
-1614318387,2019-02-23,2019,16,Winter Tour 2019,Pearl Street Warehouse,Washington,DC,USA,true
-1614317602,2019-03-01,2019,16,Winter Tour 2019,Viva Zapata,Westport,CT,USA,true
-1679079917,2019-03-19,2019,1,,Relix,New York,NY,USA,true
-1614317158,2019-03-22,2019,14,Spring Tour 2019,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true
-1614316899,2019-03-28,2019,14,Spring Tour 2019,The Java Barn,Canton,NY,USA,true
-1614316456,2019-03-29,2019,14,Spring Tour 2019,Flour City Station,Rochester,NY,USA,true
-1614316138,2019-04-04,2019,14,Spring Tour 2019,Higher Ground,South Burlington,VT,USA,true
-1664130637,2019-04-06,2019,1,,Hampden-Sydney College Frat House,Hampden Sydney,VA,USA,false
-1614315171,2019-04-11,2019,14,Spring Tour 2019,River Street Jazz Cafe,Plains,PA,USA,true
-1614315004,2019-04-12,2019,14,Spring Tour 2019,Market Street Park,Charlottesville,VA,USA,true
-1614314712,2019-04-13,2019,14,Spring Tour 2019,123 Pleasant Street,Morgantown,WV,USA,true
-1614314179,2019-04-18,2019,14,Spring Tour 2019,The Mercury Lounge,New York,NY,USA,true
-1614313627,2019-04-19,2019,14,Spring Tour 2019,Down the Road Beer Co.,Everett,MA,USA,true
-1614310757,2019-04-20,2019,1,,The Acoustic,Bridgeport,CT,USA,true
-1614313575,2019-05-03,2019,14,Spring Tour 2019,B Chord Brewing Company,Round Hill,VA,USA,true
-1715020691,2019-05-04,2019,14,Spring Tour 2019,Chi Psi Yard Sale,Lexington,VA,USA,true
-1614313203,2019-05-09,2019,14,Spring Tour 2019,Woodlands Tavern,Columbus,OH,USA,true
-1614312473,2019-05-10,2019,14,Spring Tour 2019,Madison Theater,Covington,KY,USA,true
-1614312273,2019-05-11,2019,14,Spring Tour 2019,The Rex Theater,Pittsburgh,PA,USA,true
-1614306725,2019-05-18,2019,1,,Marvin's Mountaintop,Masontown,WV,USA,true
-1614306331,2019-05-24,2019,7,Summer Tour 2019,Revival Music Festival,Ellendale,MN,USA,true
-1614307340,2019-05-25,2019,7,Summer Tour 2019,Three Sisters Park,Chillicothe,IL,USA,true
-1614310040,2019-05-26,2019,7,Summer Tour 2019,The Mellwood Tavern,Louisville,KY,USA,true
-1614303358,2019-06-15,2019,7,Summer Tour 2019,Pizza in the Park,Stamford,CT,USA,true
-1614295229,2019-06-22,2019,7,Summer Tour 2019,Kenny's Westside Pub,Peoria,IL,USA,true
-1614300379,2019-06-26,2019,7,Summer Tour 2019,The Fox Theatre,Boulder,CO,USA,true
-1614300553,2019-06-27,2019,7,Summer Tour 2019,Aggie Theatre,Fort Collins,CO,USA,true
-1614300844,2019-06-28,2019,7,Summer Tour 2019,The Lariat,Buena Vista,CO,USA,true
-1614302893,2019-06-29,2019,7,Summer Tour 2019,Beanstalk Music & Mountain Festival,Bond,CO,USA,true
-1613694760,2019-07-11,2019,7,Summer Tour 2019,Doc Taylor's,Virginia Beach,VA,USA,true
-1613694362,2019-07-12,2019,7,Summer Tour 2019,The Camel,Richmond,VA,USA,true
-1613697753,2019-07-13,2019,7,Summer Tour 2019,Paradise Music & Beer Festival,Covington,KY,USA,true
-1614299494,2019-07-19,2019,7,Summer Tour 2019,Jerry Jam,Bath,NH,USA,true
-1613619605,2019-07-25,2019,7,Summer Tour 2019,Orlando's Bar and Lounge,Burlington,VT,USA,true
-1595185299,2019-07-27,2019,7,Summer Tour 2019,Peach Music Festival,Scranton,PA,USA,true
-1613620791,2019-08-08,2019,7,Summer Tour 2019,Otus Supply,Ferndale,MI,USA,true
-1614299084,2019-08-09,2019,7,Summer Tour 2019,Cowpie Music Festival,Caledonia,MI,USA,true
-1614298417,2019-08-10,2019,7,Summer Tour 2019,The Mousetrap,Indianapolis,IN,USA,true
-1614297985,2019-08-14,2019,7,Summer Tour 2019,Skully's Music-Diner,Columbus,OH,USA,true
-1613621323,2019-08-16,2019,7,Summer Tour 2019,Birds of a Feather Music & Arts Festival,Morning View,KY,USA,true
-1613621568,2019-08-17,2019,7,Summer Tour 2019,Birds of a Feather Music & Arts Festival,Morning View,KY,USA,true
-1613618864,2019-08-22,2019,7,Summer Tour 2019,Night Lights Music Festival,Sherman,NY,USA,true
-1613615869,2019-09-01,2019,1,,Silk Fest,Granby,CT,USA,true
-1613615034,2019-09-06,2019,7,Summer Tour 2019,Sprout Music Collective,West Chester,PA,USA,true
-1613613861,2019-09-07,2019,7,Summer Tour 2019,Valley Fusion Festival,Capon Bridge,WV,USA,true
-1613613251,2019-09-14,2019,1,,Private Party,Norwalk,CT,USA,true
-1608183761,2019-09-18,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true
-1613535674,2019-09-19,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true
-1613534872,2019-09-21,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true
-1601962402,2019-10-05,2019,1,,Barberry Hill Farm,Madison,CT,USA,true
-1608535941,2019-10-18,2019,5,Fall Tour 2019,Parish Public House,Albany,NY,USA,true
-1613528677,2019-10-19,2019,5,Fall Tour 2019,Sonia,Cambridge,MA,USA,true
-1613527259,2019-10-25,2019,5,Fall Tour 2019,River Street Jazz Cafe,Plains,PA,USA,true
-1613526499,2019-10-31,2019,5,Fall Tour 2019,The Mercury Lounge,New York,NY,USA,true
-1613511263,2019-11-02,2019,5,Fall Tour 2019,College Street Music Hall,New Haven,CT,USA,true
-1613508165,2019-11-07,2019,5,Fall Tour 2019,XL Live,Harrisburg,PA,USA,true
-1616454806,2019-11-08,2019,5,Fall Tour 2019,9:30 Club,Washington,DC,USA,true
-1613507639,2019-11-09,2019,5,Fall Tour 2019,Hampden-Sydney College Frat House,Hampden Sydney,VA,USA,true
-1613507150,2019-11-10,2019,5,Fall Tour 2019,The Broadberry,Richmond,VA,USA,true
-1613506931,2019-11-14,2019,5,Fall Tour 2019,Roxian Theatre,McKees Rocks,PA,USA,true
-1613450184,2019-11-15,2019,5,Fall Tour 2019,The Summit Music Hall,Columbus,OH,USA,true
-1613444180,2019-11-16,2019,5,Fall Tour 2019,Nietzsche's,Buffalo,NY,USA,true
-1613443194,2019-11-27,2019,5,Fall Tour 2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true
-1613441845,2019-12-05,2019,5,Fall Tour 2019,Aggie Theatre,Fort Collins,CO,USA,true
-1613439915,2019-12-06,2019,5,Fall Tour 2019,Cervantes' Other Side,Denver,CO,USA,true
-1613439018,2019-12-07,2019,5,Fall Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true
-1613436194,2019-12-08,2019,5,Fall Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true
-1613435548,2019-12-11,2019,5,Fall Tour 2019,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true
-1613434987,2019-12-12,2019,5,Fall Tour 2019,Lincoln Hall,Chicago,IL,USA,true
-1613434124,2019-12-13,2019,5,Fall Tour 2019,Madison Theater,Covington,KY,USA,true
-1613433393,2019-12-14,2019,5,Fall Tour 2019,The Mousetrap,Indianapolis,IN,USA,true
-1613160742,2019-12-21,2019,8,Goosemas VI,Wall Street Theater,Norwalk,CT,USA,true
-1613158995,2020-01-14,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true
-1613158668,2020-01-17,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true
-1613158190,2020-01-18,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true
-1597168237,2020-01-24,2020,3,Winter Tour 2020,Bowery Ballroom,New York,NY,USA,true
-1613152694,2020-01-25,2020,3,Winter Tour 2020,Music Hall of Williamsburg,Brooklyn,NY,USA,true
-1613152384,2020-02-05,2020,3,Winter Tour 2020,Marquee Theatre,Tempe,AZ,USA,true
-1613147507,2020-02-06,2020,3,Winter Tour 2020,Belly Up Tavern,Solana Beach,CA,USA,true
-1613103303,2020-02-07,2020,3,Winter Tour 2020,The Troubadour,West Hollywood,CA,USA,true
-1613147258,2020-02-08,2020,3,Winter Tour 2020,The Troubadour,West Hollywood,CA,USA,true
-1679080283,2020-02-10,2020,1,,Jam in the Van,Los Angeles,CA,USA,true
-1613146897,2020-02-12,2020,3,Winter Tour 2020,Fremont Theater,San Luis Obispo,CA,USA,true
-1613146701,2020-02-13,2020,3,Winter Tour 2020,The Catalyst,Santa Cruz,CA,USA,true
-1613104091,2020-02-14,2020,3,Winter Tour 2020,Great American Music Hall,San Francisco,CA,USA,true
-1613101473,2020-02-15,2020,3,Winter Tour 2020,The Regency Ballroom,San Francisco,CA,USA,true
-1602830467,2020-02-16,2020,3,Winter Tour 2020,Crystal Bay Club,Crystal Bay,NV,USA,true
-1602830169,2020-02-19,2020,3,Winter Tour 2020,Session Music Hall,Eugene,OR,USA,true
-1613100294,2020-02-20,2020,3,Winter Tour 2020,Midtown Ballroom,Bend,OR,USA,true
-1602829277,2020-02-21,2020,3,Winter Tour 2020,Wonder Ballroom,Portland,OR,USA,true
-1602829578,2020-02-22,2020,3,Winter Tour 2020,Neptune Theatre,Seattle,WA,USA,true
-1602828440,2020-02-29,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true
-1602828850,2020-02-29,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true
-1602828053,2020-03-01,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true
-1602827443,2020-03-05,2020,3,Winter Tour 2020,Agora Theater,Cleveland,OH,USA,true
-1602827131,2020-03-06,2020,3,Winter Tour 2020,The Intersection,Grand Rapids,MI,USA,true
-1602826574,2020-03-07,2020,3,Winter Tour 2020,Riviera Theatre,Chicago,IL,USA,true
-1602826142,2020-03-08,2020,3,Winter Tour 2020,Delmar Hall,St. Louis,MO,USA,true
-1594067578,2020-03-11,2020,3,Winter Tour 2020,Madison Theater,Covington,KY,USA,true
-1602824178,2020-03-15,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true
-1602823058,2020-03-21,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true
-1613099309,2020-03-27,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true
-1599321210,2020-06-19,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true
-1599321218,2020-06-20,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true
-1599321248,2020-06-26,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true
-1601960752,2020-06-27,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true
-1601959001,2020-06-28,2020,2,Bingo Tour,Millstone Farm,Wilton,CT,USA,true
-1599321090,2020-09-11,2020,1,,Yarmouth Drive-In,West Yarmouth,MA,USA,true
-1599321108,2020-09-12,2020,1,,Yarmouth Drive-In,West Yarmouth,MA,USA,true
-1599321126,2020-09-16,2020,1,,South Farms,Morris,CT,USA,true
-1599321141,2020-09-17,2020,1,,South Farms,Morris,CT,USA,true
-1613006128,2020-09-19,2020,1,,Wall Street Theater,Norwalk,CT,USA,true
-1601953243,2020-10-02,2020,1,,Higher Ground Drive-In at the Essex Junction Exposition Center,Essex Junction,VT,USA,true
-1601953232,2020-10-03,2020,6,Fall Tour 2020,Drive-In Live,Swanzey,NH,USA,true
-1602831065,2020-10-15,2020,6,Fall Tour 2020,Legend Valley,Thornville,OH,USA,true
-1608528597,2020-10-17,2020,6,Fall Tour 2020,Smoky Mountain Event Center,Waynesville,NC,USA,true
-1608527452,2020-10-19,2020,6,Fall Tour 2020,Frederick Fairgrounds,Frederick,MD,USA,true
-1605809122,2020-11-06,2020,6,Fall Tour 2020,South Farms,Morris,CT,USA,true
-1605927892,2020-11-07,2020,6,Fall Tour 2020,South Farms,Morris,CT,USA,true
-1608529980,2020-12-11,2020,1,,620 Loft & Garden in Rockefeller Center,New York,NY,USA,true
-1618127002,2021-04-09,2021,1,,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true
-1621489414,2021-05-03,2021,26,Shenanigans Summer Tour 2021,Frederick Fairgrounds,Frederick,MD,USA,true
-1621489520,2021-05-04,2021,26,Shenanigans Summer Tour 2021,Frederick Fairgrounds,Frederick,MD,USA,true
-1621490963,2021-05-06,2021,1,,Riverfront Park,North Charleston,SC,USA,true
-1621488565,2021-05-08,2021,26,Shenanigans Summer Tour 2021,The Caverns Above Ground Amphitheater,Pelham,TN,USA,true
-1621488243,2021-05-09,2021,1,,The Caverns Above Ground Amphitheater,Pelham,TN,USA,true
-1624330525,2021-06-11,2021,26,Shenanigans Summer Tour 2021,Northlands Live,Swanzey,NH,USA,true
-1624331646,2021-06-12,2021,26,Shenanigans Summer Tour 2021,Westville Music Bowl,New Haven,CT,USA,true
-1624331672,2021-06-13,2021,26,Shenanigans Summer Tour 2021,Westville Music Bowl,New Haven,CT,USA,true
-1624592560,2021-06-15,2021,26,Shenanigans Summer Tour 2021,Silver Lake Twin Drive-In Theatre,Perry,NY,USA,true
-1625628063,2021-06-16,2021,26,Shenanigans Summer Tour 2021,Silver Lake Twin Drive-In Theatre,Perry,NY,USA,true
-1624331734,2021-06-18,2021,26,Shenanigans Summer Tour 2021,Legend Valley,Thornville,OH,USA,true
-1624331751,2021-06-19,2021,26,Shenanigans Summer Tour 2021,Legend Valley,Thornville,OH,USA,true
-1626226617,2021-07-02,2021,26,Shenanigans Summer Tour 2021,The Pines Music Park,Eau Claire,WI,USA,true
-1626226633,2021-07-03,2021,26,Shenanigans Summer Tour 2021,The Pines Music Park,Eau Claire,WI,USA,true
-1627784422,2021-07-06,2021,26,Shenanigans Summer Tour 2021,Pine Creek Lodge,Livingston,MT,USA,true
-1627787577,2021-07-07,2021,26,Shenanigans Summer Tour 2021,Pine Creek Lodge,Livingston,MT,USA,true
-1627788999,2021-07-09,2021,26,Shenanigans Summer Tour 2021,Sculpture Park at Denver Performing Arts Center,Denver,CO,USA,true
-1628047692,2021-07-10,2021,26,Shenanigans Summer Tour 2021,Sculpture Park at Denver Performing Arts Center,Denver,CO,USA,true
-1628134819,2021-07-23,2021,1,,FloydFest,Floyd,VA,USA,true
-1630723826,2021-08-21,2021,1,,Oak Ridge Farm,Arrington,VA,USA,true
-1630726077,2021-08-22,2021,1,,Oak Ridge Farm,Arrington,VA,USA,true
-1630728677,2021-08-28,2021,1,,Bronx Zoo,Bronx,NY,USA,true
-1631854243,2021-09-03,2021,1,,Snowshoe Mountain Resort,Snowshoe,WV,USA,true
-1631924908,2021-09-18,2021,1,,Sea.Hear.Now Festival,Asbury Park,NJ,USA,true
-1635306732,2021-10-08,2021,27,Fall Tour 2021,Terminal 5,New York,NY,USA,true
-1635910003,2021-10-09,2021,27,Fall Tour 2021,Terminal 5,New York,NY,USA,true
-1635919185,2021-10-28,2021,27,Fall Tour 2021,State Theater,Portland,ME,USA,true
-1635919553,2021-10-29,2021,27,Fall Tour 2021,State Theater,Portland,ME,USA,true
-1643255453,2021-10-30,2021,27,Fall Tour 2021,The Palladium,Worcester,MA,USA,true
-1643255473,2021-10-31,2021,27,Fall Tour 2021,The Palladium,Worcester,MA,USA,true
-1643255965,2021-11-06,2021,27,Fall Tour 2021,The Eastern,Atlanta,GA,USA,true
-1643255989,2021-11-07,2021,27,Fall Tour 2021,The Eastern,Atlanta,GA,USA,true
-1643256041,2021-11-09,2021,27,Fall Tour 2021,Republic,New Orleans,LA,USA,true
-1643256074,2021-11-10,2021,27,Fall Tour 2021,House of Blues,Houston,TX,USA,true
-1643256285,2021-11-11,2021,27,Fall Tour 2021,Historic Scoot Inn,Austin,TX,USA,true
-1643256302,2021-11-12,2021,27,Fall Tour 2021,Historic Scoot Inn,Austin,TX,USA,true
-1643257560,2021-11-13,2021,27,Fall Tour 2021,The Echo Lounge & Music Hall,Dallas,TX,USA,true
-1643257583,2021-11-16,2021,27,Fall Tour 2021,Tower Theatre,Oklahoma City,OK,USA,true
-1643257605,2021-11-17,2021,27,Fall Tour 2021,The Truman,Kansas City,MO,USA,true
-1643341083,2021-11-19,2021,27,Fall Tour 2021,Belly Up,Aspen,CO,USA,true
-1643341465,2021-11-21,2021,27,Fall Tour 2021,The Mission Ballroom,Denver,CO,USA,true
-1643341486,2021-11-22,2021,27,Fall Tour 2021,The Mission Ballroom,Denver,CO,USA,true
-1643341525,2021-12-30,2021,1,,Riviera Theatre,Chicago,IL,USA,true
-1643341538,2021-12-31,2021,1,,Riviera Theatre,Chicago,IL,USA,true
-1643221619,2022-01-26,2022,28,Winter Tour 2022,Marquee Theatre,Tempe,AZ,USA,true
-1643342049,2022-01-27,2022,28,Winter Tour 2022,The Observatory North Park,San Diego,CA,USA,true
-1643430972,2022-01-28,2022,28,Winter Tour 2022,The Fonda Theatre,Los Angeles,CA,USA,true
-1643946135,2022-01-29,2022,28,Winter Tour 2022,The Regency Ballroom,San Francisco,CA,USA,true
-1646889854,2022-01-30,2022,28,Winter Tour 2022,The Regency Ballroom,San Francisco,CA,USA,true
-1646890151,2022-02-02,2022,28,Winter Tour 2022,Midtown Ballroom,Bend,OR,USA,true
-1646890846,2022-02-03,2022,28,Winter Tour 2022,Wonder Ballroom,Portland,OR,USA,true
-1646891581,2022-02-04,2022,28,Winter Tour 2022,Wonder Ballroom,Portland,OR,USA,true
-1644291579,2022-02-05,2022,28,Winter Tour 2022,Neptune Theatre,Seattle,WA,USA,true
-1644290969,2022-02-07,2022,28,Winter Tour 2022,The ELM,Bozeman,MT,USA,true
-1647968786,2022-02-09,2022,28,Winter Tour 2022,First Avenue,Minneapolis,MN,USA,true
-1647969186,2022-02-10,2022,28,Winter Tour 2022,The Sylvee,Madison,WI,USA,true
-1647969465,2022-02-11,2022,28,Winter Tour 2022,Old Forester's Paristown Hall,Louisville,KY,USA,true
-1647969788,2022-02-12,2022,28,Winter Tour 2022,Stage AE,Pittsburgh,PA,USA,true
-1647970135,2022-02-26,2022,1,,Mohegan Sun Arena,Uncasville,CT,USA,true
-1646272524,2022-03-01,2022,28,Winter Tour 2022,9:30 Club,Washington,DC,USA,true
-1646892759,2022-03-02,2022,28,Winter Tour 2022,9:30 Club,Washington,DC,USA,true
-1647971657,2022-03-03,2022,28,Winter Tour 2022,The Fillmore,Charlotte,NC,USA,true
-1647971890,2022-03-04,2022,28,Winter Tour 2022,Brooklyn Bowl,Nashville,TN,USA,true
-1647972376,2022-03-05,2022,28,Winter Tour 2022,Brooklyn Bowl,Nashville,TN,USA,true
-1647972561,2022-03-07,2022,28,Winter Tour 2022,The Mill & Mine,Knoxville,TN,USA,true
-1647972862,2022-03-09,2022,28,Winter Tour 2022,Royal Oak Music Theatre,Royal Oak,MI,USA,true
-1647967541,2022-03-10,2022,28,Winter Tour 2022,Agora Theater,Cleveland,OH,USA,true
-1647973810,2022-03-11,2022,28,Winter Tour 2022,The Fillmore,Philadelphia,PA,USA,true
-1647974144,2022-03-12,2022,28,Winter Tour 2022,The Fillmore,Philadelphia,PA,USA,true
-1649637376,2022-04-28,2022,1,,Firefly Distillery,North Charleston,SC,USA,true
-1650982465,2022-04-29,2022,1,,Salvage Station,Asheville,NC,USA,true
-1651783457,2022-04-30,2022,1,,Sweetwater 420 Festival,Atlanta,GA,USA,true
-1651783541,2022-05-01,2022,1,,Beale Street Music Festival,Memphis,TN,USA,true
-1653776640,2022-05-27,2022,29,Dripfield Summer Tour 2022,Westville Music Bowl,New Haven,CT,USA,true
-1653839586,2022-05-28,2022,29,Dripfield Summer Tour 2022,Westville Music Bowl,New Haven,CT,USA,true
-1654951966,2022-05-29,2022,29,Dripfield Summer Tour 2022,Boston Calling,Boston,MA,USA,true
-1654952260,2022-06-06,2022,29,Dripfield Summer Tour 2022,Champlain Valley Exposition,Essex Junction,VT,USA,true
-1654952499,2022-06-08,2022,29,Dripfield Summer Tour 2022,Artpark,Lewiston,NY,USA,true
-1654952852,2022-06-10,2022,29,Dripfield Summer Tour 2022,Legend Valley,Thornville,OH,USA,true
-1658016134,2022-06-11,2022,29,Dripfield Summer Tour 2022,Legend Valley,Thornville,OH,USA,true
-1658547159,2022-06-12,2022,29,Dripfield Summer Tour 2022,TCU Amphitheater at White River State Park,Indianapolis,IN,USA,true
-1658553316,2022-06-14,2022,29,Dripfield Summer Tour 2022,Greenfield Lake Amphitheater,Wilmington,NC,USA,true
-1658553333,2022-06-15,2022,29,Dripfield Summer Tour 2022,Red Hat Amphitheater,Raleigh,NC,USA,true
-1658553367,2022-06-17,2022,29,Dripfield Summer Tour 2022,Bonnaroo Music and Arts Festival,Manchester,TN,USA,true
-1658553386,2022-06-24,2022,29,Dripfield Summer Tour 2022,Radio City Music Hall,New York,NY,USA,true
-1658553400,2022-06-25,2022,29,Dripfield Summer Tour 2022,Radio City Music Hall,New York,NY,USA,true
-1667314241,2022-06-25,2022,1,,Studio 1515,New York,NY,USA,true
-1658554962,2022-06-30,2022,29,Dripfield Summer Tour 2022,High Sierra Music Festival,Quincy,CA,USA,true
-1658556414,2022-07-02,2022,29,Dripfield Summer Tour 2022,Peach Music Festival,Scranton,PA,USA,true
-1658556522,2022-07-22,2022,29,Dripfield Summer Tour 2022,Fort Adams State Park,Newport,RI,USA,true
-1658556609,2022-07-22,2022,29,Dripfield Summer Tour 2022,Newport Blues Café,Newport,RI,USA,true
-1660830109,2022-08-12,2022,29,Dripfield Summer Tour 2022,Chrysalis,Columbia,MD,USA,true
-1660830198,2022-08-13,2022,29,Dripfield Summer Tour 2022,Chrysalis,Columbia,MD,USA,true
-1660783551,2022-08-16,2022,29,Dripfield Summer Tour 2022,Dillon Amphitheatre,Dillon,CO,USA,true
-1660783515,2022-08-17,2022,29,Dripfield Summer Tour 2022,Dillon Amphitheatre,Dillon,CO,USA,true
-1660875454,2022-08-18,2022,29,Dripfield Summer Tour 2022,Red Rocks Park and Amphitheater,Morrison,CO,USA,true
-1661051264,2022-08-20,2022,29,Dripfield Summer Tour 2022,Brooklyn Bowl,Las Vegas,NV,USA,true
-1661051366,2022-08-21,2022,29,Dripfield Summer Tour 2022,Greek Theatre,Los Angeles,CA,USA,true
-1661051448,2022-08-23,2022,29,Dripfield Summer Tour 2022,South Shore Room at Harrah's Lake Tahoe,Stateline,NV,USA,true
-1661051487,2022-08-25,2022,1,,Pioneer Courthouse Square,Portland,OR,USA,true
-1661051527,2022-08-26,2022,29,Dripfield Summer Tour 2022,Thing Festival,Port Townsend,WA,USA,true
-1661051560,2022-08-27,2022,29,Dripfield Summer Tour 2022,Sacred Rose Festival,Bridgeview,IL,USA,true
-1661654953,2022-09-29,2022,30,Dripfield Fall Tour 2022,The National,Richmond,VA,USA,true
-1661654980,2022-09-30,2022,30,Dripfield Fall Tour 2022,The National,Richmond,VA,USA,true
-1661655044,2022-10-01,2022,30,Dripfield Fall Tour 2022,Pullman Yards,Atlanta,GA,USA,true
-1661655058,2022-10-02,2022,30,Dripfield Fall Tour 2022,Pullman Yards,Atlanta,GA,USA,true
-1661655105,2022-10-04,2022,30,Dripfield Fall Tour 2022,The Pageant,St. Louis,MO,USA,true
-1661655131,2022-10-06,2022,30,Dripfield Fall Tour 2022,Joy Theater,New Orleans,LA,USA,true
-1661655168,2022-10-07,2022,30,Dripfield Fall Tour 2022,Joy Theater,New Orleans,LA,USA,true
-1661655203,2022-10-08,2022,30,Dripfield Fall Tour 2022,Stubb's BBQ,Austin,TX,USA,true
-1661655429,2022-10-09,2022,30,Dripfield Fall Tour 2022,Zilker Park,Austin,TX,USA,true
-1661655503,2022-10-11,2022,30,Dripfield Fall Tour 2022,Arvest Bank Theater at the Midland,Kansas City,MO,USA,true
-1661655538,2022-10-13,2022,30,Dripfield Fall Tour 2022,JJ's Live,Fayetteville,AR,USA,true
-1661655592,2022-10-14,2022,30,Dripfield Fall Tour 2022,The Criterion,Oklahoma City,OK,USA,true
-1661655645,2022-10-15,2022,30,Dripfield Fall Tour 2022,South Side Ballroom,Dallas,TX,USA,true
-1661655448,2022-10-16,2022,30,Dripfield Fall Tour 2022,Zilker Park,Austin,TX,USA,true
-1667313566,2022-11-01,2022,1,,Hollywood Masonic Temple,Hollywood,CA,USA,true
-1661655709,2022-11-09,2022,31,TAB/Goose Fall 2022,Cross Insurance Arena,Portland,ME,USA,true
-1661655754,2022-11-11,2022,31,TAB/Goose Fall 2022,Tsongas Center,Lowell,MA,USA,true
-1661655935,2022-11-12,2022,31,TAB/Goose Fall 2022,Mohegan Sun Arena,Uncasville,CT,USA,true
-1661655965,2022-11-13,2022,31,TAB/Goose Fall 2022,Cool Insuring Arena,Glens Falls,NY,USA,true
-1661656009,2022-11-15,2022,31,TAB/Goose Fall 2022,UPMC Events Center,Carnot-Moon,PA,USA,true
-1661656167,2022-11-17,2022,31,TAB/Goose Fall 2022,EagleBank Arena,Fairfax,VA,USA,true
-1661656204,2022-11-18,2022,31,TAB/Goose Fall 2022,War Memorial Arena,Syracuse,NY,USA,true
-1661656555,2022-11-19,2022,31,TAB/Goose Fall 2022,Santander Arena,Reading,PA,USA,true
-1670018897,2022-12-07,2022,1,,30 Rockefeller Plaza,New York,NY,USA,true
-1661656582,2022-12-16,2022,1,,1STBANK Center,Broomfield,CO,USA,true
-1661656607,2022-12-17,2022,1,,1STBANK Center,Broomfield,CO,USA,true
-1668170993,2022-12-18,2022,1,,The Fox Theatre,Boulder,CO,USA,true
-1664301263,2022-12-30,2022,1,,Andrew J Brady Music Center,Cincinnati,OH,USA,true
-1664301272,2022-12-31,2022,1,,Andrew J Brady Music Center,Cincinnati,OH,USA,true
-1672769241,2023-01-15,2023,1,,Moon Palace,Riviera Maya,,Mexico,true
-1677934351,2023-03-03,2023,1,,Okeechobee Music Festival,Okeechobee,FL,USA,true
-1670439691,2023-03-08,2023,32,Spring Tour 2023,The Capitol Theatre,Port Chester,NY,USA,true
-1670439704,2023-03-09,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1670439739,2023-03-10,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1670439778,2023-03-11,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1670439789,2023-03-12,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1670440316,2023-03-23,2023,32,Spring Tour 2023,Roadrunner,Boston,MA,USA,true
-1670440350,2023-03-24,2023,32,Spring Tour 2023,The Met,Philadelphia,PA,USA,true
-1670440360,2023-03-25,2023,32,Spring Tour 2023,The Met,Philadelphia,PA,USA,true
-1670440377,2023-03-26,2023,32,Spring Tour 2023,Agora Theater,Cleveland,OH,USA,true
-1678977364,2023-03-28,2023,32,Spring Tour 2023,Georgia Theatre,Athens,GA,USA,true
-1678977337,2023-03-30,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true
-1670440389,2023-03-31,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true
-1680396905,2023-04-01,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true
-1680396930,2023-04-02,2023,32,Spring Tour 2023,Avondale Brewing Company,Birmingham,AL,USA,true
-1670440423,2023-04-13,2023,32,Spring Tour 2023,The Sylvee,Madison,WI,USA,true
-1670440441,2023-04-14,2023,32,Spring Tour 2023,The Salt Shed,Chicago,IL,USA,true
-1670440457,2023-04-15,2023,32,Spring Tour 2023,The Salt Shed,Chicago,IL,USA,true
-1670440474,2023-04-16,2023,32,Spring Tour 2023,Palace Theatre,St. Paul,MN,USA,true
-1670440487,2023-04-18,2023,32,Spring Tour 2023,The ELM,Bozeman,MT,USA,true
-1670440497,2023-04-19,2023,32,Spring Tour 2023,The ELM,Bozeman,MT,USA,true
-1670440512,2023-04-21,2023,32,Spring Tour 2023,Knitting Factory,Boise,ID,USA,true
-1670440530,2023-04-22,2023,32,Spring Tour 2023,Paramount Theatre,Seattle,WA,USA,true
-1670440544,2023-04-23,2023,32,Spring Tour 2023,Paramount Theatre,Seattle,WA,USA,true
-1670440689,2023-04-25,2023,32,Spring Tour 2023,McDonald Theatre,Eugene,OR,USA,true
-1670440707,2023-04-27,2023,32,Spring Tour 2023,The Warfield,San Francisco,CA,USA,true
-1670440719,2023-04-28,2023,32,Spring Tour 2023,The Warfield,San Francisco,CA,USA,true
-1670440734,2023-04-29,2023,32,Spring Tour 2023,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true
-1678977645,2023-05-02,2023,32,Spring Tour 2023,Faubourg Brewery,New Orleans,LA,USA,true
-1678977663,2023-05-03,2023,32,Spring Tour 2023,Faubourg Brewery,New Orleans,LA,USA,true
-1684521220,2023-05-26,2023,33,Summer Tour 2023,Three Sisters Park,Chillicothe,IL,USA,true
-1678977723,2023-06-02,2023,33,Summer Tour 2023,Cathead Distillery,Jackson,MS,USA,true
-1678977739,2023-06-03,2023,33,Summer Tour 2023,Riverbend Music Festival,Chattanooga,TN,USA,true
-1678977750,2023-06-04,2023,33,Summer Tour 2023,Railbird Music Festival,Lexington,KY,USA,true
-1686586195,2023-06-21,2023,33,Summer Tour 2023,Riviera Theatre,Chicago,IL,USA,true
-1678977768,2023-06-22,2023,33,Summer Tour 2023,Louisville Palace Theatre,Louisville,KY,USA,true
-1678977782,2023-06-23,2023,33,Summer Tour 2023,Louisville Palace Theatre,Louisville,KY,USA,true
-1678977794,2023-06-25,2023,33,Summer Tour 2023,Electric Forest Festival,Rothbury,MI,USA,true
-1678977807,2023-06-27,2023,33,Summer Tour 2023,Kemba Live! Outdoors,Columbus,OH,USA,true
-1680623883,2023-06-29,2023,33,Summer Tour 2023,Peach Music Festival,Scranton,PA,USA,true
-1680623957,2023-06-30,2023,33,Summer Tour 2023,Nelson Ledges Quarry Park,Garrettsville,OH,USA,true
-1680623971,2023-07-01,2023,33,Summer Tour 2023,Nelson Ledges Quarry Park,Garrettsville,OH,USA,true
-1678977844,2023-07-03,2023,33,Summer Tour 2023,Stone Pony Summer Stage,Asbury Park,NJ,USA,true
-1678977854,2023-07-04,2023,33,Summer Tour 2023,Stone Pony Summer Stage,Asbury Park,NJ,USA,true
-1680624000,2023-07-06,2023,33,Summer Tour 2023,Thompson's Point,Portland,ME,USA,true
-1678977867,2023-07-07,2023,33,Summer Tour 2023,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true
-1680624030,2023-07-08,2023,33,Summer Tour 2023,Levitate Music and Arts Festival,Marshfield,MA,USA,true
-1680624072,2023-07-29,2023,33,Summer Tour 2023,Fort Adams State Park,Newport,RI,USA,true
-1689710328,2023-09-13,2023,34,Fall Tour 2023,Leader Bank Pavilion,Boston,MA,USA,true
-1690124854,2023-09-14,2023,34,Fall Tour 2023,Leader Bank Pavilion,Boston,MA,USA,true
-1686586810,2023-09-15,2023,34,Fall Tour 2023,Knox Farm State Park,East Aurora,NY,USA,true
-1680624164,2023-09-16,2023,34,Fall Tour 2023,Masonic Temple,Detroit,MI,USA,true
-1680624194,2023-09-17,2023,34,Fall Tour 2023,Miller High Life Theatre,Milwaukee,WI,USA,true
-1680624215,2023-09-20,2023,34,Fall Tour 2023,Red Butte Garden Amphitheatre,Salt Lake City,UT,USA,true
-1680624228,2023-09-22,2023,34,Fall Tour 2023,Kettlehouse Amphitheater,Bonner,MT,USA,true
-1680624243,2023-09-23,2023,34,Fall Tour 2023,Spokane Pavilion,Spokane,WA,USA,true
-1695143588,2023-09-24,2023,34,Fall Tour 2023,Cascade Equinox Festival,Redmond,OR,USA,true
-1680624255,2023-09-25,2023,34,Fall Tour 2023,Fox Theater,Oakland,CA,USA,true
-1680624271,2023-09-26,2023,34,Fall Tour 2023,Fox Theater,Oakland,CA,USA,true
-1689710282,2023-09-28,2023,34,Fall Tour 2023,The Wiltern,Los Angeles,CA,USA,true
-1680624285,2023-09-29,2023,34,Fall Tour 2023,Santa Barbara Bowl,Santa Barbara,CA,USA,true
-1695143625,2023-09-30,2023,34,Fall Tour 2023,Ohana Festival,Dana Point,CA,USA,true
-1680625321,2023-10-01,2023,34,Fall Tour 2023,Brooklyn Bowl,Las Vegas,NV,USA,true
-1685655901,2023-10-03,2023,34,Fall Tour 2023,Pepsi Amphitheater,Flagstaff,AZ,USA,true
-1685655916,2023-10-05,2023,34,Fall Tour 2023,Red Rocks Park and Amphitheater,Morrison,CO,USA,true
-1685655928,2023-10-06,2023,34,Fall Tour 2023,Red Rocks Park and Amphitheater,Morrison,CO,USA,true
-1694018355,2023-10-07,2023,34,Fall Tour 2023,West Lawn at Lory Student Center,Fort Collins,CO,USA,true
-1695777245,2023-10-27,2023,34,Fall Tour 2023,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true
-1689710455,2023-11-03,2023,35,Fall European Tour 2023,Trabendo,Paris,,France,true
-1689710478,2023-11-04,2023,35,Fall European Tour 2023,Luxor,Cologne,,Germany,true
-1689710490,2023-11-07,2023,35,Fall European Tour 2023,Melkweg Oude Zaal,Amsterdam,,Netherlands,true
-1689710506,2023-11-09,2023,35,Fall European Tour 2023,Hotel Cecil,Copenhagen,,Denmark,true
-1699616462,2023-11-10,2023,35,Fall European Tour 2023,Rolling Stone Beach,Wendel,,Germany,true
-1689710521,2023-11-11,2023,35,Fall European Tour 2023,Gretchen,Berlin,,Germany,true
-1689710564,2023-11-13,2023,35,Fall European Tour 2023,AB Club,Brussels,,Belgium,true
-1689710577,2023-11-15,2023,35,Fall European Tour 2023,BAaD,Glasgow,,United Kingdom,true
-1689710600,2023-11-16,2023,35,Fall European Tour 2023,Academy 2,Manchester,,United Kingdom,true
-1689710616,2023-11-18,2023,35,Fall European Tour 2023,Thekla,Bristol,,United Kingdom,true
-1685665456,2023-11-19,2023,35,Fall European Tour 2023,Electric Ballroom,London,,United Kingdom,true
-1685665473,2023-11-20,2023,35,Fall European Tour 2023,Electric Ballroom,London,,United Kingdom,true
-1689710643,2023-12-08,2023,1,,Hampton Coliseum,Hampton,VA,USA,true
-1689710651,2023-12-09,2023,1,,Hampton Coliseum,Hampton,VA,USA,true
-1710264780,2024-04-07,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1710264790,2024-04-08,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1710264813,2024-04-09,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1710264829,2024-04-10,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true
-1713972776,2024-04-24,2024,1,,Clune Auditorium at Wilton High School,Wilton,CT,USA,true
-1714142474,2024-04-24,2024,1,,Clune Auditorium at Wilton High School,Wilton,CT,USA,true
-1715813149,2024-05-11,2024,1,,Regions Tower,Indianapolis,IN,USA,true
-1703179698,2024-05-26,2024,36,Summer Tour 2024,Three Sisters Park,Chillicothe,IL,USA,true
-1707240265,2024-06-04,2024,36,Summer Tour 2024,The Factory,Chesterfield,MO,USA,true
-1707240279,2024-06-05,2024,36,Summer Tour 2024,The Factory,Chesterfield,MO,USA,true
-1707240294,2024-06-07,2024,36,Summer Tour 2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true
-1707240309,2024-06-08,2024,36,Summer Tour 2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true
-1707240478,2024-06-10,2024,36,Summer Tour 2024,Steelhouse,Omaha,NE,USA,true
-1707240531,2024-06-11,2024,36,Summer Tour 2024,The Midland Theatre,Kansas City,MO,USA,true
-1707240597,2024-06-12,2024,36,Summer Tour 2024,Everwise Amphitheater at White River State Park,Indianapolis,IN,USA,true
-1701282961,2024-06-14,2024,36,Summer Tour 2024,Northlands Live,Swanzey,NH,USA,true
-1707240660,2024-06-15,2024,36,Summer Tour 2024,Constellation Brands-Marvin Sands Performing Arts Center,Canandaigua,NY,USA,true
-1707240691,2024-06-16,2024,36,Summer Tour 2024,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true
-1707240752,2024-06-18,2024,36,Summer Tour 2024,Red Hat Amphitheater,Raleigh,NC,USA,true
-1707240781,2024-06-20,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true
-1707240794,2024-06-21,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true
-1707240816,2024-06-22,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true
-1707240952,2024-06-23,2024,36,Summer Tour 2024,Skyla Credit Union Amphitheatre,Charlotte,NC,USA,true
-1707240973,2024-06-25,2024,36,Summer Tour 2024,Thompson's Point,Portland,ME,USA,true
-1707241190,2024-06-26,2024,36,Summer Tour 2024,Thompson's Point,Portland,ME,USA,true
-1707241262,2024-06-28,2024,36,Summer Tour 2024,Mann Center for the Performing Arts,Philadelphia,PA,USA,true
-1707241278,2024-06-29,2024,36,Summer Tour 2024,Forest Hills Stadium,Queens,NY,USA,true
-1707241290,2024-06-30,2024,36,Summer Tour 2024,Westville Music Bowl,New Haven,CT,USA,true
-1712074920,2024-09-01,2024,37,September Tour 2024,PNC Bank Arts Center,Holmdel,NJ,USA,true
-1719245701,2024-09-02,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true
-1719248198,2024-09-03,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true
-1719248225,2024-09-04,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true
-1712074940,2024-09-06,2024,37,September Tour 2024,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true
-1712074979,2024-09-07,2024,37,September Tour 2024,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true
-1712075003,2024-09-09,2024,37,September Tour 2024,Ting Pavilion,Charlottesville,VA,USA,true
-1719248320,2024-09-11,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true
-1719248336,2024-09-12,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true
-1719248398,2024-09-13,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true
-1712075027,2024-09-14,2024,37,September Tour 2024,The Armory,Minneapolis,MN,USA,true
-1712075175,2024-09-15,2024,37,September Tour 2024,Vibrant Music Hall,Waukee,IA,USA,true
-1712075204,2024-09-17,2024,37,September Tour 2024,The Great Saltair,Magna,UT,USA,true
-1712075232,2024-09-19,2024,37,September Tour 2024,Kettlehouse Amphitheater,Bonner,MT,USA,true
-1712075248,2024-09-20,2024,37,September Tour 2024,Kettlehouse Amphitheater,Bonner,MT,USA,true
-1712075274,2024-09-21,2024,37,September Tour 2024,Remlinger Farms,Carnation,WA,USA,true
-1712075391,2024-09-22,2024,37,September Tour 2024,Edgefield Concerts on the Lawn,Troutdale,OR,USA,true
-1712075420,2024-09-24,2024,37,September Tour 2024,Cuthbert Amphitheater,Eugene,OR,USA,true
-1712075435,2024-09-26,2024,37,September Tour 2024,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true
-1712075463,2024-09-27,2024,37,September Tour 2024,Greek Theatre,Los Angeles,CA,USA,true
-1712075724,2024-09-28,2024,37,September Tour 2024,Frost Amphitheater,Stanford,CA,USA,true
-1727545020,2024-10-01,2024,38,Fall Tour 2024,The Troubadour,West Hollywood,CA,USA,true
-1716390709,2024-10-04,2024,37,September Tour 2024,Memphis Botanical Gardens,Memphis,TN,USA,true
-1719248440,2024-10-24,2024,38,Fall Tour 2024,Ascend Amphitheater,Nashville,TN,USA,true
-1728409724,2024-10-25,2024,38,Fall Tour 2024,Lawrence Joel Veterans Memorial Coliseum,Winston-Salem,NC,USA,true
-1728407482,2024-10-26,2024,38,Fall Tour 2024,Avondale Brewing Company,Birmingham,AL,USA,true
-1719248538,2024-10-29,2024,38,Fall Tour 2024,The Fillmore Miami Beach,Miami,FL,USA,true
-1719248561,2024-10-30,2024,38,Fall Tour 2024,The Fillmore Miami Beach,Miami,FL,USA,true
-1719248592,2024-10-31,2024,38,Fall Tour 2024,The St. Pete Pier,St. Petersburg,FL,USA,true
-1719248634,2024-11-01,2024,38,Fall Tour 2024,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true
-1719248650,2024-11-02,2024,38,Fall Tour 2024,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true
-1730823679,2024-11-04,2024,1,,The Revelry,Charlotte,NC,USA,true
-1719248761,2024-11-07,2024,38,Fall Tour 2024,Petersen Events Center,Pittsburgh,PA,USA,true
-1719248817,2024-11-08,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true
-1719248797,2024-11-09,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true
-1719248831,2024-11-10,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true
-1719248901,2024-11-12,2024,38,Fall Tour 2024,The Anthem,Washington,DC,USA,true
-1719248917,2024-11-13,2024,38,Fall Tour 2024,The Anthem,Washington,DC,USA,true
-1730168333,2024-11-24,2024,1,,Madison Square Garden,New York,NY,USA,true
-1719248965,2024-12-13,2024,1,,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,USA,true
-1719248984,2024-12-14,2024,1,,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,USA,true
-1721059697,2024-12-30,2024,1,,Moody Center,Austin,TX,USA,true
-1721059705,2024-12-31,2024,1,,Moody Center,Austin,TX,USA,true
-1731950152,2025-02-06,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true
-1731950167,2025-02-07,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true
-1731950848,2025-02-08,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true
-1732138914,2025-02-10,2025,39,Winter Tour 2025,HISTORY,Toronto,ON,Canada,true
-1731950869,2025-02-11,2025,39,Winter Tour 2025,HISTORY,Toronto,ON,Canada,true
-1731951149,2025-02-13,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true
-1731951172,2025-02-14,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true
-1731951387,2025-02-15,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true
-1741108426,2025-03-11,2025,1,,The Shed,New York,NY,USA,true
-1737015351,2025-04-24,2025,1,,Fair Grounds Race Course,New Orleans,LA,USA,true
-1745685585,2025-04-25,2025,1,,Preservation Hall,New Orleans,LA,USA,true
-1727890080,2025-05-08,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1727890094,2025-05-09,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1727890109,2025-05-10,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1743623827,2025-05-10,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1736785860,2025-05-25,2025,40,Everything Must Go Summer Tour,Napa Valley Expo,Napa,CA,USA,true
-1748090458,2025-05-25,2025,40,Everything Must Go Summer Tour,Napa Valley Expo,Napa,CA,USA,true
-1740507757,2025-05-27,2025,40,Everything Must Go Summer Tour,The Masonic,San Francisco,CA,USA,true
-1740507768,2025-05-28,2025,40,Everything Must Go Summer Tour,The Masonic,San Francisco,CA,USA,true
-1737998824,2025-05-30,2025,40,Everything Must Go Summer Tour,Hayden Homes Amphitheater,Bend,OR,USA,true
-1738001411,2025-05-31,2025,40,Everything Must Go Summer Tour,Spokane Pavilion,Spokane,WA,USA,true
-1738001727,2025-06-01,2025,40,Everything Must Go Summer Tour,Idaho Botanical Garden: Outlaw Field,Boise,ID,USA,true
-1738001750,2025-06-03,2025,40,Everything Must Go Summer Tour,Brooklyn Bowl,Las Vegas,NV,USA,true
-1738001942,2025-06-04,2025,40,Everything Must Go Summer Tour,Arizona Financial Theatre,Phoenix,AZ,USA,true
-1736789025,2025-06-06,2025,40,Everything Must Go Summer Tour,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true
-1736789092,2025-06-07,2025,40,Everything Must Go Summer Tour,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true
-1738001961,2025-06-10,2025,40,Everything Must Go Summer Tour,The Factory,Chesterfield,MO,USA,true
-1738001976,2025-06-11,2025,40,Everything Must Go Summer Tour,The Factory,Chesterfield,MO,USA,true
-1738002251,2025-06-12,2025,40,Everything Must Go Summer Tour,Everwise Amphitheater at White River State Park,Indianapolis,IN,USA,true
-1736352597,2025-06-15,2025,40,Everything Must Go Summer Tour,Merriweather Post Pavilion,Columbia,MD,USA,true
-1738002457,2025-06-17,2025,40,Everything Must Go Summer Tour,Live Oak Bank Pavilion,Wilmington,NC,USA,true
-1738002473,2025-06-19,2025,40,Everything Must Go Summer Tour,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true
-1738002485,2025-06-20,2025,40,Everything Must Go Summer Tour,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true
-1738002506,2025-06-21,2025,40,Everything Must Go Summer Tour,Constellation Brands-Marvin Sands Performing Arts Center,Canandaigua,NY,USA,true
-1737731867,2025-06-22,2025,40,Everything Must Go Summer Tour,Belleayre Mountain,Highmount,NY,USA,true
-1749749082,2025-06-23,2025,40,Everything Must Go Summer Tour,Racket,New York,NY,USA,true
-1738002676,2025-06-27,2025,40,Everything Must Go Summer Tour,Bank of New Hampshire Pavilion,Gilford,NH,USA,true
-1736789107,2025-06-28,2025,40,Everything Must Go Summer Tour,Madison Square Garden,New York,NY,USA,true
-1738002691,2025-06-29,2025,40,Everything Must Go Summer Tour,Westville Music Bowl,New Haven,CT,USA,true
-1745515491,2025-07-25,2025,1,,Fort Adams State Park,Newport,RI,USA,true
-1755099318,2025-08-13,2025,1,,30 Rockefeller Plaza,New York,NY,USA,true
-1754580823,2025-08-15,2025,1,,World Cafe Live,Philadelphia,PA,USA,true
-1744816419,2025-08-16,2025,40,Everything Must Go Summer Tour,Park City Song Summit,Park City,UT,USA,true
-1745887842,2025-08-28,2025,41,Fall Tour 2025,Hancher Green,Iowa City,IA,USA,true
-1743092094,2025-08-31,2025,1,,The Gorge Amphitheatre,Quincy,WA,USA,true
-1739970619,2025-09-12,2025,41,Fall Tour 2025,Harvest Music Festival,Fredericton,NB,Canada,true
-1750092069,2025-09-14,2025,41,Fall Tour 2025,Waterfront Park,Burlington,VT,USA,true
-1739466724,2025-09-17,2025,41,Fall Tour 2025,Kohl Center,Madison,WI,USA,true
-1745888102,2025-09-19,2025,41,Fall Tour 2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,USA,true
-1745888259,2025-09-20,2025,41,Fall Tour 2025,Huntingon Bank Pavilion at Northerly Island,Chicago,IL,USA,true
-1745888333,2025-09-23,2025,41,Fall Tour 2025,Louisville Palace Theatre,Louisville,KY,USA,true
-1745888334,2025-09-24,2025,41,Fall Tour 2025,Louisville Palace Theatre,Louisville,KY,USA,true
-1745888390,2025-09-26,2025,41,Fall Tour 2025,Ameris Bank Amphitheatre,Alpharetta,GA,USA,true
-1745888429,2025-09-27,2025,41,Fall Tour 2025,PNC Music Pavilion,Charlotte,NC,USA,true
-1759102128,2025-09-28,2025,1,,The Revelry,Charlotte,NC,USA,true
-1745888335,2025-09-30,2025,41,Fall Tour 2025,Kemba Live! Outdoors,Columbus,OH,USA,true
-1750092168,2025-10-02,2025,41,Fall Tour 2025,Allianz Amphitheater at Riverfront,Richmond,VA,USA,true
-1750092201,2025-10-03,2025,41,Fall Tour 2025,Allianz Amphitheater at Riverfront,Richmond,VA,USA,true
-1750092202,2025-10-04,2025,41,Fall Tour 2025,Mann Center for the Performing Arts,Philadelphia,PA,USA,true
-1747331275,2025-10-05,2025,41,Fall Tour 2025,RISE Festival,Jean,NV,USA,true
-1743534473,2025-11-02,2025,1,,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true
-1765242396,2025-12-08,2025,1,,Grand Ballroom at Manhattan Center,New York,NY,USA,true
-1753114489,2025-12-12,2025,1,,Amica Mutual Pavilion,Providence,RI,USA,true
-1753114510,2025-12-13,2025,1,,Amica Mutual Pavilion,Providence,RI,USA,true
-1764955445,2026-03-28,2026,1,,Jam in the Streets,Athens,GA,USA,true
-1762797174,2026-04-10,2026,42,The Spring 2026 Tour,ExploreAsheville.com Arena,Asheville,NC,USA,true
-1762797175,2026-04-11,2026,42,The Spring 2026 Tour,Coca-Cola Amphitheater,Birmingham,AL,USA,true
-1762797176,2026-04-12,2026,42,The Spring 2026 Tour,Central Florida Fairgrounds,Orlando,FL,USA,true
-1762797177,2026-04-14,2026,42,The Spring 2026 Tour,War Memorial Auditorium,Fort Lauderdale,FL,USA,true
-1762797178,2026-04-15,2026,42,The Spring 2026 Tour,War Memorial Auditorium,Fort Lauderdale,FL,USA,true
-1762797179,2026-04-17,2026,42,The Spring 2026 Tour,The BayCare Sound,Clearwater,FL,USA,true
-1762797180,2026-04-18,2026,42,The Spring 2026 Tour,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true
-1762797181,2026-04-19,2026,42,The Spring 2026 Tour,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true
-1762797182,2026-04-21,2026,42,The Spring 2026 Tour,Saenger Theatre,New Orleans,LA,USA,true
-1762797183,2026-04-22,2026,42,The Spring 2026 Tour,Saenger Theatre,New Orleans,LA,USA,true
-1762797184,2026-04-23,2026,42,The Spring 2026 Tour,Bayou Music Center,Houston,TX,USA,true
-1762797185,2026-04-24,2026,42,The Spring 2026 Tour,Moody Center,Austin,TX,USA,true
-1762797186,2026-04-25,2026,42,The Spring 2026 Tour,The Pavilion at Toyota Music Factory,Irving,TX,USA,true
-1771450225,2026-05-07,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1778202106,2026-05-07,2026,1,,Hotel El Ganzo,San Jose Del Cabo,,Mexico,true
-1771450241,2026-05-08,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1771450242,2026-05-09,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1773021342,2026-05-09,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true
-1765285120,2026-05-22,2026,43,Europe/UK Tour 2026,Electric Brixton,London,,UK,true
-1765285154,2026-05-23,2026,43,Europe/UK Tour 2026,Electric Brixton,London,,UK,true
-1765285390,2026-05-25,2026,43,Europe/UK Tour 2026,La Madeleine,Brussels,,Belgium,true
-1765285422,2026-05-27,2026,43,Europe/UK Tour 2026,Melkweg,Amsterdam,,Netherlands,true
-1765285442,2026-05-28,2026,43,Europe/UK Tour 2026,Melkweg,Amsterdam,,Netherlands,true
-1765285944,2026-05-30,2026,43,Europe/UK Tour 2026,Bürgerhaus Stollwerck,Cologne,,Germany,true
-1765285986,2026-06-01,2026,43,Europe/UK Tour 2026,Elysée-Montmartre,Paris,,France,true
-1765286055,2026-06-03,2026,43,Europe/UK Tour 2026,Festsaal Kreuzberg,Berlin,,Germany,true
-1765286171,2026-06-05,2026,43,Europe/UK Tour 2026,Northside Festival,Viby,,Denmark,true
-1769450529,2026-06-13,2026,44,Summer Tour 2026,RBC Amphitheatre,Toronto,ON,Canada,true
-1769450530,2026-06-15,2026,44,Summer Tour 2026,The Dome,Virginia Beach,VA,USA,true
-1769450531,2026-06-16,2026,44,Summer Tour 2026,The Dome,Virginia Beach,VA,USA,true
-1768255307,2026-06-19,2026,44,Summer Tour 2026,Madison Square Garden,New York,NY,USA,true
-1768255308,2026-06-20,2026,44,Summer Tour 2026,Madison Square Garden,New York,NY,USA,true
-1781619077,2026-06-21,2026,44,Summer Tour 2026,Central Park SummerStage,New York,NY,USA,true
-1769450532,2026-06-23,2026,44,Summer Tour 2026,Firefly Distillery,North Charleston,SC,USA,true
-1769450533,2026-06-24,2026,44,Summer Tour 2026,Firefly Distillery,North Charleston,SC,USA,true
-1769450534,2026-06-26,2026,44,Summer Tour 2026,Red Hat Amphitheater,Raleigh,NC,USA,true
-1769450535,2026-06-27,2026,44,Summer Tour 2026,Red Hat Amphitheater,Raleigh,NC,USA,true
-1769450536,2026-06-28,2026,44,Summer Tour 2026,Merriweather Post Pavilion,Columbia,MD,USA,true
-1769450537,2026-06-30,2026,44,Summer Tour 2026,Leader Bank Pavilion,Boston,MA,USA,true
-1769450538,2026-07-01,2026,44,Summer Tour 2026,Leader Bank Pavilion,Boston,MA,USA,true
-1769450539,2026-07-02,2026,44,Summer Tour 2026,PNC Bank Arts Center,Holmdel,NJ,USA,true
-1769450540,2026-07-03,2026,44,Summer Tour 2026,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true
-1769450541,2026-07-04,2026,44,Summer Tour 2026,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true
-1769450542,2026-08-13,2026,44,Summer Tour 2026,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true
-1769450543,2026-08-14,2026,44,Summer Tour 2026,Greek Theatre,Los Angeles,CA,USA,true
-1769450544,2026-08-15,2026,44,Summer Tour 2026,Frost Amphitheater,Stanford,CA,USA,true
-1769450545,2026-08-16,2026,44,Summer Tour 2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,USA,true
-1769450546,2026-08-18,2026,44,Summer Tour 2026,Commodore Ballroom,Vancouver,BC,Canada,false
-1769450547,2026-08-19,2026,44,Summer Tour 2026,WAMU Theater,Seattle,WA,USA,false
-1769450548,2026-08-21,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false
-1769450725,2026-08-22,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false
-1769450726,2026-08-24,2026,44,Summer Tour 2026,Kettlehouse Amphitheater,Bonner,MT,USA,false
-1769450727,2026-08-27,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false
-1769450728,2026-08-28,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false
-1775581872,2026-08-29,2026,44,Summer Tour 2026,Civic Center,Salt Lake City,UT,USA,false
-1782144765,2026-08-31,2026,44,Summer Tour 2026,The Mishawaka,Bellvue,CO,USA,false
-1782144766,2026-09-01,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false
-1782144767,2026-09-02,2026,44,Summer Tour 2026,Dillon Amphitheatre,Dillon,CO,USA,false
-1771450166,2026-09-26,2026,1,,Kentucky Expo Center,Louisville,KY,USA,false
-1780327768,2026-11-03,2026,45,Fall Tour 2026,The Midland,Kansas City,MO,USA,false
-1780327769,2026-11-04,2026,45,Fall Tour 2026,The Midland,Kansas City,MO,USA,false
-1780327770,2026-11-06,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false
-1780327771,2026-11-07,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false
-1780327772,2026-11-08,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false
-1780327773,2026-11-10,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,false
-1780327774,2026-11-11,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,false
-1780327775,2026-11-13,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false
-1780327776,2026-11-14,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false
-1780327777,2026-11-15,2026,45,Fall Tour 2026,Cross Insurance Arena,Portland,ME,USA,false
-1780327778,2026-11-18,2026,45,Fall Tour 2026,John Paul Jones Arena,Charlottesville,VA,USA,false
-1780327779,2026-11-19,2026,45,Fall Tour 2026,Citizens Live at The Wylie,Pittsburgh,PA,USA,false
-1780327780,2026-11-20,2026,45,Fall Tour 2026,Citizens Live at The Wylie,Pittsburgh,PA,USA,false
-1780327781,2026-11-21,2026,45,Fall Tour 2026,Blue Cross Arena,Rochester,NY,USA,false
-1784559906,2026-12-11,2026,1,,Jim Whelan Boardwalk Hall,Atlantic City,NJ,USA,false
-1784559917,2026-12-12,2026,1,,Jim Whelan Boardwalk Hall,Atlantic City,NJ,USA,false
+show_id,show_date,year,tour_id,tour,venue,city,state,country,has_setlist,show_order
+1605930400,2014-09-27,2014,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,false,1
+1616038942,2014-10-24,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,false,1
+1613690100,2014-10-25,2014,1,,Tavern On Seven,Norwalk,CT,USA,false,1
+1613690131,2014-11-21,2014,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1616038775,2014-11-26,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,true,1
+1613690543,2014-12-20,2014,13,Goosemas I,Factory Underground Studio,Norwalk,CT,USA,true,1
+1616038744,2014-12-23,2014,1,,Station House Bar and Grille,Norwalk,CT,USA,true,1
+1601959537,2015-01-16,2015,1,,Viva Zapata,Westport,CT,USA,true,1
+1613701736,2015-01-17,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616038703,2015-01-20,2015,1,,Wonder Bar,Allston,MA,USA,false,1
+1616038160,2015-02-20,2015,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,true,1
+1614304412,2015-03-07,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1684862246,2015-03-11,2015,1,,Stella Blues,New Haven,CT,USA,false,1
+1616037808,2015-03-14,2015,1,,Jimmy's Seaside Tavern,Stamford,CT,USA,true,1
+1743797147,2015-03-15,2015,1,,Bella Luna Restaurant and Milky Way Lounge,Jamaica Plain,MA,USA,false,1
+1616037734,2015-04-16,2015,1,,Radio Bean,Burlington,VT,USA,false,1
+1616037488,2015-04-18,2015,1,,Tavern On Seven,Norwalk,CT,USA,true,1
+1614304463,2015-05-02,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1683570770,2015-05-07,2015,1,,Church of Boston,Boston,MA,USA,false,1
+1616037453,2015-05-21,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false,1
+1616037430,2015-05-23,2015,1,,Stella Blues,New Haven,CT,USA,false,1
+1616037413,2015-05-28,2015,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false,1
+1614304594,2015-06-06,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616037386,2015-06-12,2015,1,,Bradford's Grill & Tavern,Norwalk,CT,USA,false,1
+1616037305,2015-06-17,2015,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1743793096,2015-06-26,2015,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false,1
+1712707675,2015-06-27,2015,1,,Jones Jam,Wilton,CT,USA,false,1
+1724179919,2015-08-09,2015,1,,Wonder Bar,Asbury Park,NJ,USA,false,1
+1616037273,2015-08-11,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false,1
+1616037254,2015-08-18,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,true,1
+1616037233,2015-08-25,2015,1,,BRYAC Black Rock,Bridgeport,CT,USA,false,1
+1616037215,2015-09-04,2015,1,,Tavern On Seven,Norwalk,CT,USA,false,1
+1614304613,2015-09-18,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1743526614,2015-09-19,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1743792240,2015-09-26,2015,1,,Stella Blues,New Haven,CT,USA,true,1
+1698084503,2015-10-01,2015,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1616037170,2015-10-09,2015,1,,Creatures of the Night,Adams,TN,USA,false,1
+1616037160,2015-10-10,2015,1,,Creatures of the Night,Adams,TN,USA,false,1
+1614304635,2015-11-13,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1614304669,2015-12-04,2015,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616036851,2015-12-19,2015,12,Goosemas II,Factory Underground Studio,Norwalk,CT,USA,true,1
+1705934210,2016-01-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1616036815,2016-01-28,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false,1
+1743796790,2016-02-19,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false,1
+1743797293,2016-03-08,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1743797308,2016-03-15,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1616036792,2016-03-17,2016,1,,Viva Zapata,Westport,CT,USA,false,1
+1616036774,2016-03-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1743797250,2016-03-22,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1616036749,2016-03-26,2016,1,,Rock n Roll Resort,Kerhonkson,NY,USA,true,1
+1616036730,2016-03-29,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1743797320,2016-03-29,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1614304693,2016-04-15,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1616036658,2016-04-16,2016,1,,Stella Blues,New Haven,CT,USA,true,1
+1616036639,2016-04-20,2016,1,,Loft,Norwalk,CT,USA,true,1
+1616036597,2016-04-27,2016,1,,BRYAC Black Rock,Bridgeport,CT,USA,false,1
+1616036563,2016-04-29,2016,1,,King Neptune's Pub,Lake George,NY,USA,false,1
+1616036545,2016-05-01,2016,1,,Electric Haze,Worcester,MA,USA,false,1
+1616036521,2016-05-05,2016,1,,BRYAC Black Rock,Bridgeport,CT,USA,false,1
+1686327822,2016-06-17,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true,1
+1616036413,2016-07-09,2016,1,,Soupstock Music and Arts Festival,Shelton,CT,USA,false,1
+1689369871,2016-07-09,2016,1,,Viva Zapata,Westport,CT,USA,true,1
+1689370609,2016-07-14,2016,1,,Stella Blues,New Haven,CT,USA,true,1
+1616036331,2016-07-19,2016,1,,Viva Zapata,Westport,CT,USA,false,1
+1614304713,2016-07-29,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616036210,2016-08-06,2016,1,,Backwoods Pondfest,Peru,NY,USA,true,1
+1616035556,2016-08-12,2016,1,,Rebirth Arts Festival,Easton,CT,USA,true,1
+1692375765,2016-08-18,2016,1,,King Neptune's Pub,Lake George,NY,USA,true,1
+1724194043,2016-08-19,2016,1,,The Red Door,Watertown,CT,USA,false,1
+1614304730,2016-08-20,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1724194002,2016-08-21,2016,1,,The Spread South Norwalk,Norwalk,CT,USA,false,1
+1724194134,2016-08-25,2016,1,,Radio Bean,Burlington,VT,USA,true,1
+1614304757,2016-09-16,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616034465,2016-10-01,2016,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1648264582,2016-10-09,2016,1,,Night Shift Brewery,Everett,MA,USA,true,1
+1614304775,2016-10-22,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1616034399,2016-10-23,2016,1,,Vinyl Street Cafe,Fairfield,CT,USA,true,1
+1616034271,2016-10-28,2016,1,,King Neptune's Pub,Lake George,NY,USA,false,1
+1616034250,2016-10-29,2016,1,,Space Ballroom,Hamden,CT,USA,false,1
+1743794784,2016-10-29,2016,1,,Space Ballroom,Hamden,CT,USA,true,1
+1616034229,2016-10-30,2016,1,,The Spread South Norwalk,Norwalk,CT,USA,false,1
+1616034185,2016-11-19,2016,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1614304915,2016-11-23,2016,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1616032614,2016-12-16,2016,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true,1
+1616032595,2016-12-21,2016,1,,Space Ballroom,Hamden,CT,USA,false,1
+1615962879,2016-12-23,2016,11,Goosemas III,Factory Underground Studio,Norwalk,CT,USA,false,1
+1615962804,2016-12-30,2016,1,,Arch Street Tavern,Hartford,CT,USA,false,1
+1615962713,2017-01-13,2017,1,,Space Ballroom,Hamden,CT,USA,true,1
+1615962491,2017-01-18,2017,1,,Alchemy,Providence,RI,USA,true,1
+1616032462,2017-01-20,2017,1,,Penuche's Music Hall,Manchester,NH,USA,false,1
+1615962104,2017-01-28,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true,1
+1615961779,2017-02-07,2017,1,,Brooklyn Bowl,Brooklyn,NY,USA,false,1
+1615961762,2017-02-08,2017,1,,Nectar's,Burlington,VT,USA,true,1
+1615961746,2017-02-10,2017,1,,Gypsy Sally's,Washington,DC,USA,true,1
+1615961722,2017-02-11,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true,1
+1615961700,2017-02-16,2017,1,,Space Ballroom,Hamden,CT,USA,false,1
+1615961673,2017-02-23,2017,1,,The Haunt,Ithaca,NY,USA,false,1
+1615961649,2017-02-24,2017,1,,Ocean Mist,Wakefield,RI,USA,false,1
+1615961628,2017-02-25,2017,1,,Arch Street Tavern,Hartford,CT,USA,true,1
+1615961596,2017-03-10,2017,1,,Nectar's,Burlington,VT,USA,false,1
+1615961581,2017-03-11,2017,1,,Monopole,Plattsburgh,NY,USA,false,1
+1615961556,2017-03-17,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,false,1
+1615961542,2017-03-18,2017,1,,Snug Harbor,New Paltz,NY,USA,false,1
+1616030483,2017-03-23,2017,24,Spring Tour 2017,Wonder Bar,Asbury Park,NJ,USA,false,1
+1615961468,2017-03-24,2017,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1743798013,2017-03-25,2017,1,,The Iron Horse,Northampton,MA,USA,true,1
+1616030004,2017-03-31,2017,24,Spring Tour 2017,Rock n Roll Resort,Kerhonkson,NY,USA,false,1
+1616029967,2017-04-01,2017,24,Spring Tour 2017,American Beauty,New York,NY,USA,true,1
+1615961421,2017-04-07,2017,24,Spring Tour 2017,Funk 'n Waffles,Syracuse,NY,USA,false,1
+1616029886,2017-04-08,2017,24,Spring Tour 2017,The Wherehouse,Newburgh,NY,USA,false,1
+1616029821,2017-04-13,2017,24,Spring Tour 2017,Brown Hotel Music Club & Grill,Indiana,PA,USA,false,1
+1615961392,2017-04-14,2017,24,Spring Tour 2017,King's Rook Club,Erie,PA,USA,false,1
+1615961369,2017-04-27,2017,24,Spring Tour 2017,Arch Street Tavern,Hartford,CT,USA,false,1
+1679182964,2017-04-29,2017,1,,Snug Harbor,New Paltz,NY,USA,true,1
+1615961344,2017-05-05,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,false,1
+1615961328,2017-05-06,2017,24,Spring Tour 2017,Nectar's,Burlington,VT,USA,false,1
+1615961143,2017-05-10,2017,24,Spring Tour 2017,The Warehouse at FTC,Fairfield,CT,USA,true,1
+1615961108,2017-05-17,2017,24,Spring Tour 2017,Woodlands Tavern,Columbus,OH,USA,false,1
+1616029688,2017-05-18,2017,24,Spring Tour 2017,Stanley's Pub,Cincinnati,OH,USA,false,1
+1615961069,2017-05-19,2017,24,Spring Tour 2017,Lamasco Bar,Evansville,IN,USA,true,1
+1669048356,2017-05-20,2017,1,,Carnton Plantation,Franklin,TN,USA,true,1
+1615961047,2017-05-31,2017,24,Spring Tour 2017,The 8x10,Baltimore,MD,USA,false,1
+1615961017,2017-06-01,2017,1,,Bullfrog Brewery,Williamsport,PA,USA,false,1
+1615960999,2017-06-02,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,false,1
+1616029589,2017-06-03,2017,24,Spring Tour 2017,Paddy's Beach Club,Westerly,RI,USA,false,1
+1615960973,2017-06-07,2017,1,,StageOne at FTC,Fairfield,CT,USA,true,1
+1615960939,2017-06-10,2017,1,,Soupstock Music and Arts Festival,Shelton,CT,USA,false,1
+1616028256,2017-06-15,2017,21,Throw 'Em To The Wolves Tour 2017,Mad Tea Party Jam,Artemas,PA,USA,false,1
+1615960852,2017-06-22,2017,21,Throw 'Em To The Wolves Tour 2017,Doc Taylor's,Virginia Beach,VA,USA,false,1
+1616028057,2017-06-23,2017,21,Throw 'Em To The Wolves Tour 2017,Blue Side Tavern,Frederick,MD,USA,false,1
+1616027988,2017-06-24,2017,21,Throw 'Em To The Wolves Tour 2017,Shadefest Music Festival,Avenue,MD,USA,false,1
+1616027894,2017-06-27,2017,21,Throw 'Em To The Wolves Tour 2017,The Pour House Music Hall,Raleigh,NC,USA,false,1
+1616027822,2017-06-28,2017,21,Throw 'Em To The Wolves Tour 2017,Gottrocks,Greenville,SC,USA,false,1
+1616027743,2017-06-30,2017,21,Throw 'Em To The Wolves Tour 2017,The Thirsty Turtle,Macon,GA,USA,false,1
+1616027620,2017-07-01,2017,21,Throw 'Em To The Wolves Tour 2017,Barrelhouse South,Savannah,GA,USA,false,1
+1616027534,2017-07-03,2017,21,Throw 'Em To The Wolves Tour 2017,Tiki Hut,Hilton Head,SC,USA,false,1
+1615960608,2017-07-05,2017,21,Throw 'Em To The Wolves Tour 2017,Guanabanas Restaurant,Jupiter,FL,USA,false,1
+1616027453,2017-07-07,2017,21,Throw 'Em To The Wolves Tour 2017,Funky Buddha Lounge,Boca Raton,FL,USA,false,1
+1615873444,2017-07-08,2017,21,Throw 'Em To The Wolves Tour 2017,Dunedin Brewery,Dunedin,FL,USA,true,1
+1615960408,2017-07-12,2017,21,Throw 'Em To The Wolves Tour 2017,The Charleston Pour House,Charleston,SC,USA,true,1
+1615875210,2017-07-13,2017,21,Throw 'Em To The Wolves Tour 2017,The Evening Muse,Charlotte,NC,USA,true,1
+1615960115,2017-07-14,2017,21,Throw 'Em To The Wolves Tour 2017,The Whiskey,Wilmington,NC,USA,true,1
+1615959437,2017-07-15,2017,21,Throw 'Em To The Wolves Tour 2017,Sierra Nevada Brewing Co.,Fletcher,NC,USA,true,1
+1615959401,2017-07-20,2017,1,,Nectar's,Burlington,VT,USA,false,1
+1615959385,2017-07-21,2017,1,,Jerry Jam,Bath,NH,USA,false,1
+1615959360,2017-07-30,2017,1,,Bayley Beach,Rowayton,CT,USA,false,1
+1615959323,2017-08-03,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false,1
+1616026265,2017-08-04,2017,21,Throw 'Em To The Wolves Tour 2017,Strange Brew Pub,Norwich,CT,USA,false,1
+1615959304,2017-08-05,2017,1,,SoNo Arts Festival,Norwalk,CT,USA,false,1
+1615959282,2017-08-10,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false,1
+1616025999,2017-08-11,2017,21,Throw 'Em To The Wolves Tour 2017,Triumph Brewing Company of New Hope,New Hope,PA,USA,false,1
+1616025916,2017-08-12,2017,21,Throw 'Em To The Wolves Tour 2017,Yasgur Road Campground,Bethel,NY,USA,false,1
+1615959262,2017-08-17,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false,1
+1615875482,2017-08-19,2017,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1615959210,2017-08-24,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false,1
+1616024595,2017-08-25,2017,21,Throw 'Em To The Wolves Tour 2017,Rock The Dock,Lake George,NY,USA,false,1
+1616024356,2017-08-26,2017,21,Throw 'Em To The Wolves Tour 2017,Knitting Factory Brooklyn,Brooklyn,NY,USA,false,1
+1615959161,2017-08-31,2017,21,Throw 'Em To The Wolves Tour 2017,Putnam Den,Saratoga Springs,NY,USA,false,1
+1615958881,2017-09-01,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true,1
+1616024264,2017-09-08,2017,1,,Great North Music and Arts Festival,Minot,ME,USA,false,1
+1615958718,2017-09-22,2017,22,Fall Tour 2017,Bullfrog Brewery,Williamsport,PA,USA,false,1
+1615958603,2017-09-23,2017,22,Fall Tour 2017,Hometown Get Down,Clarksburg,MD,USA,true,1
+1615958523,2017-09-26,2017,1,,Snug Harbor,New Paltz,NY,USA,false,1
+1615958438,2017-09-30,2017,1,,Middle East Restaurant and Club,Cambridge,MA,USA,false,1
+1615956261,2017-10-02,2017,1,,Garcia's at The Capitol Theatre,Port Chester,NY,USA,true,1
+1615956241,2017-10-11,2017,1,,Alchemy,Providence,RI,USA,false,1
+1615956098,2017-10-13,2017,1,,Putnam Den,Saratoga Springs,NY,USA,false,1
+1615956067,2017-10-21,2017,1,,Pacific Standard Tavern,New Haven,CT,USA,true,1
+1615954994,2017-10-24,2017,1,,Brooklyn Bowl,Brooklyn,NY,USA,true,1
+1615954913,2017-10-26,2017,1,,Funk 'n Waffles,Syracuse,NY,USA,false,1
+1615954516,2017-10-27,2017,1,,Monopole,Plattsburgh,NY,USA,false,1
+1615954376,2017-10-31,2017,1,,Gypsy Sally's,Washington,DC,USA,true,1
+1615954304,2017-11-01,2017,1,,The Stanhope House,Stanhope,NJ,USA,true,1
+1615953621,2017-11-02,2017,1,,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true,1
+1615874908,2017-11-03,2017,1,,The Hollow Bar & Kitchen,Albany,NY,USA,true,1
+1614305805,2017-11-04,2017,1,,Arch Street Tavern,Hartford,CT,USA,true,1
+1615872297,2017-11-09,2017,1,,Wall Street Theater,Norwalk,CT,USA,true,1
+1615872051,2017-11-10,2017,1,,Nectar's,Burlington,VT,USA,true,1
+1743794986,2017-11-11,2017,22,Fall Tour 2017,Ocean Mist,Wakefield,RI,USA,false,1
+1615951011,2017-11-15,2017,1,,The 8x10,Baltimore,MD,USA,false,1
+1615874562,2017-11-16,2017,1,,Doc Taylor's,Virginia Beach,VA,USA,false,1
+1615875859,2017-11-17,2017,1,,The Whiskey,Wilmington,NC,USA,false,1
+1743795076,2017-11-18,2017,1,,Crossbones Tavern,Greenville,NC,USA,false,1
+1614304934,2017-11-22,2017,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,false,1
+1615876087,2017-11-30,2017,1,,The One Stop at Asheville Music Hall,Asheville,NC,USA,false,1
+1615949626,2017-12-01,2017,1,,The Hummingbird Stage & Taproom,Macon,GA,USA,false,1
+1615949604,2017-12-02,2017,1,,The Charleston Pour House,Charleston,SC,USA,false,1
+1615949521,2017-12-07,2017,1,,The Funky Biscuit,Boca Raton,FL,USA,true,1
+1615949336,2017-12-08,2017,1,,Guanabanas Restaurant,Jupiter,FL,USA,true,1
+1615874497,2017-12-09,2017,1,,Dunedin Brewery,Dunedin,FL,USA,false,1
+1615874177,2017-12-16,2017,1,,Still Partners,Sea Cliff,NY,USA,false,1
+1615871919,2017-12-23,2017,10,Goosemas IV,Factory Underground Studio,Norwalk,CT,USA,true,1
+1615871887,2017-12-30,2017,1,,The Hollow Bar & Kitchen,Albany,NY,USA,false,1
+1615871866,2017-12-31,2017,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1615871514,2018-01-12,2018,15,Winter Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,false,1
+1615871447,2018-01-13,2018,15,Winter Tour 2018,El Club,Detroit,MI,USA,true,1
+1615871324,2018-01-14,2018,15,Winter Tour 2018,Grog Shop,Cleveland Heights,OH,USA,true,1
+1615871188,2018-01-17,2018,15,Winter Tour 2018,Mr. Smalls Theatre,Millvale,PA,USA,true,1
+1615869147,2018-01-18,2018,15,Winter Tour 2018,Buffalo Iron Works,Buffalo,NY,USA,true,1
+1615344775,2018-01-19,2018,15,Winter Tour 2018,Westcott Theater,Syracuse,NY,USA,true,1
+1615871039,2018-01-20,2018,15,Winter Tour 2018,Chameleon Club,Lancaster,PA,USA,true,1
+1615870461,2018-01-23,2018,15,Winter Tour 2018,The Met,Pawtucket,RI,USA,true,1
+1615870141,2018-01-26,2018,15,Winter Tour 2018,Arch Street Tavern,Hartford,CT,USA,false,1
+1615870089,2018-01-27,2018,15,Winter Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,false,1
+1615866380,2018-02-02,2018,15,Winter Tour 2018,Octave,Covington,KY,USA,true,1
+1615869951,2018-02-03,2018,15,Winter Tour 2018,Lamasco Bar,Evansville,IN,USA,false,1
+1615869729,2018-02-06,2018,18,Colorado Tour 2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,false,1
+1615869651,2018-02-07,2018,18,Colorado Tour 2018,Hodi's Half Note,Fort Collins,CO,USA,false,1
+1615868549,2018-02-08,2018,18,Colorado Tour 2018,Globe Hall,Denver,CO,USA,true,1
+1615868053,2018-02-09,2018,18,Colorado Tour 2018,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true,1
+1615430866,2018-02-10,2018,18,Colorado Tour 2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,true,1
+1615867879,2018-02-14,2018,15,Winter Tour 2018,Woodlands Tavern,Columbus,OH,USA,true,1
+1615866914,2018-02-15,2018,15,Winter Tour 2018,Octave,Covington,KY,USA,true,1
+1615865221,2018-02-16,2018,15,Winter Tour 2018,King's Rook Club,Erie,PA,USA,false,1
+1615865145,2018-02-17,2018,15,Winter Tour 2018,The Range,Ithaca,NY,USA,false,1
+1615865059,2018-02-23,2018,15,Winter Tour 2018,Snug Harbor,New Paltz,NY,USA,false,1
+1615864906,2018-02-24,2018,15,Winter Tour 2018,The Main Pub,Manchester,CT,USA,false,1
+1615861481,2018-03-15,2018,15,Winter Tour 2018,Flour City Station,Rochester,NY,USA,true,1
+1615861349,2018-03-16,2018,15,Winter Tour 2018,River Street Jazz Cafe,Plains,PA,USA,true,1
+1615775085,2018-03-17,2018,15,Winter Tour 2018,Finger Lakes Live,Geneva,NY,USA,false,1
+1615774962,2018-03-23,2018,17,Spring Tour 2018,Viva Zapata,Westport,CT,USA,false,1
+1615774859,2018-03-30,2018,17,Spring Tour 2018,Putnam Den,Saratoga Springs,NY,USA,true,1
+1666379523,2018-04-04,2018,17,Spring Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,true,1
+1615774222,2018-04-06,2018,17,Spring Tour 2018,Nectar's,Burlington,VT,USA,true,1
+1615774195,2018-04-07,2018,17,Spring Tour 2018,The Java Barn,Canton,NY,USA,false,1
+1615774169,2018-04-11,2018,17,Spring Tour 2018,Silk City,Philadelphia,PA,USA,false,1
+1615773981,2018-04-12,2018,17,Spring Tour 2018,DROM,New York,NY,USA,false,1
+1615773877,2018-04-13,2018,17,Spring Tour 2018,Hawks and Reed Performing Arts Center,Greenfield,MA,USA,false,1
+1615773784,2018-04-14,2018,17,Spring Tour 2018,Pacific Standard Tavern,New Haven,CT,USA,false,1
+1615773760,2018-04-19,2018,17,Spring Tour 2018,Doc Taylor's,Virginia Beach,VA,USA,false,1
+1615773564,2018-04-20,2018,17,Spring Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true,1
+1615772927,2018-04-21,2018,17,Spring Tour 2018,Cattivo,Pittsburgh,PA,USA,true,1
+1715183087,2018-04-28,2018,17,Spring Tour 2018,Chi Psi Yard Sale,Lexington,VA,USA,false,1
+1615772358,2018-05-03,2018,17,Spring Tour 2018,Jewel Nightclub,Manchester,NH,USA,true,1
+1615347480,2018-05-04,2018,17,Spring Tour 2018,Wall Street Theater,Norwalk,CT,USA,true,1
+1615771555,2018-05-05,2018,17,Spring Tour 2018,The Hollow Bar & Kitchen,Albany,NY,USA,false,1
+1615771361,2018-05-10,2018,17,Spring Tour 2018,The Warehouse at FTC,Fairfield,CT,USA,true,1
+1615771130,2018-05-11,2018,17,Spring Tour 2018,Nectar's,Burlington,VT,USA,false,1
+1615771109,2018-05-12,2018,17,Spring Tour 2018,Mountain Sky,Jermyn,PA,USA,false,1
+1615621983,2018-05-30,2018,1,,Beachland Ballroom & Tavern,Cleveland,OH,USA,false,1
+1615621791,2018-05-31,2018,1,,SoHi Sound Studios,Columbus,OH,USA,false,1
+1615424118,2018-06-01,2018,20,Summer Tour 2018,Octave,Covington,KY,USA,true,1
+1615349454,2018-06-02,2018,20,Summer Tour 2018,Octave,Covington,KY,USA,true,1
+1615621607,2018-06-05,2018,20,Summer Tour 2018,Tap Shack,Duck,NC,USA,false,1
+1615621231,2018-06-06,2018,20,Summer Tour 2018,Mike Dianna's Grill Room,Corolla,NC,USA,false,1
+1615620985,2018-06-07,2018,20,Summer Tour 2018,Pearl Street Warehouse,Washington,DC,USA,false,1
+1615620964,2018-06-08,2018,20,Summer Tour 2018,Dogfish Head Brewings & Eats,Rehoboth Beach,DE,USA,false,1
+1615617709,2018-06-10,2018,20,Summer Tour 2018,Disc Jam Music Festival,Stephentown,NY,USA,true,1
+1615617365,2018-06-12,2018,20,Summer Tour 2018,Cocalico Street,Ephrata,PA,USA,false,1
+1615608463,2018-06-15,2018,20,Summer Tour 2018,Space Ballroom,Hamden,CT,USA,true,1
+1615340285,2018-06-21,2018,1,,Pizza in the Park,Stamford,CT,USA,true,1
+1615617190,2018-06-28,2018,20,Summer Tour 2018,The Vault Music Hall & Pub at Greasy Luck,New Bedford,MA,USA,false,1
+1615617110,2018-06-30,2018,20,Summer Tour 2018,Bleachers,Bristol,CT,USA,true,1
+1615432626,2018-07-05,2018,20,Summer Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true,1
+1615617005,2018-07-06,2018,20,Summer Tour 2018,Bullfrog Brewery,Williamsport,PA,USA,false,1
+1615602893,2018-07-12,2018,20,Summer Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true,1
+1615616784,2018-07-13,2018,20,Summer Tour 2018,Nectar's,Burlington,VT,USA,false,1
+1615616600,2018-07-19,2018,20,Summer Tour 2018,Levitt Pavilion,Westport,CT,USA,false,1
+1615615296,2018-07-22,2018,20,Summer Tour 2018,Jerry Jam,Bath,NH,USA,true,1
+1615614366,2018-07-29,2018,20,Summer Tour 2018,Bayley Beach,Rowayton,CT,USA,true,1
+1615613879,2018-08-02,2018,20,Summer Tour 2018,Doc Taylor's,Virginia Beach,VA,USA,true,1
+1615613325,2018-08-03,2018,20,Summer Tour 2018,The Whiskey,Wilmington,NC,USA,true,1
+1615613210,2018-08-04,2018,20,Summer Tour 2018,Sierra Nevada Brewing Co.,Fletcher,NC,USA,true,1
+1724180052,2018-08-05,2018,20,Summer Tour 2018,The Beach House Resort,Hilton Head,SC,USA,false,1
+1724193532,2018-08-07,2018,20,Summer Tour 2018,The Beach House Resort,Hilton Head,SC,USA,false,1
+1615613134,2018-08-08,2018,20,Summer Tour 2018,Tap Shack,Duck,NC,USA,false,1
+1615613070,2018-08-09,2018,20,Summer Tour 2018,Shadefest Music Festival,Elkins,WV,USA,false,1
+1615612682,2018-08-10,2018,20,Summer Tour 2018,B Chord Brewing Company,Round Hill,VA,USA,false,1
+1615612651,2018-08-31,2018,20,Summer Tour 2018,Town Ballroom,Buffalo,NY,USA,false,1
+1615611809,2018-09-01,2018,20,Summer Tour 2018,The Haunt,Ithaca,NY,USA,true,1
+1615611336,2018-09-02,2018,20,Summer Tour 2018,King Neptune's Pub,Lake George,NY,USA,false,1
+1615611162,2018-09-08,2018,20,Summer Tour 2018,Gumpas Pond,Pelham,NH,USA,true,1
+1615431281,2018-09-20,2018,20,Summer Tour 2018,Resonance Music & Arts Festival,Thornville,OH,USA,true,1
+1615345471,2018-09-21,2018,1,,Resonance Music & Arts Festival,Thornville,OH,USA,true,1
+1615602672,2018-09-22,2018,20,Summer Tour 2018,Resonance Music & Arts Festival,Thornville,OH,USA,true,3
+1615350239,2018-09-29,2018,19,Fall Tour 2018,Soupstock Music and Arts Festival,Shelton,CT,USA,true,1
+1715183104,2018-10-05,2018,19,Fall Tour 2018,Chi Psi Yard Sale,Lexington,VA,USA,false,1
+1615611008,2018-10-07,2018,19,Fall Tour 2018,Harry Brown's Farm,Starks,ME,USA,false,1
+1615609980,2018-10-11,2018,19,Fall Tour 2018,Ukrainian Homestead,Lehighton,PA,USA,false,1
+1615609781,2018-10-12,2018,19,Fall Tour 2018,Just Joshin' Music Festival,Amston,CT,USA,true,1
+1615427966,2018-10-26,2018,19,Fall Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true,1
+1615603769,2018-10-27,2018,19,Fall Tour 2018,BRYAC Black Rock,Bridgeport,CT,USA,true,1
+1743794882,2018-11-08,2018,19,Fall Tour 2018,118 North,Wayne,PA,USA,false,1
+1615601971,2018-11-09,2018,19,Fall Tour 2018,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,false,1
+1615601742,2018-11-10,2018,19,Fall Tour 2018,Flour City Station,Rochester,NY,USA,true,1
+1615600342,2018-11-15,2018,19,Fall Tour 2018,123 Pleasant Street,Morgantown,WV,USA,true,1
+1615430308,2018-11-16,2018,19,Fall Tour 2018,Octave,Covington,KY,USA,true,1
+1615002805,2018-11-17,2018,1,,Madison Live!,Covington,KY,USA,true,1
+1614304965,2018-11-21,2018,1,,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1615427110,2018-11-29,2018,19,Fall Tour 2018,Paradise Rock Club,Boston,MA,USA,true,1
+1615426517,2018-11-30,2018,19,Fall Tour 2018,Nectar's,Burlington,VT,USA,true,1
+1615423629,2018-12-01,2018,19,Fall Tour 2018,Jay Peak Resort,Jay,VT,USA,true,1
+1615349092,2018-12-08,2018,1,,Nietzsche's,Buffalo,NY,USA,true,1
+1615340173,2018-12-11,2018,1,,The Waiting Room Lounge,Omaha,NE,USA,true,1
+1615338365,2018-12-12,2018,1,,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true,1
+1615337213,2018-12-13,2018,1,,HI-FI Indy,Indianapolis,IN,USA,true,1
+1615003067,2018-12-14,2018,19,Fall Tour 2018,Madison Live!,Covington,KY,USA,true,1
+1615002449,2018-12-15,2018,1,,Woodlands Tavern,Columbus,OH,USA,true,1
+1615001663,2018-12-22,2018,9,Goosemas V,Cantiki SoNo,Norwalk,CT,USA,true,1
+1614326388,2019-01-25,2019,16,Winter Tour 2019,The Cubby Bear,Chicago,IL,USA,true,1
+1614325989,2019-01-26,2019,16,Winter Tour 2019,Kenny's Westside Pub,Peoria,IL,USA,true,1
+1614325540,2019-01-31,2019,16,Winter Tour 2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,USA,true,1
+1614325187,2019-02-01,2019,16,Winter Tour 2019,The Eldo,Crested Butte,CO,USA,true,1
+1614324720,2019-02-02,2019,16,Winter Tour 2019,Bluebird Theater,Denver,CO,USA,true,1
+1614324369,2019-02-07,2019,16,Winter Tour 2019,Intrinzik,Montrose,CO,USA,true,1
+1614323611,2019-02-08,2019,16,Winter Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true,1
+1614321503,2019-02-14,2019,16,Winter Tour 2019,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true,1
+1614319723,2019-02-15,2019,16,Winter Tour 2019,Octave,Covington,KY,USA,true,1
+1614318775,2019-02-22,2019,16,Winter Tour 2019,Sprout Music Collective,West Chester,PA,USA,true,1
+1614318387,2019-02-23,2019,16,Winter Tour 2019,Pearl Street Warehouse,Washington,DC,USA,true,1
+1614317602,2019-03-01,2019,16,Winter Tour 2019,Viva Zapata,Westport,CT,USA,true,1
+1679079917,2019-03-19,2019,1,,Relix,New York,NY,USA,true,1
+1614317158,2019-03-22,2019,14,Spring Tour 2019,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,USA,true,1
+1614316899,2019-03-28,2019,14,Spring Tour 2019,The Java Barn,Canton,NY,USA,true,1
+1614316456,2019-03-29,2019,14,Spring Tour 2019,Flour City Station,Rochester,NY,USA,true,1
+1614316138,2019-04-04,2019,14,Spring Tour 2019,Higher Ground,South Burlington,VT,USA,true,1
+1664130637,2019-04-06,2019,1,,Hampden-Sydney College Frat House,Hampden Sydney,VA,USA,false,1
+1614315171,2019-04-11,2019,14,Spring Tour 2019,River Street Jazz Cafe,Plains,PA,USA,true,1
+1614315004,2019-04-12,2019,14,Spring Tour 2019,Market Street Park,Charlottesville,VA,USA,true,1
+1614314712,2019-04-13,2019,14,Spring Tour 2019,123 Pleasant Street,Morgantown,WV,USA,true,1
+1614314179,2019-04-18,2019,14,Spring Tour 2019,The Mercury Lounge,New York,NY,USA,true,1
+1614313627,2019-04-19,2019,14,Spring Tour 2019,Down the Road Beer Co.,Everett,MA,USA,true,1
+1614310757,2019-04-20,2019,1,,The Acoustic,Bridgeport,CT,USA,true,1
+1614313575,2019-05-03,2019,14,Spring Tour 2019,B Chord Brewing Company,Round Hill,VA,USA,true,1
+1715020691,2019-05-04,2019,14,Spring Tour 2019,Chi Psi Yard Sale,Lexington,VA,USA,true,1
+1614313203,2019-05-09,2019,14,Spring Tour 2019,Woodlands Tavern,Columbus,OH,USA,true,1
+1614312473,2019-05-10,2019,14,Spring Tour 2019,Madison Theater,Covington,KY,USA,true,1
+1614312273,2019-05-11,2019,14,Spring Tour 2019,The Rex Theater,Pittsburgh,PA,USA,true,1
+1614306725,2019-05-18,2019,1,,Marvin's Mountaintop,Masontown,WV,USA,true,1
+1614306331,2019-05-24,2019,7,Summer Tour 2019,Revival Music Festival,Ellendale,MN,USA,true,1
+1614307340,2019-05-25,2019,7,Summer Tour 2019,Three Sisters Park,Chillicothe,IL,USA,true,1
+1614310040,2019-05-26,2019,7,Summer Tour 2019,The Mellwood Tavern,Louisville,KY,USA,true,1
+1614303358,2019-06-15,2019,7,Summer Tour 2019,Pizza in the Park,Stamford,CT,USA,true,1
+1614295229,2019-06-22,2019,7,Summer Tour 2019,Kenny's Westside Pub,Peoria,IL,USA,true,1
+1614300379,2019-06-26,2019,7,Summer Tour 2019,The Fox Theatre,Boulder,CO,USA,true,1
+1614300553,2019-06-27,2019,7,Summer Tour 2019,Aggie Theatre,Fort Collins,CO,USA,true,1
+1614300844,2019-06-28,2019,7,Summer Tour 2019,The Lariat,Buena Vista,CO,USA,true,1
+1614302893,2019-06-29,2019,7,Summer Tour 2019,Beanstalk Music & Mountain Festival,Bond,CO,USA,true,1
+1613694760,2019-07-11,2019,7,Summer Tour 2019,Doc Taylor's,Virginia Beach,VA,USA,true,1
+1613694362,2019-07-12,2019,7,Summer Tour 2019,The Camel,Richmond,VA,USA,true,1
+1613697753,2019-07-13,2019,7,Summer Tour 2019,Paradise Music & Beer Festival,Covington,KY,USA,true,1
+1614299494,2019-07-19,2019,7,Summer Tour 2019,Jerry Jam,Bath,NH,USA,true,1
+1613619605,2019-07-25,2019,7,Summer Tour 2019,Orlando's Bar and Lounge,Burlington,VT,USA,true,1
+1595185299,2019-07-27,2019,7,Summer Tour 2019,Peach Music Festival,Scranton,PA,USA,true,1
+1613620791,2019-08-08,2019,7,Summer Tour 2019,Otus Supply,Ferndale,MI,USA,true,1
+1614299084,2019-08-09,2019,7,Summer Tour 2019,Cowpie Music Festival,Caledonia,MI,USA,true,1
+1614298417,2019-08-10,2019,7,Summer Tour 2019,The Mousetrap,Indianapolis,IN,USA,true,1
+1614297985,2019-08-14,2019,7,Summer Tour 2019,Skully's Music-Diner,Columbus,OH,USA,true,1
+1613621323,2019-08-16,2019,7,Summer Tour 2019,Birds of a Feather Music & Arts Festival,Morning View,KY,USA,true,1
+1613621568,2019-08-17,2019,7,Summer Tour 2019,Birds of a Feather Music & Arts Festival,Morning View,KY,USA,true,1
+1613618864,2019-08-22,2019,7,Summer Tour 2019,Night Lights Music Festival,Sherman,NY,USA,true,1
+1613615869,2019-09-01,2019,1,,Silk Fest,Granby,CT,USA,true,1
+1613615034,2019-09-06,2019,7,Summer Tour 2019,Sprout Music Collective,West Chester,PA,USA,true,1
+1613613861,2019-09-07,2019,7,Summer Tour 2019,Valley Fusion Festival,Capon Bridge,WV,USA,true,1
+1613613251,2019-09-14,2019,1,,Private Party,Norwalk,CT,USA,true,1
+1608183761,2019-09-18,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true,1
+1613535674,2019-09-19,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true,2
+1613534872,2019-09-21,2019,7,Summer Tour 2019,Coopers Lake,Slippery Rock,PA,USA,true,1
+1601962402,2019-10-05,2019,1,,Barberry Hill Farm,Madison,CT,USA,true,1
+1608535941,2019-10-18,2019,5,Fall Tour 2019,Parish Public House,Albany,NY,USA,true,1
+1613528677,2019-10-19,2019,5,Fall Tour 2019,Sonia,Cambridge,MA,USA,true,1
+1613527259,2019-10-25,2019,5,Fall Tour 2019,River Street Jazz Cafe,Plains,PA,USA,true,1
+1613526499,2019-10-31,2019,5,Fall Tour 2019,The Mercury Lounge,New York,NY,USA,true,1
+1613511263,2019-11-02,2019,5,Fall Tour 2019,College Street Music Hall,New Haven,CT,USA,true,1
+1613508165,2019-11-07,2019,5,Fall Tour 2019,XL Live,Harrisburg,PA,USA,true,1
+1616454806,2019-11-08,2019,5,Fall Tour 2019,9:30 Club,Washington,DC,USA,true,1
+1613507639,2019-11-09,2019,5,Fall Tour 2019,Hampden-Sydney College Frat House,Hampden Sydney,VA,USA,true,1
+1613507150,2019-11-10,2019,5,Fall Tour 2019,The Broadberry,Richmond,VA,USA,true,1
+1613506931,2019-11-14,2019,5,Fall Tour 2019,Roxian Theatre,McKees Rocks,PA,USA,true,1
+1613450184,2019-11-15,2019,5,Fall Tour 2019,The Summit Music Hall,Columbus,OH,USA,true,1
+1613444180,2019-11-16,2019,5,Fall Tour 2019,Nietzsche's,Buffalo,NY,USA,true,1
+1613443194,2019-11-27,2019,5,Fall Tour 2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,USA,true,1
+1613441845,2019-12-05,2019,5,Fall Tour 2019,Aggie Theatre,Fort Collins,CO,USA,true,1
+1613439915,2019-12-06,2019,5,Fall Tour 2019,Cervantes' Other Side,Denver,CO,USA,true,1
+1613439018,2019-12-07,2019,5,Fall Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true,1
+1613436194,2019-12-08,2019,5,Fall Tour 2019,Old Town Pub & Restaurant,Steamboat Springs,CO,USA,true,1
+1613435548,2019-12-11,2019,5,Fall Tour 2019,The Bootleg at Atomic Cowboy,St. Louis,MO,USA,true,1
+1613434987,2019-12-12,2019,5,Fall Tour 2019,Lincoln Hall,Chicago,IL,USA,true,1
+1613434124,2019-12-13,2019,5,Fall Tour 2019,Madison Theater,Covington,KY,USA,true,1
+1613433393,2019-12-14,2019,5,Fall Tour 2019,The Mousetrap,Indianapolis,IN,USA,true,1
+1613160742,2019-12-21,2019,8,Goosemas VI,Wall Street Theater,Norwalk,CT,USA,true,1
+1613158995,2020-01-14,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true,1
+1613158668,2020-01-17,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true,1
+1613158190,2020-01-18,2020,3,Winter Tour 2020,Moon Palace,Riviera Maya,,Mexico,true,1
+1597168237,2020-01-24,2020,3,Winter Tour 2020,Bowery Ballroom,New York,NY,USA,true,1
+1613152694,2020-01-25,2020,3,Winter Tour 2020,Music Hall of Williamsburg,Brooklyn,NY,USA,true,1
+1613152384,2020-02-05,2020,3,Winter Tour 2020,Marquee Theatre,Tempe,AZ,USA,true,1
+1613147507,2020-02-06,2020,3,Winter Tour 2020,Belly Up Tavern,Solana Beach,CA,USA,true,1
+1613103303,2020-02-07,2020,3,Winter Tour 2020,The Troubadour,West Hollywood,CA,USA,true,1
+1613147258,2020-02-08,2020,3,Winter Tour 2020,The Troubadour,West Hollywood,CA,USA,true,1
+1679080283,2020-02-10,2020,1,,Jam in the Van,Los Angeles,CA,USA,true,1
+1613146897,2020-02-12,2020,3,Winter Tour 2020,Fremont Theater,San Luis Obispo,CA,USA,true,1
+1613146701,2020-02-13,2020,3,Winter Tour 2020,The Catalyst,Santa Cruz,CA,USA,true,1
+1613104091,2020-02-14,2020,3,Winter Tour 2020,Great American Music Hall,San Francisco,CA,USA,true,1
+1613101473,2020-02-15,2020,3,Winter Tour 2020,The Regency Ballroom,San Francisco,CA,USA,true,1
+1602830467,2020-02-16,2020,3,Winter Tour 2020,Crystal Bay Club,Crystal Bay,NV,USA,true,1
+1602830169,2020-02-19,2020,3,Winter Tour 2020,Session Music Hall,Eugene,OR,USA,true,1
+1613100294,2020-02-20,2020,3,Winter Tour 2020,Midtown Ballroom,Bend,OR,USA,true,1
+1602829277,2020-02-21,2020,3,Winter Tour 2020,Wonder Ballroom,Portland,OR,USA,true,1
+1602829578,2020-02-22,2020,3,Winter Tour 2020,Neptune Theatre,Seattle,WA,USA,true,1
+1602828440,2020-02-29,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true,2
+1602828850,2020-02-29,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true,1
+1602828053,2020-03-01,2020,3,Winter Tour 2020,Rock Legends Cruise,Port Canaveral,FL,USA,true,1
+1602827443,2020-03-05,2020,3,Winter Tour 2020,Agora Theater,Cleveland,OH,USA,true,1
+1602827131,2020-03-06,2020,3,Winter Tour 2020,The Intersection,Grand Rapids,MI,USA,true,1
+1602826574,2020-03-07,2020,3,Winter Tour 2020,Riviera Theatre,Chicago,IL,USA,true,1
+1602826142,2020-03-08,2020,3,Winter Tour 2020,Delmar Hall,St. Louis,MO,USA,true,1
+1594067578,2020-03-11,2020,3,Winter Tour 2020,Madison Theater,Covington,KY,USA,true,1
+1602824178,2020-03-15,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true,1
+1602823058,2020-03-21,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true,1
+1613099309,2020-03-27,2020,4,Live From Out There,T's House,Somewhere,CT,USA,true,1
+1599321210,2020-06-19,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true,1
+1599321218,2020-06-20,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true,1
+1599321248,2020-06-26,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true,1
+1601960752,2020-06-27,2020,2,Bingo Tour,Goose Community Rec Center,Redding,CT,USA,true,1
+1601959001,2020-06-28,2020,2,Bingo Tour,Millstone Farm,Wilton,CT,USA,true,1
+1599321090,2020-09-11,2020,1,,Yarmouth Drive-In,West Yarmouth,MA,USA,true,1
+1599321108,2020-09-12,2020,1,,Yarmouth Drive-In,West Yarmouth,MA,USA,true,1
+1599321126,2020-09-16,2020,1,,South Farms,Morris,CT,USA,true,1
+1599321141,2020-09-17,2020,1,,South Farms,Morris,CT,USA,true,1
+1613006128,2020-09-19,2020,1,,Wall Street Theater,Norwalk,CT,USA,true,1
+1601953243,2020-10-02,2020,1,,Higher Ground Drive-In at the Essex Junction Exposition Center,Essex Junction,VT,USA,true,1
+1601953232,2020-10-03,2020,6,Fall Tour 2020,Drive-In Live,Swanzey,NH,USA,true,1
+1602831065,2020-10-15,2020,6,Fall Tour 2020,Legend Valley,Thornville,OH,USA,true,1
+1608528597,2020-10-17,2020,6,Fall Tour 2020,Smoky Mountain Event Center,Waynesville,NC,USA,true,1
+1608527452,2020-10-19,2020,6,Fall Tour 2020,Frederick Fairgrounds,Frederick,MD,USA,true,1
+1605809122,2020-11-06,2020,6,Fall Tour 2020,South Farms,Morris,CT,USA,true,1
+1605927892,2020-11-07,2020,6,Fall Tour 2020,South Farms,Morris,CT,USA,true,1
+1608529980,2020-12-11,2020,1,,620 Loft & Garden in Rockefeller Center,New York,NY,USA,true,1
+1618127002,2021-04-09,2021,1,,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true,1
+1621489414,2021-05-03,2021,26,Shenanigans Summer Tour 2021,Frederick Fairgrounds,Frederick,MD,USA,true,1
+1621489520,2021-05-04,2021,26,Shenanigans Summer Tour 2021,Frederick Fairgrounds,Frederick,MD,USA,true,1
+1621490963,2021-05-06,2021,1,,Riverfront Park,North Charleston,SC,USA,true,1
+1621488565,2021-05-08,2021,26,Shenanigans Summer Tour 2021,The Caverns Above Ground Amphitheater,Pelham,TN,USA,true,1
+1621488243,2021-05-09,2021,1,,The Caverns Above Ground Amphitheater,Pelham,TN,USA,true,1
+1624330525,2021-06-11,2021,26,Shenanigans Summer Tour 2021,Northlands Live,Swanzey,NH,USA,true,1
+1624331646,2021-06-12,2021,26,Shenanigans Summer Tour 2021,Westville Music Bowl,New Haven,CT,USA,true,1
+1624331672,2021-06-13,2021,26,Shenanigans Summer Tour 2021,Westville Music Bowl,New Haven,CT,USA,true,1
+1624592560,2021-06-15,2021,26,Shenanigans Summer Tour 2021,Silver Lake Twin Drive-In Theatre,Perry,NY,USA,true,1
+1625628063,2021-06-16,2021,26,Shenanigans Summer Tour 2021,Silver Lake Twin Drive-In Theatre,Perry,NY,USA,true,1
+1624331734,2021-06-18,2021,26,Shenanigans Summer Tour 2021,Legend Valley,Thornville,OH,USA,true,1
+1624331751,2021-06-19,2021,26,Shenanigans Summer Tour 2021,Legend Valley,Thornville,OH,USA,true,1
+1626226617,2021-07-02,2021,26,Shenanigans Summer Tour 2021,The Pines Music Park,Eau Claire,WI,USA,true,1
+1626226633,2021-07-03,2021,26,Shenanigans Summer Tour 2021,The Pines Music Park,Eau Claire,WI,USA,true,1
+1627784422,2021-07-06,2021,26,Shenanigans Summer Tour 2021,Pine Creek Lodge,Livingston,MT,USA,true,1
+1627787577,2021-07-07,2021,26,Shenanigans Summer Tour 2021,Pine Creek Lodge,Livingston,MT,USA,true,1
+1627788999,2021-07-09,2021,26,Shenanigans Summer Tour 2021,Sculpture Park at Denver Performing Arts Center,Denver,CO,USA,true,1
+1628047692,2021-07-10,2021,26,Shenanigans Summer Tour 2021,Sculpture Park at Denver Performing Arts Center,Denver,CO,USA,true,1
+1628134819,2021-07-23,2021,1,,FloydFest,Floyd,VA,USA,true,1
+1630723826,2021-08-21,2021,1,,Oak Ridge Farm,Arrington,VA,USA,true,1
+1630726077,2021-08-22,2021,1,,Oak Ridge Farm,Arrington,VA,USA,true,1
+1630728677,2021-08-28,2021,1,,Bronx Zoo,Bronx,NY,USA,true,1
+1631854243,2021-09-03,2021,1,,Snowshoe Mountain Resort,Snowshoe,WV,USA,true,1
+1631924908,2021-09-18,2021,1,,Sea.Hear.Now Festival,Asbury Park,NJ,USA,true,1
+1635306732,2021-10-08,2021,27,Fall Tour 2021,Terminal 5,New York,NY,USA,true,1
+1635910003,2021-10-09,2021,27,Fall Tour 2021,Terminal 5,New York,NY,USA,true,1
+1635919185,2021-10-28,2021,27,Fall Tour 2021,State Theater,Portland,ME,USA,true,1
+1635919553,2021-10-29,2021,27,Fall Tour 2021,State Theater,Portland,ME,USA,true,1
+1643255453,2021-10-30,2021,27,Fall Tour 2021,The Palladium,Worcester,MA,USA,true,1
+1643255473,2021-10-31,2021,27,Fall Tour 2021,The Palladium,Worcester,MA,USA,true,1
+1643255965,2021-11-06,2021,27,Fall Tour 2021,The Eastern,Atlanta,GA,USA,true,1
+1643255989,2021-11-07,2021,27,Fall Tour 2021,The Eastern,Atlanta,GA,USA,true,1
+1643256041,2021-11-09,2021,27,Fall Tour 2021,Republic,New Orleans,LA,USA,true,1
+1643256074,2021-11-10,2021,27,Fall Tour 2021,House of Blues,Houston,TX,USA,true,1
+1643256285,2021-11-11,2021,27,Fall Tour 2021,Historic Scoot Inn,Austin,TX,USA,true,1
+1643256302,2021-11-12,2021,27,Fall Tour 2021,Historic Scoot Inn,Austin,TX,USA,true,1
+1643257560,2021-11-13,2021,27,Fall Tour 2021,The Echo Lounge & Music Hall,Dallas,TX,USA,true,1
+1643257583,2021-11-16,2021,27,Fall Tour 2021,Tower Theatre,Oklahoma City,OK,USA,true,1
+1643257605,2021-11-17,2021,27,Fall Tour 2021,The Truman,Kansas City,MO,USA,true,1
+1643341083,2021-11-19,2021,27,Fall Tour 2021,Belly Up,Aspen,CO,USA,true,1
+1643341465,2021-11-21,2021,27,Fall Tour 2021,The Mission Ballroom,Denver,CO,USA,true,1
+1643341486,2021-11-22,2021,27,Fall Tour 2021,The Mission Ballroom,Denver,CO,USA,true,1
+1643341525,2021-12-30,2021,1,,Riviera Theatre,Chicago,IL,USA,true,1
+1643341538,2021-12-31,2021,1,,Riviera Theatre,Chicago,IL,USA,true,1
+1643221619,2022-01-26,2022,28,Winter Tour 2022,Marquee Theatre,Tempe,AZ,USA,true,1
+1643342049,2022-01-27,2022,28,Winter Tour 2022,The Observatory North Park,San Diego,CA,USA,true,1
+1643430972,2022-01-28,2022,28,Winter Tour 2022,The Fonda Theatre,Los Angeles,CA,USA,true,1
+1643946135,2022-01-29,2022,28,Winter Tour 2022,The Regency Ballroom,San Francisco,CA,USA,true,1
+1646889854,2022-01-30,2022,28,Winter Tour 2022,The Regency Ballroom,San Francisco,CA,USA,true,1
+1646890151,2022-02-02,2022,28,Winter Tour 2022,Midtown Ballroom,Bend,OR,USA,true,1
+1646890846,2022-02-03,2022,28,Winter Tour 2022,Wonder Ballroom,Portland,OR,USA,true,1
+1646891581,2022-02-04,2022,28,Winter Tour 2022,Wonder Ballroom,Portland,OR,USA,true,1
+1644291579,2022-02-05,2022,28,Winter Tour 2022,Neptune Theatre,Seattle,WA,USA,true,1
+1644290969,2022-02-07,2022,28,Winter Tour 2022,The ELM,Bozeman,MT,USA,true,1
+1647968786,2022-02-09,2022,28,Winter Tour 2022,First Avenue,Minneapolis,MN,USA,true,1
+1647969186,2022-02-10,2022,28,Winter Tour 2022,The Sylvee,Madison,WI,USA,true,1
+1647969465,2022-02-11,2022,28,Winter Tour 2022,Old Forester's Paristown Hall,Louisville,KY,USA,true,1
+1647969788,2022-02-12,2022,28,Winter Tour 2022,Stage AE,Pittsburgh,PA,USA,true,1
+1647970135,2022-02-26,2022,1,,Mohegan Sun Arena,Uncasville,CT,USA,true,1
+1646272524,2022-03-01,2022,28,Winter Tour 2022,9:30 Club,Washington,DC,USA,true,1
+1646892759,2022-03-02,2022,28,Winter Tour 2022,9:30 Club,Washington,DC,USA,true,1
+1647971657,2022-03-03,2022,28,Winter Tour 2022,The Fillmore,Charlotte,NC,USA,true,1
+1647971890,2022-03-04,2022,28,Winter Tour 2022,Brooklyn Bowl,Nashville,TN,USA,true,1
+1647972376,2022-03-05,2022,28,Winter Tour 2022,Brooklyn Bowl,Nashville,TN,USA,true,1
+1647972561,2022-03-07,2022,28,Winter Tour 2022,The Mill & Mine,Knoxville,TN,USA,true,1
+1647972862,2022-03-09,2022,28,Winter Tour 2022,Royal Oak Music Theatre,Royal Oak,MI,USA,true,1
+1647967541,2022-03-10,2022,28,Winter Tour 2022,Agora Theater,Cleveland,OH,USA,true,1
+1647973810,2022-03-11,2022,28,Winter Tour 2022,The Fillmore,Philadelphia,PA,USA,true,1
+1647974144,2022-03-12,2022,28,Winter Tour 2022,The Fillmore,Philadelphia,PA,USA,true,1
+1649637376,2022-04-28,2022,1,,Firefly Distillery,North Charleston,SC,USA,true,1
+1650982465,2022-04-29,2022,1,,Salvage Station,Asheville,NC,USA,true,1
+1651783457,2022-04-30,2022,1,,Sweetwater 420 Festival,Atlanta,GA,USA,true,1
+1651783541,2022-05-01,2022,1,,Beale Street Music Festival,Memphis,TN,USA,true,1
+1653776640,2022-05-27,2022,29,Dripfield Summer Tour 2022,Westville Music Bowl,New Haven,CT,USA,true,1
+1653839586,2022-05-28,2022,29,Dripfield Summer Tour 2022,Westville Music Bowl,New Haven,CT,USA,true,1
+1654951966,2022-05-29,2022,29,Dripfield Summer Tour 2022,Boston Calling,Boston,MA,USA,true,1
+1654952260,2022-06-06,2022,29,Dripfield Summer Tour 2022,Champlain Valley Exposition,Essex Junction,VT,USA,true,1
+1654952499,2022-06-08,2022,29,Dripfield Summer Tour 2022,Artpark,Lewiston,NY,USA,true,1
+1654952852,2022-06-10,2022,29,Dripfield Summer Tour 2022,Legend Valley,Thornville,OH,USA,true,1
+1658016134,2022-06-11,2022,29,Dripfield Summer Tour 2022,Legend Valley,Thornville,OH,USA,true,1
+1658547159,2022-06-12,2022,29,Dripfield Summer Tour 2022,TCU Amphitheater at White River State Park,Indianapolis,IN,USA,true,1
+1658553316,2022-06-14,2022,29,Dripfield Summer Tour 2022,Greenfield Lake Amphitheater,Wilmington,NC,USA,true,1
+1658553333,2022-06-15,2022,29,Dripfield Summer Tour 2022,Red Hat Amphitheater,Raleigh,NC,USA,true,1
+1658553367,2022-06-17,2022,29,Dripfield Summer Tour 2022,Bonnaroo Music and Arts Festival,Manchester,TN,USA,true,1
+1658553386,2022-06-24,2022,29,Dripfield Summer Tour 2022,Radio City Music Hall,New York,NY,USA,true,1
+1658553400,2022-06-25,2022,29,Dripfield Summer Tour 2022,Radio City Music Hall,New York,NY,USA,true,1
+1667314241,2022-06-25,2022,1,,Studio 1515,New York,NY,USA,true,1
+1658554962,2022-06-30,2022,29,Dripfield Summer Tour 2022,High Sierra Music Festival,Quincy,CA,USA,true,1
+1658556414,2022-07-02,2022,29,Dripfield Summer Tour 2022,Peach Music Festival,Scranton,PA,USA,true,1
+1658556522,2022-07-22,2022,29,Dripfield Summer Tour 2022,Fort Adams State Park,Newport,RI,USA,true,1
+1658556609,2022-07-22,2022,29,Dripfield Summer Tour 2022,Newport Blues Café,Newport,RI,USA,true,2
+1660830109,2022-08-12,2022,29,Dripfield Summer Tour 2022,Chrysalis,Columbia,MD,USA,true,1
+1660830198,2022-08-13,2022,29,Dripfield Summer Tour 2022,Chrysalis,Columbia,MD,USA,true,1
+1660783551,2022-08-16,2022,29,Dripfield Summer Tour 2022,Dillon Amphitheatre,Dillon,CO,USA,true,1
+1660783515,2022-08-17,2022,29,Dripfield Summer Tour 2022,Dillon Amphitheatre,Dillon,CO,USA,true,1
+1660875454,2022-08-18,2022,29,Dripfield Summer Tour 2022,Red Rocks Park and Amphitheater,Morrison,CO,USA,true,1
+1661051264,2022-08-20,2022,29,Dripfield Summer Tour 2022,Brooklyn Bowl,Las Vegas,NV,USA,true,1
+1661051366,2022-08-21,2022,29,Dripfield Summer Tour 2022,Greek Theatre,Los Angeles,CA,USA,true,1
+1661051448,2022-08-23,2022,29,Dripfield Summer Tour 2022,South Shore Room at Harrah's Lake Tahoe,Stateline,NV,USA,true,1
+1661051487,2022-08-25,2022,1,,Pioneer Courthouse Square,Portland,OR,USA,true,1
+1661051527,2022-08-26,2022,29,Dripfield Summer Tour 2022,Thing Festival,Port Townsend,WA,USA,true,1
+1661051560,2022-08-27,2022,29,Dripfield Summer Tour 2022,Sacred Rose Festival,Bridgeview,IL,USA,true,1
+1661654953,2022-09-29,2022,30,Dripfield Fall Tour 2022,The National,Richmond,VA,USA,true,1
+1661654980,2022-09-30,2022,30,Dripfield Fall Tour 2022,The National,Richmond,VA,USA,true,1
+1661655044,2022-10-01,2022,30,Dripfield Fall Tour 2022,Pullman Yards,Atlanta,GA,USA,true,1
+1661655058,2022-10-02,2022,30,Dripfield Fall Tour 2022,Pullman Yards,Atlanta,GA,USA,true,1
+1661655105,2022-10-04,2022,30,Dripfield Fall Tour 2022,The Pageant,St. Louis,MO,USA,true,1
+1661655131,2022-10-06,2022,30,Dripfield Fall Tour 2022,Joy Theater,New Orleans,LA,USA,true,1
+1661655168,2022-10-07,2022,30,Dripfield Fall Tour 2022,Joy Theater,New Orleans,LA,USA,true,1
+1661655203,2022-10-08,2022,30,Dripfield Fall Tour 2022,Stubb's BBQ,Austin,TX,USA,true,1
+1661655429,2022-10-09,2022,30,Dripfield Fall Tour 2022,Zilker Park,Austin,TX,USA,true,1
+1661655503,2022-10-11,2022,30,Dripfield Fall Tour 2022,Arvest Bank Theater at the Midland,Kansas City,MO,USA,true,1
+1661655538,2022-10-13,2022,30,Dripfield Fall Tour 2022,JJ's Live,Fayetteville,AR,USA,true,1
+1661655592,2022-10-14,2022,30,Dripfield Fall Tour 2022,The Criterion,Oklahoma City,OK,USA,true,1
+1661655645,2022-10-15,2022,30,Dripfield Fall Tour 2022,South Side Ballroom,Dallas,TX,USA,true,1
+1661655448,2022-10-16,2022,30,Dripfield Fall Tour 2022,Zilker Park,Austin,TX,USA,true,1
+1667313566,2022-11-01,2022,1,,Hollywood Masonic Temple,Hollywood,CA,USA,true,1
+1661655709,2022-11-09,2022,31,TAB/Goose Fall 2022,Cross Insurance Arena,Portland,ME,USA,true,1
+1661655754,2022-11-11,2022,31,TAB/Goose Fall 2022,Tsongas Center,Lowell,MA,USA,true,1
+1661655935,2022-11-12,2022,31,TAB/Goose Fall 2022,Mohegan Sun Arena,Uncasville,CT,USA,true,1
+1661655965,2022-11-13,2022,31,TAB/Goose Fall 2022,Cool Insuring Arena,Glens Falls,NY,USA,true,1
+1661656009,2022-11-15,2022,31,TAB/Goose Fall 2022,UPMC Events Center,Carnot-Moon,PA,USA,true,1
+1661656167,2022-11-17,2022,31,TAB/Goose Fall 2022,EagleBank Arena,Fairfax,VA,USA,true,1
+1661656204,2022-11-18,2022,31,TAB/Goose Fall 2022,War Memorial Arena,Syracuse,NY,USA,true,1
+1661656555,2022-11-19,2022,31,TAB/Goose Fall 2022,Santander Arena,Reading,PA,USA,true,1
+1670018897,2022-12-07,2022,1,,30 Rockefeller Plaza,New York,NY,USA,true,1
+1661656582,2022-12-16,2022,1,,1STBANK Center,Broomfield,CO,USA,true,1
+1661656607,2022-12-17,2022,1,,1STBANK Center,Broomfield,CO,USA,true,1
+1668170993,2022-12-18,2022,1,,The Fox Theatre,Boulder,CO,USA,true,1
+1664301263,2022-12-30,2022,1,,Andrew J Brady Music Center,Cincinnati,OH,USA,true,1
+1664301272,2022-12-31,2022,1,,Andrew J Brady Music Center,Cincinnati,OH,USA,true,1
+1672769241,2023-01-15,2023,1,,Moon Palace,Riviera Maya,,Mexico,true,1
+1677934351,2023-03-03,2023,1,,Okeechobee Music Festival,Okeechobee,FL,USA,true,1
+1670439691,2023-03-08,2023,32,Spring Tour 2023,The Capitol Theatre,Port Chester,NY,USA,true,1
+1670439704,2023-03-09,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1670439739,2023-03-10,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1670439778,2023-03-11,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1670439789,2023-03-12,2023,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1670440316,2023-03-23,2023,32,Spring Tour 2023,Roadrunner,Boston,MA,USA,true,1
+1670440350,2023-03-24,2023,32,Spring Tour 2023,The Met,Philadelphia,PA,USA,true,1
+1670440360,2023-03-25,2023,32,Spring Tour 2023,The Met,Philadelphia,PA,USA,true,1
+1670440377,2023-03-26,2023,32,Spring Tour 2023,Agora Theater,Cleveland,OH,USA,true,1
+1678977364,2023-03-28,2023,32,Spring Tour 2023,Georgia Theatre,Athens,GA,USA,true,1
+1678977337,2023-03-30,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true,1
+1670440389,2023-03-31,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true,1
+1680396905,2023-04-01,2023,32,Spring Tour 2023,Ryman Auditorium,Nashville,TN,USA,true,1
+1680396930,2023-04-02,2023,32,Spring Tour 2023,Avondale Brewing Company,Birmingham,AL,USA,true,1
+1670440423,2023-04-13,2023,32,Spring Tour 2023,The Sylvee,Madison,WI,USA,true,1
+1670440441,2023-04-14,2023,32,Spring Tour 2023,The Salt Shed,Chicago,IL,USA,true,1
+1670440457,2023-04-15,2023,32,Spring Tour 2023,The Salt Shed,Chicago,IL,USA,true,1
+1670440474,2023-04-16,2023,32,Spring Tour 2023,Palace Theatre,St. Paul,MN,USA,true,1
+1670440487,2023-04-18,2023,32,Spring Tour 2023,The ELM,Bozeman,MT,USA,true,1
+1670440497,2023-04-19,2023,32,Spring Tour 2023,The ELM,Bozeman,MT,USA,true,1
+1670440512,2023-04-21,2023,32,Spring Tour 2023,Knitting Factory,Boise,ID,USA,true,1
+1670440530,2023-04-22,2023,32,Spring Tour 2023,Paramount Theatre,Seattle,WA,USA,true,1
+1670440544,2023-04-23,2023,32,Spring Tour 2023,Paramount Theatre,Seattle,WA,USA,true,1
+1670440689,2023-04-25,2023,32,Spring Tour 2023,McDonald Theatre,Eugene,OR,USA,true,1
+1670440707,2023-04-27,2023,32,Spring Tour 2023,The Warfield,San Francisco,CA,USA,true,1
+1670440719,2023-04-28,2023,32,Spring Tour 2023,The Warfield,San Francisco,CA,USA,true,1
+1670440734,2023-04-29,2023,32,Spring Tour 2023,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true,1
+1678977645,2023-05-02,2023,32,Spring Tour 2023,Faubourg Brewery,New Orleans,LA,USA,true,1
+1678977663,2023-05-03,2023,32,Spring Tour 2023,Faubourg Brewery,New Orleans,LA,USA,true,1
+1684521220,2023-05-26,2023,33,Summer Tour 2023,Three Sisters Park,Chillicothe,IL,USA,true,1
+1678977723,2023-06-02,2023,33,Summer Tour 2023,Cathead Distillery,Jackson,MS,USA,true,1
+1678977739,2023-06-03,2023,33,Summer Tour 2023,Riverbend Music Festival,Chattanooga,TN,USA,true,1
+1678977750,2023-06-04,2023,33,Summer Tour 2023,Railbird Music Festival,Lexington,KY,USA,true,1
+1686586195,2023-06-21,2023,33,Summer Tour 2023,Riviera Theatre,Chicago,IL,USA,true,1
+1678977768,2023-06-22,2023,33,Summer Tour 2023,Louisville Palace Theatre,Louisville,KY,USA,true,1
+1678977782,2023-06-23,2023,33,Summer Tour 2023,Louisville Palace Theatre,Louisville,KY,USA,true,1
+1678977794,2023-06-25,2023,33,Summer Tour 2023,Electric Forest Festival,Rothbury,MI,USA,true,1
+1678977807,2023-06-27,2023,33,Summer Tour 2023,Kemba Live! Outdoors,Columbus,OH,USA,true,1
+1680623883,2023-06-29,2023,33,Summer Tour 2023,Peach Music Festival,Scranton,PA,USA,true,1
+1680623957,2023-06-30,2023,33,Summer Tour 2023,Nelson Ledges Quarry Park,Garrettsville,OH,USA,true,1
+1680623971,2023-07-01,2023,33,Summer Tour 2023,Nelson Ledges Quarry Park,Garrettsville,OH,USA,true,1
+1678977844,2023-07-03,2023,33,Summer Tour 2023,Stone Pony Summer Stage,Asbury Park,NJ,USA,true,1
+1678977854,2023-07-04,2023,33,Summer Tour 2023,Stone Pony Summer Stage,Asbury Park,NJ,USA,true,1
+1680624000,2023-07-06,2023,33,Summer Tour 2023,Thompson's Point,Portland,ME,USA,true,1
+1678977867,2023-07-07,2023,33,Summer Tour 2023,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true,1
+1680624030,2023-07-08,2023,33,Summer Tour 2023,Levitate Music and Arts Festival,Marshfield,MA,USA,true,1
+1680624072,2023-07-29,2023,33,Summer Tour 2023,Fort Adams State Park,Newport,RI,USA,true,1
+1689710328,2023-09-13,2023,34,Fall Tour 2023,Leader Bank Pavilion,Boston,MA,USA,true,1
+1690124854,2023-09-14,2023,34,Fall Tour 2023,Leader Bank Pavilion,Boston,MA,USA,true,1
+1686586810,2023-09-15,2023,34,Fall Tour 2023,Knox Farm State Park,East Aurora,NY,USA,true,1
+1680624164,2023-09-16,2023,34,Fall Tour 2023,Masonic Temple,Detroit,MI,USA,true,1
+1680624194,2023-09-17,2023,34,Fall Tour 2023,Miller High Life Theatre,Milwaukee,WI,USA,true,1
+1680624215,2023-09-20,2023,34,Fall Tour 2023,Red Butte Garden Amphitheatre,Salt Lake City,UT,USA,true,1
+1680624228,2023-09-22,2023,34,Fall Tour 2023,Kettlehouse Amphitheater,Bonner,MT,USA,true,1
+1680624243,2023-09-23,2023,34,Fall Tour 2023,Spokane Pavilion,Spokane,WA,USA,true,1
+1695143588,2023-09-24,2023,34,Fall Tour 2023,Cascade Equinox Festival,Redmond,OR,USA,true,1
+1680624255,2023-09-25,2023,34,Fall Tour 2023,Fox Theater,Oakland,CA,USA,true,1
+1680624271,2023-09-26,2023,34,Fall Tour 2023,Fox Theater,Oakland,CA,USA,true,1
+1689710282,2023-09-28,2023,34,Fall Tour 2023,The Wiltern,Los Angeles,CA,USA,true,1
+1680624285,2023-09-29,2023,34,Fall Tour 2023,Santa Barbara Bowl,Santa Barbara,CA,USA,true,1
+1695143625,2023-09-30,2023,34,Fall Tour 2023,Ohana Festival,Dana Point,CA,USA,true,1
+1680625321,2023-10-01,2023,34,Fall Tour 2023,Brooklyn Bowl,Las Vegas,NV,USA,true,1
+1685655901,2023-10-03,2023,34,Fall Tour 2023,Pepsi Amphitheater,Flagstaff,AZ,USA,true,1
+1685655916,2023-10-05,2023,34,Fall Tour 2023,Red Rocks Park and Amphitheater,Morrison,CO,USA,true,1
+1685655928,2023-10-06,2023,34,Fall Tour 2023,Red Rocks Park and Amphitheater,Morrison,CO,USA,true,1
+1694018355,2023-10-07,2023,34,Fall Tour 2023,West Lawn at Lory Student Center,Fort Collins,CO,USA,true,1
+1695777245,2023-10-27,2023,34,Fall Tour 2023,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true,1
+1689710455,2023-11-03,2023,35,Fall European Tour 2023,Trabendo,Paris,,France,true,1
+1689710478,2023-11-04,2023,35,Fall European Tour 2023,Luxor,Cologne,,Germany,true,1
+1689710490,2023-11-07,2023,35,Fall European Tour 2023,Melkweg Oude Zaal,Amsterdam,,Netherlands,true,1
+1689710506,2023-11-09,2023,35,Fall European Tour 2023,Hotel Cecil,Copenhagen,,Denmark,true,1
+1699616462,2023-11-10,2023,35,Fall European Tour 2023,Rolling Stone Beach,Wendel,,Germany,true,1
+1689710521,2023-11-11,2023,35,Fall European Tour 2023,Gretchen,Berlin,,Germany,true,1
+1689710564,2023-11-13,2023,35,Fall European Tour 2023,AB Club,Brussels,,Belgium,true,1
+1689710577,2023-11-15,2023,35,Fall European Tour 2023,BAaD,Glasgow,,United Kingdom,true,1
+1689710600,2023-11-16,2023,35,Fall European Tour 2023,Academy 2,Manchester,,United Kingdom,true,1
+1689710616,2023-11-18,2023,35,Fall European Tour 2023,Thekla,Bristol,,United Kingdom,true,1
+1685665456,2023-11-19,2023,35,Fall European Tour 2023,Electric Ballroom,London,,United Kingdom,true,1
+1685665473,2023-11-20,2023,35,Fall European Tour 2023,Electric Ballroom,London,,United Kingdom,true,1
+1689710643,2023-12-08,2023,1,,Hampton Coliseum,Hampton,VA,USA,true,1
+1689710651,2023-12-09,2023,1,,Hampton Coliseum,Hampton,VA,USA,true,1
+1710264780,2024-04-07,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1710264790,2024-04-08,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1710264813,2024-04-09,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1710264829,2024-04-10,2024,1,,The Capitol Theatre,Port Chester,NY,USA,true,1
+1713972776,2024-04-24,2024,1,,Clune Auditorium at Wilton High School,Wilton,CT,USA,true,1
+1714142474,2024-04-24,2024,1,,Clune Auditorium at Wilton High School,Wilton,CT,USA,true,2
+1715813149,2024-05-11,2024,1,,Regions Tower,Indianapolis,IN,USA,true,1
+1703179698,2024-05-26,2024,36,Summer Tour 2024,Three Sisters Park,Chillicothe,IL,USA,true,1
+1707240265,2024-06-04,2024,36,Summer Tour 2024,The Factory,Chesterfield,MO,USA,true,1
+1707240279,2024-06-05,2024,36,Summer Tour 2024,The Factory,Chesterfield,MO,USA,true,1
+1707240294,2024-06-07,2024,36,Summer Tour 2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true,1
+1707240309,2024-06-08,2024,36,Summer Tour 2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true,1
+1707240478,2024-06-10,2024,36,Summer Tour 2024,Steelhouse,Omaha,NE,USA,true,1
+1707240531,2024-06-11,2024,36,Summer Tour 2024,The Midland Theatre,Kansas City,MO,USA,true,1
+1707240597,2024-06-12,2024,36,Summer Tour 2024,Everwise Amphitheater at White River State Park,Indianapolis,IN,USA,true,1
+1701282961,2024-06-14,2024,36,Summer Tour 2024,Northlands Live,Swanzey,NH,USA,true,1
+1707240660,2024-06-15,2024,36,Summer Tour 2024,Constellation Brands-Marvin Sands Performing Arts Center,Canandaigua,NY,USA,true,1
+1707240691,2024-06-16,2024,36,Summer Tour 2024,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true,1
+1707240752,2024-06-18,2024,36,Summer Tour 2024,Red Hat Amphitheater,Raleigh,NC,USA,true,1
+1707240781,2024-06-20,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true,1
+1707240794,2024-06-21,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true,1
+1707240816,2024-06-22,2024,36,Summer Tour 2024,Fox Theatre,Atlanta,GA,USA,true,1
+1707240952,2024-06-23,2024,36,Summer Tour 2024,Skyla Credit Union Amphitheatre,Charlotte,NC,USA,true,1
+1707240973,2024-06-25,2024,36,Summer Tour 2024,Thompson's Point,Portland,ME,USA,true,1
+1707241190,2024-06-26,2024,36,Summer Tour 2024,Thompson's Point,Portland,ME,USA,true,1
+1707241262,2024-06-28,2024,36,Summer Tour 2024,Mann Center for the Performing Arts,Philadelphia,PA,USA,true,1
+1707241278,2024-06-29,2024,36,Summer Tour 2024,Forest Hills Stadium,Queens,NY,USA,true,1
+1707241290,2024-06-30,2024,36,Summer Tour 2024,Westville Music Bowl,New Haven,CT,USA,true,1
+1712074920,2024-09-01,2024,37,September Tour 2024,PNC Bank Arts Center,Holmdel,NJ,USA,true,1
+1719245701,2024-09-02,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true,1
+1719248198,2024-09-03,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true,1
+1719248225,2024-09-04,2024,37,September Tour 2024,MGM Music Hall at Fenway,Boston,MA,USA,true,1
+1712074940,2024-09-06,2024,37,September Tour 2024,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true,1
+1712074979,2024-09-07,2024,37,September Tour 2024,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true,1
+1712075003,2024-09-09,2024,37,September Tour 2024,Ting Pavilion,Charlottesville,VA,USA,true,1
+1719248320,2024-09-11,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true,1
+1719248336,2024-09-12,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true,1
+1719248398,2024-09-13,2024,37,September Tour 2024,The Salt Shed,Chicago,IL,USA,true,1
+1712075027,2024-09-14,2024,37,September Tour 2024,The Armory,Minneapolis,MN,USA,true,1
+1712075175,2024-09-15,2024,37,September Tour 2024,Vibrant Music Hall,Waukee,IA,USA,true,1
+1712075204,2024-09-17,2024,37,September Tour 2024,The Great Saltair,Magna,UT,USA,true,1
+1712075232,2024-09-19,2024,37,September Tour 2024,Kettlehouse Amphitheater,Bonner,MT,USA,true,1
+1712075248,2024-09-20,2024,37,September Tour 2024,Kettlehouse Amphitheater,Bonner,MT,USA,true,1
+1712075274,2024-09-21,2024,37,September Tour 2024,Remlinger Farms,Carnation,WA,USA,true,1
+1712075391,2024-09-22,2024,37,September Tour 2024,Edgefield Concerts on the Lawn,Troutdale,OR,USA,true,1
+1712075420,2024-09-24,2024,37,September Tour 2024,Cuthbert Amphitheater,Eugene,OR,USA,true,1
+1712075435,2024-09-26,2024,37,September Tour 2024,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true,1
+1712075463,2024-09-27,2024,37,September Tour 2024,Greek Theatre,Los Angeles,CA,USA,true,1
+1712075724,2024-09-28,2024,37,September Tour 2024,Frost Amphitheater,Stanford,CA,USA,true,1
+1727545020,2024-10-01,2024,38,Fall Tour 2024,The Troubadour,West Hollywood,CA,USA,true,1
+1716390709,2024-10-04,2024,37,September Tour 2024,Memphis Botanical Gardens,Memphis,TN,USA,true,1
+1719248440,2024-10-24,2024,38,Fall Tour 2024,Ascend Amphitheater,Nashville,TN,USA,true,1
+1728409724,2024-10-25,2024,38,Fall Tour 2024,Lawrence Joel Veterans Memorial Coliseum,Winston-Salem,NC,USA,true,2
+1728407482,2024-10-26,2024,38,Fall Tour 2024,Avondale Brewing Company,Birmingham,AL,USA,true,2
+1719248538,2024-10-29,2024,38,Fall Tour 2024,The Fillmore Miami Beach,Miami,FL,USA,true,1
+1719248561,2024-10-30,2024,38,Fall Tour 2024,The Fillmore Miami Beach,Miami,FL,USA,true,1
+1719248592,2024-10-31,2024,38,Fall Tour 2024,The St. Pete Pier,St. Petersburg,FL,USA,true,1
+1719248634,2024-11-01,2024,38,Fall Tour 2024,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true,1
+1719248650,2024-11-02,2024,38,Fall Tour 2024,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true,1
+1730823679,2024-11-04,2024,1,,The Revelry,Charlotte,NC,USA,true,1
+1719248761,2024-11-07,2024,38,Fall Tour 2024,Petersen Events Center,Pittsburgh,PA,USA,true,1
+1719248817,2024-11-08,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true,1
+1719248797,2024-11-09,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true,1
+1719248831,2024-11-10,2024,38,Fall Tour 2024,Andrew J Brady Music Center,Cincinnati,OH,USA,true,1
+1719248901,2024-11-12,2024,38,Fall Tour 2024,The Anthem,Washington,DC,USA,true,1
+1719248917,2024-11-13,2024,38,Fall Tour 2024,The Anthem,Washington,DC,USA,true,1
+1730168333,2024-11-24,2024,1,,Madison Square Garden,New York,NY,USA,true,1
+1719248965,2024-12-13,2024,1,,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,USA,true,1
+1719248984,2024-12-14,2024,1,,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,USA,true,1
+1721059697,2024-12-30,2024,1,,Moody Center,Austin,TX,USA,true,1
+1721059705,2024-12-31,2024,1,,Moody Center,Austin,TX,USA,true,1
+1731950152,2025-02-06,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true,1
+1731950167,2025-02-07,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true,1
+1731950848,2025-02-08,2025,39,Winter Tour 2025,Miller High Life Theatre,Milwaukee,WI,USA,true,1
+1732138914,2025-02-10,2025,39,Winter Tour 2025,HISTORY,Toronto,ON,Canada,true,1
+1731950869,2025-02-11,2025,39,Winter Tour 2025,HISTORY,Toronto,ON,Canada,true,1
+1731951149,2025-02-13,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true,1
+1731951172,2025-02-14,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true,1
+1731951387,2025-02-15,2025,39,Winter Tour 2025,GLC Live at 20 Monroe,Grand Rapids,MI,USA,true,1
+1741108426,2025-03-11,2025,1,,The Shed,New York,NY,USA,true,1
+1737015351,2025-04-24,2025,1,,Fair Grounds Race Course,New Orleans,LA,USA,true,1
+1745685585,2025-04-25,2025,1,,Preservation Hall,New Orleans,LA,USA,true,1
+1727890080,2025-05-08,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,1
+1727890094,2025-05-09,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,1
+1727890109,2025-05-10,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,1
+1743623827,2025-05-10,2025,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,2
+1736785860,2025-05-25,2025,40,Everything Must Go Summer Tour,Napa Valley Expo,Napa,CA,USA,true,2
+1748090458,2025-05-25,2025,40,Everything Must Go Summer Tour,Napa Valley Expo,Napa,CA,USA,true,1
+1740507757,2025-05-27,2025,40,Everything Must Go Summer Tour,The Masonic,San Francisco,CA,USA,true,1
+1740507768,2025-05-28,2025,40,Everything Must Go Summer Tour,The Masonic,San Francisco,CA,USA,true,1
+1737998824,2025-05-30,2025,40,Everything Must Go Summer Tour,Hayden Homes Amphitheater,Bend,OR,USA,true,1
+1738001411,2025-05-31,2025,40,Everything Must Go Summer Tour,Spokane Pavilion,Spokane,WA,USA,true,1
+1738001727,2025-06-01,2025,40,Everything Must Go Summer Tour,Idaho Botanical Garden: Outlaw Field,Boise,ID,USA,true,1
+1738001750,2025-06-03,2025,40,Everything Must Go Summer Tour,Brooklyn Bowl,Las Vegas,NV,USA,true,1
+1738001942,2025-06-04,2025,40,Everything Must Go Summer Tour,Arizona Financial Theatre,Phoenix,AZ,USA,true,1
+1736789025,2025-06-06,2025,40,Everything Must Go Summer Tour,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true,1
+1736789092,2025-06-07,2025,40,Everything Must Go Summer Tour,Fiddler's Green Amphitheatre,Greenwood Village,CO,USA,true,1
+1738001961,2025-06-10,2025,40,Everything Must Go Summer Tour,The Factory,Chesterfield,MO,USA,true,1
+1738001976,2025-06-11,2025,40,Everything Must Go Summer Tour,The Factory,Chesterfield,MO,USA,true,1
+1738002251,2025-06-12,2025,40,Everything Must Go Summer Tour,Everwise Amphitheater at White River State Park,Indianapolis,IN,USA,true,1
+1736352597,2025-06-15,2025,40,Everything Must Go Summer Tour,Merriweather Post Pavilion,Columbia,MD,USA,true,1
+1738002457,2025-06-17,2025,40,Everything Must Go Summer Tour,Live Oak Bank Pavilion,Wilmington,NC,USA,true,1
+1738002473,2025-06-19,2025,40,Everything Must Go Summer Tour,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true,1
+1738002485,2025-06-20,2025,40,Everything Must Go Summer Tour,Jacobs Pavilion at Nautica,Cleveland,OH,USA,true,1
+1738002506,2025-06-21,2025,40,Everything Must Go Summer Tour,Constellation Brands-Marvin Sands Performing Arts Center,Canandaigua,NY,USA,true,1
+1737731867,2025-06-22,2025,40,Everything Must Go Summer Tour,Belleayre Mountain,Highmount,NY,USA,true,1
+1749749082,2025-06-23,2025,40,Everything Must Go Summer Tour,Racket,New York,NY,USA,true,1
+1738002676,2025-06-27,2025,40,Everything Must Go Summer Tour,Bank of New Hampshire Pavilion,Gilford,NH,USA,true,1
+1736789107,2025-06-28,2025,40,Everything Must Go Summer Tour,Madison Square Garden,New York,NY,USA,true,1
+1738002691,2025-06-29,2025,40,Everything Must Go Summer Tour,Westville Music Bowl,New Haven,CT,USA,true,1
+1745515491,2025-07-25,2025,1,,Fort Adams State Park,Newport,RI,USA,true,1
+1755099318,2025-08-13,2025,1,,30 Rockefeller Plaza,New York,NY,USA,true,1
+1754580823,2025-08-15,2025,1,,World Cafe Live,Philadelphia,PA,USA,true,1
+1744816419,2025-08-16,2025,40,Everything Must Go Summer Tour,Park City Song Summit,Park City,UT,USA,true,1
+1745887842,2025-08-28,2025,41,Fall Tour 2025,Hancher Green,Iowa City,IA,USA,true,1
+1743092094,2025-08-31,2025,1,,The Gorge Amphitheatre,Quincy,WA,USA,true,1
+1739970619,2025-09-12,2025,41,Fall Tour 2025,Harvest Music Festival,Fredericton,NB,Canada,true,1
+1750092069,2025-09-14,2025,41,Fall Tour 2025,Waterfront Park,Burlington,VT,USA,true,1
+1739466724,2025-09-17,2025,41,Fall Tour 2025,Kohl Center,Madison,WI,USA,true,1
+1745888102,2025-09-19,2025,41,Fall Tour 2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,USA,true,1
+1745888259,2025-09-20,2025,41,Fall Tour 2025,Huntingon Bank Pavilion at Northerly Island,Chicago,IL,USA,true,1
+1745888333,2025-09-23,2025,41,Fall Tour 2025,Louisville Palace Theatre,Louisville,KY,USA,true,1
+1745888334,2025-09-24,2025,41,Fall Tour 2025,Louisville Palace Theatre,Louisville,KY,USA,true,1
+1745888390,2025-09-26,2025,41,Fall Tour 2025,Ameris Bank Amphitheatre,Alpharetta,GA,USA,true,1
+1745888429,2025-09-27,2025,41,Fall Tour 2025,PNC Music Pavilion,Charlotte,NC,USA,true,1
+1759102128,2025-09-28,2025,1,,The Revelry,Charlotte,NC,USA,true,1
+1745888335,2025-09-30,2025,41,Fall Tour 2025,Kemba Live! Outdoors,Columbus,OH,USA,true,1
+1750092168,2025-10-02,2025,41,Fall Tour 2025,Allianz Amphitheater at Riverfront,Richmond,VA,USA,true,1
+1750092201,2025-10-03,2025,41,Fall Tour 2025,Allianz Amphitheater at Riverfront,Richmond,VA,USA,true,1
+1750092202,2025-10-04,2025,41,Fall Tour 2025,Mann Center for the Performing Arts,Philadelphia,PA,USA,true,1
+1747331275,2025-10-05,2025,41,Fall Tour 2025,RISE Festival,Jean,NV,USA,true,1
+1743534473,2025-11-02,2025,1,,Spirit of the Suwannee Music Park,Live Oak,FL,USA,true,1
+1765242396,2025-12-08,2025,1,,Grand Ballroom at Manhattan Center,New York,NY,USA,true,1
+1753114489,2025-12-12,2025,1,,Amica Mutual Pavilion,Providence,RI,USA,true,1
+1753114510,2025-12-13,2025,1,,Amica Mutual Pavilion,Providence,RI,USA,true,1
+1764955445,2026-03-28,2026,1,,Jam in the Streets,Athens,GA,USA,true,1
+1762797174,2026-04-10,2026,42,The Spring 2026 Tour,ExploreAsheville.com Arena,Asheville,NC,USA,true,1
+1762797175,2026-04-11,2026,42,The Spring 2026 Tour,Coca-Cola Amphitheater,Birmingham,AL,USA,true,1
+1762797176,2026-04-12,2026,42,The Spring 2026 Tour,Central Florida Fairgrounds,Orlando,FL,USA,true,1
+1762797177,2026-04-14,2026,42,The Spring 2026 Tour,War Memorial Auditorium,Fort Lauderdale,FL,USA,true,1
+1762797178,2026-04-15,2026,42,The Spring 2026 Tour,War Memorial Auditorium,Fort Lauderdale,FL,USA,true,1
+1762797179,2026-04-17,2026,42,The Spring 2026 Tour,The BayCare Sound,Clearwater,FL,USA,true,1
+1762797180,2026-04-18,2026,42,The Spring 2026 Tour,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true,1
+1762797181,2026-04-19,2026,42,The Spring 2026 Tour,The St. Augustine Amphitheatre,St. Augustine,FL,USA,true,1
+1762797182,2026-04-21,2026,42,The Spring 2026 Tour,Saenger Theatre,New Orleans,LA,USA,true,1
+1762797183,2026-04-22,2026,42,The Spring 2026 Tour,Saenger Theatre,New Orleans,LA,USA,true,1
+1762797184,2026-04-23,2026,42,The Spring 2026 Tour,Bayou Music Center,Houston,TX,USA,true,1
+1762797185,2026-04-24,2026,42,The Spring 2026 Tour,Moody Center,Austin,TX,USA,true,1
+1762797186,2026-04-25,2026,42,The Spring 2026 Tour,The Pavilion at Toyota Music Factory,Irving,TX,USA,true,1
+1771450225,2026-05-07,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,2
+1778202106,2026-05-07,2026,1,,Hotel El Ganzo,San Jose Del Cabo,,Mexico,true,1
+1771450241,2026-05-08,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,1
+1771450242,2026-05-09,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,2
+1773021342,2026-05-09,2026,1,,El Ganzo Oasis,San Jose Del Cabo,,Mexico,true,1
+1765285120,2026-05-22,2026,43,Europe/UK Tour 2026,Electric Brixton,London,,UK,true,1
+1765285154,2026-05-23,2026,43,Europe/UK Tour 2026,Electric Brixton,London,,UK,true,1
+1765285390,2026-05-25,2026,43,Europe/UK Tour 2026,La Madeleine,Brussels,,Belgium,true,1
+1765285422,2026-05-27,2026,43,Europe/UK Tour 2026,Melkweg,Amsterdam,,Netherlands,true,1
+1765285442,2026-05-28,2026,43,Europe/UK Tour 2026,Melkweg,Amsterdam,,Netherlands,true,1
+1765285944,2026-05-30,2026,43,Europe/UK Tour 2026,Bürgerhaus Stollwerck,Cologne,,Germany,true,1
+1765285986,2026-06-01,2026,43,Europe/UK Tour 2026,Elysée-Montmartre,Paris,,France,true,1
+1765286055,2026-06-03,2026,43,Europe/UK Tour 2026,Festsaal Kreuzberg,Berlin,,Germany,true,1
+1765286171,2026-06-05,2026,43,Europe/UK Tour 2026,Northside Festival,Viby,,Denmark,true,1
+1769450529,2026-06-13,2026,44,Summer Tour 2026,RBC Amphitheatre,Toronto,ON,Canada,true,1
+1769450530,2026-06-15,2026,44,Summer Tour 2026,The Dome,Virginia Beach,VA,USA,true,1
+1769450531,2026-06-16,2026,44,Summer Tour 2026,The Dome,Virginia Beach,VA,USA,true,1
+1768255307,2026-06-19,2026,44,Summer Tour 2026,Madison Square Garden,New York,NY,USA,true,1
+1768255308,2026-06-20,2026,44,Summer Tour 2026,Madison Square Garden,New York,NY,USA,true,1
+1781619077,2026-06-21,2026,44,Summer Tour 2026,Central Park SummerStage,New York,NY,USA,true,1
+1769450532,2026-06-23,2026,44,Summer Tour 2026,Firefly Distillery,North Charleston,SC,USA,true,1
+1769450533,2026-06-24,2026,44,Summer Tour 2026,Firefly Distillery,North Charleston,SC,USA,true,1
+1769450534,2026-06-26,2026,44,Summer Tour 2026,Red Hat Amphitheater,Raleigh,NC,USA,true,1
+1769450535,2026-06-27,2026,44,Summer Tour 2026,Red Hat Amphitheater,Raleigh,NC,USA,true,1
+1769450536,2026-06-28,2026,44,Summer Tour 2026,Merriweather Post Pavilion,Columbia,MD,USA,true,1
+1769450537,2026-06-30,2026,44,Summer Tour 2026,Leader Bank Pavilion,Boston,MA,USA,true,1
+1769450538,2026-07-01,2026,44,Summer Tour 2026,Leader Bank Pavilion,Boston,MA,USA,true,1
+1769450539,2026-07-02,2026,44,Summer Tour 2026,PNC Bank Arts Center,Holmdel,NJ,USA,true,1
+1769450540,2026-07-03,2026,44,Summer Tour 2026,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true,1
+1769450541,2026-07-04,2026,44,Summer Tour 2026,Saratoga Performing Arts Center,Saratoga Springs,NY,USA,true,1
+1769450542,2026-08-13,2026,44,Summer Tour 2026,Cal Coast Credit Union Amphitheater,San Diego,CA,USA,true,1
+1769450543,2026-08-14,2026,44,Summer Tour 2026,Greek Theatre,Los Angeles,CA,USA,true,1
+1769450544,2026-08-15,2026,44,Summer Tour 2026,Frost Amphitheater,Stanford,CA,USA,true,1
+1769450545,2026-08-16,2026,44,Summer Tour 2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,USA,true,1
+1769450546,2026-08-18,2026,44,Summer Tour 2026,Commodore Ballroom,Vancouver,BC,Canada,false,1
+1769450547,2026-08-19,2026,44,Summer Tour 2026,WAMU Theater,Seattle,WA,USA,false,1
+1769450548,2026-08-21,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false,1
+1769450725,2026-08-22,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false,1
+1769450726,2026-08-24,2026,44,Summer Tour 2026,Kettlehouse Amphitheater,Bonner,MT,USA,false,1
+1769450727,2026-08-27,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false,1
+1769450728,2026-08-28,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false,1
+1775581872,2026-08-29,2026,44,Summer Tour 2026,Civic Center,Salt Lake City,UT,USA,false,1
+1782144765,2026-08-31,2026,44,Summer Tour 2026,The Mishawaka,Bellvue,CO,USA,false,1
+1782144766,2026-09-01,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false,1
+1782144767,2026-09-02,2026,44,Summer Tour 2026,Dillon Amphitheatre,Dillon,CO,USA,false,1
+1771450166,2026-09-26,2026,1,,Kentucky Expo Center,Louisville,KY,USA,false,1
+1780327768,2026-11-03,2026,45,Fall Tour 2026,The Midland,Kansas City,MO,USA,false,1
+1780327769,2026-11-04,2026,45,Fall Tour 2026,The Midland,Kansas City,MO,USA,false,1
+1780327770,2026-11-06,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false,1
+1780327771,2026-11-07,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false,1
+1780327772,2026-11-08,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,false,1
+1780327773,2026-11-10,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,false,1
+1780327774,2026-11-11,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,false,1
+1780327775,2026-11-13,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false,1
+1780327776,2026-11-14,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false,1
+1780327777,2026-11-15,2026,45,Fall Tour 2026,Cross Insurance Arena,Portland,ME,USA,false,1
+1780327778,2026-11-18,2026,45,Fall Tour 2026,John Paul Jones Arena,Charlottesville,VA,USA,false,1
+1780327779,2026-11-19,2026,45,Fall Tour 2026,Citizens Live at The Wylie,Pittsburgh,PA,USA,false,1
+1780327780,2026-11-20,2026,45,Fall Tour 2026,Citizens Live at The Wylie,Pittsburgh,PA,USA,false,1
+1780327781,2026-11-21,2026,45,Fall Tour 2026,Blue Cross Arena,Rochester,NY,USA,false,1
+1784559906,2026-12-11,2026,1,,Jim Whelan Boardwalk Hall,Atlantic City,NJ,USA,false,1
+1784559917,2026-12-12,2026,1,,Jim Whelan Boardwalk Hall,Atlantic City,NJ,USA,false,1

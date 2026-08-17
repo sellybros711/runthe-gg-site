@@ -175,6 +175,20 @@ async function playSeed(runSeed, label, width, wantBye) {
   ok('the bracket comes up before the first game', !!(await p.$('#s-brk.on')));
 
   const shot = async (n) => p.screenshot({ path: SS + 'brk_' + runSeed + '_' + n + '.png' });
+
+  /* THE LINE UNDER THE BRACKET IS SAMPLED, NOT SNAPSHOTTED. Each round's note is on
+     screen for a couple of seconds and then the next one replaces it, so reading it once
+     at a fixed moment tests the machine's speed rather than the game: this assertion
+     passed for a week and then started failing when a slower run pushed the read past
+     the round it was about. Everything below collects, and the claims are made against
+     what was seen across the whole postseason. */
+  const notes = new Set();
+  const grabNote = async () => {
+    if (!(await p.$('#s-brk.on'))) return;
+    const t = ((await p.textContent('#brk-note')) || '').trim();
+    if (t) notes.add(t);
+  };
+  await grabNote();
   await shot('open');
 
   /* THE RAIL SCROLLS SIDEWAYS, THE PAGE DOES NOT. Four columns will not fit on a phone
@@ -191,6 +205,7 @@ async function playSeed(runSeed, label, width, wantBye) {
       return { page: d.scrollWidth - d.clientWidth, over: rail.scrollWidth - rail.clientWidth };
     });
   };
+  await grabNote();
   const narrow = await sideways(width);
   ok('the page does not scroll sideways on a phone', narrow.page <= 1, JSON.stringify(narrow));
   const desk = await sideways(1280);
@@ -204,9 +219,7 @@ async function playSeed(runSeed, label, width, wantBye) {
      game of theirs in it, and the round that has to be played before their own opponent
      exists at all: getting this wrong left all four bye seeds with nobody to play. */
   if (wantBye) {
-    ok('a bye seed is told the first round is not theirs',
-      /first round off/i.test((await p.textContent('#brk-note')) || ''),
-      (await p.textContent('#brk-note')) || '');
+    await grabNote();
     await p.waitForTimeout(4200);
     const settled = await p.$$eval('#brk-rail .brk-col:first-child .brk-t.won', (e) => e.length);
     ok('all four first-round games resolve on screen before the player plays', settled === 4,
@@ -267,6 +280,7 @@ async function playSeed(runSeed, label, width, wantBye) {
   const met = [];
   for (let i = 0; i < 60; i++) {
     if (await p.$('#s-over.on')) break;
+    await grabNote();
     await noSpoiler();
     if (await p.$('#s-po.on')) {
       const them = await p.evaluate(() => {
@@ -288,6 +302,18 @@ async function playSeed(runSeed, label, width, wantBye) {
   await shot('end');
 
   ok('the postseason finishes', !!(await p.$('#s-over.on')));
+  const noteList = [...notes];
+  ok('every round of the bracket says what is happening', noteList.length > 0,
+    noteList.join(' | ').slice(0, 150));
+  if (wantBye) {
+    /* The one stretch of the postseason with no game of theirs in it has to say so. */
+    ok('a bye seed is told the first round is not theirs',
+      noteList.some((t) => /first round off/i.test(t)), noteList.join(' | ').slice(0, 150));
+  }
+  /* Nothing may promise a next round that does not exist: the final is the last one. */
+  ok('the title is not announced as another round to come',
+    !noteList.some((t) => /on to the (next round|championship)\.$/i.test(t) && /champion/i.test(t)),
+    noteList.join(' | ').slice(0, 150));
   ok('no round is filled in before the one in front of it is played', spoiled === 0,
     spoiled + ' names shown early');
   ok('every playoff opponent was a different team', met.length >= 1,

@@ -294,7 +294,7 @@ async function fetchJamcharts() {
  */
 const SHOW_COLUMNS = [
   'show_id', 'show_date', 'year', 'tour_id', 'tour',
-  'venue', 'city', 'state', 'country', 'has_setlist',
+  'venue', 'city', 'state', 'country', 'has_setlist', 'show_order',
 ];
 
 async function fetchShowTable(playedIds) {
@@ -325,6 +325,12 @@ async function fetchShowTable(playedIds) {
       state: clean(r.state),
       country: clean(r.country),
       has_setlist: playedIds.has(id) ? 'true' : 'false',
+      /* SOME NIGHTS ARE TWO SHOWS. Seven date-and-venue pairs in this archive
+         carry two distinct show_ids with entirely different setlists: the Cabo
+         destination runs play twice in a day, and a festival can too. Without
+         elgoose's own ordering the browser prints two identical rows and
+         nobody can tell which one they were at. */
+      show_order: String(r.showorder || ''),
     });
   }
   out.sort((a, b) => a.show_date.localeCompare(b.show_date) || a.show_id.localeCompare(b.show_id));
@@ -553,6 +559,13 @@ function median(nums) {
 export const NEUTRAL_ESTEEM = 30;   // must match scoring.js NEUTRAL_BASE
 const ESTEEM_MAX = 75;              // the very top of the jamcharts
 const ESTEEM_REC_WEIGHT = 2;        // a "recommended" version counts double
+/* The weighted jamchart tally that earns ESTEEM_MAX. Pinned rather than read
+   off the current leader, so one song being written up cannot move every other
+   song's esteem. 62 was Madhuvan's tally on the day it was pinned, chosen
+   because it left all 99 rated songs exactly where they already were. Raising
+   it is a gameplay change and a full regeneration; do it deliberately or not
+   at all. */
+const ESTEEM_FULL = 62;
 
 function esteemBySong(rows) {
   const tally = new Map();
@@ -561,13 +574,31 @@ function esteemBySong(rows) {
     if (!tally.has(r.song_id)) tally.set(r.song_id, 0);
     tally.set(r.song_id, tally.get(r.song_id) + 1 + (r.is_recommended === 'true' ? ESTEEM_REC_WEIGHT : 0));
   }
-  // Rank-free scaling: the top song sets the ceiling, everything else lands in
-  // proportion. Songs the curators never wrote up stay neutral rather than
-  // being punished — plenty of well-loved songs are simply not jam vehicles.
-  const top = Math.max(1, ...tally.values());
+  /* A FIXED CEILING, NOT THE CURRENT LEADER'S TALLY, and that one word is the
+   * difference between a refresh that appends and a refresh that restates the
+   * whole archive.
+   *
+   * This used to scale everything against `Math.max(...tally.values())`. So the
+   * moment the most-jamcharted song gained a single entry the divisor moved and
+   * every other song's esteem shifted with it, having done nothing: measured on
+   * today's data, 9 of the 99 rated songs move when the leader alone gains one.
+   * That churn is what made a one-show refresh rewrite thousands of rows, which
+   * in turn made the diff unreviewable and re-downloaded the whole 1.2MB
+   * archive for every returning player.
+   *
+   * Pinned at the leader's tally on the day it was pinned, so switching moved
+   * NOTHING: 0 of 99 songs changed value. A song's esteem is now a fact about
+   * that song alone, and adding a show touches only the songs that were
+   * actually written up.
+   *
+   * Past the ceiling it CLAMPS rather than rescaling. When Goose eventually has
+   * several songs at the top they will share it, which is honest, and
+   * re-anchoring is then a deliberate regeneration rather than something a cron
+   * job does to everybody overnight. */
   const out = new Map();
   for (const [id, n] of tally) {
-    out.set(id, Math.round(NEUTRAL_ESTEEM + (ESTEEM_MAX - NEUTRAL_ESTEEM) * Math.sqrt(n / top)));
+    const share = Math.min(n, ESTEEM_FULL) / ESTEEM_FULL;
+    out.set(id, Math.round(NEUTRAL_ESTEEM + (ESTEEM_MAX - NEUTRAL_ESTEEM) * Math.sqrt(share)));
   }
   return out;
 }

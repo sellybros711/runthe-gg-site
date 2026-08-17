@@ -33,13 +33,20 @@ const R = (p) => readFileSync(path.join(ROOT, p), 'utf8');
 // ---------------------------------------------------------------- load
 const G = {};
 new Function('window', 'self', 'module', R('arcade/match/entities.js'))(G, G, {});
-for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
+/* supplement.js was missing from this list, and it is the one file in the set
+   that exists purely to add recognizable players an automated source ranks too
+   low to promote. Every game that loads data.js has had it for months; this
+   generator did not, so 69 of its 74 hand-curated names were absent from
+   Sportegories alone. Nate Robinson, Earl Boykins, Kris Humphries, Sebastian
+   Telfair: exactly the "oh yeah, that guy" answers this game is for. */
+for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/supplement.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
   try { new Function('window', 'self', R(f))(G, G); } catch (e) { console.warn('skip ' + f + ': ' + e.message); }
 }
 const CORPUS = G.GRID_ENTITIES || [];
 const FORMER = (G.RTG_FORMER && G.RTG_FORMER.players) || [];
 const AWARDS = (G.RTG_AWARDS && G.RTG_AWARDS.players) || {};
 const ROSTERS = (G.RTG_ROSTERS && G.RTG_ROSTERS.players) || [];
+const SUPPLEMENT = (G.RTG_SUPPLEMENT && G.RTG_SUPPLEMENT.players) || [];
 
 /* Every active pro belongs in here.
  *
@@ -91,18 +98,132 @@ function nameKey(name) {
 const nkFull = (s) => tokens(s).join('');
 
 // ------------------------------------------------------------ merge pool
-const pool = new Map();                       // sport|normfull -> record
-function put(e, fromCorpus) {
+/* Two men, one record.
+ *
+ * The merge key is sport plus name, so any two players who share both become a
+ * single spliced career. "Marcus Allen" came out of here as a running back who
+ * is also a cornerback, with the Chiefs and the Vikings and none of his eleven
+ * Raiders years: the Hall of Famer from former.js welded to an active
+ * 22-year-old Vikings corner from rosters.js.
+ *
+ * They are no longer merged on the name alone. A name is a BUCKET of people:
+ * an incoming record joins the first person in that bucket it does not
+ * contradict, and if it contradicts all of them it becomes a new person under
+ * the same name. Both Josh Allens get to exist, which is the only correct
+ * answer, because the Bills quarterback and the Jaguars linebacker are not one
+ * man and neither is the offensive lineman already in the file. */
+/* Position FAMILY, not side of the ball. There are three NFL players called
+   Josh Allen: an offensive lineman, the Bills quarterback and the Jaguars
+   linebacker. Grouping by offence/defence merged the first two into a lineman
+   who is also a quarterback, with the Buccaneers, the 49ers, the Cardinals and
+   the Bills. Nobody plays two of these families. */
+const POS_FAMILY = {
+  Quarterback: 'QB',
+  'Running Back': 'RB', Fullback: 'RB',
+  'Wide Receiver': 'WR', 'Tight End': 'TE',
+  'Offensive Lineman': 'OL', 'Offensive Tackle': 'OL', Guard: 'OL', Center: 'OL',
+  'Defensive Lineman': 'DL', 'Defensive End': 'DL', 'Defensive Tackle': 'DL',
+  Linebacker: 'LB', Cornerback: 'DB', Safety: 'DB',
+  Kicker: 'K', 'Place Kicker': 'K', Punter: 'PUNT', 'Long Snapper': 'LS',
+  /* Baseball and basketball, deliberately coarse. Infielders move to the
+     outfield and small forwards guard centres, so those are left unmapped and
+     never conflict. A pitcher is not a second baseman, though, which is how
+     two Luis Castillos became one man who both hit and pitched. */
+  Pitcher: 'PIT', 'Starting Pitcher': 'PIT', 'Relief Pitcher': 'PIT',
+  Catcher: 'BAT', 'First Baseman': 'BAT', 'Second Baseman': 'BAT', 'Third Baseman': 'BAT',
+  Shortstop: 'BAT', Outfielder: 'BAT', 'Left Fielder': 'BAT', 'Center Fielder': 'BAT',
+  'Right Fielder': 'BAT', 'Designated Hitter': 'BAT',
+  'Point Guard': 'GRD', 'Shooting Guard': 'GRD'
+};
+
+/* Colleges disagree constantly without meaning anything: Ole Miss against
+   Mississippi, LSU against Louisiana State, App State against Appalachian
+   State, "Miami; Washington State; Incarnate Word" against "Miami". Treating
+   those as different men would shred real careers, so normalise hard and only
+   call it a conflict when nothing lines up. What survives is the real signal:
+   Louisiana-Monroe against Wyoming really is two different Josh Allens. */
+const COLLEGE_ALIAS = { 'ole miss': 'mississippi', 'pitt': 'pittsburgh', 'cal': 'california' };
+function schools(col) {
+  return String(col || '').split(';').map((s) => s
+    .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/,.*$/, '')                        // "Albany State, Ga." -> "Albany State"
+    .replace(/\b(university|univ|college|of|the|at)\b/g, ' ')
+    .replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean).map((s) => COLLEGE_ALIAS[s] || s);
+}
+const initials = (s) => s.split(' ').map((w) => w[0]).join('');
+function sameSchool(a, b) {
+  if (a === b) return true;
+  if (a.startsWith(b) || b.startsWith(a)) return true;          // App State / Appalachian State
+  const ia = initials(a), ib = initials(b);
+  if (ia === b || ib === a) return true;                        // NC State style
+  if ('u' + ia === b || 'u' + ib === a) return true;            // USC / Southern California
+  if (ia + 'u' === b || ib + 'u' === a) return true;            // LSU / Louisiana State
+  return false;
+}
+function collegeConflict(a, b) {
+  const A = schools(a), B = schools(b);
+  if (!A.length || !B.length) return false;
+  for (const x of A) for (const y of B) if (sameSchool(x, y)) return false;
+  return true;
+}
+
+const collisions = [];
+/* The strongest signal of all, and it needs no guessing: two rows from the SAME
+   source with the same name and sport are two people, because that source
+   already told them apart. former.js carries two Alex Gonzalezes, both
+   shortstops, both 1990s to 2000s: no position, era or college test can
+   separate them, and the file itself already had. rosters.js has nine more,
+   including two active Christian Joneses who are both offensive tackles.
+   A well-formed source lists a person once, so a second row is a second man. */
+function differentPerson(cur, e, isRosterRow, src) {
+  if (src && cur.src && cur.src[src]) return 'same source, two rows';
+  const a = POS_FAMILY[cur.pos], b = POS_FAMILY[e.pos];
+  if (a && b && a !== b) return 'position';
+  // Careers thirty years apart are not one man having a long career.
+  const ca = cur.decade || [], cb = e.decade || [];
+  if (ca.length && cb.length) {
+    const aMax = Math.max(...ca), aMin = Math.min(...ca);
+    const bMax = Math.max(...cb), bMin = Math.min(...cb);
+    if (aMax + 30 <= bMin || bMax + 30 <= aMin) return 'era';
+  }
+  /* A roster row is somebody playing THIS season, and the decade array of an
+     active player always reaches the current decade, so nobody whose record
+     stops at 2000 or earlier is on it. Jon Runyan senior and junior share a
+     name, a position and a sport, and only this tells them apart. */
+  if (isRosterRow && ca.length && Math.max(...ca) <= 2000) return 'era';
+  if (cur.col && e.col && collegeConflict(cur.col, e.col)) return 'college';
+  return null;
+}
+
+/* One name can be several people, so a bucket is a LIST. An incoming record
+   joins the first person in the bucket it does not contradict, and otherwise
+   becomes a new person under the same name. sportegories.js already indexes
+   name -> [players] and accepts any of them that satisfies a category, so both
+   Josh Allens simply work once they both exist. */
+const pool = new Map();                       // sport|normfull -> [record]
+function put(e, fromCorpus, isRoster, src) {
   const k = e.sport + '|' + nkFull(e.name);
-  const cur = pool.get(k);
+  const bucket = pool.get(k);
+  let cur = null;
+  const forceNew = !!(src && DUP[src] && DUP[src].has(k));
+  if (bucket && !forceNew) {
+    for (const rec of bucket) { if (!differentPerson(rec, e, isRoster, src)) { cur = rec; break; } }
+    if (!cur) {
+      collisions.push({ name: e.name, sport: e.sport, why: differentPerson(bucket[0], e, isRoster, src),
+        kept: bucket[0].pos, added: e.pos, team: (e.t || [])[0], roster: !!isRoster });
+    }
+  }
   if (!cur) {
-    pool.set(k, {
+    cur = {
       name: e.name, sport: e.sport, pos: e.pos || null, t: (e.t || []).slice(),
       col: e.col || null, aw: (e.aw || []).slice(), decade: (e.decade || []).slice(),
       act: e.act === 1 ? 1 : 0, hof: e.hof ? 1 : 0, dp: typeof e.dp === 'number' ? e.dp : null,
       f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0,
-      tpart: e.tpart ? 1 : 0
-    });
+      tpart: e.tpart ? 1 : 0, src: {}
+    };
+    if (src) cur.src[src] = 1;
+    if (bucket) bucket.push(cur); else pool.set(k, [cur]);
     return;
   }
   // A curated record carries a real career, so it clears the roster snapshot's
@@ -111,7 +232,12 @@ function put(e, fromCorpus) {
   // keep the richer record
   if (!cur.pos && e.pos) cur.pos = e.pos;
   if (!cur.col && e.col) cur.col = e.col;
-  if ((e.t || []).length > cur.t.length) cur.t = (e.t || []).slice();
+  /* Union the team lists, do not keep whichever source happened to be longest.
+     Three sources name the same franchise differently, so "longest wins" threw
+     away real clubs: Steven Jackson came out of here holding the Rams tag from
+     one source and losing the other source's, which is half of why the Rams
+     category refused him. A club named by any source is a club he played for. */
+  for (const t of (e.t || [])) if (t && !cur.t.includes(t)) cur.t.push(t);
   if ((e.decade || []).length > cur.decade.length) cur.decade = (e.decade || []).slice();
   if (e.act === 1) cur.act = 1;
   if (e.hof) cur.hof = 1;
@@ -120,20 +246,50 @@ function put(e, fromCorpus) {
   if (e.id && !cur.ids.includes(e.id)) cur.ids.push(e.id);
   if (fromCorpus) cur.corpus = 1;
   if (e.aw) for (const a of e.aw) if (!cur.aw.includes(a)) cur.aw.push(a);
+  if (src) { cur.src = cur.src || {}; cur.src[src] = 1; }
 }
-CORPUS.forEach((e) => put(e, true));
-FORMER.forEach((e) => put(e, false));
-ROSTERS.forEach((p) => put(fromRoster(p), false));
+/* When one source lists a name twice it is telling us there are two people, but
+   it is NOT telling us which of them is the career already in the pool. Merging
+   the first row and splitting the second gets it exactly half wrong: the older
+   Max Muncy absorbed the young Athletics infielder, and the new record that
+   split off carried the wrong club. So for any name a source duplicates, every
+   row from that source becomes its own person and none of them touch the
+   established record. The curated career stays clean and each new man is
+   whole. */
+function dupKeys(rows, name, sport) {
+  const seen = new Set(), dup = new Set();
+  for (const r of rows) {
+    const k = sport(r) + '|' + nkFull(name(r));
+    if (seen.has(k)) dup.add(k); else seen.add(k);
+  }
+  return dup;
+}
+const DUP = {
+  corpus: dupKeys(CORPUS, (e) => e.name, (e) => e.sport),
+  former: dupKeys(FORMER, (e) => e.name, (e) => e.sport),
+  supp:   dupKeys(SUPPLEMENT, (e) => e.name, (e) => e.sport),
+  roster: dupKeys(ROSTERS, (p) => p.n, (p) => p.s)
+};
+
+CORPUS.forEach((e) => put(e, true, false, 'corpus'));
+FORMER.forEach((e) => put(e, false, false, 'former'));
+// Hand-curated, so it counts as corpus: these names were chosen BY a person for
+// being recognizable, which is the whole question the fame gate is asking.
+SUPPLEMENT.forEach((e) => put(e, true, false, 'supp'));
+ROSTERS.forEach((p) => put(fromRoster(p), false, true, 'roster'));
 
 // awards are keyed "SPORT|normalized name"
 for (const [key, val] of Object.entries(AWARDS)) {
   const i = key.indexOf('|'); if (i < 0) continue;
-  const rec = pool.get(key.slice(0, i) + '|' + nkFull(key.slice(i + 1)));
-  if (!rec) continue;
-  for (const a of val.aw || []) if (!rec.aw.includes(a)) rec.aw.push(a);
+  /* An award belongs to a name, and a name can be several people. Without a
+     way to tell which one earned it, give it to every same-named player: the
+     alternative is silently handing one man's Pro Bowl to his namesake. */
+  const recs = pool.get(key.slice(0, i) + '|' + nkFull(key.slice(i + 1)));
+  if (!recs) continue;
+  for (const rec of recs) for (const a of val.aw || []) if (!rec.aw.includes(a)) rec.aw.push(a);
 }
 // hall-of-fame flag lives in awards for many players
-for (const rec of pool.values()) if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
+for (const rec of [...pool.values()].flat()) if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
 
 // career stats are keyed by CORPUS id only
 const STATVALS = {};
@@ -141,7 +297,7 @@ for (const src of [G.RTG_HLSTATS, G.RTG_ROSTERSTATS, G.RTG_STATS]) {
   const s = (src && src.stats) || src || {};
   for (const k of Object.keys(s)) { STATVALS[k] = STATVALS[k] || {}; Object.assign(STATVALS[k], s[k].vals || {}); }
 }
-for (const rec of pool.values()) {
+for (const rec of [...pool.values()].flat()) {
   const st = {};
   for (const k of Object.keys(STATVALS)) {
     for (const id of rec.ids) { const v = STATVALS[k][id]; if (v != null) { st[k] = v; break; } }
@@ -149,7 +305,86 @@ for (const rec of pool.values()) {
   if (Object.keys(st).length) rec.st = st;
 }
 
-const PLAYERS = [...pool.values()].filter((p) => nameKey(p.name));
+if (collisions.length) {
+  console.log('shared names split into separate people: ' + collisions.length);
+  for (const c of collisions.slice(0, 8)) {
+    console.log('  ' + c.sport + ' ' + c.name + '  ' + (c.kept || '?') + ' + ' + (c.added || '?') +
+                (c.team ? ' (' + c.team + ')' : '') + '  [' + c.why + ']');
+  }
+  if (collisions.length > 8) console.log('  ... and ' + (collisions.length - 8) + ' more');
+}
+
+const PLAYERS = [...pool.values()].flat().filter((p) => nameKey(p.name));
+
+/* ------------------------------------------------------- one franchise, one name
+ *
+ * A player emailed in: letter J, category "Played for the St. Louis Rams",
+ * answer "Steven Jackson", told it did not fit. He rushed for 10,135 yards
+ * there.
+ *
+ * The corpus carried the Rams as TWO teams. 197 players were filed under "Los
+ * Angeles Rams" and 201 under "St. Louis Rams", and the split was not by era:
+ * Kurt Warner, Marshall Faulk, Isaac Bruce, Torry Holt and Jackson, the entire
+ * Greatest Show on Turf and none of whom ever played a down for the Rams in
+ * Los Angeles, were all filed under Los Angeles. The two labels were never two
+ * eras, they were two upstream sources disagreeing, so every category built on
+ * either one rejected roughly half of the franchise's actual players. The same
+ * hole sat under the Raiders, Chargers, Athletics, Angels, Braves, Dodgers,
+ * Nets, Grizzlies, Sonics and a dozen more.
+ *
+ * Since the data cannot tell the eras apart, the categories must stop claiming
+ * to. Relocations collapse to the bare nickname, which is true of every player
+ * in the merged set: "Played for the Rams" is right for Eric Dickerson and for
+ * Cooper Kupp. Where the nickname changed too, the current full name is the
+ * canonical one, because a franchise that renamed is still the same franchise.
+ *
+ * Deliberately an explicit list and not a heuristic. Same-nickname pairs that
+ * are NOT one franchise sit right next to these in the data and must never be
+ * merged: the NFL Arizona Cardinals and the MLB St. Louis Cardinals, the NFL
+ * Cleveland Browns and the MLB St. Louis Browns, the MLB Colorado Rockies and
+ * the NHL club of the same name, and a long row of Negro League Giants, Stars
+ * and Sox. */
+const FRANCHISE = {
+  // NFL: moved, kept the nickname
+  'St. Louis Rams': 'Rams', 'Los Angeles Rams': 'Rams',
+  'San Diego Chargers': 'Chargers', 'Los Angeles Chargers': 'Chargers',
+  'Oakland Raiders': 'Raiders', 'Las Vegas Raiders': 'Raiders', 'Los Angeles Raiders': 'Raiders',
+  // NFL: moved and renamed
+  'Houston Oilers': 'Tennessee Titans', 'Tennessee Oilers': 'Tennessee Titans',
+  'Baltimore Colts': 'Indianapolis Colts',
+  // NBA: moved, kept the nickname
+  'New Jersey Nets': 'Nets', 'Brooklyn Nets': 'Nets',
+  'Vancouver Grizzlies': 'Grizzlies', 'Memphis Grizzlies': 'Grizzlies',
+  'San Diego Clippers': 'Clippers', 'Los Angeles Clippers': 'Clippers', 'LA Clippers': 'Clippers',
+  // NBA: moved and/or renamed
+  'Seattle SuperSonics': 'Oklahoma City Thunder',
+  'Washington Bullets': 'Washington Wizards',
+  'Charlotte Bobcats': 'Charlotte Hornets',
+  'New Orleans Hornets': 'New Orleans Pelicans',
+  'Kansas City Kings': 'Sacramento Kings',
+  'New Orleans Jazz': 'Utah Jazz',
+  // MLB: moved, kept the nickname
+  'Boston Braves': 'Braves', 'Milwaukee Braves': 'Braves', 'Atlanta Braves': 'Braves',
+  'Brooklyn Dodgers': 'Dodgers', 'Los Angeles Dodgers': 'Dodgers',
+  'Philadelphia Athletics': 'Athletics', 'Kansas City Athletics': 'Athletics', 'Oakland Athletics': 'Athletics',
+  'California Angels': 'Angels', 'Anaheim Angels': 'Angels', 'Los Angeles Angels': 'Angels',
+  'Florida Marlins': 'Marlins', 'Miami Marlins': 'Marlins',
+  // MLB: renamed in place
+  'Tampa Bay Devil Rays': 'Tampa Bay Rays',
+  'Cleveland Indians': 'Cleveland Guardians',
+  // MLB: moved and renamed
+  'Montreal Expos': 'Washington Nationals',
+  'Seattle Pilots': 'Milwaukee Brewers',
+  'St. Louis Browns': 'Baltimore Orioles'
+};
+// One upstream row arrived as "NO/Oklahoma City\r\n Hornets". Collapse the
+// whitespace before anything keys off the string.
+const tidy = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
+const franchise = (t) => { const s = tidy(t); return FRANCHISE[s] || s; };
+for (const p of PLAYERS) {
+  const seen = new Set();
+  p.t = p.t.map(franchise).filter((t) => t && !seen.has(t) && seen.add(t));
+}
 
 // --------------------------------------------------------- lookup tables
 const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
@@ -419,17 +654,31 @@ const viability = {};        // catIndex -> { letter: recognizableCount }
 CATS.forEach((c) => {
   const hits = PLAYERS.filter((p) => test(p, c.p));
   c.s = sportOf(hits);
+  /* Count TYPEABLE answers, not records. Now that one name can be several
+     people, both Josh Allens satisfying a category is still one thing a player
+     can write down, and counting it twice would inflate the solvability
+     promise the daily generator relies on. Same-named hits collapse to one. */
+  const seenKnown = new Set(), seenAll = new Set();
   const by = {};
-  hits.forEach((p) => { if ((p.f || 0) >= FAME_MIN) p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; }); });
+  hits.forEach((p) => {
+    if ((p.f || 0) < FAME_MIN) return;
+    const k = p.sport + '|' + nkFull(p.name);
+    if (seenKnown.has(k)) return; seenKnown.add(k);
+    p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; });
+  });
   const all = {};
-  hits.forEach((p) => p._i.forEach((L) => { all[L] = (all[L] || 0) + 1; }));
+  hits.forEach((p) => {
+    const k = p.sport + '|' + nkFull(p.name);
+    if (seenAll.has(k)) return; seenAll.add(k);
+    p._i.forEach((L) => { all[L] = (all[L] || 0) + 1; });
+  });
   /* Tier is a promise about how hard a category FEELS, so it counts the
      answers a fan could actually produce, not every name in the file. Once the
      active rosters landed, raw counts stopped meaning anything: "NFL Safety"
      gained 200 special-teamers nobody can name and would have been relabelled
      an anchor. Recognizable answers only. */
   const known = hits.filter((p) => (p.f || 0) >= FAME_MIN);
-  c.n = known.length;
+  c.n = seenKnown.size;                        // distinct names, as above
   // Thresholds re-fit to recognizable counts so the anchor/mid/hard/spice mix
   // stays what it was before the rosters landed (~10/21/54/15).
   c.t = known.length >= 203 ? 0 : known.length >= 67 ? 1 : known.length >= 13 ? 2 : 3;  // tier
@@ -467,6 +716,12 @@ const payload = {
   dec0: DEC0,
   fameMin: FAME_MIN, minAnswers: MIN_ANSWERS,
   sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, awards: AWDS, conf: CONF,
+  /* Ships so livecheck.js can resolve an OUTSIDE player's teams too. It builds
+     its team lookup from `teams`, which no longer contains "St. Louis Rams", so
+     without this a register player's Rams years would simply be dropped and the
+     category would answer "cannot tell" instead of yes. One map, one file, no
+     second copy to drift. */
+  alias: FRANCHISE,
   players: compact,
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,

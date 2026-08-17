@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Run The Arcade: Archive | RunThe.GG</title>
+<title>Run The Arcade: The Vault | RunThe.GG</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="apple-mobile-web-app-title" content="Run The Arcade" />
 <meta name="application-name" content="Run The Arcade" />
@@ -13,19 +13,19 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Play any past day's Run The Arcade puzzles, a Pro feature." />
+<meta name="description" content="The Vault: play any past day's Run The Arcade puzzles, an Arcade Card perk." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
-<meta property="og:title" content="Run The Arcade Archive" />
+<meta property="og:title" content="The Run The Arcade Vault" />
 <meta property="og:description" content="Replay any past day across all nine games and chase your personal best." />
 <meta property="og:url" content="https://runthe.gg/arcade/archive/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Run The Arcade Archive" />
+<meta name="twitter:title" content="The Run The Arcade Vault" />
 <meta name="twitter:description" content="Replay any past day across all nine games and chase your personal best." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/archive/" />
@@ -34,6 +34,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=2" />
 <script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/gamemarks.js?v=1"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -57,23 +58,58 @@
   body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
-  .wrap{width:100%; max-width:760px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 48px;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 14px;}
-  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
-  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo img{height:44px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
-  .spacer{flex:1;}
+  .wrap{width:100%; max-width:760px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 20px;}
+  /* The page used to carry its own header row: a back chevron, a second logo,
+     a PRO pill and the theme button. topbanner.js then started injecting the
+     sticky arcade banner above it, which already holds the logo (home), the
+     entitlement chip and the account chip, so the page was wearing two hats.
+     What is left is the one control the banner does not have. */
+  .top{display:flex; justify-content:flex-end; padding:4px 2px 10px;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn:hover{color:var(--ink);}
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
-  .pill{font-size:9px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#20140a; background:var(--gold); border-radius:999px; padding:4px 9px; flex:0 0 auto;}
 
-  .hero{text-align:left; margin:2px 0 18px;}
-  .hero h1{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:30px; margin:0 0 4px; color:var(--ink);}
-  .hero p{margin:0; font-size:13.5px; color:var(--mut); font-weight:600; line-height:1.5;}
+  /* ---- page head: the hub's zone-head, so the two pages read as one product ---- */
+  .zone-head{display:flex; align-items:baseline; gap:12px; margin:2px 2px 15px; flex-wrap:wrap;}
+  .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
+  .zone-head .kicker{flex:0 0 100%; display:flex; align-items:center; gap:7px;
+    font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--mut); margin-bottom:7px;}
+  .zone-head .kicker b{font-weight:900; color:var(--brandT,var(--coralT));}
+  .zone-head .kicker svg{width:15px; height:15px; display:block; color:var(--goldT); flex:0 0 auto;}
+  @media (max-width:640px){ .zone-head .kicker{font-size:10px; letter-spacing:.08em; gap:6px;} }
+  /* The hub prints ten pips because ten is a countable number of things. The
+     vault holds hundreds of puzzles, so the same slot takes a bar instead:
+     same position, same typography, a mark that suits the scale. */
+  .vprog{margin-left:auto; display:inline-flex; align-items:center; gap:9px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  /* a class with display beats the UA rule for [hidden], and the gate was
+     showing an empty track next to the title */
+  .vprog[hidden]{display:none;}
+  .vprog .track{width:74px; height:7px; border-radius:999px; background:var(--card2); border:1px solid var(--line2); overflow:hidden;}
+  .vprog .fill{display:block; height:100%; border-radius:999px; background:var(--goldT); transition:width .5s ease;}
+  .vprog.all{color:var(--greenT);} .vprog.all .fill{background:var(--greenT);}
+
+  /* ---- the vault at a glance: what is in here, and how much of it is yours ---- */
+  .vstats{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin:0 0 18px;}
+  .vstats .s{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 13px; box-shadow:var(--shadow);}
+  .vstats .s .n{display:block; font-family:var(--hero); font-weight:400; font-size:27px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .vstats .s .c{display:block; font-size:9.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .vstats .s.gold .n{color:var(--goldT);}
+  @media (max-width:640px){ .vstats{gap:8px;} .vstats .s{padding:10px; border-radius:12px;} .vstats .s .n{font-size:22px;} .vstats .s .c{font-size:8.5px; letter-spacing:.07em;} }
+  @media (max-width:360px){ .vstats .s .c{font-size:8px;} }
+
+  /* ---- resume: the one thing a returning member most likely wants ---- */
+  .resume{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid color-mix(in srgb, var(--gold) 34%, var(--line2));
+    border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:0 0 18px; cursor:pointer; width:100%; text-align:left; font:inherit; color:inherit;}
+  .resume:hover{border-color:var(--goldT);}
+  .resume .ic{flex:0 0 auto; width:38px; height:38px; border-radius:11px; display:grid; place-items:center; color:var(--goldT);
+    background:color-mix(in srgb, var(--gold) 15%, var(--card)); border:1px solid color-mix(in srgb, var(--gold) 34%, transparent);}
+  .resume .t{min-width:0; flex:1;}
+  .resume .t b{display:block; font-size:13.5px; font-weight:900; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .resume .t span{display:block; font-size:11.5px; color:var(--mut); font-weight:700; margin-top:2px;}
+  .resume .arw{flex:0 0 auto; color:var(--goldT); font-size:19px; font-weight:900;}
 
   /* pro upsell */
   .gate{background:var(--card); border:1px solid var(--line2); border-radius:18px; box-shadow:var(--shadow); padding:24px 20px; text-align:center; max-width:460px; margin:8px auto;}
@@ -87,17 +123,16 @@
   .btn:hover{filter:brightness(1.06);}
   .gate .fine{font-size:11px; color:var(--dim); margin:12px 0 0; font-weight:600;}
 
-  /* pro bar */
-  .probar{display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:12px; padding:10px 14px; box-shadow:var(--shadow); margin-bottom:16px;}
-  .probar b{color:var(--goldT); font-family:var(--hero); font-weight:400; letter-spacing:.04em; font-size:15px;}
-  .probar span{font-size:12px; color:var(--mut); font-weight:600;}
-  .probar .off{margin-left:auto; font-size:11px; font-weight:800; color:var(--mut); border:1px solid var(--line2); border-radius:999px; padding:5px 11px; cursor:pointer; background:var(--card2);}
-  .probar .off:hover{color:var(--ink);}
-
-  /* game tiles - mirror the home-page grid so the archive reads as the same product */
+  /* game tiles - mirror the home-page grid so the vault reads as the same product */
   .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;}
   @media (min-width:640px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
   @media (max-width:640px){ .tiles{gap:11px;} }
+  /* Same two groups as the hub, in the same order, minus High Low: an endless
+     streak game has no daily puzzle, so it has no past days to keep. */
+  .tsec{grid-column:1 / -1; margin:6px 0 -4px;}
+  .tsec:first-child{margin-top:0;}
+  .tsec b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.07em; text-transform:uppercase; font-size:14px; color:var(--ink);}
+  .tsec span{display:block; font-size:12px; color:var(--mut); margin-top:2px;}
   button.tile{font:inherit; text-align:left; padding:0; width:100%; color:inherit;}
   .tile{--c:var(--blue); --onC:#fff; position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; cursor:pointer;
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
@@ -110,47 +145,99 @@
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card)); border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);}
   .tile .cap svg{width:60px; height:60px; position:relative; z-index:1; filter:drop-shadow(0 4px 10px rgba(0,0,0,.18));}
+  /* The hub's status chip, carrying the vault's own fact: how many of this
+     game's past days you have already cleared. Nine tiles that all said "Pick
+     a day" were nine identical tiles; this is the only thing that tells them
+     apart, and the only thing that says you have been here before. */
+  .tile .status{position:absolute; top:9px; right:9px; z-index:2; font-size:9px; font-weight:900; letter-spacing:.08em;
+    text-transform:uppercase; border-radius:999px; padding:4px 8px; color:var(--mut); background:var(--card);
+    border:1px solid var(--line2); font-variant-numeric:tabular-nums;}
+  .tile .status.some{color:var(--goldT); border-color:color-mix(in srgb, var(--gold) 45%, transparent);}
+  .tile .status.all{color:var(--greenT); border-color:color-mix(in srgb, var(--green) 45%, transparent);}
   .tile .body{display:flex; flex-direction:column; flex:1; padding:15px;}
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
-  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
-  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
-  /* Same per-accent label rule as the hub: only the dark accents take white. */
+  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 0;}
+  .tile .foot{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:auto; padding-top:13px;}
+  .tile .tmeta{font-size:10px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; color:var(--dim); margin-right:auto;}
+  .tile .play{border-radius:999px; min-height:46px; padding:0 18px; display:flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s; flex:1 0 auto;}
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
+  /* Mobile: the hub's row layout, for the hub's reason. A 2-up grid leaves each
+     card too narrow for a sentence, so the description was switched off, and
+     nine abstract icons with names like "Alma Mater" and "Odd One Out" told a
+     player nothing. A full-width row has room for the blurb that is already
+     written, so it shows it. */
   @media (max-width:640px){
-    .tile{border-radius:14px;}
-    .tile .cap{height:76px;} .tile .cap svg{width:42px; height:42px;}
-    .tile .body{padding:11px;} .tile .nm{font-size:15px;} .tile .desc{display:none;}
-    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
+    .tiles{grid-template-columns:1fr; gap:10px;}
+    .tile{flex-direction:row; align-items:stretch; border-radius:14px;}
+    .tile:hover{transform:none;}
+    .tile .cap{flex:0 0 86px; height:auto; position:static;}
+    .tile .cap svg{width:50px; height:50px;}
+    .tile .status{top:9px; right:10px; font-size:8.5px; padding:3px 7px;}
+    .tile .body{padding:11px 12px 11px 13px; justify-content:center; min-width:0;}
+    .tile .nm{font-size:16.5px; padding-right:60px;}
+    .tile .desc{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+      font-size:12.5px; line-height:1.42; margin:4px 0 0;}
+    .tile .foot{padding-top:8px;}
+    /* margin-left:auto as well as the meta's margin-right:auto, so the button
+       still sits right when a long "3 played, last Fri Aug 14" wraps it onto
+       its own line instead of leaving it stranded at the left edge. */
+    .tile .play{min-height:33px; padding:0 15px; font-size:12.5px; flex:0 0 auto; margin-left:auto;}
+  }
+  @media (max-width:360px){
+    .tile .cap{flex:0 0 68px;} .tile .cap svg{width:42px; height:42px;}
+    .tile .body{padding:11px 10px 11px 11px;}
+    .tile .nm{font-size:15.5px; padding-right:54px;}
+    .tile .desc{font-size:12px;}
+    .tile .tmeta{font-size:9.5px; letter-spacing:.05em;}
+    .tile .play{padding:0 13px; font-size:12px;}
   }
   .arch-note{text-align:center; color:var(--dim); font-size:11.5px; margin:18px 0 4px; line-height:1.5;}
   .foot{text-align:center; color:var(--dim); font-size:11.5px; padding:14px 0 2px;}
   .foot a{color:var(--coralT);}
 </style>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
+     game can be reported on its own. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar">
-    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">ARCHIVE</span></a>
-    <div class="spacer"></div>
-    <span class="pill" id="proPill" hidden>PRO</span>
+  <div class="top">
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
       <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
     </button>
   </div>
 
-  <div class="hero">
-    <h1>The Archive</h1>
-    <p>Missed a day? Replay any past Run The Arcade puzzle and chase your personal best. Today’s streak and leaderboard belong to today’s game. Archive days are yours.</p>
+  <div class="zone-head">
+    <span class="kicker">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4" stroke-linecap="round"/></svg>
+      <span>Every <b>past day</b> &middot; nine games</span>
+    </span>
+    <span class="day">The Vault</span>
+    <span class="vprog" id="vprog" hidden><span class="track"><i class="fill" id="vfill" style="width:0"></i></span><span id="vprogT"></span></span>
   </div>
 
   <div id="content"></div>
 
-  <div class="foot">Part of <b>Run The Arcade</b> · <a href="/arcade/">Today's puzzles</a> · <a href="/">RunThe.GG</a><br><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/contact.html">Report a data error</a></div>
+  <div class="foot"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/contact.html">Report a data error</a></div>
 </div>
 
 <script src="/arcade/tokens.js?v=6"></script>
@@ -163,7 +250,8 @@
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=14"></script>
-<script src="/arcade/calendar.js?v=12"></script>
+<script src="/arcade/nav.js?v=1"></script>
+<script src="/arcade/calendar.js?v=13"></script>
 <script>
 (function(){
   // days of archive since launch; drives the gate's concrete pitch
@@ -173,22 +261,10 @@
   var LS=window.localStorage;
   var content=document.getElementById('content');
   var LAUNCH=(window.RTGArchive&&RTGArchive.LAUNCH)||'2026-06-01';
-  var MAX_DAYS=45;
-  var GAMES=[
-    {k:'table', path:'table', name:'Number Game', c:'var(--gold)'},
-    {k:'match', path:'match', name:'Common Ground', c:'var(--blue)'},
-    {k:'career', path:'career', name:'Career Path', c:'var(--green)'},
-    {k:'oddone', path:'oddone', name:'Odd One Out', c:'var(--violet)'},
-    {k:'rankit', path:'rankit', name:'Rank It', c:'var(--pink)'},
-    {k:'almamater', path:'almamater', name:'Alma Mater', c:'var(--gold)'},
-    {k:'guess', path:'guess', name:'Guess the Player', c:'var(--coral)'},
-    {k:'crossword', path:'crossword', name:'Daily Crossword', c:'var(--gray)'}
-  ];
 
   function isPro(){ return !!(window.RTGTokens && RTGTokens.isPro && RTGTokens.isPro()); }
   function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function pretty(s){ try{ var d=new Date(s+'T00:00:00'); return d.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric', year:'numeric'}); }catch(e){ return s; } }
-  function daysAgo(s){ var a=new Date(s+'T00:00:00'), b=new Date(iso(new Date())+'T00:00:00'); var n=Math.round((b-a)/86400000); return n===1?'Yesterday':(n+' days ago'); }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   function renderGate(){
@@ -196,13 +272,13 @@
       '<div class="gate">'+
         '<div class="crown"><svg width="28" height="28" viewBox="0 0 24 24" fill="#20140a" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7z"/></svg></div>'+
         // the day count is live: an abstract perk becomes a specific pile
-        '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Archive is an Arcade Card perk') + '</h2>'+
+        '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Vault is an Arcade Card perk') + '</h2>'+
         '<p>' + (VAULTD > 0
           ? ('That’s ' + (VAULTD * 9) + ' puzzles you can still play, across all nine games.')
           : 'Go back and play any puzzle you missed, from any game.') + '</p>'+
         '<ul>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, every game</span></li>'+
-          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays, no daily token limit</span></li>'+
+          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>All ten games, unlimited, every day</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Your streak and today’s leaderboard stay untouched</span></li>'+
         '</ul>'+
         '<button class="btn" id="goPro">Get Arcade Card</button>'+
@@ -221,32 +297,138 @@
     });
   }
 
-  // Home-page-style grid: one tile per game. Clicking a tile opens that game's
-  // archive calendar (past playable days) via the shared RTGCalendar module.
+  /* The two groups the hub uses, in the hub's order. High Low is absent on
+     purpose: an endless streak game has no daily puzzle, so it keeps no past
+     days. Anything the calendar adds later that is not listed here still shows,
+     under "Daily puzzles", rather than vanishing. */
+  var SECTIONS=[
+    { title:'Daily puzzles', sub:'One past day at a time, as many as you like.',
+      keys:['match','sportegories','crossword','rankit','guess'] },
+    { title:'Streak games', sub:'That day’s run, replayed until you beat it.',
+      keys:['almamater','career','table','oddone'] }
+  ];
+
+  // Every past day the vault holds, oldest first.
+  function vaultDays(){
+    var out=[], t=iso(new Date());
+    var d=new Date(LAUNCH+'T00:00:00');
+    for(var i=0;i<4000;i++){
+      var s=iso(d); if(s>=t) break;
+      out.push(s); d.setDate(d.getDate()+1);
+    }
+    return out;
+  }
+
+  /* What this member has actually done in here. doneDates() reads the same
+     rtg:<game>:done:<date> log the calendar puts its checkmarks from, so a tile
+     and the calendar behind it can never disagree. */
+  function progress(list, days){
+    var byGame={}, played=0, latest=null;
+    for(var i=0;i<list.length;i++){
+      var g=list[i];
+      var done=(window.RTGArchive && RTGArchive.doneDates) ? RTGArchive.doneDates(g.key) : {};
+      var n=0, last=null;
+      for(var j=0;j<days.length;j++){
+        if(done[days[j]]){ n++; if(!last || days[j]>last) last=days[j]; }
+      }
+      byGame[g.key]={ n:n, last:last };
+      played+=n;
+      if(last && (!latest || last>latest.date)) latest={ date:last, game:g };
+    }
+    return { byGame:byGame, played:played, total:days.length*list.length, latest:latest };
+  }
+
+  function statusChip(n, of){
+    if(!of) return '';
+    if(n===0)  return '<span class="status">'+of+' day'+(of===1?'':'s')+'</span>';
+    if(n>=of)  return '<span class="status all">All '+of+'</span>';
+    return '<span class="status some">'+n+' / '+of+'</span>';
+  }
+  function metaLine(n, last){
+    if(n===0) return 'Not started';
+    return n+' played · last '+pretty(last).replace(/,? \d{4}$/,'');
+  }
+
+  // Home-page-style grid: one tile per game, carrying that game's own vault
+  // progress. Clicking a tile opens its calendar via the shared RTGCalendar.
   function renderList(){
-    document.getElementById('proPill').hidden=false;
     var list=(window.RTGCalendar && RTGCalendar.GAMES) || [];
-    var html='<div class="probar"><b>Arcade Card</b><span>Unlimited plays · every past day unlocked</span></div>';
-    html+='<div class="tiles">';
-    for(var i=0;i<list.length;i++){ var g=list[i];
-      html+='<button class="tile '+g.cls+'" type="button" data-k="'+esc(g.key)+'">'+
-        '<span class="cap" aria-hidden="true">'+g.icon+'</span>'+
-        '<span class="body">'+
-          '<span class="nm">'+esc(g.name)+'</span>'+
-          '<span class="desc">'+esc(g.desc)+'</span>'+
-          '<span class="play">Pick a day <span class="arw">→</span></span>'+
-        '</span>'+
+    var days=vaultDays(), of=days.length;
+    var p=progress(list, days);
+
+    // headline progress, in the slot the hub gives its pips
+    var bar=document.getElementById('vprog');
+    if(bar && p.total){
+      var pct=Math.round((p.played/p.total)*100);
+      bar.hidden=false;
+      bar.classList.toggle('all', p.played>=p.total);
+      document.getElementById('vfill').style.width=Math.max(pct?3:0, pct)+'%';
+      document.getElementById('vprogT').textContent=p.played+' / '+p.total+' played';
+    }
+
+    var html='<div class="vstats">'+
+      '<div class="s"><span class="n">'+of+'</span><span class="c">Days in the vault</span></div>'+
+      '<div class="s gold"><span class="n">'+p.played+'</span><span class="c">Puzzles played</span></div>'+
+      '<div class="s"><span class="n">'+Math.max(0, p.total-p.played)+'</span><span class="c">Still to play</span></div>'+
+    '</div>';
+
+    /* A member who has been here before almost always wants the day they were
+       last on, and the old page made them pick a game, then find the date in a
+       calendar, every single time. */
+    if(p.latest){
+      html+='<button class="resume" type="button" id="resume" data-k="'+esc(p.latest.game.key)+'">'+
+        '<span class="ic" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg></span>'+
+        '<span class="t"><b>Pick up where you left off</b><span>'+esc(p.latest.game.name)+' · '+esc(pretty(p.latest.date))+'</span></span>'+
+        '<span class="arw" aria-hidden="true">→</span>'+
       '</button>';
     }
+
+    var seen={}, s, i, g;
+    html+='<div class="tiles">';
+    for(s=0;s<SECTIONS.length;s++){
+      var sec=SECTIONS[s], rows='';
+      for(i=0;i<sec.keys.length;i++){
+        g=byKey(list, sec.keys[i]); if(!g) continue;
+        seen[g.key]=1; rows+=tileHTML(g, p.byGame[g.key], of);
+      }
+      if(!rows) continue;
+      html+='<div class="tsec"><b>'+esc(sec.title)+'</b><span>'+esc(sec.sub)+'</span></div>'+rows;
+    }
+    var extra='';
+    for(i=0;i<list.length;i++){ if(!seen[list[i].key]) extra+=tileHTML(list[i], p.byGame[list[i].key], of); }
+    if(extra) html+=extra;
     html+='</div>';
-    html+='<div class="arch-note">Pick a game, then choose any past day back to launch.<br>Chase your personal best on each date. Today’s streak and leaderboard belong to today’s game.</div>';
+
+    html+='<div class="arch-note">Every day back to launch, on every game above.<br>Vault runs chase your personal best. Today’s streak and leaderboard belong to today’s game.</div>';
     content.innerHTML=html;
-    [].forEach.call(content.querySelectorAll('button.tile'), function(btn){
+
+    [].forEach.call(content.querySelectorAll('[data-k]'), function(btn){
       btn.addEventListener('click', function(){
         var k=btn.getAttribute('data-k');
         if(window.RTGCalendar) RTGCalendar.open(k);
       });
     });
+  }
+
+  function byKey(list, k){ for(var i=0;i<list.length;i++){ if(list[i].key===k) return list[i]; } return null; }
+
+  function tileHTML(g, st, of){
+    st=st||{n:0,last:null};
+    /* The mark comes from gamemarks.js, the same definition the daily page
+       renders, animations included. calendar.js used to carry a second, static
+       set of its own, which is how the two pages drifted apart. */
+    var mark = (window.RTGGameMarks && RTGGameMarks.svg(g.key)) || '';
+    return '<button class="tile '+g.cls+'" type="button" data-k="'+esc(g.key)+'">'+
+      '<span class="cap" data-mark="'+esc(g.key)+'" aria-hidden="true">'+statusChip(st.n, of)+mark+'</span>'+
+      '<span class="body">'+
+        '<span class="nm">'+esc(g.name)+'</span>'+
+        '<span class="desc">'+esc(g.desc)+'</span>'+
+        '<span class="foot">'+
+          '<span class="tmeta">'+esc(metaLine(st.n, st.last))+'</span>'+
+          '<span class="play">Pick a day <span class="arw">→</span></span>'+
+        '</span>'+
+      '</span>'+
+    '</button>';
   }
 
   // First paint from whatever we know synchronously (localStorage). The Stripe

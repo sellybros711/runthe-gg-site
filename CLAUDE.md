@@ -92,6 +92,8 @@ Its data refreshes itself daily at 6am Eastern
 (`.github/workflows/setlist-data.yml`) and commits three files:
 `goose.csv` (performances), `goose_shows.csv` (every show, past and future,
 with tour names) and `goose_latest.json` (last night's setlist plus the next
-three dates, for the home screen). A refresh is not an append: song esteem is
-derived, so one new show restates thousands of rows and the commit diff can
-never be the review. The gates are.
+three dates, for the home screen). A refresh APPENDS: song esteem is derived
+but its ceiling is pinned, so adding a show touches the rows it adds plus any
+song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
+failing any refresh where a derived value moved for a song whose own history
+did not.

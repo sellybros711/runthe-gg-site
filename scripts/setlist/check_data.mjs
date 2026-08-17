@@ -680,9 +680,11 @@ check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
   'and the landing state takes the bar');
 
 /* THE REFRESH RUNS ITSELF, and these guard the parts that make that safe.
-   A refresh is not an append: crowd_rating is derived from the jamchart
-   standings, so one new show restates ~4,000 of 7,500 rows. The commit diff can
-   never be the control, so the gates are. */
+   A refresh appends. crowd_rating is derived, and while it was scaled against
+   the current leader's tally one new write-up moved every song, so a refresh
+   rewrote thousands of rows and the diff could not be the control. The ceiling
+   is pinned now and data_drift enforces the rest, so the gates guard a diff a
+   person can actually read. */
 console.log('the automatic refresh');
 const wf = read('.github/workflows/setlist-data.yml');
 check(/cron:/.test(wf), 'the refresh is scheduled');
@@ -707,6 +709,38 @@ check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
    against the file, so every SUCCESSFUL refresh would otherwise fail here. */
 check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
   'the counts in the copy can be regenerated');
+
+/* A REFRESH APPENDS, and the pinned esteem ceiling is what makes that true.
+   Scaling against the current leader's tally meant one song being written up
+   moved every other song: 9 of the 99 rated songs shift when the leader alone
+   gains an entry. That churn rewrote thousands of rows per refresh, which made
+   the diff unreviewable and re-sent the whole 1.2MB archive to every returning
+   player every day. */
+{
+  const ing = read('scripts/setlist/ingest_band.mjs');
+  check(/const ESTEEM_FULL = \d+;/.test(ing), 'the esteem ceiling is a pinned constant');
+  check(/Math\.min\(n, ESTEEM_FULL\) \/ ESTEEM_FULL/.test(ing),
+    'and esteem is scaled against it, clamped rather than rescaled');
+  check(!/Math\.max\(1, \.\.\.tally\.values\(\)\)/.test(ing),
+    'nothing scales against the current leader any more');
+  /* THE PIN MUST STILL COVER THE DATA. Past it every top song shares the
+     ceiling, which is honest but compresses the scale, and re-anchoring is a
+     deliberate regeneration. Reported rather than failed: the day Goose passes
+     it must not be the day the nightly refresh starts failing. */
+  const full = Number((ing.match(/const ESTEEM_FULL = (\d+);/) || [])[1]);
+  const tally = new Map();
+  for (const r of parseCSV(read('setlist/data/goose.csv'))) {
+    if (r.is_jamchart !== 'true' || !r.song_id) continue;
+    tally.set(r.song_id, (tally.get(r.song_id) || 0) + 1 + (r.is_recommended === 'true' ? 2 : 0));
+  }
+  const lead = Math.max(0, ...tally.values());
+  console.log(`  info  top jamchart tally is ${lead}, ceiling pinned at ${full}` +
+    (lead > full ? ' — past it, songs now share the top. Re-anchor when convenient.' : ''));
+}
+/* And the gate that keeps it honest once pinned. */
+check(/every derived change belongs to a song whose own history changed/
+  .test(read('scripts/setlist/data_drift.mjs')),
+  'a refresh may not move derived values for songs that did not change');
 /* AND ITS PATCHES MUST COMPOSE. DATA_CONTRACT is patched twice, once for the
    performance counts and once for the show table's. When each patch computed
    its result from the copy on disk and the writes were replayed at the end,
@@ -854,7 +888,28 @@ for (const [key, what] of [
   ['topVenue', 'the venue you go to most'],
   ['bigYear', 'your biggest year'],
   ['tours', 'tours caught'],
+  ['bigJams', 'the twenty-minute-plus jams'],
+  ['bustouts', 'the bustouts you caught'],
+  ['perShow', 'how many songs a night you get'],
+  ['since', 'how long since your last one'],
+  ['gapDays', 'the longest you ever went without'],
+  ['onceOnly', 'songs you have heard exactly once'],
+  ['encores', 'how many encores you stayed for'],
+  ['backToBack', 'nights you did back to back'],
+  ['topOpener', 'what keeps opening for you'],
 ]) check(new RegExp(`\\b${key}\\b`).test(gameBare), `the profile knows ${what}`);
+/* An opener is the one slot every show has exactly one of, so "most common" is
+   a fair count there and an artefact of set length anywhere else. */
+check(/const first = sh\.songs\[0\];/.test(gameBare),
+  'the opener count reads the first song of each show');
+check(/topOpener\[1\] > 1/.test(gameBare), 'and one occurrence is not a pattern');
+// "1 days ago".
+check(/st\.since === 1 \? 'yesterday'/.test(gameBare), 'a day is not "1 days"');
+/* fmtDate's short form drops the year, so a 636-day wait read "Nov 21 to Aug
+   18" and looked like nine months. Years are the part that makes it make
+   sense, and the full dates do not fit the column. */
+check(/st\.gapFrom\.slice\(0, 4\)/.test(gameBare),
+  'and states the years a long wait spanned, not bare month-days');
 /* THE INVERSE, which is the one a tracker actually wants: not what you have
    seen but what the band keeps playing while you are not in the room. */
 check(/const wanted = \[\.\.\.playCount\]/.test(gameBare)
@@ -867,6 +922,117 @@ check(/venues\[0\]\[1\] > 1 \? \{ venue/.test(gameBare),
 /* Two words at most in a tile label: a third of a 390px screen clipped
    "songs played to you" to "SONGS PLAYED TO" over "YOU". */
 check(!/'songs played to you'/.test(gameBare), 'tile labels fit their tile');
+
+/* THE COLLECTION. "130 of 367 songs heard live" is the profile's headline and
+   the next thing anybody who tracks this wants is WHICH ones, and when. That is
+   not another statistic, it is the list, and it is the difference between a
+   scoreboard and a collection. */
+console.log('every song');
+check(/if \(S\.screen === 'songs'\)/.test(gameBare), 'the collection is routed');
+check(/function songCollection\(bandId\)/.test(gameBare), 'and built from the archive already loaded');
+check(/data-go="songs"/.test(gameBare), 'the profile links to it');
+/* KEYED ON song_id, NOT THE TITLE. Three titles here are two different songs
+   each: Goose's own "All I Need" and an LP Giobbi cover of it, "Revival" by two
+   writers, two "Happy Birthday"s. Folding those together credits somebody with
+   a song they have never heard because they caught the other one, and makes the
+   total disagree with the profile's. */
+check(/const byId = new Map\(\);/.test(gameBare) && /byId\.get\(p\.song_id\)/.test(gameBare),
+  'keyed on song_id so same-named songs stay separate');
+check(/titles\.get\(s\.song\) > 1 && s\.artist/.test(gameBare),
+  'and a shared title is qualified by whose song it is');
+check(/const open = SONGS\.open === s\.id;/.test(gameBare),
+  'opening one row cannot open its namesake');
+/* THE DRAFT SCREEN ALREADY OWNS data-song, and this handler runs before its
+   in the same listener, so the first version of the collection silently
+   swallowed every pick in the game. The regression harness caught it: a
+   playthrough that reported "picks 0". */
+check(/data-songrow="\$\{esc\(s\.id\)\}"/.test(gameBare),
+  'the collection ROW uses its own hook, not the draft\'s');
+check(/const songBtn = e\.target\.closest\('\[data-song\]'\)/.test(gameBare),
+  'and the draft still picks songs by data-song');
+{
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const ids = new Set(rows.map(r => r.song_id).filter(Boolean)).size;
+  const titles = new Set(rows.map(r => r.song).filter(Boolean)).size;
+  check(ids > titles, `same-named songs exist to be merged (${ids} ids, ${titles} titles)`);
+}
+/* Filter and sort are separate controls because "never heard, most played" is
+   the most useful list on the screen: what you are missing, in the order you
+   are most likely to fix it. */
+check(/id="sFilter"/.test(gameBare) && /id="sSort"/.test(gameBare),
+  'it filters and sorts independently');
+check(/plays: \(a, b\) => b\.plays - a\.plays/.test(gameBare),
+  'including by how often the band has played it');
+check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'its search keeps its caret');
+// Every sighting carries what makes it a memory rather than a row.
+for (const f of ['venue', 'len', 'jam'])
+  check(new RegExp(`${f}:`).test(gameBare), `a sighting records its ${f}`);
+
+/* EVERY NUMBER ON THE PROFILE IS AUDITABLE. A tile saying "65 segues" is a
+   claim, and until you can see the 65 it is one you have to take on trust. */
+console.log('what is behind a number');
+check(/const PERF_STATS = \{/.test(gameBare) && /const SHOW_STATS = \{/.test(gameBare),
+  'each stat is defined in one place');
+/* THE DEFINITION IS USED TWICE, to count it and to list it, and that is the
+   whole reason the table exists. Two copies of "is this a segue" WILL drift,
+   and a tile saying 65 that opens a list of 63 is worse than no list at all. */
+check(/function statCount\(perf, key\)/.test(gameBare), 'the count comes from that definition');
+check(/const segues = statCount\(perf, 'segues'\)/.test(gameBare),
+  'and the profile counts through it rather than inline');
+check(!/if \(String\(p\.is_segue\) === 'true'\) segues\+\+/.test(gameBare),
+  'the old inline copies are gone');
+/* Named at the LIST site specifically: statCount filters with the same
+   expression, so a looser pattern is satisfied by the counter alone. */
+check(/let hits = perf\.filter\(def\.pick\);/.test(gameBare),
+  'the list filters through the same definition');
+check(/const hits = perf\.filter\(def\.pick\);/.test(gameBare),
+  'and so does the count');
+check(/id="statSheet"/.test(gameBare) && /function openStat\(key\)/.test(gameBare),
+  'tapping a number opens what is behind it');
+check(/data-stat="\$\{esc\(stat\)\}"/.test(gameBare), 'the tiles carry the key they were counted with');
+/* Counted as DISTINCT SONGS, so the list must show songs. "34 covers" means 34
+   different ones, not 34 performances. */
+check(/unique: true/.test(gameBare) && /new Set\(hits\.map\(p => p\.song_id \|\| p\.song\)\)/.test(gameBare),
+  'covers count distinct songs, and the list matches');
+/* An average is not a list of anything. */
+check(/st\.perShow \? \[st\.perShow\.toFixed\(1\), 'songs a night'\] : null/.test(gameBare),
+  'an average does not pretend to open a list');
+check(/\.ftile\.tap\{/.test(gameBare) && /\.pstat\.tap\{/.test(gameBare),
+  'and a tappable number looks tappable');
+
+/* YOUR NIGHTS, the other half of the collection. "Every song" answers what you
+   have heard; this answers what you were AT, and gives each night its setlist
+   back. Until now the game could count your shows without ever showing you
+   one. */
+console.log('your nights');
+check(/if \(S\.screen === 'nights'\)/.test(gameBare), 'your nights is routed');
+check(/function myNights\(bandId\)/.test(gameBare), 'and built from the marked shows');
+check(/data-go="nights"/.test(gameBare), 'the profile links to it');
+/* A night with no setlist STILL GETS A ROW. It is a show you went to, and one
+   in five played shows has never been typed up. */
+check(/hasSet: !!sh/.test(gameBare), 'a night with no setlist is still a night');
+check(/Nobody has typed this one up on elgoose yet/.test(gameBare), 'and says why it is bare');
+// Multi-night runs are how anybody who was there describes a show.
+check(/night \$\{n\.run\.night\} of \$\{n\.run\.of\}/.test(gameBare),
+  'a night in a run says which night it was');
+/* The facts line renders NOTHING rather than an empty rule. A show typed up
+   overnight has no times and no jamchart entries yet, so all three parts of it
+   can be blank, and the div was drawing its border under nothing. */
+check(/return facts\.length \? `<div class="ng-facts">/.test(gameBare),
+  'the night summary is omitted when it would be empty');
+
+/* EVERY LIST ROW NEEDS ITS OWN HOOK. The collection shipped using data-song,
+   which the DRAFT screen already owned, and swallowed every pick in the game.
+   These three must stay distinct from each other and from the draft's. */
+{
+  const hooks = ['data-song', 'data-songrow', 'data-nightrow', 'data-mark', 'data-peek'];
+  const readers = hooks.filter(h => new RegExp(`closest\\('\\[${h}\\]'\\)`).test(gameBare));
+  check(readers.length === hooks.length,
+    `every list hook has its own handler (${readers.length} of ${hooks.length})`);
+  check(new Set(hooks).size === hooks.length, 'and none of them collide by name');
+  check(/data-nightrow="\$\{esc\(n\.id\)\}"/.test(gameBare),
+    'the night row uses its own hook, not the draft\'s');
+}
 
 /* THE PROFILE LOADS THE ARCHIVE ITSELF. Reached from the home screen there has
    never been a draft, so S.data is empty and the panel used to degrade to a
@@ -919,7 +1085,7 @@ check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
    target's measured rect, so a renamed hook does not throw, it silently points
    at nothing. */
 for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]',
-  '[data-go="tour"]', '[data-go="browse"]', '[data-go="profile"]'])
+  '[data-go="tour"]', '[data-go="songs"]', '[data-go="browse"]', '[data-go="profile"]'])
   check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
     `a step aims at ${sel}`);
 
@@ -980,7 +1146,7 @@ const showsPath = 'setlist/data/goose_shows.csv';
 check(existsSync(resolve(repoRoot, showsPath)), 'the show table exists');
 const showRows = parseCSV(read(showsPath));
 const SHOW_COLS = ['show_id', 'show_date', 'year', 'tour_id', 'tour',
-  'venue', 'city', 'state', 'country', 'has_setlist'];
+  'venue', 'city', 'state', 'country', 'has_setlist', 'show_order'];
 const showHead = read(showsPath).slice(0, read(showsPath).indexOf('\n')).trim().split(',');
 check(showHead.length === SHOW_COLS.length && showHead.every((h, i) => h === SHOW_COLS[i]),
   'its header matches DATA_CONTRACT', `got ${showHead.join(',')}`);
@@ -1118,6 +1284,28 @@ check(/id="bYear"/.test(gameBare) && /id="bTour"/.test(gameBare),
    and only a handful of them happened in the year you picked. */
 check(/!BROWSE\.year \|\| r\.year === BROWSE\.year\)\s*\n\s*\.map\(r => r\.tour\)/.test(gameBare),
   'and the tour list narrows to the chosen year');
+/* SOME NIGHTS ARE TWO SHOWS. Seven date-and-venue pairs carry two distinct
+   show_ids with entirely different setlists: the Cabo destination runs play
+   twice in a day. Two identical rows is an invitation to tick the wrong one, on
+   the screen whose whole job is claiming the right one. */
+{
+  const pairs = new Map();
+  for (const r of showRows) {
+    const k = `${r.show_date}|${r.venue}`;
+    pairs.set(k, (pairs.get(k) || 0) + 1);
+  }
+  const doubled = [...pairs.values()].filter(n => n > 1).length;
+  check(doubled > 0, `nights holding more than one show exist (${doubled})`);
+  check(showRows.some(r => Number(r.show_order) > 1),
+    'the table records which show of the night each one is');
+  check(/show_order: String\(r\.showorder \|\| ''\)/.test(read('scripts/setlist/ingest_band.mjs')),
+    'taken from elgoose rather than guessed from row order');
+  check(/Show \$\{r\.show_order\} of \$\{n\}/.test(gameBare), 'and the browser says so');
+  /* Counted over the whole table, not the filtered list, or the marker would
+     appear and vanish as somebody narrows the year. */
+  check(/for \(const r of all\) \{\s*\n\s*const k = `\$\{r\.show_date\}\|\$\{r\.venue\}`/.test(gameBare),
+    'counted across every show, not the current filter');
+}
 check(/data-mark=/.test(gameBare), 'rows can be ticked');
 check(/toggleThere\(band\.id, mark\.dataset\.mark\)/.test(gameBare),
   'and a tick reaches the same store the draft writes to');
