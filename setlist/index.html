@@ -1875,6 +1875,33 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     background:var(--line); border-radius:var(--r-md); overflow:hidden;
     margin-top:var(--sp-2);}
   .ftile{background:var(--card2); padding:10px 6px; text-align:center; min-width:0;}
+  /* A tappable tile is a button, so it needs the button reset and a hint that
+     it opens something. Every number that is a count of things opens the list
+     of them; an average opens nothing, because it is not a list. */
+  .ftile.tap{font-family:inherit; border:0; text-align:center; cursor:pointer; position:relative;}
+  .ftile.tap:after{content:''; position:absolute; right:6px; top:6px; width:4px; height:4px;
+    border-radius:99px; background:var(--tealT); opacity:.55;}
+  .ftile.tap:active{background:var(--card3);}
+  .pstat.tap{font-family:inherit; border:0; cursor:pointer; position:relative; width:100%;}
+  .pstat.tap:after{content:''; position:absolute; right:7px; top:7px; width:4px; height:4px;
+    border-radius:99px; background:var(--tealT); opacity:.55;}
+  .pstat.tap:active{background:var(--card2);}
+
+  /* The list behind a number. */
+  .stvlist{max-height:64dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    margin:0 -2px; padding:0 2px;}
+  .stv-row{display:grid; grid-template-columns:1fr auto; gap:2px 10px;
+    padding:9px 0; border-bottom:1px solid var(--line);}
+  .stv-row:last-child{border-bottom:0;}
+  .stv-s{font-size:13.5px; font-weight:800; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stv-m{font-size:11.5px; font-weight:800; color:var(--tealT); text-align:right;
+    white-space:nowrap;}
+  .stv-w{grid-column:1; font-size:11.5px; font-weight:600; color:var(--dim);
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stv-l{grid-column:2; font-size:11.5px; font-weight:700; color:var(--mut);
+    text-align:right; font-variant-numeric:tabular-nums;}
+
   .ftile b{display:block; font-family:var(--ui); font-size:19px; line-height:1.05;
     color:var(--ink); font-variant-numeric:tabular-nums;}
   .ftile span{display:block; font-size:9.5px; font-weight:800; letter-spacing:.6px;
@@ -2109,6 +2136,11 @@ setTimeout(function(){
      is chosen by a state this page does not know until supabase answers. -->
 <div class="sheet" id="authSheet" role="dialog" aria-modal="true" aria-labelledby="authHd">
   <div class="inner" id="authInner"></div>
+</div>
+
+<!-- What is behind a number on the profile. One element, filled per stat. -->
+<div class="sheet" id="statSheet" role="dialog" aria-modal="true" aria-label="What makes up this number">
+  <div class="inner" id="statInner"></div>
 </div>
 
 <div class="sheet" id="bandSheet" role="dialog" aria-modal="true" aria-labelledby="bandSheetHd">
@@ -3593,6 +3625,54 @@ async function fanData(bandId){
   } catch (e) { return null; }
 }
 
+/* ── one definition per number ───────────────────────────────────────────────
+ *
+ * EACH STAT IS DEFINED ONCE AND USED TWICE: to count it for the tile, and to
+ * list what is behind it when somebody taps that tile. That is the whole reason
+ * this table exists rather than a filter written out at each site. A tile
+ * saying 65 that opens a list of 63 is worse than no list at all, and two
+ * copies of "is this a segue" WILL drift.
+ */
+const PERF_STATS = {
+  plays:     { label: 'Every song played to you', pick: () => true },
+  /* The duration's own breakdown, longest first, because that is what somebody
+     tapping "28h 52m" wants to see: where the hours went. Untimed plays are
+     excluded, since they contributed nothing to the number. */
+  music:     { label: 'Where the hours went',
+               pick: p => (Number(p.length_sec) || 0) > 0, byLength: true },
+  segues:    { label: 'Segues you were there for',
+               pick: p => String(p.is_segue) === 'true' },
+  jamcharts: { label: 'Jamchart versions you caught',
+               pick: p => String(p.is_jamchart) === 'true' },
+  bigJams:   { label: 'Twenty minutes or longer',
+               pick: p => (Number(p.length_sec) || 0) >= 1200 },
+  bustouts:  { label: 'Bustouts you were there for',
+               pick: p => (Number(p.show_gap) || 0) >= 50,
+               note: p => `${p.show_gap}-show gap` },
+  debuts:    { label: 'Debuts you witnessed',
+               pick: p => Number(p.times_played) === 1 },
+  /* Counted as DISTINCT SONGS, not performances, because "34 covers" means 34
+     different ones. The list therefore shows each once, with how many times. */
+  covers:    { label: 'Covers you have heard',
+               pick: p => String(p.is_cover) === 'true', unique: true,
+               note: p => p.original_artist || '' },
+};
+
+/* The show-level ones. Same contract: the count is the size of the list. */
+const SHOW_STATS = {
+  venues:    { label: 'Venues you have been to',  by: r => r.venue },
+  cities:    { label: 'Cities',                   by: r => r.city },
+  states:    { label: 'States and provinces',     by: r => r.state },
+  years:     { label: 'Years you have seen them', by: r => r.year },
+  tours:     { label: 'Tours you caught',         by: r => r.tour },
+};
+
+function statCount(perf, key){
+  const def = PERF_STATS[key];
+  const hits = perf.filter(def.pick);
+  return def.unique ? new Set(hits.map(p => p.song_id || p.song)).size : hits.length;
+}
+
 /* WHAT YOU SAW, and the split that had to be made before any of it was right.
  *
  * A SHOW YOU WENT TO IS NOT THE SAME THING AS A SETLIST SOMEBODY TYPED UP.
@@ -3661,24 +3741,26 @@ function attendanceStats(bandId){
   if (!perf.length) return out;
 
   const seenIds = new Set(), seenTitles = new Map();
-  let secs = 0, segues = 0, jams = 0, debuts = 0, bigJams = 0, bustouts = 0;
-  const covers = new Set();
+  let secs = 0;
   let longest = null, rarest = null;
   for (const p of perf) {
     if (p.song_id) seenIds.add(p.song_id);
     seenTitles.set(p.song, (seenTitles.get(p.song) || 0) + 1);
     const len = Number(p.length_sec) || 0;
     secs += len;
-    if (String(p.is_segue) === 'true') segues++;
-    if (String(p.is_jamchart) === 'true') jams++;
-    if (String(p.is_cover) === 'true') covers.add(p.song);
-    if (Number(p.times_played) === 1) debuts++;
-    if (len >= 1200) bigJams++;                 // the twenty-minute-plus ones
-    if ((Number(p.show_gap) || 0) >= 50) bustouts++;
     if (len && (!longest || len > Number(longest.length_sec))) longest = p;
     const gap = Number(p.show_gap) || 0;
     if (gap && (!rarest || gap > Number(rarest.show_gap))) rarest = p;
   }
+  /* COUNTED THROUGH THE SAME DEFINITIONS THE DRILL-DOWN LISTS THROUGH. These
+     were six inline conditions here and would have become a second copy of the
+     same rules the moment the tiles became tappable. */
+  const segues = statCount(perf, 'segues');
+  const jams = statCount(perf, 'jamcharts');
+  const debuts = statCount(perf, 'debuts');
+  const bigJams = statCount(perf, 'bigJams');
+  const bustouts = statCount(perf, 'bustouts');
+  const coverCount = statCount(perf, 'covers');
 
   /* WHAT YOU KEEP GETTING DEALT. An opener is the one slot every show has
      exactly one of, so it is the only role where "most common" is a fair
@@ -3723,7 +3805,7 @@ function attendanceStats(bandId){
     performances: perf.length,
     seconds: secs,
     segues, jamcharts: jams, debuts, bigJams, bustouts,
-    covers: covers.size,
+    covers: coverCount,
     perShow: perf.length / withSet.length,
     since, gapDays, gapFrom, gapTo, backToBack, encores,
     topOpener: topOpener && topOpener[1] > 1 ? { song: topOpener[0], times: topOpener[1] } : null,
@@ -4105,6 +4187,10 @@ document.getElementById('detailSheet').addEventListener('click', e => {
   if (e.target.id === 'detailSheet' || e.target.closest('#detailClose')) closeDetail();
 });
 
+document.getElementById('statSheet').addEventListener('click', e => {
+  if (e.target.id === 'statSheet' || e.target.closest('#statClose')) closeStat();
+});
+
 function guideAdvance(){
   if (GUIDE_AT < GUIDE_STEPS.length - 1){ openGuide(GUIDE_AT + 1); return; }
   /* The last step's button is the first move the walkthrough has been
@@ -4148,6 +4234,7 @@ window.addEventListener('resize', () => {
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (document.getElementById('guide').classList.contains('on')){ closeGuide(); return; }
+  if (document.getElementById('statSheet').classList.contains('on')){ closeStat(); return; }
   if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
   if (document.body.classList.contains('sheet-on')){
     S.pickedSong = null; S.sheetForced = false; S.hint = ''; S.hintBad = false;
@@ -5213,6 +5300,95 @@ function songCollection(bandId){
   return out;
 }
 
+/* ── what is behind a number ─────────────────────────────────────────────────
+ *
+ * EVERY COUNT ON THE PROFILE IS NOW AUDITABLE. A tile saying "65 segues" is a
+ * claim, and until you can see the 65 it is a claim you have to take on trust.
+ * The list is built from the SAME definition that produced the number, so the
+ * two cannot disagree.
+ */
+function attendedPerformances(bandId){
+  const table = TOUR_STATE.rows;
+  const data = (S.data && S.band && S.band.id === bandId ? S.data : null)
+    || FAN_DATA.get(bandId) || null;
+  if (!table || !data) return null;
+  const ids = attendedSet(bandId);
+  const byId = new Map(data.shows.map(s => [String(s.show_id), s]));
+  return table.filter(r => ids.has(r.show_id) && byId.has(r.show_id))
+    .flatMap(r => byId.get(r.show_id).songs);
+}
+
+function openStat(key){
+  const band = BANDS.find(b => b.shows && !b.sample);
+  const sheet = document.getElementById('statSheet');
+  const inner = document.getElementById('statInner');
+  const place = r => [r.city, r.state].filter(Boolean).join(', ');
+
+  let title = '', body = '';
+
+  if (PERF_STATS[key]) {
+    const def = PERF_STATS[key];
+    const perf = attendedPerformances(band.id) || [];
+    let hits = perf.filter(def.pick);
+    title = def.label;
+    if (def.unique) {
+      /* Distinct songs, newest sighting first, with how many times. The tile
+         counts songs so the list must show songs. */
+      const seen = new Map();
+      for (const p of hits) {
+        const k = p.song_id || p.song;
+        if (!seen.has(k)) seen.set(k, { p, n: 0 });
+        seen.get(k).n++;
+      }
+      hits = [...seen.values()].sort((a, b) => b.n - a.n).map(x => ({ ...x.p, _times: x.n }));
+    } else if (def.byLength) {
+      hits = hits.slice().sort((a, b) => Number(b.length_sec) - Number(a.length_sec));
+    } else {
+      hits = hits.slice().sort((a, b) => String(b.show_date).localeCompare(String(a.show_date)));
+    }
+    body = hits.length ? hits.map(p => `<div class="stv-row">
+        <span class="stv-s">${esc(p.song)}</span>
+        <span class="stv-m">${p._times ? `${p._times}x`
+          : esc(fmtDate(p.show_date))}${
+          def.note && def.note(p) ? ` &middot; ${esc(def.note(p))}` : ''}</span>
+        <span class="stv-w">${p._times ? '' : `${esc(p.venue || '')}${
+          place(p) ? `, ${esc(place(p))}` : ''}`}</span>
+        ${Number(p.length_sec) ? `<span class="stv-l">${esc(fmtClock(Number(p.length_sec)))}</span>` : ''}
+      </div>`).join('')
+      : '<div class="sgd-none">Nothing here yet.</div>';
+    title += ` (${hits.length})`;
+
+  } else if (SHOW_STATS[key]) {
+    const def = SHOW_STATS[key];
+    const table = TOUR_STATE.rows || [];
+    const ids = attendedSet(band.id);
+    const mine = table.filter(r => ids.has(r.show_id));
+    const groups = new Map();
+    for (const r of mine) {
+      const k = def.by(r);
+      if (!k) continue;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(r);
+    }
+    const rows = [...groups].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    title = `${def.label} (${rows.length})`;
+    body = rows.map(([name, list]) => `<div class="stv-row">
+        <span class="stv-s">${esc(name)}</span>
+        <span class="stv-m">${list.length} show${list.length === 1 ? '' : 's'}</span>
+        <span class="stv-w">${esc(list.map(r => fmtDate(r.show_date, { short: true })).slice(0, 4).join(' · '))}${
+          list.length > 4 ? ' &hellip;' : ''}</span>
+      </div>`).join('');
+  } else return;
+
+  inner.innerHTML = `
+    <div class="grab"></div>
+    <div class="sheet-hd"><h2>${esc(title)}</h2>
+      <button class="x" type="button" id="statClose">Close</button></div>
+    <div class="stvlist">${body}</div>`;
+  sheet.classList.add('on');
+}
+function closeStat(){ document.getElementById('statSheet').classList.remove('on'); }
+
 function renderSongs(){
   loadTourRows();
   const band = BANDS.find(b => b.shows && !b.sample);
@@ -5767,17 +5943,20 @@ function renderProfile(){
     const mins = st.seconds ? Math.round(st.seconds % 3600 / 60) : 0;
 
     // A tile only appears when it has something to say.
+    /* Each tile carries the key it was counted with, so tapping it opens the
+       list built from that same definition. */
     const tiles = st.songsSeen === null ? [] : [
       /* Two words at most. A third of a 390px screen is not wide enough for
          "songs played to you", which clipped to "SONGS PLAYED TO" over "YOU". */
-      st.seconds ? [hours ? `${hours}h ${mins}m` : `${mins}m`, 'of music'] : null,
-      st.performances ? [st.performances, 'song plays'] : null,
-      st.segues ? [st.segues, 'segues'] : null,
-      st.jamcharts ? [st.jamcharts, 'jamcharts'] : null,
-      st.covers ? [st.covers, 'covers'] : null,
-      st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts'] : null,
-      st.bigJams ? [st.bigJams, '20-min jams'] : null,
-      st.bustouts ? [st.bustouts, 'bustouts'] : null,
+      st.seconds ? [hours ? `${hours}h ${mins}m` : `${mins}m`, 'of music', 'music'] : null,
+      st.performances ? [st.performances, 'song plays', 'plays'] : null,
+      st.segues ? [st.segues, 'segues', 'segues'] : null,
+      st.jamcharts ? [st.jamcharts, 'jamcharts', 'jamcharts'] : null,
+      st.covers ? [st.covers, 'covers', 'covers'] : null,
+      st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts', 'debuts'] : null,
+      st.bigJams ? [st.bigJams, '20-min jams', 'bigJams'] : null,
+      st.bustouts ? [st.bustouts, 'bustouts', 'bustouts'] : null,
+      /* An average is not a list of anything, so it does not open one. */
       st.perShow ? [st.perShow.toFixed(1), 'songs a night'] : null,
       st.encores ? [st.encores, 'encores'] : null,
       st.backToBack ? [st.backToBack, 'back to back'] : null,
@@ -5816,15 +5995,15 @@ function renderProfile(){
       <div class="fanhd">${esc(b.label)}</div>
 
       <div class="pstats">
-        <div class="pstat"><b>${st.shows}</b><span>Shows</span></div>
-        <div class="pstat"><b>${st.venues}</b><span>Venues</span></div>
-        <div class="pstat"><b>${st.years}</b><span>Years</span></div>
+        <button class="pstat tap" type="button" data-go="nights"><b>${st.shows}</b><span>Shows</span></button>
+        <button class="pstat tap" type="button" data-stat="venues"><b>${st.venues}</b><span>Venues</span></button>
+        <button class="pstat tap" type="button" data-stat="years"><b>${st.years}</b><span>Years</span></button>
       </div>
       <div class="pstats" style="margin-top:1px">
-        <div class="pstat"><b>${st.cities}</b><span>Cities</span></div>
-        <div class="pstat"><b>${st.states || st.countries}</b><span>${
-          st.states ? 'States' : 'Countries'}</span></div>
-        <div class="pstat"><b>${st.tours}</b><span>Tours</span></div>
+        <button class="pstat tap" type="button" data-stat="cities"><b>${st.cities}</b><span>Cities</span></button>
+        <button class="pstat tap" type="button" data-stat="states"><b>${st.states || st.countries}</b><span>${
+          st.states ? 'States' : 'Countries'}</span></button>
+        <button class="pstat tap" type="button" data-stat="tours"><b>${st.tours}</b><span>Tours</span></button>
       </div>
 
       ${st.songsSeen === null
@@ -5836,8 +6015,10 @@ function renderProfile(){
           <div class="fanfine">${st.songsTotal - st.songsSeen} still out there.</div>
         </div>
 
-        <div class="ftiles">${tiles.map(([v, k]) =>
-          `<div class="ftile"><b>${esc(String(v))}</b><span>${esc(k)}</span></div>`).join('')}</div>
+        <div class="ftiles">${tiles.map(([v, k, stat]) => stat
+          ? `<button class="ftile tap" type="button" data-stat="${esc(stat)}"><b>${
+              esc(String(v))}</b><span>${esc(k)}</span></button>`
+          : `<div class="ftile"><b>${esc(String(v))}</b><span>${esc(k)}</span></div>`).join('')}</div>
 
         <div class="fanlist">
           ${rows.map(([k, v, extra]) => `<div class="fanrow"><i>${esc(k)}</i>
@@ -5915,6 +6096,10 @@ app.addEventListener('click', e => {
      data-songROW, not data-song: the DRAFT screen's cards already own
      data-song, and this handler runs before theirs in the same listener, so
      the first version of it silently swallowed every pick in the game. */
+  /* Tapping a number opens what is behind it. */
+  const stat = e.target.closest('[data-stat]');
+  if (stat){ openStat(stat.dataset.stat); return; }
+
   const nightRow = e.target.closest('[data-nightrow]');
   if (nightRow){
     const id = nightRow.dataset.nightrow;
