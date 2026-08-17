@@ -21,6 +21,7 @@
  * is better than silently editing the wrong number.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import loadBand, { parseCSV } from '../../setlist/dataLoader.js';
@@ -65,6 +66,33 @@ const patch = (file, re, replace, what) => {
   changed++;
   console.log(`  ${CHECK ? 'STALE' : 'wrote'} ${file}: ${what}`);
 };
+
+/* THE CACHE BUSTER, and the bug that made it necessary.
+ *
+ * The game fetches its data as `goose.csv?v=${DATA_VERSION}`, and that constant
+ * was maintained by hand. It sat at 2 from 5 August while goose.csv changed on
+ * the 14th, 16th and 17th, so four different files were served under one URL
+ * and any cache kept the oldest. A player who marked a show from the 14th was
+ * told they had never heard the songs played at it: their browser had an
+ * archive from before that night existed.
+ *
+ * Hashing all three data files rather than just the archive, because the page
+ * reads all three under the same version. Content-addressed, so it changes when
+ * the data changes and not otherwise, and it is computed in the same step of
+ * the refresh that already rewrites the counts. */
+const DATA_FILES = [
+  'setlist/data/goose.csv',
+  'setlist/data/goose_shows.csv',
+  'setlist/data/goose_latest.json',
+];
+const stamp = createHash('sha1');
+for (const f of DATA_FILES) stamp.update(read(f));
+const version = stamp.digest('hex').slice(0, 8);
+console.log(`data stamp: ${version}`);
+patch('setlist/index.html',
+  /const DATA_VERSION = '[0-9a-f]{8}';/,
+  `const DATA_VERSION = '${version}';`,
+  'the cache buster');
 
 // The home screen's band card.
 patch('setlist/index.html',

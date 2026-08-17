@@ -2094,7 +2094,23 @@ const BANDS = [
     note: 'Made-up data, for testing', sample: true },
 ];
 
-const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
+/* THE CACHE BUSTER, DERIVED FROM THE DATA RATHER THAN TYPED.
+ *
+ * It was a hand-maintained number, which works exactly as long as somebody
+ * remembers, and nobody did: it sat at 2 from 5 August while goose.csv changed
+ * on the 14th, the 16th and the 17th. Four different files served under one
+ * URL, so any cache kept the August 5 archive forever.
+ *
+ * That is not cosmetic. A player who marked the Greek Theatre on 14 August was
+ * told they had never heard Rockdale, which opened that show: their browser
+ * held an archive from before the night existed, the show table beside it was
+ * new enough to know about it, and the profile counted the shows it could not
+ * find a setlist for as shows with nothing played at them.
+ *
+ * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
+ * itself, in the same step of the daily refresh that already updates the
+ * counts. It changes when, and only when, the data does. Do not edit by hand. */
+const DATA_VERSION = '193f74ba';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
