@@ -2,14 +2,23 @@
 
 ```
 node football/build/test/test_scorelines.mjs
+node football/build/test/test_game_scripts.mjs
+node football/build/test/test_drives.mjs
+
+(nohup node cfb/build/test/gzip_server.mjs &)
+node football/build/test/test_bracket.mjs
 ```
 
-No database, no browser, no network. It reads `data/display_calibration.json` and
-plays games through the real engine.
+The first three need no database, no browser and no network. They read
+`data/display_calibration.json` and play games through the real engine. The fourth
+drives the page in Chromium and needs a server, which is why it is listed apart.
 
 | File | What it proves |
 |---|---|
 | `test_scorelines.mjs` | That the scores on screen are scores the NFL has actually produced, and that changing how a scoreline is rendered cannot change who won. |
+| `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
+| `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
+| `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
 
 ## Why the second half of that matters more than the first
 
@@ -51,8 +60,15 @@ The college game had the identical typo, found first, fixed the same way. If you
 are adding a third game, take the calibration key names from the build stage rather
 than from memory.
 
-## There is no browser suite here
+## How much of the page is covered
 
-The college game has one, under `cfb/build/test/`. This game does not. The engine is
-covered; the page is not. Worth knowing before you assume a green run means the UI
-is fine.
+Almost none of it. `test_bracket.mjs` is the only file here that opens a browser, and
+it opens it on one screen. The engine is covered thoroughly; the page is covered at
+the postseason and nowhere else, so a green run says nothing about the draft, the
+season screen, the results card or the leaderboard. The college game has a real
+browser suite under `cfb/build/test/` if you want the shape of one.
+
+`test_bracket.mjs` writes an instrumented copy of the game to
+`football/__test_bracket.html`, drives it, and deletes it. That name is deliberate:
+`__test*.html` is in `.gitignore` because the site deploys straight from `main`, and
+a committed copy of the game carrying a test hook would be served at runthe.gg.
