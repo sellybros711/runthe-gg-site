@@ -95,6 +95,44 @@ const wasRated = oldRows.filter(r => r.crowd_rating).length;
 check(rated >= wasRated * 0.9,
   `esteem is still populated (${rated} rows, was ${wasRated})`);
 
+/* ── the show table ──────────────────────────────────────────────────────────
+ *
+ * THE ROW COUNT IS THE ONLY HONEST ALARM HERE, and it is worth being clear why
+ * the obvious one is wrong. "There are no upcoming shows" cannot be a failure:
+ * a band between tours really does have none, and gating on it would block
+ * every setlist refresh until they announced something. What a broken response
+ * actually looks like is the table collapsing, so that is what this watches.
+ *
+ * It only runs when both sides have the file, so the commit that introduces it
+ * is not failed by its own absence from HEAD.
+ */
+const SHOWS = 'setlist/data/goose_shows.csv';
+const readShows = src => { try { return parseCSV(src()); } catch { return null; } };
+const newShows2 = readShows(() => readFileSync(resolve(repoRoot, SHOWS), 'utf8'));
+const oldShows2 = argOld ? null : readShows(() =>
+  /* stderr piped, not inherited: the first run after this file is added has no
+     HEAD copy, and git's "exists on disk, but not in HEAD" would otherwise be
+     printed as if something had gone wrong. It has not; that is the new-file
+     case the branch below handles. */
+  execFileSync('git', ['show', `HEAD:${SHOWS}`],
+    { cwd: repoRoot, encoding: 'utf8', maxBuffer: 8e6, stdio: ['ignore', 'pipe', 'pipe'] }));
+
+if (newShows2) {
+  const today = new Date().toISOString().slice(0, 10);
+  const up = newShows2.filter(r => r.show_date >= today).length;
+  console.log(`\nshow table: ${newShows2.length} shows, ${up} still to play` +
+    (oldShows2 ? ` (was ${oldShows2.length})` : ' (new file)'));
+  check(newShows2.some(r => r.tour), 'the show table still carries tour names');
+  check(newShows2.every(r => /^\d{4}-\d{2}-\d{2}$/.test(r.show_date || '')),
+    'every show_date in the table is YYYY-MM-DD');
+  if (oldShows2) {
+    check(newShows2.length >= oldShows2.length,
+      `the show table did not shrink (${oldShows2.length} to ${newShows2.length})`);
+    check(newShows2.length - oldShows2.length <= 60,
+      `and its growth is plausible (+${newShows2.length - oldShows2.length})`);
+  }
+}
+
 console.log();
 console.log(failures ? `${failures} check(s) failed — do NOT commit this refresh`
                      : 'drift is within bounds');

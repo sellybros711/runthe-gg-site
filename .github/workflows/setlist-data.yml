@@ -2,12 +2,23 @@ name: Refresh setlist data
 
 # Goose plays, elgoose.net gets the setlist, and this puts it in the game.
 #
-# WEEKLY, ON A TUESDAY, and the day is chosen rather than arbitrary. Most shows
-# are Friday to Sunday, the setlist itself goes up within a day, but the parts
-# the game leans on hardest -- the jamcharts, and the "recommended" flag that
-# drives song esteem -- are curated afterwards and take longer to settle. A
-# Tuesday run catches the whole weekend with the curation mostly done. Nothing
-# breaks if a show waits three days: the archive is 656 shows deep.
+# EVERY MORNING AT 6AM EASTERN, so the setlist from last night's show is in the
+# game before most people are awake to look for it. The band tours in runs of
+# consecutive nights, so "the day after each show" and "every day" are the same
+# schedule for weeks at a time, and a day with no new show costs one no-op run.
+#
+# GITHUB'S CRON IS UTC AND HAS NO IDEA WHAT DAYLIGHT SAVING IS, so a single
+# entry cannot mean 6am Eastern all year: it is 10:00 UTC from March to
+# November and 11:00 UTC the rest of the time. Both are listed and the job
+# checks the actual New York clock before doing anything, so exactly one of the
+# two proceeds on any given day. Doing it the other way, picking one and living
+# with it, would put the refresh at 5am half the year.
+#
+# The trade this schedule makes, stated plainly: the jamcharts and the
+# "recommended" flags that drive song esteem are curated by hand AFTER a show
+# and take days to settle, so a show refreshed the next morning arrives with
+# its esteem provisional. That is fine and self correcting, because a refresh
+# is not an append and every later run restates it.
 #
 # A REFRESH IS NOT AN APPEND, which is the thing to understand before touching
 # this. crowd_rating is derived -- the most-jamcharted song sets a ceiling of 75
@@ -36,7 +47,8 @@ name: Refresh setlist data
 
 on:
   schedule:
-    - cron: '0 11 * * 2'     # Tuesdays 11:00 UTC
+    - cron: '0 10 * * *'    # 6am Eastern while daylight saving is in effect
+    - cron: '0 11 * * *'    # 6am Eastern the rest of the year
   workflow_dispatch: {}
 
 permissions:
@@ -50,39 +62,70 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      # THE GATE THAT MAKES TWO CRON LINES BEHAVE AS ONE. Only the entry that
+      # lands on 6am in New York gets past here; the other exits cleanly. A
+      # manual run is always allowed through, since somebody asked for it.
+      - name: Is it 6am in New York
+        id: when
+        run: |
+          HOUR=$(TZ=America/New_York date +%H)
+          echo "New York says ${HOUR}:00 ($(TZ=America/New_York date))"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run, proceeding"
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$HOUR" = "06" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "not 6am Eastern, this is the other cron entry. Stopping."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.when.outputs.go == 'yes'
 
       - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == 'yes'
         with:
           node-version: '20'
 
       # No API key: elgoose.net's v2 API is open, and a full 2014-to-now fetch
       # takes about half a minute. The script paces itself between years because
       # the API throttles by answering an empty 200 rather than a 429.
+      #
+      # This also writes goose_shows.csv, the show-level table that carries the
+      # tour names and every date still to be played. The setlist file cannot
+      # hold those: it is one row per performance, and an unplayed show has none.
       - name: Fetch from elgoose.net
+        if: steps.when.outputs.go == 'yes'
         run: node scripts/setlist/ingest_band.mjs --strict
 
       # The home screen states the archive size and DATA_CONTRACT states the
       # counts. check_data asserts both against the file, so without this step
       # every SUCCESSFUL refresh would fail the checks.
       - name: Put the new counts into the copy
+        if: steps.when.outputs.go == 'yes'
         run: node scripts/setlist/sync_counts.mjs
 
       - name: Is this refresh safe to commit
+        if: steps.when.outputs.go == 'yes'
         run: node scripts/setlist/data_drift.mjs
 
       - name: Data and discoverability
+        if: steps.when.outputs.go == 'yes'
         run: node scripts/setlist/check_data.mjs
 
       - name: Scoring spec
+        if: steps.when.outputs.go == 'yes'
         run: node setlist/verify-scoring.mjs
 
       # Only reached when all four gates passed.
       - name: Commit if the archive moved
+        if: steps.when.outputs.go == 'yes'
         run: |
           git config user.name "setlist-bot"
           git config user.email "noreply@anthropic.com"
-          git add setlist/data/goose.csv setlist/data/DATA_CONTRACT.md setlist/index.html
+          git add setlist/data/goose.csv setlist/data/goose_shows.csv \
+                  setlist/data/DATA_CONTRACT.md setlist/index.html
           if git diff --cached --quiet; then
             echo "no new shows"
             exit 0
@@ -93,7 +136,7 @@ jobs:
           git commit -m "Refresh goose setlist data ($SHOWS shows)"
           # Other scheduled jobs in this repo push to main too, so a concurrent
           # run can advance the ref mid-job. Rebase and retry rather than fail on
-          # a non-fast-forward; nothing else touches these three files.
+          # a non-fast-forward; nothing else touches these files.
           for i in 1 2 3 4 5; do
             git push && break
             echo "push rejected, rebasing onto latest main (attempt $i)"
