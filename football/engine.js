@@ -373,6 +373,15 @@ const CONSTANTS = {
    */
   FINAL_EDGE_BONUS: 0.25,
 
+  /* THE FINAL, ONCE THE PERFECT SEASON HAS ALREADY GONE. Nothing while the run is still
+     unbeaten; past that the ring comes nearer, fastest for the rosters that should have
+     been winning it anyway. See finalRecordEase(). */
+  NOT_PERFECT_EASE_PER_LOSS: 0.035,
+  NOT_PERFECT_EASE_CAP: 0.09,
+  NOT_PERFECT_EASE_ELITE_AT: 95,
+  NOT_PERFECT_EASE_ELITE_FULL: 100,
+  NOT_PERFECT_EASE_ELITE_MULT: 1.8,
+
   /*
    * ─── CLASS, OVER SEVENTEEN WEEKS ────────────────────────────────────────────
    *
@@ -666,13 +675,42 @@ function scoringScript(you, them, rng) {
   const winner = margin >= 0 ? 'you' : 'them';
   /* The score that settled a one-possession game is the winner's last one, held back to
      land in the closing minutes where a broadcast would have shown it. */
+  /* ---- OVERTIME ----
+   * A game goes to overtime when regulation ends level, so the only finals that can have
+   * come out of one are those the winner reached with a single score after the tie: a
+   * field goal, a touchdown with or without its kick, or the very occasional safety. That
+   * is exactly the set of points SCORE_KINDS can produce, so an overtime game is one where
+   * the winner holds a score worth precisely the final margin and everything else adds up
+   * level.
+   *
+   * PLAYOFF RULES, EVERYWHERE. Both sides get a possession and it is sudden death after
+   * that, so an overtime here never ends level. That is not only what was asked for, it is
+   * the only version this game can represent: a run's record is wins and losses with
+   * nowhere to put a tie, so a regular-season overtime that ended 24-24 would have no way
+   * of being written down.
+   *
+   * The rate is set on the finals that COULD have gone to overtime rather than on all of
+   * them, and tuned so the whole population lands near the real one -- about one game in
+   * eighteen. */
+  const OT_MARGINS = [2, 3, 6, 7, 8];
+  const OT_CHANCE = 0.23;
+  let otScore = null;
+  const absMargin = Math.abs(margin);
+  if (absMargin !== 0 && OT_MARGINS.indexOf(absMargin) >= 0 && rng() < OT_CHANCE) {
+    const pool = winner === 'you' ? yParts : tParts;
+    const at = pool.findIndex((s) => s.points === absMargin);
+    if (at >= 0) otScore = pool.splice(at, 1)[0];
+  }
+
   /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
      of them meant the winner had almost always been behind just before it, so 70.6% of
      games featured a comeback against something nearer 55% in real football. Plenty of
-     three-point wins are led wire to wire and the loser simply never answers. */
+     three-point wins are led wire to wire and the loser simply never answers.
+     An overtime game never takes one: regulation ended level, so there is nothing to hold
+     back and the score that settled it is already waiting in the extra period. */
   const CLINCHER_CHANCE = 0.6;
   let clincher = null;
-  if (margin !== 0 && Math.abs(margin) <= 8 && rng() < CLINCHER_CHANCE) {
+  if (!otScore && margin !== 0 && Math.abs(margin) <= 8 && rng() < CLINCHER_CHANCE) {
     clincher = (winner === 'you' ? yParts : tParts).pop();
   }
 
@@ -812,7 +850,7 @@ function scoringScript(you, them, rng) {
   }
 
   let ry = 0, rt = 0;
-  return idx.map((i, k) => {
+  const out = idx.map((i, k) => {
     const e = order[i];
     const t0 = secs[k];
     const q = quarterOf(t0);
@@ -826,6 +864,27 @@ function scoringScript(you, them, rng) {
       you: ry, them: rt,
     };
   });
+
+  /* THE EXTRA PERIOD, appended after regulation has been laid out and totalled, so the
+     running score it carries is the one the fourth quarter actually ended on -- level, by
+     construction. Fifteen minutes, which is the playoff length; both sides get a
+     possession before it can end, so the score that settles it is never on the opening
+     drive of the period and lands a couple of minutes in at the earliest. */
+  if (otScore) {
+    const OT_SEC = 15 * 60;
+    const elapsed = 120 + Math.floor(rng() * (OT_SEC - 240));
+    const sec = Math.max(1, OT_SEC - elapsed);
+    if (otScore.team === 'you') ry += otScore.points; else rt += otScore.points;
+    out.push({
+      q: QUARTERS + 1,
+      ot: true,
+      sec,
+      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+      team: otScore.team, kind: otScore.kind, note: otScore.note || null, points: otScore.points,
+      you: ry, them: rt,
+    });
+  }
+  return out;
 }
 
 /** Round names, counting back from the final. */
@@ -962,6 +1021,40 @@ function finalEdge(rating, constants = CONSTANTS) {
   const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_KNEE) / span) : 1;
   return 1 + C.FINAL_EDGE_KNEE_BONUS
     + (C.FINAL_EDGE_BONUS - C.FINAL_EDGE_KNEE_BONUS) * t;
+}
+
+/**
+ * HOW MUCH THE FINAL EASES ONCE THE PERFECT SEASON IS ALREADY GONE.
+ *
+ * finalEdge() above reads the roster and nothing else, so a 17-0 team and a 13-4 team walked
+ * into the same Super Bowl. That is defensible for a game about the perfect season -- and it
+ * is also why a run that loses in week two has nothing left to play for, because the one
+ * prize still available is exactly as far away as it was before.
+ *
+ * So: no change at all while the run is still perfect. The hardest thing in the game stays
+ * the hardest thing in the game, and nobody buys an easier final by losing on purpose --
+ * a loss costs the perfect season, which is worth more than this is. Past the first loss the
+ * ring gets nearer, and it gets nearer fastest for the rosters that should already have been
+ * winning it: a 95 that dropped two coin-flips in October is the team this is for.
+ *
+ * The elite half ramps from ELITE_AT to ELITE_FULL rather than switching on at 95, because a
+ * cliff there would make a 94.9 and a 95.1 play visibly different finals for no reason a
+ * player could see.
+ *
+ * Added to the edge rather than multiplied into it, so the help is the same size whether the
+ * roster is being flattered or punished by finalEdge.
+ */
+function finalRecordEase(losses, rating, constants = CONSTANTS) {
+  const C = constants;
+  const n = Math.max(0, Math.floor(losses || 0));
+  if (n <= 0) return 0;
+  const base = Math.min(C.NOT_PERFECT_EASE_CAP, n * C.NOT_PERFECT_EASE_PER_LOSS);
+  if (!(rating > 0)) return base;
+  const span = C.NOT_PERFECT_EASE_ELITE_FULL - C.NOT_PERFECT_EASE_ELITE_AT;
+  const t = span > 0
+    ? Math.max(0, Math.min(1, (rating - C.NOT_PERFECT_EASE_ELITE_AT) / span))
+    : (rating >= C.NOT_PERFECT_EASE_ELITE_AT ? 1 : 0);
+  return base * (1 + (C.NOT_PERFECT_EASE_ELITE_MULT - 1) * t);
 }
 
 /**
@@ -2891,7 +2984,8 @@ const publicAPI = {
   buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, weeklyEdge, weeklyEdgeVs,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
+  weeklyEdge, weeklyEdgeVs,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,

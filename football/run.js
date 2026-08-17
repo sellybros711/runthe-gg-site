@@ -914,7 +914,16 @@ function advanceWeek(run, data, leagueContext, displayCal) {
  */
 function homeField(run, regularWins, isFinal) {
   const C = E.CONSTANTS;
-  if (isFinal && !run.tradeMachine) return E.finalEdge(liveRating(run));
+  if (isFinal && !run.tradeMachine) {
+    /* THE RING GETS NEARER ONCE THE PERFECT SEASON IS GONE, and nearest for the rosters
+       that should already have been winning it. Nothing at all while the run is still
+       unbeaten, so the hardest thing in the game stays the hardest thing in the game and
+       a loss can never be worth taking on purpose. */
+    const rating = liveRating(run);
+    const s2 = run.season || {};
+    const losses = Math.max(0, (s2.losses || 0));
+    return E.finalEdge(rating) + E.finalRecordEase(losses, rating);
+  }
   let k = C.PLAYOFF_HOME_FIELD || 0;
   if (isFinal) k *= C.GM_FINAL_HOME_FIELD || 0;
   if (!k) return 1;

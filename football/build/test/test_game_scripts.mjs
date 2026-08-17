@@ -45,6 +45,7 @@ const qPts = [0, 0, 0, 0];
 let wrongFinal = 0, dupClock = 0, lateFG = 0, emptyButScored = 0, outOfOrder = 0, badQuarter = 0;
 let events = 0, scripts = 0;
 let closeLeads = 0, closeGames = 0, blowLeads = 0, blowGames = 0;
+let otGames = 0, otRegNotLevel = 0, otLoserScored = 0, otNoScore = 0;
 
 for (let i = 0; i < N; i++) {
   const [you, them] = drawFinal();
@@ -58,12 +59,14 @@ for (let i = 0; i < N; i++) {
   let prevAbs = -1, ry = 0, rt = 0, prevDiff = 0, changes = 0;
   for (const e of sc) {
     events++;
-    if (e.q < 1 || e.q > 4 || e.sec < 1 || e.sec > 899) badQuarter++;
+    /* Five is overtime, and its period is fifteen minutes rather than a quarter's. */
+    const maxSec = e.q === 5 ? 900 : 899;
+    if (e.q < 1 || e.q > 5 || e.sec < 1 || e.sec > maxSec) badQuarter++;
     const abs = (e.q - 1) * 900 + (900 - e.sec);      // elapsed seconds
     if (abs === prevAbs) dupClock++;
     if (abs < prevAbs) outOfOrder++;
     prevAbs = abs;
-    qPts[e.q - 1] += e.points;
+    if (e.q <= 4) qPts[e.q - 1] += e.points;   // overtime is not a quarter
     /* The kick that cannot be justified: inside the last three minutes, still behind by
        more than a field goal afterwards. Earlier in the quarter the same kick is ordinary
        game management and is deliberately allowed. */
@@ -77,6 +80,20 @@ for (let i = 0; i < N; i++) {
   const m = Math.abs(you - them);
   if (m <= 8) { closeLeads += changes; closeGames++; }
   else if (m >= 17) { blowLeads += changes; blowGames++; }
+
+  const otPlays = sc.filter((e) => e.q === 5);
+  if (otPlays.length) {
+    otGames++;
+    /* Regulation has to have finished level, or it was not an overtime. */
+    const reg = sc.filter((e) => e.q <= 4);
+    const rY = reg.length ? reg[reg.length - 1].you : 0;
+    const rT = reg.length ? reg[reg.length - 1].them : 0;
+    if (rY !== rT) otRegNotLevel++;
+    /* Sudden death after both possessions: whoever scores in it has won, so the losing
+       side can never be the one who scored there. */
+    const winner = you > them ? 'you' : 'them';
+    if (otPlays.some((e) => e.team !== winner)) otLoserScored++;
+  } else if (you === them) otNoScore++;
 }
 
 console.log('=== the script has to reach the score it was given ===');
@@ -127,6 +144,16 @@ ok('close games change hands about as often as real ones',
 ok('blowouts settle and stay settled',
   blowLeads / Math.max(1, blowGames) < 1.2,
   (blowLeads / Math.max(1, blowGames)).toFixed(2) + ' in games decided by 17+');
+
+console.log('\n=== overtime ===');
+/* PLAYOFF RULES EVERYWHERE, which is what the record can represent: a run is wins and
+   losses with nowhere to put a tie, so an overtime here always produces a winner. */
+ok('no game is left level', otNoScore === 0, otNoScore + ' finished tied');
+ok('overtime happens about as often as it really does',
+  pct(otGames, scripts) >= 4.0 && pct(otGames, scripts) <= 7.5,
+  pct(otGames, scripts).toFixed(2) + '% of games, real ~5.6%');
+ok('regulation finished level in every one of them', otRegNotLevel === 0, otRegNotLevel);
+ok('only the winner scores in overtime', otLoserScored === 0, otLoserScored);
 
 console.log('\n' + events + ' scoring plays over ' + scripts + ' scripts, ' +
   (events / scripts).toFixed(2) + ' a game');
