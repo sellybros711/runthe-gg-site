@@ -1085,7 +1085,7 @@ check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
    target's measured rect, so a renamed hook does not throw, it silently points
    at nothing. */
 for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]',
-  '[data-go="tour"]', '[data-go="browse"]', '[data-go="profile"]'])
+  '[data-go="tour"]', '[data-go="songs"]', '[data-go="browse"]', '[data-go="profile"]'])
   check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
     `a step aims at ${sel}`);
 

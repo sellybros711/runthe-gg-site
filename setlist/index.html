@@ -2411,6 +2411,12 @@ const TBAR_FULL = 25 * 60;
 
 const app = document.getElementById('app');
 
+/* Only home and the profile ever lead to these, so anything else is a stale
+   breadcrumb and the profile is the safer of the two to land on. */
+function backFrom(){
+  return S.cameFrom === 'home' ? 'home' : 'profile';
+}
+
 function setScreen(name){
   clearTimeout(S.revealTimer);
   S.screen = name;
@@ -2483,6 +2489,16 @@ const GUIDE_STEPS = [
         This follows elgoose.net, so it fills in as they book.</p>
       <p>The setlist from each night lands in the game the <b>next morning</b>,
         which means the show you just saw is draftable by breakfast.</p>`,
+  },
+  {
+    aim: () => document.querySelector('[data-go="songs"]'),
+    eyebrow: 'The whole catalogue',
+    hd: 'All 367 songs',
+    body: `<p>Every song Goose has ever played, and how often. Tap one and it
+        opens <b>every time you heard it</b>: the date, the venue, how long it
+        ran.</p>
+      <p>Sort it by what they play most and filter to what you have never
+        caught, and it becomes the list of what you are still missing.</p>`,
   },
   {
     aim: () => document.querySelector('[data-go="browse"]'),
@@ -2694,6 +2710,7 @@ function renderHome(){
         ${b.shows ? `<div class="bandlinks">
           <button type="button" data-go="tour">Tour dates</button>
           <button type="button" data-go="browse">Track your shows</button>
+          <button type="button" data-go="songs">All songs</button>
         </div>` : ''}
       </section>`;
   };
@@ -5158,7 +5175,7 @@ function renderNights(){
       <div class="bhd"><h2>Your nights</h2></div>
       <div class="loading"><div class="spinner"></div><div>Reading your shows</div></div>
       <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
-    document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+    document.getElementById('backHome').addEventListener('click', () => setScreen(backFrom()));
     return;
   }
 
@@ -5235,7 +5252,7 @@ function renderNights(){
       <button class="btn ghost" type="button" id="backHome">Back</button>
     </div>`;
 
-  document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+  document.getElementById('backHome').addEventListener('click', () => setScreen(backFrom()));
   const sortSel = document.getElementById('nSort');
   if (sortSel) sortSel.addEventListener('change', e => {
     NIGHTS.sort = e.target.value; NIGHTS.open = null; render();
@@ -5406,7 +5423,7 @@ function renderSongs(){
       <div class="bhd"><h2>Every song</h2></div>
       <div class="loading"><div class="spinner"></div><div>Reading the archive</div></div>
       <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
-    document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+    document.getElementById('backHome').addEventListener('click', () => setScreen(backFrom()));
     return;
   }
 
@@ -5488,7 +5505,7 @@ function renderSongs(){
       <button class="btn ghost" type="button" id="backHome">Back</button>
     </div>`;
 
-  document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+  document.getElementById('backHome').addEventListener('click', () => setScreen(backFrom()));
   document.getElementById('sFilter').addEventListener('change', e => {
     SONGS.filter = e.target.value; SONGS.open = null; render();
   });
@@ -6122,6 +6139,11 @@ app.addEventListener('click', e => {
 
   const go = e.target.closest('[data-go]');
   if (go){
+    /* WHERE BACK GOES. Every song and Your nights are reachable from the band
+       panel AND from the profile now, so a hardcoded destination sends half of
+       the people who arrive somewhere they have never been. One breadcrumb,
+       set at the moment of navigation, which is the only place that knows. */
+    S.cameFrom = S.screen;
     // The board reads on the way in rather than on a timer: it is one request
     // and it should be fresh every time somebody opens it.
     if (go.dataset.go === 'board'){ setScreen('board'); loadBoard(); }
