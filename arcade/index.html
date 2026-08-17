@@ -510,7 +510,7 @@
      you that the name and the blurb can't, and the question you actually ask
      when you're deciding on a phone: have I got time for this right now. */
   .tile .foot{margin-top:auto;}
-  .tile .tmeta{display:block; font-size:10.5px; font-weight:900; letter-spacing:.09em;
+  .tile .tmeta{display:none; font-size:10.5px; font-weight:900; letter-spacing:.09em;
     text-transform:uppercase; color:var(--dim,var(--mut)); margin:0 0 9px; text-align:center;}
   .tile.archive .tmeta{display:none;}   /* the split Archive/Leaderboard pill needs the room */
   .tile .play{border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -578,7 +578,7 @@
        as broken. On a 320px screen most of them do need the third line. */
     .tile .desc{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
       overflow:hidden; font-size:12.5px; line-height:1.42; margin:4px 0 0;}
-    .tile .foot{display:flex; align-items:center; justify-content:space-between;
+    .tile .foot{display:flex; align-items:center; justify-content:flex-end;
       flex-wrap:wrap; gap:8px; margin-top:8px;}
     .tile .tmeta{margin:0; text-align:left; font-size:10px;}
     /* The whole row is the link, so the button no longer has to be the tap
@@ -685,7 +685,6 @@
               <span class="nm">Daily Match</span>
               <span class="desc" id="descM">Tap four names that belong together. Find all four groups before four mistakes.</span>
               <span class="foot">
-                <span class="tmeta">About 3 min</span>
                 <span class="play" id="playM">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -723,7 +722,6 @@
               <span class="nm">Daily Crossword</span>
               <span class="desc">Fill the grid from sports clues. Fastest clean solve tops the board.</span>
               <span class="foot">
-                <span class="tmeta">About 3 min</span>
                 <span class="play" id="playC">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -751,7 +749,6 @@
               <span class="nm">Guess the Player</span>
               <span class="desc">Name the mystery player from any era in eight guesses. Tiles compare careers.</span>
               <span class="foot">
-                <span class="tmeta">About 2 min</span>
                 <span class="play" id="playG">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -786,7 +783,6 @@
               <span class="nm">Number Game</span>
               <span class="desc">One player, one club. Type the number they wore. Within two still counts.</span>
               <span class="foot">
-                <span class="tmeta">About 1 min</span>
                 <span class="play" id="playT">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -808,7 +804,6 @@
               <span class="nm">Odd One Out</span>
               <span class="desc">Five names, four share something. Tap the odd one, then name what links the rest.</span>
               <span class="foot">
-                <span class="tmeta">About 1 min</span>
                 <span class="play" id="playO">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -830,7 +825,6 @@
               <span class="nm">Career Path</span>
               <span class="desc">A well-travelled career unfolds one club at a time. Type the player early for more points.</span>
               <span class="foot">
-                <span class="tmeta">About 1 min</span>
                 <span class="play" id="playR">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -854,7 +848,6 @@
               <span class="nm">Rank It</span>
               <span class="desc">Rank five players by a career stat, most at the top. Five tries, fewest wins.</span>
               <span class="foot">
-                <span class="tmeta">About 2 min</span>
                 <span class="play" id="playK">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -874,7 +867,6 @@
               <span class="nm">Alma Mater</span>
               <span class="desc">Where did this player go to college? Type the school for full points.</span>
               <span class="foot">
-                <span class="tmeta">About 1 min</span>
                 <span class="play" id="playA">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -899,7 +891,6 @@
               <span class="nm">Sportegories</span>
               <span class="desc">One letter, eight categories, two minutes. Type a full name for each.</span>
               <span class="foot">
-                <span class="tmeta">2 min, timed</span>
                 <span class="play" id="playS">PLAY <span class="arw">→</span></span>
               </span>
             </span>
@@ -919,7 +910,6 @@
               <span class="nm">High Low</span>
               <span class="desc">Pick a stat, then call whether each next player is higher or lower.</span>
               <span class="foot">
-                <span class="tmeta">Endless</span>
                 <span class="play" id="playH">PLAY <span class="arw">→</span></span>
               </span>
             </span>
