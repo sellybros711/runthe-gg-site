@@ -1385,6 +1385,63 @@ window.GA_ID='G-L29P5MRWKE';
     @keyframes stepIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
   }
 
+  /* ── the twelve-team bracket ────────────────────────────────────
+     Four columns, one per round, on a rail that scrolls sideways when the
+     screen is not wide enough for all of them: a bracket read left to right is
+     the shape everybody already knows, and squashing it into something else to
+     fit a phone would cost the one thing it is for. The rail is the only thing
+     on this site allowed to scroll sideways, and it says so with a scrollbar
+     and a snap, so nobody mistakes it for the page having overflowed. */
+  .brk-title{margin:2px 0 0;text-align:center;font-size:clamp(24px,7vw,38px);line-height:1.05;
+    letter-spacing:-.01em}
+  .brk-wrap{position:relative;margin-top:14px}
+  .brk{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 12px;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .brk::-webkit-scrollbar{height:6px}
+  .brk::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+  .brk-col{flex:0 0 auto;width:148px;display:flex;flex-direction:column;
+    justify-content:space-around;gap:8px;scroll-snap-align:center}
+  .brk-col.live{width:158px}
+  .brk-h{font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim);text-align:center;padding-bottom:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brk-col.live .brk-h{color:#fff}
+  .brk-g{border:1px solid var(--line);border-radius:9px;overflow:hidden;
+    background:rgba(255,255,255,.03);transition:border-color .2s,box-shadow .2s}
+  .brk-g.live{border-color:rgba(96,165,250,.55);box-shadow:0 0 0 1px rgba(96,165,250,.2)}
+  .brk-g.yours{border-color:rgba(16,185,129,.5)}
+  .brk-t{display:flex;align-items:center;gap:6px;padding:6px 8px;font-family:var(--fn);
+    font-size:12px;line-height:1.15;color:var(--dim);transition:color .2s,background .2s}
+  .brk-t+.brk-t{border-top:1px solid rgba(255,255,255,.07)}
+  .brk-t .sd{flex:0 0 17px;text-align:center;font-size:10px;font-weight:700;color:var(--dim);
+    opacity:.85}
+  .brk-t .nm{flex:1 1 auto;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;color:var(--ink)}
+  .brk-t .yr{flex:0 0 auto;font-size:10px;color:var(--dim);opacity:.8}
+  .brk-t.tbd .nm{color:var(--dim);font-weight:500;font-style:italic;font-size:11px}
+  .brk-t.won{background:rgba(16,185,129,.13)}
+  .brk-t.won .nm{color:#a7f3d0}
+  .brk-t.won .sd{color:#6ee7b7}
+  .brk-t.out{opacity:.42}
+  .brk-t.me .nm{color:#fde68a;font-weight:800;letter-spacing:.04em}
+  .brk-t.me.won .nm{color:#fde68a}
+  @media(prefers-reduced-motion:no-preference){
+    .brk-t.won{animation:brkWin .42s ease both}
+    @keyframes brkWin{from{background:rgba(16,185,129,.42)}to{background:rgba(16,185,129,.13)}}
+  }
+  .brk-note{margin:2px 0 0;text-align:center;color:var(--dim);font-family:var(--fb);
+    font-size:13.5px;line-height:1.4;min-height:19px}
+  /* Wide enough for all four, so centre them. The rail stays scrollable rather than
+     going overflow-x:visible, because a box with overflow-y:hidden computes a visible
+     overflow-x back to auto anyway: asking for it just moved the scrollbar out of the
+     stylesheet and into the layout, where it kept a leftover scroll offset from the
+     narrow screen and clipped the first round.
+     The columns are sized by share of the rail rather than by a fixed width, because a
+     fixed one that fits the page today stops fitting the moment the page gutter changes,
+     and the failure is the championship hanging off the edge unreachable. */
+  @media(min-width:760px){.brk{justify-content:center;gap:8px}
+    .brk-col,.brk-col.live{flex:1 1 0;width:auto;min-width:0;max-width:172px}}
+
   /* ── seed CTA ───────────────────────────────────────────────── */
   .seed-cta{margin-top:16px;padding:15px 18px;font-size:17px;border-radius:13px;
     background:linear-gradient(170deg,#10b981,#047857);box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
@@ -2991,6 +3048,27 @@ or endorsed by the NCAA, the CFP or any school.
     </div>
   </div>
 
+  <!-- s-brk (the bracket, between rounds) -->
+  <!-- The field, drawn once on Selection Sunday and walked forward a round at a
+       time: the other games resolve on screen one by one, and when the player's
+       own is the last one left the whistle hands off to s-po and it is played
+       out with the field and the score log like any other. -->
+  <div class="screen" id="s-brk">
+    <div class="seed-hero">
+      <div class="eyebrow" id="brk-eyebrow">College Football Playoff</div>
+      <!-- Not .seed-rec: that is sized for "12-1" and "National Championship" set in
+           it runs off a phone twice over. -->
+      <h2 class="display brk-title" id="brk-round">First Round</h2>
+    </div>
+    <div class="brk-wrap">
+      <div class="brk" id="brk-rail" role="group" aria-label="College Football Playoff bracket"></div>
+    </div>
+    <p class="brk-note" id="brk-note"></p>
+    <div style="margin-top:10px;text-align:center">
+      <button class="btn-text" id="b-brk-fast">Sim to the end</button>
+    </div>
+  </div>
+
   <!-- s-po (playoff broadcast) -->
   <div class="screen" id="s-po">
     <div class="gameday" id="po-gameday" style="display:none"><span id="po-gdtext"></span></div>
@@ -3263,8 +3341,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=26"></script>
-<script src="run.js?v=12"></script>
+<script src="engine.js?v=27"></script>
+<script src="run.js?v=13"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
@@ -3564,7 +3642,7 @@ let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,la
 /* The screens a game is actually being played out on. They run a live scoreboard near the
    bottom edge, which is where the fixed ad strip sits, and they are the one part of this
    that asks for undivided attention. */
-const NO_ADS=['s-load','s-season','s-po','s-bowl'];
+const NO_ADS=['s-load','s-season','s-po','s-bowl','s-brk'];
 function show(id){
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
@@ -3854,8 +3932,8 @@ function pfHub(){
        earn a place on the front; titles, playoffs and best rank are one tap away in the
        case, where they have always lived. */
     '<div class="pfstats">'+
-      '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Seasons played</span></div>'+
-      '<div class="pfstat"><b id="pf-best">&mdash;</b><span>Best overall</span></div>'+
+      '<div class="pfstat"><b id="pf-runs">&hellip;</b><span>Seasons played</span></div>'+
+      '<div class="pfstat"><b id="pf-best">&hellip;</b><span>Best overall</span></div>'+
     '</div>'+
     '<div class="pfnav">'+
       pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record')+
@@ -6312,7 +6390,7 @@ function openBoxScore(r){
       '<span class="bsc">'+p.clock+'</span>'+
       '<span class="bsw">'+esc(p.team==='you'?'YOU':oppAbbr)+'</span>'+
       '<span class="bsk">'+(KIND[p.kind]||p.kind)+(p.note?' &middot; '+esc(p.note):'')+'</span>'+
-      '<span class="bss">'+p.you+'&ndash;'+p.them+'</span></div>';
+      '<span class="bss">'+p.you+'-'+p.them+'</span></div>';
   }
   if(!summary) summary='<div class="bsnone">A defensive slugfest. Nobody found the end zone.</div>';
   $('sheet-in').innerHTML=
@@ -6338,8 +6416,15 @@ function openBoxScore(r){
    back into free play, which is the one thing that would make the mode feel like
    it had not stuck. */
 let nextConference=null;
+/* PS_CFB_SEED FIXES THE RUN, and nothing in the game sets it. The postseason is the
+   part of this that is hardest to reach on purpose: a good roster makes the playoff
+   about one season in six, so a test that drafts and plays until it lands in a
+   bracket is a test that fails at random. With the seed pinned the same run comes
+   out every time and the bracket can be driven end to end. */
 function newRun(){
-  run=R.createRun({seed:E.hashSeed(String(Date.now())+Math.random()),
+  const forced=typeof window!=='undefined'?window.PS_CFB_SEED:null;
+  run=R.createRun({seed:forced!=null?Number(forced)
+    :E.hashSeed(String(Date.now())+Math.random()),
     conference:nextConference});
   lastChem=1;
 }
@@ -7181,6 +7266,7 @@ $('b-sim').onclick=()=>fastForward();
 
 function after(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf);
+  stopBracket();
   cancelAnimationFrame(raceRaf); raceRaf=0;
   if(run.phase===R.PHASES.SEEDING){
     paintSeed();
@@ -7536,7 +7622,13 @@ function playPlayoffGame(r,afterFn){
   youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',them.bg);
   themEl.style.setProperty('--tcol2',them.accent||'rgba(255,255,255,.3)');
-  const poRk=teamRank(r.opponent_id);
+  /* THE NUMBER BESIDE THE OPPONENT IS THEIR SEED IN THIS BRACKET. It used to be where
+     that team finished in its OWN real season, which is a different number about a
+     different competition, and it is what put a "#4" opposite a four seed and had a
+     player reporting that they had been drawn against themselves. The two are the same
+     number for a team in the field, but only by coincidence, and the coincidence was
+     the bug. The old ranking is still the fallback for a run with no bracket. */
+  const poRk=r.opponentSeed||teamRank(r.opponent_id);
   setTeamCode(youEl,'YOU',null);
   setTeamCode(themEl,opp?E.teamColors(opp).abbreviation:'OPP',opp?opp.season:null);
   /* YOUR SEED GOES NEXT TO YOUR RECORD, the way the opponent's ranking does. It
@@ -7659,17 +7751,173 @@ function playPlayoffGame(r,afterFn){
   next();
 }
 
+/* ── the bracket between rounds ──────────────────────────────────
+   Twelve teams, four rounds, walked forward one round at a time. The engine has
+   already settled a whole round by the time this draws it, so what is animated
+   here is the REVEAL and not the result: games flip to their winner one after
+   another, the player's is held back to last, and when it is the only one left
+   the screen hands off to the broadcast. Nothing here decides anything. */
+/* Three names for the same four rounds, because three places need different lengths:
+   the title over the bracket, the heading over a column 150px wide, and a sentence. */
+const BRK_HEADS=['First Round','Quarterfinals','Semifinals','National Championship'];
+const BRK_COLS=['First Round','Quarterfinals','Semifinals','Championship'];
+const BRK_SHORT=['First Round','Quarterfinal','Semifinal','National Championship'];
+const BRK_STEP=620, BRK_LEAD=760, BRK_TAIL=620;
+let brkShown=new Set(), brkTimer=null;
+
+const brkKey=(r,i)=>r+':'+i;
+function brkFirstRound(){
+  return E.PLAYOFF_ROUND_NAMES.length-((run.playoffSeed&&run.playoffSeed.rounds)||4);
+}
+/* One side of one game. A seat with no team in it yet is the winner of a game that
+   has not been played, and it says so rather than sitting blank. */
+function brkSeat(e,st,fed){
+  /* "fed" marks a seat whose occupant has to win a game to get there, as against a seed
+     that is simply in that round: the one seed sits in the quarterfinal from the start,
+     the other side of that game does not. It is the difference between a bracket drawn
+     ahead and a bracket giving results away, so it is in the markup and tested on. */
+  const f=fed?' fed':'';
+  if(!e) return '<div class="brk-t tbd'+f+'"><span class="sd"></span>'+
+    '<span class="nm">'+esc(st||'TBD')+'</span></div>';
+  if(e.you){
+    return '<div class="brk-t me'+f+(e.mark||'')+'"><span class="sd">'+e.seed+'</span>'+
+      '<span class="nm">Your team</span></div>';
+  }
+  const t=e.team, c=t?E.teamColors(t):null;
+  /* The season is written with the apostrophe on it. Two digits on their own, hard right
+     in a row that already has a number hard left, read as a score, and a bracket showing
+     scores for games nobody has played is worse than showing nothing. */
+  return '<div class="brk-t'+f+(e.mark||'')+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(c?(c.abbreviation||t.school||'TBD'):'TBD')+'</span>'+
+    '<span class="yr">'+(t&&t.season?'&rsquo;'+esc(String(t.season).slice(2)):'')+'</span></div>';
+}
+/* The pairings for one round AS THIS SCREEN IS ALLOWED TO KNOW THEM, which is not the
+   same as what the engine knows. The engine settles a whole round in one call, the
+   player's game included, so reading the bracket straight off it filled the semifinal in
+   with the survivor of a quarterfinal the player had not been shown yet: the result of
+   your own game, printed one column to the right, before you played it. A team only
+   moves up here once the game that sent it there has been revealed. */
+function brkGames(r){
+  if(!run.bracket) return [];
+  const F=run.bracket.field;
+  const won=(i)=>{
+    const g=(run.bracket.rounds[r-1]||[])[i];
+    return g&&brkShown.has(brkKey(r-1,i))?(g.winner||null):null;
+  };
+  let pairs;
+  if(r===0) pairs=E.BRACKET.first.map(([a,b])=>[F[a],F[b]]);
+  else if(r===1) pairs=E.BRACKET.quarter.map(([s,g])=>[F[s],won(g)]);
+  else if(r===2) pairs=E.BRACKET.semi.map(([a,b])=>[won(a),won(b)]);
+  else pairs=[[won(0),won(1)]];
+  return pairs.map(([a,b],i)=>{
+    const g=(run.bracket.rounds[r]||[])[i];
+    const open=brkShown.has(brkKey(r,i));
+    return {a:a||null,b:b||null,open,
+      winner:open&&g?g.winner:null,
+      yours:g?!!g.yours:!!((a&&a.you)||(b&&b.you))};
+  });
+}
+function paintBracket(live){
+  const rail=$('brk-rail');
+  let html='';
+  for(let r=0;r<4;r++){
+    const games=brkGames(r);
+    html+='<div class="brk-col'+(r===live?' live':'')+'">'+
+      '<div class="brk-h">'+esc(BRK_COLS[r])+'</div>';
+    games.forEach((g,i)=>{
+      const won=(s)=>{
+        if(!g.open||!g.winner||!s) return '';
+        return g.winner===s?' won':' out';
+      };
+      const a=g.a?{...g.a,mark:won(g.a)}:null;
+      const b=g.b?{...g.b,mark:won(g.b)}:null;
+      /* A seat still to be won into says which game it is waiting on, so an empty
+         quarterfinal reads "5/12 winner" rather than a blank row or a line of text too
+         long for the box. */
+      const feeder=r===1?E.BRACKET.first[E.BRACKET.quarter[i][1]]:null;
+      const st=feeder?feeder[0]+'/'+feeder[1]+' winner'
+        :r===2?'QF winner':r===3?'SF winner':'TBD';
+      html+='<div class="brk-g'+(r===live&&!g.open?' live':'')+(g.yours?' yours':'')+'">'+
+        brkSeat(a,st,r>=2)+brkSeat(b,st,r>=1)+'</div>';
+    });
+    html+='</div>';
+  }
+  rail.innerHTML=html;
+  const col=rail.children[live];
+  if(col&&col.scrollIntoView) col.scrollIntoView({block:'nearest',inline:'center',
+    behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  $('brk-round').textContent=BRK_HEADS[live]||'Playoffs';
+}
+/* Reveal the unshown games of a round, one after another, then call back. `mine`
+   decides whether the player's own game is part of it: it is held back before the
+   broadcast and revealed after it. */
+function revealBracket(r,mine,note,done){
+  /* Queued off the ENGINE's round rather than brkGames(), which deliberately reports no
+     winner for anything still unrevealed and so would queue nothing at all. */
+  const settled=(run.bracket&&run.bracket.rounds[r])||[];
+  const queue=[];
+  settled.forEach((g,i)=>{
+    if(brkShown.has(brkKey(r,i))) return;
+    if(!mine&&g.yours) return;
+    if(!g.winner) return;
+    queue.push(i);
+  });
+  $('brk-note').textContent=note||'';
+  show('s-brk');
+  paintBracket(r);
+  let n=0;
+  const tick=()=>{
+    if(n>=queue.length){ brkTimer=setTimeout(done,BRK_TAIL); return; }
+    brkShown.add(brkKey(r,queue[n++]));
+    paintBracket(r);
+    brkTimer=setTimeout(tick,BRK_STEP);
+  };
+  brkTimer=setTimeout(tick,BRK_LEAD);
+}
+function stopBracket(){ clearTimeout(brkTimer); brkTimer=null; }
+
 function runPlayoffs(){
+  brkShown=new Set();
+  const first=brkFirstRound();
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){after();return;}
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
     paintCalendar(r);
-    playPlayoffGame(r,step);
+    const br=run.bracketRound!=null?run.bracketRound:first;
+    if(!run.bracket){ playPlayoffGame(r,step); return; }
+    /* The rest of the round first, then yours. The engine settled them together;
+       the order they are shown in is this screen's to choose, and a player wants
+       to see the bracket fill in around them before they take the field.
+       THE FINAL IS ONE GAME AND IT IS YOURS, so there is no rest of it to show and
+       nothing after it to go on to: both lines have to know that or the title arrives
+       under "on to the next round". */
+    const others=((run.bracket.rounds[br]||[]).filter(g=>!g.yours&&g.winner)).length
+      -[...brkShown].filter(k=>k.indexOf(br+':')===0).length;
+    const lead=others>0?'The rest of the '+(BRK_SHORT[br]||'round').toLowerCase()+'.'
+      :'The '+(BRK_SHORT[br]||'round').toLowerCase()+' is set.';
+    revealBracket(br,false,lead,()=>{
+      $('brk-note').textContent='You are up.';
+      brkTimer=setTimeout(()=>{
+        playPlayoffGame(r,()=>{
+          const after=!r.won?'Your season ends here.'
+            :BRK_SHORT[br+1]?'On to the '+BRK_SHORT[br+1].toLowerCase()+'.'
+              :'National champions.';
+          revealBracket(br,true,after,step);
+        });
+      },900);
+    });
   };
-  step();
+  /* A BYE SEED WATCHES THE FIRST ROUND. startPlayoffs has already played it, so
+     this is the one stretch of the postseason with no game of the player's in it. */
+  if(first>0&&run.bracket){
+    revealBracket(0,false,'You have the first round off.',()=>step());
+  }else{
+    step();
+  }
 }
 
 $('b-po-fast').onclick=()=>{if(poSkip) poSkip();};
+$('b-brk-fast').onclick=()=>{stopBracket();show('s-season');fastForward();};
 
 /* ── bowl broadcast ──────────────────────────────────────────────
    A single neutral-site game on its own screen, played the way a playoff round
@@ -8818,7 +9066,7 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
   const cr={v:1,a:challengeTeam,b:teamBlob()};
   const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
   const who=(challengeTeam.n||'your friend');
-  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'–'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
+  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'-'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
     :('The Challenge Bowl vs '+who+', see how it went: '))+link;
   ga('challenge_result_shared',{won:lastBowl.youWon}); shareTextFile(text,null,'bowl.png'); };
 if($('b-challenge')) $('b-challenge').onclick=async()=>{

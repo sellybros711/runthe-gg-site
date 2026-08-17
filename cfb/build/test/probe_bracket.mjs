@@ -1,20 +1,26 @@
-/* What the postseason does to a roster, measured the same way before and after the
- * bracket goes in.
+/* What the postseason does to a roster, measured the way the game is actually played.
  *
- *   node cfb/build/test/probe_bracket.mjs [--label baseline]
+ *   node cfb/build/test/probe_bracket.mjs [--label whatever]
  *
- * THERE IS NO BRACKET TODAY. generatePlayoffs draws a LADDER of four opponents by
- * strength -- a nine-or-ten-win team, then two eleven-win teams, then one of the best
- * seasons in the data -- and playoffOpponent hands you the next rung each round. Nothing
- * tracks who else is in the field, nothing advances, and the seed beside the opponent on
- * the scoreboard is that team's rank in its OWN real season, which is why a four seed can
- * appear to play a four seed.
+ * THERE IS A BRACKET NOW. What it replaced was a LADDER: generatePlayoffs drew four
+ * opponents by strength, a nine-or-ten-win team, then two eleven-win teams, then one of
+ * the best seasons in the data, and playoffOpponent handed you the next rung each round.
+ * Nothing tracked who else was in the field, nothing advanced, and the number beside the
+ * opponent on the scoreboard was that team's rank in its OWN real season, which is how a
+ * four seed came to appear against a four seed.
  *
- * Replacing that ladder with a real twelve-team bracket changes who you meet and when,
- * and this game's title and perfect-season rates have been tuned twice already against
- * the ladder's exact shape. So this measures the rates first, and the same numbers have
- * to come back after. Anything else is a difficulty change smuggled in behind a
- * formatting fix.
+ * This measured the ladder's rates before that went in, and the same numbers had to come
+ * back after, because anything else is a difficulty change smuggled in behind a
+ * formatting fix. They did:
+ *
+ *   ladder    playoff 17.42%   bye 4.65%   title 0.24%   perfect 0.06%
+ *   bracket   playoff 17.42%   bye 4.65%   title 0.20%   perfect 0.06%
+ *
+ * READ THOSE TITLE FIGURES WITH CARE. At this sample size a 0.24% rate is about sixteen
+ * titles, so the gap above is four events wide and means nothing on its own. The reading
+ * that settled it is tune_bracket.mjs, which holds the rosters and runs 57,200 seasons a
+ * candidate: ladder 0.217%, bracket 0.215%, a difference of one title. Use this file to
+ * see the postseason a real run walks through, and that one to tune anything.
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -93,21 +99,37 @@ for (const [name, pick] of Object.entries(STRATS)) {
 }
 
 /* And the thing a player can see with their own eyes: who they are actually put in front
-   of. Under the ladder this is a strength tier and nothing else. */
-console.log('\n=== who a top-four seed meets, over 400 brackets ===');
-const rng0 = E.createSeededRNG(E.hashSeed('who'));
-const byRound = [{}, {}, {}, {}];
-for (let i = 0; i < 400; i++) {
-  const po = E.generatePlayoffs(data.prepared, rng0);
-  po.forEach((t, idx) => {
-    const w = Number(String(t.record).split('-')[0]) || 0;
-    byRound[idx][w] = (byRound[idx][w] || 0) + 1;
+   of, by SEED, which under the ladder was not a question that could be asked. Walked as a
+   winner every time, so every round has somebody in it. */
+console.log('\n=== who a four seed meets, over 400 brackets ===');
+{
+  const rng0 = E.createSeededRNG(E.hashSeed('who'));
+  const MINE = 4;
+  const rounds = E.CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE;
+  const first = E.PLAYOFF_ROUND_NAMES.length - rounds;
+  const bySeed = [{}, {}, {}, {}];
+  const byWins = [{}, {}, {}, {}];
+  for (let i = 0; i < 400; i++) {
+    const br = E.buildBracket(data.prepared, rng0, MINE);
+    E.openBracket(br, first, rng0);
+    for (let r = 0; r < rounds; r++) {
+      const opp = E.bracketPending(br, first + r);
+      if (opp) {
+        bySeed[first + r][opp.seed] = (bySeed[first + r][opp.seed] || 0) + 1;
+        const w = Number(String(opp.team && opp.team.record).split('-')[0]) || 0;
+        byWins[first + r][w] = (byWins[first + r][w] || 0) + 1;
+      }
+      E.advanceBracket(br, first + r, true, rng0);
+    }
+  }
+  const share = (h) => {
+    const tot = Object.values(h).reduce((a, b) => a + b, 0) || 1;
+    return Object.keys(h).map(Number).sort((a, b) => a - b)
+      .map((k) => k + ' ' + (100 * h[k] / tot).toFixed(0) + '%').join(', ');
+  };
+  E.PLAYOFF_ROUND_NAMES.forEach((n, i) => {
+    if (i < first) { console.log('  ' + n.padEnd(18) + 'bye'); return; }
+    console.log('  ' + n.padEnd(18) + 'seeds: ' + share(bySeed[i]));
+    console.log('  ' + ''.padEnd(18) + 'wins:  ' + share(byWins[i]));
   });
 }
-const NAMES = E.playoffRoundNames(4);
-byRound.forEach((h, i) => {
-  const tot = Object.values(h).reduce((a, b) => a + b, 0);
-  const wins = Object.keys(h).map(Number).sort((a, b) => a - b);
-  console.log('  ' + NAMES[i].padEnd(18)
-    + wins.map((w) => w + '-win ' + (100 * h[w] / tot).toFixed(0) + '%').join(', '));
-});

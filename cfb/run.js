@@ -208,6 +208,10 @@ function createRun(opts) {
     playoffs: null,
     season: null,
     playoffSeed: null,
+    // The twelve-team field, built on Selection Sunday. Null until then, and null all
+    // season for a run that does not make it.
+    bracket: null,
+    bracketRound: null,
     outcome: null,
     bowlInfo: null,
   };
@@ -440,11 +444,19 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   }
 
   const playoff = run.phase === PHASES.PLAYOFFS;
-  const oppId = playoff
-    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
-    : run.schedule[s.week];
-  const opp = data.byTeamSeasonId[oppId];
+  /* WHERE THIS GAME SITS IN THE TWELVE-TEAM BRACKET, which is not where it sits in the
+     player's own postseason: a bye seed plays three games and the first of them is the
+     bracket's second round. run.playoffs, the old strength ladder, is still read when
+     there is no bracket, so an older caller keeps working. */
+  const bracketRound = playoff
+    ? E.PLAYOFF_ROUND_NAMES.length - run.playoffSeed.rounds + s.playoffRound : 0;
   const rng = rngFor(run);
+  if (playoff && run.bracket) E.openBracket(run.bracket, bracketRound, rng);
+  const seat = playoff && run.bracket ? E.bracketPending(run.bracket, bracketRound) : null;
+  const oppId = !playoff ? run.schedule[s.week]
+    : seat && seat.team ? seat.team.team_season_id
+      : E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound);
+  const opp = data.byTeamSeasonId[oppId];
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
   // Seeding carries into the bracket: the top seeds host early and are the
   // higher seed after that, and by the semifinal the field is neutral.
@@ -470,6 +482,10 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     playoff,
     opponent: opp.display,
     opponent_id: oppId,
+    /* THE OPPONENT'S SEED IN THIS BRACKET, which is the whole of the four-plays-a-four
+       complaint: what used to be printed there was where that team finished in its own
+       real season, so two unrelated fours could sit either side of the scoreboard. */
+    opponentSeed: seat ? seat.seed : null,
     won: r.won,
     yourScore: Math.round(r.yourScore * 10) / 10,
     oppScore: Math.round(r.oppScore * 10) / 10,
@@ -479,6 +495,12 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   s.results.push(result);
 
   if (playoff) {
+    /* Settle the whole round, the player's game included, before moving on. Everything
+       else in it is decided here in one go and the screen reveals it a game at a time. */
+    if (run.bracket) {
+      E.advanceBracket(run.bracket, bracketRound, r.won, rng);
+      run.bracketRound = bracketRound;
+    }
     s.playoffRound++;
     if (!r.won) {
       finish(run, { eliminatedIn: roundName });
@@ -507,6 +529,14 @@ function advanceWeek(run, data, leagueContext, displayCal) {
         regularRecord: s.wins + '-' + s.losses,
       };
       run.phase = PHASES.SEEDING;
+      /* THE FIELD IS SET ON SELECTION SUNDAY, not one game at a time, because that is
+         when a player is shown it. The other eleven are drawn here against the seed just
+         earned, and nothing in it is resolved yet: the first round is played when the
+         postseason starts, so the bracket on the seeding screen is the empty one. */
+      if (seed.made) {
+        run.bracket = E.buildBracket(data.prepared, rngFor(run), seed.seed);
+        run.bracketRound = null;
+      }
       if (!seed.made && !seed.bowl) {
         finish(run, { missedPlayoffs: true });
       } else if (!seed.made && seed.bowl) {
@@ -523,6 +553,13 @@ function advanceWeek(run, data, leagueContext, displayCal) {
 function startPlayoffs(run) {
   if (run.phase !== PHASES.SEEDING) throw new Error('not at seeding');
   if (!run.playoffSeed.made) throw new Error('did not make the playoffs');
+  /* A BYE SEED WATCHES THE FIRST ROUND. Their quarterfinal is against the winner of one
+     of those games, so it has to be played before anybody can be asked who that is, and
+     playing it here rather than inside the first game means the screen can show it. */
+  if (run.bracket) {
+    E.openBracket(run.bracket, E.PLAYOFF_ROUND_NAMES.length - run.playoffSeed.rounds,
+      rngFor(run));
+  }
   run.season.playoffRound = 0;
   run.phase = PHASES.PLAYOFFS;
   return run;

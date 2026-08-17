@@ -208,6 +208,42 @@ const CONSTANTS = {
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
+  /* HOW HARD THE FIELD IS, which is a separate question from how hard each game is.
+     buildBracket deals the other eleven seats out of three pools by seed: the top
+     BRACKET_ELITE_SEEDS come from the best seasons in the data, everything down to
+     BRACKET_GREAT_SEEDS from eleven-win teams, the rest from nine and ten-win ones. So
+     at 1 and 7: one all-time season at the top, eleven-win teams down to the seven seed,
+     and a nine or ten-win team in each of the last five seats, which is what a twelve
+     seed is in the real thing.
+
+     THESE TWO NUMBERS ARE WHY NO PIVOT ABOVE HAD TO MOVE. The bracket replaced a strength
+     ladder that put exactly one all-time season in a player's way, always in the final,
+     and nothing better than an eleven-win team before it. Filling all four bye seats from
+     that same top pool put two of them in front of anybody who reached the semifinal, and
+     the title rate fell by half. Tuning it back with the pivots was not possible: they
+     bottom out on ROUND_EDGE_MIN for exactly the rosters that reach a final, so four
+     settings in a row measured the same. The field is the lever, not the games.
+
+     MEASURED, at 57,200 seasons a candidate, against the ladder run over the same ones:
+
+       the old ladder    title 0.217%   from a bye 2.68%
+       1 elite, 7 great  title 0.215%   from a bye 3.65%     <- shipped
+       1 elite, 6 great  title 0.253%
+       2 elite, 6 great  title 0.203%
+       4 elite, 8 great  title 0.112%   the first cut, half the old rate
+
+     A title is as hard as it was, to within one title in fifty-seven thousand seasons.
+     What did move is that a bye is worth more, which is the bracket being real rather
+     than a difficulty change: on a ladder the top seed skipped a rung, in a bracket it
+     skips a rung AND gets the weakest survivor. Re-measure with tune_bracket.mjs after
+     any change here, and read the title column rather than the perfect one, which is
+     counted in the tens and is noise at this sample size. */
+  BRACKET_ELITE_SEEDS: 1,
+  BRACKET_GREAT_SEEDS: 7,
+  /* Off means playRun falls back to the old strength ladder. Nothing ships with this
+     off; it is here so the ladder's rates can still be measured at full sample size,
+     which is the only honest thing to tune the bracket against. */
+  BRACKET_ENABLED: true,
   /* BOWL ELIGIBILITY IS SIX WINS, the way it is in real college football: win half
      your games and you have earned a bowl. Which bowl is set by where you finish
      in the country, not by your record, so a strong team that just missed the
@@ -1616,9 +1652,10 @@ function pickFrom(pool, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
-/* The four opponents a bracket can put in front of you, weakest first: a nine or
-   ten win team in the first round, then a conference winner, then two of the
-   best seasons in the game. A top-four seed never meets the first of them. */
+/* THE OLD LADDER, kept as the fallback for a caller with no bracket: four opponents by
+   strength, weakest first, a nine or ten win team in the first round, then a conference
+   winner, then two of the best seasons in the game, with a top-four seed never meeting
+   the first of them. buildBracket below is what a real run walks through now. */
 function generatePlayoffs(data, rng, opts = {}) {
   const { goodPool, greatPool, elitePool } = data;
   const elite = elitePool.length ? elitePool : greatPool;
@@ -1639,12 +1676,180 @@ function generatePlayoffs(data, rng, opts = {}) {
   return count ? ladder.slice(ladder.length - Math.min(count, ladder.length)) : ladder;
 }
 
-/* Read the ladder from the back, so a team playing three rounds starts at the
+/* Read that ladder from the back, so a team playing three rounds starts at the
    quarterfinal and a team playing four starts at the first round. */
 function playoffOpponent(playoffs, rounds, roundIdx) {
   if (!playoffs || !playoffs.length) return null;
   const start = Math.max(0, playoffs.length - (rounds || playoffs.length));
   return playoffs[Math.min(start + roundIdx, playoffs.length - 1)];
+}
+
+// ─── the bracket ────────────────────────────────────────────────────────────
+
+/*
+ * A REAL TWELVE-TEAM FIELD, because the ladder above is not one and this replaced it.
+ *
+ * What the ladder did was hand you the next rung by STRENGTH: a nine-or-ten-win team,
+ * then two eleven-win teams, then one of the best seasons in the data. Nobody else was in
+ * the field, nothing advanced, and there was no sense in which a seed played another seed.
+ * On screen that produced a four seed apparently drawn against a four seed, which is what
+ * a player reported: their own "#4" is a bracket seed and the opponent's "#4" is where
+ * that team finished in its OWN real season, and the two collided by coincidence.
+ *
+ * THE SHAPE IS THE REAL ONE. Seeds one to four have the first round off.
+ *
+ *   First round   5v12   6v11   7v10   8v9
+ *   Quarterfinal  1 vs W(8/9)      2 vs W(7/10)     3 vs W(6/11)     4 vs W(5/12)
+ *   Semifinal     W(1/8/9) vs W(4/5/12)             W(2/7/10) vs W(3/6/11)
+ *   Final         the two survivors
+ *
+ * So a four seed's quarterfinal is the 5/12 winner and never another four, which is the
+ * whole of the complaint.
+ */
+const BRACKET = {
+  /* Seed pairs, in bracket order. Index is the game number within the round. */
+  first: [[5, 12], [6, 11], [7, 10], [8, 9]],
+  /* Each quarterfinal is a bye seed against the winner of one first-round game, named by
+     that game's index above. */
+  quarter: [[1, 3], [2, 2], [3, 1], [4, 0]],
+  /* Each semifinal is two quarterfinal winners, by quarterfinal index. */
+  semi: [[0, 3], [1, 2]],
+};
+
+/*
+ * THE OTHER ELEVEN, seeded so the number means something. A one seed has to be a better
+ * season than a twelve or the bracket reads as broken the first time anybody looks at it,
+ * so the field is drawn from the same pools the ladder used and dealt out in strength
+ * order: the top from the best seasons in the data, the middle from eleven-win teams,
+ * the bottom from nine and ten-win teams.
+ *
+ * WHERE THE TIERS BREAK IS A DIFFICULTY SETTING, not a detail, and it is the one this
+ * change turns on. The ladder it replaced put exactly one of the best seasons in the data
+ * in a player's way, in the final, and nothing better than an eleven-win team before it.
+ * A bracket puts a whole field in the way instead, so if the top four seats are all drawn
+ * from that same top pool, a bye seed has to beat two of them back to back and the title
+ * gets much harder without anybody having decided that it should. BRACKET_ELITE_SEEDS is
+ * how many seats come out of the top pool; see the note on it in CONSTANTS.
+ *
+ * YOUR SEED IS YOUR RANK, and it is left empty here rather than filled, because the
+ * roster in that slot is the player's own and does not come out of a pool.
+ */
+function buildBracket(data, rng, yourSeed, constants = CONSTANTS) {
+  const { goodPool, greatPool, elitePool } = data;
+  const elite = elitePool.length ? elitePool : greatPool;
+  const great = greatPool.length ? greatPool : goodPool;
+  const good = goodPool.length ? goodPool : greatPool;
+  const topN = constants.BRACKET_ELITE_SEEDS;
+  const midN = constants.BRACKET_GREAT_SEEDS;
+  const poolFor = (seed) => (seed <= topN ? elite : seed <= midN ? great : good);
+
+  const used = new Set();
+  const field = {};
+  for (let seed = 1; seed <= constants.PLAYOFF_TEAMS; seed++) {
+    if (seed === yourSeed) { field[seed] = { seed, you: true, team: null }; continue; }
+    /* Nobody twice in one bracket, which a straight pick from a pool will do often
+       enough to be noticed on a screen that lists all twelve. */
+    let team = null;
+    for (let tries = 0; tries < 24; tries++) {
+      const t = pickFrom(poolFor(seed), rng);
+      if (t && !used.has(t.team_season_id)) { team = t; break; }
+    }
+    if (!team) team = pickFrom(poolFor(seed), rng);
+    if (team) used.add(team.team_season_id);
+    field[seed] = { seed, you: false, team };
+  }
+  return { field, rounds: [[], [], [], []], yourSeed };
+}
+
+/* Two seeds meet: the better one wins more often, and the gap decides how much more. The
+   strength each carries is its own season's z-score, so a twelve seed beating a five is
+   about as likely here as it is in the real thing rather than a coin flip. */
+function bracketFavourite(a, b, rng) {
+  const z = (e) => (e && e.team ? (e.team.strength_z || 0) : 0);
+  /* The seed itself carries weight beyond the two seasons' z-scores, because a bracket
+     that ignored it would put a nine seed through as often as a one. */
+  const edge = (b.seed - a.seed) * 0.06 + (z(a) - z(b)) * 0.55;
+  const pA = 1 / (1 + Math.exp(-edge));
+  return rng() < pA ? a : b;
+}
+
+/* Who meets who in a round, read off the shape above and the round before it. Both the
+   drawing of a round and the resolving of it go through here, because the one thing that
+   must never differ is who the game was between. */
+function bracketPairs(bracket, roundIdx) {
+  const F = bracket.field;
+  const prev = (i) => ((bracket.rounds[roundIdx - 1] || [])[i] || {}).winner;
+  if (roundIdx === 0) return BRACKET.first.map(([a, b]) => [F[a], F[b]]);
+  if (roundIdx === 1) return BRACKET.quarter.map(([s, g]) => [F[s], prev(g)]);
+  if (roundIdx === 2) return BRACKET.semi.map(([a, b]) => [prev(a), prev(b)]);
+  return [[prev(0), prev(1)]];
+}
+
+/* Whether a round is one the player is in. A bye seed is in three of the four, and the
+   rounds they are not in still have to be played by somebody. */
+function bracketYourRound(bracket, roundIdx) {
+  return bracketPairs(bracket, roundIdx).some(([a, b]) => (a && a.you) || (b && b.you));
+}
+
+/*
+ * PLAY THE ROUNDS THE PLAYER IS NOT IN. A bye seed enters at the quarterfinal, and a
+ * quarterfinal is against the winner of a first-round game: ask for that pairing with the
+ * first round still empty and the opponent is nobody. That is not a hypothetical, it is
+ * what the first cut of this did for all four bye seeds, every time.
+ *
+ * Call this before asking who a player's opponent is, and advanceBracket calls it on the
+ * way past as well, so neither order of use can leave a hole.
+ */
+function openBracket(bracket, roundIdx, rng) {
+  for (let r = 0; r < roundIdx; r++) {
+    if ((bracket.rounds[r] || []).length) continue;
+    /* Never settle the player's own game as a side effect: if theirs is the unplayed one
+       then the caller has skipped a round, and guessing that result would be worse than
+       the empty pairing this is here to prevent. */
+    if (bracketYourRound(bracket, r)) break;
+    advanceBracket(bracket, r, false, rng);
+  }
+  return bracket;
+}
+
+/* Everything in one round that is not the player's game. `youWon` settles theirs, so the
+   bracket can be walked forward one round at a time and drawn between them. */
+function advanceBracket(bracket, roundIdx, youWon, rng) {
+  openBracket(bracket, roundIdx, rng);
+  bracket.rounds[roundIdx] = bracketPairs(bracket, roundIdx).map(([a, b]) => {
+    if (!a || !b) return { a: a || null, b: b || null, winner: a || b || null };
+    const mine = a.you || b.you;
+    const winner = mine
+      ? (youWon ? (a.you ? a : b) : (a.you ? b : a))
+      : bracketFavourite(a, b, rng);
+    return { a, b, winner, yours: !!mine };
+  });
+  return bracket.rounds[roundIdx];
+}
+
+/* Who the player is put in front of this round, once the round has been resolved, as a
+   bracket ENTRY and not a team-season: the entry carries the opponent's SEED, which is
+   the number that has to appear beside their name. Their `.team` is the season itself.
+   Null on a bye, because a bye seed has no game in round 0. */
+function bracketOpponent(bracket, roundIdx) {
+  const games = (bracket && bracket.rounds[roundIdx]) || [];
+  for (const g of games) {
+    if (!g.yours) continue;
+    return (g.a && g.a.you ? g.b : g.a) || null;
+  }
+  return null;
+}
+
+/* The pairing a player's game WILL be, before the round is resolved, so the opponent can
+   be named on a scoreboard and a bracket drawn with the game still ahead of it. Same
+   shape as bracketOpponent: an entry, so read `.team` for the season and `.seed` for the
+   number. */
+function bracketPending(bracket, roundIdx) {
+  for (const [a, b] of bracketPairs(bracket, roundIdx)) {
+    if (a && a.you) return b || null;
+    if (b && b.you) return a || null;
+  }
+  return null;
 }
 
 function generateBowlOpponent(data, rng, tier) {
@@ -1875,8 +2080,21 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
   if (seed.made) {
     const names = playoffRoundNames(seed.rounds);
+    /* THE BRACKET, BUILT ONCE THE SEED IS KNOWN, because the seed is what a player's slot
+       in it is. Everything else in the field is drawn here so the projection and a real
+       season walk the same twelve teams. `playoffs`, the old strength ladder, is still
+       accepted and still used when a caller has not moved over: see buildBracket. */
+    const bracket = constants.BRACKET_ENABLED !== false && prepared && prepared.goodPool
+      ? buildBracket(prepared, rng, seed.seed, constants) : null;
+    const firstRound = PLAYOFF_ROUND_NAMES.length - seed.rounds;
+    // A bye seed's quarterfinal opponent is a first-round winner, so play that round.
+    if (bracket) openBracket(bracket, firstRound, rng);
     for (let i = 0; i < seed.rounds; i++) {
-      const opp = playoffOpponent(playoffs, seed.rounds, i);
+      /* Asked BEFORE the game and settled after, so the bracket records what really
+         happened rather than assuming the player through. The pending call hands back a
+         bracket entry, so the season itself is one step in. */
+      const pending = bracket ? bracketPending(bracket, firstRound + i) : null;
+      const opp = (pending && pending.team) || playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 25;
       /* EVERY ROUND is scaled to the roster in front of it, on its own pivot, so
          how far a season goes tracks the team rather than the draw. advantage
@@ -1897,6 +2115,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       }
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, bowl: false, round: names[i], ...r });
+      if (bracket) advanceBracket(bracket, firstRound + i, r.won, rng);
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
       if (i === seed.rounds - 1) titleWon = true;
     }
@@ -2012,7 +2231,9 @@ const publicAPI = {
   pairLinks, resolveChemistry,
   generateSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, resolveHeadToHead, playRun, playBowlGame, prepareData, toFootballScore,
-  playoffOpponent, playoffRoundNames,
+  playoffOpponent, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  BRACKET, buildBracket, openBracket, advanceBracket, bracketPairs, bracketYourRound,
+  bracketOpponent, bracketPending, bracketFavourite,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
   teamRating, teamOverall, titleEdge, roundEdge,
   respinCost, respinFees,
