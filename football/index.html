@@ -1204,6 +1204,42 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line-2);border-radius:14px;padding:16px;box-shadow:0 26px 60px -22px #000}
   .tutend-in h2{font-family:var(--fd);font-size:22px;line-height:1.05;margin:6px 0 8px;color:var(--ink)}
 
+  /* ── the fourteen-team bracket ──────────────────────────────────
+     Four columns, one per round, on a rail that scrolls sideways when the screen is not
+     wide enough for all of them. A bracket read left to right is the shape everybody
+     already knows, and squashing it into something else to fit a phone costs the one
+     thing it is for. Same treatment the college game's uses, and the same reasoning. */
+  .nbrk-title{margin:2px 0 0;text-align:center;font-size:clamp(23px,7vw,36px);line-height:1.05}
+  .nbrk-wrap{position:relative;margin-top:12px}
+  /* position so the columns measure from the rail rather than from the wrapper: nbrkFocus
+     reads offsetLeft to scroll the round being played into view, and that is only a stable
+     number when the rail is the offset parent. */
+  .nbrk{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 12px;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .nbrk::-webkit-scrollbar{height:6px}
+  .nbrk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+  .nbrk-col{flex:0 0 152px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px}
+  .nbrk-h{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2);text-align:center;padding-bottom:2px}
+  .nbrk-conf{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:#64748b;margin-top:3px}
+  .nbrk-g{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+  .nbrk-g.live{border-color:rgba(239,68,68,.55);box-shadow:0 0 0 1px rgba(239,68,68,.25)}
+  .nbrk-t{display:flex;align-items:center;gap:6px;padding:6px 7px;font-size:11.5px;
+    color:var(--dim);min-height:28px}
+  .nbrk-t+.nbrk-t{border-top:1px solid var(--line)}
+  .nbrk-t .sd{flex:0 0 15px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim-2)}
+  .nbrk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-weight:700}
+  .nbrk-t .yr{font-size:9.5px;color:var(--dim-2);flex:0 0 auto}
+  .nbrk-t.me .nm{color:#fca5a5}
+  .nbrk-t.won{color:var(--ink)}
+  .nbrk-t.won .nm{font-weight:800}
+  .nbrk-t.out{opacity:.42}
+  .nbrk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
+  .nbrk-note{text-align:center;font-size:12px;color:var(--dim-2);margin:6px 0 0;min-height:16px}
+  @media (max-width:400px){ .nbrk-col{flex:0 0 140px} }
+
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -4659,6 +4695,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="headline" id="headline"></div>
+<!-- s-nbrk: the bracket, between playoff rounds. The field is drawn once and walked
+     forward a round at a time; the other games resolve on screen one after another and
+     when the player's own is the last one left it hands off to the broadcast. -->
+<div class="screen" id="s-nbrk">
+  <div class="seed-hero">
+    <div class="eyebrow" id="nbrk-eyebrow">NFL Playoffs</div>
+    <h2 class="display nbrk-title" id="nbrk-round">Wild Card</h2>
+  </div>
+  <div class="nbrk-wrap">
+    <div class="nbrk" id="nbrk-rail" role="group" aria-label="Playoff bracket"></div>
+  </div>
+  <p class="nbrk-note" id="nbrk-note"></p>
+  <div style="margin-top:8px;text-align:center">
+    <button class="btn-text" id="b-nbrk-fast">Skip to the game</button>
+  </div>
+</div>
+
 <!-- The tutorial coach bar, and the panel that closes it out. -->
 <div class="tut" id="tut" hidden>
   <div class="tut-head"><span class="tut-step" id="tut-step">1 of 6</span>
@@ -5981,14 +6034,288 @@ function paintResultsPromo(){
   }
 }
 
-/* ---- THE FIRST RUN GUIDE ----
-   Shown once per browser, to somebody who has never started a run here. It is the only
-   thing in the game that interrupts before the player has done anything, so it earns that
-   by being the only thing that explains the game at all.
+/* ══ THE PLAYOFF BRACKET ══════════════════════════════════════════════════════
+ * Fourteen teams in the NFL's shape: seven seeds a conference, the top seed on a bye,
+ * three rounds to a conference championship and then the Super Bowl across the middle.
+ * Walked forward a round at a time, the other games flipping to their winners one after
+ * another and the player's held back to last, at which point it hands off to the broadcast.
+ *
+ * IT DECIDES NOTHING. The player's four opponents are the engine's difficulty ladder and
+ * stay exactly that: a good team, a great team, the 2007 Patriots and the 1972 Dolphins,
+ * in that order. The postseason is balanced on that ladder (see finalEdge and
+ * finalRecordEase), so a bracket that picked the opponents instead would quietly rebuild
+ * difficulty. What is drawn here is the field AROUND that path, and the other twelve games
+ * are simulated for the reveal alone.
+ *
+ * TWO PLACES IT IS AUTHORED RATHER THAN DERIVED, both of them consequences of that:
+ *   * the player meets the ladder in ladder order, so where the NFL's reseeding would pair
+ *     them with somebody else, the bracket follows the game that was actually played. The
+ *     reseeding rule still governs every game the player is not in.
+ *   * the 1972 Dolphins were an AFC team and are drawn here as the other conference's top
+ *     seed, because the Super Bowl opponent has to be on the far side of the bracket and
+ *     the ladder always ends with them. The 2007 Patriots keep their real conference, and
+ *     so does every other team in the field.
+ */
+const NBRK_ROUNDS=['Wild Card','Divisional','Conference Championship','Super Bowl'];
+const NBRK_SHORT=['Wild Card','Divisional','Conference','Super Bowl'];
+let nbrk=null;
 
-   IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
-   over it, so the way out of the guide is the thing the guide is telling you to do. Got it
-   dismisses without starting, for somebody who wants to look around first. */
+const nbrkConf=(t)=>t&&t.division?String(t.division).slice(0,3):'AFC';
+
+/* SEEDED ON THE RECORD, the way the real thing is. A bye is the top seed by definition;
+   everybody else is spread across two to seven by how many games they won, so 15-2 is the
+   two seed, 12-5 is the five, and anything at 10-7 or worse scrapes in at seven. */
+function nbrkSeedOf(wins,bye){
+  if(bye) return 1;
+  const w=Math.max(0,Math.min(E.CONSTANTS.REGULAR_SEASON_GAMES,wins|0));
+  if(w>=15) return 2;
+  if(w>=14) return 3;
+  if(w>=13) return 4;
+  if(w>=12) return 5;
+  if(w>=11) return 6;
+  return 7;
+}
+const NBRK_WC=[[2,7],[3,6],[4,5]];
+
+function nbrkBuild(){
+  if(nbrk&&nbrk.forSeed===run.seed&&nbrk.rounds===run.playoffSeed.rounds) return nbrk;
+  const rng=E.createSeededRNG(E.hashSeed(String(run.seed)+'|nflbracket'));
+  const rounds=run.playoffSeed.rounds, bye=!!run.playoffSeed.bye;
+  const ladder=(run.playoffs||[]).slice();
+  const sb=ladder[ladder.length-1]||null;              // the 1972 Dolphins
+  const cc=ladder[ladder.length-2]||null;              // the 2007 Patriots
+  const mySeed=nbrkSeedOf(run.season?run.season.regularWins:0,bye);
+
+  /* The player's conference is the one the championship opponent really belongs to, so
+     that game is a real AFC or NFC final rather than an invented one. */
+  const myConf=nbrkConf(cc);
+  const farConf=myConf==='AFC'?'NFC':'AFC';
+
+  /* Fillers come from the same data the schedule does, strongest first, and they keep
+     their own conference.
+
+     ONE SEASON PER FRANCHISE, which is the whole reason this is tracked by club and not
+     by team_season_id. Every year of every team is its own row, so drawing on strength
+     alone put the 2019 Patriots, the 2006 Patriots and the 2025 Patriots in the same
+     seven-team conference: the strongest rows are the same handful of dynasties over and
+     over. A bracket with three of anybody in it is not a bracket. */
+  const used=new Set(), clubs=new Set();
+  [sb,cc].filter(Boolean).forEach(t=>{ used.add(t.team_season_id); clubs.add(t.franchise); });
+  const pool=(DATA&&DATA.teamSeasons?DATA.teamSeasons:[]).filter(t=>!used.has(t.team_season_id));
+  const take=(conf,n)=>{
+    const c=pool.filter(t=>nbrkConf(t)===conf&&!used.has(t.team_season_id))
+      .sort((a,b)=>(b.strength_z||0)-(a.strength_z||0)).slice(0,60);
+    const out=[];
+    while(out.length<n&&c.length){
+      const t=c.splice(Math.floor(rng()*Math.min(c.length,24)),1)[0];
+      if(clubs.has(t.franchise)) continue;
+      used.add(t.team_season_id); clubs.add(t.franchise); out.push(t);
+    }
+    return out;
+  };
+
+  const near=new Array(8).fill(null), far=new Array(8).fill(null);
+  near[mySeed]={you:true,seed:mySeed};
+  if(cc) near[bye?2:1]={team:cc,seed:bye?2:1};
+  if(sb) far[1]={team:sb,seed:1};
+  const nearFill=take(myConf,7-near.filter(Boolean).length);
+  for(let s2=1,i=0;s2<=7;s2++) if(!near[s2]) near[s2]={team:nearFill[i++]||null,seed:s2};
+  const farFill=take(farConf,7-far.filter(Boolean).length);
+  for(let s2=1,i=0;s2<=7;s2++) if(!far[s2]) far[s2]={team:farFill[i++]||null,seed:s2};
+
+  nbrk={forSeed:run.seed,rounds,bye,mySeed,myConf,farConf,near,far,ladder,
+    revealed:new Set(),results:{}};
+  return nbrk;
+}
+
+/* Which round the player walks in at: everybody plays the Super Bowl, a bye skips the
+   wild card. Same arithmetic the college game uses. */
+function nbrkFirstRound(){ return NBRK_ROUNDS.length-((run.playoffSeed&&run.playoffSeed.rounds)||4); }
+
+/* One simulated game between two seats. Strength decides it, with enough noise that a
+   seven seed can turn one over: these are the games the player is not in, so they only
+   have to be plausible. Cached by key so a bracket redrawn mid-animation cannot change an
+   answer it has already given. */
+function nbrkPlay(key,a,b,rng){
+  const B=nbrkBuild();
+  if(B.results[key]!==undefined) return B.results[key];
+  /* THE PLAYER'S LINE IS DRAWN FORWARD, never simulated. A bracket is drawn ahead of the
+     games, so your own path has to continue to the Super Bowl until the run says otherwise
+     -- and it does say otherwise, through nbrkSettleMine, which writes the real result the
+     moment the broadcast has given it. Left uncached on purpose so that write wins.
+     Simulating it instead put the player out in the divisional round on screen while they
+     were still alive in the game. */
+  if((a&&a.you)||(b&&b.you)) return (a&&a.you)?a:b;
+  let w;
+  if(!a||!b) w=a||b||null;
+  else{
+    const za=(a.team&&a.team.strength_z)||0, zb=(b.team&&b.team.strength_z)||0;
+    /* Seed is worth something on top of strength, the way home field is. */
+    const edge=(za-zb)*0.55+((b.seed||7)-(a.seed||7))*0.18;
+    w=(rng()<1/(1+Math.exp(-edge)))?a:b;
+  }
+  B.results[key]=w;
+  return w;
+}
+/* THE FOUR THAT SURVIVE A CONFERENCE, in seed order, once the wild card has been played. */
+function nbrkSurvivors(side,rng){
+  const B=nbrkBuild(), field=B[side];
+  const out=[field[1]];
+  NBRK_WC.forEach(([hi,lo],i)=>{ out.push(nbrkPlay(side+':0:'+i,field[hi],field[lo],rng)); });
+  return out.filter(Boolean).sort((x,y)=>x.seed-y.seed);
+}
+/* The pairings for one round of one conference. RESEEDED EVERY ROUND, which is the thing
+   that makes this the NFL's bracket and not a fixed ladder: the best seed still alive
+   always draws the worst seed still alive. */
+function nbrkConfPairs(side,round,rng){
+  const B=nbrkBuild(), field=B[side];
+  if(round===0) return NBRK_WC.map(([hi,lo])=>[field[hi],field[lo]]);
+  if(round===1){
+    const v=nbrkSurvivors(side,rng);
+    return [[v[0],v[3]],[v[1],v[2]]];
+  }
+  if(round===2){
+    const d=nbrkConfPairs(side,1,rng).map(([a,b],i)=>nbrkPlay(side+':1:'+i,a,b,rng));
+    return [[d[0],d[1]]];
+  }
+  return [];
+}
+/* Every game in a round, both conferences, plus the Super Bowl across the middle. Each is
+   tagged with whether the player is in it, because that one is revealed last and its
+   result belongs to the broadcast rather than to the bracket. */
+function nbrkRoundGames(round){
+  const rng=E.createSeededRNG(E.hashSeed(String(run.seed)+'|nbrk|'+round));
+  const mine=(g)=>!!(g&&((g[0]&&g[0].you)||(g[1]&&g[1].you)));
+  if(round===3){
+    const champ=(side)=>{
+      const p=nbrkConfPairs(side,2,rng);
+      return p.length?nbrkPlay(side+':2:0',p[0][0],p[0][1],rng):null;
+    };
+    const g=[champ('near'),champ('far')];
+    return [{side:'sb',i:0,pair:g,me:mine(g),key:'sb:3:0'}];
+  }
+  const out=[];
+  for(const side of ['near','far']){
+    nbrkConfPairs(side,round,rng).forEach((pair,i)=>{
+      out.push({side,i,pair,me:mine(pair),key:side+':'+round+':'+i});
+    });
+  }
+  return out;
+}
+
+/* One seat in one game. A seat with nobody in it yet is the winner of a game that has not
+   been played, and says so rather than sitting blank. */
+function nbrkSeat(e,won,settled){
+  if(!e) return '<div class="nbrk-t tbd"><span class="sd"></span><span class="nm">TBD</span></div>';
+  const cls=settled?(won?' won':' out'):'';
+  if(e.you) return '<div class="nbrk-t me'+cls+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">Your team</span></div>';
+  const t=e.team;
+  /* The year carries an apostrophe. Two bare digits hard right, in a row that already has a
+     number hard left, read as a score, and a bracket showing scores for games nobody has
+     played is worse than showing nothing. */
+  return '<div class="nbrk-t'+cls+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(t?E.nickname(t.franchise)||t.franchise:'TBD')+'</span>'+
+    '<span class="yr">'+(t&&t.season?'&rsquo;'+esc(String(t.season).slice(2)):'')+'</span></div>';
+}
+/* Draws the whole field, all four rounds, from what has been revealed so far.
+
+   `upTo` is the round being played, and it is what the red ring keys off. The player's
+   seat exists in every round they could still reach, so ringing every game they turn up
+   in would ring four at once and say nothing about which one is on now. */
+function nbrkRender(upTo){
+  const B=nbrkBuild(), rail=$('nbrk-rail'); if(!rail) return;
+  const first=nbrkFirstRound();
+  /* A COLUMN IS EMPTY UNTIL THE ROUND THAT FEEDS IT HAS BEEN PLAYED. Every game in the
+     field is decided the first time its pairing is asked for, so without this the bracket
+     printed the whole thing on the first screen: you could read who won the Super Bowl
+     before your wild card had kicked off. The seats know their teams either way, this only
+     governs whether they are drawn, and TBD is what an unfed seat says. */
+  const known=[true,false,false,false];
+  for(let r=1;r<4;r++) known[r]=nbrkRoundGames(r-1).every(g=>B.revealed.has(g.key));
+  let h='';
+  for(let r=0;r<4;r++){
+    h+='<div class="nbrk-col"><div class="nbrk-h">'+esc(NBRK_SHORT[r])+'</div>';
+    const games=nbrkRoundGames(r);
+    let side=null;
+    for(const g of games){
+      if(r<3&&g.side!==side){
+        side=g.side;
+        h+='<div class="nbrk-conf">'+esc(side==='near'?B.myConf:B.farConf)+'</div>';
+      }
+      /* Settled means this screen has already shown it. The player's own game is never
+         settled here: its result is the broadcast's to give. */
+      const settled=B.revealed.has(g.key);
+      const w=settled?B.results[g.key]:null;
+      const p0=known[r]?g.pair[0]:null, p1=known[r]?g.pair[1]:null;
+      h+='<div class="nbrk-g'+(g.me&&r===upTo?' live':'')+'">'+
+        nbrkSeat(p0,w&&p0&&w===p0,settled)+
+        nbrkSeat(p1,w&&p1&&w===p1,settled)+'</div>';
+    }
+    if(r===0&&first>0) h+='<div class="nbrk-conf">Byes</div>'+
+      '<div class="nbrk-g">'+nbrkSeat(B.near[1],false,false)+nbrkSeat(B.far[1],false,false)+'</div>';
+    h+='</div>';
+  }
+  rail.innerHTML=h;
+}
+
+/* The reveal. Every game in this round that the player is not in flips to its winner one
+   after another; the player's is left standing and the screen hands off to the broadcast.
+   Nothing here decides anything: the other games were settled by nbrkPlay the moment the
+   pairings were asked for, and the player's was settled by the engine before this screen
+   was ever shown. */
+const NBRK_STEP=560, NBRK_LEAD=700, NBRK_TAIL=620;
+let nbrkTimer=null, nbrkSkip=null;
+/* THE ROUND BEING PLAYED, IN VIEW. Four columns at 152 wide is 640 and a phone shows two
+   and a half of them, so by the Super Bowl the one game that matters started off the right
+   hand edge and the player had to go looking for it. */
+function nbrkFocus(round){
+  const rail=$('nbrk-rail'); if(!rail) return;
+  const col=rail.children[round]; if(!col) return;
+  rail.scrollTo({left:Math.max(0,col.offsetLeft-12),behavior:'smooth'});
+}
+function nbrkShow(round,done){
+  const B=nbrkBuild();
+  /* THE ROUNDS A BYE WALKED PAST. Nobody animated them, but they happened, and the round
+     after them cannot be filled in until they are settled. */
+  for(let r=0;r<nbrkFirstRound();r++) nbrkRoundGames(r).forEach(g=>B.revealed.add(g.key));
+  $('nbrk-round').textContent=NBRK_ROUNDS[round]||'Playoffs';
+  $('nbrk-eyebrow').textContent=round===3?'One game left':'NFL Playoffs';
+  $('nbrk-note').textContent='';
+  nbrkRender(round);
+  show('s-nbrk');
+  nbrkFocus(round);
+  const games=nbrkRoundGames(round).filter(g=>!g.me&&!B.revealed.has(g.key));
+  let i=0;
+  const finish=()=>{
+    clearTimeout(nbrkTimer); nbrkTimer=null; nbrkSkip=null;
+    games.forEach(g=>B.revealed.add(g.key));
+    nbrkRender(round);
+    $('nbrk-note').textContent='Your game is next.';
+    done();
+  };
+  nbrkSkip=finish;
+  const tick=()=>{
+    if(i>=games.length){ nbrkTimer=setTimeout(finish,NBRK_TAIL); return; }
+    B.revealed.add(games[i].key);
+    i++;
+    nbrkRender(round);
+    nbrkTimer=setTimeout(tick,NBRK_STEP);
+  };
+  nbrkTimer=setTimeout(tick,NBRK_LEAD);
+}
+/* Once the player's game has been played, its winner is the run's own result, so the seat
+   settles the next time the bracket is drawn. */
+function nbrkSettleMine(round,won){
+  const B=nbrkBuild();
+  const g=nbrkRoundGames(round).find(x=>x.me);
+  if(!g) return;
+  const me=g.pair[0]&&g.pair[0].you?g.pair[0]:g.pair[1];
+  const them=g.pair[0]&&g.pair[0].you?g.pair[1]:g.pair[0];
+  B.results[g.key]=won?me:them;
+  B.revealed.add(g.key);
+}
+
 /* ---- THE OPTIONAL TUTORIAL ----
  * A practice draft on a fixed seed, coached one pick at a time, that hands over to a real
  * run at the end. Optional on purpose: plenty of people would rather press Start and find
@@ -6089,6 +6416,14 @@ function tutFinish(){
   $('tutend-play').onclick=()=>{ end.hidden=true; };
 }
 
+/* ---- THE FIRST RUN GUIDE ----
+   Shown once per browser, to somebody who has never started a run here. It is the only
+   thing in the game that interrupts before the player has done anything, so it earns that
+   by being the only thing that explains the game at all.
+
+   IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
+   over it, so the way out of the guide is the thing the guide is telling you to do. Got it
+   dismisses without starting, for somebody who wants to look around first. */
 const FRG_KEY='ps_seen_guide';
 function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
 function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
@@ -9191,9 +9526,18 @@ function playPlayoffGame(r,after){
 function runPlayoffs(){
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
+    const round=run.season.playoffRound;
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
     paintCalendar(r);
-    playPlayoffGame(r,step);
+    /* THE BRACKET FIRST, THEN THE GAME. advanceWeek has already settled the result, so
+       what the bracket animates is the rest of the field catching up to where the player
+       is; their own game is left standing and handed to the broadcast to decide on
+       screen. Settled straight afterwards so the next round draws it correctly. */
+    const idx=nbrkFirstRound()+round;
+    nbrkShow(idx,()=>{
+      nbrkSettleMine(idx,!!r.won);
+      playPlayoffGame(r,step);
+    });
   };
   step();
 }
@@ -9201,6 +9545,7 @@ function runPlayoffs(){
 $('b-po').onclick=()=>{R.startPlayoffs(run);runPlayoffs();};
 $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
 $('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
+$('b-nbrk-fast').onclick=()=>{ if(nbrkSkip) nbrkSkip(); };
 
 /* ---------- result ----------
    Reads top to bottom as the answer to four questions in order: what was my
