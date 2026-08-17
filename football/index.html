@@ -971,8 +971,14 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;
     align-items:center;justify-content:center;flex:0 0 auto}
-  .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
-    stroke-linecap:round;stroke-linejoin:round}
+  /* SOLID GLYPHS, NOT LINE ART. At 18px a 1.8px stroke is a tenth of the mark's height,
+     which is why the old icons read as wireframes next to the college game's real app
+     icon sitting six inches below them on the same sheet. Filled shapes with the detail
+     CUT OUT of them (fill-rule evenodd) hold their weight at this size, and a second
+     element at reduced opacity gives each mark a foreground and a background instead of
+     one flat outline. 19px rather than 18 because a solid shape reads slightly smaller
+     than its own bounding box where an outline reads slightly larger. */
+  .modecard .mc-icon svg{width:19px;height:19px;fill:#fff;stroke:none}
   .modecard.mc-club .mc-icon{background:linear-gradient(135deg,var(--mc-a,#dc2626) 0%,var(--mc-a2,#991b1b) 100%)}
   .modecard.mc-era .mc-icon{background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%)}
   .modecard.mc-cap .mc-icon{background:linear-gradient(135deg,#16a34a 0%,#15803d 100%)}
@@ -1262,7 +1268,6 @@ window.GA_ID='G-L29P5MRWKE';
      reds; a defense is the side that stops things, and it gets the one colour on the
      palette that is not already spoken for by a team plate or a warning. */
   .modecard.mc-def .mc-icon{background:linear-gradient(135deg,#10b981,#065f46)}
-  .modecard.mc-def .mc-icon svg{stroke:#ecfdf5}
   .modecard.mc-loading{opacity:.6}
   .modecard.mc-loading .mc-title::after{content:' loading...';font-weight:600;opacity:.7}
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
@@ -5970,13 +5975,20 @@ function modeMenu(){
     '<div class="modecards">'+
       '<button class="modecard mc-club" id="b-mc-club"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<path d="M12 2L3 7v6c0 5.25 3.75 10.13 9 11.25C17.25 23.13 21 18.25 21 13V7L12 2z"/>'+
+          /* A shield with the star cut out of it rather than drawn inside it, so the
+             mark is one shape and the detail is the gradient showing through. */
+          '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
+            '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
+            '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/>'+
           '</svg></div><div class="mc-title">One Franchise</div>'+arrow+'</div>'+
         '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
       '</button>'+
       '<button class="modecard mc-era" id="b-mc-era"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'+
+          /* A filled clock face with the hands cut out. The outlined version was a ring
+             and two hairlines, which at this size is three thin things and no shape. */
+          '<path fill-rule="evenodd" d="M12 1.8a10.2 10.2 0 1 0 0 20.4 10.2 10.2 0 0 0 '+
+            '0-20.4Zm1.15 4.6v5.05l3.3 1.95-1.15 1.9-4.45-2.65V6.4h2.3Z"/>'+
           '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
       '</button>'+
@@ -5988,9 +6000,17 @@ function modeMenu(){
              and of six versions drawn it is the only one whose D is still legible that
              small. A three-picket fence reads beautifully at 96px and turns to mush at
              eighteen, which is the size that actually ships. */
-          '<path d="M3 4.5v15h4a7.5 7.5 0 0 0 0-15z"/>'+
-          '<path d="M15.5 21V10l2.5-3 2.5 3v11"/>'+
-          '<path d="M14 13.5h8"/><path d="M14 17.5h8"/>'+
+          '<path fill-rule="evenodd" d="M2 3.8v16.4h4a8.2 8.2 0 0 0 0-16.4H2Zm3.4 3.3h.6a4.9 '+
+            '4.9 0 0 1 0 9.8h-.6V7.1Z"/>'+
+          /* The fence sits behind the D at 82%, which is what makes the pair read as a
+             logo rather than as two marks sharing a box: the letter leads, the joke
+             supports. Two pickets with a real gap, because three slim ones close up into
+             a solid block at 18px and the rails then have nothing to span. */
+          '<g opacity=".82">'+
+            '<path d="M13.8 20.4V11.2l1.8-2.4 1.8 2.4v9.2h-3.6Z"/>'+
+            '<path d="M19.6 20.4V11.2l1.8-2.4 1.8 2.4v9.2h-3.6Z"/>'+
+            '<path d="M13.2 12.7h10.6v1.5H13.2z"/><path d="M13.2 16.5h10.6v1.5H13.2z"/>'+
+          '</g>'+
           '</svg></div><div class="mc-title">One Stop'+
           (cd?'':' <span class="mc-soon-tag">Coming Soon</span>')+
           '</div>'+(cd?arrow:'')+'</div>'+
@@ -5999,8 +6019,12 @@ function modeMenu(){
       '</button>'+
       '<button class="modecard mc-trade'+(ct?'':' mc-soon')+'" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
-          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
+          /* Two solid arrows, the return one dimmed, so the pair reads as an exchange
+             with a direction rather than as a symmetrical loop. */
+          '<path d="M4.4 9.9V8.6a3.4 3.4 0 0 1 3.4-3.4h9.3V2.1l5.1 4.35-5.1 4.35V7.9H7.8c-.4 '+
+            '0-.7.3-.7.7v1.3H4.4Z"/>'+
+          '<path opacity=".5" d="M19.6 14.1v1.3a3.4 3.4 0 0 1-3.4 3.4H6.9v3.1L1.8 17.55 6.9 '+
+            '13.2v3.1h9.3c.4 0 .7-.3.7-.7v-1.5h2.7Z"/>'+
           /* NO "NEW" HERE ANY MORE. It is not, and a tag that says so on a mode people have
              been playing for weeks makes every other NEW on the screen worth less. Coming
              Soon stays, because that one is not an announcement -- it is the answer to
