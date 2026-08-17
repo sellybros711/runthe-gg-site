@@ -8327,15 +8327,27 @@ function buildTimeline(script,pace){
    YOU drives advance toward 100 (left→right).
    THEM drives advance toward 0 (right→left). */
 
+/* "Q1".."Q4", then "OT". The extra period is not a fifth quarter and calling it Q5 on the
+   play log would read as a bug rather than as overtime. */
+function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
+
 function generateDrives(script,rng){
-  const GAME=3600,HALF=1800,drives=[],ticks=[];
+  const HALF=1800,drives=[],ticks=[];
   for(const e of script) ticks.push({sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points});
+  /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
+     the last gap came out negative and the extra period drew no drives at all. */
+  const REG=3600;
+  const GAME=ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
   /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
      stayed with whoever had it when the second quarter ran out and play carried straight on
      into the third, so a team could finish the half with a punt and open the second half
      receiving its own kickoff. Modelled as a tick in the same list as the scores, which is
      also what stops a drive being drawn straight through the interval. */
   ticks.push({sec:HALF,half:true});
+  /* OVERTIME OPENS WITH ITS OWN KICKOFF, off its own coin toss -- the second-half rule does
+     not carry into it, and neither does whoever happened to have the ball when regulation
+     ran out. Modelled the same way halftime is, so no drive is drawn across the whistle. */
+  if(GAME>REG) ticks.push({sec:REG,ot:true});
   ticks.sort((a,b)=>a.sec-b.sec);
 
   /* THE TOSS, AND THE DEFERRAL THAT FOLLOWS IT. Possession opened with 'you' in every game
@@ -8345,6 +8357,10 @@ function generateDrives(script,rng){
      way. Drawn first so the two halves can never disagree about who received what. */
   const youReceiveFirst=rng()<0.5;
   const secondHalfReceiver=youReceiveFirst?'them':'you';
+  /* A FRESH TOSS FOR OVERTIME. Under playoff rules both sides get a possession whatever
+     happens on the first one, so receiving is worth less here than it is at kickoff -- but
+     it is still its own toss and not a continuation of either half. */
+  const otReceiver=rng()<0.5?'you':'them';
   let pos=youReceiveFirst?'you':'them',t=0;
   const flip=()=>{pos=pos==='you'?'them':'you';};
   const youKO=()=>18+Math.floor(rng()*12);
@@ -8359,13 +8375,15 @@ function generateDrives(script,rng){
         /* A score in the last seconds of the half still hands the ball over at the
            interval, so the kickoff wins over whatever the score just set up. */
         pos=secondHalfReceiver;at=pos==='you'?youKO():themKO();
+      }else if(ns&&ns.ot){
+        pos=otReceiver;at=pos==='you'?youKO():themKO();
       }else if(ns){
         if(ns.kind==='SAFETY'){pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;}
         else{pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();}
       }
       t=tE;continue;
     }
-    const scorePoss=(ns&&!ns.half)?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
+    const scorePoss=(ns&&!ns.half&&!ns.ot)?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
     let filler=Math.max(0,Math.round(gap/220)-1+(rng()<0.45?1:0));
     if(scorePoss){
       const af=filler%2===0?pos:(pos==='you'?'them':'you');
@@ -8419,6 +8437,7 @@ function generateDrives(script,rng){
        opening kickoff receives this one, wherever the ball happened to be when the half
        ended. */
     if(ns&&ns.half){pos=secondHalfReceiver;at=pos==='you'?youKO():themKO();}
+    if(ns&&ns.ot){pos=otReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
   return drives;
@@ -8721,7 +8740,7 @@ function playPlayoffGame(r,after){
   const logScore=(e)=>{
     const who=e.team==='you'?'You':(opp?opp.franchise:'OPP');
     $('po-log').insertAdjacentHTML('afterbegin',
-      '<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+'</span>'+
+      '<div class="pl '+e.team+'"><span class="t">'+periodLabel(e)+' '+e.clock+'</span>'+
       '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+
       (e.note?', '+esc(e.note):'')+'</span>'+
       '<span class="n">'+e.you+'-'+e.them+'</span></div>');
@@ -9887,7 +9906,7 @@ function bowlBroadcast(cfg){
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
   const logScore=(e)=>{ const who=e.team==='you'?'You':(cfg.themName||'Them');
-    $('bowl-log').insertAdjacentHTML('afterbegin','<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+
+    $('bowl-log').insertAdjacentHTML('afterbegin','<div class="pl '+e.team+'"><span class="t">'+periodLabel(e)+' '+e.clock+
       '</span><span class="w">'+esc(who)+' '+e.kind.toLowerCase()+(e.note?', '+esc(e.note):'')+
       '</span><span class="n">'+e.you+'-'+e.them+'</span></div>'); };
   const finish=()=>{
