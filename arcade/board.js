@@ -266,6 +266,19 @@
     // server decides: an empty slot gets filled, an existing row is left alone.
     try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
     opts = opts || {};
+    /* GA4: a completed, ranked run. Carries the specific arcade game so each one
+       reports separately, plus the shape of the result. Inert without gtag. */
+    try{
+      if (typeof window.gtag === 'function') {
+        var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low'};
+        window.gtag('event','arcade_game_completed',{
+          game_name:'Run The Arcade', arcade_game: GA_L[game] || game,
+          seconds: Math.max(0, Math.round(opts.seconds || 0)),
+          mistakes: opts.mistakes || 0,
+          run_len: (opts.runLen == null ? 0 : Math.max(0, Math.round(opts.runLen)))
+        });
+      }
+    }catch(e){}
     var run = {
       game: game, date: dateStr,
       seconds: Math.max(0, Math.round(opts.seconds || 0)),

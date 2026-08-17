@@ -264,15 +264,30 @@
     return 'spent';
   }
 
+
+  /* GA4: one event when a play actually starts, tagged with the specific arcade
+     game so each game can be reported on its own. Inert if gtag is absent. */
+  var GA_LABEL = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low'};
+  function gaGame(ev, game, extra){
+    try{
+      if (typeof window.gtag !== 'function') return;
+      var p = { arcade_game: GA_LABEL[game] || game, game_name: 'Run The Arcade' };
+      if (extra) for (var k in extra) p[k] = extra[k];
+      window.gtag('event', ev, p);
+    }catch(e){}
+  }
   function startAttempt(game){
     var s=read(), before=s.plays[game]||0;
     DENIED=false; REPLAY=false;
     if(unlimited()){
       s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
+      gaGame('arcade_game_started', game, { tier:'card', try_no:before+1 });
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
-    if(!canPlay(game)) return { ok:false, tryNo:before, first:false, bonus:false, left:0, reason:why(game) };
+    if(!canPlay(game)){ gaGame('arcade_play_blocked', game, { reason:String(why(game)||'') });
+      return { ok:false, tryNo:before, first:false, bonus:false, left:0, reason:why(game) }; }
     s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
+    gaGame('arcade_game_started', game, { tier:'free', try_no:before+1 });
     serverSpend(game);
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remainingOf(game) };
   }

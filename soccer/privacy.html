@@ -74,7 +74,7 @@
   window.GA_ID='G-L29P5MRWKE';
   (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
     window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
-    gtag('js',new Date());gtag('config',id);
+    gtag('js',new Date());gtag('set',{game_name:'RunThePitch'}); gtag('config',id);
     var s=document.createElement('script');s.async=true;
     s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
     document.head.appendChild(s);})();
