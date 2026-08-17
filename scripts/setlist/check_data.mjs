@@ -968,6 +968,38 @@ check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'its search keeps its
 for (const f of ['venue', 'len', 'jam'])
   check(new RegExp(`${f}:`).test(gameBare), `a sighting records its ${f}`);
 
+/* EVERY NUMBER ON THE PROFILE IS AUDITABLE. A tile saying "65 segues" is a
+   claim, and until you can see the 65 it is one you have to take on trust. */
+console.log('what is behind a number');
+check(/const PERF_STATS = \{/.test(gameBare) && /const SHOW_STATS = \{/.test(gameBare),
+  'each stat is defined in one place');
+/* THE DEFINITION IS USED TWICE, to count it and to list it, and that is the
+   whole reason the table exists. Two copies of "is this a segue" WILL drift,
+   and a tile saying 65 that opens a list of 63 is worse than no list at all. */
+check(/function statCount\(perf, key\)/.test(gameBare), 'the count comes from that definition');
+check(/const segues = statCount\(perf, 'segues'\)/.test(gameBare),
+  'and the profile counts through it rather than inline');
+check(!/if \(String\(p\.is_segue\) === 'true'\) segues\+\+/.test(gameBare),
+  'the old inline copies are gone');
+/* Named at the LIST site specifically: statCount filters with the same
+   expression, so a looser pattern is satisfied by the counter alone. */
+check(/let hits = perf\.filter\(def\.pick\);/.test(gameBare),
+  'the list filters through the same definition');
+check(/const hits = perf\.filter\(def\.pick\);/.test(gameBare),
+  'and so does the count');
+check(/id="statSheet"/.test(gameBare) && /function openStat\(key\)/.test(gameBare),
+  'tapping a number opens what is behind it');
+check(/data-stat="\$\{esc\(stat\)\}"/.test(gameBare), 'the tiles carry the key they were counted with');
+/* Counted as DISTINCT SONGS, so the list must show songs. "34 covers" means 34
+   different ones, not 34 performances. */
+check(/unique: true/.test(gameBare) && /new Set\(hits\.map\(p => p\.song_id \|\| p\.song\)\)/.test(gameBare),
+  'covers count distinct songs, and the list matches');
+/* An average is not a list of anything. */
+check(/st\.perShow \? \[st\.perShow\.toFixed\(1\), 'songs a night'\] : null/.test(gameBare),
+  'an average does not pretend to open a list');
+check(/\.ftile\.tap\{/.test(gameBare) && /\.pstat\.tap\{/.test(gameBare),
+  'and a tappable number looks tappable');
+
 /* YOUR NIGHTS, the other half of the collection. "Every song" answers what you
    have heard; this answers what you were AT, and gives each night its setlist
    back. Until now the game could count your shows without ever showing you
