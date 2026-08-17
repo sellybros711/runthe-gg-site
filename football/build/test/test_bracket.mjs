@@ -92,18 +92,56 @@ const buildProbe = () => {
 const on = (p, id) => p.evaluate((i) => {
   const s = document.getElementById(i); return !!s && s.classList.contains('on'); }, id);
 
-/* The draft, played the way somebody in a hurry plays it: take the first tile you can
-   afford, until the squad sheet appears. The board is torn down and respun between picks,
-   so each round waits for a live tile rather than assuming one is under the cursor. */
+/* THE DRAFT, PLAYED BY SOMEBODY WHO IS TRYING. Best points per game it can afford, holding
+   a floor back for the spots still to fill, which is the whole puzzle the game is built
+   around and takes about 139 of the 140 available.
+
+   This started out taking the first affordable tile, on the grounds that a dumb strategy
+   is a fair one. It is not: the first tile is DOM order, not merit, and the teams it built
+   went 7-10. Measured, it reached the postseason about one season in four, and one run of
+   this suite drafted ten in a row that all missed. Playing badly does not make the test
+   stricter, it just makes it spend a quarter of an hour on seasons that never reach the
+   screen this file exists to check, and fail once every twenty runs for no reason. Drafting
+   properly lands 14-3 and gets there on the first or second attempt.
+
+   The cap is a constant here rather than read off the page: it is the only number the
+   harness needs and the page does not print a machine-readable one. If the game's cap ever
+   moves, this holds a floor back too aggressively and the assertions below still hold,
+   they just take more attempts to get there. */
+const CAP = 140, FLOOR = 4, SPOTS = 6;
 const draft = async (p) => {
+  let spent = 0, taken = 0;
   for (let i = 0; i < 9; i++) {
     if (await on(p, 's-squad') || await on(p, 's-season')) break;
+    /* The board is torn down and respun between picks, so each round waits for a live tile
+       rather than assuming one is under the cursor. */
     const ready = await p.waitForFunction(() => [...document.querySelectorAll('#opts .tile')]
       .some((x) => !x.disabled && !x.classList.contains('off') && !x.classList.contains('no')),
       null, { timeout: 20000 }).catch(() => null);
     if (!ready) break;
-    await p.evaluate(() => [...document.querySelectorAll('#opts .tile')]
-      .find((x) => !x.disabled && !x.classList.contains('off') && !x.classList.contains('no')).click());
+    const got = await p.evaluate(([sp, idx, cap, floor, spots]) => {
+      const live = [...document.querySelectorAll('#opts .tile')]
+        .filter((x) => !x.disabled && !x.classList.contains('off') && !x.classList.contains('no'));
+      if (!live.length) return null;
+      /* Price is in the tile's header (`QB$17.8M`) and the rating is the figure beside it
+         (`11.9FPPG`). Read off the rendered tile rather than out of the data, because that
+         is what a player is choosing between. */
+      const rows = live.map((t) => {
+        const m = ((t.querySelector('.th') || {}).textContent || '').match(/\$([\d.]+)M/);
+        return { t, cost: m ? parseFloat(m[1]) : 999,
+          fppg: parseFloat((t.querySelector('.tf') || {}).textContent) || 0 };
+      });
+      const budget = cap - sp - floor * (spots - 1 - idx);
+      const can = rows.filter((r) => r.cost <= budget);
+      /* Nothing affordable means the earlier picks were too expensive: take the cheapest
+         man on the board and carry on, the way the game forces you to. */
+      const from = can.length ? can : rows.slice().sort((a, b) => a.cost - b.cost).slice(0, 1);
+      from.sort((a, b) => b.fppg - a.fppg);
+      from[0].t.click();
+      return { cost: from[0].cost };
+    }, [spent, taken, CAP, FLOOR, SPOTS]);
+    if (!got) break;
+    spent += got.cost; taken++;
     await p.waitForTimeout(500);
     /* Flex-eligible players open a slot chooser; any slot will do. */
     if (await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))) {
@@ -209,9 +247,12 @@ try {
 
     /* Not just "made the postseason": a run that loses its first playoff game shows one
        bracket and proves nothing about the seam between rounds, which is where the settle
-       and the redraw happen. So the loop keeps drafting until one advances. */
+       and the redraw happen. So the loop keeps drafting until one advances.
+
+       Six attempts, because each is a whole season played on screen and the drafting above
+       reaches the postseason on most of them. */
     let made = false, seeded = null, shots = [], played = 0, tries = 0;
-    for (; tries < 10 && shots.length < 2; tries++) {
+    for (; tries < 6 && shots.length < 2; tries++) {
       await p.goto(HOST + '/football/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
       await p.waitForSelector('#s-intro.on', { timeout: 60000 });
       await p.click('#b-start');
