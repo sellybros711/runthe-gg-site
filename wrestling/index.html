@@ -253,15 +253,15 @@
   .arena .crowd{position:absolute;top:0;left:0;right:0;height:42%;background:
     repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
     repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);opacity:.5;}
-  .arena .mat{position:absolute;left:0;right:0;bottom:0;height:34%;
-    background:linear-gradient(180deg,#3a2b2b,#241a1a);border-top:3px solid #C6392C;}
-  .arena .mat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 26px,transparent 26px 52px);}
-  .arena .ropes{position:absolute;left:0;right:0;bottom:26%;height:34%;pointer-events:none;
-    background:linear-gradient(180deg,transparent 0,transparent 18%,rgba(244,232,219,.34) 18%,rgba(244,232,219,.34) 21%,transparent 21%,transparent 52%,rgba(244,232,219,.30) 52%,rgba(244,232,219,.30) 55%,transparent 55%,transparent 86%,rgba(244,232,219,.26) 86%,rgba(244,232,219,.26) 89%,transparent 89%);}
+  /* the ring itself, in two layers so the wrestlers stand inside it */
+  .ringback,.ringfront{position:absolute;left:0;right:0;bottom:0;pointer-events:none;}
+  .ringback svg,.ringfront svg{width:100%;height:100%;display:block;}
+  .arena .ringback,.arena .ringfront{height:78%;}
+  .arena .ringback{z-index:1;} .arena .ringfront{z-index:4;}
 
   /* Fighters are positioned from the arena centre and driven entirely from JS,
      so a move can place one wrestler exactly on top of the other. */
-  .fighter{position:absolute;bottom:4%;left:50%;width:250px;margin-left:-125px;z-index:3;
+  .fighter{position:absolute;bottom:13%;left:50%;width:250px;margin-left:-125px;z-index:3;
     transform-origin:50% 88%;transition:transform .16s ease-out;will-change:transform;}
   .fighter .fbob{animation:bob 1.7s ease-in-out infinite;transform-origin:50% 90%;}
   .fighter.busy .fbob{animation:none;}
@@ -369,23 +369,15 @@
     background:radial-gradient(ellipse 34% 62% at 26% -8%,rgba(244,232,219,.11),transparent 70%),
                radial-gradient(ellipse 34% 62% at 74% -8%,rgba(244,232,219,.11),transparent 70%),
                radial-gradient(ellipse 60% 40% at 50% 108%,rgba(198,57,44,.10),transparent 70%);}
-  .homering .hr-post{position:absolute;bottom:22%;width:8px;height:37%;z-index:3;border-radius:3px 3px 0 0;
-    background:linear-gradient(180deg,#4a4038,#2b2420);box-shadow:0 0 0 1px rgba(0,0,0,.4);}
-  .homering .hr-post.l{left:3.4%;} .homering .hr-post.r{right:3.4%;}
-  .homering .hr-post::before{content:"";position:absolute;left:-3px;right:-3px;top:-7px;height:14px;border-radius:7px;background:var(--brandred);
-    box-shadow:0 16px 0 -1px rgba(198,57,44,.75),0 32px 0 -2px rgba(198,57,44,.55);}
   .hr-tonight{display:inline-block;background:var(--brandred);color:#fff;font-size:8.5px;letter-spacing:.24em;
     padding:3px 10px 2px;border-radius:99px;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
   .homering .hr-crowd{position:absolute;top:0;left:0;right:0;height:44%;opacity:.42;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
       repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);}
-  .homering .hr-mat{position:absolute;left:0;right:0;bottom:0;height:32%;
-    background:linear-gradient(180deg,#3a2b2b,#241a1a);border-top:3px solid #C6392C;}
-  .homering .hr-mat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 26px,transparent 26px 52px);}
-  .homering .hr-ropes{position:absolute;left:0;right:0;bottom:24%;height:34%;pointer-events:none;z-index:4;
-    background:linear-gradient(180deg,transparent 0,transparent 18%,rgba(244,232,219,.30) 18%,rgba(244,232,219,.30) 21%,transparent 21%,transparent 52%,rgba(244,232,219,.26) 52%,rgba(244,232,219,.26) 55%,transparent 55%,transparent 86%,rgba(244,232,219,.22) 86%,rgba(244,232,219,.22) 89%,transparent 89%);}
+  .homering .ringback,.homering .ringfront{height:80%;}
+  .homering .ringback{z-index:2;} .homering .ringfront{z-index:5;}
   .hr-cast{position:absolute;inset:0;z-index:3;}
-  .hr-fig{position:absolute;bottom:4%;width:150px;margin-left:-75px;}
+  .hr-fig{position:absolute;bottom:14%;width:150px;margin-left:-75px;}
   .hr-fig svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));}
   .hr-fig .hr-bob{animation:bob 1.9s ease-in-out infinite;transform-origin:50% 90%;}
   .hr-cap{position:absolute;left:0;right:0;top:10px;text-align:center;z-index:6;pointer-events:none;}
@@ -393,7 +385,7 @@
     color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.9);}
   .hr-names{display:block;font-size:12px;color:var(--cream);opacity:.9;margin-top:2px;text-shadow:0 2px 6px rgba(0,0,0,.9);}
   @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;} .hr-names{font-size:11px;}
-    .homering .hr-post{width:6px;} .home-kick span{font-size:10px;letter-spacing:.2em;} }
+    .home-kick span{font-size:10px;letter-spacing:.2em;} }
 
   /* ---- home: start / resume ---- */
   .startcard{margin-top:26px;text-align:center;}
@@ -847,10 +839,11 @@
 
     <!-- the ring: a different card every time you land here -->
     <div class="homering" id="homeRing">
+      <div class="hr-crowd"></div>
       <div class="hr-lights"></div>
-      <div class="hr-ropes"></div><div class="hr-crowd"></div><div class="hr-mat"></div>
-      <div class="hr-post l"></div><div class="hr-post r"></div>
+      <div class="ringback"></div>
       <div class="hr-cast" id="hrCast"></div>
+      <div class="ringfront"></div>
       <div class="hr-cap"><span class="hr-tonight">Tonight</span><span class="hr-stip" id="hrStip">-</span><span class="hr-names" id="hrNames">-</span></div>
     </div>
 
@@ -1048,12 +1041,12 @@
   </div>
 
   <div class="arena" id="arena">
-    <div class="ropes"></div>
     <div class="crowd" id="crowd"></div>
-    <div class="mat"></div>
+    <div class="ringback"></div>
     <div class="fighter me" id="fMe"></div>
     <div class="fighter opp" id="fOpp"></div>
     <div class="fighter ref" id="fRef"></div>
+    <div class="ringfront"></div>
     <div class="fxlayer" id="fFx"></div>
     <div class="callout" id="fCall"></div>
     <div class="pincount" id="fPin"></div>
@@ -1145,9 +1138,10 @@
     </div>
   </div>
   <div class="arena promo" id="pmArena">
-    <div class="ropes"></div><div class="crowd" id="pmCrowd"></div><div class="mat"></div>
+    <div class="crowd" id="pmCrowd"></div><div class="ringback"></div>
     <div class="fighter me" id="pMe"></div>
     <div class="fighter opp" id="pOpp"></div>
+    <div class="ringfront"></div>
     <div class="bubble me" id="pBubMe"></div>
     <div class="bubble opp" id="pBubOpp"></div>
     <div class="fxlayer" id="pFx"></div>
@@ -3050,6 +3044,98 @@ function refreshHud(){ if(!G) return;
   $('hPop').textContent=Math.round(G.car.pop);
   $('hCoins').textContent=G.bag.coins.toLocaleString();
 }
+/* ============================================================
+   THE RING
+   ------------------------------------------------------------
+   A real ring is a trapezoid seen in perspective: the far side is
+   narrower than the near side, every rope ends at a post, and the
+   apron skirts the front edge. It is drawn in two layers so the
+   wrestlers stand inside it, with the far ropes behind them and
+   the near ropes in front.
+
+   The SVG stretches to any box (preserveAspectRatio="none"), but
+   ropes and posts use non-scaling-stroke so they stay a constant
+   pixel thickness instead of smearing on a wide screen.
+   ============================================================ */
+const RING={
+  bx1:17, bx2:83,        // far corners, left and right
+  fx1:2,  fx2:98,        // near corners
+  yTopB:10, yBack:46,    // far post tops, far mat edge
+  yTopF:30, yFront:88,   // near post tops, near mat edge
+  apron:100,
+};
+let RINGN=0;             // gradient ids must be unique: a def inside a
+                         // display:none screen will not resolve for another
+function ringSVG(front){
+  const R=RING, o=[], u='rg'+(++RINGN);
+  const open=`<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">`;
+  // ropes: three per side, evenly spaced between the post top and the mat
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const T=[0.12,0.42,0.72];
+  const rope=(x1,y1,x2,y2,w,op)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#F4E8DB"
+      stroke-width="${w}" opacity="${op}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`;
+  const post=(x,yTop,yBase,w)=>
+    `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBase}" stroke="#2a2320" stroke-width="${w+2}"
+       vector-effect="non-scaling-stroke"/>
+     <line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBase}" stroke="#544840" stroke-width="${w}"
+       vector-effect="non-scaling-stroke"/>`;
+  // the stacked turnbuckle pads that make a corner read as a corner
+  const pads=(x,yTop,yBase,w)=>T.map(t=>{
+    const y=lerp(yTop,yBase,t);
+    return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+(yBase-yTop)*0.17}" stroke="#C6392C"
+      stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`;
+  }).join('');
+
+  if(!front){
+    // ---- behind the wrestlers: far posts, far ropes, the canvas, the apron ----
+    o.push(open);
+    o.push(`<defs>
+      <linearGradient id="${u}m" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4d5b6e"/><stop offset="1" stop-color="#6b7c92"/></linearGradient>
+      <linearGradient id="${u}a" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b03227"/><stop offset="1" stop-color="#5e1a14"/></linearGradient>
+    </defs>`);
+    o.push(post(R.bx1,R.yTopB,R.yBack,5)+post(R.bx2,R.yTopB,R.yBack,5));
+    o.push(pads(R.bx1,R.yTopB,R.yBack,7)+pads(R.bx2,R.yTopB,R.yBack,7));
+    T.forEach(t=>{ const y=lerp(R.yTopB,R.yBack,t);
+      o.push(rope(R.bx1,y,R.bx2,y,2,0.75)); });
+    // the canvas, in perspective
+    o.push(`<polygon points="${R.bx1},${R.yBack} ${R.bx2},${R.yBack} ${R.fx2},${R.yFront} ${R.fx1},${R.yFront}"
+       fill="url(#${u}m)"/>`);
+    // canvas seams, which run with the perspective and stop the mat reading flat
+    [0.34,0.67].forEach(t=>{
+      const y=lerp(R.yBack,R.yFront,t), xl=lerp(R.bx1,R.fx1,t), xr=lerp(R.bx2,R.fx2,t);
+      o.push(`<line x1="${xl}" y1="${y}" x2="${xr}" y2="${y}" stroke="#8b9cb3" stroke-width="1"
+         opacity=".16" vector-effect="non-scaling-stroke"/>`);
+    });
+    o.push(`<polygon points="${R.bx1},${R.yBack} ${R.bx2},${R.yBack} ${R.fx2},${R.yFront} ${R.fx1},${R.yFront}"
+       fill="none" stroke="#8b9cb3" stroke-width="1" opacity=".3" vector-effect="non-scaling-stroke"/>`);
+    // apron skirt
+    o.push(`<polygon points="${R.fx1},${R.yFront} ${R.fx2},${R.yFront} ${R.fx2},${R.apron} ${R.fx1},${R.apron}"
+       fill="url(#${u}a)"/>`);
+    o.push(`<line x1="${R.fx1}" y1="${R.yFront}" x2="${R.fx2}" y2="${R.yFront}" stroke="#F4E8DB"
+       stroke-width="2" opacity=".55" vector-effect="non-scaling-stroke"/>`);
+    o.push(`</svg>`);
+  } else {
+    // ---- in front of the wrestlers: near posts, near ropes, the ropes running back ----
+    o.push(open);
+    T.forEach(t=>{
+      const yB=lerp(R.yTopB,R.yBack,t), yF=lerp(R.yTopF,R.yFront,t);
+      o.push(rope(R.bx1,yB,R.fx1,yF,2,0.6));       // running to the near corners
+      o.push(rope(R.bx2,yB,R.fx2,yF,2,0.6));
+      o.push(rope(R.fx1,yF,R.fx2,yF,2.4,0.9));     // and across the front
+    });
+    o.push(post(R.fx1,R.yTopF,R.yFront,7)+post(R.fx2,R.yTopF,R.yFront,7));
+    o.push(pads(R.fx1,R.yTopF,R.yFront,10)+pads(R.fx2,R.yTopF,R.yFront,10));
+    o.push(`</svg>`);
+  }
+  return o.join('');
+}
+function paintRings(){
+  document.querySelectorAll('.ringback').forEach(e=>{ if(!e.firstChild) e.innerHTML=ringSVG(false); });
+  document.querySelectorAll('.ringfront').forEach(e=>{ if(!e.firstChild) e.innerHTML=ringSVG(true); });
+}
+
 /* ---- THE RING ON THE FRONT PAGE ----
    A different card every time you land here: a singles match, a tag match,
    a six-man, a rumble. Drawn from the same roster and the same pixel rig the
@@ -6037,6 +6123,7 @@ function renderHof(){
 }
 
 /* ---------- boot ---------- */
+paintRings();
 renderHome();
 </script>
 </body>
