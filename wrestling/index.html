@@ -247,7 +247,7 @@
   .momtick{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(244,232,219,.55);transform:translateX(-1px);}
 
   .arena{position:relative;height:340px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
-    background:radial-gradient(ellipse at 50% 20%,rgba(198,57,44,.16),transparent 60%),linear-gradient(180deg,#161113,#0b0a0a);}
+    background:radial-gradient(ellipse at 50% 20%,var(--arGlow,rgba(198,57,44,.16)),transparent 60%),linear-gradient(180deg,#161113,#0b0a0a);}
   .arena.shake{animation:shk .32s;}
   @keyframes shk{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
   .arena .crowd{position:absolute;top:0;left:0;right:0;height:42%;background:
@@ -364,7 +364,7 @@
   .home-kick::after{background:linear-gradient(90deg,rgba(198,57,44,.65),transparent);}
   .homering{position:relative;height:272px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
     box-shadow:0 18px 44px -22px rgba(0,0,0,.9);
-    background:radial-gradient(ellipse at 50% 18%,rgba(198,57,44,.18),transparent 62%),linear-gradient(180deg,#171113,#0b0a0a);}
+    background:radial-gradient(ellipse at 50% 18%,var(--arGlow,rgba(198,57,44,.18)),transparent 62%),linear-gradient(180deg,#171113,#0b0a0a);}
   .homering .hr-lights{position:absolute;inset:0;z-index:2;pointer-events:none;
     background:radial-gradient(ellipse 34% 62% at 26% -8%,rgba(244,232,219,.11),transparent 70%),
                radial-gradient(ellipse 34% 62% at 74% -8%,rgba(244,232,219,.11),transparent 70%),
@@ -3066,13 +3066,107 @@ const RING={
 };
 let RINGN=0;             // gradient ids must be unique: a def inside a
                          // display:none screen will not resolve for another
-function ringSVG(front){
+
+/* ---- NINE BUILDINGS ----
+   You should be able to tell where you are with the sound off. Every
+   promotion gets its own canvas, apron, turnbuckles, ropes, house
+   lights and room, drawn from what the promotion actually is: a bingo
+   hall in the Rust Belt does not look like a stadium, and a Tokyo
+   strong style hall does not look like a beachfront neon show.
+
+   `seats` scales with the money: an indie basement holds a couple of
+   sparse rows, the global tour fills a bowl to the roof.            */
+const ARENA_DEF={
+  // ---------------- indie ----------------
+  gcw:{ mat:['#7a6a52','#5d4f3c'], apron:['#8f4a1e','#43220c'], pad:'#a8602c', rope:'#e2d3ba',
+        glow:'rgba(168,96,44,.20)', seats:2, dens:13, dim:.42, tone:['#6a5340','#8a6a4a','#4a3a2c'],
+        wall:'linear-gradient(180deg,#1c1512 0%,#221a15 62%,#140f0d 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(232,220,192,.16) 0 60px,transparent 60px 132px)' },
+  cdp:{ mat:['#5c6b72','#43505a'], apron:['#41616c','#1d2b31'], pad:'#5e7f8a', rope:'#dfe6e6',
+        glow:'rgba(94,127,138,.18)', seats:2, dens:16, dim:.34, tone:['#59636a','#7d8a86','#3e4750'],
+        wall:'linear-gradient(180deg,#141a1c 0%,#1a2226 70%,#0f1315 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 22px,transparent 22px 26px)' },
+  // ---------------- regional ----------------
+  sbcw:{ mat:['#6f6647','#565037'], apron:['#7a6a4a','#3a3220'], pad:'#7a6a4a', rope:'#efe3c6',
+        glow:'rgba(122,106,74,.20)', seats:3, dens:11, dim:.5, tone:['#6b5a44','#8f7a58','#4b3f2f'],
+        wall:'linear-gradient(180deg,#1d1811 0%,#2a2318 66%,#161209 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(239,227,198,.10) 0 46px,transparent 46px 92px)' },
+  scw:{ mat:['#4a5f86','#33436b'], apron:['#d2687a','#5d2437'], pad:'#d2687a', rope:'#ffe9f0',
+        glow:'rgba(210,104,122,.26)', seats:3, dens:10, dim:.55, tone:['#c0648a','#63b8c8','#8a5aa8'],
+        wall:'linear-gradient(180deg,#20132a 0%,#2c1740 55%,#140a1c 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(99,184,200,.30) 0 8px,transparent 8px 44px)' },
+  rose:{ mat:['#6b4450','#4c2e39'], apron:['#c0455f','#4d1622'], pad:'#c0455f', rope:'#ffe2e8',
+        glow:'rgba(192,69,95,.24)', seats:3, dens:12, dim:.46, tone:['#8f4257','#b06a72','#5c2f3c'],
+        wall:'linear-gradient(180deg,#1b0f14 0%,#2a151d 60%,#120a0e 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(192,69,95,.22) 0 34px,transparent 34px 70px)' },
+  // ---------------- national ----------------
+  acw:{ mat:['#41597d','#2b3c58'], apron:['#3f7fbf','#16324f'], pad:'#3f7fbf', rope:'#f2f6fb',
+        glow:'rgba(63,127,191,.26)', seats:4, dens:8, dim:.62, tone:['#4f6b8f','#7e93ad','#38506e'],
+        wall:'linear-gradient(180deg,#0f1620 0%,#182534 58%,#0b1017 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(63,127,191,.26) 0 4px,transparent 4px 30px)' },
+  kaiju:{ mat:['#48605a','#31423e'], apron:['#4a8f76','#173029'], pad:'#4a8f76', rope:'#e9f2ee',
+        glow:'rgba(74,143,118,.18)', seats:4, dens:9, dim:.5, tone:['#4c6459','#6f8378','#37473f'],
+        wall:'linear-gradient(180deg,#0d1412 0%,#16211d 62%,#080d0b 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(233,242,238,.10) 0 70px,transparent 70px 150px)' },
+  eterna:{ mat:['#7a6136','#5a4726'], apron:['#d99a2b','#5c3c0c'], pad:'#d99a2b', rope:'#fff3d6',
+        glow:'rgba(217,154,43,.28)', seats:4, dens:8, dim:.64, tone:['#b9762f','#3f7f9f','#9a4a6a'],
+        wall:'linear-gradient(180deg,#241706 0%,#33230b 58%,#180f04 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(217,154,43,.30) 0 16px,rgba(192,57,43,.24) 16px 32px)' },
+  // ---------------- global ----------------
+  cwf:{ mat:['#4d5b6e','#6b7c92'], apron:['#c0392b','#4a1410'], pad:'#c0392b', rope:'#ffffff',
+        glow:'rgba(192,57,43,.30)', seats:6, dens:6, dim:.72, tone:['#5d6b80','#8d9ab0','#414d61'],
+        wall:'linear-gradient(180deg,#0a0d12 0%,#161d28 46%,#090c11 100%)',
+        trim:'repeating-linear-gradient(90deg,rgba(255,255,255,.20) 0 3px,transparent 3px 26px)' },
+};
+const ARENA_FALLBACK=ARENA_DEF.cwf;
+function arenaOf(pid){ return ARENA_DEF[pid]||ARENA_FALLBACK; }
+
+/* the house, built from the promotion's own description.
+   Each deck is a head over a pair of shoulders, tiled. Decks further
+   back are smaller, tighter and darker, and every other deck is offset
+   half a seat so the rows do not line up into wallpaper. */
+function venueCSS(T){
+  const L=[];
+  for(let i=T.seats-1;i>=0;i--){          // paint the back decks first
+    const k=T.seats>1 ? i/(T.seats-1) : 0;
+    const d=Math.max(5,Math.round(T.dens*(1-k*0.30)));   // seat pitch
+    const h=Math.round(d*1.28);                          // row pitch
+    const col=T.tone[i%T.tone.length];
+    const dark=`color-mix(in srgb, ${col} 62%, #000)`;
+    const off=(i%2)?Math.round(d/2):0;
+    const y=Math.round(i*h*0.86);
+    L.push(`radial-gradient(ellipse 46% 26% at 50% 92%, ${dark} 0 99%, transparent 100%) ${off}px ${y}px / ${d}px ${h}px`);
+    L.push(`radial-gradient(circle at 50% 34%, ${col} 0 30%, transparent 32%) ${off}px ${y}px / ${d}px ${h}px`);
+  }
+  // the room falls away toward the back of the bowl
+  L.push(`linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 42%,transparent 74%,rgba(0,0,0,.5) 100%) 0 0 / 100% 100%`);
+  L.push(`${T.trim} 0 0 / auto`);
+  L.push(T.wall);
+  return L.join(',');
+}
+function dressArena(root,pid){
+  if(!root) return;
+  const T=arenaOf(pid);
+  const back=root.querySelector('.ringback'), front=root.querySelector('.ringfront');
+  if(back) back.innerHTML=ringSVG(false,T);
+  if(front) front.innerHTML=ringSVG(true,T);
+  const cr=root.querySelector('.crowd,.hr-crowd');
+  if(cr){
+    cr.style.background=venueCSS(T);
+    cr.style.opacity=T.dim;
+    cr.style.height=(26+T.seats*5)+'%';   // a basement is not a stadium bowl
+  }
+  root.style.setProperty('--arGlow',T.glow);
+}
+
+function ringSVG(front,T){
+  T=T||ARENA_FALLBACK;
   const R=RING, o=[], u='rg'+(++RINGN);
   const open=`<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">`;
   // ropes: three per side, evenly spaced between the post top and the mat
   const lerp=(a,b,t)=>a+(b-a)*t;
-  const T=[0.12,0.42,0.72];
-  const rope=(x1,y1,x2,y2,w,op)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#F4E8DB"
+  const RT=[0.12,0.42,0.72];   // where the three ropes sit between post top and mat
+  const rope=(x1,y1,x2,y2,w,op)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${T.rope}"
       stroke-width="${w}" opacity="${op}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`;
   const post=(x,yTop,yBase,w)=>
     `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBase}" stroke="#2a2320" stroke-width="${w+2}"
@@ -3080,9 +3174,9 @@ function ringSVG(front){
      <line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBase}" stroke="#544840" stroke-width="${w}"
        vector-effect="non-scaling-stroke"/>`;
   // the stacked turnbuckle pads that make a corner read as a corner
-  const pads=(x,yTop,yBase,w)=>T.map(t=>{
+  const pads=(x,yTop,yBase,w)=>RT.map(t=>{
     const y=lerp(yTop,yBase,t);
-    return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+(yBase-yTop)*0.17}" stroke="#C6392C"
+    return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+(yBase-yTop)*0.17}" stroke="${T.pad}"
       stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`;
   }).join('');
 
@@ -3091,13 +3185,13 @@ function ringSVG(front){
     o.push(open);
     o.push(`<defs>
       <linearGradient id="${u}m" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#4d5b6e"/><stop offset="1" stop-color="#6b7c92"/></linearGradient>
+        <stop offset="0" stop-color="${T.mat[0]}"/><stop offset="1" stop-color="${T.mat[1]}"/></linearGradient>
       <linearGradient id="${u}a" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#b03227"/><stop offset="1" stop-color="#5e1a14"/></linearGradient>
+        <stop offset="0" stop-color="${T.apron[0]}"/><stop offset="1" stop-color="${T.apron[1]}"/></linearGradient>
     </defs>`);
     o.push(post(R.bx1,R.yTopB,R.yBack,5)+post(R.bx2,R.yTopB,R.yBack,5));
     o.push(pads(R.bx1,R.yTopB,R.yBack,7)+pads(R.bx2,R.yTopB,R.yBack,7));
-    T.forEach(t=>{ const y=lerp(R.yTopB,R.yBack,t);
+    RT.forEach(t=>{ const y=lerp(R.yTopB,R.yBack,t);
       o.push(rope(R.bx1,y,R.bx2,y,2,0.75)); });
     // the canvas, in perspective
     o.push(`<polygon points="${R.bx1},${R.yBack} ${R.bx2},${R.yBack} ${R.fx2},${R.yFront} ${R.fx1},${R.yFront}"
@@ -3113,13 +3207,13 @@ function ringSVG(front){
     // apron skirt
     o.push(`<polygon points="${R.fx1},${R.yFront} ${R.fx2},${R.yFront} ${R.fx2},${R.apron} ${R.fx1},${R.apron}"
        fill="url(#${u}a)"/>`);
-    o.push(`<line x1="${R.fx1}" y1="${R.yFront}" x2="${R.fx2}" y2="${R.yFront}" stroke="#F4E8DB"
+    o.push(`<line x1="${R.fx1}" y1="${R.yFront}" x2="${R.fx2}" y2="${R.yFront}" stroke="${T.rope}"
        stroke-width="2" opacity=".55" vector-effect="non-scaling-stroke"/>`);
     o.push(`</svg>`);
   } else {
     // ---- in front of the wrestlers: near posts, near ropes, the ropes running back ----
     o.push(open);
-    T.forEach(t=>{
+    RT.forEach(t=>{
       const yB=lerp(R.yTopB,R.yBack,t), yF=lerp(R.yTopF,R.yFront,t);
       o.push(rope(R.bx1,yB,R.fx1,yF,2,0.6));       // running to the near corners
       o.push(rope(R.bx2,yB,R.fx2,yF,2,0.6));
@@ -3131,9 +3225,11 @@ function ringSVG(front){
   }
   return o.join('');
 }
-function paintRings(){
-  document.querySelectorAll('.ringback').forEach(e=>{ if(!e.firstChild) e.innerHTML=ringSVG(false); });
-  document.querySelectorAll('.ringfront').forEach(e=>{ if(!e.firstChild) e.innerHTML=ringSVG(true); });
+// the building you are working tonight
+function myPromoId(){ return (G&&G.car&&G.car.deal&&G.car.deal.promo)||'cwf'; }
+function paintRings(pid){
+  pid=pid||myPromoId();
+  ['arena','pmArena','homeRing'].forEach(id=>dressArena($(id),pid));
 }
 
 /* ---- THE RING ON THE FRONT PAGE ----
@@ -3157,6 +3253,11 @@ const HOME_CARDS=[
 function homeRing(){
   const wrap=$('hrCast'); if(!wrap) return;
   const card=HOME_CARDS[Math.floor(Math.random()*HOME_CARDS.length)];
+  const save0=load();
+  // your building if you have one, otherwise a different house every visit
+  const venue=(save0&&save0.car&&save0.car.deal&&save0.car.deal.promo)
+    || PROMOS[Math.floor(Math.random()*PROMOS.length)].id;
+  dressArena($('homeRing'),venue);
   // pull real characters, and drop the player in when they have a career
   const pool=CHARS.slice();
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
@@ -3178,7 +3279,8 @@ function homeRing(){
       <div class="hr-bob" style="animation-delay:${(i*0.23).toFixed(2)}s;transform:scaleX(${flip})">
         ${wrestlerSVG(c.look,{pose:card.pose[i%card.pose.length]})}</div></div>`;
   }).join('');
-  $('hrStip').textContent=card.stip;
+  const vp=promoById(venue);
+  $('hrStip').textContent=(vp?vp.short+' · ':'')+card.stip;
   $('hrNames').textContent=cast.map(c=>c.you?`${c.name} (you)`:c.name).join('  ·  ');
 }
 function renderHome(){
@@ -4186,7 +4288,7 @@ async function startFight(o){
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   go('fight');
-  stageInit();
+  stageInit(); dressArena($('arena'),myPromoId());
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fClock').textContent='BELL';
@@ -5541,7 +5643,7 @@ function beginPromo(mode,targetId){
   const target=targetId?charById(targetId):null;
   PM={mode,target,beat:0,maxBeats:3,score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,done:false};
   go('promo');
-  stageInit('pmArena');                           // same rig and ring as a match
+  stageInit('pmArena'); dressArena($('pmArena'),myPromoId());   // same rig and ring as a match
   figLook('me',G.w.look);
   if(target){ figLook('opp',target.look); FIG.opp.el.style.display=''; }
   else FIG.opp.el.style.display='none';
