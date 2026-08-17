@@ -447,10 +447,24 @@
     var k = s.sport+'|'+nkey(s.name); (stintsByName[k] || (stintsByName[k]=[])).push(s);
   }); }catch(e){}
 
+  /* The number a player is KNOWN by: the one they wore longest, ties going to
+     the more recent. Taking the latest stint instead made Michael Vick a #2
+     (one season in Pittsburgh) rather than the #7 he was for twelve years in
+     Atlanta and Philadelphia, and would have done the same to anyone who
+     changed number for a short last stop. Longest-worn is the number a fan
+     pictures, which is the only one this question can fairly be about. */
   function jerseyVal(e){
     if(!e) return null;
     var ss = stintsByName[e.sport+'|'+nkey(e.name)];
-    if(ss && ss.length){ var best=null; for(var i=0;i<ss.length;i++){ if(ss[i].num!=null && (best===null || ss[i].y1>best.y1)) best=ss[i]; } if(best) return best.num; }
+    if(ss && ss.length){
+      var best=null, bestLen=-1;
+      for(var i=0;i<ss.length;i++){
+        var st=ss[i]; if(st.num==null) continue;
+        var len=(st.y1-st.y0+1);
+        if(len>bestLen || (len===bestLen && best && st.y1>best.y1)){ best=st; bestLen=len; }
+      }
+      if(best) return best.num;
+    }
     if(e.j && e.j.length){ var last=e.j[e.j.length-1]; if(last!=null) return last; }
     return null;
   }
@@ -504,8 +518,16 @@
       prefix:(isDraft?'#':''), note:(st.lowbest?'lower = better':''), lowbest:st.lowbest,
       isStat:true, asof:(isDraft?null:(ASOF[st.sport]||null)), vfn:vfn, pool:pool });
   });
-  // years played, per sport (jersey number removed as a category)
+  /* Jersey number and years played, per sport.
+     Jersey came out when the Number Game was "guess the jersey number", to stop
+     two games asking the same question. The Number Game now asks which number a
+     player wore AT A GIVEN CLUB, which is a different question from who wore the
+     higher number, so this is free again. jerseyVal() takes the number from the
+     latest stint (one canonical number per player) and falls back to the
+     corpus's own list; drawOpponent already skips ties, which matters here more
+     than anywhere else, since 1 to 99 clusters hard. */
   SPORTS.forEach(function(sp){
+    var jp = poolFor(sp, jerseyVal); if(jp.length>=MIN_POOL) CATS.push({ sport:sp, key:sp+'_jersey', label:'Jersey number', unit:'', prefix:'#', note:'', lowbest:false, isStat:false, asof:null, vfn:jerseyVal, pool:jp });
     var yp = poolFor(sp, yearsVal);  if(yp.length>=MIN_POOL) CATS.push({ sport:sp, key:sp+'_years', label:'Years played', unit:'yrs', prefix:'', note:'longevity', lowbest:false, isStat:false, asof:null, vfn:yearsVal, pool:yp });
   });
   // NBA draft position from the corpus draft field (NFL draft comes from hlstats)
@@ -514,9 +536,9 @@
     var pool=poolFor('NBA', vfn); if(pool.length>=MIN_POOL) CATS.push({ sport:'NBA', key:'nba_draft', label:'Draft position', unit:'', prefix:'#', note:'lower = better', lowbest:true, isStat:false, asof:null, vfn:vfn, pool:pool });
   })();
 
-  // NBA: only Points and Years played for now. The other NBA counting stats
-  // aren't sourced reliably yet ("NBA STATS COMING SOON").
-  var NBA_KEEP = { nba_points:1, NBA_years:1 };
+  // NBA: Points, Jersey number and Years played. The other NBA counting stats
+  // aren't sourced reliably yet ("NBA STATS COMING SOON"); these three are.
+  var NBA_KEEP = { nba_points:1, NBA_years:1, NBA_jersey:1 };
   CATS = CATS.filter(function(c){ return c.sport!=='NBA' || NBA_KEEP[c.key]; });
 
   // order within a sport: stats (by pool size desc), then jersey, years, draft
