@@ -8,6 +8,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import loadBand, { parseCSV } from '../../setlist/dataLoader.js';
@@ -712,6 +713,29 @@ check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
    the second silently threw away the first: the contract reached main with a
    current show-table line and a stale performance line, and no check caught
    it because the guarded number is the one on the home screen. */
+/* THE CACHE BUSTER MUST MATCH THE DATA IT IS BUSTING. This is the guard for a
+   bug a player found: DATA_VERSION was hand-maintained and sat at 2 from 5
+   August while goose.csv changed on the 14th, 16th and 17th. Four files served
+   under one URL, so any cache kept the oldest, and somebody who marked the
+   Greek Theatre on the 14th was told they had never heard the song that opened
+   it. Their browser held an archive from before that night existed while the
+   show table beside it was new enough to know about it. */
+{
+  const files = ['setlist/data/goose.csv', 'setlist/data/goose_shows.csv',
+    'setlist/data/goose_latest.json'];
+  const h = createHash('sha1');
+  for (const f of files) h.update(read(f));
+  const want = h.digest('hex').slice(0, 8);
+  const said = (game.match(/const DATA_VERSION = '([0-9a-f]{8})'/) || [])[1];
+  check(said === want, 'the cache buster matches the data it serves',
+    said ? `page says ${said}, data hashes to ${want} (run sync_counts.mjs)`
+         : 'DATA_VERSION is not a content hash');
+  // All three files ride the same version, so all three must use it.
+  const versioned = [...game.matchAll(/\$\{band\.(csv|shows|latest)\}\?v=\$\{DATA_VERSION\}/g)];
+  check(versioned.length === 3,
+    `every data file is fetched with the buster (${versioned.length} of 3)`);
+}
+
 const sync = read('scripts/setlist/sync_counts.mjs');
 check(/const current = file => pending\.has\(file\) \? pending\.get\(file\) : read\(file\)/.test(sync),
   'a second patch to one file reads the first one\'s result');
