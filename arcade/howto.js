@@ -128,6 +128,19 @@
     card.appendChild(x);
     card.appendChild(h);
     card.appendChild(ul);
+    /* Reading the rules and being shown the screen are different needs, and a
+       list of bullets only ever answers the first one. The walkthrough lives
+       one tap away rather than being a first-visit event you can miss. */
+    var tourBtn = null;
+    if (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key]) {
+      tourBtn = RTGTour.button('Show me around the screen');
+      tourBtn.style.cssText = 'display:flex;width:100%;justify-content:center;margin:0 0 10px;';
+      tourBtn.addEventListener('click', function(){
+        close();
+        setTimeout(function(){ RTGTour.replay('game:' + key, RTGTourData.GAMES[key]); }, 120);
+      });
+      card.appendChild(tourBtn);
+    }
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
@@ -168,11 +181,26 @@
     // for a locked/finished day, typically after a ~300ms timeout) has run.
     // If any game scrim is showing we skip the auto-open and leave the flag
     // unset, so the intro still shows on the next fresh visit.
+    /* On a first visit, walk them through the actual screen rather than
+       opening a list of rules. Pointing at the league switcher and saying what
+       it does lands; "one puzzle a day, five tries" does not, because at that
+       moment they do not yet know what they are looking at. The bullets stay
+       behind the "?" for anyone who wants the rules on their own.
+       Waits for the pregame overlay to be gone as well as any result modal:
+       walking someone through a screen they cannot see would be worse than
+       saying nothing. */
     if(!seen()){
-      setTimeout(function(){
-        if(document.querySelector('.scrim:not(.hidden)')) return;
-        open();
-      }, 700);
+      var tries = 0;
+      var wait = setInterval(function(){
+        if (++tries > 40) { clearInterval(wait); return; }              // ~12s, then give up
+        if (document.querySelector('.scrim:not(.hidden)')) return;      // a result is showing
+        if (document.querySelector('.rtgpg-scrim:not([hidden])')) return; // pregame is showing
+        clearInterval(wait);
+        markSeen();
+        var did = (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key])
+          ? RTGTour.once('game:' + key, RTGTourData.GAMES[key]) : false;
+        if (!did) open();
+      }, 300);
     }
   }
 

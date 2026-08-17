@@ -330,6 +330,8 @@
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=3"></script>
 <script src="/arcade/type.js?v=2"></script>
+<script src="/arcade/tour.js?v=1"></script>
+<script src="/arcade/tourdata.js?v=1"></script>
 <script src="/arcade/sportegories.js?v=7"></script>
 <script src="/arcade/livecheck.js?v=5"></script>
 <script>
@@ -357,6 +359,13 @@
   function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
 
   var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
+  /* This page has no shared how-to helper, so it starts its own walkthrough.
+     It waits for the rows to exist, because half the steps point at them. */
+  function maybeTour(){
+    if(!window.RTGTour || !window.RTGTourData || !RTGTourData.GAMES.sportegories) return;
+    if(!document.getElementById('in0')) return;
+    RTGTour.once('game:sportegories', RTGTourData.GAMES.sportegories);
+  }
 
   var TIER_NAME = ['Anchor','Mid','Hard','Spice'];
 
@@ -389,6 +398,7 @@
     $('letterTile').textContent = puz.letter;
     $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
     $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice. Deep cuts get looked up.';
+    setTimeout(maybeTour, 500);
   }
 
   /* The typeahead used to live here, ~90 lines of it, and three other games

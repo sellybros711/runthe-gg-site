@@ -252,7 +252,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
-/* This page loads Archivo + Rubik only — no Anton — so the shared hero takes
+/* This page loads Archivo + Rubik only (no Anton), so the shared hero takes
    the display face this page actually has. Layout comes from .a-rhero /
    .a-runline in arcade.css, shared with every other game. */
 .modal{--a-heroFont:var(--pix); --a-heroInk:var(--ink);}
@@ -379,7 +379,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <div class="a-gametitle" style="--a-tc:var(--news)"><span class="a-gametitle__plate">Daily <b>Crossword</b></span></div>
 
   <div class="inforow">
-    <span class="seg" id="dateSeg">– <small>Daily</small></span>
+    <span class="seg" id="dateSeg">- <small>Daily</small></span>
     <span class="sep"></span>
     <span class="seg size" id="sizeSeg">5 × 5</span>
     <span class="sep"></span>
@@ -400,8 +400,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -424,7 +424,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <button class="arw" id="prevClue" aria-label="Previous clue">‹</button>
     <div class="body">
       <span class="tag" id="clueTag">1 ACROSS</span>
-      <span class="txt" id="clueTxt">–</span>
+      <span class="txt" id="clueTxt">-</span>
     </div>
     <button class="arw" id="nextClue" aria-label="Next clue">›</button>
   </div>
@@ -449,9 +449,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <div class="k" id="mTimeK">Your time</div>
     </div>
     <div class="a-runline">
-      <span><b id="mBest">–</b> best</span><i></i>
+      <span><b id="mBest">-</b> best</span><i></i>
       <span><b id="mStreak">0</b> day streak</span><i></i>
-      <span><b id="mAvg">–</b> average</span>
+      <span><b id="mAvg">-</b> average</span>
     </div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
@@ -513,7 +513,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=12"></script>
-<script src="/arcade/howto.js?v=15"></script>
+<script src="/arcade/howto.js?v=16"></script>
+<script src="/arcade/tour.js?v=1"></script>
+<script src="/arcade/tourdata.js?v=1"></script>
 <script>
 (function(){
   "use strict";
@@ -940,7 +942,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       s.lastDone = today;
       var prevBestT=s.best||0;
       // Store the second the player was SHOWN. fmt() floors, so rounding here
-      // let a 1:18.6 solve display "1:18" and post a 1:19 best — two numbers
+      // let a 1:18.6 solve display "1:18" and post a 1:19 best: two numbers
       // that now sit side by side and used to disagree.
       var shownT=Math.floor(elapsed);
       var newBestT=(!ARCHIVE && attemptFirst && prevBestT>0 && shownT<prevBestT);
@@ -1069,8 +1071,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('stFlawless').textContent = s.perfects||0;
     var tl=document.getElementById('stTimeline');
     if(solves>0){
-      var best=(s.best && s.best<1e9)?fmt(s.best):'–';
-      var avg=s.timeSum?fmt(Math.round(s.timeSum/solves)):'–';
+      var best=(s.best && s.best<1e9)?fmt(s.best):'-';
+      var avg=s.timeSum?fmt(Math.round(s.timeSum/solves)):'-';
       tl.innerHTML='<div class="cell">'+best+'<span class="mut">Best time</span></div>'+
                    '<div class="cell">'+avg+'<span class="mut">Avg time</span></div>';
       tl.classList.remove('hidden'); document.getElementById('stEmpty').classList.add('hidden');
@@ -1177,14 +1179,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     done=true; if(tick){ clearInterval(tick); tick=null; }
     var b=document.getElementById('board'); if(b){ b.style.pointerEvents='none'; b.style.opacity='.55'; }
     var seg=document.getElementById('dateSeg'); if(seg) seg.innerHTML = fmtDate(DATE)+' <small>No plays left. Back tomorrow.</small>';
-    var bestStr = (saved.best && saved.best<1e9) ? fmt(saved.best) : '–';
+    var bestStr = (saved.best && saved.best<1e9) ? fmt(saved.best) : '-';
     document.getElementById('mTitle').textContent='No plays left';
     document.getElementById('mSub').textContent='No plays left. Back tomorrow.';
     document.getElementById('mTime').textContent=bestStr;
     document.getElementById('mStreak').textContent=saved.streak||0;
     document.getElementById('mBest').textContent=bestStr;
     document.getElementById('mTimeK').textContent='Best time';
-    document.getElementById('mAvg').textContent = (saved.timeSum && saved.solves) ? fmt(Math.round(saved.timeSum/saved.solves)) : '–';
+    document.getElementById('mAvg').textContent = (saved.timeSum && saved.solves) ? fmt(Math.round(saved.timeSum/saved.solves)) : '-';
     document.getElementById('mFlawless').classList.remove('on');
     var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
     updateAgainBtn();

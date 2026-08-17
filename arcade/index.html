@@ -1003,6 +1003,40 @@
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=12"></script>
 <script src="/arcade/calendar.js?v=11"></script>
+<script src="/arcade/tour.js?v=1"></script>
+<script src="/arcade/tourdata.js?v=1"></script>
+<script>
+/* THE FIRST NINETY SECONDS.
+   Ten tiles with no explanation is the single biggest thing standing between
+   someone arriving and someone playing: it does not say what the place is,
+   what a streak is for, or which one to open. The walkthrough points at the
+   real tiles and answers those in order, and it stays available afterwards
+   because plenty of people skip it and come back wanting it. */
+(function () {
+  function startTour(force){
+    if (!window.RTGTour || !window.RTGTourData) return;
+    if (force) RTGTour.replay('hub', RTGTourData.HUB);
+    else RTGTour.once('hub', RTGTourData.HUB);
+  }
+  function mountButton(){
+    if (!window.RTGTour) return;
+    var head = document.querySelector('.zone-head');
+    if (!head || document.getElementById('tourOpen')) return;
+    var b = RTGTour.button('New here? Show me around');
+    b.id = 'tourOpen';
+    b.style.cssText = 'margin:10px auto 0; display:flex;';
+    b.addEventListener('click', function(){ startTour(true); });
+    head.appendChild(b);
+  }
+  function go(){
+    mountButton();
+    // let the tiles finish painting so the spotlight lands on a real rectangle
+    setTimeout(function(){ startTour(false); }, 650);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+  else go();
+})();
+</script>
 <script>
 (function () {
   var LS = window.localStorage;
