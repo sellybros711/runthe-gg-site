@@ -3246,10 +3246,9 @@ const HOME_CARDS=[
 function homeRing(){
   const wrap=$('hrCast'); if(!wrap) return;
   const card=HOME_CARDS[Math.floor(Math.random()*HOME_CARDS.length)];
-  const save0=load();
-  // your building if you have one, otherwise a different house every visit
-  const venue=(save0&&save0.car&&save0.car.deal&&save0.car.deal.promo)
-    || PROMOS[Math.floor(Math.random()*PROMOS.length)].id;
+  // a different one of the nine buildings every time you land here, whether
+  // or not you have a career: the front page is a showcase, not a status line
+  const venue=PROMOS[Math.floor(Math.random()*PROMOS.length)].id;
   dressArena($('homeRing'),venue);
   // pull real characters, and drop the player in when they have a career
   const pool=CHARS.slice();
