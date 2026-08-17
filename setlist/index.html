@@ -1114,13 +1114,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
          414px   "Draft a setlist"
          694px   Leaderboard and Your shows
-         780px   the HOW IT WORKS heading
-         809px   step 1, and every one of the five steps ends below the fold
+         752px   On tour and Every show
+         838px   the HOW IT WORKS heading, itself on the fold
+         867px   step 1, and every one of the five steps below it
 
-     So a first-time player meets the button 400 pixels before they meet a
-     single rule, and the two buttons under it are unlabelled beyond their own
+     So a first-time player meets the button 450 pixels before they meet a
+     single rule, and the FOUR buttons under it are unlabelled beyond their own
      names. They press Draft not knowing what a draft is, what they are scored
-     on, or that "Your shows" is where their own concert history lives. Moving
+     on, or that "Your shows" is where their own concert history lives.
+
+     Those numbers got worse, not better, after this was first built: adding the
+     tour and browser screens pushed the rules a further 58px down the page.
+     That is the failure mode this whole block exists to prevent, so the guard
+     in check_data now asserts every nav button on the home screen is covered
+     by a step rather than trusting anybody to remember. Moving
      the rules above the button would fix that for the first visit and punish
      every visit after it, so instead the rules come to the player, pointing at
      the thing each one is about, once.
@@ -2243,12 +2250,31 @@ const GUIDE_STEPS = [
         you were dealt were loaded or thin, only what you did with them.</p>`,
   },
   {
+    aim: () => document.querySelector('[data-go="tour"]'),
+    eyebrow: 'While you are here',
+    hd: 'The band is on tour',
+    body: `<p>Every date Goose has announced, with how many days until each one.
+        This follows elgoose.net, so it fills in as they book.</p>
+      <p>The setlist from each night lands in the game the <b>next morning</b>,
+        which means the show you just saw is draftable by breakfast.</p>`,
+  },
+  {
+    aim: () => document.querySelector('[data-go="browse"]'),
+    eyebrow: 'If you have been to a few',
+    hd: 'Claim the ones you were at',
+    body: `<p>Every show in the archive, filtered by <b>year and tour</b>, and you
+        tick the nights you were there.</p>
+      <p>Start here rather than waiting for the game to deal you one: the draft
+        picks at random, so marking a decade of shows one draw at a time would
+        take longer than the decade did.</p>`,
+  },
+  {
     aim: () => document.querySelector('[data-go="profile"]'),
-    eyebrow: 'If you go to shows',
+    eyebrow: 'What that gets you',
     hd: 'Your shows',
-    body: `<p>Mark the nights you were really at as you draft. Segue then works out
-        <b>how much of the catalogue you have heard live</b>: how many songs, which
-        one you have seen most, and how many are still out there.</p>
+    body: `<p>Once nights are marked, Segue works out <b>how much of the catalogue
+        you have heard live</b>: how many songs, which one you have seen most, and
+        how many are still out there.</p>
       <p>It stays on this device unless you sign in, and it never appears on the
         leaderboard.</p>`,
   },
