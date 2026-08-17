@@ -295,7 +295,31 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;padding:2px 5px;border-radius:4px;flex:0 0 auto;
     background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.45)}
   .hp-new[hidden]{display:none}
-  .hp-util{margin-top:8px}
+  /* THREE ACROSS, NOT TWO AND AN ORPHAN. .hrow is a two-column grid, which was right while
+     this row held two buttons; adding the tutorial left Leaderboard alone on a second row at
+     half width, sitting under a gap. Three equal columns is the same row it always looked
+     like, with one more thing in it. */
+  /* .hrow.hp-util, both classes, because .hrow sets its two columns further down the sheet
+     and a single-class rule up here loses the tie on order alone. */
+  .hrow.hp-util{margin-top:8px;grid-template-columns:repeat(3,1fr);gap:6px}
+  /* THREE LABELS IN THE WIDTH TWO USED TO HAVE. "Leaderboard" is eleven uppercase
+     characters and will not wrap, so on a 320 screen it ran out of its own button while
+     "How to play" wrapped to two lines and made all three of them 57px tall. The tracking
+     is what tips it over: at .03em it adds nearly 4px to an eleven-character word, which is
+     most of the overflow. Dropped here, with the padding pulled in and wrapping refused, so
+     the three stay one line and one height. */
+  .hp-util .hp-util-btn{white-space:nowrap;letter-spacing:0;padding-left:6px;padding-right:6px}
+  @media (max-width:440px){
+    .hp-util .hp-util-btn{font-size:11px;padding-left:4px;padding-right:4px}
+  }
+  /* One more step for the narrowest phones. At 320 the three share 279px, and eleven
+     uppercase characters of Archivo do not fit a third of that at 11px: Leaderboard ran 9px
+     past its own button. Measured off the rendered button rather than guessed, the same way
+     the pair above it was. */
+  @media (max-width:340px){
+    .hrow.hp-util{gap:4px}
+    .hp-util .hp-util-btn{font-size:10px;padding-left:3px;padding-right:3px}
+  }
   .hp-util-btn{padding:11px 14px;font-size:13px;background:transparent;box-shadow:none;
     border:1.5px solid var(--line);border-radius:10px;color:var(--dim);font-weight:600;
     letter-spacing:.04em}
