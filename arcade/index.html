@@ -1014,8 +1014,8 @@
 <script src="/arcade/tokens.js?v=5"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=8"></script>
-<script src="/arcade/auth.js?v=1"></script>
+<script src="/arcade/board.js?v=9"></script>
+<script src="/arcade/auth.js?v=2"></script>
 <script src="/arcade/mycard.js?v=7"></script>
 <script src="/arcade/topbanner.js?v=5"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
@@ -1200,7 +1200,9 @@
   // that do track their own best, then write the mark back so a broken streak
   // never erases the record.
   best = Math.max(best, cur, cw.bestStreak | 0, gs.bestStreak | 0);
-  try { localStorage.setItem('grid_best_streak', String(best)); } catch (e) {}
+  // Only ever write a real mark. Writing 0 put the key straight back after a
+  // sign-out wipe, which read as leftover account data on a clean browser.
+  if (best > 0) { try { localStorage.setItem('grid_best_streak', String(best)); } catch (e) {} }
 
   // ---- today's play states -> card status + pips ----
   function todayStr() {

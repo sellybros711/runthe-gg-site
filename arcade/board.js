@@ -150,6 +150,14 @@
     return res.text().then(function (b) {
       try { b = JSON.parse(b); } catch (e) {}
       lastError = { where: where, status: res.status, message: (b && (b.message || b.hint)) || res.statusText };
+      // A 4xx on a submit is the server refusing this run outright, not a bad
+      // connection, and the player is never told - the game just carries on and
+      // their name never appears. Say it once in the console so the next one of
+      // these is found in minutes instead of by someone noticing an empty board.
+      // ('unknown game' hid here for as long as the sport editions existed.)
+      if (where === 'submit' && res.status >= 400 && res.status < 500) {
+        try { console.warn('[RTG] score refused:', lastError.status, lastError.message); } catch (e) {}
+      }
       return null;
     }).catch(function () { lastError = { where: where, status: res.status }; return null; });
   }

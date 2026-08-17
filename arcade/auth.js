@@ -85,6 +85,57 @@
       localStorage.removeItem('runthegrid_pro');
     } catch (e) {}
   }
+  /* Signing out has to leave this browser looking exactly like a browser that
+   * has never signed in. It did not: the pro flag and the wallet were cleared,
+   * but every streak, every daily result, the lifetime totals behind My Arcade
+   * Card, the resume snapshots and the chosen sport edition all stayed, so a
+   * signed-out visitor kept seeing "Solved", their streak, their Archive pills
+   * and their punched ticket. On a shared device the next person saw them too.
+   *
+   * Sweep by prefix with a keep-list, rather than naming every key to delete.
+   * The old code named them, which is precisely why it fell behind: eleven more
+   * keys have been added since it was written and none of them made the list.
+   * Anything new is now cleared by default, and only what is deliberately
+   * device-scoped (theme, sound nudge, onboarding seen-flags) survives.
+   *
+   * NOT called on a merely-absent session: that fires during boot before the
+   * session resolves, and wiping there would eat a signed-in player's progress.
+   * Only an explicit sign-out and a SIGNED_OUT event reach this. */
+  var KEEP = {
+    runthegrid_theme: 1,        // device appearance
+    runthegrid_sound_nudged: 1, // "we turned sound on" notice, shown once ever
+    grid_tester: 1,             // local dev toggle, not account state
+    'rtg:fav_cfb': 1            // a browsing preference, not a score
+  };
+  function keepKey(k) {
+    if (KEEP[k]) return true;
+    return k.indexOf('rtg:howto:') === 0 || k.indexOf('rtg:tour:') === 0;
+  }
+  function oursKey(k) {
+    return k === GOLF_KEY ||
+      k.indexOf('rtg:') === 0 || k.indexOf('rtg_') === 0 || k.indexOf('grid_') === 0 ||
+      k.indexOf('runthegrid_') === 0 || k.indexOf('rtt_') === 0 || k.indexOf('rtp_') === 0;
+  }
+  function wipeLocal() {
+    try {
+      var kill = [], i, k;
+      for (i = 0; i < localStorage.length; i++) {
+        k = localStorage.key(i);
+        if (k && oursKey(k) && !keepKey(k)) kill.push(k);
+      }
+      for (i = 0; i < kill.length; i++) localStorage.removeItem(kill[i]);
+    } catch (e) {}
+    // Resume snapshots and one-shot flags also live in sessionStorage.
+    try {
+      var sk = [], j, s;
+      for (j = 0; j < sessionStorage.length; j++) {
+        s = sessionStorage.key(j);
+        if (s && oursKey(s)) sk.push(s);
+      }
+      for (j = 0; j < sk.length; j++) sessionStorage.removeItem(sk[j]);
+    } catch (e) {}
+  }
+
   function bridgeInbound() {
     // arriving from Golf: if the default key is empty but Golf has a session, adopt it
     try {
@@ -124,6 +175,11 @@
       // Arrived from a reset email: supabase-js parsed the recovery token into a
       // short-lived session. Flag it so the UI can show "set a new password".
       if (evt === 'PASSWORD_RECOVERY') recovery = true;
+      // A real sign-out elsewhere (another tab, or a token that will not
+      // refresh) clears everything too - but only when this page HAD a session
+      // to lose. A SIGNED_OUT on a page that was never signed in is boot noise
+      // and must not touch storage.
+      if (evt === 'SIGNED_OUT' && session) wipeLocal();
       session = s || null;
       if (session) bridgeSession(); else bridgeClear();
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
@@ -204,11 +260,23 @@
     });
   }
 
+  // Sign-out ends with a reload, deliberately. Half the arcade paints its
+  // signed-in state once at boot and never re-reads it: the hub's tiles, its
+  // ticket and its dot row, each game's streak panel and saved result, the
+  // Archive pills a cardholder gets. Repainting all of that from an event would
+  // mean auditing every surface forever; one reload is a guarantee, and it
+  // lands on the same page the reader was already on.
   function signOut() {
-    if (!sb) { session = null; profile = null; bridgeClear(); fire(); return Promise.resolve(); }
+    function done() {
+      session = null; profile = null; wipeLocal(); bridgeClear(); fire();
+      // A tick of slack so the caller's promise chain and any last render (the
+      // delete-account confirmation, the modal closing) run before the reload.
+      try { setTimeout(function () { location.reload(); }, 80); } catch (e) {}
+    }
+    if (!sb) { done(); return Promise.resolve(); }
     return sb.auth.signOut({ scope: 'local' })
       .catch(function () { return sb.auth.signOut().catch(function () {}); })
-      .then(function () { session = null; profile = null; bridgeClear(); fire(); });
+      .then(done);
   }
 
   function available(username) {
