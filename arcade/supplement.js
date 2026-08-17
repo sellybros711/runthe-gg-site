@@ -119,6 +119,38 @@
              Raiders years, so every Raiders category refused him. ---- */
       { id:'sup_nfl_marcus-allen',    name:'Marcus Allen',      sport:'NFL', f:5, t:['Raiders','Kansas City Chiefs'], j:[32], pos:'Running Back', decade:[1980,1990], col:'Southern California', ns:16, hp:1 },
 
+      /* ================================== AUDIT 2026-08, second pass
+       * Named in stars.js, absent from every source. Mostly players who
+       * retired too recently for former.js and are gone from the active
+       * rosters, which is the gap those two files leave between them. */
+
+      /* ---- NBA ---- */
+      { id:'sup_nba_drazen-petrovic', name:'Drazen Petrovic', sport:'NBA', f:5, t:['Portland Trail Blazers','Nets'], j:[3,44], pos:'Shooting Guard', decade:[1980,1990], col:'', ns:4, hp:0 },
+      { id:'sup_nba_jamaal-magloire', name:'Jamaal Magloire', sport:'NBA', f:4, t:['New Orleans Pelicans','Milwaukee Bucks','Portland Trail Blazers','Nets','Miami Heat','Toronto Raptors'], j:[21], pos:'Center', decade:[2000,2010], col:'Kentucky', ns:12, hp:1 },
+      { id:'sup_nba_josh-howard',     name:'Josh Howard',     sport:'NBA', f:4, t:['Dallas Mavericks','Washington Wizards','Utah Jazz','Minnesota Timberwolves'], j:[5], pos:'Small Forward', decade:[2000,2010], col:'Wake Forest', ns:10, hp:1 },
+      { id:'sup_nba_otto-porter',     name:'Otto Porter',     sport:'NBA', f:4, t:['Washington Wizards','Chicago Bulls','Orlando Magic','Golden State Warriors','Toronto Raptors'], j:[22], pos:'Small Forward', decade:[2010,2020], col:'Georgetown', ns:10, hp:1 },
+      { id:'sup_nba_cam-thomas',      name:'Cam Thomas',      sport:'NBA', f:4, t:['Nets'], j:[24], pos:'Shooting Guard', decade:[2020], col:'Louisiana State', ns:4, hp:1 },
+      { id:'sup_nba_jonathan-kuminga', name:'Jonathan Kuminga', sport:'NBA', f:4, t:['Golden State Warriors'], j:[0], pos:'Power Forward', decade:[2020], col:'', ns:4, hp:1 },
+      { id:'sup_nba_chris-duarte',    name:'Chris Duarte',    sport:'NBA', f:3, t:['Indiana Pacers','Sacramento Kings','Chicago Bulls'], j:[3], pos:'Shooting Guard', decade:[2020], col:'Oregon', ns:4, hp:1 },
+
+      /* ---- NFL ---- */
+      { id:'sup_nfl_chris-carson',    name:'Chris Carson',    sport:'NFL', f:4, t:['Seattle Seahawks'], j:[32], pos:'Running Back', decade:[2010,2020], col:'Oklahoma State', ns:5, hp:0 },
+
+      /* ---- MLB ---- */
+      { id:'sup_mlb_wander-franco',   name:'Wander Franco',   sport:'MLB', f:4, t:['Tampa Bay Rays'], j:[5], pos:'Shortstop', decade:[2020], col:'', ns:3, hp:0 },
+      { id:'sup_mlb_cole-ragans',     name:'Cole Ragans',     sport:'MLB', f:4, t:['Texas Rangers','Kansas City Royals'], j:[55], pos:'Pitcher', decade:[2020], col:'', ns:4, hp:1 },
+      { id:'sup_mlb_alek-manoah',     name:'Alek Manoah',     sport:'MLB', f:4, t:['Toronto Blue Jays'], j:[6], pos:'Pitcher', decade:[2020], col:'West Virginia', ns:4, hp:1 },
+      { id:'sup_mlb_justin-steele',   name:'Justin Steele',   sport:'MLB', f:4, t:['Chicago Cubs'], j:[35], pos:'Pitcher', decade:[2020], col:'', ns:5, hp:0 },
+      { id:'sup_mlb_shane-mcclanahan', name:'Shane McClanahan', sport:'MLB', f:4, t:['Tampa Bay Rays'], j:[18], pos:'Pitcher', decade:[2020], col:'South Florida', ns:4, hp:1 },
+      { id:'sup_mlb_hyun-jin-ryu',    name:'Hyun-Jin Ryu',    sport:'MLB', f:4, t:['Dodgers','Toronto Blue Jays'], j:[99], pos:'Pitcher', decade:[2010,2020], col:'', ns:11, hp:0 },
+      { id:'sup_mlb_zack-britton',    name:'Zack Britton',    sport:'MLB', f:4, t:['Baltimore Orioles','New York Yankees'], j:[53], pos:'Pitcher', decade:[2010,2020], col:'', ns:12, hp:0 },
+      { id:'sup_mlb_aaron-sanchez',   name:'Aaron Sanchez',   sport:'MLB', f:3, t:['Toronto Blue Jays','Houston Astros','San Francisco Giants','Washington Nationals','Minnesota Twins'], j:[41], pos:'Pitcher', decade:[2010,2020], col:'', ns:9, hp:1 },
+      { id:'sup_mlb_kevin-kiermaier', name:'Kevin Kiermaier', sport:'MLB', f:4, t:['Tampa Bay Rays','Toronto Blue Jays'], j:[39], pos:'Center Fielder', decade:[2010,2020], col:'', ns:11, hp:0 },
+      { id:'sup_mlb_rowdy-tellez',    name:'Rowdy Tellez',    sport:'MLB', f:3, t:['Toronto Blue Jays','Milwaukee Brewers','Pittsburgh Pirates','Seattle Mariners'], j:[44], pos:'First Baseman', decade:[2010,2020], col:'', ns:8, hp:0 },
+      { id:'sup_mlb_jose-iglesias',   name:'Jose Iglesias',   sport:'MLB', f:3, t:['Detroit Tigers','Boston Red Sox','Cincinnati Reds','Baltimore Orioles','Colorado Rockies','Marlins','New York Mets','San Diego Padres'], j:[11], pos:'Shortstop', decade:[2010,2020], col:'', ns:13, hp:0 },
+      { id:'sup_mlb_andrew-chafin',   name:'Andrew Chafin',   sport:'MLB', f:3, t:['Arizona Diamondbacks','Chicago Cubs','Athletics','Detroit Tigers','Milwaukee Brewers','Texas Rangers','Washington Nationals'], j:[39], pos:'Pitcher', decade:[2010,2020], col:'Kent State', ns:12, hp:0 },
+      { id:'sup_mlb_kyle-wright',     name:'Kyle Wright',     sport:'MLB', f:3, t:['Braves','Kansas City Royals'], j:[30], pos:'Pitcher', decade:[2010,2020], col:'Vanderbilt', ns:6, hp:1 },
+
       /* ============================================== NBA icons, missing */
       { id:'sup_nba_bob-pettit',      name:'Bob Pettit',        sport:'NBA', f:5, t:['Atlanta Hawks'], j:[9], pos:'Power Forward', decade:[1950,1960], col:'Louisiana State', ns:11, hp:1 },
       { id:'sup_nba_nate-thurmond',   name:'Nate Thurmond',     sport:'NBA', f:5, t:['Golden State Warriors','Chicago Bulls','Cleveland Cavaliers'], j:[42], pos:'Center', decade:[1960,1970], col:'Bowling Green', ns:14, hp:1 },

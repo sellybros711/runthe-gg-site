@@ -169,7 +169,15 @@ function collegeConflict(a, b) {
 }
 
 const collisions = [];
-function differentPerson(cur, e, isRosterRow) {
+/* The strongest signal of all, and it needs no guessing: two rows from the SAME
+   source with the same name and sport are two people, because that source
+   already told them apart. former.js carries two Alex Gonzalezes, both
+   shortstops, both 1990s to 2000s: no position, era or college test can
+   separate them, and the file itself already had. rosters.js has nine more,
+   including two active Christian Joneses who are both offensive tackles.
+   A well-formed source lists a person once, so a second row is a second man. */
+function differentPerson(cur, e, isRosterRow, src) {
+  if (src && cur.src && cur.src[src]) return 'same source, two rows';
   const a = POS_FAMILY[cur.pos], b = POS_FAMILY[e.pos];
   if (a && b && a !== b) return 'position';
   // Careers thirty years apart are not one man having a long career.
@@ -194,14 +202,15 @@ function differentPerson(cur, e, isRosterRow) {
    name -> [players] and accepts any of them that satisfies a category, so both
    Josh Allens simply work once they both exist. */
 const pool = new Map();                       // sport|normfull -> [record]
-function put(e, fromCorpus, isRoster) {
+function put(e, fromCorpus, isRoster, src) {
   const k = e.sport + '|' + nkFull(e.name);
   const bucket = pool.get(k);
   let cur = null;
-  if (bucket) {
-    for (const rec of bucket) { if (!differentPerson(rec, e, isRoster)) { cur = rec; break; } }
+  const forceNew = !!(src && DUP[src] && DUP[src].has(k));
+  if (bucket && !forceNew) {
+    for (const rec of bucket) { if (!differentPerson(rec, e, isRoster, src)) { cur = rec; break; } }
     if (!cur) {
-      collisions.push({ name: e.name, sport: e.sport, why: differentPerson(bucket[0], e, isRoster),
+      collisions.push({ name: e.name, sport: e.sport, why: differentPerson(bucket[0], e, isRoster, src),
         kept: bucket[0].pos, added: e.pos, team: (e.t || [])[0], roster: !!isRoster });
     }
   }
@@ -211,8 +220,9 @@ function put(e, fromCorpus, isRoster) {
       col: e.col || null, aw: (e.aw || []).slice(), decade: (e.decade || []).slice(),
       act: e.act === 1 ? 1 : 0, hof: e.hof ? 1 : 0, dp: typeof e.dp === 'number' ? e.dp : null,
       f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0,
-      tpart: e.tpart ? 1 : 0
+      tpart: e.tpart ? 1 : 0, src: {}
     };
+    if (src) cur.src[src] = 1;
     if (bucket) bucket.push(cur); else pool.set(k, [cur]);
     return;
   }
@@ -236,13 +246,37 @@ function put(e, fromCorpus, isRoster) {
   if (e.id && !cur.ids.includes(e.id)) cur.ids.push(e.id);
   if (fromCorpus) cur.corpus = 1;
   if (e.aw) for (const a of e.aw) if (!cur.aw.includes(a)) cur.aw.push(a);
+  if (src) { cur.src = cur.src || {}; cur.src[src] = 1; }
 }
-CORPUS.forEach((e) => put(e, true));
-FORMER.forEach((e) => put(e, false));
+/* When one source lists a name twice it is telling us there are two people, but
+   it is NOT telling us which of them is the career already in the pool. Merging
+   the first row and splitting the second gets it exactly half wrong: the older
+   Max Muncy absorbed the young Athletics infielder, and the new record that
+   split off carried the wrong club. So for any name a source duplicates, every
+   row from that source becomes its own person and none of them touch the
+   established record. The curated career stays clean and each new man is
+   whole. */
+function dupKeys(rows, name, sport) {
+  const seen = new Set(), dup = new Set();
+  for (const r of rows) {
+    const k = sport(r) + '|' + nkFull(name(r));
+    if (seen.has(k)) dup.add(k); else seen.add(k);
+  }
+  return dup;
+}
+const DUP = {
+  corpus: dupKeys(CORPUS, (e) => e.name, (e) => e.sport),
+  former: dupKeys(FORMER, (e) => e.name, (e) => e.sport),
+  supp:   dupKeys(SUPPLEMENT, (e) => e.name, (e) => e.sport),
+  roster: dupKeys(ROSTERS, (p) => p.n, (p) => p.s)
+};
+
+CORPUS.forEach((e) => put(e, true, false, 'corpus'));
+FORMER.forEach((e) => put(e, false, false, 'former'));
 // Hand-curated, so it counts as corpus: these names were chosen BY a person for
 // being recognizable, which is the whole question the fame gate is asking.
-SUPPLEMENT.forEach((e) => put(e, true));
-ROSTERS.forEach((p) => put(fromRoster(p), false, true));
+SUPPLEMENT.forEach((e) => put(e, true, false, 'supp'));
+ROSTERS.forEach((p) => put(fromRoster(p), false, true, 'roster'));
 
 // awards are keyed "SPORT|normalized name"
 for (const [key, val] of Object.entries(AWARDS)) {

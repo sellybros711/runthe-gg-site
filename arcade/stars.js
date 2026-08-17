@@ -143,7 +143,7 @@
     'Zach Thomas','Patrick Willis','Luke Kuechly','Bobby Wagner','Fred Warner','Roquan Smith',
     'Julius Peppers','DeMarcus Ware','Jared Allen','Von Miller','Khalil Mack','J.J. Watt','Aaron Donald',
     'Myles Garrett','T.J. Watt','Nick Bosa','Joey Bosa','Micah Parsons','Chase Young','Danielle Hunter',
-    'Trey Hendrickson','Maxx Crosby','Josh Allen (LB)','Kayvon Thibodeaux','Will Anderson Jr.',
+    'Trey Hendrickson','Maxx Crosby','Kayvon Thibodeaux','Will Anderson Jr.',
     'Cameron Jordan','Bradley Chubb','Jalen Ramsey','Sauce Gardner','Pat Surtain II','Devon Witherspoon',
     'Marlon Humphrey','Xavien Howard','Denzel Ward','Marshon Lattimore','Byron Jones','Justin Simmons',
     'Kevin Byard','Minkah Fitzpatrick','Derwin James','Jessie Bates III','Tyrann Mathieu','Jamal Adams',
