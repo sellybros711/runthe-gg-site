@@ -304,7 +304,7 @@ STAT_STEPS.forEach(([key, label, steps]) => steps.forEach((min) => {
 add('Career spanned 3 different decades', { k: 'decades', min: 3 }, 'era');
 add('Career spanned 4 different decades', { k: 'decades', min: 4 }, 'era');
 add('Never played for another franchise', { k: 'teamsMax', max: 1 }, 'journey');
-add('Played for exactly two franchises', { k: 'teamsMax', max: 2 }, 'journey');
+add('Played for exactly two franchises', { k: 'teamsExact', n: 2 }, 'journey');
 add('Played for 6+ franchises', { k: 'teams', min: 6 }, 'journey');
 add('Active player today', { k: 'act' }, 'era');
 add('#1 overall draft pick', { k: 'draft1' }, 'draft');
@@ -382,6 +382,12 @@ function test(p, pr) {
     // Never counts a roster snapshot: one team listed today is not a career
     // spent in one town.
     case 'teamsMax': return !p.tpart && p.t.length > 0 && p.t.length <= pr.max;
+    // teamsMax is AT MOST n, which is right for the one-franchise categories
+    // ("never left" is teamsMax 1) and wrong for any label that says a number
+    // out loud. "Played for exactly two franchises" ran on teamsMax 2, so it
+    // accepted every one-franchise player and listed Bill Russell and David
+    // Robinson as answers you could have given.
+    case 'teamsExact': return !p.tpart && p.t.length === pr.n;
     case 'decades': return new Set(p.decade).size >= pr.min;
     default: return false;
   }

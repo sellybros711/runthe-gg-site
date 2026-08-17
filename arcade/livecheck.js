@@ -337,7 +337,11 @@
      incomplete that those predicates are confirm-only by design, so `null` is
      their normal state and accepting it would hand a free point to any real
      player for "Hall of Fame Center". Same for stats. */
-  var SOFT_GAP = { pos: 1, col: 1, conf: 1, team: 1, teams: 1, teamsMax: 1, decades: 1, act: 1 };
+  var SOFT_GAP = { pos: 1, col: 1, conf: 1, team: 1, teams: 1, teamsMax: 1, teamsExact: 1, decades: 1, act: 1 };
+  /* The roster-shaped predicates. Their `null` does not mean "we know nothing":
+     it means "the roster we have cannot refute this", which is worth something
+     when there IS a roster and nothing at all when there isn't. */
+  var ROSTER_PRED = { teams: 1, teamsMax: 1, teamsExact: 1 };
 
   function verdict(s, pr, gaps) {
     if (pr.all) {
@@ -351,7 +355,19 @@
     }
     if (gaps) gaps.seen = (gaps.seen || 0) + 1;
     var _v = predicate(s, pr);
-    if (_v === null && gaps) { (gaps.kinds || (gaps.kinds = [])).push(pr.k); }
+    if (_v === null && gaps) {
+      (gaps.kinds || (gaps.kinds = [])).push(pr.k);
+      /* Evidence only when the roster we pulled AGREES with the claim. A roster
+         SHORTER than the claim is not evidence for it: David Robinson comes
+         back with one franchise, and one franchise is not two. */
+      if (ROSTER_PRED[pr.k] && s.teams && s.teams.length) {
+        var rn = s.teams.length, fits =
+          pr.k === 'teamsExact' ? (rn === pr.n) :
+          pr.k === 'teamsMax'   ? (rn <= pr.max) :
+                                  (rn >= (pr.min || 0));
+        if (fits) gaps.solid = true;
+      }
+    }
     if (_v === true && gaps) gaps.confirmed = (gaps.confirmed || 0) + 1;
     return _v;
   }
@@ -361,7 +377,15 @@
      player — otherwise "real athlete" alone would satisfy any category. */
   function softPass(gaps) {
     if (!gaps || !gaps.kinds || !gaps.kinds.length) return false;
-    if (!gaps.confirmed) return false;
+    /* "Confirmed something else" is the right guard for a multi-clause
+       category and impossible for a single-clause one: there IS no other
+       clause to confirm. "Played for exactly two franchises" is one predicate,
+       so every correct answer outside our file was told we could not verify it
+       - which is what Rodney Stuckey (Pistons, Pacers) got.
+       A pulled roster counts as the evidence instead. Not a free pass: an empty
+       roster still fails, and a roster LONGER than the category allows is
+       refuted outright a few lines up. */
+    if (!gaps.confirmed && !gaps.solid) return false;
     for (var i = 0; i < gaps.kinds.length; i++) if (!SOFT_GAP[gaps.kinds[i]]) return false;
     return true;
   }
@@ -407,6 +431,11 @@
         // "Never left one franchise" is a claim about a complete career, which
         // is exactly what we can't establish. We can only refute it.
         return s.teams.length > pr.max ? false : null;
+
+      case 'teamsExact':
+        // Same asymmetry: rosters under-report, so seeing n proves nothing on
+        // its own, but seeing more than n settles it.
+        return s.teams.length > pr.n ? false : null;
 
       case 'decade': {
         var ds = decadesOf(s);

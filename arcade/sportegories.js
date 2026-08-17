@@ -93,6 +93,9 @@
       // tpart marks a record whose team list came from today's roster only. One
       // team listed for a ten-year veteran is a snapshot, not a one-town career.
       case 'teamsMax': return !p.tpart && p.teams.length > 0 && p.teams.length <= pr.max;
+      // AT MOST n vs EXACTLY n. Any label that says a number out loud needs
+      // the second one, or it accepts everyone below the number too.
+      case 'teamsExact': return !p.tpart && p.teams.length === pr.n;
       case 'decades': return bitCount(p.decBits) >= pr.min;
       default: return false;
     }
@@ -138,6 +141,7 @@
       case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;
       case 'teams':    return p.teams.length >= pr.min ? true : null;
       case 'teamsMax': return (!p.tpart && p.teams.length > 0) ? (p.teams.length <= pr.max) : null;
+      case 'teamsExact':return (!p.tpart && p.teams.length > 0) ? (p.teams.length === pr.n) : null;
       // our lists are partial, so they can confirm but never deny
       case 'award':    return p.aw.indexOf(pr.v) >= 0 ? true : null;
       case 'awardRe':  return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
