@@ -4,7 +4,7 @@
  *   SIGNED OUT           → nothing is playable. The hub browses fine; any PLAY
  *                          asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
- *                          Daily Match, Sportegories, Alma Mater, Odd One Out.
+ *                          Daily Match, Sportegories, Alma Mater, Career Path.
  *                          The other six are Arcade Card only.
  *   ARCADE CARD (paid)   → all ten, unlimited, plus the Archive.
  *
@@ -16,9 +16,9 @@
  *
  * WHY THESE FOUR: they are the quickest to understand and the quickest to pay
  * off (a Connections grid, a letter-and-a-clock scramble, name the college,
- * spot the imposter). They sell the arcade in five seconds. The deeper games -
- * High Low, the Crossword, Career Path, Guess the Player, Rank It, the Number
- * Game - are the ones worth paying for.
+ * name the well-travelled player). They sell the arcade in five seconds. The
+ * deeper games - High Low, the Crossword, Odd One Out, Guess the Player, Rank
+ * It, the Number Game - are the ones worth paying for.
  *
  * ENTITLEMENT: Arcade Card is the paid membership. Server truth lives in the
  * Supabase `subscriptions` row; board.js mirrors an active/trialing sub into
@@ -39,7 +39,7 @@
 
   // The four free games, in the order the hub lists them (daily pair first,
   // then the streak pair). Everything not in here is Arcade Card only.
-  var FREE_LIST = ['match','sportegories','almamater','oddone'];
+  var FREE_LIST = ['match','sportegories','almamater','career'];
   var FREE = {};
   for (var fi=0; fi<FREE_LIST.length; fi++) FREE[FREE_LIST[fi]] = 1;
 

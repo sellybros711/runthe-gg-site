@@ -365,7 +365,7 @@
   .tsec.daily{order:0;}
   .tile.match{order:1;} .tile.spg{order:2;} .tile.cross{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
   .tsec.run{order:6;}
-  .tile.alma{order:7;} .tile.oddone{order:8;} .tile.table{order:9;} .tile.career{order:10;} .tile.highlow{order:11;}
+  .tile.alma{order:7;} .tile.career{order:8;} .tile.table{order:9;} .tile.oddone{order:10;} .tile.highlow{order:11;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -1011,7 +1011,7 @@
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=4"></script>
+<script src="/arcade/tokens.js?v=5"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=8"></script>
@@ -1131,7 +1131,7 @@
                  career:'cardCareer', almamater:'cardAlma' };
     // section base order, free games first (matches the resting CSS)
     var SECTIONS = [ { base:1, keys:['match','sportegories','crossword','rankit','guess'] },
-                     { base:7, keys:['almamater','oddone','table','career','highlow'] } ];
+                     { base:7, keys:['almamater','career','table','oddone','highlow'] } ];
     var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     function paint(){
       var member = !!(TOK.hasCard && TOK.hasCard());
@@ -1230,8 +1230,8 @@
     // filling ticket doubles as a map of the game identities. Free four first.
     var ALL=[
       ['Match',mDone,'var(--blueT)','match'],       ['Sportegories',sDone,'var(--spgT,#DA6BE6)','sportegories'],
-      ['Alma',aDone,'var(--mossT)','almamater'], ['Odd One',oDone,'var(--violetT)','oddone'],
-      ['Number',tDone,'var(--goldT)','table'],      ['Career',rDone,'var(--greenT)','career'],
+      ['Alma',aDone,'var(--mossT)','almamater'], ['Career',rDone,'var(--greenT)','career'],
+      ['Number',tDone,'var(--goldT)','table'],      ['Odd One',oDone,'var(--violetT)','oddone'],
       ['Rank It',kDone,'var(--pinkT)','rankit'],    ['Guess',gDone,'var(--coralT)','guess'],
       ['High Low',hlDone,'var(--hlT)','highlow'],  ['Crossword',cDone,'var(--newsT)','crossword']
     ];
@@ -1356,7 +1356,7 @@
   // offer. The lock badges on the tiles are where the other six get sold.
   var hlPlayed = false; try { hlPlayed = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
   var PIPS = [ ['match','pipM',mDone], ['sportegories','pipS',sDone], ['almamater','pipA',aDone],
-               ['oddone','pipO',oDone], ['table','pipT',tDone], ['career','pipR',rDone],
+               ['career','pipR',rDone], ['table','pipT',tDone], ['oddone','pipO',oDone],
                ['rankit','pipK',kDone], ['guess','pipG',gDone], ['highlow','pipH',hlPlayed],
                ['crossword','pipC',cDone] ];
   var total = 0, n = 0;

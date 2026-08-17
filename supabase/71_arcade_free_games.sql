@@ -3,7 +3,7 @@
 -- The model this enforces:
 --   signed out    : nothing playable (client-side only; there is no uid to check)
 --   free account  : four free games, ONE play each per day
---                   (match, sportegories, almamater, oddone)
+--                   (match, sportegories, almamater, career)
 --   Arcade Card   : every game, unlimited, plus the Archive
 --
 -- 69_arcade_card.sql counted a single number per user per day, so it could not
@@ -37,7 +37,7 @@ create policy "arcade_game_plays read own" on public.arcade_game_plays
 create or replace function public.arcade_free_game(p_game text)
 returns boolean
 language sql immutable as $$
-  select p_game in ('match','sportegories','almamater','oddone');
+  select p_game in ('match','sportegories','almamater','career');
 $$;
 
 -- ---------- 3) spend this game's play for today (atomic) --------------------
@@ -100,7 +100,7 @@ begin
     from public.arcade_game_plays where user_id = uid and play_date = d;
   return json_build_object('signed_in', true, 'unlimited', false,
                            'cap', 1, 'plays', v_plays,
-                           'free', json_build_array('match','sportegories','almamater','oddone'));
+                           'free', json_build_array('match','sportegories','almamater','career'));
 end $$;
 
 revoke all on function public.arcade_spend_game(text)  from public, anon;
