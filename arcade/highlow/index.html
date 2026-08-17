@@ -256,12 +256,12 @@
       <div class="lock" aria-hidden="true">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
       </div>
-      <div class="kick">Arcade Card exclusive</div>
-      <h1>Members only</h1>
-      <p>High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.</p>
+      <div class="kick" id="gateKick">Arcade Card exclusive</div>
+      <h1 id="gateTitle">Members only</h1>
+      <p id="gateCopy">High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.</p>
       <button class="getbtn" id="gateGet" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19"/></svg>
-        Get the Arcade Card
+        <span id="gateGetLab">Get the Arcade Card</span>
       </button>
       <a class="backlink" href="/arcade/">‹ Back to the arcade</a>
     </div>
@@ -379,17 +379,17 @@
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/hlstats.js?v=3"></script>
 <script src="/arcade/rosterstats.js?v=2"></script>
-<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/tokens.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/board.js?v=8"></script>
 <script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=6"></script>
-<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/mycard.js?v=7"></script>
+<script src="/arcade/topbanner.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/card.js?v=13"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
@@ -530,14 +530,29 @@
   var P = { gate:document.getElementById('panelGate'), setup:document.getElementById('panelSetup'), play:document.getElementById('panelPlay') };
   function show(name){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===name); }); }
 
-  // ---------- card gate ----------
-  function isMember(){ try{ return !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){ return false; } }
+  // ---------- gate ----------
+  // High Low is an Arcade Card game. A signed-out visitor is one step further
+  // back than a signed-in free player, so the panel has two faces: create an
+  // account (which still won't open this one, and says so), or get the card.
+  function canStart(){ try{ return !window.RTGTokens || RTGTokens.canPlay(GAME); }catch(e){ return true; } }
+  function signedIn(){ try{ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){ return false; } }
   var revealed=false;
   function revealGame(){ if(revealed) return; revealed=true; show('setup'); showCategories();
     document.getElementById('lb').classList.add('on'); renderRealBoard(); }
 
+  function paintGate(){
+    var out = signedIn();
+    document.getElementById('gateCopy').textContent = out
+      ? 'High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.'
+      : 'High Low is an endless higher-or-lower streak game reserved for Arcade Card members. A free account gets you Daily Match, Sportegories, Alma Mater and Odd One Out, one go a day each.';
+    document.getElementById('gateGetLab').textContent = out ? 'Get the Arcade Card' : 'Create a free account';
+  }
+
   document.getElementById('gateGet').addEventListener('click', function(){
-    try{ if(window.RTGCard && RTGCard.paywall){ RTGCard.paywall({reason:'upsell'}); return; } }catch(e){}
+    if(!signedIn()){
+      try{ if(window.RTGAuthUI && RTGAuthUI.open){ RTGAuthUI.open('signup'); return; } }catch(e){}
+    }
+    try{ if(window.RTGCard && RTGCard.paywall){ RTGCard.paywall({reason:'locked'}); return; } }catch(e){}
     location.href='/arcade/';
   });
 
@@ -628,7 +643,11 @@
     document.getElementById('mbMetric').textContent = cat.sport+' · '+lbl;
     baselineVal = cat.vfn(baseline);
     document.getElementById('lb').classList.remove('on');
-    try{ if(window.RTGTokens && RTGTokens.startAttempt){ RTGTokens.startAttempt(GAME); charged=true; } }catch(e){}
+    try{ if(window.RTGTokens && RTGTokens.startAttempt){
+      var att=RTGTokens.startAttempt(GAME);
+      if(att && att.ok===false){ playing=false; revealed=false; paintGate(); show('gate'); return; }
+      charged=true;
+    } }catch(e){}
     show('play');
     setBaselineCard(baseline, baselineVal);
     nextOpponent();
@@ -689,6 +708,10 @@
     playing=false; busy=false;
     document.getElementById('scrim').classList.add('hidden');
     baseline=null; opp=null;
+    // A free account gets one run a day. When it's gone, the setup screen would
+    // just hand them a category list that refuses to start, so send them to the
+    // gate's "back tomorrow" face instead.
+    if(!canStart()){ revealed=false; paintGate(); show('gate'); return; }
     show('setup'); showCategories();
   }
 
@@ -773,10 +796,17 @@
   document.getElementById('yourBest').textContent = s0.best||0;
   if(s0.last && s0.last.run!=null) document.getElementById('yourRun').textContent = s0.last.run+' in a row';
 
-  if(isMember()) revealGame(); else show('gate');
+  if(canStart()) revealGame(); else { paintGate(); show('gate'); }
   if(window.RTG_BOARD){
-    try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){ if(isMember()){ revealGame(); renderRealBoard(); } }); }catch(e){}
+    try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){
+      if(canStart()){ revealGame(); renderRealBoard(); } else if(!revealed){ paintGate(); }
+    }); }catch(e){}
   }
+  // The session lands asynchronously, so a signed-in player can boot into the
+  // signed-out face of the gate. Repaint when the wallet changes too.
+  document.addEventListener('rtg:tokens', function(){
+    if(canStart()){ revealGame(); renderRealBoard(); } else if(!revealed){ paintGate(); }
+  });
 })();
 </script>
 <script>

@@ -359,10 +359,13 @@
   .tsec b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.07em;
     text-transform:uppercase; font-size:14px; color:var(--ink);}
   .tsec span{display:block; font-size:12px; color:var(--mut); margin-top:2px;}
+  /* The two free games in each section lead it. Members get these overwritten
+     inline with a most-recently-played order; these are the resting state, so
+     there is no reflow for everyone else. */
   .tsec.daily{order:0;}
-  .tile.match{order:1;} .tile.cross{order:2;} .tile.spg{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
+  .tile.match{order:1;} .tile.spg{order:2;} .tile.cross{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
   .tsec.run{order:6;}
-  .tile.table{order:7;} .tile.career{order:8;} .tile.oddone{order:9;} .tile.alma{order:10;} .tile.highlow{order:11;}
+  .tile.alma{order:7;} .tile.oddone{order:8;} .tile.table{order:9;} .tile.career{order:10;} .tile.highlow{order:11;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -487,13 +490,9 @@
   .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
     padding:4px 8px; border-radius:6px; line-height:1; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); background:var(--c);}
   .tile .badge .bshort{display:none;}   /* the narrow-row wording; see the mobile block */
-  /* the Card-exclusive tile: a gold "CARD" badge with a small lock, not the daily accent */
-  .tile.highlow .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
-  .tile.highlow .badge svg{width:10px; height:10px;}
-  /* High Low tile: Members Only sits just left of the Beta tag, top-right */
-  .tile.highlow .tags{position:absolute; top:11px; right:12px; z-index:2; display:inline-flex; align-items:center; gap:6px;}
-  .tile.highlow .status{position:static; top:auto; right:auto; left:auto; transform:none;}
-  @media (max-width:640px){ .tile.highlow .tags{top:7px; right:8px; gap:5px;} }
+  /* an Arcade Card game: a gold "CARD" badge with a small lock, not the daily accent */
+  .tile.locked .badge{background:var(--brand); color:var(--onAccent); text-shadow:none; display:inline-flex; align-items:center; gap:4px;}
+  .tile.locked .badge svg{width:10px; height:10px;}
   /* High Low: the two arrows bob up and down in turn */
   .tile.highlow .cap svg .hlup{animation:capHlUp 3.2s ease-in-out infinite;}
   .tile.highlow .cap svg .hldn{animation:capHlDn 3.2s ease-in-out infinite;}
@@ -519,13 +518,19 @@
      Eight of the ten accents are light, so white text on them sat near 2:1 and
      leaned entirely on a text-shadow. Blue and slate are the two dark ones and
      genuinely want white, they keep the shadow, the rest do not need it. */
-  /* High Low is card-only: for non-members the PLAY pill greys out so the tile
-     reads as locked. It stays tappable on purpose - it opens the game page,
-     which is where the Arcade Card offer lives. */
-  .tile.highlow:not(.ismember) .play{background:var(--card3); color:var(--mut); text-shadow:none;
-    border:1px solid var(--line2); animation:none;}
-  .tile.highlow:not(.ismember):hover .play{filter:none; background:var(--card3);}
-  .tile.highlow:not(.ismember) .play .arw{opacity:.6;}
+  /* Six of the ten are Arcade Card games: for everyone else the PLAY pill greys
+     out so the tile reads as locked at a glance. It stays tappable on purpose -
+     it opens the game page, which is where the rules and the offer live. */
+  .tile.locked .play{background:var(--card3); color:var(--mut); text-shadow:none;
+    border:1px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px;}
+  .tile.locked:hover .play{filter:none; background:var(--card3);}
+  .tile.locked .play::after{display:none;}
+  .tile.locked .play .arw{display:none;}
+  .tile.locked .cap{filter:saturate(.55);}
+  .tile .status.lock{border-color:color-mix(in srgb, var(--gold,#F2B632) 55%, transparent); color:var(--goldT,#8A6100);
+    background:color-mix(in srgb,var(--card) 78%, transparent);}
+  .tile .status svg{width:9px; height:9px; vertical-align:-1px; margin-right:3px;}
+  .tile .play svg{width:13px; height:13px; flex:0 0 auto;}
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
@@ -898,7 +903,7 @@
 
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" aria-hidden="true">
-              <span class="badge"><svg class="lockic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="bfull">Members only</span><span class="bshort">Card</span></span>
+              <span class="status" id="stH">Ready</span>
               <svg viewBox="0 0 56 56">
                 <g class="hlup" fill="#F5822B"><path d="M14 6 L22 19 L6 19 Z"/></g>
                 <g class="hldn" fill="#F5822B" opacity=".62"><path d="M42 50 L50 37 L34 37 Z"/></g>
@@ -933,12 +938,12 @@
 
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>9</s> <b>22 daily games</b></h2>
-          <p class="cp-sub">Your free Arcade is 9 games a day. The Card unlocks an NBA, NFL and MLB edition of four of them, plus a members-only game.</p>
+          <h2 class="cp-head" id="cp-head"><s>4</s> <b>25 daily games</b></h2>
+          <p class="cp-sub">A free account plays four games a day. The Card opens all ten, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of every game</li>
-            <li><i>&#10003;</i> Higher or Lower, members only</li>
+            <li><i>&#10003;</i> Six members-only games</li>
             <li><i>&#10003;</i> The full archive of past days</li>
           </ul>
           <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
@@ -983,15 +988,15 @@
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/tokens.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/board.js?v=8"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=6"></script>
-<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/mycard.js?v=7"></script>
+<script src="/arcade/topbanner.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/card.js?v=13"></script>
 <script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=1"></script>
@@ -1081,25 +1086,59 @@
   // The plays counter and the whole player HUD now live in the Arcade Card
   // (top banner) and the banner's own tokens chip; the hub only gates entry.
 
-  // Gate entry to a game when out of plays. Intent to play another game is the
-  // primary paywall/conversion trigger: a guest with 0 left -> "create account",
-  // a signed-in free user with 0 left -> Arcade Card paywall. Card/testing =
-  // unlimited. A game already started today stays enterable (resume/finish it).
+  // Tiles always navigate. The game page is where the rules, the lock and the
+  // offer live (pregame.js), and sending someone to a paywall from a hub tile
+  // before they have even seen what the game is converts worse than showing
+  // them the game first. The hub's job is to make the state legible, which is
+  // what the lock badges below do.
+  //
+  // ---- lock badges + ordering ----------------------------------------------
+  // Six of the ten are Arcade Card games. Everyone else sees them locked, and
+  // sees the four free ones first in each section. Members see no locks and get
+  // their sections ordered by what they played most recently.
   (function(){
     if(!TOK) return;
-    function unlimited(){ return (TOK.isPro&&TOK.isPro()) || (TOK.testing&&TOK.testing()); }
-    var links = [].slice.call(document.querySelectorAll('a.tile[href^="/arcade/"]'));
-    links.forEach(function(a){
-      a.addEventListener('click', function(e){
-        if(unlimited()) return;
-        var m=(a.getAttribute('href')||'').match(/\/arcade\/([a-z]+)\//); var game=m&&m[1];
-        var already = game && TOK.playsOf && TOK.playsOf(game)>0;   // resume/replay their own started game
-        if((TOK.remaining&&TOK.remaining()>0) || already) return;
-        e.preventDefault();
-        if(window.RTGCard) RTGCard.wall();
-        else if(window.RTGAuthUI) RTGAuthUI.open('signup');
+    var TILE = { match:'cardMatch', crossword:'cardCross', sportegories:'cardSpg', rankit:'cardRank',
+                 guess:'cardGuess', highlow:'cardHigh', oddone:'cardOdd', table:'cardTable',
+                 career:'cardCareer', almamater:'cardAlma' };
+    // section base order, free games first (matches the resting CSS)
+    var SECTIONS = [ { base:1, keys:['match','sportegories','crossword','rankit','guess'] },
+                     { base:7, keys:['almamater','oddone','table','career','highlow'] } ];
+    var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    function paint(){
+      var member = !!(TOK.hasCard && TOK.hasCard());
+      var last = (TOK.lastPlayed && member) ? TOK.lastPlayed() : null;
+      SECTIONS.forEach(function(sec){
+        var keys = sec.keys.slice();
+        if(last){
+          var pos={}; keys.forEach(function(k,i){ pos[k]=i; });
+          keys.sort(function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; });
+        }
+        keys.forEach(function(k,i){
+          var el=document.getElementById(TILE[k]); if(!el) return;
+          el.style.order = String(sec.base + i);
+          var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
+          el.classList.toggle('locked', lock);
+          var cap = el.querySelector('.cap');
+          var badge = el.querySelector('.badge');
+          if(lock && cap && !badge){
+            badge=document.createElement('span'); badge.className='badge';
+            badge.innerHTML=LOCK+'<span class="bfull">Arcade Card</span><span class="bshort">Card</span>';
+            cap.insertBefore(badge, cap.firstChild);
+          } else if(!lock && badge){ badge.remove(); }
+          var play = el.querySelector('.play');
+          if(lock && play && !play.classList.contains('split')) play.innerHTML = LOCK+'ARCADE CARD';
+          // "READY" next to a padlock is a contradiction. A locked tile's chip
+          // names the tier instead.
+          var st = el.querySelector('.status');
+          if(st && lock){ st.className='status lock'; st.textContent='Card'; }
+        });
       });
-    });
+    }
+    paint();
+    document.addEventListener('rtg:tokens', paint);
+    if(window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(paint);
+    window.PAINT_LOCKS = paint;      // re-run after mark() rewrites the play pills
   })();
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
   var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
@@ -1137,20 +1176,26 @@
   var aDone = (as.lastDone === t);
   var sDone = !!(sg.last && sg.last.d === t);
 
-  // ---- ARCADE TICKET: one daily punch-card across all nine games ----
+  // ---- ARCADE TICKET: one daily punch-card ----
+  // A ticket you cannot finish is not a ticket. Members get all ten punches;
+  // everyone else gets the four they can actually play, so "3 / 4" is a real
+  // thing to complete rather than a reminder of six locked doors.
   (function(){
-    // [label, done, accent] - a punched hole takes its game's color, so the
-    // filling ticket doubles as a map of the game identities.
-    var GAMES=[
-      ['Number',tDone,'var(--goldT)'],['Match',mDone,'var(--blueT)'],['Career',rDone,'var(--greenT)'],
-      ['Odd One',oDone,'var(--violetT)'],['Rank It',kDone,'var(--pinkT)'],['Guess',gDone,'var(--coralT)'],
-      ['Alma',aDone,'var(--mossT)'],['Sportegories',sDone,'var(--spgT,#DA6BE6)'],['Crossword',cDone,'var(--newsT)']
-    ];
-    // Members get one more punch: the card-only High Low, "done" once they've
-    // played it today (it's endless, so a single play counts).
     var isMember=false; try{ isMember=!!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard()); }catch(e){}
-    var hlDone=false; try{ hlDone=isMember && window.RTGTokens && RTGTokens.playsOf && RTGTokens.playsOf('highlow')>0; }catch(e){}
-    if(isMember) GAMES.push(['High Low',hlDone,'var(--hlT)']);
+    var hlDone=false; try{ hlDone=!!(window.RTGTokens && RTGTokens.playsOf && RTGTokens.playsOf('highlow')>0); }catch(e){}
+    // [label, done, accent, key] - a punched hole takes its game's color, so the
+    // filling ticket doubles as a map of the game identities. Free four first.
+    var ALL=[
+      ['Match',mDone,'var(--blueT)','match'],       ['Sportegories',sDone,'var(--spgT,#DA6BE6)','sportegories'],
+      ['Alma',aDone,'var(--mossT)','almamater'], ['Odd One',oDone,'var(--violetT)','oddone'],
+      ['Number',tDone,'var(--goldT)','table'],      ['Career',rDone,'var(--greenT)','career'],
+      ['Rank It',kDone,'var(--pinkT)','rankit'],    ['Guess',gDone,'var(--coralT)','guess'],
+      ['High Low',hlDone,'var(--hlT)','highlow'],  ['Crossword',cDone,'var(--newsT)','crossword']
+    ];
+    var GAMES = ALL.filter(function(x){
+      try{ return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(x[3])); }catch(e){ return true; }
+    });
+    if(!GAMES.length) GAMES = ALL.slice(0,4);       // signed out: show the four on offer
     var N=GAMES.length;
     var doneN=GAMES.filter(function(x){return x[1];}).length;
     var perfect=doneN===GAMES.length;
@@ -1262,18 +1307,24 @@
     });
   })();
 
-  // High Low is the tenth game, but only members can play it - so the target
-  // matches the ticket rather than showing non-members a total they can't reach.
-  var isMemberN = false; try { isMemberN = !!(TOK && TOK.hasCard && TOK.hasCard()); } catch (e) {}
-  var hlPlayed = false; try { hlPlayed = isMemberN && TOK && TOK.playsOf && TOK.playsOf('highlow') > 0; } catch (e) {}
-  var hlTile = document.getElementById('cardHigh');
-  if (hlTile && isMemberN) hlTile.classList.add('ismember');
-  var pipH = document.getElementById('pipH');
-  if (pipH) { pipH.style.display = isMemberN ? '' : 'none'; if (hlPlayed) pipH.classList.add('done'); }
-  // Nine free games; the tenth is members-only, so non-members are never
-  // shown a total they cannot reach.
-  var total = isMemberN ? 10 : 9;
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0) + (sDone ? 1 : 0) + (hlPlayed ? 1 : 0);
+  // The dot row counts only the games this player can reach: all ten for a
+  // member, the free four for everyone else. A target you cannot hit is not a
+  // target, and six permanently dark dots read as failure rather than as an
+  // offer. The lock badges on the tiles are where the other six get sold.
+  var hlPlayed = false; try { hlPlayed = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
+  var PIPS = [ ['match','pipM',mDone], ['sportegories','pipS',sDone], ['almamater','pipA',aDone],
+               ['oddone','pipO',oDone], ['table','pipT',tDone], ['career','pipR',rDone],
+               ['rankit','pipK',kDone], ['guess','pipG',gDone], ['highlow','pipH',hlPlayed],
+               ['crossword','pipC',cDone] ];
+  var total = 0, n = 0;
+  PIPS.forEach(function(p){
+    var el = document.getElementById(p[1]); if (!el) return;
+    var lock = false; try { lock = !!(TOK && TOK.cardOnly && TOK.cardOnly(p[0])); } catch (e) {}
+    el.style.display = lock ? 'none' : '';
+    if (lock) return;
+    total++; if (p[2]) { n++; el.classList.add('done'); }
+  });
+  if (!total) { total = 4; }                       // signed out: the four on offer
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
   if (n === total) {
     document.getElementById('dprog').classList.add('all');
@@ -1281,6 +1332,8 @@
     // record the perfect day once (feeds the Arcade Card's achievements)
     if (TOK && TOK.recordPerfect) TOK.recordPerfect();
   }
+  // mark() rewrote every play pill, including the locked ones. Repaint.
+  try { if (window.PAINT_LOCKS) window.PAINT_LOCKS(); } catch (e) {}
 })();
 </script>
 <script>

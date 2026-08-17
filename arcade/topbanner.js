@@ -90,9 +90,16 @@
       var unlimited = !!(t && t.hasCard && t.hasCard());
       if (unlimited) { tk.className = 'rtb-tokens unlimited'; tk.innerHTML = TICKET + '<span>Unlimited</span>'; }
       else if (t) {
+        // Per game now, not a pool: a free account has four games with one go
+        // each, so the chip counts games left, and a signed-out visitor is shown
+        // the offer rather than a zero.
         var left = t.remaining ? t.remaining() : 0;
+        var signed = !!(t.signedIn && t.signedIn());
         if (left === Infinity) { tk.className = 'rtb-tokens unlimited'; tk.innerHTML = TICKET + '<span>Unlimited</span>'; }
-        else { tk.className = 'rtb-tokens'; tk.innerHTML = TICKET + '<span>' + left + ' play' + (left === 1 ? '' : 's') + '</span>'; }
+        else {
+          tk.className = 'rtb-tokens';
+          tk.innerHTML = TICKET + '<span>' + (signed ? (left + ' game' + (left === 1 ? '' : 's') + ' left') : '4 games free') + '</span>';
+        }
       } else { tk.className = 'rtb-tokens'; tk.innerHTML = TICKET + '<span>Plays</span>'; }
     }
     var pf = document.getElementById('rtbProf');

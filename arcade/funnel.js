@@ -22,7 +22,8 @@
     ['almamater', 'Alma Mater'],
     ['guess', 'Guess the Player'],
     ['crossword', 'Daily Crossword'],
-    ['sportegories', 'Sportegories']
+    ['sportegories', 'Sportegories'],
+    ['highlow', 'High Low']
   ];
 
   function currentGame() {
@@ -64,8 +65,17 @@
     if (!link) return;
     link.setAttribute('data-fun-link', '1');
     var cur = currentGame();
+    // Only offer what this player can actually open next. Handing a free
+    // account "Next: Career Path" when Career Path is an Arcade Card game sends
+    // them to a wall, and counts a game they can never punch toward a total
+    // they can never reach.
+    var pool = GAMES.filter(function (g) {
+      try { return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(g[0])); }
+      catch (e) { return true; }
+    });
+    if (!pool.length) pool = GAMES;
     var played = 0, next = null;
-    GAMES.forEach(function (g) {
+    pool.forEach(function (g) {
       var done = g[0] === cur || playedToday(g[0]);   // the game you're IN counts as played
       if (done) played++;
       else if (!next) next = g;
@@ -104,12 +114,12 @@
     guestNotice(rowEl);
     var home = document.getElementById('funHome');
     if (next) {
-      prog.textContent = played + ' of ' + GAMES.length + ' played today';
+      prog.textContent = played + ' of ' + pool.length + ' played today';
       link.setAttribute('href', '/arcade/' + next[0] + '/');
       link.innerHTML = 'Next: ' + next[1] + ' <span aria-hidden="true">→</span>';
       if (home) home.style.display = '';
     } else {
-      prog.textContent = 'Clean sweep! All ' + GAMES.length + ' played!';
+      prog.textContent = 'Clean sweep! All ' + pool.length + ' played!';
       link.setAttribute('href', '/arcade/');
       link.textContent = 'Back to the arcade';
       if (home) home.style.display = 'none';   // the main button is the way home

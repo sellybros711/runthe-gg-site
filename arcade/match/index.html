@@ -717,26 +717,26 @@
 <script src="/arcade/data.js?v=2"></script>
   <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/funnel.js?v=4"></script>
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=3"></script>
+  <script src="/arcade/tokens.js?v=4"></script>
 <script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=7"></script>
+  <script src="/arcade/board.js?v=8"></script>
 <script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=6"></script>
-<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/mycard.js?v=7"></script>
+<script src="/arcade/topbanner.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/card.js?v=13"></script>
 <script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=12"></script>
+<script src="/arcade/pregame.js?v=13"></script>
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=1"></script>
@@ -1557,11 +1557,11 @@
       var ex = document.querySelector('.explain'); if (!ex) return;
       var base = 'Tap four names that belong together. Find all four groups before four mistakes.';
       if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
-      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label(GAME) + ' today') : '');
+      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.hint(GAME)) : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent');} }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = RTGTokens.blockMsg(GAME); b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
@@ -1583,7 +1583,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
@@ -1667,12 +1667,12 @@
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
-          document.getElementById('resCoins').textContent = 'No plays left. Back tomorrow.';
+          document.getElementById('resCoins').textContent = (window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
         } else {
           done = true;
           boardEl.style.pointerEvents = 'none'; boardEl.style.opacity = '.5';
           poolEl.style.pointerEvents = 'none'; poolEl.style.opacity = '.5';
-          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left. Back tomorrow.';
+          var ex = document.querySelector('.explain'); if (ex) ex.textContent = (window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
         }
         return;
       }

@@ -369,17 +369,20 @@
     );
   }
 
-  // ---- server-side Arcade token wallet (signed-in users). spendToken() is the
-  // source of truth for a ranked play; tokenStatus() reads remaining without
-  // spending. Both resolve null when signed-out / offline (caller falls back to
-  // the client wallet). See supabase/69_arcade_card.sql. ----
-  function spendToken() {
+  // ---- server-side play counter (signed-in users). spendToken(game) is the
+  // source of truth for a ranked play; tokenStatus() reads today's per-game
+  // counts without spending. Both resolve null when signed-out / offline, and
+  // also when the RPC is missing, so a site deployed ahead of the migration
+  // falls back to the client wallet instead of locking everyone out.
+  // See supabase/71_arcade_free_games.sql. ----
+  function spendToken(game) {
     if (!sb || !session) return Promise.resolve(null);
-    return withTimeout(sb.rpc('arcade_spend_token').then(function (r) { return (r && !r.error) ? r.data : null; }));
+    return withTimeout(sb.rpc('arcade_spend_game', { p_game: game || '' })
+      .then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
   function tokenStatus() {
     if (!sb || !session) return Promise.resolve(null);
-    return withTimeout(sb.rpc('arcade_tokens_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
+    return withTimeout(sb.rpc('arcade_game_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
 
   // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or

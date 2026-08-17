@@ -1,12 +1,15 @@
-/* pregame.js - the intro screen shown when you open a Run The Arcade game.
+/* pregame.js - the gate shown when you open a Run The Arcade game.
  *
- * Self-mounting (like auth-ui.js / card.js / calendar.js). On a game page it
- * shows a full-screen overlay BEFORE the board is touched:
- *   FREE, plays left     → how to play + "N plays left today" → Start
- *   FREE, out of plays   → "You're out of plays" → Get Arcade Card
- *   CARDHOLDER           → your high score + all-time leaderboard → Continue
+ * Self-mounting (like auth-ui.js / card.js / calendar.js). If the player can
+ * play this game right now it stays out of the way entirely: one click to play,
+ * straight onto a ready board. It only appears when they cannot, and then it
+ * says which of the three reasons it is:
+ *   SIGNED OUT           → how to play + "Create a free account"
+ *   FREE, card-only game → "This one is on the Arcade Card"
+ *   FREE, play used      → "Back tomorrow", plus the four other free games
+ *   CARDHOLDER           → never (they can always play)
  *
- * Why this is safe: every game charges its token only on the FIRST interaction
+ * Why this is safe: every game charges its play only on the FIRST interaction
  * (startAttempt via startIfNeeded), never on load. This overlay sits in front
  * of the board, so nothing is spent until the player dismisses it and plays -
  * no game code changes, no double spend. Skipped entirely in archive practice.
@@ -20,7 +23,7 @@
 
   function gameKey(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   var GAME = gameKey();
-  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1 };
+  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, sportegories:1 };
   if (!GAME || !KNOWN[GAME]) return;
   if (window.RTGArchive && RTGArchive.active && RTGArchive.active()) return;   // archive practice: no gate
 
@@ -34,6 +37,7 @@
     almamater:  ['Name the college each player attended.', 'Type it for 2 points, take four choices for 1.'],
     guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
+    sportegories: ['One letter, eight categories, two minutes.', 'Every answer has to start with that letter. Rarer names score more.'],
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
@@ -45,17 +49,39 @@
     almamater:  { k:'rtg:almamater:v1', f:'bestRun',    cap:'best run' },
     guess:      { k:'rtg:guess:v1',     f:'bestStreak', cap:'win streak' },
     crossword:  { k:'rtg:cw:v1',        f:'best',       cap:'best time', t:true },
+    sportegories:{k:'rtg_sportegories_v1', f:'best',    cap:'best score' },
   };
 
   var T = window.RTGTokens;
   function hasCard(){ return !!(T && T.hasCard && T.hasCard()); }
-  function canPlay(){ return T && T.canPlay ? T.canPlay() : true; }
-  function remaining(){ return T && T.remaining ? T.remaining() : Infinity; }
+  function canPlay(){ return T && T.canPlay ? T.canPlay(GAME) : true; }
+  function remaining(){ return T && T.remaining ? T.remaining(GAME) : Infinity; }
   function signedIn(){ return !!(T && T.signedIn && T.signedIn()); }
+  function unlocked(){ return T && T.unlocked ? T.unlocked(GAME) : true; }
+  // The four free games, minus this one, as a readable list for the "come back
+  // tomorrow" screen: the whole point of a per-game cap is that there is always
+  // something else to go and play right now.
+  function otherFree(){
+    var list=(T && T.FREE_GAMES) ? T.FREE_GAMES : [];
+    var out=[];
+    for(var i=0;i<list.length;i++){
+      if(list[i]===GAME) continue;
+      var m=(window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(list[i]) : null;
+      out.push({ key:list[i], name:(m&&m.name)||list[i] });
+    }
+    return out;
+  }
+  function freeLinks(){
+    var o=otherFree(); if(!o.length) return '';
+    return '<div class="rtgpg-alt">'+o.map(function(g){
+      return '<a class="rtgpg-alt-a" href="/arcade/'+esc(g.key)+'/">'+esc(g.name)+'</a>';
+    }).join('')+'</div>';
+  }
   function openSignin(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signin'); }
-  function openCard(){ if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason:'upsell' }); }
+  function openCard(reason){ if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason: reason || 'upsell' }); }
   function meta(){ return (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(GAME) : null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var LOCK='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
   function $(id){ return document.getElementById(id); }
 
   function bestText(){
@@ -99,7 +125,18 @@
       '.rtgpg-note2{font-size:12px;color:var(--mut,#A9B8CB);font-weight:600;line-height:1.5;margin:0 0 14px;}',
       '.rtgpg-link{color:var(--c,var(--blue,#2F6BFF));font-weight:800;cursor:pointer;text-decoration:underline;}',
       '.rtgpg-ghost{appearance:none;border:0;background:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:12.5px;color:var(--mut,#A9B8CB);margin-top:12px;padding:6px;text-decoration:underline;}',
-      '.rtgpg-ghost:hover{color:var(--ink,#F4F7FB);}'
+      '.rtgpg-ghost:hover{color:var(--ink,#F4F7FB);}',
+      '.rtgpg-lock{display:inline-flex;align-items:center;gap:6px;}',
+      // A purchase button is the Arcade Card's gold, not the game's accent.
+      // Two of the ten accents are near-white, which put white-on-white text on
+      // the single most important button on this screen.
+      '.rtgpg-go.buy{background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);text-shadow:none;}',
+      '.rtgpg-alt{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:2px 0 14px;}',
+      '.rtgpg-alt-a{display:inline-block;font-size:12px;font-weight:800;text-decoration:none;color:var(--ink,#F4F7FB);background:var(--card2,#162B44);border:1px solid var(--line2,rgba(244,247,251,.15));border-radius:999px;padding:7px 12px;}',
+      '.rtgpg-alt-a:hover{border-color:var(--c,var(--blue,#2F6BFF));color:var(--c,var(--blue,#2F6BFF));}',
+      '.rtgpg-perks{list-style:none;margin:0 0 15px;padding:0;display:grid;gap:6px;text-align:left;}',
+      '.rtgpg-perks li{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:700;color:var(--mut,#A9B8CB);line-height:1.4;}',
+      '.rtgpg-perks li b{color:var(--c,var(--blue,#2F6BFF));font-weight:900;flex:0 0 auto;}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -111,11 +148,10 @@
   var INTRO_SEEN=false;
   try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
   function build(){
-    // One click to play: if the player can play right now (cardholder, or has
-    // plays left), don't gate at all: land them straight on a ready board.
-    // The token is still charged on first interaction, and each game shows the
-    // paywall itself if the server later says they're out. The overlay now only
-    // appears when they're already out of plays.
+    // One click to play: if the player can play this game right now, don't gate
+    // at all - land them straight on a ready board. The play is still charged on
+    // first interaction, and each game shows the paywall itself if the server
+    // later disagrees. The overlay only appears when they cannot play.
     if (hasCard() || canPlay()) { dismissed = true; return; }
     injectStyles();
     scrim=document.createElement('div'); scrim.className='rtgpg-scrim';
@@ -158,11 +194,9 @@
       // its modal from re-onboarding right after this gate.
       var left=remaining();
       var unlimited = left===Infinity;
-      var note = unlimited ? 'Unlimited plays' : (left+' play'+(left===1?'':'s')+' left today');
+      var note = unlimited ? 'Unlimited plays' : 'Your free go at this one today';
       var upsell = unlimited ? '' :
-        (signedIn()
-          ? '<div class="rtgpg-note2">Want more? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for unlimited plays.</div>'
-          : '<div class="rtgpg-note2"><a class="rtgpg-link" id="rtgpgSignin">Sign in</a> for 3 a day, or <a class="rtgpg-link" id="rtgpgCard">get an Arcade Card</a> for unlimited.</div>');
+        '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all ten games, unlimited.</div>';
       var mid;
       if(!INTRO_SEEN){
         mid='<div class="rtgpg-tag">How to play</div>'+
@@ -184,25 +218,67 @@
       $('rtgpgGo').onclick=done;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
       if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
-      if($('rtgpgCard')) $('rtgpgCard').onclick=openCard;
+      if($('rtgpgCard')) $('rtgpgCard').onclick=function(){ openCard('upsell'); };
       return;
     }
 
-    // FREE out of plays: upsell (or, for a signed-out guest, sign in for 3/day)
+    // ---- blocked. Three different reasons, three different asks. ----
+    var rules='<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
+
+    if(!signedIn()){
+      // SIGNED OUT. Show what the game is before asking for anything: the rules
+      // are the pitch, and a free account is the only thing standing between
+      // them and playing it (if it is one of the free four).
+      var isFree = T && T.isFreeGame ? T.isFreeGame(GAME) : false;
+      b.innerHTML=
+        '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
+        '<div class="rtgpg-tag">How to play</div>'+
+        rules+
+        '<div class="rtgpg-note">'+(isFree
+          ? 'Free to play with a free account. One go a day, on this and three other games.'
+          : 'This one is part of the Arcade Card. Start with a free account and play the four free games today.')+'</div>'+
+        '<button class="rtgpg-go" id="rtgpgGo" type="button">Create a free account</button>'+
+        '<div><button class="rtgpg-ghost" id="rtgpgSignin" type="button">Already have one? Sign in</button></div>'+
+        '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+      $('rtgpgGo').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup'); else openSignin(); };
+      $('rtgpgSignin').onclick=openSignin;
+      $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+      return;
+    }
+
+    if(!unlocked()){
+      // FREE ACCOUNT, CARD-ONLY GAME. Not "you ran out" - they never had it.
+      // Say what it is, say what the card opens, point at what they can play now.
+      b.innerHTML=
+        '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
+        '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
+        rules+
+        '<ul class="rtgpg-perks">'+
+          '<li><b>›</b><span>All ten games, as often as you like</span></li>'+
+          '<li><b>›</b><span>NBA, NFL and MLB versions of every one</span></li>'+
+          '<li><b>›</b><span>The Archive: every past day, still playable</span></li>'+
+        '</ul>'+
+        '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Get the Arcade Card</button>'+
+        '<div class="rtgpg-note2" style="margin-top:12px">Free today:</div>'+
+        freeLinks()+
+        '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+      $('rtgpgGo').onclick=function(){ openCard('locked'); };
+      $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+      return;
+    }
+
+    // FREE ACCOUNT, PLAY USED. The cap is per game, so there is always somewhere
+    // else to send them: that is the whole reason the four exist.
     b.innerHTML=
       '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
-      '<div class="rtgpg-tag">Out of plays</div>'+
-      '<div class="rtgpg-note">'+(signedIn()
-        ? 'You’ve used today’s free plays. Come back tomorrow, or get an Arcade Card for unlimited plays across every game.'
-        : 'You’ve used today’s free play. Sign in for 3 free plays a day, or get an Arcade Card for unlimited plays.')+'</div>'+
-      '<button class="rtgpg-go" id="rtgpgGo" type="button">'+(signedIn()?'Get Arcade Card':'Create free account')+'</button>'+
-      '<div>'+
-        (signedIn()?'':'<button class="rtgpg-ghost" id="rtgpgSignin" type="button">Have an account? Sign in</button> · ')+
-        '<button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button>'+
-      '</div>';
-    $('rtgpgGo').onclick=function(){ if(window.RTGCard && RTGCard.wall) RTGCard.wall(); else if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({reason:'out'}); };
+      '<div class="rtgpg-tag">Back tomorrow</div>'+
+      '<div class="rtgpg-note">That’s today’s go at '+esc(name)+'. A fresh one lands at midnight.</div>'+
+      '<div class="rtgpg-note2">Still free today:</div>'+
+      freeLinks()+
+      '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Play it again with the Arcade Card</button>'+
+      '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+    $('rtgpgGo').onclick=function(){ openCard('out'); };
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
-    if($('rtgpgSignin')) $('rtgpgSignin').onclick=openSignin;
   }
 
   // Games whose all-time record is a TIME (lower = better); everything else is a

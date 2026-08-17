@@ -425,26 +425,26 @@
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/funnel.js?v=4"></script>
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/tokens.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/board.js?v=8"></script>
 <script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=6"></script>
-<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/mycard.js?v=7"></script>
+<script src="/arcade/topbanner.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/card.js?v=13"></script>
 <script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=12"></script>
+<script src="/arcade/pregame.js?v=13"></script>
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=1"></script>
@@ -812,7 +812,7 @@
     if(pickedIdx!==null && !done){ h.textContent='Now tap the player they should swap with.'; return; }
     var base=(hintNote?hintNote+' ':'')+'Tap two players to swap them, or drag by the number.';
     if(ARCHIVE){ h.textContent=base+' · Archive practice'; return; }
-    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
     h.textContent=base+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily run of sets; every replay is a fresh random run.
@@ -855,7 +855,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent=RTGTokens.blockMsg(GAME);b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -932,7 +932,7 @@
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg> '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
     document.getElementById('mTitle').textContent = ok ? 'TRIES USED' : 'NOT SOLVED';
-    document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.'
+    document.getElementById('hintline').textContent = locked ? (window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.')
       : (ok ? ('Solved in '+t+' '+(t===1?'try':'tries')+'.') : 'Out of tries. Back tomorrow.');
     document.getElementById('yourTm').textContent = ok ? (t+' '+(t===1?'try':'tries')) : '-';
     document.getElementById('yourBest').textContent = s.bestTries ? (s.bestTries+' '+(s.bestTries===1?'try':'tries')) : '-';
@@ -943,7 +943,7 @@
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
     // Render the run as it actually happened: a green square per clear, the
@@ -1062,7 +1062,7 @@
     else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
       done=true;
       document.getElementById('checkBtn').disabled=true;
-      document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
+      document.getElementById('hintline').textContent=(window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
       seedDaily(); SETS=[]; _catsBag=[]; _runGuard=0; fillSets(BATCH); startSet();     // show today's first set, locked
       if(saved.last){ showEnd(saved, true); }
     } else { beginAttempt(); }

@@ -348,25 +348,25 @@
 <script src="/arcade/jerseys.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=3"></script>
+<script src="/arcade/funnel.js?v=4"></script>
 <script src="/arcade/share.js?v=4"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=3"></script>
+<script src="/arcade/tokens.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=7"></script>
+<script src="/arcade/board.js?v=8"></script>
 <script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=1"></script>
-<script src="/arcade/mycard.js?v=6"></script>
-<script src="/arcade/topbanner.js?v=3"></script>
+<script src="/arcade/mycard.js?v=7"></script>
+<script src="/arcade/topbanner.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=12"></script>
+<script src="/arcade/card.js?v=13"></script>
 <script src="/arcade/calendar.js?v=11"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=12"></script>
+<script src="/arcade/pregame.js?v=13"></script>
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=1"></script>
@@ -589,7 +589,7 @@
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
     if(ARCHIVE){ h.textContent='Type the number. Within two still counts. · Archive · your personal best'; return; }
-    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
     h.textContent='Type the number. Within two still counts.'+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily board; every replay is a fresh random board.
@@ -622,7 +622,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent='No plays left today';b.disabled=true;b.classList.add('spent');} }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent=RTGTokens.blockMsg(GAME);b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -706,7 +706,7 @@
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
     // Render the run as it actually happened: a green square per clear, the
@@ -778,7 +778,7 @@
   if(canResume){ resumeAttempt(RES); }
   else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
     done=true; vs.style.pointerEvents='none'; vs.style.opacity='.5';
-    document.getElementById('hintline').textContent='No plays left. New tables tomorrow.';
+    document.getElementById('hintline').textContent=(window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
     if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
   } else { beginAttempt(); }
   if(window.RTG_BOARD){
