@@ -280,6 +280,22 @@ if (process.env.BROWSER) {
 window.__DEF={
   menu:()=>modeMenu(),
   auth(st){ authState=st; },
+  /* DEFENSE_LIVE is a const in the shipped file, so the gate is read here and overridden
+     through a hook rather than reassigned: one build has to be driven through both states. */
+  live:()=>DEFENSE_LIVE,
+  setLive(v){ __defLiveOverride=v; },
+  launch(){ return beginDefenseDraft(); },
+  board(){ show('s-board'); paintComp(); },
+  comps:()=>[...document.querySelectorAll('#lb-comp option')]
+    .map(o=>({value:o.value,label:o.textContent})),
+  scopeFor(v){ const sel=document.getElementById('lb-comp'); sel.value=v;
+    sel.dispatchEvent(new Event('change')); return lbScope(); },
+  card:()=>{ const b=document.getElementById('b-mc-def'); if(!b) return null;
+    const cs=getComputedStyle(b);
+    return {disabled:b.disabled,soon:b.className.includes('mc-soon'),
+      tag:(b.querySelector('.mc-soon-tag')||{}).textContent||null,
+      arrow:!!b.querySelector('.mc-arrow'),opacity:Number(cs.opacity),
+      pointer:cs.pointerEvents}; },
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
   roster:()=>(run&&run.roster||[]).map(p=>({pos:p.position,price:p.price_musd})),
@@ -290,8 +306,14 @@ window.__DEF={
 };
 
 boot();`;
-  const src = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
+  let src = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
   if (src.split('\nboot();').length !== 2) throw new Error('the boot() anchor moved');
+  /* The gate is a const in the shipped file and stays one. The probe copy adds an override
+     beside it so the same build can be seen both ways. */
+  const GATE = 'const canPlayDefense=()=>DEFENSE_LIVE;';
+  if (src.split(GATE).length !== 2) throw new Error('the defense gate moved; update this file');
+  src = src.replace(GATE, 'let __defLiveOverride=null;\n'
+    + 'const canPlayDefense=()=>(__defLiveOverride===null?DEFENSE_LIVE:__defLiveOverride);');
   fs.writeFileSync(PROBE, src.replace('\nboot();', HOOK));
   const b = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
@@ -307,7 +329,44 @@ boot();`;
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
     await p.evaluate(() => window.__DEF.menu());
     await p.waitForTimeout(400);
-    ok('the menu offers the mode', await p.evaluate(() => {
+    /* ── THE GATE ─────────────────────────────────────────────────────────────
+       The mode is finished and NOT recordable: ps_runs_run_mode_ck lists the modes by
+       name, so until supabase/80_football_defense_mode.sql is applied the database
+       rejects every defense run outright. A playable card would hand somebody a season
+       that vanishes on submit. Both states are checked here so flipping DEFENSE_LIVE is
+       a one-line change with a test behind it rather than a leap. */
+    const shipped = await p.evaluate(() => window.__DEF.live());
+    console.log(`  (DEFENSE_LIVE is ${shipped}; the migration must be applied before it flips)`);
+    await p.evaluate(() => window.__DEF.setLive(false));
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    const gated = await p.evaluate(() => window.__DEF.card());
+    ok('gated: the card is greyed out, says Coming Soon and cannot be pressed',
+      gated && gated.disabled && gated.soon && gated.tag === 'Coming Soon'
+      && gated.opacity < 0.6 && gated.pointer === 'none' && !gated.arrow, gated);
+    ok('gated: the launcher refuses even when called directly',
+      await p.evaluate(async () => { window.__DEF.launch();
+        await new Promise((r) => setTimeout(r, 500));
+        return !document.getElementById('s-draft').classList.contains('on'); }));
+    await p.evaluate(() => window.__DEF.board());
+    await p.waitForTimeout(200);
+    ok('gated: the board does not offer a competition nobody can be on',
+      await p.evaluate(() => !window.__DEF.comps().some((o) => o.value === 'defense')));
+
+    /* And what flipping it buys, so the live path is covered before it is live. */
+    await p.evaluate(() => window.__DEF.setLive(true));
+    await p.evaluate(() => window.__DEF.board());
+    await p.waitForTimeout(200);
+    ok('live: the board offers the Defense Draft as its own competition',
+      await p.evaluate(() => window.__DEF.comps()
+        .some((o) => o.value === 'defense' && /Defense Draft/.test(o.label))));
+    ok('live: and choosing it asks the database for run_mode defense',
+      await p.evaluate(() => window.__DEF.scopeFor('defense').mode) === 'defense',
+      await p.evaluate(() => window.__DEF.scopeFor('defense')));
+
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    ok('live: the menu offers the mode', await p.evaluate(() => {
       const b2 = document.getElementById('b-mc-def'); return !!b2 && !b2.disabled; }));
     await p.click('#b-mc-def');
     await p.waitForSelector('#opts .tile', { timeout: 60000 });

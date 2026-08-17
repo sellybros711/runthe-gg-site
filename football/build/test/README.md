@@ -90,6 +90,23 @@ the postseason and nowhere else, so a green run says nothing about the draft, th
 season screen, the results card or the leaderboard. The college game has a real
 browser suite under `cfb/build/test/` if you want the shape of one.
 
+## The Defense Draft is finished and gated
+
+`DEFENSE_LIVE` in `football/index.html` is `false`, so the mode card says Coming Soon and
+cannot be pressed. That is not caution. `ps_runs_run_mode_ck` lists the recordable modes
+by name, so until `supabase/80_football_defense_mode.sql` is applied the database rejects
+every defense run outright, and a player would get a season that vanishes on submit.
+
+To open it:
+
+1. run `supabase/80_football_defense_mode.sql`
+2. flip `DEFENSE_LIVE` to `true`
+3. deploy
+
+The other order records nothing and shows a save failure nobody can act on. Both states
+are covered by `BROWSER=1 node football/build/test/test_defense.mjs`, so the flip is a
+one-line change with a test behind it.
+
 `test_bracket.mjs` writes an instrumented copy of the game to
 `football/__test_bracket.html`, drives it, and deletes it. That name is deliberate:
 `__test*.html` is in `.gitignore` because the site deploys straight from `main`, and

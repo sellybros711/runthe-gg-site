@@ -788,6 +788,7 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:inset 3px 0 0 var(--c2),inset 0 0 0 1px transparent}
   /* The Trade Machine board, marked the same way a club board is but with the mode's own
      color rather than a team's, so it reads as its own competition at a glance. */
+  .lbmode.isdef select{border-color:rgba(16,185,129,.45);color:#6ee7b7}
   .lbmode.istrade select{border-color:rgba(56,189,248,.55);
     box-shadow:inset 3px 0 0 #38bdf8,inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
@@ -990,9 +991,13 @@ window.GA_ID='G-L29P5MRWKE';
     padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.16);color:#4ade80;
     border:1px solid rgba(34,197,94,.45);vertical-align:middle;margin-left:6px}
   .modecard.mc-soon{opacity:.45;pointer-events:none;filter:grayscale(.5)}
+  /* nowrap so the tag breaks as a unit. Without it "Coming Soon" splits across two lines on
+     a narrow phone and the second word sits alone under the mode's name, which reads as a
+     layout accident rather than a label. It may still take a line of its own, and that is
+     fine; what it must not do is come apart. */
   .mc-soon-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
     padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.10);color:var(--dim-2);
-    vertical-align:middle;margin-left:6px}
+    vertical-align:middle;margin-left:6px;white-space:nowrap}
   /* Real gold rather than bronze: the darker end of an amber gradient reads brown at this
      size, so both stops sit high and the text is the dark color instead. */
   .mc-soon-tag.gold{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600;
@@ -4927,6 +4932,18 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
    and by the field, so it is a function beside the other mode readers rather than a local
    in whichever of them happened to need it first. */
 const isDefRun=()=>!!(run&&run.defense);
+
+/* ---- IS THE DEFENSE DRAFT LIVE? ----
+   False until supabase/80_football_defense_mode.sql has been applied, and that is not
+   caution, it is the truth about the mode. ps_runs_run_mode_ck lists the recordable modes
+   by name, so until that constraint is widened the database REJECTS every defense run
+   outright. The mode plays perfectly and every season it produces would vanish on submit,
+   which is the worst version of shipping something: it looks finished and quietly is not.
+
+   So the card says Coming Soon and cannot be pressed, exactly as the Trade Machine did
+   before its own migration landed. Flip this AFTER running the migration, not before. */
+const DEFENSE_LIVE=false;
+const canPlayDefense=()=>DEFENSE_LIVE;
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
@@ -5786,6 +5803,9 @@ $('b-start').onclick=()=>{ beginDraft({}); };
    empty board, and a failure lands on the front page with a reason instead of a draft with
    nobody in it. */
 function beginDefenseDraft(){
+  /* Checked here as well as at the card, because the card is only one way in and the DOM
+     is not the authority on what is playable. Same belt and braces the Trade Machine uses. */
+  if(!canPlayDefense()) return;
   const b=$('b-mc-def');
   if(b){ b.disabled=true; b.classList.add('mc-loading'); }
   loadDefensePool().then(()=>{
@@ -5942,6 +5962,8 @@ function modeMenu(){
   const arrow='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
   const ct=canPlayTrade();
   const tradeLocked=locked||!ct;
+  const cd=canPlayDefense();
+  const defLocked=locked||!cd;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
@@ -5958,13 +5980,16 @@ function modeMenu(){
           '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
       '</button>'+
-      '<button class="modecard mc-def" id="b-mc-def"'+(locked?' disabled':'')+'>'+
+      '<button class="modecard mc-def'+(cd?'':' mc-soon')+'" id="b-mc-def"'+
+        (defLocked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* A shield with a bar across it: the same shield the One Franchise card uses,
              which is the game's existing mark for a team, struck through to say stop. */
           '<path d="M12 2L3 7v6c0 5.25 3.75 10.13 9 11.25C17.25 23.13 21 18.25 21 13V7L12 2z"/>'+
           '<line x1="7" y1="12" x2="17" y2="12"/>'+
-          '</svg></div><div class="mc-title">Defense Draft</div>'+arrow+'</div>'+
+          '</svg></div><div class="mc-title">Defense Draft'+
+          (cd?'':' <span class="mc-soon-tag">Coming Soon</span>')+
+          '</div>'+(cd?arrow:'')+'</div>'+
         '<p>The same draft from the other side. Sign a front seven and a secondary under '+
         'the same cap, and win by how few points you let the other team score.</p>'+
       '</button>'+
@@ -6051,7 +6076,7 @@ function modeMenu(){
   /* The sheet is closed by beginDefenseDraft AFTER the pool has arrived, not here, so the
      card can stay on screen and disabled while it loads rather than dropping the player on
      the front page with nothing happening. */
-  if(def&&!locked) def.onclick=()=>{ beginDefenseDraft(); };
+  if(def&&!locked&&canPlayDefense()) def.onclick=()=>{ beginDefenseDraft(); };
   const trade=$('b-mc-trade');
   if(trade&&!locked&&canPlayTrade()) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
   /* Leaves this page, so it is tracked before it goes: a cross-promo whose click-through
@@ -13110,8 +13135,19 @@ let lbEra=null;
    not in the select, lbScope() cannot return it, and tradeBoardOff() puts the board back on
    free play if eligibility is ever lost mid-session (a sign-out, or a rename). */
 let lbTrade=false;
+/* The Defense Draft's own board. Gated the same way the Trade Machine's is: an option
+   nobody can play is an option that leads to an empty table. */
+let lbDefense=false;
 function tradeBoardOff(){
   if(lbTrade&&!canPlayTrade()){ lbTrade=false; if(lbSort==='gm') lbSort='rating'; return true; }
+  return false;
+}
+/* The same guard for the defense board. It matters more here than for the Trade Machine,
+   because this one is gated on a database migration rather than on who the viewer is: with
+   DEFENSE_LIVE false the board would query run_mode='defense' and correctly find nothing,
+   which reads as a broken leaderboard rather than as a mode that has not opened yet. */
+function defenseBoardOff(){
+  if(lbDefense&&!canPlayDefense()){ lbDefense=false; return true; }
   return false;
 }
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
@@ -13143,7 +13179,11 @@ function lbScope(){
   /* Asked here as well as at the paint, because this is the call that actually reaches the
      database and it must never read a board the viewer is not entitled to. */
   tradeBoardOff();
+  defenseBoardOff();
   if(lbTrade) return {mode:'trade',win:lbWin};
+  /* One board for the whole mode, like the Trade Machine: the mode IS the competition,
+     so there is no second field the way club has a franchise and era has a decade. */
+  if(lbDefense) return {mode:'defense',win:lbWin};
   if(lbEra) return {mode:'era',era:lbEra,win:lbWin};
   return lbClub
     ? {mode:'club',franchise:lbClub,win:lbWin}
@@ -13160,11 +13200,12 @@ function paintComp(){
      sign-out) rather than being decided once and frozen. dataset.tm records which of the two
      shapes is currently rendered, so the select is only ever rebuilt when it actually has to
      be: rebuilding a select that is open closes it. */
-  const wantTrade=canPlayTrade()?'1':'0';
+  const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'');
   if(!sel.options.length||sel.dataset.tm!==wantTrade){
     sel.dataset.tm=wantTrade;
     sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
+      (canPlayDefense()?'<option value="defense">Defense Draft</option>':'')+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
@@ -13173,12 +13214,13 @@ function paintComp(){
         .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
       '</optgroup>';
   }
-  sel.value=lbTrade?'trade':lbEra?'era:'+lbEra:(lbClub||'');
+  sel.value=lbTrade?'trade':lbDefense?'defense':lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade);
-  wrap.classList.toggle('isera',!!lbEra&&!lbTrade);
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense);
+  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense);
   wrap.classList.toggle('istrade',!!lbTrade);
-  if(lbClub&&!lbEra&&!lbTrade){
+  wrap.classList.toggle('isdef',!!lbDefense);
+  if(lbClub&&!lbEra&&!lbTrade&&!lbDefense){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
     wrap.style.setProperty('--c2',tc.secondary);
@@ -13192,18 +13234,21 @@ $('lb-comp').addEventListener('change',()=>{
   /* Checked again rather than trusted: the option is only rendered for an eligible viewer,
      but the value arrives from the DOM and the DOM is not the authority on that. */
   if(v==='trade'&&canPlayTrade()){
-    lbTrade=true; lbEra=null; lbClub=null;
+    lbTrade=true; lbDefense=false; lbEra=null; lbClub=null;
     /* Land on the axis the mode is about. Record and team rating both mostly describe the
        roster you were handed; the GM rating is the season's work. */
     lbSort='gm';
+  }else if(v==='defense'&&canPlayDefense()){
+    lbDefense=true; lbTrade=false; lbEra=null; lbClub=null;
+    if(lbSort==='gm') lbSort='rating';
   }else if(v.startsWith('era:')){
-    lbTrade=false; lbEra=v.slice(4); lbClub=null;
+    lbTrade=false; lbDefense=false; lbEra=v.slice(4); lbClub=null;
     if(lbSort==='gm') lbSort='rating';
   }else{
-    lbTrade=false; lbEra=null; lbClub=v||null;
+    lbTrade=false; lbDefense=false; lbEra=null; lbClub=v||null;
     if(lbSort==='gm') lbSort='rating';
   }
-  ga('board_competition',{mode:lbTrade?'trade':lbEra?'era':lbClub?'club':'free',
+  ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
 });
@@ -13230,8 +13275,9 @@ const SORT_META={
 function boardFromRun(){
   if(!run||!run.outcome) return;
   lbTrade=!!(run.tradeMachine&&canPlayTrade());
-  lbEra=lbTrade?null:(run.era||null);
-  lbClub=(lbTrade||lbEra)?null:(run.franchise||null);
+  lbDefense=!lbTrade&&!!(run.defense&&canPlayDefense());
+  lbEra=(lbTrade||lbDefense)?null:(run.era||null);
+  lbClub=(lbTrade||lbDefense||lbEra)?null:(run.franchise||null);
 }
 
 /* THE AXIS A BOARD LEADS WITH. The Trade Machine is scored on the GM rating, so that is the
@@ -13278,7 +13324,11 @@ async function loadBoard(){
   }
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
-  $('lb-blurb').textContent=lbTrade
+  $('lb-blurb').textContent=lbDefense
+    ? 'Every Defense Draft season. Ranked apart from the offense boards, because a defensive '+
+      'team rating is built from a different pool and holding people under is a different '+
+      'job from outscoring them. '+clock
+    : lbTrade
     ? 'Every Trade Machine season. Ranked apart from the draft modes, because the roster is '+
       'dealt to you and the season is what you did with it. '+
       (lbSort==='gm'
