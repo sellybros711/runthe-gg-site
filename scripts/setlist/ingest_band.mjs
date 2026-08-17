@@ -87,6 +87,8 @@ function arg(name, fallback) {
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
+// Derived from --out so a band added later gets both files in one place.
+const SHOWS_OUT = resolve(repoRoot, arg('shows-out', OUT.replace(/\.csv$/, '_shows.csv')));
 const LIMIT = Number(arg('limit', 0)) || 0;
 const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
 const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site is 2014
@@ -268,6 +270,74 @@ async function fetchJamcharts() {
     console.warn('  crowd_rating and jamchart_note will be blank — scoring falls back to neutral.');
   }
   return map;
+}
+
+/* ── the show table ──────────────────────────────────────────────────────────
+ *
+ * A SECOND FILE, and the reason is that it holds rows the setlist file cannot.
+ * goose.csv is one row per PERFORMANCE, so a show with no setlist has nothing
+ * to put in it, and every show Goose has not played yet is exactly that. The
+ * band is on tour right now; those dates are the point.
+ *
+ * It also carries the tour name, which the setlist endpoint does not return at
+ * all. 43 distinct tours across 855 shows, from "Summer Tour 2018" to
+ * "Goosemas VI", plus "Not Part of a Tour" for the 247 one-offs and festivals.
+ *
+ * The counts to expect for Goose, measured Aug 2026: 855 shows total, 827 of
+ * them in the past, and only ~656 of those carry a setlist. That gap is not an
+ * error, it is announced-but-unplayed dates plus shows nobody has transcribed.
+ */
+const SHOW_COLUMNS = [
+  'show_id', 'show_date', 'year', 'tour_id', 'tour',
+  'venue', 'city', 'state', 'country', 'has_setlist',
+];
+
+async function fetchShowTable(playedIds) {
+  const url = ARTIST_ID ? `${API}/shows/artist_id/${ARTIST_ID}.json` : `${API}/shows.json`;
+  const rows = await getJSON(url, { retryEmpty: true });
+  if (!rows.length) throw new Error('the shows endpoint returned nothing');
+
+  const clean = s => decodeEntities(s || '').replace(/\s+/g, ' ').trim();
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const id = String(r.show_id || '');
+    const date = String(r.showdate || '');
+    // The endpoint can list a show twice when it is tied to two artists.
+    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date) || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      show_id: id,
+      show_date: date,
+      year: date.slice(0, 4),
+      tour_id: String(r.tour_id || ''),
+      /* "Not Part of a Tour" is elgoose's label for a one-off, and it is a
+         sentence rather than a name. Blanked here so the UI can decide how to
+         say it instead of having that string wired into a dropdown. */
+      tour: /^not part of a tour$/i.test(clean(r.tourname)) ? '' : clean(r.tourname),
+      venue: clean(r.venuename),
+      city: clean(r.city),
+      state: clean(r.state),
+      country: clean(r.country),
+      has_setlist: playedIds.has(id) ? 'true' : 'false',
+    });
+  }
+  out.sort((a, b) => a.show_date.localeCompare(b.show_date) || a.show_id.localeCompare(b.show_id));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = out.filter(r => r.show_date >= today).length;
+  const withSet = out.filter(r => r.has_setlist === 'true').length;
+  console.log(`  ${out.length} shows · ${withSet} with a setlist · ${upcoming} still to play`);
+  /* AN EMPTY SCHEDULE IS NOT AN ERROR, and it must not be treated as one. A
+     band between tours genuinely has no announced dates, and failing --strict
+     on that would block every setlist refresh until they booked something. The
+     shape of a broken response is the ROW COUNT collapsing, which data_drift
+     checks against the committed file. So this is a note, not a failure. */
+  if (!upcoming) console.warn('  note: no upcoming shows announced');
+  /* Tour names going missing IS a schema break: every row in a healthy response
+     carries one, even if it is the "not part of a tour" placeholder. */
+  if (!out.some(r => r.tour)) degrade('no tour names in the show table');
+  return out;
 }
 
 /**
@@ -644,6 +714,20 @@ async function main() {
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, csv, 'utf8');
+
+  /* The show table, written beside the setlists. Skipped under --limit, which
+     exists to produce a small file for testing and would otherwise pair a
+     10-show CSV with the full 855-row schedule. */
+  if (!LIMIT) {
+    console.log('\nFetching the show table (tours and upcoming dates)...');
+    const played = new Set(raw.map(r => String(r.show_id)));
+    const table = await fetchShowTable(played);
+    const text = [SHOW_COLUMNS.join(',')]
+      .concat(table.map(r => SHOW_COLUMNS.map(c => csvCell(r[c])).join(',')))
+      .join('\n') + '\n';
+    writeFileSync(SHOWS_OUT, text, 'utf8');
+    console.log(`Wrote ${SHOWS_OUT}`);
+  }
 
   console.log(`\nWrote ${OUT}`);
   console.log(`  ${performances} performances · ${shows} shows · ${songs} distinct songs`);

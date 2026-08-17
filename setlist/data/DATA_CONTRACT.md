@@ -1,8 +1,15 @@
 # Segue — band data contract
 
-One CSV per band, served from `/setlist/data/<band>.csv`. The CSV is the single
+Two CSVs per band, served from `/setlist/data/`. `<band>.csv` is the single
 source of truth for the game: `dataLoader.js` turns it into `{ shows, segues }`
 and `scoring.js` scores against it. Nothing else feeds the game.
+
+`<band>_shows.csv` is the show-level table beside it, and it exists to hold the
+rows the setlist file cannot. The setlist file is one row per **performance**,
+so a show with no setlist has nothing to put in it, and every date the band has
+not played yet is exactly that. It also carries the tour name, which the
+setlist endpoint does not return at all. It feeds the tour schedule and the
+show browser, and nothing in the scoring reads it.
 
 Generate with:
 
@@ -11,8 +18,24 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7516 performances · 656 shows · 367 songs**, 2014–2026.
+As of the last run: **7544 performances · 658 shows · 367 songs**, 2014–2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
+
+The show table from the same run: **855 shows · 658 with a setlist · 28 still to
+play**. The gap between 855 and 658 is not an error. It is announced dates that
+were never played, plus shows nobody has transcribed.
+
+## `<band>_shows.csv`
+
+| column | notes |
+|---|---|
+| `show_id` | joins to `show_id` in the setlist CSV |
+| `show_date` | `YYYY-MM-DD`, past and future |
+| `year` | the first four characters of `show_date` |
+| `tour_id` | elgoose's tour key |
+| `tour` | display name, **blank for a one-off**. elgoose writes "Not Part of a Tour", which is a sentence rather than a name, so the ingester blanks it and the UI decides how to say it |
+| `venue`, `city`, `state`, `country` | display text, entity-decoded |
+| `has_setlist` | `true` when the setlist CSV has rows for this `show_id` |
 
 ### Two things that will silently corrupt a run
 

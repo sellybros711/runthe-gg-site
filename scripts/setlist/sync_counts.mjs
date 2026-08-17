@@ -70,6 +70,21 @@ patch('setlist/data/DATA_CONTRACT.md',
   `**${counts.performances} performances · ${counts.shows} shows · ${counts.songs} songs**`,
   'counts in DATA_CONTRACT');
 
+/* The show table's own line. "still to play" moves every time the band plays,
+   which is the whole point of the file, so it cannot be left to a human. */
+const showRows = parseCSV(read('setlist/data/goose_shows.csv'));
+const today = new Date().toISOString().slice(0, 10);
+const st = {
+  shows: showRows.length,
+  withSet: showRows.filter(r => r.has_setlist === 'true').length,
+  upcoming: showRows.filter(r => r.show_date >= today).length,
+};
+console.log(`goose_shows.csv: ${st.shows} shows · ${st.withSet} with a setlist · ${st.upcoming} still to play`);
+patch('setlist/data/DATA_CONTRACT.md',
+  /\*\*(\d[\d,]*) shows · (\d[\d,]*) with a setlist · (\d[\d,]*) still to\s*\nplay\*\*/,
+  `**${st.shows} shows · ${st.withSet} with a setlist · ${st.upcoming} still to\nplay**`,
+  'counts in the show table section');
+
 if (!CHECK) for (const [file, after] of edits) writeFileSync(resolve(repoRoot, file), after);
 
 if (CHECK && changed) {

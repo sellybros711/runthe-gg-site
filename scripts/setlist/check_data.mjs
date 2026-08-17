@@ -824,6 +824,113 @@ check(/e\.clientX >= r\.left && e\.clientX <= r\.right/.test(gameBare),
 check(/closeGuide\(\);\s*target\.click\(\);/.test(gameBare),
   'and the press is forwarded to it');
 
+/* THE SHOW TABLE, and the reason it is a second file rather than more columns:
+   the setlist CSV is one row per PERFORMANCE, so a show with no setlist has
+   nothing to put in it, and every date the band has not played yet is exactly
+   that. It also carries the tour name, which the setlist endpoint never
+   returns. Measured Aug 2026: 855 shows, 658 with a setlist, 28 still to play,
+   43 distinct tours. */
+console.log('the show table');
+const showsPath = 'setlist/data/goose_shows.csv';
+check(existsSync(resolve(repoRoot, showsPath)), 'the show table exists');
+const showRows = parseCSV(read(showsPath));
+const SHOW_COLS = ['show_id', 'show_date', 'year', 'tour_id', 'tour',
+  'venue', 'city', 'state', 'country', 'has_setlist'];
+const showHead = read(showsPath).slice(0, read(showsPath).indexOf('\n')).trim().split(',');
+check(showHead.length === SHOW_COLS.length && showHead.every((h, i) => h === SHOW_COLS[i]),
+  'its header matches DATA_CONTRACT', `got ${showHead.join(',')}`);
+check(showRows.length > 700, `it covers the whole history (${showRows.length} shows)`);
+check(showRows.every(r => /^\d{4}-\d{2}-\d{2}$/.test(r.show_date || '')),
+  'every show_date is YYYY-MM-DD');
+const tourNames = new Set(showRows.map(r => r.tour).filter(Boolean));
+check(tourNames.size >= 20, `tour names are present (${tourNames.size} distinct)`);
+/* "Not Part of a Tour" is elgoose's label for a one-off and it is a sentence,
+   not a name. The ingester blanks it so the UI decides how to say it; letting
+   it through would put that string in a dropdown. */
+check(!tourNames.has('Not Part of a Tour'), "elgoose's one-off placeholder is blanked, not a tour");
+/* EVERY SHOW IN THE ARCHIVE MUST BE IN THE TABLE, because the browser reads
+   the table and the attendance stats read the archive. A show missing here is
+   one a player cannot tick and therefore cannot ever be credited for. */
+const tableIds = new Set(showRows.map(r => r.show_id));
+const archiveIds = new Set(parseCSV(read('setlist/data/goose.csv')).map(r => r.show_id));
+const missing = [...archiveIds].filter(id => !tableIds.has(id));
+check(!missing.length, 'every archived show is in the table',
+  missing.length ? `${missing.length} missing, e.g. ${missing[0]}` : '');
+check([...tableIds].some(id => !archiveIds.has(id)),
+  'and the table carries shows the archive cannot (unplayed and untranscribed)');
+const flagged = showRows.filter(r => r.has_setlist === 'true').map(r => r.show_id);
+check(flagged.every(id => archiveIds.has(id)) && flagged.length === archiveIds.size,
+  `has_setlist agrees with the archive (${flagged.length} of ${archiveIds.size})`);
+
+/* ON TOUR. The band is playing right now, and the archive is silent about that
+   by construction: it only knows shows that have already happened. */
+console.log('on tour');
+check(/if \(S\.screen === 'tour'\)/.test(gameBare), 'the tour screen is routed');
+check(/shows: '\/setlist\/data\/goose_shows\.csv'/.test(gameBare), 'the band points at its show table');
+/* A SEPARATE FETCH, deliberately: 72KB against the archive's 1.2MB. Making
+   somebody download every performance to see who is playing tomorrow would be
+   indefensible, so fetchShowTable must not go through fetchBand. */
+check(/async function fetchShowTable\(band\)/.test(gameBare), 'the table is fetched on its own');
+check(!/fetchBand[\s\S]{0,200}goose_shows/.test(gameBare),
+  'and not dragged in behind the whole archive');
+/* THE COUNTDOWN IS IN DAYS AND THAT IS THE DATA'S FAULT, not laziness: elgoose
+   returns null for showtime and timezone on every row in the table, so there
+   is no set time to count to and no venue clock to count it in. An
+   hours-and-minutes readout would be inventing both. */
+check(/function daysUntil\(/.test(gameBare) && /function countdownWords\(/.test(gameBare),
+  'the countdown is computed in whole days');
+check(!/getHours\(\)[\s\S]{0,120}countdown/i.test(gameBare),
+  'and no finer unit is invented from a date alone');
+check(/class="card nextshow"/.test(gameBare) && /\.nextshow\{/.test(gameBare),
+  'the next show gets its own card');
+
+/* EVERY SHOW. Marking attendance one night at a time during a draft was the
+   only way in, and for somebody with a hundred shows behind them that means
+   playing until the game happens to deal each of them. */
+console.log('every show');
+check(/if \(S\.screen === 'browse'\)/.test(gameBare), 'the browser is routed');
+check(/id="bYear"/.test(gameBare) && /id="bTour"/.test(gameBare),
+  'it filters by year and by tour');
+/* The tour list follows the year, because 43 tours in one dropdown is a scroll
+   and only a handful of them happened in the year you picked. */
+check(/!BROWSE\.year \|\| r\.year === BROWSE\.year\)\s*\n\s*\.map\(r => r\.tour\)/.test(gameBare),
+  'and the tour list narrows to the chosen year');
+check(/data-mark=/.test(gameBare), 'rows can be ticked');
+check(/toggleThere\(band\.id, mark\.dataset\.mark\)/.test(gameBare),
+  'and a tick reaches the same store the draft writes to');
+/* Repainting the row rather than the screen: a re-render throws away the
+   scroll position, and somebody working through a year taps a lot of these. */
+check(/mark\.classList\.toggle\('on', now\)/.test(gameBare),
+  'ticking repaints the row, not the whole list');
+/* A date the band has not reached cannot be one you were at. */
+check(/r\.show_date < today\)\.reverse\(\)/.test(gameBare), 'only played shows can be ticked');
+/* Typing re-renders the list, so the field has to be handed its caret back or
+   every second keystroke lands at the start of the box. */
+check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'the search box keeps its caret');
+
+/* SIX IN THE MORNING, EASTERN, EVERY DAY. */
+console.log('the refresh schedule');
+check(/cron: '0 10 \* \* \*'/.test(wf) && /cron: '0 11 \* \* \*'/.test(wf),
+  'the refresh runs daily on both UTC hours');
+/* TWO ENTRIES BECAUSE GITHUB CRON HAS NO DAYLIGHT SAVING. 6am Eastern is 10:00
+   UTC from March to November and 11:00 UTC the rest of the year, so a single
+   entry would be 5am for half of it. The gate lets exactly one through. */
+check(/TZ=America\/New_York date \+%H/.test(wf), 'and only the one that is 6am in New York proceeds');
+check(/steps\.when\.outputs\.go == 'yes'/.test(wf), 'every later step is gated on it');
+check(/workflow_dispatch/.test(wf) && /github\.event_name.*workflow_dispatch/.test(wf),
+  'a manual run is always let through');
+check(/git add[\s\S]{0,120}goose_shows\.csv/.test(wf), 'the refresh commits the show table too');
+check(/ingest_band\.mjs[\s\S]{0,400}goose_shows/.test(read('scripts/setlist/ingest_band.mjs'))
+  || /SHOWS_OUT/.test(read('scripts/setlist/ingest_band.mjs')),
+  'and the ingester writes it');
+/* AN EMPTY SCHEDULE IS NOT AN ERROR. A band between tours has no announced
+   dates, and failing --strict on that would block every setlist refresh until
+   they booked something. The collapse that IS an error is the row count. */
+check(!/degrade\('no upcoming shows/.test(read('scripts/setlist/ingest_band.mjs')),
+  'an empty schedule does not fail the run');
+check(/the show table did not shrink/.test(read('scripts/setlist/data_drift.mjs')),
+  'but a collapsed show table does');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments

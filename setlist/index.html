@@ -1625,6 +1625,83 @@
   .bempty{padding:26px 4px; text-align:center; color:var(--dim);
     font-weight:600; font-size:13.5px; line-height:1.6;}
 
+  /* ---- on tour ----
+     The next show is the whole screen's reason to exist, so it is the only
+     thing on it built like a poster. Everything under it is a list. */
+  .nextshow{padding:16px 16px 15px; margin-bottom:var(--sp-2);
+    border-color:color-mix(in srgb, var(--teal) 40%, var(--line2));}
+  .ns-when{font-family:var(--hero); font-size:34px; line-height:1.02;
+    color:var(--tealT); text-transform:uppercase; letter-spacing:.01em;}
+  .ns-date{font-family:var(--ui); font-size:15px; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--mut); margin:5px 0 9px;}
+  .ns-venue{font-size:17px; font-weight:800; line-height:1.25;}
+  .ns-city{font-size:13.5px; font-weight:600; color:var(--mut); margin-top:2px;}
+  .ns-tour{font-family:var(--ui); font-size:11px; letter-spacing:2px; margin-top:9px;
+    text-transform:uppercase; color:var(--dim);}
+  .tourhd{margin:var(--sp-2) 0 8px;}
+  .trow{display:flex; align-items:center; gap:12px; padding:11px 14px;
+    border-bottom:1px solid var(--line);}
+  .trow:last-child{border-bottom:0;}
+  /* The count is the column the eye runs down, so it is fixed width and set in
+     the display face with tabular figures: a ragged one is unreadable as a
+     countdown, which is the only thing it is for. */
+  .t-when{flex:0 0 40px; text-align:center;}
+  .t-when b{display:block; font-family:var(--ui); font-size:21px; line-height:1;
+    font-variant-numeric:tabular-nums; color:var(--ink);}
+  .t-when i{font-style:normal; font-size:9px; font-weight:800; letter-spacing:.9px;
+    text-transform:uppercase; color:var(--dim);}
+  .t-what{flex:1; min-width:0;}
+  .t-venue{font-size:14px; font-weight:800; line-height:1.3;}
+  .t-city{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:1px;}
+  .t-date{flex:0 0 auto; font-family:var(--ui); font-size:13px; letter-spacing:1px;
+    text-transform:uppercase; color:var(--dim);}
+
+  /* ---- every show ----
+     A filter bar that is two native selects on purpose. A custom dropdown here
+     would be a listbox to build, label and keyboard-test for no gain: these
+     hold 13 years and 43 tours, and the platform's own picker is better at
+     that on a phone than anything worth writing. */
+  .bfilter{display:flex; gap:8px; margin-bottom:var(--sp-2);}
+  .bfilter label{flex:1; min-width:0; display:block;}
+  .bfilter span{display:block; font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--dim); margin-bottom:4px;}
+  .bfilter select{width:100%; font-family:inherit; font-size:13.5px; font-weight:700;
+    color:var(--ink); background:var(--card); border:1px solid var(--line2);
+    border-radius:var(--r-md); padding:9px 10px; appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
+      linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+    background-size:5px 5px, 5px 5px; background-repeat:no-repeat; padding-right:28px;}
+  .bcount{font-size:12px; font-weight:700; color:var(--dim); margin:0 0 8px;}
+  .binput{width:100%; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink);
+    background:var(--card); border:1px solid var(--line2); border-radius:var(--r-md);
+    padding:10px 12px; margin-bottom:10px;}
+  .binput::placeholder{color:var(--dim); font-weight:600;}
+  /* The row IS the toggle. A separate checkbox beside it would put a 20px
+     target on a 44px row and make the obvious tap do nothing. */
+  .srow{display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+    padding:10px 14px; background:none; border:0;
+    border-bottom:1px solid var(--line); font-family:inherit;}
+  .srow:last-child{border-bottom:0;}
+  .s-tick{flex:0 0 20px; height:20px; border-radius:6px; border:2px solid var(--line2);
+    display:flex; align-items:center; justify-content:center;}
+  .srow.on .s-tick{background:var(--teal); border-color:var(--teal);}
+  .s-tick:after{content:''; width:9px; height:5px; margin-top:-2px;
+    border-left:2.5px solid #04202B; border-bottom:2.5px solid #04202B;
+    transform:rotate(-45deg); opacity:0;}
+  .srow.on .s-tick:after{opacity:1;}
+  .s-main{flex:1; min-width:0;}
+  /* BLOCKS, because they are spans inside a button and inline is what made the
+     list ragged: a short venue sat on the date's line and a long one dropped
+     below it, so no two rows read the same way. Block also gives the ellipsis
+     something to clip, which inline never did. */
+  .s-date{display:block; font-size:13.5px; font-weight:800;}
+  .s-venue{display:block; font-size:12.5px; font-weight:600; color:var(--mut);
+    margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .s-no{flex:0 0 auto; font-size:9.5px; font-weight:800; letter-spacing:1px;
+    text-transform:uppercase; color:var(--dim);}
+  .srow.on .s-date{color:var(--tealT);}
+
   /* ---- the profile ---- */
   /* ---- the shows you were at, as a fan artifact ---- */
   /* The block is dropped straight into a bare .card, which carries no padding of
@@ -1877,8 +1954,8 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=38" defer></script>
-<script src="/setlist/board.js?v=38" defer></script>
+<script src="/setlist/auth.js?v=39" defer></script>
+<script src="/setlist/board.js?v=39" defer></script>
 
 <script type="module">
 import {
@@ -1889,15 +1966,16 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=38';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=38';
+} from './scoring.js?v=39';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=39';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
 // scripts/setlist/make_sample.mjs. Real bands come from the ingester.
 const BANDS = [
   { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
-    note: '656 shows from the elgoose.net archive' },
+    shows: '/setlist/data/goose_shows.csv',
+    note: '658 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
     note: 'Made-up data, for testing', sample: true },
 ];
@@ -1954,9 +2032,11 @@ function shuffle(arr, rng){
 
 // ── formatting ───────────────────────────────────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function fmtDate(d){
+function fmtDate(d, opts = {}){
   if (!d) return '';
   const [y, m, day] = String(d).split('-');
+  // The short form drops the year, for lists that are already inside one.
+  if (opts.short) return `${MONTHS[Number(m) - 1] || ''} ${Number(day)}`;
   return `${MONTHS[Number(m) - 1] || ''} ${Number(day)}, ${y}`;
 }
 /* ---------------------------------------------------------------------------
@@ -2333,6 +2413,10 @@ function renderHome(){
     <div class="homelinks">
       <button class="btn ghost" type="button" data-go="board">Leaderboard</button>
       <button class="btn ghost" type="button" data-go="profile">Your shows</button>
+    </div>
+    <div class="homelinks">
+      <button class="btn ghost" type="button" data-go="tour">On tour</button>
+      <button class="btn ghost" type="button" data-go="browse">Every show</button>
     </div>
 
     <section class="how">
@@ -4084,6 +4168,57 @@ async function fetchBand(band){
   return data;
 }
 
+/* ── the show table ──────────────────────────────────────────────────────────
+ *
+ * 72KB against the setlist file's 1.2MB, and that ratio is why it is a separate
+ * fetch rather than something bolted onto fetchBand. The tour screen and the
+ * browser both want every show the band has ever announced and neither wants a
+ * single song, so making somebody download the whole archive to see who is
+ * playing tomorrow would be indefensible.
+ *
+ * It also holds rows the archive cannot: a show with no setlist has no
+ * performances, and every date still to be played is one of those.
+ */
+const showTableCache = new Map();
+async function fetchShowTable(band){
+  if (showTableCache.has(band.id)) return showTableCache.get(band.id);
+  if (!band.shows) return null;
+  const res = await fetch(`${band.shows}?v=${DATA_VERSION}`);
+  if (!res.ok) throw new Error(`Could not load ${band.shows} (${res.status}).`);
+  const rows = parseCSV(await res.text())
+    .filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.show_date || ''));
+  rows.sort((a, b) => a.show_date.localeCompare(b.show_date));
+  showTableCache.set(band.id, rows);
+  return rows;
+}
+
+/* TODAY AS THE BAND WOULD COUNT IT.
+ *
+ * A show is "tonight" until the night is over, and the viewer's own clock is
+ * the only one available: elgoose returns null for both showtime and timezone
+ * on every row, so there is no set time to count down to and no venue timezone
+ * to count it in. Local midnight is therefore the honest boundary, and the
+ * countdown is in whole days because anything finer would be invented.
+ */
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${
+    String(d.getDate()).padStart(2, '0')}`;
+}
+function daysUntil(iso){
+  const [y, m, d] = iso.split('-').map(Number);
+  const then = new Date(y, m - 1, d);
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((then - midnight) / 86400000);
+}
+function countdownWords(n){
+  if (n < 0) return '';
+  if (n === 0) return 'Tonight';
+  if (n === 1) return 'Tomorrow';
+  return `${n} days`;
+}
+
 // ── running a show ───────────────────────────────────────────────────────────
 async function start(bandId){
   const band = BANDS.find(b => b.id === bandId);
@@ -4444,6 +4579,236 @@ function render(){
   if (S.screen === 'result')  return renderResult();
   if (S.screen === 'board')   return renderBoard();
   if (S.screen === 'profile') return renderProfile();
+  if (S.screen === 'tour')    return renderTour();
+  if (S.screen === 'browse')  return renderBrowse();
+}
+
+/* ── the tour ────────────────────────────────────────────────────────────────
+ *
+ * WHAT THE ARCHIVE CANNOT TELL YOU, which is what is happening next. Measured
+ * against the live endpoint in Aug 2026: 28 announced dates across Summer Tour
+ * 2026 and Fall Tour 2026, the nearest of them tomorrow in Vancouver.
+ *
+ * THE COUNTDOWN IS IN DAYS AND THAT IS NOT A SHORTCUT. elgoose returns null for
+ * both `showtime` and `timezone` on every row in the table, so there is no set
+ * time to count down to and no venue clock to count it in. A ticking
+ * hours-and-minutes readout would be inventing both. Days is what the data
+ * supports, so days is what it says.
+ */
+const TOUR_STATE = { rows: null, loading: false, error: '' };
+
+async function loadTourRows(){
+  if (TOUR_STATE.rows || TOUR_STATE.loading) return;
+  TOUR_STATE.loading = true;
+  const band = BANDS.find(b => b.shows && !b.sample);
+  try {
+    TOUR_STATE.rows = await fetchShowTable(band);
+    TOUR_STATE.error = '';
+  } catch (e) {
+    TOUR_STATE.error = e.message;
+  } finally {
+    TOUR_STATE.loading = false;
+    if (S.screen === 'tour' || S.screen === 'browse') render();
+  }
+}
+
+function renderTour(){
+  loadTourRows();
+  const rows = TOUR_STATE.rows;
+  const band = BANDS.find(b => b.shows && !b.sample);
+
+  if (!rows){
+    app.innerHTML = `
+      <div class="bhd"><h2>On tour</h2></div>
+      ${TOUR_STATE.error
+        ? `<div class="err">${esc(TOUR_STATE.error)}</div>`
+        : `<div class="loading"><div class="spinner"></div><div>Loading the schedule</div></div>`}
+      <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
+    document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+    return;
+  }
+
+  const today = todayISO();
+  const up = rows.filter(r => r.show_date >= today);
+  const played = rows.filter(r => r.show_date < today && r.has_setlist === 'true');
+  const last = played[played.length - 1];
+
+  /* Grouped by tour, in date order, because a run is how anybody following the
+     band thinks about it. A one-off has a blank tour by contract, so it gets
+     its own heading rather than an empty one. */
+  const groups = [];
+  for (const r of up){
+    const name = r.tour || 'One-off dates';
+    const g = groups.length && groups[groups.length - 1].name === name
+      ? groups[groups.length - 1] : (groups.push({ name, rows: [] }), groups[groups.length - 1]);
+    g.rows.push(r);
+  }
+
+  const next = up[0];
+  const place = r => [r.city, r.state || r.country].filter(Boolean).join(', ');
+
+  app.innerHTML = `
+    <div class="bhd"><h2>On tour</h2></div>
+
+    ${next ? `
+      <section class="card nextshow">
+        <div class="ns-when">${esc(countdownWords(daysUntil(next.show_date)))}</div>
+        <div class="ns-date">${esc(fmtDate(next.show_date))}</div>
+        <div class="ns-venue">${esc(next.venue)}</div>
+        <div class="ns-city">${esc(place(next))}</div>
+        ${next.tour ? `<div class="ns-tour">${esc(next.tour)}</div>` : ''}
+      </section>` : `
+      <div class="bempty">No dates announced right now.<br>
+        This follows elgoose.net, so it fills in when they do.</div>`}
+
+    ${groups.map(g => `
+      <div class="eyebrow tourhd">${esc(g.name)}</div>
+      <section class="card">
+        ${g.rows.map(r => {
+          const n = daysUntil(r.show_date);
+          return `<div class="trow">
+            <div class="t-when"><b>${n === 0 ? '&middot;' : n}</b><i>${
+              n === 0 ? 'tonight' : n === 1 ? 'day' : 'days'}</i></div>
+            <div class="t-what">
+              <div class="t-venue">${esc(r.venue)}</div>
+              <div class="t-city">${esc(place(r))}</div>
+            </div>
+            <div class="t-date">${esc(fmtDate(r.show_date, { short: true }))}</div>
+          </div>`;
+        }).join('')}
+      </section>`).join('')}
+
+    ${last ? `<p class="axnote" style="margin-top:16px">Last played
+      ${esc(fmtDate(last.show_date))}, ${esc(last.venue)}, ${esc(place(last))}.
+      The setlist lands here the morning after each show.</p>` : ''}
+
+    <div class="homelinks" style="margin-top:18px">
+      <button class="btn ghost" type="button" data-go="browse">Every show</button>
+      <button class="btn ghost" type="button" id="backHome">Back</button>
+    </div>`;
+  document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+}
+
+/* ── every show ──────────────────────────────────────────────────────────────
+ *
+ * MARKING SHOWS ONE AT A TIME DURING A DRAFT WAS THE ONLY WAY IN, and it is a
+ * terrible one for the people this is for: the draft deals you a random night,
+ * so somebody with a hundred shows behind them would have to play until the
+ * game happened to deal each of them. This is the way in that matches how
+ * anybody actually remembers going to shows, by year and by run.
+ *
+ * The filters are the two facts the show table carries that a person navigates
+ * by. 13 years and 43 tours, so both are short enough for a native select.
+ */
+const BROWSE = { year: '', tour: '', q: '' };
+
+function renderBrowse(){
+  loadTourRows();
+  const rows = TOUR_STATE.rows;
+  const band = BANDS.find(b => b.shows && !b.sample);
+
+  if (!rows){
+    app.innerHTML = `
+      <div class="bhd"><h2>Every show</h2></div>
+      ${TOUR_STATE.error
+        ? `<div class="err">${esc(TOUR_STATE.error)}</div>`
+        : `<div class="loading"><div class="spinner"></div><div>Loading the shows</div></div>`}
+      <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
+    document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+    return;
+  }
+
+  const today = todayISO();
+  /* Played shows only. A date the band has not reached cannot be one you were
+     at, and offering to tick it is an invitation to a wrong answer. */
+  const all = rows.filter(r => r.show_date < today).reverse();
+
+  const years = [...new Set(all.map(r => r.year))].sort().reverse();
+  /* The tour list follows the year filter, because 43 tours in one dropdown is
+     a scroll and only a handful of them ever happened in the year you picked. */
+  const tours = [...new Set(all
+    .filter(r => !BROWSE.year || r.year === BROWSE.year)
+    .map(r => r.tour).filter(Boolean))];
+
+  if (BROWSE.tour && !tours.includes(BROWSE.tour)) BROWSE.tour = '';
+
+  const q = BROWSE.q.trim().toLowerCase();
+  const list = all.filter(r =>
+    (!BROWSE.year || r.year === BROWSE.year) &&
+    (!BROWSE.tour || r.tour === BROWSE.tour) &&
+    (!q || `${r.venue} ${r.city} ${r.state} ${r.show_date}`.toLowerCase().includes(q)));
+
+  const marked = attendedSet(band.id);
+  const place = r => [r.city, r.state || r.country].filter(Boolean).join(', ');
+  const CAP = 300;
+  const shown = list.slice(0, CAP);
+
+  app.innerHTML = `
+    <div class="bhd"><h2>Every show</h2></div>
+    <p class="bcount">Tick the ones you were at. ${marked.size} marked so far.</p>
+
+    <div class="bfilter">
+      <label><span>Year</span>
+        <select id="bYear">
+          <option value="">All years</option>
+          ${years.map(y => `<option value="${esc(y)}"${
+            y === BROWSE.year ? ' selected' : ''}>${esc(y)}</option>`).join('')}
+        </select></label>
+      <label><span>Tour</span>
+        <select id="bTour">
+          <option value="">All tours</option>
+          ${tours.map(t => `<option value="${esc(t)}"${
+            t === BROWSE.tour ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+        </select></label>
+    </div>
+
+    <input id="bQ" class="binput" type="search" placeholder="Venue or city"
+      value="${esc(BROWSE.q)}" autocomplete="off" />
+
+    <p class="bcount">${list.length} show${list.length === 1 ? '' : 's'}${
+      list.length > CAP ? `, showing the first ${CAP}. Narrow it with a filter.` : ''}</p>
+
+    <section class="card">
+      ${shown.length ? shown.map(r => `
+        <button class="srow${marked.has(r.show_id) ? ' on' : ''}" type="button"
+          data-mark="${esc(r.show_id)}" aria-pressed="${marked.has(r.show_id)}">
+          <span class="s-tick"></span>
+          <span class="s-main">
+            <span class="s-date">${esc(fmtDate(r.show_date))}</span>
+            <span class="s-venue">${esc(r.venue)}${r.city ? ` &middot; ${esc(place(r))}` : ''}</span>
+          </span>
+          ${r.has_setlist === 'true' ? '' : '<span class="s-no">No setlist</span>'}
+        </button>`).join('')
+        : `<div class="bempty">Nothing matches that.</div>`}
+    </section>
+
+    <p class="axnote" style="margin-top:12px">A show with no setlist can still be
+      one you were at, it just cannot count towards the songs you have heard.
+      ${ME.signedIn ? '' : 'Signed out, this list lives in this browser only.'}</p>
+
+    <div class="homelinks" style="margin-top:18px">
+      <button class="btn ghost" type="button" data-go="profile">Your shows</button>
+      <button class="btn ghost" type="button" id="backHome">Back</button>
+    </div>`;
+
+  document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+  document.getElementById('bYear').addEventListener('change', e => {
+    BROWSE.year = e.target.value; render();
+  });
+  document.getElementById('bTour').addEventListener('change', e => {
+    BROWSE.tour = e.target.value; render();
+  });
+  /* Typing re-renders the whole list, so the field has to be given its caret
+     back or every second keystroke lands at the start of the box. */
+  const box = document.getElementById('bQ');
+  box.addEventListener('input', e => {
+    const at = e.target.selectionStart;
+    BROWSE.q = e.target.value;
+    render();
+    const again = document.getElementById('bQ');
+    again.focus();
+    again.setSelectionRange(at, at);
+  });
 }
 
 /* ── the leaderboard ─────────────────────────────────────────────────────────
@@ -4666,6 +5031,21 @@ app.addEventListener('click', e => {
   }
 
   if (e.target.closest('#rankSignIn')){ openAuth('in'); return; }
+
+  /* Ticking a show in the browser repaints THAT ROW, not the screen. A
+     re-render would throw away the scroll position, and somebody working
+     through a year of shows taps a lot of these in a row. */
+  const mark = e.target.closest('[data-mark]');
+  if (mark){
+    const band = BANDS.find(b => b.shows && !b.sample);
+    const now = toggleThere(band.id, mark.dataset.mark);
+    mark.classList.toggle('on', now);
+    mark.setAttribute('aria-pressed', String(now));
+    const count = document.querySelector('.bcount');
+    if (count) count.textContent =
+      `Tick the ones you were at. ${attendedCount(band.id)} marked so far.`;
+    return;
+  }
 
   const go = e.target.closest('[data-go]');
   if (go){
