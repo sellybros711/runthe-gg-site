@@ -186,13 +186,23 @@ for (const r of ROSTERS) {
   const row = `     ${r.s}  ${f.name}` +
     `\n         former: ${f.pos || '?'}, ${(f.decade || []).join('/') || 'no decades'}, fame ${f.f}` +
     `\n         roster: ${r.p || '?'}, ${r.t || '?'}, age ${r.age == null ? '?' : r.age}`;
-  if (posClash || eraClash) hard.push({ row, why: [posClash && 'position', eraClash && 'era'].filter(Boolean).join(' + ') });
+  if (posClash || eraClash) hard.push({ key, row, why: [posClash && 'position', eraClash && 'era'].filter(Boolean).join(' + ') });
   else if (f.col && r.col && nk(f.col) !== nk(r.col)) soft.push(`     ${r.s}  ${f.name}  (${f.col} vs ${r.col})`);
 }
-say(`\n3) TWO PEOPLE MERGED INTO ONE RECORD  ${hard.length} certain, ${soft.length} to check`);
-say('   CERTAIN: the roster entry contradicts the former-player entry on which');
-say('   side of the ball they play, or on which century they played in.');
-for (const h of list(hard.map((h) => h.row + `\n         clash: ${h.why}`), 15)) say(h);
+/* These used to be merged. The generator now treats a name as a bucket of
+   people, so each of these should appear in the corpus MORE THAN ONCE. Any that
+   still resolve to a single record means the split rule missed a pair. */
+const countByName = new Map();
+for (const p of D.players) {
+  const k = D.sports[p[1]] + '|' + nk(p[0]);
+  countByName.set(k, (countByName.get(k) || 0) + 1);
+}
+const stillMerged = hard.filter((h) => (countByName.get(h.key) || 0) < 2);
+say(`\n3) NAMES SHARED BY MORE THAN ONE PERSON  ${hard.length} found, ${stillMerged.length} still merged`);
+say('   The corpus keys on sport plus name, so these used to collapse into one');
+say('   spliced career. Each should now exist as separate people. Anything in');
+say('   "still merged" is a pair the split rule did not catch.');
+for (const h of list(stillMerged.map((h) => h.row + `\n         clash: ${h.why}`), 15)) say(h);
 say(`   WORTH A LOOK (${soft.length}): different college, which is usually just the two`);
 say('   sources spelling a school differently, but sometimes is two men.');
 for (const s of list(soft, 10)) say(s);
@@ -232,4 +242,4 @@ for (const r of list(noTeams.map((p) => `     ${D.sports[p[1]]}  ${p[0]}  (fame 
 console.log(out.join('\n'));
 console.log('\n---------------------------------------------------------------');
 console.log(`corpus ${D.players.length} players · ${D.teams.length} teams · ${D.cats.length} categories`);
-console.log(`stars misnamed ${misspelt.length} · stars absent ${missing.length} · supplement gap ${suppMissing.length} · merged people ${hard.length} (+${soft.length} to check) · one-club ${thin.length} · teamless ${noTeams.length}`);
+console.log(`stars misnamed ${misspelt.length} · stars absent ${missing.length} · supplement gap ${suppMissing.length} · shared names ${hard.length} (${stillMerged.length} still merged) · one-club ${thin.length} · teamless ${noTeams.length}`);

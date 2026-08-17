@@ -132,6 +132,11 @@
       { id:'sup_nba_chet-walker',     name:'Chet Walker',       sport:'NBA', f:5, t:['Philadelphia 76ers','Chicago Bulls'], j:[25], pos:'Small Forward', decade:[1960,1970], col:'Bradley', ns:13, hp:0 },
 
       /* ============================================== NFL icons, missing */
+      /* Josh Allen the Jaguars linebacker, absent from every source. He can
+         only exist now that a name is a bucket of people: before this, adding
+         him would have welded him to the Bills quarterback. */
+      { id:'sup_nfl_josh-allen-lb',   name:'Josh Allen',        sport:'NFL', f:5, t:['Jacksonville Jaguars'], j:[41], pos:'Linebacker', decade:[2010,2020], col:'Kentucky', ns:7, hp:1 },
+
       { id:'sup_nfl_sid-luckman',     name:'Sid Luckman',       sport:'NFL', f:5, t:['Chicago Bears'], j:[42], pos:'Quarterback', decade:[1930,1940,1950], col:'Columbia', ns:12, hp:1 },
       { id:'sup_nfl_ya-tittle',       name:'Y.A. Tittle',       sport:'NFL', f:5, t:['San Francisco 49ers','New York Giants'], j:[14], pos:'Quarterback', decade:[1940,1950,1960], col:'Louisiana State', ns:17, hp:1 },
       { id:'sup_nfl_bob-griese',      name:'Bob Griese',        sport:'NFL', f:5, t:['Miami Dolphins'], j:[12], pos:'Quarterback', decade:[1960,1970,1980], col:'Purdue', ns:14, hp:1 },

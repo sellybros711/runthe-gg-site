@@ -106,46 +106,114 @@ const nkFull = (s) => tokens(s).join('');
  * Raiders years: the Hall of Famer from former.js welded to an active
  * 22-year-old Vikings corner from rosters.js.
  *
- * A roster row is a snapshot of somebody playing right now. When it contradicts
- * an established career on which side of the ball the man plays, or on which
- * century he played in, they are not the same person and the snapshot is
- * dropped. Dropping it costs one fame-0 deep cut; merging it corrupts a
- * household name AND hands every category his namesake's clubs.
- *
- * Only ever applied to roster rows, and only against a record that already
- * carries real career shape. Curated sources are trusted to be one person. */
-const SIDE_OF_BALL = {
-  Quarterback: 'off', 'Running Back': 'off', Fullback: 'off', 'Wide Receiver': 'off',
-  'Tight End': 'off', 'Offensive Lineman': 'off', 'Offensive Tackle': 'off', Guard: 'off', Center: 'off',
-  Cornerback: 'def', Safety: 'def', Linebacker: 'def', 'Defensive End': 'def',
-  'Defensive Tackle': 'def', 'Defensive Lineman': 'def',
-  Kicker: 'st', 'Place Kicker': 'st', Punter: 'st', 'Long Snapper': 'st'
+ * They are no longer merged on the name alone. A name is a BUCKET of people:
+ * an incoming record joins the first person in that bucket it does not
+ * contradict, and if it contradicts all of them it becomes a new person under
+ * the same name. Both Josh Allens get to exist, which is the only correct
+ * answer, because the Bills quarterback and the Jaguars linebacker are not one
+ * man and neither is the offensive lineman already in the file. */
+/* Position FAMILY, not side of the ball. There are three NFL players called
+   Josh Allen: an offensive lineman, the Bills quarterback and the Jaguars
+   linebacker. Grouping by offence/defence merged the first two into a lineman
+   who is also a quarterback, with the Buccaneers, the 49ers, the Cardinals and
+   the Bills. Nobody plays two of these families. */
+const POS_FAMILY = {
+  Quarterback: 'QB',
+  'Running Back': 'RB', Fullback: 'RB',
+  'Wide Receiver': 'WR', 'Tight End': 'TE',
+  'Offensive Lineman': 'OL', 'Offensive Tackle': 'OL', Guard: 'OL', Center: 'OL',
+  'Defensive Lineman': 'DL', 'Defensive End': 'DL', 'Defensive Tackle': 'DL',
+  Linebacker: 'LB', Cornerback: 'DB', Safety: 'DB',
+  Kicker: 'K', 'Place Kicker': 'K', Punter: 'PUNT', 'Long Snapper': 'LS',
+  /* Baseball and basketball, deliberately coarse. Infielders move to the
+     outfield and small forwards guard centres, so those are left unmapped and
+     never conflict. A pitcher is not a second baseman, though, which is how
+     two Luis Castillos became one man who both hit and pitched. */
+  Pitcher: 'PIT', 'Starting Pitcher': 'PIT', 'Relief Pitcher': 'PIT',
+  Catcher: 'BAT', 'First Baseman': 'BAT', 'Second Baseman': 'BAT', 'Third Baseman': 'BAT',
+  Shortstop: 'BAT', Outfielder: 'BAT', 'Left Fielder': 'BAT', 'Center Fielder': 'BAT',
+  'Right Fielder': 'BAT', 'Designated Hitter': 'BAT',
+  'Point Guard': 'GRD', 'Shooting Guard': 'GRD'
 };
+
+/* Colleges disagree constantly without meaning anything: Ole Miss against
+   Mississippi, LSU against Louisiana State, App State against Appalachian
+   State, "Miami; Washington State; Incarnate Word" against "Miami". Treating
+   those as different men would shred real careers, so normalise hard and only
+   call it a conflict when nothing lines up. What survives is the real signal:
+   Louisiana-Monroe against Wyoming really is two different Josh Allens. */
+const COLLEGE_ALIAS = { 'ole miss': 'mississippi', 'pitt': 'pittsburgh', 'cal': 'california' };
+function schools(col) {
+  return String(col || '').split(';').map((s) => s
+    .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/,.*$/, '')                        // "Albany State, Ga." -> "Albany State"
+    .replace(/\b(university|univ|college|of|the|at)\b/g, ' ')
+    .replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean).map((s) => COLLEGE_ALIAS[s] || s);
+}
+const initials = (s) => s.split(' ').map((w) => w[0]).join('');
+function sameSchool(a, b) {
+  if (a === b) return true;
+  if (a.startsWith(b) || b.startsWith(a)) return true;          // App State / Appalachian State
+  const ia = initials(a), ib = initials(b);
+  if (ia === b || ib === a) return true;                        // NC State style
+  if ('u' + ia === b || 'u' + ib === a) return true;            // USC / Southern California
+  if (ia + 'u' === b || ib + 'u' === a) return true;            // LSU / Louisiana State
+  return false;
+}
+function collegeConflict(a, b) {
+  const A = schools(a), B = schools(b);
+  if (!A.length || !B.length) return false;
+  for (const x of A) for (const y of B) if (sameSchool(x, y)) return false;
+  return true;
+}
+
 const collisions = [];
-function differentPerson(cur, e) {
-  const a = SIDE_OF_BALL[cur.pos], b = SIDE_OF_BALL[e.pos];
+function differentPerson(cur, e, isRosterRow) {
+  const a = POS_FAMILY[cur.pos], b = POS_FAMILY[e.pos];
   if (a && b && a !== b) return 'position';
-  const last = (cur.decade || []).length ? Math.max(...cur.decade) : null;
-  if (last !== null && last <= 2000) return 'era';
+  // Careers thirty years apart are not one man having a long career.
+  const ca = cur.decade || [], cb = e.decade || [];
+  if (ca.length && cb.length) {
+    const aMax = Math.max(...ca), aMin = Math.min(...ca);
+    const bMax = Math.max(...cb), bMin = Math.min(...cb);
+    if (aMax + 30 <= bMin || bMax + 30 <= aMin) return 'era';
+  }
+  /* A roster row is somebody playing THIS season, and the decade array of an
+     active player always reaches the current decade, so nobody whose record
+     stops at 2000 or earlier is on it. Jon Runyan senior and junior share a
+     name, a position and a sport, and only this tells them apart. */
+  if (isRosterRow && ca.length && Math.max(...ca) <= 2000) return 'era';
+  if (cur.col && e.col && collegeConflict(cur.col, e.col)) return 'college';
   return null;
 }
 
-const pool = new Map();                       // sport|normfull -> record
+/* One name can be several people, so a bucket is a LIST. An incoming record
+   joins the first person in the bucket it does not contradict, and otherwise
+   becomes a new person under the same name. sportegories.js already indexes
+   name -> [players] and accepts any of them that satisfies a category, so both
+   Josh Allens simply work once they both exist. */
+const pool = new Map();                       // sport|normfull -> [record]
 function put(e, fromCorpus, isRoster) {
   const k = e.sport + '|' + nkFull(e.name);
-  const cur = pool.get(k);
-  if (cur && isRoster) {
-    const why = differentPerson(cur, e);
-    if (why) { collisions.push({ name: cur.name, sport: cur.sport, why, cur: cur.pos, snap: e.pos, team: (e.t || [])[0] }); return; }
+  const bucket = pool.get(k);
+  let cur = null;
+  if (bucket) {
+    for (const rec of bucket) { if (!differentPerson(rec, e, isRoster)) { cur = rec; break; } }
+    if (!cur) {
+      collisions.push({ name: e.name, sport: e.sport, why: differentPerson(bucket[0], e, isRoster),
+        kept: bucket[0].pos, added: e.pos, team: (e.t || [])[0], roster: !!isRoster });
+    }
   }
   if (!cur) {
-    pool.set(k, {
+    cur = {
       name: e.name, sport: e.sport, pos: e.pos || null, t: (e.t || []).slice(),
       col: e.col || null, aw: (e.aw || []).slice(), decade: (e.decade || []).slice(),
       act: e.act === 1 ? 1 : 0, hof: e.hof ? 1 : 0, dp: typeof e.dp === 'number' ? e.dp : null,
       f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0,
       tpart: e.tpart ? 1 : 0
-    });
+    };
+    if (bucket) bucket.push(cur); else pool.set(k, [cur]);
     return;
   }
   // A curated record carries a real career, so it clears the roster snapshot's
@@ -179,12 +247,15 @@ ROSTERS.forEach((p) => put(fromRoster(p), false, true));
 // awards are keyed "SPORT|normalized name"
 for (const [key, val] of Object.entries(AWARDS)) {
   const i = key.indexOf('|'); if (i < 0) continue;
-  const rec = pool.get(key.slice(0, i) + '|' + nkFull(key.slice(i + 1)));
-  if (!rec) continue;
-  for (const a of val.aw || []) if (!rec.aw.includes(a)) rec.aw.push(a);
+  /* An award belongs to a name, and a name can be several people. Without a
+     way to tell which one earned it, give it to every same-named player: the
+     alternative is silently handing one man's Pro Bowl to his namesake. */
+  const recs = pool.get(key.slice(0, i) + '|' + nkFull(key.slice(i + 1)));
+  if (!recs) continue;
+  for (const rec of recs) for (const a of val.aw || []) if (!rec.aw.includes(a)) rec.aw.push(a);
 }
 // hall-of-fame flag lives in awards for many players
-for (const rec of pool.values()) if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
+for (const rec of [...pool.values()].flat()) if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
 
 // career stats are keyed by CORPUS id only
 const STATVALS = {};
@@ -192,7 +263,7 @@ for (const src of [G.RTG_HLSTATS, G.RTG_ROSTERSTATS, G.RTG_STATS]) {
   const s = (src && src.stats) || src || {};
   for (const k of Object.keys(s)) { STATVALS[k] = STATVALS[k] || {}; Object.assign(STATVALS[k], s[k].vals || {}); }
 }
-for (const rec of pool.values()) {
+for (const rec of [...pool.values()].flat()) {
   const st = {};
   for (const k of Object.keys(STATVALS)) {
     for (const id of rec.ids) { const v = STATVALS[k][id]; if (v != null) { st[k] = v; break; } }
@@ -201,14 +272,15 @@ for (const rec of pool.values()) {
 }
 
 if (collisions.length) {
-  console.log('name collisions dropped ' + collisions.length + ' roster snapshots (two men, one name):');
+  console.log('shared names split into separate people: ' + collisions.length);
   for (const c of collisions.slice(0, 8)) {
-    console.log('  ' + c.sport + ' ' + c.name + '  kept ' + (c.cur || '?') + ', dropped ' + (c.snap || '?') + ' on ' + (c.team || '?') + '  [' + c.why + ']');
+    console.log('  ' + c.sport + ' ' + c.name + '  ' + (c.kept || '?') + ' + ' + (c.added || '?') +
+                (c.team ? ' (' + c.team + ')' : '') + '  [' + c.why + ']');
   }
   if (collisions.length > 8) console.log('  ... and ' + (collisions.length - 8) + ' more');
 }
 
-const PLAYERS = [...pool.values()].filter((p) => nameKey(p.name));
+const PLAYERS = [...pool.values()].flat().filter((p) => nameKey(p.name));
 
 /* ------------------------------------------------------- one franchise, one name
  *
@@ -548,17 +620,31 @@ const viability = {};        // catIndex -> { letter: recognizableCount }
 CATS.forEach((c) => {
   const hits = PLAYERS.filter((p) => test(p, c.p));
   c.s = sportOf(hits);
+  /* Count TYPEABLE answers, not records. Now that one name can be several
+     people, both Josh Allens satisfying a category is still one thing a player
+     can write down, and counting it twice would inflate the solvability
+     promise the daily generator relies on. Same-named hits collapse to one. */
+  const seenKnown = new Set(), seenAll = new Set();
   const by = {};
-  hits.forEach((p) => { if ((p.f || 0) >= FAME_MIN) p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; }); });
+  hits.forEach((p) => {
+    if ((p.f || 0) < FAME_MIN) return;
+    const k = p.sport + '|' + nkFull(p.name);
+    if (seenKnown.has(k)) return; seenKnown.add(k);
+    p._i.forEach((L) => { by[L] = (by[L] || 0) + 1; });
+  });
   const all = {};
-  hits.forEach((p) => p._i.forEach((L) => { all[L] = (all[L] || 0) + 1; }));
+  hits.forEach((p) => {
+    const k = p.sport + '|' + nkFull(p.name);
+    if (seenAll.has(k)) return; seenAll.add(k);
+    p._i.forEach((L) => { all[L] = (all[L] || 0) + 1; });
+  });
   /* Tier is a promise about how hard a category FEELS, so it counts the
      answers a fan could actually produce, not every name in the file. Once the
      active rosters landed, raw counts stopped meaning anything: "NFL Safety"
      gained 200 special-teamers nobody can name and would have been relabelled
      an anchor. Recognizable answers only. */
   const known = hits.filter((p) => (p.f || 0) >= FAME_MIN);
-  c.n = known.length;
+  c.n = seenKnown.size;                        // distinct names, as above
   // Thresholds re-fit to recognizable counts so the anchor/mid/hard/spice mix
   // stays what it was before the rosters landed (~10/21/54/15).
   c.t = known.length >= 203 ? 0 : known.length >= 67 ? 1 : known.length >= 13 ? 2 : 3;  // tier
