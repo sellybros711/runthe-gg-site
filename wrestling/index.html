@@ -369,8 +369,6 @@
     background:radial-gradient(ellipse 34% 62% at 26% -8%,rgba(244,232,219,.11),transparent 70%),
                radial-gradient(ellipse 34% 62% at 74% -8%,rgba(244,232,219,.11),transparent 70%),
                radial-gradient(ellipse 60% 40% at 50% 108%,rgba(198,57,44,.10),transparent 70%);}
-  .hr-tonight{display:inline-block;background:var(--brandred);color:#fff;font-size:8.5px;letter-spacing:.24em;
-    padding:3px 10px 2px;border-radius:99px;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
   .homering .hr-crowd{position:absolute;top:0;left:0;right:0;height:44%;opacity:.42;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 9px),
       repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 3px,transparent 3px 8px);}
@@ -380,10 +378,7 @@
   .hr-fig{position:absolute;bottom:14%;width:150px;margin-left:-75px;}
   .hr-fig svg{width:100%;height:auto;image-rendering:pixelated;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));}
   .hr-fig .hr-bob{animation:bob 1.9s ease-in-out infinite;transform-origin:50% 90%;}
-  .hr-cap{position:absolute;left:0;right:0;top:10px;text-align:center;z-index:6;pointer-events:none;}
-  .hr-stip{display:block;font-family:var(--display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.9);}
-  @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;}
+  @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;}
     .home-kick span{font-size:10px;letter-spacing:.2em;} }
 
   /* ---- home: start / resume ---- */
@@ -843,7 +838,6 @@
       <div class="ringback"></div>
       <div class="hr-cast" id="hrCast"></div>
       <div class="ringfront"></div>
-      <div class="hr-cap"><span class="hr-tonight">Tonight</span><span class="hr-stip" id="hrStip">-</span></div>
     </div>
 
     <div id="homeCont"></div>
@@ -3278,8 +3272,6 @@ function homeRing(){
       <div class="hr-bob" style="animation-delay:${(i*0.23).toFixed(2)}s;transform:scaleX(${flip})">
         ${wrestlerSVG(c.look,{pose:card.pose[i%card.pose.length]})}</div></div>`;
   }).join('');
-  const vp=promoById(venue);
-  $('hrStip').textContent=(vp?vp.short+' · ':'')+card.stip;
 }
 function renderHome(){
   homeRing();
