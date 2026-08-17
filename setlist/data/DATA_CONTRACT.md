@@ -40,6 +40,7 @@ figure repeated here goes stale the next time the band plays. It already did.)
 | `tour` | display name, **blank for a one-off**. elgoose writes "Not Part of a Tour", which is a sentence rather than a name, so the ingester blanks it and the UI decides how to say it |
 | `venue`, `city`, `state`, `country` | display text, entity-decoded |
 | `has_setlist` | `true` when the setlist CSV has rows for this `show_id` |
+| `show_order` | elgoose's ordering when a date and venue hold more than one show. Seven pairs in this archive do, with entirely different setlists (the Cabo destination runs play twice in a day), and without this the browser prints two identical rows |
 
 ## `<band>_latest.json`
 

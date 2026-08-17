@@ -1776,6 +1776,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      below it, so no two rows read the same way. Block also gives the ellipsis
      something to clip, which inline never did. */
   .s-date{display:block; font-size:13.5px; font-weight:800;}
+  /* Only appears on the handful of nights that really were two shows, so it
+     wants to read as a qualifier on the date rather than another column. */
+  .s-nth{font-style:normal; margin-left:7px; font-size:9.5px; font-weight:900;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--tealT);}
   .s-venue{display:block; font-size:12.5px; font-weight:600; color:var(--mut);
     margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .s-no{flex:0 0 auto; font-size:9.5px; font-weight:800; letter-spacing:1px;
@@ -2123,7 +2127,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = '193f74ba';
+const DATA_VERSION = '1eade448';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -2597,7 +2601,7 @@ function renderHome(){
 
         ${b.shows ? `<div class="bandlinks">
           <button type="button" data-go="tour">Tour dates</button>
-          <button type="button" data-go="browse">Every show</button>
+          <button type="button" data-go="browse">Track your shows</button>
         </div>` : ''}
       </section>`;
   };
@@ -5012,7 +5016,7 @@ function renderTour(){
       The setlist lands here the morning after each show.</p>` : ''}
 
     <div class="homelinks" style="margin-top:18px">
-      <button class="btn ghost" type="button" data-go="browse">Every show</button>
+      <button class="btn ghost" type="button" data-go="browse">Track your shows</button>
       <button class="btn ghost" type="button" id="backHome">Back</button>
     </div>`;
   document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
@@ -5038,7 +5042,7 @@ function renderBrowse(){
 
   if (!rows){
     app.innerHTML = `
-      <div class="bhd"><h2>Every show</h2></div>
+      <div class="bhd"><h2>Track your shows</h2></div>
       ${TOUR_STATE.error
         ? `<div class="err">${esc(TOUR_STATE.error)}</div>`
         : `<div class="loading"><div class="spinner"></div><div>Loading the shows</div></div>`}
@@ -5072,8 +5076,25 @@ function renderBrowse(){
   const CAP = 300;
   const shown = list.slice(0, CAP);
 
+  /* SOME NIGHTS ARE TWO SHOWS, and this list could not say so. Seven
+     date-and-venue pairs in the archive carry two distinct show_ids with
+     entirely different setlists: the Cabo destination runs play twice in a day.
+     Two identical rows is an invitation to tick the wrong one, on the screen
+     whose whole job is claiming the right one. Counted across the WHOLE table
+     rather than the filtered list, so the marker does not appear and disappear
+     as somebody narrows the year. */
+  const sameNight = new Map();
+  for (const r of all) {
+    const k = `${r.show_date}|${r.venue}`;
+    sameNight.set(k, (sameNight.get(k) || 0) + 1);
+  }
+  const nth = r => {
+    const n = sameNight.get(`${r.show_date}|${r.venue}`) || 1;
+    return n > 1 && r.show_order ? `Show ${r.show_order} of ${n}` : '';
+  };
+
   app.innerHTML = `
-    <div class="bhd"><h2>Every show</h2></div>
+    <div class="bhd"><h2>Track your shows</h2></div>
     <p class="bcount">Tick the ones you were at. ${marked.size} marked so far.</p>
 
     <div class="bfilter">
@@ -5103,7 +5124,8 @@ function renderBrowse(){
           data-mark="${esc(r.show_id)}" aria-pressed="${marked.has(r.show_id)}">
           <span class="s-tick"></span>
           <span class="s-main">
-            <span class="s-date">${esc(fmtDate(r.show_date))}</span>
+            <span class="s-date">${esc(fmtDate(r.show_date))}${
+              nth(r) ? `<i class="s-nth">${esc(nth(r))}</i>` : ''}</span>
             <span class="s-venue">${esc(r.venue)}${r.city ? ` &middot; ${esc(place(r))}` : ''}</span>
           </span>
           ${r.has_setlist === 'true' ? '' : '<span class="s-no">No setlist</span>'}
