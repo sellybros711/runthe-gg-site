@@ -337,10 +337,13 @@ try {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => { bad++; console.log(' FAIL  page error   ' + String(e.message).split('\n')[0]); });
 
-    /* Six attempts against a five-in-eight chance of being seeded: missing all six is about
-       one run in three hundred. */
+    /* Eight attempts. Five-in-eight seeded puts the odds of missing all eight at about one
+       run in two thousand, and the extra attempts cost nothing on a run that gets there
+       early: the loop stops the moment a bracket has been seen. Six was the first number
+       here, and a clean run promptly used five of them, which is close enough to the edge
+       to be worth the headroom. Observed across suite runs: 1 try, then 5. */
     let seeded = null, shots = [], played = 0, tries = 0, short = 0;
-    for (; tries < 6 && !shots.length; tries++) {
+    for (; tries < 8 && !shots.length; tries++) {
       await p.goto(HOST + '/football/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
       await p.waitForSelector('#s-intro.on', { timeout: 60000 });
       await p.click('#b-start');
