@@ -225,6 +225,15 @@ const CONSTANTS = {
    * first-round exits, and a harder path through the legends at the end.
    */
   CONSISTENCY: 0.20,
+  /* THE DEFENSE DRAFT. Both solved rather than tuned; the derivation is above
+     resolveGameDefense and depends on the measured spread of drafted rosters. */
+  DEF_REF: 45.5,
+  DEF_POWER: 2.24,
+  /* The spread on the offense you are given. Real team scoring runs a standard deviation
+     around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
+     sits near this across the era), and your borrowed offense should be as streaky as
+     anybody's or a defensive run would be decided entirely by your own roster. */
+  DEF_OFFENSE_SD: 0.40,
 
   /*
    * Playoff home-field advantage, scaling linearly from PLAYOFF_WINS (no
@@ -2565,6 +2574,104 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
 }
 
 /*
+ * THE DEFENSE DRAFT, the same game from the other side of the ball.
+ *
+ * resolveGame above is: your six men score, the opponent's defense modifies what they
+ * score, and the opponent scores whatever that team really scored. This is the mirror
+ * of it, term for term:
+ *
+ *   yourScore = a LEAGUE AVERAGE offense, still modified by the opponent's defense
+ *   oppScore  = what that team really scored, modified by YOUR defense
+ *
+ * You do not draft an offense in this mode, so you are given the league's, and the only
+ * thing your roster touches is how much the other team scores. A perfect season here is
+ * twenty-one weeks of holding people under, which is what a defense is for.
+ *
+ * SUPPRESSION IS A RATIO RAISED TO A POWER, and the power is not decoration. Measured
+ * over 4,000 drafted rosters, the achievable spread on defense is a third of what it is
+ * on offense: the fifth and ninety-fifth percentile offenses are 69.2 and 84.8 fantasy
+ * points apart (a ratio of 1.225), where the same percentiles on defense are 47.4 and
+ * 51.9 (a ratio of 1.095). IDP scoring is tackle-led and tackle counts barely separate
+ * starters, so nobody pulls away from the pack the way a Faulk or a Manning does.
+ *
+ * Left linear, that would make the draft almost irrelevant: every roster lands near 50
+ * and every season plays the same. DEF_POWER is solved rather than tuned, as the exponent
+ * that carries the defensive spread onto the scoreboard with the same force the offensive
+ * one has: ln(1.225) / ln(1.095) = 2.24.
+ *
+ * DEF_REF is solved the same way. The median drafted offense scores 79.0 against an
+ * opponent's 64.0, a margin of 1.233, which is the game a decent roster is used to
+ * playing. So the median drafted defense has to hold that same opponent to 1/1.233 of
+ * what they would otherwise score, and the reference that produces it at a roster total
+ * of 50.0 is 45.5.
+ *
+ * Both numbers therefore mean "as consequential as the offense mode, and as winnable".
+ * Re-derive them, do not nudge them, if the pool or the pricing curve ever moves.
+ */
+function defenseSuppression(defenseTotal, constants = CONSTANTS) {
+  const ref = constants.DEF_REF, k = constants.DEF_POWER;
+  if (!(defenseTotal > 0)) return 1;
+  return Math.pow(ref / defenseTotal, k);
+}
+
+function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllowed,
+  rng, constants = CONSTANTS, advantage = 1) {
+  /* Your defenders' own production, sampled the same way the offense mode samples its
+     skill players, so a defender has a good week and a bad week like anyone else. */
+  const samples = [];
+  let raw = 0;
+  for (const p of roster) {
+    const s = sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+    samples.push(s);
+    raw += s;
+  }
+  const C = constants.CONSISTENCY || 0;
+  if (C > 0) {
+    const expected = roster.reduce((s, p) => s + p.ppr_ppg_mean, 0);
+    raw = raw * (1 - C) + expected * C;
+  }
+  /* NO STRUCTURE MULTIPLIER HERE, and this is the one place the mirror breaks on purpose.
+     rosterStructure is an OFFENSIVE reading of a roster: it scores quarterback support,
+     the pass and rush balance, and skill-position archetypes like the triplets. Run it on
+     six defenders and it finds no quarterback, no passing share and no receiving share,
+     and returns about 0.57 for every defense ever drafted. Measured, that penalty alone
+     put the mode at 1.5 wins a season and 50.9 points allowed a game: a flat 43% tax
+     dressed up as roster construction.
+
+     A DEFENSIVE ANALOGUE IS NOT BUILT YET, and inventing a formula to fill the hole would
+     be worse than leaving it at one. The data is already carrying what it would need:
+     01-defenders.mjs ships rush_ppg, cover_ppg and tackle_ppg per man, so a later version
+     can reward a front that rushes and a secondary that covers rather than six of one
+     kind. Until that exists and is measured, a defense is the sum of its men. */
+  const defenseTotal = raw * chemistryMultiplier;
+
+  /* THE OPPONENT'S OFFENSE, held down by yours. advantage divides here exactly as it
+     divides in resolveGame: home field and the late-season class edge make the other
+     team score less, whichever mode you are in. */
+  const suppression = defenseSuppression(defenseTotal, constants);
+  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng)
+    * constants.SCALE * suppression / advantage;
+
+  /* YOUR OFFENSE, which you did not draft: the league's average, drawn with the same
+     spread a real team has and modified by the opponent's defense, which is the one term
+     resolveGame applies to your roster and this applies to the league's. */
+  const yourScore = sampleGamma(leagueAvgAllowed, leagueAvgAllowed * constants.DEF_OFFENSE_SD,
+    rng) * constants.SCALE * (opponent.pts_allowed_mean / leagueAvgAllowed);
+
+  let won;
+  if (yourScore > oppScore) won = true;
+  else if (yourScore < oppScore) won = false;
+  else won = rng() < 0.5;
+
+  /* WHAT EACH MAN CONTRIBUTED. On offense the column sums to the score; here it cannot,
+     because the score is not a sum of your men. It sums to the defensive total instead,
+     which is the thing they actually built together, and the box score says so. */
+  const lines = samples.map((v, i) => (v * (1 - C) + roster[i].ppr_ppg_mean * C) * chemistryMultiplier);
+
+  return { won, yourScore, oppScore, defenseModifier: suppression, defenseTotal, lines };
+}
+
+/*
  * HEAD-TO-HEAD — the "Challenge Bowl". Two drafted rosters, neither of which has a defense
  * (both are six offensive skill players), so each side is scored as its OFFENSE against a
  * neutral, league-average defense: the same raw x chemistry x structure the season uses,
@@ -2982,7 +3089,8 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, generateSchedule, generatePlayoffs,
-  resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
+  resolveGame, resolveGameDefense, defenseSuppression,
+  resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
   weeklyEdge, weeklyEdgeVs,
