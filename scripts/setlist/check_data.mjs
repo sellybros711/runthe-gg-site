@@ -706,6 +706,34 @@ check(wf.indexOf('git commit') > wf.indexOf('verify-scoring.mjs'),
    against the file, so every SUCCESSFUL refresh would otherwise fail here. */
 check(existsSync(resolve(repoRoot, 'scripts/setlist/sync_counts.mjs')),
   'the counts in the copy can be regenerated');
+/* AND ITS PATCHES MUST COMPOSE. DATA_CONTRACT is patched twice, once for the
+   performance counts and once for the show table's. When each patch computed
+   its result from the copy on disk and the writes were replayed at the end,
+   the second silently threw away the first: the contract reached main with a
+   current show-table line and a stale performance line, and no check caught
+   it because the guarded number is the one on the home screen. */
+const sync = read('scripts/setlist/sync_counts.mjs');
+check(/const current = file => pending\.has\(file\) \? pending\.get\(file\) : read\(file\)/.test(sync),
+  'a second patch to one file reads the first one\'s result');
+check(/const before = current\(file\)/.test(sync) && !/const before = read\(file\)/.test(sync),
+  'and no patch reads around it');
+/* The counts it maintains must actually agree with the data, which is the
+   whole point and was not true on main. */
+{
+  const contract = read('setlist/data/DATA_CONTRACT.md');
+  const perf = contract.match(/\*\*(\d[\d,]*) performances · (\d[\d,]*) shows/);
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  check(!!perf && Number(perf[1].replace(/,/g, '')) === rows.length,
+    'DATA_CONTRACT states the real performance count',
+    perf ? `says ${perf[1]}, file has ${rows.length}` : 'line not found');
+  // Parsed here rather than reusing the show table section's copy: that one is
+  // declared further down the file and this would read it before it exists.
+  const tableRows = parseCSV(read('setlist/data/goose_shows.csv'));
+  const tbl = contract.match(/\*\*(\d[\d,]*) shows · (\d[\d,]*) with a setlist/);
+  check(!!tbl && Number(tbl[1].replace(/,/g, '')) === tableRows.length,
+    'and the real show table size',
+    tbl ? `says ${tbl[1]}, file has ${tableRows.length}` : 'line not found');
+}
 
 /* WHICH VERSION YOU PICKED, which is the premise of the game and was invisible
    everywhere after the draft screen. Across the 166 songs with five or more
@@ -795,10 +823,33 @@ check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
 
 /* EVERY STEP AIMS AT SOMETHING THAT EXISTS. The arrow is positioned from the
    target's measured rect, so a renamed hook does not throw, it silently points
-   at nothing. These are the three the steps name. */
-for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]', '[data-go="profile"]'])
+   at nothing. */
+for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]',
+  '[data-go="tour"]', '[data-go="browse"]', '[data-go="profile"]'])
   check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
     `a step aims at ${sel}`);
+
+/* AND EVERY BUTTON ON THE HOME SCREEN HAS A STEP, which is the guard that
+   matters, because the other direction is the one that actually failed. The
+   walkthrough shipped covering Leaderboard and Your shows; two commits later
+   On tour and Every show were added to the same row and nothing said a word
+   about them, which is precisely the gap the walkthrough exists to close,
+   reopened by the person who closed it.
+   Reading renderHome rather than the whole file on purpose: `data-go="browse"`
+   also appears on the tour screen, and that one is a cross-link, not a thing a
+   first visit has to be introduced to. */
+const homeSrc = (() => {
+  const at = gameBare.indexOf('function renderHome(){');
+  return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\n}', at));
+})();
+check(!!homeSrc, 'renderHome can be read');
+const homeGos = [...new Set([...homeSrc.matchAll(/data-go="([a-z]+)"/g)].map(m => m[1]))];
+const aimed = [...new Set([...gameBare.matchAll(/aim: \(\) => document\.querySelector\('\[data-go="([a-z]+)"\]'\)/g)]
+  .map(m => m[1]))];
+const unexplained = homeGos.filter(g => !aimed.includes(g));
+check(homeGos.length >= 4, `the home screen offers ${homeGos.length} screens`);
+check(!unexplained.length, 'every screen the home screen links to gets a step',
+  unexplained.length ? `no step for ${unexplained.map(g => `"${g}"`).join(', ')}` : '');
 check(/class="card band"/.test(gameBare) && /class="card band soon"/.test(gameBare)
   && /data-start="\$\{b\.id\}"/.test(gameBare),
   'and the home screen still carries the hooks they aim at');

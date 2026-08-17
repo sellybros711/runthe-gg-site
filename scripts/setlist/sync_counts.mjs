@@ -38,13 +38,21 @@ const counts = { performances: rows.length, shows: shows.length, songs };
 console.log(`goose.csv: ${counts.performances} performances · ${counts.shows} shows · ${counts.songs} songs`);
 
 let changed = 0;
-const edits = [];
+/* PENDING CONTENT PER FILE, NOT A LIST OF EDITS, and that distinction is a bug
+   that reached main. DATA_CONTRACT is patched twice now: once for the
+   performance counts and once for the show table's. When each patch computed
+   its result from the copy ON DISK and the writes were replayed at the end,
+   the second write silently threw away the first, so the contract shipped with
+   a current show-table line and a stale performance line. Every patch now
+   reads whatever the previous one produced. */
+const pending = new Map();
+const current = file => pending.has(file) ? pending.get(file) : read(file);
 
 /* Each edit names the file, the pattern it expects to find EXACTLY ONCE, and
    what to put back. A pattern that matches zero times or more than once is a
    failure rather than a guess. */
 const patch = (file, re, replace, what) => {
-  const before = read(file);
+  const before = current(file);
   const hits = [...before.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g'))];
   if (hits.length !== 1) {
     console.error(`  FAIL  ${file}: expected one "${what}", found ${hits.length}`);
@@ -53,7 +61,7 @@ const patch = (file, re, replace, what) => {
   }
   const after = before.replace(re, replace);
   if (after === before) { console.log(`  ok    ${file}: ${what} already current`); return; }
-  edits.push([file, after]);
+  pending.set(file, after);
   changed++;
   console.log(`  ${CHECK ? 'STALE' : 'wrote'} ${file}: ${what}`);
 };
@@ -85,7 +93,7 @@ patch('setlist/data/DATA_CONTRACT.md',
   `**${st.shows} shows · ${st.withSet} with a setlist · ${st.upcoming} still to\nplay**`,
   'counts in the show table section');
 
-if (!CHECK) for (const [file, after] of edits) writeFileSync(resolve(repoRoot, file), after);
+if (!CHECK) for (const [file, after] of pending) writeFileSync(resolve(repoRoot, file), after);
 
 if (CHECK && changed) {
   console.error(`\n${changed} file(s) quote stale counts. Run without --check to fix.`);
