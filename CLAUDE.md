@@ -63,3 +63,35 @@ open('/tmp/x.js','w').write(b)
 
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
+
+## Segue, the setlist game
+
+`setlist/index.html`, same one-file convention. It is NOT in the same state as
+the wrestling game above and the difference is deliberate, so it is written
+down here rather than inferred from that paragraph:
+
+| | wrestling | setlist |
+|---|---|---|
+| in `sitemap.xml` | no | **yes** |
+| indexable | no, noindexed | **yes** |
+| linked from the homepage or nav | no | no |
+
+So Segue is live and findable by search, and a visitor browsing runthe.gg will
+not stumble on it. Linking it from the homepage is the step that launches it,
+and it has not been taken. `check_data.mjs` asserts all three of those, so
+changing any of them means changing a guard on purpose.
+
+It has its own regression suite, which is the thing to run after editing:
+
+```
+node scripts/setlist/check_data.mjs
+node setlist/verify-scoring.mjs
+```
+
+Its data refreshes itself daily at 6am Eastern
+(`.github/workflows/setlist-data.yml`) and commits three files:
+`goose.csv` (performances), `goose_shows.csv` (every show, past and future,
+with tour names) and `goose_latest.json` (last night's setlist plus the next
+three dates, for the home screen). A refresh is not an append: song esteem is
+derived, so one new show restates thousands of rows and the commit diff can
+never be the review. The gates are.
