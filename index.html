@@ -1014,33 +1014,6 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 
-<script defer src="/assets/arcade-ad.js"></script>
-<script>
-/* The panel itself lives in /assets/arcade-ad.js -- one look and one set of storage keys
-   for every surface that runs it. All this page decides is WHEN it is polite to ask,
-   which is the only part that is local knowledge. */
-(function(){
-  function otherSheetOpen(){
-    /* The sign-in sheet opens by itself when somebody lands back from Google, and the
-       install sheet may be open from a tap a moment ago. Stacking on either would replace
-       the thing they asked for with a thing they did not. */
-    var m=document.getElementById('modal'), i=document.getElementById('install');
-    return !!((m && !m.hidden) || (i && !i.hidden));
-  }
-  function ask(){
-    var A=window.RTG_ARCADE_AD; if(!A) return;
-    if(A.forced()){ A.show({from:'home'}); return; }
-    if(!A.due() || otherSheetOpen()) return;
-    A.show({from:'home'});
-  }
-  /* A beat after the page is up: the homepage has video and canvas work to get through
-     first, and the auth script decides on DOMContentLoaded whether IT is opening a sheet.
-     The guards are re-read when the timer fires, so the delay is politeness and not the
-     actual protection. */
-  function boot(){ setTimeout(ask,1200); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
-})();
-</script>
 
 <script>
 (function(){
