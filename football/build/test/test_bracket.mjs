@@ -10,15 +10,19 @@
  *
  * Two claims, and they need two different rigs, which is why this file has two halves.
  *
- *   THE SHAPE has to hold for every seeding, including the bye, and a bye seed is about
- *   one run in twenty. Reaching it by drafting and hoping is not a test, it is a wait. So
- *   the first half builds an instrumented copy of the page, the same one-anchor insertion
- *   the scratch harness uses, and parks a run at a chosen record.
+ *   THE DRAWING has to hold for every seeding and every round: the bye entry, the
+ *   reseeding, and the way a column fills in only once the round feeding it has been
+ *   played. Getting there by drafting means being seeded (five seasons in eight) and then
+ *   winning four games on top, which is a test that fails for no reason about one run in
+ *   seven. So the first half builds an instrumented copy of the page, the same one-anchor
+ *   insertion the scratch harness uses, parks a run at a chosen record, and walks it to
+ *   the final. Deterministic, both entries, every run.
  *
  *   THE HAND-OFF has to hold on the page as it ships, because the bracket sits between
  *   advanceWeek and the broadcast and that seam is not visible from the numbers. So the
- *   second half drafts, plays and wins or loses a real season with nothing injected, and
- *   checks the drawing against what the run recorded.
+ *   second half drafts and plays a real season with nothing injected and checks that the
+ *   bracket stood in front of exactly the playoff games the run went on to record. It
+ *   depends on being seeded and on nothing else.
  *
  * The instrumented copy is written into football/ because the page loads engine.js and
  * run.js beside itself, and removed in a finally. If a crash ever leaves one behind it is
@@ -72,6 +76,22 @@ window.__BRK={
       empty:[...B.near.slice(1),...B.far.slice(1)].filter(x=>!x||(!x.team&&!x.you)).length};
   },
   first:()=>nbrkFirstRound(),
+  /* Walk one round: draw it, run the reveal to its end without waiting out the animation,
+     and read back what is on screen. */
+  show:(r)=>new Promise(res=>{ nbrkShow(r,res); if(nbrkSkip) nbrkSkip(); }),
+  settle:(r,won)=>nbrkSettleMine(r,won),
+  screen:()=>({
+    title:document.getElementById('nbrk-round').textContent,
+    cols:document.querySelectorAll('#nbrk-rail .nbrk-col').length,
+    games:document.querySelectorAll('#nbrk-rail .nbrk-g').length,
+    live:document.querySelectorAll('#nbrk-rail .nbrk-g.live').length,
+    mine:document.querySelectorAll('#nbrk-rail .nbrk-t.me').length,
+    tbd:[...document.querySelectorAll('#nbrk-rail .nbrk-col')]
+      .map(c=>c.querySelectorAll('.nbrk-t.tbd').length),
+    scroll:Math.round(document.getElementById('nbrk-rail').scrollLeft),
+    maxScroll:Math.round(document.getElementById('nbrk-rail').scrollWidth
+      -document.getElementById('nbrk-rail').clientWidth),
+  }),
   games:(r)=>nbrkRoundGames(r).map(g=>({side:g.side,me:!!g.me,key:g.key,
     pair:g.pair.map(x=>x?(x.you?'YOU':(x.team?x.team.team_season_id:null)):null)})),
   hasData:()=>!!DATA,
@@ -102,23 +122,33 @@ const on = (p, id) => p.evaluate((i) => {
    ten seeded, and one run of this suite duly drafted ten in a row that all missed and
    failed five assertions about a bracket that had never been on screen. Playing badly does
    not make the test stricter, it just spends a quarter of an hour on seasons that never
-   reach the screen this file exists to check. Drafting properly went 14-3, 13-4 and 12-5,
-   all three seeded, so it gets there on the first or second attempt.
+   reach the screen this file exists to check.
+
+   Drafting properly is five of eight over the same measurement: 14-3, 13-4, 12-5, 13-4,
+   12-5, then 11-6, 9-8 and 10-7 that missed. Five in eight is what the six attempts below
+   are sized against, and it is why nothing here is allowed to depend on WINNING a playoff
+   game: that would be another coin toss on top, and the round-to-round seam is checked
+   deterministically in the first half instead.
 
    The cap is a constant here rather than read off the page: it is the only number the
    harness needs and the page does not print a machine-readable one. If the game's cap ever
    moves, this holds a floor back too aggressively and the assertions below still hold,
    they just take more attempts to get there. */
 const CAP = 140, FLOOR = 4, SPOTS = 6;
+/* Returns how many men it signed, and the caller checks that. An earlier version just broke
+   out of the loop when a board failed to arrive in time and let the season play with three
+   men on the roster, which comes back as "no run reached the postseason" six times over and
+   reads like the bracket is broken. A harness that cannot do its setup has to say so in
+   those words. It happens on a loaded machine: run this suite on its own. */
 const draft = async (p) => {
-  let spent = 0, taken = 0;
+  let spent = 0, taken = 0, signed = 0;
   for (let i = 0; i < 9; i++) {
     if (await on(p, 's-squad') || await on(p, 's-season')) break;
     /* The board is torn down and respun between picks, so each round waits for a live tile
        rather than assuming one is under the cursor. */
     const ready = await p.waitForFunction(() => [...document.querySelectorAll('#opts .tile')]
       .some((x) => !x.disabled && !x.classList.contains('off') && !x.classList.contains('no')),
-      null, { timeout: 20000 }).catch(() => null);
+      null, { timeout: 30000 }).catch(() => null);
     if (!ready) break;
     const got = await p.evaluate(([sp, idx, cap, floor, spots]) => {
       const live = [...document.querySelectorAll('#opts .tile')]
@@ -143,6 +173,7 @@ const draft = async (p) => {
     }, [spent, taken, CAP, FLOOR, SPOTS]);
     if (!got) break;
     spent += got.cost; taken++;
+    signed = taken;
     await p.waitForTimeout(500);
     /* Flex-eligible players open a slot chooser; any slot will do. */
     if (await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))) {
@@ -150,6 +181,7 @@ const draft = async (p) => {
       await p.waitForTimeout(500);
     }
   }
+  return signed;
 };
 
 const b = await chromium.launch({
@@ -231,14 +263,65 @@ try {
       const selfPlay = games.flat().filter((g) => g.pair[0] && g.pair[0] === g.pair[1]);
       ok(tag + ': nobody plays themselves', selfPlay.length === 0, selfPlay.map((g) => g.key));
     }
+
+    /* ── walked forward, round by round ──────────────────────────────────────
+       The seam this file was written for: settle the player's game, draw the next round,
+       and the drawing has to move on with them. It is checked here rather than on a played
+       season because reaching the Super Bowl by drafting means winning four coin tosses on
+       top of the five-in-eight chance of being seeded at all, which is a test that fails
+       for no reason about one run in seven. Parked, both entries into the bracket are
+       walked all the way to the final on every run. */
+    for (const [tag, wins, bye, seed] of [
+      ['a wild card walked to the final', 12, false, 11],
+      ['a bye seed walked to the final', 16, true, 11],
+    ]) {
+      const first = bye ? 1 : 0;
+      const seen = [];
+      await p.evaluate(([w, y, s]) => window.__BRK.park(w, y, s), [wins, bye, seed]);
+      for (let r = first; r < 4; r++) {
+        await p.evaluate((rr) => window.__BRK.show(rr), r);
+        seen.push(await p.evaluate(() => window.__BRK.screen()));
+        await p.evaluate((rr) => window.__BRK.settle(rr, true), r);   // the player wins it
+      }
+      const ROUNDS = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
+
+      ok(tag + ': every round names itself', seen.every((x, i) => x.title === ROUNDS[first + i]),
+        seen.map((x) => x.title));
+      ok(tag + ': the whole field is drawn every time',
+        seen.every((x) => x.cols === 4 && x.games === 13), seen.map((x) => [x.cols, x.games]));
+      ok(tag + ': exactly one game is ringed, and it is the player\'s',
+        seen.every((x) => x.live === 1), seen.map((x) => x.live));
+      /* One more appearance a round: the rounds already won, plus the one being played. A
+         bracket that had the player in the Super Bowl on the first screen was giving the
+         game away, which is what this counts. */
+      ok(tag + ': the player appears once more each round',
+        seen.every((x, i) => x.mine === i + 1), seen.map((x) => x.mine));
+      /* A column fed by a round nobody has played is all TBD. Column r has 2 seats a game:
+         6, 4, 2 and 1 games across the four rounds. */
+      const SEATS = [12, 8, 4, 2];
+      ok(tag + ': no column is filled in before its round is played',
+        seen.every((x, i) => {
+          const now = first + i;
+          return x.tbd.every((n, c) => n === (c <= now ? 0 : SEATS[c]));
+        }), seen.map((x) => [x.title, x.tbd]));
+      /* And the round being played is on screen rather than off the right hand edge. */
+      ok(tag + ': the rail scrolls to the round being played',
+        seen.every((x, i) => x.scroll > 0 || first + i === 0 || x.maxScroll === 0),
+        seen.map((x) => [x.scroll, x.maxScroll]));
+    }
     await ctx.close();
   }
 
   /* ── the page as it ships ──────────────────────────────────────────────────
      No hook, no injected run: a season drafted and played, and the bracket read off the
-     screen between rounds. Seeds are not pinned, because any run that gets there is a run
-     the bracket has to draw correctly, and a pinned seed is one board rather than the
-     game. */
+     screen. Seeds are not pinned, because any run that gets there is a run the bracket has
+     to draw correctly, and a pinned seed is one board rather than the game.
+
+     WHAT THIS HALF IS FOR is the seam between advanceWeek and the broadcast, which is not
+     visible from the numbers: that the bracket comes up at all on a real run, that one tap
+     hands off to the game, and that the number of times it stood there matches the number
+     of playoff games the run recorded. How the drawing behaves from round to round is
+     settled above, deterministically, so nothing here has to depend on winning. */
   console.log('=== the postseason as it ships ===');
   {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
@@ -246,30 +329,24 @@ try {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => { bad++; console.log(' FAIL  page error   ' + String(e.message).split('\n')[0]); });
 
-    /* Not just "made the postseason": a run that loses its first playoff game shows one
-       bracket and proves nothing about the seam between rounds, which is where the settle
-       and the redraw happen. So the loop keeps drafting until one advances.
-
-       Six attempts, because each is a whole season played on screen and the drafting above
-       reaches the postseason on most of them. */
-    let made = false, seeded = null, shots = [], played = 0, tries = 0;
-    for (; tries < 6 && shots.length < 2; tries++) {
+    /* Six attempts against a five-in-eight chance of being seeded: missing all six is about
+       one run in three hundred. */
+    let seeded = null, shots = [], played = 0, tries = 0, short = 0;
+    for (; tries < 6 && !shots.length; tries++) {
       await p.goto(HOST + '/football/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
       await p.waitForSelector('#s-intro.on', { timeout: 60000 });
       await p.click('#b-start');
       await p.waitForSelector('#opts .tile', { timeout: 30000 });
-      await draft(p);
+      if (await draft(p) < SPOTS) { short++; continue; }
       await p.waitForSelector('#s-squad.on,#s-season.on', { timeout: 30000 });
       if (await on(p, 's-squad')) await p.click('#b-play');
       await p.waitForSelector('#s-season.on', { timeout: 30000 });
       await p.click('#b-sim');
       await p.waitForSelector('#s-seed.on,#s-over.on', { timeout: 90000 });
       if (!(await on(p, 's-seed'))) continue;
-      made = true;
       seeded = await p.evaluate(() => document.getElementById('sd-rec').textContent);
 
       await p.click('#b-po');
-      shots = [];
       for (let n = 0; n < 5; n++) {
         await p.waitForSelector('#s-nbrk.on,#s-over.on', { timeout: 90000 });
         if (await on(p, 's-over')) break;
@@ -279,10 +356,6 @@ try {
           games: document.querySelectorAll('#nbrk-rail .nbrk-g').length,
           live: document.querySelectorAll('#nbrk-rail .nbrk-g.live').length,
           mine: document.querySelectorAll('#nbrk-rail .nbrk-t.me').length,
-          /* Columns whose round has not been played yet are all TBD, and the first one
-             that is not is the round on screen. */
-          tbd: [...document.querySelectorAll('#nbrk-rail .nbrk-col')]
-            .map((c) => c.querySelectorAll('.nbrk-t.tbd').length),
           /* The rail scrolls sideways; the page must not. */
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         })));
@@ -300,31 +373,25 @@ try {
         document.querySelectorAll('#v-list .cw.po:not(.todo)').length);
     }
 
-    ok('a drafted run reaches the postseason', made, { tries });
-    ok('and one of those runs wins a playoff game', shots.length > 1, { brackets: shots.length });
-    ok('the bracket stands in front of every playoff game',
-      shots.length > 0 && shots.length <= 4, { rounds: shots.length, seeded, played });
+    /* A draft that could not finish is a broken harness, not a broken bracket, and it says
+       so in those words rather than as six seasons that missed the postseason. */
+    ok('the harness can draft a full squad', short === 0,
+      { draftsThatRanShort: short, hint: 'run this suite on its own, it needs the machine' });
+    ok('a drafted run reaches the postseason', shots.length > 0, { tries, seeded });
     ok('the whole field is drawn every time',
       shots.length > 0 && shots.every((s) => s.cols === 4 && s.games === 13),
       shots.map((s) => [s.cols, s.games]));
     ok('exactly one game on it is the player\'s',
       shots.length > 0 && shots.every((s) => s.live === 1), shots.map((s) => s.live));
+    ok('the player is on the bracket',
+      shots.length > 0 && shots.every((s) => s.mine >= 1), shots.map((s) => s.mine));
     ok('the rail scrolls, the page does not',
       shots.every((s) => s.overflow <= 1), shots.map((s) => s.overflow));
-    /* The run's own path, drawn one round at a time. Round n's screen shows the player in
-       every round they have finished plus the one being played, and nowhere later: a
-       bracket that already had them in the Super Bowl was giving the game away. */
-    ok('the player appears once more on the bracket each round',
-      shots.every((s, i) => s.mine === i + 1), shots.map((s) => s.mine));
-    /* And the same for everybody else. A column fed by a round nobody has played yet is
-       all TBD, so the last column is empty until the conference championships are done. */
-    ok('no column is filled in before its round is played',
-      shots.every((s) => s.tbd[3] === (s.title === 'Super Bowl' ? 0 : 2)),
-      shots.map((s) => [s.title, s.tbd]));
     /* The drawing and the record are the same run seen twice. A season that lost in the
        divisional round cannot have been shown a conference championship bracket. */
-    ok('the bracket stops where the run stopped', shots.length === played,
-      { bracketsShown: shots.length, playoffGamesPlayed: played });
+    ok('the bracket stood in front of every playoff game the run played',
+      shots.length > 0 && shots.length === played,
+      { bracketsShown: shots.length, playoffGamesPlayed: played, rounds: shots.map((s) => s.title) });
     ok('the postseason still ends on the results screen', await on(p, 's-over'));
     await ctx.close();
   }
