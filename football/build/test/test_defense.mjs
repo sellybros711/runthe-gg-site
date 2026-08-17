@@ -357,9 +357,13 @@ boot();`;
     await p.evaluate(() => window.__DEF.setLive(true));
     await p.evaluate(() => window.__DEF.board());
     await p.waitForTimeout(200);
-    ok('live: the board offers the Defense Draft as its own competition',
+    /* THE NAME ON SCREEN IS "One Stop"; the value in the database is still 'defense'.
+       Renaming a stored enum to match a label would orphan every run already recorded
+       under the old one, so the two are deliberately allowed to differ and this asserts
+       both halves at once. */
+    ok('live: the board offers One Stop as its own competition',
       await p.evaluate(() => window.__DEF.comps()
-        .some((o) => o.value === 'defense' && /Defense Draft/.test(o.label))));
+        .some((o) => o.value === 'defense' && /One Stop/.test(o.label))));
     ok('live: and choosing it asks the database for run_mode defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense').mode) === 'defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense')));
@@ -426,7 +430,7 @@ boot();`;
     const st = await p.evaluate(() => window.__DEF.state());
     ok('a full season plays', st.games === 17 && st.wins + st.losses === 17, st);
     ok('and every game was resolved as a defense',
-      st.defense === true && st.mode === 'defense' && st.label === 'Defense Draft'
+      st.defense === true && st.mode === 'defense' && st.label === 'One Stop'
       && st.defMods.every((m) => m > 0 && m < 5), st);
     await ctx.close();
   } finally {

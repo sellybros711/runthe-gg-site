@@ -23,7 +23,7 @@ anywhere, and `BROWSER=1` adds a played season on top.
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
-| `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, and every scheme can be drafted for on purpose. |
+| `test_defense.mjs` | That One Stop, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, and every scheme can be drafted for on purpose. |
 
 ## What `test_defense.mjs` is really guarding
 
@@ -90,7 +90,7 @@ the postseason and nowhere else, so a green run says nothing about the draft, th
 season screen, the results card or the leaderboard. The college game has a real
 browser suite under `cfb/build/test/` if you want the shape of one.
 
-## The Defense Draft is finished and gated
+## One Stop is finished and gated
 
 `DEFENSE_LIVE` in `football/index.html` is `false`, so the mode card says Coming Soon and
 cannot be pressed. That is not caution. `ps_runs_run_mode_ck` lists the recordable modes
