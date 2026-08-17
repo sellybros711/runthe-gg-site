@@ -183,7 +183,15 @@
     '</ul>';
   }
 
-  // The Arcade Card upsell. reason: 'out' (out of daily plays) | 'archive' | undefined.
+  // Display name for a game key, from the shared calendar so the wall and the
+  // tile can never disagree about what a game is called.
+  function gameName(key){
+    if(!key) return null;
+    try{ var m=(window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(key) : null; return (m&&m.name)||null; }catch(e){ return null; }
+  }
+  // The Arcade Card upsell.
+  // reason: 'locked' (a members-only game) | 'out' (today's go used) |
+  //         'archive' | 'upsell' | undefined. opts.game / opts.name name it.
   function paywall(opts){
     opts=opts||{}; var reason=opts.reason||'out';
     ensureScrim();
@@ -198,8 +206,13 @@
         ? ('That’s ' + (vd*25) + ' puzzles waiting, across all ten games. Play any of them, any time.')
         : 'Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='locked'){
-      kicker='Arcade Card'; head='This one is on the card';
-      sub='Six of the ten games are members-only, and each comes in NBA, NFL and MLB editions. The card opens all of them, unlimited, plus the Archive.';
+      // Name the game they just tapped. "You need the card to play THIS" is a
+      // far more specific ask than a generic tier pitch, and it is the sentence
+      // they came here for.
+      var gn = opts.name || gameName(opts.game);
+      kicker='Members only'; head='You need the Arcade Card';
+      sub = (gn ? (gn + ' is one of six members-only games. ') : 'This is one of six members-only games. ')
+        + 'The card opens all ten, unlimited, plus NBA, NFL and MLB editions of five of them and the full Archive.';
     } else if(reason==='upsell'){
       kicker='Arcade Card'; head='4 → 25 daily games';
       sub='All ten games instead of four, NBA, NFL and MLB editions of five of them, unlimited plays and the full archive.';
@@ -429,8 +442,8 @@
     if(!signedIn()) return guestConvert();
     var g = game || pageGame();
     var locked=false;
-    try{ locked = !!(g && window.RTGTokens && RTGTokens.locked && RTGTokens.locked(g)); }catch(e){}
-    paywall({ reason: locked ? 'locked' : 'out' });
+    try{ locked = !!(g && window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(g)); }catch(e){}
+    paywall({ reason: locked ? 'locked' : 'out', game: g });
   }
 
   // Turn a game's out-of-plays "Play again" button into an inviting upsell (the

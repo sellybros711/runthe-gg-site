@@ -255,7 +255,7 @@
         rules+
         '<ul class="rtgpg-perks">'+
           '<li><b>›</b><span>All ten games, as often as you like</span></li>'+
-          '<li><b>›</b><span>NBA, NFL and MLB versions of every one</span></li>'+
+          '<li><b>›</b><span>NBA, NFL and MLB editions of five of them</span></li>'+
           '<li><b>›</b><span>The Archive: every past day, still playable</span></li>'+
         '</ul>'+
         '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Get the Arcade Card</button>'+

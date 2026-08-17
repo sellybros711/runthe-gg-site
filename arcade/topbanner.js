@@ -36,6 +36,7 @@
       '.rtg-topbanner .rtb-site{font-weight:900;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut,#A9B8CB);border:1px solid var(--line2,rgba(244,247,251,.14));border-radius:999px;padding:6px 10px;text-decoration:none;white-space:nowrap;}',
       '.rtg-topbanner .rtb-site i{font-style:normal;color:var(--coralT,#F06A5F);}',
       '.rtg-topbanner .rtb-site:hover{color:var(--ink,#F4F7FB);}',
+      '.rtg-topbanner .rtb-tokens[hidden]{display:none;}',
       '.rtg-topbanner .rtb-tokens{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-weight:800;font-size:12px;color:var(--ink,#F4F7FB);background:var(--card2,#162B44);border:1px solid var(--line2,rgba(244,247,251,.14));border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap;line-height:1;}',
       '.rtg-topbanner .rtb-tokens .tk-ic{width:15px;height:15px;flex:0 0 auto;color:var(--coralT,#F06A5F);}',
       '.rtg-topbanner .rtb-tokens:hover{border-color:var(--coralT,#F06A5F);}',
@@ -88,17 +89,22 @@
     var tk = document.getElementById('rtbTokens');
     if (tk) {
       var unlimited = !!(t && t.hasCard && t.hasCard());
+      var signed = !!(t && t.signedIn && t.signedIn());
+      // Signed out, this pill had nothing to report: it was a fixed "4 games
+      // free" advert sitting next to ten tiles that each say FREE or MEMBERS
+      // ONLY in their own corner. Hide it and let the tiles do the talking.
+      // Signed in it is live (games left today), and for a member it is their
+      // status plus the way into My Arcade Card, so it stays.
+      tk.hidden = !signed;
       if (unlimited) { tk.className = 'rtb-tokens unlimited'; tk.innerHTML = TICKET + '<span>Unlimited</span>'; }
       else if (t) {
         // Per game now, not a pool: a free account has four games with one go
-        // each, so the chip counts games left, and a signed-out visitor is shown
-        // the offer rather than a zero.
+        // each, so the chip counts games left rather than tokens in a wallet.
         var left = t.remaining ? t.remaining() : 0;
-        var signed = !!(t.signedIn && t.signedIn());
         if (left === Infinity) { tk.className = 'rtb-tokens unlimited'; tk.innerHTML = TICKET + '<span>Unlimited</span>'; }
         else {
           tk.className = 'rtb-tokens';
-          tk.innerHTML = TICKET + '<span>' + (signed ? (left + ' game' + (left === 1 ? '' : 's') + ' left') : '4 games free') + '</span>';
+          tk.innerHTML = TICKET + '<span>' + left + ' game' + (left === 1 ? '' : 's') + ' left</span>';
         }
       } else { tk.className = 'rtb-tokens'; tk.innerHTML = TICKET + '<span>Plays</span>'; }
     }
