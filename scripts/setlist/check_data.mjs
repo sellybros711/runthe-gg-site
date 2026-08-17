@@ -894,7 +894,17 @@ for (const [key, what] of [
   ['since', 'how long since your last one'],
   ['gapDays', 'the longest you ever went without'],
   ['onceOnly', 'songs you have heard exactly once'],
+  ['encores', 'how many encores you stayed for'],
+  ['backToBack', 'nights you did back to back'],
+  ['topOpener', 'what keeps opening for you'],
 ]) check(new RegExp(`\\b${key}\\b`).test(gameBare), `the profile knows ${what}`);
+/* An opener is the one slot every show has exactly one of, so "most common" is
+   a fair count there and an artefact of set length anywhere else. */
+check(/const first = sh\.songs\[0\];/.test(gameBare),
+  'the opener count reads the first song of each show');
+check(/topOpener\[1\] > 1/.test(gameBare), 'and one occurrence is not a pattern');
+// "1 days ago".
+check(/st\.since === 1 \? 'yesterday'/.test(gameBare), 'a day is not "1 days"');
 /* fmtDate's short form drops the year, so a 636-day wait read "Nov 21 to Aug
    18" and looked like nine months. Years are the part that makes it make
    sense, and the full dates do not fit the column. */
@@ -957,6 +967,40 @@ check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'its search keeps its
 // Every sighting carries what makes it a memory rather than a row.
 for (const f of ['venue', 'len', 'jam'])
   check(new RegExp(`${f}:`).test(gameBare), `a sighting records its ${f}`);
+
+/* YOUR NIGHTS, the other half of the collection. "Every song" answers what you
+   have heard; this answers what you were AT, and gives each night its setlist
+   back. Until now the game could count your shows without ever showing you
+   one. */
+console.log('your nights');
+check(/if \(S\.screen === 'nights'\)/.test(gameBare), 'your nights is routed');
+check(/function myNights\(bandId\)/.test(gameBare), 'and built from the marked shows');
+check(/data-go="nights"/.test(gameBare), 'the profile links to it');
+/* A night with no setlist STILL GETS A ROW. It is a show you went to, and one
+   in five played shows has never been typed up. */
+check(/hasSet: !!sh/.test(gameBare), 'a night with no setlist is still a night');
+check(/Nobody has typed this one up on elgoose yet/.test(gameBare), 'and says why it is bare');
+// Multi-night runs are how anybody who was there describes a show.
+check(/night \$\{n\.run\.night\} of \$\{n\.run\.of\}/.test(gameBare),
+  'a night in a run says which night it was');
+/* The facts line renders NOTHING rather than an empty rule. A show typed up
+   overnight has no times and no jamchart entries yet, so all three parts of it
+   can be blank, and the div was drawing its border under nothing. */
+check(/return facts\.length \? `<div class="ng-facts">/.test(gameBare),
+  'the night summary is omitted when it would be empty');
+
+/* EVERY LIST ROW NEEDS ITS OWN HOOK. The collection shipped using data-song,
+   which the DRAFT screen already owned, and swallowed every pick in the game.
+   These three must stay distinct from each other and from the draft's. */
+{
+  const hooks = ['data-song', 'data-songrow', 'data-nightrow', 'data-mark', 'data-peek'];
+  const readers = hooks.filter(h => new RegExp(`closest\\('\\[${h}\\]'\\)`).test(gameBare));
+  check(readers.length === hooks.length,
+    `every list hook has its own handler (${readers.length} of ${hooks.length})`);
+  check(new Set(hooks).size === hooks.length, 'and none of them collide by name');
+  check(/data-nightrow="\$\{esc\(n\.id\)\}"/.test(gameBare),
+    'the night row uses its own hook, not the draft\'s');
+}
 
 /* THE PROFILE LOADS THE ARCHIVE ITSELF. Reached from the home screen there has
    never been a draft, so S.data is empty and the panel used to degrade to a

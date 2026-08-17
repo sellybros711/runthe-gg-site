@@ -1823,6 +1823,29 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sgd-none{padding:8px 0 2px; font-size:12px; font-weight:600; color:var(--dim);
     line-height:1.5;}
 
+  /* ---- your nights ----
+     The other half of the collection. Shares the row chrome with Every song on
+     purpose: they are two views of the same habit, and a tracker moving between
+     them should not have to relearn the furniture. */
+  .ngrow{display:flex; align-items:baseline; gap:10px; width:100%; text-align:left;
+    padding:10px 14px; background:none; border:0; font-family:inherit;}
+  .ng-main{flex:1; min-width:0;}
+  .ng-d{display:block; font-size:13.5px; font-weight:800;}
+  .ng-run{font-style:normal; margin-left:7px; font-size:9.5px; font-weight:900;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--tealT);}
+  .ng-v{display:block; font-size:12.5px; font-weight:600; color:var(--mut);
+    margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ng-c{flex:0 0 auto; font-size:13.5px; font-weight:900; color:var(--tealT);
+    font-variant-numeric:tabular-nums; text-align:right;}
+  .ng-c i{display:block; font-style:normal; font-size:9px; font-weight:800;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--dim);}
+  .ngrow.open{background:var(--card2);}
+  .ng-tour{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--dim); padding:4px 0 8px;}
+  /* The line that makes a night a memory rather than a list of titles. */
+  .ng-facts{margin-top:9px; padding-top:8px; border-top:1px solid var(--line);
+    font-size:11.5px; font-weight:700; color:var(--mut); line-height:1.5;}
+
   /* ---- the profile ---- */
   /* ---- the shows you were at, as a fan artifact ---- */
   /* The block is dropped straight into a bare .card, which carries no padding of
@@ -3657,15 +3680,29 @@ function attendanceStats(bandId){
     if (gap && (!rarest || gap > Number(rarest.show_gap))) rarest = p;
   }
 
+  /* WHAT YOU KEEP GETTING DEALT. An opener is the one slot every show has
+     exactly one of, so it is the only role where "most common" is a fair
+     count rather than an artefact of set length. */
+  const openers = new Map();
+  let encores = 0;
+  for (const r of withSet) {
+    const sh = byId.get(r.show_id);
+    const first = sh.songs[0];
+    if (first) openers.set(first.song, (openers.get(first.song) || 0) + 1);
+    if (sh.songs.some(p => String(p.set).toUpperCase().startsWith('E'))) encores++;
+  }
+  const topOpener = [...openers].sort((a, b) => b[1] - a[1])[0];
+
   /* THE SHAPE OF YOUR OWN RUN, which the counts above cannot show: how long it
      has been, and the longest you ever went without one. Both computed from the
      marked dates, so they cover every show including the untranscribed ones. */
   const day = d => Math.round(Date.parse(`${d}T00:00:00Z`) / 86400000);
   const since = day(todayISO()) - day(out.last);
-  let gapDays = 0, gapFrom = '', gapTo = '';
+  let gapDays = 0, gapFrom = '', gapTo = '', backToBack = 0;
   for (let i = 1; i < dates.length; i++) {
     const d = day(dates[i]) - day(dates[i - 1]);
     if (d > gapDays) { gapDays = d; gapFrom = dates[i - 1]; gapTo = dates[i]; }
+    if (d === 1) backToBack++;   // consecutive nights, which is how a run is done
   }
 
   /* THE ONE A TRACKER ACTUALLY WANTS: not what you have seen, but what the
@@ -3688,7 +3725,8 @@ function attendanceStats(bandId){
     segues, jamcharts: jams, debuts, bigJams, bustouts,
     covers: covers.size,
     perShow: perf.length / withSet.length,
-    since, gapDays, gapFrom, gapTo,
+    since, gapDays, gapFrom, gapTo, backToBack, encores,
+    topOpener: topOpener && topOpener[1] > 1 ? { song: topOpener[0], times: topOpener[1] } : null,
     onceOnly: [...seenTitles.values()].filter(n => n === 1).length,
     longest: longest ? { song: longest.song, len: Number(longest.length_sec) } : null,
     rarest: rarest ? { song: rarest.song, gap: Number(rarest.show_gap) } : null,
@@ -4963,6 +5001,158 @@ function render(){
   if (S.screen === 'tour')    return renderTour();
   if (S.screen === 'browse')  return renderBrowse();
   if (S.screen === 'songs')   return renderSongs();
+  if (S.screen === 'nights')  return renderNights();
+}
+
+/* ── your nights ─────────────────────────────────────────────────────────────
+ *
+ * THE OTHER HALF OF THE COLLECTION. "Every song" answers what you have heard;
+ * this answers what you were AT, and gives each night back its setlist. The
+ * pair is the whole point: a tracker thinks in both, and until now the game
+ * could count your shows without ever showing you one.
+ *
+ * A night with no setlist still gets a row. It is a show you went to, and the
+ * screen says what it cannot say rather than leaving it out.
+ */
+const NIGHTS = { open: null, sort: 'new' };
+
+function myNights(bandId){
+  const table = TOUR_STATE.rows;
+  if (!table) return null;
+  const data = (S.data && S.band && S.band.id === bandId ? S.data : null)
+    || FAN_DATA.get(bandId) || null;
+
+  const ids = attendedSet(bandId);
+  const byId = new Map((data ? data.shows : []).map(s => [String(s.show_id), s]));
+
+  return table.filter(r => ids.has(r.show_id)).map(r => {
+    const sh = byId.get(r.show_id);
+    const sets = [];
+    let jams = 0, secs = 0, best = null;
+    if (sh) for (const p of sh.songs) {
+      const label = setLabel(p.set);
+      if (!sets.length || sets[sets.length - 1].label !== label) sets.push({ label, songs: [] });
+      sets[sets.length - 1].songs.push({
+        n: p.song, seg: String(p.is_segue) === 'true',
+        len: Number(p.length_sec) || 0, jam: String(p.is_jamchart) === 'true',
+        gap: Number(p.show_gap) || 0,
+      });
+      if (String(p.is_jamchart) === 'true') jams++;
+      secs += Number(p.length_sec) || 0;
+      /* The one worth remembering about that night: the biggest bustout, or
+         failing that the longest thing they played. */
+      const g = Number(p.show_gap) || 0;
+      if (g >= 50 && (!best || g > (best.gap || 0))) best = { song: p.song, gap: g };
+    }
+    return {
+      id: r.show_id, date: r.show_date, venue: r.venue,
+      city: r.city, state: r.state, country: r.country, tour: r.tour,
+      order: r.show_order, run: sh && sh.run ? sh.run : null,
+      songs: sh ? sh.songs.length : 0, sets, jams, secs, best,
+      hasSet: !!sh,
+    };
+  }).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function renderNights(){
+  loadTourRows();
+  const band = BANDS.find(b => b.shows && !b.sample);
+  for (const b of BANDS){
+    if (b.sample) continue;
+    if (!FAN_DATA.has(b.id) && !FAN_FETCHING.has(b.id) && !(S.data && S.band && S.band.id === b.id)){
+      FAN_FETCHING.add(b.id);
+      fanData(b.id).then(d => { if (d) FAN_DATA.set(b.id, d); if (S.screen === 'nights') render(); });
+    }
+  }
+
+  const list = myNights(band.id);
+  if (!list){
+    app.innerHTML = `
+      <div class="bhd"><h2>Your nights</h2></div>
+      <div class="loading"><div class="spinner"></div><div>Reading your shows</div></div>
+      <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
+    document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+    return;
+  }
+
+  const sorted = NIGHTS.sort === 'old' ? list.slice().reverse() : list;
+  const place = n => [n.city, n.state || n.country].filter(Boolean).join(', ');
+  const withSet = list.filter(n => n.hasSet).length;
+
+  app.innerHTML = `
+    <div class="bhd"><h2>Your nights</h2></div>
+    <p class="bcount">${list.length} show${list.length === 1 ? '' : 's'} marked.
+      Tap one for the setlist.</p>
+
+    ${list.length ? `
+    <div class="bfilter">
+      <label><span>Order</span>
+        <select id="nSort">
+          <option value="new"${NIGHTS.sort === 'new' ? ' selected' : ''}>Newest first</option>
+          <option value="old"${NIGHTS.sort === 'old' ? ' selected' : ''}>Oldest first</option>
+        </select></label>
+    </div>
+
+    <section class="card">
+      ${sorted.map(n => {
+        const open = NIGHTS.open === n.id;
+        return `<div class="sgwrap">
+          <button class="ngrow${open ? ' open' : ''}" type="button"
+            data-nightrow="${esc(n.id)}" aria-expanded="${open}">
+            <span class="ng-main">
+              <span class="ng-d">${esc(fmtDate(n.date))}${
+                n.run ? `<i class="ng-run">night ${n.run.night} of ${n.run.of}</i>` : ''}${
+                !n.run && Number(n.order) > 1 ? `<i class="ng-run">show ${esc(n.order)}</i>` : ''}</span>
+              <span class="ng-v">${esc(n.venue)}${place(n) ? `, ${esc(place(n))}` : ''}</span>
+            </span>
+            <span class="ng-c">${n.hasSet ? `${n.songs}<i>songs</i>` : '<i>no setlist</i>'}</span>
+          </button>
+          ${open ? `<div class="sgdet">
+            ${n.tour ? `<div class="ng-tour">${esc(n.tour)}</div>` : ''}
+            ${n.hasSet ? `
+              <div class="lastset" style="margin-top:0; padding-top:0; border-top:0">
+                ${n.sets.map(s => `<div class="ls-row">
+                  <span class="ls-k">${esc(s.label)}</span>
+                  <span class="ls-v">${s.songs.map((sg, i) =>
+                    esc(sg.n) + (i === s.songs.length - 1 ? ''
+                      : sg.seg ? '<i class="ls-seg">&gt;</i>' : '<i class="ls-sep">,</i>')
+                  ).join(' ')}</span>
+                </div>`).join('')}
+              </div>
+              ${(() => {
+                /* A show typed up overnight often has no times and no jamchart
+                   entries yet, so all three of these can be empty. The div was
+                   rendering anyway and drawing its rule under nothing. */
+                const facts = [
+                  n.secs ? `${Math.floor(n.secs / 60)} minutes of music` : '',
+                  n.jams ? `${n.jams} jamchart version${n.jams === 1 ? '' : 's'}` : '',
+                  n.best ? `${esc(n.best.song)} after a ${n.best.gap}-show gap` : '',
+                ].filter(Boolean);
+                return facts.length ? `<div class="ng-facts">${facts.join(' &middot; ')}</div>` : '';
+              })()}`
+            : `<div class="sgd-none">Nobody has typed this one up on elgoose yet,
+                 so the songs cannot be counted. It still counts as a show you
+                 were at.</div>`}
+          </div>` : ''}
+        </div>`;
+      }).join('')}
+    </section>
+
+    ${withSet < list.length ? `<p class="axnote" style="margin-top:12px">${
+      list.length - withSet} of these have no setlist on elgoose yet.</p>` : ''}
+    ` : `<div class="bempty">You have not marked any shows yet.<br>
+           Track your shows to start.</div>`}
+
+    <div class="homelinks" style="margin-top:18px">
+      <button class="btn ghost" type="button" data-go="browse">Track your shows</button>
+      <button class="btn ghost" type="button" id="backHome">Back</button>
+    </div>`;
+
+  document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+  const sortSel = document.getElementById('nSort');
+  if (sortSel) sortSel.addEventListener('change', e => {
+    NIGHTS.sort = e.target.value; NIGHTS.open = null; render();
+  });
 }
 
 /* ── every song, and how many of them you have heard ─────────────────────────
@@ -5118,7 +5308,7 @@ function renderSongs(){
       band has played it.</p>
 
     <div class="homelinks" style="margin-top:18px">
-      <button class="btn ghost" type="button" data-go="browse">Track your shows</button>
+      <button class="btn ghost" type="button" data-go="nights">Your nights</button>
       <button class="btn ghost" type="button" id="backHome">Back</button>
     </div>`;
 
@@ -5589,6 +5779,8 @@ function renderProfile(){
       st.bigJams ? [st.bigJams, '20-min jams'] : null,
       st.bustouts ? [st.bustouts, 'bustouts'] : null,
       st.perShow ? [st.perShow.toFixed(1), 'songs a night'] : null,
+      st.encores ? [st.encores, 'encores'] : null,
+      st.backToBack ? [st.backToBack, 'back to back'] : null,
     ].filter(Boolean);
 
     const rows = st.songsSeen === null ? [] : [
@@ -5602,7 +5794,8 @@ function renderProfile(){
       st.tours ? ['Tours caught', `${st.tours} of ${st.toursTotal}`, ''] : null,
       ['First', fmtDate(st.first), ''],
       ['Latest', fmtDate(st.last),
-        st.since != null ? (st.since === 0 ? 'today' : `${st.since} days ago`) : ''],
+        st.since != null ? (st.since === 0 ? 'today'
+          : st.since === 1 ? 'yesterday' : `${st.since} days ago`) : ''],
       /* Only once there is a gap worth naming. Two shows a week apart do not
          need telling that their longest gap was a week. */
       /* YEARS, NOT SHORT DATES. fmtDate's short form drops the year, so a
@@ -5614,6 +5807,7 @@ function renderProfile(){
             st.gapFrom.slice(0, 4) === st.gapTo.slice(0, 4)
               ? st.gapFrom.slice(0, 4)
               : `${st.gapFrom.slice(0, 4)} to ${st.gapTo.slice(0, 4)}`] : null,
+      st.topOpener ? ['Opened for you most', st.topOpener.song, `${st.topOpener.times}x`] : null,
       st.onceOnly ? ['Heard once only', `${st.onceOnly} songs`, ''] : null,
     ].filter(Boolean);
 
@@ -5658,7 +5852,8 @@ function renderProfile(){
 
         <!-- The aggregates above raise a question only a list can answer. -->
         <div class="bandlinks" style="margin-top:13px">
-          <button type="button" data-go="songs">Every song, and yours</button>
+          <button type="button" data-go="songs">Every song</button>
+          <button type="button" data-go="nights">Your nights</button>
         </div>
 
         ${/* NOT "no longer in the archive", which is what this used to say and
@@ -5720,6 +5915,16 @@ app.addEventListener('click', e => {
      data-songROW, not data-song: the DRAFT screen's cards already own
      data-song, and this handler runs before theirs in the same listener, so
      the first version of it silently swallowed every pick in the game. */
+  const nightRow = e.target.closest('[data-nightrow]');
+  if (nightRow){
+    const id = nightRow.dataset.nightrow;
+    NIGHTS.open = NIGHTS.open === id ? null : id;
+    render();
+    const again = document.querySelector(`[data-nightrow="${CSS.escape(id)}"]`);
+    if (again) again.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
   const songRow = e.target.closest('[data-songrow]');
   if (songRow){
     const id = songRow.dataset.songrow;
