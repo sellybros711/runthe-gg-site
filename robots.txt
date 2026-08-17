@@ -2,5 +2,7 @@
 User-agent: *
 Allow: /
 Disallow: /scripts/
+Disallow: /supabase/
+Disallow: /functions/
 
 Sitemap: https://runthe.gg/sitemap.xml

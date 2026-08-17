@@ -54,6 +54,18 @@
       'Tap a cell to switch across/down; clues sit below.',
       'Fastest clean solve tops the board.',
       'Free players get one Reveal; Pro gets unlimited.'
+    ],
+    sportegories: [
+      'One letter, eight sports categories, two minutes.',
+      'Type a full name that fits each category and starts with the letter.',
+      'Bank the easy ones fast; you can come back to anything that stalls.',
+      'The clock ends the round. Fill all eight for a perfect day.'
+    ],
+    highlow: [
+      'Pick a category: NBA, NFL or MLB stat pools.',
+      'Players come two at a time. Call whether the next one sits higher or lower on the stat.',
+      'Every correct call reveals the real value and extends your run.',
+      'One miss ends it. Endless: the only target is your best run.'
     ]
   };
 

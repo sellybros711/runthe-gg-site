@@ -17,20 +17,20 @@
   </url>
   <url>
     <loc>https://runthe.gg/football/how-to-play.html</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://runthe.gg/cfb/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image><image:loc>https://runthe.gg/cfb/og.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/cfb/how-to-play.html</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -43,7 +43,7 @@
   </url>
   <url>
     <loc>https://runthe.gg/golf/how-to-play.html</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -56,7 +56,7 @@
   </url>
   <url>
     <loc>https://runthe.gg/soccer/how-to-play.html</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -77,65 +77,77 @@
   <url><loc>https://runthe.gg/disclaimer.html</loc><lastmod>2026-07-29</lastmod><priority>0.3</priority></url>
   <url>
     <loc>https://runthe.gg/arcade/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/table/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/match/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/career/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/oddone/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/rankit/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/almamater/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/guess/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://runthe.gg/arcade/crossword/</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://runthe.gg/arcade/assets/arcade-share.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://runthe.gg/arcade/sportegories/</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://runthe.gg/arcade/highlow/</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>
