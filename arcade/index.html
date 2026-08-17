@@ -517,7 +517,6 @@
   .tile .foot{margin-top:auto;}
   .tile .tmeta{display:none; font-size:10.5px; font-weight:900; letter-spacing:.09em;
     text-transform:uppercase; color:var(--dim,var(--mut)); margin:0 0 9px; text-align:center;}
-  .tile.archive .tmeta{display:none;}   /* the split Archive/Leaderboard pill needs the room */
   .tile .play{border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:var(--onC,#160B02); background:var(--c); transition:filter .12s;}
   /* Each game keeps its own PLAY colour; only the LABEL is chosen per accent.
@@ -559,19 +558,71 @@
     box-shadow:0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); opacity:0; animation:playpulse 2.2s ease-in-out infinite;}
   @keyframes playpulse{0%,100%{opacity:0; transform:scale(1);}55%{opacity:.55; transform:scale(1.045);}}
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
-  .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px; text-shadow:none;}
-  .tile.spent .play .arw{display:none;}
-  /* Archive (cardholder, already played today): outlined in the game's own accent, not the solved green. */
-  .tile.archive .play{background:var(--card2); color:var(--c); border:1.5px solid var(--c); animation:none; text-shadow:none;}
-  .tile.archive.cross .play{color:var(--coralT); border-color:var(--coral);}   /* crossword accent is near-white; keep it readable */
-  /* played + cardholder: two equal-size buttons - Archive and Leaderboard */
-  .tile .play.split{background:transparent; border:0; box-shadow:none; padding:0; gap:8px; min-height:0; overflow:visible;}
-  .tile .play.split .half{flex:1 1 0; width:0; display:flex; align-items:center; justify-content:center; gap:6px;
-    min-height:44px; padding:11px 6px; border-radius:999px; font-weight:900; font-size:12px; letter-spacing:.03em;
-    color:var(--c); background:var(--card2); border:1.5px solid var(--c); transition:background .12s, filter .12s;}
-  .tile .play.split .half:hover{background:color-mix(in srgb, var(--c) 12%, var(--card2));}
-  .tile .play.split .half svg{width:15px; height:15px; flex:0 0 auto;}
-  .tile.archive.cross .play.split .half{color:var(--coralT); border-color:var(--coral);}
+  /* Played today: the PLAY pill hollows out. Same size, same place, same weight,
+     so the row still reads at a glance, but an outline says "this one is done"
+     without a second glance. Tapping it opens today's result. */
+  .tile .play.hollow{background:transparent; color:var(--c); border:1.5px solid var(--c); animation:none;
+    text-shadow:none; font-size:14px; letter-spacing:.02em;}
+  .tile .play.hollow svg{width:15px; height:15px; flex:0 0 auto;}
+  .tile .play.hollow::after{display:none;}
+  .tile:hover .play.hollow{background:color-mix(in srgb, var(--c) 12%, transparent); filter:none;}
+  /* the crossword accent is near-white, so it borrows the readable variant */
+  .tile.cross .play.hollow{color:var(--coralT); border-color:var(--coral);}
+
+  /* ---- today's result, read back on the hub ----
+     Built from the same localStorage the tiles are already reading, so it opens
+     instantly and needs nothing from the game pages. */
+  .rcp{position:fixed; inset:0; z-index:9700; display:flex; align-items:flex-end; justify-content:center;
+    padding:max(20px,env(safe-area-inset-top)) 14px 20px; background:rgba(3,9,18,.7); backdrop-filter:blur(5px); overflow:auto;}
+  .rcp[hidden]{display:none;}
+  @media (min-width:560px){ .rcp{align-items:center;} }
+  .rcp-sheet{width:100%; max-width:420px; margin:auto 0; background:var(--card); color:var(--ink);
+    border:1px solid var(--line2); border-top:4px solid var(--rc,var(--blue)); border-radius:18px;
+    padding:18px 18px 16px; position:relative; box-shadow:0 30px 90px -20px rgba(0,0,0,.75); text-align:center;}
+  .rcp-x{position:absolute; top:11px; right:11px; width:32px; height:32px; border-radius:50%;
+    border:1px solid var(--line2); background:var(--card2); color:var(--mut); font-size:13px; cursor:pointer;}
+  .rcp-kick{font-size:10.5px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .rcp-nm{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase;
+    font-size:23px; line-height:1.05; margin:3px 0 3px; color:var(--rc,var(--blue));}
+  .rcp-head{font-size:13px; font-weight:800; color:var(--ink); margin:0 0 14px;}
+  .rcp-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(0,1fr)); gap:8px; margin:0 0 14px;}
+  .rcp-stat{background:var(--card2); border:1px solid var(--line); border-radius:11px; padding:10px 6px;}
+  .rcp-stat .v{font-family:var(--hero); font-weight:400; font-size:23px; line-height:1; color:var(--ink);}
+  .rcp-stat .l{font-size:9.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+  .rcp-acts{display:grid; gap:8px;}
+  .rcp-btn{appearance:none; cursor:pointer; font-family:inherit; font-weight:900; font-size:14px;
+    border-radius:11px; min-height:46px; padding:12px 14px; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--rc,var(--blue)); color:#fff; border:0; text-shadow:0 1px 2px rgba(0,0,0,.28);}
+  .rcp-btn.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line2); text-shadow:none;}
+  .rcp-btn.ghost:hover{border-color:var(--rc,var(--blue));}
+  .rcp-btn svg{width:15px; height:15px; flex:0 0 auto;}
+  .rcp-btn[disabled]{opacity:.55; cursor:default;}
+  .rcp-note{font-size:11.5px; font-weight:700; color:var(--mut); margin:11px 0 0; line-height:1.45;}
+
+  /* ---- The Vault row ---- */
+  .vaultbtn{grid-column:1 / -1; display:flex; align-items:center; gap:12px; width:100%;
+    appearance:none; cursor:pointer; font-family:inherit; text-align:left; margin:4px 0 0;
+    background:var(--card); border:1px solid var(--line2); border-left:4px solid var(--gold);
+    border-radius:14px; padding:13px 15px; box-shadow:var(--shadow); transition:border-color .14s, transform .08s;}
+  .vaultbtn:hover{border-color:var(--gold);} .vaultbtn:active{transform:translateY(1px);}
+  .vaultbtn .vb-ic{flex:0 0 auto; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    background:color-mix(in srgb, var(--gold) 16%, var(--card2)); color:var(--goldT);}
+  .vaultbtn .vb-ic svg{width:19px; height:19px;}
+  .vaultbtn .vb-t{flex:1; min-width:0;}
+  .vaultbtn .vb-t b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.06em;
+    text-transform:uppercase; font-size:15px; color:var(--goldT); line-height:1.15;}
+  .vaultbtn .vb-t span{display:block; font-size:12px; font-weight:700; color:var(--mut); margin-top:2px;}
+  .vaultbtn .vb-end{flex:0 0 auto; font-size:19px; color:var(--mut); line-height:1;}
+  .vaultbtn .vb-end svg{width:15px; height:15px; display:block;}
+  /* Locked: greyed and padlocked, but still a button. It opens the offer, which
+     is the only reason a locked door belongs on the page at all. */
+  .vaultbtn.locked{border-left-color:var(--line2); background:var(--card2);}
+  .vaultbtn.locked .vb-ic{background:var(--card3); color:var(--mut);}
+  .vaultbtn.locked .vb-t b{color:var(--mut);}
+  .vaultbtn.locked .vb-t span{color:var(--dim,var(--mut));}
+  .vaultbtn.locked .vb-end{color:var(--goldT);}
+  .vaultbtn.locked:hover{border-color:var(--gold);}
+
   /* Mobile: one game per row, and the row says what the game is.
      This used to be a 2-up grid of squares, which left each card about 176px
      wide, too narrow for a sentence, so the description was simply switched
@@ -611,10 +662,6 @@
        target, it shrinks to a chip and stops being the loudest thing on the
        screen ten times over. */
     .tile .play{min-height:33px; padding:0 15px; font-size:12.5px; flex:0 0 auto;}
-    /* Archive + Leaderboard: two pills need the full row width, so they take it
-       and the time chip stands down. */
-    .tile .play.split{flex:1 1 100%; gap:7px;}
-    .tile .play.split .half{flex:1 1 0; min-height:34px; font-size:12px; letter-spacing:.01em; padding:0 8px;}
     /* "Members only" doesn't fit an 86px spine; the short form does. */
     .tile .badge .bfull{display:none;}
     .tile .badge .bshort{display:inline;}
@@ -944,6 +991,19 @@
           </a>
         </div>
 
+        <!-- The Vault gets its own front door. It used to be reachable only by
+             tapping a game you had already finished, which meant it was hidden
+             behind having played, and hidden completely from anyone who had
+             not. Members open it; everyone else sees it locked, which is the
+             point of showing it at all. -->
+        <button class="vaultbtn" id="vaultBtn" type="button">
+          <span class="vb-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          </span>
+          <span class="vb-t"><b>The Vault</b><span id="vbSub">Every past day, still playable</span></span>
+          <span class="vb-end" id="vbEnd" aria-hidden="true">›</span>
+        </button>
+
         <div class="double" id="double">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
           <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
@@ -1149,7 +1209,7 @@
           var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
-          if(lock && play && !play.classList.contains('split')) play.innerHTML = LOCK+'ARCADE CARD';
+          if(lock && play) play.innerHTML = LOCK+'ARCADE CARD';
           var st = el.querySelector('.status');
           if(!st) return;
           // Solved today outranks the price chip. mark() sets .solved, and it
@@ -1292,6 +1352,8 @@
   var ARW = ' <span class="arw">→</span>';
   var CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
   var TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg>';
+  var CHART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>';
+  var LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
     var st = document.getElementById(stId);
@@ -1304,53 +1366,185 @@
       card.classList.add('unplayed');
       st.className = 'status ready';
     }
-    if (done && hasCard()) {
-      // Cardholder who's finished today: the bottom pill splits into the two
-      // things left to do on this game - open its past-days Archive, or check
-      // today's Leaderboard.
-      play.classList.add('split');
-      play.innerHTML =
-        '<span class="half archh" role="button" tabindex="0">' + CAL_SVG + 'Archive</span>' +
-        '<span class="half lbh" role="button" tabindex="0">' + TROPHY_SVG + 'Leaderboard</span>';
-      card.classList.add('archive'); card.setAttribute('data-arch', key); card.setAttribute('data-lb', key);
-    } else if (done) {
-      // Free user who already played today: an honest "✓ DONE", not "PLAY".
-      // The card still links to the game (its intro offers the Arcade Card).
-      card.classList.add('spent');
-      play.textContent = '✓ DONE';
-    } else {
+    // A card-only game can carry a finished save from before it was locked (or
+    // from a lapsed membership). The lock wins there: paint() overwrites this
+    // pill with ARCADE CARD a moment later, so claiming a result here would
+    // flash a button that is about to become a different one.
+    var lockedNow = false;
+    try { lockedNow = !!(TOK && TOK.cardOnly && TOK.cardOnly(key)); } catch (e) {}
+    if (done && !lockedNow) {
+      // Played today, member or not: the PLAY pill hollows out and opens what
+      // you actually want after finishing, which is how you did. The two things
+      // that used to live here as a split pill (Leaderboard, past days) are
+      // inside that result, where they read as next steps rather than as a
+      // choice you have to make before seeing your score.
+      play.classList.add('hollow');
+      play.innerHTML = CHART_SVG + 'VIEW RESULT';
+      card.classList.add('recap'); card.setAttribute('data-recap', key);
+    } else if (!done) {
       // Not played yet (free or cardholder): PLAY.
       play.innerHTML = 'PLAY' + ARW;
     }
   }
-  function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }
+  // Career Path, Odd One Out and Alma Mater post POINTS now, not a count of
+  // rounds survived, so "11 in a row" was reading back the wrong unit.
+  function runText(sv, unit) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' ' + (unit || 'in a row')) : 'Played'; }
 
   mark('cardMatch', 'pipM', 'stM', 'playM', mDone, (mRes && mRes.grade) ? ('Solved · ' + mRes.grade) : 'Solved', 'match');
   mark('cardCross', 'pipC', 'stC', 'playC', cDone, 'Solved', 'crossword');
   mark('cardGuess', 'pipG', 'stG', 'playG', gDone, (gs.last && gs.last.won === false) ? 'Missed' : 'Solved', 'guess');
   mark('cardTable', 'pipT', 'stT', 'playT', tDone, runText(ts), 'table');
-  mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
-  mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
+  mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os, 'pts'), 'oddone');
+  mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs, 'pts'), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
-  mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
+  mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as, 'pts'), 'almamater');
   mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + ' pts') : 'Solved', 'sportegories');
+  // High Low is endless, so "done" is simply having run it today.
+  var hs = {}; try { hs = JSON.parse(g('rtg:highlow:v1', '{}')) || {}; } catch (e) {}
+  var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
+  mark('cardHigh',  'pipH', 'stH', 'playH', hDone, runText(hs), 'highlow');
 
-  // Cardholders: a played tile is an "Archive" entry. Clicking it opens that
-  // game's past-days calendar (RTGCalendar) instead of replaying today.
+  /* ---- today's result, read back on the hub -------------------------------
+   * A finished tile opens this instead of navigating. Everything it shows is
+   * already in localStorage (it is the same data the tiles above were built
+   * from), so it opens instantly and needs no change to any game page.
+   *
+   * Each game stores a different shape, so READ names the two or three numbers
+   * that game actually keeps. Where a game does not persist today's own figure
+   * (the Crossword banks a lifetime best, not a per-day time) the card says
+   * what it does know rather than inventing a number to fill a box. */
   (function(){
-    [].forEach.call(document.querySelectorAll('a.tile[href^="/arcade/"]'), function(a){
-      function route(e){
-        if(!a.classList.contains('archive')) return;
-        var k=a.getAttribute('data-arch') || a.getAttribute('data-lb');
-        var lbHalf = e.target && e.target.closest && e.target.closest('.half.lbh');
-        if(lbHalf){ e.preventDefault(); if(k) location.href='/arcade/'+k+'/#lb'; return; }
-        // the Archive half, or a tap on the played card body -> that game's calendar
-        e.preventDefault();
-        if(k && window.RTGCalendar) RTGCalendar.open(k); else if(k) location.href='/arcade/'+k+'/';
-      }
-      a.addEventListener('click', route);
-      a.addEventListener('keydown', function(e){ if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('half')){ route(e); } });
+    var t = todayStr();
+    function J(k){ try { return JSON.parse(g(k, '{}')) || {}; } catch (e) { return {}; } }
+    function secs(n){ n = Math.max(0, Math.round(+n || 0)); return Math.floor(n/60) + ':' + pad(n%60); }
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+    var READ = {
+      match: function(){
+        var r = null; try { r = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
+        if (!r) return null;
+        var s = [];
+        if (r.grade) s.push([r.grade, 'Grade']);
+        if (r.time != null) s.push([secs(r.time), 'Time']);
+        s.push([String(r.mistakes || 0), 'Mistakes']);
+        return { head: r.won === false ? 'Not solved today' : 'Solved today', stats: s };
+      },
+      crossword: function(){ var v = J('rtg:cw:v1');
+        return { head: 'Solved today', stats: [[String(v.streak||0),'Day streak'],
+          [(v.best && v.best < 1e9) ? secs(v.best) : '-', 'Best time'], [String(v.solves||0), 'Solves']] }; },
+      guess: function(){ var v = J('rtg:guess:v1'), l = v.last || {};
+        return { head: l.won === false ? 'Missed today' : 'Solved today',
+          stats: [[String(l.guesses || 0), 'Guesses'], [String(v.streak||0), 'Win streak'],
+                  [String(v.bestStreak||0), 'Best streak']] }; },
+      sportegories: function(){ var v = J('rtg_sportegories_v1'), l = v.last || {};
+        return { head: 'Today\u2019s card', stats: [[String(l.score != null ? l.score : 0), 'Points'],
+          [String(l.correct != null ? l.correct : 0) + '/8', 'Correct'], [String(v.best||0), 'Best ever']] }; },
+      rankit: function(){ var v = J('rtg:rankit:v2'), l = v.last || {};
+        return { head: l.solved === false ? 'Not solved today' : 'Solved today',
+          stats: [[String(l.tries != null ? l.tries : '-'), 'Tries'], [String(v.streak||0), 'Day streak'],
+                  [l.seconds != null ? secs(l.seconds) : '-', 'Time']] }; },
+      highlow: function(){ var v = J('rtg:highlow:v1'), l = v.last || {};
+        return { head: 'Today\u2019s run', stats: [[String(l.run != null ? l.run : 0), 'In a row'], [String(v.best||0), 'Best ever']] }; }
+    };
+    // the four run-and-points games share a shape: last.run, bestRun, streak
+    ['table','oddone','career','almamater'].forEach(function(k){
+      var key = 'rtg:' + k + ':v1';
+      READ[k] = function(){ var v = J(key), l = v.last || {};
+        return { head: 'Today\u2019s run', stats: [[String(l.run != null ? l.run : 0), k === 'table' ? 'In a row' : 'Points'],
+          [String(v.bestRun||0), 'Best ever'], [String(v.streak||0), 'Day streak']] }; };
     });
+
+    var scrim = null;
+    function close(){ if (scrim) scrim.hidden = true; try { document.body.style.overflow=''; } catch(e){} }
+    // High Low is endless rather than daily, so it has no calendar entry and no
+    // past days to open. It still needs a name and a colour here.
+    var OFF_CALENDAR = { highlow: { name: 'High Low', accent: 'var(--hl,#F5822B)' } };
+    function open(key){
+      var meta = (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(key) : null;
+      var fallback = OFF_CALENDAR[key] || null;
+      var name = (meta && meta.name) || (fallback && fallback.name) || key;
+      var accent = (meta && meta.accent) || (fallback && fallback.accent) || 'var(--blue)';
+      var hasArchive = !!meta;                 // only daily games have past days
+      var data = null; try { data = READ[key] ? READ[key]() : null; } catch (e) {}
+      if (!data) data = { head: 'Played today', stats: [] };
+      var member = hasCard();
+
+      if (!scrim) {
+        scrim = document.createElement('div'); scrim.className = 'rcp'; scrim.hidden = true;
+        scrim.innerHTML = '<div class="rcp-sheet" role="dialog" aria-modal="true" aria-label="Today’s result"></div>';
+        document.body.appendChild(scrim);
+        scrim.addEventListener('click', function(e){ if (e.target === scrim) close(); });
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+      }
+      var sheet = scrim.querySelector('.rcp-sheet');
+      sheet.style.setProperty('--rc', accent);
+      sheet.innerHTML =
+        '<button class="rcp-x" type="button" aria-label="Close">✕</button>' +
+        '<div class="rcp-kick">Today’s result</div>' +
+        '<h2 class="rcp-nm">' + esc(name) + '</h2>' +
+        '<div class="rcp-head">' + esc(data.head) + '</div>' +
+        (data.stats.length ? '<div class="rcp-stats">' + data.stats.map(function(s){
+          return '<div class="rcp-stat"><div class="v">' + esc(s[0]) + '</div><div class="l">' + esc(s[1]) + '</div></div>';
+        }).join('') + '</div>' : '') +
+        '<div class="rcp-acts">' +
+          '<button class="rcp-btn" id="rcpLb" type="button">' + TROPHY_SVG + 'Today’s leaderboard</button>' +
+          (member ? '<button class="rcp-btn ghost" id="rcpAgain" type="button">Play it again</button>' : '') +
+          (!hasArchive ? '' : (member
+            ? '<button class="rcp-btn ghost" id="rcpVault" type="button">' + CAL_SVG + 'Past days of ' + esc(name) + '</button>'
+            : '<button class="rcp-btn ghost" id="rcpVault" type="button">' + LOCK_SVG + 'Past days need the Arcade Card</button>')) +
+        '</div>' +
+        (member ? '' : '<div class="rcp-note">A fresh ' + esc(name) + ' lands at midnight.</div>');
+
+      sheet.querySelector('.rcp-x').onclick = close;
+      document.getElementById('rcpLb').onclick = function(){ location.href = '/arcade/' + key + '/#lb'; };
+      var again = document.getElementById('rcpAgain');
+      if (again) again.onclick = function(){ location.href = '/arcade/' + key + '/'; };
+      var vlt = document.getElementById('rcpVault');
+      if (vlt) vlt.onclick = function(){
+        if (member) { close(); if (window.RTGCalendar) RTGCalendar.open(key); else location.href = '/arcade/archive/'; return; }
+        close();
+        if (window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason: 'archive' });
+        else location.href = '/arcade/archive/';
+      };
+      scrim.hidden = false;
+      try { document.body.style.overflow = 'hidden'; } catch (e) {}
+    }
+
+    document.addEventListener('click', function(e){
+      var a = e.target && e.target.closest && e.target.closest('a.tile[data-recap]');
+      if (!a) return;
+      e.preventDefault(); e.stopPropagation();
+      open(a.getAttribute('data-recap'));
+    }, true);
+  })();
+
+  /* ---- The Vault -----------------------------------------------------------
+   * Members open it. Everyone else gets it greyed with a padlock and a tap that
+   * opens the offer: a locked door is only worth showing if it tells you how to
+   * get through it. */
+  (function(){
+    var btn = document.getElementById('vaultBtn'); if (!btn) return;
+    function paint(){
+      var member = hasCard();
+      var days = 0;
+      try {
+        var launch = (window.RTGArchive && RTGArchive.LAUNCH) || '2026-07-22';
+        days = Math.max(0, Math.floor((Date.now() - Date.parse(launch)) / 864e5));
+      } catch (e) {}
+      btn.classList.toggle('locked', !member);
+      document.getElementById('vbSub').textContent = member
+        ? (days > 0 ? (days + ' past days, all still playable') : 'Every past day, still playable')
+        : 'Arcade Card members only';
+      document.getElementById('vbEnd').innerHTML = member ? '›' : LOCK_SVG;
+    }
+    btn.addEventListener('click', function(){
+      if (hasCard()) { location.href = '/arcade/archive/'; return; }
+      if (window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason: 'archive' });
+      else location.href = '/arcade/archive/';
+    });
+    paint();
+    document.addEventListener('rtg:tokens', paint);
+    if (window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(paint);
   })();
 
   // The dot row counts only the games this player can reach: all ten for a
