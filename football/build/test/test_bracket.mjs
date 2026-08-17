@@ -97,12 +97,13 @@ const on = (p, id) => p.evaluate((i) => {
    around and takes about 139 of the 140 available.
 
    This started out taking the first affordable tile, on the grounds that a dumb strategy
-   is a fair one. It is not: the first tile is DOM order, not merit, and the teams it built
-   went 7-10. Measured, it reached the postseason about one season in four, and one run of
-   this suite drafted ten in a row that all missed. Playing badly does not make the test
-   stricter, it just makes it spend a quarter of an hour on seasons that never reach the
-   screen this file exists to check, and fail once every twenty runs for no reason. Drafting
-   properly lands 14-3 and gets there on the first or second attempt.
+   is a fair one. It is not: the first tile is DOM order rather than merit. Measured over
+   ten seasons it went 7-10, 15-2, 7-10, 9-8, 12-5, 9-8, 8-9, 8-9, 10-7, 10-7: two of the
+   ten seeded, and one run of this suite duly drafted ten in a row that all missed and
+   failed five assertions about a bracket that had never been on screen. Playing badly does
+   not make the test stricter, it just spends a quarter of an hour on seasons that never
+   reach the screen this file exists to check. Drafting properly went 14-3, 13-4 and 12-5,
+   all three seeded, so it gets there on the first or second attempt.
 
    The cap is a constant here rather than read off the page: it is the only number the
    harness needs and the page does not print a machine-readable one. If the game's cap ever
