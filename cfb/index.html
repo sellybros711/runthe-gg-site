@@ -1442,6 +1442,50 @@ window.GA_ID='G-L29P5MRWKE';
   @media(min-width:760px){.brk{justify-content:center;gap:8px}
     .brk-col,.brk-col.live{flex:1 1 0;width:auto;min-width:0;max-width:172px}}
 
+  /* ── the tutorial coach bar ─────────────────────────────────────
+     Deliberately NOT a spotlight or a modal, the same call the football game made and
+     for the same reason: the lesson IS the draft, so every control has to stay live
+     while the coaching is up. It sits along the bottom, over nothing that gets tapped,
+     and the wheel underneath behaves exactly as it always does.
+     Green rather than the football game's blue, because that is this game's accent and
+     a blue bar here would read as something bolted on from the other one. */
+  .tut{position:fixed;left:8px;right:8px;bottom:8px;z-index:68;
+    background:linear-gradient(180deg,#0f2820,#0a1a15);border:1px solid rgba(16,185,129,.45);
+    border-radius:13px;padding:11px 12px 10px;box-shadow:0 20px 46px -18px #000;
+    max-height:44vh;overflow:auto}
+  .tut[hidden]{display:none}
+  .tut-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .tut-step{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;color:#6ee7b7;background:rgba(16,185,129,.14);
+    border:1px solid rgba(16,185,129,.4);border-radius:999px;padding:3px 8px;flex:0 0 auto}
+  .tut-title{font-family:var(--fn);font-size:14px;font-weight:800;color:var(--ink);
+    line-height:1.2;min-width:0}
+  .tut-body{font-size:12.5px;line-height:1.45;color:var(--dim);margin:0}
+  .tut-num{color:#6ee7b7;font-weight:800}
+  .tut-row{display:flex;gap:7px;margin-top:9px}
+  .tut-row .btn{flex:1;padding:9px 10px;font-size:12.5px}
+  .tut-skip{background:transparent;border:1px solid var(--line-2);color:var(--dim-2);
+    flex:0 0 auto !important;width:auto !important;padding:9px 12px !important}
+  /* The end of it is the one moment it does take the screen, because there is nothing
+     left to practise on and the only question is what to do next. */
+  .tutend{position:fixed;inset:0;z-index:69;display:flex;align-items:center;
+    justify-content:center;padding:18px;background:rgba(4,10,8,.88);backdrop-filter:blur(3px)}
+  .tutend[hidden]{display:none}
+  .tutend-in{width:min(360px,100%);background:linear-gradient(180deg,#0f2820,#0b1712);
+    border:1px solid rgba(16,185,129,.4);border-radius:14px;padding:16px;
+    box-shadow:0 26px 60px -22px #000}
+  .tutend-eyebrow{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:#6ee7b7}
+  .tutend-in h2{font-family:var(--fd);font-size:22px;line-height:1.05;margin:6px 0 8px;
+    color:var(--ink)}
+  .tutend-in p{margin:0 0 12px;font-size:13.5px;line-height:1.45;color:var(--dim)}
+  /* The practice run is marked wherever it is on screen, so nobody finishes one
+     wondering why it is not in their history. */
+  .tutflag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
+    font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:#6ee7b7;background:rgba(16,185,129,.13);
+    border:1px solid rgba(16,185,129,.38)}
+
   /* ── seed CTA ───────────────────────────────────────────────── */
   .seed-cta{margin-top:16px;padding:15px 18px;font-size:17px;border-radius:13px;
     background:linear-gradient(170deg,#10b981,#047857);box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
@@ -2853,6 +2897,10 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="ctas">
       <button class="btn" id="b-play-intro">Draft your team</button>
       <button class="btn ghost" id="b-modes">More ways to play<span class="mc-sticker">New</span></button>
+      <!-- The tutorial sits ABOVE the two utility buttons and below the two ways in,
+           because it is a way in and they are not: somebody who does not yet know what
+           this game is wants a coached draft, not a rules page or a leaderboard. -->
+      <button class="btn ghost" id="b-tut">Walk me through a draft</button>
       <div class="cta2">
         <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
         <button class="btn ghost sm" id="b-how">How to play</button>
@@ -3353,6 +3401,27 @@ or endorsed by the NCAA, the CFP or any school.
      Same element and the same job as the NFL game's: the toast is for things you did on
      purpose and this is for something the game noticed. -->
 <div class="headline" id="headline"></div>
+
+<!-- The tutorial coach bar, and the panel that closes it out. -->
+<div class="tut" id="tut" hidden>
+  <div class="tut-head"><span class="tut-step" id="tut-step">1 of 6</span>
+    <span class="tut-title" id="tut-title"></span></div>
+  <p class="tut-body" id="tut-body"></p>
+  <div class="tut-row">
+    <button class="btn ghost sm tut-skip" id="tut-skip" type="button">Skip</button>
+  </div>
+</div>
+<div class="tutend" id="tutend" hidden>
+  <div class="tutend-in">
+    <div class="tutend-eyebrow">Practice draft complete</div>
+    <h2 id="tutend-h">That is a roster</h2>
+    <p id="tutend-body"></p>
+    <button class="btn" id="tutend-go" type="button" style="width:100%">Draft my own team</button>
+    <button class="btn ghost sm" id="tutend-play" type="button"
+      style="width:100%;margin-top:8px">Play this one out first</button>
+  </div>
+</div>
+
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <!-- supabase-js, for accounts only. Deferred and OPTIONAL: if the CDN is blocked
@@ -3411,6 +3480,9 @@ const M=(v)=>(v>0&&v<1)?'$'+Math.round(v*1000)+'K':'$'+v.toFixed(1)+'M';
    fees. NOT for money spent, which is a sum of six prices and lands on 10.9 as
    often as on 11: rounding it printed a squad that cost $10.9M as $11M, which is
    the cap-adjacent number a player is watching and the one they would check. */
+/* WHOLE MILLIONS, for the budget and nothing else. M0 is right for "$11M" and wrong for
+   anything under a million: it rounded the first re-spin, which really costs $500K, up to
+   "$1M" on the button that charges it. Use M() for any figure that can be a fraction. */
 const M0=(v)=>'$'+Math.round(v)+'M';
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
@@ -5427,6 +5499,10 @@ function achState(rows){
    whichever screen happened to read the cabinet. */
 let lastEarned=[];
 function recordRun(row){
+  /* A COACHED DRAFT IS NOT A SEASON YOU PLAYED. It never reaches the history, so it can
+     never reach a badge, the trophy case or the profile counters either, all of which
+     are derived from these rows. */
+  if(tutorialOn){ lastEarned=[]; return lastEarned; }
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
   const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
@@ -5867,6 +5943,8 @@ function paintMyPin(){
    away, which is exactly the set of seasons most worth recording. */
 async function submitRun(o,selectionRank,stats){
   if(!B||!run) return null;
+  // ... and it never reaches the leaderboard. See recordRun().
+  if(tutorialOn) return null;
   const sig=stats.sig;
   const payload={
     regularWins:o.regularWins,
@@ -6479,8 +6557,9 @@ let nextConference=null;
    about one season in six, so a test that drafts and plays until it lands in a
    bracket is a test that fails at random. With the seed pinned the same run comes
    out every time and the bracket can be driven end to end. */
-function newRun(){
-  const forced=typeof window!=='undefined'?window.PS_CFB_SEED:null;
+function newRun(seed){
+  const forced=seed!=null?seed
+    :(typeof window!=='undefined'?window.PS_CFB_SEED:null);
   run=R.createRun({seed:forced!=null?Number(forced)
     :E.hashSeed(String(Date.now())+Math.random()),
     conference:nextConference});
@@ -6505,10 +6584,114 @@ const modeLabelLong=(m)=>m==='free'
   ? 'Perfect COLLEGE Season: Classic Draft'
   : m.replace(/^conf:/,'')+' Draft';
 
-function beginDraft(conference){
+/* ── THE OPTIONAL TUTORIAL ──────────────────────────────────────────
+ * A practice draft on a fixed seed, coached one pick at a time, that hands over to a real
+ * run at the end. Optional on purpose: plenty of people would rather press Draft and find
+ * out, and the intro still points them straight at that.
+ *
+ * THE SEED IS CHOSEN, NOT ARBITRARY, the same way the football game's was. Seed 16 opens
+ * on 2018 Oklahoma, where Kyler Murray costs $4.8M of the $11M that has to cover all six
+ * spots, on a board that also holds a $0.30M running back. So the budget is a decision on
+ * the very first pick rather than a rule somebody reads about later. That board happens to
+ * carry a tight end as well, which is what makes the flex lesson concrete rather than
+ * hypothetical: there is no TE spot in this game, so he can only go to a flex.
+ * Picked by sweeping 4,000 seeds for an opening board holding both a genuine star and a
+ * genuine bargain, then checking the draft still completes whichever one you take.
+ *
+ * NOTHING HERE IS RECORDED. recordRun() and submitRun() both refuse a tutorial run, so a
+ * coached draft cannot reach the leaderboard, the season history or a badge.
+ */
+const TUTORIAL_SEED=16;
+let tutorialOn=false;
+
+/* THE COPY READS THE RUN RATHER THAN QUOTING IT. Naming the player or the price in the
+   text would go stale the first time the player data is rebuilt, and this game's has been
+   rebuilt repeatedly. Every number below is asked of the live run at the moment it is
+   shown, so the lesson stays true even if the seed lands somewhere else entirely. */
+function tutSteps(){
+  const left=R.remaining(run), spots=R.slotsLeft(run);
+  const n=(v)=>'<span class="tut-num">'+v+'</span>';
+  const fees=E.CONSTANTS.RESPIN_LADDER_MUSD||[0.5,1,1.5];
+  return [
+    { t:'One spin, one signing',
+      b:'Every spin gives you a year and a school, and you sign ONE player off that '+
+        'roster. Then it spins again. Six spins fill six spots: QB, RB, two WR and two '+
+        'flex. You have '+n(M(left))+' of NIL money for all six.' },
+    { t:'The budget is the whole puzzle',
+      b:'One spot gone, '+n(M(left))+' left for '+n(spots)+'. The figure under the budget '+
+        'is what remains PER open spot: when it turns red you can no longer afford an '+
+        'average player everywhere else. A star early is paid for by bargains later.' },
+    { t:'The tabs are positions',
+      b:'QB, RB, WR and TE, with everyone that team had at each. A position with nowhere '+
+        'left to go greys out. There is no tight end spot in this game, so a TE can only '+
+        'go to a flex, and the tile says so before you tap it.' },
+    { t:'Players who played together lift each other',
+      b:'A quarterback and the receiver he actually threw to, real teammates, brothers, '+
+        'a shared school, coach, home state or conference: each link lifts the whole '+
+        'roster a little. Watch the chemistry line move as you sign. It is worth a few '+
+        'points of overall, which is a game or two a season.' },
+    { t:'You can spin again, for a price',
+      b:'Three re-spins a run, costing '+n(M(fees[0]))+', then '+n(M(fees[1]))+', then '+
+        n(M(fees[2]))+' off the budget. Worth it when the board genuinely has nobody you '+
+        'can use. Rarely worth it to chase a name you recognise, because the fee comes '+
+        'out of the same '+n(M(left))+' you still have to fill '+n(spots)+' with.' },
+    { t:'Last spot',
+      b:n(M(left))+' left, and whatever is on the next board has to fit inside it. If '+
+        'nothing does, that is exactly what a re-spin is for, fee and all.' },
+  ];
+}
+
+function tutPaint(){
+  if(!tutorialOn) return;
+  const bar=$('tut'); if(!bar) return;
+  const i=Math.min(5,Math.max(0,(run&&run.roster?run.roster.length:0)));
+  const st=tutSteps()[i];
+  $('tut-step').textContent=(i+1)+' of 6';
+  $('tut-title').textContent=st.t;
+  $('tut-body').innerHTML=st.b;
+  bar.hidden=false;
+  /* THE BAR SITS OVER THE PLAYER LIST, so the list has to be able to scroll out from
+     under it. Measured rather than guessed: the copy is a different length on every step,
+     and a fixed reserve would either waste a third of a phone screen on the short ones or
+     still hide a tile on the long ones. */
+  const scr=$('s-draft');
+  if(scr) requestAnimationFrame(()=>{ scr.style.paddingBottom=(bar.offsetHeight+22)+'px'; });
+}
+function tutStart(){
+  tutorialOn=true;
+  ga('tutorial_started');
+  beginDraft(null,TUTORIAL_SEED);
+  tutPaint();
+}
+function tutStop(quiet){
+  tutorialOn=false;
+  const bar=$('tut'); if(bar) bar.hidden=true;
+  const end=$('tutend'); if(end) end.hidden=true;
+  const scr=$('s-draft'); if(scr) scr.style.paddingBottom='';
+  paintModeTag();
+  if(!quiet) ga('tutorial_skipped');
+}
+$('tut-skip').onclick=()=>tutStop();
+/* The roster is full, so there is nothing left to coach and the only question is what to
+   do next. The answer this exists to give is "now go and do your own". */
+function tutFinish(){
+  if(!tutorialOn) return;
+  const end=$('tutend'); if(!end) return;
+  ga('tutorial_finished');
+  const bar=$('tut'); if(bar) bar.hidden=true;
+  const scr=$('s-draft'); if(scr) scr.style.paddingBottom='';
+  $('tutend-body').innerHTML='In a real run the season plays out from here: twelve games, '+
+    'then the College Football Playoff if you finish in the top twelve. This practice '+
+    'draft is not recorded, and never reaches the leaderboard or your season history.';
+  end.hidden=false;
+  $('tutend-go').onclick=()=>{ tutStop(true); ga('tutorial_to_real_run'); beginDraft(null); };
+  $('tutend-play').onclick=()=>{ end.hidden=true; };
+}
+
+function beginDraft(conference,seed){
   pendingChallenge=false;
   if(conference!==undefined) nextConference=conference&&E.isPowerConference(conference)?conference:null;
-  newRun();
+  newRun(seed);
   ga('game_started',{mode:runMode(run)});
   paintTop(); drawField($('field'),true);
   paintModeTag();
@@ -6525,9 +6708,12 @@ function paintModeTag(){
   const conf=run&&run.conference;
   for(const id of ['d-mode','o-mode']){
     const el=$(id); if(!el) continue;
-    el.innerHTML=conf
-      ? '<span class="modetag">'+esc(conf)+' draft</span>'
-      : '';
+    /* A PRACTICE RUN SAYS SO WHEREVER IT IS. It is not recorded anywhere, and somebody
+       who finishes one and then cannot find it in their history has been misled by
+       silence rather than told anything. */
+    el.innerHTML=tutorialOn
+      ? '<span class="tutflag">Practice draft</span>'
+      : conf ? '<span class="modetag">'+esc(conf)+' draft</span>' : '';
   }
 }
 
@@ -6777,13 +6963,13 @@ function paintRespins(){
   }
   const btn=(kind,label,chk)=>chk.ok
     ? '<button class="btn ghost sm respin" data-kind="'+kind+'"><b>'+label+'</b>'+
-      '<span>'+M0(chk.cost)+'</span></button>'
+      '<span>'+M(chk.cost)+'</span></button>'
     : '<div class="respin off"><b>'+label+'</b><span>'+esc(chk.reason)+'</span></div>';
   el.innerHTML='<div class="respins">'+
       btn('year','New year',y)+btn('team','New team',t)+
     '</div>'+
     '<p class="respinnote">Comes off your budget. '+
-      (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
+      (left>1?'Next one costs '+M(E.respinCost(run.respinsUsed+1))+'. ':'')+
       left+' left.</p>';
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
@@ -6861,6 +7047,7 @@ function signInto(p,slot){
   ga('player_signed',{spin_n:run.roster.length,position:p&&p.position,
     season:p&&p.season,price_musd:p&&p.price_musd,
     slot:slot===null?null:E.SLOTS[slot],slot_chosen:slot!==null});
+  if(tutorialOn&&run.phase!==R.PHASES.SEASON) tutPaint();
   if(run.phase===R.PHASES.SEASON){
     ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)
       +E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed});
@@ -6871,6 +7058,7 @@ function signInto(p,slot){
 /* ── squad screen ────────────────────────────────────────────── */
 function paintSquad(){
   R.startSeason(run,DATA,CTX);
+  if(tutorialOn) tutFinish();
   ga('season_started');
   drawField($('field2'),false);
 
@@ -9354,6 +9542,7 @@ function perfectLine(n){
 
 /* ── wire up buttons ─────────────────────────────────────────── */
 $('b-play-intro').onclick=()=>beginDraft();
+$('b-tut').onclick=()=>{ ga('tutorial_opened',{from:'intro'}); tutStart(); };
 $('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
 $('b-feedback').onclick=()=>feedbackSheet();
 $('b-modes').onclick=modeMenu;
