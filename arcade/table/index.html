@@ -145,7 +145,14 @@
      stops growing and the typing sits directly under it. */
   .versus:has(.pcard.solo){flex:0 0 auto; grid-auto-rows:auto;}
   .pcard.solo{grid-column:1 / -1; max-width:none; min-height:0; cursor:default;
-    padding:clamp(20px,3vh,30px) 16px; gap:8px;}
+    padding:clamp(20px,3vh,30px) 16px; gap:8px;
+    /* the club's colours, same treatment as Alma Mater: a two-tone band and a
+       wash off the top, never tinted text */
+    border-color:color-mix(in srgb, var(--tp,var(--gold)) 45%, var(--line2));
+    background:radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--tp,var(--gold)) 20%, var(--card)), var(--card) 62%);}
+  .pcard.solo:after{content:""; position:absolute; inset:0 0 auto; height:6px;
+    background:linear-gradient(90deg, var(--tp,var(--gold)) 0 62%, var(--ts,var(--tp,var(--gold))) 62% 100%);}
+  .pcard.solo .tm{position:relative;}
   .pcard.solo:hover{transform:none; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); border-color:var(--line2); border-top-color:var(--tp,var(--gold));}
   .pcard.solo .num{font-family:var(--hero,var(--f)); font-size:clamp(34px,6vh,52px); line-height:1; color:var(--goldT); margin-top:4px;}
   .answerbar{display:flex; gap:9px; margin:14px 0 0; justify-content:center;}
@@ -339,7 +346,7 @@
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/jerseys.js?v=1"></script>
-<script src="/arcade/teamcolors.js?v=1"></script>
+<script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
 <script src="/arcade/share.js?v=4"></script>
@@ -473,7 +480,7 @@
   // team-color accent: look up the stint's team in the shared palette
   function teamStyle(e){
     var c=window.RTG_TEAMCOLORS && RTG_TEAMCOLORS.get(e.team);   // matches the team shown on the card
-    return c ? ' style="--tp:'+c.p+'"' : '';
+    return c ? ' style="--tp:'+c.p+';--ts:'+(c.s||c.p)+'"' : '';
   }
   function renderLadder(){
     var rd=document.getElementById('ladderRd'), bar=document.getElementById('ladderBar'), zn=document.getElementById('ladderZone');

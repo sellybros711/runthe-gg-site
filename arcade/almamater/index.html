@@ -100,9 +100,27 @@
   .modesw button:hover{color:var(--ink); border-color:var(--gold);}
   .modesw button.on{background:var(--gold); color:var(--onAccent,#20180a); border-color:transparent;}
   .prompt{text-align:center; font-weight:900; font-size:16px; color:var(--ink); margin:2px 0 12px;}
-  .pcard{background:var(--card); border:1px solid var(--line2); border-radius:16px; box-shadow:var(--shadow); padding:24px 16px; margin-bottom:16px; text-align:center; position:relative; overflow:hidden;}
-  .pcard:before{content:""; position:absolute; inset:0; background:radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%); pointer-events:none;}
-  .pcard .plab{position:relative; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--goldT); margin-bottom:10px;}
+  /* THE CARD WEARS THE TEAM, NOT THE GAME.
+     Every card in the same yellow taught you nothing and made ten rounds look
+     like one. The club's own colours are a second, faster read: plenty of
+     people know the Expos by that blue before they have finished reading the
+     word. --tp/--ts are set per round from the shared palette and fall back to
+     the game accent for the teams we hold nothing for.
+     The colour is carried by a band and a wash, never by the text. Team
+     palettes run from near-black to near-white, so tinting the words would
+     have been a contrast problem on a few dozen clubs and a guess on the rest. */
+  .pcard{background:var(--card); border:1px solid color-mix(in srgb, var(--tp,var(--gold)) 45%, var(--line2));
+    border-radius:16px; box-shadow:var(--shadow); padding:24px 16px; margin-bottom:16px; text-align:center;
+    position:relative; overflow:hidden; transition:border-color .35s;}
+  .pcard:before{content:""; position:absolute; inset:0; background:radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--tp,var(--gold)) 22%, transparent), transparent 62%); pointer-events:none; transition:background .35s;}
+  /* primary on the left, secondary on the right: the two-tone reads as a kit */
+  .pcard:after{content:""; position:absolute; inset:0 0 auto; height:6px;
+    background:linear-gradient(90deg, var(--tp,var(--gold)) 0 62%, var(--ts,var(--tp,var(--gold))) 62% 100%);
+    transition:background .35s;}
+  .pcard .plab{position:relative; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-bottom:10px;}
+  /* the team half of the label gets a swatch instead of being recoloured */
+  .pcard .plab .sw{display:inline-block; width:9px; height:9px; border-radius:3px; vertical-align:-1px;
+    margin-right:6px; background:var(--tp,var(--gold)); box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;}
   .pcard .pname{position:relative; font-family:var(--hero); font-weight:400; font-size:36px; line-height:1.04; color:var(--ink); letter-spacing:.01em;}
   @media (max-width:400px){ .pcard .pname{font-size:30px;} }
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
@@ -327,6 +345,7 @@
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=1"></script>
+<script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/type.js?v=2"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
@@ -513,8 +532,23 @@
     var r=SEQ[idx];
     bailed=false; answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
     setAnswerEnabled(true);
-    document.getElementById('pMeta').textContent=[r.sport, r.team].filter(Boolean).join(' · ')||r.sport;
+    paintTeam(r);
     document.getElementById('pName').textContent=r.name;
+  }
+  /* Repaint the card in the club's colours each round. Unknown team: clear the
+     variables so the game's own accent takes over rather than leaving the last
+     club's colours on a card that has moved on. */
+  function paintTeam(r){
+    var card=document.querySelector('.pcard'), meta=document.getElementById('pMeta');
+    var c = (r.team && window.RTG_TEAMCOLORS) ? RTG_TEAMCOLORS.get(r.team) : null;
+    if(card){
+      if(c){ card.style.setProperty('--tp', c.p); card.style.setProperty('--ts', c.s || c.p); }
+      else { card.style.removeProperty('--tp'); card.style.removeProperty('--ts'); }
+    }
+    if(meta){
+      var bits=[r.sport, r.team].filter(Boolean);
+      meta.innerHTML = (c ? '<span class="sw"></span>' : '') + esc(bits.join(' · ') || r.sport);
+    }
   }
   function bail(){
     if(done||busy||bailed) return;

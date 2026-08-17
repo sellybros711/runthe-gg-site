@@ -370,7 +370,7 @@
 <script src="/arcade/awards.js?v=1"></script>
 <script src="/arcade/supplement.js?v=1"></script>
 <script src="/arcade/data.js?v=2"></script>
-<script src="/arcade/teamcolors.js?v=1"></script>
+<script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=3"></script>
 <script src="/arcade/share.js?v=4"></script>
@@ -605,7 +605,7 @@
       // on the light ones. Pick the ink from the fill's luminance, the same way
       // the hub picks its PLAY labels.
       var ink = tc ? onColorOf(tc.p) : null;
-      var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+'"'):'';
+      var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+';--pc2:'+(tc.s||tc.p)+'"'):'';
       var body = veiled ? '<span class="tm">? ? ?</span>' : '<span class="tm">'+esc(tm)+'</span>'+tag;
       return (i>0?'<div class="stopgap"></div>':'')
            + '<div class="stop'+(veiled?' veiled':'')+'"'+st+'><span class="dot">'+(i+1)+'</span>'+body+'</div>';

@@ -149,10 +149,68 @@
     "Boston Braves":{p:'#CE1141',s:'#13274F'},
     "Milwaukee Braves":{p:'#CE1141',s:'#13274F'}
   };
+  /* RELOCATIONS AND RENAMES.
+     The corpus records the name a player actually wore, which is correct, and
+     it means a third of the teams the games display are franchises that have
+     since moved or been renamed. Those are the same club with the same colours,
+     so they map straight through rather than falling back to a grey card.
+     Only unambiguous continuations are here. The Negro League clubs are
+     deliberately absent: their colours deserve real sourcing, not a guess. */
+  var ALIAS = {
+    'Cleveland Indians':'Cleveland Guardians',
+    'California Angels':'Los Angeles Angels',
+    'Anaheim Angels':'Los Angeles Angels',
+    'Los Angeles Angels of Anaheim':'Los Angeles Angels',
+    'Brooklyn Dodgers':'Los Angeles Dodgers',
+    'Brooklyn Robins':'Los Angeles Dodgers',
+    'Philadelphia Athletics':'Oakland Athletics',
+    'Kansas City Athletics':'Oakland Athletics',
+    'St. Louis Browns':'Baltimore Orioles',
+    'Tampa Bay Devil Rays':'Tampa Bay Rays',
+    'Florida Marlins':'Miami Marlins',
+    'New Jersey Nets':'Brooklyn Nets',
+    'Charlotte Bobcats':'Charlotte Hornets',
+    'New Orleans Hornets':'New Orleans Pelicans',
+    'Seattle SuperSonics':'Oklahoma City Thunder',
+    'Vancouver Grizzlies':'Memphis Grizzlies',
+    'LA Clippers':'Los Angeles Clippers',
+    'Cincinnati Redlegs':'Cincinnati Reds',
+    'Boston Bees':'Atlanta Braves',
+    'Houston Colt .45s':'Houston Astros',
+    'Montreal Expos':'Montreal Expos',
+    'Washington Nationals':'Washington Nationals',
+    /* Two different franchises wore this name (the club that became the Twins,
+       then the one that became the Rangers). Both wore navy and red, which is
+       what the card shows, so the ambiguity does not reach the screen. */
+    'Washington Senators':'Minnesota Twins'
+  };
   T.get = function(name){
-    if(!name || !Object.prototype.hasOwnProperty.call(T, name)) return null;
-    var v = T[name];
+    if(!name) return null;
+    var key = Object.prototype.hasOwnProperty.call(T, name) ? name
+            : (Object.prototype.hasOwnProperty.call(ALIAS, name) ? ALIAS[name] : null);
+    if(!key) return null;
+    var v = T[key];
     return (v && typeof v === 'object') ? v : null;
+  };
+  /* Which of black or white to print ON a team colour. Team palettes run the
+     whole range from near-black to near-white, so a fixed white sat at 3.4:1
+     on the pale ones. */
+  T.ink = function(hex){
+    try{
+      var h = String(hex||'').replace('#','');
+      if(h.length !== 6) return '#fff';
+      var lin = function(c){ c = parseInt(c,16)/255; return c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); };
+      var L = 0.2126*lin(h.substr(0,2)) + 0.7152*lin(h.substr(2,2)) + 0.0722*lin(h.substr(4,2));
+      var ratio = function(a,b){ return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); };
+      return ratio(L, 0.00856) >= ratio(L, 1) ? '#0A1728' : '#fff';
+    }catch(e){ return '#fff'; }
+  };
+  /* The CSS custom properties a card needs to wear a team's colours. Returns
+     '' for a team we hold nothing for, so the caller's own accent stands. */
+  T.vars = function(name){
+    var c = T.get(name);
+    if(!c) return '';
+    return '--tp:' + c.p + ';--ts:' + (c.s || c.p) + ';--tpInk:' + T.ink(c.p);
   };
   window.RTG_TEAMCOLORS = T;
 })();
