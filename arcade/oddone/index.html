@@ -302,7 +302,8 @@
 <script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=5"></script>
@@ -796,10 +797,14 @@
       if(ANSLOG.length>60) out += '\u2026';
       return out;
     }
-  document.getElementById('mShare').addEventListener('click', function(){
+  /* The result screen shows this card too (resultart.js), so the spec the
+     share button builds is now a function both can call. */
+  function cardSpec(){
     var stat=(run>0?'🔥 ':'')+run+' points';
-    RTGShare.send({ key:'oddone', date:DATE, grid:shareGrid(), stat:stat, statInt:run });
-  });
+    return { key:'oddone', date:DATE, grid:shareGrid(), stat:stat, statInt:run };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+  document.getElementById('mShare').addEventListener('click', function(){ RTGShare.send(cardSpec()); });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }

@@ -425,7 +425,8 @@
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=5"></script>
@@ -1063,11 +1064,15 @@
     if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
-  document.getElementById('mShare').addEventListener('click', function(){
+  /* The result screen shows this card too (resultart.js), so the spec the
+     share button builds is now a function both can call. */
+  function cardSpec(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
     var stat=(won?('🎯 '+guesses.length+'/'+MAX):('❌ X/'+MAX))+' · '+fmt(elapsed);
-    RTGShare.send({ key:'guess', date:DATE, grid:grid, stat:stat, statInt:(won?guesses.length:null) });
-  });
+    return { key:'guess', date:DATE, grid:grid, stat:stat, statInt:(won?guesses.length:null) };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+  document.getElementById('mShare').addEventListener('click', function(){ RTGShare.send(cardSpec()); });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }

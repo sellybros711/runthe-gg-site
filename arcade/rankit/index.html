@@ -454,7 +454,8 @@
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=5"></script>
@@ -1001,14 +1002,18 @@
       for(var i=0;i<ENDSLOTS.length;i++){ if(ENDSLOTS[i]) n++; s += ENDSLOTS[i]?'🟩':'🟥'; }
       return n ? ('\n' + s + '  ' + n + '/' + ENDSLOTS.length + ' in place') : '';
     }
-  document.getElementById('mShare').addEventListener('click', function(){
+  /* The result screen shows this card too (resultart.js), so the spec the
+     share button builds is now a function both can call. */
+  function cardSpec(){
     var sv=load();
     var st=(sv.last&&typeof sv.last.tries==='number')?sv.last:{tries:tries, solved:solved};
-    // Fewest tries is the brag now, so the share leads with it. An unsolved
-    // card says so plainly rather than dressing up a zero.
+    // Fewest tries is the brag now, so the card leads with it. An unsolved
+    // one says so plainly rather than dressing up a zero.
     var stat = st.solved ? ('🏅 Solved in '+st.tries+'/'+MAX_TRIES) : ('❌ Not solved in '+MAX_TRIES);
-    RTGShare.send({ key:'rankit', date:DATE, grid:shareGrid()+endLine(), stat:stat, statInt:st.solved?st.tries:0 });
-  });
+    return { key:'rankit', date:DATE, grid:shareGrid()+endLine(), stat:stat, statInt:st.solved?st.tries:0 };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+  document.getElementById('mShare').addEventListener('click', function(){ RTGShare.send(cardSpec()); });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }

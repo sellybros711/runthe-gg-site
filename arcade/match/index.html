@@ -747,7 +747,8 @@
   <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
   <script src="/arcade/tokens.js?v=5"></script>
@@ -1473,7 +1474,10 @@
     // order becomes the grid, the result line becomes the stat, and solve time
     // (lower is better) rides the challenge link. Replaces Match's old bespoke
     // canvas so all nine games look identical.
-    function shareResultImage() {
+    function shareResultImage() { RTGShare.send(cardSpec()); }
+    /* The result screen shows this card too (resultart.js), so the spec is a
+       function both can call. */
+    function cardSpec() {
       var r = window._lastResult || {};
       var grid = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var stat = r.won
@@ -1487,9 +1491,10 @@
       var timeline = (r.won && solveTimes.length === solveOrder.length && solveOrder.length)
         ? solveOrder.map(function (idx, i) { return { color: laneById[laneCat[idx]].color, t: solveTimes[i] }; })
         : null;
-      RTGShare.send({ key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null,
-                      timeline: timeline, total: r.won ? r.time : null });
+      return { key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null,
+               timeline: timeline, total: r.won ? r.time : null };
     }
+    window.RTG_CARD_SPEC = cardSpec;
 
     // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
     var hintBtn = document.getElementById('btnHint');

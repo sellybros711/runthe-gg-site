@@ -355,7 +355,8 @@
 <script src="/arcade/card.js?v=14"></script>
 <script src="/arcade/pregame.js?v=14"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=4"></script>
 <script src="/arcade/type.js?v=2"></script>
@@ -785,14 +786,17 @@
     startPuzzle(false);
   });
   $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
+  /* The result screen shows this card too (resultart.js), so the spec the
+     share button builds is now a function both can call. */
+  function cardSpec(){
+    var pts = parseInt($('mScore').textContent,10)||0;
+    return { key:'sportegories', date:today(), grid:'', stat:pts+' pts',
+             statInt:pts, letter:(puz&&puz.letter)||'', marks:lastMarks };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
   $('mShare').addEventListener('click', function(){
     try{
-      var pts = parseInt($('mScore').textContent,10)||0;
-      if(window.RTGShare && RTGShare.send){
-        RTGShare.send({ key:'sportegories', date:today(), grid:'', stat:pts+' pts',
-                        statInt:pts, letter:(puz&&puz.letter)||'', marks:lastMarks });
-        return;
-      }
+      if(window.RTGShare && RTGShare.send){ RTGShare.send(cardSpec()); return; }
     }catch(e){}
     toast('Sharing unavailable');
   });

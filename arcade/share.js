@@ -423,6 +423,7 @@
   // PNG and copy the text. Falls back to plain text if anything is unavailable.
   // spec: { key, date, grid, stat, statInt }
   function send(spec) {
+    remember(spec);
     var text = card(spec.key, spec.date, { grid: spec.grid, stat: spec.stat });
     try { window.RTGShareStat = (spec.statInt == null || isNaN(spec.statInt)) ? null : spec.statInt; } catch (e) {}
     function go() {
@@ -450,8 +451,35 @@
   }
   function copyText(text) { try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function () {}); } catch (e) {} }
 
+  /* ---- the card, kept ----------------------------------------------------
+   * draw() built a beautiful picture of your run and then threw it away unless
+   * you pressed Share. Remembering the spec lets the result screen show you the
+   * same card, and lets the hub show it back to you later, from one drawing.
+   * Stored per game per day; a new day overwrites, so this stays tiny. */
+  function slot(key, date) { return 'rtg:card:' + key + ':' + (date || ''); }
+  function remember(spec) {
+    if (!spec || !spec.key) return spec;
+    try { localStorage.setItem(slot(spec.key, spec.date), JSON.stringify(spec)); } catch (e) {}
+    return spec;
+  }
+  function recall(key, date) {
+    try { return JSON.parse(localStorage.getItem(slot(key, date)) || 'null'); } catch (e) { return null; }
+  }
+  // Draw to a data URL, waiting for the display faces so Anton/Archivo don't
+  // fall back to a system face mid-draw (the same guard send() uses).
+  function preview(spec) {
+    function go() {
+      try { var cv = draw(spec); return cv ? cv.toDataURL('image/png') : null; } catch (e) { return null; }
+    }
+    try {
+      if (document.fonts && document.fonts.ready) return document.fonts.ready.then(go, go);
+    } catch (e) {}
+    return Promise.resolve(go());
+  }
+
   window.RTGShare = {
     NAMES: NAMES, name: name, url: url, puzzleNo: puzzleNo,
-    header: header, card: card, fire: fire, send: send, draw: draw, note: note
+    header: header, card: card, fire: fire, send: send, draw: draw, note: note,
+    remember: remember, recall: recall, preview: preview
   };
 })();

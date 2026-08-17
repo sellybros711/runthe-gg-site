@@ -523,7 +523,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="gen.js?v=5"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=5"></script>
-<script src="/arcade/share.js?v=5"></script>
+<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/resultart.js?v=1"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=5"></script>
@@ -1044,10 +1045,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // a crossword's shape is the puzzle's, not the solver's, and posting it
   // spoils which squares are blocked while boasting about nothing. The time is
   // the boast, and the poster already draws its own grid art.
-  function shareCrosswordImage(){
-    RTGShare.send({ key:'crossword', date:DATE,
-      stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) });
+  function cardSpec(){
+    return { key:'crossword', date:DATE,
+      stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) };
   }
+  window.RTG_CARD_SPEC = cardSpec;
+  function shareCrosswordImage(){ RTGShare.send(cardSpec()); }
 
   // ---- dopamine: confetti burst --------------------------------------------
   var CONFETTI_COLORS=['#FF5A3C','#F5A623','#2F6BFF','#7C5CF0','#1f8b39','#d23a22'];
