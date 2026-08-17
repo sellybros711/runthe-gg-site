@@ -4,14 +4,18 @@
 node football/build/test/test_scorelines.mjs
 node football/build/test/test_game_scripts.mjs
 node football/build/test/test_drives.mjs
+node football/build/test/test_defense.mjs
 
 (nohup node cfb/build/test/gzip_server.mjs &)
 node football/build/test/test_bracket.mjs
+BROWSER=1 node football/build/test/test_defense.mjs
 ```
 
-The first three need no database, no browser and no network. They read
-`data/display_calibration.json` and play games through the real engine. The fourth
-drives the page in Chromium and needs a server, which is why it is listed apart.
+The first four need no database, no browser and no network. They read
+`data/display_calibration.json` and play games through the real engine. The last two
+drive the page in Chromium and need a server, which is why they are listed apart.
+`test_defense.mjs` appears in both lists on purpose: its pool and balance halves run
+anywhere, and `BROWSER=1` adds a played season on top.
 
 | File | What it proves |
 |---|---|
@@ -19,6 +23,17 @@ drives the page in Chromium and needs a server, which is why it is listed apart.
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
+| `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, and a defensive season is as winnable. |
+
+## What `test_defense.mjs` is really guarding
+
+Not "the mode exists". A defense mode can be completely broken and still look fine:
+every season would simply play the same, because the achievable spread on defense is a
+third of the offensive one. IDP scoring is tackle-led and tackle counts barely separate
+starters, so `DEF_POWER` is what carries the difference between a good defensive roster
+and a bad one onto the scoreboard at all. Lower it and nothing throws, nothing renders
+wrong, and the draft quietly stops mattering. That assertion is the reason this file is
+worth running.
 
 ## Why the second half of that matters more than the first
 
