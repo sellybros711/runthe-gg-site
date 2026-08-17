@@ -222,13 +222,25 @@
   // Spend on the server too (signed-in, non-card): keeps the server's per-day,
   // per-game count authoritative so the client wallet can be reconciled against
   // it. Fire-and-forget; the client stays the fast path, the server is truth.
-  // DENIED is the server's verdict on the attempt currently in progress. It was
-  // the missing half of this handshake: the spend went out, and a refusal only
-  // ever raised the local floor - the play kept going and could still post a
-  // ranked score. Now a refusal is remembered for the life of the attempt,
-  // board.js refuses to submit while it stands, and card.js turns it into the
-  // right offer. Cleared at the top of every startAttempt.
-  var DENIED=false;
+  // The server's verdict on the attempt currently in progress. Both flags are
+  // cleared at the top of every startAttempt.
+  //
+  // There are two very different reasons arcade_spend_game says no, and treating
+  // them the same threw away honest wins:
+  //
+  //   DENIED  - the wallet was wrong. 'card_only' or 'not_signed_in' means the
+  //             client thought this game was open when it was not, so the run it
+  //             covers must not reach a leaderboard at all.
+  //   REPLAY  - 'spent'. The player is genuinely entitled to this game, they have
+  //             simply already had today's go. That happens without any cheating:
+  //             a cleared cache, a second device, a sign-out (which now wipes the
+  //             local wallet) all resurrect the client counter while the server's
+  //             stands. Refusing to submit meant they finished the puzzle, won,
+  //             and watched an empty board with nothing said. Now the run posts
+  //             flagged as a replay: grid_submit_run keeps the day's first row
+  //             and will not let a repeat of a board you have already seen
+  //             improve it, so the honest case lands and the exploit does not.
+  var DENIED=false, REPLAY=false;
   function emit(name){ try{ document.dispatchEvent(new Event(name)); }catch(e){} }
   function serverSpend(game){
     try{
@@ -236,7 +248,11 @@
       if(!(window.RTG_BOARD && RTG_BOARD.spendToken)) return;
       RTG_BOARD.spendToken(game).then(function(res){
         if(!res) return;                                                      // offline → client wallet governs
-        if(res.ok===false){ setServerUsed(game, PER_GAME_DAILY); DENIED=true; emit('rtg:tokens'); emit('rtg:denied'); }
+        if(res.ok===false){
+          setServerUsed(game, PER_GAME_DAILY);
+          if(res.reason==='spent') REPLAY=true; else DENIED=true;
+          emit('rtg:tokens'); emit('rtg:denied');
+        }
         else if(typeof res.used==='number') setServerUsed(game, res.used);
       }).catch(function(){});
     }catch(e){}
@@ -250,7 +266,7 @@
 
   function startAttempt(game){
     var s=read(), before=s.plays[game]||0;
-    DENIED=false;
+    DENIED=false; REPLAY=false;
     if(unlimited()){
       s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
@@ -260,9 +276,13 @@
     serverSpend(game);
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remainingOf(game) };
   }
-  // May this attempt's result count? False only after the server has explicitly
-  // refused the play - offline and card plays stay true.
+  // May this attempt's result reach a board at all? False only when the server
+  // refused a play the client had no right to. Offline, card and replay plays
+  // all stay true.
   function rankAuthorized(){ return !DENIED; }
+  // Is this attempt a repeat of a game already spent on the server today? The
+  // run still posts; it just cannot overwrite a row that is already there.
+  function replaying(){ return REPLAY; }
 
   // A compact, tier-aware status chunk for hints/tiles. No trailing "today":
   // hint() adds it where it belongs, so nothing reads "Sign in to play today".
@@ -329,6 +349,7 @@
     canPlay: canPlay,
     startAttempt: startAttempt,
     rankAuthorized: rankAuthorized,
+    replaying: replaying,
     // ordering (hub)
     lastPlayed: lastPlayed,
     order: order,

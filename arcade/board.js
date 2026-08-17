@@ -145,18 +145,51 @@
              .catch(function () { if (!done) { done = true; clearTimeout(t); resolve(null); } });
     });
   }
+  /* A refused score has to be said out loud.
+   *
+   * For as long as this module has existed, a 4xx on a submit resolved to null
+   * and the game carried on as though nothing had happened: the player finished
+   * the puzzle, won, opened the board and was not on it, with no way to tell a
+   * rejection from an empty day. Every leaderboard bug on this site has been
+   * found by somebody eventually noticing that, weeks late. The server always
+   * says why in plain words ('unknown game', 'daily ranked limit reached',
+   * 'implausible time'), so show it.
+   *
+   * Deliberately plain and self-contained: this fires in ten different games,
+   * none of which share a toast, and it must never depend on one of them having
+   * loaded. */
+  var REFUSE_CSS = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483000;' +
+    'max-width:min(92vw,420px);box-sizing:border-box;padding:11px 14px;border-radius:12px;' +
+    'background:#2A1414;color:#FFE9E4;border:1px solid rgba(240,106,95,.55);' +
+    'font:700 12.5px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;' +
+    'box-shadow:0 14px 40px -12px rgba(0,0,0,.75);';
+  function sayRefused(msg) {
+    try {
+      var el = document.getElementById('rtg-refused');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'rtg-refused';
+        el.setAttribute('role', 'status');
+        el.style.cssText = REFUSE_CSS;
+        document.body.appendChild(el);
+      }
+      el.textContent = 'Score not posted: ' + msg;
+      clearTimeout(sayRefused.t);
+      sayRefused.t = setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 9000);
+    } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('rtg:refused', { detail: { message: msg } })); } catch (e) {}
+  }
+
   function fail(where, res) {
-    offline = true;
+    // A 4xx is a decision, not a dead network. Marking it offline made the game
+    // fall back to its Sample board and told the player the opposite of the truth.
+    if (!(res.status >= 400 && res.status < 500)) offline = true;
     return res.text().then(function (b) {
       try { b = JSON.parse(b); } catch (e) {}
       lastError = { where: where, status: res.status, message: (b && (b.message || b.hint)) || res.statusText };
-      // A 4xx on a submit is the server refusing this run outright, not a bad
-      // connection, and the player is never told - the game just carries on and
-      // their name never appears. Say it once in the console so the next one of
-      // these is found in minutes instead of by someone noticing an empty board.
-      // ('unknown game' hid here for as long as the sport editions existed.)
       if (where === 'submit' && res.status >= 400 && res.status < 500) {
         try { console.warn('[RTG] score refused:', lastError.status, lastError.message); } catch (e) {}
+        sayRefused(lastError.message || ('server said no (' + res.status + ')'));
       }
       return null;
     }).catch(function () { lastError = { where: where, status: res.status }; return null; });
@@ -200,7 +233,8 @@
   function post(run) {
     var body = JSON.stringify({
       p_game: run.game, p_date: run.date, p_seconds: run.seconds,
-      p_mistakes: run.mistakes, p_reveals: run.reveals, p_run_len: run.runLen
+      p_mistakes: run.mistakes, p_reveals: run.reveals, p_run_len: run.runLen,
+      p_replay: !!run.replay
     });
     // `null` here means "no answer" (timeout/network) — worth another try.
     // `false` means the server answered and said no — never worth retrying.
@@ -214,13 +248,22 @@
     );
   }
 
+  function replayFlag() {
+    try { return !!(window.RTGTokens && RTGTokens.replaying && RTGTokens.replaying()); } catch (e) { return false; }
+  }
+
   // ---- submit a completed run. Returns {streak, best_streak} or null. ----
   function submit(game, dateStr, opts) {
     if (!session) return Promise.resolve(null);   // signed-in only; guests keep local
     // Every game funnels its ranked result through here, so this is the one
     // place the server's token verdict has to be honoured. If the wallet was
-    // faked (localStorage cleared to mint plays) the spend RPC refused, and
+    // faked (a locked game unlocked by hand) the spend RPC refused outright, and
     // the run that refusal covers must not reach the leaderboard.
+    //
+    // "You already played this today" is NOT that. It is the ordinary answer for
+    // a cleared cache or a second device, and dropping those runs here is what
+    // made a win vanish with nothing said. Those carry run.replay instead and the
+    // server decides: an empty slot gets filled, an existing row is left alone.
     try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
     opts = opts || {};
     var run = {
@@ -228,7 +271,10 @@
       seconds: Math.max(0, Math.round(opts.seconds || 0)),
       mistakes: opts.mistakes || 0,
       reveals: opts.reveals || 0,
-      runLen: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen)))
+      runLen: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen))),
+      // A run the server already counted a play for today. It still posts, but
+      // only to claim an empty slot: see supabase/79_grid_replay_posts.sql.
+      replay: replayFlag()
     };
     return post(run).then(function (r) {
       if (r === false) return null;               // server refused; nothing to retry
