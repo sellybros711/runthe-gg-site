@@ -188,6 +188,18 @@ if (want('head')) {
       await p.waitForTimeout(350);
       const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       ok(n + ': no sideways scroll at ' + w, over <= 1, over + 'px');
+      /* A LABEL THAT RUNS PAST ITS OWN BUTTON, which is the failure a page-level overflow
+         check cannot see and a screenshot hides. The front page's three utility buttons
+         share the width two used to have, and "Leaderboard" is the long one: at one size
+         it needed 94px of a 91px button and still looked right in a picture. scrollWidth
+         is the only witness, so it is the one asked, at every width including 320.
+         THE THREE-UP ROW ONLY. "More ways to play" carries a New sticker that overhangs
+         its button on purpose, and scrollWidth counts that as overflow, so pointing this
+         at every button on the page reports a design as a bug at all eight widths. */
+      const clipped = await p.$$eval('.cta3 .btn', (els) => els
+        .filter((e) => e.scrollWidth > e.clientWidth + 1)
+        .map((e) => (e.textContent || '').trim() + ' needs ' + e.scrollWidth + ' has ' + e.clientWidth));
+      ok(n + ': no button label clipped at ' + w, clipped.length === 0, clipped.join('; '));
     }
     ok(n + ': nothing logged', p.errs.length === 0, p.errs.slice(0, 3).join(' | '));
     await p.close();
@@ -225,7 +237,7 @@ if (want('fold')) {
     const m = await p.evaluate(() => {
       const tick = document.getElementById('h-ticker').getBoundingClientRect();
       const out = { ceiling: tick.height > 0 ? tick.top : innerHeight, buttons: {} };
-      for (const id of ['b-play-intro', 'b-modes', 'b-lb-intro', 'b-how']) {
+      for (const id of ['b-play-intro', 'b-modes', 'b-tut', 'b-lb-intro', 'b-how']) {
         const e = document.getElementById(id);
         out.buttons[id] = e ? e.getBoundingClientRect().bottom : null;
       }
@@ -233,7 +245,7 @@ if (want('fold')) {
     });
     const last = Math.max(...Object.values(m.buttons).filter((v) => v !== null));
     const slack = m.ceiling - last;
-    ok(name + ' (' + w + 'x' + h + '): all four buttons clear the poll bar and the address bar',
+    ok(name + ' (' + w + 'x' + h + '): every front-page button clears the poll bar and the address bar',
       slack >= CHROME, 'slack ' + slack.toFixed(0) + 'px, need ' + CHROME);
     ok(name + ':   and nothing logged', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
     await p.close();
