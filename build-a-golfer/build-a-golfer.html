@@ -1296,7 +1296,7 @@ window.GA_ID='G-L29P5MRWKE';
      (people were tapping the reel display, which looks like a button). */
   .spinwrap{position:relative; width:100%}
   .spinarrow{position:absolute; top:-19px; width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
-    border-top:17px solid var(--gold); filter:drop-shadow(0 0 6px rgba(241,208,74,.65)); animation:spinbounce .85s ease-in-out infinite; pointer-events:none; z-index:2}
+    border-top:21px solid var(--gold); filter:drop-shadow(0 0 6px rgba(241,208,74,.65)); animation:spinbounce .85s ease-in-out infinite; pointer-events:none; z-index:2}
   .spinarrow.l{left:14%}
   .spinarrow.r{right:14%; animation-delay:.42s}
   @keyframes spinbounce{0%,100%{transform:translateY(-3px); opacity:.4} 50%{transform:translateY(6px); opacity:1}}
@@ -9485,6 +9485,11 @@ function scrRules(){
   const bk=$(`<button class="btn ghost" style="width:auto;padding:7px 13px;font-size:13px;margin:0 0 8px">‹ Back</button>`);
   bk.onclick=back; add(bk);
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📖 How to play</span></div>`));
+  // The written manual below is a reference; the guided tour is the one that shows you the actual screen.
+  { const tb=$(`<button class="btn goldfill" style="max-width:340px;margin:12px auto 4px">▶ Take the guided tour</button>`);
+    tb.onclick=()=>{ try{ track('tour_replay',{from:'rules'}); }catch(e){} replayTour(); };
+    add(tb);
+    add($(`<div class="small muted center" style="margin:0 0 8px">A 30 second walkthrough of the home screen and what each tab does.</div>`)); }
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">Build a golfer.<br>Run the tour.</h1>`));
   add($(`<p class="lede center" style="margin:2px 0 16px">Build a golfer one skill at a time, then live out their career, up to 30 years on tour, or test your build on the daily challenge.</p>`));
 
@@ -10777,6 +10782,7 @@ function overlayMenu(screen){
   play.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Play</div>`));
   play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
+  play.appendChild(menuRow('🧭','Guided Tour','A walkthrough of the home screen and the tabs',()=>{ S.overlay=null; try{ track('tour_replay',{from:'menu'}); }catch(e){} replayTour(); }));
   { const n=newsUnseenCount();
     play.appendChild(menuRow('✨','What\'s New', n?(n+' new feature'+(n>1?'s':'')+' since you last looked'):'Everything that has landed in Career Mode',()=>{ S.overlay=null; openWhatsNew(); })); }
   // Online moved off the bottom bar (Tour Pass took its slot), so it lives here + on the home strip.
@@ -11412,6 +11418,157 @@ function onboardPanel(){
   box.appendChild(skip);
   return box;
 }
+// ── The guided tour ──────────────────────────────────────────────────────────────────────────────
+// The first-run panel above answered exactly one question - what do I tap first - and nothing else. A
+// brand-new player still landed on seven unexplained tabs, a raised gold Pass button, two currency pills
+// and a shop, and the moment that first round ended they were dropped onto the full home screen with no
+// orientation at all. This walks them through the REAL interface instead: the actual home page, with a
+// spotlight and a bobbing arrow on each thing in turn, the goal stated up front, and a recommendation of
+// where to go first at the end. Fires once for a new player; replayable from How to Play or the menu.
+// NOTE: every fixed element here is positioned WITHOUT a transform (the card is centred the house way,
+// left:0/right:0/margin:0 auto, and the arrow bobs on a non-fixed child). A transform on a position:fixed
+// element is what makes iOS anchor it to the document and let it drift mid-scroll, which this game has
+// chased down seven times now - same reason toast() and .scrollcue are built this way.
+const TOUR_KEY='bag_tour_done';
+var _tourI=0, _tourList=null;
+function tourSeen(){ try{ return !!LS.get(TOUR_KEY,false); }catch(e){ return true; } }
+function tourRunning(){ return !!document.getElementById('tourdim'); }
+function tourSteps(){ return [
+  { title:'Welcome to Run The Tour',
+    body:'You build one golfer, then play out their entire career. Thirty seasons, four majors a year, a world ranking to climb, and a real shot at being remembered as the greatest of all time.',
+    target:null },
+  { title:'Career is the game',
+    body:'Draft your golfer one skill at a time from real pros, then take them through thirty seasons. Win majors, make the team cups, and hang on when age starts taking your distance.',
+    target:'#rttnav [data-nav="career"]' },
+  { title:'A round a day',
+    body:'One course, the same one for everybody, three tries to beat the tour average. Five minutes, and the fastest way to learn how a round actually plays.',
+    target:'#rttnav [data-nav="daily"]' },
+  { title:'Your season track',
+    body:'Everything you play feeds this. Sixty tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
+    target:'#rttnav [data-nav="pass"]' },
+  { title:'What you earn',
+    body:'Coins, packs and gear live in the Shop. Your trophies, records and lifetime stats live in Profile, right next door.',
+    target:'#rttnav [data-nav="shop"]' },
+  { title:'Start here',
+    body:'Play one Daily round first. It takes five minutes and teaches you the swing, the courses and the scoring, so your career starts with all of it already familiar.',
+    target:'#rttnav [data-nav="daily"]',
+    cta:'▶ Play my first round',
+    act:function(){ try{ track('tour_cta'); }catch(e){} startDailyChallenge(); } }
+]; }
+function tourStyleOnce(){ if(document.getElementById('tourcss')) return;
+  const st=document.createElement('style'); st.id='tourcss';
+  st.textContent='.tourdim{position:fixed;inset:0;z-index:70}'
+   +'.tourdim.solid{background:rgba(3,10,7,.82)}'
+   +'body.tourlock{overflow:hidden}'
+   +'.tourhole{position:fixed;left:0;top:0;width:0;height:0;border-radius:14px;box-shadow:0 0 0 9999px rgba(3,10,7,.82);pointer-events:none;transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease}'
+   +'.tourhole:after{content:"";position:absolute;inset:-3px;border-radius:inherit;border:2px solid var(--gold);box-shadow:0 0 16px -2px rgba(241,208,74,.7)}'
+   +'.tourarrow{position:fixed;z-index:73;pointer-events:none}'
+   +'.tourarrow span{display:block;width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;filter:drop-shadow(0 3px 7px rgba(0,0,0,.6))}'
+   +'.tourarrow.up span{border-bottom:21px solid var(--gold);animation:tourbobU 1.15s ease-in-out infinite}'
+   +'.tourarrow.down span{border-top:17px solid var(--gold);animation:tourbobD 1.15s ease-in-out infinite}'
+   +'@keyframes tourbobU{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}'
+   +'@keyframes tourbobD{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}'
+   +'.tourcard{position:fixed;left:0;right:0;margin:0 auto;width:min(342px,calc(100vw - 28px));z-index:72;background:linear-gradient(168deg,#0e3020,#06170f);border:1.5px solid rgba(241,208,74,.42);border-radius:18px;padding:15px 17px 14px;box-shadow:0 22px 46px -14px rgba(0,0,0,.85)}'
+   +'.tc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}'
+   +'.tc-step{font:800 10px/1 var(--body);letter-spacing:.18em;color:var(--gold);opacity:.85}'
+   +'.tc-skip{background:none;border:0;color:var(--muted);font:700 12px var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px 2px}'
+   +'.tc-title{margin:0 0 7px;color:var(--oncard);font-family:var(--display);font-size:24px;line-height:1.05;letter-spacing:.3px}'
+   +'.tc-body{margin:0 0 12px;color:var(--oncard);opacity:.9;font:500 14px/1.5 var(--body)}'
+   +'.tc-dots{display:flex;gap:5px;justify-content:center;margin:0 0 12px}'
+   +'.tc-dots i{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.22)}'
+   +'.tc-dots i.on{background:var(--gold);box-shadow:0 0 7px -1px var(--gold)}'
+   +'.tc-acts{display:flex;gap:9px;align-items:stretch}'
+   +'.tc-back{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--oncard);border-radius:12px;font:800 13px var(--body);padding:0 14px;cursor:pointer}'
+   +'.tc-next{flex:1 1 auto;margin:0}'
+   +'@media (prefers-reduced-motion:reduce){.tourarrow span{animation:none!important}.tourhole{transition:none}}';
+  document.head.appendChild(st); }
+function tourPlace(){
+  const dim=document.getElementById('tourdim'); if(!dim||!_tourList) return;
+  const st=_tourList[_tourI]||{};
+  const hole=dim.querySelector('.tourhole'), card=dim.querySelector('.tourcard'), arrow=dim.querySelector('.tourarrow');
+  const el=st.target?document.querySelector(st.target):null;
+  const vh=window.innerHeight, vw=window.innerWidth, ch=card.offsetHeight;
+  if(!el){   // no target (or it isn't on this screen): centre the card, no spotlight, no arrow
+    dim.classList.add('solid'); hole.style.display='none'; arrow.style.display='none';
+    card.style.top=Math.max(74,Math.round((vh-ch)/2))+'px';
+    return; }
+  const r=el.getBoundingClientRect(), pad=(st.pad==null?9:st.pad);
+  dim.classList.remove('solid'); hole.style.display=''; arrow.style.display='';
+  hole.style.left=Math.round(r.left-pad)+'px'; hole.style.top=Math.round(r.top-pad)+'px';
+  hole.style.width=Math.round(r.width+pad*2)+'px'; hole.style.height=Math.round(r.height+pad*2)+'px';
+  hole.style.borderRadius=(st.round==null?14:st.round)+'px';
+  // put the card on whichever side of the target has room for it, and point the arrow back at the target
+  const gap=20, below=(r.bottom+gap+ch+14)<vh;
+  const top=Math.max(74, Math.min(below?(r.bottom+gap):(r.top-gap-ch), vh-ch-14));
+  card.style.top=top+'px';
+  arrow.className='tourarrow '+(below?'up':'down');
+  arrow.style.left=Math.round(Math.max(22, Math.min(r.left+r.width/2-20, vw-46)))+'px';
+  arrow.style.top=Math.round(below?(top-17):(top+ch))+'px';
+}
+function tourRender(){
+  const dim=document.getElementById('tourdim'); if(!dim||!_tourList) return;
+  const st=_tourList[_tourI]||{}, card=dim.querySelector('.tourcard');
+  card.querySelector('.tc-step').textContent=(_tourI+1)+' OF '+_tourList.length;
+  card.querySelector('.tc-title').textContent=st.title||'';
+  card.querySelector('.tc-body').textContent=st.body||'';
+  const dots=card.querySelector('.tc-dots'); dots.innerHTML='';
+  _tourList.forEach((_,i)=>dots.appendChild($('<i class="'+(i===_tourI?'on':'')+'"></i>')));
+  card.querySelector('.tc-back').style.visibility=_tourI?'visible':'hidden';
+  card.querySelector('.tc-next').textContent=st.cta||(_tourI<_tourList.length-1?'Next ▸':'Got it');
+  tourPlace();
+}
+function tourNext(){
+  if(!_tourList) return;
+  const st=_tourList[_tourI]||{};
+  if(st.act){ tourEnd(true); try{ st.act(); }catch(e){} return; }
+  if(_tourI<_tourList.length-1){ _tourI++; tourRender(); } else tourEnd(true);
+}
+function tourEnd(done){
+  try{ window.removeEventListener('resize', tourPlace); }catch(e){}
+  const d=document.getElementById('tourdim'); if(d) d.remove();
+  document.body.classList.remove('tourlock');
+  _tourList=null; _tourI=0;
+  if(done){ try{ LS.set(TOUR_KEY,true); }catch(e){} }
+}
+function startTour(replay){
+  try{
+    if(tourRunning()) return;
+    tourStyleOnce();
+    _tourList=tourSteps(); _tourI=0;
+    const dim=$('<div class="tourdim" id="tourdim" role="dialog" aria-modal="true" aria-label="Guided tour"></div>');
+    dim.appendChild($('<div class="tourhole"></div>'));
+    dim.appendChild($('<div class="tourarrow"><span></span></div>'));
+    const card=$('<div class="tourcard"><div class="tc-top"><span class="tc-step"></span>'
+      +'<button type="button" class="tc-skip">Skip</button></div>'
+      +'<h3 class="tc-title"></h3><p class="tc-body"></p><div class="tc-dots"></div>'
+      +'<div class="tc-acts"><button type="button" class="tc-back">Back</button>'
+      +'<button type="button" class="btn goldfill tc-next"></button></div></div>');
+    dim.appendChild(card);
+    card.querySelector('.tc-skip').onclick=function(){ try{ track('tour_skip',{step:_tourI}); }catch(e){} tourEnd(true); };
+    card.querySelector('.tc-back').onclick=function(){ if(_tourI>0){ _tourI--; tourRender(); } };
+    card.querySelector('.tc-next').onclick=tourNext;
+    // a tap on the dimmed background moves on too (a first-timer's instinct); Back undoes an over-tap
+    dim.onclick=function(e){ if(e.target===dim) tourNext(); };
+    document.body.appendChild(dim);
+    document.body.classList.add('tourlock');
+    window.addEventListener('resize', tourPlace);
+    try{ track('tour_start',{replay:!!replay}); }catch(e){}
+    tourRender();
+  }catch(e){ console.error('[RunTheTour] guided tour failed:', e); tourEnd(false); }
+}
+// Fires once, on the home screen, for a player with no history at all. Everything else in the title
+// popup chain already bails for a new player, so the tour has the screen to itself.
+function maybeFirstTour(){ try{
+  if(tourSeen()||tourRunning()) return;
+  if(S.overlay||S.screen!=='title') return;
+  if(typeof isNewPlayer!=='function'||!isNewPlayer()) return;
+  startTour(false);
+}catch(e){} }
+// Replay from How to Play / the menu: the tour points at the bottom tabs, so it needs the home screen.
+function replayTour(){
+  S.overlay=null; S.screen='title'; try{ render(); }catch(e){}
+  setTimeout(function(){ try{ startTour(true); }catch(e){} }, 280);
+}
 // Enhancements 4+5: the "A RunThe.GG Game / Build the Perfect Golfer" hero is ~90px of pitch aimed at
 // someone who's already bought in, and the pixel golfer (the best thing in the game) was nowhere on the
 // home page. Anyone with history gets their golfer + their name instead; first-run keeps the full hero.
@@ -11470,11 +11627,10 @@ function scrTitle(){
     w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
   }
   // CS473: brand-new player (guest, no history, no auto sign-in) → a focused first-run path.
-  const firstRun = isNewPlayer() && !LS.get('bag_onboard_done',false);
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
   // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
-  if(!firstRun){ const hw=$(`<div class="center homehead-act" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
+  { const hw=$(`<div class="center homehead-act" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
     // Prize Wheel lives here as a compact glowing pill (owner: no full-size tile for it)
     if(wheelEnabled()) hw.appendChild(wheelMiniBtn());
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
@@ -11489,16 +11645,12 @@ function scrTitle(){
   const ri=resumeInfo();
   const cs=careerSaveInfo();
   // CS473: brand-new player → the focused first-run path instead of the full menu (until they play or skip).
-  if(firstRun){
-    stack.appendChild(onboardPanel());
-    w.appendChild(stack);
-    w.appendChild($(`<div class="small muted center" style="margin-top:14px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`));
-    add(w);
-    return;
-  }
+  // (the old first-run panel is retired: a brand-new player now gets the REAL home screen with the
+  // guided tour running over it, so the arrows point at the actual tabs and they finish the intro
+  // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's

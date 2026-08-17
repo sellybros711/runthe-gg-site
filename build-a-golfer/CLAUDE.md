@@ -15827,3 +15827,58 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     passed to `page.evaluate` as a STRING needs its invoking `()`; `beginDailyRound()` throws unless
     `startDailyChallenge()` set the course up first; and a round that looks stalled is usually a
     signature-hole decision correctly waiting for a click.
+
+- **THE GUIDED TOUR: an instruction manual that points at the actual screen (owner: "do you feel that you
+  explained everything properly to someone that has never seen the game before? there should be an
+  instruction manual once you get on the page. I think the instructions would be a big arrow that points at
+  the tab and tells you what to do there, and then tells you your goals, next steps, and a suggestion of
+  where to go first and what to do").** The honest answer was no. CS473's first-run panel answered exactly
+  one question, what do I tap first, and nothing else: a brand-new player still landed on SEVEN unexplained
+  tabs, a raised gold Pass button, two currency pills and a shop, with the goal of the game never stated,
+  and the moment that first round ended they were dropped onto the full home screen cold. How to Play
+  (CS431, nine sections) is a reference manual nobody opens before playing, not onboarding. So there was a
+  launch pad and a reference book and nothing in between that showed you the interface.
+  - **The tour runs over the REAL home screen**, which is the structural decision the rest follows from.
+    The old panel REPLACED the home screen, so there was nothing to point at; now the new player sees the
+    actual page with a spotlight and a bobbing gold arrow on each thing in turn, and finishes the intro
+    already oriented on the interface instead of being introduced to it afterwards. The CS473 panel is
+    retired (`onboardPanel` left defined, unused).
+  - **Six steps**: the goal up front ("you build one golfer, then play out their entire career"), then
+    Career, Daily, the Pass and the Shop each spotlit in the bottom nav with what they are, then a
+    "Start here" step that recommends a Daily round and has the button that does it. Skip, Back, dots, and
+    a tap anywhere on the dimmed background to move on.
+  - **Positioned without a single transform on a fixed element** - the card is centred the house way
+    (`left:0;right:0;margin:0 auto`) and the arrow bobs on a non-fixed child. A transform on a
+    `position:fixed` element is what makes iOS anchor it to the document and drift mid-scroll, which this
+    game has now chased down seven times (CS306/329/430/439/472 and the scroll cue in the animation audit).
+    Asserted in the suite so it cannot regress.
+  - The card picks whichever side of the target has room and the arrow points back at it, so it works on a
+    320px phone and a 1600px desktop alike; a step whose target is missing degrades to a centred card with
+    the dim still on rather than breaking. Replayable any time from How to Play and the ≡ menu.
+  - **A screenshot caught what the assertions could not**: the opening step had no dim at all. The dimming
+    comes from the spotlight hole's `box-shadow: 0 0 0 9999px`, so hiding the hole on a step with no target
+    took the dim with it, and step one rendered the full busy home page at full brightness behind a card,
+    which is the exact overwhelm the tour exists to prevent. The arrow was also too small to read as "a big
+    arrow"; both fixed and re-shot.
+  - **One real regression, found and fixed properly.** `news_test` dropped 18/0 to 15/3: the newsletter
+    seeds itself as fully read for a brand-new player (correct, they have missed nothing), and it seeds on
+    the FIRST call to `newsSeen()`. The old first-run branch returned early before the What's New pill
+    rendered, so that call never happened, and the test's "returning player" fixture relied on that
+    accident - it seeded history AFTER a new-player page load. Fixed the FIXTURE, not the game (seed via
+    `addInitScript` so the history exists before the first render, like a real returning player), and
+    proved it by running the corrected test against BOTH builds: 18/0 on each, so it is genuinely valid
+    rather than weakened to accommodate the change.
+  - Verified in Playwright: a 17-check suite (fires by itself for a new player and never for one with
+    history, runs over the real home, the spotlight covers the tab being described, the arrow points at it,
+    the card is on screen and never covers its own target at any step, no fixed element carries a
+    transform, the last step recommends a first move and its button performs it, it never fires twice, both
+    replay entry points work, a missing target degrades); a 6-viewport sweep from 320px to 1600px, all
+    clean; and a 6-check end-to-end journey driven through the real UI (land, tap through all six steps on
+    the background, take the recommendation, play 18 holes to a result, come back to the full interface
+    with the tour gone, replay it later). Regressions green: news_test 18/18 on both builds, regress_final,
+    tp_final, shoptabs, wk_test 25/25, cup_crash 12/12, legacy_ui 9/9, entry_ui 11/11, anim_moments,
+    br_feel. **0 page errors** throughout; inline scripts parse (block 0 is the JSON-LD tag, fails
+    identically on baseline). `aa_race` fails 2 checks identically on the DEPLOYED build (a timing-sensitive
+    flag-burn assertion; the ad itself shows) - pre-existing, not this change.
+  - Tunable: `tourSteps()` (the copy and what each step points at - adding a step is one row), the
+    `.tour*` CSS, and `TOUR_KEY` if the tour should ever re-fire for everyone.
