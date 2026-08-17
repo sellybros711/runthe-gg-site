@@ -41,6 +41,34 @@ figure repeated here goes stale the next time the band plays. It already did.)
 | `venue`, `city`, `state`, `country` | display text, entity-decoded |
 | `has_setlist` | `true` when the setlist CSV has rows for this `show_id` |
 
+## `<band>_latest.json`
+
+About 1KB, and that size is the reason it exists. The home screen prints last
+night's setlist and a countdown to the next date; reading those out of the
+1.2MB archive or even the 72KB show table is not a defensible cost for a panel
+that has to be on screen before anybody has decided to play.
+
+```
+{ "last":     { show_id, date, venue, city, state, country, tour,
+                run?: {night, of},
+                sets: [ { label, songs: [ { n, s?, l? } ] } ] },
+  "upcoming": [ { date, venue, city, state, country, tour }, ... ] }
+```
+
+`n` is the title, `s` is `1` when the song segued into the next one, and `l` is
+its length in seconds when the archive has one (a show transcribed overnight
+often has none yet). Sets are grouped by `dataLoader.setLabel`, so set order
+here and in the game come from the same code.
+
+**`upcoming` carries three dates, not one.** This file is written by a scheduled
+job and read whenever somebody visits, so the top of the list goes stale the
+moment the band plays it. Three lets the page pick the first date still ahead
+and stay right even if a refresh is missed.
+
+Nothing in the scoring reads this file, and the home screen treats it as
+optional: if it 404s, fails, or parses badly, the band panel simply renders
+without the live section.
+
 ### Two things that will silently corrupt a run
 
 elgoose.net serves ~100 bands from one API, and every response mixes them

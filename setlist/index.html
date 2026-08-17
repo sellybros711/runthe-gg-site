@@ -1590,6 +1590,73 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     margin:var(--sp-2) 0 0;}
   .homelinks .btn{font-size:13.5px; padding:11px 12px;}
 
+  /* ---- the band panel's live strip ----
+     THE BAND OWNS ITS OWN THINGS. This screen had four identical ghost buttons
+     in two rows: Leaderboard, Your shows, On tour, Every show. They read as
+     peers and are not. Two are about GOOSE and two are about YOU, and
+     flattening that into one grid of equal buttons is what made the page a
+     pile rather than a structure.
+     So the band's pages live inside the band, under what the band is actually
+     doing, and the player's two links sit below in a deliberately quieter
+     treatment. */
+  /* THE COUNTDOWN GOES ABOVE THE BUTTON AND THE SETLIST BELOW IT, and the
+     ordering is the point rather than an accident. The setlist is the LAST
+     show's detail, so putting the button between them separated a heading from
+     the thing it heads. The countdown is one compact line and is the timely
+     hook, so it earns the space above the primary action; the setlist is a
+     block with its own header and reads perfectly well underneath. Measured:
+     this puts "Draft a setlist" at 470px rather than the 665px it reached when
+     the whole live section sat on top of it. */
+  .nextline{display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 8px;
+    padding:9px 0 11px; margin-bottom:2px; border-top:1px solid var(--line);
+    padding-top:11px;}
+  .nl-k{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--dim); flex:0 0 100%;}
+  .nl-v{font-family:var(--hero); font-size:19px; line-height:1; color:var(--tealT);
+    text-transform:uppercase; letter-spacing:.01em;}
+  .nl-p{font-size:11.5px; font-weight:600; color:var(--mut); line-height:1.4;}
+
+  /* THE SETLIST IN THE FORM FANS ACTUALLY READ IT: titles run on, commas
+     between songs, a caret where the band segued. Anybody who reads setlists
+     parses this at a glance and a table of rows would say less in more room. */
+  .lastset{margin-top:13px; padding-top:11px; border-top:1px solid var(--line);
+    font-size:12.5px; line-height:1.6;}
+  /* The heading the setlist belongs to, kept with it. */
+  .ls-hd{margin-bottom:6px; line-height:1.45;}
+  .ls-hk{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--dim); margin-right:7px;}
+  .ls-hd b{font-weight:900; font-size:13px;}
+  .ls-hp{display:block; font-size:11.5px; font-weight:600; color:var(--dim);}
+  .ls-row{display:flex; gap:9px; padding:2px 0;}
+  .ls-k{flex:0 0 42px; font-family:var(--ui); font-size:10px; letter-spacing:1.2px;
+    text-transform:uppercase; color:var(--dim); padding-top:3px;}
+  .ls-v{flex:1; min-width:0; font-weight:700; color:var(--mut);}
+  /* The comma HUGS its song and the caret stands off it, which is the spacing
+     every setlist uses: "A > B, C". The single space between titles comes from
+     the join, so only the caret needs a margin of its own. */
+  .ls-sep{font-style:normal; color:var(--dim);}
+  .ls-seg{font-style:normal; color:var(--violetT); font-weight:900; margin-left:4px;}
+
+  /* Inside the panel and under the primary button, so they read as more of
+     this band rather than as more of the site. */
+  .bandlinks{display:flex; gap:18px; margin-top:11px; padding-top:10px;
+    border-top:1px solid var(--line);}
+  .bandlinks button{background:none; border:0; padding:2px 0; font-family:inherit;
+    font-size:12.5px; font-weight:800; color:var(--tealT);}
+  /* Drawn, not typed. A '›' glyph is a few pixels of ink in a 16px box and
+     lands differently in every font the stack falls back through. */
+  .bandlinks button:after{content:''; display:inline-block; width:5px; height:5px;
+    margin-left:7px; vertical-align:1px; transform:rotate(45deg);
+    border-top:2px solid currentColor; border-right:2px solid currentColor;}
+
+  /* QUIETER THAN THE PANEL, on purpose. These two are the only things on this
+     screen that would still mean something if the band changed. */
+  .youlinks{display:flex; align-items:center; gap:16px; margin:var(--sp-2) 0 0;
+    padding-top:var(--sp-1); border-top:1px solid var(--line);}
+  .youlinks .eyebrow{flex:0 0 auto;}
+  .youlinks button{background:none; border:0; padding:4px 0; font-family:inherit;
+    font-size:13px; font-weight:800; color:var(--ink);}
+
   /* ---- the board ---- */
   /* Off the top bar. Every other screen opens with a hero or a card that
      carries its own space; these two open with the heading itself. */
@@ -1988,6 +2055,7 @@ import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=39';
 const BANDS = [
   { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
     shows: '/setlist/data/goose_shows.csv',
+    latest: '/setlist/data/goose_latest.json',
     note: '659 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
     note: 'Made-up data, for testing', sample: true },
@@ -2407,17 +2475,68 @@ function renderHome(){
   const real = BANDS.filter(b => !b.sample);
   const test = BANDS.filter(b => b.sample);
 
-  /* Your own shows, counted on the band you marked them against. It only
-     appears once there is one, so a first visit is not asked to care about a
-     feature it has not met yet. */
+  loadLatest();
+
+  /* THE BAND PANEL, and the restructure it represents.
+   *
+   * The home screen had grown four identical ghost buttons in two rows:
+   * Leaderboard, Your shows, On tour, Every show. They looked like peers and
+   * are not. Two of them are about GOOSE (what they are playing, what they
+   * have played) and two are about YOU (where you rank, what you have seen),
+   * and flattening that into one grid of equal buttons is what made the page
+   * read as a pile rather than a structure.
+   *
+   * So the band owns its own things. The panel is the band: who they are, what
+   * they played last night, what they play next, the button that starts a
+   * game, and the two ways to go deeper into their history. What is left below
+   * is the short list of things about the player, and it is deliberately
+   * quieter than the panel above it.
+   */
   const card = b => {
     const mine = attendedCount(b.id);
+    const live = b.latest ? LATEST.data : null;
+    const next = b.latest ? nextShow() : null;
+    const last = live && live.last;
+    const days = next ? daysUntil(next.date) : null;
+    const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+
     return `
       <section class="card band">
         <div class="band-hd"><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}${mine
           ? ` <b class="mine">&middot; ${mine} you were at</b>` : ''}</div>
+
+        ${next ? `<div class="nextline">
+          <span class="nl-k">Next show</span>
+          <b class="nl-v">${esc(countdownWords(days))}</b>
+          <span class="nl-p">${esc(fmtDate(next.date, { short: true }))} &middot;
+            ${esc(next.venue)}${place(next) ? `, ${esc(place(next))}` : ''}</span>
+        </div>` : ''}
+
         <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
+
+        ${last && last.sets.length ? `<div class="lastset">
+          <div class="ls-hd"><span class="ls-hk">Last show</span>
+            <b>${esc(fmtDate(last.date))}</b>
+            <span class="ls-hp">${esc(last.venue)}${
+              place(last) ? `, ${esc(place(last))}` : ''}</span></div>
+          ${last.sets.map(s => `<div class="ls-row">
+            <span class="ls-k">${esc(s.label)}</span>
+            <span class="ls-v">${s.songs.map((sg, i) =>
+              /* The separator TRAILS its own song, because in a setlist the
+                 mark belongs to the song it leaves: "A > B, C" says A segued
+                 into B and B merely preceded C. Leading it off the previous
+                 song's flag put every caret one title late. */
+              esc(sg.n) + (i === s.songs.length - 1 ? ''
+                : sg.s ? '<i class="ls-seg">&gt;</i>' : '<i class="ls-sep">,</i>')
+            ).join(' ')}</span>
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${b.shows ? `<div class="bandlinks">
+          <button type="button" data-go="tour">Tour dates</button>
+          <button type="button" data-go="browse">Every show</button>
+        </div>` : ''}
       </section>`;
   };
 
@@ -2440,15 +2559,14 @@ function renderHome(){
         <button class="btn big ghost" type="button" id="reqBand">Request a band</button>
       </section></div>
 
-    <!-- UNDER THE BANDS, not in the hero. A first visit is here to press one
-         button and it is not either of these. -->
-    <div class="homelinks">
-      <button class="btn ghost" type="button" data-go="board">Leaderboard</button>
-      <button class="btn ghost" type="button" data-go="profile">Your shows</button>
-    </div>
-    <div class="homelinks">
-      <button class="btn ghost" type="button" data-go="tour">On tour</button>
-      <button class="btn ghost" type="button" data-go="browse">Every show</button>
+    <!-- WHAT IS LEFT IS ABOUT THE PLAYER, not the band, and it is quieter than
+         the panel above on purpose. The band's own pages moved inside the band
+         panel, where they belong: these two are the only things on this screen
+         that would still mean something if the band changed. -->
+    <div class="youlinks">
+      <span class="eyebrow">Yours</span>
+      <button type="button" data-go="board">Leaderboard</button>
+      <button type="button" data-go="profile">Your shows</button>
     </div>
 
     <section class="how">
@@ -4222,6 +4340,42 @@ async function fetchShowTable(band){
   rows.sort((a, b) => a.show_date.localeCompare(b.show_date));
   showTableCache.set(band.id, rows);
   return rows;
+}
+
+/* ── what they played last night, and what they play next ────────────────────
+ *
+ * ITS OWN 1KB FILE, and that is the whole reason this exists rather than being
+ * read out of the archive. The home screen has to print fifteen song titles and
+ * one date; the archive that holds them is 1.2MB and the show table is 72KB,
+ * and neither is defensible for a panel that has to be on screen before
+ * anybody has decided to play.
+ *
+ * IT FAILS SILENTLY ON PURPOSE. The game is a static page reading a CSV, and a
+ * blocked request or a file that has not been generated yet has to leave the
+ * home screen exactly as usable as it was. Nothing here throws into the render.
+ */
+const LATEST = { data: null, tried: false };
+async function loadLatest(){
+  if (LATEST.tried) return;
+  LATEST.tried = true;
+  const band = BANDS.find(b => b.latest && !b.sample);
+  if (!band) return;
+  try {
+    const res = await fetch(`${band.latest}?v=${DATA_VERSION}`);
+    if (!res.ok) return;
+    LATEST.data = await res.json();
+  } catch (e) { /* the panel simply does not appear */ }
+  if (S.screen === 'home') render();
+}
+
+/* The first date still ahead of us, which is why the file carries three. It is
+   written by a scheduled job and read whenever somebody visits, so the top of
+   the list goes stale the moment the band plays it. */
+function nextShow(){
+  const up = LATEST.data && LATEST.data.upcoming;
+  if (!up || !up.length) return null;
+  const today = todayISO();
+  return up.find(s => s.date >= today) || null;
 }
 
 /* TODAY AS THE BAND WOULD COUNT IT.

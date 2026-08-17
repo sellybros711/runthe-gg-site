@@ -48,6 +48,10 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* The loader, so the latest-setlist file is grouped by the SAME code the game
+   reads with, rather than a second implementation of set order that could
+   disagree with it. */
+import { loadBand, setLabel } from '../../setlist/dataLoader.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dir, '..', '..');
@@ -89,6 +93,7 @@ function arg(name, fallback) {
 const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
 // Derived from --out so a band added later gets both files in one place.
 const SHOWS_OUT = resolve(repoRoot, arg('shows-out', OUT.replace(/\.csv$/, '_shows.csv')));
+const LATEST_OUT = resolve(repoRoot, arg('latest-out', OUT.replace(/\.csv$/, '_latest.json')));
 const LIMIT = Number(arg('limit', 0)) || 0;
 const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
 const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site is 2014
@@ -338,6 +343,63 @@ async function fetchShowTable(playedIds) {
      carries one, even if it is the "not part of a tour" placeholder. */
   if (!out.some(r => r.tour)) degrade('no tour names in the show table');
   return out;
+}
+
+/* ── the front page's own little file ────────────────────────────────────────
+ *
+ * A THIRD FILE, and it is here so the home screen does not have to download a
+ * megabyte to print fifteen song titles. Showing "here is what they played
+ * last night" needs one show's setlist; the archive that holds it is 1.2MB and
+ * the show table is 72KB, and neither is a defensible cost for a panel that
+ * has to be on screen before anybody has decided to play.
+ *
+ * THE NEXT THREE SHOWS, not the next one, because this file is written by a
+ * scheduled job and read whenever somebody visits. One date goes stale the
+ * moment the band plays it; three lets the page pick the first that is still
+ * ahead and stay correct even if a refresh is missed.
+ */
+function buildLatest(csvText, table) {
+  const { shows } = loadBand(csvText);
+  const played = shows.slice().sort((a, b) => String(a.show_date).localeCompare(String(b.show_date)));
+  const last = played[played.length - 1];
+  if (!last) throw new Error('no shows to take a latest setlist from');
+
+  const meta = new Map(table.map(r => [r.show_id, r]));
+  const m = meta.get(last.show_id) || {};
+
+  // Songs arrive in running order across all sets, so grouping is a fold.
+  const sets = [];
+  for (const p of last.songs) {
+    const label = setLabel(p.set);
+    if (!sets.length || sets[sets.length - 1].label !== label) sets.push({ label, songs: [] });
+    sets[sets.length - 1].songs.push({
+      n: p.song,
+      ...(String(p.is_segue) === 'true' ? { s: 1 } : {}),
+      ...(Number(p.length_sec) ? { l: Number(p.length_sec) } : {}),
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const place = r => ({
+    venue: r.venue || '', city: r.city || '', state: r.state || '',
+    country: r.country || '', tour: r.tour || '',
+  });
+
+  return {
+    last: {
+      show_id: last.show_id,
+      date: last.show_date,
+      venue: last.venue || m.venue || '',
+      city: last.city || m.city || '',
+      state: last.state || m.state || '',
+      country: m.country || '',
+      tour: m.tour || '',
+      ...(last.run ? { run: last.run } : {}),
+      sets,
+    },
+    upcoming: table.filter(r => r.show_date >= today).slice(0, 3)
+      .map(r => ({ date: r.show_date, ...place(r) })),
+  };
 }
 
 /**
@@ -727,6 +789,13 @@ async function main() {
       .join('\n') + '\n';
     writeFileSync(SHOWS_OUT, text, 'utf8');
     console.log(`Wrote ${SHOWS_OUT}`);
+
+    const latest = buildLatest(csv, table);
+    writeFileSync(LATEST_OUT, JSON.stringify(latest) + '\n', 'utf8');
+    const songs = latest.last.sets.reduce((a, s) => a + s.songs.length, 0);
+    console.log(`Wrote ${LATEST_OUT}`);
+    console.log(`  last show ${latest.last.date}, ${songs} songs in ${
+      latest.last.sets.length} sets · ${latest.upcoming.length} upcoming carried`);
   }
 
   console.log(`\nWrote ${OUT}`);

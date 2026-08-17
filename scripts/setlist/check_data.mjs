@@ -913,6 +913,84 @@ const flagged = showRows.filter(r => r.has_setlist === 'true').map(r => r.show_i
 check(flagged.every(id => archiveIds.has(id)) && flagged.length === archiveIds.size,
   `has_setlist agrees with the archive (${flagged.length} of ${archiveIds.size})`);
 
+/* THE HOME SCREEN'S OWN LITTLE FILE. ~1KB, and that size is the argument: the
+   panel prints last night's setlist and a countdown, and reading those out of
+   the 1.2MB archive or the 72KB table is not defensible for something that has
+   to be on screen before anybody has decided to play. */
+console.log('last night and next up');
+const latestPath = 'setlist/data/goose_latest.json';
+check(existsSync(resolve(repoRoot, latestPath)), 'the latest file exists');
+const latest = JSON.parse(read(latestPath));
+check(read(latestPath).length < 20000,
+  `and stays small (${read(latestPath).length} bytes)`);
+check(!!latest.last && /^\d{4}-\d{2}-\d{2}$/.test(latest.last.date || ''),
+  'it names a last show');
+check(Array.isArray(latest.last.sets) && latest.last.sets.length > 0
+  && latest.last.sets.every(s => s.label && Array.isArray(s.songs) && s.songs.length),
+  'with a real setlist in it');
+/* THE LAST SHOW MUST BE THE LAST SHOW. Taking the wrong end of the sort, or a
+   show the archive no longer holds, is the failure nobody would notice: the
+   panel keeps rendering, just with a setlist from years ago. */
+{
+  const dates = showRows.filter(r => r.has_setlist === 'true').map(r => r.show_date).sort();
+  check(latest.last.date === dates[dates.length - 1],
+    'and it is genuinely the most recent one played',
+    `file says ${latest.last.date}, archive's newest is ${dates[dates.length - 1]}`);
+  check(tableIds.has(latest.last.show_id), 'whose show_id is in the table');
+}
+/* THREE DATES, NOT ONE. Written by a scheduled job, read whenever somebody
+   visits: one date goes stale the moment the band plays it. */
+check(Array.isArray(latest.upcoming), 'it carries an upcoming list');
+check(latest.upcoming.length !== 1,
+  `and more than a single date when there are any (${latest.upcoming.length})`);
+check(latest.upcoming.every(s => /^\d{4}-\d{2}-\d{2}$/.test(s.date || '')),
+  'every upcoming date is YYYY-MM-DD');
+/* SET ORDER COMES FROM THE GAME'S OWN LOADER, not a second implementation that
+   could disagree with it about where an encore goes. */
+check(/import \{ loadBand, setLabel \} from '\.\.\/\.\.\/setlist\/dataLoader\.js'/
+  .test(read('scripts/setlist/ingest_band.mjs')),
+  'the ingester groups it with the loader the game reads with');
+check(/git add[\s\S]{0,180}goose_latest\.json/.test(wf), 'the refresh commits it');
+
+/* THE PANEL IS OPTIONAL, and has to be. The game is a static page reading a
+   CSV; a blocked request or a file that has not been generated yet must leave
+   the home screen exactly as usable as it was. */
+check(/const LATEST = \{ data: null, tried: false \}/.test(gameBare),
+  'the home screen loads it separately from the archive');
+check(/catch \(e\) \{ \/\* the panel simply does not appear \*\//.test(game)
+  || /catch \(e\) \{ \}/.test(gameBare) || /catch \(e\) \{\s*\}/.test(gameBare),
+  'and swallows a failure rather than breaking the screen');
+check(/function nextShow\(\)/.test(gameBare) && /up\.find\(s => s\.date >= today\)/.test(gameBare),
+  'the countdown skips dates that have already been played');
+
+/* THE BAND OWNS ITS OWN THINGS. This screen had four identical ghost buttons in
+   two rows: Leaderboard, Your shows, On tour, Every show. They read as peers
+   and are not: two are about GOOSE and two are about YOU, and flattening that
+   into one grid is what made the page a pile rather than a structure. */
+console.log('the band panel');
+check(/class="nextline"/.test(gameBare), 'the panel carries the countdown');
+check(/class="lastset"/.test(gameBare), 'and last night\'s setlist');
+check(/class="ls-hd"/.test(gameBare), 'with the heading it belongs to');
+check(/class="bandlinks"/.test(gameBare), "the band's own pages sit inside the band panel");
+check(/class="youlinks"/.test(gameBare), 'and the player links are a separate, quieter row');
+check(!/class="homelinks"/.test(homeSrc), 'the old grid of equal ghost buttons is gone');
+{
+  /* The order is load-bearing and was wrong once. The setlist is the LAST
+     show's detail, so a button between them separates a heading from the thing
+     it heads; the countdown is one line and earns the space above the primary
+     action. Measured: 470px for the draft button this way against 665px with
+     the whole live section on top of it. */
+  const iNext = homeSrc.indexOf('class="nextline"');
+  const iBtn = homeSrc.indexOf('data-start="${b.id}"');
+  const iSet = homeSrc.indexOf('class="lastset"');
+  check(iNext > -1 && iBtn > iNext && iSet > iBtn,
+    'countdown, then the button, then the setlist under its own heading');
+}
+/* The separator TRAILS its song: in a setlist the mark belongs to the song it
+   leaves, and reading it off the previous song put every caret one title late. */
+check(/esc\(sg\.n\) \+ \(i === s\.songs\.length - 1 \? ''/.test(gameBare),
+  'a segue mark trails the song it leaves');
+
 /* ON TOUR. The band is playing right now, and the archive is silent about that
    by construction: it only knows shows that have already happened. */
 console.log('on tour');
