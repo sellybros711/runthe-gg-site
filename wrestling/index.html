@@ -383,8 +383,7 @@
   .hr-cap{position:absolute;left:0;right:0;top:10px;text-align:center;z-index:6;pointer-events:none;}
   .hr-stip{display:block;font-family:var(--display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.9);}
-  .hr-names{display:block;font-size:12px;color:var(--cream);opacity:.9;margin-top:2px;text-shadow:0 2px 6px rgba(0,0,0,.9);}
-  @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;} .hr-names{font-size:11px;}
+  @media(max-width:640px){ .homering{height:212px;} .hr-fig{width:104px;margin-left:-52px;} .hr-stip{font-size:13px;}
     .home-kick span{font-size:10px;letter-spacing:.2em;} }
 
   /* ---- home: start / resume ---- */
@@ -844,7 +843,7 @@
       <div class="ringback"></div>
       <div class="hr-cast" id="hrCast"></div>
       <div class="ringfront"></div>
-      <div class="hr-cap"><span class="hr-tonight">Tonight</span><span class="hr-stip" id="hrStip">-</span><span class="hr-names" id="hrNames">-</span></div>
+      <div class="hr-cap"><span class="hr-tonight">Tonight</span><span class="hr-stip" id="hrStip">-</span></div>
     </div>
 
     <div id="homeCont"></div>
@@ -3281,7 +3280,6 @@ function homeRing(){
   }).join('');
   const vp=promoById(venue);
   $('hrStip').textContent=(vp?vp.short+' · ':'')+card.stip;
-  $('hrNames').textContent=cast.map(c=>c.you?`${c.name} (you)`:c.name).join('  ·  ');
 }
 function renderHome(){
   homeRing();
