@@ -24,7 +24,7 @@ const E = (typeof require !== 'undefined')
    and falls back by mode so a run restored from storage without it still resolves. */
 const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
 const slotsOf = (run) => (run && run.slots)
-  || (run && run.tradeMachine ? TRADE_SLOTS : E.SLOTS);
+  || (run && run.tradeMachine ? TRADE_SLOTS : (run && run.defense ? E.DEFENSE_SLOTS : E.SLOTS));
 
 /* PICK_FRANCHISE is gone. There is no favorite club to choose, so a run opens on the draft:
    the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
@@ -416,6 +416,9 @@ function createRun(opts) {
   }
   const capSurvivor = !!opts.capSurvivor;
   const tradeMachine = !!opts.tradeMachine;
+  /* THE DEFENSE DRAFT. Six spots like everything else, drawn from the defender pool, and
+     the only run whose roster decides what the OTHER team scores. */
+  const defense = !!opts.defense;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
@@ -423,8 +426,10 @@ function createRun(opts) {
     era,
     capSurvivor,
     tradeMachine,
-    // The Trade Machine runs a second flex in place of the second receiver.
-    slots: tradeMachine ? TRADE_SLOTS.slice() : E.SLOTS.slice(),
+    defense,
+    // The Trade Machine runs a second flex in place of the second receiver; the defense
+    // draft runs its own six.
+    slots: (tradeMachine ? TRADE_SLOTS : (defense ? E.DEFENSE_SLOTS : E.SLOTS)).slice(),
     seed,
     rngCalls: 0,
     /* The ceiling for THIS run. Only GM mode moves it, and only downward, as cash goes out
@@ -824,7 +829,13 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     ? homeField(run, s.regularWins, isFinal)
     : E.weeklyEdgeVs(liveRating(run), opp);
   const gameSlots = slotsOf(run);
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
+  /* THE DEFENSE DRAFT PLAYS THE MIRROR GAME. Same opponent, same advantage, same league
+     context: what changes is which side of the scoreboard the roster is attached to. */
+  const r = run.defense
+    ? E.resolveGameDefense(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
+      rng, E.CONSTANTS, advantage)
+    : E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
+      rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
@@ -947,6 +958,12 @@ function liveRating(run) {
   const s = run && run.season;
   if (!s || !run.roster || !run.roster.length) return 0;
   const pts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  /* NO STRUCTURE ON A DEFENSE, for the reason resolveGameDefense gives at length: it is an
+     offensive reading of a roster and returns about 0.57 for any six defenders. Applying it
+     here as well would put seeding, home field and the rating on the results screen all on
+     the same false footing, and the three would agree with each other while disagreeing
+     with the games actually played. */
+  if (run.defense) return pts * (s.chemistry || 1);
   return pts * (s.chemistry || 1) * E.rosterStructure(run.roster).multiplier;
 }
 

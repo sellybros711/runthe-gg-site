@@ -1253,6 +1253,13 @@ window.GA_ID='G-L29P5MRWKE';
   .nbrk-note{text-align:center;font-size:12px;color:var(--dim-2);margin:6px 0 0;min-height:16px}
   @media (max-width:400px){ .nbrk-col{flex:0 0 140px} }
 
+  /* Emerald for the defense card. The other three modes are the game's own blues and
+     reds; a defense is the side that stops things, and it gets the one colour on the
+     palette that is not already spoken for by a team plate or a warning. */
+  .modecard.mc-def .mc-icon{background:linear-gradient(135deg,#10b981,#065f46)}
+  .modecard.mc-def .mc-icon svg{stroke:#ecfdf5}
+  .modecard.mc-loading{opacity:.6}
+  .modecard.mc-loading .mc-title::after{content:' loading...';font-weight:600;opacity:.7}
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -4812,7 +4819,39 @@ function achMarkSeen(userId,ids){
    (QB RB WR WR TE FLEX); the Trade Machine swaps the second receiver for a second flex.
    Used only for slot LABELS on screen — the count is six either way. */
 const slotsNow=()=>(run&&run.slots)||(run&&run.tradeMachine
-  ?['QB','RB','WR','TE','FLEX','FLEX']:E.SLOTS);
+  ?['QB','RB','WR','TE','FLEX','FLEX']
+  :(run&&run.defense?E.DEFENSE_SLOTS:E.SLOTS));
+
+/* ---- THE DEFENSE DRAFT'S POOL ----
+   A second indexed data set over the SAME team-seasons, holding defenders instead of skill
+   players. Every question the draft asks (what can this team-season offer, what can I
+   afford, who is left) is asked of a `data` argument rather than of a global, so swapping
+   the argument is the whole of the mode as far as the draft is concerned.
+
+   IT IS FETCHED WHEN THE MODE STARTS, NOT AT BOOT. The file is 6.5MB, 0.9MB over the wire,
+   which is more than the entire rest of the game; putting it in the boot bundle would make
+   every visitor pay for a mode most of them will not open. */
+let DDATA=null, defLoading=null;
+const dataNow=()=>((run&&run.defense&&DDATA)?DDATA:DATA);
+function loadDefensePool(){
+  if(DDATA) return Promise.resolve(DDATA);
+  if(defLoading) return defLoading;
+  defLoading=fetch('data/defender_seasons.json?v=1')
+    .then(r=>{ if(!r.ok) throw new Error('defender_seasons'); return r.json(); })
+    .then(rows=>{
+      /* THE ENGINE SAMPLES ppr_ppg_*, and a defender's rating is IDP points rather than
+         PPR points. The arithmetic is identical, only the meaning of the number differs,
+         so the pool is normalised onto the field names the engine already reads instead
+         of teaching every call site a second pair of names. The honest names survive on
+         the row for anything that wants to say where the figure came from. */
+      for(const p of rows){ p.ppr_ppg_mean=p.idp_ppg_mean; p.ppr_ppg_sd=p.idp_ppg_sd; }
+      DDATA=R.indexData(rows,DATA.teamSeasons);
+      for(const p of rows) BYKEY.set(p.player_id+'|'+p.season,p);
+      return DDATA;
+    })
+    .catch((e)=>{ defLoading=null; throw e; });
+  return defLoading;
+}
 
 /* board.js is OPTIONAL, unlike the engine. A blocked script, an ad blocker that
    does not like the word "board", or a stale cached copy at the wrong version
@@ -4853,11 +4892,13 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
+  if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
 }
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
+  if(run&&run.defense) return 'Defense Draft';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
   return 'Classic Mode';
@@ -5116,7 +5157,7 @@ const TIER={
   bad:  {color:'#ef4444',w:2.6,dash:'2 4', op:0.9, speed:'.8s', name:'Hurts'},
 };
 /*
- * The field is laid out by the POSITIONS you actually signed, not by slot order.
+ * The field is laid out by the positions you actually signed, not by slot order.
  * Draft a running back into the flex spot and he belongs in the backfield next to
  * the other one, not out where a slot receiver would stand.
  *
@@ -5680,7 +5721,8 @@ function newRun(opts){
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
 function beginDraft(opts){
-  if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine)&&!oneTeamReady()){
+  if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine||opts.defense)
+    &&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
   }
   replaceCtx=null;
@@ -5691,7 +5733,7 @@ function beginDraft(opts){
   if(opts&&opts.tradeMachine){
     if(!canPlayTrade()) return;
     R.autoDraftTrade(run,DATA,CTX);
-    R.startSeason(run,DATA,CTX);
+    R.startSeason(run,dataNow(),CTX);
     $('b-sim').style.display='none';
     tradeIntro(openTeamReveal);
     return;
@@ -5699,6 +5741,23 @@ function beginDraft(opts){
   show('s-draft'); nextSpin();
 }
 $('b-start').onclick=()=>{ beginDraft({}); };
+
+/* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
+   does: its pool is not in the boot bundle. The wait is a second at most on a cold cache
+   and nothing at all on a warm one, so it says what it is doing rather than opening an
+   empty board, and a failure lands on the front page with a reason instead of a draft with
+   nobody in it. */
+function beginDefenseDraft(){
+  const b=$('b-mc-def');
+  if(b){ b.disabled=true; b.classList.add('mc-loading'); }
+  loadDefensePool().then(()=>{
+    closeSheet();
+    beginDraft({defense:true});
+  }).catch(()=>{
+    if(b){ b.disabled=false; b.classList.remove('mc-loading'); }
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+}
 $('b-tut').onclick=()=>{ tutStart(); };
 
 /* ---------- ALL-TIME TEAMS ----------
@@ -5861,6 +5920,16 @@ function modeMenu(){
           '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
       '</button>'+
+      '<button class="modecard mc-def" id="b-mc-def"'+(locked?' disabled':'')+'>'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          /* A shield with a bar across it: the same shield the One Franchise card uses,
+             which is the game's existing mark for a team, struck through to say stop. */
+          '<path d="M12 2L3 7v6c0 5.25 3.75 10.13 9 11.25C17.25 23.13 21 18.25 21 13V7L12 2z"/>'+
+          '<line x1="7" y1="12" x2="17" y2="12"/>'+
+          '</svg></div><div class="mc-title">Defense Draft</div>'+arrow+'</div>'+
+        '<p>The same draft from the other side. Sign a front seven and a secondary under '+
+        'the same cap, and win by how few points you let the other team score.</p>'+
+      '</button>'+
       '<button class="modecard mc-trade'+(ct?'':' mc-soon')+'" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
@@ -5940,6 +6009,11 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
+  const def=$('b-mc-def');
+  /* The sheet is closed by beginDefenseDraft AFTER the pool has arrived, not here, so the
+     card can stay on screen and disabled while it loads rather than dropping the player on
+     the front page with nothing happening. */
+  if(def&&!locked) def.onclick=()=>{ beginDefenseDraft(); };
   const trade=$('b-mc-trade');
   if(trade&&!locked&&canPlayTrade()) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
   /* Leaves this page, so it is tracked before it goes: a cross-promo whose click-through
@@ -6834,13 +6908,13 @@ function nextSpin(){
   paintTop(); drawField($('field'),true);
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
-  const draw=R.spin(run,DATA);
+  const draw=R.spin(run,dataNow());
   spinBoth(draw,()=>{ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName,franchise:draw.franchise,mode:runMode(),club:run&&run.franchise||null});paintOpts(draw);});
 }
 
 let activeTab=null;
 
-/* TABS ARE THE FOUR POSITIONS. Nothing else.
+/* TABS ARE THE POSITIONS BEING DRAFTED. Nothing else.
 
    There used to be a FLEX tab and a LOCKED tab as well. Both were bookkeeping
    leaking into the UI: FLEX is a spot on the roster, not a position a player
@@ -6854,7 +6928,11 @@ let activeTab=null;
    Within a tab, signable players come first best-first, then the ones you cannot
    have, grayed at the bottom with the reason. A position with nowhere left to go
    keeps its tab, grayed and pushed to the right end of the row. */
-const POSITIONS=['QB','RB','WR','TE'];
+const OFFENSE_POSITIONS=['QB','RB','WR','TE'];
+/* The tab row follows the side of the ball being drafted: four skill positions, or the
+   three defensive groups. Everything downstream indexes into this list rather than the
+   literal, so the row, the ordering inside ALL and the greyed-out rule all move with it. */
+const positionsNow=()=>(run&&run.defense?E.DEFENSE_POSITIONS:OFFENSE_POSITIONS);
 /* ALL is the default tab. Making somebody tap through four tabs on every one of
    six spins just to see what a team has is work, not a decision. It lists the
    whole squad in position order so the shape of the roster reads at a glance. */
@@ -6872,7 +6950,7 @@ function destination(p){
 }
 
 function optionGroups(draw){
-  const groups=new Map(POSITIONS.map(p=>[p,[]]));
+  const groups=new Map(positionsNow().map(p=>[p,[]]));
   const all=[];
   for(const row of draw.board){
     const p=BYKEY.get(row.key);
@@ -6891,7 +6969,7 @@ function optionGroups(draw){
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
   // ALL follows the same two rules, then position order.
   all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
-    ||POSITIONS.indexOf(a.p.position)-POSITIONS.indexOf(b.p.position)
+    ||positionsNow().indexOf(a.p.position)-positionsNow().indexOf(b.p.position)
     ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   return new Map([[ALL,all],...groups]);
 }
@@ -6984,7 +7062,7 @@ function paintOpts(draw){
   const names=[...groups.keys()]
     .sort((a,b)=>(a===ALL?-1:b===ALL?1:0)
       ||(positionOpen(a)?0:1)-(positionOpen(b)?0:1)
-      ||POSITIONS.indexOf(a)-POSITIONS.indexOf(b));
+      ||positionsNow().indexOf(a)-positionsNow().indexOf(b));
   /* A new board opens on a tab you can sign from, but once you pick a tab it
      stays picked. The first version of this guard also fired on the repaint that
      a tab click triggers, so a full tab bounced straight back to another one. */
@@ -7029,7 +7107,7 @@ function paintRespins(){
      explaining itself over and over; the mode's whole promise is that the team never
      changes. */
   const clubRun=!!(run&&run.franchise);
-  const y=R.canRespin(run,'year',DATA), t=clubRun?null:R.canRespin(run,'team',DATA);
+  const y=R.canRespin(run,'year',dataNow()), t=clubRun?null:R.canRespin(run,'team',dataNow());
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
   if(!y.ok&&!(t&&t.ok)){
     el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
@@ -7050,7 +7128,7 @@ function paintRespins(){
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
       ga('respin_used',{kind:b.dataset.kind,respins_used:(run.respinsUsed||0)+1,mode:runMode(),club:run&&run.franchise||null});
-      const d=R.respin(run,DATA,b.dataset.kind);
+      const d=R.respin(run,dataNow(),b.dataset.kind);
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
   });
@@ -7159,7 +7237,7 @@ const schemeIconSvg=(key)=>SCHEME_ICONS[key]
    'stroke-linecap="round" stroke-linejoin="round">'+SCHEME_ICONS[key]+'</svg>'
   :'';
 function paintSquad(){
-  R.startSeason(run,DATA,CTX);
+  R.startSeason(run,dataNow(),CTX);
   if(tutorialOn) tutFinish();
   drawField($('field2'),false);
   const rl=$('q-roster-list');
@@ -7578,7 +7656,7 @@ function runSim(){
   const card=document.querySelector('#s-season .gamecard');
   const step=()=>{
     if(run.phase!==R.PHASES.SEASON){after();return;}
-    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
     if(run.tradeMachine) checkHeadline(run.season.results);
     paintSeasonBug(r.opponent_id,'Week '+r.week);
     $('v-you').textContent='0'; $('v-them').textContent='0';
@@ -7633,7 +7711,7 @@ function fastForward(){
   if(run.tradeMachine) return;
   clearTimeout(simTimer);
   while(run.phase===R.PHASES.SEASON||run.phase===R.PHASES.PLAYOFFS){
-    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
     if(run.capSurvivor&&run.phase===R.PHASES.SEASON){
       const inf=R.inflateCap(run);
       if(inf&&inf.overCap){
@@ -7724,7 +7802,7 @@ function beginTradeMachine(){
   dressTeam();
   ga('game_started',{mode:'trade'});
   R.autoDraftTrade(run,DATA,CTX);
-  R.startSeason(run,DATA,CTX);
+  R.startSeason(run,dataNow(),CTX);
   $('b-sim').style.display='none';
   tradeIntro(openTeamReveal);
 }
@@ -9540,7 +9618,7 @@ function runPlayoffs(){
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
     const round=run.season.playoffRound;
-    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
     paintCalendar(r);
     /* THE BRACKET FIRST, THEN THE GAME. advanceWeek has already settled the result, so
        what the bracket animates is the rest of the field catching up to where the player
@@ -9907,7 +9985,7 @@ function paintOver(){
        without this the numbers were in the document at ~290ms and on the glass at ~720ms,
        behind the solve. One frame of patience buys the whole difference. */
     await new Promise((r)=>afterPaint(r));
-    const best=R.bestPossibleSquad(run,DATA,CTX);
+    const best=R.bestPossibleSquad(run,dataNow(),CTX);
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
     /* 100% is reserved for a true six-for-six draft: the best available player at every
@@ -10021,7 +10099,7 @@ function schemeTail(st){
  * uses. 12-5 against a best of 13-4 says what 60% against 74% said, and says it as football.
  */
 function comparison(best){
-  const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
+  const mine=R.projectSeason(run.roster,best.yourChemistry,run,dataNow(),LEAGUE);
   /* If the best squad IS your squad, the two columns have to read the same. They did
      not: resolveGame() draws each player's week in roster order, so the identical six
      men in a different order simulate slightly differently, and a player who had
@@ -10029,7 +10107,7 @@ function comparison(best){
      was missed, so nothing should look missed. */
   const samePlayers=best.lineup.every((r)=>r.same);
   const theirs=samePlayers?mine
-    :R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
+    :R.projectSeason(best.squad,best.chemistry,run,dataNow(),LEAGUE);
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
   /* The ceiling, in the row above the record it produces. Deliberately the rating

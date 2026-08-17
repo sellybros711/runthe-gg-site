@@ -1795,9 +1795,28 @@ function coachReport(roster, chemistryMultiplier, spend) {
 }
 
 const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
+/*
+ * ONE MAP FOR BOTH SIDES OF THE BALL. The defense draft's slots are DL, LB and DB, and
+ * none of those names collide with QB, RB, WR or TE, so they simply live here too and
+ * fillsSlot needs no idea which mode it is in.
+ *
+ * FLEX IS THE UNION, which is the only name that appears in both rosters. It is safe
+ * because a board only ever offers one side's players: an offensive run's wheel draws
+ * from player_seasons and a defensive run's from defender_seasons, so a FLEX spot can
+ * only ever be shown men from its own pool. Splitting it into FLEX and D_FLEX would mean
+ * branching on mode at every eligibility question in the game to buy nothing.
+ */
 const SLOT_ELIGIBILITY = {
-  QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
+  QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'],
+  DL: ['DL'], LB: ['LB'], DB: ['DB'],
+  FLEX: ['RB', 'WR', 'TE', 'DL', 'LB', 'DB'],
 };
+
+/* The defense draft's roster: two up front, one at linebacker, two in the secondary, one
+   free. Six spots, the same as the offense, so every count in the game is unchanged. */
+const DEFENSE_SLOTS = ['DL', 'DL', 'LB', 'DB', 'DB', 'FLEX'];
+/* The tabs a defensive draft board shows, in the order a defense is listed. */
+const DEFENSE_POSITIONS = ['DL', 'LB', 'DB'];
 
 /*
  * ─── MEN WHO PLAYED TWO POSITIONS ───────────────────────────────────────────────────
@@ -3089,6 +3108,7 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, generateSchedule, generatePlayoffs,
+  DEFENSE_SLOTS, DEFENSE_POSITIONS,
   resolveGame, resolveGameDefense, defenseSuppression,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
