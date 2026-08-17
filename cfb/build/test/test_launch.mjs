@@ -45,12 +45,16 @@ const b = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: ['--no-sandbox'],
 });
-/* THE ARCADE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off: it
-   writes localStorage on the way in, exactly as ticking the box does. It opens 1.4s after
-   the front page settles and covers the screen, so a suite that idles on the intro and
-   then clicks would be clicking a backdrop. test_arcade_ad.mjs is where the ad itself is
-   checked; everything here is about something else. */
-const NO_ARCADE_AD = () => { try { localStorage.setItem('cfb_arcade_ad_off', '1'); } catch (e) {} };
+/* THE ARCADE HOUSE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off:
+   this writes the shared localStorage key on the way in, exactly as ticking the box does.
+   Still needed even though the college game no longer runs the ad, because this suite is
+   the one that also visits the SITE front page, where it does. It covers the screen, so a
+   suite that idles there and then clicks would be clicking a backdrop.
+   test_arcade_ad.mjs is where the ad itself is checked. */
+/* rtg_arcade_ad_off, not cfb_. The key was renamed when the panel moved into
+   /assets/arcade-ad.js to be shared site-wide, and this guard went on writing the old one
+   for a while, which is a guard that silently guards nothing. */
+const NO_ARCADE_AD = () => { try { localStorage.setItem('rtg_arcade_ad_off', '1'); } catch (e) {} };
 
 /* A page with the outside world switched off and a log that is watched.
    "Failed to load resource" is the browser narrating a request that failed, and the

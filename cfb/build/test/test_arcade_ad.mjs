@@ -1,18 +1,18 @@
-/* The arcade ad, and the promises it makes about when it will leave you alone.
+/* The arcade house ad, and the promises it makes about when it will leave you alone.
  *
  *   (nohup node cfb/build/test/gzip_server.mjs &)
  *   node cfb/build/test/test_arcade_ad.mjs
  *
- * This is the one thing on the site that interrupts somebody, so the rules matter more
- * than the artwork: once a visit, never again if the box is ticked, never over a
- * challenge link, and never on top of the draft. Each of those is a separate promise and
- * each one is checked here, including the two that only break on a second page load.
+ * DRIVEN THROUGH THE HOMEPAGE, not through the college game. The panel lives in
+ * /assets/arcade-ad.js and is shared by the homepage, the NFL game and the golf game,
+ * with one set of storage keys between them; the college game used to run it too and no
+ * longer does, by request. This file follows the panel rather than the surface, so it
+ * moved with it. The last section holds the removal: the college game must keep asking
+ * nobody, which is a thing a later change could undo by accident.
  *
- * THE PANEL ITSELF NOW LIVES IN /assets/arcade-ad.js, shared with the homepage, the NFL
- * game and the golf game, and so do the storage keys. It used to be four panels with four
- * key sets, which told a player crossing the site four times and let "don't show this
- * again" silence only the one they ticked. What this game still owns -- and what the
- * bottom half of this file checks -- is WHEN it is polite to ask.
+ * This is the one thing on the site that interrupts somebody, so the rules matter more
+ * than the artwork: once a visit, never again if the box is ticked, and never stacked on
+ * a sheet somebody already opened.
  *
  * The storage reads are wrapped in the shared file because Safari in private mode throws
  * rather than returning null, so there is a case here for storage being unavailable
@@ -20,7 +20,8 @@
  */
 import { chromium } from 'playwright';
 const SS = process.env.SS || '/tmp/';
-const URL = 'http://localhost:8081/cfb/index.html';
+const URL = 'http://localhost:8081/index.html';
+const CFB = 'http://localhost:8081/cfb/index.html';
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -40,7 +41,6 @@ console.log('=== the first look at the front page ===');
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 {
   const p = await visit(ctx);
-  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
   ok('it is not up the instant the page paints', !(await adUp(p)));
   await p.waitForSelector(AD, { timeout: 15000 });
   await p.waitForTimeout(500);
@@ -134,7 +134,6 @@ console.log('\n=== the rest of the same visit ===');
      without the timestamp in localStorage this is a second showing to the same person a
      few seconds later. */
   const p = await visit(ctx);
-  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
   await p.waitForTimeout(2600);
   ok('a second tab in the same visit does not show it again', !(await adUp(p)));
   await p.close();
@@ -171,7 +170,6 @@ console.log('\n=== a new visit, having said no ===');
   const said = await b.newContext({ viewport: { width: 390, height: 844 } });
   await said.addInitScript(() => { try { localStorage.setItem('rtg_arcade_ad_off', '1'); } catch (e) {} });
   const p = await visit(said);
-  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
   await p.waitForTimeout(2600);
   ok('a player who ticked the box never sees it again', !(await adUp(p)));
   await p.close();
@@ -180,30 +178,25 @@ console.log('\n=== a new visit, having said no ===');
 
 console.log('\n=== the cases it must stay out of ===');
 {
-  /* Somebody who tapped Draft in the first second came for the draft. */
-  const quick = await b.newContext({ viewport: { width: 390, height: 844 } });
-  const p = await visit(quick);
-  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
-  await p.evaluate(() => document.getElementById('b-play-intro').click());
-  await p.waitForTimeout(2600);
-  ok('it does not open on top of a draft already under way', !(await adUp(p)),
-    await p.evaluate(() => [...document.querySelectorAll('.screen.on')].map((e) => e.id).join(',')));
+  /* A sheet somebody already opened is a thing they asked for. The homepage opens its
+     sign-in sheet by itself on the way back from Google, so this is a real collision and
+     not a hypothetical one. */
+  const busy = await b.newContext({ viewport: { width: 390, height: 844 } });
+  await busy.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const m = document.getElementById('modal');
+      if (m) m.hidden = false;
+    });
+  });
+  const p = await visit(busy);
+  await p.waitForTimeout(3000);
+  const modalUp = await p.evaluate(() => {
+    const m = document.getElementById('modal'); return !!(m && !m.hidden);
+  });
+  ok('it does not stack on a sheet that is already open', !modalUp || !(await adUp(p)),
+    'sign-in sheet up: ' + modalUp);
   await p.close();
-  await quick.close();
-}
-{
-  /* And a friend's challenge link is not a front page. */
-  const ch = await b.newContext({ viewport: { width: 390, height: 844 } });
-  const p = await visit(ch, URL + '?c=notarealchallengeblob');
-  await p.waitForTimeout(3200);
-  /* A mangled link falls through to the front page by design, so the ad is allowed
-     there. What must never happen is the ad landing ON the challenge screen. */
-  const onChallenge = await p.evaluate(() => document.getElementById('s-challenge').classList.contains('on'));
-  const up = await adUp(p);
-  ok('a challenge screen never has the ad over it', !onChallenge || !up,
-    'challenge screen up: ' + onChallenge + ', ad up: ' + up);
-  await p.close();
-  await ch.close();
+  await busy.close();
 }
 {
   /* Private mode: storage throws rather than answering, and boot must survive it. */
@@ -215,13 +208,35 @@ console.log('\n=== the cases it must stay out of ===');
     Object.defineProperty(window, 'sessionStorage', { get: () => boom });
   });
   const p = await visit(noStore);
-  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
-  await p.waitForTimeout(2600);
-  ok('the game still boots where storage refuses to answer',
-    await p.evaluate(() => document.getElementById('s-intro').classList.contains('on')));
+  await p.waitForTimeout(3000);
+  /* "The page came up" measured by its own content, not by readyState: the homepage has
+     video and canvas still settling at this point and a strict complete is a flaky
+     assertion about loading rather than about surviving. */
+  ok('the page still comes up where storage refuses to answer',
+    await p.evaluate(() => !!document.getElementById('acct')
+      && document.querySelectorAll('a[href]').length > 5));
   ok('and the ad still shows rather than failing closed', await adUp(p));
   await p.close();
   await noStore.close();
+}
+
+console.log('\n=== and the college game asks nobody ===');
+/* REMOVED BY REQUEST, and this is what keeps it removed. The shared panel is one script
+   tag and one call away from being back on any surface, so "we took it off the college
+   game" needs something holding it there rather than a memory of having deleted it. */
+{
+  const c = await b.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await visit(c, CFB);
+  await p.waitForSelector('#s-intro.on', { timeout: 30000 });
+  await p.waitForTimeout(3200);
+  ok('the front page of the college game never puts it up', !(await adUp(p)));
+  ok('and it does not even load the shared panel', await p.evaluate(() =>
+    !window.RTG_ARCADE_AD && ![...document.scripts].some((x) => /arcade-ad/.test(x.src || ''))));
+  /* Sitting on the front page for a while is the case that used to trigger it. */
+  await p.waitForTimeout(2500);
+  ok('nor after a long look at it', !(await adUp(p)));
+  await p.close();
+  await c.close();
 }
 
 await b.close();

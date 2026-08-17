@@ -3268,9 +3268,10 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
-<!-- The Run The Arcade house ad, shared with the homepage and the other games so the
-     panel looks the same everywhere and one "don't show this again" covers the lot. -->
-<script defer src="/assets/arcade-ad.js?v=1"></script>
+<!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
+     the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
+     to draft a team, and the front page has its own way to the arcade in "More ways to
+     play" for anyone who wants it. -->
 <script>
 (function(){
 'use strict';
@@ -4505,30 +4506,6 @@ function modeMenu(){
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
   $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
-}
-
-/* ── THE ARCADE ──────────────────────────────────────────────────────
-   The panel and its remembering now live in /assets/arcade-ad.js, shared with the
-   homepage, the NFL game and the golf game. It used to be four separate panels with four
-   separate sets of storage keys, which meant a player crossing the site in one sitting
-   was told four times and "don't show this again" only ever silenced the one they ticked.
-   The look, the once-a-visit rule and the two locks that enforce it (a session flag for
-   the tab, a timestamp for the other tabs) all moved there.
-
-   What stays here is the only part that is local knowledge: WHEN it is polite to ask.
-     NOT OVER A CHALLENGE. Somebody who arrived on a friend's link came for that, and
-       routeChallenge() takes over before this is ever asked.
-     NOT OVER ANYTHING ELSE. It waits for the front page to settle and then checks it is
-       still the screen and that no other sheet is up, because a player who tapped Draft
-       in the first second should get the draft and not this. */
-const ARC_DELAY=1400;
-function askArcadeAd(){
-  const A=window.RTG_ARCADE_AD; if(!A) return;
-  if(A.forced()){ A.show({from:'cfb'}); return; }
-  if(!A.due()) return;
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  A.show({from:'cfb'});
 }
 
 /* THE FIVE, WITH THE YEARS EACH ONE COVERS. The years matter: a Pac-12 draft ends
@@ -6031,7 +6008,7 @@ async function boot(){
        one thing that would make the whole screen feel cheap. */
     const spent=((window.performance&&performance.now)?performance.now():0)-t0;
     if(spent>380) await new Promise(r=>setTimeout(r,240));
-    if(!routeChallenge()){ show('s-intro'); setTimeout(askArcadeAd,ARC_DELAY); }
+    if(!routeChallenge()) show('s-intro');
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
