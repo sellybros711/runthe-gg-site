@@ -98,7 +98,66 @@
       { id:'sup_mlb_kazuo-matsui',    name:'Kazuo Matsui',      sport:'MLB', f:3, t:['New York Mets','Colorado Rockies','Houston Astros'], j:[7,25], pos:'Second Baseman', decade:[2000,2010], col:'', ns:5, hp:0 },
       { id:'sup_mlb_wily-mo-pena',    name:'Wily Mo Pena',      sport:'MLB', f:3, t:['Cincinnati Reds','Boston Red Sox','Washington Nationals','Arizona Diamondbacks','Seattle Mariners'], j:[26,22], pos:'Outfielder', decade:[2000,2010], col:'', ns:6, hp:0 },
       { id:'sup_mlb_dan-vogelbach',   name:'Dan Vogelbach',     sport:'MLB', f:3, t:['Seattle Mariners','Toronto Blue Jays','Milwaukee Brewers','Pittsburgh Pirates','New York Mets'], j:[20,32], pos:'Designated Hitter', decade:[2010,2020], col:'', ns:6, hp:0 },
-      { id:'sup_mlb_pokey-reese-supp', name:'Pokey Reese',      sport:'MLB', f:3, t:['Cincinnati Reds','Pittsburgh Pirates','Boston Red Sox'], j:[3,4], pos:'Second Baseman', decade:[1990,2000], col:'', ns:7, hp:1 }
+      { id:'sup_mlb_pokey-reese-supp', name:'Pokey Reese',      sport:'MLB', f:3, t:['Cincinnati Reds','Pittsburgh Pirates','Boston Red Sox'], j:[3,4], pos:'Second Baseman', decade:[1990,2000], col:'', ns:7, hp:1 },
+
+      /* ====================================================== AUDIT 2026-08
+       * Added by scripts/audit-corpus.mjs, which cross-checks stars.js (the
+       * hand-curated "a fan would know this name" list) against the corpus.
+       * Every name below was listed there as an ICON and was missing from the
+       * corpus entirely, so any category they belong to refused them.
+       *
+       * Franchises are named as the corpus names them today. The generator
+       * folds relocations into one identity (Raiders, Angels, Athletics), so
+       * an entry written with the modern name is correct for every era.
+       */
+
+      /* ---- two sports, one man. Absent from every source in the repo. ---- */
+      { id:'sup_nfl_bo-jackson',      name:'Bo Jackson',        sport:'NFL', f:5, t:['Raiders'], j:[34], pos:'Running Back', decade:[1980,1990], col:'Auburn', ns:4, hp:1 },
+      { id:'sup_mlb_bo-jackson',      name:'Bo Jackson',        sport:'MLB', f:5, t:['Kansas City Royals','Chicago White Sox','Angels'], j:[16,8], pos:'Outfielder', decade:[1980,1990], col:'Auburn', ns:8, hp:0 },
+
+      /* ---- career repair: former.js kept his last stop and lost eleven
+             Raiders years, so every Raiders category refused him. ---- */
+      { id:'sup_nfl_marcus-allen',    name:'Marcus Allen',      sport:'NFL', f:5, t:['Raiders','Kansas City Chiefs'], j:[32], pos:'Running Back', decade:[1980,1990], col:'Southern California', ns:16, hp:1 },
+
+      /* ============================================== NBA icons, missing */
+      { id:'sup_nba_bob-pettit',      name:'Bob Pettit',        sport:'NBA', f:5, t:['Atlanta Hawks'], j:[9], pos:'Power Forward', decade:[1950,1960], col:'Louisiana State', ns:11, hp:1 },
+      { id:'sup_nba_nate-thurmond',   name:'Nate Thurmond',     sport:'NBA', f:5, t:['Golden State Warriors','Chicago Bulls','Cleveland Cavaliers'], j:[42], pos:'Center', decade:[1960,1970], col:'Bowling Green', ns:14, hp:1 },
+      { id:'sup_nba_nate-archibald',  name:'Nate Archibald',    sport:'NBA', f:5, t:['Sacramento Kings','Nets','Boston Celtics','Milwaukee Bucks'], j:[1], pos:'Point Guard', decade:[1970,1980], col:'Texas-El Paso', ns:14, hp:0 },
+      { id:'sup_nba_dolph-schayes',   name:'Dolph Schayes',     sport:'NBA', f:5, t:['Philadelphia 76ers'], j:[4], pos:'Power Forward', decade:[1940,1950,1960], col:'New York University', ns:16, hp:1 },
+      { id:'sup_nba_hal-greer',       name:'Hal Greer',         sport:'NBA', f:5, t:['Philadelphia 76ers'], j:[15], pos:'Shooting Guard', decade:[1950,1960,1970], col:'Marshall', ns:15, hp:0 },
+      { id:'sup_nba_sam-jones',       name:'Sam Jones',         sport:'NBA', f:5, t:['Boston Celtics'], j:[24], pos:'Shooting Guard', decade:[1950,1960], col:'North Carolina Central', ns:12, hp:1 },
+      { id:'sup_nba_tom-heinsohn',    name:'Tom Heinsohn',      sport:'NBA', f:5, t:['Boston Celtics'], j:[15], pos:'Power Forward', decade:[1950,1960], col:'Holy Cross', ns:9, hp:1 },
+      { id:'sup_nba_bill-sharman',    name:'Bill Sharman',      sport:'NBA', f:5, t:['Boston Celtics'], j:[21], pos:'Shooting Guard', decade:[1950,1960], col:'Southern California', ns:11, hp:0 },
+      { id:'sup_nba_jerry-lucas',     name:'Jerry Lucas',       sport:'NBA', f:5, t:['Sacramento Kings','Golden State Warriors','New York Knicks'], j:[32,16], pos:'Power Forward', decade:[1960,1970], col:'Ohio State', ns:11, hp:1 },
+      { id:'sup_nba_chet-walker',     name:'Chet Walker',       sport:'NBA', f:5, t:['Philadelphia 76ers','Chicago Bulls'], j:[25], pos:'Small Forward', decade:[1960,1970], col:'Bradley', ns:13, hp:0 },
+
+      /* ============================================== NFL icons, missing */
+      { id:'sup_nfl_sid-luckman',     name:'Sid Luckman',       sport:'NFL', f:5, t:['Chicago Bears'], j:[42], pos:'Quarterback', decade:[1930,1940,1950], col:'Columbia', ns:12, hp:1 },
+      { id:'sup_nfl_ya-tittle',       name:'Y.A. Tittle',       sport:'NFL', f:5, t:['San Francisco 49ers','New York Giants'], j:[14], pos:'Quarterback', decade:[1940,1950,1960], col:'Louisiana State', ns:17, hp:1 },
+      { id:'sup_nfl_bob-griese',      name:'Bob Griese',        sport:'NFL', f:5, t:['Miami Dolphins'], j:[12], pos:'Quarterback', decade:[1960,1970,1980], col:'Purdue', ns:14, hp:1 },
+      { id:'sup_nfl_ken-stabler',     name:'Ken Stabler',       sport:'NFL', f:5, t:['Raiders','Tennessee Titans','New Orleans Saints'], j:[12], pos:'Quarterback', decade:[1970,1980], col:'Alabama', ns:15, hp:0 },
+      { id:'sup_nfl_dan-fouts',       name:'Dan Fouts',         sport:'NFL', f:5, t:['Chargers'], j:[14], pos:'Quarterback', decade:[1970,1980], col:'Oregon', ns:15, hp:0 },
+      { id:'sup_nfl_roger-craig',     name:'Roger Craig',       sport:'NFL', f:5, t:['San Francisco 49ers','Raiders','Minnesota Vikings'], j:[33], pos:'Running Back', decade:[1980,1990], col:'Nebraska', ns:11, hp:0 },
+      { id:'sup_nfl_andre-reed',      name:'Andre Reed',        sport:'NFL', f:5, t:['Buffalo Bills','Washington Commanders'], j:[83], pos:'Wide Receiver', decade:[1980,1990,2000], col:'Kutztown', ns:16, hp:0 },
+      { id:'sup_nfl_ozzie-newsome',   name:'Ozzie Newsome',     sport:'NFL', f:5, t:['Cleveland Browns'], j:[82], pos:'Tight End', decade:[1970,1980,1990], col:'Alabama', ns:13, hp:1 },
+      { id:'sup_nfl_mike-ditka',      name:'Mike Ditka',        sport:'NFL', f:5, t:['Chicago Bears','Philadelphia Eagles','Dallas Cowboys'], j:[89], pos:'Tight End', decade:[1960,1970], col:'Pittsburgh', ns:12, hp:1 },
+      { id:'sup_nfl_chad-ochocinco',  name:'Chad Ochocinco',    sport:'NFL', f:5, t:['Cincinnati Bengals','New England Patriots'], j:[85], pos:'Wide Receiver', decade:[2000,2010], col:'Oregon State', ns:11, hp:0 },
+      { id:'sup_nfl_aj-green',        name:'A.J. Green',        sport:'NFL', f:5, t:['Cincinnati Bengals','Arizona Cardinals'], j:[18], pos:'Wide Receiver', decade:[2010,2020], col:'Georgia', ns:12, hp:1 },
+
+      /* ============================================== MLB icons, missing */
+      { id:'sup_mlb_tris-speaker',    name:'Tris Speaker',      sport:'MLB', f:5, t:['Boston Red Sox','Cleveland Guardians','Washington Nationals','Athletics'], j:[], pos:'Center Fielder', decade:[1900,1910,1920], col:'', ns:22, hp:0 },
+      { id:'sup_mlb_christy-mathewson', name:'Christy Mathewson', sport:'MLB', f:5, t:['New York Giants','Cincinnati Reds'], j:[], pos:'Pitcher', decade:[1900,1910], col:'Bucknell', ns:17, hp:0 },
+      /* ---- career repair: household names the sources filed as one-club men.
+             Each was found by scripts/audit-corpus.mjs check 4, and each was
+             refused by every category on the clubs that were missing. ---- */
+      { id:'sup_mlb_babe-ruth-fix',   name:'Babe Ruth',         sport:'MLB', f:5, t:['Boston Red Sox','New York Yankees','Braves'], j:[3], pos:'Outfielder', decade:[1910,1920,1930], col:'', ns:22, hp:0 },
+      { id:'sup_mlb_david-ortiz-fix', name:'David Ortiz',       sport:'MLB', f:5, t:['Minnesota Twins','Boston Red Sox'], j:[34], pos:'Designated Hitter', decade:[1990,2000,2010], col:'', ns:20, hp:0 },
+      { id:'sup_mlb_john-smoltz-fix', name:'John Smoltz',       sport:'MLB', f:5, t:['Braves','Boston Red Sox','St. Louis Cardinals'], j:[29], pos:'Pitcher', decade:[1980,1990,2000], col:'', ns:21, hp:0 },
+      { id:'sup_mlb_paul-konerko-fix', name:'Paul Konerko',     sport:'MLB', f:4, t:['Dodgers','Cincinnati Reds','Chicago White Sox'], j:[14], pos:'First Baseman', decade:[1990,2000,2010], col:'', ns:18, hp:1 },
+      { id:'sup_mlb_willie-mccovey-fix', name:'Willie McCovey', sport:'MLB', f:5, t:['San Francisco Giants','San Diego Padres','Athletics'], j:[44], pos:'First Baseman', decade:[1950,1960,1970,1980], col:'', ns:22, hp:0 },
+      { id:'sup_nba_patrick-ewing-fix', name:'Patrick Ewing',   sport:'NBA', f:5, t:['New York Knicks','Oklahoma City Thunder','Orlando Magic'], j:[33], pos:'Center', decade:[1980,1990,2000], col:'Georgetown', ns:17, hp:1 },
+
+      { id:'sup_mlb_lee-smith',       name:'Lee Smith',         sport:'MLB', f:5, t:['Chicago Cubs','Boston Red Sox','St. Louis Cardinals','New York Yankees','Baltimore Orioles','Angels','Cincinnati Reds','Washington Nationals'], j:[46], pos:'Pitcher', decade:[1980,1990], col:'Northwestern State', ns:18, hp:0 }
     ]
   };
 })(typeof self !== 'undefined' ? self : this);

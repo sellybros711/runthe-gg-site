@@ -33,13 +33,20 @@ const R = (p) => readFileSync(path.join(ROOT, p), 'utf8');
 // ---------------------------------------------------------------- load
 const G = {};
 new Function('window', 'self', 'module', R('arcade/match/entities.js'))(G, G, {});
-for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
+/* supplement.js was missing from this list, and it is the one file in the set
+   that exists purely to add recognizable players an automated source ranks too
+   low to promote. Every game that loads data.js has had it for months; this
+   generator did not, so 69 of its 74 hand-curated names were absent from
+   Sportegories alone. Nate Robinson, Earl Boykins, Kris Humphries, Sebastian
+   Telfair: exactly the "oh yeah, that guy" answers this game is for. */
+for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/supplement.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
   try { new Function('window', 'self', R(f))(G, G); } catch (e) { console.warn('skip ' + f + ': ' + e.message); }
 }
 const CORPUS = G.GRID_ENTITIES || [];
 const FORMER = (G.RTG_FORMER && G.RTG_FORMER.players) || [];
 const AWARDS = (G.RTG_AWARDS && G.RTG_AWARDS.players) || {};
 const ROSTERS = (G.RTG_ROSTERS && G.RTG_ROSTERS.players) || [];
+const SUPPLEMENT = (G.RTG_SUPPLEMENT && G.RTG_SUPPLEMENT.players) || [];
 
 /* Every active pro belongs in here.
  *
@@ -91,10 +98,46 @@ function nameKey(name) {
 const nkFull = (s) => tokens(s).join('');
 
 // ------------------------------------------------------------ merge pool
+/* Two men, one record.
+ *
+ * The merge key is sport plus name, so any two players who share both become a
+ * single spliced career. "Marcus Allen" came out of here as a running back who
+ * is also a cornerback, with the Chiefs and the Vikings and none of his eleven
+ * Raiders years: the Hall of Famer from former.js welded to an active
+ * 22-year-old Vikings corner from rosters.js.
+ *
+ * A roster row is a snapshot of somebody playing right now. When it contradicts
+ * an established career on which side of the ball the man plays, or on which
+ * century he played in, they are not the same person and the snapshot is
+ * dropped. Dropping it costs one fame-0 deep cut; merging it corrupts a
+ * household name AND hands every category his namesake's clubs.
+ *
+ * Only ever applied to roster rows, and only against a record that already
+ * carries real career shape. Curated sources are trusted to be one person. */
+const SIDE_OF_BALL = {
+  Quarterback: 'off', 'Running Back': 'off', Fullback: 'off', 'Wide Receiver': 'off',
+  'Tight End': 'off', 'Offensive Lineman': 'off', 'Offensive Tackle': 'off', Guard: 'off', Center: 'off',
+  Cornerback: 'def', Safety: 'def', Linebacker: 'def', 'Defensive End': 'def',
+  'Defensive Tackle': 'def', 'Defensive Lineman': 'def',
+  Kicker: 'st', 'Place Kicker': 'st', Punter: 'st', 'Long Snapper': 'st'
+};
+const collisions = [];
+function differentPerson(cur, e) {
+  const a = SIDE_OF_BALL[cur.pos], b = SIDE_OF_BALL[e.pos];
+  if (a && b && a !== b) return 'position';
+  const last = (cur.decade || []).length ? Math.max(...cur.decade) : null;
+  if (last !== null && last <= 2000) return 'era';
+  return null;
+}
+
 const pool = new Map();                       // sport|normfull -> record
-function put(e, fromCorpus) {
+function put(e, fromCorpus, isRoster) {
   const k = e.sport + '|' + nkFull(e.name);
   const cur = pool.get(k);
+  if (cur && isRoster) {
+    const why = differentPerson(cur, e);
+    if (why) { collisions.push({ name: cur.name, sport: cur.sport, why, cur: cur.pos, snap: e.pos, team: (e.t || [])[0] }); return; }
+  }
   if (!cur) {
     pool.set(k, {
       name: e.name, sport: e.sport, pos: e.pos || null, t: (e.t || []).slice(),
@@ -128,7 +171,10 @@ function put(e, fromCorpus) {
 }
 CORPUS.forEach((e) => put(e, true));
 FORMER.forEach((e) => put(e, false));
-ROSTERS.forEach((p) => put(fromRoster(p), false));
+// Hand-curated, so it counts as corpus: these names were chosen BY a person for
+// being recognizable, which is the whole question the fame gate is asking.
+SUPPLEMENT.forEach((e) => put(e, true));
+ROSTERS.forEach((p) => put(fromRoster(p), false, true));
 
 // awards are keyed "SPORT|normalized name"
 for (const [key, val] of Object.entries(AWARDS)) {
@@ -152,6 +198,14 @@ for (const rec of pool.values()) {
     for (const id of rec.ids) { const v = STATVALS[k][id]; if (v != null) { st[k] = v; break; } }
   }
   if (Object.keys(st).length) rec.st = st;
+}
+
+if (collisions.length) {
+  console.log('name collisions dropped ' + collisions.length + ' roster snapshots (two men, one name):');
+  for (const c of collisions.slice(0, 8)) {
+    console.log('  ' + c.sport + ' ' + c.name + '  kept ' + (c.cur || '?') + ', dropped ' + (c.snap || '?') + ' on ' + (c.team || '?') + '  [' + c.why + ']');
+  }
+  if (collisions.length > 8) console.log('  ... and ' + (collisions.length - 8) + ' more');
 }
 
 const PLAYERS = [...pool.values()].filter((p) => nameKey(p.name));
