@@ -45,6 +45,35 @@
     highlow: "<svg viewBox=\"0 0 56 56\">\n                <g class=\"hlup\" fill=\"#F5822B\"><path d=\"M14 6 L22 19 L6 19 Z\"/></g>\n                <g class=\"hldn\" fill=\"#F5822B\" opacity=\".62\"><path d=\"M42 50 L50 37 L34 37 Z\"/></g>\n                <!-- the number is the point: you are calling a stat, not a shape -->\n                <text x=\"28\" y=\"34\" text-anchor=\"middle\" font-family=\"Anton, Impact, sans-serif\" font-size=\"19\" fill=\"#F5822B\">27.4</text>\n              </svg>"
   };
 
+  /* The name and the one-line pitch, in one place for the same reason the
+     drawings are: the hub carried one set inline and calendar.js carried a
+     second, and they had already drifted into describing the same game two
+     different ways.
+
+     Written to a shape: a question that puts the player's own knowledge on
+     trial, then what the run actually is. "One player, one club. Type the
+     number they wore." describes a mechanic to somebody who has already
+     decided to play. "How well do you know athletes' jersey numbers?" asks a
+     question they want to answer. Streak games close with how far you can get;
+     daily puzzles close with the constraint that makes them hard. */
+  var NAMES = {
+    match: 'Common Ground', sportegories: 'Sportegories', crossword: 'Daily Crossword',
+    rankit: 'Rank It', guess: 'Guess the Player', almamater: 'Alma Mater',
+    career: 'Career Path', table: 'Number Game', oddone: 'Odd One Out', highlow: 'High Low'
+  };
+  var DESC = {
+    match: 'Can you spot what sixteen athletes have in common? Four hidden groups, four mistakes allowed.',
+    sportegories: 'How many athletes can you name from a single letter? Eight categories, two minutes.',
+    crossword: 'How deep does your sports vocabulary go? A mini crossword against the clock.',
+    rankit: 'Think you know who tops the all-time lists? Put five athletes in order, fewest tries wins.',
+    guess: 'Can you name the mystery athlete? Eight guesses, and every one tells you more.',
+    almamater: 'How well do you know where athletes went to college? Keep naming schools until you miss.',
+    career: 'How many clubs does it take before you know the player? The earlier you call it, the more it scores.',
+    table: 'How well do you know athletes\u2019 jersey numbers? Go for as long as you can.',
+    oddone: 'Can you spot which of five athletes does not belong? Name the link too, and keep the run alive.',
+    highlow: 'Higher or lower? Pick a stat, then call every athlete that follows until you miss.'
+  };
+
   // Aliases, because the Vault and the hub have historically keyed these
   // differently and neither name is wrong.
   var ALIAS = { cross: 'crossword', alma: 'almamater', spg: 'sportegories', number: 'table' };
@@ -76,12 +105,22 @@
 
   /* Fill every empty data-mark host under root. Already-filled hosts are left
      alone, so a page may ship its own inline copy and this becomes a no-op. */
+  /* "Already filled" means a mark of OUR OWN sitting directly in the host, not
+     any svg anywhere inside it. A locked tile carries a padlock inside its
+     status chip, and querying for a descendant svg matched that padlock, so
+     every locked game silently lost its drawing. */
+  function hasMark(h) {
+    for (var c = h.firstElementChild; c; c = c.nextElementSibling) {
+      if (c.tagName && c.tagName.toLowerCase() === 'svg') return true;
+    }
+    return false;
+  }
   function fill(root) {
     style();
     var hosts = (root || document).querySelectorAll('[data-mark]');
     for (var i = 0; i < hosts.length; i++) {
       var h = hosts[i];
-      if (h.querySelector('svg')) continue;
+      if (hasMark(h)) continue;
       var s = svg(h.getAttribute('data-mark'));
       if (s) h.insertAdjacentHTML('beforeend', s);
     }
@@ -92,5 +131,9 @@
     else fill();
   }
 
-  window.RTGGameMarks = { svg: svg, fill: fill, style: style, KEYS: Object.keys(MARKS) };
+  function name(k) { return NAMES[resolve(k)] || ''; }
+  function desc(k) { return DESC[resolve(k)] || ''; }
+
+  window.RTGGameMarks = { svg: svg, fill: fill, style: style, KEYS: Object.keys(MARKS),
+                          name: name, desc: desc, NAMES: NAMES, DESC: DESC };
 })();
