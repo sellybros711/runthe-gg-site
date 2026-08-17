@@ -3925,8 +3925,107 @@ function recordSeason(o){
   if(distinctThis>=4)lt.slamSeasons++;
   lt.distinctMajors=['masters','champ','usopen','open'].filter(k=>lt.maj[k]>0).length;
   const fresh=_badgeFresh(c);
+  logSeason(o);   // chronological archive for Profile → History (the lt totals above are aggregates and lose the story)
   saveCareerLifetime(c); sbSyncStats();
   return {career:c,fresh};
+}
+/* ── The season & career archive ──────────────────────────────────────────────────────────────────
+   Everything the game recorded until now was an AGGREGATE (lifetime `lt` totals) or a RANKING
+   (c.hof = your best five builds by net). Neither is a history: you could not answer "how did last
+   season go" or "what happened to the golfer before this one". These two logs are the chronology.
+   Local-first on purpose - the server's runtour_scores only holds seasons that were successfully
+   POSTED, so an offline season, a guest season or a failed submit would silently vanish from your
+   own history. Capped and grow-only, and synced through the cloud bundle so the story follows the
+   account rather than the browser. */
+const SEASON_LOG_KEY='bag_season_log', CAREER_LOG_KEY='bag_career_log';
+const SEASON_LOG_MAX=60, CAREER_LOG_MAX=30;
+function seasonLog(){ const a=LS.get(acctKey(SEASON_LOG_KEY),[]); return Array.isArray(a)?a:[]; }
+function careerLog(){ const a=LS.get(acctKey(CAREER_LOG_KEY),[]); return Array.isArray(a)?a:[]; }
+// a stable identity for a logged row, so two devices merging the same season don't duplicate it
+function _logId(r){ return (r&&r.id) || [r&&r.cid,r&&r.yr,r&&r.money].join('|'); }
+function _logPush(key,row,max){ try{
+  const cur=(LS.get(acctKey(key),[])||[]).filter(Boolean);
+  const id=_logId(row);
+  if(cur.some(r=>_logId(r)===id)) return cur;         // idempotent: a re-run of the same season never doubles up
+  cur.unshift(row);                                    // newest first, which is the order it is read in
+  const out=cur.slice(0,max);
+  LS.set(acctKey(key),out); try{ cloudPush(); }catch(e){}
+  return out;
+}catch(e){ return []; } }
+function logSeason(o){ try{
+  const cid=(S.careerSeed!=null?String(S.careerSeed):'solo');
+  const yr=S.year||1;
+  _logPush(SEASON_LOG_KEY, {
+    id:cid+':'+yr+':'+(o.money||0),
+    t:Date.now(), cid, yr, name:o.name||S.name||'Your Golfer', ovr:o.ovr||0,
+    wins:o.wins||0, maj:o.majorsWon||0, money:o.money||0, net:o.net||0,
+    top10:o.top10||0, made:o.made||0, played:o.played||0,
+    best:(o.best==null?99:o.best), mrank:o.moneyRank||0,
+    circuit:!!S.circuitMode, league:(typeof leagueJoined==='function'&&leagueJoined())||false
+  }, SEASON_LOG_MAX);
+}catch(e){} }
+function logCareerEnd(e){ try{
+  if(!e) return;
+  const cid=(S.careerSeed!=null?String(S.careerSeed):'solo');
+  _logPush(CAREER_LOG_KEY, {
+    id:'c:'+cid+':'+(e.years||0),
+    t:Date.now(), cid, name:S.name||'Your Golfer', years:e.years||0,
+    wins:e.wins||0, maj:e.majors||0, money:e.money||0, net:e.net||0,
+    top10:e.top10||0, best:(e.bestFin==null?99:e.bestFin), ovr:(career().bestOvr||0),
+    reason:e.reason||'', age:e.age||0, entry:e.entry||null
+  }, CAREER_LOG_MAX);
+}catch(e2){} }
+// cross-device merge for both logs: union by id, newest first, capped. Grow-only, so a device that
+// has been offline for a month can only ever ADD seasons back, never prune another device's.
+function mergeLog(local,server,max){
+  const out=[], seen={};
+  [].concat(Array.isArray(local)?local:[], Array.isArray(server)?server:[]).forEach(r=>{
+    if(!r) return; const id=_logId(r); if(seen[id]) return; seen[id]=1; out.push(r); });
+  out.sort((a,b)=>(b.t||0)-(a.t||0));
+  return out.slice(0,max);
+}
+// a short phrase for why a logged career ended (the log stores endCareer's raw reason string)
+function careerEndPhrase(c){
+  if(!c) return '';
+  const full=(c.years>=(c.maxYears||30)) || c.reason==='age';
+  if(full) return 'full career';
+  if(c.reason==='chose') return 'retired early';
+  return 'career ended';
+}
+// Profile → History: the chronological story of every season and every career, read straight from the
+// two logs. Seasons are grouped by career so it reads as chapters, newest career first (the active one
+// on top), each season inside newest-year first — the same order the logs are stored in.
+function profileHistoryHTML(){
+  const sl=seasonLog(), cl=careerLog();
+  if(!sl.length && !cl.length)
+    return `<div class="small muted center" style="padding:24px 8px">No history yet.<br>Finish a season and it will show up here, year by year.</div>`;
+  const endByCid={}; cl.forEach(c=>{ if(c&&c.cid!=null) endByCid[String(c.cid)]=c; });
+  const order=[], groups={};
+  sl.forEach(s=>{ const k=String(s.cid); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
+  const netCol=n=>(n||0)>=0?'#35d6a0':'#E14A33';
+  const curCid=(S.careerSeed!=null?String(S.careerSeed):'solo');
+  const seasonRow=s=>{
+    const line1=`${(s.wins||0)>0?'🏆 ':''}${s.wins||0}W · ${s.maj||0} maj · ${s.top10||0} top-10${(s.made!=null&&s.played)?` · ${s.made}/${s.played} cuts`:''}`;
+    const line2=`${s.mrank?ord(s.mrank)+' on the money list · ':''}OVR ${s.ovr||'-'}${s.circuit?' · Legend Circuit':''}${s.league?' · Breakaway League':''}`;
+    return `<div class="lb" style="grid-template-columns:40px 1fr 92px;align-items:start">
+      <span class="pos" style="font-size:11px;color:var(--muted);padding-top:1px">Yr ${s.yr}</span>
+      <span class="pl" style="min-width:0;white-space:normal;overflow:visible;line-height:1.3"><span style="color:var(--oncard)">${esc(line1)}</span><span class="small muted" style="display:block">${esc(line2)}</span></span>
+      <span style="text-align:right"><b style="color:${netCol(s.net)}">${fmtShort(s.net||0)}</b><span class="small muted" style="display:block">${fmtShort(s.money||0)} won</span></span>
+    </div>`;
+  };
+  const cards=order.map(k=>{
+    const rows=groups[k], first=rows[0], end=endByCid[k];
+    const isCur=(k===curCid && !end);
+    const nm=(first&&first.name)||'Your Golfer';
+    const n=rows.length;
+    const meta=`${isCur?'<b style="color:#35d6a0">Active</b> · ':''}${n} season${n===1?'':'s'}${end?' · '+esc(careerEndPhrase(end)):''}`;
+    return `<div class="scout" style="display:block;margin-bottom:12px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px">
+        <b style="color:var(--gold);font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(nm)}</b>
+        <span class="small muted" style="flex:0 0 auto">${meta}</span></div>
+      <div class="board">${rows.map(seasonRow).join('')}</div></div>`;
+  }).join('');
+  return `<h2 style="margin:2px 0 10px">Season by season</h2>${cards}`;
 }
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
@@ -9663,7 +9762,7 @@ function overlayRecord(screen){
   // CS484: PROFILE (renamed from Trophy Room) reorganized into tabs so it isn't one giant scroll (owner:
   // "rename ... to Profile, enhance and reorganize the page so there is less scrolling"). A compact always-on
   // header (avatar → Closet, name, title, Tour Rep rank) + account card, then Stats / Trophies / Achievements.
-  const tab = ['stats','trophies','ach'].includes(S.profileTab) ? S.profileTab : 'stats';
+  const tab = ['stats','history','trophies','ach'].includes(S.profileTab) ? S.profileTab : 'stats';
   S.profileTab=tab;
   let rankName=''; try{ rankName=repTier().tier.name; }catch(e){}
   const statsTab=`
@@ -9678,15 +9777,16 @@ function overlayRecord(screen){
     ${titleSection}
     <h2 style="margin:16px 0 8px">Hall of Fame · your top builds</h2>
     <div class="board">${rows}</div>`;
+  const historyTab=profileHistoryHTML();
   const trophiesTab=`${cabinet}${legendTokensHTML()}`;
   const achTab=`${repHeaderHTML()}${achListHTML()}`;
-  const body = tab==='stats'?statsTab : (tab==='trophies'?trophiesTab : achTab);
+  const body = tab==='stats'?statsTab : (tab==='history'?historyTab : (tab==='trophies'?trophiesTab : achTab));
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Profile</h3>
     <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Open your Closet to dress your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Open Closet</button><button type="button" class="profcard-btn" style="background:rgba(241,208,74,.12);border:1px solid var(--gold);color:var(--gold);font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">★ Player Card</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${rankName?`<div class="small muted" style="margin-top:0">${(sbSignedIn()&&sbUsername)?'RunThe.GG member · ':''}Tour Rep <b style="color:var(--gold)">${esc(rankName)}</b></div>`:''}</div>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">${acctCard}</div>
-    <div class="segrow proftabs" style="margin:0 0 14px"><button class="${tab==='stats'?'on':''}" data-ptab="stats">Stats</button><button class="${tab==='trophies'?'on':''}" data-ptab="trophies">Trophies</button><button class="${tab==='ach'?'on':''}" data-ptab="ach">Achievements</button></div>
+    <div class="segrow proftabs" style="margin:0 0 14px"><button class="${tab==='stats'?'on':''}" data-ptab="stats">Stats</button><button class="${tab==='history'?'on':''}" data-ptab="history">History</button><button class="${tab==='trophies'?'on':''}" data-ptab="trophies">Trophies</button><button class="${tab==='ach'?'on':''}" data-ptab="ach">Achievements</button></div>
     ${body}
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
@@ -22793,7 +22893,8 @@ function endCareer(reason){
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
-    bestFin: c.best, age:playerAge(), maxYears:careerYears(), entry:c.entry||null, startAge:careerStartAge()}; }   // age at retirement, gates Legend Circuit eligibility (50+)
+    bestFin: c.best, age:playerAge(), maxYears:careerYears(), entry:c.entry||null, startAge:careerStartAge()};
+    logCareerEnd(S.careerEnd); }   // age at retirement, gates Legend Circuit eligibility (50+)
   // ---- lifetime career-completion badges (Hall of Famer + the Career Grand Slam black tee) ----
   try{ const cc=career(); cc.lt=Object.assign(ltDefault(),cc.lt||{}); cc.lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},cc.lt.maj||{});
     cc.lt.careers++;
@@ -30378,6 +30479,8 @@ function cloudBundle(){
     pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
     wheel: LS.get(acctKey('bag_wheel'), null),                   // Prize Wheel: free-spin day, banked spins, 2x XP boost expiry
+    seasonlog: seasonLog(),                                      // Profile → History: the chronological season archive
+    careerlog: careerLog(),                                      // Profile → History: every career you have finished
   };
 }
 // Tour Pass claim flag: the LATER claimed period wins (so a device that already granted this season's
@@ -30623,6 +30726,8 @@ async function cloudPull(){
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     { const mw=mergeWheel(LS.get(acctKey('bag_wheel'),null), server.wheel); if(mw) LS.set(acctKey('bag_wheel'), mw); }   // Prize Wheel: used free spin / banked spins / boost cross-device
+    LS.set(acctKey(SEASON_LOG_KEY), mergeLog(seasonLog(), server.seasonlog, SEASON_LOG_MAX));   // your season history follows the account
+    LS.set(acctKey(CAREER_LOG_KEY), mergeLog(careerLog(), server.careerlog, CAREER_LOG_MAX));
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();

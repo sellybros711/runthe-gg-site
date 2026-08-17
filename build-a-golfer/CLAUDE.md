@@ -15018,6 +15018,38 @@ allows Google Fonts, or self-host Anton.*
     suite); inline scripts parse. (arcade_ad's last 2 checks fail on the known stale `bag_arcade_ad_off`
     fixture, unchanged.)
 
+### PROFILE HISTORY: the chronological story of every season and every career (task #45)
+- **The problem was that the game only ever kept AGGREGATES.** The lifetime `lt` totals answer "how many
+  majors have you ever won" and `c.hof` ranks your best five builds by net, but neither is a HISTORY - you
+  could not open the Profile and see how last season went, or what happened to the golfer before this one.
+  The story was being thrown away as it happened.
+- **Two local-first logs** (`bag_season_log` cap 60, `bag_career_log` cap 30), account-scoped via `acctKey`
+  and synced through the existing cloud bundle so the story follows the account, not the browser.
+  Local-FIRST on purpose: the server's `runtour_scores` only holds seasons that POSTED, so an offline
+  season, a guest season or a failed submit would vanish from the player's own history - the log records
+  the season the moment it is finalized, regardless.
+- **Wired at the source, not a screen.** `logSeason(o)` fires inside `recordSeason()` (so it captures the
+  exact figures the summary shows), `logCareerEnd(e)` inside `endCareer()` (so a finished career is banked
+  with why it ended). Both are idempotent by a stable `_logId` (re-running the same season never doubles a
+  row), grow-only, and merged cross-device by `mergeLog` (union by id, newest first, capped - so a device
+  offline for a month can only ever ADD seasons back, never prune another device's).
+- **A fourth Profile tab, History**, between Stats and Trophies. `profileHistoryHTML()` groups the season
+  log by career so it reads as CHAPTERS - the active career on top marked "Active", each finished career
+  below it labelled with how it ended ("full career" / "retired early", via `careerEndPhrase` off the
+  logged `reason`) - and inside each, every season newest-year first: the record (Nw / N maj / N top-10 /
+  cuts made), the money-list finish + OVR + any Legend Circuit / Breakaway League tag, and the net profit
+  in green/red beside the money won. `fmtShort` on both money figures so the right column never crowds the
+  wrapping middle one (the first cut clipped the record mid-word - the base `.lb .pl` is nowrap+ellipsis,
+  overridden to wrap here).
+- Verified in Playwright: the log functions round-trip (season + career banked with the right figures),
+  a duplicate season does not double, `cloudBundle` carries both logs and `mergeLog` unions grow-only; and
+  the History tab renders the grouped chapters with the Active / full-career labels, money-list rank,
+  Breakaway-League tag and green/red net - 0 page errors. Screenshotted on a phone; the layout wraps
+  cleanly with no truncation. Tunable: `SEASON_LOG_MAX`/`CAREER_LOG_MAX`, and what each row shows in
+  `seasonRow`/`profileHistoryHTML`. NOTE: the regression suites the prior sessions cite (regress_final
+  etc.) live in the session scratchpad, which does not persist, so they could not be re-run here; the
+  change is contained to the Profile overlay + two log helpers and was verified by its own suite.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
