@@ -276,6 +276,11 @@ try {
       ['a bye seed walked to the final', 16, true, 11],
     ]) {
       const first = bye ? 1 : 0;
+      /* A bye run draws one extra box in the first column, under a Byes heading: the two
+         top seeds, who are not playing that round but are in the field and would otherwise
+         appear from nowhere in the divisional. It is a fourteenth game box, and since the
+         player IS one of those top seeds it also shows them a second time. */
+      const extra = bye ? 1 : 0;
       const seen = [];
       await p.evaluate(([w, y, s]) => window.__BRK.park(w, y, s), [wins, bye, seed]);
       for (let r = first; r < 4; r++) {
@@ -288,14 +293,17 @@ try {
       ok(tag + ': every round names itself', seen.every((x, i) => x.title === ROUNDS[first + i]),
         seen.map((x) => x.title));
       ok(tag + ': the whole field is drawn every time',
-        seen.every((x) => x.cols === 4 && x.games === 13), seen.map((x) => [x.cols, x.games]));
+        seen.every((x) => x.cols === 4 && x.games === 13 + extra),
+        { got: seen.map((x) => [x.cols, x.games]), wantGames: 13 + extra });
       ok(tag + ': exactly one game is ringed, and it is the player\'s',
         seen.every((x) => x.live === 1), seen.map((x) => x.live));
-      /* One more appearance a round: the rounds already won, plus the one being played. A
-         bracket that had the player in the Super Bowl on the first screen was giving the
-         game away, which is what this counts. */
+      /* One more appearance a round: the rounds already won, plus the one being played, and
+         for a bye the seat in the Byes box on top of that. A bracket that had the player in
+         the Super Bowl on the first screen was giving the game away, which is what this
+         counts. */
       ok(tag + ': the player appears once more each round',
-        seen.every((x, i) => x.mine === i + 1), seen.map((x) => x.mine));
+        seen.every((x, i) => x.mine === i + 1 + extra),
+        { got: seen.map((x) => x.mine), want: seen.map((x, i) => i + 1 + extra) });
       /* A column fed by a round nobody has played is all TBD. Column r has 2 seats a game:
          6, 4, 2 and 1 games across the four rounds. */
       const SEATS = [12, 8, 4, 2];
