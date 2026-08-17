@@ -1786,6 +1786,43 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-transform:uppercase; color:var(--dim);}
   .srow.on .s-date{color:var(--tealT);}
 
+  /* ---- every song ----
+     A COLLECTION, NOT A SCOREBOARD. "159 of 365 songs heard live" is the
+     profile's headline and the next question it raises is which ones, which is
+     a list rather than another number. Three columns, and the third is the one
+     that makes it a tracker's screen: how many times the band has played it,
+     beside how many times you were in the room. */
+  .sgwrap{border-bottom:1px solid var(--line);}
+  .sgwrap:last-child{border-bottom:0;}
+  .sgrow{display:flex; align-items:baseline; gap:10px; width:100%; text-align:left;
+    padding:10px 14px; background:none; border:0; font-family:inherit;}
+  .sg-n{flex:1; min-width:0; font-size:13.5px; font-weight:800; color:var(--mut);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sgrow.got .sg-n{color:var(--ink);}
+  .sg-cov{font-style:normal; margin-left:7px; font-size:9px; font-weight:900;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--dim);}
+  /* Your count is the loud one. Theirs is a reference figure, so it is quiet
+     and fixed width to keep the column straight down the list. */
+  .sg-c{flex:0 0 auto; font-size:13.5px; font-weight:900; color:var(--tealT);
+    font-variant-numeric:tabular-nums;}
+  .sg-c i{font-style:normal; font-size:10px; font-weight:800;}
+  .sgrow:not(.got) .sg-c{color:var(--dim); font-weight:700;}
+  .sg-p{flex:0 0 34px; text-align:right; font-size:11.5px; font-weight:700;
+    color:var(--dim); font-variant-numeric:tabular-nums;}
+  .sgrow.open{background:var(--card2);}
+  .sgdet{padding:2px 14px 12px; background:var(--card2);}
+  .sgd-row{display:flex; align-items:baseline; gap:9px; padding:5px 0;
+    border-top:1px solid var(--line); font-size:12px;}
+  .sgd-d{flex:0 0 88px; font-weight:800;}
+  .sgd-v{flex:1; min-width:0; font-weight:600; color:var(--mut);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sgd-l{flex:0 0 auto; font-weight:800; color:var(--mut);
+    font-variant-numeric:tabular-nums;}
+  .sgd-j{display:block; font-style:normal; font-size:8.5px; font-weight:900;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--violetT); text-align:right;}
+  .sgd-none{padding:8px 0 2px; font-size:12px; font-weight:600; color:var(--dim);
+    line-height:1.5;}
+
   /* ---- the profile ---- */
   /* ---- the shows you were at, as a fan artifact ---- */
   /* The block is dropped straight into a bare .card, which carries no padding of
@@ -3601,7 +3638,7 @@ function attendanceStats(bandId){
   if (!perf.length) return out;
 
   const seenIds = new Set(), seenTitles = new Map();
-  let secs = 0, segues = 0, jams = 0, debuts = 0;
+  let secs = 0, segues = 0, jams = 0, debuts = 0, bigJams = 0, bustouts = 0;
   const covers = new Set();
   let longest = null, rarest = null;
   for (const p of perf) {
@@ -3613,9 +3650,22 @@ function attendanceStats(bandId){
     if (String(p.is_jamchart) === 'true') jams++;
     if (String(p.is_cover) === 'true') covers.add(p.song);
     if (Number(p.times_played) === 1) debuts++;
+    if (len >= 1200) bigJams++;                 // the twenty-minute-plus ones
+    if ((Number(p.show_gap) || 0) >= 50) bustouts++;
     if (len && (!longest || len > Number(longest.length_sec))) longest = p;
     const gap = Number(p.show_gap) || 0;
     if (gap && (!rarest || gap > Number(rarest.show_gap))) rarest = p;
+  }
+
+  /* THE SHAPE OF YOUR OWN RUN, which the counts above cannot show: how long it
+     has been, and the longest you ever went without one. Both computed from the
+     marked dates, so they cover every show including the untranscribed ones. */
+  const day = d => Math.round(Date.parse(`${d}T00:00:00Z`) / 86400000);
+  const since = day(todayISO()) - day(out.last);
+  let gapDays = 0, gapFrom = '', gapTo = '';
+  for (let i = 1; i < dates.length; i++) {
+    const d = day(dates[i]) - day(dates[i - 1]);
+    if (d > gapDays) { gapDays = d; gapFrom = dates[i - 1]; gapTo = dates[i]; }
   }
 
   /* THE ONE A TRACKER ACTUALLY WANTS: not what you have seen, but what the
@@ -3635,8 +3685,11 @@ function attendanceStats(bandId){
     songsTotal: new Set(data.shows.flatMap(s => s.songs.map(p => p.song_id)).filter(Boolean)).size,
     performances: perf.length,
     seconds: secs,
-    segues, jamcharts: jams, debuts,
+    segues, jamcharts: jams, debuts, bigJams, bustouts,
     covers: covers.size,
+    perShow: perf.length / withSet.length,
+    since, gapDays, gapFrom, gapTo,
+    onceOnly: [...seenTitles.values()].filter(n => n === 1).length,
     longest: longest ? { song: longest.song, len: Number(longest.length_sec) } : null,
     rarest: rarest ? { song: rarest.song, gap: Number(rarest.show_gap) } : null,
     mostSeen: top ? { song: top[0], times: top[1] } : null,
@@ -4909,6 +4962,181 @@ function render(){
   if (S.screen === 'profile') return renderProfile();
   if (S.screen === 'tour')    return renderTour();
   if (S.screen === 'browse')  return renderBrowse();
+  if (S.screen === 'songs')   return renderSongs();
+}
+
+/* ── every song, and how many of them you have heard ─────────────────────────
+ *
+ * THE AGGREGATES CANNOT ANSWER THE QUESTION THEY RAISE. "159 of 365 songs
+ * heard live" is the headline of the profile, and the very next thing anybody
+ * who tracks this wants is WHICH ones, and when. That is not another statistic,
+ * it is the list, and it is the difference between a scoreboard and a
+ * collection.
+ *
+ * Everything here comes off data the profile has already fetched, so opening
+ * it costs nothing beyond a render.
+ */
+const SONGS = { filter: 'all', sort: 'seen', q: '', open: null };
+
+function songCollection(bandId){
+  const data = (S.data && S.band && S.band.id === bandId ? S.data : null)
+    || FAN_DATA.get(bandId) || null;
+  const table = TOUR_STATE.rows;
+  if (!data) return null;
+
+  const ids = attendedSet(bandId);
+  const meta = new Map((table || []).map(r => [r.show_id, r]));
+  /* KEYED ON song_id, NOT THE TITLE, so this agrees with the profile's "of 367"
+     and, more importantly, so it does not merge songs that merely share a name.
+     Three titles here are two different songs each: Goose's own "All I Need"
+     and an LP Giobbi cover of it, "Revival" by two different writers, and two
+     "Happy Birthday"s. Folding those together would credit somebody with a song
+     they have never heard because they caught the other one. */
+  const byId = new Map();
+  for (const sh of data.shows) {
+    const at = ids.has(String(sh.show_id));
+    for (const p of sh.songs) {
+      if (!p.song || !p.song_id) continue;
+      let s = byId.get(p.song_id);
+      if (!s) byId.set(p.song_id, s = { id: p.song_id, song: p.song, plays: 0, mine: [],
+        cover: String(p.is_cover) === 'true', artist: p.original_artist || '' });
+      s.plays++;
+      /* Each sighting keeps what makes it a memory rather than a row: where it
+         was, how long it ran, and whether the curators wrote that one up. */
+      if (at) s.mine.push({
+        date: sh.show_date,
+        venue: sh.venue || (meta.get(String(sh.show_id)) || {}).venue || '',
+        city: sh.city || '', state: sh.state || '',
+        len: Number(p.length_sec) || 0,
+        jam: String(p.is_jamchart) === 'true',
+        gap: Number(p.show_gap) || 0,
+      });
+    }
+  }
+  const out = [...byId.values()];
+  for (const s of out) s.mine.sort((a, b) => b.date.localeCompare(a.date));
+  /* Two rows reading "All I Need" is the same trap the two-show nights were, so
+     a shared title is qualified by whose song it is. */
+  const titles = new Map();
+  for (const s of out) titles.set(s.song, (titles.get(s.song) || 0) + 1);
+  for (const s of out) if (titles.get(s.song) > 1 && s.artist) s.qualify = s.artist;
+  return out;
+}
+
+function renderSongs(){
+  loadTourRows();
+  const band = BANDS.find(b => b.shows && !b.sample);
+  for (const b of BANDS){
+    if (b.sample) continue;
+    if (!FAN_DATA.has(b.id) && !FAN_FETCHING.has(b.id) && !(S.data && S.band && S.band.id === b.id)){
+      FAN_FETCHING.add(b.id);
+      fanData(b.id).then(d => { if (d) FAN_DATA.set(b.id, d); if (S.screen === 'songs') render(); });
+    }
+  }
+
+  const all = songCollection(band.id);
+  if (!all){
+    app.innerHTML = `
+      <div class="bhd"><h2>Every song</h2></div>
+      <div class="loading"><div class="spinner"></div><div>Reading the archive</div></div>
+      <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
+    document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+    return;
+  }
+
+  const heard = all.filter(s => s.mine.length).length;
+  const q = SONGS.q.trim().toLowerCase();
+  let list = all.filter(s =>
+    (SONGS.filter === 'all' || (SONGS.filter === 'heard' ? s.mine.length : !s.mine.length)) &&
+    (!q || s.song.toLowerCase().includes(q)));
+
+  const SORTS = {
+    seen:  (a, b) => b.mine.length - a.mine.length || b.plays - a.plays,
+    /* THE MOST USEFUL SORT ON THE SCREEN, and the reason the filter and the
+       sort are separate: "never heard, most played" is the list of what you are
+       missing, in the order you are most likely to fix it. */
+    plays: (a, b) => b.plays - a.plays,
+    az:    (a, b) => a.song.localeCompare(b.song),
+  };
+  list = list.slice().sort(SORTS[SONGS.sort] || SORTS.seen);
+
+  const place = m => [m.city, m.state].filter(Boolean).join(', ');
+
+  app.innerHTML = `
+    <div class="bhd"><h2>Every song</h2></div>
+    <p class="bcount">You have heard <b>${heard}</b> of ${all.length} songs live.
+      Tap one to see every time.</p>
+
+    <div class="bfilter">
+      <label><span>Show</span>
+        <select id="sFilter">
+          ${[['all', `All ${all.length}`], ['heard', `Heard (${heard})`],
+             ['never', `Never heard (${all.length - heard})`]].map(([v, t]) =>
+            `<option value="${v}"${v === SONGS.filter ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+        </select></label>
+      <label><span>Order</span>
+        <select id="sSort">
+          ${[['seen', 'Times you saw it'], ['plays', 'Times they played it'], ['az', 'A to Z']]
+            .map(([v, t]) => `<option value="${v}"${v === SONGS.sort ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+        </select></label>
+    </div>
+
+    <input id="sQ" class="binput" type="search" placeholder="Find a song"
+      value="${esc(SONGS.q)}" autocomplete="off" />
+    <p class="bcount">${list.length} song${list.length === 1 ? '' : 's'}</p>
+
+    <section class="card">
+      ${list.length ? list.map(s => {
+        /* Keyed on the id, not the title: two songs share a name here, and
+           opening one by title would expand both. */
+        const open = SONGS.open === s.id;
+        return `<div class="sgwrap">
+          <button class="sgrow${s.mine.length ? ' got' : ''}${open ? ' open' : ''}" type="button"
+            data-songrow="${esc(s.id)}" aria-expanded="${open}">
+            <span class="sg-n">${esc(s.song)}${
+              s.qualify ? `<i class="sg-cov">${esc(s.qualify)}</i>`
+                        : s.cover ? '<i class="sg-cov">cover</i>' : ''}</span>
+            <span class="sg-c">${s.mine.length ? `${s.mine.length}<i>x</i>` : '<i>not yet</i>'}</span>
+            <span class="sg-p">${s.plays}</span>
+          </button>
+          ${open ? `<div class="sgdet">${s.mine.length
+            ? s.mine.map(m => `<div class="sgd-row">
+                <span class="sgd-d">${esc(fmtDate(m.date))}</span>
+                <span class="sgd-v">${esc(m.venue)}${place(m) ? `, ${esc(place(m))}` : ''}</span>
+                <span class="sgd-l">${m.len ? esc(fmtClock(m.len)) : ''}${
+                  m.jam ? '<i class="sgd-j">jamchart</i>' : ''}</span>
+              </div>`).join('')
+            : `<div class="sgd-none">They have played it ${s.plays} time${
+                s.plays === 1 ? '' : 's'} and you have not been there yet.</div>`}
+          </div>` : ''}
+        </div>`;
+      }).join('') : '<div class="bempty">Nothing matches that.</div>'}
+    </section>
+
+    <p class="axnote" style="margin-top:12px">Counted from the shows you marked
+      that have a setlist on elgoose. The right-hand number is how many times the
+      band has played it.</p>
+
+    <div class="homelinks" style="margin-top:18px">
+      <button class="btn ghost" type="button" data-go="browse">Track your shows</button>
+      <button class="btn ghost" type="button" id="backHome">Back</button>
+    </div>`;
+
+  document.getElementById('backHome').addEventListener('click', () => setScreen('profile'));
+  document.getElementById('sFilter').addEventListener('change', e => {
+    SONGS.filter = e.target.value; SONGS.open = null; render();
+  });
+  document.getElementById('sSort').addEventListener('change', e => {
+    SONGS.sort = e.target.value; SONGS.open = null; render();
+  });
+  const box = document.getElementById('sQ');
+  box.addEventListener('input', e => {
+    const at = e.target.selectionStart;
+    SONGS.q = e.target.value; SONGS.open = null;
+    render();
+    const again = document.getElementById('sQ');
+    again.focus(); again.setSelectionRange(at, at);
+  });
 }
 
 /* ── the tour ────────────────────────────────────────────────────────────────
@@ -5358,6 +5586,9 @@ function renderProfile(){
       st.jamcharts ? [st.jamcharts, 'jamcharts'] : null,
       st.covers ? [st.covers, 'covers'] : null,
       st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts'] : null,
+      st.bigJams ? [st.bigJams, '20-min jams'] : null,
+      st.bustouts ? [st.bustouts, 'bustouts'] : null,
+      st.perShow ? [st.perShow.toFixed(1), 'songs a night'] : null,
     ].filter(Boolean);
 
     const rows = st.songsSeen === null ? [] : [
@@ -5370,7 +5601,20 @@ function renderProfile(){
         ? ['Biggest year', st.bigYear.year, `${st.bigYear.shows} shows`] : null,
       st.tours ? ['Tours caught', `${st.tours} of ${st.toursTotal}`, ''] : null,
       ['First', fmtDate(st.first), ''],
-      ['Latest', fmtDate(st.last), ''],
+      ['Latest', fmtDate(st.last),
+        st.since != null ? (st.since === 0 ? 'today' : `${st.since} days ago`) : ''],
+      /* Only once there is a gap worth naming. Two shows a week apart do not
+         need telling that their longest gap was a week. */
+      /* YEARS, NOT SHORT DATES. fmtDate's short form drops the year, so a
+         636-day wait read "Nov 21 to Aug 18" and looked like nine months. The
+         full dates do not fit the column, and the years are the part that
+         makes the number make sense. */
+      st.gapDays > 120
+        ? ['Longest wait', `${st.gapDays} days`,
+            st.gapFrom.slice(0, 4) === st.gapTo.slice(0, 4)
+              ? st.gapFrom.slice(0, 4)
+              : `${st.gapFrom.slice(0, 4)} to ${st.gapTo.slice(0, 4)}`] : null,
+      st.onceOnly ? ['Heard once only', `${st.onceOnly} songs`, ''] : null,
     ].filter(Boolean);
 
     return `
@@ -5411,6 +5655,11 @@ function renderProfile(){
           ${st.wanted.map(w => `<div class="fw-row"><b>${esc(w.song)}</b>
             <span>${w.plays} play${w.plays === 1 ? '' : 's'}</span></div>`).join('')}
         </div>` : ''}
+
+        <!-- The aggregates above raise a question only a list can answer. -->
+        <div class="bandlinks" style="margin-top:13px">
+          <button type="button" data-go="songs">Every song, and yours</button>
+        </div>
 
         ${/* NOT "no longer in the archive", which is what this used to say and
               is not what happened. One in five played shows has no setlist
@@ -5463,6 +5712,21 @@ app.addEventListener('click', e => {
     const count = document.querySelector('.bcount');
     if (count) count.textContent =
       `Tick the ones you were at. ${attendedCount(band.id)} marked so far.`;
+    return;
+  }
+
+  /* One song open at a time. The list is 367 rows and a screen of expanded
+     ones is a scroll with no shape to it.
+     data-songROW, not data-song: the DRAFT screen's cards already own
+     data-song, and this handler runs before theirs in the same listener, so
+     the first version of it silently swallowed every pick in the game. */
+  const songRow = e.target.closest('[data-songrow]');
+  if (songRow){
+    const id = songRow.dataset.songrow;
+    SONGS.open = SONGS.open === id ? null : id;
+    render();
+    const again = document.querySelector(`[data-songrow="${CSS.escape(id)}"]`);
+    if (again) again.scrollIntoView({ block: 'nearest' });
     return;
   }
 

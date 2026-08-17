@@ -888,7 +888,18 @@ for (const [key, what] of [
   ['topVenue', 'the venue you go to most'],
   ['bigYear', 'your biggest year'],
   ['tours', 'tours caught'],
+  ['bigJams', 'the twenty-minute-plus jams'],
+  ['bustouts', 'the bustouts you caught'],
+  ['perShow', 'how many songs a night you get'],
+  ['since', 'how long since your last one'],
+  ['gapDays', 'the longest you ever went without'],
+  ['onceOnly', 'songs you have heard exactly once'],
 ]) check(new RegExp(`\\b${key}\\b`).test(gameBare), `the profile knows ${what}`);
+/* fmtDate's short form drops the year, so a 636-day wait read "Nov 21 to Aug
+   18" and looked like nine months. Years are the part that makes it make
+   sense, and the full dates do not fit the column. */
+check(/st\.gapFrom\.slice\(0, 4\)/.test(gameBare),
+  'and states the years a long wait spanned, not bare month-days');
 /* THE INVERSE, which is the one a tracker actually wants: not what you have
    seen but what the band keeps playing while you are not in the room. */
 check(/const wanted = \[\.\.\.playCount\]/.test(gameBare)
@@ -901,6 +912,51 @@ check(/venues\[0\]\[1\] > 1 \? \{ venue/.test(gameBare),
 /* Two words at most in a tile label: a third of a 390px screen clipped
    "songs played to you" to "SONGS PLAYED TO" over "YOU". */
 check(!/'songs played to you'/.test(gameBare), 'tile labels fit their tile');
+
+/* THE COLLECTION. "130 of 367 songs heard live" is the profile's headline and
+   the next thing anybody who tracks this wants is WHICH ones, and when. That is
+   not another statistic, it is the list, and it is the difference between a
+   scoreboard and a collection. */
+console.log('every song');
+check(/if \(S\.screen === 'songs'\)/.test(gameBare), 'the collection is routed');
+check(/function songCollection\(bandId\)/.test(gameBare), 'and built from the archive already loaded');
+check(/data-go="songs"/.test(gameBare), 'the profile links to it');
+/* KEYED ON song_id, NOT THE TITLE. Three titles here are two different songs
+   each: Goose's own "All I Need" and an LP Giobbi cover of it, "Revival" by two
+   writers, two "Happy Birthday"s. Folding those together credits somebody with
+   a song they have never heard because they caught the other one, and makes the
+   total disagree with the profile's. */
+check(/const byId = new Map\(\);/.test(gameBare) && /byId\.get\(p\.song_id\)/.test(gameBare),
+  'keyed on song_id so same-named songs stay separate');
+check(/titles\.get\(s\.song\) > 1 && s\.artist/.test(gameBare),
+  'and a shared title is qualified by whose song it is');
+check(/const open = SONGS\.open === s\.id;/.test(gameBare),
+  'opening one row cannot open its namesake');
+/* THE DRAFT SCREEN ALREADY OWNS data-song, and this handler runs before its
+   in the same listener, so the first version of the collection silently
+   swallowed every pick in the game. The regression harness caught it: a
+   playthrough that reported "picks 0". */
+check(/data-songrow="\$\{esc\(s\.id\)\}"/.test(gameBare),
+  'the collection ROW uses its own hook, not the draft\'s');
+check(/const songBtn = e\.target\.closest\('\[data-song\]'\)/.test(gameBare),
+  'and the draft still picks songs by data-song');
+{
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const ids = new Set(rows.map(r => r.song_id).filter(Boolean)).size;
+  const titles = new Set(rows.map(r => r.song).filter(Boolean)).size;
+  check(ids > titles, `same-named songs exist to be merged (${ids} ids, ${titles} titles)`);
+}
+/* Filter and sort are separate controls because "never heard, most played" is
+   the most useful list on the screen: what you are missing, in the order you
+   are most likely to fix it. */
+check(/id="sFilter"/.test(gameBare) && /id="sSort"/.test(gameBare),
+  'it filters and sorts independently');
+check(/plays: \(a, b\) => b\.plays - a\.plays/.test(gameBare),
+  'including by how often the band has played it');
+check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'its search keeps its caret');
+// Every sighting carries what makes it a memory rather than a row.
+for (const f of ['venue', 'len', 'jam'])
+  check(new RegExp(`${f}:`).test(gameBare), `a sighting records its ${f}`);
 
 /* THE PROFILE LOADS THE ARCHIVE ITSELF. Reached from the home screen there has
    never been a draft, so S.data is empty and the panel used to degrade to a
