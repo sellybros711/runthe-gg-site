@@ -1014,7 +1014,7 @@ const showsPath = 'setlist/data/goose_shows.csv';
 check(existsSync(resolve(repoRoot, showsPath)), 'the show table exists');
 const showRows = parseCSV(read(showsPath));
 const SHOW_COLS = ['show_id', 'show_date', 'year', 'tour_id', 'tour',
-  'venue', 'city', 'state', 'country', 'has_setlist'];
+  'venue', 'city', 'state', 'country', 'has_setlist', 'show_order'];
 const showHead = read(showsPath).slice(0, read(showsPath).indexOf('\n')).trim().split(',');
 check(showHead.length === SHOW_COLS.length && showHead.every((h, i) => h === SHOW_COLS[i]),
   'its header matches DATA_CONTRACT', `got ${showHead.join(',')}`);
@@ -1152,6 +1152,28 @@ check(/id="bYear"/.test(gameBare) && /id="bTour"/.test(gameBare),
    and only a handful of them happened in the year you picked. */
 check(/!BROWSE\.year \|\| r\.year === BROWSE\.year\)\s*\n\s*\.map\(r => r\.tour\)/.test(gameBare),
   'and the tour list narrows to the chosen year');
+/* SOME NIGHTS ARE TWO SHOWS. Seven date-and-venue pairs carry two distinct
+   show_ids with entirely different setlists: the Cabo destination runs play
+   twice in a day. Two identical rows is an invitation to tick the wrong one, on
+   the screen whose whole job is claiming the right one. */
+{
+  const pairs = new Map();
+  for (const r of showRows) {
+    const k = `${r.show_date}|${r.venue}`;
+    pairs.set(k, (pairs.get(k) || 0) + 1);
+  }
+  const doubled = [...pairs.values()].filter(n => n > 1).length;
+  check(doubled > 0, `nights holding more than one show exist (${doubled})`);
+  check(showRows.some(r => Number(r.show_order) > 1),
+    'the table records which show of the night each one is');
+  check(/show_order: String\(r\.showorder \|\| ''\)/.test(read('scripts/setlist/ingest_band.mjs')),
+    'taken from elgoose rather than guessed from row order');
+  check(/Show \$\{r\.show_order\} of \$\{n\}/.test(gameBare), 'and the browser says so');
+  /* Counted over the whole table, not the filtered list, or the marker would
+     appear and vanish as somebody narrows the year. */
+  check(/for \(const r of all\) \{\s*\n\s*const k = `\$\{r\.show_date\}\|\$\{r\.venue\}`/.test(gameBare),
+    'counted across every show, not the current filter');
+}
 check(/data-mark=/.test(gameBare), 'rows can be ticked');
 check(/toggleThere\(band\.id, mark\.dataset\.mark\)/.test(gameBare),
   'and a tick reaches the same store the draft writes to');

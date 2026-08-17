@@ -294,7 +294,7 @@ async function fetchJamcharts() {
  */
 const SHOW_COLUMNS = [
   'show_id', 'show_date', 'year', 'tour_id', 'tour',
-  'venue', 'city', 'state', 'country', 'has_setlist',
+  'venue', 'city', 'state', 'country', 'has_setlist', 'show_order',
 ];
 
 async function fetchShowTable(playedIds) {
@@ -325,6 +325,12 @@ async function fetchShowTable(playedIds) {
       state: clean(r.state),
       country: clean(r.country),
       has_setlist: playedIds.has(id) ? 'true' : 'false',
+      /* SOME NIGHTS ARE TWO SHOWS. Seven date-and-venue pairs in this archive
+         carry two distinct show_ids with entirely different setlists: the Cabo
+         destination runs play twice in a day, and a festival can too. Without
+         elgoose's own ordering the browser prints two identical rows and
+         nobody can tell which one they were at. */
+      show_order: String(r.showorder || ''),
     });
   }
   out.sort((a, b) => a.show_date.localeCompare(b.show_date) || a.show_id.localeCompare(b.show_id));
