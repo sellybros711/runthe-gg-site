@@ -775,6 +775,55 @@ check(!!fanLabel && /white-space:nowrap/.test(fanLabel[0]), 'the row labels do n
 check(!!fanLabel && Number((fanLabel[0].match(/flex:0 0 (\d+)px/) || [])[1]) >= 80,
   'and the label column is wide enough for the longest of them');
 
+/* THE WALKTHROUGH, and the measurement that says it has to exist. On a 390x844
+   screen the "Draft a setlist" button sits at 414px while the first rule starts
+   at 809px and all five end below the fold, so a first-time player meets the
+   button 400px before they meet a single word of explanation. */
+console.log('the walkthrough');
+check(/const GUIDE_STEPS = \[/.test(gameBare), 'a first visit gets walked through the page');
+check(/id="guide"/.test(gameBare), 'the overlay is in the markup');
+/* IT MUST BE GETTABLE BACK. A walkthrough you can only ever see once is a
+   popup; the button under the rules is what makes it a manual. */
+check(/id="guideBtn"/.test(gameBare), 'and can be reopened afterwards');
+check(/if \(e\.target\.closest\('#guideBtn'\)\)\{ openGuide\(0\); return; \}/.test(gameBare),
+  'the reopen button is wired');
+/* ONCE. Guarded by a stored key AND an in-session flag, because a home screen
+   re-render would otherwise bring it back after somebody closed it. */
+check(/const GUIDE_KEY = 'segue_guide_v1'/.test(gameBare), 'it remembers being seen');
+check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
+  'and cannot reappear later in the same session');
+
+/* EVERY STEP AIMS AT SOMETHING THAT EXISTS. The arrow is positioned from the
+   target's measured rect, so a renamed hook does not throw, it silently points
+   at nothing. These are the three the steps name. */
+for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]', '[data-go="profile"]'])
+  check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
+    `a step aims at ${sel}`);
+check(/class="card band"/.test(gameBare) && /class="card band soon"/.test(gameBare)
+  && /data-start="\$\{b\.id\}"/.test(gameBare),
+  'and the home screen still carries the hooks they aim at');
+
+/* THE LAYOUT MATHS MEASURES FROM THE RING, NOT THE TARGET. The ring is the
+   target plus a 6px halo; leaving the halo out put the arrow's tip on top of
+   the ring's own border. */
+check(/const ringTop = r\.top - GUIDE_PAD, ringBottom = r\.bottom \+ GUIDE_PAD;/.test(gameBare),
+  'the arrow is placed off the ring, halo included');
+/* Centring the target and then asking which side fitted could never work: a
+   350px panel plus a 68px arrow and its gaps needs 442px, and a centred target
+   on an 844px screen leaves 393 above and 392 below. Room is made first. */
+check(/window\.scrollBy\(0, r\.bottom - wantBottom\)/.test(gameBare),
+  'and room is made before a side is chosen');
+/* At 320px the nav row wants 315px of a 260px content width. */
+check(/\.g-nav\{[^}]*flex-wrap:wrap/.test(gameBare), 'the panel nav wraps rather than overflowing');
+/* THE SPOTLIT THING IS PRESSABLE, or the spotlight is a lie. The overlay covers
+   the page, so a press on the very button the arrow points at reaches the
+   overlay and nothing else; without the hand hit test, "press this one first"
+   steps the walkthrough forward instead of dealing a show. */
+check(/e\.clientX >= r\.left && e\.clientX <= r\.right/.test(gameBare),
+  'pressing the highlighted element does what it says');
+check(/closeGuide\(\);\s*target\.click\(\);/.test(gameBare),
+  'and the press is forwarded to it');
+
 console.log('copy');
 const stripComments = src => src
   .replace(/\/\*[\s\S]*?\*\//g, '')          // block comments

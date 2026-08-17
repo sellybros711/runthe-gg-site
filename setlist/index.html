@@ -1101,6 +1101,77 @@
     transition:transform var(--t-slow) var(--ease), opacity var(--t-base) var(--ease);}
   .grab{width:38px; height:4px; border-radius:99px; background:var(--line2);
     margin:4px auto 12px;}
+
+  /* ---- THE WALKTHROUGH --------------------------------------------------
+     MEASURED, and the measurement is the argument for it existing. On a
+     390x844 screen:
+
+         414px   "Draft a setlist"
+         694px   Leaderboard and Your shows
+         780px   the HOW IT WORKS heading
+         809px   step 1, and every one of the five steps ends below the fold
+
+     So a first-time player meets the button 400 pixels before they meet a
+     single rule, and the two buttons under it are unlabelled beyond their own
+     names. They press Draft not knowing what a draft is, what they are scored
+     on, or that "Your shows" is where their own concert history lives. Moving
+     the rules above the button would fix that for the first visit and punish
+     every visit after it, so instead the rules come to the player, pointing at
+     the thing each one is about, once.
+
+     The spotlight is a RING WITH AN ENORMOUS SPREAD SHADOW rather than an SVG
+     mask or a clip-path: one element, nothing to support-test, and it tracks a
+     measured rect exactly. */
+  .guide{position:fixed; inset:0; z-index:80; visibility:hidden; pointer-events:none;
+    opacity:0; transition:opacity var(--t-base) var(--ease), visibility 0s var(--t-base);}
+  .guide.on{visibility:visible; pointer-events:auto; opacity:1;
+    transition:opacity var(--t-base) var(--ease), visibility 0s;}
+  .g-ring{position:absolute; border-radius:14px; border:3px solid var(--tealT);
+    box-shadow:0 0 0 9999px rgba(4,10,20,.76); pointer-events:none;
+    transition:top var(--t-base) var(--ease), left var(--t-base) var(--ease),
+      width var(--t-base) var(--ease), height var(--t-base) var(--ease);}
+  /* The opening panel aims at nothing, so the ring collapses to a point and
+     only its shadow is left doing the dimming. */
+  .g-ring.blank{border-color:transparent;}
+  /* BIG, because that is the whole request. 68px of arrow beside a 44px tall
+     button is not subtle and is not meant to be. */
+  .g-arrow{position:absolute; width:68px; height:68px; color:var(--tealT);
+    pointer-events:none;}
+  .g-arrow svg{display:block; width:100%; height:100%;}
+  .g-card{position:absolute; left:var(--gut); right:var(--gut); max-width:430px;
+    margin:0 auto; background:var(--card); border:1px solid var(--line2);
+    border-radius:var(--r-lg); padding:15px 16px 13px;
+    box-shadow:0 20px 44px -20px rgba(0,0,0,.65);}
+  .g-eyebrow{font-family:var(--ui); font-size:11px; letter-spacing:2.6px;
+    text-transform:uppercase; color:var(--tealT); margin-bottom:5px;}
+  .g-card h3{font-family:var(--hero); font-size:20px; line-height:1.12; margin:0 0 8px;
+    text-transform:uppercase; letter-spacing:.02em;}
+  .g-card p{margin:0 0 9px; font-size:13.5px; line-height:1.5; font-weight:600;
+    color:var(--mut);}
+  .g-card p:last-of-type{margin-bottom:0;}
+  .g-card b{color:var(--ink); font-weight:800;}
+  /* The clock line: three budgets that are otherwise only discoverable by
+     playing a whole game and watching the meter. */
+  .g-budget{display:flex; gap:1px; margin:10px 0 0; background:var(--line);
+    border-radius:var(--r-md); overflow:hidden;}
+  .g-budget div{flex:1; background:var(--card2); padding:8px 4px; text-align:center;}
+  .g-budget b{display:block; font-family:var(--ui); font-size:17px; color:var(--ink);}
+  .g-budget span{font-size:9.5px; font-weight:800; letter-spacing:1.1px;
+    text-transform:uppercase; color:var(--dim);}
+  /* WRAPS, because it has to. At 320px the row wants Back, Close, the dots and
+     "Deal me a show" in 260px of content width and needs 315, so the button ran
+     off the panel and off the screen. Wrapping drops it to its own line and
+     margin-left keeps it on the right where it started. */
+  .g-nav{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:13px;}
+  .g-nav .sp{flex:1;}
+  .g-next{margin-left:auto;}
+  .g-dots{display:flex; gap:5px; align-items:center;}
+  .g-dots i{width:6px; height:6px; border-radius:99px; background:var(--line2);}
+  .g-dots i.at{background:var(--tealT); width:16px;}
+  .g-skip, .g-back{background:none; border:0; font-size:12px; font-weight:800;
+    color:var(--dim); padding:7px 4px;}
+  .g-next{border:0; border-radius:var(--r-md); background:var(--teal); color:#04202B;
+    font-weight:900; font-size:13.5px; padding:10px 15px; white-space:nowrap;}
   .sheet-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
     margin-bottom:10px;}
   .sheet-hd h2{font-family:var(--hero); font-size:21px; margin:0; text-transform:uppercase;
@@ -1746,6 +1817,14 @@ setTimeout(function(){
   <div class="inner" id="respinInner"></div>
 </div>
 
+<!-- The walkthrough. Positioned entirely from measured rects, so it has no
+     content of its own here beyond the three pieces it moves around. -->
+<div class="guide" id="guide" role="dialog" aria-modal="true" aria-labelledby="guideHd">
+  <div class="g-ring" id="guideRing"></div>
+  <div class="g-arrow" id="guideArrow"></div>
+  <div class="g-card" id="guideCard"></div>
+</div>
+
 <!-- REQUEST A BAND. There is no backend here: the whole game is a static page
      reading a CSV, and the rest of the site already sends mail the same way
      (contact.html links the identical address). The form composes the message
@@ -2022,6 +2101,195 @@ function setScreen(name){
   render();
 }
 
+/* ── the walkthrough ─────────────────────────────────────────────────────────
+ *
+ * WHY IT EXISTS is measured in the CSS above: the primary button sits 400px
+ * higher on the page than the first word of explanation, and the two buttons
+ * beneath it are never explained at all.
+ *
+ * WHAT IT SAYS is measured too. "Picking at random gets you about three
+ * quarters of it" is six full games played by choosing a random legal song
+ * every round: 71, 71, 76, 78, 88 and 93 percent of the ceiling, median 77.
+ * Worth stating, because the ceiling is the one thing about the scoring that
+ * is genuinely not guessable, and without it a first score is just a number.
+ *
+ * Each step names an element to aim at, and everything else about the layout
+ * comes from that element's measured rect at paint time. Nothing is
+ * hardcoded, so the steps survive the page reflowing under them.
+ */
+const GUIDE_KEY = 'segue_guide_v1';
+const GUIDE_STEPS = [
+  {
+    aim: null,
+    eyebrow: 'The goal',
+    hd: 'Build one night that never happened',
+    body: `<p>Segue deals you a <b>real Goose show</b>, one at a time, and you take
+        one song off each. What you end up with is a setlist the band never played
+        but could have.</p>
+      <p>You are not chasing a high score out of nowhere. When you finish, Segue
+        replays <b>the same nights in the same order</b> and works out the best show
+        that was actually available to you. That is what you are up against.</p>
+      <p>Picking at random gets you about <b>three quarters</b> of it. The last
+        quarter is the game.</p>`,
+  },
+  {
+    aim: () => document.querySelector('.band:not(.soon) [data-start]'),
+    eyebrow: 'Start here',
+    hd: 'Press this one first',
+    body: `<p>You get a random night from the archive. Pick a song off it and it
+        joins your set, spending <b>its real running time</b>, so a 20 minute jam
+        costs you 20 minutes.</p>
+      <p>You decide when a set ends. Rare songs, great versions and songs that
+        really did segue are worth the most.</p>`,
+    extra: `<div class="g-budget">
+        <div><b>75</b><span>Min set I</span></div>
+        <div><b>70</b><span>Min set II</span></div>
+        <div><b>10</b><span>Min encore</span></div>
+      </div>`,
+  },
+  {
+    aim: () => document.querySelector('[data-go="board"]'),
+    eyebrow: 'When you finish',
+    hd: 'The leaderboard',
+    body: `<p>Every finished show is ranked two ways: on <b>total points</b>, and on
+        <b>how close you got to your own ceiling</b>.</p>
+      <p>The second one is the fairer fight. It does not care whether the nights
+        you were dealt were loaded or thin, only what you did with them.</p>`,
+  },
+  {
+    aim: () => document.querySelector('[data-go="profile"]'),
+    eyebrow: 'If you go to shows',
+    hd: 'Your shows',
+    body: `<p>Mark the nights you were really at as you draft. Segue then works out
+        <b>how much of the catalogue you have heard live</b>: how many songs, which
+        one you have seen most, and how many are still out there.</p>
+      <p>It stays on this device unless you sign in, and it never appears on the
+        leaderboard.</p>`,
+  },
+];
+
+let GUIDE_AT = 0;
+/* Declared here rather than beside renderHome, which is where it is set: a
+   `let` used above its own declaration only works because nothing calls
+   renderHome during module evaluation, and that is not a thing to rely on. */
+let guideAutoTried = false;
+const guideEl = () => document.getElementById('guide');
+
+function guideSeen(){ try { return !!localStorage.getItem(GUIDE_KEY); } catch { return false; } }
+function markGuideSeen(){ try { localStorage.setItem(GUIDE_KEY, '1'); } catch {} }
+
+function openGuide(i = 0){
+  GUIDE_AT = Math.max(0, Math.min(GUIDE_STEPS.length - 1, i));
+  guideEl().classList.add('on');
+  paintGuide();
+}
+function closeGuide(){
+  guideEl().classList.remove('on');
+  markGuideSeen();
+}
+
+/* ARROW GEOMETRY, and the one thing worth saying about it: the shaft and the
+   head are one path with a round join, so the head cannot drift off the shaft
+   at any size the way two separate paths do. Drawn pointing DOWN; the up case
+   is the same path rotated, rather than a second set of coordinates. */
+const GUIDE_ARROW = `<svg viewBox="0 0 68 68" fill="none" stroke="currentColor"
+  stroke-width="8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M34 6 V50"/><path d="M17 35 L34 57 L51 35"/></svg>`;
+
+function paintGuide(){
+  const step = GUIDE_STEPS[GUIDE_AT];
+  const card = document.getElementById('guideCard');
+  const ring = document.getElementById('guideRing');
+  const arrow = document.getElementById('guideArrow');
+  const last = GUIDE_AT === GUIDE_STEPS.length - 1;
+
+  card.innerHTML = `
+    <div class="g-eyebrow">${esc(step.eyebrow)}</div>
+    <h3 id="guideHd">${esc(step.hd)}</h3>
+    ${step.body}${step.extra || ''}
+    <div class="g-nav">
+      ${GUIDE_AT ? '<button class="g-back" type="button" id="guideBack">Back</button>' : ''}
+      <button class="g-skip" type="button" id="guideSkip">${last ? 'Close' : 'Skip'}</button>
+      <span class="sp"></span>
+      <div class="g-dots">${GUIDE_STEPS.map((_, i) =>
+        `<i class="${i === GUIDE_AT ? 'at' : ''}"></i>`).join('')}</div>
+      <button class="g-next" type="button" id="guideNext">${
+        last ? 'Deal me a show' : 'Next'}</button>
+    </div>`;
+
+  const target = step.aim ? step.aim() : null;
+  /* A step whose target is missing degrades to a centred panel rather than
+     pointing at the top left corner, which is what a zeroed rect would do. */
+  if (!target){
+    ring.className = 'g-ring blank';
+    ring.style.cssText = 'top:50%; left:50%; width:0; height:0;';
+    arrow.style.display = 'none';
+    placeGuideCard(card, null);
+    return;
+  }
+
+  target.scrollIntoView({ block: 'center', behavior: 'auto' });
+  requestAnimationFrame(() => placeGuideCard(card, target, ring, arrow));
+}
+
+const GUIDE_GAP = 12, GUIDE_ARROW_H = 68, GUIDE_PAD = 6;
+
+/* MAKE ROOM FIRST, THEN CHOOSE A SIDE.
+ *
+ * Centring the target and then asking which side fit was the bug, and the
+ * numbers say why it could never have worked: on an 844px screen a centred
+ * "Draft a setlist" leaves 393px above and 392px below, while the panel plus
+ * the arrow plus their gaps need 442px. Neither side fits, so the panel got
+ * clamped to the top of the screen and the arrow was drawn straight across
+ * its bottom 33 pixels.
+ *
+ * Scrolling the target up by 50px is all it ever needed. So the target is
+ * moved to where the panel CAN sit before any side is picked, and the browser
+ * clamping that scroll at the end of the document is what the fallback to the
+ * other side is for.
+ */
+function placeGuideCard(card, target, ring, arrow){
+  const VH = window.innerHeight;
+  const h = card.offsetHeight;
+  const need = h + GUIDE_ARROW_H + GUIDE_GAP * 2 + GUIDE_PAD;
+
+  if (!target){
+    card.style.top = `${Math.max(GUIDE_GAP, (VH - h) / 2)}px`;
+    return;
+  }
+
+  let r = target.getBoundingClientRect();
+  const wantBottom = VH - need;
+  if (r.bottom > wantBottom){
+    window.scrollBy(0, r.bottom - wantBottom);
+    r = target.getBoundingClientRect();
+  }
+
+  ring.className = 'g-ring';
+  ring.style.cssText = `top:${r.top - GUIDE_PAD}px; left:${r.left - GUIDE_PAD}px;` +
+    `width:${r.width + GUIDE_PAD * 2}px; height:${r.height + GUIDE_PAD * 2}px;`;
+
+  /* Everything below measures from the RING, not from the target. The ring is
+     the target plus its halo, and leaving the halo out of the sums is what put
+     the arrow's tip on top of the ring's own border. */
+  const ringTop = r.top - GUIDE_PAD, ringBottom = r.bottom + GUIDE_PAD;
+  const fitsBelow = VH - ringBottom >= need;
+  // Below reads best (the arrow points up at the thing you just read about),
+  // but above is the honest fallback when the target is at the page's end.
+  const below = fitsBelow || ringTop < need;
+  card.style.top = below
+    ? `${ringBottom + GUIDE_ARROW_H + GUIDE_GAP}px`
+    : `${Math.max(GUIDE_GAP, ringTop - GUIDE_ARROW_H - GUIDE_GAP - h)}px`;
+
+  arrow.style.display = '';
+  arrow.style.transform = below ? 'rotate(180deg)' : 'rotate(0deg)';
+  arrow.style.top = `${below ? ringBottom + 2 : ringTop - GUIDE_ARROW_H - 2}px`;
+  arrow.style.left = `${Math.min(
+    Math.max(r.left + r.width / 2 - GUIDE_ARROW_H / 2, GUIDE_GAP),
+    window.innerWidth - GUIDE_ARROW_H - GUIDE_GAP)}px`;
+  arrow.innerHTML = GUIDE_ARROW;
+}
+
 // ── home ─────────────────────────────────────────────────────────────────────
 function renderHome(){
   const real = BANDS.filter(b => !b.sample);
@@ -2081,12 +2349,23 @@ function renderHome(){
         <li><b>5</b><span>When you're done, the show plays back song by song
           and the crowd reacts.</span></li>
       </ol>
+      <!-- The walkthrough runs itself on a first visit. This is how anybody
+           gets it back, which is what makes it a manual rather than a popup. -->
+      <button class="btn ghost" type="button" id="guideBtn">Show me around</button>
     </section>
 
     ${test.length ? `<div class="tryout">
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
       <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
+
+  /* ONCE, ON A FIRST VISIT, and guarded by a flag as well as the stored key so
+     that a home screen re-render mid-session cannot bring it back after
+     somebody has closed it. */
+  if (!guideAutoTried && !guideSeen()){
+    guideAutoTried = true;
+    requestAnimationFrame(() => { if (S.screen === 'home') openGuide(0); });
+  }
 }
 
 // ── reveal ───────────────────────────────────────────────────────────────────
@@ -3329,6 +3608,7 @@ function openBandForm(){
 function closeBandForm(){ bandSheet.classList.remove('on'); }
 document.addEventListener('click', e => {
   if (e.target.closest('#reqBand')){ openBandForm(); return; }
+  if (e.target.closest('#guideBtn')){ openGuide(0); return; }
   if (e.target.closest('#reqCancel') || e.target === bandSheet) closeBandForm();
 });
 document.addEventListener('keydown', e => {
@@ -3358,8 +3638,49 @@ document.getElementById('detailSheet').addEventListener('click', e => {
   if (e.target.id === 'detailSheet' || e.target.closest('#detailClose')) closeDetail();
 });
 
+function guideAdvance(){
+  if (GUIDE_AT < GUIDE_STEPS.length - 1){ openGuide(GUIDE_AT + 1); return; }
+  /* The last step's button is the first move the walkthrough has been
+     recommending, so it makes the move rather than just closing. */
+  closeGuide();
+  const go = document.querySelector('.band:not(.soon) [data-start]');
+  if (go) go.click();
+}
+
+document.getElementById('guide').addEventListener('click', e => {
+  if (e.target.closest('#guideSkip')){ closeGuide(); return; }
+  if (e.target.closest('#guideBack')){ openGuide(GUIDE_AT - 1); return; }
+  if (e.target.closest('#guideNext')){ guideAdvance(); return; }
+  if (e.target.closest('.g-card')) return;
+
+  /* THE SPOTLIT THING HAS TO BE PRESSABLE, or the spotlight is a lie. The
+     overlay covers the whole page, so a press on the very button the arrow is
+     pointing at reaches the overlay and nothing else, and "press this one
+     first" would step the walkthrough forward instead of drafting. The dim
+     cannot pass clicks through selectively, so the target's rect is hit
+     tested by hand and the press is forwarded. */
+  const step = GUIDE_STEPS[GUIDE_AT];
+  const target = step.aim ? step.aim() : null;
+  if (target){
+    const r = target.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top && e.clientY <= r.bottom){
+      closeGuide();
+      target.click();
+      return;
+    }
+  }
+  // Anywhere else on the dim: forward, since the dim is all there is to press.
+  guideAdvance();
+});
+/* A rotate or a keyboard opening moves every rect the panel was placed from. */
+window.addEventListener('resize', () => {
+  if (document.getElementById('guide').classList.contains('on')) paintGuide();
+});
+
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (document.getElementById('guide').classList.contains('on')){ closeGuide(); return; }
   if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
   if (document.body.classList.contains('sheet-on')){
     S.pickedSong = null; S.sheetForced = false; S.hint = ''; S.hintBad = false;
