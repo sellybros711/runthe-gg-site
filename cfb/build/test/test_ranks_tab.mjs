@@ -85,11 +85,25 @@ const noTable=http.createServer((req,res)=>{
 });
 await new Promise((r)=>noTable.listen(5556,r));
 
+/* SIGNED OUT, BUT KNOWN TO BE SIGNED OUT, which is not the same thing and is the only
+   state the sign-in prompt draws in. The real library comes from a CDN this sandbox
+   cannot reach, so without a stub authState never becomes ready and gateState() quite
+   correctly says nothing: asking somebody to sign in before you know whether they
+   already have is worse than not asking. Only the section that tests the prompt needs
+   it, so it is opt-in and the rest of the file keeps the behaviour it has always had. */
+const AUTH_STUB=`window.supabase={createClient(){return{
+  auth:{onAuthStateChange(){return{data:{}}},
+    getSession:()=>Promise.resolve({data:{session:null}}),
+    signOut:()=>Promise.resolve({})},
+  from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve({data:null})}}}}}},
+  rpc:()=>Promise.resolve({data:null,error:null})}}};`;
+
 /* live: true pins on, false pins off, null leaves it to work itself out. */
-async function newPage(live,port){
+async function newPage(live,port,auth){
   const page=await b.newPage({viewport:{width:600,height:1000}});
   page.on('pageerror',(e)=>{console.log('  PAGE ERROR: '+e.message);bad++;});
   await page.addInitScript(`window.PS_CFB_BOARD_URL='http://localhost:${port||5555}';
+    ${auth?AUTH_STUB:''}
     ${live===null?'':'window.PS_CFB_RANKS_LIVE='+(live?'true':'false')+';'}`);
   await page.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await page.waitForTimeout(2500);
@@ -214,7 +228,7 @@ console.log('\n=== the sign-in ask on the results screen itself ===');
       array['af${i}a:2016','af${i}b:2007','af${i}c:2014','af${i}d:2011','af${i}e:2009','af${i}f:2017'],
       'free', 'askfield')`);
   }
-  const p=await newPage(null);
+  const p=await newPage(null,null,true);
   ok('reached the results screen', await playToResults(p));
   await p.waitForTimeout(2600);
 
@@ -230,7 +244,8 @@ console.log('\n=== the sign-in ask on the results screen itself ===');
      machine's board happens to have a row in every window. */
   ok('  with a real number on at least one', cells.some(c=>/#\d/.test(c)), cells.join('  '));
 
-  const gate=(await p.textContent('#o-place .gateline'))||'';
+  const gateEl=await p.$('#o-place .gateline');
+  const gate=gateEl?((await gateEl.textContent())||''):'';
   ok('the sign-in prompt is there too', /Sign in and keep this season/.test(gate), gate.slice(0,80));
   /* The whole point. "would sit" makes the number contingent on the button. */
   ok('  and it says the placing is what you WOULD get', /would/i.test(gate), gate.slice(0,90));
