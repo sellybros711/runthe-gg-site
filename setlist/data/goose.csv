@@ -7543,3 +7543,17 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,2,13,Jed Stone,663,false,Vasudo,,3,16,0,36,false,false,,>,true,closer
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,2,14,Sinnerman,739,true,Nina Simone,,12,21,10,36,false,false,,,false,closer
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,E,15,Good Times // End Times,1022,false,,,3,4,0,,false,false,,,false,jam|encore
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,1,Royal,987,false,,,6,16,0,38,false,false,,>,true,opener
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,2,Butter Rum,415,false,Vasudo,,8,122,10,49,false,false,,",",false,
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,3,Please Forgive Me,685,true,David Gray,,18,16,10,,false,false,,",",false,
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,4,Torero,979,false,,,7,10,0,41,false,false,,",",false,closer|jam|peak
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,5,Earthling or Alien?,605,false,,,7,52,0,57,false,false,,>,true,jam|peak
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,6,Spirit Of The Dark Horse,557,false,,,16,41,10,41,false,false,,>,true,
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,7,Pancakes,723,false,Great Blue,,5,75,0,62,false,false,,,false,opener|closer|jam|peak
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,8,Echo of a Rose,463,false,Vasudo,,4,129,0,65,false,false,,",",false,jam
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,9,In Your Eyes,498,true,Peter Gabriel,,16,16,10,45,false,false,,>,true,jam|peak
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,10,Rosewood Heart,412,false,,,9,69,10,60,false,false,,",",false,jam|peak
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,11,Atlas Dogs,727,false,,,5,63,0,46,false,false,,>,true,opener
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,12,(((postplace))),1024,false,,,4,4,0,,false,false,,>,true,closer
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,13,So Ready,421,false,,,4,159,0,38,false,false,,,false,closer
+1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,E,14,Turn On Your Love Light,578,true,Bobby Blue Bland,,16,57,10,,false,false,,,false,closer|encore

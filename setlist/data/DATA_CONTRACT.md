@@ -21,7 +21,7 @@ node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a
 As of the last run: **7544 performances · 658 shows · 367 songs**, 2014–2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
 
-The show table from the same run: **855 shows · 658 with a setlist · 28 still to
+The show table from the same run: **855 shows · 659 with a setlist · 28 still to
 play**. The gap between 855 and 658 is not an error. It is announced dates that
 were never played, plus shows nobody has transcribed.
 
