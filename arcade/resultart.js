@@ -110,6 +110,13 @@
         try { RTGShare.send(spec() || sp); } catch (e) {}
       };
       requestAnimationFrame(function () { box.classList.add('on'); });
+      /* The loose Share button underneath is now the same action twice. Hide
+         it rather than remove it: the card's button clicks it, so its handler
+         and the challenge loop's watch on it both have to stay. funnel.js
+         cannot do this itself - it ranks the modal the moment it opens, and
+         the card arrives a beat later, once the canvas has drawn. */
+      var dup = sheet.querySelector('#mShare, #resShare');
+      if (dup) dup.style.display = 'none';
       // The card is what the hub reads back later, so bank it here rather than
       // only when somebody shares.
       try { RTGShare.remember(sp); } catch (e) {}

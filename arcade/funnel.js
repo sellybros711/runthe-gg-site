@@ -42,6 +42,14 @@
     s.textContent = '.funprog{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#8aa0b8);margin:10px 0 -4px;}' +
       '.funrow{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;margin:10px 0 0;}' +
       '.funhome,.funlb{display:inline-block;margin:0;background:none;border:0;font:800 12px var(--f,system-ui);color:var(--mut,#8aa0b8);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}' +
+      /* Rank, not restyle. Each game keeps its own button skin; these only say
+         which one is the answer. The doubled class beats the games' own
+         `.abtn.gold` / `.btn.primary` without reaching for !important. */
+      '.abtn.funsecond,.btn.funsecond{font-weight:800;}' +
+      /* the members-only archive link stops competing with the primary. Beats
+         archivecta's own rule whichever stylesheet lands last. */
+      '.sheet .rtgArchCta.funquiet,.modal .rtgArchCta.funquiet{background:none;border:0;' +
+      'padding:6px 8px;margin:0;font-weight:800;font-size:12px;text-decoration:underline;text-underline-offset:3px;}' +
       '.funhome:hover,.funlb:hover{color:var(--ink,#F4F7FB);}' +
       // Guest notice: says what actually happened to the score, and offers the
       // one action that changes it. Quiet, not a second paywall.
@@ -124,6 +132,73 @@
       link.textContent = 'Back to the arcade';
       if (home) home.style.display = 'none';   // the main button is the way home
     }
+    rank(sheetEl || link.closest('.sheet, .modal'), link, !!next);
+  }
+
+  /* ---- one hierarchy, instead of four modules each appending a button ------
+   * Four things injected into this modal independently: the game's own Play
+   * again and Share, our progress line and next-game link, archivecta's gold
+   * "Play a past day", challenge.js's milestone. Nobody ranked them, so the
+   * end of a game offered seven equal destinations and no answer to "what now".
+   *
+   * The answer depends on the game. A daily puzzle is finished - today's board
+   * is done and the next game is the only forward move. A streak game is never
+   * finished; going again IS the loop, and sending someone away from a run they
+   * are enjoying is the wrong call. So the primary button is the next game on a
+   * daily and Play again on a streak, and the other one drops to secondary. */
+  var STREAK = { table: 1, oddone: 1, career: 1, almamater: 1, highlow: 1 };
+  function rank(sheet, link, haveNext) {
+    if (!sheet) return;
+    var again = sheet.querySelector('#mAgain, #resAgain');
+    var share = sheet.querySelector('#mShare, #resShare');
+
+    // resultart.js hides the loose Share once its card has drawn (the card
+    // carries one, and the two are the same action). It cannot be done here:
+    // this runs the moment the modal opens, before the canvas exists.
+    var primary = (STREAK[currentGame()] || !haveNext) ? again : link;
+    var second  = primary === again ? link : again;
+    [[primary, 'funprimary'], [second, 'funsecond']].forEach(function (pair) {
+      if (!pair[0]) return;
+      pair[0].classList.remove('funprimary', 'funsecond');
+      pair[0].classList.add(pair[1]);
+    });
+    /* Move the game's OWN loud-button class onto whichever button is primary,
+       rather than inventing a colour here. Each game already says which of its
+       buttons shouts - `gold`, `primary`, `go` - and each has its own accent
+       behind it. Transplanting the modifier keeps every game's skin and still
+       lets the ranking decide who wears it. Recorded on the sheet the first
+       time, so running this again cannot lose track of the original owner. */
+    if (again && !sheet.getAttribute('data-fun-mod')) {
+      sheet.setAttribute('data-fun-mod',
+        ['gold', 'primary', 'go'].filter(function (m) { return again.classList.contains(m); }).join(' '));
+    }
+    (sheet.getAttribute('data-fun-mod') || '').split(' ').filter(Boolean).forEach(function (m) {
+      if (primary) primary.classList.add(m);
+      if (second) second.classList.remove(m);
+    });
+    // Put the primary's row first. Rows, not buttons: every game wraps its
+    // buttons, and moving a button out of its wrapper breaks that game's grid.
+    var pr = rowOf(primary, sheet), sr = rowOf(second, sheet);
+    if (pr && sr && pr !== sr && pr.parentNode === sr.parentNode &&
+        Array.prototype.indexOf.call(pr.parentNode.children, pr) >
+        Array.prototype.indexOf.call(sr.parentNode.children, sr)) {
+      sr.parentNode.insertBefore(pr, sr);
+    }
+    // The archive CTA is a members-only nicety, not a headline. It reads as one
+    // while it is a full-width gold button directly under the primary.
+    // archivecta.js injects on the same modal-open event, so which of us runs
+    // first is not ours to decide. Catch it on the way past, or a beat later.
+    var arch = sheet.querySelector('.rtgArchCta');
+    if (arch) arch.classList.add('funquiet');
+    else setTimeout(function () {
+      var a = sheet.querySelector('.rtgArchCta');
+      if (a) a.classList.add('funquiet');
+    }, 400);
+  }
+  function rowOf(el, sheet) {
+    if (!el) return null;
+    var r = el.parentNode;
+    return (r && r !== sheet) ? r : el;
   }
   /* A guest and a cardholder used to get byte-identical result screens — same
      streak, same "best ever", same Leaderboard button. But board.js submits
