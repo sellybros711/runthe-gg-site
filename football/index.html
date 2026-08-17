@@ -1150,6 +1150,36 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion: reduce){
     .frg{animation:none} .frg-arrow{animation:none}}
 
+  /* ---- THE TUTORIAL COACH BAR ----
+     Deliberately NOT a spotlight or a modal. The lesson is the draft itself, so the player
+     has to be able to touch every control while it is up: it sits along the bottom, over
+     nothing that is tapped, and the draft underneath behaves exactly as it always does. */
+  .tut{position:fixed;left:8px;right:8px;bottom:8px;z-index:68;
+    background:linear-gradient(180deg,#16233a,#0e1728);border:1px solid rgba(96,165,250,.45);
+    border-radius:13px;padding:11px 12px 10px;box-shadow:0 20px 46px -18px #000;
+    max-height:44vh;overflow:auto}
+  .tut[hidden]{display:none}
+  .tut-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .tut-step{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:#60a5fa;background:rgba(96,165,250,.14);border:1px solid rgba(96,165,250,.4);
+    border-radius:999px;padding:3px 8px;flex:0 0 auto}
+  .tut-title{font-family:var(--fn);font-size:14px;font-weight:800;color:var(--ink);
+    line-height:1.2;min-width:0}
+  .tut-body{font-size:12.5px;line-height:1.45;color:var(--dim);margin:0}
+  .tut-num{color:#93c5fd;font-weight:800}
+  .tut-row{display:flex;gap:7px;margin-top:9px}
+  .tut-row .btn{flex:1;padding:9px 10px;font-size:12.5px}
+  .tut-skip{background:transparent;border:1px solid var(--line-2);color:var(--dim-2);
+    flex:0 0 auto !important;width:auto !important;padding:9px 12px !important}
+  /* The end of the tutorial is the one moment it does take the screen, because there is
+     nothing left to practise on and the only question is what to do next. */
+  .tutend{position:fixed;inset:0;z-index:69;display:flex;align-items:center;
+    justify-content:center;padding:18px;background:rgba(4,8,16,.88);backdrop-filter:blur(3px)}
+  .tutend[hidden]{display:none}
+  .tutend-in{width:min(360px,100%);background:linear-gradient(180deg,#16233a,#101a2c);
+    border:1px solid var(--line-2);border-radius:14px;padding:16px;box-shadow:0 26px 60px -22px #000}
+  .tutend-in h2{font-family:var(--fd);font-size:22px;line-height:1.05;margin:6px 0 8px;color:var(--ink)}
+
   .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
   .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
   .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
@@ -3929,6 +3959,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
       d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <div class="hrow hp-util">
+      <button class="btn hp-util-btn" id="b-tut">Tutorial</button>
       <button class="btn hp-util-btn" id="b-how">How to play</button>
       <button class="btn hp-util-btn" id="b-board">Leaderboard</button>
     </div>
@@ -4604,6 +4635,26 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="headline" id="headline"></div>
+<!-- The tutorial coach bar, and the panel that closes it out. -->
+<div class="tut" id="tut" hidden>
+  <div class="tut-head"><span class="tut-step" id="tut-step">1 of 6</span>
+    <span class="tut-title" id="tut-title"></span></div>
+  <p class="tut-body" id="tut-body"></p>
+  <div class="tut-row">
+    <button class="btn ghost sm tut-skip" id="tut-skip" type="button">Skip</button>
+  </div>
+</div>
+<div class="tutend" id="tutend" hidden>
+  <div class="tutend-in">
+    <div class="frg-eyebrow">Tutorial complete</div>
+    <h2 id="tutend-h">That is a team</h2>
+    <p class="frg-goal" id="tutend-body"></p>
+    <button class="btn" id="tutend-go" type="button" style="width:100%">Start my own run</button>
+    <button class="btn ghost sm" id="tutend-play" type="button"
+      style="width:100%;margin-top:8px">Play this one out first</button>
+  </div>
+</div>
+
 <!-- The first run guide. Once per browser, on the very first visit. -->
 <div class="frg" id="frg" hidden>
   <div class="frg-pane" id="frg-t"></div><div class="frg-pane" id="frg-b"></div>
@@ -4622,7 +4673,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       season. It is meant to be very hard, and almost nobody gets there first try.</p>
     <p class="frg-later">Everything else (the other modes, the leaderboard, your profile)
       can wait until you have played one.</p>
-    <button class="btn ghost sm frg-x" id="frg-x" type="button">Got it</button>
+    <button class="btn frg-x" id="frg-tut" type="button">Walk me through one</button>
+    <button class="btn ghost sm frg-x" id="frg-x" type="button">No thanks, I will try it</button>
   </div>
   <div class="frg-hint" id="frg-hint">Start here</div>
   <div class="frg-arrow" id="frg-arrow" aria-hidden="true">
@@ -5557,6 +5609,7 @@ function beginDraft(opts){
   show('s-draft'); nextSpin();
 }
 $('b-start').onclick=()=>{ beginDraft({}); };
+$('b-tut').onclick=()=>{ tutStart(); };
 
 /* ---------- ALL-TIME TEAMS ----------
    Pick a club and every spin of the draft is that club. Only the year moves, so the run is
@@ -5912,6 +5965,106 @@ function paintResultsPromo(){
    IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
    over it, so the way out of the guide is the thing the guide is telling you to do. Got it
    dismisses without starting, for somebody who wants to look around first. */
+/* ---- THE OPTIONAL TUTORIAL ----
+ * A practice draft on a fixed seed, coached one pick at a time, that hands over to a real
+ * run at the end. Optional on purpose: plenty of people would rather press Start and find
+ * out, and the guide still points them straight at that.
+ *
+ * THE SEED IS CHOSEN, NOT ARBITRARY. Seed 3 opens on the 2018 Chiefs, whose best player
+ * costs 48 of the 140 available for one of six spots, on a board that also holds a 4M
+ * option. That makes the salary cap a decision on the very first pick rather than a rule
+ * somebody reads about later, which is the one thing the front page never managed to say.
+ * Picked by sweeping 4,000 seeds for an opening board carrying both a genuine star and a
+ * genuine bargain.
+ *
+ * NOTHING HERE IS RECORDED. recordRun() refuses a tutorial run outright, so a coached draft
+ * cannot reach the leaderboard, the profile or a badge.
+ */
+const TUTORIAL_SEED=3;
+let tutorialOn=false;
+
+/* THE COPY READS THE RUN RATHER THAN QUOTING IT. Naming the player or the price in the text
+   would go stale the first time the player data is rebuilt, and it has been rebuilt several
+   times already. Every number below is asked of the live run at the moment it is shown, so
+   the lesson stays true even if the seed lands somewhere else entirely. */
+function tutSteps(){
+  const left=R.remaining(run), spots=R.slotsLeft(run);
+  const n=(v)=>'<span class="tut-num">'+v+'</span>';
+  return [
+    { t:'One spin, one signing',
+      b:'Every spin gives you a year and a team, and you sign ONE player from it. Then it '+
+        'spins again. Six spins fill six spots: QB, RB, two WR, TE and a flex. You have '+
+        n(M(left))+' to sign all six.' },
+    { t:'The cap is the whole puzzle',
+      b:'One spot gone, '+n(M(left))+' left for '+n(spots)+'. The figure under the cap is '+
+        'what is left PER remaining spot: when it turns red you can no longer afford an '+
+        'average player everywhere else. A star early is paid for by bargains later.' },
+    { t:'The tabs are positions',
+      b:'QB, RB, WR and TE, with everyone the team had at each. A position with nowhere '+
+        'left to go greys out. Signing a running back when RB is already filled puts him '+
+        'at flex instead, and the tile says so before you tap it.' },
+    { t:'You can spin again, for a price',
+      b:'Three respins a run, costing 5, then 10, then 15 off the cap. Worth it when the '+
+        'board genuinely has nobody you can use. Rarely worth it to chase a name you '+
+        'recognise, because the fee comes out of the same '+n(M(left))+' you still have to '+
+        'fill '+n(spots)+' with.' },
+    { t:'Two to go',
+      b:n(M(left))+' left and '+n(spots)+' spots. This is where the first pick shows its '+
+        'price: an expensive start is either the reason the team is good or the reason the '+
+        'last two spots are whoever happens to be cheapest.' },
+    { t:'Last spot',
+      b:'Whatever is left has to cover it. If nothing on the board fits, that is exactly '+
+        'what a respin is for, fee and all.' },
+  ];
+}
+
+function tutPaint(){
+  if(!tutorialOn) return;
+  const bar=$('tut'); if(!bar) return;
+  const i=Math.min(5,Math.max(0,(run&&run.roster?run.roster.length:0)));
+  const st=tutSteps()[i];
+  $('tut-step').textContent=(i+1)+' of 6';
+  $('tut-title').textContent=st.t;
+  $('tut-body').innerHTML=st.b;
+  bar.hidden=false;
+  /* THE BAR SITS OVER THE PLAYER LIST, so the list has to be able to scroll out from under
+     it. Measured rather than guessed: the copy is a different length on every step, and a
+     fixed reserve would either waste a third of a phone screen on the short ones or still
+     hide a tile on the long ones. */
+  const scr=$('s-draft');
+  if(scr) requestAnimationFrame(()=>{ scr.style.paddingBottom=(bar.offsetHeight+22)+'px'; });
+}
+function tutStart(){
+  tutorialOn=true;
+  frgClose();
+  ga('tutorial_started');
+  beginDraft({seed:TUTORIAL_SEED});
+  tutPaint();
+}
+function tutStop(quiet){
+  tutorialOn=false;
+  const bar=$('tut'); if(bar) bar.hidden=true;
+  const end=$('tutend'); if(end) end.hidden=true;
+  const scr=$('s-draft'); if(scr) scr.style.paddingBottom='';
+  if(!quiet) ga('tutorial_skipped');
+}
+$('tut-skip').onclick=()=>tutStop();
+/* The roster is full, so there is nothing left to coach and the only question is what to do
+   next. The answer this exists to give is "now go and do your own". */
+function tutFinish(){
+  if(!tutorialOn) return;
+  const end=$('tutend'); if(!end) return;
+  ga('tutorial_finished');
+  const bar=$('tut'); if(bar) bar.hidden=true;
+  const scr=$('s-draft'); if(scr) scr.style.paddingBottom='';
+  $('tutend-body').innerHTML='In a real run the season plays out from here: seventeen games, '+
+    'then the playoffs if you get there. This practice draft is not recorded and never '+
+    'reaches the leaderboard.';
+  end.hidden=false;
+  $('tutend-go').onclick=()=>{ tutStop(true); ga('tutorial_to_real_run'); beginDraft({}); };
+  $('tutend-play').onclick=()=>{ end.hidden=true; };
+}
+
 const FRG_KEY='ps_seen_guide';
 function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
 function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
@@ -6012,6 +6165,7 @@ function firstRunGuide(){
   window.addEventListener('scroll',frgPlace,{passive:true});
   ga('first_run_guide_shown');
   $('frg-x').onclick=()=>{ ga('first_run_guide_dismissed'); frgClose(); };
+  $('frg-tut').onclick=()=>{ ga('first_run_guide_tutorial'); tutStart(); };
   /* Tapping the button both starts the run and finishes the guide; the button's own
      handler still runs, because the guide never covered it. */
   $('b-start').addEventListener('click',frgClose,{once:true});
@@ -6606,6 +6760,7 @@ function signInto(p,slot){
   try{R.sign(run,p,slot);}catch(err){toast(err.message);return;}
   ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:runMode(),club:run&&run.franchise||null,
     slot:slot===null?null:slotsNow()[slot],slot_chosen:slot!==null});
+  if(tutorialOn&&run.phase!==R.PHASES.SEASON) tutPaint();
   if(run.phase===R.PHASES.SEASON){
     ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)+E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed,mode:runMode(),club:run&&run.franchise||null});
     paintSquad();
@@ -6633,6 +6788,7 @@ const schemeIconSvg=(key)=>SCHEME_ICONS[key]
   :'';
 function paintSquad(){
   R.startSeason(run,DATA,CTX);
+  if(tutorialOn) tutFinish();
   drawField($('field2'),false);
   const rl=$('q-roster-list');
   if(run.tradeMachine){
@@ -11882,6 +12038,11 @@ let ranksP=null, gmRankP=null;
    the rank query is a read and does not need an account. It just is not recorded until there
    is somebody to record it against. */
 async function recordRun(){
+  /* A PRACTICE DRAFT IS NOT A RUN. It is played on a fixed seed with the answers written
+     beside it, so recording it would put a coached team on the same board as everybody
+     else's real ones. Marked as a guest run, which is the existing shape for "played, not
+     recorded", so nothing downstream has to learn a new state. */
+  if(tutorialOn){ submitted='guest'; return submitted; }
   if(submitted!==null) return submitted;
   if(!authState.signedIn){ submitted='guest'; return submitted; }
   const pay=runPayload();
