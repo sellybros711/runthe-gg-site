@@ -1233,8 +1233,21 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:700}
   .nbrk-t .yr{font-size:9.5px;color:var(--dim-2);flex:0 0 auto}
   .nbrk-t.me .nm{color:#fca5a5}
-  .nbrk-t.won{color:var(--ink)}
-  .nbrk-t.won .nm{font-weight:800}
+  /* WINNERS ARE TINTED, NOT JUST BOLDED. Weight alone is a poor signal at 11.5px in a
+     column you are scanning rather than reading: at a glance a settled game looked like two
+     similar rows, and telling who went through meant stopping on each one. Green is the
+     house colour for a good outcome everywhere else in the game, and the faint wash behind
+     the row carries further down a column than the text colour does.
+
+     LOSERS ARE NOT TURNED RED, which was the other way round to do this. Red already means
+     YOUR TEAM here, on every screen of the bracket, so painting the beaten side red would
+     have two unrelated meanings sharing one colour in the same box. Dimming them is enough
+     once the winner is doing the talking. */
+  .nbrk-t.won{color:var(--ink);background:rgba(74,222,128,.07)}
+  .nbrk-t.won .nm{font-weight:800;color:#86efac}
+  /* Your own colour outranks the winner colour: when you go through, the wash and the
+     weight say advanced and the red still says which one is you. */
+  .nbrk-t.won.me .nm{color:#fca5a5}
   .nbrk-t.out{opacity:.42}
   .nbrk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
   .nbrk-note{text-align:center;font-size:12px;color:var(--dim-2);margin:6px 0 0;min-height:16px}

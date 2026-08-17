@@ -88,6 +88,15 @@ window.__BRK={
     mine:document.querySelectorAll('#nbrk-rail .nbrk-t.me').length,
     tbd:[...document.querySelectorAll('#nbrk-rail .nbrk-col')]
       .map(c=>c.querySelectorAll('.nbrk-t.tbd').length),
+    /* What a settled game looks like: the side that went through, and the player's own
+       seat when they are the one that went through. Read as computed colour rather than as
+       a class name, because the class surviving a stylesheet edit proves nothing. */
+    tint:(()=>{ const n=document.querySelector('#nbrk-rail .nbrk-t.won:not(.me) .nm');
+      return n?{name:getComputedStyle(n).color,weight:getComputedStyle(n).fontWeight,
+        bg:getComputedStyle(n.closest('.nbrk-t')).backgroundColor}:null; })(),
+    mineWon:(()=>{ const n=document.querySelector('#nbrk-rail .nbrk-t.won.me .nm');
+      return n?getComputedStyle(n).color:null; })(),
+    beaten:document.querySelectorAll('#nbrk-rail .nbrk-t.out').length,
     scroll:Math.round(document.getElementById('nbrk-rail').scrollLeft),
     maxScroll:Math.round(document.getElementById('nbrk-rail').scrollWidth
       -document.getElementById('nbrk-rail').clientWidth),
@@ -312,6 +321,26 @@ try {
           const now = first + i;
           return x.tbd.every((n, c) => n === (c <= now ? 0 : SEATS[c]));
         }), seen.map((x) => [x.title, x.tbd]));
+      /* THE WINNER IS TINTED, not merely bolded. Weight alone at 11.5px in a column you
+         scan rather than read made a settled game look like two similar rows. Asserted as
+         the computed colour: green name, faint green wash, heavier weight, and the beaten
+         side dimmed rather than reddened, because red is already the player's own colour
+         on this screen. */
+      const settled = seen.slice(1);          // the first screen has nothing settled yet
+      ok(tag + ': the side that went through is tinted, not just bolded',
+        settled.length > 0 && settled.every((x) => x.tint
+          && x.tint.name === 'rgb(134, 239, 172)'
+          && x.tint.weight === '800'
+          && x.tint.bg !== 'rgba(0, 0, 0, 0)'),
+        settled.map((x) => x.tint));
+      ok(tag + ': and the beaten side is dimmed rather than reddened',
+        settled.every((x) => x.beaten > 0), settled.map((x) => x.beaten));
+      /* The player wins every game in this walk, so from the second screen on their own
+         seat is a settled winner and has to stay red: advanced is the wash, you is the
+         colour, and one must not overwrite the other. */
+      ok(tag + ': your own seat keeps your colour when you go through',
+        settled.every((x) => x.mineWon === 'rgb(252, 165, 165)'),
+        settled.map((x) => x.mineWon));
       /* And the round being played is on screen rather than off the right hand edge. */
       ok(tag + ': the rail scrolls to the round being played',
         seen.every((x, i) => x.scroll > 0 || first + i === 0 || x.maxScroll === 0),
