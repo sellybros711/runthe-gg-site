@@ -23,17 +23,24 @@ anywhere, and `BROWSER=1` adds a played season on top.
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
-| `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, and a defensive season is as winnable. |
+| `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, and every scheme can be drafted for on purpose. |
 
 ## What `test_defense.mjs` is really guarding
 
-Not "the mode exists". A defense mode can be completely broken and still look fine:
-every season would simply play the same, because the achievable spread on defense is a
-third of the offensive one. IDP scoring is tackle-led and tackle counts barely separate
-starters, so `DEF_POWER` is what carries the difference between a good defensive roster
-and a bad one onto the scoreboard at all. Lower it and nothing throws, nothing renders
-wrong, and the draft quietly stops mattering. That assertion is the reason this file is
-worth running.
+Not "the mode exists". A defense mode can be completely broken and still look fine.
+
+On the rating alone, drafted defenses land within 9.5% of each other where offenses
+spread over 22.5%: IDP scoring is tackle-led, and tackle counts barely separate
+starters. Nothing in the mode would throw or render wrong if that compression came
+back. Every season would simply play the same, and the draft would quietly stop
+mattering.
+
+What closes the gap is `defenseStructure` reading WHAT KIND of defense a roster is,
+which is why the schemes are tested as hard as the balance. Two assertions draw the
+distinction on purpose, one on the rating alone and one on the rating times structure,
+so a regression says which half broke. Three more draft toward the pass rush, toward
+coverage, and toward tacklers, and check each strategy actually produces the defense it
+is chasing: a scheme reachable only by luck is a lottery ticket rather than a decision.
 
 ## Why the second half of that matters more than the first
 

@@ -227,8 +227,8 @@ const CONSTANTS = {
   CONSISTENCY: 0.20,
   /* THE DEFENSE DRAFT. Both solved rather than tuned; the derivation is above
      resolveGameDefense and depends on the measured spread of drafted rosters. */
-  DEF_REF: 45.5,
-  DEF_POWER: 2.24,
+  DEF_REF: 39.9,
+  DEF_POWER: 1.0,
   /* The spread on the offense you are given. Real team scoring runs a standard deviation
      around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
      sits near this across the era), and your borrowed offense should be as streaky as
@@ -1585,6 +1585,240 @@ const SCHEMES = [
   },
 ];
 
+/* The scheme bonus is a range, not a flat number: 1% for a roster that only just fits its
+   scheme, scaling to 3% for one that fits it strongly, with the detect's fit (0..1) sliding
+   between the two. Shared by both sides of the ball so a defensive scheme is worth what an
+   offensive one is worth before the mode's own arithmetic gets to it. */
+const SCHEME_MIN_BONUS = 0.01, SCHEME_MAX_BONUS = 0.03;
+
+/*
+ * ─── DEFENSIVE SCHEMES ───────────────────────────────────────────────────────────────
+ *
+ * The same idea as the offensive schemes above and read the same way: hardest and most
+ * specific first, each detect returning a fit in 0..1 or -1, the first match winning.
+ *
+ * WHAT THEY READ. 01-defenders.mjs splits every man's production three ways, and those
+ * three columns are what tells one defense from another:
+ *   rush_ppg    sacks, quarterback hits, tackles for loss    the pass rush
+ *   cover_ppg   interceptions and passes defended            the coverage
+ *   tackle_ppg  solos and assists                            the volume
+ * A defense that gets to 50 points on sacks and a defense that gets there on tackles are
+ * different teams, and until now the engine could not tell them apart.
+ *
+ * THE THRESHOLDS ARE PERCENTILES OF THE REAL POOL, not round numbers. Measured over
+ * 16,973 player-seasons:
+ *              med    p75    p90    p97
+ *   DL rush    1.2    2.3    3.6    5.0
+ *   LB rush    0.6    1.5    2.8    4.4
+ *   LB cover   0.2    0.7    1.2    1.9
+ *   LB tackle  4.3    6.7    8.6   10.3
+ *   DB cover   1.1    2.0    2.8    3.9
+ *   DB tackle  4.6    5.9    7.0    8.2
+ * A scheme qualifies around p75 to p90 of its key column and reaches full fit near p97,
+ * so signing one of the best in the league at a thing is what completes it.
+ */
+const DEFENSE_SCHEMES = [
+  {
+    key: 'steel_curtain',
+    name: 'Steel Curtain',
+    detect(roster) {
+      const dl = roster.filter(p => p.position === 'DL')
+        .sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0));
+      if (dl.length < 2) return -1;
+      if ((dl[0].rush_ppg || 0) < 5.0 || (dl[1].rush_ppg || 0) < 3.6) return -1;
+      return fitAvg(over(dl[0].rush_ppg, 5.0, 3.0), over(dl[1].rush_ppg, 3.6, 2.0));
+    },
+    strength: 'Steel Curtain. Two linemen wreck the pocket and nothing else has to work.',
+  },
+  {
+    key: 'legion_of_boom',
+    name: 'Legion of Boom',
+    detect(roster) {
+      const db = roster.filter(p => p.position === 'DB')
+        .sort((a, b) => (b.cover_ppg || 0) - (a.cover_ppg || 0));
+      if (db.length < 2) return -1;
+      if ((db[0].cover_ppg || 0) < 3.9 || (db[1].cover_ppg || 0) < 2.8) return -1;
+      return fitAvg(over(db[0].cover_ppg, 3.9, 2.0), over(db[1].cover_ppg, 2.8, 1.5));
+    },
+    strength: 'Legion of Boom. A secondary that takes half the field away before the snap.',
+  },
+  {
+    key: 'blitzburgh',
+    name: 'Blitzburgh',
+    detect(roster) {
+      const lb = roster.filter(p => p.position === 'LB')
+        .sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
+      if (!lb || (lb.rush_ppg || 0) < 4.4) return -1;
+      const dl = roster.filter(p => p.position === 'DL')
+        .sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
+      if (!dl || (dl.rush_ppg || 0) < 2.3) return -1;
+      return fitAvg(over(lb.rush_ppg, 4.4, 2.5), over(dl.rush_ppg, 2.3, 2.0));
+    },
+    strength: 'Blitzburgh. The pressure comes from the second level and nobody blocks it.',
+  },
+  {
+    key: 'tampa_2',
+    name: 'Tampa 2',
+    detect(roster) {
+      const lb = roster.filter(p => p.position === 'LB')
+        .sort((a, b) => (b.cover_ppg || 0) - (a.cover_ppg || 0))[0];
+      if (!lb || (lb.cover_ppg || 0) < 1.9 || (lb.tackle_ppg || 0) < 6.7) return -1;
+      return fitAvg(over(lb.cover_ppg, 1.9, 1.2), over(lb.tackle_ppg, 6.7, 3.6));
+    },
+    strength: 'Tampa 2. A linebacker who can run the seam is the whole coverage.',
+  },
+  {
+    key: 'forty_six',
+    name: 'The 46',
+    detect(roster) {
+      /* Pressure from everywhere rather than from one place: three men who all get
+         after it, whatever level they line up at. */
+      const rushers = roster.filter(p => (p.rush_ppg || 0) >= 2.0)
+        .sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0));
+      if (rushers.length < 3) return -1;
+      return fitAvg(...rushers.slice(0, 3).map(r => over(r.rush_ppg, 2.0, 2.5)));
+    },
+    strength: 'The 46. Eight in the box and pressure from places nobody accounts for.',
+  },
+  {
+    key: 'no_fly_zone',
+    name: 'No-Fly Zone',
+    detect(roster) {
+      const db = roster.filter(p => p.position === 'DB')
+        .sort((a, b) => (b.cover_ppg || 0) - (a.cover_ppg || 0));
+      if (db.length < 2) return -1;
+      const both = (db[0].cover_ppg || 0) + (db[1].cover_ppg || 0);
+      if (both < 4.8) return -1;
+      return over(both, 4.8, 3.0);
+    },
+    strength: 'No-Fly Zone. Throwing on this secondary is a decision you regret.',
+  },
+  {
+    key: 'monsters',
+    name: 'Monsters of the Midway',
+    detect(roster) {
+      const lb = roster.filter(p => p.position === 'LB')
+        .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      if (!lb || lb.ppr_ppg_mean < 12.9 || (lb.tackle_ppg || 0) < 10.3) return -1;
+      return fitAvg(over(lb.ppr_ppg_mean, 12.9, 3.5), over(lb.tackle_ppg, 10.3, 3.0));
+    },
+    strength: 'Monsters of the Midway. The best player on the field plays linebacker.',
+  },
+  {
+    key: 'orange_crush',
+    name: 'Orange Crush',
+    detect(roster) {
+      /* Every level above the line. Nothing spectacular anywhere and nowhere to attack. */
+      const best = (pos) => roster.filter(p => p.position === pos)
+        .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      const dl = best('DL'), lb = best('LB'), db = best('DB');
+      if (!dl || !lb || !db) return -1;
+      if (dl.ppr_ppg_mean < 5.7 || lb.ppr_ppg_mean < 8.8 || db.ppr_ppg_mean < 8.0) return -1;
+      return fitAvg(over(dl.ppr_ppg_mean, 5.7, 4.0), over(lb.ppr_ppg_mean, 8.8, 4.1),
+        over(db.ppr_ppg_mean, 8.0, 2.9));
+    },
+    strength: 'Orange Crush. Three levels, no weak one, nowhere to attack.',
+  },
+  {
+    key: 'sack_exchange',
+    name: 'Sack Exchange',
+    detect(roster) {
+      const front = roster.filter(p => p.position === 'DL')
+        .reduce((t, p) => t + (p.rush_ppg || 0), 0);
+      if (front < 6.0) return -1;
+      return over(front, 6.0, 4.0);
+    },
+    strength: 'Sack Exchange. The front four are the entire game plan.',
+  },
+  {
+    key: 'bend_dont_break',
+    name: 'Bend but Do Not Break',
+    detect(roster) {
+      /* Volume tacklers and few splash plays: everything is in front of you, and it
+         stays there. Requires the tackling to be real AND the rush to be quiet, so it
+         is a shape rather than a consolation prize for a roster with nothing else. */
+      const tackle = roster.reduce((t, p) => t + (p.tackle_ppg || 0), 0);
+      const rush = roster.reduce((t, p) => t + (p.rush_ppg || 0), 0);
+      if (tackle < 30 || rush > 4) return -1;
+      return fitAvg(over(tackle, 30, 12), over(4 - rush, 0, 3));
+    },
+    strength: 'Bend but Do Not Break. Everything is in front of you and it stays there.',
+  },
+];
+
+/* The first defensive scheme that fits, same rule as the offensive list. */
+function detectDefenseScheme(roster) {
+  for (const s of DEFENSE_SCHEMES) {
+    const fit = s.detect(roster);
+    if (fit >= 0) return { key: s.key, name: s.name, fit: clamp(fit, 0, 1) };
+  }
+  return null;
+}
+
+/*
+ * HOW A DEFENSE IS BUILT, the counterpart to rosterStructure, and deliberately a lighter
+ * touch than that one for a measured reason.
+ *
+ * Real defenses are FLAT. Over 861 real team defenses, taking each club's six biggest
+ * contributors, the two weakest average 0.85 of the roster average (offense: 0.64) and the
+ * top man takes 0.21 of the unit's production, with the tenth and ninetieth percentiles at
+ * 0.19 and 0.24. There is no defensive equivalent of a quarterback, so a defense cannot be
+ * built around one man the way an offense can, and a shape term with the offensive one's
+ * swing would be inventing a decision the sport does not offer.
+ *
+ * Level balance is not a term at all, though it looks like the obvious one: the roster is
+ * DL, DL, LB, DB, DB and a flex, so the spread across the three levels is forced by the
+ * slots before the player makes a single choice. Scoring it would be scoring the rules.
+ *
+ * WHAT IS LEFT IS THE FLOOR AND THE SCHEME. The floor stops stars-and-scrubs, which the
+ * cap otherwise rewards here more than on offense because defensive production is so
+ * compressed. The scheme is the real decision, which is why it carries the larger share.
+ *
+ * WHAT THIS FUNCTION BOUGHT. Before it existed, defensive rosters were so alike that the
+ * engine had to raise suppression to the power 2.24 to make the draft matter at all. With
+ * the schemes reading the three columns, drafted defenses now vary as much as drafted
+ * offenses do (1.220 against 1.225 at the fifth and ninety-fifth percentiles), and that
+ * exponent has been retired: see resolveGameDefense. The variety is real now instead of
+ * manufactured, which also means a scheme is worth on defense exactly what a scheme is
+ * worth on offense, no more.
+ */
+const DEF_STRUCTURE = {
+  IDEAL_FLOOR_SHARE: 0.85,   // measured median of real team defenses
+  FLOOR_TOLERANCE: 0.08,     // to p10 (0.77), so no real defense is punished
+  FLOOR_WEIGHT: 0.60,
+  SHAPE_STRENGTH: 0.5,
+  MIN: 0.80,
+  MAX: 1.12,
+};
+
+function defenseStructure(roster) {
+  const S = DEF_STRUCTURE;
+  const total = roster.reduce((t, p) => t + (p.ppr_ppg_mean || 0), 0);
+  const n = roster.length;
+  if (!n || total <= 0) {
+    return { multiplier: 1, floorShare: 1, scheme: null, schemeBonus: 0, total: 0 };
+  }
+  const avg = total / n;
+  const weakest = roster.map(p => p.ppr_ppg_mean || 0).sort((a, b) => a - b).slice(0, 2);
+  const floorShare = (weakest.reduce((a, b) => a + b, 0) / weakest.length) / avg;
+  /* Below the tolerance band it costs; inside it, nothing. A real defense's shape is
+     never penalised, which is what the p10 anchor buys. */
+  const shortfall = Math.max(0, (S.IDEAL_FLOOR_SHARE - S.FLOOR_TOLERANCE) - floorShare);
+  const floor = 1 - shortfall * S.FLOOR_WEIGHT;
+  const shaped = 1 + (floor - 1) * S.SHAPE_STRENGTH;
+
+  const scheme = detectDefenseScheme(roster);
+  const schemeBonus = scheme
+    ? SCHEME_MIN_BONUS + (SCHEME_MAX_BONUS - SCHEME_MIN_BONUS) * scheme.fit : 0;
+  const multiplier = clamp(shaped + schemeBonus, S.MIN, S.MAX);
+  return {
+    multiplier, floorShare, total,
+    scheme: scheme ? scheme.key : null,
+    schemeName: scheme ? scheme.name : null,
+    schemeBonus,
+  };
+}
+
 /* The first scheme in the list (hardest and most specific first) that the roster fits,
    with the fit strength that sets the size of its bonus. */
 function detectScheme(roster) {
@@ -1677,7 +1911,6 @@ function rosterStructure(roster) {
   /* The scheme bonus is a range, not a flat number: 1% for a roster that only just
      fits the scheme, scaling to 3% for one that fits it strongly. detectScheme's fit
      (0..1) is what slides it between the two. */
-  const SCHEME_MIN_BONUS = 0.01, SCHEME_MAX_BONUS = 0.03;
   const schemeBonus = scheme
     ? SCHEME_MIN_BONUS + (SCHEME_MAX_BONUS - SCHEME_MIN_BONUS) * scheme.fit : 0;
 
@@ -1705,7 +1938,80 @@ function rosterStructure(roster) {
  * Every line is tied to a number the player can check on the same screen, so this
  * explains the structure multiplier rather than decorating it.
  */
+/*
+ * THE COACH'S TAKE ON A DEFENSE. Its own function rather than a pile of branches inside the
+ * offensive one, because almost every line differs: there is no quarterback to support, no
+ * run-pass balance, and the floor sits in a completely different place (real defenses put
+ * their quietest two at 0.85 of the roster average against an offense's 0.64), so an
+ * offensive threshold applied here would either never fire or always fire.
+ *
+ * The three notes it can reach for are the three things a defense is: the rush, the
+ * coverage, and the tackling underneath them.
+ */
+function defenseCoachReport(roster, chemistryMultiplier, spend) {
+  const st = defenseStructure(roster);
+  const strengths = [];
+  const weaknesses = [];
+  const total = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const sum = (f) => roster.reduce((t, p) => t + (p[f] || 0), 0);
+  const rush = sum('rush_ppg'), cover = sum('cover_ppg'), tackle = sum('tackle_ppg');
+  const chem = (chemistryMultiplier - 1) * 100;
+  const last = (n) => n.split(' ').slice(-1)[0];
+  const best = (f) => roster.slice().sort((a, b) => (b[f] || 0) - (a[f] || 0))[0];
+
+  /* Thresholds are the measured pool summed over six men, not round numbers: a drafted
+     front reaches about 12 a game at the very top and coverage about 8. */
+  if (rush >= 7) {
+    strengths.push(`${last(best('rush_ppg').name)} gets there before the throw does.`);
+  } else if (rush < 2.5) {
+    weaknesses.push('Nobody rushes the passer. He can wait all day.');
+  }
+  if (cover >= 5) {
+    strengths.push(`${last(best('cover_ppg').name)} takes his half of the field away.`);
+  } else if (cover < 2) {
+    weaknesses.push('Nothing in coverage. Throws land whether you get home or not.');
+  }
+  if (tackle >= 36) strengths.push('They tackle. Nothing turns into more than it was.');
+  else if (tackle < 26) weaknesses.push('Poor tacklers, so every catch is a long gain.');
+
+  /* The floor, against the measured band for real defenses rather than the offensive one. */
+  if (st.floorShare < 0.70) weaknesses.push('Two of your six barely show up in a box score.');
+  else if (st.floorShare >= 0.85) strengths.push('Six contributors. Nobody to attack.');
+
+  if (st.scheme) {
+    const s = DEFENSE_SCHEMES.find((x) => x.key === st.scheme);
+    if (s) strengths.push(s.strength);
+  }
+
+  if (chem >= 8) strengths.push('These players know each other, and it shows.');
+  else if (chem < 1) weaknesses.push('Six strangers. Nobody has played a down together.');
+
+  const unspent = CONSTANTS.CAP_MUSD - spend;
+  if (unspent >= 20) weaknesses.push(`You left $${unspent.toFixed(0)}M unspent. That was a better player.`);
+  else if (unspent <= 3) strengths.push('You used the whole budget.');
+
+  const swing = roster.reduce((t, p) => t + p.ppr_ppg_sd, 0) / Math.max(1, total);
+  if (swing > 0.52) weaknesses.push('Streaky. Big weeks, and some very quiet ones.');
+  else if (swing < 0.38) strengths.push('Steady week to week, and that matters here.');
+
+  /* Judged on what a defense is judged on: whether it holds people under. */
+  let verdict;
+  if (st.multiplier >= 1.02 && total >= 52) verdict = 'Nobody is scoring on this.';
+  else if (st.multiplier >= 0.96 && total >= 47) verdict = 'Good enough to win a lot of games.';
+  else if (total >= 42) verdict = 'Middle of the pack. It will need some luck.';
+  else verdict = 'This defense will get scored on.';
+
+  return { structure: st, strengths, weaknesses, verdict, totalFppg: total, swing };
+}
+
 function coachReport(roster, chemistryMultiplier, spend) {
+  /* WHICH SIDE OF THE BALL IS READ OFF THE MEN. Six defenders can only have come from a
+     defense draft, so the roster describes itself and this needs no extra argument
+     threaded through every caller, including the ones rebuilding somebody else's run from
+     stored picks where no mode is available to pass. */
+  const isDefense = roster.length > 0
+    && roster.every((p) => p.position === 'DL' || p.position === 'LB' || p.position === 'DB');
+  if (isDefense) return defenseCoachReport(roster, chemistryMultiplier, spend);
   const st = rosterStructure(roster);
   const strengths = [];
   const weaknesses = [];
@@ -2606,26 +2912,35 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
  * thing your roster touches is how much the other team scores. A perfect season here is
  * twenty-one weeks of holding people under, which is what a defense is for.
  *
- * SUPPRESSION IS A RATIO RAISED TO A POWER, and the power is not decoration. Measured
- * over 4,000 drafted rosters, the achievable spread on defense is a third of what it is
- * on offense: the fifth and ninety-fifth percentile offenses are 69.2 and 84.8 fantasy
- * points apart (a ratio of 1.225), where the same percentiles on defense are 47.4 and
- * 51.9 (a ratio of 1.095). IDP scoring is tackle-led and tackle counts barely separate
- * starters, so nobody pulls away from the pack the way a Faulk or a Manning does.
+ * SUPPRESSION IS A RATIO, AND DEF_POWER IS 1 BECAUSE THE SCHEMES EARNED IT. That is worth
+ * the paragraph, because the exponent used to be 2.24 and the story of why it is not any
+ * more is the story of the mode.
  *
- * Left linear, that would make the draft almost irrelevant: every roster lands near 50
- * and every season plays the same. DEF_POWER is solved rather than tuned, as the exponent
- * that carries the defensive spread onto the scoreboard with the same force the offensive
- * one has: ln(1.225) / ln(1.095) = 2.24.
+ * On the raw rating alone, defenses barely differ. Measured over 4,000 drafted rosters
+ * before defensive schemes existed, the fifth and ninety-fifth percentile offenses were
+ * 69.2 and 84.8 fantasy points apart, a ratio of 1.225, where the same percentiles on
+ * defense were 47.4 and 51.9, a ratio of 1.095. IDP scoring is tackle-led and tackle
+ * counts barely separate starters, so nobody pulls away from the pack the way a Faulk or
+ * a Manning does. Left linear, every roster landed near 50 and every season played the
+ * same, so DEF_POWER was solved as the exponent that forced the difference back onto the
+ * scoreboard: ln(1.225) / ln(1.095) = 2.24. An honest correction for a real problem, but
+ * a correction, and one that quietly doubled what chemistry and everything else was worth.
  *
- * DEF_REF is solved the same way. The median drafted offense scores 79.0 against an
- * opponent's 64.0, a margin of 1.233, which is the game a decent roster is used to
- * playing. So the median drafted defense has to hold that same opponent to 1/1.233 of
- * what they would otherwise score, and the reference that produces it at a roster total
- * of 50.0 is 45.5.
+ * defenseStructure removed the problem rather than correcting it. Once a roster is read
+ * for what KIND of defense it is (see DEFENSE_SCHEMES) the same measurement over 8,000
+ * drafted rosters gives an effective total of 43.2 and 52.7 at the same percentiles: a
+ * ratio of 1.220 against the offense's 1.225. The spread the exponent was manufacturing is
+ * now really there, produced by the difference between a pass rush and a coverage unit,
+ * so the exponent has nothing left to do and comes out.
  *
- * Both numbers therefore mean "as consequential as the offense mode, and as winnable".
- * Re-derive them, do not nudge them, if the pool or the pricing curve ever moves.
+ * DEF_REF is solved the same way it always was. The median drafted offense scores 79.0
+ * against an opponent's 64.0, a margin of 1.233, which is the game a decent roster is used
+ * to playing. The median drafted defense has to hold that same opponent to 1/1.233 of what
+ * they would otherwise score, and at an effective median total of 49.2 the reference that
+ * does it is 39.9.
+ *
+ * Both numbers mean "as consequential as the offense mode, and as winnable". Re-derive
+ * them, do not nudge them, if the pool, the pricing curve or the schemes ever move.
  */
 function defenseSuppression(defenseTotal, constants = CONSTANTS) {
   const ref = constants.DEF_REF, k = constants.DEF_POWER;
@@ -2657,12 +2972,13 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
      put the mode at 1.5 wins a season and 50.9 points allowed a game: a flat 43% tax
      dressed up as roster construction.
 
-     A DEFENSIVE ANALOGUE IS NOT BUILT YET, and inventing a formula to fill the hole would
-     be worse than leaving it at one. The data is already carrying what it would need:
-     01-defenders.mjs ships rush_ppg, cover_ppg and tackle_ppg per man, so a later version
-     can reward a front that rushes and a secondary that covers rather than six of one
-     kind. Until that exists and is measured, a defense is the sum of its men. */
-  const defenseTotal = raw * chemistryMultiplier;
+     defenseStructure IS THAT ANALOGUE, written against the three columns 01-defenders.mjs
+     ships per man: the pass rush, the coverage and the tackling. It is a lighter touch than
+     the offensive one because real defenses are flatter than real offenses (see its own
+     comment for the 861 team-seasons that say so), and most of what it carries is the
+     scheme rather than the shape, because the scheme is where the decision is. */
+  const structure = defenseStructure(roster).multiplier;
+  const defenseTotal = raw * chemistryMultiplier * structure;
 
   /* THE OPPONENT'S OFFENSE, held down by yours. advantage divides here exactly as it
      divides in resolveGame: home field and the late-season class edge make the other
@@ -2685,7 +3001,8 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
   /* WHAT EACH MAN CONTRIBUTED. On offense the column sums to the score; here it cannot,
      because the score is not a sum of your men. It sums to the defensive total instead,
      which is the thing they actually built together, and the box score says so. */
-  const lines = samples.map((v, i) => (v * (1 - C) + roster[i].ppr_ppg_mean * C) * chemistryMultiplier);
+  const teamMul = chemistryMultiplier * structure;
+  const lines = samples.map((v, i) => (v * (1 - C) + roster[i].ppr_ppg_mean * C) * teamMul);
 
   return { won, yourScore, oppScore, defenseModifier: suppression, defenseTotal, lines };
 }
@@ -3108,7 +3425,12 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, generateSchedule, generatePlayoffs,
-  DEFENSE_SLOTS, DEFENSE_POSITIONS,
+  DEFENSE_SLOTS, DEFENSE_POSITIONS, defenseStructure, detectDefenseScheme,
+  DEFENSE_SCHEME_NAMES: Object.fromEntries(DEFENSE_SCHEMES.map(s => [s.key, s.name])),
+  DEFENSE_SCHEME_TAGLINES: Object.fromEntries(DEFENSE_SCHEMES.map(s => {
+    const i = s.strength.indexOf('. ');
+    return [s.key, i < 0 ? s.strength : s.strength.slice(i + 2)];
+  })),
   resolveGame, resolveGameDefense, defenseSuppression,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,

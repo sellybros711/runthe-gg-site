@@ -3500,6 +3500,40 @@ window.GA_ID='G-L29P5MRWKE';
     padding:2px 7px;border-radius:5px;margin-left:auto;white-space:nowrap;flex-shrink:0}
   .scheme-tagline{font-family:var(--fb);font-size:12.5px;line-height:1.4;color:var(--dim-2)}
   /* Greatest Show on Turf: Rams gold */
+  /* THE DEFENSIVE SCHEMES' COLOURS. Same three rules per scheme as the offensive set
+     below, so the panel is one component with twenty skins rather than two components.
+     Each colour is picked for the defense it names where one exists: Steel Curtain in
+     Pittsburgh's gold, Legion of Boom in Seattle's green, Orange Crush in orange. */
+  .scheme-steel_curtain .stripe{background:linear-gradient(90deg,#8a8f98,#ffb612)}
+  .scheme-steel_curtain .scheme-icon{background:rgba(255,182,18,.18);color:#ffb612}
+  .scheme-steel_curtain .scheme-name{color:#ffb612}
+  .scheme-legion_of_boom .stripe{background:linear-gradient(90deg,#002244,#69be28)}
+  .scheme-legion_of_boom .scheme-icon{background:rgba(105,190,40,.18);color:#8fe04a}
+  .scheme-legion_of_boom .scheme-name{color:#8fe04a}
+  .scheme-blitzburgh .stripe{background:linear-gradient(90deg,#ffb612,#ef4444)}
+  .scheme-blitzburgh .scheme-icon{background:rgba(239,68,68,.18);color:#fca5a5}
+  .scheme-blitzburgh .scheme-name{color:#fca5a5}
+  .scheme-tampa_2 .stripe{background:linear-gradient(90deg,#d50a0a,#ff7900)}
+  .scheme-tampa_2 .scheme-icon{background:rgba(255,121,0,.18);color:#ff9d4d}
+  .scheme-tampa_2 .scheme-name{color:#ff9d4d}
+  .scheme-forty_six .stripe{background:linear-gradient(90deg,#0b162a,#c83803)}
+  .scheme-forty_six .scheme-icon{background:rgba(200,56,3,.20);color:#f0713f}
+  .scheme-forty_six .scheme-name{color:#f0713f}
+  .scheme-no_fly_zone .stripe{background:linear-gradient(90deg,#002244,#38bdf8)}
+  .scheme-no_fly_zone .scheme-icon{background:rgba(56,189,248,.18);color:#7dd3fc}
+  .scheme-no_fly_zone .scheme-name{color:#7dd3fc}
+  .scheme-monsters .stripe{background:linear-gradient(90deg,#0b162a,#c83803)}
+  .scheme-monsters .scheme-icon{background:rgba(11,22,42,.55);color:#e8a87c}
+  .scheme-monsters .scheme-name{color:#e8a87c}
+  .scheme-orange_crush .stripe{background:linear-gradient(90deg,#fb4f14,#002244)}
+  .scheme-orange_crush .scheme-icon{background:rgba(251,79,20,.18);color:#fb923c}
+  .scheme-orange_crush .scheme-name{color:#fb923c}
+  .scheme-sack_exchange .stripe{background:linear-gradient(90deg,#003f2d,#7cc576)}
+  .scheme-sack_exchange .scheme-icon{background:rgba(124,197,118,.18);color:#86efac}
+  .scheme-sack_exchange .scheme-name{color:#86efac}
+  .scheme-bend_dont_break .stripe{background:linear-gradient(90deg,#334155,#94a3b8)}
+  .scheme-bend_dont_break .scheme-icon{background:rgba(148,163,184,.18);color:#cbd5e1}
+  .scheme-bend_dont_break .scheme-name{color:#cbd5e1}
   .scheme-greatest_show .stripe{background:linear-gradient(90deg,#d4a017,#f5c842)}
   .scheme-greatest_show .scheme-icon{background:rgba(212,160,23,.18);color:#f5c842}
   .scheme-greatest_show .scheme-name{color:#f5c842}
@@ -4889,6 +4923,10 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
 /* Which competition the run in progress belongs to. One function because eight analytics
    events and every board call ask it, and a run with no club is a free run wherever it is
    asked from. Safe before a run exists, which is most of the page's life. */
+/* Which side of the ball this run is drafting. Read by both painters of the scheme panel
+   and by the field, so it is a function beside the other mode readers rather than a local
+   in whichever of them happened to need it first. */
+const isDefRun=()=>!!(run&&run.defense);
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
@@ -7220,6 +7258,20 @@ function signInto(p,slot){
 /* ---------- squad ---------- */
 /* One line icon per scheme, in the scheme's own color (the tile sets `color`, and
    every path draws with currentColor). Keyed to the engine's scheme keys. */
+/* One mark per defensive scheme, drawn in the same 24x24 stroke style as the offensive
+   set above so the panel looks like one game rather than two. */
+const DEFENSE_SCHEME_ICONS={
+  steel_curtain:'<rect x="3" y="9" width="18" height="7" rx="1"/><line x1="7" y1="9" x2="7" y2="16"/><line x1="12" y1="9" x2="12" y2="16"/><line x1="17" y1="9" x2="17" y2="16"/>',
+  legion_of_boom:'<path d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6z"/><polyline points="9 12 11.5 14.5 15.5 9.5"/>',
+  blitzburgh:'<path d="M13 2 4 14h7l-1 8 9-13h-7z"/><line x1="2" y1="4" x2="5" y2="6"/><line x1="22" y1="4" x2="19" y2="6"/>',
+  tampa_2:'<circle cx="7" cy="16" r="2.4"/><circle cx="17" cy="16" r="2.4"/><path d="M4 9c2.5-3 13.5-3 16 0"/>',
+  forty_six:'<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="12" y1="2" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="2" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="8.5" y2="8.5"/><line x1="19" y1="5" x2="15.5" y2="8.5"/>',
+  no_fly_zone:'<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/><path d="M8 13c1.5-2 6.5-2 8 0"/>',
+  monsters:'<path d="M12 3l2.4 5.6L20 9.6l-4 4 1 6-5-2.8L7 19.6l1-6-4-4 5.6-1z"/>',
+  orange_crush:'<line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/><circle cx="8" cy="7" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.4" fill="currentColor" stroke="none"/>',
+  sack_exchange:'<circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>',
+  bend_dont_break:'<path d="M3 17c4-9 14-9 18 0"/><line x1="3" y1="20" x2="21" y2="20"/>',
+};
 const SCHEME_ICONS={
   greatest_show:'<polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/>',
   triplets:'<circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="7" cy="16" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="16" r="2" fill="currentColor" stroke="none"/>',
@@ -7232,10 +7284,13 @@ const SCHEME_ICONS={
   dual_threat:'<path d="M12 21V13"/><path d="M12 13 6 6.5"/><path d="M12 13 18 6.5"/><polyline points="6 10.5 6 6 10.5 6"/><polyline points="13.5 6 18 6 18 10.5"/>',
   two_te:'<rect x="12.8" y="2" width="7.2" height="6" rx="2" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M13 6 L20 6 L20 19 Q20 20 19 20 L5 20 Q3 20 3 18 L3 16 Q3 13 5.5 13 Q8.5 13 10.5 9 Q12.5 6 13 10 Z"/>',
 };
-const schemeIconSvg=(key)=>SCHEME_ICONS[key]
-  ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '+
-   'stroke-linecap="round" stroke-linejoin="round">'+SCHEME_ICONS[key]+'</svg>'
-  :'';
+const schemeIconSvg=(key)=>{
+  const marks=(run&&run.defense)?DEFENSE_SCHEME_ICONS:SCHEME_ICONS;
+  return marks[key]
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '+
+     'stroke-linecap="round" stroke-linejoin="round">'+marks[key]+'</svg>'
+    :'';
+};
 function paintSquad(){
   R.startSeason(run,dataNow(),CTX);
   if(tutorialOn) tutFinish();
@@ -7308,16 +7363,19 @@ function paintSquad(){
   /* Scheme mode swaps the coach's take headline for the scheme's own identity: its
      name in the scheme color, its tagline, and the +3% it earns. No scheme falls
      back to the verdict and the multiplier sentence. */
-  const schemeName=st.scheme?E.SCHEME_NAMES[st.scheme]:null;
+  const schemeName=st.scheme
+    ?(isDefRun()?E.DEFENSE_SCHEME_NAMES[st.scheme]:E.SCHEME_NAMES[st.scheme]):null;
   $('q-panel').className='panel schemepanel scheme-'+(st.scheme||'none');
-  $('q-scheme-eye').textContent=schemeName?'Offensive scheme':"Coach's take";
+  $('q-scheme-eye').textContent=schemeName
+    ?(isDefRun()?'Defensive scheme':'Offensive scheme'):"Coach's take";
   $('q-scheme-badge').hidden=!schemeName;
   $('q-scheme-tagline').hidden=!schemeName;
   $('q-verdict').hidden=!!schemeName;
   if(schemeName){
     $('q-scheme-icon').innerHTML=schemeIconSvg(st.scheme);
     $('q-scheme-name').textContent=schemeName;
-    $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
+    $('q-scheme-tagline').textContent=
+      (isDefRun()?E.DEFENSE_SCHEME_TAGLINES[st.scheme]:E.SCHEME_TAGLINES[st.scheme])||'';
     /* The badge shows the boost this fit actually earned, 1 to 3 per cent, not a flat
        number, so a stronger fit reads as worth more. */
     $('q-scheme-bonus').textContent='+'+Math.round((st.schemeBonus||0)*100)+'%';
@@ -7330,6 +7388,25 @@ function paintSquad(){
         : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
           (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
   }
+  /* A DEFENSE GETS ITS OWN THREE BARS, because the offensive ones ask questions a defense
+     has no answer to: it has no quarterback, no run-pass split and no ball to concentrate
+     through. These are the three columns the schemes are detected from, so what the panel
+     measures and what the scheme rewards are the same thing said twice.
+
+     The scales are the measured pool, not round numbers. Summed over six men, a pass rush
+     runs to about 12 points a game at the very top, coverage to about 8, and tackling
+     is always the bulk of the total, so it is scored against the 25 to 40 band real
+     rosters live in. */
+  if(isDefRun()){
+    const sum=(f)=>run.roster.reduce((t,p)=>t+(p[f]||0),0);
+    const rush=sum('rush_ppg'), cover=sum('cover_ppg'), tackle=sum('tackle_ppg');
+    $('q-meters').innerHTML=
+      meter('Pass rush',rush.toFixed(1)+' a game from sacks and pressure',span(rush,1.5,12))+
+      meter('Coverage',cover.toFixed(1)+' a game from picks and breakups',span(cover,1.0,8))+
+      meter('Tackling',tackle.toFixed(1)+' a game, the volume underneath',span(tackle,25,40))+
+      meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
+        span(st.floorShare,0.60,0.85));
+  }else{
   $('q-meters').innerHTML=
     meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' pass points a game':'nobody at quarterback',
       span(st.qbSupport,0.70,1.12))+
@@ -7360,6 +7437,7 @@ function paintSquad(){
        average is stars and scrubs, 0.64 is what real teams do. */
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
       span(st.floorShare,0.14,0.64));
+  }
   /* THREE NOTES, NOT FIVE OR SIX. Every weakness ties to a meter above, so a list that repeats
      all of them is the same panel twice. The most important of each is kept: the meters carry
      the detail and these carry the judgement. */
@@ -9855,7 +9933,10 @@ function paintOver(){
      at once instead of waiting on them. Its cell shows a brief working state until then. */
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  const st=E.rosterStructure(run.roster);
+  /* A DEFENSE IS READ BY ITS OWN FUNCTION. The two return the same shape of object where
+     this panel touches it (multiplier, scheme, schemeBonus, floorShare) and differ where
+     the sports differ, which is what the meters below branch on. */
+  const st=isDefRun()?E.defenseStructure(run.roster):E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
 
   /* Measured over 1,600 drafts across four play styles, team rating runs from about 1
@@ -10060,7 +10141,13 @@ function swapRows(best){
    the leaderboard records, and by the detail sheet. */
 function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  return fppg*chemistry*E.rosterStructure(roster).multiplier;
+  /* A DEFENSE IS READ BY ITS OWN STRUCTURE HERE TOO. This one number is what the
+     comparison table shows, what the leaderboard stores and what the detail sheet prints,
+     so reading a defense with the offensive function would put all three on a footing the
+     games were never played on. Same reason liveRating branches. */
+  return fppg*chemistry*(isDefRun()
+    ?E.defenseStructure(roster).multiplier
+    :E.rosterStructure(roster).multiplier);
 }
 
 /* THE STRUCTURE MULTIPLIER, IN A FORM A PLAYER CAN READ.
@@ -10080,7 +10167,10 @@ function fitPhrase(){ return 'for how the six fit together'; }
    because the roster could not be rebuilt from stored picks. */
 function schemeTail(st){
   if(!st||!st.scheme) return '';
-  const nm=E.SCHEME_NAMES[st.scheme];
+  /* defenseStructure ships the name on the object, so a defensive scheme names itself here
+     without this having to know which run it is describing. Falls back to the offensive
+     table for anything built by rosterStructure, which does not. */
+  const nm=st.schemeName||E.SCHEME_NAMES[st.scheme];
   const sp=Math.max(1,Math.round((st.schemeBonus||0)*100));
   return ' The '+esc(nm)+' scheme is +'+sp+'% of that.';
 }
@@ -12400,7 +12490,7 @@ function runPayload(){
   const s=run.season;
   const pts=(f)=>s.results.reduce((t,r)=>t+f(r),0)/Math.max(1,s.results.length);
   const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  const mult=E.rosterStructure(run.roster).multiplier;
+  const mult=(isDefRun()?E.defenseStructure(run.roster):E.rosterStructure(run.roster)).multiplier;
   return {
     regularWins:o.regularWins,
     playoffWins:o.wins-o.regularWins,
@@ -13345,11 +13435,17 @@ function runDetail(row,back){
      and in this sheet. */
   const men=bySlotOrder(picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''})));
   const known=men.filter(m=>m.p);
-  /* The offensive scheme this roster fits, for the fit line's wording. Only when all six
-     resolved against this browser's data, since a partial roster detects the wrong scheme
-     or none. The stored multiplier is still what the number reports; this only names it. */
+  /* The scheme this roster fits, for the fit line's wording. Only when all six resolved
+     against this browser's data, since a partial roster detects the wrong scheme or none.
+     The stored multiplier is still what the number reports; this only names it.
+
+     WHICH SIDE OF THE BALL IS READ OFF THE MEN, not off the run, because a row opened from
+     the leaderboard may be somebody else's run and carries no mode. Six defenders can only
+     have come from a defense draft, so the roster describes itself. */
+  const detailMen=known.map(m=>m.p);
+  const allD=detailMen.length>0&&detailMen.every(p=>['DL','LB','DB'].includes(p.position));
   const detailSt=(men.length>=E.SLOTS.length&&known.length===men.length)
-    ? E.rosterStructure(known.map(m=>m.p)) : null;
+    ? (allD?E.defenseStructure(detailMen):E.rosterStructure(detailMen)) : null;
   const o=mine?run.outcome:null;
   const p=mine?runPayload():null;
 

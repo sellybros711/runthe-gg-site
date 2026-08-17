@@ -12,10 +12,13 @@
  *   buys more or less than a $30M receiver, the two modes are two different games sharing
  *   an interface and a player moving between them has to relearn what money is worth.
  *
- *   THE DRAFT HAS TO MATTER AS MUCH. The achievable spread on defense is a third of the
- *   offensive one, because IDP scoring is tackle-led and tackle counts barely separate
- *   starters. That is what DEF_POWER exists to correct, and a regression in it would not
- *   throw or look wrong on screen: every season would just quietly play the same.
+ *   THE DRAFT HAS TO MATTER AS MUCH. On the rating alone it does not: IDP scoring is
+ *   tackle-led, tackle counts barely separate starters, and drafted defenses land within
+ *   9.5% of each other where offenses spread over 22.5%. What closes that gap is
+ *   defenseStructure reading WHAT KIND of defense a roster is. Break the schemes and
+ *   nothing throws and nothing renders wrong; every season just quietly plays the same.
+ *   Two assertions below draw that distinction on purpose, one on the rating alone and
+ *   one on the rating times structure, so a regression says which half broke.
  *
  *   THE SEASON HAS TO BE AS WINNABLE. Same reason, other direction.
  *
@@ -99,11 +102,101 @@ console.log('\n=== the arithmetic ===');
     { at40: worse.toFixed(3), at50: mid.toFixed(3), at60: better.toFixed(3) });
   ok('and the median drafted defense is close to neutral',
     Math.abs(E.defenseSuppression(50) - 0.81) < 0.05, E.defenseSuppression(50).toFixed(3));
-  /* DEF_POWER is what carries the compressed defensive spread onto the scoreboard. Below
-     about 2 the draft stops mattering; this is the guard on that. */
-  const spread = E.defenseSuppression(47.4) / E.defenseSuppression(51.9);
-  ok('the draft moves the scoreboard as much as it does on offense',
+  /* HOW MUCH A DEFENSE CAN DIFFER FROM ANOTHER DEFENSE, end to end. The inputs are the
+     fifth and ninety-fifth percentile EFFECTIVE totals, rating times structure, because
+     structure is half of what separates two defenses now: 43.2 and 52.7 measured over
+     8,000 drafted rosters. On the raw rating alone the same percentiles are 47.4 and 51.9,
+     a spread of 1.095, and that gap between the two numbers is the whole reason
+     defenseStructure exists. Compare against the offense's 1.225. */
+  const spread = E.defenseSuppression(43.2) / E.defenseSuppression(52.7);
+  ok('a good defense beats a poor one by as much as a good offense beats a poor one',
     spread > 1.18 && spread < 1.30, { spread: spread.toFixed(3), want: '~1.225' });
+  /* And the schemes are what put it there. Without them every roster would be within 9.5%
+     of every other and the mode would play the same every time. */
+  const rawOnly = E.defenseSuppression(47.4) / E.defenseSuppression(51.9);
+  ok('and the rating alone would not have', rawOnly < 1.12,
+    { ratingOnly: rawOnly.toFixed(3), withStructure: spread.toFixed(3) });
+}
+
+console.log('\n=== the schemes ===');
+{
+  const byTS = new Map();
+  for (const r of D) { if (!r.team_season_id) continue;
+    if (!byTS.has(r.team_season_id)) byTS.set(r.team_season_id, []);
+    byTS.get(r.team_season_id).push(r); }
+  const ks = [...byTS.keys()];
+  let seed = 2024;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const ELIG = { DL: ['DL'], LB: ['LB'], DB: ['DB'], FLEX: ['DL', 'LB', 'DB'] };
+  /* `rank` is the player's strategy. Drafting toward a scheme is the point of the feature,
+     so the test drafts the way somebody chasing one would. */
+  const draft = (rank) => {
+    let spent = 0; const took = [];
+    for (let i = 0; i < E.DEFENSE_SLOTS.length; i++) {
+      const ts = ks[Math.floor(rnd() * ks.length)];
+      const opts = (byTS.get(ts) || []).filter((p) => ELIG[E.DEFENSE_SLOTS[i]].includes(p.position));
+      if (!opts.length) { i--; continue; }
+      const budget = 140 - spent - 3 * (E.DEFENSE_SLOTS.length - 1 - i);
+      const can = opts.filter((p) => p.price_musd <= budget);
+      const from = (can.length ? can : opts.slice().sort((a, b) => a.price_musd - b.price_musd).slice(0, 1)).slice();
+      from.sort((a, b) => rank(b) - rank(a));
+      took.push(from[0]); spent += from[0].price_musd;
+    }
+    return took;
+  };
+  const survey = (rank, n) => {
+    const hits = {}; let none = 0;
+    for (let i = 0; i < n; i++) {
+      const st = E.defenseStructure(draft(rank));
+      if (st.scheme) hits[st.scheme] = (hits[st.scheme] || 0) + 1; else none++;
+    }
+    return { hits, none, n };
+  };
+  const N = Number(process.env.SCHEMES || 2500);
+  const best = survey((p) => p.ppr_ppg_mean, N);
+
+  /* A scheme nobody can reach is decoration; one that fires on nearly everything is not a
+     decision. Both ends are asserted. */
+  const share = (r, k) => (r.hits[k] || 0) / r.n;
+  const top = Math.max(...Object.values(best.hits)) / best.n;
+  ok('no single scheme swallows the mode', top < 0.35,
+    { commonest: (100 * top).toFixed(1) + '%' });
+  ok('and drafting well usually earns one', best.none / best.n < 0.10,
+    { noScheme: (100 * best.none / best.n).toFixed(1) + '%' });
+
+  /* THE SCHEMES ARE DRAFTABLE ON PURPOSE, which is the whole feature. Three strategies, and
+     each has to produce the defense it is chasing. A scheme reachable only by luck is a
+     lottery ticket rather than a decision. */
+  const rushy = survey((p) => p.rush_ppg, N);
+  const covery = survey((p) => p.cover_ppg, N);
+  const tackly = survey((p) => p.tackle_ppg - 3 * p.rush_ppg, N);
+  ok('chasing the pass rush builds a pass-rush defense',
+    share(rushy, 'forty_six') + share(rushy, 'steel_curtain') + share(rushy, 'blitzburgh')
+      + share(rushy, 'sack_exchange') > 0.60,
+    { the46: (100 * share(rushy, 'forty_six')).toFixed(0) + '%',
+      steel: (100 * share(rushy, 'steel_curtain')).toFixed(0) + '%',
+      blitz: (100 * share(rushy, 'blitzburgh')).toFixed(0) + '%' });
+  ok('chasing coverage builds a coverage defense',
+    share(covery, 'no_fly_zone') + share(covery, 'legion_of_boom') > 0.60,
+    { noFly: (100 * share(covery, 'no_fly_zone')).toFixed(0) + '%',
+      boom: (100 * share(covery, 'legion_of_boom')).toFixed(0) + '%' });
+  ok('and chasing tacklers builds the one that has no splash plays',
+    share(tackly, 'bend_dont_break') > 0.20,
+    { bend: (100 * share(tackly, 'bend_dont_break')).toFixed(0) + '%' });
+
+  /* Every scheme has to be reachable by SOME strategy, or it is dead code with a name. */
+  const all = {};
+  for (const r of [best, rushy, covery, tackly]) {
+    for (const k of Object.keys(r.hits)) all[k] = true;
+  }
+  const dead = Object.keys(E.DEFENSE_SCHEME_NAMES).filter((k) => !all[k]);
+  ok('every scheme is reachable by some way of drafting', dead.length === 0,
+    { unreachable: dead.map((k) => E.DEFENSE_SCHEME_NAMES[k]) });
+
+  /* And each names itself, so the panel never has a key with no words behind it. */
+  const missing = Object.keys(E.DEFENSE_SCHEME_NAMES)
+    .filter((k) => !E.DEFENSE_SCHEME_NAMES[k] || !E.DEFENSE_SCHEME_TAGLINES[k]);
+  ok('every scheme has a name and a tagline', missing.length === 0, { missing });
 }
 
 console.log('\n=== a season, both modes ===');
@@ -136,7 +229,12 @@ console.log('\n=== a season, both modes ===');
     const wins = [], totals = [], allowed = [];
     for (let i = 0; i < n; i++) {
       const roster = draft(slots, pool, elig);
-      totals.push(roster.reduce((t, p) => t + p.ppr_ppg_mean, 0));
+      /* Ranked by what the engine will actually use, rating TIMES structure, not by rating
+         alone. Both modes apply a structure multiplier and in both of them it is part of
+         how good the roster is, so ranking on the rating would be asking whether half the
+         draft matters and reporting it as the whole. */
+      const st = defense ? E.defenseStructure(roster) : E.rosterStructure(roster);
+      totals.push(roster.reduce((t, p) => t + p.ppr_ppg_mean, 0) * st.multiplier);
       let w = 0;
       for (let g = 0; g < 17; g++) {
         const opp = teams[Math.floor(rnd() * teams.length)];
