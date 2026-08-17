@@ -2710,6 +2710,11 @@ window.GA_ID='G-L29P5MRWKE';
   .rcell.top10{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08)}
   .rcell.top10 .rn{color:#93c5fd}
   .rcell.dead .rn{color:var(--dim-2);font-size:22px}
+  .rcell.go{cursor:pointer;transition:border-color .15s,transform .1s}
+  .rcell.go:hover{border-color:var(--line-2)}
+  .rcell.go:active{transform:translateY(1px)}
+  .plwho{margin-top:9px;text-align:center;color:var(--dim);font-family:var(--fb);
+    font-size:12.5px;line-height:1.35}
   .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
   /* The sign-in ask, wherever it is made. Ruled off from what is above it because it
      is an offer rather than more of the result, and :empty so a signed-in player is
@@ -3267,11 +3272,18 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="splits" id="o-splits"></div>
 
-    <div class="resume" id="o-resume"></div>
+    <!-- Where this season sits on the board, and the ask. Filled in after the screen
+         has painted, and left empty if the board is not reachable.
 
-    <!-- Where this season sits on the board. Filled in after the screen has
-         painted, and left empty if the board is not reachable. -->
+         ABOVE THE RESUME ON PURPOSE. It used to sit under it, which on a phone put the
+         one button on this page that grows the game about a screen and a half down,
+         below the ranking chip and the signature wins. Those are a payoff for the
+         season just played and they keep, the ask does not: the football game puts the
+         placings and the prompt directly under the headline numbers and converts
+         better. -->
     <div id="o-place"></div>
+
+    <div class="resume" id="o-resume"></div>
 
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
          so it sits in the open under the résumé and the rest goes behind tabs. -->
@@ -4697,16 +4709,31 @@ function gateState(){
   if(!authState.name) return 'noname';
   return '';
 }
+/* WHAT THE SENTENCE HAS TO DO IS MAKE THE PLACING CONTINGENT.
+   This used to read "Only seasons with a name on them go on the board. This one is
+   saved either way." Both halves are true and the second one answers the question the
+   button is asking: there is nothing to lose, so there is no reason to press it. That
+   copy is the football game's FALLBACK, for the case where the board could not be read
+   and there is no placing to show, and it got used here as the default. Signing up on
+   this game ran well behind the football game's, and this is the first reason why.
+
+   So a guest looking at a placing is told what the placing is: where the season WOULD
+   sit. The reassurance survives only where it is the whole truth, which is when there
+   is no number on screen to be contingent about. */
 const GATE_WORDS={
-  guest:{ say:'Only seasons with a name on them go on the board. This one is saved either way.',
+  guest:{ say:'That is where this season <b>would</b> sit. Only seasons with a name on them go on the board.',
+          dry:'Only seasons with a name on them go on the board, and <b>this one is kept either way</b>.',
           act:'Sign in and keep this season' },
   noname:{ say:'Your season is saved and yours. The board lists seasons by name, so it needs one before it can show this.',
+           dry:'Your season is saved and yours. The board lists seasons by name, so it needs one before it can show this.',
            act:'Pick your name' },
 };
-function gateCta(){
+/* `placed` says whether a real placing is on screen above this line. */
+function gateCta(placed){
   const g=gateState(); if(!g) return '';
-  return '<div class="gateline"><span>'+GATE_WORDS[g].say+'</span>'+
-    '<button class="btn sm" data-gate="'+g+'">'+GATE_WORDS[g].act+'</button></div>';
+  const w=GATE_WORDS[g];
+  return '<div class="gateline"><span>'+(placed?w.say:w.dry)+'</span>'+
+    '<button class="btn sm" data-gate="'+g+'">'+w.act+'</button></div>';
 }
 /* Delegated, so every repaint of either panel keeps working without rewiring. */
 let signInForBoard=false;
@@ -5904,11 +5931,23 @@ async function paintPlace(){
      A guest's own season is still PLACED here: placeIn counts how many NAMED seasons
      beat it, which is a real answer to "where would this have finished", and the board
      explains that signing in is what puts it on the list. */
-  const opts={window:'week',mode:runMode(run),named:true};
-  const [place,count]=await Promise.all([
-    B.placeIn(opts,'record','desc',score), B.total(opts),
-  ]);
-  if(place===null){
+  /* THREE WINDOWS, NOT ONE, AND IN THE OPEN.
+     This asked for the week alone and printed one ordinal. The football game shows
+     today, this week and all time on the results screen itself, and that is worth
+     more than the extra two round trips: one number is one verdict, and "104th of
+     354 this week" is a verdict most seasons lose. The same season is usually well
+     inside the all-time field and often near the top of today's, so a player who is
+     shown one window is being shown the least flattering answer about a third of the
+     time, on the exact screen we are asking them to sign up on.
+
+     The three cells already existed in this game, drawn by rankCell() in the Where it
+     ranks tab. That tab is not the one this screen opens on, so nobody saw them. The
+     football game hit this and wrote it down: "a prompt nobody sees is not a prompt."
+     Same fix here, and the tab keeps its copy for anyone who opens it. */
+  let r=null; try{ r=await B.ranks(score,runMode(run)); }catch(_){}
+  const live=RANK_WINDOWS.filter(([k])=>r&&r[k]&&r[k].place!=null);
+  const which=run.conference?' '+esc(run.conference)+' draft':'';
+  if(!live.length){
     /* Two ways to have no place, and they read differently. Before the migration
        runs there is no board to be ranked on yet; after it, a null is a network
        that did not answer. board.js knows which, so say which. */
@@ -5916,39 +5955,38 @@ async function paintPlace(){
       ? 'The leaderboard opens at launch. This season is saved and goes into the '+
         'standings the moment it does.'
       : 'The leaderboard is not reachable right now. This season is still yours; it '+
-        'just is not ranked yet.')+'</div>'+
+        'just is not ranked yet.')+'</div>'+gateCta(false)+
       '<button id="o-lb">Board</button></div>';
-  }else if(count===0){
+  }else if(live.every(([k])=>r[k].total===0)){
     /* AN EMPTY BOARD IS NOT A FIRST PLACE. The board lists named seasons only, so
        until somebody signs in the field this place is quoted against is empty, and
        "1st of 0 seasons" is what the arithmetic says rather than what is true. A
        guest sees the invitation instead, which is the honest version of the same
        fact and the one that tells them what to do about it. */
-    const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox"><div class="pl">'+
-      'No named season has been put on the'+which+' board this week yet. '+
-      'Yours would be the first.</div>'+gateCta()+
+      'No named season has been put on the'+which+' board yet. '+
+      'Yours would be the first.</div>'+gateCta(false)+
       '<button id="o-lb">Board</button></div>';
   }else{
-    myPlace=place;
-    const ord=(n)=>{const t=n%100;if(t>=11&&t<=13)return n+'th';
-      return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
-    /* A guest is placed against the named field but is not IN it, so the ordinal can
-       come out one past the end: beat all four named seasons and you are 1st, lose to
-       all four and you are 5th of 4. Counting yourself in fixes the arithmetic and is
-       also what actually happens the moment you sign in and claim the run. */
-    const field=(!authState.signedIn&&count!==null&&place>count)?place:count;
-    /* The ask is the button under this line now, so the sentence stops repeating it. */
-    const nameLine='';
-    const which=run.conference?' '+esc(run.conference)+' draft':'';
+    const wk=r.week; if(wk&&wk.place!=null) myPlace=wk.place;
+    /* The caption earns its line only in a conference draft, where the field being
+       that conference and not the whole game is worth saying. In free play the three
+       labels say it already, and a line of explanation between the numbers and the
+       ask is fifty pixels of the button's head start spent on nothing. */
     el.innerHTML='<div class="placebox">'+
-      '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
-      '<div class="pl">of '+(field===null?'the':field.toLocaleString())+which+
-        ' seasons this week.'+nameLine+'</div>'+gateCta()+
+      '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k],null,k)).join('')+'</div>'+
+      (which?'<div class="plwho">Among every'+which+' season recorded.</div>':'')+
+      gateCta(true)+
       '<button id="o-lb">Board</button></div>';
   }
   const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
 }
+/* A placing is a way into the board, the way it is in the football game. Delegated so
+   every repaint keeps working, and only cells with a real number are buttons. */
+document.addEventListener('click',(e)=>{
+  const c=e.target.closest&&e.target.closest('#o-place .rcell.go'); if(!c) return;
+  openBoard(runMode(run));
+});
 
 /* ── Where it ranks: the three-window placings tab ─────────────────
    THE LAUNCH SWITCH, WHICH THROWS ITSELF.
@@ -5970,7 +6008,9 @@ async function paintPlace(){
 const RANKS_PINNED=window.PS_CFB_RANKS_LIVE===true?true:
                    window.PS_CFB_RANKS_LIVE===false?false:null;
 const RANK_WINDOWS=[['today','Today'],['week','This week'],['all','All time']];
-function rankCell(label,w,dash){
+/* `win` is the window key, and passing it makes a cell with a real number a way into
+   the board. Only a real number: there is nothing to open behind a dash. */
+function rankCell(label,w,dash,win){
   if(!w||w.place==null) return '<div class="rcell dead"><span class="rw">'+label+
     '</span><span class="rn">--</span><span class="rof">'+(dash||'not available')+
     '</span></div>';
@@ -5984,7 +6024,8 @@ function rankCell(label,w,dash){
      without being counted in it, so a season behind all of them places one past the
      end. See paintPlace(). */
   const field=(w.total!=null&&w.place>w.total)?w.place:w.total;
-  return '<div class="rcell'+cls+'"><span class="rw">'+label+'</span>'+
+  return '<div class="rcell'+cls+(win?' go':'')+'"'+(win?' data-win="'+win+'"':'')+'>'+
+    '<span class="rw">'+label+'</span>'+
     '<span class="rn">#'+w.place.toLocaleString()+'</span>'+
     '<span class="rof">of '+(field==null?'?':field.toLocaleString())+'</span></div>';
 }
@@ -6014,7 +6055,7 @@ async function paintRanksTab(){
   }
   el.innerHTML='<p class="rankwho">'+who+'</p>'+
     '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k])).join('')+'</div>'+
-    gateCta();
+    gateCta(true);
 }
 
 /* paintNewBadges() PAINTED A PANEL HERE, listing what the season had just earned with a

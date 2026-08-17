@@ -190,6 +190,80 @@ console.log('\n=== a window nobody has signed in for says so ===');
   await p.close();
 }
 
+/* ── the ask itself ────────────────────────────────────────────────────────────
+   THE PLACINGS AND THE PROMPT ARE ON THE PAGE, NOT BEHIND A TAB.
+
+   Everything above tests the Where it ranks tab, which is not the tab this screen
+   opens on. That is exactly how signing up came to lag the football game: three
+   placings and a sign-in button existed and almost nobody was shown them, and the one
+   line that WAS shown ended with "This one is saved either way" -- a true sentence
+   that answers the question the button is asking.
+
+   So this checks the surface a guest actually lands on: three windows in the open,
+   the prompt under them, and a sentence that makes the placing contingent rather than
+   talking the reader out of it. */
+console.log('\n=== the sign-in ask on the results screen itself ===');
+{
+  psql("delete from cfb_runs where display_name = 'askfield'");
+  for (let i = 0; i < 3; i++) {
+    psql(`insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games,
+      national_rank, made_playoffs, title_won, perfect, bowl_won, seed_label,
+      point_diff, chemistry_pct, spend_musd, overall, picks, run_mode, display_name)
+      values (${8 + i}, 0, ${8 + i}, ${4 - i}, 12, ${20 - i * 5}, false, false, false,
+      false, 'Bowl Game', ${3.0 + i}, 2.0, 10.0, ${88 + i},
+      array['af${i}a:2016','af${i}b:2007','af${i}c:2014','af${i}d:2011','af${i}e:2009','af${i}f:2017'],
+      'free', 'askfield')`);
+  }
+  const p=await newPage(null);
+  ok('reached the results screen', await playToResults(p));
+  await p.waitForTimeout(2600);
+
+  /* Three windows, WITHOUT opening any tab. */
+  const cells=await p.$$eval('#o-place .rcell',(els)=>els.map(e=>e.textContent));
+  ok('three placings show without opening a tab', cells.length===3, cells.length+' cells');
+  ok('  labelled Today, This week, All time',
+    /Today/.test(cells[0]||'')&&/This week/.test(cells[1]||'')&&/All time/.test(cells[2]||''),
+    cells.join('  '));
+  /* At least one, not all three. A window with no named season in it correctly draws
+     "nobody yet", and which windows are populated depends on what is in the database
+     when this runs; the claim here is that the placings reach the page, not that this
+     machine's board happens to have a row in every window. */
+  ok('  with a real number on at least one', cells.some(c=>/#\d/.test(c)), cells.join('  '));
+
+  const gate=(await p.textContent('#o-place .gateline'))||'';
+  ok('the sign-in prompt is there too', /Sign in and keep this season/.test(gate), gate.slice(0,80));
+  /* The whole point. "would sit" makes the number contingent on the button. */
+  ok('  and it says the placing is what you WOULD get', /would/i.test(gate), gate.slice(0,90));
+  /* And it does NOT hand back the reason not to bother. That sentence belongs only
+     where there is no placing on screen to be contingent about. */
+  ok('  without telling them it is saved either way anyway',
+    !/either way/i.test(gate), gate.slice(0,120));
+
+  /* Above the fold on a small phone, because a prompt below it is the tab problem
+     again in a different costume. */
+  await p.setViewportSize({width:375,height:667});
+  await p.waitForTimeout(400);
+  const seen=await p.evaluate(()=>{
+    const btn=document.querySelector('#o-place .gateline button');
+    if(!btn) return null;
+    const r=btn.getBoundingClientRect();
+    return {top:Math.round(r.top),vh:window.innerHeight};
+  });
+  ok('the button is on the first screen of a 375x667 phone',
+    seen&&seen.top<seen.vh, JSON.stringify(seen));
+
+  /* A placing is a way into the board. */
+  await p.setViewportSize({width:390,height:844});
+  await p.waitForTimeout(300);
+  await p.$eval('#o-place .rcell.go',(el)=>el.click());
+  await p.waitForTimeout(1200);
+  ok('tapping a placing opens the board', !!(await p.$('#s-board.on')));
+
+  await p.screenshot({path:SS+'place_ask.png'});
+  await p.close();
+  psql("delete from cfb_runs where display_name = 'askfield'");
+}
+
 noTable.close();
 await b.close();
 console.log(bad?('\n'+bad+' FAILURES'):'\nall clear');
