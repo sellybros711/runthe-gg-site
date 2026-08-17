@@ -15882,3 +15882,34 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     flag-burn assertion; the ad itself shows) - pre-existing, not this change.
   - Tunable: `tourSteps()` (the copy and what each step points at - adding a step is one row), the
     `.tour*` CSS, and `TOUR_KEY` if the tour should ever re-fire for everyone.
+
+### TIGHTENING THE COLLECTION ECONOMY (owner: "it's way too easy to earn coins")
+- **The owner was right, and the first measurement I took was wrong.** An audit script read `p.coins` off
+  the prize-wheel entries when the field is actually `p.amt`, which zeroed out roughly 40% of the faucet
+  and produced a comfortable-sounding 9,987 coins/week and 12.2 years to finish the collection. Corrected,
+  the real numbers were **25,647 coins/week** and **2.0 years to own all 223 pool items**. The instinct that
+  players would finish far sooner than expected was correct; my first reading had contradicted it.
+- **The prize wheel scaled the wrong way.** Its coin tiers multiplied with world rank (`sc(600,3.5)`,
+  `sc(1200,4)`, `sc(2500,5)`), so a top-ranked player pulled 2,571 coins a spin against an amateur's 431 -
+  a 6× curve that hands the most currency to the players who need it least, and the single biggest driver
+  of the late-game faucet. Flattened to `sc(600,1.6)/sc(1200,1.7)/sc(2500,1.8)` - a 3.2× curve. **Amateur
+  payouts are untouched**; only the top end comes down, so a new player feels no nerf at all.
+- **`EXCHANGE_COST` 5 → 10**, the owner's named lever, and the most effective single one available: it is
+  the trade-up ladder that converts duplicate pulls into new rarities, so it gates completion directly
+  rather than gating spending. Coins turned out to be a *weak* completion lever by comparison - a 30% coin
+  cut only moved completion by 0.2 years, because packs are bought long before coins run short.
+- Net effect: **coins 25,647 → 21,629 per week, completion 2.0 → 3.2 years.**
+- Copy now interpolates the constant instead of hardcoding "5" (the How to Play rules row and the shop
+  preview button's sub-line), so the next tuning pass moves one number and every surface follows.
+- **Note for whoever reads this next:** a dev account is a bad instrument for judging the economy. Dev
+  users hold a 1,000,000-coin grant, get `dailyUnlimited()` instead of `DAILY_MAX_ATTEMPTS=3`, and carry a
+  free Pro pass. None of that reaches a real player, so the owner's sense of "way too easy" was measuring
+  a much richer account than the one being tuned.
+- `SHARD_COST` (the targeted redeem, 3/3/4/5) is a *stronger* completion lever than the exchange and is
+  deliberately left alone here - it is the next dial to turn if completion should push past 3.2 years.
+- Verified in Playwright: a 7-check economy suite on the applied change, plus a Monte-Carlo completion sim
+  run against the live pool and odds. Regressions green: regress_final, tour_test 17/17, news_test 18/18,
+  shoptabs, tp_final, wheel_ui, wheel, wheel_rot. `shardex_test` (8/9) and `packfix_test` (13/1, the T6
+  full-price check) fail **identically on the deployed baseline** - pre-existing stale fixtures, not this
+  change. Main script parses.
+- Tunable: `EXCHANGE_COST`, `SHARD_COST`, and the `sc(...)` coin tiers in `wheelPrizesFor()`.
