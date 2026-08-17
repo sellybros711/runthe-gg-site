@@ -790,6 +790,13 @@ check(/\bunmatched\b/.test(gameBare), 'shows that fell out of the archive are re
 }
 check(/const table = TOUR_STATE\.rows;/.test(gameBare),
   'the show table is what counts your shows');
+/* AND UNTIL IT LANDS THERE IS NOTHING TO PUT IN THE TILES. Every field in that
+   grid except the count is derived from the table, so rendering it early wrote
+   "undefined" into five of the six tiles: for the length of the fetch on a good
+   connection, and forever on a failed one. */
+check(/if \(st\.partial\) return `<div class="fanband">/.test(gameBare),
+  'and the panel waits rather than printing undefined into itself');
+check(/partial: true/.test(gameBare), 'the half-built state is flagged as such');
 check(/const mine = table\.filter\(r => ids\.has\(r\.show_id\)\)/.test(gameBare),
   'and every marked show it knows about is counted');
 /* Song-level stats can only come from the shows that were transcribed, so the

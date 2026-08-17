@@ -5279,6 +5279,17 @@ function renderProfile(){
         <div class="sub">No shows marked yet</div></div>
       <div class="val">0<i>marked</i></div>
     </div></div>`;
+    /* BEFORE THE SHOW TABLE LANDS THERE IS NOTHING TO PUT IN THE TILES, and
+       saying so is the only honest option. Every field below except the count
+       is derived from that table, so rendering the grid without it printed
+       "undefined" into five of the six tiles: for the length of the fetch on a
+       good connection, and forever on a failed one. */
+    if (st.partial) return `<div class="fanband">
+      <div class="fanhd">${esc(b.label)}</div>
+      <div class="fanwait">${st.shows} show${st.shows === 1 ? '' : 's'} marked.
+        Working out where they were and what got played...</div>
+    </div>`;
+
     /* THE HEADLINE IS SONGS, NOT SHOWS. Anybody can count their shows; only
        this can tell them how much of the catalogue they have actually heard,
        because only this knows what was played on each of those nights. */
