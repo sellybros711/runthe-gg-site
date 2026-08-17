@@ -125,6 +125,7 @@ jobs:
           git config user.name "setlist-bot"
           git config user.email "noreply@anthropic.com"
           git add setlist/data/goose.csv setlist/data/goose_shows.csv \
+                  setlist/data/goose_latest.json \
                   setlist/data/DATA_CONTRACT.md setlist/index.html
           if git diff --cached --quiet; then
             echo "no new shows"
