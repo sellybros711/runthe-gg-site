@@ -319,6 +319,9 @@
 
   // ---- top rows for a game's day. Returns array (maybe empty) or null. ----
   function leaderboard(game, dateStr, limit) {
+    // A missing key would query game=eq.null and come back empty, which reads
+    // as "nobody played" rather than "we asked the wrong question".
+    if (!game || !dateStr) return Promise.resolve(null);
     var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
       '&puzzle_date=eq.' + encodeURIComponent(dateStr) +
       '&order=score.asc,created_at.asc&limit=' + ((limit || 5) + 3) +   // fetch a few extra so scrub can't shrink a full board

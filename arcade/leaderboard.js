@@ -64,8 +64,56 @@
    * all-sports board before its cardholder status resolved, then switched.
    * Resolving lazily removes the whole class of ordering bug: the board asks
    * for the current key at the moment it queries, not once at startup. */
-  function gameOf() { try { return typeof CFG.game === 'function' ? CFG.game() : CFG.game; } catch (e) { return null; } }
+  /* A game key resolver that throws used to be indistinguishable from a quiet
+   * day. Common Ground mounted its board with a resolver that referenced a
+   * variable trapped inside the game's own IIFE, so every call raised
+   * ReferenceError, this catch turned it into null, and the board asked the
+   * server for `game=eq.null` and rendered "Nobody has posted today" over a
+   * table full of rows. It did that for as long as the shared board existed.
+   *
+   * Now a resolver that fails is treated as the wiring fault it is: say so in
+   * the console and let render() show a broken board rather than an empty one,
+   * so the next one of these is a five-minute fix. */
+  function gameOf() {
+    try {
+      var g = typeof CFG.game === 'function' ? CFG.game() : CFG.game;
+      if (!g) { warnKey('resolved to ' + (g === '' ? 'an empty string' : String(g))); return null; }
+      return g;
+    } catch (e) {
+      warnKey((e && e.message) || 'threw');
+      return null;
+    }
+  }
+  var warned = false;
+  function warnKey(why) {
+    if (warned) return; warned = true;
+    try { console.error('[RTG] leaderboard game key ' + why + '. The board cannot load. Check the mount() call on this page.'); } catch (e) {}
+  }
   function variantOf() { try { return typeof CFG.variant === 'function' ? CFG.variant() : CFG.variant; } catch (e) { return null; } }
+
+  /* An empty board has two completely different causes and looks identical
+   * either way: nobody has played, or we asked the wrong question. The query is
+   * two filters, game and date, and a mismatch in either returns zero rows and
+   * the cheerful "be the first" copy.
+   *
+   * The game key is not a constant. Members play sport editions keyed
+   * 'match_nba' and friends, resolved from localStorage at read time, so a
+   * cleared key reads the all-sports board while the rows sit under the NBA
+   * one. From a phone there is no way to see which was asked for.
+   *
+   * Add ?lbdebug=1 to the URL and the empty board shows it. Hidden from
+   * everyone who has not opted in, on purpose: the answer to an empty board for
+   * a normal player is to go and play. */
+  function debugOn() {
+    try { return /[?&]lbdebug=1/.test(location.search); } catch (e) { return false; }
+  }
+  function debugLine() {
+    if (!debugOn()) return '';
+    var esc = function (s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+    return '<div style="margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);' +
+      'font:700 11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.85">' +
+      'game=' + esc(gameOf()) + '<br>date=' + esc(CFG && CFG.date) + '</div>';
+  }
 
   /* One row's headline value, in that game's own language. */
   function valueOf(row) {
@@ -440,6 +488,12 @@
     if (!B || !B.leaderboard) { paint('<div class="rtglb-msg">Leaderboard unavailable.</div>'); return; }
     // Show what we already have and refresh underneath the bar; only a first,
     // contentless load starts empty.
+    if (!gameOf()) {
+      paint('<div class="rtglb-msg">This board is misconfigured and can’t load. Your results are safe.' +
+            debugLine() + '</div>');
+      if (pinEl) pinEl.hidden = true;
+      return;
+    }
     if (tab === 'all') { renderAll(); return; }
     paint(lastHTML.today || '');
     busyBar(true);
@@ -460,7 +514,8 @@
         return;
       }
       if (!rows.length) {
-        paint('<div class="rtglb-msg"><b>Nobody has posted today.</b> Finish the puzzle and you’ll be first on the board.</div>');
+        paint('<div class="rtglb-msg"><b>Nobody has posted today.</b> Finish the puzzle and you’ll be first on the board.' +
+              debugLine() + '</div>');
         renderPin(null, 0, null, st);
         tease('Be the first on today’s board');
         return;
