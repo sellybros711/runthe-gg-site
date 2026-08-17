@@ -111,7 +111,12 @@ function put(e, fromCorpus) {
   // keep the richer record
   if (!cur.pos && e.pos) cur.pos = e.pos;
   if (!cur.col && e.col) cur.col = e.col;
-  if ((e.t || []).length > cur.t.length) cur.t = (e.t || []).slice();
+  /* Union the team lists, do not keep whichever source happened to be longest.
+     Three sources name the same franchise differently, so "longest wins" threw
+     away real clubs: Steven Jackson came out of here holding the Rams tag from
+     one source and losing the other source's, which is half of why the Rams
+     category refused him. A club named by any source is a club he played for. */
+  for (const t of (e.t || [])) if (t && !cur.t.includes(t)) cur.t.push(t);
   if ((e.decade || []).length > cur.decade.length) cur.decade = (e.decade || []).slice();
   if (e.act === 1) cur.act = 1;
   if (e.hof) cur.hof = 1;
@@ -150,6 +155,76 @@ for (const rec of pool.values()) {
 }
 
 const PLAYERS = [...pool.values()].filter((p) => nameKey(p.name));
+
+/* ------------------------------------------------------- one franchise, one name
+ *
+ * A player emailed in: letter J, category "Played for the St. Louis Rams",
+ * answer "Steven Jackson", told it did not fit. He rushed for 10,135 yards
+ * there.
+ *
+ * The corpus carried the Rams as TWO teams. 197 players were filed under "Los
+ * Angeles Rams" and 201 under "St. Louis Rams", and the split was not by era:
+ * Kurt Warner, Marshall Faulk, Isaac Bruce, Torry Holt and Jackson, the entire
+ * Greatest Show on Turf and none of whom ever played a down for the Rams in
+ * Los Angeles, were all filed under Los Angeles. The two labels were never two
+ * eras, they were two upstream sources disagreeing, so every category built on
+ * either one rejected roughly half of the franchise's actual players. The same
+ * hole sat under the Raiders, Chargers, Athletics, Angels, Braves, Dodgers,
+ * Nets, Grizzlies, Sonics and a dozen more.
+ *
+ * Since the data cannot tell the eras apart, the categories must stop claiming
+ * to. Relocations collapse to the bare nickname, which is true of every player
+ * in the merged set: "Played for the Rams" is right for Eric Dickerson and for
+ * Cooper Kupp. Where the nickname changed too, the current full name is the
+ * canonical one, because a franchise that renamed is still the same franchise.
+ *
+ * Deliberately an explicit list and not a heuristic. Same-nickname pairs that
+ * are NOT one franchise sit right next to these in the data and must never be
+ * merged: the NFL Arizona Cardinals and the MLB St. Louis Cardinals, the NFL
+ * Cleveland Browns and the MLB St. Louis Browns, the MLB Colorado Rockies and
+ * the NHL club of the same name, and a long row of Negro League Giants, Stars
+ * and Sox. */
+const FRANCHISE = {
+  // NFL: moved, kept the nickname
+  'St. Louis Rams': 'Rams', 'Los Angeles Rams': 'Rams',
+  'San Diego Chargers': 'Chargers', 'Los Angeles Chargers': 'Chargers',
+  'Oakland Raiders': 'Raiders', 'Las Vegas Raiders': 'Raiders', 'Los Angeles Raiders': 'Raiders',
+  // NFL: moved and renamed
+  'Houston Oilers': 'Tennessee Titans', 'Tennessee Oilers': 'Tennessee Titans',
+  'Baltimore Colts': 'Indianapolis Colts',
+  // NBA: moved, kept the nickname
+  'New Jersey Nets': 'Nets', 'Brooklyn Nets': 'Nets',
+  'Vancouver Grizzlies': 'Grizzlies', 'Memphis Grizzlies': 'Grizzlies',
+  'San Diego Clippers': 'Clippers', 'Los Angeles Clippers': 'Clippers', 'LA Clippers': 'Clippers',
+  // NBA: moved and/or renamed
+  'Seattle SuperSonics': 'Oklahoma City Thunder',
+  'Washington Bullets': 'Washington Wizards',
+  'Charlotte Bobcats': 'Charlotte Hornets',
+  'New Orleans Hornets': 'New Orleans Pelicans',
+  'Kansas City Kings': 'Sacramento Kings',
+  'New Orleans Jazz': 'Utah Jazz',
+  // MLB: moved, kept the nickname
+  'Boston Braves': 'Braves', 'Milwaukee Braves': 'Braves', 'Atlanta Braves': 'Braves',
+  'Brooklyn Dodgers': 'Dodgers', 'Los Angeles Dodgers': 'Dodgers',
+  'Philadelphia Athletics': 'Athletics', 'Kansas City Athletics': 'Athletics', 'Oakland Athletics': 'Athletics',
+  'California Angels': 'Angels', 'Anaheim Angels': 'Angels', 'Los Angeles Angels': 'Angels',
+  'Florida Marlins': 'Marlins', 'Miami Marlins': 'Marlins',
+  // MLB: renamed in place
+  'Tampa Bay Devil Rays': 'Tampa Bay Rays',
+  'Cleveland Indians': 'Cleveland Guardians',
+  // MLB: moved and renamed
+  'Montreal Expos': 'Washington Nationals',
+  'Seattle Pilots': 'Milwaukee Brewers',
+  'St. Louis Browns': 'Baltimore Orioles'
+};
+// One upstream row arrived as "NO/Oklahoma City\r\n Hornets". Collapse the
+// whitespace before anything keys off the string.
+const tidy = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
+const franchise = (t) => { const s = tidy(t); return FRANCHISE[s] || s; };
+for (const p of PLAYERS) {
+  const seen = new Set();
+  p.t = p.t.map(franchise).filter((t) => t && !seen.has(t) && seen.add(t));
+}
 
 // --------------------------------------------------------- lookup tables
 const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
@@ -467,6 +542,12 @@ const payload = {
   dec0: DEC0,
   fameMin: FAME_MIN, minAnswers: MIN_ANSWERS,
   sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, awards: AWDS, conf: CONF,
+  /* Ships so livecheck.js can resolve an OUTSIDE player's teams too. It builds
+     its team lookup from `teams`, which no longer contains "St. Louis Rams", so
+     without this a register player's Rams years would simply be dropped and the
+     category would answer "cannot tell" instead of yes. One map, one file, no
+     second copy to drift. */
+  alias: FRANCHISE,
   players: compact,
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,

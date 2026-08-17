@@ -69,6 +69,13 @@
     if (V && V.D === D) return V;
     var teamSport = {}, teamCanon = {}, colByCore = {}, posCanon = {};
     D.teams.forEach(function (t) { teamCanon[norm(t)] = t; });
+    /* Relocations and renames, from the generator's own map (D.alias). An
+       outside player's profile names the franchise as it was at the time, so a
+       Rams career comes back as "St. Louis Rams" and the corpus now only knows
+       "Rams". Without this the team is unrecognised and silently dropped, which
+       reads as "we cannot tell" on a category the player has clearly met. */
+    var AL = D.alias || {};
+    Object.keys(AL).forEach(function (old) { teamCanon[norm(old)] = AL[old]; });
     // team -> league, counted across the corpus so a shared name resolves to
     // whichever league actually uses it
     var tally = {};
