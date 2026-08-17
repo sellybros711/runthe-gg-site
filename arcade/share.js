@@ -1,7 +1,7 @@
 /* Run The Arcade - one voice for every share card (shared).
  *
  * Before this, nine games hand-built nine slightly different share strings:
- * "Run The Arcade · Number Game", "Run The Arcade Daily Match, Aug 9",
+ * "Run The Arcade · Number Game", "Run The Arcade Common Ground, Aug 9",
  * "Run The Arcade Daily Crossword 2026-08-10"... different separators, some
  * with a date, some without, none with the one thing that makes a daily-puzzle
  * share travel: a PUZZLE NUMBER. "#142" is what lets two people know they
@@ -18,7 +18,7 @@
   'use strict';
 
   var NAMES = {
-    table: 'Number Game', match: 'Daily Match', career: 'Career Path',
+    table: 'Number Game', match: 'Common Ground', career: 'Career Path',
     oddone: 'Odd One Out', rankit: 'Rank It', almamater: 'Alma Mater',
     guess: 'Guess the Player', crossword: 'Daily Crossword',
     highlow: 'High Low', sportegories: 'Sportegories'
@@ -178,7 +178,7 @@
 
     var top = 320, boxH = 620;
     // Each game gets its OWN picture of how the run went - never the generic
-    // Wordle squares. Daily Match draws a solve timeline; the rest dispatch to a
+    // Wordle squares. Common Ground draws a solve timeline; the rest dispatch to a
     // bespoke renderer below (streak motifs for the streak games, a time hero for
     // the timed ones, a dossier for Guess). All read the stat the game already
     // passes (statInt / stat), so no per-game wiring is needed. handledStat=true
@@ -288,7 +288,7 @@
       }
       cbig(fmtT(secs), 850, 96, accent); clabel('to solve', 908);
     }
-    // ---- Daily Match, no-timeline case (a loss or a resumed board): groups
+    // ---- Common Ground, no-timeline case (a loss or a resumed board): groups
     // solved out of five, so the losing/partial share still gets a bespoke card
     // instead of the generic emoji grid. ----
     function artMatch(spec) {

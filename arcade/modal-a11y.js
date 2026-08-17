@@ -4,7 +4,7 @@
  * open, traps Tab within it, closes on Escape, and restores focus on close —
  * without touching any game's own logic.
  *
- * Self-mounting and fail-soft: eight games toggle `#scrim.hidden`, Daily Match
+ * Self-mounting and fail-soft: eight games toggle `#scrim.hidden`, Common Ground
  * toggles `#resultModal[hidden]`; both are observed. If neither exists it does
  * nothing. It never blocks a finished puzzle.
  */

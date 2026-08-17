@@ -4,7 +4,7 @@
  *   SIGNED OUT           → nothing is playable. The hub browses fine; any PLAY
  *                          asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
- *                          Daily Match, Sportegories, Alma Mater, Career Path.
+ *                          Common Ground, Sportegories, Alma Mater, Career Path.
  *                          The other six are Arcade Card only.
  *   ARCADE CARD (paid)   → all ten, unlimited, plus the Archive.
  *

@@ -49,8 +49,12 @@
       '.rtg-topbanner .rtb-prof .rtb-plab{font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.rtg-topbanner .rtb-prof .rtb-av{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--coral,#F06A5F),#F0913C);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;font-family:var(--hero,inherit);}',
       '@media (max-width:520px){.rtg-topbanner .rtb-name{display:none;}}',
-      '@media (max-width:440px){.rtg-topbanner .rtb-prof{max-width:130px;}}',
-      '@media (max-width:380px){.rtg-topbanner .rtb-site{display:none;}.rtg-topbanner .rtb-prof .rtb-plab{max-width:74px;}}'
+      /* The decorative RunThe.GG pill goes before anything functional does. The
+         plays chip now says "N games left" rather than "N plays", which is five
+         characters wider, and that was enough to push the profile button 7px off
+         the right edge in the 381-440px band (every current iPhone). */
+      '@media (max-width:440px){.rtg-topbanner .rtb-prof{max-width:130px;}.rtg-topbanner .rtb-site{display:none;}}',
+      '@media (max-width:380px){.rtg-topbanner .rtb-prof .rtb-plab{max-width:74px;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }

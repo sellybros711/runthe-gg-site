@@ -22,7 +22,7 @@
     { key:'table',      path:'table',      cls:'table',  name:'Number Game',    accent:'var(--gold)',
       desc:'One player, one club: name the number they wore.',
       icon:'<svg viewBox="0 0 56 56"><rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/><rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/><g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g></svg>' },
-    { key:'match',      path:'match',      cls:'match',  name:'Daily Match',      accent:'var(--blue)',
+    { key:'match',      path:'match',      cls:'match',  name:'Common Ground', accent:'var(--blue)',
       desc:'Tap four names that belong together. Find all four groups before four mistakes.',
       icon:'<svg viewBox="0 0 56 56"><g><rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/></g></svg>' },
     { key:'career',     path:'career',     cls:'career', name:'Career Path',      accent:'var(--green)',

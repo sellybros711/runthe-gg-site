@@ -1,7 +1,7 @@
 /* Run The Arcade - next-game funnel for end modals (shared).
  *
  * Every game's end modal ships a generic "More games" link back to the hub.
- * This module upgrades it into a specific pull: "Next: Daily Match →" pointing
+ * This module upgrades it into a specific pull: "Next: Common Ground →" pointing
  * at the first game you haven't played today, plus a small "N of 9 played"
  * progress line. Finishing one puzzle should hand you the next one - that
  * hand-off is the whole session-extending trick of a games suite.
@@ -15,7 +15,7 @@
   'use strict';
   var GAMES = [
     ['table', 'Number Game'],
-    ['match', 'Daily Match'],
+    ['match', 'Common Ground'],
     ['career', 'Career Path'],
     ['oddone', 'Odd One Out'],
     ['rankit', 'Rank It'],

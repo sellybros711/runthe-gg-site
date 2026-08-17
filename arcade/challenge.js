@@ -233,7 +233,7 @@
   }
   function markMile(g, n) { try { LS.setItem('rtg:mile:' + g + ':' + n, '1'); } catch (e) {} }
 
-  // The end modal is a "#scrim > .sheet" in seven games, but Daily Match uses
+  // The end modal is a "#scrim > .sheet" in seven games, but Common Ground uses
   // "#resultModal > .sheet" and Crossword "#scrim > .modal". Resolve whichever
   // exists so the challenge/milestone decoration reaches all nine.
   function findSheet() {
@@ -288,7 +288,7 @@
   function watchModal() {
     if (!window.MutationObserver) return;
     var scrim = document.getElementById('scrim');        // 8 games: toggles .hidden
-    var rm = document.getElementById('resultModal');     // Daily Match: toggles [hidden]
+    var rm = document.getElementById('resultModal');     // Common Ground: toggles [hidden]
     var check = function () {
       if (scrim && !scrim.classList.contains('hidden')) decorateModal();
       if (rm && !rm.hasAttribute('hidden')) decorateModal();

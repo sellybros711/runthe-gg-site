@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
+<title>Common Ground | Run The Arcade Sports Grouping Puzzle</title>
 <meta name="apple-mobile-web-app-title" content="Run The Arcade" />
 <meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
@@ -24,14 +24,14 @@
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
-<meta property="og:title" content="Daily Match: Sports Connections" />
+<meta property="og:title" content="Common Ground: sort sixteen names into four groups" />
 <meta property="og:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta property="og:url" content="https://runthe.gg/arcade/match/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Daily Match: Sports Connections" />
+<meta name="twitter:title" content="Common Ground: sort sixteen names into four groups" />
 <meta name="twitter:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/match/" />
@@ -539,7 +539,7 @@
   <div class="topwrap">
     <div class="topbar">
       <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">DAILY MATCH</span></a>
+      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">COMMON GROUND</span></a>
       <div class="spacer"></div>
       <button class="themeBtn helpBtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
       <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
@@ -688,7 +688,7 @@
     <div class="sheet">
       <button class="x" id="stClose" type="button" aria-label="Close">✕</button>
       <h2>Your Stats</h2>
-      <div class="sub-h">Run The Arcade · Daily Match</div>
+      <div class="sub-h">Run The Arcade · Common Ground</div>
       <div class="statgrid">
         <div class="rstat"><div class="v" id="stPlayed">0</div><div class="l">Played</div></div>
         <div class="rstat"><div class="v" id="stWin">0%</div><div class="l">Win</div></div>
@@ -717,8 +717,8 @@
 <script src="/arcade/data.js?v=2"></script>
   <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=4"></script>
-<script src="/arcade/share.js?v=4"></script>
+<script src="/arcade/funnel.js?v=5"></script>
+<script src="/arcade/share.js?v=5"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
   <script src="/arcade/tokens.js?v=5"></script>
@@ -730,16 +730,16 @@
 <script src="/arcade/leaderboard.js?v=6"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=2"></script>
-<script src="/arcade/mycard.js?v=7"></script>
-<script src="/arcade/topbanner.js?v=5"></script>
+<script src="/arcade/mycard.js?v=8"></script>
+<script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=14"></script>
-<script src="/arcade/calendar.js?v=11"></script>
+<script src="/arcade/calendar.js?v=12"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/pregame.js?v=14"></script>
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=1"></script>
+<script src="/arcade/tourdata.js?v=2"></script>
   <script>
   (function () {
     'use strict';
@@ -799,7 +799,7 @@
 
     // ---- streak ----
     // The arcade has no coin economy; the game is about building the longest
-    // daily streak. Streak is per-game (this Daily Match).
+    // daily streak. Streak is per-game (this Common Ground board).
     function streakGet() { return parseInt(LS.getItem('grid_match_streak' + modeSuffix()) || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
@@ -1895,7 +1895,7 @@
     var rmode = activeResumeMode();
     if (rmode) startWith(rmode);
     else if (window.RTGMode && RTGMode.eligible() && !ARCHIVE) {
-      RTGMode.choose(GAME_BASE, { title: 'Daily Match' }).then(startWith);
+      RTGMode.choose(GAME_BASE, { title: 'Common Ground' }).then(startWith);
     } else startWith('all');
 
     // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----

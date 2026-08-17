@@ -5,7 +5,7 @@
  *
  * Reads every *.json file in grid/data/ (the drop folder), validates it against
  * the shared schema, dedupes, and compiles the athlete/coach entries into
- * grid/match/entities.js (what the Daily Match generator loads). Team and
+ * grid/match/entities.js (what the Common Ground generator loads). Team and
  * term entries are validated and counted here too - they're the shared corpus
  * the Daily Crossword will read.
  *

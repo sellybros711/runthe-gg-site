@@ -30,7 +30,7 @@
       html: 'These ones keep going until you miss. <b>How far you get is the score</b>, and it starts over tomorrow.' },
     { sel: '#cardMatch',
       title: 'Start here',
-      html: 'Daily Match is the easiest way in: sixteen names hide four groups of four. ' +
+      html: 'Common Ground is the easiest way in: sixteen names hide four groups of four. ' +
             '<b>No sports trivia needed to see the idea</b>, and it takes about three minutes.' },
     { sel: '#dprog',
       title: 'Your day, at a glance',
@@ -39,7 +39,7 @@
       title: 'What you are chasing',
       html: 'Each game keeps <b>its own daily streak</b>: play it, and the streak grows. Miss a day and it goes back to zero. ' +
             'That is the whole game behind the games.',
-      cta: 'Play Daily Match',
+      cta: 'Play Common Ground',
       href: '/arcade/match/' }
   ];
 
@@ -54,7 +54,7 @@
           '<b>its own leaderboard and its own streak</b>. They do not share.'
   };
   /* Every page has a leaderboard and no two of them agree on the class name:
-     .lb on most, #lb on Daily Match, and the collapsed .rtglb-open pill where
+     .lb on most, #lb on Common Ground, and the collapsed .rtglb-open pill where
      the panel itself is behind a tap. First match wins. */
   var BOARD = {
     sel: '.lb, #lb, .rtglb-open',

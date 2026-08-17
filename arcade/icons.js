@@ -16,7 +16,7 @@
   var P = {
     // Number Game - a jersey wearing the number
     table: '<path d="M8.6 3.4 4.6 5.4 3.1 9.6 6 10.6 6 20.6 18 20.6 18 10.6 20.9 9.6 19.4 5.4 15.4 3.4"/><path d="M8.6 3.4c.7 2 2 3 3.4 3s2.7-1 3.4-3"/><text x="12" y="17.2" text-anchor="middle" font-size="7" font-weight="900" font-family="Archivo, system-ui, sans-serif" fill="currentColor" stroke="none">26</text>',
-    // Daily Match - grouped tiles (2x2)
+    // Common Ground - grouped tiles (2x2)
     match: '<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/>',
     // Career Path - connected team stops on a route
     career: '<path d="M5 5v7a2 2 0 0 0 2 2h6a2 2 0 0 1 2 2v3"/><rect x="3" y="3" width="4" height="4"/><rect x="17" y="17" width="4" height="4"/><rect x="11" y="10" width="4" height="4"/>',

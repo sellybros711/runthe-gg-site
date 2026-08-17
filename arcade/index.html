@@ -19,7 +19,7 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
+<meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. Common Ground and a Daily Crossword every day. Beat the clock, keep your streak." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -296,7 +296,7 @@
   /* ---- play zone (right) ---- */
   .zone-head{display:flex; align-items:baseline; gap:12px; margin:2px 2px 15px; flex-wrap:wrap;}
   .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
-  /* Says the quiet part out loud. "Rank It", "Odd One Out", "Daily Match" are
+  /* Says the quiet part out loud. "Rank It", "Odd One Out", "Common Ground" are
      the names of puzzles, not of sports puzzles, and nothing above the fold
      used to establish which one this is, you found out by playing. */
   .zone-head .kicker{flex:0 0 100%; display:flex; align-items:center; gap:7px;
@@ -388,7 +388,7 @@
      transform-box:fill-box so the origin is the element, not the SVG viewport. */
   .tile.match .cap svg rect{transform-box:fill-box; transform-origin:center;}
 
-  /* Daily Match: the tiles settle in a diagonal wave */
+  /* Common Ground: the tiles settle in a diagonal wave */
   .tile.match .cap svg rect{animation:capPop 5.6s ease-in-out infinite;}
   .tile.match .cap svg rect:nth-of-type(1){animation-delay:0s}
   .tile.match .cap svg rect:nth-of-type(2){animation-delay:.11s}
@@ -710,7 +710,7 @@
               </g></svg>
             </span>
             <span class="body">
-              <span class="nm">Daily Match</span>
+              <span class="nm">Common Ground</span>
               <span class="desc" id="descM">Tap four names that belong together. Find all four groups before four mistakes.</span>
               <span class="foot">
                 <span class="play" id="playM">PLAY <span class="arw">→</span></span>
@@ -951,7 +951,7 @@
 
         <section class="editions" id="editions">
           <h2 class="ed-h">Five games, three more ways</h2>
-          <p class="ed-s">Daily Match, Alma Mater, Career Path, Guess the Player and Rank It each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
+          <p class="ed-s">Common Ground, Alma Mater, Career Path, Guess the Player and Rank It each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
           <div class="ed-row">
             <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
             <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
@@ -998,7 +998,8 @@
   <nav class="nav">
     <a class="on" href="/arcade/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
     <a href="/arcade/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8.6 3.4 4.6 5.4 3.1 9.6 6 10.6 6 20.6 18 20.6 18 10.6 20.9 9.6 19.4 5.4 15.4 3.4"/><path d="M8.6 3.4c.7 2 2 3 3.4 3s2.7-1 3.4-3"/><text x="12" y="17.2" text-anchor="middle" font-size="7" font-weight="900" font-family="Archivo, system-ui, sans-serif" fill="currentColor" stroke="none">26</text></svg>Number</a>
-    <a href="/arcade/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Match</a>
+    <a href="/arcade/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Common Ground</a>
+    <a href="/arcade/sportegories/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><text x="12" y="17" text-anchor="middle" font-size="13" font-weight="900" font-family="Archivo, system-ui, sans-serif" fill="currentColor" stroke="none">S</text></svg>Sportegories</a>
     <a href="/arcade/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
     <a href="/arcade/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
     <a href="/arcade/rankit/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
@@ -1016,13 +1017,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=9"></script>
 <script src="/arcade/auth.js?v=2"></script>
-<script src="/arcade/mycard.js?v=7"></script>
-<script src="/arcade/topbanner.js?v=5"></script>
+<script src="/arcade/mycard.js?v=8"></script>
+<script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=14"></script>
-<script src="/arcade/calendar.js?v=11"></script>
+<script src="/arcade/calendar.js?v=12"></script>
 <script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=1"></script>
+<script src="/arcade/tourdata.js?v=2"></script>
 <script>
 /* THE FIRST NINETY SECONDS.
    Ten tiles with no explanation is the single biggest thing standing between
@@ -1231,7 +1232,7 @@
     // [label, done, accent, key] - a punched hole takes its game's color, so the
     // filling ticket doubles as a map of the game identities. Free four first.
     var ALL=[
-      ['Match',mDone,'var(--blueT)','match'],       ['Sportegories',sDone,'var(--spgT,#DA6BE6)','sportegories'],
+      ['Common',mDone,'var(--blueT)','match'],       ['Sportegories',sDone,'var(--spgT,#DA6BE6)','sportegories'],
       ['Alma',aDone,'var(--mossT)','almamater'], ['Career',rDone,'var(--greenT)','career'],
       ['Number',tDone,'var(--goldT)','table'],      ['Odd One',oDone,'var(--violetT)','oddone'],
       ['Rank It',kDone,'var(--pinkT)','rankit'],    ['Guess',gDone,'var(--coralT)','guess'],

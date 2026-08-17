@@ -1,5 +1,5 @@
 /* =============================================================================
- * RunTheGrid / Daily Match — generator / engine
+ * RunTheGrid / Common Ground: generator / engine
  *
  * Two ways to get a board, same output shape:
  *   buildFromDB(date, entities)  — the real thing: discovers categories from the
@@ -245,7 +245,7 @@
   var FAM_CAP = { wordplay: 1 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
   var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
   /* opts.sport: a single-sport edition (the Arcade Card's NBA/NFL/MLB versions
-     of Daily Match). Every category on such a board leads with the same sport,
+     of Common Ground). Every category on such a board leads with the same sport,
      so the ">= 2 distinct lead sports" rule below can never be satisfied and
      the build would fail every time. It is a rule about variety on a mixed
      board, not a rule about correctness, so a sport edition drops it to one. */

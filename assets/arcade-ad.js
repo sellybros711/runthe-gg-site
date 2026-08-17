@@ -81,7 +81,7 @@
      point: "ten daily puzzles" is a quantity, "Alma Mater, Rank It, High Low" is a
      reason to tap, and one of the ten is always somebody's sort of thing. */
   var GAMES = [
-    ['Daily Match', '#5C8CFF'], ['Crossword', '#9CADC0'], ['Word Search', '#37C5D5'],
+    ['Common Ground', '#5C8CFF'], ['Crossword', '#9CADC0'], ['Word Search', '#37C5D5'],
     ['Guess the Player', '#F06A5F'], ['Number Game', '#F2B632'], ['Odd One Out', '#B79BF6'],
     ['Career Path', '#48D17A'], ['Rank It', '#F778AE'], ['Alma Mater', '#96B93C'],
     ['High Low', '#FF8A3D']

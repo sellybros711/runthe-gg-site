@@ -33,7 +33,7 @@
   // ---- stats, mirroring the hub's localStorage reads ----
   var GAME_META = {
     table:      { name: 'Number Game',   href: '/arcade/table/',      tone: 'var(--goldT,#F2B632)' },
-    match:      { name: 'Daily Match',   href: '/arcade/match/',      tone: 'var(--blueT,#5C8CFF)' },
+    match:      { name: 'Common Ground', href: '/arcade/match/',      tone: 'var(--blueT,#5C8CFF)' },
     career:     { name: 'Career Path',   href: '/arcade/career/',     tone: 'var(--greenT,#48D17A)' },
     oddone:     { name: 'Odd One Out',   href: '/arcade/oddone/',     tone: 'var(--violetT,#B79BF6)' },
     rankit:     { name: 'Rank It',       href: '/arcade/rankit/',     tone: 'var(--pinkT,#F778AE)' },
