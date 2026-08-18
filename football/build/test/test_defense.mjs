@@ -283,6 +283,9 @@ window.__DEF={
   /* DEFENSE_LIVE is a const in the shipped file, so the gate is read here and overridden
      through a hook rather than reassigned: one build has to be driven through both states. */
   live:()=>DEFENSE_LIVE,
+  testers:()=>DEFENSE_TESTERS.slice(),
+  /* null hands the question back to the shipped gate, which is how the tester allowlist
+     gets tested at all: overriding it would answer before the allowlist is consulted. */
   setLive(v){ __defLiveOverride=v; },
   launch(){ return beginDefenseDraft(); },
   board(){ show('s-board'); paintComp(); },
@@ -310,10 +313,10 @@ boot();`;
   if (src.split('\nboot();').length !== 2) throw new Error('the boot() anchor moved');
   /* The gate is a const in the shipped file and stays one. The probe copy adds an override
      beside it so the same build can be seen both ways. */
-  const GATE = 'const canPlayDefense=()=>DEFENSE_LIVE;';
+  const GATE = 'const canPlayDefense=()=>{';
   if (src.split(GATE).length !== 2) throw new Error('the defense gate moved; update this file');
-  src = src.replace(GATE, 'let __defLiveOverride=null;\n'
-    + 'const canPlayDefense=()=>(__defLiveOverride===null?DEFENSE_LIVE:__defLiveOverride);');
+  src = src.replace(GATE, 'let __defLiveOverride=null;\n' + GATE
+    + '\n  if(__defLiveOverride!==null) return __defLiveOverride;');
   fs.writeFileSync(PROBE, src.replace('\nboot();', HOOK));
   const b = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
@@ -352,6 +355,47 @@ boot();`;
     await p.waitForTimeout(200);
     ok('gated: the board does not offer a competition nobody can be on',
       await p.evaluate(() => !window.__DEF.comps().some((o) => o.value === 'defense')));
+
+    /* ── THE TESTER ALLOWLIST ─────────────────────────────────────────────────
+       Between "nobody" and "everybody" there is a middle state: named accounts get the
+       real mode on the real database while the card stays greyed out for everyone else.
+       The override goes back to null here so the shipped gate answers, which is the only
+       way the allowlist is under test rather than bypassed. */
+    await p.evaluate(() => window.__DEF.setLive(null));
+    const testers = await p.evaluate(() => window.__DEF.testers());
+    console.log(`  (testers: ${testers.join(', ') || 'none'})`);
+    ok('the allowlist is not empty while the mode is gated',
+      shipped === true || testers.length > 0, testers);
+    /* Capitalised on purpose: a username is displayed the way it was typed and a tester
+       should not have to match their own capitalisation to reach the mode. */
+    await p.evaluate((n) => window.__DEF.auth({ ready: true, signedIn: true, name: n, userId: 'u2' }),
+      String(testers[0] || 'malikwillislover').toUpperCase());
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    const asTester = await p.evaluate(() => window.__DEF.card());
+    ok('tester: the card is pressable however the name was capitalised',
+      asTester && !asTester.disabled && !asTester.soon && !asTester.tag && asTester.arrow, asTester);
+    await p.evaluate(() => window.__DEF.board());
+    await p.waitForTimeout(200);
+    ok('tester: and the board offers One Stop',
+      await p.evaluate(() => window.__DEF.comps().some((o) => o.value === 'defense')));
+
+    await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Somebody Else', userId: 'u3' }));
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    const asOther = await p.evaluate(() => window.__DEF.card());
+    ok('everybody else: still Coming Soon, still unpressable',
+      asOther && asOther.disabled && asOther.soon && asOther.tag === 'Coming Soon', asOther);
+    ok('everybody else: the launcher refuses when called directly',
+      await p.evaluate(async () => { window.__DEF.launch();
+        await new Promise((r) => setTimeout(r, 500));
+        return !document.getElementById('s-draft').classList.contains('on'); }));
+    await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: false, name: null, userId: null }));
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    ok('signed out: gated too, and a name is what the allowlist matches on',
+      await p.evaluate(() => { const c = window.__DEF.card(); return !!c && c.disabled; }));
+    await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
 
     /* And what flipping it buys, so the live path is covered before it is live. */
     await p.evaluate(() => window.__DEF.setLive(true));

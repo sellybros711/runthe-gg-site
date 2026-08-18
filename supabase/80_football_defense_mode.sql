@@ -16,9 +16,13 @@
 --
 -- Order of operations, if that gating is being lifted:
 --   1. run this file
---   2. flip DEFENSE_LIVE in football/index.html
---   3. deploy
--- The other order records nothing and shows the player a saved-run failure they
+--   2. deploy with names in DEFENSE_TESTERS (football/index.html), who then get the
+--      real mode against the real database while everybody else still sees
+--      Coming Soon
+--   3. flip DEFENSE_LIVE to true and deploy again, which opens it to everybody
+-- This file comes first in every version of the plan, testers included: a tester
+-- whose season is rejected by the constraint learns exactly as little as no
+-- tester at all, and the other order shows the player a saved-run failure they
 -- can do nothing about.
 
 -- ---------------------------------------------------------------------------

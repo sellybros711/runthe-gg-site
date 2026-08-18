@@ -100,12 +100,20 @@ every defense run outright, and a player would get a season that vanishes on sub
 To open it:
 
 1. run `supabase/80_football_defense_mode.sql`
-2. flip `DEFENSE_LIVE` to `true`
-3. deploy
+2. deploy with names in `DEFENSE_TESTERS`, who get the real mode on the real database
+   while everybody else still sees Coming Soon
+3. flip `DEFENSE_LIVE` to `true` and deploy again, which opens it to everybody
 
-The other order records nothing and shows a save failure nobody can act on. Both states
-are covered by `BROWSER=1 node football/build/test/test_defense.mjs`, so the flip is a
-one-line change with a test behind it.
+The migration comes first in every version of that plan, testers included: the other
+order records nothing and shows a save failure nobody can act on.
+
+`DEFENSE_TESTERS` is a feature flag, not a permission. The list ships in the page, so it
+is readable by anybody who opens the console and forgeable by anybody who cares to. That
+is fine for hiding an unannounced mode and would not be fine for anything else; the
+database is what decides whether a run is recorded and it does not consult the list.
+
+All three states are covered by `BROWSER=1 node football/build/test/test_defense.mjs`, so
+the flip is a one-line change with a test behind it.
 
 `test_bracket.mjs` writes an instrumented copy of the game to
 `football/__test_bracket.html`, drives it, and deletes it. That name is deliberate:

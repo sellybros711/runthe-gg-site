@@ -4938,17 +4938,36 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
    in whichever of them happened to need it first. */
 const isDefRun=()=>!!(run&&run.defense);
 
-/* ---- IS THE DEFENSE DRAFT LIVE? ----
-   False until supabase/80_football_defense_mode.sql has been applied, and that is not
-   caution, it is the truth about the mode. ps_runs_run_mode_ck lists the recordable modes
-   by name, so until that constraint is widened the database REJECTS every defense run
-   outright. The mode plays perfectly and every season it produces would vanish on submit,
-   which is the worst version of shipping something: it looks finished and quietly is not.
+/* ---- WHO CAN PLAY ONE STOP ----
+   Two gates, and they answer different questions.
 
-   So the card says Coming Soon and cannot be pressed, exactly as the Trade Machine did
-   before its own migration landed. Flip this AFTER running the migration, not before. */
+   DEFENSE_LIVE is "is this open to everybody". It stays false until
+   supabase/80_football_defense_mode.sql has been applied, and that is not caution, it is
+   the truth about the mode: ps_runs_run_mode_ck lists the recordable modes by name, so
+   until that constraint is widened the database REJECTS every One Stop run outright. The
+   mode plays perfectly and every season it produced would vanish on submit, which is the
+   worst version of shipping something because it looks finished and quietly is not.
+
+   DEFENSE_TESTERS is "who can play it before then". Named accounts get the real mode,
+   card pressable and board listed, so the thing can be played on production against the
+   real database before it is announced. THE MIGRATION STILL HAS TO BE RUN FIRST: a tester
+   whose run is rejected by the constraint learns exactly as little as no tester at all.
+
+   THIS IS A FEATURE FLAG, NOT A PERMISSION. The list ships in the page, so it is readable
+   by anybody who opens the console and forgeable by anybody who wants to bother. That is
+   fine for hiding an unannounced game mode and would not be fine for anything else. The
+   database is what actually decides whether a run is recorded, and it does not consult
+   this list. */
 const DEFENSE_LIVE=false;
-const canPlayDefense=()=>DEFENSE_LIVE;
+const DEFENSE_TESTERS=['malikwillislover','runnyj'];
+const canPlayDefense=()=>{
+  if(DEFENSE_LIVE) return true;
+  if(!authState.signedIn) return false;
+  /* Lower-cased on both sides: a username is displayed the way it was typed and nobody
+     testing a mode should have to match their own capitalisation to reach it. */
+  const me=String(authState.name||'').trim().toLowerCase();
+  return !!me && DEFENSE_TESTERS.indexOf(me)>=0;
+};
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
