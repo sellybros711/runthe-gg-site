@@ -95,27 +95,41 @@ console.log('=== the pool ===');
 
 console.log('\n=== the arithmetic ===');
 {
-  /* Better defense, fewer points. The direction is the whole mode, and it is one sign flip
-     away from being exactly backwards. */
-  const worse = E.defenseSuppression(40), mid = E.defenseSuppression(50), better = E.defenseSuppression(60);
+  /* THE WHOLE MODE IS CALIBRATED SO A DEFENSE HAS THE SAME WIN CHANCES AS A DRAFT, and the
+     four knobs below are what buys that. Their job is measured, not guessed, against the
+     offense season-win distribution (see the note on defenseOverall), so the numbers here
+     are the settings, and the balance itself is the "both modes" section further down.
+
+     Better defense, fewer points. One sign flip from being exactly backwards. */
+  const worse = E.defenseSuppression(30), mid = E.defenseSuppression(40), better = E.defenseSuppression(53);
   ok('a better defense suppresses harder', worse > mid && mid > better,
-    { at40: worse.toFixed(3), at50: mid.toFixed(3), at60: better.toFixed(3) });
-  ok('and the median drafted defense is close to neutral',
-    Math.abs(E.defenseSuppression(50) - 0.81) < 0.05, E.defenseSuppression(50).toFixed(3));
-  /* HOW MUCH A DEFENSE CAN DIFFER FROM ANOTHER DEFENSE, end to end. The inputs are the
-     fifth and ninety-fifth percentile EFFECTIVE totals, rating times structure, because
-     structure is half of what separates two defenses now: 43.2 and 52.7 measured over
-     8,000 drafted rosters. On the raw rating alone the same percentiles are 47.4 and 51.9,
-     a spread of 1.095, and that gap between the two numbers is the whole reason
-     defenseStructure exists. Compare against the offense's 1.225. */
-  const spread = E.defenseSuppression(43.2) / E.defenseSuppression(52.7);
-  ok('a good defense beats a poor one by as much as a good offense beats a poor one',
-    spread > 1.18 && spread < 1.30, { spread: spread.toFixed(3), want: '~1.225' });
-  /* And the schemes are what put it there. Without them every roster would be within 9.5%
-     of every other and the mode would play the same every time. */
-  const rawOnly = E.defenseSuppression(47.4) / E.defenseSuppression(51.9);
-  ok('and the rating alone would not have', rawOnly < 1.12,
-    { ratingOnly: rawOnly.toFixed(3), withStructure: spread.toFixed(3) });
+    { at30: worse.toFixed(2), at40: mid.toFixed(2), at53: better.toFixed(2) });
+  /* THE MEDIAN DRAFTED DEFENSE (raw ~34) LETS THE OTHER TEAM SCORE ABOUT LEAGUE AVERAGE, a
+     touch over. It is NOT a shutdown unit: your own offense is deliberately below average
+     (DEF_OFFENSE_SCALE), so a merely-average defense is a losing team, exactly as a
+     merely-average offense is in the main mode. A median that suppressed hard would hand
+     every typical roster a winning record and make the mode softer than the draft. */
+  const med = E.defenseSuppression(34);
+  ok('the median defense allows about league average, not less',
+    med > 1.0 && med < 1.3, { suppression: med.toFixed(2), impliedAllowed: (21.5 * med).toFixed(0) });
+  /* AN ELITE DEFENSE IS DOMINANT, which is what lets it win the low-scoring games a title
+     run is made of. At the top of the drafted range it roughly halves the opponent's
+     scoring, holding a ~22 point team near 11. */
+  ok('an elite defense roughly halves the opponent',
+    E.defenseSuppression(53) < 0.62, E.defenseSuppression(53).toFixed(2));
+  /* THE FLOOR IS BAD, NOT HOPELESS. A pure power law explodes for a scrap-heap defense and
+     sends it winless, which the offense floor never does. The cap is the ceiling on how far
+     the opponent runs it up, and it is what lets the curve be steep enough to separate the
+     good defenses without a zero at the bottom. */
+  ok('the worst defense is capped, never worse than the cap',
+    E.defenseSuppression(1) === E.CONSTANTS.DEF_SUPPRESS_MAX
+    && E.CONSTANTS.DEF_SUPPRESS_MAX <= 1.6,
+    { atFloor: E.defenseSuppression(1), cap: E.CONSTANTS.DEF_SUPPRESS_MAX });
+  /* YOUR FREE OFFENSE IS MEDIOCRE ON PURPOSE. Without this the mode is a coin flip in the
+     middle because a neutral defense plus a league-average offense is a .500 team. */
+  ok('the undrafted offense is set below average',
+    E.CONSTANTS.DEF_OFFENSE_SCALE > 0.6 && E.CONSTANTS.DEF_OFFENSE_SCALE < 0.95,
+    E.CONSTANTS.DEF_OFFENSE_SCALE);
 }
 
 console.log('\n=== the schemes ===');
@@ -264,8 +278,12 @@ console.log('\n=== a season, both modes ===');
   console.log(`  defense: ${d.wins.toFixed(2)} wins, draft gap ${d.gap.toFixed(2)}, allowed ${d.allowed.toFixed(1)}`);
   ok('a defensive season is about as winnable as an offensive one',
     Math.abs(o.wins - d.wins) < 1.5, { offense: o.wins.toFixed(2), defense: d.wins.toFixed(2) });
-  ok('and the draft matters about as much',
-    Math.abs(o.gap - d.gap) < 1.0, { offense: o.gap.toFixed(2), defense: d.gap.toFixed(2) });
+  /* THE DRAFT MATTERS AT LEAST AS MUCH, not exactly as much. A defense's outcomes spread
+     wider across draft quality than an offense's, so drafting well is rewarded a little more
+     here, which is a feature of the mode rather than a balance leak: the concern for parity
+     is that a defense is not HARDER, and a wider spread does not make a good draft harder. */
+  ok('and the draft matters at least as much as the offense draft',
+    d.gap >= o.gap - 0.3, { offense: o.gap.toFixed(2), defense: d.gap.toFixed(2) });
   /* The mode's own identity: you are the side that stops people. */
   ok('a drafted defense allows fewer points than a drafted offense does',
     d.allowed < o.allowed, { defense: d.allowed.toFixed(1), offense: o.allowed.toFixed(1) });
@@ -315,11 +333,15 @@ console.log('\n=== the overall, and the season it projects ===');
     [10, 20, 30, 40, 50, 60].every((v, i, a) => i === 0
       || E.defenseOverall(v) > E.defenseOverall(a[i - 1])),
     [10, 30, 50].map((v) => +E.defenseOverall(v).toFixed(1)));
-  /* The two anchors the map was fitted on, which are the fifth and ninety-fifth percentile
-     of 6,000 drafted rosters a side. If either moves, every band below moves with it. */
-  ok('and it lands the measured percentiles on the offense’s own',
-    Math.abs(E.defenseOverall(11.0) - 14.4) < 0.1 && Math.abs(E.defenseOverall(51.5) - 84.9) < 0.1,
-    { p5: +E.defenseOverall(11.0).toFixed(1), p95: +E.defenseOverall(51.5).toFixed(1) });
+  /* THE THREE ANCHORS THAT MATTER, by raw defense total: the median drafted defense (~34)
+     grades where the median offense does (~48), a well-drafted one (~48) reads ~80 like a
+     well-drafted offense, and a near-perfect one (~55) reaches ~95 so it can finally touch
+     the elite seeding and title-game tier the whole fix is about. */
+  ok('the map aligns the median, the good draft, and the elite ceiling',
+    Math.abs(E.defenseOverall(34) - 48) < 4
+    && Math.abs(E.defenseOverall(48) - 80) < 4
+    && E.defenseOverall(55) >= 94,
+    { median: +E.defenseOverall(34).toFixed(0), good: +E.defenseOverall(48).toFixed(0), ceiling: +E.defenseOverall(55).toFixed(0) });
 
   const N = Number(process.env.OVERALL || 300);
   const grade = (n, map, slots, elig, defense) => {

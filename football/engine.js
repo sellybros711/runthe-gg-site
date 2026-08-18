@@ -225,15 +225,22 @@ const CONSTANTS = {
    * first-round exits, and a harder path through the legends at the end.
    */
   CONSISTENCY: 0.20,
-  /* THE DEFENSE DRAFT. Both solved rather than tuned; the derivation is above
-     resolveGameDefense and depends on the measured spread of drafted rosters. */
-  DEF_REF: 39.9,
-  DEF_POWER: 1.0,
+  /* THE DEFENSE DRAFT, calibrated against the offense season-win distribution rather than by
+     eye: a drafted defense should have the same shot at a good season and a title as a
+     drafted offense. DEF_REF sets where a defense is neutral (the median drafted defense at
+     raw ~34 allows about league average, keeping the scorelines realistic); DEF_POWER is the
+     steepness that lets an elite defense separate from a poor one; the cap keeps the worst
+     defense bad rather than winless. See the block above resolveGameDefense and the
+     defenseOverall map. */
+  DEF_REF: 36.1,
+  DEF_POWER: 1.8,
+  DEF_SUPPRESS_MAX: 1.6,   // worst defense lets the opponent run up ~1.6x, no more
   /* The spread on the offense you are given. Real team scoring runs a standard deviation
      around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
      sits near this across the era), and your borrowed offense should be as streaky as
      anybody's or a defensive run would be decided entirely by your own roster. */
   DEF_OFFENSE_SD: 0.40,
+  DEF_OFFENSE_SCALE: 0.90,  // your undrafted offense is a shade below average
 
   /*
    * Playoff home-field advantage, scaling linearly from PLAYOFF_WINS (no
@@ -2912,83 +2919,93 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
  * thing your roster touches is how much the other team scores. A perfect season here is
  * twenty-one weeks of holding people under, which is what a defense is for.
  *
- * SUPPRESSION IS A RATIO, AND DEF_POWER IS 1 BECAUSE THE SCHEMES EARNED IT. That is worth
- * the paragraph, because the exponent used to be 2.24 and the story of why it is not any
- * more is the story of the mode.
+ * SUPPRESSION IS A RATIO, AND THE FOUR KNOBS ARE CALIBRATED TO ONE TARGET: a drafted
+ * defense should have the same shot at a good season and a title as a drafted offense.
+ * That target is measured, not eyeballed, by playing thousands of full seasons a side and
+ * comparing the outcomes that matter to a player: how often you reach the playoffs, how
+ * often you win a playoff game, how often you win it all.
  *
- * On the raw rating alone, defenses barely differ. Measured over 4,000 drafted rosters
- * before defensive schemes existed, the fifth and ninety-fifth percentile offenses were
- * 69.2 and 84.8 fantasy points apart, a ratio of 1.225, where the same percentiles on
- * defense were 47.4 and 51.9, a ratio of 1.095. IDP scoring is tackle-led and tackle
- * counts barely separate starters, so nobody pulls away from the pack the way a Faulk or
- * a Manning does. Left linear, every roster landed near 50 and every season played the
- * same, so DEF_POWER was solved as the exponent that forced the difference back onto the
- * scoreboard: ln(1.225) / ln(1.095) = 2.24. An honest correction for a real problem, but
- * a correction, and one that quietly doubled what chemistry and everything else was worth.
+ * The first version balanced the wrong thing. It matched the SPREAD of team ratings across
+ * drafts (defenseStructure and a gentle exponent got the fifth-to-ninety-fifth ratio to
+ * 1.220 against the offense's 1.225) and stopped there. But a matched rating spread with a
+ * defense's naturally compressed win distribution still produced almost no twelve-win
+ * seasons, and its overall could not pass ~88, below every playoff-edge threshold. The
+ * result was a mode you could not win a playoff game in: zero titles in 22,000 seasons.
  *
- * defenseStructure removed the problem rather than correcting it. Once a roster is read
- * for what KIND of defense it is (see DEFENSE_SCHEMES) the same measurement over 8,000
- * drafted rosters gives an effective total of 43.2 and 52.7 at the same percentiles: a
- * ratio of 1.220 against the offense's 1.225. The spread the exponent was manufacturing is
- * now really there, produced by the difference between a pass rush and a coverage unit,
- * so the exponent has nothing left to do and comes out.
+ * The four knobs together fix that:
+ *   DEF_POWER (1.8)     the steepness that lets an elite defense pull far enough clear of
+ *                       the pack to string playoff wins together, widening the win
+ *                       distribution to match the offense's.
+ *   DEF_REF (36.1)      set so the MEDIAN drafted defense (raw ~34) allows about league
+ *                       average, which keeps the scorelines realistic while the steeper
+ *                       curve does the separating.
+ *   DEF_SUPPRESS_MAX    a cap so the worst defense is bad, not winless: a pure power law
+ *                       explodes for a scrap-heap roster in a way the offense floor never
+ *                       does, because a bad offense still steals a couple of games.
+ *   DEF_OFFENSE_SCALE   your undrafted offense is a shade below average, so a merely-decent
+ *                       defense is a losing team the way a merely-decent offense is. Without
+ *                       it a neutral defense plus a free league-average offense is a coin
+ *                       flip, and the mode is softer in the middle than the draft it mirrors.
  *
- * DEF_REF is solved the same way it always was. The median drafted offense scores 79.0
- * against an opponent's 64.0, a margin of 1.233, which is the game a decent roster is used
- * to playing. The median drafted defense has to hold that same opponent to 1/1.233 of what
- * they would otherwise score, and at an effective median total of 49.2 the reference that
- * does it is 39.9.
+ * The overall map (above defenseOverall) is the fifth knob: it labels a top defense high
+ * enough to be handed the elite seeding and title-game edge, which suppression alone, capped
+ * below that tier, could never reach.
  *
- * Both numbers mean "as consequential as the offense mode, and as winnable". Re-derive
- * them, do not nudge them, if the pool, the pricing curve or the schemes ever move.
- */
+ * Re-derive against the offense outcome distribution, do not nudge, if the pool, the pricing
+ * curve, the schemes or the offense mode ever move. */
 function defenseSuppression(defenseTotal, constants = CONSTANTS) {
   const ref = constants.DEF_REF, k = constants.DEF_POWER;
   if (!(defenseTotal > 0)) return 1;
-  return Math.pow(ref / defenseTotal, k);
+  /* Capped so the worst defense is bad, not hopeless. A pure power law explodes for a low
+     total (a scrap-heap defense lets the other team score several times normal and goes
+     winless), which offense's bottom never does: a bad offense still steals a couple of
+     games. The cap is the most a weak defense lets the opponent run up, and it is what lets
+     DEF_POWER be steep enough to separate the good defenses at the top without turning the
+     bottom into an automatic zero. */
+  return Math.min(constants.DEF_SUPPRESS_MAX || Infinity, Math.pow(ref / defenseTotal, k));
 }
 
 /*
  * A DEFENSE'S TEAM OVERALL, ON THE SAME 0 TO 100 SCALE AN OFFENSE'S IS ON.
  *
- * THE PROBLEM THIS SOLVES. Team overall is points times chemistry times shape, and on
- * offense that product runs from about 3 to about 95, which is why the number doubles as
- * its own percentage and why the bands sit at 75 and 50. IDP scoring is a smaller currency:
- * six defenders sum to a fraction of what six skill players do, so the identical product on
- * a defense tops out at 55.4. A PERFECTLY DRAFTED DEFENSE COULD NOT REACH THE GREEN BAND,
- * ever, and the best one the pool can produce was shown to the player as a red 49.
+ * THE PROBLEM. Team overall is points times chemistry times shape. On offense that product
+ * runs about 3 to 95, so the number doubles as its own percentage and the bands sit at 75
+ * and 50. IDP scoring is a smaller currency, so the identical product on a defense tops out
+ * near 55: a perfectly drafted defense could not reach the green band, and worse, it could
+ * not reach the tier the rest of the season is decided in. weeklyEdgeVs, seedFromRecord,
+ * playoffShare and finalEdge all read the overall against offense thresholds (CLASS_FLOOR
+ * 84, ELITE_FLOOR 95, FINAL_EDGE_PIVOT 95). A defense that never passed 88 got no class edge,
+ * no bye, and the full title-game penalty, so the mode was unwinnable past the wild card.
  *
- * It is not only cosmetic. weeklyEdgeVs, seedFromRecord, playoffShare and finalEdge all
- * read the overall against constants calibrated on the offense's range, so on a defense
- * every one of them was reading a top roster as a bottom one: no class edge on a Sunday, no
- * elite seeding path, and the title game's own opinion pinned in the band its comment calls
- * hopeless. The mode was playing the whole back half of the season as a bad team.
+ * THE MAP is a curve through three anchors that matter, by raw defense total: the median
+ * drafted defense (~34) grades where the median offense does (~48); a well-drafted one (~48)
+ * reads ~80, the same green a well-drafted offense reads, so "took the best on every board"
+ * means the same thing on both sides; and a near-perfect one (~55) reaches ~95, which is the
+ * whole point, because that is where the elite seeding and a winnable Super Bowl live. Below
+ * the first pair it runs to the origin; above the last it clamps at 100.
  *
- * THE MAP IS MEASURED, not invented. 6,000 rosters a side, drafted four ways (best
- * available, cheapest, points per dollar, at random) over the same team-season wheel:
- *
- *              min     p5    p25    p50    p75    p95    max
- *   offense    3.0   14.4   28.4   46.2   69.3   84.9   94.8
- *   defense    7.1   11.0   16.6   22.0   43.2   51.5   55.4
- *
- * Linear through the fifth and ninety-fifth percentiles of each. Two anchors rather than a
- * curve through all seven because the tails are where the bands live and a straight line is
- * a thing the next person can check by hand. What it buys, and the reason those two anchors
- * were the right ones: a greedy defense (median 49.4) lands at 81.2 against a greedy
- * offense's 79.2, so "took the best man on every board" reads the same on both sides of the
- * ball, which is exactly what the 75 band was set to mean.
- *
- * NOT USED FOR SUPPRESSION. How many points a defense holds you to is decided by the RAW
- * total against DEF_REF, in resolveGameDefense, and that is untouched: this is a grade, not
- * a quantity of football. Feeding it into the suppression curve would rescale the whole
- * mode's scoring by 1.74 and undo the balance the constants above were derived for.
+ * NOT USED FOR SUPPRESSION. How many points a defense allows is the RAW total against DEF_REF
+ * in resolveGameDefense. This is the grade and the seeding input, nothing else. The win
+ * parity itself is bought by the suppression curve and DEF_OFFENSE_SCALE, measured against
+ * the offense season-win distribution; this map only makes sure a top defense is LABELLED
+ * high enough to be handed the edge that suppression alone cannot reach.
  */
-const DEF_OVERALL = { FROM_LO: 11.0, FROM_HI: 51.5, TO_LO: 14.4, TO_HI: 84.9 };
+const DEF_OVERALL_MAP = [
+  [10.0, 11.0], [18.0, 32.0], [34.0, 48.0],
+  [48.0, 80.0], [52.0, 89.0], [55.0, 95.0],
+];
 function defenseOverall(defenseTotal) {
   if (!(defenseTotal > 0)) return 0;
-  const d = DEF_OVERALL;
-  const k = (d.TO_HI - d.TO_LO) / (d.FROM_HI - d.FROM_LO);
-  return Math.max(0, d.TO_LO + (defenseTotal - d.FROM_LO) * k);
+  const m = DEF_OVERALL_MAP;
+  if (defenseTotal <= m[0][0]) return Math.max(0, m[0][1] * defenseTotal / m[0][0]);
+  for (let i = 1; i < m.length; i++) {
+    if (defenseTotal <= m[i][0]) {
+      const [x0, y0] = m[i - 1], [x1, y1] = m[i];
+      return y0 + (y1 - y0) * (defenseTotal - x0) / (x1 - x0);
+    }
+  }
+  const [x0, y0] = m[m.length - 2], [x1, y1] = m[m.length - 1];
+  return Math.min(100, y1 + (y1 - y0) * (defenseTotal - x1) / (x1 - x0));
 }
 
 /** The overall of a roster as drafted, either side of the ball, in one place. */
@@ -3039,11 +3056,17 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
   const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng)
     * constants.SCALE * suppression / advantage;
 
-  /* YOUR OFFENSE, which you did not draft: the league's average, drawn with the same
-     spread a real team has and modified by the opponent's defense, which is the one term
-     resolveGame applies to your roster and this applies to the league's. */
+  /* YOUR OFFENSE, WHICH YOU DID NOT DRAFT, AND WHICH IS NOT LEAGUE AVERAGE. An all-defense
+     team is not a .500 team with a coin-flip offense: it is a team that wins low-scoring
+     games and loses when its defense cracks. DEF_OFFENSE_SCALE holds your offense a notch
+     below average so a merely-decent defense has a losing record, the way a merely-decent
+     offense does in the main mode. Without it a defense that allows a realistic ~24 points
+     still wins about half its games off a free average offense, which makes the mode softer
+     in the middle than the draft it is meant to mirror. The scores it produces are the
+     13-10, 16-9 games a defense-first team actually plays. */
   const yourScore = sampleGamma(leagueAvgAllowed, leagueAvgAllowed * constants.DEF_OFFENSE_SD,
-    rng) * constants.SCALE * (opponent.pts_allowed_mean / leagueAvgAllowed);
+    rng) * constants.SCALE * (opponent.pts_allowed_mean / leagueAvgAllowed)
+    * (constants.DEF_OFFENSE_SCALE || 1);
 
   let won;
   if (yourScore > oppScore) won = true;
