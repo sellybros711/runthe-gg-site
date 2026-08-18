@@ -66,6 +66,20 @@ offense, and 1.48 is the 2-15 that was being printed under a season that finishe
 Both are asserted here, and the second one as a difference rather than as a tuned range: the
 claim is that the projection plays the mode.
 
+## The scoreboard row
+
+The How close table also prints what each roster does to the SCOREBOARD rather than to a
+fantasy total: points scored a game on a draft, points allowed a game on a defense, yours
+against the best you could have had. Only the side of the ball you drafted, because in One
+Stop your offense is the league's average and in a draft your defense is not yours either,
+so the other half is a number no different pick could have moved.
+
+The subtle part is the RNG. `toFootballScore` turns the engine's continuous score into a
+scoreline the NFL has really produced, and it draws a value. Drawing that from the season's
+own stream would consume numbers the next game depends on and silently rewrite every later
+week, which is the failure mode the section below this one is about. The scores get a second
+seeded stream, and the first assertion here is that the records did not move because of it.
+
 ## And the formation
 
 Six defensive spots (DL DL LB DB DB FLEX) can hold exactly four shapes: the one with the

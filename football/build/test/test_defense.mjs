@@ -378,6 +378,101 @@ console.log('\n=== the overall, and the season it projects ===');
     })()) < 1.5, { viaPlayRun: +asDefense.toFixed(2) });
 }
 
+console.log('\n=== the scoreboard the projection reports ===');
+{
+  /* The How close table prints what each roster does to the SCOREBOARD, not just what it is
+     worth in fantasy points: points scored a game on a draft, points allowed a game on a
+     defense, yours against the best you could have had. Both come out of projectSeason, so
+     both are the season a roster typically plays rather than the one it happened to play.
+
+     THE SUBTLE PART IS THE RNG. toFootballScore is what turns the engine's continuous score
+     into a scoreline the NFL has really produced, and it draws a value. Drawing it from the
+     season's own stream would consume numbers the next game depends on and silently rewrite
+     every later week, which would not look like a rendering change: it would look like the
+     leaderboard disagreeing with itself. The scores get a second seeded stream, and the
+     first assertion here is that the records did not move because of it. */
+  const R = require(`${ROOT}/football/run.js`);
+  const oData = R.indexData(O, TS);
+  const dData = R.indexData(D, TS);
+  const ctx = { battery: rd('battery.json'), coaches: rd('coaches.json'), curated: rd('curated.json') };
+  const LEAGUE = LC.league_avg_pts_allowed_by_season;
+
+  const play = (defense, seed) => {
+    const data = defense ? dData : oData;
+    const run = R.createRun({ seed, defense: defense || undefined });
+    while (run.roster.length < 6) {
+      const draw = R.spin(run, data);
+      const live = R.affordableFrom(run, draw.team_season_id, data.playersByTeamSeason);
+      if (!live.length) throw new Error('nothing signable');
+      const left = 6 - run.roster.length;
+      const spent = run.roster.reduce((t, p) => t + p.price_musd, 0);
+      const budget = 140 - spent - 3 * (left - 1);
+      const can = live.filter((p) => p.price_musd <= budget);
+      const from = (can.length ? can : live.slice().sort((a, b) => a.price_musd - b.price_musd).slice(0, 1)).slice();
+      from.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+      R.sign(run, from[0]);
+    }
+    R.startSeason(run, data, ctx);
+    let guard = 0;
+    while (run.phase !== R.PHASES.OVER && guard++ < 80) {
+      if (run.phase === R.PHASES.SEEDING) {
+        if (run.playoffSeed.made) { R.startPlayoffs(run); continue; }
+        break;
+      }
+      R.advanceWeek(run, data, LEAGUE, CAL);
+    }
+    return { run, data };
+  };
+
+  const { run, data } = play(true, 4041);
+  const withScores = R.projectSeason(run.roster, run.season.chemistry, run, data, LEAGUE, 150, CAL);
+  const without = R.projectSeason(run.roster, run.season.chemistry, run, data, LEAGUE, 150);
+  ok('working out the scorelines does not change the record they came from',
+    withScores.typicalWins === without.typicalWins && withScores.meanWins === without.meanWins,
+    { with: withScores.typicalWins, without: without.typicalWins });
+
+  /* The projection is a projection OF the season that was played, so the two have to be in
+     the same neighbourhood. Not equal: one season is mostly luck, which is the whole reason
+     the table replays it rather than reporting it. */
+  const played = (f) => run.season.results.reduce((t, r) => t + f(r), 0) / run.season.results.length;
+  const realAgainst = played((r) => r.shownThem ?? r.oppScore);
+  console.log(`  points allowed: projected ${withScores.pointsAgainst.toFixed(1)}, `
+    + `played ${realAgainst.toFixed(1)}`);
+  ok('the projected points allowed agree with the season that was played',
+    Math.abs(withScores.pointsAgainst - realAgainst) < 4,
+    { projected: +withScores.pointsAgainst.toFixed(1), played: +realAgainst.toFixed(1) });
+  ok('and they are NFL scores, not engine units',
+    withScores.pointsAgainst > 10 && withScores.pointsAgainst < 40,
+    +withScores.pointsAgainst.toFixed(1));
+
+  /* THE ROW ONLY MEANS SOMETHING IF A BETTER DEFENSE SHOWS A LOWER NUMBER. That is the
+     direction of the whole mode and it is one sign flip from being backwards. */
+  const best = R.bestPossibleSquad(run, data, ctx);
+  if (best) {
+    const bestProj = R.projectSeason(best.squad, best.chemistry, run, data, LEAGUE, 150, CAL);
+    console.log(`  yours ${withScores.pointsAgainst.toFixed(1)} allowed, `
+      + `best available ${bestProj.pointsAgainst.toFixed(1)}`);
+    ok('the best defense you could have drafted allows fewer points than yours',
+      bestProj.pointsAgainst <= withScores.pointsAgainst + 0.01,
+      { yours: +withScores.pointsAgainst.toFixed(1), best: +bestProj.pointsAgainst.toFixed(1) });
+  } else {
+    ok('the best possible squad could be worked out', false);
+  }
+
+  /* And the other side of the ball, where the row is points SCORED and a better draft has to
+     move it the other way. */
+  const off = play(false, 4041);
+  const oMine = R.projectSeason(off.run.roster, off.run.season.chemistry, off.run, off.data, LEAGUE, 150, CAL);
+  const oBest = R.bestPossibleSquad(off.run, off.data, ctx);
+  console.log(`  offense: yours ${oMine.pointsFor.toFixed(1)} scored, `
+    + `best available ${oBest ? R.projectSeason(oBest.squad, oBest.chemistry, off.run, off.data, LEAGUE, 150, CAL).pointsFor.toFixed(1) : 'n/a'}`);
+  ok('a draft scores NFL points too, and the best you could have drafted scores more',
+    oMine.pointsFor > 10 && oMine.pointsFor < 45 && (!oBest
+      || R.projectSeason(oBest.squad, oBest.chemistry, off.run, off.data, LEAGUE, 150, CAL).pointsFor
+        >= oMine.pointsFor - 0.01),
+    +oMine.pointsFor.toFixed(1));
+}
+
 if (process.env.BROWSER) {
   console.log('\n=== the mode, in a browser ===');
   const { chromium } = await import('playwright');

@@ -2848,11 +2848,26 @@ function bestPossibleSquad(run, data, ctx) {
  * results page, and separately from the season you actually played so this does
  * not just re-report the same luck.
  */
-function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400) {
+function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400, displayCal = null) {
   const schedule = run.schedule.map((id) => data.byTeamSeasonId[id]);
   const playoffs = run.playoffs.map((id) => data.byTeamSeasonId[id]);
   const wins = [];
   let madePlayoffs = 0, titles = 0, perfect = 0, bye = 0;
+  /* THE SCOREBOARD, ON ITS OWN STREAM.
+   *
+   * A rating says how good the six are; this says what they did to the scoreboard, which is
+   * the thing the mode is actually about on a defense and the thing anybody would ask about
+   * on an offense. Averaged over every game of every trial, so it is the season this roster
+   * typically plays rather than the one it happened to play.
+   *
+   * toFootballScore is what turns the engine's continuous score into a scoreline the NFL has
+   * really produced, and it DRAWS FROM THE RNG. Drawing from the season's own stream here
+   * would consume values the next game depends on and silently rewrite every later week, so
+   * this gets a second seeded stream of its own. Same reason the file's own suite asserts
+   * that both paths through that function draw exactly one value.
+   */
+  const srng = displayCal ? E.createSeededRNG(E.hashSeed(`projscore|${run.seed}`)) : null;
+  let ptsFor = 0, ptsAgainst = 0, scored = 0;
 
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
@@ -2863,6 +2878,12 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
     if (out.seed.bye) bye++;
     if (out.titleWon) titles++;
     if (out.perfect) perfect++;
+    for (const r of out.results) {
+      const shown = srng ? E.toFootballScore(r.yourScore, r.oppScore, r.won, srng, displayCal) : null;
+      ptsFor += shown ? shown.you : r.yourScore;
+      ptsAgainst += shown ? shown.them : r.oppScore;
+      scored++;
+    }
   }
   wins.sort((a, b) => a - b);
   const games = E.CONSTANTS.REGULAR_SEASON_GAMES;
@@ -2873,6 +2894,10 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
     meanWins: wins.reduce((a, b) => a + b, 0) / trials,
     bestWins: wins[trials - 1],
     worstWins: wins[0],
+    /* Per game across every trial, playoffs included, which is what the season stats tab
+       averages over so the two cannot disagree about the same season. */
+    pointsFor: scored ? ptsFor / scored : 0,
+    pointsAgainst: scored ? ptsAgainst / scored : 0,
     playoffRate: madePlayoffs / trials,
     byeRate: bye / trials,
     titleRate: titles / trials,

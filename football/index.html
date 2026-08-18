@@ -10480,11 +10480,13 @@ function paintOver(){
           ? 'Team overall includes chemistry and how the six fit, and is graded on the same '+
             'scale an offense is, because six defenders in fantasy scoring add up to far less '+
             'than six skill players and a raw total would read as a bad team every time. '
-          : 'Points a game includes chemistry and how the six fit, because that is what '+
-            'the simulation scores with. ')+
-        'Both records come from replaying the two teams against your actual 17 opponents '+
-        'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
-        'also have changed what the wheel showed you next.</p>';
+          : 'Fantasy points a game includes chemistry and how the six fit, because that is '+
+            'what the simulation scores with. ')+
+        (isDefRun()?'Points allowed':'Points scored')+' and both records come from replaying '+
+        'the two teams against your actual 17 opponents many times, because one season is mostly '+
+        'luck: they are the season each roster typically plays, not the one yours happened to. '+
+        'Your six teams stay fixed, so a different pick would also have changed what the wheel '+
+        'showed you next.</p>';
     }
     /* Only now, with perfectPct known, is the run sent and the board read. */
     paintRanks().catch(()=>{
@@ -10573,7 +10575,7 @@ function schemeTail(st){
  * uses. 12-5 against a best of 13-4 says what 60% against 74% said, and says it as football.
  */
 function comparison(best){
-  const mine=R.projectSeason(run.roster,best.yourChemistry,run,dataNow(),LEAGUE);
+  const mine=R.projectSeason(run.roster,best.yourChemistry,run,dataNow(),LEAGUE,undefined,CAL);
   /* If the best squad IS your squad, the two columns have to read the same. They did
      not: resolveGame() draws each player's week in roster order, so the identical six
      men in a different order simulate slightly differently, and a player who had
@@ -10581,7 +10583,7 @@ function comparison(best){
      was missed, so nothing should look missed. */
   const samePlayers=best.lineup.every((r)=>r.same);
   const theirs=samePlayers?mine
-    :R.projectSeason(best.squad,best.chemistry,run,dataNow(),LEAGUE);
+    :R.projectSeason(best.squad,best.chemistry,run,dataNow(),LEAGUE,undefined,CAL);
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
   /* The ceiling, in the row above the record it produces. Deliberately the rating
@@ -10597,7 +10599,14 @@ function comparison(best){
        the offense's 0 to 100 scale. Labelling a grade as fantasy points would have a player
        comparing 76.3 against the 44 his own men actually scored. */
     vs(isDefRun()?'Team overall':'Fantasy points a game',
-      mineRating.toFixed(1),bestRating.toFixed(1),true)+
+      mineRating.toFixed(1),bestRating.toFixed(1))+
+    /* THE SIDE OF THE SCOREBOARD YOU DRAFTED, and only that one. In One Stop your offense is
+       the league's average and you did not pick it; in a draft your defense is not a thing
+       you own either. Printing the half nobody chose would put a number next to "best" that
+       no different pick could have moved. */
+    vs(isDefRun()?'Points allowed a game':'Points scored a game',
+      (isDefRun()?mine.pointsAgainst:mine.pointsFor).toFixed(1),
+      (isDefRun()?theirs.pointsAgainst:theirs.pointsFor).toFixed(1),true)+
     vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
   '</div>';
