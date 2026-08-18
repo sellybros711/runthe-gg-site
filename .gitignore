@@ -1,3 +1,7 @@
 node_modules/
 
 scratchpad/
+
+# Python bytecode cache (created when the roster tools are imported)
+__pycache__/
+*.pyc
