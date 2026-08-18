@@ -156,7 +156,7 @@ window.GA_ID='G-L29P5MRWKE';
        it was before. */
     --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500; --flex:#ba22f1;
     /* THE THREE DEFENSIVE COLORS. Not aliases of the five above, though three of them
-       currently hold the same hex: One Stop never shows a receiver and a draft never shows
+       currently hold the same hex: Lockdown never shows a receiver and a draft never shows
        a linebacker, so the two sets are free to move apart later without either dragging
        the other with it.
 
@@ -5112,7 +5112,7 @@ const isDefRun=()=>!!(run&&run.defense);
    DEFENSE_LIVE is "is this open to everybody". It stays false until
    supabase/80_football_defense_mode.sql has been applied, and that is not caution, it is
    the truth about the mode: ps_runs_run_mode_ck lists the recordable modes by name, so
-   until that constraint is widened the database REJECTS every One Stop run outright. The
+   until that constraint is widened the database REJECTS every Lockdown run outright. The
    mode plays perfectly and every season it produced would vanish on submit, which is the
    worst version of shipping something because it looks finished and quietly is not.
 
@@ -5145,7 +5145,7 @@ function runMode(){
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
-  if(run&&run.defense) return 'One Stop';
+  if(run&&run.defense) return 'Lockdown';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
   return 'Classic Mode';
@@ -5799,7 +5799,7 @@ function fieldMarkings(def){
 function fieldState(el){
   const def=isDefRun();
   /* A FIELD IS REBUILT WHEN THE SIDE OF THE BALL CHANGES, not just when it is first seen.
-     One page can play a draft and then a One Stop run without reloading, and the markings are
+     One page can play a draft and then a Lockdown run without reloading, and the markings are
      baked into this markup: kept, the defensive field would come back with no line of
      scrimmage and the offensive one would come back with somebody else's. */
   if(el._ps&&el._ps.def===def) return el._ps;
@@ -6313,7 +6313,7 @@ function modeMenu(){
             '<path d="M19.6 20.4V11.2l1.8-2.4 1.8 2.4v9.2h-3.6Z"/>'+
             '<path d="M13.2 12.7h10.6v1.5H13.2z"/><path d="M13.2 16.5h10.6v1.5H13.2z"/>'+
           '</g>'+
-          '</svg></div><div class="mc-title">One Stop'+
+          '</svg></div><div class="mc-title">Lockdown'+
           (cd?'':' <span class="mc-soon-tag">Coming Soon</span>')+
           '</div>'+(cd?arrow:'')+'</div>'+
         '<p>The same draft from the other side. Sign a front seven and a secondary under '+
@@ -7762,7 +7762,7 @@ function paintSquad(){
       /* A DEFENSE DOES NOT SCORE. The multiplier means the same thing on both sides, how
          much more or less the six are worth than their own numbers, but "they score 12%
          less" reads on a defense as though the roster were losing you points on offense,
-         which is the one thing a One Stop roster has nothing to do with. */
+         which is the one thing a Lockdown roster has nothing to do with. */
       '<p class="fit">'+(isDefRun()
         ? (fitPct===0
           ? 'These six neither help nor hold each other back, so this defense is worth '+
@@ -10618,7 +10618,7 @@ function comparison(best){
        comparing 76.3 against the 44 his own men actually scored. */
     vs(isDefRun()?'Team overall':'Fantasy points a game',
       mineRating.toFixed(1),bestRating.toFixed(1))+
-    /* THE SIDE OF THE SCOREBOARD YOU DRAFTED, and only that one. In One Stop your offense is
+    /* THE SIDE OF THE SCOREBOARD YOU DRAFTED, and only that one. In Lockdown your offense is
        the league's average and you did not pick it; in a draft your defense is not a thing
        you own either. Printing the half nobody chose would put a number next to "best" that
        no different pick could have moved. */
@@ -10801,7 +10801,7 @@ function drawShareCard(){
      Trade Machine was in the same position: it fell through to the classic line, which
      describes six spins it never took. */
   centered(run.defense
-    ? 'One Stop. Six spins, six defenders, one shot at 20-0.'
+    ? 'Lockdown. Six spins, six defenders, one shot at 20-0.'
     : run.tradeMachine
     ? 'The Trade Machine. A roster you inherited and a season to fix it.'
     : run.franchise
@@ -10881,7 +10881,7 @@ function drawShareCard(){
 
   /* The six players. Position chip, name, then the year and city on the right, so
      the eye can run down either column on its own. */
-  /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a One Stop
+  /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a Lockdown
      card printed six defenders under QB RB WR WR TE FLEX, and a Trade Machine card printed
      its two flexes as a second receiver. This is the one artefact that leaves the site, so
      it was the one place the wrong word travelled furthest. */
@@ -12936,8 +12936,7 @@ function runPayload(){
     era:run.era||null,
     mode:runMode(),
     picks:run.roster.map(pickKey),
-    /* THE SLOT NAMES OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a One
-       Stop roster was being recorded as QB RB WR TE FLEX: six defenders filed under the
+    /* THE SLOT NAMES OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a Lockdown roster was being recorded as QB RB WR TE FLEX: six defenders filed under the
        positions of the game they were not playing. ps_submit_run checks these names against
        the mode, so they have to be the mode's own. */
     slots:run.roster.map((p,i)=>slotsNow()[run.slotIndex[i]]),
@@ -13544,7 +13543,7 @@ let lbEra=null;
    not in the select, lbScope() cannot return it, and tradeBoardOff() puts the board back on
    free play if eligibility is ever lost mid-session (a sign-out, or a rename). */
 let lbTrade=false;
-/* One Stop's own board. Gated the same way the Trade Machine's is: an option
+/* Lockdown's own board. Gated the same way the Trade Machine's is: an option
    nobody can play is an option that leads to an empty table. */
 let lbDefense=false;
 function tradeBoardOff(){
@@ -13614,7 +13613,7 @@ function paintComp(){
     sel.dataset.tm=wantTrade;
     sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
-      (canPlayDefense()?'<option value="defense">One Stop</option>':'')+
+      (canPlayDefense()?'<option value="defense">Lockdown</option>':'')+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
@@ -13734,7 +13733,7 @@ async function loadBoard(){
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
   $('lb-blurb').textContent=lbDefense
-    ? 'Every One Stop season. Ranked apart from the offense boards, because a defensive '+
+    ? 'Every Lockdown season. Ranked apart from the offense boards, because a defensive '+
       'team rating is built from a different pool and holding people under is a different '+
       'job from outscoring them. '+clock
     : lbTrade
@@ -14150,7 +14149,7 @@ function gmCell(row){
 function runKindOf(row){
   if(row&&row.run_mode==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
   if(row&&row.run_mode==='trade') return 'Trade Machine';
-  if(row&&row.run_mode==='defense') return 'One Stop';
+  if(row&&row.run_mode==='defense') return 'Lockdown';
   if(row&&row.run_mode==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(row&&row.run_mode==='daily') return 'daily puzzle';
   return 'free run';

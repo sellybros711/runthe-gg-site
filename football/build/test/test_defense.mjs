@@ -516,7 +516,7 @@ window.__DEF={
   /* ---- WHAT ACTUALLY GOES OVER THE WIRE ----
      fetch is stubbed and the real calls are made, so this reads the URL the board asks
      for and the body the submit sends rather than the intent the page had. The two are
-     not the same thing and the difference is where One Stop's runs were being lost. */
+     not the same thing and the difference is where Lockdown's runs were being lost. */
   async wire(){
     const seen=[]; const real=window.fetch;
     window.fetch=(u,o)=>{ seen.push({url:String(u),body:(o&&o.body)||null});
@@ -687,7 +687,7 @@ boot();`;
       asTester && !asTester.disabled && !asTester.soon && !asTester.tag && asTester.arrow, asTester);
     await p.evaluate(() => window.__DEF.board());
     await p.waitForTimeout(200);
-    ok('tester: and the board offers One Stop',
+    ok('tester: and the board offers Lockdown',
       await p.evaluate(() => window.__DEF.comps().some((o) => o.value === 'defense')));
 
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Somebody Else', userId: 'u3' }));
@@ -711,13 +711,13 @@ boot();`;
     await p.evaluate(() => window.__DEF.setLive(true));
     await p.evaluate(() => window.__DEF.board());
     await p.waitForTimeout(200);
-    /* THE NAME ON SCREEN IS "One Stop"; the value in the database is still 'defense'.
+    /* THE NAME ON SCREEN IS "Lockdown"; the value in the database is still 'defense'.
        Renaming a stored enum to match a label would orphan every run already recorded
        under the old one, so the two are deliberately allowed to differ and this asserts
        both halves at once. */
-    ok('live: the board offers One Stop as its own competition',
+    ok('live: the board offers Lockdown as its own competition',
       await p.evaluate(() => window.__DEF.comps()
-        .some((o) => o.value === 'defense' && /One Stop/.test(o.label))));
+        .some((o) => o.value === 'defense' && /Lockdown/.test(o.label))));
     ok('live: and choosing it asks the database for run_mode defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense').mode) === 'defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense')));
@@ -812,7 +812,7 @@ boot();`;
       { n: roster.length, spend: roster.reduce((t, r) => t + r.price, 0).toFixed(1) });
 
     /* ── THE FIELD ────────────────────────────────────────────────────────────
-       One Stop draws its own formation, and the thing that breaks a formation is not
+       Lockdown draws its own formation, and the thing that breaks a formation is not
        arithmetic, it is a label landing on somebody's face. Six defensive spots can hold
        exactly four shapes, so all four are checked at every width the game draws a field
        at, against the rendered pixels rather than against the table they came from.
@@ -853,7 +853,7 @@ boot();`;
 
     /* ── THE RUN HAS TO BE RECORDED AS THE GAME IT WAS ────────────────────────
        This is the assertion that would have saved the Trade Machine, and it is written
-       here because One Stop repeated the fault exactly. board.js decided the mode name at
+       here because Lockdown repeated the fault exactly. board.js decided the mode name at
        four separate call sites; a new mode had to be added to all four and was added to
        none, so a defense run went out as p_mode 'free' and landed on the open draft's
        board, ranked against a game it was not playing. Nothing threw and nothing looked
@@ -882,11 +882,11 @@ boot();`;
       !!sent && !sent.p_franchise && !sent.p_era && sent.p_gm_rating == null,
       sent && { fr: sent.p_franchise, era: sent.p_era, gm: sent.p_gm_rating });
     ok('and every game was resolved as a defense',
-      st.defense === true && st.mode === 'defense' && st.label === 'One Stop'
+      st.defense === true && st.mode === 'defense' && st.label === 'Lockdown'
       && st.defMods.every((m) => m > 0 && m < 5), st);
 
     /* THE ONE ARTEFACT THAT LEAVES THE SITE. The card took its six row labels from E.SLOTS,
-       the offense's list, so a One Stop card printed six defenders under QB RB WR WR TE
+       the offense's list, so a Lockdown card printed six defenders under QB RB WR WR TE
        FLEX: the wrong word, on the graphic that travels furthest from the game that could
        explain it. It reads the run's own slots now, and this checks it draws from them. */
     /* A run that made the playoffs stops at seeding, and the card reads run.outcome, which

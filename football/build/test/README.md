@@ -23,7 +23,7 @@ anywhere, and `BROWSER=1` adds a played season on top.
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
-| `test_defense.mjs` | That One Stop, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
+| `test_defense.mjs` | That Lockdown, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
 
 ## What `test_defense.mjs` is really guarding
 
@@ -70,8 +70,7 @@ claim is that the projection plays the mode.
 
 The How close table also prints what each roster does to the SCOREBOARD rather than to a
 fantasy total: points scored a game on a draft, points allowed a game on a defense, yours
-against the best you could have had. Only the side of the ball you drafted, because in One
-Stop your offense is the league's average and in a draft your defense is not yours either,
+against the best you could have had. Only the side of the ball you drafted, because in Lockdown your offense is the league's average and in a draft your defense is not yours either,
 so the other half is a number no different pick could have moved.
 
 The subtle part is the RNG. `toFootballScore` turns the engine's continuous score into a
@@ -136,13 +135,13 @@ than from memory.
 ## How much of the page is covered
 
 Two files here open a browser: `test_bracket.mjs` on the postseason, and
-`test_defense.mjs` on One Stop's gate, draft, formation and season. The engine is covered
+`test_defense.mjs` on Lockdown's gate, draft, formation and season. The engine is covered
 thoroughly. The page is covered on those screens and nowhere else, so a green run says
 nothing about a normal draft, the season screen, the results card or the leaderboard, and
 nothing at all about the offensive formation. The college game has a real browser suite
 under `cfb/build/test/` if you want the shape of one.
 
-## One Stop is finished and gated
+## Lockdown is finished and gated
 
 `DEFENSE_LIVE` in `football/index.html` is `false`, so the mode card says Coming Soon and
 cannot be pressed. That is not caution. `ps_runs_run_mode_ck` lists the recordable modes
