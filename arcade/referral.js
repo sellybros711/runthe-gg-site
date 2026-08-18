@@ -263,6 +263,16 @@
         'width:100%;min-height:52px;border-radius:13px;padding:15px;display:flex;align-items:center;justify-content:center;gap:9px;'+
         'color:#06210f;background:var(--green,#48D17A);box-shadow:var(--shadow,0 6px 18px -10px rgba(0,0,0,.55));}',
       '.rtgref-modal .go:hover{filter:brightness(1.05);}',
+      // second path: the Arcade Card. Gold, like every other card CTA on the
+      // site, so "buy" never wears the "free bonus" green.
+      '.rtgref-modal .card{appearance:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:14px;'+
+        'width:100%;min-height:48px;border-radius:12px;padding:13px;margin-top:10px;display:flex;align-items:center;'+
+        'justify-content:center;gap:8px;color:var(--goldT,#F2B632);background:color-mix(in srgb, var(--gold,#F2B632) 12%, transparent);'+
+        'border:1px solid color-mix(in srgb, var(--gold,#F2B632) 45%, transparent);}',
+      '.rtgref-modal .card:hover{background:color-mix(in srgb, var(--gold,#F2B632) 20%, transparent);}',
+      '.rtgref-modal .card b{color:var(--ink,#F4F7FB);font-weight:900;}',
+      '.rtgref-modal .or{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;'+
+        'color:var(--dim,#7C8DA3);margin:12px 0 2px;}',
       '.rtgref-modal .later{appearance:none;border:0;background:none;cursor:pointer;font-family:var(--f,inherit);'+
         'font-weight:800;font-size:12.5px;color:var(--mut,#A9B8CB);margin-top:12px;padding:6px;text-decoration:underline;}'
     ].join('');
@@ -274,18 +284,25 @@
     var scrim=document.createElement('div');
     scrim.className='rtgref-scrim'; scrim.id='rtg-ref-scrim';
     scrim.setAttribute('role','dialog'); scrim.setAttribute('aria-modal','true');
+    // Two ways to keep playing: a free bonus for inviting, or the card for
+    // unlimited. The card row only appears if RTGCard is on the page.
+    var canCard = !!(window.RTGCard && RTGCard.paywall);
     scrim.innerHTML=
       '<div class="rtgref-modal">'+
         '<div class="cap" aria-hidden="true">🎟️</div>'+
         '<h2>That’s all four for today</h2>'+
-        '<p>Want more? Invite a friend. When they sign up with your link, you <b>both</b> get another go at today’s games.</p>'+
+        '<p>Two ways to keep playing. Invite a friend and you <b>both</b> get another go today, or go unlimited with the Arcade Card.</p>'+
         '<button class="go" type="button" id="rtgRefGo"><span aria-hidden="true">🎟️</span> Invite a friend</button>'+
+        (canCard ? '<div class="or">or</div>'+
+          '<button class="card" type="button" id="rtgRefCard"><span aria-hidden="true">🎫</span> <span>Get the <b>Arcade Card</b>, unlimited</span></button>' : '')+
         '<div><button class="later" type="button" id="rtgRefLater">Maybe later</button></div>'+
       '</div>';
     function close(){ if(scrim && scrim.parentNode) scrim.parentNode.removeChild(scrim); }
     scrim.addEventListener('click', function(e){ if(e.target===scrim) close(); });
     document.body.appendChild(scrim);
     document.getElementById('rtgRefGo').addEventListener('click', function(){ share(); close(); });
+    var cardBtn=document.getElementById('rtgRefCard');
+    if(cardBtn) cardBtn.addEventListener('click', function(){ close(); try{ RTGCard.paywall({reason:'out'}); }catch(e){} });
     document.getElementById('rtgRefLater').addEventListener('click', close);
   }
   function maybeExhaustPrompt(){
