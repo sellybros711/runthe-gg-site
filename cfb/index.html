@@ -1307,12 +1307,22 @@ window.GA_ID='G-L29P5MRWKE';
     inset 0 0 0 1px rgba(0,0,0,.9)}
 
   /* ── playoff call + log ─────────────────────────────────────── */
-  .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
+  /* HEIGHT IS RESERVED FOR TWO LINES OF COMMENTARY. The call under the field used to be one
+     short line ("You", "2007 Ohio State") and now it is a sentence naming the man who
+     scored, which wraps on a narrow phone. The log sits directly under it, so a call that
+     grows the box pushes the log down mid-animation. Two lines is what almost every call
+     needs, and it is what the empty box before kickoff reserves, so the log sits still all
+     game. The two longest names in the data, both on one roster, on a two-point conversion,
+     still reach four lines and move it: that is a handful of rosters out of fourteen
+     thousand players, and reserving for it would cost 30px of dead air in every other game. */
+  .pocap{min-height:82px;margin-top:13px;display:flex;align-items:center;justify-content:center}
   .pocap .call{text-align:center;padding:9px 15px;border-radius:11px;
     background:var(--grad-panel);border:1px solid var(--line-2);
     animation:callin .36s var(--ezs) both}
   .pocap .call b{display:block;font-family:var(--fd);font-size:26px;letter-spacing:.03em;line-height:1}
-  .pocap .call span{display:block;font-size:11.5px;color:var(--dim);margin-top:3px}
+  /* Two lines' worth, so a long call and a short one are the same size box. */
+  .pocap .call span{display:block;font-size:11.5px;line-height:1.4;color:var(--dim);
+    margin-top:4px;min-height:2.8em}
   .pocap .call.you b{color:var(--youink,#4ade80)} .pocap .call.them b{color:#fca5a5}
   .pocap .call.big{border-color:rgba(251,191,36,.45)}
   .pocap .call.big b{color:#fcd34d}
@@ -3469,7 +3479,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=28"></script>
+<script src="engine.js?v=29"></script>
 <script src="run.js?v=13"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
@@ -7690,13 +7700,66 @@ function recordBefore(r){
   return w+'-'+(past.length-w);
 }
 
+/* ---- WHO SCORED IT ----
+ *
+ * The broadcast knew a touchdown had happened and never knew whose, so a drafted roster
+ * could play a whole postseason without one of its six names being said. The call banner
+ * read "TOUCHDOWN / You" and the log read "You touchdown", and which of the six you spent
+ * the budget on scored it was nowhere on the screen you are watching.
+ *
+ * THE POSTSEASON ONLY, WHICH IS A DECISION RATHER THAN A LIMITATION. A playoff game and a
+ * bowl are the ones you actually watch: a running clock, a drive chart, a call banner, paced
+ * to be looked at. A regular season week is a score that flashes past in about half a second
+ * on the way to eleven more, and a line of commentary under it is something to read rather
+ * than something to watch.
+ *
+ * THE STREAM IS ITS OWN, AND THAT IS THE CARE POINT. Every game in a season is played out of
+ * one sequential rng, so a draw taken from it here would consume values the next week depends
+ * on and quietly rewrite the rest of the year. It would not throw, it would just make the
+ * leaderboard disagree with itself. Everything below is seeded off the finished game instead,
+ * on the same string the broadcast seeds its own script with.
+ *
+ * Cached on the result in a WeakMap rather than on a field of it, because the results array
+ * is walked, counted and summarised in a dozen places and none of them should have to know
+ * to skip something. Lazy too: a fast-forwarded round runs none of this. */
+const creditCache=new WeakMap();
+/* The roster as the commentary needs it: who he is, and the three columns that say what kind
+   of player he is. Rebuilt per game rather than held, because the run is the only owner of
+   the roster and this must never be a second copy that can go stale. */
+function creditMen(){
+  if(!run||!run.roster||!run.roster.length) return null;
+  return run.roster.map((p,i)=>({
+    name:p.name, pos:p.position, slot:E.SLOTS[run.slotIndex[i]],
+    pass:p.pass_ppg||0, rush:p.rush_ppg||0, rec:p.rec_ppg||0 }));
+}
+function gameCredits(r,seedStr,script){
+  if(!r||!script||!script.length) return null;
+  const hit=creditCache.get(r); if(hit) return hit;
+  const men=creditMen(); if(!men) return null;
+  const out=E.touchdownCredits(script,men,E.createSeededRNG(E.hashSeed(seedStr+'|credits')));
+  creditCache.set(r,out);
+  return out;
+}
+/* The credits keyed by the play they belong to, ready for the two places that show them. */
+function creditIndex(credits){
+  const at=new Map();
+  if(credits) for(const c of credits) at.set(c.at,c);
+  return at;
+}
+
 function buildTimeline(script,pace){
   const segs=[];
+  /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is built
+     quarter by quarter out of a filtered copy, so by the time a segment is played there is
+     nothing left tying it to the play it came from, and the touchdown credits are keyed on
+     exactly that. Keyed by the event object rather than recomputed from the clock, because
+     two scores in a quarter can share one and would not be told apart. */
+  const idx=new Map(script.map((e,i)=>[e,i]));
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
       segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,ms:pace.hold});
+      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
       from=e.sec;
     }
     segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
@@ -7968,6 +8031,9 @@ function playPlayoffGame(r,afterFn){
   const seedStr=run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,r.won,E.createSeededRNG(E.hashSeed(seedStr)));
   const segs=buildTimeline(script,pace);
+  /* WHOSE TOUCHDOWNS THEY WERE, on the same script the timeline is built from, so the name in
+     the call belongs to the play the clock just stopped for. */
+  const creditAt=creditIndex(gameCredits(r,seedStr,script));
 
   const driveRng=E.createSeededRNG(E.hashSeed(seedStr+'|drives'));
   const drives=generateDrives(script,driveRng);
@@ -7993,7 +8059,7 @@ function playPlayoffGame(r,afterFn){
     $('po-q').textContent='FINAL';
     $('po-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
     $('po-log').innerHTML='';
-    script.forEach(e=>logScore(e));
+    script.forEach((e,k)=>logScore(e,k));
     paintField(3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&isChampionship?' big':'')+'"><b>'+
@@ -8007,11 +8073,14 @@ function playPlayoffGame(r,afterFn){
   };
   poSkip=finish;
 
-  const logScore=(e)=>{
+  /* `i` is the play's index in the script, which is how a credit finds its touchdown. The
+     replay at the end walks the script in order and passes it; nothing else has to. */
+  const logScore=(e,i)=>{
     const who=e.team==='you'?'You':(opp?E.teamColors(opp).abbreviation:'OPP');
+    const c=i!=null?creditAt.get(i):null;
     $('po-log').insertAdjacentHTML('afterbegin',
       '<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+'</span>'+
-      '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+
+      '<span class="w">'+(c?esc(c.short):esc(who)+' '+e.kind.toLowerCase())+
       (e.note?', '+esc(e.note):'')+'</span>'+
       '<span class="n">'+e.you+'-'+e.them+'</span></div>');
   };
@@ -8043,10 +8112,13 @@ function playPlayoffGame(r,afterFn){
       setLead(e.you,e.them);
       cell.classList.add('scored');setTimeout(()=>cell.classList.remove('scored'),620);
       paintField((e.q-1)*900+(900-e.sec));
+      /* The name where the word "You" used to be. A drafted man scoring is the thing this
+         screen is actually reporting, and the score is on the bug above it either way. */
+      const c=creditAt.get(seg.i);
       $('po-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b>'+
-        '<span>'+(e.team==='you'?'You':esc(r.opponent))+
-        (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
-      logScore(e);
+        '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
+        (e.note?', '+esc(e.note):'')+' · '+e.you+'-'+e.them+'</span></div>';
+      logScore(e,seg.i);
       poTimer=setTimeout(next,seg.ms);
       return;
     }
@@ -8276,6 +8348,10 @@ function playFeatureBroadcast(cfg){
   const seedStr=run.seed+'|bowl|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,r.won,E.createSeededRNG(E.hashSeed(seedStr)));
   const segs=buildTimeline(script,pace);
+  /* A BOWL GETS THE NAMES TOO. It is the postseason for a team that missed the field, played
+     on the same clock and the same field as a playoff game, so leaving it out would mean the
+     only players who never hear their roster named are the ones who did not make the twelve. */
+  const creditAt=creditIndex(gameCredits(r,seedStr,script));
   /* THE SAME DRIVE CHART THE PLAYOFF PLAYS ON. A bowl is a full game, so it gets
      the field: possession moving down the yardlines, a kickoff to open, and a
      fresh kickoff at the half to whichever side did not receive the first one.
@@ -8290,11 +8366,13 @@ function playFeatureBroadcast(cfg){
   paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
-  const logScore=(e)=>{
+  const logScore=(e,i)=>{
     const who=e.team==='you'?'You':(opp?E.teamColors(opp).abbreviation:'OPP');
+    const c=i!=null?creditAt.get(i):null;
     $('bowl-log').insertAdjacentHTML('afterbegin',
       '<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+'</span>'+
-      '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+(e.note?', '+esc(e.note):'')+
+      '<span class="w">'+(c?esc(c.short):esc(who)+' '+e.kind.toLowerCase())+
+      (e.note?', '+esc(e.note):'')+
       '</span><span class="n">'+e.you+'-'+e.them+'</span></div>');
   };
   const finish=()=>{
@@ -8303,7 +8381,7 @@ function playFeatureBroadcast(cfg){
     setLead(r.shownYou,r.shownThem);
     bug.className='bug final';
     $('bowl-q').textContent='FINAL';$('bowl-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
-    $('bowl-log').innerHTML='';script.forEach(logScore);
+    $('bowl-log').innerHTML='';script.forEach((e,k)=>logScore(e,k));
     paintField(3600);
     $('bowl-cap').innerHTML='<div class="call '+(r.won?'you':'them')+'"><b>'+
       (r.won?cfg.winCall:cfg.loseCall)+'</b><span>'+
@@ -8335,10 +8413,11 @@ function playFeatureBroadcast(cfg){
       cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them;setLead(e.you,e.them);
       cell.classList.add('scored');setTimeout(()=>cell.classList.remove('scored'),620);
       paintField((e.q-1)*900+(900-e.sec));
+      const c=creditAt.get(seg.i);
       $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
-        (e.team==='you'?'You':esc(opp?E.teamColors(opp).abbreviation:'OPP'))+
-        (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
-      logScore(e);poTimer=setTimeout(next,seg.ms);return;
+        (c?esc(c.blurb):(e.team==='you'?'You':esc(opp?E.teamColors(opp).abbreviation:'OPP')))+
+        (e.note?', '+esc(e.note):'')+' · '+e.you+'-'+e.them+'</span></div>';
+      logScore(e,seg.i);poTimer=setTimeout(next,seg.ms);return;
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -9296,7 +9375,7 @@ function bowlBroadcast(cfg){
       cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),620);
       paintField((e.q-1)*900+(900-e.sec));
       $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
-        (e.team==='you'?'You':esc(cfg.themName||'Them'))+(e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
+        (e.team==='you'?'You':esc(cfg.themName||'Them'))+(e.note?', '+esc(e.note):'')+' · '+e.you+'-'+e.them+'</span></div>';
       logScore(e); poTimer=setTimeout(next,seg.ms); return;
     }
     poTimer=setTimeout(next,seg.ms);
