@@ -591,6 +591,9 @@ window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
+<!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
+     defaults above so no advertising cookie is set before the certified CMP answers. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -812,7 +815,9 @@ window.GA_ID='G-L29P5MRWKE';
           <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
         </section>
 
-        <section class="gj" style="padding:0 4px;">
+        <details class="gjx">
+<summary>About Run The Arcade<span class="gjx-chev" aria-hidden="true"></span></summary>
+<section class="gj" style="padding:0 4px;">
           <style>
           .gj{margin:30px 0 6px;border-top:1px solid var(--line2);padding-top:22px;text-align:left;}
           .gj h2{font-family:var(--hero);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:19px;margin:0 0 8px;color:var(--ink);}
@@ -821,6 +826,24 @@ window.GA_ID='G-L29P5MRWKE';
           .gj li{font-size:13.5px;line-height:1.6;color:var(--mut);margin:4px 0;font-weight:600;}
           .gj a{color:var(--tealT);font-weight:800;text-decoration:none;}
           .gj a:hover{text-decoration:underline;}
+/* The how-to block, folded. Open, five headings of prose sat in the middle of the game
+   and on the desktop grid pages it auto-placed into whatever cell was free, which put it
+   above the puzzle. Folded it is one quiet line, and grid-column:1/-1 means it can only
+   land in a row where every column is free, i.e. a new row at the bottom. Folded is not
+   hidden: the text ships in the HTML either way and Google indexes a closed details at
+   full weight. */
+.gjx{grid-column:1/-1;margin:30px 0 6px;border-top:1px solid var(--line2,rgba(148,163,184,.25));}
+.gjx>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
+  font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;text-transform:uppercase;
+  letter-spacing:.02em;font-size:15px;color:var(--ink,#F4F7FB);padding:14px 2px;
+  -webkit-tap-highlight-color:transparent;}
+.gjx>summary::-webkit-details-marker{display:none;}
+.gjx>summary .gjx-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;
+  border-right:2px solid var(--mut,#A9B8CB);border-bottom:2px solid var(--mut,#A9B8CB);
+  transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
+.gjx[open]>summary .gjx-chev{transform:rotate(-135deg);}
+.gjx .gj{margin:0 0 10px;border-top:0;padding-top:0;}
+
           </style>
           <h2>What is Run The Arcade?</h2>
           <p>Run The Arcade is a set of ten quick daily sports games in one place, sharing one streak
@@ -844,6 +867,7 @@ window.GA_ID='G-L29P5MRWKE';
             days. The same account carries your trophies and streaks across every game on
             <a href="/">RunThe.GG</a>.</p>
         </section>
+</details>
 
         <div class="m-links">
           <a href="/">Sign in to save your streak →</a>
