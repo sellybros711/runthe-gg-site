@@ -156,6 +156,68 @@
     });
   }
 
+  // ---- the result-modal invite ad -----------------------------------------
+  // Every game ends on a result sheet (#scrim .sheet or #resultModal). This
+  // drops one invite row into the foot of it, so the reward is offered at the
+  // moment a player just finished and is deciding what to do next. Self-mounting
+  // like resultstats.js: same sheet resolver, same observer, idempotent.
+  function signedInNow(){ try{ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){ return false; } }
+  function findSheet(){
+    return document.querySelector('#scrim .sheet') ||
+           document.querySelector('#scrim .modal') ||
+           document.querySelector('#resultModal .sheet') ||
+           document.querySelector('#resultModal .modal');
+  }
+  function adStyles(){
+    if(document.getElementById('rtg-ref-ad-style')) return;
+    var s=document.createElement('style'); s.id='rtg-ref-ad-style';
+    s.textContent=[
+      '.rtgref-ad{margin:14px 0 2px;padding:13px 14px;border-radius:13px;text-align:center;'+
+        'background:color-mix(in srgb, var(--green,#48D17A) 12%, transparent);'+
+        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 42%, transparent);}',
+      '.rtgref-ad .h{font-weight:900;font-size:13.5px;color:var(--ink,#F4F7FB);line-height:1.35;}',
+      '.rtgref-ad .h b{color:var(--greenT,#48D17A);}',
+      '.rtgref-ad .s{font-size:11.5px;color:var(--mut,#A9B8CB);font-weight:600;margin-top:3px;line-height:1.4;}',
+      '.rtgref-ad button{appearance:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:13.5px;'+
+        'margin-top:10px;width:100%;min-height:44px;border-radius:11px;padding:11px 14px;display:flex;'+
+        'align-items:center;justify-content:center;gap:8px;color:#06210f;'+
+        'background:var(--green,#48D17A);border:1px solid rgba(0,0,0,.2);}',
+      '.rtgref-ad button:hover{filter:brightness(1.05);}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+  function decorateResult(){
+    var sheet=findSheet(); if(!sheet) return;
+    if(!signedInNow()) return;                       // no account = no code to share
+    if(!(window.RTG_BOARD && RTG_BOARD.referralCode)) return;
+    if(sheet.querySelector('.rtgref-ad')) return;    // already placed on this sheet
+    adStyles();
+    var ad=document.createElement('div');
+    ad.className='rtgref-ad';
+    ad.innerHTML='<div class="h">Out of goes? <b>Bring a friend for another.</b></div>'+
+      '<div class="s">They sign up with your link, you both get an extra go at today’s games.</div>'+
+      '<button type="button"><span aria-hidden="true">🎟️</span> Invite a friend</button>';
+    ad.querySelector('button').addEventListener('click', function(){ share(); });
+    sheet.appendChild(ad);                            // foot of the modal
+  }
+  function watchResult(){
+    // only game pages have a result modal; the hub/join do not
+    var scrim=document.getElementById('scrim');
+    var rm=document.getElementById('resultModal');
+    if(!scrim && !rm) return;
+    var check=function(){
+      if(scrim && !scrim.classList.contains('hidden') && !scrim.hasAttribute('hidden')) decorateResult();
+      if(rm && !rm.hasAttribute('hidden')) decorateResult();
+    };
+    if(window.MutationObserver){
+      if(scrim) new MutationObserver(check).observe(scrim, { attributes:true, attributeFilter:['class','hidden'] });
+      if(rm) new MutationObserver(check).observe(rm, { attributes:true, attributeFilter:['hidden'] });
+    }
+    check();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', watchResult);
+  else watchResult();
+
   window.RTGReferral = {
     capture: capture,
     pending: pending,
@@ -164,6 +226,7 @@
     code: code,
     stats: stats,
     share: share,
-    buildLink: buildLink
+    buildLink: buildLink,
+    decorateResult: decorateResult
   };
 })();
