@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
@@ -284,10 +284,10 @@
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
         "top   top" "title title" "mode mode" "lead lead"
-        "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "foot foot";
+        "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "gj    gj" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
     .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
-    .lb{grid-area:lbd;} .foot{grid-area:foot;}
+    .lb{grid-area:lbd;} .gj{grid-area:gj;} .foot{grid-area:foot;}
       }
     .foot{ grid-column:1 / -1; margin-top:18px; }
     .a-gametitle{ margin:2px 0 8px; }
@@ -374,18 +374,13 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your result.</div>
   </div>
 
-<style>
-.gj{margin:36px 0 10px;border-top:1px solid var(--line2,rgba(148,163,184,.25));padding-top:24px;text-align:left;}
-.gj h2{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:21px;margin:0 0 10px;color:var(--ink,#F4F7FB);}
-.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:15px;margin:20px 0 8px;color:var(--ink,#F4F7FB);}
-.gj p{font-size:13.5px;line-height:1.65;color:var(--mut,#A9B8CB);margin:0 0 10px;font-weight:600;}
-.gj ul{margin:0 0 10px;padding-left:20px;}
-.gj li{font-size:13.5px;line-height:1.6;color:var(--mut,#A9B8CB);margin:5px 0;font-weight:600;}
-.gj a{color:var(--tealT,#37C5D5);font-weight:800;text-decoration:none;}
-.gj a:hover{text-decoration:underline;}
-</style>
-<section class="gj">
-<h2>How to play Guess the Player</h2>
+<details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Guess the Player</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
 <p>One mystery athlete a day, from any era, and the sport is given. Type any player from that sport and the tiles tell you how close you landed. They compare careers, not this season: position, franchises, debut decade, college and honours.</p>
 <ul>
   <li>Green means a match, yellow means close, and arrows point higher or lower.</li>
@@ -401,7 +396,8 @@ window.GA_ID='G-L29P5MRWKE';
   <li>The franchise tile rewards guessing players with many stops; one guess can test five teams at once.</li>
 </ul>
 <p>Like the deduction? Try <a href="/arcade/oddone/">Odd One Out</a>, or go endless in <a href="/arcade/highlow/">High Low</a>.</p>
-</section>
+</div>
+</details>
   <div class="foot">A daily guessing game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
 </div>
 

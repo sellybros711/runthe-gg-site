@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
@@ -614,18 +614,13 @@ window.GA_ID='G-L29P5MRWKE';
         <button class="submit-go" id="btnSubmit" type="button" disabled>Submit</button>
       </div>
       <div class="mfeedback" id="mFeedback" role="status" aria-live="polite"></div>
-    <style>
-.gj{margin:36px 0 10px;border-top:1px solid var(--line2,rgba(148,163,184,.25));padding-top:24px;text-align:left;}
-.gj h2{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:21px;margin:0 0 10px;color:var(--ink,#F4F7FB);}
-.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:15px;margin:20px 0 8px;color:var(--ink,#F4F7FB);}
-.gj p{font-size:13.5px;line-height:1.65;color:var(--mut,#A9B8CB);margin:0 0 10px;font-weight:600;}
-.gj ul{margin:0 0 10px;padding-left:20px;}
-.gj li{font-size:13.5px;line-height:1.6;color:var(--mut,#A9B8CB);margin:5px 0;font-weight:600;}
-.gj a{color:var(--tealT,#37C5D5);font-weight:800;text-decoration:none;}
-.gj a:hover{text-decoration:underline;}
-</style>
-<section class="gj">
-<h2>How to play Common Ground</h2>
+    <details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Common Ground</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
 <p>Common Ground is a daily sports grouping puzzle. Sixteen names hide four secret groups of four, and a group can be anything its members truly share: a franchise, a college, a jersey number, a surname, a title-winning team. Your job is to find all four groups before four mistakes end the day.</p>
 <ul>
   <li>Tap four names you believe belong together, then lock the group in.</li>
@@ -642,7 +637,8 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Read the names as words, not resumes. Surnames, numbers and nicknames hide threads a stat sheet never shows.</li>
 </ul>
 <p>More from Run The Arcade: spot the impostor in <a href="/arcade/oddone/">Odd One Out</a>, or put five careers in order in <a href="/arcade/rankit/">Rank It</a>.</p>
-</section>
+</div>
+</details>
 </main>
 
     <aside class="side" aria-label="Game status and controls">
