@@ -775,7 +775,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=12"></script>
+  <script src="/arcade/board.js?v=13"></script>
 <script src="/arcade/leaderboard.js?v=13"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=2"></script>
@@ -1408,9 +1408,9 @@ window.GA_ID='G-L29P5MRWKE';
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
-      if (won && attemptFirst && !ARCHIVE && window.RTG_BOARD) {
+      if (won && !ARCHIVE && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
-        RTG_BOARD.submit(GAME, DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+        RTG_BOARD.submit(GAME, DATE, { seconds: raw, mistakes: mistakes, reveals: 0, replay: !attemptFirst }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
