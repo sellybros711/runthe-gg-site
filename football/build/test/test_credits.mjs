@@ -253,6 +253,84 @@ console.log('\n=== takeaways fit the man who made them ===');
     { rushEnd: count('Rush End'), noseMan: count('Nose Man') });
 }
 
+/* ── both sides of a Challenge Bowl ──────────────────────────────────────── */
+console.log('\n=== the Bowl names both teams ===');
+{
+  /* A season's opponent is a historic team modelled as a team rather than as players, so
+     only your six can ever be named. In the Bowl a person drafted each side, and the other
+     team's touchdowns deserve a name every bit as much as yours. */
+  const mine = [
+    { name: 'My Back', pos: 'RB', slot: 'RB', pts: 15, avg: 15, pass: 0, rush: 13, rec: 2 },
+    { name: 'My Wideout', pos: 'WR', slot: 'WR', pts: 14, avg: 14, pass: 0, rush: 0, rec: 13 },
+    { name: 'My Arm', pos: 'QB', slot: 'QB', pts: 22, avg: 22, pass: 21, rush: 0.5, rec: 0 },
+  ];
+  const theirs = [
+    { name: 'Their Back', pos: 'RB', slot: 'RB', pts: 15, avg: 15, pass: 0, rush: 13, rec: 2 },
+    { name: 'Their Wideout', pos: 'WR', slot: 'WR', pts: 14, avg: 14, pass: 0, rush: 0, rec: 13 },
+    { name: 'Their Arm', pos: 'QB', slot: 'QB', pts: 22, avg: 22, pass: 21, rush: 0.5, rec: 0 },
+  ];
+  let mineOnYou = 0, mineOnThem = 0, theirsOnThem = 0, theirsOnYou = 0, youTD = 0, themTD = 0;
+  for (let g = 0; g < 1200; g++) {
+    const script = E.scoringScript(28, 24, E.createSeededRNG(E.hashSeed('b' + g)));
+    script.forEach((e) => { if (e.kind === 'TOUCHDOWN') { if (e.team === 'you') youTD++; else themTD++; } });
+    const rng = E.createSeededRNG(E.hashSeed('c' + g));
+    for (const c of E.touchdownCredits(script, mine, rng)) {
+      if (script[c.at].team === 'you') mineOnYou++; else mineOnThem++;
+    }
+    for (const c of E.touchdownCredits(script, theirs, rng, { team: 'them' })) {
+      if (script[c.at].team === 'them') theirsOnThem++; else theirsOnYou++;
+    }
+  }
+  ok('your men are credited with your touchdowns and only yours',
+    mineOnYou === youTD && mineOnThem === 0, { onYours: mineOnYou, yourTDs: youTD, strayed: mineOnThem });
+  ok('and the opponent\'s men with theirs',
+    theirsOnThem === themTD && theirsOnYou === 0, { onTheirs: theirsOnThem, theirTDs: themTD, strayed: theirsOnYou });
+  ok('so every touchdown in the game has a name on it', youTD > 0 && themTD > 0,
+    { you: youTD, them: themTD });
+}
+
+/* ── the Bowl's roster filter ────────────────────────────────────────────── */
+console.log('\n=== a defence cannot score in the Bowl ===');
+{
+  /* bowlMen lives in index.html, so it comes out of the page rather than being retyped, the
+     same way test_drives.mjs takes generateDrives. */
+  const html = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
+  const i = html.indexOf('function bowlMen(roster){');
+  const j = html.indexOf('\n}\n', i) + 3;
+  const BOWL_SCORERS = new Set(['QB', 'RB', 'WR', 'TE']);
+  const bowlMen = eval('(' + html.slice(i, j).replace('function bowlMen', 'function') + ')');
+
+  const defence = [
+    { name: 'Rush End', position: 'DL', ppr_ppg_mean: 19, rush_ppg: 10.1, cover_ppg: 1.6, tackle_ppg: 7.3 },
+    { name: 'Corner', position: 'DB', ppr_ppg_mean: 12, rush_ppg: 0, cover_ppg: 6, tackle_ppg: 4 },
+  ];
+  const offence = [
+    { name: 'A Back', position: 'RB', ppr_ppg_mean: 15, pass_ppg: 0, rush_ppg: 13, rec_ppg: 2 },
+    { name: 'A Passer', position: 'QB', ppr_ppg_mean: 22, pass_ppg: 21, rush_ppg: 0.5, rec_ppg: 0 },
+  ];
+  /* THE GUARD, AND WHY IT IS ONE. A defender carries rush_ppg too and it means his PASS
+     RUSH, while the credit weight adds rushing to receiving. Without the filter a Lockdown
+     roster reaching this screen would hand touchdowns to defensive ends on the strength of
+     their sack numbers, which is a sentence the game would say with a straight face. */
+  ok('a defensive roster produces no scorers at all', bowlMen(defence).length === 0,
+    bowlMen(defence).map((m) => m.name));
+  ok('and an offensive one produces all of them', bowlMen(offence).length === 2,
+    bowlMen(offence).map((m) => m.name + ' ' + m.pos));
+  const men = bowlMen(offence);
+  ok('with the production mix carried across',
+    men.every((m) => m.pts === m.avg) && men[1].pass === 21 && men[0].rush === 13,
+    men.map((m) => [m.name, m.pts, m.avg, m.pass, m.rush, m.rec]));
+  /* A defence handed straight to the credits, with no filter in front, is exactly the thing
+     the filter prevents; this says the danger is real rather than theoretical. */
+  const unfiltered = E.touchdownCredits(
+    E.scoringScript(28, 21, E.createSeededRNG(E.hashSeed('g'))),
+    defence.map((p) => ({ name: p.name, pos: p.position, slot: p.position,
+      pts: p.ppr_ppg_mean, avg: p.ppr_ppg_mean, pass: 0, rush: p.rush_ppg, rec: 0 })),
+    E.createSeededRNG(E.hashSeed('h')));
+  ok('(and unfiltered, a defensive end really would score)', unfiltered.length > 0,
+    unfiltered.slice(0, 1).map((c) => c.blurb));
+}
+
 /* ── the kicks ───────────────────────────────────────────────────────────── */
 console.log('\n=== field goals carry a distance ===');
 {

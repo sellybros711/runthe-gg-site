@@ -36,14 +36,30 @@ the men you drafted only appear going the other way. Both are drawn rather than 
 on the same bargain the scoring script already makes: the game was settled in fantasy space
 long before either runs, and the only question left is which legal version of it to show.
 
-They run on the PLAYOFF broadcast and nowhere else. That is a decision about what the two
-screens are, not a limit on the code. A playoff game is the one the player watches: running
-clock, drive chart, a call banner, paced to be looked at. A regular season week is a score
-that flashes past in about half a second on the way to sixteen more, and a line of
-commentary under it is something to read rather than something to watch. This shipped to
-both at first and the season half was wrong: it turned a fast, skimmable season into a wall
-of text. `gameCredits` returns null for a non-playoff result, so the box score for a regular
-week is exactly what it always was.
+They run on the two screens a game is WATCHED on, the playoff broadcast and the Challenge
+Bowl, and nowhere else. That is a decision about what the screens are, not a limit on the
+code. Those two have a running clock, a call banner and (in the postseason) a drive chart,
+and are paced to be looked at. A regular season week is a score that flashes past in about
+half a second on the way to sixteen more, and a line of commentary under it is something to
+read rather than something to watch. This shipped to the season screen at first and it was
+wrong: it turned a fast, skimmable season into a wall of text. `gameCredits` returns null for
+a non-playoff result, so the box score for a regular week is exactly what it always was.
+
+The Bowl differs from the postseason in two ways that are worth knowing. BOTH TEAMS GET
+NAMES, because a person drafted each side: a season's opponent is a historic team modelled as
+a team rather than as players, so there only your six can be named, and `opts.team` on
+`touchdownCredits` is what the Bowl uses for the other half. And it has no per-man box score
+behind it, because `resolveHeadToHead` resolves to two team totals rather than six samples a
+side, so `bowlMen` sets each man's `pts` equal to his `avg`: form of exactly 1 for everybody,
+which is the honest reading of a game that never sampled them individually. Credit there
+follows what a man IS rather than how he played that day.
+
+`bowlMen` also filters to QB, RB, WR and TE, and that is a guard rather than tidiness. A
+defender carries `rush_ppg` too and it means his PASS RUSH, while the credit weight adds
+rushing to receiving, so a Lockdown roster reaching that screen would hand touchdowns to
+defensive ends on the strength of their sack numbers. Two assertions cover it, and one of
+them deliberately runs a defence through the credits WITHOUT the filter to show the danger is
+real rather than theoretical.
 
 Two things in here are load-bearing and neither is obvious.
 

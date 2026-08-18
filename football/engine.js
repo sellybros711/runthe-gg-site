@@ -1064,9 +1064,15 @@ function touchdownBlurb(scorer, passer, yards, play, rng) {
  * A roster with nobody who can reach an end zone (which is every Lockdown roster, whose
  * offense is the league's rather than drafted) returns an empty list, and the caller shows
  * what it always showed. That is the honest answer here: there is no drafted man to name.
+ *
+ * `opts.team` picks which side of the script to credit, and defaults to yours. It exists for
+ * the Challenge Bowl, where BOTH teams were drafted by a person and the opponent's scores
+ * deserve a name every bit as much as yours do. A season's opponent is a historic team
+ * modelled as a team rather than as players, so there it stays on the default.
  */
-function touchdownCredits(script, men, rng) {
+function touchdownCredits(script, men, rng, opts = {}) {
   const out = [];
+  const side = opts.team || 'you';
   if (!Array.isArray(script) || !Array.isArray(men) || !men.length) return out;
   /* The end-zone share of a man's game. A quarterback's passing does not make HIM the
      scorer, it makes him the passer, so only what he does with the ball in his hands
@@ -1085,7 +1091,7 @@ function touchdownCredits(script, men, rng) {
   for (const m of men) if ((m.pass || 0) > (passer ? passer.pass : 0)) passer = m;
 
   script.forEach((e, i) => {
-    if (e.team !== 'you' || e.kind !== 'TOUCHDOWN') return;
+    if (e.team !== side || e.kind !== 'TOUCHDOWN') return;
     const scorer = pickWeighted(men, weights, rng);
     if (!scorer) return;
     /* How he got there, from what he is. A quarterback credited with a touchdown ran it in
@@ -1096,7 +1102,7 @@ function touchdownCredits(script, men, rng) {
     const yards = touchdownYards(play, rng);
     const withPasser = play === 'catch' && passer && passer !== scorer ? passer : null;
     out.push({
-      at: i, kind: 'TOUCHDOWN', team: 'you',
+      at: i, kind: 'TOUCHDOWN', team: side,
       scorer: scorer.name, slot: scorer.slot || scorer.pos, play, yards,
       passer: withPasser ? withPasser.name : null,
       short: lastName(scorer.name) + ' ' + yards + '-yard TD ' + (play === 'run' ? 'run' : 'catch'),

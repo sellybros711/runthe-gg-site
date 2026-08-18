@@ -5024,7 +5024,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=55"></script>
+<script src="engine.js?v=56"></script>
 <script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
@@ -11444,6 +11444,25 @@ function paintChallengeIntro(t){
     if(draftBtn) draftBtn.textContent='Play a normal game'; }
 }
 
+/* A roster in the shape E.touchdownCredits reads, for a game that has no box score behind it.
+   The Bowl resolves to two team totals rather than six samples a side, so there is no "how he
+   played today" to weight by and every man is credited on what he IS: pts equal to avg means
+   a form of exactly 1 for all six, which is the honest reading of a game that never sampled
+   them individually.
+
+   OFFENSIVE POSITIONS ONLY, and that is a guard rather than tidiness. A defender carries
+   rush_ppg too, meaning his PASS RUSH, and the credit weight adds rushing to receiving. Feed
+   it a Lockdown roster and it would hand touchdowns to defensive ends on the strength of
+   their sack numbers. Filtering here means a roster that cannot score simply names nobody. */
+const BOWL_SCORERS=new Set(['QB','RB','WR','TE']);
+function bowlMen(roster){
+  if(!Array.isArray(roster)) return [];
+  return roster.filter(p=>p&&BOWL_SCORERS.has(String(p.position||'').toUpperCase()))
+    .map(p=>({name:p.name,pos:p.position,slot:p.position,
+      pts:p.ppr_ppg_mean||0,avg:p.ppr_ppg_mean||0,
+      pass:p.pass_ppg||0,rush:p.rush_ppg||0,rec:p.rec_ppg||0}));
+}
+
 /* The Bowl broadcast. Fully config-driven (never reads `run`) so it also serves the result
    view, where there is no run in progress. Mirrors the playoff broadcast on the same bug. */
 function bowlBroadcast(cfg){
@@ -11468,14 +11487,32 @@ function bowlBroadcast(cfg){
   show('s-bowl');
 
   const pace=PACE['Super Bowl'];
-  const rng=E.createSeededRNG(E.hashSeed('bowl|'+cfg.shownYou+'-'+cfg.shownThem+'|'+(cfg.themName||'')));
+  const bowlSeed='bowl|'+cfg.shownYou+'-'+cfg.shownThem+'|'+(cfg.themName||'');
+  const rng=E.createSeededRNG(E.hashSeed(bowlSeed));
   const script=E.scoringScript(cfg.shownYou,cfg.shownThem,rng);
   const segs=buildTimeline(script,pace);
+  /* NAMES ON BOTH SIDES HERE, which the postseason cannot do. A season's opponent is a
+     historic team modelled as a team rather than as players, so only your six can be named;
+     in the Bowl a person drafted each side and the other team's touchdowns deserve a name
+     every bit as much as yours. Its own stream, off the same key the script uses. */
+  const credRng=E.createSeededRNG(E.hashSeed(bowlSeed+'|credits'));
+  const creditAt=new Map();
+  E.touchdownCredits(script,cfg.youMen||[],credRng).forEach(c=>creditAt.set(c.at,c));
+  E.touchdownCredits(script,cfg.themMen||[],credRng,{team:'them'}).forEach(c=>creditAt.set(c.at,c));
+  /* NO DRIVE CHART ON THIS SCREEN, so there is no bar for a kick to have to agree with and
+     the engine's own distribution is the source rather than the fallback it is in the
+     postseason. Same shape either way: the player sees the distance, not just three points. */
+  const fgYards=E.fieldGoalDistances(script,E.createSeededRNG(E.hashSeed(bowlSeed+'|fg')));
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
-  const logScore=(e)=>{ const who=e.team==='you'?'You':(cfg.themName||'Them');
+  const logScore=(e,i)=>{
+    const who=e.team==='you'?'You':(cfg.themName||'Them');
+    const c=i!=null?creditAt.get(i):null;
+    const fg=i!=null?fgYards.get(i):null;
+    const what=c?esc(c.short)
+      :esc(who)+' '+(fg?fg+'-yard field goal':e.kind.toLowerCase());
     $('bowl-log').insertAdjacentHTML('afterbegin','<div class="pl '+e.team+'"><span class="t">'+periodLabel(e)+' '+e.clock+
-      '</span><span class="w">'+esc(who)+' '+e.kind.toLowerCase()+(e.note?', '+esc(e.note):'')+
+      '</span><span class="w">'+what+(e.note?', '+esc(e.note):'')+
       '</span><span class="n">'+e.you+'-'+e.them+'</span></div>'); };
   const finish=()=>{
     stopBowl();
@@ -11521,9 +11558,12 @@ function bowlBroadcast(cfg){
       const e=seg.e; const cell=e.team==='you'?youEl:themEl;
       cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them; setLead(e.you,e.them);
       cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),520);
-      $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
-        (e.team==='you'?'You':esc(cfg.themName||'Them'))+(e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
-      logScore(e); poTimer=setTimeout(next,seg.ms); return;
+      const c=creditAt.get(seg.i), fg=fgYards.get(seg.i);
+      $('bowl-cap').innerHTML='<div class="call '+e.team+(fg?' fg':'')+'"><b>'+
+        (fg?fg+'-YARD FIELD GOAL':e.kind)+'</b><span>'+
+        (c?esc(c.blurb):(e.team==='you'?'You':esc(cfg.themName||'Them')))+
+        (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
+      logScore(e,seg.i); poTimer=setTimeout(next,seg.ms); return;
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -11542,8 +11582,10 @@ function playBowl(){
     {roster:run.roster, chemistry:run.season.chemistry},
     E.createSeededRNG(seed), CAL);
   ga('challenge_bowl_played',{won:!res.aWon,mode:runMode()});
+  /* You are b here (the friend who just drafted); the sender is a. */
   bowlBroadcast({ themName:(challengeTeam.n||''), themFranchise:challengeTeam.f||null,
-    shownYou:res.shownB, shownThem:res.shownA, youWon:!res.aWon, ctx:'play' });
+    shownYou:res.shownB, shownThem:res.shownA, youWon:!res.aWon, ctx:'play',
+    youMen:bowlMen(run.roster), themMen:bowlMen(sender.roster) });
 }
 
 /* Anyone opening a result link recomputes the same Bowl and watches it from the SENDER's
@@ -11555,8 +11597,10 @@ function showBowlResultView(aBlob,bBlob){
   const res=E.resolveHeadToHead({roster:A.roster,chemistry:A.chemistry},{roster:B.roster,chemistry:B.chemistry},
     E.createSeededRNG(seed), CAL);
   ga('challenge_result_viewed',{});
+  /* Watched from the SENDER's side, so a is "you" here and b is the opponent. */
   bowlBroadcast({ themName:(bBlob.n||''), themFranchise:bBlob.f||null,
-    shownYou:res.shownA, shownThem:res.shownB, youWon:res.aWon, ctx:'view' });
+    shownYou:res.shownA, shownThem:res.shownB, youWon:res.aWon, ctx:'view',
+    youMen:bowlMen(A.roster), themMen:bowlMen(B.roster) });
 }
 
 async function shareTextFile(text,file,fname){
