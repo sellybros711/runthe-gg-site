@@ -1513,35 +1513,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      survives the render and describes the game to both. It is not a stub for the app and it
      is not hidden text -- it sits under the game as an about section, which is what it reads
      as to somebody who has just finished a show. */
-  .about{max-width:760px; margin:var(--sp-4) auto 0; padding-top:var(--sp-2);
-    border-top:1px solid var(--line); color:var(--mut);}
-
-  /* Once the game is running it is not a page with an About section on it, it
-     is a game. The copy is for whoever landed here cold. */
-  body.playing .about{display:none;}
-  .about > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px;}
-  .about > summary::-webkit-details-marker{display:none;}
-  .about > summary:after{content:''; width:7px; height:7px; flex:0 0 auto;
-    border-right:2px solid var(--dim); border-bottom:2px solid var(--dim);
-    transform:rotate(45deg) translateY(-2px); transition:transform var(--t-fast) var(--ease);}
-  .about[open] > summary:after{transform:rotate(-135deg) translateY(-1px);}
-  .about > summary h2{margin:0;}
-  .about h2{font-family:var(--ui); font-size:13px; font-weight:800; letter-spacing:2.6px;
-    text-transform:uppercase; color:var(--dim); margin:0 0 14px;}
+  /* THE ABOUT COPY IS SHEET CONTENT NOW, not a wall under the page. It used to
+     be a <details> so it could be folded away while staying in the HTML for a
+     crawler; a sheet does the same job (visibility:hidden, never
+     display:none) and gets it off the bottom of every screen. */
+  /* WEIGHT 500 BECAUSE 400 IS NOT LOADED. Archivo is requested at 500 and up,
+     and nothing here set a weight, so these paragraphs asked for a face the
+     page never fetched and the browser drew a synthesised one. It did not
+     matter while the copy was folded shut at the bottom of the page; it does
+     now that a button invites you to read six paragraphs of it. 500 rather
+     than the 600 the rest of the game uses: this is the only long-form reading
+     on the site. */
+  .about .inner{color:var(--mut); font-weight:500;}
   .about h3{font-family:var(--ui); font-size:15px; font-weight:800; color:var(--ink);
-    margin:22px 0 6px;}
+    margin:20px 0 6px;}
   .about p{margin:0 0 12px; font-size:14.5px; line-height:1.62;}
-  .about a{color:var(--teal);}
+  .about a{color:var(--tealT);}
+  /* The site links, folded in with the copy so the footer has nothing left. */
+  .ab-links{display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:20px;
+    padding-top:14px; border-top:1px solid var(--line);}
+  .ab-links a{font-size:13px; font-weight:800;}
   /* Spaced by its own margin, never by a sibling selector off .about: there
      is an ad slot between the two that is injected and then REMOVED when it
      has nothing to show, so anything keyed on adjacency matches or does not
      depending on when the rule is evaluated against the DOM. */
+  /* One button wide enough to press and no wider. The footer used to carry six
+     links and two paragraphs under every screen in the game. */
   .sfoot{max-width:760px; margin:var(--sp-4) auto 0; padding:var(--sp-2) 0 var(--sp-3);
-    border-top:1px solid var(--line); color:var(--dim); font-size:13px; text-align:center;}
-  .sfoot a{color:inherit; text-decoration:none;}
-  .sfoot a:hover{color:var(--ink); text-decoration:underline;}
-  .sfoot span{display:inline-block; margin:0 6px; opacity:.5;}
-  .sfoot .src{margin:12px 0 0; font-size:12px; line-height:1.55; color:var(--dim);}
+    border-top:1px solid var(--line); text-align:center;}
+  .sfoot .btn{width:auto; min-width:170px; min-height:44px; font-size:13px;
+    padding:10px 22px; color:var(--dim);}
 
   /* The ad slot, above the footer. Nothing until AdSense fills it: the ins collapses when
      it declines, so an unsold page looks exactly as it does with no ad markup at all, and
@@ -2021,13 +2022,19 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- Outside #app on purpose: render() replaces the contents of #app on every state
        change, so anything put in there is gone the moment the game boots.
 
-       FOLDED, AND GONE ENTIRELY ONCE YOU ARE PLAYING. Five paragraphs of prose sat open
-       under every screen in the game, so a draft with two songs on it ended in a wall of
-       copy about what a jam band is. It stays in the DOM either way, because a crawler
-       reads a closed <details> and this is the only page on the site that explains what
-       the game is. -->
-  <details class="about">
-    <summary><h2>About Segue</h2></summary>
+       BEHIND A BUTTON, AND STILL STATIC MARKUP. Five paragraphs of prose sat open under
+       every screen in the game, so a draft with two songs on it ended in a wall of copy
+       about what a jam band is. It was a folded <details> for a while, which got it out
+       of the way but still left it at the bottom of the page. This is the only page on
+       the site that explains what the game is, and it is indexed, so the copy has to be
+       in the HTML a crawler receives: a sheet is visibility:hidden rather than
+       display:none, so it stays readable to one while being out of everybody else's
+       way. Injecting it from JS would lose exactly that. -->
+  <div class="sheet about" id="aboutSheet" role="dialog" aria-modal="true" aria-labelledby="aboutHd">
+    <div class="inner">
+      <div class="grab"></div>
+      <div class="sheet-hd"><h2 id="aboutHd">About Segue</h2>
+        <button class="x" type="button" id="aboutClose">Close</button></div>
     <p><strong>Segue</strong> is a free setlist-builder game about jam bands, played in the
       browser with nothing to download and no account required. You are handed real concerts
       and asked to build a better night out of them.</p>
@@ -2048,15 +2055,22 @@ window.GA_ID='G-L29P5MRWKE';
       argument the game is making: a setlist is not a list of good songs, it is an order.</p>
 
     <h3>Where the shows come from</h3>
-    <p>Every concert, song and running time is real. The current band is goosetheband, with 7,504
-      recorded performances across 655 shows between 2014 and 2026, taken from the community
+    <p>Every concert, song and running time is real. The current band is goosetheband, with 7,558
+      recorded performances across 659 shows between 2014 and 2026, taken from the community
       archive at <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
       Nothing is generated: if a show is in the game, it happened, in that order, at that
       length.</p>
     <p>Segue is an unofficial fan project. It is not affiliated with, endorsed by, or
       connected to any band, venue or promoter, and all song and band names belong to their
       respective owners.</p>
-  </details>
+
+      <div class="ab-links">
+        <a href="/">RunThe.GG</a><a href="/about.html">About</a><a
+          href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a
+          href="/disclaimer.html">Disclaimer</a><a href="/contact.html">Contact</a>
+      </div>
+    </div>
+  </div>
 
   <!-- Placeholder slot; the initialiser at the foot of this file refuses to start one, so
        this renders nothing until a real unit id is pasted in. -->
@@ -2068,17 +2082,11 @@ window.GA_ID='G-L29P5MRWKE';
          data-ad-format="horizontal"
          data-full-width-responsive="true"></ins>
   </div>
+  <!-- One button. Everything the footer used to say is a tap away in the sheet
+       above, which keeps it in the HTML for a crawler and off the bottom of
+       every screen for everybody else. -->
   <footer class="sfoot">
-    <p>
-      <a href="/">RunThe.GG</a><span>&middot;</span><a href="/about.html">About</a><span>&middot;</span><a
-        href="/privacy.html">Privacy</a><span>&middot;</span><a
-        href="/terms.html">Terms</a><span>&middot;</span><a
-        href="/disclaimer.html">Disclaimer</a><span>&middot;</span><a
-        href="/contact.html">Contact</a>
-    </p>
-    <p class="src">Show data from the goosetheband community archive at
-      <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
-      An unofficial fan project, not affiliated with or endorsed by any band or venue.</p>
+    <button class="btn ghost" type="button" id="aboutBtn">About &amp; legal</button>
   </footer>
 </div>
 
@@ -4208,6 +4216,14 @@ document.getElementById('statSheet').addEventListener('click', e => {
   if (e.target.id === 'statSheet' || e.target.closest('#statClose')) closeStat();
 });
 
+/* The about sheet. Bound on the document rather than on the app, because the
+   button lives in the static footer and not in anything render() rewrites. */
+const aboutSheet = document.getElementById('aboutSheet');
+document.addEventListener('click', e => {
+  if (e.target.closest('#aboutBtn')){ aboutSheet.classList.add('on'); return; }
+  if (e.target === aboutSheet || e.target.closest('#aboutClose')) aboutSheet.classList.remove('on');
+});
+
 function guideAdvance(){
   if (GUIDE_AT < GUIDE_STEPS.length - 1){ openGuide(GUIDE_AT + 1); return; }
   /* The last step's button is the first move the walkthrough has been
@@ -4252,6 +4268,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (document.getElementById('guide').classList.contains('on')){ closeGuide(); return; }
   if (document.getElementById('statSheet').classList.contains('on')){ closeStat(); return; }
+  if (aboutSheet.classList.contains('on')){ aboutSheet.classList.remove('on'); return; }
   if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
   if (document.body.classList.contains('sheet-on')){
     S.pickedSong = null; S.sheetForced = false; S.hint = ''; S.hintBad = false;
