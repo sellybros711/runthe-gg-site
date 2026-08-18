@@ -226,6 +226,87 @@
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', watchResult);
   else watchResult();
 
+  // ---- "you're out of free games today" prompt ----------------------------
+  // When a signed-in free player has used every free play for the day, the hub
+  // pops one invite prompt: the natural moment to want more, and the reward is
+  // exactly more. Once per day (a nagging pop-up is worse than none), never for
+  // cardholders (unlimited, never tapped out), and only on the hub so it never
+  // stacks over a game's own result modal, which already carries the ad.
+  function onHub(){
+    var p = location.pathname || '';
+    return /\/arcade\/?$/.test(p) || /\/arcade\/index\.html$/.test(p);
+  }
+  function tier(){ try{ return window.RTGTokens && RTGTokens.tier ? RTGTokens.tier() : (signedIn()?'free':'guest'); }catch(e){ return 'guest'; } }
+  function tappedOut(){
+    try{ return !!(window.RTGTokens && RTGTokens.remaining && RTGTokens.remaining() === 0); }catch(e){ return false; }
+  }
+  function exhaustKey(){ return 'rtg:ref:exhausted:' + (window.RTGTokens && RTGTokens.today ? RTGTokens.today() : ''); }
+  function exhaustSeen(){ try{ return !!localStorage.getItem(exhaustKey()); }catch(e){ return false; } }
+  function markExhaust(){ try{ localStorage.setItem(exhaustKey(), '1'); }catch(e){} }
+
+  function promptStyles(){
+    if(document.getElementById('rtg-ref-modal-style')) return;
+    var s=document.createElement('style'); s.id='rtg-ref-modal-style';
+    s.textContent=[
+      '.rtgref-scrim{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;'+
+        'padding:20px;background:rgba(3,9,18,.72);backdrop-filter:blur(4px);}',
+      '.rtgref-modal{width:100%;max-width:380px;background:var(--card,#10233A);color:var(--ink,#F4F7FB);'+
+        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 40%, var(--line2,rgba(244,247,251,.15)));'+
+        'border-radius:18px;padding:24px 20px 20px;text-align:center;box-shadow:0 30px 90px -20px rgba(0,0,0,.8);}',
+      '.rtgref-modal .cap{width:60px;height:60px;margin:0 auto 12px;border-radius:14px;display:grid;place-items:center;'+
+        'font-size:30px;background:color-mix(in srgb, var(--green,#48D17A) 16%, var(--card2,#162B44));'+
+        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 40%, transparent);}',
+      '.rtgref-modal h2{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;'+
+        'font-size:24px;line-height:1.08;margin:0 0 8px;}',
+      '.rtgref-modal p{font-size:13.5px;color:var(--mut,#A9B8CB);line-height:1.5;margin:0 auto 18px;max-width:300px;}',
+      '.rtgref-modal .go{appearance:none;border:0;cursor:pointer;font-family:var(--f,inherit);font-weight:900;font-size:15px;'+
+        'width:100%;min-height:52px;border-radius:13px;padding:15px;display:flex;align-items:center;justify-content:center;gap:9px;'+
+        'color:#06210f;background:var(--green,#48D17A);box-shadow:var(--shadow,0 6px 18px -10px rgba(0,0,0,.55));}',
+      '.rtgref-modal .go:hover{filter:brightness(1.05);}',
+      '.rtgref-modal .later{appearance:none;border:0;background:none;cursor:pointer;font-family:var(--f,inherit);'+
+        'font-weight:800;font-size:12.5px;color:var(--mut,#A9B8CB);margin-top:12px;padding:6px;text-decoration:underline;}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+  function showExhaustPrompt(){
+    if(document.getElementById('rtg-ref-scrim')) return;
+    promptStyles();
+    var scrim=document.createElement('div');
+    scrim.className='rtgref-scrim'; scrim.id='rtg-ref-scrim';
+    scrim.setAttribute('role','dialog'); scrim.setAttribute('aria-modal','true');
+    scrim.innerHTML=
+      '<div class="rtgref-modal">'+
+        '<div class="cap" aria-hidden="true">🎟️</div>'+
+        '<h2>That’s all four for today</h2>'+
+        '<p>Want more? Invite a friend. When they sign up with your link, you <b>both</b> get another go at today’s games.</p>'+
+        '<button class="go" type="button" id="rtgRefGo"><span aria-hidden="true">🎟️</span> Invite a friend</button>'+
+        '<div><button class="later" type="button" id="rtgRefLater">Maybe later</button></div>'+
+      '</div>';
+    function close(){ if(scrim && scrim.parentNode) scrim.parentNode.removeChild(scrim); }
+    scrim.addEventListener('click', function(e){ if(e.target===scrim) close(); });
+    document.body.appendChild(scrim);
+    document.getElementById('rtgRefGo').addEventListener('click', function(){ share(); close(); });
+    document.getElementById('rtgRefLater').addEventListener('click', close);
+  }
+  function maybeExhaustPrompt(){
+    if(!onHub()) return;
+    if(tier()!=='free') return;                 // guests can't earn; cardholders never run out
+    if(!tappedOut()) return;
+    if(exhaustSeen()) return;
+    if(!(window.RTG_BOARD && RTG_BOARD.referralCode)) return;   // no way to make a link: stay quiet
+    markExhaust();                              // once per day, set before showing so it can't double-fire
+    showExhaustPrompt();
+  }
+  // Check on load and whenever plays change (card.js reconciles the server
+  // floor after boot, which is often the moment the tapped-out truth arrives).
+  function wireExhaust(){
+    if(!onHub()) return;
+    document.addEventListener('rtg:tokens', maybeExhaustPrompt);
+    setTimeout(maybeExhaustPrompt, 1500);      // after reconcile settles
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wireExhaust);
+  else wireExhaust();
+
   window.RTGReferral = {
     capture: capture,
     pending: pending,
@@ -235,6 +316,7 @@
     stats: stats,
     share: share,
     buildLink: buildLink,
-    decorateResult: decorateResult
+    decorateResult: decorateResult,
+    maybeExhaustPrompt: maybeExhaustPrompt
   };
 })();
