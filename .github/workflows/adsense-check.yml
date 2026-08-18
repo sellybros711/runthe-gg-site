@@ -1,0 +1,45 @@
+name: AdSense readiness
+
+# Every indexable page must carry the AdSense publisher tag and reach the policy
+# pages. Two rejections were traced to pages that quietly failed one of those and
+# nothing complained. See the header of scripts/check-adsense.mjs.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-adsense.mjs
+#
+# Runs on any HTML change because the failure mode is a NEW page that forgets the
+# tag, which no narrower path filter would catch.
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.html'
+      - 'sitemap.xml'
+      - 'ads.txt'
+      - 'scripts/check-adsense.mjs'
+      - '.github/workflows/adsense-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.html'
+      - 'sitemap.xml'
+      - 'ads.txt'
+      - 'scripts/check-adsense.mjs'
+      - '.github/workflows/adsense-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: adsense-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-adsense.mjs

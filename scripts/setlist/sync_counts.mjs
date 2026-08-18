@@ -100,6 +100,16 @@ patch('setlist/index.html',
   `${counts.shows} shows from the elgoose.net archive`,
   'archive size on the home screen');
 
+/* The about copy states the archive size too, and it was already stale: it
+   said 7,504 performances across 655 shows against a file holding 7,558 and
+   659. Any number written by hand beside data that refreshes daily goes wrong,
+   so this one is maintained like the others rather than trusted. */
+patch('setlist/index.html',
+  /with (\d[\d,]*)\s*\n(\s*)recorded performances across (\d[\d,]*) shows/,
+  (m, _p, indent) => `with ${counts.performances.toLocaleString('en-US')}\n${indent}` +
+    `recorded performances across ${counts.shows} shows`,
+  'archive size in the about copy');
+
 // The contract's "as of the last run" line.
 patch('setlist/data/DATA_CONTRACT.md',
   /\*\*(\d[\d,]*) performances · (\d[\d,]*) shows · (\d[\d,]*) songs\*\*/,

@@ -260,9 +260,35 @@ check(!/\.hero:after\{[^}]*rgba\(255,255,255/.test(game),
 check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
 check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
       'how-it-works dropped the numbered circles');
-check(/<details class="about"/.test(game), 'the about wall is folded away');
-check(/body\.playing \.about\{display:none/.test(game),
-      'and gone entirely once you are playing');
+/* THE ABOUT COPY IS BEHIND A BUTTON, and what used to be one guard is now
+   several, because "folded away" was only ever half of what had to stay true.
+   Five paragraphs about what a jam band is sat under every screen in the game;
+   a <details> got them out of the reader's way, a sheet gets them off the page
+   entirely. Either way this is the only page on the site that explains what
+   Segue is, and it is indexed, so all of the following have to hold at once. */
+const scriptless = game.replace(/<script[\s\S]*?<\/script>/g, '');
+check(scriptless.includes('is a free setlist-builder game about jam bands'),
+      'the about copy is in the served markup, not injected by the game');
+/* A closed sheet is hidden by visibility. display:none would take the prose
+   away from a crawler as well as from the reader, which is the whole reason
+   this copy is not simply rendered on demand like every other screen. */
+check(/\.sheet\{[^}]*visibility:hidden/.test(game),
+      'and hidden by visibility, so it is still read');
+check(!/\.about\{[^}]*display:none/.test(game) && !/\.about[^{]*\{[^}]*display:none/.test(game),
+      'never by display:none');
+check(/<footer class="sfoot">\s*<button[^>]*id="aboutBtn"[^>]*>[\s\S]*?<\/footer>/.test(gameBare),
+      'the footer is one button');
+check(/id="aboutSheet"/.test(gameBare) && /id="aboutClose"/.test(gameBare),
+      'that opens a sheet which closes again');
+/* The site links went into the sheet with the prose. A footer that quietly
+   drops one of these is a policy problem rather than a layout one, so they are
+   counted here rather than eyeballed. */
+const abLinks = gameBare.match(/<div class="ab-links">([\s\S]*?)<\/div>/);
+check(!!abLinks, 'the site links moved into the sheet');
+for (const href of ['/', '/about.html', '/privacy.html', '/terms.html',
+                    '/disclaimer.html', '/contact.html'])
+  check(!!abLinks && new RegExp(`href="${href.replace(/\./g, '\\.')}"`).test(abLinks[1]),
+        `  and it still links ${href}`);
 
 /* The HUD's whole job is to make the clock feel like the thing you are
    playing against. It shipped once with the set name and the countdown at the
@@ -1361,6 +1387,24 @@ if (claimed) {
   const said = Number(claimed[1].replace(/,/g, ''));
   const actual = loadBand(read('setlist/data/goose.csv')).shows.length;
   check(said === actual, `home screen says ${said} shows and the data has ${actual}`);
+}
+
+/* The about copy states the size of the archive too, and it was wrong for
+   weeks: 7,504 performances across 655 shows against a file holding 7,558 and
+   659. It went stale for the ordinary reason, which is that it was typed once
+   beside data that changes every morning. sync_counts.mjs maintains it now;
+   this is what makes sure it kept doing so. */
+const prose = game.match(/with ([\d,]+)\s*\n\s*recorded performances across ([\d,]+) shows/);
+check(!!prose, 'the about copy states the archive size');
+if (prose) {
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const saidPerf = Number(prose[1].replace(/,/g, ''));
+  const saidShows = Number(prose[2].replace(/,/g, ''));
+  const realShows = loadBand(read('setlist/data/goose.csv')).shows.length;
+  check(saidPerf === rows.length,
+    `about copy says ${saidPerf} performances and the data has ${rows.length}`);
+  check(saidShows === realShows,
+    `about copy says ${saidShows} shows and the data has ${realShows}`);
 }
 
 console.log();
