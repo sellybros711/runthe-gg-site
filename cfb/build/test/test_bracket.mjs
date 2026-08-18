@@ -41,7 +41,8 @@ const data = R.indexData(rd('cfb_player_seasons.json'), rd('cfb_team_seasons.jso
 
 console.log('=== the shape of the field ===');
 {
-  let sameSeed = 0, dupTeam = 0, noOpp = 0, dead = 0, brackets = 0;
+  let sameSeed = 0, dupTeam = 0, dupSchool = 0, noOpp = 0, dead = 0, brackets = 0;
+  const schoolOf = (t) => String(t.team_season_id || '').replace(/-\d{4}$/, '');
   const met = {};
   for (let seed = 1; seed <= E.CONSTANTS.PLAYOFF_TEAMS; seed++) {
     met[seed] = new Set();
@@ -49,8 +50,15 @@ console.log('=== the shape of the field ===');
       const rng = E.createSeededRNG(E.hashSeed('shape|' + seed + '|' + t));
       const br = E.buildBracket(data.prepared, rng, seed);
       brackets++;
-      const ids = Object.values(br.field).filter((e) => e.team).map((e) => e.team.team_season_id);
+      const teams = Object.values(br.field).filter((e) => e.team).map((e) => e.team);
+      const ids = teams.map((t) => t.team_season_id);
       if (new Set(ids).size !== ids.length) dupTeam++;
+      /* NO SCHOOL TWICE. A real playoff never has a program in it twice, and the pools
+         hold many seasons of the blue-bloods, so without a block seven brackets in ten
+         put the same school on two lines, which reads as the bracket not matching the
+         team you face. */
+      const schools = teams.map(schoolOf);
+      if (new Set(schools).size !== schools.length) dupSchool++;
       const rounds = seed <= E.CONSTANTS.PLAYOFF_BYES
         ? E.CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE : E.CONSTANTS.PLAYOFF_ROUNDS_NO_BYE;
       const first = E.PLAYOFF_ROUND_NAMES.length - rounds;
@@ -73,6 +81,7 @@ console.log('=== the shape of the field ===');
   }
   ok('no seed ever plays its own seed', sameSeed === 0, sameSeed + ' of ' + brackets + ' brackets');
   ok('no team is in the field twice', dupTeam === 0, String(dupTeam));
+  ok('no school is in the field twice', dupSchool === 0, dupSchool + ' of ' + brackets + ' brackets');
   ok('every round has somebody in the other seat', noOpp === 0, String(noOpp));
   ok('nobody knocked out comes back', dead === 0, String(dead));
   const wrong = Object.keys(met).filter((s) => met[s].has(Number(s)));

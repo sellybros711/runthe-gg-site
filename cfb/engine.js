@@ -1743,19 +1743,32 @@ function buildBracket(data, rng, yourSeed, constants = CONSTANTS) {
   const midN = constants.BRACKET_GREAT_SEEDS;
   const poolFor = (seed) => (seed <= topN ? elite : seed <= midN ? great : good);
 
+  /* NO SCHOOL TWICE IN ONE BRACKET, not merely no season twice. The pools hold many
+     seasons of the same program (Alabama has a dozen, Ohio State nearly as many), so a
+     draw that only blocked a repeated team_season_id still put "Alabama '12" on one line
+     and "Alabama '20" on another about seven brackets in ten. A real playoff never has a
+     school in it twice, and on a phone the year is small: a player reads their opponent
+     as "ALA", sees another "ALA" across the bracket, and the whole thing stops looking
+     like the team they are actually facing. Blocking the SCHOOL fixes both, and it
+     subsumes the season block, since two of the same season are the same school. */
+  const schoolOf = (t) => String(t.team_season_id || '').replace(/-\d{4}$/, '') || t.school || '';
   const used = new Set();
   const field = {};
   for (let seed = 1; seed <= constants.PLAYOFF_TEAMS; seed++) {
     if (seed === yourSeed) { field[seed] = { seed, you: true, team: null }; continue; }
-    /* Nobody twice in one bracket, which a straight pick from a pool will do often
-       enough to be noticed on a screen that lists all twelve. */
     let team = null;
-    for (let tries = 0; tries < 24; tries++) {
+    for (let tries = 0; tries < 40; tries++) {
       const t = pickFrom(poolFor(seed), rng);
-      if (t && !used.has(t.team_season_id)) { team = t; break; }
+      if (t && !used.has(schoolOf(t))) { team = t; break; }
     }
-    if (!team) team = pickFrom(poolFor(seed), rng);
-    if (team) used.add(team.team_season_id);
+    /* The safety valve, for a pool too school-poor to answer in 40 tries: take any team
+       whose school is not already in the field, scanning the pool once; only if even that
+       fails does a repeat slip through, which the field diversity makes vanishingly rare. */
+    if (!team) {
+      const pool = poolFor(seed);
+      team = pool.find((t) => !used.has(schoolOf(t))) || pickFrom(pool, rng);
+    }
+    if (team) used.add(schoolOf(team));
     field[seed] = { seed, you: false, team };
   }
   return { field, rounds: [[], [], [], []], yourSeed };
