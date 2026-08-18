@@ -7526,8 +7526,8 @@ function overlayCoinLog(screen){
 // EXACTLY ONCE, on any device, and never anyone else. To grant again later: bump COIN_GRANT_V and set the
 // amounts. Runs after cloudPull on sign-in (so grantV/bonus are the synced values). NOTE: a future
 // COIN_EPOCH re-baseline zeroes bonus; re-grant then by bumping COIN_GRANT_V.
-const COIN_GRANT_V=3;   // bump to re-grant: v3 grants 500,000 to SophKill (only names in COIN_GRANTS are credited)
-const COIN_GRANTS={ 'sophkill':500000 };
+const COIN_GRANT_V=4;   // bump to re-grant: v4 grants 10,000 to ChopShop15 (only names in COIN_GRANTS are credited)
+const COIN_GRANTS={ 'chopshop15':10000 };
 function maybeCoinGrant(){ try{
   if(!sbSignedIn()) return; const uname=(sbUsername||'').toLowerCase(); if(!uname) return;
   const amt=COIN_GRANTS[uname]; if(!amt) return;
@@ -28491,6 +28491,20 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
   var f=packCreditFields(opts.tier||'base'), p=packState(); p[f[0]]=(p[f[0]]||0)+n; packSave(p);
   if(!opts.silent){ var nm=packType(opts.tier||'base').name; toast('<span style="color:var(--gold);font-weight:800">🎁 Free '+esc(nm)+' earned!</span>'+(opts.why?' · <span class="small">'+opts.why+'</span>':'')+'<br><span class="small">Open it in the Pro Shop → Packs.</span>', 4200); }
   return n; }
+// One-time targeted PACK grant to a named account (owner request), mirroring the coin grant: matched by the
+// server-attributed username, applied EXACTLY ONCE per account on any device, guarded by a synced version
+// flag (bag_packs.packGrantV, carried by mergePacks). To grant again later: bump PACK_GRANT_V + set PACK_GRANTS.
+const PACK_GRANT_V=1;
+const PACK_GRANTS={ 'chopshop15':{tier:'summer', n:2} };   // 2 Summer Smash Packs
+function maybePackGrant(){ try{
+  if(!packsOn()||!sbSignedIn()) return; var uname=(sbUsername||'').toLowerCase(); if(!uname) return;
+  var g=PACK_GRANTS[uname]; if(!g||!(g.n>0)) return;
+  if((packState().packGrantV||0)>=PACK_GRANT_V) return;   // already granted this version (synced)
+  grantFreePack(g.n, {tier:g.tier, silent:true});         // credit g.n free packs of the tier (writes bag_packs)
+  var p=packState(); p.packGrantV=PACK_GRANT_V; packSave(p);   // burn the flag on the post-grant state
+  try{ toast('<span style="color:var(--gold);font-weight:800">🎁 '+g.n+' '+esc(packType(g.tier).name)+(g.n>1?'s':'')+' added!</span><br><span class="small">Open them in the Pro Shop → Packs.</span>', 5200); }catch(e){}
+  try{ render(); }catch(e){}
+}catch(e){} }
 // CS401: a WELCOME free pack, once per account, for having/creating a RunThe.GG account (the sign-up
 // incentive). Runs after cloudPull so the flag is synced first and a second device never re-grants.
 function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState().welcomePack) return;
@@ -30266,7 +30280,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -30520,6 +30534,7 @@ function mergePacks(local, server){
     packEarned:Math.max(l.packEarned||0,s.packEarned||0), packSpent:Math.max(l.packSpent||0,s.packSpent||0),
     tourEarned:Math.max(l.tourEarned||0,s.tourEarned||0), tourSpent:Math.max(l.tourSpent||0,s.tourSpent||0),
     champEarned:Math.max(l.champEarned||0,s.champEarned||0), champSpent:Math.max(l.champSpent||0,s.champSpent||0),
+    packGrantV:Math.max(l.packGrantV||0,s.packGrantV||0),   // one-time targeted pack grant flag: max so a device can't re-grant
     welcomePack:!!(l.welcomePack||s.welcomePack)});
   // dupe shards: monotonic earned/spent per rarity, max-merged so a spent shard can never resurrect
   ['common','rare','epic','legendary'].forEach(r=>{ ['shardE_'+r,'shardS_'+r].forEach(k=>{ merged[k]=Math.max(l[k]||0,s[k]||0); }); });
