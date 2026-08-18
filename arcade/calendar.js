@@ -18,27 +18,29 @@
 
   // Game registry. The drawings live in gamemarks.js so the hub, the Vault and
   // this calendar cannot show three different logos for one game.
-  // the same product. `cls` matches the hub's .tile.<cls> accent rules.
+  // `cls` matches the hub's .tile.<cls> accent rules.
   var GAMES = [
-    { key:'table',      path:'table',      cls:'table',  name:'Number Game',    accent:'var(--gold)',
-      desc:'One player, one club: name the number they wore.' },
-    { key:'match',      path:'match',      cls:'match',  name:'Common Ground', accent:'var(--blue)',
-      desc:'Tap four names that belong together. Find all four groups before four mistakes.' },
-    { key:'career',     path:'career',     cls:'career', name:'Career Path',      accent:'var(--green)',
-      desc:'Three clubs or more, revealed one at a time. Type the name early for more points.' },
-    { key:'oddone',     path:'oddone',     cls:'oddone', name:'Odd One Out',      accent:'var(--violet)',
-      desc:'Four names share a connection, one doesn’t. Spot it, then name it.' },
-    { key:'rankit',     path:'rankit',     cls:'rankit', name:'Rank It',          accent:'var(--pink)',
-      desc:'Put five athletes in order by a career stat, most at the top.' },
-    { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)',
-      desc:'Name the college each player came from. Type it, or take four choices.' },
-    { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)',
-      desc:'One mystery athlete from any era. Crack it in eight guesses.' },
-    { key:'crossword',  path:'crossword',  cls:'cross',  name:'Daily Crossword',  accent:'var(--news,#64748B)',
-      desc:'A sports mini crossword. Beat the clock for a flawless solve.' },
-    { key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)',
-      desc:'One letter, eight categories, two minutes.' }
+    { key:'table',      path:'table',      cls:'table',  name:'Number Game',    accent:'var(--gold)' },
+    { key:'match',      path:'match',      cls:'match',  name:'Common Ground', accent:'var(--blue)' },
+    { key:'career',     path:'career',     cls:'career', name:'Career Path',      accent:'var(--green)' },
+    { key:'oddone',     path:'oddone',     cls:'oddone', name:'Odd One Out',      accent:'var(--violet)' },
+    { key:'rankit',     path:'rankit',     cls:'rankit', name:'Rank It',          accent:'var(--pink)' },
+    { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)' },
+    { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)' },
+    { key:'crossword',  path:'crossword',  cls:'cross',  name:'Daily Crossword',  accent:'var(--news,#64748B)' },
+    { key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)' }
   ];
+
+  /* Blurbs live in gamemarks.js so the hub, the Vault and this calendar cannot
+     describe one game three different ways. Read lazily: a page that loads
+     calendar.js before gamemarks.js still gets the right words. */
+  for (var gi = 0; gi < GAMES.length; gi++) {
+    (function (g) {
+      Object.defineProperty(g, 'desc', { enumerable: true, get: function () {
+        return (window.RTGGameMarks && RTGGameMarks.desc(g.key)) || '';
+      } });
+    })(GAMES[gi]);
+  }
 
   var byKey = {};
   for (var i = 0; i < GAMES.length; i++) byKey[GAMES[i].key] = GAMES[i];
