@@ -10796,7 +10796,15 @@ function drawShareCard(){
      three-letter code for the four franchises that share a city with another, because "Los
      Angeles" on its own is two different clubs. */
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
-  centered(run.franchise
+  /* THE MODE HAS TO NAME ITSELF HERE, because this card is read by people who have not
+     played and a defensive roster under "Classic Mode" is a card that explains nothing. The
+     Trade Machine was in the same position: it fell through to the classic line, which
+     describes six spins it never took. */
+  centered(run.defense
+    ? 'One Stop. Six spins, six defenders, one shot at 20-0.'
+    : run.tradeMachine
+    ? 'The Trade Machine. A roster you inherited and a season to fix it.'
+    : run.franchise
     ? 'One Franchise: '+E.cityLabel(run.franchise)+'. Six spins, six players, any year.'
     : run.era
     ? run.era+' era. Six spins, six players from one decade.'
@@ -10873,15 +10881,21 @@ function drawShareCard(){
 
   /* The six players. Position chip, name, then the year and city on the right, so
      the eye can run down either column on its own. */
-  const bySlot=new Array(E.SLOTS.length).fill(null);
+  /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a One Stop
+     card printed six defenders under QB RB WR WR TE FLEX, and a Trade Machine card printed
+     its two flexes as a second receiver. This is the one artefact that leaves the site, so
+     it was the one place the wrong word travelled furthest. */
+  const cardSlots=slotsNow();
+  const bySlot=new Array(cardSlots.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   /* Read out of the stylesheet rather than written down again. This line used to be
      a second copy of the palette, and the moment the CSS moved it was a share card
-     drawing last month's colors. */
+     drawing last month's colors. Since the palette gained DL, LB and DB the chips on a
+     defensive card take those without this needing to know the mode. */
   const COLS=posColors();
   let y=CARD.ROWS;
   const ROW=CARD.ROW;
-  E.SLOTS.forEach((slot,i)=>{
+  cardSlots.forEach((slot,i)=>{
     const p=bySlot[i]; if(!p) return;
     // chip
     /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row

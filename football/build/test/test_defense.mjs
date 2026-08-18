@@ -503,6 +503,16 @@ window.__DEF={
       pointer:cs.pointerEvents}; },
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
+  /* THE SHARE CARD. It is drawn to a canvas, so what it says cannot be read back without
+     an OCR pass; what CAN be read back is that it drew at all, at the right size, off the
+     right slot names. It is worth having because nothing renders this except a player
+     tapping share, so a throw in here reaches a person before it reaches a test. */
+  shareCard(){
+    const before=slotsNow().join(',');
+    const c=drawShareCard();
+    return {w:c.width,h:c.height,slots:before,
+      bytes:c.toDataURL('image/png').length};
+  },
   /* ---- WHAT ACTUALLY GOES OVER THE WIRE ----
      fetch is stubbed and the real calls are made, so this reads the URL the board asks
      for and the body the submit sends rather than the intent the page had. The two are
@@ -773,7 +783,17 @@ boot();`;
         const budget = 140 - sp - 3 * (5 - idx);
         const can = rows.filter((r) => r.cost <= budget);
         const from = can.length ? can : rows.slice().sort((a, b) => a.cost - b.cost).slice(0, 1);
-        from.sort((a, b) => b.fppg - a.fppg);
+        /* CHEAPEST AMONG EQUALS, and the second half of that is not tidiness.
+           The board prints one decimal, so ties on the figure are common, and with no
+           tie-break the winner was whichever tile the page happened to list first. That
+           made this harness depend on the ORDER of a list it does not own: when the ALL
+           tab changed from position order to price order the tie-break silently became
+           'take the most expensive man with these points', six picks in a row, and the
+           drafted team stopped reaching the postseason in eight attempts out of eight.
+           Nothing about the game had got worse. Same points for less money is what a
+           player would do anyway, so this is both the competent choice and a
+           deterministic one. */
+        from.sort((a, b) => b.fppg - a.fppg || a.cost - b.cost);
         from[0].t.click();
         return { cost: from[0].cost };
       }, [spent, i]);
@@ -864,6 +884,24 @@ boot();`;
     ok('and every game was resolved as a defense',
       st.defense === true && st.mode === 'defense' && st.label === 'One Stop'
       && st.defMods.every((m) => m > 0 && m < 5), st);
+
+    /* THE ONE ARTEFACT THAT LEAVES THE SITE. The card took its six row labels from E.SLOTS,
+       the offense's list, so a One Stop card printed six defenders under QB RB WR WR TE
+       FLEX: the wrong word, on the graphic that travels furthest from the game that could
+       explain it. It reads the run's own slots now, and this checks it draws from them. */
+    /* A run that made the playoffs stops at seeding, and the card reads run.outcome, which
+       is not set until the season is actually over. Walk it the rest of the way first. */
+    for (let i = 0; i < 25; i++) {
+      if (await p.evaluate(() => document.getElementById('s-over').classList.contains('on'))) break;
+      await p.evaluate(() => { const b2 = [...document.querySelectorAll('.screen.on button')]
+        .find((x) => !x.disabled && /start|play|next|continue|see|results|skip|finish/i.test(x.textContent));
+        if (b2) b2.click(); });
+      await p.waitForTimeout(800);
+    }
+    const card = await p.evaluate(() => window.__DEF.shareCard());
+    ok('the share card draws, at 1080x1350, off the defensive slots',
+      !!card && card.w === 1080 && card.h === 1350
+      && card.slots === 'DL,DL,LB,DB,DB,FLEX' && card.bytes > 20000, card);
     await ctx.close();
   } finally {
     await b.close();

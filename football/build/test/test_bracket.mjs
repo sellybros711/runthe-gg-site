@@ -176,7 +176,17 @@ const draft = async (p) => {
       /* Nothing affordable means the earlier picks were too expensive: take the cheapest
          man on the board and carry on, the way the game forces you to. */
       const from = can.length ? can : rows.slice().sort((a, b) => a.cost - b.cost).slice(0, 1);
-      from.sort((a, b) => b.fppg - a.fppg);
+      /* CHEAPEST AMONG EQUALS, and the second half of that is not tidiness.
+         The board prints one decimal, so ties on the figure are common, and with no
+         tie-break the winner was whichever tile the page happened to list first. That
+         made this harness depend on the ORDER of a list it does not own: when the ALL
+         tab changed from position order to price order the tie-break silently became
+         'take the most expensive man with these points', six picks in a row, and the
+         drafted team stopped reaching the postseason in eight attempts out of eight.
+         Nothing about the game had got worse. Same points for less money is what a
+         player would do anyway, so this is both the competent choice and a
+         deterministic one. */
+      from.sort((a, b) => b.fppg - a.fppg || a.cost - b.cost);
       from[0].t.click();
       return { cost: from[0].cost };
     }, [spent, taken, CAP, FLOOR, SPOTS]);
