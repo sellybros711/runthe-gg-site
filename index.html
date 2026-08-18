@@ -669,48 +669,122 @@ window.GA_ID='G-L29P5MRWKE';
     .gtiles{
       display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;
     }
+    /* A tile is a cabinet, not a card. Everything here is the vocabulary the
+       rest of the page already speaks: Anton names split two-tone the way the
+       game cards split them, the chip's 3px accent bar under them, the NEW
+       badge reused wholesale, and hard offset shadows with no blur, which is
+       the same trick the badges pull at 2px. Nothing rounds past 4px and
+       nothing fades: this site is pixels. */
     .gtile{
-      position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;
-      min-height:138px;padding:14px 13px 13px;margin:0;text-align:left;cursor:pointer;
-      border-radius:12px;border:1px solid var(--cardb);background:var(--card);
+      position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:11px;
+      padding:13px 12px 12px;margin:0;text-align:left;cursor:pointer;
+      border:2px solid var(--ac);border-radius:4px;background:var(--card);
+      box-shadow:4px 4px 0 var(--acd);
       -webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);
-      transition:transform .1s ease,border-color .12s ease;
-      background-image:radial-gradient(120% 100% at 100% 0%, var(--tint,transparent), transparent 62%);
+      transition:transform .08s ease,box-shadow .08s ease;
     }
-    .gtile:active{transform:scale(.985);}
-    .gt-crest{width:44px;height:44px;object-fit:contain;flex:0 0 auto;}
-    .gt-nm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
-      font-size:16px;line-height:1.12;color:var(--ink);}
-    .gt-mode{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-      color:var(--mut);margin-top:auto;}
-    .gt-new{position:absolute;top:10px;right:10px;font-size:9px;font-weight:900;letter-spacing:.08em;
-      text-transform:uppercase;color:#04150c;background:var(--green);border-radius:4px;padding:2px 5px;}
-    /* each tile wears its own game's colour, the same one its card and its
-       Play button use, so the tile and the sheet read as one thing */
-    .gtile.arcade  {--tint:rgba(242,113,28,.30); border-color:rgba(242,113,28,.42);}
-    .gtile.cfb     {--tint:rgba(16,185,129,.28); border-color:rgba(16,185,129,.34);}
-    .gtile.football{--tint:rgba(220,60,60,.28);  border-color:rgba(220,60,60,.34);}
-    .gtile.golf    {--tint:rgba(235,166,31,.28); border-color:rgba(235,166,31,.34);}
-    .gtile.soccer  {--tint:rgba(53,196,205,.28); border-color:rgba(53,196,205,.34);}
-    .gtile.arcade .gt-nm{color:#FFCFA6;} .gtile.cfb .gt-nm{color:#A7F3D0;}
-    .gtile.football .gt-nm{color:#FFC9C7;} .gtile.golf .gt-nm{color:#F3DCA0;}
-    .gtile.soccer .gt-nm{color:#A5EFE4;}
-    /* An odd number of games leaves a hole in a two-column grid, so the last one
-       takes the whole row and lays itself out sideways. :last-of-type counts
-       buttons only, and the nth-child(odd) test means a sixth game switches
-       this off by itself rather than needing anyone to remember. */
-    .gtile:not(.soonTile):last-of-type:nth-child(odd){
-      grid-column:1 / -1;min-height:0;flex-direction:row;align-items:center;gap:13px;
-      padding:13px;}
-    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-crest{width:40px;height:40px;}
-    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-nm{flex:1;}
-    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-mode{margin:0;}
+    /* pressed = the cabinet button actually going in */
+    .gtile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acd);}
 
-    /* "coming soon" is not a game, so it does not pretend to be tappable */
-    .gtile.soonTile{grid-column:1 / -1;min-height:0;cursor:default;align-items:flex-start;
-      background-image:none;border-style:dashed;padding:13px;}
+    /* the crest sits behind glass, scanlines and all */
+    .gt-txt,.gt-scr{position:relative;z-index:1;}
+    .gt-scr{display:grid;place-items:center;flex:0 0 auto;
+      width:54px;height:54px;border-radius:3px;overflow:hidden;
+      background:#0a1626;border:2px solid var(--acq);}
+    .gt-scr:after{content:"";position:absolute;inset:0;pointer-events:none;
+      background:repeating-linear-gradient(180deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px);}
+    .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;}
+
+    .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
+    .gt-nm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;
+      font-size:17px;line-height:1.04;color:var(--ink);text-transform:uppercase;}
+    .gt-nm b{font-weight:400;color:var(--ac);}
+    /* the college edition needs its qualifier, but not at the size of a name */
+    .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
+      color:var(--mut);margin-top:3px;}
+    /* A tagline, not a spec sheet. It keeps the chip's accent bar, because that
+       is how this page marks a supporting line, but it is a sentence, so it
+       drops the uppercase and the letterspacing that go with a label. */
+    .gt-tag{font-size:11px;font-weight:700;line-height:1.35;color:var(--mut);
+      border-left:3px solid var(--acq);padding:1px 0 1px 8px;margin-top:auto;}
+    /* the badge belongs to the tile, so it sits inside it and not in the gutter */
+    .gt-new{position:absolute;top:9px;right:9px;z-index:2;font-size:9px;letter-spacing:.08em;
+      text-transform:uppercase;font-weight:900;}
+    /* the marquee reads left to right, so its badge ends the line instead */
+    .gtile.hero .gt-new{position:static;margin-left:auto;align-self:center;}
+
+    /* Colour alone made five identical tiles in five hues. Each one now carries
+       a scrap of its own game drawn in CSS behind the words: a marquee of
+       bulbs, two different fields, mown fairway stripes, a centre circle. No
+       images, nothing to load, and it sits under the text at low contrast so
+       the name still reads first. */
+    .gtile:before{content:"";position:absolute;inset:0;border-radius:2px;pointer-events:none;}
+
+    /* the arcade: a marquee of bulbs over the pixel grid of a cabinet screen */
+    .gtile.arcade:before{
+      background:
+        radial-gradient(circle at 9px 8px, rgba(242,113,28,.5) 1.7px, transparent 2.2px) 0 0/18px 100% repeat-x,
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 9px),
+        repeating-linear-gradient(0deg,  rgba(255,255,255,.03) 0 1px, transparent 1px 9px);}
+
+    /* college football: mown bands across a field, chalked every five yards */
+    .gtile.cfb:before{
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.075) 0 1.5px, transparent 1.5px 24px),
+        repeating-linear-gradient(90deg, rgba(16,185,129,.09) 0 12px, transparent 12px 24px);}
+
+    /* the NFL season: the same field, but you can see an end zone from here */
+    .gtile.football:before{
+      background:
+        linear-gradient(90deg, transparent 0 76%, rgba(220,60,60,.17) 76%),
+        linear-gradient(90deg, transparent 0 76%, rgba(255,255,255,.09) 76% 77.4%, transparent 77.4%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1.5px, transparent 1.5px 21px);}
+
+    /* the golf tour: a fairway cut on the diagonal, light falling off the green */
+    .gtile.golf:before{
+      background:
+        repeating-linear-gradient(115deg, rgba(255,255,255,.045) 0 11px, transparent 11px 22px),
+        radial-gradient(70% 90% at 92% 112%, rgba(235,166,31,.16), transparent 68%);}
+
+    /* the pitch: a halfway line and the arc of the centre circle */
+    .gtile.soccer:before{
+      background:
+        radial-gradient(circle at 50% 100%, transparent 33px, rgba(53,196,205,.22) 33px 34.5px, transparent 34.6px),
+        linear-gradient(90deg, transparent calc(50% - .75px), rgba(53,196,205,.16) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px));}
+
+    /* One colour per game, the same one its card, its Play button and its sheet
+       use: --ac paints it, --acd is the shadow it casts, --acq the quiet edges. */
+    .gtile.arcade  {--ac:#F2711C;--acd:#7A2E04;--acq:rgba(242,113,28,.45);}
+    .gtile.cfb     {--ac:#10B981;--acd:#065F46;--acq:rgba(16,185,129,.42);}
+    .gtile.football{--ac:#DC3C3C;--acd:#6E1B1B;--acq:rgba(220,60,60,.42);}
+    .gtile.golf    {--ac:#EBA61F;--acd:#7A5406;--acq:rgba(235,166,31,.42);}
+    .gtile.soccer  {--ac:#35C4CD;--acd:#0B5A61;--acq:rgba(53,196,205,.42);}
+
+    /* The Arcade is the flagship and the newest thing here, so it gets the top
+       row to itself and reads sideways, like a cabinet marquee. It also does
+       the arithmetic: five games minus the marquee is four, which is exactly
+       two clean rows. */
+    .gtile.hero{grid-column:1 / -1;flex-direction:row;align-items:center;gap:14px;padding:14px 13px;}
+    .gtile.hero .gt-scr{width:62px;height:62px;}
+    .gtile.hero .gt-crest{width:46px;height:46px;}
+    .gtile.hero .gt-nm{font-size:25px;}
+    .gtile.hero .gt-tag{margin:0;font-size:12.5px;}
+    .gtile.hero .gt-txt{flex:1;}
+
+    /* Add a sixth game and the bottom row is left one short, so the last tile
+       takes the whole row instead. Counting is on child position, not on
+       anyone remembering to add a class. */
+    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even){
+      grid-column:1 / -1;flex-direction:row;align-items:center;gap:13px;}
+    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even) .gt-txt{flex:1;}
+    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even) .gt-tag{margin:0;}
+
+    /* "coming soon" is not a game, so it does not pretend to be one: no colour,
+       no shadow to press, and a dashed edge like the card it replaces. */
+    .gtile.soonTile{grid-column:1 / -1;cursor:default;gap:5px;padding:12px 13px;
+      border:2px dashed rgba(255,255,255,.18);box-shadow:none;background:none;}
     .gtile.soonTile .gt-nm{font-size:14px;color:var(--mut);}
-    .gtile.soonTile .gt-mode{margin-top:4px;}
+    .gtile.soonTile .gt-tag{margin-top:0;border-left-color:rgba(255,255,255,.18);}
 
     /* ---- the sheet ---- */
     body.gopen{overflow:hidden;}
@@ -724,11 +798,14 @@ window.GA_ID='G-L29P5MRWKE';
     /* the whole-card link is for the desktop stack. In a sheet it would swallow
        every tap that is not the close button. */
     .games > .feat.open .feat-link{display:none;}
+    /* square, hard shadow, presses in: the same button the tiles are */
     .games > .feat.open .gx{
       display:flex;align-items:center;justify-content:center;position:sticky;top:0;margin-left:auto;
-      width:38px;height:38px;border-radius:50%;border:1px solid var(--cardb);background:var(--card);
-      color:var(--ink);font-size:15px;line-height:1;cursor:pointer;z-index:2;
+      width:38px;height:38px;border-radius:4px;border:2px solid var(--cardb);background:var(--card);
+      box-shadow:3px 3px 0 rgba(0,0,0,.45);
+      color:var(--ink);font-size:14px;line-height:1;cursor:pointer;z-index:2;
       -webkit-appearance:none;appearance:none;}
+    .games > .feat.open .gx:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.45);}
     .games > .feat.open .play{min-width:100%;justify-content:center;padding:14px 20px;font-size:15px;}
     .games > .feat.open .g-foot{padding-top:18px;}
     /* Reading order for a sheet: what it is, what it does, what you get, what it
@@ -792,36 +869,46 @@ window.GA_ID='G-L29P5MRWKE';
            there is one description per game and it lives in one place. Desktop
            never sees the tiles: it has the room for the cards themselves. -->
       <div class="gtiles">
-        <button class="gtile arcade" type="button" data-open-game="arcade">
-          <img class="gt-crest" src="/arcade/assets/arcade-icon.png?v=2" alt="" width="76" height="76" loading="lazy" />
-          <span class="gt-nm">Run The Arcade</span>
-          <span class="gt-mode">Solo &middot; Daily</span>
-          <span class="gt-new">New</span>
+        <button class="gtile hero arcade" type="button" data-open-game="arcade">
+          <span class="gt-scr"><img class="gt-crest" src="/arcade/assets/arcade-icon.png?v=2" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-txt">
+            <span class="gt-nm">Run The <b>Arcade</b></span>
+            <span class="gt-tag">Ten quick sports puzzles, new every day.</span>
+          </span>
+          <span class="badge-new gt-new">New</span>
         </button>
         <button class="gtile cfb" type="button" data-open-game="cfb">
-          <img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" />
-          <span class="gt-nm">Perfect Season: College Football</span>
-          <span class="gt-mode">Solo</span>
-          <span class="gt-new">New</span>
+          <span class="gt-scr"><img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-txt">
+            <span class="gt-nm">Perfect <b>Season</b><i>College Football</i></span>
+            <span class="gt-tag">Sign six stars, chase the national title.</span>
+          </span>
+          <span class="badge-new gt-new">New</span>
         </button>
         <button class="gtile football" type="button" data-open-game="football">
-          <img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" />
-          <span class="gt-nm">The Perfect Season</span>
-          <span class="gt-mode">Solo &middot; One franchise</span>
+          <span class="gt-scr"><img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-txt">
+            <span class="gt-nm">The Perfect <b>Season</b></span>
+            <span class="gt-tag">Sign six legends, play a full NFL season.</span>
+          </span>
         </button>
         <button class="gtile golf" type="button" data-open-game="golf">
-          <img class="gt-crest" src="/golf/icon-192.png" alt="" width="76" height="76" loading="lazy" />
-          <span class="gt-nm">Run The Tour</span>
-          <span class="gt-mode">Solo &middot; Head-to-Head</span>
+          <span class="gt-scr"><img class="gt-crest" src="/golf/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-txt">
+            <span class="gt-nm">Run The <b>Tour</b></span>
+            <span class="gt-tag">A new 18-hole course every single day.</span>
+          </span>
         </button>
         <button class="gtile soccer" type="button" data-open-game="soccer">
-          <img class="gt-crest" src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="76" height="76" loading="lazy" />
-          <span class="gt-nm">Run The Pitch</span>
-          <span class="gt-mode">Solo &middot; Head-to-Head</span>
+          <span class="gt-scr"><img class="gt-crest" src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-txt">
+            <span class="gt-nm">Run The <b>Pitch</b></span>
+            <span class="gt-tag">Draft a squad, simulate a World Cup run.</span>
+          </span>
         </button>
         <div class="gtile soonTile">
           <span class="gt-nm">More games coming soon</span>
-          <span class="gt-mode">One account plays them all</span>
+          <span class="gt-tag">One account plays them all.</span>
         </div>
       </div>
 
