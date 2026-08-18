@@ -994,6 +994,45 @@ check(/again\.setSelectionRange\(at, at\)/.test(gameBare), 'its search keeps its
 for (const f of ['venue', 'len', 'jam'])
   check(new RegExp(`${f}:`).test(gameBare), `a sighting records its ${f}`);
 
+/* LOGGING SHOWS AND THE STATS BUILT FROM THEM IS A SIGNED-IN FEATURE. The point
+   of an account here is that your attendance record outlives the browser it was
+   made in, so the three personal screens ask for a name first and the mark
+   buttons send you to sign in rather than writing a mark nothing would keep. The
+   tour schedule and the song catalogue stay open, because neither is yours. */
+console.log('attendance needs an account');
+check(/function authWall\(/.test(gameBare), 'there is a sign-in wall to show');
+for (const [heading, screen] of [
+  ['Your shows', 'the profile'],
+  ['Track your shows', 'the show browser'],
+  ['Your nights', 'the nights list'],
+]) check(new RegExp(`if \\(!ME\\.signedIn\\) return authWall\\('${heading}'`).test(gameBare),
+      `${screen} is behind the wall when signed out`);
+/* Exactly those three, so accidentally walling the open catalogue (a fourth
+   authWall) or unwalling a personal screen (a second) both fail here. */
+check((gameBare.match(/return authWall\(/g) || []).length === 3,
+      'only the three personal screens are walled, not the catalogue');
+/* The show-card button writes a mark, so signed out it must reach sign-in
+   BEFORE toggleThere, never after. Order is the whole point, so this checks the
+   guard comes first rather than merely existing. */
+{
+  const h = gameBare.slice(gameBare.indexOf("closest('#wereThereBtn')"));
+  const gate = h.indexOf('!ME.signedIn');
+  const write = h.indexOf('toggleThere');
+  check(gate > -1 && write > -1 && gate < write,
+    'marking a show asks you to sign in before it writes anything');
+}
+/* THE CATALOGUE STAYS OPEN. It is the band's song list, not yours, so signed
+   out it keeps the songs and the play counts and only drops the "you were
+   there" overlay, offering a nudge in its place. */
+check(/const ids = ME\.signedIn \? attendedSet\(bandId\) : new Set\(\)/.test(gameBare),
+      'signed out, the catalogue shows no attendance overlay');
+check(/id="songsIn"/.test(gameBare), 'and nudges you to sign in instead of walling');
+/* A wall has to become the real screen the instant an account arrives and go
+   back the instant it leaves, so the auth-change handler repaints these. */
+check(/function authScreen\(\)/.test(gameBare)
+   && /\['home', 'profile', 'browse', 'nights', 'songs'\]\.includes\(S\.screen\)/.test(gameBare),
+      'signing in or out repaints the screens that turn on it');
+
 /* EVERY NUMBER ON THE PROFILE IS AUDITABLE. A tile saying "65 segues" is a
    claim, and until you can see the 65 it is one you have to take on trust. */
 console.log('what is behind a number');
