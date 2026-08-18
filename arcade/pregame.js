@@ -58,6 +58,10 @@
   function remaining(){ return T && T.remaining ? T.remaining(GAME) : Infinity; }
   function signedIn(){ return !!(T && T.signedIn && T.signedIn()); }
   function unlocked(){ return T && T.unlocked ? T.unlocked(GAME) : true; }
+  // Inviting needs a signed-in account (that is where the code comes from) and
+  // the referral module present. Cardholders are unlimited, so they never see
+  // the out-of-plays screen this sits on.
+  function canInvite(){ return signedIn() && !!(window.RTGReferral && RTGReferral.share); }
   // The four free games, minus this one, as a readable list for the "come back
   // tomorrow" screen: the whole point of a per-game cap is that there is always
   // something else to go and play right now.
@@ -127,6 +131,15 @@
       '.rtgpg-ghost{appearance:none;border:0;background:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:12.5px;color:var(--mut,#A9B8CB);margin-top:12px;padding:6px;text-decoration:underline;}',
       '.rtgpg-ghost:hover{color:var(--ink,#F4F7FB);}',
       '.rtgpg-lock{display:inline-flex;align-items:center;gap:6px;}',
+      // Invite affordance: a full-width secondary action, green (a bonus, not a
+      // purchase), sitting above the Arcade Card upsell when a free player is
+      // out of plays. This is the moment the referral pays off, so it leads.
+      '.rtgpg-invite{appearance:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:14px;'+
+        'width:100%;min-height:50px;border-radius:13px;padding:13px 16px;margin:0 0 10px;'+
+        'color:var(--greenT,#48D17A);background:color-mix(in srgb, var(--green,#48D17A) 14%, transparent);'+
+        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 45%, transparent);display:flex;align-items:center;justify-content:center;gap:8px;}',
+      '.rtgpg-invite:hover{background:color-mix(in srgb, var(--green,#48D17A) 22%, transparent);}',
+      '.rtgpg-invite b{color:var(--ink,#F4F7FB);font-weight:900;}',
       // A purchase button is the Arcade Card's gold, not the game's accent.
       // Two of the ten accents are near-white, which put white-on-white text on
       // the single most important button on this screen.
@@ -297,10 +310,14 @@
       '<div class="rtgpg-note">That’s today’s go at '+esc(name)+'. A fresh one lands at midnight.</div>'+
       '<div class="rtgpg-note2">Still free today:</div>'+
       freeLinks()+
+      (canInvite()
+        ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button"><span aria-hidden="true">🎟️</span> Invite a friend, <b>you both get another go today</b></button>'
+        : '')+
       '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Play it again with the Arcade Card</button>'+
       '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
     $('rtgpgGo').onclick=function(){ openCard('out'); };
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+    if($('rtgpgInvite')) $('rtgpgInvite').onclick=function(){ if(window.RTGReferral) RTGReferral.share(); };
   }
 
   // Games whose all-time record is a TIME (lower = better); everything else is a

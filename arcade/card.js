@@ -274,11 +274,11 @@
         var err = d && d.error, msg;
         if(err==='no_customer') msg='This membership is complimentary. There’s nothing to bill or manage.';
         else if(err==='signin') msg='Please sign in to manage your membership.';
-        else if(err==='unauthorized'){ msg='Your session expired — please sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
+        else if(err==='unauthorized'){ msg='Your session expired. Please sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
         else if(err==='stripe_not_configured') msg='Billing isn’t fully connected yet. Please contact support.';
         else if(err==='stripe_error') msg='Stripe couldn’t open the portal'+((d&&d.detail)?(': '+d.detail):'.');
         else if(err==='network') msg='Could not reach the billing service. Check your connection and try again.';
-        else msg='Could not open the billing portal'+((d&&d.status)?(' (HTTP '+d.status+')'):'')+((d&&d.detail)?(' — '+d.detail):'.');
+        else msg='Could not open the billing portal'+((d&&d.status)?(' (HTTP '+d.status+')'):'')+((d&&d.detail)?(': '+d.detail):'.');
         showErr(msg);
       });
     };
@@ -489,8 +489,11 @@
     RTG_BOARD.tokenStatus().then(function(s){
       if(!s || !s.signed_in) return;
       if(s.unlimited){ try{ localStorage.setItem('runthegrid_pro','1'); }catch(e){} }
-      else if(s.plays && window.RTGTokens && RTGTokens.setServerPlays){
-        RTGTokens.setServerPlays(s.plays);
+      else if(window.RTGTokens){
+        if(s.plays && RTGTokens.setServerPlays) RTGTokens.setServerPlays(s.plays);
+        // today's referral bonus travels on the same status read, so the wallet
+        // learns about a reward the moment any page reconciles.
+        if(RTGTokens.setServerBonus) RTGTokens.setServerBonus(s.bonus||0);
         try{ document.dispatchEvent(new Event('rtg:tokens')); }catch(e){}
       }
     }).catch(function(){});
