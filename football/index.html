@@ -155,6 +155,19 @@ window.GA_ID='G-L29P5MRWKE';
        is duller to look at, and the worst label on the set is 4.6:1, exactly what
        it was before. */
     --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500; --flex:#ba22f1;
+    /* THE THREE DEFENSIVE COLORS. Not aliases of the five above, though three of them
+       currently hold the same hex: One Stop never shows a receiver and a draft never shows
+       a linebacker, so the two sets are free to move apart later without either dragging
+       the other with it.
+
+       The values are the three of the five that sit furthest apart, which is why they were
+       taken rather than picked fresh. The worst pair in the whole measured set is QB against
+       TE at deltaE 36.7, so a trio drawn from it cannot do worse than that, and every one of
+       them already carries a white label at 7:1 or better on the rendered gradient.
+
+       Without this block every defender painted --flex, the fallback in posPaint, so a
+       lineman, a linebacker and a corner were one magenta and the field said nothing. */
+    --dl:#ff0a3b; --lb:#eb9500; --db:#0f93ff;
     /* THE LABEL ON A CHIP STAYS WHITE, and that is a measured result rather than an
        assumption. Brightening these looked like it must break white text: against
        the PURE colors, white manages only 1.7:1 on the new green and 2.1:1 on the
@@ -2158,6 +2171,9 @@ window.GA_ID='G-L29P5MRWKE';
      field that broke: 47px of label under a back at 64% does not fit in 0.46 of 330px.
      Same aspect as the draft field now, which is the one the formation was solved for. */
   .field.short{aspect-ratio:1/0.54}
+  /* The reveal's own aspect. It was an inline attribute, which no selector can beat, and a
+     field that cannot be restyled by a class is a field the next mode cannot reach. */
+  #field-rv{aspect-ratio:1/0.62}
   /* THE CLUB WASH IS GONE, along with the favorite team it tinted the field with. It
      screened E.washColors() of your club over every field; with no club there is nothing for
      it to be a wash of, and --tc1 would never be set, so it painted nothing. The end-zone
@@ -2268,6 +2284,30 @@ window.GA_ID='G-L29P5MRWKE';
      purpose: it is paint on grass, so it sits under the players and under the markings instead
      of competing with either. */
   .field .ezmark img{width:100%;max-width:260px;height:auto;opacity:.11}
+  /* THE LINE OF SCRIMMAGE. Dashed, so it cannot be mistaken for the yard lines it crosses,
+     and faded at both sidelines by the same mask the numbered lines fade with. It sits under
+     the chips on purpose: see the note in fieldMarkings. */
+  .field .los{position:absolute;left:0;right:0;height:2px;margin-top:-1px;
+    background:repeating-linear-gradient(90deg,
+      rgba(255,255,255,.52) 0 10px,transparent 10px 19px);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+  /* THE NAME OF THE FRONT, in the corner of the end zone, where a broadcast puts its own
+     furniture. Empty for a draft, and empty for a defense until the flex is signed, so the
+     rule below takes the box out of the picture rather than leaving a hairline floating in
+     the paint. */
+  .field .front{position:absolute;left:9px;top:7px;z-index:3;pointer-events:none;
+    font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.11em;
+    text-transform:uppercase;color:rgba(255,255,255,.74);
+    background:rgba(6,11,20,.6);border:1px solid rgba(255,255,255,.15);
+    border-radius:5px;padding:2px 6px;line-height:1.15}
+  .field .front:empty{display:none}
+  /* ONE STOP GETS A TALLER FIELD, and it is not decoration. A draft stands on two tiers, the
+     line of scrimmage and the backfield; a defense stands on three, and the third one has to
+     fit its own 45px of name and team underneath it. In a 0.54 box the secondary's labels
+     land on the linebackers' discs at every phone width. 0.72 is the shallowest aspect that
+     clears it at 260 wide, which is the narrowest field the game can draw. */
+  body.def-mode .field:not(.hero-field){aspect-ratio:1/0.72}
   .field .vig{position:absolute;inset:0;pointer-events:none;
     box-shadow:inset 0 0 66px 20px rgba(3,6,12,.8)}
   /* A count of connections on the chip itself, in the strongest one's color. */
@@ -4369,7 +4409,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <h2 class="display" style="font-size:26px;margin:4px 0 4px" id="rv-title">Your inherited roster</h2>
     <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Meet the six players you've been handed.
       <button type="button" class="rv-rules" id="b-rv-rules" aria-label="How the Trade Machine works" title="How the Trade Machine works">i</button></p>
-    <div class="field" id="field-rv" style="aspect-ratio:1/0.62"></div>
+    <div class="field" id="field-rv"></div>
     <div class="rv-roster" id="rv-roster"></div>
     <button class="btn-text rv-skip" id="rv-skip" style="display:none">Reveal the whole roster</button>
     <div class="rv-payoff" id="rv-payoff" style="display:none">
@@ -5012,6 +5052,7 @@ function dressTeam(){
   const f=(run&&run.franchise)||null;
   b.classList.toggle('oneteam',!!f);
   b.classList.toggle('trade-mode',!!(run&&run.tradeMachine));
+  b.classList.toggle('def-mode',isDefRun());
   b.classList.toggle('cap-mode',!!(run&&run.capSurvivor));
   if(!f){ TEAM_VARS.forEach(k=>b.style.removeProperty(k)); return; }
   const tc=E.teamColors(f), w=E.washColors(f);
@@ -5105,7 +5146,8 @@ window.addEventListener('error',(ev)=>{
   el.textContent='Something broke: '+msg+'. Tap to dismiss, or reload to start again.';
   el.onclick=()=>{el.style.display='none';};
 });
-const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
+const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex',
+  DL:'--dl',LB:'--lb',DB:'--db'};
 /* One place that paints a position color. Six call sites used to write this exact
    gradient string out by hand, in four slightly different forms, which is how a
    palette change turns into a hunt. */
@@ -5299,9 +5341,87 @@ const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:68,y:24}
    the other flex wide right. Every chip still carries the player's real position on its face. */
 const SPOT_TRADE=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:70,y:24},{x:88,y:24},{x:72,y:64}];
 
+/* ---------- THE DEFENSIVE FORMATION ----------
+ * ONE STOP LINES UP FACING THE OTHER WAY, so it cannot borrow the table above. That one is
+ * keyed by QB, RB, WR and TE and would leave all six defenders on the fallback spots, which
+ * is a spread offense with the wrong letters printed on it.
+ *
+ * A defense is read in three tiers, and the picture has to say which tier a man is in before
+ * it says anything else:
+ *
+ *   the line   the men with a hand on the ground, level with the ball
+ *   the box    the linebackers, a few yards back
+ *   the deep   the secondary, between everybody and the end zone
+ *
+ * The end zone is at the top of the picture, the same as it is in a draft, and it means the
+ * same thing: it is the one being attacked. So the defense faces DOWN the screen, the ball is
+ * at the bottom, and depth on the field is height on the phone. The secondary is nearest the
+ * paint because that is the ground it is protecting.
+ *
+ * WHY THE SPOTS ARE HARD CODED PER SHAPE rather than placed by a table of counts.
+ * Six defensive spots (DL DL LB DB DB FLEX) can hold exactly four shapes: the one with the
+ * flex still open, and the three the flex closes into. Four is small enough to draw each one
+ * by hand, and drawing them by hand is what lets each be a formation somebody would recognise
+ * instead of an even spread. It is also the only way to satisfy the spacing rule below, which
+ * a generic table cannot: three chips on one row leave no gap wide enough for a fourth on the
+ * row beneath unless they are placed knowing it is coming.
+ *
+ * THE SPACING RULE, same as the offense's and measured the same way. A label starts 20px under
+ * its own spot and runs 45px, and a disc is 17px across the radius, so two chips on ADJACENT
+ * tiers need about 18% of the field's width between them or the lower disc lands on the upper
+ * one's name. Chips on the SAME tier cannot collide vertically at all. Every pair below clears
+ * 18, and the field is given a taller aspect in this mode (see body.def-mode) because three
+ * tiers plus their labels do not fit in the two-tier box a draft uses.
+ */
+const DEF_ROWS={DL:64,LB:44,DB:24,FLEX:24};
+const DEF_FRONTS={
+  /* Keyed DL-LB-DB. The flex is still open here, so it stands where a slot corner would and
+     the front has no name yet: naming a shape that is one signing from changing would print
+     the wrong word for most of the draft. */
+  '2-1-2':{name:'',      DL:[30,70],    LB:[50], DB:[12,88],    FLEX:[32]},
+  /* A flex lineman. Three down and the ends slide out over the tackles, so the backer shades
+     into the gap he is left covering rather than standing behind a man. */
+  '3-1-2':{name:'Heavy front', DL:[14,50,86], LB:[32], DB:[12,88]},
+  /* A flex linebacker. Two wide ends and two backers filling the middle behind them. */
+  '2-2-2':{name:'Base',        DL:[18,82],    LB:[36,64], DB:[12,88]},
+  /* A flex defensive back, which is what nickel means: the extra man walks down over the
+     slot and the front does not move. */
+  '2-1-3':{name:'Nickel',      DL:[30,70],    LB:[50], DB:[12,88,32]},
+};
+/* By slot index, for the same reason the offense keeps one: a shape nothing matches still has
+   to put six chips somewhere, and somewhere sensible beats stacking them at the origin. */
+const SPOT_FALLBACK_DEF=[{x:30,y:64},{x:70,y:64},{x:50,y:44},{x:12,y:24},{x:88,y:24},{x:32,y:24}];
+
+/** Which of the four shapes is on the field, and what is standing in each spot. */
+function defShape(){
+  const slots=slotsNow();
+  const bySlot=new Array(slots.length).fill(null);
+  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  /* An unsigned spot counts as its own slot, so the formation holds its shape through the
+     draft instead of collapsing toward whoever has been signed so far. */
+  const eff=slots.map((slot,i)=>bySlot[i]?bySlot[i].position:slot);
+  const c=(pos)=>eff.filter(e=>e===pos).length;
+  const key=c('DL')+'-'+c('LB')+'-'+c('DB');
+  return {eff,key,front:DEF_FRONTS[key]||DEF_FRONTS['2-1-2']};
+}
+
+function layoutDefense(){
+  const {eff,front}=defShape();
+  const out=new Array(eff.length).fill(null);
+  ['DL','LB','DB','FLEX'].forEach((pos)=>{
+    const xs=front[pos]; if(!xs||!xs.length) return;
+    let k=0;
+    eff.forEach((e,i)=>{ if(e!==pos) return;
+      out[i]={x:xs[Math.min(k,xs.length-1)],y:DEF_ROWS[pos]}; k++; });
+  });
+  out.forEach((v,i)=>{ if(!v) out[i]={...SPOT_FALLBACK_DEF[i]}; });
+  return out;
+}
+
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
   if(run&&run.tradeMachine) return SPOT_TRADE.map((c)=>({...c}));
+  if(isDefRun()) return layoutDefense();
   const n=E.SLOTS.length;
   const bySlot=new Array(n).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
@@ -5477,7 +5597,7 @@ const FIELD_YARDS=23, FIELD_EZ_YARDS=4;
    the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
    direction of play, and the old field had them parallel to it, which is the pitch turned 90
    degrees from the formation standing on it. */
-function fieldMarkings(){
+function fieldMarkings(def){
   const out=['<div class="turf"></div><div class="lit"></div>'];
   const pct=(yd)=>100*yd/FIELD_YARDS;
   const goal=pct(FIELD_EZ_YARDS);
@@ -5522,19 +5642,35 @@ function fieldMarkings(){
                '<div class="tick edge" style="top:'+top+'%;right:0"></div>');
     }
   }
+  /* THE LINE OF SCRIMMAGE, on a defensive field only.
+     It is drawn AT the line's own depth and under the chips, so the linemen stand on it the
+     way they stand on it in life. Under, not below: the 45px of name and team hanging off a
+     chip means anything drawn clear of the front's labels ends up most of a tier beneath the
+     men it is supposed to be in front of, and the discs are opaque with their own shadow, so
+     a chalk line behind one reads as a chalk line behind one.
+
+     Dashed, and brighter than a yard line, because a solid line at this weight is what every
+     five yards already looks like and the picture would gain nothing by drawing a sixth. */
+  if(def) out.push('<div class="los" style="top:'+DEF_ROWS.DL+'%"></div>');
   out.push('<div class="vig"></div>');
   return out.join('');
 }
 
 function fieldState(el){
-  if(el._ps) return el._ps;
-  el.innerHTML=fieldMarkings()+
-    E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
+  const def=isDefRun();
+  /* A FIELD IS REBUILT WHEN THE SIDE OF THE BALL CHANGES, not just when it is first seen.
+     One page can play a draft and then a One Stop run without reloading, and the markings are
+     baked into this markup: kept, the defensive field would come back with no line of
+     scrimmage and the offensive one would come back with somebody else's. */
+  if(el._ps&&el._ps.def===def) return el._ps;
+  el.innerHTML=fieldMarkings(def)+'<div class="front"></div>'+
+    slotsNow().map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={
+    def:def,
     chips:[...el.querySelectorAll('.chip')],
-    coords:SPOT_FALLBACK.map(c=>({...c})),
+    coords:(def?SPOT_FALLBACK_DEF:SPOT_FALLBACK).map(c=>({...c})),
     raf:0,
     // A field's first paint has nothing to move FROM, so it snaps into place.
     // Sliding in from a default formation would just be motion with no meaning.
@@ -5565,7 +5701,7 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.querySelector('.dl').textContent=p?p.position:E.SLOTS[i];
+    disc.querySelector('.dl').textContent=p?p.position:slotsNow()[i];
     disc.style.cssText=p?posPaint(p.position):'';
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     /* Team code before the year, so a chip says which team-season the player came out of
@@ -5585,6 +5721,13 @@ function drawField(el,live){
       pip.style.display='grid';
     }else{ pip.style.display='none'; }
   });
+
+  /* WHAT THE FRONT IS CALLED, once there is a front to call anything.
+     It appears the moment the flex is filled, which is the signing that decides the shape,
+     and not before: the other three spots can only hold what they already hold, so until
+     then the answer is "one of three" and printing one of them would be a guess. */
+  const tag=el.querySelector('.front');
+  if(tag) tag.textContent=isDefRun()?(defShape().front.name||''):'';
 
   const paint=(coords)=>{
     st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
@@ -5630,7 +5773,7 @@ const RAIL={
 function railState(el){
   if(el._rs) return el._rs;
   el.innerHTML='<svg class="rarcs" preserveAspectRatio="none"></svg>'+
-    '<div class="rnodes">'+E.SLOTS.map((slot,i)=>
+    '<div class="rnodes">'+slotsNow().map((slot,i)=>
       '<button class="rnode" data-i="'+i+'"><span class="rdot">'+slot+'</span>'+
       '<span class="rnm"></span></button>').join('')+'</div>';
   el._rs={ svg:el.querySelector('.rarcs'), nodes:[...el.querySelectorAll('.rnode')],
@@ -5654,7 +5797,7 @@ function drawRail(el,bySlot,links,at){
     const p=bySlot[i];
     node.className='rnode'+(p?' on':'')+(st.focus===i?' focus':'');
     const dot=node.querySelector('.rdot');
-    dot.textContent=p?p.position:E.SLOTS[i];
+    dot.textContent=p?p.position:slotsNow()[i];
     dot.style.cssText=p?posPaint(p.position):'';
     node.querySelector('.rnm').textContent=p?lastName(p.name):'';
   });
@@ -7454,11 +7597,21 @@ function paintSquad(){
   }else{
     $('q-verdict').innerHTML=
       '<p class="take">'+esc(cr.verdict)+'</p>'+
-      '<p class="fit">'+(fitPct===0
-        ? 'These six neither help nor hold each other back, so they score about what their '+
-          'own numbers add up to.'
-        : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
-          (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
+      /* A DEFENSE DOES NOT SCORE. The multiplier means the same thing on both sides, how
+         much more or less the six are worth than their own numbers, but "they score 12%
+         less" reads on a defense as though the roster were losing you points on offense,
+         which is the one thing a One Stop roster has nothing to do with. */
+      '<p class="fit">'+(isDefRun()
+        ? (fitPct===0
+          ? 'These six neither help nor hold each other back, so this defense is worth '+
+            'about what their own numbers add up to.'
+          : 'Because of how these six fit together, this defense is '+strong+fitPct+'% '+
+            (st.multiplier>1?'stronger':'weaker')+'</b> than their own numbers add up to.')
+        : (fitPct===0
+          ? 'These six neither help nor hold each other back, so they score about what their '+
+            'own numbers add up to.'
+          : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
+            (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.'))+'</p>';
   }
   /* A DEFENSE GETS ITS OWN THREE BARS, because the offensive ones ask questions a defense
      has no answer to: it has no quarterback, no run-pass split and no ball to concentrate
@@ -13953,7 +14106,7 @@ function watchFold(){
    sticky bar carries the lineup once the field is gone. */
 function drawPips(bySlot){
   const el=$('d-pips'); if(!el) return;
-  el.innerHTML=E.SLOTS.map((slot,i)=>{
+  el.innerHTML=slotsNow().map((slot,i)=>{
     const p=bySlot[i];
     if(!p) return '<i>'+esc(slot)+'</i>';
     /* Filled: the last name, and the salary under it, so the strip is a running tally

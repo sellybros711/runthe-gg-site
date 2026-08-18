@@ -23,7 +23,7 @@ anywhere, and `BROWSER=1` adds a played season on top.
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
-| `test_defense.mjs` | That One Stop, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, and every scheme can be drafted for on purpose. |
+| `test_defense.mjs` | That One Stop, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
 
 ## What `test_defense.mjs` is really guarding
 
@@ -41,6 +41,19 @@ distinction on purpose, one on the rating alone and one on the rating times stru
 so a regression says which half broke. Three more draft toward the pass rush, toward
 coverage, and toward tacklers, and check each strategy actually produces the defense it
 is chasing: a scheme reachable only by luck is a lottery ticket rather than a decision.
+
+## And the formation
+
+Six defensive spots (DL DL LB DB DB FLEX) can hold exactly four shapes: the one with the
+flex still open, and the three the flex closes into. The browser half draws all four at
+four widths and measures the rendered pixels, checking that no disc lands on another
+chip's name and that nothing escapes the field.
+
+That is not a cosmetic assertion. A formation breaks by a label sliding under a face, and
+it breaks silently: nothing throws, the season still plays, and the only symptom is a
+picture nobody can read. The offense's own formation had no such test and had to be solved
+by hand twice, once when the flex chip landed on the running back's name and once when the
+fallback table and the live one disagreed about where he stood.
 
 ## Why the second half of that matters more than the first
 
@@ -84,11 +97,12 @@ than from memory.
 
 ## How much of the page is covered
 
-Almost none of it. `test_bracket.mjs` is the only file here that opens a browser, and
-it opens it on one screen. The engine is covered thoroughly; the page is covered at
-the postseason and nowhere else, so a green run says nothing about the draft, the
-season screen, the results card or the leaderboard. The college game has a real
-browser suite under `cfb/build/test/` if you want the shape of one.
+Two files here open a browser: `test_bracket.mjs` on the postseason, and
+`test_defense.mjs` on One Stop's gate, draft, formation and season. The engine is covered
+thoroughly. The page is covered on those screens and nowhere else, so a green run says
+nothing about a normal draft, the season screen, the results card or the leaderboard, and
+nothing at all about the offensive formation. The college game has a real browser suite
+under `cfb/build/test/` if you want the shape of one.
 
 ## One Stop is finished and gated
 

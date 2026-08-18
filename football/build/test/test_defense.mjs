@@ -301,6 +301,47 @@ window.__DEF={
       pointer:cs.pointerEvents}; },
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
+  /* ---- THE FIELD ----
+     Whichever copy of it is on screen: the draft's, the squad's or the results'. */
+  vis(){ return [...document.querySelectorAll('.field')]
+    .find(f=>f.getBoundingClientRect().width>0)||null; },
+  shape:()=>defShape().key,
+  frontName:()=>{ const f=window.__DEF.vis();
+    return f?((f.querySelector('.front')||{}).textContent||''):''; },
+  los:()=>{ const f=window.__DEF.vis(); return !!(f&&f.querySelector('.los')); },
+  /* Force the flex, so all four shapes are reachable from one draft. */
+  setFlex(pos){ const i=run.slotIndex.indexOf(5); if(i<0) return null;
+    run.roster[i].position=pos; const f=window.__DEF.vis(); if(f) drawField(f,true);
+    return defShape().key; },
+  /* Every disc against every other chip's rendered NAME, in real pixels. Not the label
+     box: a surname is centered and ellipsized inside a box far wider than most of them,
+     so boxes touching is not the same complaint as a disc drawn over a name. */
+  fieldProbe(){
+    const f=window.__DEF.vis(); if(!f) return {noField:true,over:[],outside:[],discs:[]};
+    const fr=f.getBoundingClientRect();
+    const chips=[...f.querySelectorAll('.chip')];
+    const box=(el)=>{ const r=el.getBoundingClientRect();
+      return {l:r.left,r:r.right,t:r.top,b:r.bottom}; };
+    const hit=(a,b)=>a.l<b.r&&b.l<a.r&&a.t<b.b&&b.t<a.b;
+    const out={field:{w:Math.round(fr.width),h:Math.round(fr.height)},
+      over:[],outside:[],discs:[]};
+    const discs=chips.map(c=>box(c.querySelector('.disc')));
+    const texts=chips.map(c=>{ const rg=document.createRange();
+      rg.selectNodeContents(c.querySelector('.who'));
+      const r=rg.getBoundingClientRect();
+      const y=box(c.querySelector('.yr'));
+      return r.width?{l:r.left,r:r.right,t:r.top,b:Math.max(r.bottom,y.bottom)}:null; });
+    chips.forEach((c,i)=>{
+      if(discs[i].t<fr.top-0.5||discs[i].b>fr.bottom+0.5
+        ||discs[i].l<fr.left-0.5||discs[i].r>fr.right+0.5) out.outside.push(i+':disc');
+      if(texts[i]&&(texts[i].b>fr.bottom+0.5||texts[i].t<fr.top-0.5))
+        out.outside.push(i+':name');
+      chips.forEach((_,j)=>{ if(i===j) return;
+        if(texts[j]&&hit(discs[i],texts[j])) out.over.push(i+' on '+j);
+        if(j>i&&hit(discs[i],discs[j])) out.discs.push(i+'+'+j); });
+    });
+    return out;
+  },
   roster:()=>(run&&run.roster||[]).map(p=>({pos:p.position,price:p.price_musd})),
   state:()=>{ const s=run&&run.season||{}; const rs=s.results||[];
     return { defense:!!(run&&run.defense), mode:runMode(), label:runModeLabel(),
@@ -464,6 +505,37 @@ boot();`;
       roster.length === 6 && roster.every((r) => ['DL', 'LB', 'DB'].includes(r.pos))
       && roster.reduce((t, r) => t + r.price, 0) <= 140.01,
       { n: roster.length, spend: roster.reduce((t, r) => t + r.price, 0).toFixed(1) });
+
+    /* ── THE FIELD ────────────────────────────────────────────────────────────
+       One Stop draws its own formation, and the thing that breaks a formation is not
+       arithmetic, it is a label landing on somebody's face. Six defensive spots can hold
+       exactly four shapes, so all four are checked at every width the game draws a field
+       at, against the rendered pixels rather than against the table they came from.
+
+       This is the assertion the offense's formation never had and had to be re-solved by
+       hand twice because of it. */
+    ok('the field is a defensive one: a line of scrimmage, and defensive spots',
+      await p.evaluate(() => window.__DEF.los())
+      && JSON.stringify(await p.evaluate(() => [...window.__DEF.vis()
+        .querySelectorAll('.chip .dl')].map((d) => d.textContent)))
+        .indexOf('QB') < 0);
+    for (const W of [320, 390, 430, 900]) {
+      await p.setViewportSize({ width: W, height: 844 });
+      await p.waitForTimeout(200);
+      for (const flex of ['DL', 'LB', 'DB']) {
+        const key = await p.evaluate((f) => window.__DEF.setFlex(f), flex);
+        await p.waitForTimeout(620);
+        const r = await p.evaluate(() => window.__DEF.fieldProbe());
+        ok(`@${W} the ${key} formation fits, with nothing drawn over a name`,
+          !r.noField && !r.over.length && !r.outside.length && !r.discs.length,
+          { over: r.over, outside: r.outside, discs: r.discs, field: r.field });
+      }
+    }
+    /* The front is named only once the flex has decided the shape, which by now it has. */
+    ok('and the front is named on the field',
+      ['Heavy front', 'Base', 'Nickel'].includes(await p.evaluate(() => window.__DEF.frontName())),
+      await p.evaluate(() => window.__DEF.frontName()));
+    await p.setViewportSize({ width: 390, height: 844 });
 
     if (await p.evaluate(() => document.getElementById('s-squad').classList.contains('on'))) {
       await p.click('#b-play');
