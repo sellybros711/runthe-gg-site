@@ -318,6 +318,34 @@ check(/\.topbar:after\{[^}]*linear-gradient\(90deg/.test(game),
       'the top rule sweeps horizontally, not out of a conic');
 check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
       'and does not use the conic on a 3px strip');
+
+/* THE BOTTOM TAB BAR. The one thing the request was explicit about is that it
+   must never scroll away, so the rule that makes it fixed to the foot of the
+   viewport is the load-bearing one and is guarded first. It carries five
+   destinations, the songs list among them by name, hides itself during the
+   draft (where the game owns the bottom of the screen), and the page leaves
+   room so the last row is not stranded behind it. */
+console.log('the tab bar');
+check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
+      'the tab bar is pinned to the foot of the screen, not scrolled with the page');
+check((game.match(/data-tab="/g) || []).length === 5, 'it carries five tabs');
+check(/data-tab="songs"/.test(game), 'and the songs list is one of them');
+for (const dest of ['home', 'tour', 'songs', 'board', 'profile'])
+  check(new RegExp(`data-tab="${dest}"`).test(game), `  including ${dest}`);
+/* Shown only on the browsing screens: the default is display:none and a body
+   class turns it on, so the draft (which is not in that set) never gets it. */
+check(/\.tabbar\{[^}]*display:none/.test(game) && /body\.hasTabs \.tabbar\{display:block;?\}/.test(game),
+      'it stands down unless the screen is one that wants it');
+check(/const TAB_SCREENS = new Set\(\[[^\]]*\]\)/.test(gameBare)
+   && !/const TAB_SCREENS = new Set\(\[[^\]]*'draft'[^\]]*\]\)/.test(gameBare),
+      'and the draft is not one of those screens');
+check(/body\.hasTabs \.wrap\{padding-bottom/.test(game),
+      'the page leaves room so nothing hides behind the bar');
+/* Static markup outside #app, so render() cannot carry it off; paintTabs keeps
+   the lit tab and the bar in step, called from render() so it needs no wiring
+   of its own. */
+check(/function paintTabs\(\)/.test(gameBare) && /paintTabs\(\);/.test(gameBare),
+      'the lit tab is kept in step with the screen');
 /* The hero fade resolves to --bg, which is near-black on the dark theme, and
    the hero ink is pinned dark. Any type inside the faded zone is dark on
    dark: at 58% the blurb measured 2.55:1. It must start below the copy. */
