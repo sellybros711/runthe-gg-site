@@ -114,10 +114,10 @@
   // signed-in claims on the first tick).
   function wire(){
     if(window.RTG_BOARD && RTG_BOARD.onChange){
-      RTG_BOARD.onChange(function(st){ if(st && st.signedIn) claimPending(); });
+      RTG_BOARD.onChange(function(st){ if(st && st.signedIn){ claimPending(); warm(); } });
     } else {
       // board.js not up yet: retry briefly, then rely on the tokens/auth events.
-      var n=0, t=setInterval(function(){ if(++n>40 || (window.RTG_BOARD && RTG_BOARD.onChange)){ clearInterval(t); if(window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(function(st){ if(st && st.signedIn) claimPending(); }); } }, 250);
+      var n=0, t=setInterval(function(){ if(++n>40 || (window.RTG_BOARD && RTG_BOARD.onChange)){ clearInterval(t); if(window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(function(st){ if(st && st.signedIn){ claimPending(); warm(); } }); } }, 250);
     }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
@@ -141,7 +141,31 @@
     }catch(e){}
   }
   function signedIn(){ try{ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){ return false; } }
+
+  // Push a ready link out through the OS share sheet or the clipboard.
+  function dispatch(url, cb){
+    if(navigator.share){
+      navigator.share({ title:'Run The Arcade', text:SHARE_TEXT, url:url })
+        .then(function(){ if(cb) cb(true); })
+        .catch(function(){ if(cb) cb(false); });   // user dismissed: no toast
+      return;
+    }
+    var done=function(ok){ toast(ok?'Invite link copied':'Copy this link: '+url); if(cb) cb(ok); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ done(true); }, function(){ done(false); });
+    } else { done(false); }
+  }
+
+  /* iOS Safari only opens navigator.share() when it is called SYNCHRONOUSLY
+     inside the tap handler. The link comes from an async RPC, so awaiting it
+     first spends the user gesture and the share sheet silently never opens,
+     which reads as "the button does nothing". The code is prewarmed the moment
+     an invite affordance appears (warm(), below), so by tap time codeCache is
+     usually hot and we can share in the same tick. Only a cold cache falls back
+     to the async path, and there the clipboard (more gesture-tolerant than the
+     share sheet) is the realistic outcome. */
   function share(cb){
+    if(codeCache){ dispatch(buildLink(codeCache), cb); return; }
     link(function(url){
       if(!url){
         // A signed-in player with no link did not fail to sign in: the code
@@ -151,18 +175,11 @@
                          : 'Sign in to get your invite link');
         if(cb) cb(false); return;
       }
-      if(navigator.share){
-        navigator.share({ title:'Run The Arcade', text:SHARE_TEXT, url:url })
-          .then(function(){ if(cb) cb(true); })
-          .catch(function(){ if(cb) cb(false); });   // user dismissed: no toast
-        return;
-      }
-      var done=function(ok){ toast(ok?'Invite link copied':'Copy this link: '+url); if(cb) cb(ok); };
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(url).then(function(){ done(true); }, function(){ done(false); });
-      } else { done(false); }
+      dispatch(url, cb);
     });
   }
+  // Fetch the code ahead of any tap so share() has it synchronously (see above).
+  function warm(){ if(!codeCache && signedIn()) code(function(){}); }
 
   // ---- the result-modal invite ad -----------------------------------------
   // Every game ends on a result sheet (#scrim .sheet or #resultModal). This
