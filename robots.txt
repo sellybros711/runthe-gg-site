@@ -1,4 +1,4 @@
-# RunThe.GG — allow the real pages, keep internal build tools out of search.
+# RunThe.GG: allow the real pages, keep internal build tools out of search.
 User-agent: *
 Allow: /
 Disallow: /scripts/
