@@ -3469,7 +3469,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=27"></script>
+<script src="engine.js?v=28"></script>
 <script src="run.js?v=13"></script>
 <script src="achievements.js?v=10"></script>
 <script src="auth.js?v=3"></script>
@@ -7356,9 +7356,12 @@ function setTeamCode(cell,code,season){
   el.appendChild(document.createTextNode(code));
 }
 
-function paintSeasonBug(oppId,label){
+function paintSeasonBug(oppId,label,bracketSeed){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
-  const rk=o?teamRank(oppId):0;
+  /* THE NUMBER IS THE BRACKET SEED IN THE PLAYOFFS, the same one the broadcast shows, so
+     the preview and the scoreboard agree. Outside the playoffs there is no seed and it
+     falls back to the team's poll ranking, which is what a regular-season game wants. */
+  const rk=bracketSeed!=null?bracketSeed:(o?teamRank(oppId):0);
   const mine=youColors();
   $('v-byou').style.setProperty('--tcol',mine.bg);
   $('v-byou').style.setProperty('--tcol2',mine.accent);
@@ -7394,8 +7397,25 @@ function paintUpcomingBug(){
   if(run.phase===R.PHASES.SEASON){
     paintSeasonBug(run.schedule[s.week],'Week '+(s.week+1));
   }else if(run.phase===R.PHASES.PLAYOFFS){
-    paintSeasonBug(E.playoffOpponent(run.playoffs,run.playoffSeed.rounds,s.playoffRound),
-      run.playoffSeed.roundNames[s.playoffRound]||'Playoffs');
+    /* DRAW THE OPPONENT FROM THE BRACKET, exactly as advanceWeek does. This read
+       E.playoffOpponent(run.playoffs,...), the retired strength LADDER, which is a
+       different set of teams than the twelve-team bracket the game actually plays, so it
+       would name one team while the bracket and broadcast showed another. The playoff
+       broadcast does not currently route through this preview, so it was a latent defect
+       rather than a visible one, but it is the last place the two opponent systems could
+       disagree and it should read the bracket like everything else. bracketPending is
+       read-only, and by the time a round's preview shows its feeder rounds are settled,
+       so nothing is mutated and no rng consumed. The ladder stays as the no-bracket
+       fallback. */
+    const label=run.playoffSeed.roundNames[s.playoffRound]||'Playoffs';
+    let oppId=null,seed=null;
+    if(run.bracket){
+      const br=E.PLAYOFF_ROUND_NAMES.length-run.playoffSeed.rounds+s.playoffRound;
+      const seat=E.bracketPending(run.bracket,br);
+      if(seat&&seat.team){ oppId=seat.team.team_season_id; seed=seat.seed; }
+    }
+    if(oppId==null) oppId=E.playoffOpponent(run.playoffs,run.playoffSeed.rounds,s.playoffRound);
+    paintSeasonBug(oppId,label,seed);
   }
 }
 
