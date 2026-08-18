@@ -2948,6 +2948,58 @@ function defenseSuppression(defenseTotal, constants = CONSTANTS) {
   return Math.pow(ref / defenseTotal, k);
 }
 
+/*
+ * A DEFENSE'S TEAM OVERALL, ON THE SAME 0 TO 100 SCALE AN OFFENSE'S IS ON.
+ *
+ * THE PROBLEM THIS SOLVES. Team overall is points times chemistry times shape, and on
+ * offense that product runs from about 3 to about 95, which is why the number doubles as
+ * its own percentage and why the bands sit at 75 and 50. IDP scoring is a smaller currency:
+ * six defenders sum to a fraction of what six skill players do, so the identical product on
+ * a defense tops out at 55.4. A PERFECTLY DRAFTED DEFENSE COULD NOT REACH THE GREEN BAND,
+ * ever, and the best one the pool can produce was shown to the player as a red 49.
+ *
+ * It is not only cosmetic. weeklyEdgeVs, seedFromRecord, playoffShare and finalEdge all
+ * read the overall against constants calibrated on the offense's range, so on a defense
+ * every one of them was reading a top roster as a bottom one: no class edge on a Sunday, no
+ * elite seeding path, and the title game's own opinion pinned in the band its comment calls
+ * hopeless. The mode was playing the whole back half of the season as a bad team.
+ *
+ * THE MAP IS MEASURED, not invented. 6,000 rosters a side, drafted four ways (best
+ * available, cheapest, points per dollar, at random) over the same team-season wheel:
+ *
+ *              min     p5    p25    p50    p75    p95    max
+ *   offense    3.0   14.4   28.4   46.2   69.3   84.9   94.8
+ *   defense    7.1   11.0   16.6   22.0   43.2   51.5   55.4
+ *
+ * Linear through the fifth and ninety-fifth percentiles of each. Two anchors rather than a
+ * curve through all seven because the tails are where the bands live and a straight line is
+ * a thing the next person can check by hand. What it buys, and the reason those two anchors
+ * were the right ones: a greedy defense (median 49.4) lands at 81.2 against a greedy
+ * offense's 79.2, so "took the best man on every board" reads the same on both sides of the
+ * ball, which is exactly what the 75 band was set to mean.
+ *
+ * NOT USED FOR SUPPRESSION. How many points a defense holds you to is decided by the RAW
+ * total against DEF_REF, in resolveGameDefense, and that is untouched: this is a grade, not
+ * a quantity of football. Feeding it into the suppression curve would rescale the whole
+ * mode's scoring by 1.74 and undo the balance the constants above were derived for.
+ */
+const DEF_OVERALL = { FROM_LO: 11.0, FROM_HI: 51.5, TO_LO: 14.4, TO_HI: 84.9 };
+function defenseOverall(defenseTotal) {
+  if (!(defenseTotal > 0)) return 0;
+  const d = DEF_OVERALL;
+  const k = (d.TO_HI - d.TO_LO) / (d.FROM_HI - d.FROM_LO);
+  return Math.max(0, d.TO_LO + (defenseTotal - d.FROM_LO) * k);
+}
+
+/** The overall of a roster as drafted, either side of the ball, in one place. */
+function overallOf(roster, chemistryMultiplier, isDefense) {
+  const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const chem = chemistryMultiplier || 1;
+  return isDefense
+    ? defenseOverall(pts * chem * defenseStructure(roster).multiplier)
+    : pts * chem * rosterStructure(roster).multiplier;
+}
+
 function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllowed,
   rng, constants = CONSTANTS, advantage = 1) {
   /* Your defenders' own production, sampled the same way the offense mode samples its
@@ -3236,12 +3288,22 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   /* The same team overall the results screen prints, so the weekly edge, seeding and home
      field are all decided by the number the player is shown rather than by a second
      opinion. Computed up front because the regular season reads it too. */
-  const teamRating = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * chemistryMultiplier * rosterStructure(roster).multiplier;
+  /* ON THE SIDE OF THE BALL THIS RUN IS ACTUALLY PLAYING. Both halves of this were wrong
+     for a defense and wrong in the same direction. rosterStructure is an offensive reading
+     that returns about 0.57 for any six defenders, and the product it lands on is on a
+     scale the seeding and edge constants below do not share, so a top defense projected as
+     a bottom team. overallOf answers both. */
+  const teamRating = overallOf(roster, chemistryMultiplier, !!opts.defense);
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
-    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-      weeklyEdgeVs(teamRating, opp, constants));
+    /* THE PROJECTION HAS TO PLAY THE GAME THE RUN PLAYED. A One Stop roster resolved
+       through resolveGame is a 47-point offense: it loses almost every week, and the
+       typical record it came back with was 2-15 for a season that finished 10-7. */
+    const r = opts.defense
+      ? resolveGameDefense(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+        weeklyEdgeVs(teamRating, opp, constants))
+      : resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+        weeklyEdgeVs(teamRating, opp, constants));
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -3276,8 +3338,10 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       const opp = playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 21.5;
       const isFinal = i === seed.rounds - 1;
-      const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-        isFinal ? finalAdvantage : advantage);
+      const adv = isFinal ? finalAdvantage : advantage;
+      const r = opts.defense
+        ? resolveGameDefense(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, adv)
+        : resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, adv);
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, round: names[i], ...r });
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
@@ -3431,7 +3495,7 @@ const publicAPI = {
     const i = s.strength.indexOf('. ');
     return [s.key, i < 0 ? s.strength : s.strength.slice(i + 2)];
   })),
-  resolveGame, resolveGameDefense, defenseSuppression,
+  resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,

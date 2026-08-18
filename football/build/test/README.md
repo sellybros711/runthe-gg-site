@@ -42,6 +42,30 @@ so a regression says which half broke. Three more draft toward the pass rush, to
 coverage, and toward tacklers, and check each strategy actually produces the defense it
 is chasing: a scheme reachable only by luck is a lottery ticket rather than a decision.
 
+## The two numbers the results screen makes a claim with
+
+Team overall and the typical record are the only things on that page that are a claim about
+the game rather than a report of it, and on a defense both were computed as though six
+defenders were an offense.
+
+The overall is points times chemistry times shape. On offense that runs about 3 to 95, which
+is why the number doubles as its own percentage and why the bands sit at 75 and 50. IDP
+scoring is a smaller currency: the identical product on a defense tops out at 55.4, so a
+perfectly drafted defense could never reach the green band and the best one the pool can
+build was shown as a red 49. It is not only cosmetic. `weeklyEdgeVs`, `seedFromRecord`,
+`playoffShare` and `finalEdge` all read the overall against constants calibrated on the
+offense's range, so a top defense got no class edge, no elite seeding path and the title
+game's full penalty. `E.defenseOverall` maps it onto the offense's scale through the fifth
+and ninety-fifth percentiles of 6,000 drafted rosters a side, which lands a greedy defense
+at 79.9 against a greedy offense's 78.2.
+
+The typical record came out of `playRun`, which resolved a defensive roster through
+`resolveGame`. The same six defenders project 10.24 wins as a defense and 1.48 as an
+offense, and 1.48 is the 2-15 that was being printed under a season that finished 10-7.
+
+Both are asserted here, and the second one as a difference rather than as a tuned range: the
+claim is that the projection plays the mode.
+
 ## And the formation
 
 Six defensive spots (DL DL LB DB DB FLEX) can hold exactly four shapes: the one with the

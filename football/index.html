@@ -10364,10 +10364,16 @@ function paintOver(){
      as four more tiles was the same four numbers twice. What this tab can add instead is
      the sum: how those three turn into the team overall at the top. Same sentence the
      leaderboard's detail sheet uses, so the two can never read differently. */
+  /* THE SAME SENTENCE CANNOT BE USED ON BOTH SIDES. On offense the three numbers multiply
+     out to the team overall, so the sentence is an equals sign. On a defense the overall is
+     that product put on the offense's scale, so saying "which is" would be arithmetic that
+     does not check out; and a defense does not play against an average defense. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
     pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' '+fitPhrase()+', which is a <b>'+rating.toFixed(1)+'</b> team overall '+
-    'against an average defense.'+schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
+    ' '+fitPhrase()+', '+(isDefRun()
+      ? 'which grades out as a <b>'+rating.toFixed(1)+'</b> team overall.'
+      : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
+    schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
   /* The lineup, which the old results page never showed at all. */
   drawField($('field3'),false);
@@ -10470,8 +10476,13 @@ function paintOver(){
         'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
         'there buys more somewhere else.</p>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Points a game includes chemistry and how the six fit, because that is what '+
-        'the simulation scores with. Both records come from replaying the two teams against your actual 17 opponents '+
+        '<p class="caveat">'+(isDefRun()
+          ? 'Team overall includes chemistry and how the six fit, and is graded on the same '+
+            'scale an offense is, because six defenders in fantasy scoring add up to far less '+
+            'than six skill players and a raw total would read as a bad team every time. '
+          : 'Points a game includes chemistry and how the six fit, because that is what '+
+            'the simulation scores with. ')+
+        'Both records come from replaying the two teams against your actual 17 opponents '+
         'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
         'also have changed what the wheel showed you next.</p>';
     }
@@ -10502,21 +10513,25 @@ function swapRows(best){
   }).join('')+'</div>';
 }
 
-/* Points a game, which is what the engine actually scores with.
+/* THE TEAM OVERALL. On offense it is points a game, which is what the engine scores with:
    resolveGame() works a week out as
      sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
-   so dropping the per-opponent term leaves what a roster is worth against an
-   average defense. One definition, used by the comparison table below, by the run
-   the leaderboard records, and by the detail sheet. */
-function teamRating(roster,chemistry){
-  const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  /* A DEFENSE IS READ BY ITS OWN STRUCTURE HERE TOO. This one number is what the
-     comparison table shows, what the leaderboard stores and what the detail sheet prints,
-     so reading a defense with the offensive function would put all three on a footing the
-     games were never played on. Same reason liveRating branches. */
-  return fppg*chemistry*(isDefRun()
-    ?E.defenseStructure(roster).multiplier
-    :E.rosterStructure(roster).multiplier);
+   so dropping the per-opponent term leaves what a roster is worth against an average
+   defense, on a scale that runs about 3 to 95.
+
+   ON A DEFENSE IT IS A GRADE AND NOT A QUANTITY OF FOOTBALL, and the difference is the
+   point. Six defenders in IDP scoring sum to a fraction of what six skill players do, so
+   the identical product tops out at 55.4: a perfectly drafted defense could never reach the
+   green band, and the best one the pool can build was shown as a red 49. E.defenseOverall
+   puts it on the offense's scale off measured percentiles, so "took the best man on every
+   board" reads about 80 on both sides of the ball. What a defense actually did to the
+   scoreboard is still the raw total, which is what the points a game row prints and what
+   suppression is computed from.
+
+   The side of the ball is a parameter with a default rather than a read of the live run,
+   because two callers describe a roster that is not the one being played. */
+function teamRating(roster,chemistry,isDefense){
+  return E.overallOf(roster,chemistry,isDefense===undefined?isDefRun():!!isDefense);
 }
 
 /* THE STRUCTURE MULTIPLIER, IN A FORM A PLAYER CAN READ.
@@ -10577,7 +10592,12 @@ function comparison(best){
   const bestRating=teamRating(best.squad,best.chemistry);
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
-    vs('Fantasy points a game',mineRating.toFixed(1),bestRating.toFixed(1),true)+
+    /* THE ROW IS NOT POINTS ON A DEFENSE, so it does not say points. Both sides of it are
+       teamRating, which on offense IS points a game and on a defense is that product put on
+       the offense's 0 to 100 scale. Labelling a grade as fantasy points would have a player
+       comparing 76.3 against the 44 his own men actually scored. */
+    vs(isDefRun()?'Team overall':'Fantasy points a game',
+      mineRating.toFixed(1),bestRating.toFixed(1),true)+
     vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
   '</div>';

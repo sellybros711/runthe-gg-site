@@ -271,6 +271,113 @@ console.log('\n=== a season, both modes ===');
     d.allowed < o.allowed, { defense: d.allowed.toFixed(1), offense: o.allowed.toFixed(1) });
 }
 
+console.log('\n=== the overall, and the season it projects ===');
+{
+  /* THE TWO NUMBERS THE RESULTS SCREEN MAKES A CLAIM WITH, and both were wrong on a
+     defense in the same way: they were computed as though six defenders were an offense.
+
+     Team overall was the raw product, which tops out at 55.4 on a scale whose green band
+     starts at 75, so no defense could ever be graded well and every one of them was fed to
+     the seeding and edge constants as a bottom roster. The typical record came out of
+     playRun, which resolved a defensive roster through resolveGame: a 47 point offense
+     that loses almost every week. A season that finished 10-7 was reported as typically
+     2-15, which is not a rounding error, it is the wrong sport. */
+  const byTS = new Map();
+  for (const r of D) { if (!r.team_season_id) continue;
+    if (!byTS.has(r.team_season_id)) byTS.set(r.team_season_id, []);
+    byTS.get(r.team_season_id).push(r); }
+  const oTS = new Map();
+  for (const r of O) { if (!r.team_season_id) continue;
+    if (!oTS.has(r.team_season_id)) oTS.set(r.team_season_id, []);
+    oTS.get(r.team_season_id).push(r); }
+  let seed = 77;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const pick = (map, slots, elig) => {
+    const ks = [...map.keys()];
+    let spent = 0; const took = [];
+    for (let i = 0; i < slots.length; i++) {
+      const ts = ks[Math.floor(rnd() * ks.length)];
+      const opts = (map.get(ts) || []).filter((p) => elig[slots[i]].includes(p.position));
+      if (!opts.length) { i--; continue; }
+      const budget = 140 - spent - 3 * (slots.length - 1 - i);
+      const can = opts.filter((p) => p.price_musd <= budget);
+      const from = (can.length ? can : opts.slice().sort((a, b) => a.price_musd - b.price_musd).slice(0, 1)).slice();
+      from.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+      took.push(from[0]); spent += from[0].price_musd;
+    }
+    return took;
+  };
+  const dElig = { DL: ['DL'], LB: ['LB'], DB: ['DB'], FLEX: ['DL', 'LB', 'DB'] };
+  const oElig = { QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'] };
+
+  /* ---- the scale ---- */
+  ok('the overall is monotone, so a better defense never grades worse',
+    [10, 20, 30, 40, 50, 60].every((v, i, a) => i === 0
+      || E.defenseOverall(v) > E.defenseOverall(a[i - 1])),
+    [10, 30, 50].map((v) => +E.defenseOverall(v).toFixed(1)));
+  /* The two anchors the map was fitted on, which are the fifth and ninety-fifth percentile
+     of 6,000 drafted rosters a side. If either moves, every band below moves with it. */
+  ok('and it lands the measured percentiles on the offense’s own',
+    Math.abs(E.defenseOverall(11.0) - 14.4) < 0.1 && Math.abs(E.defenseOverall(51.5) - 84.9) < 0.1,
+    { p5: +E.defenseOverall(11.0).toFixed(1), p95: +E.defenseOverall(51.5).toFixed(1) });
+
+  const N = Number(process.env.OVERALL || 300);
+  const grade = (n, map, slots, elig, defense) => {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(E.overallOf(pick(map, slots, elig), 1, defense));
+    out.sort((a, b) => a - b);
+    return out;
+  };
+  const dOvr = grade(N, byTS, E.DEFENSE_SLOTS, dElig, true);
+  const oOvr = grade(N, oTS, E.SLOTS, oElig, false);
+  const med = (a) => a[Math.floor(a.length / 2)];
+  console.log(`  greedy median overall: offense ${med(oOvr).toFixed(1)}, defense ${med(dOvr).toFixed(1)}`);
+  /* THE BAND IS THE POINT. 75 is where the results screen turns the number green and it
+     means "you beat a greedy draft". A defense that could not reach it was being told it
+     had failed for doing the best thing available on every board. */
+  ok('a greedy defense grades like a greedy offense, both in the green band',
+    Math.abs(med(dOvr) - med(oOvr)) < 8 && med(dOvr) >= 75,
+    { offense: +med(oOvr).toFixed(1), defense: +med(dOvr).toFixed(1) });
+
+  /* ---- the season it projects ---- */
+  const teams = TS.filter((t) => t.pts_scored_mean > 0);
+  const avg = LC.league_avg_pts_allowed_by_season;
+  const sched = Array.from({ length: 17 }, () => teams[Math.floor(rnd() * teams.length)]);
+  const po = Array.from({ length: 4 }, () => teams[Math.floor(rnd() * teams.length)]);
+  const trials = 120;
+  const project = (roster, defense) => {
+    let w = 0;
+    for (let i = 0; i < trials; i++) {
+      const rng = E.createSeededRNG(E.hashSeed(`proj|${i}`));
+      w += E.playRun(roster, 1, sched, po, avg, rng, E.CONSTANTS, { defense }).regularWins;
+    }
+    return w / trials;
+  };
+  const roster = pick(byTS, E.DEFENSE_SLOTS, dElig);
+  const asDefense = project(roster, true);
+  const asOffense = project(roster, false);
+  console.log(`  the same six defenders: ${asDefense.toFixed(2)} wins as a defense, `
+    + `${asOffense.toFixed(2)} projected as an offense`);
+  /* Not a range check on a tuned number: the claim is that the projection plays the mode.
+     Resolved as an offense a defensive roster is a 47 point team and wins almost nothing,
+     which is exactly the 2-15 that was on screen. */
+  ok('playRun projects a defense as a defense', asDefense > asOffense + 3,
+    { asDefense: +asDefense.toFixed(2), asOffense: +asOffense.toFixed(2) });
+  ok('and the projection agrees with the game the engine actually plays',
+    Math.abs(asDefense - (() => {
+      let w = 0;
+      for (let i = 0; i < trials; i++) {
+        const rng = E.createSeededRNG(E.hashSeed(`direct|${i}`));
+        let k = 0;
+        for (const opp of sched) {
+          if (E.resolveGameDefense(roster, 1, opp, avg[opp.season] ?? 21.5, rng, E.CONSTANTS, 1).won) k++;
+        }
+        w += k;
+      }
+      return w / trials;
+    })()) < 1.5, { viaPlayRun: +asDefense.toFixed(2) });
+}
+
 if (process.env.BROWSER) {
   console.log('\n=== the mode, in a browser ===');
   const { chromium } = await import('playwright');

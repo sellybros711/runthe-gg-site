@@ -957,14 +957,14 @@ function homeField(run, regularWins, isFinal) {
 function liveRating(run) {
   const s = run && run.season;
   if (!s || !run.roster || !run.roster.length) return 0;
-  const pts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  /* NO STRUCTURE ON A DEFENSE, for the reason resolveGameDefense gives at length: it is an
-     offensive reading of a roster and returns about 0.57 for any six defenders. Applying it
-     here as well would put seeding, home field and the rating on the results screen all on
-     the same false footing, and the three would agree with each other while disagreeing
-     with the games actually played. */
-  if (run.defense) return pts * (s.chemistry || 1);
-  return pts * (s.chemistry || 1) * E.rosterStructure(run.roster).multiplier;
+  /* A DEFENSE IS READ BY ITS OWN STRUCTURE AND PUT ON THE OFFENSE'S SCALE, which is the
+     whole of what overallOf does. rosterStructure is an offensive reading that returns
+     about 0.57 for any six defenders, so it cannot be used here; but dropping it and
+     returning the raw product was only half a fix, because everything downstream of this
+     number, weeklyEdgeVs and seedFromRecord and playoffShare and homeField, is calibrated
+     on a range a defensive product cannot reach. A top defense was seeded as a bottom
+     team all the way through the back half of the season. */
+  return E.overallOf(run.roster, s.chemistry || 1, !!run.defense);
 }
 
 /** Leave SEEDING and start the playoffs. */
@@ -2757,9 +2757,13 @@ function bestPossibleSquad(run, data, ctx) {
   const score = (arr) => {
     const spend = arr.reduce((t, p) => t + p.price_musd, 0);
     if (spend > budget + 1e-9) return -1;
+    /* SAME READING THE SEASON USES, on either side of the ball. rosterStructure on six
+       defenders is a near-constant 0.57 that knows nothing about the schemes, so on a
+       One Stop run this was ranking candidates by points and chemistry alone and calling
+       the result the best possible team. */
     return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0)
       * E.resolveChemistry(arr, ctx, chemOpts(run)).multiplier
-      * E.rosterStructure(arr).multiplier;
+      * (run.defense ? E.defenseStructure(arr) : E.rosterStructure(arr)).multiplier;
   };
   const climb = (start, ofSlot) => {
     let cur = start.slice(), curScore = score(cur);
@@ -2798,6 +2802,9 @@ function bestPossibleSquad(run, data, ctx) {
 
   const chem = E.resolveChemistry(best, ctx, chemOpts(run));
   const yourPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  /* One reading of a roster's shape for this whole answer, picked by the side of the ball,
+     so the two halves of the comparison cannot be measured differently from each other. */
+  const struct = (arr) => (run.defense ? E.defenseStructure(arr) : E.rosterStructure(arr));
 
   return {
     squad: best,
@@ -2807,11 +2814,11 @@ function bestPossibleSquad(run, data, ctx) {
     spend: best.reduce((t, p) => t + p.price_musd, 0),
     yourSpend: run.roster.reduce((t, p) => t + p.price_musd, 0),
     yourChemistry: run.season.chemistry,
-    yourStructure: E.rosterStructure(run.roster).multiplier,
-    bestStructure: E.rosterStructure(best).multiplier,
+    yourStructure: struct(run.roster).multiplier,
+    bestStructure: struct(best).multiplier,
     // Both sides measured the same way, so the ratio between them is the honest
     // answer to "how close was I", and cannot come out above 100%.
-    yourProjected: yourPts * run.season.chemistry * E.rosterStructure(run.roster).multiplier,
+    yourProjected: yourPts * run.season.chemistry * struct(run.roster).multiplier,
     bestProjected: bestScore,
     /* One row per spot, so it always says who replaces whom. */
     lineup: bpSlots.map((slot, s) => {
@@ -2850,7 +2857,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
     const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng,
-      E.CONSTANTS, { gm: !!run.tradeMachine });
+      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense });
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;
