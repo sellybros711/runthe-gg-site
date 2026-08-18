@@ -258,11 +258,17 @@
   @media (min-width:1000px){
     .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
       grid-template-columns:minmax(0,1fr) 344px;
+      /* The play column is ONE grid area, not five. A row per element tied each
+         one to whatever sat opposite, so the tall stats card next door forced
+         empty space into the play column. One area per column means neither
+         side can push the other around, and the rail row absorbs the
+         difference in height. */
+      grid-template-rows:auto auto auto auto min-content 1fr auto auto;
       grid-template-areas:
         "top   top" "title title" "mode mode" "prm prm"
-        "clue  run" "sub lbd" "choi lbd" "hint lbd" "gj    gj" "foot foot";
+        "play  run" "play  lbd" "gj    gj" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .modesw{grid-area:mode;} .prompt{grid-area:prm;}
-    .pathcard{grid-area:clue;} .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
+    .playcol{grid-area:play;}
     .runbar{grid-area:run;} .lb{grid-area:lbd;} .gj{grid-area:gj;} .foot{grid-area:foot;}
       }
     .foot{ grid-column:1 / -1; margin-top:18px; }
@@ -322,24 +328,26 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="prompt">Whose career path is this?</div>
-  <div class="pathcard">
-    <div class="plab">Scouting file</div>
-    <div class="scout" id="scout"></div>
-    <div class="path" id="path"></div>
-    <div class="revealbar" id="revealbar">
-      <button class="revealbtn" type="button" id="revealBtn">Show next team</button>
-      <span class="worth" id="worth">Worth <b>5</b></span>
+  <div class="playcol">
+    <div class="pathcard">
+      <div class="plab">Scouting file</div>
+      <div class="scout" id="scout"></div>
+      <div class="path" id="path"></div>
+      <div class="revealbar" id="revealbar">
+        <button class="revealbtn" type="button" id="revealBtn">Show next team</button>
+        <span class="worth" id="worth">Worth <b>5</b></span>
+      </div>
     </div>
+    <div class="answerbar" id="answerbar">
+      <input class="answerin" id="answerIn" type="text" inputmode="text" placeholder="Name the player" aria-label="Name the player" />
+      <button class="answergo" id="answerGo" type="button">Call it</button>
+    </div>
+    <div class="subprompt" id="subprompt"></div>
+    <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four names (worth 1)</button>
+    <div class="choices" id="choices" hidden></div>
+    <div class="factline" id="factline" aria-live="polite"></div>
+    <div class="hintline" id="hintline">Type the name to call it. Every extra team you ask for is worth less.</div>
   </div>
-  <div class="answerbar" id="answerbar">
-    <input class="answerin" id="answerIn" type="text" inputmode="text" placeholder="Name the player" aria-label="Name the player" />
-    <button class="answergo" id="answerGo" type="button">Call it</button>
-  </div>
-  <div class="subprompt" id="subprompt"></div>
-  <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four names (worth 1)</button>
-  <div class="choices" id="choices" hidden></div>
-  <div class="factline" id="factline" aria-live="polite"></div>
-  <div class="hintline" id="hintline">Type the name to call it. Every extra team you ask for is worth less.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
