@@ -168,6 +168,13 @@ window.GA_ID='G-L29P5MRWKE';
        Without this block every defender painted --flex, the fallback in posPaint, so a
        lineman, a linebacker and a corner were one magenta and the field said nothing. */
     --dl:#ff0a3b; --lb:#eb9500; --db:#0f93ff;
+    /* THE SAME THREE AS RGB TRIPLES, so a group's color can be used at an opacity: an
+       empty spot is tinted, not filled, and `rgb(var(--dl-rgb) / .55)` is how you get
+       there from a variable. THESE MUST AGREE WITH THE THREE HEXES ABOVE. They are
+       written out rather than derived because getPropertyValue feeds --dl straight to
+       the share card's canvas, and a canvas is the wrong place to discover that the
+       notation changed. */
+    --dl-rgb:255 10 59; --lb-rgb:235 149 0; --db-rgb:15 147 255;
     /* THE LABEL ON A CHIP STAYS WHITE, and that is a measured result rather than an
        assumption. Brightening these looked like it must break white text: against
        the PURE colors, white manages only 1.7:1 on the new green and 2.1:1 on the
@@ -2308,6 +2315,45 @@ window.GA_ID='G-L29P5MRWKE';
      land on the linebackers' discs at every phone width. 0.72 is the shallowest aspect that
      clears it at 260 wide, which is the narrowest field the game can draw. */
   body.def-mode .field:not(.hero-field){aspect-ratio:1/0.72}
+  /* ---------- EACH GROUP KEEPS ITS COLOR WHEN THE SPOT IS STILL EMPTY ----------
+     --pc is the group's color as an rgb triple, set inline by posTint on the four things
+     that draw an unfilled spot: the chip on the field, the node on the rail, the tab in the
+     position row and the pip in the sticky strip. The default below is the slate everything
+     used to be, so the FLEX spot and anything with no group of its own is unchanged.
+
+     A TINT, NOT A FILL. A signed player is the only thing on this page allowed to wear a
+     solid position color; an empty spot saying the same thing as loudly would make a draft
+     look finished before it started. The alphas are low for that reason and the dark ground
+     under the chip is kept rather than replaced, so the measured contrast on the placeholder
+     label does not move.
+
+     The exclusions are not tidiness. .now is the last open spot pulsing white, .sel is the
+     spot the current tab points at, .on is a signed node or the active tab, and .full is a
+     group with nowhere left to go. Each of those already says something with the same
+     border, and a group color painted over them would say it instead. */
+  body.def-mode{--pc:148 163 184}
+  body.def-mode .chip.empty:not(.now):not(.sel) .disc{
+    border-color:rgb(var(--pc) / .55);color:rgb(var(--pc) / .95);
+    background:linear-gradient(rgb(var(--pc) / .13),rgb(var(--pc) / .13)),rgba(9,13,24,.72)}
+  /* THE TAB GETS THE PAGE'S OWN GROUND UNDER ITS LABEL, and that is a legibility fix
+     rather than a look. --panel is several steps lighter than the field, and the same red
+     that clears 4.59:1 on a chip measured 3.87:1 on a panel, which is the one color of the
+     three that could not carry its own name. On --bg it measures 5.02:1. The count keeps the
+     neutral dim: it is a number of players, not a position group, and at 70% opacity it was
+     the least legible thing in the row. */
+  /* #tabs, NOT .tabs. Three rows in this file carry that class and only one of them is a
+     row of positions: the leaderboard's and the results' would have taken the neutral
+     default and come out with brighter borders for no reason at all. */
+  body.def-mode #tabs .tab:not(.all):not(.on):not(.full){
+    border-color:rgb(var(--pc) / .55);color:rgb(var(--pc));background:var(--bg)}
+  body.def-mode #tabs .tab:not(.all):not(.on):not(.full) .n{color:var(--dim);opacity:1}
+  /* Full strength, for the same reason the tab is: the pip's own ground is a 5% white
+     wash over the page, which is light enough that red at 90% measured 4.19:1. At 100%
+     it measures 5.02:1 and the other two are well clear. */
+  body.def-mode .dpips i:not(.on){
+    border-color:rgb(var(--pc) / .55);color:rgb(var(--pc))}
+  body.def-mode .rnode:not(.on):not(.focus) .rdot{
+    border-color:rgb(var(--pc) / .55);color:rgb(var(--pc) / .95)}
   .field .vig{position:absolute;inset:0;pointer-events:none;
     box-shadow:inset 0 0 66px 20px rgba(3,6,12,.8)}
   /* A count of connections on the chip itself, in the strongest one's color. */
@@ -5148,6 +5194,18 @@ window.addEventListener('error',(ev)=>{
 });
 const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex',
   DL:'--dl',LB:'--lb',DB:'--db'};
+/* A POSITION GROUP'S COLOR ON THE SPOTS NOBODY HAS FILLED YET.
+   A filled chip is painted its position's color and an empty one used to be the same grey
+   as every other empty one, which on a defense is most of the picture for most of the
+   draft: at the first spin the field is six identical grey rings and the three tiers only
+   read once you stop and read the letters. The group's color at a low opacity says it
+   before the letters do.
+
+   Only the three defensive groups get one. FLEX is a spot on the roster, not a position
+   anybody plays, so it stays neutral, which is also the honest thing for the one spot that
+   has not decided what it is yet. */
+const TINT={DL:'--dl-rgb',LB:'--lb-rgb',DB:'--db-rgb'};
+const posTint=(pos)=>TINT[pos]?'--pc:var('+TINT[pos]+')':'';
 /* One place that paints a position color. Six call sites used to write this exact
    gradient string out by hand, in four slightly different forms, which is how a
    palette change turns into a hunt. */
@@ -5702,7 +5760,7 @@ function drawField(el,live){
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
     disc.querySelector('.dl').textContent=p?p.position:slotsNow()[i];
-    disc.style.cssText=p?posPaint(p.position):'';
+    disc.style.cssText=p?posPaint(p.position):posTint(slotsNow()[i]);
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     /* Team code before the year, so a chip says which team-season the player came out of
        rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
@@ -5798,7 +5856,7 @@ function drawRail(el,bySlot,links,at){
     node.className='rnode'+(p?' on':'')+(st.focus===i?' focus':'');
     const dot=node.querySelector('.rdot');
     dot.textContent=p?p.position:slotsNow()[i];
-    dot.style.cssText=p?posPaint(p.position):'';
+    dot.style.cssText=p?posPaint(p.position):posTint(slotsNow()[i]);
     node.querySelector('.rnm').textContent=p?lastName(p.name):'';
   });
 
@@ -7326,8 +7384,12 @@ function paintOpts(draw){
     const paint=n===ALL
       ?'background:linear-gradient(135deg,#475569,rgba(0,0,0,.5))'
       :posPaint(n);
+    /* Active tabs wear the position's color as a fill, the way they always have. The rest
+       carry it as a tint, so the row and the field agree on what a group looks like before
+       you have tapped anything. Only where a group HAS a color: see posTint. */
+    const style=(on&&open)?paint:posTint(n);
     return '<button class="tab'+(on?' on':'')+(open?'':' full')+(n===ALL?' all':'')+
-      '" data-t="'+n+'"'+(on&&open?' style="'+paint+'"':'')+'>'+
+      '" data-t="'+n+'"'+(style?' style="'+style+'"':'')+'>'+
       n+'<span class="n">'+count+'</span></button>';
   }).join('');
   $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optTile({...r,i})).join('');
@@ -14108,7 +14170,7 @@ function drawPips(bySlot){
   const el=$('d-pips'); if(!el) return;
   el.innerHTML=slotsNow().map((slot,i)=>{
     const p=bySlot[i];
-    if(!p) return '<i>'+esc(slot)+'</i>';
+    if(!p) return '<i style="'+posTint(slot)+'">'+esc(slot)+'</i>';
     /* Filled: the last name, and the salary under it, so the strip is a running tally
        of what each signing cost as much as who it was. */
     return '<i class="on" style="'+posPaint(p.position)+'"><b>'+esc(lastName(p.name))+'</b>'+

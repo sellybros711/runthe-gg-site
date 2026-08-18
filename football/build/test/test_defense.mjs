@@ -301,6 +301,48 @@ window.__DEF={
       pointer:cs.pointerEvents}; },
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
+  /* ---- THE GROUP COLORS ----
+     Which color each group is wearing, and whether the text on it can be read. Sampled off
+     the rendered page rather than computed from the palette, because every one of these
+     sits on a different ground: a chip is on grass, a tab is on the page, a pip is on a
+     white wash over the page. The same red cleared 4.59 on one and 3.87 on another. */
+  tint(){
+    const lum=(c)=>{ const f=(v)=>{ v/=255;
+      return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); };
+      return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]); };
+    /* THE DOUBLED BACKSLASH IN THAT CHARACTER CLASS IS DELIBERATE. This whole hook is a
+       template literal, and a template literal eats one level of escaping, so the digit
+       class has to be written with two here to arrive in the page with one. Written with
+       one it arrives as a class of the letter d, which matches nothing in a color, so every
+       color reads as transparent and every ratio below comes out as exactly 1. That is what
+       it did, and 1 is not a number anybody reads as wrong.
+
+       Anything that will not parse reads as fully transparent, which walks the search up to
+       the next ground rather than guessing at a color it could not read. */
+    const parse=(s)=>{ const m=String(s||'').match(/[\\d.]+/g);
+      return m?m.slice(0,4).map(Number):[0,0,0,0]; };
+    const over=(fg,bg)=>{ const a=fg[3]===undefined?1:fg[3];
+      return [0,1,2].map(i=>fg[i]*a+bg[i]*(1-a)); };
+    /* The nearest ground that actually paints something opaque, which is what the eye
+       is comparing the text against. */
+    const bgOf=(el)=>{ let n=el;
+      while(n&&n!==document.documentElement){
+        const c=parse(getComputedStyle(n).backgroundColor);
+        if((c[3]===undefined?1:c[3])>0.9) return c.slice(0,3);
+        n=n.parentElement; }
+      return [8,11,20]; };
+    const read=(el,what)=>{ const bg=bgOf(el);
+      const fg=over(parse(getComputedStyle(el).color),bg);
+      const a=lum(fg), b=lum(bg);
+      return {what,hue:getComputedStyle(el).color,
+        ratio:Math.round(100*(Math.max(a,b)+0.05)/(Math.min(a,b)+0.05))/100}; };
+    const out=[];
+    document.querySelectorAll('#tabs .tab:not(.all)').forEach((t)=>out.push(read(t,'tab '+t.dataset.t)));
+    document.querySelectorAll('#field .chip.empty .disc').forEach((d)=>out.push(read(d,'spot '+d.textContent.trim())));
+    document.querySelectorAll('.dpips i:not(.on)').forEach((d)=>out.push(read(d,'pip '+d.textContent.trim())));
+    document.querySelectorAll('.rnode:not(.on) .rdot').forEach((d)=>out.push(read(d,'node '+d.textContent.trim())));
+    return out;
+  },
   /* ---- THE FIELD ----
      Whichever copy of it is on screen: the draft's, the squad's or the results'. */
   vis(){ return [...document.querySelectorAll('.field')]
@@ -467,6 +509,32 @@ boot();`;
       const t = window.__DEF.tabs().join(' ');
       return /DL/.test(t) && /LB/.test(t) && /DB/.test(t) && !/QB|WR/.test(t); }),
       await p.evaluate(() => window.__DEF.tabs()));
+
+    /* ── EVERY GROUP KEEPS ITS OWN COLOR, AND EVERY ONE STAYS READABLE ────────
+       An empty spot wears its group's color at low opacity, on four surfaces with four
+       different grounds. Both halves are asserted because they pull against each other:
+       fade the tint until it is comfortably legible and the three groups stop being
+       distinguishable, saturate it until they are and the label stops carrying. */
+    const tint = await p.evaluate(() => window.__DEF.tint());
+    const worst = tint.reduce((a, t) => Math.min(a, t.ratio), 99);
+    console.log(`  (${tint.length} tinted labels, worst ${worst}:1)`);
+    ok('nothing tinted drops under the 4.5:1 its own label needs',
+      tint.length > 0 && worst >= 4.5,
+      tint.filter((t) => t.ratio < 4.5).slice(0, 6));
+    /* The alpha differs by surface on purpose (a tab carries its color at full strength,
+       a chip on grass at 95%), so the comparison is the hue and not the string. */
+    const hueOf = (pfx) => [...new Set(tint.filter((t) => t.what.endsWith(' ' + pfx))
+      .map((t) => (t.hue.match(/[\d.]+/g) || []).slice(0, 3).join(',')))];
+    const groups = ['DL', 'LB', 'DB'].map((g) => hueOf(g));
+    ok('and DL, LB and DB are three different colors, not one',
+      groups.every((h) => h.length === 1)
+      && new Set(groups.map((h) => h[0])).size === 3,
+      { DL: groups[0], LB: groups[1], DB: groups[2] });
+    /* The one spot with no group of its own stays neutral, which is the honest thing for
+       the spot that has not decided what it is. */
+    ok('and the flex is none of them',
+      hueOf('FLEX').length === 1 && !groups.some((h) => h[0] === hueOf('FLEX')[0]),
+      hueOf('FLEX'));
 
     let spent = 0;
     for (let i = 0; i < 9; i++) {
