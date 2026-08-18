@@ -147,6 +147,32 @@
   // "Welcome back" mid-display.
   var INTRO_SEEN=false;
   try{ INTRO_SEEN=!!localStorage.getItem('rtg:howto:'+GAME); }catch(e){}
+
+  /* Teach once, then get out of the way.
+   *
+   * The rules are the pitch the first time somebody opens a game they cannot
+   * play yet: they say what the thing IS before it asks for a sign-up. They
+   * are noise the fifth time, and a signed-out visitor meets this gate every
+   * single visit, on every game. So every branch goes through here, and after
+   * the first showing it is one line pointing at the ? button.
+   *
+   * The flag is the same 'rtg:howto:<game>' key howto.js reads, so the gate
+   * and the modal can never both onboard the same person.
+   */
+  var INTRO_NOTE='<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+  function rulesList(){
+    return '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){
+      return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
+  }
+  function markIntro(){
+    INTRO_SEEN=true;
+    try{ localStorage.setItem('rtg:howto:'+GAME,'1'); }catch(e){}
+  }
+  function introBody(){ if(INTRO_SEEN) return INTRO_NOTE; markIntro(); return rulesList(); }
+  function intro(){
+    return INTRO_SEEN ? INTRO_NOTE
+                      : ('<div class="rtgpg-tag">How to play</div>'+introBody());
+  }
   function build(){
     // One click to play: if the player can play this game right now, don't gate
     // at all - land them straight on a ready board. The play is still charged on
@@ -199,9 +225,7 @@
         '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all ten games, unlimited.</div>';
       var mid;
       if(!INTRO_SEEN){
-        mid='<div class="rtgpg-tag">How to play</div>'+
-          '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
-        try{ localStorage.setItem('rtg:howto:'+GAME,'1'); }catch(e){}
+        mid=intro();
       } else {
         var hs=bestText();
         mid='<div class="rtgpg-tag">Welcome back</div>'+
@@ -223,7 +247,6 @@
     }
 
     // ---- blocked. Three different reasons, three different asks. ----
-    var rules='<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){ return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
 
     if(!signedIn()){
       // SIGNED OUT. Show what the game is before asking for anything: the rules
@@ -232,8 +255,7 @@
       var isFree = T && T.isFreeGame ? T.isFreeGame(GAME) : false;
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
-        '<div class="rtgpg-tag">How to play</div>'+
-        rules+
+        intro()+
         '<div class="rtgpg-note">'+(isFree
           ? 'Free to play with a free account. One go a day, on this and three other games.'
           : 'This one is part of the Arcade Card. Start with a free account and play the four free games today.')+'</div>'+
@@ -252,7 +274,7 @@
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
-        rules+
+        introBody()+
         '<ul class="rtgpg-perks">'+
           '<li><b>›</b><span>All ten games, as often as you like</span></li>'+
           '<li><b>›</b><span>NBA, NFL and MLB editions of five of them</span></li>'+

@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 81_grid_submit_idempotent.sql : stop a retried submit colliding with itself.
+-- 82_grid_submit_idempotent.sql : stop a retried submit colliding with itself.
 --
 -- THE BUG. A player finishes Common Ground on a phone, the post takes longer
 -- than the client's 8 second ceiling, and board.js retries. The first request

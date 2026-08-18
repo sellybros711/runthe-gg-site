@@ -364,7 +364,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=2"></script>
 <script src="/arcade/calendar.js?v=14"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=12"></script>
+<script src="/arcade/board.js?v=14"></script>
 <script src="/arcade/leaderboard.js?v=13"></script>
 <!-- Sportegories shipped without the shared account chrome, so it had no
      paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
@@ -372,7 +372,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth.js?v=2"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=14"></script>
-<script src="/arcade/pregame.js?v=14"></script>
+<script src="/arcade/pregame.js?v=15"></script>
 <script src="/arcade/funnel.js?v=6"></script>
 <script src="/arcade/share.js?v=6"></script>
 <script src="/arcade/resultart.js?v=2"></script>
@@ -389,7 +389,7 @@ window.GA_ID='G-L29P5MRWKE';
   'use strict';
   var SP = window.RTG_SPORTEGORIES;
   var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
-  var GAME = 'sportegories';
+  var GAME = 'sportegories', attemptFirst = false;
   var SAVE = 'rtg_sportegories_v1';
   var lastMarks = '';
   // Past-day mode. archive.js owns the members gate and the banner; here we
@@ -549,7 +549,12 @@ window.GA_ID='G-L29P5MRWKE';
     spinTo(puz.letter, beginPlay);
   }
   function beginPlay(){
-    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt) RTGTokens.startAttempt(GAME);
+    /* Whose result ranks: the first go of the day. Later ones still post, they
+       just cannot overwrite the row the first one earned. */
+    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
+      var att = RTGTokens.startAttempt(GAME);
+      attemptFirst = !!(att && att.first);
+    } else { attemptFirst = false; }
     updateAgainBtn();
     clearReveal(); revealDone=null;
     $('tally').classList.remove('on');
@@ -703,7 +708,7 @@ window.GA_ID='G-L29P5MRWKE';
         try{
           var secs = Math.max(5, SECONDS - Math.max(0,left));
           if(window.RTG_BOARD && RTG_BOARD.submit){
-            RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:total })
+            RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:total, replay:!attemptFirst })
               .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
           }
         }catch(e){}

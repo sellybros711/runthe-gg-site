@@ -29,6 +29,20 @@ await p.waitForTimeout(400);
 const board = (await p.$$eval('#opts .tile', (es) => es.map((e) => e.textContent.replace(/\s+/g, ' ')).join(' | ')));
 ok('the pinned spin lands where it should', /Texas A&M/.test(board), board.slice(0, 90));
 
+/* THE ALL TAB IS PRICED HIGH TO LOW, the way the NFL game's default tab is. It used to
+   group by position, four little lists in a fixed order; now the board opens on the most
+   expensive man, which is the decision the budget forces. This holds for any board, so it
+   is asserted on whatever the pinned seed deals rather than a seed chosen to make it true.
+   Only the signable rows are checked: blocked ones still sink to the bottom regardless of
+   price, which is a separate rule the position tabs share. */
+const allTab = await p.$$eval('#opts .tile:not(.off)', (es) => es.map((e) => {
+  const m = /\$([\d.]+)(M|K)/.exec(e.textContent || '');
+  return m ? (m[2] === 'K' ? +m[1] / 1000 : +m[1]) : null;
+}).filter((v) => v !== null));
+let priced = true;
+for (let i = 1; i < allTab.length; i++) if (allTab[i] > allTab[i - 1] + 1e-9) priced = false;
+ok('the ALL tab sorts signable players by price, high to low', priced, allTab.join(', '));
+
 const clicked = await p.evaluate(() => {
   const t = [...document.querySelectorAll('#opts .tile:not(.off)')]
     .find((e) => /Ryan Tannehill/.test(e.textContent || ''));

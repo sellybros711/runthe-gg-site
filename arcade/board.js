@@ -241,7 +241,7 @@
    * error, shown to a human, saying the opposite of what happened.
    *
    * So a 23505 counts as landed. The row is there; read back the streak it
-   * earned so the game shows the real number. 81_grid_submit_idempotent.sql
+   * earned so the game shows the real number. 82_grid_submit_idempotent.sql
    * stops the collision happening at all, and this keeps the fix true for any
    * client running against a database that has not had it yet. */
   function landed(res, run) {
@@ -316,9 +316,14 @@
       mistakes: opts.mistakes || 0,
       reveals: opts.reveals || 0,
       runLen: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen))),
-      // A run the server already counted a play for today. It still posts, but
-      // only to claim an empty slot: see supabase/79_grid_replay_posts.sql.
-      replay: replayFlag()
+      /* A run that is not this player's first go at the game today. It still
+         posts, but only to claim an empty slot: see 79_grid_replay_posts.sql.
+         Two ways to be one. The server can say it already counted a play for
+         today (a cleared cache, a second device), or the game can say so
+         itself, which is how a cardholder's second attempt reaches the board
+         when the first one left it empty without being able to overwrite a
+         row that is already there. */
+      replay: replayFlag() || !!opts.replay
     };
     return post(run).then(function (r) {
       if (r === false) return null;               // server refused; nothing to retry

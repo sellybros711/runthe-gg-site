@@ -486,7 +486,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=12"></script>
+<script src="/arcade/board.js?v=14"></script>
 <script src="/arcade/leaderboard.js?v=13"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=2"></script>
@@ -497,7 +497,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=2"></script>
 <script src="/arcade/calendar.js?v=14"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=14"></script>
+<script src="/arcade/pregame.js?v=15"></script>
 <script src="/arcade/howto.js?v=16"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=2"></script>
@@ -951,9 +951,9 @@ window.GA_ID='G-L29P5MRWKE';
     showEnd(s, false);
     // The board stores attempts REMAINING so the shared score column ranks
     // fewest-tries first; an unsolved card posts 0 and lands below every solve.
-    if(attemptFirst && !ARCHIVE && window.RTG_BOARD){
+    if(!ARCHIVE && window.RTG_BOARD){
       var rl = solved ? (MAX_TRIES + 1 - tries) : 0;
-      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:rl }).then(function(res){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:rl, replay:!attemptFirst }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
