@@ -6874,12 +6874,20 @@ function optionGroups(draw){
     groups.get(p.position).push({p,block:row.block});
     all.push({p,block:row.block});
   }
+  /* A POSITION TAB IS SORTED BY WHAT IT IS: everyone at that spot, best FPPG first,
+     with the ones you cannot sign sunk to the bottom. That is unchanged. */
   for(const rows of groups.values()){
     rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   }
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
+  /* ALL IS SORTED BY PRICE, HIGH TO LOW, the way the NFL game's default tab is. It used
+     to group by position, which read as four little lists stacked in a fixed order and
+     buried a board's most expensive man wherever his position happened to fall. Price
+     descending puts the decision the budget forces, who is worth the money, at the top
+     where it is made. Blocked rows still sink, so the tab opens on what you can actually
+     sign; FPPG breaks ties between two players at the same price. */
   all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
-    ||POSITIONS.indexOf(a.p.position)-POSITIONS.indexOf(b.p.position)
+    ||b.p.price_musd-a.p.price_musd
     ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   return new Map([[ALL,all],...groups]);
 }
