@@ -6561,7 +6561,14 @@ function nbrkBuild(){
   if(nbrk&&nbrk.forSeed===run.seed&&nbrk.rounds===run.playoffSeed.rounds) return nbrk;
   const rng=E.createSeededRNG(E.hashSeed(String(run.seed)+'|nflbracket'));
   const rounds=run.playoffSeed.rounds, bye=!!run.playoffSeed.bye;
-  const ladder=(run.playoffs||[]).slice();
+  /* THE LADDER ARRIVES AS IDS ON THE REAL PAGE, as objects in the test harness. run.js stores
+     run.playoffs as team_season_id strings and everything else (paintSeasonBug, the engine)
+     resolves them through DATA on the way out; the bracket has to do the same or every pinned
+     seat renders as the nickname of undefined. Resolved once here so the rest of this file can
+     read a team off any rung the way it always assumed it could. */
+  const resolveTeam=(x)=> (x&&typeof x==='object') ? x
+    : (x!=null&&DATA&&DATA.byTeamSeasonId ? DATA.byTeamSeasonId[x]||null : null);
+  const ladder=(run.playoffs||[]).map(resolveTeam);
   const sb=ladder[ladder.length-1]||null;              // the 1972 Dolphins
   const cc=ladder[ladder.length-2]||null;              // the 2007 Patriots
   const mySeed=nbrkSeedOf(run.season?run.season.regularWins:0,bye);
@@ -6580,7 +6587,10 @@ function nbrkBuild(){
      seven-team conference: the strongest rows are the same handful of dynasties over and
      over. A bracket with three of anybody in it is not a bracket. */
   const used=new Set(), clubs=new Set();
-  [sb,cc].filter(Boolean).forEach(t=>{ used.add(t.team_season_id); clubs.add(t.franchise); });
+  /* EVERY REAL OPPONENT IS RESERVED, not just the last two. The player is shown the run's own
+     opponent in each round they play (nbrkRoundGames), so a filler that happened to be the
+     same club as the wild-card or divisional opponent would put that team on screen twice. */
+  ladder.filter(Boolean).forEach(t=>{ used.add(t.team_season_id); clubs.add(t.franchise); });
   const pool=(DATA&&DATA.teamSeasons?DATA.teamSeasons:[]).filter(t=>!used.has(t.team_season_id));
   const take=(conf,n)=>{
     const c=pool.filter(t=>nbrkConf(t)===conf&&!used.has(t.team_season_id))
@@ -6611,6 +6621,17 @@ function nbrkBuild(){
 /* Which round the player walks in at: everybody plays the Super Bowl, a bye skips the
    wild card. Same arithmetic the college game uses. */
 function nbrkFirstRound(){ return NBRK_ROUNDS.length-((run.playoffSeed&&run.playoffSeed.rounds)||4); }
+
+/* THE TEAM THE RUN ACTUALLY SCHEDULES this round, resolved to the object the seats carry.
+   The field around the player is invented, but the team across from them is not: it is the
+   one advanceWeek plays, and the season screen already reads it through E.playoffOpponent.
+   The bracket asks the same source so the two can never disagree, which is the whole of the
+   bug this exists for. A round the player is not in (a bye's wild card) has no opponent. */
+function nbrkMyOpp(round){
+  const B=nbrkBuild(), first=nbrkFirstRound();
+  if(round<first) return null;
+  return E.playoffOpponent(B.ladder, run.playoffSeed.rounds, round-first)||null;
+}
 
 /* One simulated game between two seats. Strength decides it, with enough noise that a
    seven seed can turn one over: these are the games the player is not in, so they only
@@ -6666,19 +6687,32 @@ function nbrkConfPairs(side,round,rng){
 function nbrkRoundGames(round){
   const rng=E.createSeededRNG(E.hashSeed(String(run.seed)+'|nbrk|'+round));
   const mine=(g)=>!!(g&&((g[0]&&g[0].you)||(g[1]&&g[1].you)));
+  let out;
   if(round===3){
     const champ=(side)=>{
       const p=nbrkConfPairs(side,2,rng);
       return p.length?nbrkPlay(side+':2:0',p[0][0],p[0][1],rng):null;
     };
     const g=[champ('near'),champ('far')];
-    return [{side:'sb',i:0,pair:g,me:mine(g),key:'sb:3:0'}];
+    out=[{side:'sb',i:0,pair:g,me:mine(g),key:'sb:3:0'}];
+  }else{
+    out=[];
+    for(const side of ['near','far']){
+      nbrkConfPairs(side,round,rng).forEach((pair,i)=>{
+        out.push({side,i,pair,me:mine(pair),key:side+':'+round+':'+i});
+      });
+    }
   }
-  const out=[];
-  for(const side of ['near','far']){
-    nbrkConfPairs(side,round,rng).forEach((pair,i)=>{
-      out.push({side,i,pair,me:mine(pair),key:side+':'+round+':'+i});
-    });
+  /* THE PLAYER'S OPPONENT IS THE RUN'S, not the bracket's. Every other seat is filled by the
+     reseed above; the seat across from the player is overwritten with the team the run really
+     schedules, keeping whatever seed the pairing gave it. Without this the wild-card and
+     divisional games showed a plausible stranger while advanceWeek was playing someone else,
+     which is exactly what a player watching the two side by side reported. */
+  const opp=nbrkMyOpp(round);
+  if(opp) for(const g of out) if(g.me){
+    const seat=g.pair[0]&&g.pair[0].you?1:0;
+    const cur=g.pair[seat];
+    g.pair[seat]={team:opp,seed:(cur&&cur.seed)||1};
   }
   return out;
 }

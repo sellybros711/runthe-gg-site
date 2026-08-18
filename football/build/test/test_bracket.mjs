@@ -64,7 +64,12 @@ window.__BRK={
     run.season={regularWins:wins,playoffRound:0,wins,losses:17-wins,results:[]};
     run.playoffSeed={made:true,bye:!!bye,rounds:bye?3:4,label:bye?'Top seed':'Wild card',
       roundNames:E.playoffRoundNames(bye?3:4)};
-    run.playoffs=E.generatePlayoffs(DATA.prepared,E.createSeededRNG(5),{count:bye?3:4});
+    /* AS IDS, the way run.js stores them. The bracket resolves them back through DATA, so
+       injecting objects here would test a data shape the shipped page never sees, which is
+       exactly how the seats-are-strings bug hid: every pinned opponent rendered as the
+       nickname of undefined on the real page and this harness never noticed. */
+    run.playoffs=E.generatePlayoffs(DATA.prepared,E.createSeededRNG(5),{count:bye?3:4})
+      .map(g=>g.team_season_id);
     nbrk=null;
     const B=nbrkBuild();
     return {mySeed:B.mySeed,myConf:B.myConf,farConf:B.farConf,
@@ -103,6 +108,11 @@ window.__BRK={
   }),
   games:(r)=>nbrkRoundGames(r).map(g=>({side:g.side,me:!!g.me,key:g.key,
     pair:g.pair.map(x=>x?(x.you?'YOU':(x.team?x.team.team_season_id:null)):null)})),
+  /* THE OPPONENT THE RUN SCHEDULES for a round, straight off the engine helper the season
+     screen reads, as an id so it can be held against what the bracket drew in the player's
+     game. A round the player is not in has none. */
+  oppId:(r)=>{ const o=E.playoffOpponent(run.playoffs,run.playoffSeed.rounds,r-nbrkFirstRound());
+    return (o&&o.team_season_id)?o.team_season_id:(o||null); },
   hasData:()=>!!DATA,
   state:()=>({round:run.season&&run.season.playoffRound,
     rounds:(run.playoffSeed&&run.playoffSeed.rounds)||0,
@@ -229,9 +239,10 @@ try {
       const r = await p.evaluate(([w, y, s]) => {
         const B = window.__BRK.park(w, y, s);
         return { B, first: window.__BRK.first(),
-          games: [0, 1, 2, 3].map((rd) => window.__BRK.games(rd)) };
+          games: [0, 1, 2, 3].map((rd) => window.__BRK.games(rd)),
+          opps: [0, 1, 2, 3].map((rd) => window.__BRK.oppId(rd)) };
       }, [wins, bye, seed]);
-      const { B, first, games } = r;
+      const { B, first, games, opps } = r;
       const ids = [...B.near, ...B.far].filter((x) => x && x !== 'YOU');
 
       ok(tag + ': seven seeds a conference', B.near.length === 7 && B.far.length === 7,
@@ -254,6 +265,18 @@ try {
         games.slice(first).every((g) => g.filter((x) => x.me).length === 1)
         && games.slice(0, first).every((g) => g.every((x) => !x.me)),
         games.map((g) => g.filter((x) => x.me).length));
+      /* THE BUG THIS FIX IS FOR. Every round the player is in, the team drawn across from
+         them has to be the team the run schedules, not a plausible stranger the bracket's
+         own reseed happened to land there. Read the opponent seat out of the player's game
+         and hold it against E.playoffOpponent, the one source advanceWeek and the season
+         screen both read. Before the fix the wild card and divisional seats were fillers and
+         this failed on both; the conference and Super Bowl happened to be pinned already. */
+      const drawnOpp = (rd) => { const g = games[rd].find((x) => x.me); if (!g) return null;
+        return g.pair.find((x) => x && x !== 'YOU') || null; };
+      ok(tag + ': the team drawn across from the player is the one the run schedules',
+        games.slice(first).every((g, k) => { const rd = first + k;
+          return drawnOpp(rd) === opps[rd] && opps[rd] != null; }),
+        games.map((g, rd) => (rd < first ? null : [drawnOpp(rd), opps[rd]])));
       /* A conference is a closed set until the Super Bowl, with exactly one exception, and
          the exception is the point of this assertion rather than a hole in it.
 
