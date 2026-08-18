@@ -15945,3 +15945,66 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   full-price check) fail **identically on the deployed baseline** - pre-existing stale fixtures, not this
   change. Main script parses.
 - Tunable: `EXCHANGE_COST`, `SHARD_COST`, and the `sc(...)` coin tiers in `wheelPrizesFor()`.
+
+### THE FRONTIER FIELD IS THE FRONTIER'S OWN (owner: loyal tour pros were teeing it up in league weeks)
+- `leagueFieldRoster()` topped a short Frontier field up out of the general world pool, so players who had
+  publicly stayed loyal to the tour showed up in a breakaway event. Now the field is exactly **defectors +
+  generated signings**: the top-up draws newly-created pros instead of borrowing from `w.active`.
+- Generated signings get a full skill spread (every key in `SKK`, 40-99) and are seeded off
+  `careerSeed`/`year`, so the same career re-renders the same field.
+- Verified: a Playwright check on a rigged 12-defector career - field length correct, 12 defectors present,
+  the rest generated, **zero loyal tour players**, deterministic across two calls, generated skills valid.
+  0 page errors.
+
+### THE FRONTIER LEAGUE GETS 15 VENUES OF ITS OWN (task #46; owner: "I just played a Miami tournament and
+### it was a course in the woods")
+- **The report was exactly right and the cause was structural.** The 15 `Frontier ...` stops existed *only*
+  in `LEAGUE_STOPS`. Nothing else in the game knew them: `eventCourse()` returned null (no venue subtitle),
+  `COURSEFIT` had no entry (a personality-free course), and - the actual complaint - `momentCourseKey()`
+  fell through to `keys[(dHash(evtName)>>>0)%keys.length]`, a **hash-picked stand-in** from the Daily pool.
+  Miami drew a woodland course. League events are `big:true` and `momentInfo()` has no major restriction,
+  so a Frontier Sunday in contention absolutely can be played hole by hole - the venue was just never real.
+- **Fix: the league now has its own circuit.** 15 purpose-built venues in `DAILY_COURSES`, one per stop,
+  each flagged `league:true`, each matched to its city. `EVENT_COURSE` maps every stop to its venue **by
+  object identity**, which is what lets `momentCourseKey()` recover the internal key.
+  - Miami → **Vermilion Key Club**, Biscayne Shores FL, tropical, water on half the holes, a drivable par-4
+    to a spit of land in the lagoon (7), an island green (15), the bay pinching the closer (18).
+  - Riyadh → **Najd Dunes**, Dubai → **Gulf Dunes** (desert/waste). London → **Ashdown Heath** (Surrey
+    gorse). Seoul → **Bukhan Ridge** (mountain golf + creek). Cape Town → **Table Bay Links** (coastal,
+    wide Atlantic). Tokyo → **Kasumi Pines**. Chicago → **Lakeshore Prairie**. Andalucía → **Cork Oak**
+    (tight, heavy dogleg). Plus Singapore, Adelaide, Mexico City, Boston, Dallas, Rio.
+  - **Nine biomes** across the circuit; only two stops are parkland.
+- Each venue carries a full card, and **every card sums exactly to its stated par and yardage** - the
+  generator honours the pars/yardages the signature-hole text claims, then trues the card up, clamping
+  every hole into a believable band (par-3 155-245, par-4 340-505, par-5 500-625) unless a signature hole
+  pins it. `cdiff` is fitted off the existing 41 courses: `cdiff ≈ 0.08536*avg − 0.04962`.
+- Wired into every system that gives a course character: `COURSEFIT` (per-stop skill multipliers),
+  `HV_COURSE_BIOME`, `HV_COURSE_STYLE` (fairway width spans 0.62-1.34, water 0 → 0.52), `HV_COURSE_TWEAK`
+  (grass/tree tone, flora mix, flower colours - all 15 grass tones distinct), and **`DSIG_HAZ`** for the
+  signature holes. `DSIG_HAZ` was chosen over `HV_SIG_EXTRA` deliberately: `dScenario()` reads `DSIG_HAZ`
+  only, so one table drives **both** the hole geometry *and* the on-course decision prompts.
+- The whole league flies one crimson flag (`LEAGUE_FLAG_C='#c2453b'` in `HV_FLAG_OVR`) so a Frontier week
+  reads as a different circuit at a glance; accent and design still vary per course.
+- `LEAGUE_COURSE_KEYS` keeps all 15 **out of `DAILY_KEYS`** - career venues only, same treatment as
+  `GAMES_COURSE_KEY`. The Daily rotation is unchanged.
+- Renamed `'Frontier Valderrama'` → `'Frontier Andalucía'` (the last real course name in the schedule),
+  with a `LEGACY_EVENT_ALIAS` entry so existing careers keep their wins.
+- **Note for whoever tunes the hole view next: `stepMul` and `sparse` in `HV_COURSE_TWEAK` are DEAD.** They
+  are set on several courses and read by nothing - leftovers from the deleted illustrated `hvTerrain`. The
+  pixel renderer's density comes from `const wooded=!desert&&!links` and a fixed `step`. The lever that
+  actually works is the **`scatter` flora mix**: `flower` draws at `p*0.35` behind a vnoise gate, so a
+  flower-heavy mix genuinely thins the canopy. That is how Miami was opened up
+  (`[["flower",0.5],["palm",0.34],["broadleaf",0.16]]`) after a palm-heavy mix still read as woods. Valid
+  plant kinds are `fescue, flower, pine, cypress, saguaro, palm, rock, dune, gorse, barrel, scrub,
+  ocotillo` - anything else silently falls through to a generic canopy disc (`cactus` and `heather` were
+  caught doing exactly that).
+- Verified in Playwright: a 27-check suite, **0 fail, 0 page errors**. 15 stops → 15 distinct venues each
+  with venue+location, course fit, layout style and ≥3 signature hazards; every card sums to par/yardage;
+  none leak into the Daily; all 15 fly the crimson with ≥6 accent/design combos; **all 270 league holes
+  render** through `hvGeom`+`hvBackdrop`; Miami's decision prompts reference its water (holes 12 and 18
+  across 36 seed/condition samples, 16 distinct tags); and **end to end** - a rigged Frontier Miami Sunday
+  in contention fires a Moment, `startMomentRound` lands on `dailyround` playing Vermilion Key Club
+  (tropical, not a stand-in), tracer rendering, header reading "Frontier Miami FINAL ROUND · ≈ BREEZY".
+  All 7 inline script blocks parse. Rendered hole-view grids reviewed by eye for all 15.
+- Tunable: the venue entries in `DAILY_COURSES`, `HV_COURSE_STYLE`/`HV_COURSE_TWEAK` for the look,
+  `DSIG_HAZ` for what the signature holes ask of you, and `LEAGUE_FLAG_C` for the circuit's colour.
