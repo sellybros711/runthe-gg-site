@@ -4118,6 +4118,88 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
     </div>
+
+    <!-- What this game is, in prose, for anyone who arrives without knowing. Folded, because
+         five paragraphs sitting open under the wheel is a wall of copy nobody reads and it
+         pushes the game itself off the screen. Folded is not hidden: the text is in the HTML
+         either way, and Google indexes a closed <details> at full weight. Same pattern and
+         same class names as RunThePitch, so the two games stay one site. -->
+    <style>
+    .rt-seo-details{max-width:660px;margin:30px auto 0;padding:0 16px;text-align:left;
+      border-top:1px solid rgba(255,255,255,.1);}
+    .rt-seo-details summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
+      font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
+      letter-spacing:.02em;color:var(--acc,#F2706B);font-size:19px;padding:15px 0;
+      -webkit-tap-highlight-color:transparent;}
+    .rt-seo-details summary::-webkit-details-marker{display:none;}
+    .rt-seo-details summary .sm-chev{margin-left:auto;width:9px;height:9px;flex:0 0 auto;
+      border-right:2px solid #8aa0b6;border-bottom:2px solid #8aa0b6;transform:rotate(45deg);
+      transition:transform .2s ease;margin-right:3px;}
+    .rt-seo-details[open] summary .sm-chev{transform:rotate(-135deg);}
+    .rt-seo-body{padding-bottom:14px;}
+    .rt-seo-body h2,.rt-seo-body h3{font-family:'Anton',Impact,sans-serif;font-weight:400;
+      text-transform:uppercase;letter-spacing:.02em;margin:18px 0 7px;}
+    .rt-seo-body h2{font-size:17px;} .rt-seo-body h3{font-size:14px;}
+    .rt-seo-body p,.rt-seo-body li{font-size:14px;line-height:1.62;opacity:.85;margin:0 0 9px;}
+    .rt-seo-body ul{margin:0 0 10px;padding-left:19px;}
+    .rt-seo-body a{color:var(--acc,#F2706B);font-weight:700;}
+    </style>
+    <details class="rt-seo-details">
+      <summary>About The Perfect Season &amp; FAQ<span class="sm-chev" aria-hidden="true"></span></summary>
+      <div class="rt-seo-body">
+        <h2>About The Perfect Season</h2>
+        <p><b>The Perfect Season</b> is a free NFL roster-building game you play in the browser, with
+           nothing to download and no account required. A wheel hands you a year, then a team from that
+           year, and you sign one player off it. Six spins fill six spots, and every signing comes out of
+           a $140M salary cap. Then you play all 17 games and, if you win enough of them, a playoff run
+           that ends the moment you lose once.</p>
+        <p>Every player is priced and scored from his real week-by-week statistics for the exact season you
+           drafted him from, not from his career reputation. That is the whole skill of the game: knowing
+           which seasons were monsters. A legend in a down year is an overpriced name, and a journeyman in
+           his one outlier season is often the best value on the board.</p>
+
+        <h2>How a run works</h2>
+        <ul>
+          <li>Six spins, six signings, $140M. Money left unspent is production you never fielded.</li>
+          <li>Do not like the draw? Re-spin the year or the team for $5M, then $10M, then $15M, off the
+              same budget that signs your players.</li>
+          <li>Players who shared a team, a college or a draft class build chemistry, which lifts the whole
+              roster. Two linked mid-priced players often beat one isolated superstar at the same price.</li>
+          <li>Shape matters as much as talent. A quarterback with nobody to throw to loses games a
+              balanced roster wins.</li>
+          <li>Win 12 of 17 and you are in the playoffs. Win 15 and you skip a round. One playoff loss
+              ends the run.</li>
+        </ul>
+
+        <h2>One Franchise mode</h2>
+        <p>The same game with the team wheel locked to a single franchise, so only the year moves and every
+           player you sign actually wore that jersey. It turns the draft into a history exam about one club:
+           which eras were loaded, which years to re-spin away from, which cheap seasons hide chemistry
+           partners for your stars. Each franchise keeps its own leaderboard, so deep fans of one team have
+           a real edge. It needs a free RunThe.GG account.</p>
+
+        <h2>Frequently asked questions</h2>
+        <h3>Is it free?</h3>
+        <p>Yes. The Perfect Season is free to play and always has been. Some games on RunThe.GG offer
+           optional in-game purchases.</p>
+        <h3>Do I need an account?</h3>
+        <p>No. You can play a full season as a guest. A free account saves your runs, puts you on the
+           leaderboards and unlocks One Franchise mode.</p>
+        <h3>What is a perfect season?</h3>
+        <p>20 and 0: seventeen regular-season wins and a clean playoff run. It is rare by design, and it is
+           the number the leaderboards are built around.</p>
+        <h3>Where do the numbers come from?</h3>
+        <p>Real NFL statistics from the <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>
+           open data project, applied season by season rather than career-wide.</p>
+        <h3>Does it work on a phone?</h3>
+        <p>Yes. It is built for the browser on phone, tablet and desktop, and can be added to your home
+           screen.</p>
+        <p>New here? Read the full <a href="/football/how-to-play.html">how to play guide</a>, try the college
+           version in <a href="/cfb/">Perfect Season: College Football</a>, or see everything at
+           <a href="/">RunThe.GG</a>.</p>
+      </div>
+    </details>
+
     <footer class="legal">
       <p><a href="/football/how-to-play.html" target="_blank" rel="noopener">How to play</a><span>&middot;</span><a
         href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
