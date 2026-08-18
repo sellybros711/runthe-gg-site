@@ -3008,6 +3008,11 @@ window.GA_ID='G-L29P5MRWKE';
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s ease both}
+  /* THE WEEK'S HEADLINE PLAY, under the score. A week used to be a number against a number
+     with none of your own six named in it, which is a strange thing for a game whose whole
+     subject is which six you picked. HEIGHT IS RESERVED, like the streak line above: this
+     fills in a beat after the score lands and the card must not jump when it does. Two
+     lines' worth, because a name plus a passer plus a distance wraps on a narrow phone. */
   /* THE BYE CHASE, GM mode. Reads as a scoreboard line, not a notification: the pips
      are the last eight games, filled for a win. Gold once it is clinched. */
   .seedchase{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -3128,6 +3133,20 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--dim)}
   .bx-row.tot .bpts{color:#fbbf24}
   .bx-row .star{color:#fbbf24;font-size:10px;margin-left:3px}
+  /* The scoring plays under the box score. Deliberately not a grid: a blurb is a sentence of
+     unpredictable length and the tag beside it has to sit at the top of it, not centred
+     against three wrapped lines. */
+  .bx-plays{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  .bx-ph{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+  .bx-play{display:flex;align-items:flex-start;gap:7px;padding:4px 0;font-size:12.5px;
+    line-height:1.35;color:#cbd5e1}
+  .bpk{flex:none;font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.08em;
+    padding:2px 5px;border-radius:4px;margin-top:1px;
+    background:rgba(74,222,128,.14);color:#4ade80}
+  .bpk.tk{background:rgba(59,130,246,.16);color:#7dd3fc}
+  .bpb{flex:1 1 auto;min-width:0}
+  .bpc{flex:none;font-family:var(--fn);font-size:10px;color:var(--dim);margin-top:2px}
 
   /* THE SCORE BUG
      Two tiers, the way a broadcast builds one. On top, a plate per team painted in
@@ -3305,6 +3324,11 @@ window.GA_ID='G-L29P5MRWKE';
   .pocap .call.you b{color:#4ade80} .pocap .call.them b{color:#fca5a5}
   .pocap .call.big{border-color:rgba(251,191,36,.45)}
   .pocap .call.big b{color:#fcd34d}
+  /* A takeaway is your play but it is not a score, so it is called in the defensive blue
+     rather than the green the scoreboard uses. Nothing on the bug moves when one lands and
+     the colour is what says so. */
+  .pocap .call.tk b{color:#7dd3fc;font-size:22px}
+  .pocap .call.tk{border-color:rgba(59,130,246,.4)}
   @keyframes callin{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
 
   /* Every score, kept, so the game has a record you can read after it. */
@@ -3316,6 +3340,7 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .w{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
   .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
+  .polog .pl.tk .w{color:#7dd3fc} .polog .pl.tk .n{color:#7dd3fc;font-size:11px}
 
   /* ---- Drive-chart field ---- */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
@@ -4996,8 +5021,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=53"></script>
-<script src="run.js?v=69"></script>
+<script src="engine.js?v=54"></script>
+<script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -7897,6 +7922,65 @@ $('b-play').onclick=()=>{ if(pendingChallenge) playBowl(); else startSeason(); }
    week 4 still shows the players you had in week 4 rather than whoever is on the roster
    after the trade deadline. No opponent line-up is invented: a historic opponent is
    modelled as a team, not as players, so its side stays a team total. */
+/* ---- WHO DID IT, IN THE POSTSEASON ----
+ *
+ * Names on the plays: who caught the touchdown, or in Lockdown who took the ball away. The
+ * broadcast calls them and the box score for that game lists them, and both read this.
+ *
+ * THE POSTSEASON ONLY, WHICH IS A DECISION RATHER THAN A LIMITATION. A playoff game is the
+ * one the player actually watches: it has a running clock, a drive chart and a call banner,
+ * and it is paced to be looked at. A regular season week is a score that flashes past in
+ * about half a second on the way to seventeen more of them, and a line of commentary under
+ * it is something to read rather than something to watch. This was built for both at first
+ * and the regular season version was the wrong idea: it turned a fast, skimmable season into
+ * a wall of text nobody asked to read.
+ *
+ * THE STREAM IS ITS OWN, AND THAT IS THE CARE POINT. Every game in a season is played out of
+ * one sequential rng, so a draw taken from it here would consume values the next week depends
+ * on and quietly rewrite the rest of the season. That is the toFootballScore bug written down
+ * in build/test/README.md, and it does not throw, it just makes the leaderboard disagree with
+ * itself. Everything below is seeded off the finished game instead: the seed, the round, and
+ * the score that has already been decided.
+ *
+ * Cached in a WeakMap rather than on the result, because the results array is walked, counted
+ * and summarised in a dozen places and none of them should have to know to skip a field. Lazy
+ * too: fastForward plays whole rounds in a loop with nothing on screen and none of this runs.
+ */
+const creditCache=new WeakMap();
+/* The same string the playoff broadcast seeds its own script with, so the box score afterwards
+   reproduces exactly the touchdowns that were called on screen rather than a second, equally
+   legal set of them. */
+function gameSeedStr(r){
+  return run.seed+'|'+r.round+'|'+r.shownYou+'-'+r.shownThem;
+}
+function gameCredits(r,script){
+  if(!r||!r.playoff||!r.lines||!r.lines.length||r.shownYou==null) return null;
+  const hit=creditCache.get(r); if(hit) return hit;
+  const seedStr=gameSeedStr(r);
+  const rng=E.createSeededRNG(E.hashSeed(seedStr+'|credits'));
+  const out=isDefRun()
+    ? {mode:'defense',events:E.takeawayScript(r.lines,rng)}
+    : {mode:'offense',events:E.touchdownCredits(
+        script||E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr))),
+        r.lines,rng)};
+  creditCache.set(r,out);
+  return out;
+}
+/* The same credits as a block, for the box score. A points column says who had a big
+   afternoon; this says what he actually did with it, which is the half a fantasy total
+   never shows. Silent when there is nothing to list rather than printing an empty heading. */
+function creditPanel(r){
+  const c=gameCredits(r);
+  if(!c||!c.events.length) return '';
+  const head=c.mode==='defense'?'Takeaways':'Your touchdowns';
+  return '<div class="bx-plays"><div class="bx-ph">'+head+'</div>'+
+    c.events.map(e=>'<div class="bx-play"><span class="bpk'+(c.mode==='defense'?' tk':'')+'">'+
+      (c.mode==='defense'?(e.kind==='INTERCEPTION'?'INT':'FUM'):'TD')+'</span>'+
+      '<span class="bpb">'+esc(e.blurb)+'</span>'+
+      (c.mode==='defense'?'<span class="bpc">Q'+e.q+' '+esc(e.clock)+'</span>':'')+
+      '</div>').join('')+'</div>';
+}
+
 function boxScore(r){
   if(!r||!r.lines||!r.lines.length) return;
   const when=r.playoff?(ROUND_SHORT[r.round]||String(r.round||'Playoffs').toUpperCase()):('Week '+r.week);
@@ -7936,6 +8020,7 @@ function boxScore(r){
     order.map(row).join('')+
     '<div class="bx-row tot"><span></span><span class="bn"><b>Team total</b></span>'+
       '<span class="bpts">'+total.toFixed(1)+'</span><span class="bvs"></span></div>'+
+    creditPanel(r)+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="b-bx-x">Close</button></div>';
   $('sheet-in').dataset.kind='box';
   const x=$('b-bx-x'); if(x) x.onclick=closeSheet;
@@ -9631,11 +9716,17 @@ function recordBefore(r){
    score, hold on it, repeat, then run out the quarter. */
 function buildTimeline(script,pace){
   const segs=[];
+  /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is
+     rebuilt quarter by quarter out of a filtered copy, so by the time a segment is played
+     there is nothing left tying it to the play it came from, and the touchdown credits are
+     keyed on exactly that. Keyed by the event object rather than recomputed, because two
+     scores in a quarter can share a clock and would not be told apart by one. */
+  const idx=new Map(script.map((e,i)=>[e,i]));
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
       segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,ms:pace.hold});
+      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
       from=e.sec;
     }
     segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
@@ -10011,6 +10102,18 @@ function playPlayoffGame(r,after){
   const seedStr=run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
   const segs=buildTimeline(script,pace);
+  /* WHO SCORED THEM, on the same script the timeline is built from, so the name in the call
+     belongs to the play the clock just stopped for. Passing the script in rather than
+     letting gameCredits build its own is what makes the box score afterwards agree with the
+     broadcast: same seed, same script, same six touchdowns. */
+  const credits=gameCredits(r,script);
+  const creditAt=new Map();
+  if(credits&&credits.mode==='offense') credits.events.forEach(c=>creditAt.set(c.at,c));
+  /* Lockdown's takeaways are not scores, so they are not on the timeline at all. They ride
+     the clock instead: each one flashes up as the run segment sweeps past its time, which
+     costs the broadcast nothing because that animation is already running. */
+  const takeaways=credits&&credits.mode==='defense'?credits.events.slice():[];
+  let tkNext=0;
 
   const driveRng=E.createSeededRNG(E.hashSeed(seedStr+'|drives'));
   const drives=generateDrives(script,driveRng);
@@ -10049,7 +10152,12 @@ function playPlayoffGame(r,after){
     $('po-q').textContent='FINAL';
     $('po-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
     $('po-log').innerHTML='';
-    script.forEach(e=>logScore(e));
+    /* The whole game, in one pass, in time order: the takeaways belong between the scores
+       rather than in a block after them, so the log reads as the game happened. */
+    const all=script.map((e,i)=>({t:(e.q-1)*900+(900-e.sec),e,i}))
+      .concat(takeaways.map(t=>({t:(t.q-1)*900+(900-t.sec),tk:t})))
+      .sort((a,b)=>a.t-b.t);
+    all.forEach(x=>x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
     paintField(3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
@@ -10063,13 +10171,24 @@ function playPlayoffGame(r,after){
   };
   poSkip=finish;
 
-  const logScore=(e)=>{
+  /* `i` is the play's index in the script, which is how a credit finds its touchdown. The
+     replay at the end walks the script in order and passes it; nothing else has to. */
+  const logScore=(e,i)=>{
     const who=e.team==='you'?'You':(opp?opp.franchise:'OPP');
+    const c=i!=null?creditAt.get(i):null;
     $('po-log').insertAdjacentHTML('afterbegin',
       '<div class="pl '+e.team+'"><span class="t">'+periodLabel(e)+' '+e.clock+'</span>'+
-      '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+
+      '<span class="w">'+(c?esc(c.short):esc(who)+' '+e.kind.toLowerCase())+
       (e.note?', '+esc(e.note):'')+'</span>'+
       '<span class="n">'+e.you+'-'+e.them+'</span></div>');
+  };
+  /* A takeaway in the log looks like a score without one, because it is the same kind of
+     moment in this mode and the running score beside it has not moved. */
+  const logTakeaway=(t)=>{
+    $('po-log').insertAdjacentHTML('afterbegin',
+      '<div class="pl you tk"><span class="t">Q'+t.q+' '+esc(t.clock)+'</span>'+
+      '<span class="w">'+esc(t.short)+'</span>'+
+      '<span class="n">'+(t.kind==='INTERCEPTION'?'INT':'FUM')+'</span></div>');
   };
 
   let i=0;
@@ -10084,7 +10203,18 @@ function playPlayoffGame(r,after){
         const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k;
         $('po-ck').textContent=clockText(sec);
-        paintField((seg.q-1)*900+(900-sec));
+        const elapsed=(seg.q-1)*900+(900-sec);
+        paintField(elapsed);
+        /* Any takeaway the clock has just swept past. One comparison a frame against a
+           sorted list, and the list is at most four long. */
+        while(tkNext<takeaways.length&&
+          ((takeaways[tkNext].q-1)*900+(900-takeaways[tkNext].sec))<=elapsed){
+          const t=takeaways[tkNext++];
+          $('po-cap').innerHTML='<div class="call you tk"><b>'+
+            (t.kind==='INTERCEPTION'?'INTERCEPTED':'FUMBLE')+'</b>'+
+            '<span>'+esc(t.blurb)+'</span></div>';
+          logTakeaway(t);
+        }
         bug.classList.toggle('urgent',seg.q===4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(step); return; }
         next();
@@ -10100,10 +10230,13 @@ function playPlayoffGame(r,after){
       cell.classList.add('scored');
       setTimeout(()=>cell.classList.remove('scored'),520);
       paintField((e.q-1)*900+(900-e.sec));
+      /* The name where the word "You" used to be. A drafted man scoring is the thing this
+         screen is actually reporting, and the score is on the bug above it either way. */
+      const c=creditAt.get(seg.i);
       $('po-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b>'+
-        '<span>'+(e.team==='you'?'You':esc(r.opponent))+
+        '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
-      logScore(e);
+      logScore(e,seg.i);
       poTimer=setTimeout(next,seg.ms);
       return;
     }

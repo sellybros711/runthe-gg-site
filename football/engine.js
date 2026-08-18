@@ -903,6 +903,292 @@ function scoringScript(you, them, rng) {
   return out;
 }
 
+/* ─── WHOSE TOUCHDOWN IT WAS ──────────────────────────────────────────────────
+ *
+ * The broadcast knew a touchdown had happened and never knew whose, so a drafted roster
+ * could play a whole season without one of its six names being said out loud. Every score
+ * on screen belonged to the team. This puts a man on each of them.
+ *
+ * CREDIT IS DRAWN, NOT SIMULATED, which is the bargain scoringScript already makes one
+ * level up: the game was settled in fantasy space long before this runs, and the only
+ * question left is which legal, watchable version of it to show. A touchdown goes to one of
+ * the six on a weight that is what he produced in THIS game (the box score's own column)
+ * times how much of his season is the kind of work that ends in an end zone. The man having
+ * the big day scores most of them, the decoy tight end scores few, and neither is ever
+ * impossible.
+ *
+ * IT MUST HAVE ITS OWN RNG, AND THAT IS NOT A STYLE NOTE. `rng` is one sequential stream
+ * shared by every game in a season, so drawing a scorer from it would consume values the
+ * next week depends on and silently rewrite every later result. That is precisely the
+ * failure build/test/README.md documents against toFootballScore, and it would invalidate
+ * every run recorded before the change rather than throw. Callers seed a separate stream
+ * off the game; nothing in here is reachable from the stream that plays seasons.
+ */
+
+/* The name a commentator would use on second reference. Suffixes ride along on purpose:
+   "Beckham Jr." is how that man is said out loud, and cutting to "Beckham" to satisfy a
+   rule about the last token reads as a different player. */
+function lastName(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  return parts.length > 1 ? parts.slice(1).join(' ') : (parts[0] || '');
+}
+
+function pickWeighted(items, weights, rng) {
+  let sum = 0;
+  for (const w of weights) sum += Math.max(0, w) || 0;
+  if (!(sum > 0)) return items.length ? items[Math.floor(rng() * items.length)] : null;
+  let r = rng() * sum;
+  for (let i = 0; i < items.length; i++) {
+    r -= Math.max(0, weights[i]) || 0;
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+/* HOW LONG THE SCORING PLAY WAS. Most touchdowns are short and a few are the highlight of
+   somebody's season, so this is a tight base with a long tail rather than anything even.
+   Runs sit closer to the goal line than catches do, which is the shape the real thing has. */
+function touchdownYards(play, rng) {
+  const r = rng();
+  if (play === 'run') {
+    if (r < 0.72) return 1 + Math.floor(rng() * 5);
+    if (r < 0.95) return 6 + Math.floor(rng() * 15);
+    return 21 + Math.floor(rng() * 50);
+  }
+  if (r < 0.45) return 2 + Math.floor(rng() * 8);
+  if (r < 0.85) return 10 + Math.floor(rng() * 16);
+  return 26 + Math.floor(rng() * 50);
+}
+
+/* One line of commentary per touchdown. Several shapes each, drawn on the same stream, so a
+   roster that scores four in a game does not read the same sentence four times.
+   THE PHRASING IS BANDED BY DISTANCE, which is not decoration: "punches it in" is a
+   goal-line verb and reads as a mistake on a 40-yard run, and "breaks away" reads as one on
+   a sneak. Each band only holds verbs that are true at that distance. */
+function touchdownBlurb(scorer, passer, yards, play, rng) {
+  const who = scorer.name, yd = yards;
+  const pick = (forms) => forms[Math.floor(rng() * forms.length)];
+  if (play === 'run') {
+    if (yd <= 5) return pick([
+      who + ' punches it in from the ' + yd,
+      who + ' powers in from ' + yd + ' yards out',
+      who + ' gets in behind his line from the ' + yd,
+    ]);
+    if (yd <= 20) return pick([
+      who + ' finds the corner from ' + yd + ' yards',
+      who + ' cuts back for a ' + yd + '-yard touchdown',
+      who + ' carries it in from ' + yd + ' out',
+    ]);
+    return pick([
+      who + ' breaks away for ' + yd + ' yards',
+      who + ' takes it ' + yd + ' yards to the house',
+      who + ' is gone, ' + yd + ' yards untouched',
+    ]);
+  }
+  if (passer) {
+    if (yd <= 9) return pick([
+      passer.name + ' finds ' + who + ' from ' + yd + ' yards',
+      who + ' comes down with it in the corner, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' to ' + who + ' for the score from the ' + yd,
+    ]);
+    if (yd <= 25) return pick([
+      who + ' hauls in a ' + yd + '-yard score from ' + passer.name,
+      passer.name + ' to ' + who + ', ' + yd + ' yards, touchdown',
+      who + ' finds the soft spot, ' + yd + ' yards from ' + passer.name,
+    ]);
+    return pick([
+      who + ' gets behind the secondary, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' goes deep and ' + who + ' runs under it, ' + yd + ' yards',
+      who + ' takes the top off it, ' + yd + ' yards from ' + passer.name,
+    ]);
+  }
+  return pick([
+    who + ' scores on a ' + yd + '-yard catch',
+    who + ' comes down with it from ' + yd + ' yards',
+  ]);
+}
+
+/*
+ * Credit every touchdown in `script` that belongs to `you` to one of the drafted six.
+ *
+ * `men` is the box score's own column: { name, pos, slot, pts, pass, rush, rec }. Returns
+ * an array of credits, one per touchdown, each carrying the index of the event in `script`
+ * so a caller can hang it on the play it belongs to without matching on anything fuzzy.
+ *
+ * A roster with nobody who can reach an end zone (which is every Lockdown roster, whose
+ * offense is the league's rather than drafted) returns an empty list, and the caller shows
+ * what it always showed. That is the honest answer here: there is no drafted man to name.
+ */
+function touchdownCredits(script, men, rng) {
+  const out = [];
+  if (!Array.isArray(script) || !Array.isArray(men) || !men.length) return out;
+  /* The end-zone share of a man's game. A quarterback's passing does not make HIM the
+     scorer, it makes him the passer, so only what he does with the ball in his hands
+     counts towards being credited with the score. */
+  const reach = men.map((m) => Math.max(0, (m.rush || 0) + (m.rec || 0)));
+  if (!reach.some((v) => v > 0)) return out;
+  /* Form is this game against his own average, floored so a bad day still scores
+     occasionally and capped so one enormous week does not take every touchdown. */
+  const weights = men.map((m, i) => {
+    const form = m.avg > 0 ? Math.max(0.35, Math.min(2.2, (m.pts || 0) / m.avg)) : 1;
+    return reach[i] * form;
+  });
+  /* The man who throws it, if the roster has one: the biggest passing game on it. A
+     Lockdown or quarterback-less roster simply has no passer and the catches say so. */
+  let passer = null;
+  for (const m of men) if ((m.pass || 0) > (passer ? passer.pass : 0)) passer = m;
+
+  script.forEach((e, i) => {
+    if (e.team !== 'you' || e.kind !== 'TOUCHDOWN') return;
+    const scorer = pickWeighted(men, weights, rng);
+    if (!scorer) return;
+    /* How he got there, from what he is. A quarterback credited with a touchdown ran it in
+       himself by definition, and everybody else splits on his own rushing and receiving. */
+    const isQB = String(scorer.pos || '').toUpperCase() === 'QB';
+    const rushW = Math.max(0, scorer.rush || 0), recW = Math.max(0, scorer.rec || 0);
+    const play = isQB || (rushW + recW > 0 && rng() < rushW / (rushW + recW)) ? 'run' : 'catch';
+    const yards = touchdownYards(play, rng);
+    const withPasser = play === 'catch' && passer && passer !== scorer ? passer : null;
+    out.push({
+      at: i, kind: 'TOUCHDOWN', team: 'you',
+      scorer: scorer.name, slot: scorer.slot || scorer.pos, play, yards,
+      passer: withPasser ? withPasser.name : null,
+      short: lastName(scorer.name) + ' ' + yards + '-yard TD ' + (play === 'run' ? 'run' : 'catch'),
+      blurb: touchdownBlurb(scorer, withPasser, yards, play, rng),
+    });
+  });
+  return out;
+}
+
+/* ─── THE TAKEAWAYS, WHICH ARE LOCKDOWN'S TOUCHDOWNS ──────────────────────────
+ *
+ * In Lockdown you did not draft the offense, so naming the man who scored your points would
+ * be naming nobody you picked: that offense is the league's. The six you did pick show up in
+ * the other direction, and the play that says so out loud is the one that takes the ball
+ * away. So the mode gets its own script, of interceptions and forced fumbles, credited to
+ * the six defenders exactly the way a touchdown is credited to the six skill players.
+ *
+ * HOW MANY is the defense's own game rather than a constant. A real defense averages about
+ * 1.3 takeaways a game; one playing out of its mind gets more and one being run over gets
+ * none. The rate scales on how the six actually played against their own averages, so the
+ * week the roster goes off is the week the ball is on the ground, and a quiet game stays
+ * quiet rather than being padded to look busy.
+ *
+ * WHICH MAN AND WHICH PLAY comes from what he is. A cover man picks it off, a pass rusher
+ * knocks it loose, and a linebacker does either, because the three columns 01-defenders.mjs
+ * ships per man (the rush, the coverage, the tackling) already say which he is. Drawing the
+ * PLAY FROM THE MAN rather than the man from the play is the thing that keeps a nose tackle
+ * from leading the team in interceptions.
+ *
+ * Same RNG rule as the touchdowns above, for the same reason: its own stream, never the
+ * season's.
+ */
+const TAKEAWAY_BASE = 1.3;
+
+/*
+ * How often a takeaway by this KIND of player is an interception rather than a strip.
+ *
+ * The position is the prior and the man's own columns adjust it, in that order, and the
+ * order is the whole point. Reading the columns alone looked right and was not: the cheap
+ * end of the pool is tackle-led, so most drafted defenders carry roughly zero in both the
+ * coverage and the pass rush columns, and every one of them fell through to the same
+ * tackle-derived fraction. Measured on a real roster that came out as a nose tackle and two
+ * defensive ends leading the team in interceptions, at the identical 58% as the safeties,
+ * which is the exact failure the comment above this claims to prevent.
+ *
+ * So a defensive lineman mostly knocks the ball loose and a defensive back mostly picks it
+ * off no matter how thin his line is, and the columns move him off that only when he
+ * actually has something in them: a J.J. Watt (10.1 rush, 1.6 cover) lands near 17%
+ * interceptions, an Ed Reed near 90%.
+ */
+const POS_INTERCEPTION_SHARE = { DB: 0.78, LB: 0.50, DL: 0.22 };
+
+function takeawayBlurb(man, kind, spot, rng) {
+  const who = man.name;
+  if (kind === 'INTERCEPTION') {
+    const forms = [
+      who + ' jumps the route and picks it off at the ' + spot,
+      who + ' reads it all the way, intercepted at the ' + spot,
+      who + ' undercuts the throw, picked at the ' + spot,
+      who + ' takes it away at the ' + spot,
+    ];
+    return forms[Math.floor(rng() * forms.length)];
+  }
+  /* A strip sack is a pass rusher's play and reads as a mistake next to a cornerback's
+     name, so the front seven get the quarterback and the secondary get the ball carrier. */
+  const pos = String(man.pos || '').toUpperCase();
+  const forms = pos === 'DB' ? [
+    who + ' punches it out of the receiver, yours at the ' + spot,
+    who + ' rips it free after the catch, recovered at the ' + spot,
+    who + ' knocks the ball loose at the ' + spot,
+  ] : [
+    who + ' strip-sacks the quarterback and you fall on it at the ' + spot,
+    who + ' punches the ball out, yours at the ' + spot,
+    who + ' blows up the handoff, loose ball recovered at the ' + spot,
+  ];
+  return forms[Math.floor(rng() * forms.length)];
+}
+
+/*
+ * The interceptions and forced fumbles your defense produced this game.
+ *
+ * `men` is the defensive box score column: { name, pos, slot, pts, avg, rush, cover,
+ * tackle }. Returns events shaped like the scoring script's, so the broadcast can drop them
+ * into the same log and the same call banner without a second code path.
+ */
+function takeawayScript(men, rng, opts = {}) {
+  const out = [];
+  if (!Array.isArray(men) || !men.length) return out;
+  const QSEC = 15 * 60;
+  const pts = men.reduce((t, m) => t + (m.pts || 0), 0);
+  const avg = men.reduce((t, m) => t + (m.avg || 0), 0);
+  const form = avg > 0 ? Math.max(0.3, Math.min(2.4, pts / avg)) : 1;
+  /* Knuth, which is exact and cheap at this lambda, with a hard stop so a pathological
+     stream cannot spin. Four in a game is already a rout. */
+  const lambda = Math.max(0, TAKEAWAY_BASE * form * (opts.rate || 1));
+  const L = Math.exp(-lambda);
+  let n = 0, p = 1;
+  do { n++; p *= rng(); } while (p > L && n < 12);
+  n = Math.max(0, Math.min(4, n - 1));
+  if (!n) return out;
+
+  const weights = men.map((m) => {
+    const f = m.avg > 0 ? Math.max(0.35, Math.min(2.2, (m.pts || 0) / m.avg)) : 1;
+    return Math.max(0.01, m.pts || 0) * f;
+  });
+  const secs = [];
+  for (let i = 0; i < n; i++) secs.push(Math.floor(scoreTimeAt(rng(), QSEC)));
+  secs.sort((a, b) => a - b);
+  for (let i = 0; i < secs.length; i++) {
+    if (i > 0 && secs[i] <= secs[i - 1]) secs[i] = secs[i - 1] + 1;
+    if (secs[i] % QSEC === 0) secs[i] += 1;
+    secs[i] = Math.min(4 * QSEC - 1, secs[i]);
+  }
+
+  for (const t0 of secs) {
+    const man = pickWeighted(men, weights, rng);
+    if (!man) continue;
+    /* The position first, then his own coverage against his own pass rush, and only when
+       there is enough in those two columns to be evidence rather than rounding. */
+    const base = POS_INTERCEPTION_SHARE[String(man.pos || '').toUpperCase()] ?? 0.5;
+    const cov = Math.max(0, man.cover || 0), rsh = Math.max(0, man.rush || 0);
+    const pInt = (cov + rsh) >= 0.4 ? base * 0.45 + (cov / (cov + rsh)) * 0.55 : base;
+    const kind = rng() < pInt ? 'INTERCEPTION' : 'FUMBLE';
+    const spot = 5 + Math.floor(rng() * 45);
+    const q = Math.floor(t0 / QSEC);
+    const sec = Math.max(1, Math.min(QSEC - 1, QSEC - (t0 - q * QSEC)));
+    out.push({
+      q: q + 1, sec,
+      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+      team: 'you', kind, takeaway: true,
+      by: man.name, slot: man.slot || man.pos, spot,
+      short: lastName(man.name) + (kind === 'INTERCEPTION' ? ' interception' : ' forced fumble'),
+      blurb: takeawayBlurb(man, kind, spot, rng),
+    });
+  }
+  return out;
+}
+
 /** Round names, counting back from the final. */
 const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
 
@@ -3524,6 +3810,7 @@ const publicAPI = {
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
   weeklyEdge, weeklyEdgeVs,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
+  touchdownCredits, takeawayScript, lastName,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
   teamInk, teamButton, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,

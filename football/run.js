@@ -855,6 +855,11 @@ function advanceWeek(run, data, leagueContext, displayCal) {
        Machine, so a box score has to remember who was actually on the field that week
        rather than reading today's roster. Each man's season average rides along so the
        box score can show who beat his number and who did not. */
+    /* THE PRODUCTION MIX RIDES ALONG TOO, because who scored the touchdown is drawn from
+       what kind of player a man is and the box score is the only snapshot of the lineup
+       that played. Three small numbers a man a week, and they mean different things either
+       side of the ball: passing, rushing and receiving on offense, pass rush, coverage and
+       tackling on a defense. E.touchdownCredits and E.takeawayScript read them. */
     lines: r.lines ? run.roster.map((p, i) => ({
       slot: gameSlots[run.slotIndex[i]],
       pos: p.position,
@@ -863,6 +868,9 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       franchise: p.franchise,
       pts: Math.round(r.lines[i] * 10) / 10,
       avg: Math.round(p.ppr_ppg_mean * 10) / 10,
+      ...(run.defense
+        ? { rush: p.rush_ppg || 0, cover: p.cover_ppg || 0, tackle: p.tackle_ppg || 0 }
+        : { pass: p.pass_ppg || 0, rush: p.rush_ppg || 0, rec: p.rec_ppg || 0 }),
     })) : null,
     defMod: Math.round((r.defenseModifier || 1) * 1000) / 1000,
   };

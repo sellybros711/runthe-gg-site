@@ -71,12 +71,12 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "53",
-      "sha": "a2fad498a0d421de"
+      "v": "54",
+      "sha": "7dc4373e07f3a5cf"
     },
     "run.js": {
-      "v": "69",
-      "sha": "61f9904bf59219a7"
+      "v": "70",
+      "sha": "275b4b0e312a313a"
     },
     "board.js": {
       "v": "18",

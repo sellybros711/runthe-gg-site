@@ -4,6 +4,7 @@
 node football/build/test/test_scorelines.mjs
 node football/build/test/test_game_scripts.mjs
 node football/build/test/test_drives.mjs
+node football/build/test/test_credits.mjs
 node football/build/test/test_defense.mjs
 
 (nohup node cfb/build/test/gzip_server.mjs &)
@@ -11,7 +12,7 @@ node football/build/test/test_bracket.mjs
 BROWSER=1 node football/build/test/test_defense.mjs
 ```
 
-The first four need no database, no browser and no network. They read
+The first five need no database, no browser and no network. They read
 `data/display_calibration.json` and play games through the real engine. The last two
 drive the page in Chromium and need a server, which is why they are listed apart.
 `test_defense.mjs` appears in both lists on purpose: its pool and balance halves run
@@ -22,8 +23,55 @@ anywhere, and `BROWSER=1` adds a played season on top.
 | `test_scorelines.mjs` | That the scores on screen are scores the NFL has actually produced, and that changing how a scoreline is rendered cannot change who won. |
 | `test_game_scripts.mjs` | That a finished game reads like a real one: when the points land across the four quarters, how often the lead changes hands, and that a tie goes to overtime under the playoff rules. |
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
+| `test_credits.mjs` | That the name on a playoff touchdown is a name the roster earned: credit follows what a man actually is and how he played, a defense's takeaways fit the men who made them, and none of it touches the stream the season is played out of. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
 | `test_defense.mjs` | That Lockdown, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
+
+## Names on the plays, and why only in the postseason
+
+`E.touchdownCredits` puts one of your six on every touchdown the broadcast calls, and
+`E.takeawayScript` does the same job for Lockdown, where your offense is the league's and
+the men you drafted only appear going the other way. Both are drawn rather than simulated,
+on the same bargain the scoring script already makes: the game was settled in fantasy space
+long before either runs, and the only question left is which legal version of it to show.
+
+They run on the PLAYOFF broadcast and nowhere else. That is a decision about what the two
+screens are, not a limit on the code. A playoff game is the one the player watches: running
+clock, drive chart, a call banner, paced to be looked at. A regular season week is a score
+that flashes past in about half a second on the way to sixteen more, and a line of
+commentary under it is something to read rather than something to watch. This shipped to
+both at first and the season half was wrong: it turned a fast, skimmable season into a wall
+of text. `gameCredits` returns null for a non-playoff result, so the box score for a regular
+week is exactly what it always was.
+
+Two things in here are load-bearing and neither is obvious.
+
+The first is the RNG, and it is the one that would cost real runs. Every game in a season
+comes out of one sequential stream, so a draw taken from it to pick a scorer consumes a
+value the next week depends on and silently rewrites the rest of the year. Nothing throws.
+The leaderboard just stops agreeing with itself and every run recorded before the change
+becomes unreproducible, which is the same failure `toFootballScore` shipped once and the
+reason that one is asserted to draw exactly one value on each of its paths. The credits are
+seeded off the finished game instead, and the first assertion in `test_credits.mjs` plays
+fifty seasons with the blurbs being built between the weeks and demands the results come out
+identical to the same seasons played without them.
+
+The second is that the attribution has to be about the man. A name on the wrong kind of play
+is worse than no name: it tells a player their nose tackle leads the team in interceptions
+while the box score beside it says he rushed the passer all year. That was not hypothetical.
+Reading a defender's coverage and pass rush columns alone looked principled, but the cheap
+end of the pool is tackle-led and carries about zero in both, so every drafted defender fell
+through to one shared tackle-derived fraction and the defensive ends picked off as many
+passes as the safeties, at an identical 58%. The position is the prior now and the columns
+adjust it, which is what `POS_INTERCEPTION_SHARE` is; a J.J. Watt lands near 17%
+interceptions and an Ed Reed near 90%, and a roster with nothing in either column still
+splits on what its men are. Four assertions cover that, including the thin-line case
+specifically, because that is the one that regressed silently.
+
+The blurbs are also copy, so they are held to the copy rules. `test_credits.mjs` checks its
+own output for dashes, which `scripts/check-dashes.mjs` cannot do because it reads source
+files and these sentences are assembled at runtime. It also checks the phrasing bands: a
+goal-line verb on a fifty yard run reads as broken rather than as random.
 
 ## What `test_defense.mjs` is really guarding
 
