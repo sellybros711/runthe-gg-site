@@ -140,9 +140,17 @@
       toast.t=setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); }, 3200);
     }catch(e){}
   }
+  function signedIn(){ try{ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){ return false; } }
   function share(cb){
     link(function(url){
-      if(!url){ toast('Sign in to get your invite link'); if(cb) cb(false); return; }
+      if(!url){
+        // A signed-in player with no link did not fail to sign in: the code
+        // fetch did (offline, or the RPC/migration is missing). Say the true
+        // thing, and leave the real cause in the console (board.js logs it).
+        toast(signedIn() ? 'Could not fetch your invite link. Please try again.'
+                         : 'Sign in to get your invite link');
+        if(cb) cb(false); return;
+      }
       if(navigator.share){
         navigator.share({ title:'Run The Arcade', text:SHARE_TEXT, url:url })
           .then(function(){ if(cb) cb(true); })

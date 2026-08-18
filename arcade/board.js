@@ -494,21 +494,33 @@
   // ---- referrals (see supabase/83_referrals.sql). All resolve null when
   // signed-out / offline / the RPC is missing, so a site deployed ahead of the
   // migration simply shows no invite affordance rather than erroring. ----
+  /* These gate on `sb` alone, NOT on this module's `session` var. The var is
+     set from board.js's own getSession()/onAuthStateChange and can lag the
+     shared client (a cardholder never calls spendToken, so the lag is invisible
+     until the invite needs it). supabase-js attaches the persisted session's
+     token itself, and the RPCs verify auth.uid() server-side, so gating on sb
+     is correct and avoids a false "signed out" for a signed-in user. On an
+     error we log it: a null here used to be silent, which is exactly why a
+     signed-in member saw "sign in to get your link" with no way to see why. */
+  function rpcData(name, r) {
+    if (r && r.error) { try { console.warn('[RTG] ' + name + ' failed:', r.error.message || r.error); } catch (e) {} return null; }
+    return r ? r.data : null;
+  }
   function referralCode() {                          // caller's own code (creates on first call)
-    if (!sb || !session) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_my_code').then(function (r) { return (r && !r.error) ? r.data : null; }));
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_my_code').then(function (r) { return rpcData('referral_my_code', r); }));
   }
   function referralClaim(code) {                      // invitee: redeem a code after signup
-    if (!sb || !session || !code) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_claim', { p_code: String(code) }).then(function (r) { return (r && !r.error) ? r.data : null; }));
+    if (!sb || !code) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_claim', { p_code: String(code) }).then(function (r) { return rpcData('referral_claim', r); }));
   }
   function referralLookup(code) {                     // public: whose code is this (for the join page)
     if (!sb || !code) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_lookup', { p_code: String(code) }).then(function (r) { return (r && !r.error) ? r.data : null; }));
+    return withTimeout(sb.rpc('referral_lookup', { p_code: String(code) }).then(function (r) { return rpcData('referral_lookup', r); }));
   }
   function referralStats() {                          // caller: invited count + today's bonus
-    if (!sb || !session) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_stats').then(function (r) { return (r && !r.error) ? r.data : null; }));
+    if (!sb) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_stats').then(function (r) { return rpcData('referral_stats', r); }));
   }
 
   // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or
