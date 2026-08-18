@@ -45,6 +45,32 @@ Run the checker against anything ad hoc:
 node scripts/check-dashes.mjs path/to/file-or-dir
 ```
 
+## Sibling scripts carry a hand-written cache version
+
+The game pages load their engine and run loop as separate files:
+
+```
+<script src="engine.js?v=52"></script>
+```
+
+`index.html` revalidates on every visit and those files do not. Change one and leave
+the number alone and a RETURNING visitor gets the new page against the script they
+already had. It fails on their phone, mid-run, and on nobody's development machine,
+because a developer's browser has never seen the old file. It has shipped that way
+once already, as `E.overallOf is not a function` in the main game.
+
+So a change to one of those files is three things in one commit: the edit, the bump,
+and the record.
+
+```
+node scripts/check-cachebust.mjs            # verify
+node scripts/check-cachebust.mjs --update   # after bumping
+```
+
+It runs in CI on any push or pull request touching an `.html` or `.js` file
+(`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
+versions a script beside it, found rather than listed.
+
 ## The wrestling game
 
 `wrestling/index.html` is the whole career game in one self-contained file, by

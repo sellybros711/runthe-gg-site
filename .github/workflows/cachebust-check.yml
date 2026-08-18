@@ -1,0 +1,45 @@
+name: Cache-bust check
+
+# The game pages load their engine and run loop as separate files with a hand-written
+# cache-busting query. index.html revalidates and those files do not, so a change to one
+# without a bump serves a RETURNING visitor the new page against the script they already
+# have. It fails on their phone and on nobody's development machine.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-cachebust.mjs
+# And after a deliberate bump:
+#   node scripts/check-cachebust.mjs --update
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.html'
+      - '**/*.js'
+      - 'scripts/cachebust.json'
+      - 'scripts/check-cachebust.mjs'
+      - '.github/workflows/cachebust-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.html'
+      - '**/*.js'
+      - 'scripts/cachebust.json'
+      - 'scripts/check-cachebust.mjs'
+      - '.github/workflows/cachebust-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: cachebust-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-cachebust.mjs

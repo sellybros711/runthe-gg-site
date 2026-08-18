@@ -1,0 +1,108 @@
+{
+  "arcade/crossword/index.html": {
+    "puzzles.js": {
+      "v": "10",
+      "sha": "83c36b39db638d00"
+    },
+    "gen.js": {
+      "v": "5",
+      "sha": "aef643f942252c4c"
+    }
+  },
+  "arcade/match/index.html": {
+    "entities.js": {
+      "v": "12",
+      "sha": "664edb1b32a25f85"
+    },
+    "generator.js": {
+      "v": "14",
+      "sha": "f5ffb2c71bc53aee"
+    }
+  },
+  "archive/daily-drive/index.html": {
+    "drive_generator.js": {
+      "v": "20260723m",
+      "sha": "08528cfd35451dcc"
+    },
+    "playbook.js": {
+      "v": "20260723m",
+      "sha": "e7b5c63502e2f7bf"
+    },
+    "engine.js": {
+      "v": "20260723m",
+      "sha": "a0cc105557f05cbc"
+    }
+  },
+  "baseball/index.html": {
+    "engine.js": {
+      "v": "6",
+      "sha": "fb44b80c127cd248"
+    },
+    "run.js": {
+      "v": "5",
+      "sha": "98d11d2bf25a6341"
+    },
+    "achievements.js": {
+      "v": "1",
+      "sha": "085c658695b471ad"
+    }
+  },
+  "cfb/index.html": {
+    "engine.js": {
+      "v": "27",
+      "sha": "6864c5157428f422"
+    },
+    "run.js": {
+      "v": "13",
+      "sha": "df25ac6648f7c9e9"
+    },
+    "achievements.js": {
+      "v": "10",
+      "sha": "4d048f5433f7850e"
+    },
+    "auth.js": {
+      "v": "3",
+      "sha": "4c67387d3696ab36"
+    },
+    "board.js": {
+      "v": "5",
+      "sha": "34af025993c1e615"
+    }
+  },
+  "football/index.html": {
+    "engine.js": {
+      "v": "52",
+      "sha": "02bfaa786fe7c509"
+    },
+    "run.js": {
+      "v": "69",
+      "sha": "61f9904bf59219a7"
+    },
+    "board.js": {
+      "v": "18",
+      "sha": "aa12b74665e52576"
+    },
+    "achievements.js": {
+      "v": "8",
+      "sha": "58d72f9ca897b869"
+    },
+    "auth.js": {
+      "v": "2",
+      "sha": "1768b55ebe9988d6"
+    }
+  },
+  "touchdown/index.html": {
+    "drive_generator.js": {
+      "v": "20260723m",
+      "sha": "08528cfd35451dcc"
+    },
+    "playbook.js": {
+      "v": "20260723m",
+      "sha": "e7b5c63502e2f7bf"
+    },
+    "engine.js": {
+      "v": "20260723m",
+      "sha": "a0cc105557f05cbc"
+    }
+  }
+}
