@@ -2550,6 +2550,19 @@ h2{font-size:11px;letter-spacing:.04em}
 .tn-yr{font:800 11px/1.4 var(--pixel);letter-spacing:.06em;color:var(--gold);text-transform:uppercase;padding-top:2px}
 .tn-t{font-weight:800;font-size:13.5px;color:var(--oncard)}
 .tn-s{font-size:12.5px;color:var(--muted);margin-top:1px}
+/* ROSTER UPDATES: the weekly in-season rating refresh page. */
+.ruhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;max-width:460px;margin:0 auto 12px;padding:0 2px}
+.ruhead .ruh-l{font:800 13px var(--body);color:var(--oncard);letter-spacing:.02em}
+.ruhead .ruh-l b{color:var(--gold);margin-left:6px;font-weight:800}
+.rulist{max-width:460px;margin:0 auto;display:flex;flex-direction:column}
+.rurow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.07)}
+.rurow:first-child{border-top:1px solid rgba(255,255,255,.07)}
+.rurow .ru-n{font:700 14px var(--body);color:var(--oncard)}
+.rurow .ru-ov{display:flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rurow .ru-was{color:var(--muted);font:700 14px var(--body)}
+.rurow .ru-arw{color:var(--muted)}
+.rurow .ru-now{font:800 15px var(--body)}
+.rurow .ru-d{font:800 11px var(--body);min-width:28px;text-align:right}
 /* WHAT'S NEW: the in-game newsletter. One card per feature, a left rail in its category colour. */
 .nwitem{position:relative;border:1px solid var(--line);border-left:3px solid var(--nwc,var(--gold));border-radius:10px;padding:11px 13px 12px;margin:0 0 9px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.22))}
 .nwitem.fresh{border-color:color-mix(in srgb, var(--nwc,var(--gold)) 45%, transparent);box-shadow:0 0 0 1px color-mix(in srgb, var(--nwc,var(--gold)) 18%, transparent), 0 6px 16px -10px rgba(0,0,0,.7)}
@@ -4303,6 +4316,26 @@ function maybeS1LaunchPopup(){ try{
   LS.set('bag_s1_launch_seen',true);
   try{ track('s1_launch_popup'); }catch(e){}
   S.overlay='s1launch'; render();
+}catch(e){} }
+// One-time "there's a new Roster Updates tab" hint: a bobbing arrow pointing up at the tab, reusing the
+// guided-tour spotlight machinery (owner). Fires once for anyone who isn't a brand-new player (they get
+// the full guided tour instead). Queues behind the player's own popups (welcome gift, season launch,
+// login bonus), never interrupts a live screen.
+function maybeRosterPop(){ try{
+  if(LS.get('bag_rosterhint_seen',false)) return;
+  if(S.overlay || S.screen!=='title' || tourRunning()) return;
+  if(typeof welcomePackPending==='function' && welcomePackPending()) return;
+  if(typeof isNewPlayer==='function' && isNewPlayer()) return;
+  if(!document.querySelector('[data-rosterbtn]')) return;
+  LS.set('bag_rosterhint_seen',true);
+  try{ track('roster_hint_popup'); }catch(e){}
+  startTour(false, [{
+    title:'New: Roster Updates',
+    body:'Player ratings now refresh weekly during the season. Tap here any time to see exactly which players moved, and how much their overall changed.',
+    target:'[data-rosterbtn]',
+    cta:'See the updates ▸',
+    act:function(){ openRosterUpdates(); }
+  }], 'bag_rosterhint_seen');
 }catch(e){} }
 function overlayS1Launch(screen){
   const acc='#ff9d3a';
@@ -9321,6 +9354,7 @@ function render(){
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='tournews') overlayTourNews(app);
     if(S.overlay==='whatsnew') overlayWhatsNew(app);
+    if(S.overlay==='rosterupdates') overlayRosterUpdates(app);
     if(S.overlay==='playercard') overlayPlayerCard(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='tourpass') overlayTourPass(app);
@@ -11532,7 +11566,7 @@ function onboardPanel(){
 // element is what makes iOS anchor it to the document and let it drift mid-scroll, which this game has
 // chased down seven times now - same reason toast() and .scrollcue are built this way.
 const TOUR_KEY='bag_tour_done';
-var _tourI=0, _tourList=null;
+var _tourI=0, _tourList=null, _tourKey=TOUR_KEY;
 function tourSeen(){ try{ return !!LS.get(TOUR_KEY,false); }catch(e){ return true; } }
 function tourRunning(){ return !!document.getElementById('tourdim'); }
 function tourSteps(){ return [
@@ -11630,13 +11664,16 @@ function tourEnd(done){
   const d=document.getElementById('tourdim'); if(d) d.remove();
   document.body.classList.remove('tourlock');
   _tourList=null; _tourI=0;
-  if(done){ try{ LS.set(TOUR_KEY,true); }catch(e){} }
+  if(done){ try{ LS.set(_tourKey,true); }catch(e){} }
+  _tourKey=TOUR_KEY;
 }
-function startTour(replay){
+// startTour drives the new-player guided tour by default, but a custom (list,key) reuses the exact
+// same spotlight + bobbing-arrow machinery for a one-off "here's a new tab" hint (owner: Roster Updates).
+function startTour(replay, list, key){
   try{
     if(tourRunning()) return;
     tourStyleOnce();
-    _tourList=tourSteps(); _tourI=0;
+    _tourList=list||tourSteps(); _tourI=0; _tourKey=key||TOUR_KEY;
     const dim=$('<div class="tourdim" id="tourdim" role="dialog" aria-modal="true" aria-label="Guided tour"></div>');
     dim.appendChild($('<div class="tourhole"></div>'));
     dim.appendChild($('<div class="tourarrow"><span></span></div>'));
@@ -11741,6 +11778,9 @@ function scrTitle(){
     { const nn=newsUnseenCount();
       const nb=$(`<button type="button" class="howtop news" aria-label="What's New${nn?', '+nn+' unread':''}">${nn?'<span class="nwdot"></span>':''}What's New${nn?' · '+nn:''}</button>`);
       nb.onclick=openWhatsNew; hw.appendChild(nb); }
+    // Roster Updates: the weekly in-season rating refresh, beside What's New (owner)
+    { const ru=$(`<button type="button" class="howtop news" data-rosterbtn aria-label="Roster Updates">${rosterUpdUnseen()?'<span class="nwdot"></span>':''}Roster Updates</button>`);
+      ru.onclick=openRosterUpdates; hw.appendChild(ru); }
     (head||w).appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
@@ -11752,7 +11792,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's
@@ -20823,6 +20863,35 @@ function overlayWhatsNew(app){
     }).join('')}`).join('')}</div>`));
   ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:14px 0 0">More on the way. Tell us what you want next from the menu, under Send Feedback.</p>`));
   const x=$(`<button class="x" aria-label="Close">✕</button>`); x.onclick=()=>{ S.overlay=null; render(); };
+  ov.appendChild(x);
+  const c=$(`<button class="btn red" style="margin-top:16px">Close</button>`); c.onclick=()=>{ S.overlay=null; render(); };
+  ov.appendChild(c);
+  app.appendChild(ov);
+}
+/* ==================== ROSTER UPDATES: the weekly in-season rating refresh (owner) ====================
+   Player ratings are refreshed from the DataGolf feed during the season. This page shows players exactly
+   who just moved and by how much. To publish a new weekly update, replace ROSTER_UPDATE below: the date
+   plus the {n,f,t} list (name, previous overall, current overall) of every player whose overall changed.
+   Everything on the page is derived from it. */
+const ROSTER_UPDATE={date:'2026-08-17', players:[{n:"Jackson Koivun",f:80,t:86},{n:"Blades Brown",f:76,t:82},{n:"Hideki Matsuyama",f:84,t:88},{n:"Jon Rahm",f:91,t:87},{n:"Sahith Theegala",f:85,t:81},{n:"Pierceson Coody",f:84,t:81},{n:"Dustin Johnson",f:83,t:80},{n:"Aldrich Potgieter",f:82,t:79},{n:"Adam Hadwin",f:79,t:76},{n:"Gordon Sargent",f:73,t:76},{n:"Rory McIlroy",f:91,t:89},{n:"Viktor Hovland",f:86,t:88},{n:"Michael Thorbjornsen",f:84,t:86},{n:"Tom Kim",f:84,t:86},{n:"Sungjae Im",f:83,t:85},{n:"Davis Thompson",f:82,t:84},{n:"Jordan Spieth",f:86,t:84},{n:"Aaron Rai",f:85,t:83},{n:"Akshay Bhatia",f:85,t:83},{n:"Beau Hossler",f:81,t:83},{n:"David Puig",f:85,t:83},{n:"Gary Woodland",f:85,t:83},{n:"Harris English",f:85,t:83},{n:"J.T. Poston",f:85,t:83},{n:"Rasmus H\u00f8jgaard",f:81,t:83},{n:"Keita Nakajima",f:80,t:82},{n:"Billy Horschel",f:79,t:81},{n:"Branden Grace",f:83,t:81},{n:"Jason Day",f:83,t:81},{n:"Sepp Straka",f:83,t:81},{n:"Taylor Pendrith",f:83,t:81},{n:"Tony Finau",f:83,t:81},{n:"Caleb Surratt",f:78,t:80},{n:"Talor Gooch",f:81,t:79},{n:"Davis Riley",f:74,t:76},{n:"Nick Dunlap",f:77,t:75},{n:"Rikuya Hoshino",f:76,t:74},{n:"Sam Burns",f:88,t:89},{n:"Chris Gotterup",f:87,t:88},{n:"Justin Thomas",f:88,t:87},{n:"Ben Griffin",f:87,t:86},{n:"Bryson DeChambeau",f:87,t:86},{n:"Kurt Kitayama",f:87,t:86},{n:"Maverick McNealy",f:87,t:86},{n:"Ryan Gerard",f:85,t:86},{n:"Alex Noren",f:84,t:85},{n:"Alex Smalley",f:84,t:85},{n:"Jake Knapp",f:86,t:85},{n:"Robert MacIntyre",f:86,t:85},{n:"Adam Scott",f:85,t:84},{n:"Corey Conners",f:83,t:84},{n:"Jacob Bridgeman",f:85,t:84},{n:"Justin Rose",f:85,t:84},{n:"Keith Mitchell",f:85,t:84},{n:"Kristoffer Reitan",f:85,t:84},{n:"Matt Wallace",f:83,t:84},{n:"Patrick Reed",f:85,t:84},{n:"Rickie Fowler",f:83,t:84},{n:"Shane Lowry",f:85,t:84},{n:"Brian Harman",f:84,t:83},{n:"Eric Cole",f:84,t:83},{n:"Max Homa",f:82,t:83},{n:"Ryan Fox",f:84,t:83},{n:"Ryo Hisatsune",f:84,t:83},{n:"Thomas Detry",f:84,t:83},{n:"Carlos Ortiz",f:81,t:82},{n:"Christiaan Bezuidenhout",f:83,t:82},{n:"Dean Burmester",f:83,t:82},{n:"Emiliano Grillo",f:81,t:82},{n:"Michael Kim",f:83,t:82},{n:"Nick Taylor",f:83,t:82},{n:"Byeong Hun An",f:80,t:81},{n:"Daniel Berger",f:82,t:81},{n:"Mackenzie Hughes",f:80,t:81},{n:"Matt McCarty",f:82,t:81},{n:"Stephan Jaeger",f:80,t:81},{n:"Austin Eckroat",f:79,t:80},{n:"Sergio Garcia",f:81,t:80},{n:"Thorbj\u00f8rn Olesen",f:81,t:80},{n:"Jesper Svensson",f:80,t:79},{n:"Joel Dahmen",f:78,t:79},{n:"Karl Vilips",f:78,t:79},{n:"Neal Shipley",f:78,t:79},{n:"Seamus Power",f:80,t:79},{n:"Tom Hoge",f:78,t:79},{n:"Matthieu Pavon",f:79,t:78},{n:"Adrian Meronk",f:76,t:75},{n:"Cam Davis",f:74,t:73}]};
+function rosterUpdDate(){
+  try{ const p=ROSTER_UPDATE.date.split('-').map(Number);
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][p[1]-1]+' '+p[2]+', '+p[0]; }
+  catch(e){ return ROSTER_UPDATE.date; } }
+// a red dot / hint fires while the player hasn't opened THIS week's update (tracked by its date)
+function rosterUpdUnseen(){ try{ return LS.get('bag_roster_seen','')!==ROSTER_UPDATE.date; }catch(e){ return false; } }
+function openRosterUpdates(){ try{ LS.set('bag_roster_seen', ROSTER_UPDATE.date); }catch(e){} try{ track('roster_updates_open'); }catch(e){} S.overlay='rosterupdates'; render(); }
+function overlayRosterUpdates(app){
+  const ov=$(`<div class="ov"></div>`);
+  ov.appendChild($(`<h3 style="margin:0 0 2px">Roster Updates</h3>`));
+  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 auto 16px;max-width:460px;line-height:1.55">Run The Tour is constantly working to improve itself, and one way we will now be doing that is weekly player updates during the season.</p>`));
+  const ps=ROSTER_UPDATE.players||[];
+  ov.appendChild($(`<div class="ruhead"><div class="ruh-l">Latest Update:<b>${esc(rosterUpdDate())}</b></div><div class="small muted">${ps.length} player${ps.length===1?'':'s'} updated</div></div>`));
+  ov.appendChild($(`<div class="rulist">${ps.map(p=>{
+    const up=p.t>p.f, dn=p.t<p.f, col=up?'#35d6a0':dn?'#E14A33':'var(--muted)', arw=up?'\u25B2':dn?'\u25BC':'\u2013';
+    return `<div class="rurow"><span class="ru-n">${esc(p.n)}</span><span class="ru-ov"><span class="ru-was">${p.f}</span><span class="ru-arw">\u2192</span><span class="ru-now" style="color:${col}">${p.t}</span><span class="ru-d" style="color:${col}">${arw}${Math.abs(p.t-p.f)}</span></span></div>`;
+  }).join('')}</div>`));
+  const x=$(`<button class="x" aria-label="Close">\u2715</button>`); x.onclick=()=>{ S.overlay=null; render(); };
   ov.appendChild(x);
   const c=$(`<button class="btn red" style="margin-top:16px">Close</button>`); c.onclick=()=>{ S.overlay=null; render(); };
   ov.appendChild(c);
