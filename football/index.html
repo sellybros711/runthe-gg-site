@@ -7360,9 +7360,26 @@ function optionGroups(draw){
     rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   }
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
-  // ALL follows the same two rules, then position order.
+  /* ALL PUTS THE MOST EXPENSIVE MAN FIRST ON A DEFENSE, and position order first on a
+     draft. Both are the same intent read against two different pools.
+
+     On offense the groups are unlike each other and the fantasy points say so: a
+     quarterback outscores a tight end by a mile, so listing by points would put six
+     quarterbacks at the top of every board and bury the rest of the team. Position order
+     is what makes ALL read as a squad.
+
+     On a defense the three groups are not that. IDP scoring is tackle-led, so a corner who
+     made eighty tackles and did nothing else outscores a lineman with fifteen sacks, and
+     position order buries the good ones behind whichever group happens to sort first: on
+     the 2008 Broncos it opened with four linemen at 4.7 points and under. Price is the one
+     number that already knows better, because it is value over replacement AT the man's own
+     position, so it ranks a DL against a DB on the only footing they share. Highest first,
+     which is what the cap puzzle is asking about anyway. */
+  const byPrice=isDefRun();
   all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
-    ||positionsNow().indexOf(a.p.position)-positionsNow().indexOf(b.p.position)
+    ||(byPrice
+      ? b.p.price_musd-a.p.price_musd
+      : positionsNow().indexOf(a.p.position)-positionsNow().indexOf(b.p.position))
     ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   return new Map([[ALL,all],...groups]);
 }
@@ -14268,6 +14285,22 @@ function watchFold(){
   if(!f||!scr) return;
   if(typeof IntersectionObserver!=='function'){ scr.style.setProperty('--sq','0'); return; }
   if(foldObs) foldObs.disconnect();
+  /* THE VIEWPORT IS NOT WHAT THE PLAYER CAN SEE.
+     The header and the money bar are both pinned and both opaque, so the top of the window
+     is furniture: the field slides UNDER it and stays inside the viewport the whole time.
+     Without this margin the observer went on reporting it fully visible, --sq stayed at 0,
+     and the pips did not come up until the field had scrolled clear of the bar entirely.
+     What that looks like is half a formation cut off by a solid bar with nothing having
+     taken over for it, which is worse on a defense than it ever was on a draft: a defensive
+     field is taller and the tier it loses first is the secondary.
+
+     Measured rather than assumed. --hdr is the header and the bar's height moves with the
+     note it happens to be carrying, and watchFold runs on every field redraw, so a rotation
+     or a new note is picked up on the next paint. */
+  const hdr=parseFloat(getComputedStyle(document.documentElement)
+    .getPropertyValue('--hdr'))||0;
+  const bar=scr.querySelector('.capwrap');
+  const under=Math.round(hdr+(bar?bar.offsetHeight:0));
   foldObs=new IntersectionObserver((entries)=>{
     for(const e of entries){
       /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity
@@ -14276,7 +14309,8 @@ function watchFold(){
       const sq=Math.max(0,Math.min(1,(1-e.intersectionRatio)*1.4));
       scr.style.setProperty('--sq',sq.toFixed(3));
     }
-  },{threshold:Array.from({length:21},(_,i)=>i/20)});
+  },{threshold:Array.from({length:21},(_,i)=>i/20),
+     rootMargin:(-under)+'px 0px 0px 0px'});
   foldObs.observe(f);
 }
 
