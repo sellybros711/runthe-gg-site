@@ -1824,6 +1824,30 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sgd-none{padding:8px 0 2px; font-size:12px; font-weight:600; color:var(--dim);
     line-height:1.5;}
 
+  /* THE SIGN-IN WALL, and its quieter cousin the nudge. Logging shows and the
+     stats built from them are an account feature, so Your shows, Track your
+     shows and Your nights show this instead when nobody is signed in. The open
+     catalogue keeps its list and carries the nudge rather than the wall: same
+     lock, one is the screen and one is a line you can ignore. */
+  .gate{padding:28px 18px 24px; text-align:center;}
+  .gate-i{width:52px; height:52px; margin:0 auto 15px; display:grid; place-items:center;
+    border-radius:50%; background:var(--card2); color:var(--tealT);}
+  .gate-l{margin:0 auto 18px; max-width:34ch; font-size:14.5px; font-weight:600;
+    line-height:1.55; color:var(--mut);}
+  .gate .btn{width:auto; min-width:180px; margin:0 auto;}
+  .gate-f{margin:16px auto 0; max-width:34ch; font-size:12px; font-weight:600;
+    color:var(--dim); line-height:1.5;}
+  .sgnudge{display:flex; align-items:center; gap:11px; width:100%; margin:2px 0 14px;
+    padding:12px 14px; text-align:left; font-family:inherit; cursor:pointer;
+    background:var(--card2); border:1px solid var(--line2); border-radius:12px;}
+  .sgnudge-i{flex:0 0 auto; display:grid; place-items:center; color:var(--tealT);}
+  .sgnudge-i svg{width:20px; height:20px;}
+  .sgnudge-t{flex:1; min-width:0; font-size:13px; font-weight:700; color:var(--ink);
+    line-height:1.4;}
+  .sgnudge-go{flex:0 0 auto; font-size:12.5px; font-weight:800; color:var(--tealT);
+    white-space:nowrap;}
+  .sgnudge:hover{border-color:var(--tealT);}
+
   /* ---- your nights ----
      The other half of the collection. Shares the row chrome with Every song on
      purpose: they are two views of the same habit, and a tracker moving between
@@ -3172,15 +3196,18 @@ function renderDraft(){
       <div>
         <div class="card showcard">
           <div class="d">${esc(fmtDate(show.show_date))}${
-            wasThere(S.band.id, show.show_id)
+            ME.signedIn && wasThere(S.band.id, show.show_id)
               ? '<span class="werethere" title="You marked this show as one you were at">I was here</span>' : ''}</div>
           <div class="v">${esc(show.venue || '')}${show.run
             ? `<span class="night">Night ${show.run.night} of ${show.run.of}</span>` : ''}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
+          ${/* Signed out the mark is not written, so the button says what it will
+                really do: open sign-in. The tag above stays hidden until then. */''}
           <button class="wtbtn" type="button" id="wereThereBtn"
-            aria-pressed="${wasThere(S.band.id, show.show_id)}"
+            aria-pressed="${ME.signedIn && wasThere(S.band.id, show.show_id)}"
             data-show="${esc(String(show.show_id))}">${
-              wasThere(S.band.id, show.show_id) ? 'Remove from your shows' : 'I was at this show'}</button>
+              !ME.signedIn ? 'Sign in to save this show'
+                : wasThere(S.band.id, show.show_id) ? 'Remove from your shows' : 'I was at this show'}</button>
         </div>
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
@@ -3598,6 +3625,42 @@ function toggleThere(bandId, showId){
 }
 function attendedCount(bandId){ return attendedSet(bandId).size; }
 
+/* ATTENDANCE BELONGS TO AN ACCOUNT.
+ *
+ * Logging the shows you were at, and every stat built from that list, is the one
+ * thing here worth carrying between devices, and a browser-only record died
+ * quietly the day that browser did. So the mark buttons and the three personal
+ * screens (Your shows, Track your shows, Your nights) ask for a name first. The
+ * song catalogue and the tour schedule stay open, because neither is yours.
+ *
+ * This gates the UI, never the storage. A list somebody marked before this
+ * existed still sits in localStorage and still merges up the first time its
+ * owner signs in: syncAttendance reads attendedSet raw for exactly that, so
+ * nothing here empties it. The signed-out reads that remain (the show card
+ * during a draft, the open catalogue) just decline to DISPLAY it. */
+const GATE_LOCK = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" '
+  + 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+  + '<rect x="3.5" y="11" width="17" height="10" rx="2.2"/>'
+  + '<path d="M7.5 11V7.5a4.5 4.5 0 0 1 9 0V11"/></svg>';
+function authWall(heading, line){
+  app.innerHTML = `
+    <div class="bhd"><h2>${esc(heading)}</h2></div>
+    <section class="card">
+      <div class="gate">
+        <div class="gate-i" aria-hidden="true">${GATE_LOCK}</div>
+        <p class="gate-l">${line}</p>
+        <button class="btn primary" type="button" id="gateIn">Sign in</button>
+        <p class="gate-f">One RunThe.GG account, the same one the other games use.
+          It carries the shows you were at to every device you play on.</p>
+      </div>
+    </section>
+    <button class="btn ghost" type="button" id="backHome" style="margin-top:18px">Back</button>`;
+  document.getElementById('gateIn').addEventListener('click', () => openAuth('in'));
+  /* Home, not backFrom(): the personal screens reach each other, and "back" from
+     one wall into another wall is a dead end. Home is always somewhere real. */
+  document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+}
+
 /* ---------------------------------------------------------------------------
  * WHAT THE SHOWS YOU WERE AT ADD UP TO.
  * ---------------------------------------------------------------------------
@@ -3883,7 +3946,16 @@ async function syncAttendance(){
     const merged = await b.syncAttended(band.id, local);
     if (Array.isArray(merged)) attendedReplace(band.id, merged);
   }
-  if (S.screen === 'home' || S.screen === 'profile') render();
+  if (authScreen()) render();
+}
+
+/* The screens whose content turns on whether somebody is signed in: the three
+   gated ones show a wall or their data, home shows a marked count nowhere but
+   its buttons lead here, and the catalogue swaps its seen overlay for a nudge.
+   Both the merge and the sign-in/out event repaint these, so a wall becomes the
+   real screen the instant an account arrives, and the other way round. */
+function authScreen(){
+  return ['home', 'profile', 'browse', 'nights', 'songs'].includes(S.screen);
 }
 
 async function claimPosted(){
@@ -3913,7 +3985,7 @@ function bootAccounts(){
          enough to claim somebody else's. */
       if (S.posted) claimPosted();
     }
-    if (S.screen === 'board' || S.screen === 'profile') render();
+    if (S.screen === 'board' || authScreen()) render();
   });
   ME.ready = true;
   paintMe();
@@ -4131,6 +4203,9 @@ function draftInProgress(){
 document.addEventListener('click', e => {
   const wt = e.target.closest('#wereThereBtn');
   if (!wt) return;
+  /* Logging a show is an account action now. Signed out, the button opens the
+     sign-in sheet instead of writing a mark nothing would keep. */
+  if (!ME.signedIn){ openAuth('in'); return; }
   const now = toggleThere(S.band.id, wt.dataset.show);
   toast(now ? 'Added to your shows' : 'Removed from your shows');
   render();   // the tag and the button label both follow the state
@@ -5176,6 +5251,9 @@ function myNights(bandId){
 }
 
 function renderNights(){
+  if (!ME.signedIn) return authWall('Your nights',
+    'Sign in to keep the shows you were at. Each one comes back here with its '
+    + 'full setlist, the way the night actually ran.');
   loadTourRows();
   const band = BANDS.find(b => b.shows && !b.sample);
   for (const b of BANDS){
@@ -5295,7 +5373,10 @@ function songCollection(bandId){
   const table = TOUR_STATE.rows;
   if (!data) return null;
 
-  const ids = attendedSet(bandId);
+  /* Signed out, the catalogue stays open but shows no "you were there": the
+     seen overlay is attendance, and attendance is an account feature. The raw
+     list is left alone so it merges up on sign-in. */
+  const ids = ME.signedIn ? attendedSet(bandId) : new Set();
   const meta = new Map((table || []).map(r => [r.show_id, r]));
   /* KEYED ON song_id, NOT THE TITLE, so this agrees with the profile's "of 367"
      and, more importantly, so it does not merge songs that merely share a name.
@@ -5444,10 +5525,18 @@ function renderSongs(){
     return;
   }
 
+  /* SIGNED OUT THE CATALOGUE STAYS OPEN, but the seen overlay is attendance and
+     attendance is an account feature, so it drops away: no heard/never filter,
+     no "times you saw it" sort, no per-row tally, and a nudge to sign in instead
+     of a personal count. The song list and the play counts are the band's, not
+     yours, so they stay. */
+  const out = !ME.signedIn;
   const heard = all.filter(s => s.mine.length).length;
+  const filter = out ? 'all' : SONGS.filter;
+  const sortKey = out && SONGS.sort === 'seen' ? 'plays' : SONGS.sort;
   const q = SONGS.q.trim().toLowerCase();
   let list = all.filter(s =>
-    (SONGS.filter === 'all' || (SONGS.filter === 'heard' ? s.mine.length : !s.mine.length)) &&
+    (filter === 'all' || (filter === 'heard' ? s.mine.length : !s.mine.length)) &&
     (!q || s.song.toLowerCase().includes(q)));
 
   const SORTS = {
@@ -5458,28 +5547,36 @@ function renderSongs(){
     plays: (a, b) => b.plays - a.plays,
     az:    (a, b) => a.song.localeCompare(b.song),
   };
-  list = list.slice().sort(SORTS[SONGS.sort] || SORTS.seen);
+  list = list.slice().sort(SORTS[sortKey] || SORTS.seen);
 
   const place = m => [m.city, m.state].filter(Boolean).join(', ');
 
   app.innerHTML = `
     <div class="bhd"><h2>Every song</h2></div>
-    <p class="bcount">You have heard <b>${heard}</b> of ${all.length} songs live.
-      Tap one to see every time.</p>
+    ${out
+      ? `<p class="bcount">Every song ${esc(band.label)} has played, ${all.length} in all.
+          The number on the right is how many times.</p>
+         <button class="sgnudge" type="button" id="songsIn">
+           <span class="sgnudge-i" aria-hidden="true">${GATE_LOCK}</span>
+           <span class="sgnudge-t">Sign in to track which ones you have seen live</span>
+           <span class="sgnudge-go">Sign in &rsaquo;</span>
+         </button>`
+      : `<p class="bcount">You have heard <b>${heard}</b> of ${all.length} songs live.
+          Tap one to see every time.</p>
 
-    <div class="bfilter">
-      <label><span>Show</span>
-        <select id="sFilter">
-          ${[['all', `All ${all.length}`], ['heard', `Heard (${heard})`],
-             ['never', `Never heard (${all.length - heard})`]].map(([v, t]) =>
-            `<option value="${v}"${v === SONGS.filter ? ' selected' : ''}>${esc(t)}</option>`).join('')}
-        </select></label>
-      <label><span>Order</span>
-        <select id="sSort">
-          ${[['seen', 'Times you saw it'], ['plays', 'Times they played it'], ['az', 'A to Z']]
-            .map(([v, t]) => `<option value="${v}"${v === SONGS.sort ? ' selected' : ''}>${esc(t)}</option>`).join('')}
-        </select></label>
-    </div>
+         <div class="bfilter">
+           <label><span>Show</span>
+             <select id="sFilter">
+               ${[['all', `All ${all.length}`], ['heard', `Heard (${heard})`],
+                  ['never', `Never heard (${all.length - heard})`]].map(([v, t]) =>
+                 `<option value="${v}"${v === filter ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+             </select></label>
+           <label><span>Order</span>
+             <select id="sSort">
+               ${[['seen', 'Times you saw it'], ['plays', 'Times they played it'], ['az', 'A to Z']]
+                 .map(([v, t]) => `<option value="${v}"${v === sortKey ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+             </select></label>
+         </div>`}
 
     <input id="sQ" class="binput" type="search" placeholder="Find a song"
       value="${esc(SONGS.q)}" autocomplete="off" />
@@ -5491,42 +5588,50 @@ function renderSongs(){
            opening one by title would expand both. */
         const open = SONGS.open === s.id;
         return `<div class="sgwrap">
-          <button class="sgrow${s.mine.length ? ' got' : ''}${open ? ' open' : ''}" type="button"
+          <button class="sgrow${s.mine.length ? ' got' : ''}${open ? ' open' : ''}${out ? ' bare' : ''}" type="button"
             data-songrow="${esc(s.id)}" aria-expanded="${open}">
             <span class="sg-n">${esc(s.song)}${
               s.qualify ? `<i class="sg-cov">${esc(s.qualify)}</i>`
                         : s.cover ? '<i class="sg-cov">cover</i>' : ''}</span>
-            <span class="sg-c">${s.mine.length ? `${s.mine.length}<i>x</i>` : '<i>not yet</i>'}</span>
+            ${out ? '' : `<span class="sg-c">${s.mine.length ? `${s.mine.length}<i>x</i>` : '<i>not yet</i>'}</span>`}
             <span class="sg-p">${s.plays}</span>
           </button>
-          ${open ? `<div class="sgdet">${s.mine.length
+          ${open ? `<div class="sgdet">${!out && s.mine.length
             ? s.mine.map(m => `<div class="sgd-row">
                 <span class="sgd-d">${esc(fmtDate(m.date))}</span>
                 <span class="sgd-v">${esc(m.venue)}${place(m) ? `, ${esc(place(m))}` : ''}</span>
                 <span class="sgd-l">${m.len ? esc(fmtClock(m.len)) : ''}${
                   m.jam ? '<i class="sgd-j">jamchart</i>' : ''}</span>
               </div>`).join('')
-            : `<div class="sgd-none">They have played it ${s.plays} time${
-                s.plays === 1 ? '' : 's'} and you have not been there yet.</div>`}
+            : out
+              ? `<div class="sgd-none">${esc(band.label)} ${s.plays === 1 ? 'has' : 'have'} played it ${
+                  s.plays} time${s.plays === 1 ? '' : 's'}.</div>`
+              : `<div class="sgd-none">They have played it ${s.plays} time${
+                  s.plays === 1 ? '' : 's'} and you have not been there yet.</div>`}
           </div>` : ''}
         </div>`;
       }).join('') : '<div class="bempty">Nothing matches that.</div>'}
     </section>
 
-    <p class="axnote" style="margin-top:12px">Counted from the shows you marked
-      that have a setlist on elgoose. The right-hand number is how many times the
-      band has played it.</p>
+    <p class="axnote" style="margin-top:12px">${out
+      ? `The right-hand number is how many times the band has played each song.`
+      : `Counted from the shows you marked that have a setlist on elgoose. The
+         right-hand number is how many times the band has played it.`}</p>
 
     <div class="homelinks" style="margin-top:18px">
-      <button class="btn ghost" type="button" data-go="nights">Your nights</button>
+      ${out ? '' : '<button class="btn ghost" type="button" data-go="nights">Your nights</button>'}
       <button class="btn ghost" type="button" id="backHome">Back</button>
     </div>`;
 
   document.getElementById('backHome').addEventListener('click', () => setScreen(backFrom()));
-  document.getElementById('sFilter').addEventListener('change', e => {
+  const songsIn = document.getElementById('songsIn');
+  if (songsIn) songsIn.addEventListener('click', () => openAuth('in'));
+  const sFilter = document.getElementById('sFilter');
+  if (sFilter) sFilter.addEventListener('change', e => {
     SONGS.filter = e.target.value; SONGS.open = null; render();
   });
-  document.getElementById('sSort').addEventListener('change', e => {
+  const sSort = document.getElementById('sSort');
+  if (sSort) sSort.addEventListener('change', e => {
     SONGS.sort = e.target.value; SONGS.open = null; render();
   });
   const box = document.getElementById('sQ');
@@ -5664,6 +5769,9 @@ function renderTour(){
 const BROWSE = { year: '', tour: '', q: '' };
 
 function renderBrowse(){
+  if (!ME.signedIn) return authWall('Track your shows',
+    'Sign in to log the shows you were at. Tick them off by year and tour, and '
+    + 'every one you mark starts building your stats.');
   loadTourRows();
   const rows = TOUR_STATE.rows;
   const band = BANDS.find(b => b.shows && !b.sample);
@@ -5900,6 +6008,10 @@ async function loadProfile(){
 }
 
 function renderProfile(){
+  if (!ME.signedIn) return authWall('Your shows',
+    'Sign in to keep the shows you were at, and see everything they add up to: '
+    + 'how much of the catalogue you have heard live, your venues, your years, '
+    + 'your rarest catch.');
   if (ME.signedIn && PROFILE.loadedFor !== ME.userId && !PROFILE.busy) loadProfile();
   /* THE SHOW TABLE IS WHAT COUNTS THE SHOWS. One in five played shows has no
      setlist typed up, so counting them out of the archive undercounted every
@@ -6115,6 +6227,10 @@ app.addEventListener('click', e => {
      through a year of shows taps a lot of these in a row. */
   const mark = e.target.closest('[data-mark]');
   if (mark){
+    /* The browser these live on is behind the sign-in wall, so this only fires
+       signed in. Guarded anyway: a mark that would not be kept should never be
+       written. */
+    if (!ME.signedIn){ openAuth('in'); return; }
     const band = BANDS.find(b => b.shows && !b.sample);
     const now = toggleThere(band.id, mark.dataset.mark);
     mark.classList.toggle('on', now);
