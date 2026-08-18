@@ -1,5 +1,5 @@
 -- ============================================================================
--- 82_football_bye_threshold.sql : the server seeds a bye at 16 wins, not 15
+-- 83_football_bye_threshold.sql : the server seeds a bye at 16 wins, not 15
 -- ============================================================================
 -- Safe to re-run: one CREATE OR REPLACE at the signature it already has.
 --
