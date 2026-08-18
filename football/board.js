@@ -331,16 +331,35 @@
      costs nothing here for the same reason it costs nothing on the free board, which is
      written out at length above. All-time only would have been less code and a worse
      board: after a month nobody new can reach the top of it. */
+  /* ---------------- THE ONE PLACE A MODE NAME IS DECIDED ----------------
+     Four call sites each carried their own copy of this ladder: the board query, the
+     submit, the batched rank call and its fallback. Keeping them in step was left to
+     whoever added the next mode, and both times it went wrong the same way. 'trade' was
+     missing from the submit, so every Trade Machine season until it was noticed went onto
+     the free-play board. 'defense' was missing from all four, so a One Stop run would have
+     recorded as free play and been ranked against six-pick offensive drafts.
+
+     A WHITELIST, NOT A PASS-THROUGH. An unknown mode records as free play rather than
+     being rejected by ps_runs_run_mode_ck, because a rejected submit loses somebody's
+     season and a misfiled one does not.
+
+     Club and era need a second field to name the competition, so a run claiming one of
+     those without it is not that competition and falls back to free play. The Trade
+     Machine and One Stop need nothing: the mode IS the competition. */
+  const SOLO_MODES = ['trade', 'defense'];
+  function modeOf(mode, franchise, era) {
+    if (SOLO_MODES.indexOf(mode) >= 0) return mode;
+    if (mode === 'era' && era) return 'era';
+    if (mode === 'club' && franchise) return 'club';
+    return 'free';
+  }
+
   function scope(opts) {
     opts = opts || {};
-    const club = opts.mode === 'club' && opts.franchise;
-    const eraMode = opts.mode === 'era' && opts.era;
-    /* The Trade Machine needs no second field the way club and era do: the mode IS the
-       competition, so one board serves it. */
-    const trade = opts.mode === 'trade';
-    let f = '&run_mode=eq.' + (trade ? 'trade' : eraMode ? 'era' : club ? 'club' : 'free');
-    if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
-    if (eraMode) f += '&era=eq.' + encodeURIComponent(opts.era);
+    const m = modeOf(opts.mode, opts.franchise, opts.era);
+    let f = '&run_mode=eq.' + m;
+    if (m === 'club') f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
+    if (m === 'era') f += '&era=eq.' + encodeURIComponent(opts.era);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
        many have been played, but it carries no name, so listing it puts a row of Anonymous
        on a board whose whole job is to say who did what. Every ranking call asks for this
@@ -382,13 +401,7 @@
       p_respins: payload.respins || 0,
       p_franchise: payload.franchise || null,
       p_era: payload.era || null,
-      /* WHITELISTED, NOT PASSED THROUGH, so an unknown mode records as free play rather
-         than being rejected by the server's check and losing the run. 'trade' was missing
-         from this list, which is why every Trade Machine season until now went onto the
-         free-play board: a different game, ranked against six-pick drafts. */
-      p_mode: payload.mode === 'era' ? 'era'
-        : payload.mode === 'club' ? 'club'
-        : payload.mode === 'trade' ? 'trade' : 'free',
+      p_mode: modeOf(payload.mode, payload.franchise, payload.era),
       p_picks: payload.picks,
       p_slots: payload.slots || null,
       p_seed: payload.seed || null,
@@ -538,11 +551,9 @@
   async function ranksBatch(score, mode, franchise, era) {
     if (!batchSupported) return null;
     try {
-      /* WHITELISTED, same as p_mode on submit. ps_rank_windows filters on run_mode and never
-         validated it, so 'trade' needed no SQL change to be countable here. */
-      const m = mode === 'trade' ? 'trade'
-        : (mode === 'era' && era) ? 'era'
-        : (mode === 'club' && franchise) ? 'club' : 'free';
+      /* ps_rank_windows filters on run_mode and never validated it, so a new mode is
+         countable here as soon as modeOf knows the name, with no SQL change. */
+      const m = modeOf(mode, franchise, era);
       const res = await timed(base() + 'rpc/ps_rank_windows', {
         method: 'POST',
         headers: headers(),
@@ -565,11 +576,12 @@
   async function ranks(score, mode, franchise, era) {
     const batch = await ranksBatch(score, mode, franchise, era);
     if (batch) return batch;
+    const m = modeOf(mode, franchise, era);
     const of = (win) => {
-      if (mode === 'trade') return { mode: 'trade', win, named: true };
-      if (mode === 'era' && era) return { mode: 'era', era, win, named: true };
-      if (mode === 'club' && franchise) return { mode: 'club', franchise, win, named: true };
-      return { mode: 'free', win, named: true };
+      const o = { mode: m, win, named: true };
+      if (m === 'club') o.franchise = franchise;
+      if (m === 'era') o.era = era;
+      return o;
     };
     const scopes = [['day', of('day')], ['week', of('week')], ['all', of('all')]];
     const got = await Promise.all(scopes.map(([, o]) =>

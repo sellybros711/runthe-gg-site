@@ -12875,7 +12875,11 @@ function runPayload(){
     era:run.era||null,
     mode:runMode(),
     picks:run.roster.map(pickKey),
-    slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
+    /* THE SLOT NAMES OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a One
+       Stop roster was being recorded as QB RB WR TE FLEX: six defenders filed under the
+       positions of the game they were not playing. ps_submit_run checks these names against
+       the mode, so they have to be the mode's own. */
+    slots:run.roster.map((p,i)=>slotsNow()[run.slotIndex[i]]),
     seed:String(run.seed),
     rngCalls:run.rngCalls,
     squadFppg:fppg,
@@ -14085,6 +14089,7 @@ function gmCell(row){
 function runKindOf(row){
   if(row&&row.run_mode==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
   if(row&&row.run_mode==='trade') return 'Trade Machine';
+  if(row&&row.run_mode==='defense') return 'One Stop';
   if(row&&row.run_mode==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(row&&row.run_mode==='daily') return 'daily puzzle';
   return 'free run';

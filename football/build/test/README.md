@@ -113,12 +113,19 @@ every defense run outright, and a player would get a season that vanishes on sub
 
 To open it:
 
-1. run `supabase/80_football_defense_mode.sql`
+1. run `supabase/80_football_defense_mode.sql`, then
+   `supabase/81_football_defense_submit.sql`
 2. deploy with names in `DEFENSE_TESTERS`, who get the real mode on the real database
    while everybody else still sees Coming Soon
 3. flip `DEFENSE_LIVE` to `true` and deploy again, which opens it to everybody
 
-The migration comes first in every version of that plan, testers included: the other
+Both migrations, not just the first. 80 widens the table's CHECK so a defense row can
+exist; `ps_submit_run` is the only thing that writes one and validates the mode and the
+slot names again on its own, rejecting `defense` and rejecting `DL`. 81 is that half. A
+deploy that lands before 81 does not misfile a run, it loses it: the function raises and
+the season is never recorded.
+
+The migrations come first in every version of that plan, testers included: the other
 order records nothing and shows a save failure nobody can act on.
 
 `DEFENSE_TESTERS` is a feature flag, not a permission. The list ships in the page, so it

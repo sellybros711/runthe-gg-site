@@ -14,8 +14,14 @@
 -- applied, which is the honest state: the mode is playable and its seasons
 -- would go nowhere.
 --
+-- THIS FILE IS ONLY HALF OF THE DATABASE SIDE. It widens the table's CHECK so a
+-- defense row can exist. ps_submit_run, which is the only thing that writes one,
+-- validates the mode AND the slot names again on its own, and rejected both.
+-- 81_football_defense_submit.sql is the other half, and without it the table
+-- would have taken the row and the function refused to write it.
+--
 -- Order of operations, if that gating is being lifted:
---   1. run this file
+--   1. run this file, then 81_football_defense_submit.sql
 --   2. deploy with names in DEFENSE_TESTERS (football/index.html), who then get the
 --      real mode against the real database while everybody else still sees
 --      Coming Soon

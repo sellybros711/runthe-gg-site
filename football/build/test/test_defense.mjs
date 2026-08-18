@@ -301,6 +301,21 @@ window.__DEF={
       pointer:cs.pointerEvents}; },
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
+  /* ---- WHAT ACTUALLY GOES OVER THE WIRE ----
+     fetch is stubbed and the real calls are made, so this reads the URL the board asks
+     for and the body the submit sends rather than the intent the page had. The two are
+     not the same thing and the difference is where One Stop's runs were being lost. */
+  async wire(){
+    const seen=[]; const real=window.fetch;
+    window.fetch=(u,o)=>{ seen.push({url:String(u),body:(o&&o.body)||null});
+      return Promise.resolve(new Response('[]',{status:200,
+        headers:{'Content-Type':'application/json'}})); };
+    try{ await B.top({mode:'defense',win:'day',named:true},10,'record','desc');
+      await B.submit(runPayload()); }
+    catch(e){ seen.push({error:String(e&&e.message)}); }
+    finally{ window.fetch=real; }
+    return seen;
+  },
   /* ---- THE GROUP COLORS ----
      Which color each group is wearing, and whether the text on it can be read. Sampled off
      the rendered page rather than computed from the palette, because every one of these
@@ -613,6 +628,37 @@ boot();`;
     await p.waitForSelector('#s-seed.on,#s-over.on', { timeout: 120000 });
     const st = await p.evaluate(() => window.__DEF.state());
     ok('a full season plays', st.games === 17 && st.wins + st.losses === 17, st);
+
+    /* ── THE RUN HAS TO BE RECORDED AS THE GAME IT WAS ────────────────────────
+       This is the assertion that would have saved the Trade Machine, and it is written
+       here because One Stop repeated the fault exactly. board.js decided the mode name at
+       four separate call sites; a new mode had to be added to all four and was added to
+       none, so a defense run went out as p_mode 'free' and landed on the open draft's
+       board, ranked against a game it was not playing. Nothing threw and nothing looked
+       wrong: a misfiled run is a valid row.
+
+       So the check is on the wire and not on the intent. The page can believe it is in
+       defense mode all day; what matters is the mode name in the request body and the
+       run_mode in the board's query string. */
+    const wire = await p.evaluate(() => window.__DEF.wire());
+    const read = wire.find((w) => w.url && /ps_runs\?/.test(w.url));
+    const wrote = wire.find((w) => w.url && /rpc\/ps_submit_run/.test(w.url));
+    ok('the board asks the database for run_mode defense, and for nothing else',
+      !!read && /run_mode=eq\.defense/.test(read.url) && !/run_mode=eq\.free/.test(read.url),
+      read && read.url.replace(/^.*\/rest/, '').slice(0, 150));
+    const sent = wrote && JSON.parse(wrote.body);
+    ok('and the submit sends p_mode defense', !!sent && sent.p_mode === 'defense',
+      sent && sent.p_mode);
+    /* ps_submit_run checks the slot names against the mode, so an offensive lineup on a
+       defense run is rejected outright. It was being sent: runPayload read E.SLOTS. */
+    ok('with a defensive lineup, which is what the server checks them against',
+      !!sent && Array.isArray(sent.p_slots) && sent.p_slots.length === 6
+      && sent.p_slots.every((x) => ['DL', 'LB', 'DB', 'FLEX'].includes(x)),
+      sent && sent.p_slots);
+    /* And the fields that belong to other modes are not along for the ride. */
+    ok('and no franchise, no era, no GM rating',
+      !!sent && !sent.p_franchise && !sent.p_era && sent.p_gm_rating == null,
+      sent && { fr: sent.p_franchise, era: sent.p_era, gm: sent.p_gm_rating });
     ok('and every game was resolved as a defense',
       st.defense === true && st.mode === 'defense' && st.label === 'One Stop'
       && st.defMods.every((m) => m > 0 && m < 5), st);
