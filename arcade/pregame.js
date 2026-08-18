@@ -134,11 +134,19 @@
       // Invite affordance: a full-width secondary action, green (a bonus, not a
       // purchase), sitting above the Arcade Card upsell when a free player is
       // out of plays. This is the moment the referral pays off, so it leads.
+      //
+      // The label is ONE flex item, not three. Loose text and a <b> beside the
+      // icon each become their own anonymous flex item, so the sentence broke
+      // into stacked fragments ("Invite a friend," on its own line, the rest in
+      // a block next to it) instead of wrapping like a sentence.
       '.rtgpg-invite{appearance:none;cursor:pointer;font-family:var(--f,inherit);font-weight:800;font-size:14px;'+
         'width:100%;min-height:50px;border-radius:13px;padding:13px 16px;margin:0 0 10px;'+
         'color:var(--greenT,#48D17A);background:color-mix(in srgb, var(--green,#48D17A) 14%, transparent);'+
-        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 45%, transparent);display:flex;align-items:center;justify-content:center;gap:8px;}',
+        'border:1px solid color-mix(in srgb, var(--green,#48D17A) 45%, transparent);'+
+        'display:flex;align-items:center;justify-content:center;gap:9px;text-align:left;line-height:1.35;}',
       '.rtgpg-invite:hover{background:color-mix(in srgb, var(--green,#48D17A) 22%, transparent);}',
+      '.rtgpg-invite .ic{flex:0 0 auto;font-size:16px;line-height:1;}',
+      '.rtgpg-invite .tx{flex:0 1 auto;}',
       '.rtgpg-invite b{color:var(--ink,#F4F7FB);font-weight:900;}',
       // A purchase button is the Arcade Card's gold, not the game's accent.
       // Two of the ten accents are near-white, which put white-on-white text on
@@ -311,7 +319,10 @@
       '<div class="rtgpg-note2">Still free today:</div>'+
       freeLinks()+
       (canInvite()
-        ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button"><span aria-hidden="true">🎟️</span> Invite a friend, <b>you both get another go today</b></button>'
+        ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button">'+
+            '<span class="ic" aria-hidden="true">🎟️</span>'+
+            '<span class="tx">Invite a friend, <b>you both get another go today</b></span>'+
+          '</button>'
         : '')+
       '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Play it again with the Arcade Card</button>'+
       '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
