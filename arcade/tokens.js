@@ -151,7 +151,7 @@
     });
   }
 
-  function fresh(){ return { date:todayStr(), plays:{}, sf:{} }; }
+  function fresh(){ return { date:todayStr(), plays:{}, sf:{}, bonus:0 }; }
   function read(){
     var s;
     try{ s=JSON.parse(LS.getItem(KEY)); }catch(e){ s=null; }
@@ -161,7 +161,22 @@
     // sf = server-synced used floor, per game (anti-bypass). The v3 wallet stored
     // a single number here; coerce so an upgrading device doesn't throw.
     if(!s.sf || typeof s.sf!=='object') s.sf={};
+    // bonus = extra attempts on EACH free game today, earned by referrals.
+    // Set from the server's arcade_game_status (card.js reconcile); resets with
+    // the day like everything else in this blob.
+    if(typeof s.bonus!=='number' || s.bonus<0) s.bonus=0;
     return s;
+  }
+  // Today's referral bonus: how many extra goes each free game gets. Read from
+  // the local wallet, which card.js keeps in step with the server.
+  function bonusToday(){ return read().bonus||0; }
+  // Server truth for today's bonus (from arcade_game_status). card.js only
+  // calls this with a real status object, so a flaky network read is a no-call,
+  // not a 0; following the server exactly (0 included) is therefore safe and
+  // also self-heals a local/NY date skew.
+  function setServerBonus(n){
+    var v=Math.max(0, n|0), s=read();
+    if(v!==(s.bonus||0)){ s.bonus=v; write(s); emit('rtg:tokens'); }
   }
   function write(s){ try{ LS.setItem(KEY, JSON.stringify(s)); }catch(e){} return s; }
 
@@ -178,11 +193,16 @@
 
   function capOf(game){
     if(unlimited()) return Infinity;
-    return unlocked(game) ? PER_GAME_DAILY : 0;
+    if(!unlocked(game)) return 0;
+    // A free game gets its one daily play plus any referral bonus earned today.
+    // The bonus lifts every free game, matching the server (arcade_spend_game
+    // computes the same 1 + bonus), so the client never offers a play the
+    // server will refuse.
+    return PER_GAME_DAILY + bonusToday();
   }
   function remainingOf(game){ var c=capOf(game); return c===Infinity?Infinity:Math.max(0, c-playsOf(game)); }
   // Wallet-wide view, kept for the odd caller that wants "anything left at all".
-  function cap(){ if(unlimited()) return Infinity; return signedIn() ? FREE_LIST.length*PER_GAME_DAILY : 0; }
+  function cap(){ if(unlimited()) return Infinity; return signedIn() ? FREE_LIST.length*(PER_GAME_DAILY+bonusToday()) : 0; }
   function remaining(game){
     if(game) return remainingOf(game);
     if(unlimited()) return Infinity;
@@ -212,7 +232,7 @@
     if(!signedIn()) return false;
     if(!game) return remaining()>0;                // no game named: anything left?
     if(!isFreeGame(game)) return false;
-    return playsOf(game) < PER_GAME_DAILY;
+    return playsOf(game) < capOf(game);            // capOf folds in today's bonus
   }
 
   // Spend this game's play for today.
@@ -359,6 +379,8 @@
     remainingOf: remainingOf,
     setServerUsed: setServerUsed,
     setServerPlays: setServerPlays,
+    bonusToday: bonusToday,
+    setServerBonus: setServerBonus,
     playsOf: playsOf,
     triesLeft: triesLeft,
     canPlay: canPlay,

@@ -224,6 +224,24 @@
        Leads with the 9 -> 36 games hook (the strongest differentiator) and the annual
        price, so the value is merchandised on the landing surface instead of only
        appearing as a wall when a free player runs out of plays. ---- */
+  /* Invite banner: shown to any signed-in player (that is where the code comes
+     from). Green, because it is a free bonus, not a purchase like the card. */
+  .invite{display:none; margin:22px 0 4px; border-radius:18px; padding:20px 18px; text-align:center;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--green) 15%, var(--card)), var(--card));
+    border:1px solid color-mix(in srgb, var(--green) 45%, var(--line2)); box-shadow:var(--shadow);}
+  .invite.show{display:block;}
+  .iv-kicker{font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--greenT); text-transform:uppercase;}
+  .iv-head{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:clamp(22px,5.5vw,30px); line-height:1.05; margin:9px 0 4px; color:var(--ink);}
+  .iv-head b{color:var(--greenT); font-weight:400;}
+  .iv-sub{font-size:13.5px; color:var(--mut); font-weight:600; line-height:1.5; max-width:440px; margin:0 auto;}
+  .iv-cta{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px;
+    border-radius:13px; padding:14px 22px; min-height:52px; width:100%; max-width:330px; margin:16px auto 0;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    background:var(--green); color:#06210f; box-shadow:var(--shadow);}
+  .iv-cta:hover{filter:brightness(1.06);}
+  .iv-tally{font-size:12px; color:var(--mut); margin-top:10px; font-weight:700; min-height:1em;}
+  .iv-tally b{color:var(--ink);}
   .cardpitch{display:none; margin:22px 0 4px; border-radius:18px; padding:20px 18px; text-align:center;
     background:linear-gradient(160deg, color-mix(in srgb, var(--coral) 16%, var(--card)), var(--card));
     border:1px solid color-mix(in srgb, var(--coral) 45%, var(--line2)); box-shadow:var(--shadow);}
@@ -801,6 +819,14 @@ window.GA_ID='G-L29P5MRWKE';
           </div>
         </section>
 
+        <section class="invite" id="invite" aria-labelledby="iv-head">
+          <div class="iv-kicker">Invite bonus</div>
+          <h2 class="iv-head" id="iv-head">Bring a friend, <b>you both get a bonus</b></h2>
+          <p class="iv-sub">Share your link. When a friend signs up through it, you each get an extra go at today's free games.</p>
+          <button class="iv-cta" type="button" id="ivShare"><span aria-hidden="true">🎟️</span> Invite a friend</button>
+          <div class="iv-tally" id="ivTally"></div>
+        </section>
+
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
           <h2 class="cp-head" id="cp-head"><s>4</s> <b>25 daily games</b></h2>
@@ -894,15 +920,16 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=6"></script>
+<script src="/arcade/tokens.js?v=7"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=14"></script>
+<script src="/arcade/board.js?v=15"></script>
 <script src="/arcade/auth.js?v=2"></script>
 <script src="/arcade/mycard.js?v=8"></script>
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=14"></script>
+<script src="/arcade/card.js?v=15"></script>
+<script src="/arcade/referral.js?v=2"></script>
 <script src="/arcade/nav.js?v=1"></script>
 <script src="/arcade/calendar.js?v=14"></script>
 <script src="/arcade/tour.js?v=1"></script>
@@ -1420,6 +1447,26 @@ window.GA_ID='G-L29P5MRWKE';
       try{ if(window.RTGCard && RTGCard.paywall) return RTGCard.paywall({reason:'upsell'}); }catch(e){}
       location.href='/arcade/archive/';
     });
+    // Invite banner: any signed-in player can share (a code needs an account).
+    // Shows their running invited-count once referral.js/board.js answer.
+    function syncInvite(){
+      var el=document.getElementById('invite'); if(!el) return;
+      var signed=false; try{ signed=!!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){}
+      el.classList.toggle('show', signed && !!(window.RTGReferral && RTGReferral.share));
+      if(signed && window.RTGReferral && RTGReferral.stats){
+        RTGReferral.stats(function(s){
+          var t=document.getElementById('ivTally'); if(!t) return;
+          if(s && s.invited>0) t.innerHTML='<b>'+s.invited+'</b> friend'+(s.invited===1?'':'s')+' joined so far';
+          else t.textContent='';
+        });
+      }
+    }
+    var ivBtn=document.getElementById('ivShare');
+    if(ivBtn) ivBtn.addEventListener('click', function(){ if(window.RTGReferral && RTGReferral.share) RTGReferral.share(function(){ syncInvite(); }); });
+    document.addEventListener('rtg:tokens', syncInvite);
+    syncInvite();
+    setTimeout(syncInvite, 1200);
+
     sync();
     setTimeout(sync, 1200);          // re-check once the membership state settles
     window.addEventListener('focus', sync);

@@ -491,6 +491,26 @@
     return withTimeout(sb.rpc('arcade_game_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
 
+  // ---- referrals (see supabase/83_referrals.sql). All resolve null when
+  // signed-out / offline / the RPC is missing, so a site deployed ahead of the
+  // migration simply shows no invite affordance rather than erroring. ----
+  function referralCode() {                          // caller's own code (creates on first call)
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_my_code').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+  function referralClaim(code) {                      // invitee: redeem a code after signup
+    if (!sb || !session || !code) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_claim', { p_code: String(code) }).then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+  function referralLookup(code) {                     // public: whose code is this (for the join page)
+    if (!sb || !code) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_lookup', { p_code: String(code) }).then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+  function referralStats() {                          // caller: invited count + today's bonus
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('referral_stats').then(function (r) { return (r && !r.error) ? r.data : null; }));
+  }
+
   // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or
   // null (offline). Works without a session (anon-granted RPC). ----
   function streakBoard(game, limit) {
@@ -566,6 +586,10 @@
     allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
+    referralCode: referralCode,
+    referralClaim: referralClaim,
+    referralLookup: referralLookup,
+    referralStats: referralStats,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   };
 })();
