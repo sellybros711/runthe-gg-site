@@ -158,6 +158,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   @media (max-width:640px){ :root{--gut:14px;} }
   .wrap{width:100%; max-width:1080px; margin:0 auto;
     padding:0 var(--gut) calc(24px + env(safe-area-inset-bottom,0));}
+  /* Room for the fixed tab bar on the screens that carry it, so the last row
+     and the About button clear it rather than hiding behind it. Only there:
+     the draft has no bar and wants every pixel back. */
+  body.hasTabs .wrap{padding-bottom:calc(70px + env(safe-area-inset-bottom,0));}
 
   /* Sticky and short. The draft screen is the one a player sits on eight times
      a game, so every fixed pixel here is a pixel of song list they lose. */
@@ -1554,6 +1558,28 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     margin:0 0 6px; padding-top:16px; border-top:1px solid var(--line);}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
 
+  /* ---- the bottom tab bar ----
+     Fixed to the foot of the viewport so scrolling never carries it off, and
+     full bleed so its background reaches both screen edges while the tabs stay
+     centred on a phone-width track. Present only on the browsing screens
+     (paintTabs adds body.hasTabs): the draft owns the bottom of the screen for
+     its pick sheet, so the bar stands down there. z-index sits under the sheets
+     (60) and the walkthrough (80), which are meant to cover it. */
+  .tabbar{display:none; position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:var(--bg); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom,0);}
+  body.hasTabs .tabbar{display:block;}
+  .tabbar-in{max-width:520px; margin:0 auto; display:flex;}
+  .tab{flex:1 1 0; min-width:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:3px; min-height:54px;
+    padding:7px 2px 6px; background:none; border:0; font-family:inherit;
+    color:var(--dim); -webkit-tap-highlight-color:transparent;}
+  .tab svg{width:23px; height:23px; display:block;}
+  .tab span{font-size:10.5px; font-weight:800; letter-spacing:.2px; line-height:1;}
+  .tab.on{color:var(--ink);}
+  .tab.on svg{color:var(--tealT);}
+  .tab:active{opacity:.6;}
+
   /* ---------------- accounts, the board and the profile ----------------
      All of this is OPTIONAL. Nothing below is on the path between opening the
      page and finishing a show: if supabase never loads, #meBtn stays hidden,
@@ -2114,6 +2140,32 @@ window.GA_ID='G-L29P5MRWKE';
   </footer>
 </div>
 
+<!-- THE BOTTOM TAB BAR. Fixed to the foot of the viewport so scrolling never
+     carries it off, and outside .wrap because it is position:fixed: it takes no
+     part in the page flow, so where it sits in the source is cosmetic. paintTabs()
+     keeps the lit tab and the bar's visibility in step with the current screen,
+     and hides it during the draft, where the game owns the bottom of the screen.
+     Five destinations, the songs list among them, by request. -->
+<nav class="tabbar" id="tabbar" aria-label="Sections">
+  <div class="tabbar-in">
+    <button class="tab" type="button" data-tab="home" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.7V20h13V9.7"/></svg>
+      <span>Home</span></button>
+    <button class="tab" type="button" data-tab="tour" aria-label="On tour">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.2" width="17" height="15" rx="2.2"/><path d="M3.5 9.7h17M8 3.5v3.2M16 3.5v3.2"/></svg>
+      <span>Tour</span></button>
+    <button class="tab" type="button" data-tab="songs" aria-label="Every song">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5V6l10-2v11.5"/><circle cx="6.5" cy="17.5" r="2.6"/><circle cx="16.5" cy="15.5" r="2.6"/></svg>
+      <span>Songs</span></button>
+    <button class="tab" type="button" data-tab="board" aria-label="Leaderboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h11V8a5.5 5.5 0 0 1-11 0V4.5z"/><path d="M6.5 6H4v1.2A2.9 2.9 0 0 0 6.9 10.1M17.5 6H20v1.2a2.9 2.9 0 0 1-2.9 2.9"/><path d="M12 13.4V17M9.2 20h5.6M10.6 17h2.8"/></svg>
+      <span>Board</span></button>
+    <button class="tab" type="button" data-tab="profile" aria-label="Your shows">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.8 19.6a6.2 6.2 0 0 1 12.4 0"/></svg>
+      <span>You</span></button>
+  </div>
+</nav>
+
 <script>
 /* Boot watchdog. An ES module that fails to link (a renamed export, a stale
    cached page against fresh code) never runs, so it cannot show an error — the
@@ -2457,6 +2509,42 @@ function setScreen(name){
   document.body.classList.toggle('playing', name === 'draft' || name === 'reveal');
   render();
 }
+
+/* THE TAB BAR, kept in step with the screen from one place.
+ *
+ * It shows on the browsing screens and stands down for the play flow (loading,
+ * draft, reveal, the show card, the scorecard), where the game owns the bottom
+ * of the screen. The lit tab groups the screens that belong to it: Your nights
+ * and Track your shows are both "You", since both are your own record.
+ *
+ * paintTabs runs from render(), which fires on the first paint and on every
+ * screen change, so the bar never needs its own wiring to stay current. */
+const TAB_SCREENS = new Set(['home', 'tour', 'songs', 'board', 'profile', 'nights', 'browse']);
+const TAB_LIT = { home: 'home', tour: 'tour', songs: 'songs', board: 'board',
+  profile: 'profile', nights: 'profile', browse: 'profile' };
+function paintTabs(){
+  document.body.classList.toggle('hasTabs', TAB_SCREENS.has(S.screen));
+  const lit = TAB_LIT[S.screen] || null;
+  for (const t of document.querySelectorAll('#tabbar [data-tab]')){
+    const on = t.dataset.tab === lit;
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-current', on ? 'page' : 'false');
+  }
+}
+document.getElementById('tabbar').addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]');
+  if (!t) return;
+  const dest = t.dataset.tab;
+  /* Tapping the tab you are already on takes you back to the top of it, the way
+     a native tab bar does; otherwise it navigates. */
+  if (dest === (TAB_LIT[S.screen] || null) && dest === S.screen){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  S.cameFrom = S.screen;
+  if (dest === 'board'){ setScreen('board'); loadBoard(); }
+  else setScreen(dest);
+});
 
 /* ── the walkthrough ─────────────────────────────────────────────────────────
  *
@@ -5186,6 +5274,7 @@ function renderShow(){
 }
 
 function render(){
+  paintTabs();
   if (S.screen === 'home')    return renderHome();
   if (S.screen === 'loading') return;
   if (S.screen === 'reveal')  return renderReveal();
