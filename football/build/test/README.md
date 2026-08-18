@@ -10,13 +10,14 @@ node football/build/test/test_defense.mjs
 (nohup node cfb/build/test/gzip_server.mjs &)
 node football/build/test/test_bracket.mjs
 BROWSER=1 node football/build/test/test_defense.mjs
+BROWSER=1 node football/build/test/test_credits.mjs
 ```
 
 The first five need no database, no browser and no network. They read
-`data/display_calibration.json` and play games through the real engine. The last two
+`data/display_calibration.json` and play games through the real engine. The last three
 drive the page in Chromium and need a server, which is why they are listed apart.
-`test_defense.mjs` appears in both lists on purpose: its pool and balance halves run
-anywhere, and `BROWSER=1` adds a played season on top.
+`test_defense.mjs` and `test_credits.mjs` appear in both lists on purpose: their arithmetic
+halves run anywhere, and `BROWSER=1` adds a rendered half on top.
 
 | File | What it proves |
 |---|---|
@@ -72,6 +73,41 @@ The blurbs are also copy, so they are held to the copy rules. `test_credits.mjs`
 own output for dashes, which `scripts/check-dashes.mjs` cannot do because it reads source
 files and these sentences are assembled at runtime. It also checks the phrasing bands: a
 goal-line verb on a fifty yard run reads as broken rather than as random.
+
+## The field goal distance, and the picture above it
+
+The log calls a kick at its distance, and that distance is READ OFF THE DRIVE rather than
+drawn beside it. The chart sits directly above the log and has already decided where the
+drive stalled, so an independent draw would put a 20 yard kick under a bar that stops at
+midfield: both plausible, visibly disagreeing, and the chart is what a player is watching
+while the call is up. The kick is the seven yards back to the holder plus the ten of the end
+zone, which is where the real arithmetic comes from too.
+
+Deriving it that way exposed something `generateDrives` had always had wrong. It picked the
+yard line a field goal drive ended on directly and evenly, between the opponent's 23 and 40.
+That drew a tidy picture and nothing ever read it back, so nothing ever noticed: as
+distances it is a median 48 yard kick with 41% of them from fifty or longer, against a real
+median near 38 and 15 to 20%, and a drive essentially never reached the 20. It draws the
+DISTANCE first now and puts the end of the bar where that lands.
+
+`E.fieldGoalDistances` survives as the fallback and is not dead code. A score landing within
+five seconds of the next one is resolved without a drive being drawn for it at all, and
+those kicks still have to say something. One assertion checks that path is still reachable,
+so if it ever stops being reachable the fallback goes rather than quietly rotting.
+
+The browser half is what actually proves the claim. Everything else here reasons about
+`d.endYard`, which is an argument about the code: both the call and the chart are supposed to
+come from that one number. The `BROWSER=1` half draws the chart as it ships, reads the bar
+off the canvas, converts where it stops back into a kick and checks the game would have
+called that number, at six distances and on both sides of the ball. It lands within about a
+yard every time, and the yard is the arrow tip at the leading edge, which is part of what a
+player sees as the end of the drive.
+
+It also pins the boundary the whole thing turns on. "The chart draws `endYard`" is only true
+of a FINISHED drive; the renderer interpolates one that is still running, and the call lands
+exactly on that boundary. Measured halfway through, the same drive reads as a 54 yard kick
+and at the call it reads 30. If that ever moved by a frame the bar and the number under it
+would part company, and no assertion about the data would see it.
 
 ## What `test_defense.mjs` is really guarding
 

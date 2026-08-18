@@ -408,5 +408,117 @@ console.log('\n=== the words themselves ===');
   console.log('  e.g. ' + blurbs.slice(0, 3).join('\n       '));
 }
 
+/* ── the kick against the PIXELS of the picture ──────────────────────────────
+   Everything above this reasons about d.endYard, which is the number both the call and the
+   chart are supposed to come from. That is an argument about the code. This is the
+   measurement: draw the chart as it ships, read the bar off the canvas, convert where it
+   stops back into a kick, and check the game would have called that number.
+
+   It matters because "the chart draws endYard" is only true for a FINISHED drive. The
+   renderer interpolates one that is still running, and the call lands exactly on the
+   boundary. If that ever moved by a frame the bar on screen and the number under it would
+   part company, and no assertion about the data would notice.
+
+     BROWSER=1 node football/build/test/test_credits.mjs
+   with a server on :8081. */
+if (process.env.BROWSER) {
+  console.log('\n=== the kick, measured off the drawn chart ===');
+  const { chromium } = await import('playwright');
+  const HOST = process.env.HOST || 'http://localhost:8081';
+  const PROBE = `${ROOT}/football/__test_credits.html`;
+  /* drawDriveChart is nested in the page's one script, so it is reached the same way every
+     harness for this page reaches anything: one hook at the boot() anchor. */
+  const HOOK = `
+window.__CR={
+  /* Draw a chart of exactly these drives and measure where the last bar stops, in yards.
+     The geometry is recomputed from drawDriveChart's own constants rather than guessed. */
+  measure(drives,upTo){
+    const W=680,H=210,dpr=window.devicePixelRatio||1;
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const ctx=c.getContext('2d',{willReadFrequently:true});
+    const YOU='#00aaff', THEM='#ff5522';
+    drawDriveChart(ctx,W,H,drives,upTo,YOU,THEM,'YOU','OPP');
+    const padL=4*dpr,padT=10*dpr,padB=14*dpr;
+    const fw=W-padL-4*dpr, fh=H-padT-padB;
+    const ezW=Math.round(fw*0.06), pfL=padL+ezW, pfW=fw-ezW*2;
+    const visible=drives.filter(d=>d.tStart<=upTo);
+    const shown=visible.slice(Math.max(0,visible.length-7));
+    const rowH=fh/7, i=shown.length-1;
+    const y=Math.round(padT+i*rowH+rowH/2);
+    const px=ctx.getImageData(0,y,W,1).data;
+    const want=(hex)=>[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+    const team=shown[i].team==='you'?want(YOU):want(THEM);
+    /* The bar carries a light-to-dark sheen and sits at 0.92 alpha over dark green, so a
+       pixel is "the bar" by being nearer the team colour than the field is, not by equalling
+       it. The arrow tip at the leading edge is the same colour and is deliberately included:
+       it is part of what a player sees as the end of the drive. */
+    const near=(o)=>{const dr=px[o]-team[0],dg=px[o+1]-team[1],db=px[o+2]-team[2];
+      return Math.sqrt(dr*dr+dg*dg+db*db)<110;};
+    let lo=-1,hi=-1;
+    for(let x=0;x<W;x++){ if(near(x*4)){ if(lo<0)lo=x; hi=x; } }
+    if(lo<0) return {found:false,row:y};
+    const edge=shown[i].team==='you'?hi:lo;
+    return {found:true,yards:(edge-pfL)/pfW*100,row:y,lo,hi,
+      endYard:shown[i].endYard,team:shown[i].team};
+  },
+};
+boot();`;
+  const src = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
+  if (src.split('\nboot();').length !== 2) throw new Error('the boot() anchor moved; update this file');
+  fs.writeFileSync(PROBE, src.replace('\nboot();', HOOK));
+  const br = await chromium.launch({
+    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+  try {
+    const p = await br.newPage();
+    p.on('pageerror', (e) => { bad++; console.log(' FAIL  page error   ' + String(e.message).split('\n')[0]); });
+    await p.goto(`${HOST}/football/__test_credits.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await p.waitForFunction(() => window.__CR, null, { timeout: 60000 });
+
+    /* One kick per case, at both ends of the range and on both sides of the ball, plus a
+       drive in front of it so the bar being measured is not also the first row. */
+    const cases = [
+      { tag: 'a 20 yard chip shot', team: 'you', startYard: 62, endYard: 97 },
+      { tag: 'a 31 yarder', team: 'you', startYard: 40, endYard: 86 },
+      { tag: 'a 52 yarder', team: 'you', startYard: 28, endYard: 65 },
+      { tag: 'a 60 yarder from distance', team: 'you', startYard: 20, endYard: 57 },
+      { tag: 'the opponent from 24', team: 'them', startYard: 70, endYard: 7 },
+      { tag: 'the opponent from 49', team: 'them', startYard: 80, endYard: 32 },
+    ];
+    for (const c of cases) {
+      const drives = [
+        { team: c.team === 'you' ? 'them' : 'you', startYard: 50, endYard: 50, result: 'punt', tStart: 0, tEnd: 100 },
+        { team: c.team, startYard: c.startYard, endYard: c.endYard, result: 'field goal', tStart: 100, tEnd: 400, at: 0 },
+      ];
+      const m = await p.evaluate(([d, u]) => window.__CR.measure(d, u), [drives, 400]);
+      /* What the page would say, from the same drive. */
+      const out = c.team === 'you' ? 100 - c.endYard : c.endYard;
+      const called = Math.max(18, Math.min(63, Math.round(out) + 17));
+      const drawnOut = m.found ? (c.team === 'you' ? 100 - m.yards : m.yards) : null;
+      const drawnKick = m.found ? drawnOut + 17 : null;
+      ok(c.tag + ': the bar stops where the call says it did',
+        m.found && Math.abs(drawnKick - called) <= 2.2,
+        { called, measuredOffCanvas: m.found ? +drawnKick.toFixed(1) : 'no bar found', endYard: c.endYard });
+    }
+    /* And the boundary the whole thing turns on: at the instant the call is made, the drive
+       is finished rather than part drawn. A frame early and the bar is short of where the
+       number says the kick was taken from. */
+    const drives = [
+      { team: 'them', startYard: 50, endYard: 50, result: 'punt', tStart: 0, tEnd: 100 },
+      { team: 'you', startYard: 40, endYard: 86, result: 'field goal', tStart: 100, tEnd: 400, at: 0 },
+    ];
+    const atCall = await p.evaluate((d) => window.__CR.measure(d, 400), drives);
+    const midDrive = await p.evaluate((d) => window.__CR.measure(d, 250), drives);
+    ok('the drive is complete at the moment the call is made, not still running',
+      Math.abs((100 - atCall.yards) + 17 - 31) <= 2.2
+      && (100 - midDrive.yards) + 17 > 31 + 4,
+      { atTheCall: +((100 - atCall.yards) + 17).toFixed(1),
+        halfway: +((100 - midDrive.yards) + 17).toFixed(1) });
+    await p.close();
+  } finally {
+    await br.close();
+    if (fs.existsSync(PROBE)) fs.unlinkSync(PROBE);
+  }
+}
+
 console.log(bad ? `\n${bad} FAILED` : '\nall good');
 process.exit(bad ? 1 : 0);
