@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
-<title>Run The Tour — Free Daily Golf Simulation Game | RunThe.GG</title>
+<title>Run The Tour: Free Daily Golf Simulation Game | RunThe.GG</title>
 <meta name="description" content="Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your golfer, beat the daily course, run a career, and play head-to-head online.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
@@ -55,14 +55,16 @@
 <!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open).
      `defer`ed so a slow/blocked CDN can't parser-block first paint; sbInit() waits for it (see end of script). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<!-- Google Consent Mode v2 defaults. Deny ad + analytics storage until the certified CMP (loaded by the
-     AdSense tag below) records the user's choice; the CMP then updates these signals automatically. This
-     runs BEFORE the ad/analytics tags so it honours privacy.html's promise that no advertising or
-     analytics cookies are set before consent. `wait_for_update` gives the CMP time to respond. -->
+<!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
+     the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
+     including tightening analytics where local law requires it. Analytics storage defaults to granted so
+     first-party measurement works, matching every other page on runthe.gg. Do NOT default this to denied
+     here: outside the EEA/UK/CH the CMP never prompts, so no consent update ever arrives and the page
+     goes dark in GA4. Runs BEFORE the ad/analytics tags. `wait_for_update` gives the CMP time to respond. -->
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
-gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
      handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
@@ -86,7 +88,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
   window.dataLayer=window.dataLayer||[]; window.gtag=function(){dataLayer.push(arguments);};
-  gtag('js',new Date()); gtag('config',id);
+  gtag('js',new Date()); gtag('set',{game_name:'Run The Tour'}); gtag('config',id);
   var s=document.createElement('script'); s.async=true;
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
@@ -4400,7 +4402,7 @@ function arcadeAdSeenNow(){ try{
 }catch(e){} }
 // The 10 Arcade games, with the Arcade's own tile colors, so the ad looks like the product it sells.
 const ARCADE_GAMES=[
-  ['Daily Match','#5C8CFF'],['Crossword','#9CADC0'],['Guess the Player','#F06A5F'],
+  ['Common Ground','#5C8CFF'],['Crossword','#9CADC0'],['Guess the Player','#F06A5F'],
   ['Number Game','#F2B632'],['Odd One Out','#B79BF6'],['Career Path','#48D17A'],['Rank It','#F778AE'],
   ['Alma Mater','#96B93C'],['High Low','#FF8A3D']
 ];
@@ -32435,5 +32437,32 @@ try{
 }catch(e){ try{ window.rttBoot && rttBoot.done(); }catch(e2){} }
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 </script>
+<!-- Folded, matching the rest of the site: open it was a wall of copy under the game.
+     Folded is not hidden to search: the text ships in the HTML and Google indexes a
+     closed details at full weight. -->
+<style>
+.rtt-about{max-width:640px;margin:30px auto 26px;padding:0 18px;border-top:1px solid rgba(244,227,201,.15);color:#9cbfa8;font-family:'Barlow Semi Condensed',system-ui,sans-serif;}
+.rtt-about>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:17px;color:#F4E3C9;padding:16px 0;-webkit-tap-highlight-color:transparent;}
+.rtt-about>summary::-webkit-details-marker{display:none;}
+.rtt-about>summary .ab-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;border-right:2px solid #9cbfa8;border-bottom:2px solid #9cbfa8;transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
+.rtt-about[open]>summary .ab-chev{transform:rotate(-135deg);}
+</style>
+<details class="rtt-about">
+  <summary>About Run The Tour<span class="ab-chev" aria-hidden="true"></span></summary>
+  <div style="padding-bottom:12px;">
+  <p style="font-size:14.5px;line-height:1.6;margin:0 0 10px;">Run The Tour is a free golf career simulation you play in the browser. Draft a golfer one
+    skill at a time from real players, spike the strengths you believe in, then take that build
+    through professional seasons where prize money has to outrun roughly $2.8M a year of tour
+    costs. Career mode runs up to 30 seasons of ageing, peaking and declining while you chase
+    majors, cups and the world number one.</p>
+  <p style="font-size:14.5px;line-height:1.6;margin:0 0 10px;">Beyond the career there is a Daily Challenge at a rotating real course, the same for
+    everyone with a fresh course at midnight ET, plus online Head-to-Head, Best Ball, Scramble
+    and Free-for-All against real players. Your golfer is fully yours to design: outfits, hats,
+    hairstyles, eyewear and clubs, earned through play.</p>
+  <p style="font-size:14.5px;line-height:1.6;margin:0;">New to the game? The full <a href="/golf/how-to-play.html" style="color:#EBA61F;font-weight:700;">how to play guide</a>
+    covers the draft, the eight skills and every mode. Run The Tour is part of
+    <a href="/" style="color:#EBA61F;font-weight:700;">RunThe.GG</a>, free sports games with one account across all of them.</p>
+  </div>
+</details>
 </body>
 </html>
