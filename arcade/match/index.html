@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
@@ -617,41 +617,13 @@ window.GA_ID='G-L29P5MRWKE';
         <button class="submit-go" id="btnSubmit" type="button" disabled>Submit</button>
       </div>
       <div class="mfeedback" id="mFeedback" role="status" aria-live="polite"></div>
-    <style>
-.gj{margin:36px 0 10px;border-top:1px solid var(--line2,rgba(148,163,184,.25));padding-top:24px;text-align:left;}
-.gj h2{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:21px;margin:0 0 10px;color:var(--ink,#F4F7FB);}
-.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:15px;margin:20px 0 8px;color:var(--ink,#F4F7FB);}
-.gj p{font-size:13.5px;line-height:1.65;color:var(--mut,#A9B8CB);margin:0 0 10px;font-weight:600;}
-.gj ul{margin:0 0 10px;padding-left:20px;}
-.gj li{font-size:13.5px;line-height:1.6;color:var(--mut,#A9B8CB);margin:5px 0;font-weight:600;}
-.gj a{color:var(--tealT,#37C5D5);font-weight:800;text-decoration:none;}
-.gj a:hover{text-decoration:underline;}
-/* The how-to block, folded. Open, five headings of prose sat in the middle of the game
-   and on the desktop grid pages it auto-placed into whatever cell was free, which put it
-   above the puzzle. Folded it is one quiet line, and grid-column:1/-1 means it can only
-   land in a row where every column is free, i.e. a new row at the bottom. Folded is not
-   hidden: the text ships in the HTML either way and Google indexes a closed details at
-   full weight. */
-.gjx{grid-column:1/-1;margin:30px 0 6px;border-top:1px solid var(--line2,rgba(148,163,184,.25));}
-.gjx>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
-  font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;text-transform:uppercase;
-  letter-spacing:.02em;font-size:15px;color:var(--ink,#F4F7FB);padding:14px 2px;
-  -webkit-tap-highlight-color:transparent;}
-.gjx>summary::-webkit-details-marker{display:none;}
-.gjx>summary .gjx-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;
-  border-right:2px solid var(--mut,#A9B8CB);border-bottom:2px solid var(--mut,#A9B8CB);
-  transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
-.gjx[open]>summary .gjx-chev{transform:rotate(-135deg);}
-.gjx .gj{margin:0 0 10px;border-top:0;padding-top:0;}
-
-.gjfoot{text-align:center;font-size:11.5px;font-weight:600;color:var(--mut,#A9B8CB);padding:14px 0 4px;}
-.gjfoot a{color:var(--tealT,#37C5D5);font-weight:800;text-decoration:none;}
-.gjfoot a:hover{text-decoration:underline;}
-</style>
-<details class="gjx">
-<summary>How to play Common Ground<span class="gjx-chev" aria-hidden="true"></span></summary>
-<section class="gj">
-<h2>How to play Common Ground</h2>
+    <details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Common Ground</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
 <p>Common Ground is a daily sports grouping puzzle. Sixteen names hide four secret groups of four, and a group can be anything its members truly share: a franchise, a college, a jersey number, a surname, a title-winning team. Your job is to find all four groups before four mistakes end the day.</p>
 <ul>
   <li>Tap four names you believe belong together, then lock the group in.</li>
@@ -668,7 +640,7 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Read the names as words, not resumes. Surnames, numbers and nicknames hide threads a stat sheet never shows.</li>
 </ul>
 <p>More from Run The Arcade: spot the impostor in <a href="/arcade/oddone/">Odd One Out</a>, or put five careers in order in <a href="/arcade/rankit/">Rank It</a>.</p>
-</section>
+</div>
 </details>
 <div class="gjfoot">A daily grouping puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
 </main>

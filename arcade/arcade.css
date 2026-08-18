@@ -216,3 +216,48 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   .a-card,.a-btn{transition:none !important;}
   .a-status--progress::before{animation:none !important;}
 }
+
+/* ---- How to play: one tab at the foot of every game ---------------------- */
+/* The long-form rules used to sit permanently open under every game. On a
+   desktop screen that is a wall of text nobody asked for and cannot dismiss,
+   and it pushed the board itself below the fold. A native <details> keeps
+   every word in the DOM for search while costing one line until a player
+   actually wants it. The hub keeps its own open .gj explainer: that page is
+   the pitch, so there the words are the point. */
+.gj{margin:34px 0 10px; border-top:1px solid var(--line2,rgba(148,163,184,.25));
+  padding-top:18px; text-align:left;}
+.gj > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:12px;
+  padding:13px 15px; border:1px solid var(--line2,rgba(148,163,184,.25)); border-radius:13px;
+  background:var(--card2,rgba(148,163,184,.08));
+  transition:border-color .12s, background .12s;}
+.gj > summary::-webkit-details-marker{display:none;}
+.gj > summary::marker{content:'';}
+.gj > summary:hover{border-color:var(--tealT,#37C5D5);}
+.gj > summary h2{flex:1; min-width:0; margin:0;
+  font-family:var(--hero,'Anton',Impact,sans-serif); font-weight:400; letter-spacing:.02em;
+  text-transform:uppercase; font-size:16px; line-height:1.15; color:var(--ink,#F4F7FB);}
+.gj > summary:focus-visible{outline:none;
+  box-shadow:var(--a-ring, 0 0 0 3px rgba(55,197,213,.45));}
+.gj-hint{font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--mut,#A9B8CB); flex:0 0 auto;}
+.gj-chev{color:var(--mut,#A9B8CB); font-size:12px; flex:0 0 auto; transition:transform .2s;}
+.gj[open] > summary{border-color:var(--tealT,#37C5D5);}
+.gj[open] > summary .gj-chev{transform:rotate(180deg);}
+/* Open on a wide monitor the panel is the full grid width, and a 1200px line of
+   13px prose is unreadable. Cap the measure, keep it left aligned with the tab. */
+.gj-body{padding:18px 3px 2px; max-width:760px;}
+.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif); font-weight:400; letter-spacing:.02em;
+  text-transform:uppercase; font-size:15px; margin:20px 0 8px; color:var(--ink,#F4F7FB);}
+.gj-body > h3:first-child{margin-top:0;}
+.gj p{font-size:13.5px; line-height:1.65; color:var(--mut,#A9B8CB); margin:0 0 10px; font-weight:600;}
+.gj ul{margin:0 0 10px; padding-left:20px;}
+.gj li{font-size:13.5px; line-height:1.6; color:var(--mut,#A9B8CB); margin:5px 0; font-weight:600;}
+.gj a{color:var(--tealT,#37C5D5); font-weight:800; text-decoration:none;}
+.gj a:hover{text-decoration:underline;}
+@media (max-width:520px){
+  .gj-hint{display:none;}
+  .gj > summary h2{font-size:15px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .gj > summary,.gj-chev{transition:none;}
+}

@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=2" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
@@ -176,10 +176,10 @@
       grid-template-columns:minmax(0,1fr) 344px;
       grid-template-areas:
         "top   top" "title title" "prm prm" "sub sub"
-        "choi run" "choi lbd" "hint lbd" "foot foot";
+        "choi run" "choi lbd" "hint lbd" "gj    gj" "foot foot";
     .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .prompt{grid-area:prm;}
     .subprompt{grid-area:sub;} .choices{grid-area:choi;} .hintline{grid-area:hint;}
-    .runbar{grid-area:run;} .lb{grid-area:lbd;} .foot{grid-area:foot;}
+    .runbar{grid-area:run;} .lb{grid-area:lbd;} .gj{grid-area:gj;} .foot{grid-area:foot;}
       }
     /* the five answer rows are the whole game - let them own the column
        instead of floating in it (the old grid tied the empty subprompt row to
@@ -260,38 +260,13 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
   </div>
 
-<style>
-.gj{margin:36px 0 10px;border-top:1px solid var(--line2,rgba(148,163,184,.25));padding-top:24px;text-align:left;}
-.gj h2{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:21px;margin:0 0 10px;color:var(--ink,#F4F7FB);}
-.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:15px;margin:20px 0 8px;color:var(--ink,#F4F7FB);}
-.gj p{font-size:13.5px;line-height:1.65;color:var(--mut,#A9B8CB);margin:0 0 10px;font-weight:600;}
-.gj ul{margin:0 0 10px;padding-left:20px;}
-.gj li{font-size:13.5px;line-height:1.6;color:var(--mut,#A9B8CB);margin:5px 0;font-weight:600;}
-.gj a{color:var(--tealT,#37C5D5);font-weight:800;text-decoration:none;}
-.gj a:hover{text-decoration:underline;}
-/* The how-to block, folded. Open, five headings of prose sat in the middle of the game
-   and on the desktop grid pages it auto-placed into whatever cell was free, which put it
-   above the puzzle. Folded it is one quiet line, and grid-column:1/-1 means it can only
-   land in a row where every column is free, i.e. a new row at the bottom. Folded is not
-   hidden: the text ships in the HTML either way and Google indexes a closed details at
-   full weight. */
-.gjx{grid-column:1/-1;margin:30px 0 6px;border-top:1px solid var(--line2,rgba(148,163,184,.25));}
-.gjx>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
-  font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;text-transform:uppercase;
-  letter-spacing:.02em;font-size:15px;color:var(--ink,#F4F7FB);padding:14px 2px;
-  -webkit-tap-highlight-color:transparent;}
-.gjx>summary::-webkit-details-marker{display:none;}
-.gjx>summary .gjx-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;
-  border-right:2px solid var(--mut,#A9B8CB);border-bottom:2px solid var(--mut,#A9B8CB);
-  transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
-.gjx[open]>summary .gjx-chev{transform:rotate(-135deg);}
-.gjx .gj{margin:0 0 10px;border-top:0;padding-top:0;}
-
-</style>
-<details class="gjx">
-<summary>How to play Odd One Out<span class="gjx-chev" aria-hidden="true"></span></summary>
-<section class="gj">
-<h2>How to play Odd One Out</h2>
+<details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Odd One Out</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
 <p>Five names come up. Four of them share a connection, maybe a team, a position, a decade, or a Hall of Fame plaque. One does not belong. Spotting the impostor is worth a point; naming the connection that binds the other four is worth a second.</p>
 <ul>
   <li>Tap the name that does not fit. A correct spot extends your run.</li>
@@ -308,7 +283,7 @@ window.GA_ID='G-L29P5MRWKE';
   <li>If two names both look wrong, your connection is wrong. Step back and re-derive it.</li>
 </ul>
 <p>Sharpen the same instinct in <a href="/arcade/guess/">Guess the Player</a>, or group sixteen names in <a href="/arcade/match/">Common Ground</a>.</p>
-</section>
+</div>
 </details>
   <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
