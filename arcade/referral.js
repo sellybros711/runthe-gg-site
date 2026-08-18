@@ -141,6 +141,16 @@
     }catch(e){}
   }
   function signedIn(){ try{ return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); }catch(e){ return false; } }
+  /* Turn the last RPC failure into something a person can act on or report.
+     404 means the database has not had 83_referrals.sql run against it, which
+     is a one-line answer instead of an afternoon. */
+  function reasonSuffix(){
+    var e=null; try{ e = window.RTG_BOARD && RTG_BOARD.referralError && RTG_BOARD.referralError(); }catch(x){}
+    if(!e) return '. Check your connection and try again.';
+    if(e.status===404) return ': the invite feature is not set up on the server yet.';
+    if(e.status===401 || e.status===403) return ': your session expired. Sign out and back in.';
+    return ' (error ' + (e.status||'?') + ').';
+  }
 
   // Push a ready link out through the OS share sheet or the clipboard.
   function dispatch(url, cb){
@@ -169,10 +179,9 @@
     link(function(url){
       if(!url){
         // A signed-in player with no link did not fail to sign in: the code
-        // fetch did (offline, or the RPC/migration is missing). Say the true
-        // thing, and leave the real cause in the console (board.js logs it).
-        toast(signedIn() ? 'Could not fetch your invite link. Please try again.'
-                         : 'Sign in to get your invite link');
+        // fetch did. Say WHY where we can, because "try again" on a repeatable
+        // failure is the least useful sentence a UI can produce.
+        toast(signedIn() ? ('Invite link unavailable' + reasonSuffix()) : 'Sign in to get your invite link');
         if(cb) cb(false); return;
       }
       dispatch(url, cb);

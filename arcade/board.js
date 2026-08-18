@@ -494,34 +494,64 @@
   // ---- referrals (see supabase/83_referrals.sql). All resolve null when
   // signed-out / offline / the RPC is missing, so a site deployed ahead of the
   // migration simply shows no invite affordance rather than erroring. ----
-  /* These gate on `sb` alone, NOT on this module's `session` var. The var is
-     set from board.js's own getSession()/onAuthStateChange and can lag the
-     shared client (a cardholder never calls spendToken, so the lag is invisible
-     until the invite needs it). supabase-js attaches the persisted session's
-     token itself, and the RPCs verify auth.uid() server-side, so gating on sb
-     is correct and avoids a false "signed out" for a signed-in user. On an
-     error we log it: a null here used to be silent, which is exactly why a
-     signed-in member saw "sign in to get your link" with no way to see why. */
-  function rpcData(name, r) {
-    if (r && r.error) { try { console.warn('[RTG] ' + name + ' failed:', r.error.message || r.error); } catch (e) {} return null; }
-    return r ? r.data : null;
+  /* THE SESSION THESE CALLS TRUST IS THE ONE IN STORAGE, NOT THE ONE THIS
+     MODULE PARSED.
+
+     referral_my_code / _claim / _stats are granted to `authenticated` only, so
+     a request that arrives carrying the anon key is refused and auth.uid() is
+     null. That is precisely what happens when supabase-js has not restored its
+     session yet on this page: sb.rpc() falls back to the anon key while
+     tokens.signedIn() (a raw localStorage read) already says signed in. The
+     result was a signed-in player being told the link could not be fetched.
+
+     card.js hit this same split months ago and solved it by reading the access
+     token straight out of the Supabase blob in localStorage; its comment says
+     the two checks "must agree". So these use the same source of truth, posted
+     to PostgREST directly rather than through sb.rpc(). */
+  function bearer() {
+    if (session && session.access_token) return session.access_token;
+    try {
+      var LS = window.localStorage;
+      for (var i = 0; i < LS.length; i++) {
+        var k = LS.key(i);
+        if (!(k && k.indexOf('sb-') === 0 && /auth-token$/.test(k))) continue;
+        var v = LS.getItem(k);
+        if (!v || v.indexOf('access_token') < 0) continue;
+        var o = JSON.parse(v);
+        var at = o && (o.access_token || (o.currentSession && o.currentSession.access_token));
+        if (typeof at === 'string' && at) return at;
+      }
+    } catch (e) {}
+    return null;
   }
-  function referralCode() {                          // caller's own code (creates on first call)
-    if (!sb) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_my_code').then(function (r) { return rpcData('referral_my_code', r); }));
+  /* One POST to /rpc/<name>. `needsAuth` calls resolve null (loudly) without a
+     real token rather than firing a request that can only 401. */
+  function rpcPost(name, args, needsAuth) {
+    var tok = bearer();
+    if (needsAuth && !tok) {
+      try { console.warn('[RTG] ' + name + ': no access token in session or storage'); } catch (e) {}
+      return Promise.resolve(null);
+    }
+    var h = { apikey: SB_ANON, Authorization: 'Bearer ' + (tok || SB_ANON), 'Content-Type': 'application/json' };
+    return withTimeout(
+      fetch(REST + 'rpc/' + name, { method: 'POST', headers: h, body: JSON.stringify(args || {}) })
+        .then(function (res) {
+          if (res.ok) { offline = false; return res.json(); }
+          return res.text().then(function (b) {
+            try { console.warn('[RTG] ' + name + ' failed ' + res.status + ':', b); } catch (e) {}
+            lastError = { where: name, status: res.status, message: b };
+            return null;
+          });
+        })
+    );
   }
-  function referralClaim(code) {                      // invitee: redeem a code after signup
-    if (!sb || !code) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_claim', { p_code: String(code) }).then(function (r) { return rpcData('referral_claim', r); }));
-  }
-  function referralLookup(code) {                     // public: whose code is this (for the join page)
-    if (!sb || !code) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_lookup', { p_code: String(code) }).then(function (r) { return rpcData('referral_lookup', r); }));
-  }
-  function referralStats() {                          // caller: invited count + today's bonus
-    if (!sb) return Promise.resolve(null);
-    return withTimeout(sb.rpc('referral_stats').then(function (r) { return rpcData('referral_stats', r); }));
-  }
+  function referralCode()        { return rpcPost('referral_my_code', {}, true); }
+  function referralClaim(code)   { return code ? rpcPost('referral_claim', { p_code: String(code) }, true) : Promise.resolve(null); }
+  function referralLookup(code)  { return code ? rpcPost('referral_lookup', { p_code: String(code) }, false) : Promise.resolve(null); }
+  function referralStats()       { return rpcPost('referral_stats', {}, true); }
+  // The reason the last referral call failed, for a toast that can say more
+  // than "try again".
+  function referralError() { return (lastError && /^referral_/.test(lastError.where || '')) ? lastError : null; }
 
   // ---- all-time best-streak leaderboard for one game. Array (maybe empty) or
   // null (offline). Works without a session (anon-granted RPC). ----
@@ -602,6 +632,7 @@
     referralClaim: referralClaim,
     referralLookup: referralLookup,
     referralStats: referralStats,
+    referralError: referralError,
     fmtTime: function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   };
 })();
