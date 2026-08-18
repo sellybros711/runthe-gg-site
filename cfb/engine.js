@@ -615,6 +615,56 @@ function touchdownYards(play, rng) {
   return 26 + Math.floor(rng() * 50);
 }
 
+/*
+ * How long the kick was.
+ *
+ * BANDS RATHER THAN A FORMULA. The chip shot exists but is not the common case, the bulk of
+ * them sit between thirty and fifty, and the fifty-plus kick is ordinary now rather than
+ * remarkable. Drawing evenly across the legal range would land the median in roughly the
+ * right place and still be wrong in both tails: far too many twenty yard kicks, far too few
+ * long ones, which is the half a broadcast notices.
+ *
+ * THE BANDS ARE THE NFL GAME'S, for the same reason QUARTER_SCORING_SHARE above is. College
+ * kicking is not identical to the professional game (shorter median, a thinner fifty-plus
+ * tail) but there is no college kicking reference in this repo to calibrate against, and the
+ * shape is the same in both codes. Borrowed knowingly rather than invented precisely.
+ *
+ * BOTH TEAMS, unlike the touchdown credits above. A distance is a fact about the kick and
+ * needs no drafted player behind it, so the opponent's kicks get one too and the log reads
+ * the same on either side of the ball.
+ */
+const FIELD_GOAL_BANDS = [
+  [18, 29, 0.22],
+  [30, 39, 0.26],
+  [40, 49, 0.30],
+  [50, 56, 0.19],
+  [57, 63, 0.03],
+];
+function fieldGoalYards(rng) {
+  let r = rng();
+  for (const [lo, hi, w] of FIELD_GOAL_BANDS) {
+    if (r < w) return lo + Math.floor(rng() * (hi - lo + 1));
+    r -= w;
+  }
+  const last = FIELD_GOAL_BANDS[FIELD_GOAL_BANDS.length - 1];
+  return last[0] + Math.floor(rng() * (last[1] - last[0] + 1));
+}
+
+/*
+ * Every kick in a script, keyed by its place in it.
+ *
+ * Keyed by index rather than handed back in order because the call banner and the play log
+ * ask at different moments: the banner as the clock stops on one score, the log when the
+ * whole game is replayed at the end. Both look the kick up by the same index, so a game
+ * cannot show 48 yards live and 31 in the log afterwards.
+ */
+function fieldGoalDistances(script, rng) {
+  const out = new Map();
+  if (!Array.isArray(script)) return out;
+  script.forEach((e, i) => { if (e.kind === 'FIELD GOAL') out.set(i, fieldGoalYards(rng)); });
+  return out;
+}
+
 /* One line of commentary per touchdown. Several shapes each, drawn on the same stream, so a
    roster that scores four in a game does not read the same sentence four times.
    THE PHRASING IS BANDED BY DISTANCE, which is not decoration: "punches it in" is a
@@ -2421,6 +2471,7 @@ const publicAPI = {
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   touchdownCredits, lastName,
+  fieldGoalYards, fieldGoalDistances, FIELD_GOAL_BANDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
