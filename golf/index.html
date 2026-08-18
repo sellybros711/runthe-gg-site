@@ -2554,6 +2554,8 @@ h2{font-size:11px;letter-spacing:.04em}
 .ruhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;max-width:460px;margin:0 auto 12px;padding:0 2px}
 .ruhead .ruh-l{font:800 13px var(--body);color:var(--oncard);letter-spacing:.02em}
 .ruhead .ruh-l b{color:var(--gold);margin-left:6px;font-weight:800}
+.rusort{max-width:460px;margin:0 auto 12px;display:flex;gap:8px}
+.rusort .btn{flex:1;padding:9px 4px;font-size:12px;min-height:0}
 .rulist{max-width:460px;margin:0 auto;display:flex;flex-direction:column}
 .rurow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.07)}
 .rurow:first-child{border-top:1px solid rgba(255,255,255,.07)}
@@ -20887,7 +20889,17 @@ function overlayRosterUpdates(app){
   ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 auto 16px;max-width:460px;line-height:1.55">Run The Tour is constantly working to improve itself, and one way we will now be doing that is weekly player updates during the season.</p>`));
   const ps=ROSTER_UPDATE.players||[];
   ov.appendChild($(`<div class="ruhead"><div class="ruh-l">Latest Update:<b>${esc(rosterUpdDate())}</b></div><div class="small muted">${ps.length} player${ps.length===1?'':'s'} updated</div></div>`));
-  ov.appendChild($(`<div class="rulist">${ps.map(p=>{
+  const sort=(S.ruSort=S.ruSort||'change');
+  const sorts=[['change','Biggest Change'],['rank','Highest Ranked'],['alpha','Alphabetical']];
+  const srow=$(`<div class="rusort">${sorts.map(([k,lab])=>`<button class="btn ${k===sort?'goldsel':'ghost'}" data-rusort="${k}">${lab}</button>`).join('')}</div>`);
+  srow.querySelectorAll('[data-rusort]').forEach(b=>{ b.onclick=()=>{ S.ruSort=b.getAttribute('data-rusort'); render(); }; });
+  ov.appendChild(srow);
+  const lastName=n=>{ const t=String(n).trim().split(/\s+/); return t[t.length-1]||n; };
+  const sorted=ps.slice();
+  if(sort==='alpha') sorted.sort((a,b)=>lastName(a.n).localeCompare(lastName(b.n)));
+  else if(sort==='rank') sorted.sort((a,b)=>b.t-a.t || lastName(a.n).localeCompare(lastName(b.n)));
+  else sorted.sort((a,b)=>Math.abs(b.t-b.f)-Math.abs(a.t-a.f) || (b.t-b.f)-(a.t-a.f) || lastName(a.n).localeCompare(lastName(b.n)));
+  ov.appendChild($(`<div class="rulist">${sorted.map(p=>{
     const up=p.t>p.f, dn=p.t<p.f, col=up?'#35d6a0':dn?'#E14A33':'var(--muted)', arw=up?'\u25B2':dn?'\u25BC':'\u2013';
     return `<div class="rurow"><span class="ru-n">${esc(p.n)}</span><span class="ru-ov"><span class="ru-was">${p.f}</span><span class="ru-arw">\u2192</span><span class="ru-now" style="color:${col}">${p.t}</span><span class="ru-d" style="color:${col}">${arw}${Math.abs(p.t-p.f)}</span></span></div>`;
   }).join('')}</div>`));
