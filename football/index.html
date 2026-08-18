@@ -7360,26 +7360,27 @@ function optionGroups(draw){
     rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   }
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
-  /* ALL PUTS THE MOST EXPENSIVE MAN FIRST ON A DEFENSE, and position order first on a
-     draft. Both are the same intent read against two different pools.
+  /* ALL PUTS THE MOST EXPENSIVE MAN FIRST, ON BOTH SIDES OF THE BALL.
 
-     On offense the groups are unlike each other and the fantasy points say so: a
-     quarterback outscores a tight end by a mile, so listing by points would put six
-     quarterbacks at the top of every board and bury the rest of the team. Position order
-     is what makes ALL read as a squad.
+     It used to be position order, on the reasoning that ALL should read as a squad: a
+     quarterback outscores a tight end by a mile, so ranking by POINTS would put six
+     quarterbacks at the top of every board. That argument is right about points and wrong
+     about what to do instead, because it left the top of the list decided by an accident of
+     which group sorts first. On a defense that was visible immediately: on the 2008 Broncos
+     ALL opened with four linemen at 4.7 points and under while the corners and the backers
+     worth signing sat below the fold.
 
-     On a defense the three groups are not that. IDP scoring is tackle-led, so a corner who
-     made eighty tackles and did nothing else outscores a lineman with fifteen sacks, and
-     position order buries the good ones behind whichever group happens to sort first: on
-     the 2008 Broncos it opened with four linemen at 4.7 points and under. Price is the one
-     number that already knows better, because it is value over replacement AT the man's own
-     position, so it ranks a DL against a DB on the only footing they share. Highest first,
-     which is what the cap puzzle is asking about anyway. */
-  const byPrice=isDefRun();
+     PRICE IS THE CROSS-POSITION RANKING THE POINTS CANNOT BE. It is value over replacement
+     AT the man's own position, so it already knows a quarterback is measured against other
+     quarterbacks and a corner against other corners, and it puts the two on the only footing
+     they share. It is also the number the whole screen is about: six men, one cap, and the
+     first question on any board is what the good ones here cost.
+
+     The position tabs are what read as a squad, and they still sort by points, where the
+     comparison is like for like. Equal prices fall back to points for the same reason: the
+     cheap end of a board is mostly at the floor, and there the points are the difference. */
   all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
-    ||(byPrice
-      ? b.p.price_musd-a.p.price_musd
-      : positionsNow().indexOf(a.p.position)-positionsNow().indexOf(b.p.position))
+    ||b.p.price_musd-a.p.price_musd
     ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   return new Map([[ALL,all],...groups]);
 }
