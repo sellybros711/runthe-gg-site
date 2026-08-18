@@ -206,9 +206,9 @@
    * reconnect, and when the tab comes back to the foreground.
    *
    * Only ever for failures that a later attempt could actually fix. The RPC
-   * rejects some runs on purpose — an unknown game key, a date outside the
-   * window, an implausible time, a free account past its daily ranked cap —
-   * and those are decisions, not accidents. Re-sending them would spin
+   * rejects some runs on purpose: an unknown game key, a date outside the
+   * window, an implausible time, a free account past its daily ranked cap.
+   * Those are decisions, not accidents. Re-sending them would spin
    * forever, so a 4xx is dropped and remembered in lastError instead.
    */
   var OUTBOX = 'rtg:lbq:v1', OUTMAX = 20;
@@ -230,18 +230,49 @@
   }
   function pending() { return outRead().length; }
 
+  /* A submit that collides with itself is not a refusal.
+   *
+   * withTimeout resolves the promise at 8s; it cannot cancel the request, which
+   * carries on server-side. So on a slow phone the retry below overlaps the
+   * first attempt, both transactions find no row for today, both insert, and
+   * the loser comes back 409 on grid_runs' one-row-per-day key. The run posted.
+   * Telling the player "Score not posted: duplicate key value violates unique
+   * constraint" under a cleared board is the worst of both worlds: a database
+   * error, shown to a human, saying the opposite of what happened.
+   *
+   * So a 23505 counts as landed. The row is there; read back the streak it
+   * earned so the game shows the real number. 81_grid_submit_idempotent.sql
+   * stops the collision happening at all, and this keeps the fix true for any
+   * client running against a database that has not had it yet. */
+  function landed(res, run) {
+    return res.text().then(function (b) {
+      try { b = JSON.parse(b); } catch (e) {}
+      var code = b && b.code, msg = String((b && b.message) || '');
+      if (code !== '23505' && msg.indexOf('duplicate key') < 0) {
+        return fail('submit', res).then(function () { return false; });
+      }
+      offline = false;
+      try { console.info('[RTG] run already posted for', run.game, run.date); } catch (e) {}
+      return streakOf(run.game).then(function (s) {
+        return { id: null, streak: (s && s.streak) || 0,
+                 best_streak: (s && s.best_streak) || 0, duplicate: true };
+      });
+    }).catch(function () { return false; });
+  }
+
   function post(run) {
     var body = JSON.stringify({
       p_game: run.game, p_date: run.date, p_seconds: run.seconds,
       p_mistakes: run.mistakes, p_reveals: run.reveals, p_run_len: run.runLen,
       p_replay: !!run.replay
     });
-    // `null` here means "no answer" (timeout/network) — worth another try.
-    // `false` means the server answered and said no — never worth retrying.
+    // `null` here means "no answer" (timeout/network), so it is worth another try.
+    // `false` means the server answered and said no, which is never worth retrying.
     return withTimeout(
       fetch(REST + 'rpc/grid_submit_run', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: body })
         .then(function (res) {
           if (res.ok) { offline = false; return res.json(); }
+          if (res.status === 409) return landed(res, run);                           // already on the board
           if (res.status >= 500 || res.status === 429) return fail('submit', res);   // transient → null
           return fail('submit', res).then(function () { return false; });            // refused → false
         })
@@ -380,11 +411,11 @@
   }
 
   /* ---- the complete player register (supabase/77_player_register.sql) ----
-   * Sportegories' own file is curated for recognition and always will be — it
+   * Sportegories' own file is curated for recognition and always will be: it
    * has to be small enough to ship. This is the other half: every player who
    * ever appeared, kept server-side because it is ~56k rows and 4MB+ in the
    * client encoding. Takes normalized "first|last" keys, one card's worth at a
-   * time; the RPC caps at ten. Works signed-out — it is public sports data. */
+   * time; the RPC caps at ten. Works signed-out, because it is public sports data. */
   /* An answer we could not settle is a hole in the register with a name on it.
      Fire-and-forget, deliberately: the game never waits on this and never shows
      an error for it, because a failed report must not cost anyone a point. */
@@ -495,7 +526,7 @@
   }
 
   // ---- field size + the signed-in caller's own all-time best and rank, in one
-  // call. The RPC reads auth.uid() itself, so this is safe to call signed-out —
+  // call. The RPC reads auth.uid() itself, so this is safe to call signed-out:
   // it just comes back with total and nulls. Object or null (offline). ----
   function allTimeStats(game) {
     if (!sb) return Promise.resolve(null);

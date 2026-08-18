@@ -367,7 +367,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     display:flex;justify-content:space-between;align-items:center;gap:10px;}
   .faq summary::-webkit-details-marker{display:none;}
   .faq summary:after{content:"+";color:var(--gold);font-size:20px;font-weight:800;line-height:1;flex:0 0 auto;}
-  .faq details[open] summary:after{content:"–";}
+  .faq details[open] summary:after{content:"\2212";}
   .faq p{margin:0 0 14px;font-size:13.5px;}
   .faq a{color:var(--teal);font-weight:700;}
 
@@ -651,27 +651,110 @@ window.GA_ID='G-L29P5MRWKE';
   @media (min-width:820px){ .feat.golf .feat-in{grid-template-columns:1fr 250px;} }
   @media (prefers-reduced-motion: reduce){ .golfer-slot img{animation:none;} }
 
-  /* ---- Mobile: swipe carousel. The five game cards become a horizontal, snap-scrolling
-       rail (one card at a time with a peek of the next), so the phone home screen is one
-       card tall instead of a long stack. Desktop is unchanged. ---- */
-  .games-dots{display:none;}
+  /* ---- Phones: a grid of games, and a sheet for the one you pick ----------
+       The home screen used to be a one-card snap rail, which meant the page
+       opened on a single game and everything else was a swipe the visitor had
+       to guess at. Tiles show all five at once. Tapping one promotes that
+       game's own card to a full-screen sheet: same element, same copy, same
+       live motif, just given the whole screen. Desktop keeps the stacked cards
+       and never renders a tile. */
+  .gtiles{display:none;}
+  .gx{display:none;}
   @media (max-width:640px){
-    .games{
-      display:flex;flex-wrap:nowrap;gap:12px;align-items:stretch;
-      overflow-x:auto;overflow-y:visible;
-      scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-      scrollbar-width:none;
-      margin:0 -16px;padding:2px 16px 6px;scroll-padding-left:16px;
+    .games{display:block;}
+    /* the cards are the detail view now, so they only exist when opened */
+    .games > .feat{display:none;}
+    .games > .game.soon{display:none;}
+
+    .gtiles{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;
     }
-    .games::-webkit-scrollbar{display:none;}
-    .games > .feat,.games > .game.soon{
-      flex:0 0 87%;margin:0;scroll-snap-align:start;
+    .gtile{
+      position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+      min-height:138px;padding:14px 13px 13px;margin:0;text-align:left;cursor:pointer;
+      border-radius:12px;border:1px solid var(--cardb);background:var(--card);
+      -webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);
+      transition:transform .1s ease,border-color .12s ease;
+      background-image:radial-gradient(120% 100% at 100% 0%, var(--tint,transparent), transparent 62%);
     }
-    .game.soon{min-height:220px;}
-    .games-dots{display:flex;gap:7px;justify-content:center;align-items:center;margin:15px 0 0;padding:0;}
-    .gdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.24);
-      cursor:pointer;-webkit-appearance:none;appearance:none;transition:width .2s ease,background .2s ease;}
-    .gdot.on{width:20px;border-radius:4px;background:var(--green);}
+    .gtile:active{transform:scale(.985);}
+    .gt-crest{width:44px;height:44px;object-fit:contain;flex:0 0 auto;}
+    .gt-nm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
+      font-size:16px;line-height:1.12;color:var(--ink);}
+    .gt-mode{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+      color:var(--mut);margin-top:auto;}
+    .gt-new{position:absolute;top:10px;right:10px;font-size:9px;font-weight:900;letter-spacing:.08em;
+      text-transform:uppercase;color:#04150c;background:var(--green);border-radius:4px;padding:2px 5px;}
+    /* each tile wears its own game's colour, the same one its card and its
+       Play button use, so the tile and the sheet read as one thing */
+    .gtile.arcade  {--tint:rgba(242,113,28,.30); border-color:rgba(242,113,28,.42);}
+    .gtile.cfb     {--tint:rgba(16,185,129,.28); border-color:rgba(16,185,129,.34);}
+    .gtile.football{--tint:rgba(220,60,60,.28);  border-color:rgba(220,60,60,.34);}
+    .gtile.golf    {--tint:rgba(235,166,31,.28); border-color:rgba(235,166,31,.34);}
+    .gtile.soccer  {--tint:rgba(53,196,205,.28); border-color:rgba(53,196,205,.34);}
+    .gtile.arcade .gt-nm{color:#FFCFA6;} .gtile.cfb .gt-nm{color:#A7F3D0;}
+    .gtile.football .gt-nm{color:#FFC9C7;} .gtile.golf .gt-nm{color:#F3DCA0;}
+    .gtile.soccer .gt-nm{color:#A5EFE4;}
+    /* An odd number of games leaves a hole in a two-column grid, so the last one
+       takes the whole row and lays itself out sideways. :last-of-type counts
+       buttons only, and the nth-child(odd) test means a sixth game switches
+       this off by itself rather than needing anyone to remember. */
+    .gtile:not(.soonTile):last-of-type:nth-child(odd){
+      grid-column:1 / -1;min-height:0;flex-direction:row;align-items:center;gap:13px;
+      padding:13px;}
+    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-crest{width:40px;height:40px;}
+    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-nm{flex:1;}
+    .gtile:not(.soonTile):last-of-type:nth-child(odd) .gt-mode{margin:0;}
+
+    /* "coming soon" is not a game, so it does not pretend to be tappable */
+    .gtile.soonTile{grid-column:1 / -1;min-height:0;cursor:default;align-items:flex-start;
+      background-image:none;border-style:dashed;padding:13px;}
+    .gtile.soonTile .gt-nm{font-size:14px;color:var(--mut);}
+    .gtile.soonTile .gt-mode{margin-top:4px;}
+
+    /* ---- the sheet ---- */
+    body.gopen{overflow:hidden;}
+    .games > .feat.open{
+      display:block;position:fixed;inset:0;z-index:70;margin:0;border:0;border-radius:0;
+      overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
+      padding:calc(14px + env(safe-area-inset-top)) 16px calc(26px + env(safe-area-inset-bottom));
+      animation:gsheet .18s ease-out;
+    }
+    @keyframes gsheet{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+    /* the whole-card link is for the desktop stack. In a sheet it would swallow
+       every tap that is not the close button. */
+    .games > .feat.open .feat-link{display:none;}
+    .games > .feat.open .gx{
+      display:flex;align-items:center;justify-content:center;position:sticky;top:0;margin-left:auto;
+      width:38px;height:38px;border-radius:50%;border:1px solid var(--cardb);background:var(--card);
+      color:var(--ink);font-size:15px;line-height:1;cursor:pointer;z-index:2;
+      -webkit-appearance:none;appearance:none;}
+    .games > .feat.open .play{min-width:100%;justify-content:center;padding:14px 20px;font-size:15px;}
+    .games > .feat.open .g-foot{padding-top:18px;}
+    /* Reading order for a sheet: what it is, what it does, what you get, what it
+       looks like, then the button. The card's motif is a sibling of .feat-info,
+       so display:contents lifts the text out to sit in the same flex column and
+       the two can interleave. */
+    /* the base .feat-in is a centered grid, and centring is what shrank the
+       button to its text width once this became a column */
+    .games > .feat.open .feat-in{display:flex;flex-direction:column;align-items:stretch;gap:0;}
+    .games > .feat.open .feat-info{display:contents;}
+    .games > .feat.open .feat-in > *{order:4;}
+    .games > .feat.open .g-head{order:1;}
+    .games > .feat.open .g-desc{order:2;margin:10px 0 0;}
+    .games > .feat.open .g-chips{order:3;display:flex;padding:14px 0 0;}
+    .games > .feat.open .g-foot{order:5;}
+    /* the motif is a 250px column on a desktop card; here it has the screen */
+    .games > .feat.open .drive-wrap{max-width:none;margin:16px 0 0;}
+    .games > .feat.open .drivecanvas{height:172px;}
+    .games > .feat.open .slot-wrap,
+    .games > .feat.open .golf-showcase{margin:16px 0 0;}
+    .games > .feat.open .shots{padding:16px 0 0;}
+    .games > .feat.open .phone{width:112px;}
+  }
+  @media (max-width:640px) and (prefers-reduced-motion: reduce){
+    .games > .feat.open{animation:none;}
+    .gtile{transition:none;}
   }
 </style>
 </head>
@@ -701,7 +784,49 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="note">Free · No download</span>
     </div>
     <main class="games">
+      <!-- Phone home screen: every game at once.
+           The page used to open as a one-card-wide snap rail, so a visitor's first
+           impression was a single game and a hint that something sat off screen to
+           the right. These tiles show all of them in a glance; tapping one opens
+           that game's full card as a sheet, which is the same markup below, so
+           there is one description per game and it lives in one place. Desktop
+           never sees the tiles: it has the room for the cards themselves. -->
+      <div class="gtiles">
+        <button class="gtile arcade" type="button" data-open-game="arcade">
+          <img class="gt-crest" src="/arcade/assets/arcade-icon.png?v=2" alt="" width="76" height="76" loading="lazy" />
+          <span class="gt-nm">Run The Arcade</span>
+          <span class="gt-mode">Solo &middot; Daily</span>
+          <span class="gt-new">New</span>
+        </button>
+        <button class="gtile cfb" type="button" data-open-game="cfb">
+          <img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" />
+          <span class="gt-nm">Perfect Season: College Football</span>
+          <span class="gt-mode">Solo</span>
+          <span class="gt-new">New</span>
+        </button>
+        <button class="gtile football" type="button" data-open-game="football">
+          <img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" />
+          <span class="gt-nm">The Perfect Season</span>
+          <span class="gt-mode">Solo &middot; One franchise</span>
+        </button>
+        <button class="gtile golf" type="button" data-open-game="golf">
+          <img class="gt-crest" src="/golf/icon-192.png" alt="" width="76" height="76" loading="lazy" />
+          <span class="gt-nm">Run The Tour</span>
+          <span class="gt-mode">Solo &middot; Head-to-Head</span>
+        </button>
+        <button class="gtile soccer" type="button" data-open-game="soccer">
+          <img class="gt-crest" src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="76" height="76" loading="lazy" />
+          <span class="gt-nm">Run The Pitch</span>
+          <span class="gt-mode">Solo &middot; Head-to-Head</span>
+        </button>
+        <div class="gtile soonTile">
+          <span class="gt-nm">More games coming soon</span>
+          <span class="gt-mode">One account plays them all</span>
+        </div>
+      </div>
+
       <article class="feat arcade">
+        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
         <span class="art"></span>
         <a class="feat-link" href="/arcade/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -726,6 +851,7 @@ window.GA_ID='G-L29P5MRWKE';
       </article>
 
       <article class="feat cfb">
+        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
         <span class="art"></span>
         <a class="feat-link" href="/cfb/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -745,6 +871,7 @@ window.GA_ID='G-L29P5MRWKE';
       </article>
 
       <article class="feat football">
+        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
         <span class="art"></span>
         <a class="feat-link" href="/football/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -764,6 +891,7 @@ window.GA_ID='G-L29P5MRWKE';
       </article>
 
       <article class="feat golf">
+        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
         <span class="art"></span>
         <a class="feat-link" href="/golf/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -788,6 +916,7 @@ window.GA_ID='G-L29P5MRWKE';
       </article>
 
       <article class="feat soccer">
+        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
         <span class="art"></span>
         <a class="feat-link" href="/soccer/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
@@ -816,7 +945,6 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="sd">New free sports games are in the works, and your one RunThe.GG account plays them all. <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow @RunTheGG</a> to hear what's next.</span>
       </div>
     </main>
-    <div class="games-dots" aria-hidden="true"></div>
 
     <!-- Account panel sits BELOW the games on purpose: playing requires no account,
          so the games come first. Signed-out CTA is the default so it shows even if the
@@ -1104,7 +1232,7 @@ window.GA_ID='G-L29P5MRWKE';
     var isUp = st.mode==='signup';
     var cur = username || '';
     $('m-title').textContent = pickUser?(cur?'Change username':'Pick a username'):(isUp?'Create your account':'Welcome back');
-    $('m-lede').textContent  = pickUser?'This is how you show up on the leaderboards, 3–20 letters or numbers.'
+    $('m-lede').textContent  = pickUser?'This is how you show up on the leaderboards, 3-20 letters or numbers.'
                                        :'Free forever. One account works across every RunThe.GG game.';
     var b=$('m-body'), busy=st.busy;
     if(pickUser){
@@ -1158,7 +1286,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(isUp){
       var uname=$('f-user2').value.trim(), email=$('f-email').value.trim();
       if(!uname){ st.err='Pick a username.'; renderModal(); return; }
-      if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){ st.err='Username: 3–20 letters, numbers or _.'; renderModal(); return; }
+      if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){ st.err='Username: 3-20 letters, numbers or _.'; renderModal(); return; }
       if(!email||!pass){ st.err='Enter an email and password.'; renderModal(); return; }
       run(function(){ return signUp(email,pass,uname); });
     }else{
@@ -1446,31 +1574,65 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 </script>
 
 <script>
-/* Mobile carousel dots: build one dot per game card, highlight the card nearest the
-   left edge as you swipe, and let a tap on a dot scroll to that card. The rail itself
-   is pure CSS scroll-snap; this only drives the indicator. Harmless on desktop, where
-   the dots are hidden and the games render as the usual vertical stack. */
+/* Phone home screen: tile grid to game sheet.
+ *
+ * The tiles are static markup, so the grid is painted by the first frame and
+ * nothing shifts under a thumb. All this does is promote one existing card to
+ * a full-screen sheet and put it back afterwards. The card is never cloned or
+ * moved, so its slot machine, drive chart and golfers keep running exactly as
+ * they were; the only thing they need is to be told the size changed, because
+ * the drive canvas measured itself while the card was hidden.
+ *
+ * Desktop never runs a line of this: the tiles are display:none, so no tile is
+ * ever clicked. */
 (function(){
-  var main=document.querySelector('main.games');
-  var dots=document.querySelector('.games-dots');
-  if(!main||!dots) return;
-  var sl=[].slice.call(main.children).filter(function(el){ return el.matches('.feat, .game.soon'); });
-  if(sl.length<2) return;
-  sl.forEach(function(s,i){
-    var b=document.createElement('button'); b.type='button'; b.className='gdot';
-    b.setAttribute('aria-label','View game '+(i+1)+' of '+sl.length);
-    b.addEventListener('click',function(){ s.scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'}); });
-    dots.appendChild(b);
-  });
-  var raf;
-  function update(){
-    var anchor=main.getBoundingClientRect().left+22, best=0, bd=Infinity;
-    sl.forEach(function(s,i){ var d=Math.abs(s.getBoundingClientRect().left-anchor); if(d<bd){ bd=d; best=i; } });
-    for(var i=0;i<dots.children.length;i++){ dots.children[i].classList.toggle('on', i===best); }
+  var games=document.querySelector('main.games');
+  if(!games) return;
+  var openCard=null, opener=null;
+
+  function close(){
+    if(!openCard) return;
+    openCard.classList.remove('open');
+    openCard.removeAttribute('role');
+    openCard.removeAttribute('aria-modal');
+    document.body.classList.remove('gopen');
+    var was=opener; openCard=null; opener=null;
+    if(was){ try{ was.focus({preventScroll:true}); }catch(e){ was.focus(); } }
   }
-  update();
-  main.addEventListener('scroll',function(){ if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(update); },{passive:true});
-  window.addEventListener('resize',function(){ requestAnimationFrame(update); });
+
+  function open(key, from){
+    var card=games.querySelector('.feat.'+key);
+    if(!card) return;
+    openCard=card; opener=from||null;
+    card.classList.add('open');
+    card.setAttribute('role','dialog');
+    card.setAttribute('aria-modal','true');
+    document.body.classList.add('gopen');
+    card.scrollTop=0;
+    /* the drive chart sized itself against a hidden card, so it is 0px wide
+       until something tells it to measure again. Its own listener is debounced
+       by 150ms, which is well inside the time it takes to look at a sheet. */
+    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+    var x=card.querySelector('.gx');
+    if(x){ try{ x.focus({preventScroll:true}); }catch(e){ x.focus(); } }
+    /* Android back should close the sheet, not leave the site. */
+    try{ history.pushState({rtgSheet:key},''); }catch(e){}
+  }
+
+  games.addEventListener('click', function(e){
+    var t=e.target.closest('[data-open-game]');
+    if(t){ open(t.getAttribute('data-open-game'), t); return; }
+    if(e.target.closest('[data-close-game]')){ e.preventDefault(); back(); }
+  });
+
+  function back(){
+    /* pop the entry open() pushed; popstate does the closing, so the two paths
+       can never disagree about how deep the history is */
+    if(openCard){ try{ history.back(); return; }catch(e){} }
+    close();
+  }
+  window.addEventListener('popstate', close);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && openCard) back(); });
 })();
 </script>
 

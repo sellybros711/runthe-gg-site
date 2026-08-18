@@ -4445,6 +4445,7 @@ function maybeArcadeAd(force){ try{
   if(!force){
     if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
     if(S.overlay || S.screen!=='title') return;
+    if(typeof tourRunning==='function' && tourRunning()) return;              // a guided tour (e.g. the Roster hint) owns the screen — never stack the ad on it
     if(typeof isNewPlayer==='function' && isNewPlayer()) return;              // they're mid-onboarding
     if(typeof welcomePackPending==='function' && welcomePackPending()) return; // the player's own stuff first
     if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;
