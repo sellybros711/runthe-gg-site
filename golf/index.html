@@ -16530,16 +16530,28 @@ function leagueSchedule(year, seed){
   if(leagueCupOnSchedule(year)) list=list.concat([leagueCupEvt()]);
   return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
 }
-// the Frontier's own field: the players who signed, topped up from the world so a small league still
-// plays a full 48. Sorted so the marquee names are the ones you have to beat.
+// the Frontier's own field: ONLY the players who defected, topped up with GENERATED pros the league
+// signed to fill out a 48. It must NOT pull in tour players who stayed loyal — you left them behind.
+// The marquee defectors lead the list, so the real names are the ones you have to beat.
 function leagueFieldRoster(n){
   const w=ensureWorld(); if(!w) return [];
   const set=leagueDefectorSet()||new Set();
   const mk=g=>{ const o={name:g.name, skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o; };
   const inLeague=w.active.filter(g=>set.has(g.name)).map(mk).sort((a,b)=>b.skill-a.skill);
   if(inLeague.length>=n) return inLeague.slice(0,n);
-  const rest=w.active.filter(g=>!set.has(g.name)).map(mk).sort((a,b)=>b.skill-a.skill);
-  return inLeague.concat(rest.slice(0, n-inLeague.length));
+  // fill the rest with fresh signings the Frontier generated, not loyal tour players
+  const list=inLeague.slice();
+  const rng=mulberry32((((S.careerSeed||0)^0xf00117)+(S.year||1)*0x9e3779b1)>>>0);
+  const used=new Set(w.active.map(g=>g.name).concat(list.map(g=>g.name)));
+  let guard=0;
+  while(list.length<n && guard++<400){
+    const r=genRookie(rng, w.simYear, used); stampLiving(r, w.simYear);
+    const target=78+rng()*10, d=target-r.lov;                        // solid signed pros to round out the field
+    const o={name:r.name, skill:Math.round(clamp(r.lov+d,66,90))};
+    SKK.forEach(s=>o[s]=Math.round(clamp((r['l_'+s]||70)+d,55,95)));
+    list.push(o);
+  }
+  return list.slice(0,n);
 }
 // A MAJOR is the crossover week: whichever side you play on, the other side is there too. Tops the
 // field up with the strongest players from across the divide (their season totals may not exist, which
