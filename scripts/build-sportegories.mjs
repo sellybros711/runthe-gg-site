@@ -136,6 +136,46 @@ const POS_FAMILY = {
   'Point Guard': 'GRD', 'Shooting Guard': 'GRD'
 };
 
+/* A GENERIC POSITION IS NOT A CONTRADICTION OF A SPECIFIC ONE.
+ *
+ * Half the NBA corpus is recorded as plain "Forward" or "Guard" (542 of 1076),
+ * because that is what the source says. Matching pos by string equality meant
+ * "NBA Power Forward" accepted only the 85 records that happened to carry the
+ * long label, and told everyone who answered Thaddeus Young, a power forward
+ * by any reading, that he does not fit the category. The same shape rejects
+ * outfielders for "Left Fielder" and defensive linemen for "Defensive End".
+ *
+ * The relation runs one way HERE and both ways when judging, and the split is
+ * the whole point:
+ *
+ *   building a category, we count only what we can prove. A record that says
+ *   "Power Forward" belongs in "NBA Forward". A record that says "Forward"
+ *   does NOT get counted toward "NBA Power Forward", or the counts stop
+ *   meaning anything: run it both ways here and "MLB Starting Pitcher" and
+ *   "MLB Relief Pitcher" both resolve to the same 636 generic pitchers, so
+ *   the post-game answer list offers Nolan Ryan as a reliever.
+ *
+ *   judging an answer, we refuse to deny what we cannot disprove. See evalTri
+ *   in arcade/sportegories.js: a generic record is a hole in our file, not
+ *   evidence against the player, so it goes to the live check or scores.
+ *
+ * Sport is part of nearly every one of these predicates, so the NFL's Guard
+ * and the NBA's never meet. */
+const POS_PARENT = {
+  'Power Forward': 'Forward', 'Small Forward': 'Forward',
+  'Point Guard': 'Guard', 'Shooting Guard': 'Guard',
+  'Left Fielder': 'Outfielder', 'Center Fielder': 'Outfielder', 'Right Fielder': 'Outfielder',
+  'Starting Pitcher': 'Pitcher', 'Relief Pitcher': 'Pitcher',
+  'Defensive End': 'Defensive Lineman', 'Defensive Tackle': 'Defensive Lineman',
+  'Offensive Tackle': 'Offensive Lineman',
+  'Place Kicker': 'Kicker'
+};
+// provable: the record's position is the asked-for one, or sits under it
+function posMatch(have, want) {
+  if (!have) return false;
+  return have === want || POS_PARENT[have] === want;
+}
+
 /* Colleges disagree constantly without meaning anything: Ole Miss against
    Mississippi, LSU against Louisiana State, App State against Appalachian
    State, "Miami; Washington State; Incarnate Word" against "Miami". Treating
@@ -202,7 +242,21 @@ function differentPerson(cur, e, isRosterRow, src) {
    name -> [players] and accepts any of them that satisfies a category, so both
    Josh Allens simply work once they both exist. */
 const pool = new Map();                       // sport|normfull -> [record]
+
+/* "Unknown" and "Not Available" are the source saying it has no position, and
+   they came through as if they were positions. That built a category labelled
+   "MLB Unknown", which rolled into a real daily puzzle asking players to name
+   someone whose position is the word Unknown. A placeholder is an empty field:
+   normalise it away here, at the one door every source comes through, so both
+   the category library and the answer check see a record with no position. */
+const NO_POS = { unknown: 1, 'not available': 1, 'n/a': 1, na: 1, none: 1, '-': 1, '--': 1 };
+function cleanPos(v) {
+  const s = String(v == null ? '' : v).trim();
+  return (!s || NO_POS[s.toLowerCase()]) ? null : s;
+}
+
 function put(e, fromCorpus, isRoster, src) {
+  e.pos = cleanPos(e.pos);
   const k = e.sport + '|' + nkFull(e.name);
   const bucket = pool.get(k);
   let cur = null;
@@ -603,7 +657,7 @@ function test(p, pr) {
   if (pr.all) return pr.all.every((x) => test(p, x));
   switch (pr.k) {
     case 'sport': return p.sport === pr.v;
-    case 'pos': return p.pos === pr.v;
+    case 'pos': return posMatch(p.pos, pr.v);
     case 'team': return p.t.includes(pr.v);
     case 'award': return p.aw.includes(pr.v);
     case 'awardRe': return p.aw.some((a) => a.includes(pr.v));
@@ -715,7 +769,7 @@ const payload = {
   updated: new Date().toISOString().slice(0, 10),
   dec0: DEC0,
   fameMin: FAME_MIN, minAnswers: MIN_ANSWERS,
-  sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, awards: AWDS, conf: CONF,
+  sports: SPORTS, teams: TEAMS, cols: COLS, pos: POSN, posParent: POS_PARENT, awards: AWDS, conf: CONF,
   /* Ships so livecheck.js can resolve an OUTSIDE player's teams too. It builds
      its team lookup from `teams`, which no longer contains "St. Louis Rams", so
      without this a register player's Rams years would simply be dropped and the

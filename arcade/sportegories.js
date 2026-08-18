@@ -72,11 +72,30 @@
 
   // ---------- predicate evaluation (mirrors the builder) ----------
   function bitCount(n) { n = n | 0; var c = 0; while (n) { n &= n - 1; c++; } return c; }
+
+  /* A generic position is not a contradiction of a specific one.
+   *
+   * Half the NBA corpus is recorded as plain "Forward" or "Guard" (542 of
+   * 1076), because that is what the source says. Comparing pos by string
+   * equality meant "NBA Power Forward" accepted only the records carrying the
+   * long label, and told anyone who answered Thaddeus Young, a power forward by
+   * any reading, that he does not fit the category.
+   *
+   * posProves is what we can demonstrate: this record IS that position, or sits
+   * under it. It is what builds a category, so the counts and the post-game
+   * answer list stay honest. posAllows adds the other direction, a generic
+   * record against a specific ask, and belongs only to judging: see evalTri.
+   *
+   * The parent map ships inside the data file so the engine and the builder
+   * cannot drift; the fallback keeps an older cached payload working. */
+  function posParent(v) { return ((D && D.posParent) || {})[v]; }
+  function posProves(have, want) { return !!have && (have === want || posParent(have) === want); }
+  function posAllows(have, want) { return posProves(have, want) || posParent(want) === have; }
   function test(p, pr) {
     if (pr.all) { for (var i = 0; i < pr.all.length; i++) if (!test(p, pr.all[i])) return false; return true; }
     switch (pr.k) {
       case 'sport': return p.sport === pr.v;
-      case 'pos': return p.pos === pr.v;
+      case 'pos': return posProves(p.pos, pr.v);
       case 'team': return p.teams.indexOf(pr.v) >= 0;
       case 'award': return p.aw.indexOf(pr.v) >= 0;
       case 'awardRe': return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; });
@@ -135,7 +154,7 @@
       case 'decades':  return bitCount(p.decBits) >= pr.min ? true : null;
       case 'decade':   return p.decBits ? !!(p.decBits & (1 << Math.round((pr.v - D.dec0) / 10))) : null;
       // present most of the time; absence is not a no
-      case 'pos':      return p.pos ? (p.pos === pr.v) : null;
+      case 'pos':      return p.pos ? posAllows(p.pos, pr.v) : null;
       case 'team':     return p.teams.length ? (p.teams.indexOf(pr.v) >= 0) : null;
       case 'col':      return p.col ? (p.col === pr.v) : null;
       case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;
