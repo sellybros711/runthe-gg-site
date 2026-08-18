@@ -241,7 +241,7 @@
    * error, shown to a human, saying the opposite of what happened.
    *
    * So a 23505 counts as landed. The row is there; read back the streak it
-   * earned so the game shows the real number. 81_grid_submit_idempotent.sql
+   * earned so the game shows the real number. 82_grid_submit_idempotent.sql
    * stops the collision happening at all, and this keeps the fix true for any
    * client running against a database that has not had it yet. */
   function landed(res, run) {
