@@ -3329,6 +3329,9 @@ window.GA_ID='G-L29P5MRWKE';
      the colour is what says so. */
   .pocap .call.tk b{color:#7dd3fc;font-size:22px}
   .pocap .call.tk{border-color:rgba(59,130,246,.4)}
+  /* "48-YARD FIELD GOAL" is eight characters longer than the call it replaced, and this
+     banner is as wide as a phone. Anton is condensed enough to take it at 20. */
+  .pocap .call.fg b{font-size:20px}
   @keyframes callin{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
 
   /* Every score, kept, so the game has a record you can read after it. */
@@ -5021,7 +5024,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=54"></script>
+<script src="engine.js?v=55"></script>
 <script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
@@ -9750,7 +9753,11 @@ function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
 
 function generateDrives(script,rng){
   const HALF=1800,drives=[],ticks=[];
-  for(const e of script) ticks.push({sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points});
+  /* THE SCORE'S PLACE IN THE SCRIPT rides along on the tick and then onto the drive it
+     produces. Halftime and overtime are pushed into this same list and the whole thing is
+     then sorted, so a tick's position here stops being the script's the moment that happens,
+     and the kick distances below are keyed on exactly that. */
+  script.forEach((e,i)=>ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}));
   /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
      the last gap came out negative and the extra period drew no drives at all. */
   const REG=3600;
@@ -9818,8 +9825,17 @@ function generateDrives(script,rng){
         if(ns.kind==='TOUCHDOWN'){
           ey=pos==='you'?100:0;res='touchdown';
         }else if(ns.kind==='FIELD GOAL'){
-          if(pos==='you'){ey=Math.min(97,Math.max(sy+2,60+Math.floor(rng()*18)));}
-          else{ey=Math.max(3,Math.min(sy-2,40-Math.floor(rng()*18)));}
+          /* WHERE THE KICK WAS TAKEN FROM, drawn as a DISTANCE and then turned into a yard
+             line, rather than the other way round. The distance is the thing that has to
+             look like football; the yard line is only where that puts the end of the bar.
+             Drawing the yard line directly, evenly between the opponent's 23 and 40, drew a
+             tidy chart and implied a league nobody plays in: measured over 30,000 kicks it
+             put 41% of them at 50 yards or longer against a real 15 to 20, and a drive
+             essentially never reached the 20. It matters more now than it did, because the
+             play log reads this distance back out loud. */
+          const out=Math.max(1,E.fieldGoalYards(rng)-17);
+          if(pos==='you'){ey=Math.min(97,Math.max(sy+2,100-out));}
+          else{ey=Math.max(3,Math.min(sy-2,out));}
           res='field goal';
         }else{
           if(pos==='you'){
@@ -9832,7 +9848,7 @@ function generateDrives(script,rng){
           pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;
           continue;
         }
-        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de});
+        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de,at:ns.at});
         pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();
       }else{
         const roll=rng();
@@ -10114,9 +10130,26 @@ function playPlayoffGame(r,after){
      costs the broadcast nothing because that animation is already running. */
   const takeaways=credits&&credits.mode==='defense'?credits.events.slice():[];
   let tkNext=0;
-
+  /* HOW LONG EVERY KICK WAS, both teams. "You field goal" was the one line on this screen
+     that said nothing at all about what happened: three points is three points, and the
+     difference between a 21 yarder and a 55 yarder is the whole story of the drive that
+     earned it.
+     READ OFF THE DRIVE, NOT DRAWN BESIDE IT. The chart directly above this log has already
+     decided where the drive stalled, so drawing an independent number would put a 20 yard
+     kick under a bar that stops at midfield: both plausible, visibly disagreeing, and the
+     drive chart is the thing a player is looking at while the call is on screen. The kick is
+     the seven yards back to the holder plus the ten of the end zone, which is where the real
+     arithmetic comes from too. E.fieldGoalDistances is the fallback and it is not dead code:
+     a score landing within five seconds of the next one is resolved without a drive being
+     drawn for it at all, and those kicks still have to say something. */
   const driveRng=E.createSeededRNG(E.hashSeed(seedStr+'|drives'));
   const drives=generateDrives(script,driveRng);
+  const fgYards=E.fieldGoalDistances(script,E.createSeededRNG(E.hashSeed(seedStr+'|fg')));
+  for(const d of drives){
+    if(d.result!=='field goal'||d.at==null) continue;
+    const out=d.team==='you'?100-d.endYard:d.endYard;
+    fgYards.set(d.at,Math.max(18,Math.min(63,Math.round(out)+17)));
+  }
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   const cDist=(a,b)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
@@ -10174,11 +10207,19 @@ function playPlayoffGame(r,after){
   /* `i` is the play's index in the script, which is how a credit finds its touchdown. The
      replay at the end walks the script in order and passes it; nothing else has to. */
   const logScore=(e,i)=>{
-    const who=e.team==='you'?'You':(opp?opp.franchise:'OPP');
+    /* THE CODE THEY WORE THAT YEAR, which is what the bug above this log already shows. The
+       raw franchise is the modern one, so a game against the 2000 Raiders put OAK on the
+       score bug and LV three lines below it, on the same screen, for the same team. */
+    const who=e.team==='you'?'You':(opp?E.eraCode(opp.franchise,opp.season):'OPP');
     const c=i!=null?creditAt.get(i):null;
+    const fg=i!=null?fgYards.get(i):null;
+    /* A credited touchdown says who, a field goal says how far, and everything else says what
+       it always said. */
+    const what=c?esc(c.short)
+      :esc(who)+' '+(fg?fg+'-yard field goal':e.kind.toLowerCase());
     $('po-log').insertAdjacentHTML('afterbegin',
       '<div class="pl '+e.team+'"><span class="t">'+periodLabel(e)+' '+e.clock+'</span>'+
-      '<span class="w">'+(c?esc(c.short):esc(who)+' '+e.kind.toLowerCase())+
+      '<span class="w">'+what+
       (e.note?', '+esc(e.note):'')+'</span>'+
       '<span class="n">'+e.you+'-'+e.them+'</span></div>');
   };
@@ -10232,8 +10273,11 @@ function playPlayoffGame(r,after){
       paintField((e.q-1)*900+(900-e.sec));
       /* The name where the word "You" used to be. A drafted man scoring is the thing this
          screen is actually reporting, and the score is on the bug above it either way. */
-      const c=creditAt.get(seg.i);
-      $('po-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b>'+
+      const c=creditAt.get(seg.i), fg=fgYards.get(seg.i);
+      /* The distance goes in the headline where the kind was, because "48-YARD FIELD GOAL" is
+         the call a broadcast actually makes and the team name below it has not moved. */
+      $('po-cap').innerHTML='<div class="call '+e.team+(fg?' fg':'')+'"><b>'+
+        (fg?fg+'-YARD FIELD GOAL':e.kind)+'</b>'+
         '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e,seg.i);

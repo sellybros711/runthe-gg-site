@@ -253,6 +253,101 @@ console.log('\n=== takeaways fit the man who made them ===');
     { rushEnd: count('Rush End'), noseMan: count('Nose Man') });
 }
 
+/* ── the kicks ───────────────────────────────────────────────────────────── */
+console.log('\n=== field goals carry a distance ===');
+{
+  let kicks = 0, fgs = 0, missing = 0;
+  const all = [];
+  for (let g = 0; g < 4000; g++) {
+    const script = E.scoringScript(23, 20, E.createSeededRNG(E.hashSeed('k' + g)));
+    const d = E.fieldGoalDistances(script, E.createSeededRNG(E.hashSeed('m' + g)));
+    script.forEach((e, i) => {
+      if (e.kind === 'FIELD GOAL') { fgs++; if (d.has(i)) { kicks++; all.push(d.get(i)); } else missing++; }
+      else if (d.has(i)) missing++;   // a distance on something that is not a kick
+    });
+  }
+  all.sort((a, b) => a - b);
+  const med = all[Math.floor(all.length / 2)];
+  const pct = (lo, hi) => all.filter((y) => y >= lo && y <= hi).length / all.length;
+  ok('every field goal in a script gets one, and nothing else does',
+    missing === 0 && kicks === fgs && fgs > 1000, { fieldGoals: fgs, withDistance: kicks, wrong: missing });
+  /* The legal range. A kick is snapped seven yards back and the posts are ten deep, so an
+     18 yarder is a ball on the one: anything shorter is not a field goal, it is a mistake. */
+  ok('no kick is shorter than a ball on the one or longer than the record',
+    all[0] >= 18 && all[all.length - 1] <= 63, { shortest: all[0], longest: all[all.length - 1] });
+  /* Real NFL kicks cluster in the forties. A median in the twenties would mean the game
+     thinks every drive stalls at the edge of the red zone. */
+  ok('the median kick is a real one', med >= 36 && med <= 44, { median: med });
+  ok('the long kick is ordinary but not routine', pct(50, 63) > 0.12 && pct(50, 63) < 0.32,
+    { fiftyPlus: pct(50, 63).toFixed(3) });
+  ok('and the chip shot is uncommon', pct(18, 24) < 0.16, { under25: pct(18, 24).toFixed(3) });
+  /* The banner reads it live and the log reads it again on the replay, both by index, so a
+     game that showed 48 yards must not say 31 afterwards. */
+  const s1 = E.scoringScript(23, 20, E.createSeededRNG(E.hashSeed('same')));
+  const a = [...E.fieldGoalDistances(s1, E.createSeededRNG(E.hashSeed('d'))).entries()].join('|');
+  const b2 = [...E.fieldGoalDistances(s1, E.createSeededRNG(E.hashSeed('d'))).entries()].join('|');
+  ok('the call and the replay agree on the same kick', a === b2 && a.length > 0, { map: a });
+}
+
+/* ── the kick against the picture of it ──────────────────────────────────── */
+console.log('\n=== the distance matches the drive chart above it ===');
+{
+  /* generateDrives lives in index.html, so it comes out of the page rather than being
+     retyped, the same way test_drives.mjs takes it. The page derives the distance from the
+     drive; this checks the two cannot disagree, because they are on screen together and the
+     chart is what the player is watching while the call is up. */
+  const html = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
+  const i = html.indexOf('function generateDrives(script,rng){');
+  const j = html.indexOf('\n}\n', html.indexOf('return drives;', i)) + 3;
+  const generateDrives = eval('(' + html.slice(i, j).replace('function generateDrives', 'function') + ')');
+  const cal = JSON.parse(fs.readFileSync(`${ROOT}/football/data/display_calibration.json`, 'utf8'));
+
+  const rng = E.createSeededRNG(4242);
+  const all = [];
+  let disagree = 0, kicks = 0, noDrive = 0, tagged = 0;
+  for (let g = 0; g < 4000; g++) {
+    const [hi, lo] = cal.real_pairs[Math.floor(rng() * cal.real_pairs.length)];
+    const you = rng() < 0.5 ? hi : lo, them = you === hi ? lo : hi;
+    const script = E.scoringScript(you, them, rng);
+    const drives = generateDrives(script, E.createSeededRNG(Math.floor(rng() * 1e9)));
+    const fg = E.fieldGoalDistances(script, E.createSeededRNG(Math.floor(rng() * 1e9)));
+    /* Exactly what playPlayoffGame does. */
+    for (const d of drives) {
+      if (d.result !== 'field goal' || d.at == null) continue;
+      tagged++;
+      const out = d.team === 'you' ? 100 - d.endYard : d.endYard;
+      fg.set(d.at, Math.max(18, Math.min(63, Math.round(out) + 17)));
+    }
+    const byIndex = new Map();
+    for (const d of drives) if (d.result === 'field goal' && d.at != null) byIndex.set(d.at, d);
+    script.forEach((e, k) => {
+      if (e.kind !== 'FIELD GOAL') return;
+      kicks++;
+      const y = fg.get(k);
+      all.push(y);
+      const d = byIndex.get(k);
+      if (!d) { noDrive++; return; }
+      const out = d.team === 'you' ? 100 - d.endYard : d.endYard;
+      if (y !== Math.max(18, Math.min(63, Math.round(out) + 17))) disagree++;
+    });
+  }
+  all.sort((a2, b2) => a2 - b2);
+  const med = all[Math.floor(all.length / 2)];
+  const pct = (lo2, hi2) => all.filter((y) => y >= lo2 && y <= hi2).length / all.length;
+  ok('every kick the chart drew is called at the distance the chart drew it',
+    disagree === 0 && tagged > 5000, { kicks, drawn: tagged, disagreed: disagree });
+  /* A kick whose drive was never drawn still has to say something. That is the fallback and
+     it is a real path: a score inside five seconds of the next one is resolved without a
+     drive at all. If this ever hits zero the fallback has become dead code and should go. */
+  ok('and a kick with no drive behind it still gets a distance',
+    noDrive > 0 && noDrive < kicks * 0.2, { withoutDrive: noDrive, of: kicks });
+  /* The whole point of drawing the distance first and the yard line from it. Reading the old
+     chart back gave a median of 48 and 41% from fifty plus, which is not a league. */
+  ok('the kicks a real game produces, once the chart is the source',
+    med >= 36 && med <= 44 && pct(50, 63) > 0.12 && pct(50, 63) < 0.30 && pct(18, 24) > 0.05,
+    { median: med, fiftyPlus: pct(50, 63).toFixed(3), short: pct(18, 24).toFixed(3) });
+}
+
 /* ── determinism ─────────────────────────────────────────────────────────── */
 console.log('\n=== the same game always reads the same way ===');
 {
