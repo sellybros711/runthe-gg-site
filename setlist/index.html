@@ -2105,6 +2105,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .namehint b{color:var(--mut); font-weight:800;}
   .nameacts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;}
   .nameacts .btn{width:auto;}
+  /* The same box, saying why there is no field in it. */
+  .namebox.off .namehint code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px; color:var(--mut); word-break:break-all;}
+  /* The profile is titled with your name, so the control that changes it sits
+     on that line rather than only behind the top-bar chip.
+     THE TITLE HAS TO BE THE THING THAT GIVES. It is a 42px display face with
+     letter-spacing and it holds a name somebody else chose, so at 390px
+     "sellybros711" pushed the button 8px off the right edge and a 20-character
+     name pushed it 252px off. It wraps now instead of shoving. */
+  .namehd{gap:10px;}
+  .namehd h2{flex:1 1 auto; min-width:0; overflow-wrap:anywhere;}
+  .namehd .btn{width:auto; flex:0 0 auto; white-space:nowrap;}
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -4314,7 +4326,21 @@ function renderAuth(){
                 >Use ${esc(ME.siteName || 'my account name')}</button>` : ''}
             </div>
           </form>
-        </div>` : ''}
+        </div>` : `
+        <!-- SAYS SO, rather than rendering nothing. The panel used to vanish
+             whole when profiles.segue_name was not readable, so a player who
+             had run the migration and come looking for the field found an
+             account sheet with no field on it and nothing to explain why.
+             68_setlist_username.sql promises this reports itself unavailable;
+             this is that promise being kept. The usual cause is not a missing
+             migration but PostgREST still serving its cached schema. -->
+        <div class="namebox off">
+          <div class="eyebrow">Your name on Segue</div>
+          <div class="namehint">Not available on this project yet, so the board
+            shows <b>${esc(ME.siteName || 'your account name')}</b>. It needs
+            <code>supabase/68_setlist_username.sql</code>; if that has been run,
+            reload the API schema cache in Supabase and sign in again.</div>
+        </div>`}
       <div class="respin-acts">
         <button class="btn" type="button" id="authProfile">Your shows</button>
         <button class="btn ghost" type="button" id="authOut">Sign out</button>
@@ -6505,7 +6531,13 @@ function renderProfile(){
   }).join('');
 
   app.innerHTML = `
-    <div class="bhd"><h2>${esc(ME.name || 'Your shows')}</h2></div>
+    <!-- THE NAME IS ON THIS SCREEN, SO THE WAY TO CHANGE IT IS TOO. The only
+         route to it was tapping your own name in the top bar, which reads as a
+         status chip rather than a control, and this page (the one titled with
+         that very name) said nothing about it. Reported as "I don't see where
+         to adjust my user name". -->
+    <div class="bhd namehd"><h2>${esc(ME.name || 'Your shows')}</h2>
+      <button class="btn tiny ghost" type="button" id="editName">Edit name</button></div>
     <section class="card" style="margin-bottom:var(--sp-2)">${career}</section>
 
     <div class="eyebrow">You were there</div>
@@ -6518,6 +6550,7 @@ function renderProfile(){
     <button class="btn ghost" type="button" id="backHome"
       style="margin-top:18px">Back</button>`;
   document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+  document.getElementById('editName').addEventListener('click', () => openAuth('me'));
 }
 
 // ── events ───────────────────────────────────────────────────────────────────

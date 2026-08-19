@@ -796,6 +796,30 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
   check(/lines\.push\(p\.song \+ mark\)/.test(fn), 'the setlist itself is untouched');
 }
 
+/* CHANGING YOUR NAME, and being able to find where. Reported as "I don't see
+   where to adjust my user name": the only route in was tapping your own name in
+   the top bar, which reads as a status chip rather than a control, and the
+   profile screen (the one TITLED with that name) said nothing about it. */
+console.log('your name');
+check(/id="editName"/.test(gameBare), 'the profile offers a way to change your name');
+check(/getElementById\('editName'\)\.addEventListener\('click', \(\) => openAuth\('me'\)\)/.test(gameBare),
+  'and it opens the account panel');
+/* AND WHEN THE COLUMN IS NOT THERE, IT SAYS SO. The panel used to render
+   nothing at all when profiles.segue_name was unreadable, so somebody who had
+   run the migration and come looking found an account sheet with no field and
+   no explanation. 68_setlist_username.sql promises it "reports itself
+   unavailable"; that promise is the guard. */
+check(/class="namebox off"/.test(gameBare),
+  'and says so when the project cannot store one');
+check(/68_setlist_username\.sql/.test(gameBare), 'naming the migration it needs');
+check(/schema cache/.test(gameBare),
+  'and the usual cause when the migration HAS been run');
+/* The title is a 42px display face holding a name somebody else chose. Without
+   this it shoved the button off the right edge: 8px for "sellybros711" and
+   252px for a 20-character name, at 390 wide. */
+check(/\.namehd h2\{[^}]*min-width:0/.test(game),
+  'a long name wraps rather than pushing the button off screen');
+
 /* THE CURATORS' OWN WORDS, which the game had been throwing away.
  *
  * elgoose keeps a `footnote` on a PERFORMANCE ("Unfinished.", "80s synth
