@@ -99,9 +99,16 @@ export function loadBand(csvText) {
         city: r.city,
         state: r.state,
         songs: [],
+        /* The curators' note about the night. Written on ONE row of the show
+           rather than all eleven (see COLUMNS in ingest_band.mjs: repeating it
+           costs 436KB raw), so it is hoisted here by scanning for whichever row
+           carries it. Nothing depends on that being the first. */
+        notes: '',
       });
     }
-    byShow.get(r.show_id).songs.push(r);
+    const show = byShow.get(r.show_id);
+    if (!show.notes && r.show_notes) show.notes = r.show_notes;
+    show.songs.push(r);
   }
 
   const shows = Array.from(byShow.values());
