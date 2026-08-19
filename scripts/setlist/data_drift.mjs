@@ -109,9 +109,21 @@ check(med <= MEDIAN_ESTEEM_LIMIT,
     for (const r of rows) {
       if (!r.song_id) continue;
       let s = m.get(r.song_id);
-      if (!s) m.set(r.song_id, s = { esteem: r.crowd_rating, tags: r.tags, plays: 0, charted: 0 });
+      if (!s) m.set(r.song_id, s = { esteem: r.crowd_rating, tags: r.tags,
+        plays: 0, charted: 0, timed: 0, secs: 0 });
       s.plays++;
       if (r.is_jamchart === 'true') s.charted += 1 + (r.is_recommended === 'true' ? 2 : 0);
+      /* LENGTH IS AN INPUT TOO, and leaving it out was a gate that would have
+         failed the first honest refresh after a tour. Tags derive from a song's
+         MEDIAN LENGTH (jam, peak and ballad all key off it), and elgoose types
+         setlists up the night of the show but adds track times days or weeks
+         later. So a refresh that backfills times for a run legitimately moves
+         tags for songs whose play count and jamchart count are both unchanged,
+         and this gate called that unexplained and went red. Reproduced against
+         the five untimed August 2026 shows: one song moved "jam|encore" to
+         "encore" on nothing but a length arriving. */
+      const len = Number(r.length_sec) || 0;
+      if (len > 0) { s.timed++; s.secs += len; }
     }
     return m;
   };
@@ -120,7 +132,8 @@ check(med <= MEDIAN_ESTEEM_LIMIT,
   for (const [id, a] of now) {
     const b = was.get(id);
     if (!b) continue;                       // a new song has nothing to drift from
-    const inputsMoved = a.charted !== b.charted || a.plays !== b.plays;
+    const inputsMoved = a.charted !== b.charted || a.plays !== b.plays
+      || a.timed !== b.timed || a.secs !== b.secs;
     if (a.esteem !== b.esteem) {
       movedEsteem.push(id);
       if (!inputsMoved) unexplained.push(`${id} esteem ${b.esteem} to ${a.esteem}`);

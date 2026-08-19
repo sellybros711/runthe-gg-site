@@ -944,8 +944,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;
     padding:2px 7px; border-radius:3px;}
+  /* THE LOUDEST CHIP ON THE ROW, because it is the rarest thing the list can
+     offer. A suite link pays several times an ordinary one, so it is filled
+     rather than tinted, and it keeps the arrow shape a segue chip has because
+     it is still a segue: the movement it lands on is the point. */
+  .chip.suite{background:var(--violet); color:#120A24; letter-spacing:.9px;
+    padding:2px 11px 2px 7px; border-radius:3px;
+    clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   /* And they need their separator back, since they are boxes among words. */
-  .chip.seg + .chip:before, .chip.sand + .chip:before{margin-left:9px;}
+  .chip.seg + .chip:before, .chip.sand + .chip:before,
+  .chip.suite + .chip:before{margin-left:9px;}
 
   /* RARITY. */
   .chip.rare{color:var(--goldT);}
@@ -2105,6 +2113,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .namehint b{color:var(--mut); font-weight:800;}
   .nameacts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;}
   .nameacts .btn{width:auto;}
+  /* The same box, saying why there is no field in it. */
+  .namebox.off .namehint code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px; color:var(--mut); word-break:break-all;}
+  /* The profile is titled with your name, so the control that changes it sits
+     on that line rather than only behind the top-bar chip.
+     THE TITLE HAS TO BE THE THING THAT GIVES. It is a 42px display face with
+     letter-spacing and it holds a name somebody else chose, so at 390px
+     "sellybros711" pushed the button 8px off the right edge and a 20-character
+     name pushed it 252px off. It wraps now instead of shoving. */
+  .namehd{gap:10px;}
+  .namehd h2{flex:1 1 auto; min-width:0; overflow-wrap:anywhere;}
+  .namehd .btn{width:auto; flex:0 0 auto; white-space:nowrap;}
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -2375,7 +2395,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = '20e93049';
+const DATA_VERSION = 'c592ac14';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -3287,6 +3307,13 @@ function renderDraft(){
       const why = pickBlock(p, si);
       const dead = !!why;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
+      /* A SUITE, which is a bigger deal than a segue and has to say so. Two
+         movements of one piece: Jive I into Jive II, Seekers pt I into pt II.
+         The scoring pays these several times an ordinary link, so the row
+         cannot describe them with the same three words. */
+      const landsSuite = finishes && S.data.suites
+        && S.data.suites.get(hunt.from.song_id)
+        && S.data.suites.get(hunt.from.song_id) === S.data.suites.get(p.song_id);
       /* The second line, decided BEFORE the chips, because the two were saying
          the same thing. A cover with no segue partner printed "orig. Bobby
          Blue Bland" AND a COVER chip on the same row: the line already names
@@ -3317,6 +3344,7 @@ function renderDraft(){
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
+      else if (landsSuite) chips.push('<span class="chip suite">COMPLETES THE SUITE</span>');
       else if (finishes) chips.push('<span class="chip seg">LANDS THE SEGUE</span>');
       /* NAMED, not just marked. The arrow after the title says a row is
          different; only a word says what the difference is FOR. It goes first,
@@ -3755,7 +3783,14 @@ function renderResult(){
           ${r.segues.length
             ? r.segues.map(x => `<div class="flowrow">
                 <div class="fl"><b>${esc(x.a)} → ${esc(x.b)}</b><i>${
-                  x.times > 1
+                  /* A SUITE IS NOT A ROUTINE PAIR, and saying "worth 30% of a
+                     first-time find" about Seekers pt I into pt II was the
+                     scoresheet explaining the bug it used to have. */
+                  x.suite
+                    ? `Two movements of one piece${
+                        x.kinds.includes('full suite') ? ', carried past a second' : ''
+                      }. Played together ${x.times} times and worth every one`
+                  : x.times > 1
                     ? `The band has played this pair ${x.times} times, worth ${
                         Math.round(x.fam * 100)}% of a first-time find`
                     : 'They have played this pair once, ever'}${
@@ -4014,6 +4049,20 @@ const PERF_STATS = {
   covers:    { label: 'Covers you have heard',
                pick: p => String(p.is_cover) === 'true', unique: true,
                note: p => p.original_artist || '' },
+  /* WHAT THE BAND QUOTED WITHOUT PLAYING. A few bars of somebody else's song
+     dropped inside this one, which is the sort of thing a night gets remembered
+     for. The archive keeps them in the footnote prose; the ingester parses them
+     out into a pipe-delimited column, because one performance can carry several
+     ("With Carol Of The Bells teases from Rick and Give Up The Funk tease from
+     Trevor") and the count has to be teases rather than performances.
+     EXPANDED, so the tile and the list agree: 254 performances carry 284 teases,
+     and a tile saying 284 that opens a list of 254 is the exact bug the
+     count-equals-list guard exists to catch. */
+  teases:    { label: 'Teases you caught',
+               pick: p => !!p.teases,
+               expand: p => String(p.teases).split('|').filter(Boolean)
+                 .map(t => ({ ...p, _tease: t })),
+               note: p => `inside ${p.song}` },
 };
 
 /* The show-level ones. Same contract: the count is the size of the list. */
@@ -4027,7 +4076,10 @@ const SHOW_STATS = {
 
 function statCount(perf, key){
   const def = PERF_STATS[key];
-  const hits = perf.filter(def.pick);
+  let hits = perf.filter(def.pick);
+  // One performance can be several of the thing being counted. openStat expands
+  // the same way, so the number on the tile is the length of the list it opens.
+  if (def.expand) hits = hits.flatMap(def.expand);
   return def.unique ? new Set(hits.map(p => p.song_id || p.song)).size : hits.length;
 }
 
@@ -4119,6 +4171,7 @@ function attendanceStats(bandId){
   const bigJams = statCount(perf, 'bigJams');
   const bustouts = statCount(perf, 'bustouts');
   const coverCount = statCount(perf, 'covers');
+  const teaseCount = statCount(perf, 'teases');
 
   /* WHAT YOU KEEP GETTING DEALT. An opener is the one slot every show has
      exactly one of, so it is the only role where "most common" is a fair
@@ -4164,6 +4217,7 @@ function attendanceStats(bandId){
     seconds: secs,
     segues, jamcharts: jams, debuts, bigJams, bustouts,
     covers: coverCount,
+    teases: teaseCount,
     perShow: perf.length / withSet.length,
     since, gapDays, gapFrom, gapTo, backToBack, encores,
     topOpener: topOpener && topOpener[1] > 1 ? { song: topOpener[0], times: topOpener[1] } : null,
@@ -4314,7 +4368,21 @@ function renderAuth(){
                 >Use ${esc(ME.siteName || 'my account name')}</button>` : ''}
             </div>
           </form>
-        </div>` : ''}
+        </div>` : `
+        <!-- SAYS SO, rather than rendering nothing. The panel used to vanish
+             whole when profiles.segue_name was not readable, so a player who
+             had run the migration and come looking for the field found an
+             account sheet with no field on it and nothing to explain why.
+             68_setlist_username.sql promises this reports itself unavailable;
+             this is that promise being kept. The usual cause is not a missing
+             migration but PostgREST still serving its cached schema. -->
+        <div class="namebox off">
+          <div class="eyebrow">Your name on Segue</div>
+          <div class="namehint">Not available on this project yet, so the board
+            shows <b>${esc(ME.siteName || 'your account name')}</b>. It needs
+            <code>supabase/68_setlist_username.sql</code>; if that has been run,
+            reload the API schema cache in Supabase and sign in again.</div>
+        </div>`}
       <div class="respin-acts">
         <button class="btn" type="button" id="authProfile">Your shows</button>
         <button class="btn ghost" type="button" id="authOut">Sign out</button>
@@ -5268,11 +5336,11 @@ function nextRound(){
 }
 
 function finishShow(){
-  S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts);
+  S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts, S.data.suites);
   // The ceiling: the same shows, in the same order, played as well as we can
   // find. Guaranteed reachable, so it is a target rather than a taunt.
   try {
-    S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent);
+    S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent, S.data.suites);
   } catch (err) { S.best = null; }
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
   S.posted = null;
@@ -5753,6 +5821,7 @@ function openStat(key){
     const def = PERF_STATS[key];
     const perf = attendedPerformances(band.id) || [];
     let hits = perf.filter(def.pick);
+    if (def.expand) hits = hits.flatMap(def.expand);
     title = def.label;
     if (def.unique) {
       /* Distinct songs, newest sighting first, with how many times. The tile
@@ -5769,15 +5838,20 @@ function openStat(key){
     } else {
       hits = hits.slice().sort((a, b) => String(b.show_date).localeCompare(String(a.show_date)));
     }
-    body = hits.length ? hits.map(p => `<div class="stv-row">
-        <span class="stv-s">${esc(p.song)}</span>
-        <span class="stv-m">${p._times ? `${p._times}x`
-          : esc(fmtDate(p.show_date))}${
-          def.note && def.note(p) ? ` &middot; ${esc(def.note(p))}` : ''}</span>
-        <span class="stv-w">${p._times ? '' : `${esc(p.venue || '')}${
-          place(p) ? `, ${esc(place(p))}` : ''}`}</span>
+    /* THE NOTE SITS ON THE SECOND LINE, not beside the date. .stv-m is nowrap
+       with an auto column, so a long note eats the width the name needs: the
+       tease list, whose note is "inside <song>", was rendering "Secr..." where
+       the whole point of the row is which song was teased. The second line
+       already ellipsises, and the note reads better next to the venue anyway. */
+    body = hits.length ? hits.map(p => {
+      const note = def.note && def.note(p) ? def.note(p) : '';
+      const where = p._times ? '' : `${p.venue || ''}${place(p) ? `, ${place(p)}` : ''}`;
+      return `<div class="stv-row">
+        <span class="stv-s">${esc(p._tease || p.song)}</span>
+        <span class="stv-m">${p._times ? `${p._times}x` : esc(fmtDate(p.show_date))}</span>
+        <span class="stv-w">${[note, where].filter(Boolean).map(esc).join(' &middot; ')}</span>
         ${Number(p.length_sec) ? `<span class="stv-l">${esc(fmtClock(Number(p.length_sec)))}</span>` : ''}
-      </div>`).join('')
+      </div>`; }).join('')
       : '<div class="sgd-none">Nothing here yet.</div>';
     title += ` (${hits.length})`;
 
@@ -6407,6 +6481,7 @@ function renderProfile(){
       st.segues ? [st.segues, 'segues', 'segues'] : null,
       st.jamcharts ? [st.jamcharts, 'jamcharts', 'jamcharts'] : null,
       st.covers ? [st.covers, 'covers', 'covers'] : null,
+      st.teases ? [st.teases, 'teases', 'teases'] : null,
       st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts', 'debuts'] : null,
       st.bigJams ? [st.bigJams, '20-min jams', 'bigJams'] : null,
       st.bustouts ? [st.bustouts, 'bustouts', 'bustouts'] : null,
@@ -6505,7 +6580,13 @@ function renderProfile(){
   }).join('');
 
   app.innerHTML = `
-    <div class="bhd"><h2>${esc(ME.name || 'Your shows')}</h2></div>
+    <!-- THE NAME IS ON THIS SCREEN, SO THE WAY TO CHANGE IT IS TOO. The only
+         route to it was tapping your own name in the top bar, which reads as a
+         status chip rather than a control, and this page (the one titled with
+         that very name) said nothing about it. Reported as "I don't see where
+         to adjust my user name". -->
+    <div class="bhd namehd"><h2>${esc(ME.name || 'Your shows')}</h2>
+      <button class="btn tiny ghost" type="button" id="editName">Edit name</button></div>
     <section class="card" style="margin-bottom:var(--sp-2)">${career}</section>
 
     <div class="eyebrow">You were there</div>
@@ -6518,6 +6599,7 @@ function renderProfile(){
     <button class="btn ghost" type="button" id="backHome"
       style="margin-top:18px">Back</button>`;
   document.getElementById('backHome').addEventListener('click', () => setScreen('home'));
+  document.getElementById('editName').addEventListener('click', () => openAuth('me'));
 }
 
 // ── events ───────────────────────────────────────────────────────────────────

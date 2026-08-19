@@ -28,6 +28,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
+  'teases',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -796,6 +797,94 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
   check(/lines\.push\(p\.song \+ mark\)/.test(fn), 'the setlist itself is untouched');
 }
 
+/* SUITES: the songs that are movements of one piece.
+ *
+ * Jive I > Jive II > Jive Lee, Seekers on the Ridge pt I > pt II. The scoring
+ * had these exactly backwards: familiarityMult discounts a pair by how often
+ * the band plays it, and Seekers pt I > pt II is the MOST PLAYED PAIR IN THE
+ * ARCHIVE at 57 times, so it sat on the 0.30 floor and scored 18 of a possible
+ * 60. The most canonical link in the catalogue paid the least of any link.
+ */
+console.log('suites');
+{
+  const { suites, shows } = loadBand(read('setlist/data/goose.csv'));
+  const title = new Map();
+  for (const sh of shows) for (const p of sh.songs) title.set(p.song_id, p.song);
+  const fams = new Map();
+  for (const [id, key] of suites) {
+    if (!fams.has(key)) fams.set(key, []);
+    fams.get(key).push(title.get(id));
+  }
+  check(fams.size === 3, `three families in this catalogue (${fams.size})`);
+  for (const [key, want] of [
+    ['jive', ['Jive I', 'Jive II', 'Jive Lee']],
+    ['seekers on the ridge', ['Seekers on the Ridge pt I', 'Seekers on the Ridge pt II']],
+    ['interlude', ['Interlude I', 'Interlude II', 'Interlude III']],
+  ]) {
+    const got = (fams.get(key) || []).slice().sort();
+    check(JSON.stringify(got) === JSON.stringify(want.slice().sort()),
+      `  ${key}: ${want.join(', ')}`, `got ${got.join(', ') || 'nothing'}`);
+  }
+  /* JIVE LEE HAS NO NUMERAL and belongs anyway, which is the whole reason the
+     stem rule exists alongside the part rule. */
+  check((fams.get('jive') || []).includes('Jive Lee'),
+    'a sibling with no numeral of its own still joins its family');
+  /* THE SEPARATOR IN THE PART RULE, asserted on the rule and not on its output,
+     because the output cannot currently fail. Without the separator "Yeti"
+     parses as "Yet" + roman numeral I and "2021" as "202" + 1 -- but both are
+     the only claimant of their stem, and a family needs two members, so the
+     size filter rejects them anyway and every title check still passes. The
+     separator is what stops that becoming a real family the day a song called
+     "Yet Another" or "202 Reasons" is played, and this is the only place that
+     can say so. */
+  const loader = read('setlist/dataLoader.js');
+  check(/const PART = \/\^\(\.\{3,\}\?\)\[\\s,:\]\+/.test(loader),
+    'a part marker must be separated from its stem, so "Yeti" is not "Yet I"');
+  // Belt and braces: today's catalogue really does keep them out.
+  for (const t of ['Yeti', '2021', 'Weird Fishes / Arpeggi']) {
+    const id = [...title].find(([, v]) => v === t);
+    if (!id) continue;
+    check(!suites.has(id[0]), `  and "${t}" is in no family`);
+  }
+}
+/* The scoring side: exempt from both brakes, and paid a bonus. verify-scoring
+   owns the arithmetic; this owns the wiring, which is what a UI change breaks. */
+check(/const fam = suite \? 1 : familiarityMult\(times\)/.test(read('setlist/scoring.js')),
+  'a suite link is not discounted for being canonical');
+check(/scoreShow\(S\.sets, S\.data\.segues, S\.spent, S\.data\.segueCounts, S\.data\.suites\)/.test(gameBare),
+  'the game passes its suites to the scorer');
+/* THE CEILING HAS TO KNOW TOO. Without it a player who lands a suite is
+   measured against a best line scored as if suites paid nothing, and can beat
+   100% of a target that is supposed to be unreachable. */
+check(/bestPossible\(S\.drafted, S\.data\.segues, S\.data\.segueCounts, S\.spent, S\.data\.suites\)/.test(gameBare),
+  'and to the ceiling, or a suite could beat an unbeatable target');
+check(/COMPLETES THE SUITE/.test(gameBare), 'the draft names a suite when one is on offer');
+check(/Two movements of one piece/.test(gameBare), 'and the scoresheet explains what it paid for');
+
+/* CHANGING YOUR NAME, and being able to find where. Reported as "I don't see
+   where to adjust my user name": the only route in was tapping your own name in
+   the top bar, which reads as a status chip rather than a control, and the
+   profile screen (the one TITLED with that name) said nothing about it. */
+console.log('your name');
+check(/id="editName"/.test(gameBare), 'the profile offers a way to change your name');
+check(/getElementById\('editName'\)\.addEventListener\('click', \(\) => openAuth\('me'\)\)/.test(gameBare),
+  'and it opens the account panel');
+/* AND WHEN THE COLUMN IS NOT THERE, IT SAYS SO. The panel used to render
+   nothing at all when profiles.segue_name was unreadable, so somebody who had
+   run the migration and come looking found an account sheet with no field and
+   no explanation. 68_setlist_username.sql promises it "reports itself
+   unavailable"; that promise is the guard. */
+check(/class="namebox off"/.test(gameBare),
+  'and says so when the project cannot store one');
+check(/68_setlist_username\.sql/.test(gameBare), 'naming the migration it needs');
+check(/schema cache/.test(gameBare),
+  'and the usual cause when the migration HAS been run');
+/* The title is a 42px display face holding a name somebody else chose. Without
+   this it shoved the button off the right edge: 8px for "sellybros711" and
+   252px for a 20-character name, at 390 wide. */
+check(/\.namehd h2\{[^}]*min-width:0/.test(game),
+  'a long name wraps rather than pushing the button off screen');
+
 /* THE CURATORS' OWN WORDS, which the game had been throwing away.
  *
  * elgoose keeps a `footnote` on a PERFORMANCE ("Unfinished.", "80s synth
@@ -837,6 +926,76 @@ console.log('the archive notes');
   check(!rows.some(r => /[\n\r]/.test(r.footnote) || /[\n\r]/.test(r.show_notes)),
     'notes are stored as one line');
 }
+/* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
+ *
+ * data_drift lets a derived value move only for a song whose own inputs moved.
+ * Tags derive from a song's MEDIAN LENGTH, and elgoose types a setlist up the
+ * night of the show but adds track times days or weeks later, so a refresh that
+ * backfills times for a tour legitimately moves tags for songs whose play count
+ * and jamchart count are both unchanged. Without length in the fingerprint the
+ * gate called that unexplained and the scheduled refresh would have gone red on
+ * the first honest run after a tour. Reproduced against the five untimed August
+ * 2026 shows: one song moved "jam|encore" to "encore" on a length arriving.
+ */
+{
+  const gate = read('scripts/setlist/data_drift.mjs');
+  check(/timed: 0, secs: 0/.test(gate), 'the drift gate fingerprints a song\'s timings');
+  check(/a\.timed !== b\.timed \|\| a\.secs !== b\.secs/.test(gate),
+    'and counts a length arriving as an input that moved');
+}
+
+/* TEASES: what the band quoted without playing.
+ *
+ * A few bars of somebody else's song dropped inside this one. It exists only as
+ * footnote prose ("With Axel F teases from Rick"), so the ingester parses it out
+ * into its own column and this checks the parse against the prose it came from.
+ */
+{
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const mentions = rows.filter(r => /\btease[sd]?\b/i.test(r.footnote || ''));
+  const parsed = rows.filter(r => r.teases);
+  check(mentions.length > 200, `footnotes mention teases (${mentions.length})`);
+  /* EVERY MENTION MUST YIELD A SONG. The rule got there in two goes: an
+     acronym's own full stop is not a sentence end ("Still D.R.E.", "S.O.S."),
+     and "teases from Rick and Stuart Bogie on saxophone" splits on "and" into
+     a song and a person. Both were found by looking at what it missed, and a
+     silent 99% would have shipped without this. */
+  const missed = mentions.filter(r => !r.teases);
+  check(!missed.length, 'and every one of them names a song',
+    missed.length ? `${missed.length} missed, e.g. "${missed[0].footnote}"` : '');
+  check(parsed.length === mentions.length, 'nothing is parsed out of a footnote without one');
+  const all = parsed.flatMap(r => r.teases.split('|').filter(Boolean));
+  check(all.length > mentions.length,
+    `some performances carry more than one (${all.length} teases in ${mentions.length} rows)`);
+  // Junk the rule is written to exclude, checked on the output.
+  const junk = all.filter(t => /\bon\s+(guitar|sax|saxophone|trumpet|keys|drums|percussion|vocals)$/i.test(t));
+  check(!junk.length, 'and a guest musician is not read as a teased song',
+    junk.length ? `e.g. "${junk[0]}"` : '');
+  check(!all.some(t => /\btease/i.test(t)), 'nor is the word "tease" itself');
+  check(!all.some(t => t.length > 60), 'and nothing absurdly long got through');
+  /* COMMAS ARE PART OF TITLES, and the first version of the rule split on them:
+     "With One In, One Out teases" became two songs and "Mercy, Mercy, Mercy"
+     became three. Both are single teases of a single song, and both are in this
+     archive, so they are named. */
+  for (const t of ['One In, One Out', 'Mercy, Mercy, Mercy'])
+    check(all.some(x => x.toLowerCase() === t.toLowerCase()),
+      `a title with a comma survives whole: "${t}"`);
+  // And an acronym's own full stop is not a sentence end.
+  for (const t of ['Still D.R.E.', 'S.O.S.'])
+    check(all.some(x => x.toLowerCase() === t.toLowerCase()),
+      `  as does an acronym: "${t}"`);
+}
+/* The profile stat. Counted in teases rather than performances, which is why
+   PERF_STATS.teases carries an expand: 254 rows hold 284 of them. */
+check(/teases:\s*\{ label: 'Teases you caught'/.test(gameBare),
+  'the profile counts teases');
+check(/expand: p => String\(p\.teases\)/.test(gameBare),
+  'and counts each one, not each performance that has any');
+check(/st\.teases \? \[st\.teases, 'teases', 'teases'\]/.test(gameBare),
+  'the tile is on the profile and opens its list');
+check(/p\._tease \|\| p\.song/.test(gameBare),
+  'and the list names the song that was teased');
+
 /* WHERE THEY SHOW UP. Four surfaces, and the draft is the one that was asked
    for: the note on the take you are choosing between. */
 check(/function perfNote\(perf\)/.test(gameBare), 'the note is read through one helper');
@@ -1258,12 +1417,26 @@ check(/const segues = statCount\(perf, 'segues'\)/.test(gameBare),
   'and the profile counts through it rather than inline');
 check(!/if \(String\(p\.is_segue\) === 'true'\) segues\+\+/.test(gameBare),
   'the old inline copies are gone');
-/* Named at the LIST site specifically: statCount filters with the same
-   expression, so a looser pattern is satisfied by the counter alone. */
-check(/let hits = perf\.filter\(def\.pick\);/.test(gameBare),
-  'the list filters through the same definition');
-check(/const hits = perf\.filter\(def\.pick\);/.test(gameBare),
-  'and so does the count');
+/* SLICED PER FUNCTION, because both now open with the same line. This used to
+   distinguish them by `let` versus `const`, which stopped telling them apart
+   the moment statCount needed to reassign. A pattern that matches either one
+   is satisfied by the counter alone, which is exactly the drift being guarded. */
+{
+  const fnBody = (name, end) => {
+    const i = gameBare.indexOf(`function ${name}(`);
+    return i < 0 ? '' : gameBare.slice(i, gameBare.indexOf(end, i));
+  };
+  const counter = fnBody('statCount', '\n}');
+  const lister = fnBody('openStat', 'SHOW_STATS[key]');
+  check(/perf\.filter\(def\.pick\)/.test(lister), 'the list filters through the same definition');
+  check(/perf\.filter\(def\.pick\)/.test(counter), 'and so does the count');
+  /* ONE PERFORMANCE CAN BE SEVERAL OF THE THING COUNTED. A tease footnote can
+     name two songs, so 254 performances carry 284 teases. Both sites have to
+     expand or the tile says 284 and opens a list of 254, which is the precise
+     failure the count-equals-list contract exists to prevent. */
+  check(/def\.expand/.test(counter), 'the count expands a row that holds several');
+  check(/def\.expand/.test(lister), 'and the list expands it the same way');
+}
 check(/id="statSheet"/.test(gameBare) && /function openStat\(key\)/.test(gameBare),
   'tapping a number opens what is behind it');
 check(/data-stat="\$\{esc\(stat\)\}"/.test(gameBare), 'the tiles carry the key they were counted with');

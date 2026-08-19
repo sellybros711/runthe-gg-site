@@ -512,6 +512,59 @@ const showNote = s => {
   return /^(next|previous|prev)\s+show\s*:/i.test(t) ? '' : t;
 };
 
+/* ── TEASES ──────────────────────────────────────────────────────────────────
+ *
+ * WHAT THE BAND QUOTED WITHOUT PLAYING. "With Axel F teases from Rick", "With
+ * Carol Of The Bells teases from Rick and Give Up The Funk tease from Trevor".
+ * A few bars of somebody else's song dropped inside this one, and catching one
+ * is the sort of thing a fan remembers a night for.
+ *
+ * It exists only as footnote prose, so it is parsed HERE and stored as its own
+ * column rather than re-parsed in the browser on every profile render. Measured
+ * over the archive: 254 footnotes mention a tease, in 201 of 660 shows, and this
+ * names the song in 100% of them, 259 teases of 123 distinct songs.
+ *
+ * ANCHORED ON THE WORD "tease", TAKING THE PHRASE BEFORE IT. The first version
+ * split the clause on commas and "and", which is what a list looks like, and it
+ * was wrong in three ways at once:
+ *
+ *   "With One In, One Out teases"        -> "One In" and "One Out", two songs
+ *                                           where the band teased one
+ *   "With Mercy, Mercy, Mercy tease"     -> three
+ *   "...Chris Tomson on drums, and       -> "vocals", "and Jessica", neither of
+ *      Jessica tease from Rick"             which is a song
+ *
+ * So the phrase is trimmed at the NEAREST boundary before the word instead:
+ * "with", "and", or a sentence stop. Never a comma, since titles contain them,
+ * and never an acronym's own full stop, since "Still D.R.E." and "S.O.S." are
+ * titles too and their last period is not a sentence end.
+ *
+ * THE ONE IT STILL GETS WRONG, stated because it cannot be fixed by rule: a
+ * title containing "and" is cut at its own conjunction, so "Workin' Day and
+ * Night" is recorded as "Night". It is structurally identical to the cut that
+ * makes "and Jessica tease" come out right, and it costs 1 of the 123 songs.
+ */
+function teasesIn(footnote) {
+  const s = clean(footnote);
+  if (!s || !/\btease[sd]?\b/i.test(s)) return [];
+  const CUT = /\b(?:with|and)\b|(?<![A-Z])[.;]/gi;
+  const out = [];
+  for (const m of s.matchAll(/\btease[sd]?\b/gi)) {
+    const before = s.slice(0, m.index);
+    let start = 0;
+    for (const c of before.matchAll(CUT)) start = c.index + c[0].length;
+    const p = before.slice(start).trim()
+      .replace(/\s*\([^)]*\)$/, '')             // "(John Williams)"
+      .replace(/^["'“]|["'”]$/g, '')
+      .replace(/^[,\s]+|[,\s]+$/g, '').trim();
+    if (!p || p.length > 60) continue;
+    if (/\bon\s+\w+$/i.test(p)) continue;       // a guest musician, not a song
+    if (/^(a|an|the)$/i.test(p)) continue;
+    out.push(p);
+  }
+  return out;
+}
+
 const pick = (row, ...names) => {
   for (const n of names) {
     const v = row[n];
@@ -652,6 +705,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
+  'teases',
 ];
 
 function csvCell(v) {
@@ -710,6 +764,8 @@ export function buildCSV(raw, opts = {}) {
          and these render inline; the CSV would survive them, a reviewer reading
          the diff would not. */
       footnote: clean(pick(r, 'footnote')),
+      // Pipe-delimited, the same shape `tags` uses.
+      teases: teasesIn(pick(r, 'footnote')).join('|'),
       // Carried on every row here, thinned to one row per show further down.
       show_notes: showNote(pick(r, 'shownotes')),
     });
