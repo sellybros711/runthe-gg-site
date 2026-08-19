@@ -965,8 +965,11 @@ boot();`;
     await p.evaluate(() => window.__DEF.intro());
     await p.waitForTimeout(200);
     const sticker = await p.evaluate(() => window.__DEF.stickers());
-    ok('OG is on the offense half and does not expire',
-      sticker.og.text === 'OG' && sticker.og.shown && sticker.og.absolute, sticker.og);
+    /* The word is asserted, not just the presence of a badge: it said OG first, which reads
+       as a joke to anybody who already knew the game and as nothing at all to anybody who
+       did not. Classic draft says which of the two buttons is the game that was here. */
+    ok('Classic draft is on the offense half and does not expire',
+      sticker.og.text === 'Classic draft' && sticker.og.shown && sticker.og.absolute, sticker.og);
     ok('New is on the defense half, and only while its window is open',
       sticker.nw.text === 'New' && sticker.nw.absolute
       && sticker.nw.shown === (shipped && sticker.windowOpen), sticker.nw);

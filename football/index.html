@@ -376,15 +376,18 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 5px;
     border-radius:4px;background:#4ade80;color:#06280f;
     box-shadow:0 1px 6px -1px rgba(0,0,0,.55)}
-  /* OG on the offense half, in the game's own gold rather than a second green. Green is the
-     launch colour and it is doing that job three inches to the right; two green stickers
-     side by side would say the two halves are the same kind of news, when the whole point of
-     the pair is that one of them is the game people already know. Gold is what this game
-     already uses for a thing that has been earned rather than a thing that is new.
-     IT DOES NOT EXPIRE, unlike its neighbour. NEW is an announcement with a shelf life; OG
+  /* CLASSIC DRAFT on the offense half, in the game's own gold rather than a second green.
+     Green is the launch colour and it is doing that job three inches to the right; two green
+     stickers side by side would say the two halves are the same kind of news, when the whole
+     point of the pair is that one of them is the game people already know. Gold is what this
+     game already uses for a thing that has been earned rather than a thing that is new.
+     IT DOES NOT EXPIRE, unlike its neighbour. NEW is an announcement with a shelf life; this
      is a fact about the mode that will still be true next year, so it carries no date and
-     wants no maintenance. */
-  .hp-tag.hp-og{background:#fbbf24;color:#3b2600}
+     wants no maintenance.
+     It is the longest thing on that strip, so it gets a size of its own: at the shared 8.5px
+     it ran the full width of the half at 320 and left the badge nothing to sit in. */
+  .hp-tag.hp-og{background:#fbbf24;color:#3b2600;font-size:7.5px;letter-spacing:.05em;
+    padding:2px 4px}
   /* The attribute needs its own rule here for the same reason .hp-start[hidden] does. */
   .hp-tag[hidden]{display:none}
   /* Loading, while the defensive pool is fetched. The pool is a second data file and on a
@@ -4300,7 +4303,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="hp-split" id="hp-split" hidden>
       <button class="hp-side hp-off" id="b-start-off">
         <!-- No date on this one: it is not an announcement, see .hp-tag.hp-og. -->
-        <span class="hp-tag hp-og">OG</span>
+        <span class="hp-tag hp-og">Classic draft</span>
         <span class="hp-side-name">Offense</span>
         <span class="hp-side-sub">QB RB WR TE FLEX</span>
       </button>
