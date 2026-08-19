@@ -309,6 +309,27 @@ const CONSTANTS = {
   ELITE_BYE_WINS: 13,
 
   /*
+   * ─── THE LAST TWO PERCENT, FOR THE ROSTERS THAT EARNED IT ───────────────────
+   *
+   * A small multiplier on the weekly edge for anything above ELITE_FLOOR, worth nothing at
+   * 95 and all of it by ELITE_POLISH_FULL. It is deliberately tiny: at the top the game is
+   * already decided mostly by the roster, and the point of this is not to hand a 100 a
+   * different season, it is that going 17-0 and then winning four more should be a shade
+   * less punishing for a team that genuinely is the best in the league.
+   *
+   * IT RIDES ON weeklyEdge AND SO INHERITS ITS DAMPER: weeklyEdgeVs fades the whole edge
+   * out against a strong opponent, which means this pays on the sixteen ordinary Sundays
+   * and pays almost nothing in the games against the contenders. That is the right shape
+   * for a perfect season, where it is the trap games that end runs.
+   *
+   * 95 rather than any other number because it is already the line the game draws twice:
+   * ELITE_FLOOR, where roster strength starts voting on the seed, and FINAL_EDGE_PIVOT,
+   * where the title game stops being uphill.
+   */
+  ELITE_POLISH: 0.02,
+  ELITE_POLISH_FULL: 105,
+
+  /*
    * ─── WHAT THE LAST GAME ASKS OF YOUR ROSTER ─────────────────────────────────
    *
    * Every other playoff round can be tilted by the record: win enough and the opponent's
@@ -379,6 +400,21 @@ const CONSTANTS = {
   FINAL_EDGE_CEIL: 115,
   FINAL_EDGE_PENALTY: 0.45,
   FINAL_EDGE_BREAK_EDGE: 0.86,
+  /*
+   * WHAT THE PIVOT ITSELF IS WORTH. It was exactly 1: a 95 walked into the Super Bowl in an
+   * even game and everything above it climbed from there. It is 1.03 now, the smallest lift
+   * that is not noise, and everything at or above the pivot moves up by exactly that amount:
+   * the shape of the climb from 95 to 115 is untouched.
+   *
+   * THE APPROACH RIDES UP WITH IT, and that is deliberate rather than overlooked. The band
+   * from FLOOR to PIVOT is defined by where it lands, so lifting only the top of the curve
+   * would put a step in the middle of a function whose whole claim is that it is monotone: a
+   * 94.9 would play an even final and a 95.0 a favoured one, on a tenth of a rating point.
+   * The ramp instead pays nothing at 90 and the full three points at 95, which measured over
+   * six thousand seasons is worth three hundredths of a percentage point on a 93's title
+   * rate and nothing at all on a 90's.
+   */
+  FINAL_EDGE_PIVOT_EDGE: 1.03,
   FINAL_EDGE_KNEE_BONUS: 0.10,
   /*
    * Raised from 0.09, and it buys less per point than that sounds: the old bonus was fully
@@ -1399,7 +1435,24 @@ function playoffShare(wins, rating) {
  * score. 1 up to CLASS_FLOOR, then a linear climb to 1 + CLASS_EDGE at CLASS_FULL.
  * See CONSTANTS.CLASS_*.
  */
+/*
+ * The elite polish, as a multiplier of its own so it can be read, tested and removed without
+ * touching the four returns of the band function below. Nothing under ELITE_FLOOR sees it.
+ */
+function elitePolish(rating, constants = CONSTANTS) {
+  const C = constants;
+  const p = C.ELITE_POLISH || 0;
+  if (!(p > 0) || !(rating > C.ELITE_FLOOR)) return 1;
+  const span = (C.ELITE_POLISH_FULL || C.ELITE_FULL) - C.ELITE_FLOOR;
+  const t = span > 0 ? Math.min(1, (rating - C.ELITE_FLOOR) / span) : 1;
+  return 1 + p * t;
+}
+
 function weeklyEdge(rating, constants = CONSTANTS) {
+  return weeklyEdgeBand(rating, constants) * elitePolish(rating, constants);
+}
+
+function weeklyEdgeBand(rating, constants = CONSTANTS) {
   const C = constants;
   if (!(C.CLASS_EDGE > 0)) return 1;
   const span = C.CLASS_FULL - C.CLASS_FLOOR;
@@ -1487,20 +1540,25 @@ function finalEdge(rating, constants = CONSTANTS) {
   }
   /* THE COMMON BAND. Most rosters land here, so it is no longer the even game it used to be:
      a 90 is behind in the final and only a 95 is level. */
+  /* THE PIVOT IS NO LONGER EXACTLY EVEN, so it is read from a constant everywhere rather
+     than written as a literal 1 in three places: a lift that reached one branch and not the
+     others would put a step in the middle of a function whose whole claim is that it is
+     monotone. */
+  const pv = C.FINAL_EDGE_PIVOT_EDGE || 1;
   if (rating < C.FINAL_EDGE_PIVOT) {
     const span = C.FINAL_EDGE_PIVOT - C.FINAL_EDGE_BREAK;
     const t = span > 0 ? (rating - C.FINAL_EDGE_BREAK) / span : 1;
-    return C.FINAL_EDGE_BREAK_EDGE + (1 - C.FINAL_EDGE_BREAK_EDGE) * t;
+    return C.FINAL_EDGE_BREAK_EDGE + (pv - C.FINAL_EDGE_BREAK_EDGE) * t;
   }
   /* ABOVE THE PIVOT IT PAYS, AND THE RATE GROWS. Gentle to KNEE, then steeper to CEIL. */
   if (rating <= C.FINAL_EDGE_KNEE) {
     const span = C.FINAL_EDGE_KNEE - C.FINAL_EDGE_PIVOT;
     const t = span > 0 ? (rating - C.FINAL_EDGE_PIVOT) / span : 1;
-    return 1 + C.FINAL_EDGE_KNEE_BONUS * t;
+    return pv + C.FINAL_EDGE_KNEE_BONUS * t;
   }
   const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_KNEE;
   const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_KNEE) / span) : 1;
-  return 1 + C.FINAL_EDGE_KNEE_BONUS
+  return pv + C.FINAL_EDGE_KNEE_BONUS
     + (C.FINAL_EDGE_BONUS - C.FINAL_EDGE_KNEE_BONUS) * t;
 }
 
