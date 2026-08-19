@@ -534,6 +534,33 @@ window.__DEF={
      take the page into the draft under the sticker assertions. */
   wallReset(){ wantOneTeam=false; wantDefense=false; },
   board(){ show('s-board'); paintComp(); },
+  /* Has the defensive pool been fetched by this page yet. The whole of the bug below is that
+     nothing on the board's path ever asked for it. */
+  pool:()=>!!DDATA,
+  /* Draw the Defense board with one row on the wire, and read back what the row and the run
+     detail sheet actually say. The row is handed in rather than drafted, because what is
+     under test is a browser that has never opened a defense draft: drafting one would load
+     the pool as a side effect and the bug would vanish before the assertion ran. */
+  async boardWith(row){
+    const sel=document.getElementById('lb-comp'); sel.value='defense';
+    sel.dispatchEvent(new Event('change'));
+    const real=window.fetch;
+    window.fetch=(u,o)=>{ const s=String(u);
+      const body=/ps_runs\\?/.test(s)?JSON.stringify([row]):'[]';
+      return Promise.resolve(new Response(body,{status:200,
+        headers:{'Content-Type':'application/json','Content-Range':'0-0/1'}})); };
+    /* A board request left in flight by an earlier assertion would make loadBoard return at
+       its own guard and this would read the loading state forever. */
+    lbBusy=false;
+    try{ await loadBoard(); }finally{ window.fetch=real; }
+    return {rowText:document.getElementById('lb-rows').textContent,pool:!!DDATA};
+  },
+  /* The sheet, as a reader sees it: the names it managed to resolve and its full text. */
+  detail(row){ runDetail(row);
+    return {names:[...document.querySelectorAll('#sheet-in .rrow .nm b')].map(x=>x.textContent),
+      text:document.getElementById('sheet-in').textContent}; },
+  detailNow:()=>({names:[...document.querySelectorAll('#sheet-in .rrow .nm b')].map(x=>x.textContent),
+    text:document.getElementById('sheet-in').textContent}),
   comps:()=>[...document.querySelectorAll('#lb-comp option')]
     .map(o=>({value:o.value,label:o.textContent})),
   scopeFor(v){ const sel=document.getElementById('lb-comp'); sel.value=v;
@@ -1035,6 +1062,68 @@ boot();`;
       ps || tree.slice(0, 3));
     ok('and nothing in it still calls the offense board Classic Mode',
       !JSON.stringify(tree).includes('Classic'), tree.slice(0, 2));
+
+    /* ── THE NAMES ON A DEFENSE ROW ───────────────────────────────────────────
+       Every name on a board is resolved out of THIS browser's player data, and the
+       defenders are a second data file that only starting a defense draft ever loaded. So
+       the Defense board, read by somebody who had not played one, was a list of records
+       with no players on it: "6 players" where two names belong, and a run detail sheet
+       reading "This run's players are not in the player data this browser has" about
+       players that are in it the moment anything asks. Reported off the live board.
+
+       The row is injected rather than drafted, because the state under test is a page that
+       has never opened a defense draft: drafting one loads the pool as a side effect and
+       the bug disappears before the assertion can see it. Which is exactly why the suite
+       never caught it: every check it made came after a draft.
+
+       This block has to come BEFORE the draft below for the same reason. */
+    ok('nothing has fetched the defensive pool yet, which is the state a reader is in',
+      !(await p.evaluate(() => window.__DEF.pool())));
+    {
+      /* Six real defenders off the shipped file, as the pick keys a row carries. */
+      const pool = JSON.parse(fs.readFileSync(`${ROOT}/football/data/defender_seasons.json`, 'utf8'));
+      const picked = new Set();
+      const wanted = ['DL', 'DL', 'LB', 'DB', 'DB', 'DB'];
+      const six = wanted.map((pos) => pool.find((r) => r.position === pos
+        && r.idp_ppg_mean > 10 && !picked.has(r.player_id + '|' + r.season)
+        && (picked.add(r.player_id + '|' + r.season) || true)));
+      const row = {
+        id: 'test-row', created_at: new Date(0).toISOString(), wins: 18, losses: 3, games: 21,
+        title_won: false, perfect: false, made_playoffs: true, seed_label: 'Wild card',
+        playoff_wins: 3, point_diff: 120, chemistry_pct: 1.9, spend_musd: 138, respins: 0,
+        team_rating: 90.5, squad_fppg: 51, structure_mult: 1.01, perfect_pct: 96,
+        run_mode: 'defense', franchise: null, era: null, name: 'tester',
+        picks: six.map((r) => r.player_id + ':' + r.season),
+        slots: ['DL', 'DL', 'LB', 'DB', 'DB', 'FLEX'],
+      };
+      /* The sheet first, because it is the screenshot the report came with, and because the
+         board below loads the pool and there is only one first time. */
+      const before = await p.evaluate((r) => window.__DEF.detail(r), row);
+      ok('the sheet opens on the first tap, with nothing to name yet',
+        before.names.length === 0 && /not in the player data/.test(before.text),
+        before.text.slice(0, 120));
+      /* Caught rather than thrown: a page that never fetches the pool is the bug, and it
+         should read as a failed assertion here and not as a suite that died. */
+      const came = await p.waitForFunction(() => window.__DEF.pool(), null, { timeout: 30000 })
+        .then(() => true).catch(() => false);
+      ok('the sheet goes and gets the defenders by itself', came);
+      await p.waitForTimeout(400);
+      const after = await p.evaluate(() => window.__DEF.detailNow());
+      ok('and once the defenders land the sheet names all six of them',
+        after.names.length === 6, after.names);
+      ok('and it no longer says the players are not in this browser',
+        !/not in the player data/.test(after.text), after.text.slice(0, 120));
+      ok('and the six it names are the six the row carries',
+        six.every((m) => after.names.includes(m.name)),
+        { drew: after.names, row: six.map((m) => m.name) });
+
+      /* And the board itself, which is where the two names on each row come from. */
+      const board = await p.evaluate((r) => window.__DEF.boardWith(r), row);
+      ok('the Defense board names players on its rows rather than counting them',
+        !/6 players/.test(board.rowText)
+        && six.some((m) => board.rowText.includes(m.name.split(' ').slice(-1)[0])),
+        board.rowText.slice(0, 160));
+    }
 
     await p.evaluate(() => { window.__DEF.paintHome(); window.__DEF.intro(); });
     await p.waitForSelector('#s-intro.on', { timeout: 10000 });

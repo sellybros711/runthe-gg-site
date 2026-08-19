@@ -12885,6 +12885,12 @@ async function pfDraftsPaint(userId,tab){
     const row=list[+b.dataset.i];
     if(row) runDetail(row,()=>pfDrafts(tab));
   };
+  /* The defensive pool is a second data file, so a defense run in this list has no names to
+     put after its mode until something fetches it. Drawn first and painted again when it
+     lands: careerLoad is cached, so the second pass is the same rows and no round trip. */
+  if(!DDATA&&list.some(r=>r.run_mode==='defense')){
+    loadDefensePool().then(()=>pfDraftsPaint(userId,tab)).catch(()=>{});
+  }
 }
 
 /* ---------- CAREER, BADGES, CIRCLE, ACCOUNT ---------- */
@@ -14255,9 +14261,19 @@ async function loadBoard(){
      second of those, and the line above them says both. */
   const sc=lbScope();
   const scNamed=Object.assign({},sc,{named:true});
+  /* THE DEFENDERS COME WITH THE ROWS. Every name on a board row is resolved out of this
+     browser's own player data, and the defensive pool is a SECOND data file that only
+     starting a defense draft loads. So the Defense board read by anybody who had not played
+     one had nothing to resolve: "6 players" where two names belong, and a run detail sheet
+     saying the players are not in the player data this browser has, about players that are
+     in it as soon as anything asks for them.
+
+     Fetched alongside the rows rather than in front of them, so it costs no round trip the
+     board was not already waiting on, and a failure leaves the board exactly as it was. */
   const [rows,total,onBoard,place]=await Promise.all([
     B.top(scNamed,LB_LIMIT,lbSort,lbDir),B.total(sc),B.total(scNamed),
-    myPlaceValue()===null?null:B.placeIn(scNamed,lbSort,lbDir,myPlaceValue())]);
+    myPlaceValue()===null?null:B.placeIn(scNamed,lbSort,lbDir,myPlaceValue()),
+    sc.mode==='defense'?loadDefensePool().catch(()=>null):null]);
   lbBusy=false;
   lbRows=rows;
   lbMyPlace=place;
@@ -14378,8 +14394,12 @@ $('lb-rows').addEventListener('click',(e)=>{
 /* `back`, when given, is what the sheet's own button should do instead of closing: the
    career panel opens run details from inside the profile sheet, and closing outright there
    would throw away the screen you were reading and make the list a one-way trip. */
+/* Bumped on every open, so a late arriving defensive pool only redraws the sheet it was
+   fetched for. */
+let rdToken=0;
 function runDetail(row,back){
   const mine=!row;
+  const rdMine=++rdToken;
   const picks=mine?runPayload().picks:(row.picks||[]);
   const slots=mine?runPayload().slots:(row.slots||[]);
   /* Sorted into slot order, not pick order. A row on the board was listing whatever order the
@@ -14478,6 +14498,16 @@ function runDetail(row,back){
     $('sheet-in').style.borderTop='';
     if(back) back(); else $('sheet').classList.remove('on');
   };
+  /* AND IF THE SIX ARE DEFENDERS, GO AND GET THEM. The board fetches the defensive pool with
+     its own rows, but this sheet also opens from the career list in the profile, where the
+     runs are of every mode and no pool was fetched for any of them. Drawn first and redrawn
+     when the file lands, rather than held back behind it: the tap has to do something now,
+     and a sheet that fills in a second later is better than one that opens a second late.
+     The token is what stops a redraw landing on top of a different run the reader has since
+     opened. */
+  if(!mine&&missing&&row.run_mode==='defense'&&!DDATA){
+    loadDefensePool().then(()=>{ if(rdToken===rdMine) runDetail(row,back); }).catch(()=>{});
+  }
 }
 
 /* A row is rendered entirely from numbers and from player ids resolved against
