@@ -361,11 +361,18 @@ window.GA_ID='G-L29P5MRWKE';
      it can afford the tracking it wanted all along. */
   .hp-side-sub{position:relative;font-family:var(--fn);font-size:10px;font-weight:600;
     letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-  /* THE LAUNCH STICKER, top right corner of the half it belongs to. Solid rather than
-     translucent: a 16% green wash reads fine on a near-black panel, which is where the chip
-     beside "More ways to play" used to sit, and disappears into a saturated blue button,
-     which is where this one sits. Dark text on solid green is the only version that still
-     reads as a sticker at 8.5px.
+  /* THE CAPTION OVER THE PAIR. The two halves are a choice, and nothing on the page said
+     so: the headline sells the game and the buttons name two words. One quiet line does the
+     job the two stickers were half doing, and it says the actual thing rather than implying
+     it. Dim and small on purpose, because the buttons under it are the loud part. */
+  .hp-pick{margin:0 0 8px;text-align:center;font-size:12.5px;color:var(--dim-2)}
+  .hp-pick[hidden]{display:none}
+  /* THE LAUNCH STICKER, top right corner of the half it belongs to.
+     QUIET, and that is the second version of it. It was solid green with dark text, beside a
+     solid gold CLASSIC DRAFT on the other half: two saturated badges on two saturated
+     buttons, and between them they pulled the eye off the headline they were sitting under.
+     The gold one is gone (the caption above the pair says what it was there to say) and this
+     one is a white wash that belongs to the button it sits on rather than competing with it.
      Absolutely positioned so it cannot push the label off centre: the two halves are a grid
      of equal columns and anything in the flow of one and not the other shifts it.
      THE TOP STRIP IS THE STICKER'S, which is what the button's 24px of top padding buys. The
@@ -373,22 +380,10 @@ window.GA_ID='G-L29P5MRWKE';
      for a badge to hide in: measured at 320, 360 and 390 the label ran straight under it, by
      as much as 14px on DEFENSE. Vertical separation is the only kind that holds at every
      width, because it does not depend on how long the word is. */
-  .hp-tag{position:absolute;top:6px;right:6px;font-family:var(--fn);font-size:8.5px;
-    font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 5px;
-    border-radius:4px;background:#4ade80;color:#06280f;
-    box-shadow:0 1px 6px -1px rgba(0,0,0,.55)}
-  /* CLASSIC DRAFT on the offense half, in the game's own gold rather than a second green.
-     Green is the launch colour and it is doing that job three inches to the right; two green
-     stickers side by side would say the two halves are the same kind of news, when the whole
-     point of the pair is that one of them is the game people already know. Gold is what this
-     game already uses for a thing that has been earned rather than a thing that is new.
-     IT DOES NOT EXPIRE, unlike its neighbour. NEW is an announcement with a shelf life; this
-     is a fact about the mode that will still be true next year, so it carries no date and
-     wants no maintenance.
-     It is the longest thing on that strip, so it gets a size of its own: at the shared 8.5px
-     it ran the full width of the half at 320 and left the badge nothing to sit in. */
-  .hp-tag.hp-og{background:#fbbf24;color:#3b2600;font-size:7.5px;letter-spacing:.05em;
-    padding:2px 4px}
+  .hp-tag{position:absolute;top:6px;right:6px;font-family:var(--fn);font-size:8px;
+    font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:2px 5px;
+    border-radius:4px;background:rgba(255,255,255,.18);color:rgba(255,255,255,.92);
+    border:1px solid rgba(255,255,255,.28)}
   /* The attribute needs its own rule here for the same reason .hp-start[hidden] does. */
   .hp-tag[hidden]{display:none}
   /* Loading, while the defensive pool is fetched. The pool is a second data file and on a
@@ -648,7 +643,6 @@ window.GA_ID='G-L29P5MRWKE';
   @media (max-height:800px){
     .field.hero-field{aspect-ratio:auto;height:116px}
     .hero{margin-bottom:10px}
-    .hnote{margin-top:7px;font-size:11.5px}
     .htitle{margin-bottom:11px}
     .legal{margin-top:28px}
   }
@@ -755,8 +749,6 @@ window.GA_ID='G-L29P5MRWKE';
      push the send button off the screen. */
   textarea.fld{min-height:104px;resize:vertical;line-height:1.45;font-size:14.5px}
   .fbnote{margin:9px 0 0;font-size:11.5px;line-height:1.5;color:var(--dim-2)}
-  .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2);
-    transition:opacity .3s ease}
   .hero-reels{margin-top:0}
   /* Taller than it was. The lowest chip carries a name and a team line UNDER its disc, and at
      1/0.52 that ran into the field's own overflow:hidden and clipped the running back by 3px
@@ -4275,7 +4267,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- Markings are written in by fieldMarkings() at boot, the same call the draft field
            uses, so the two fields can never drift apart. -->
       <div class="field hero-field" id="h-field"></div>
-      <p class="hnote" id="h-note">Six spins, six spots, one shot at all of them.</p>
     </div>
 
     <div class="htitle">
@@ -4292,10 +4283,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          than one being built at runtime so the first-run guide, the landscape ordering and
          the focus ring all have something real to attach to before any script runs. -->
     <button class="btn hp-start" id="b-start">Start a run</button>
+    <!-- Shown and hidden with the split, not with the page: it is a caption for the pair of
+         buttons and says nothing about the single Start a run. -->
+    <p class="hp-pick" id="hp-pick" hidden>Choose what side of the ball to draft</p>
     <div class="hp-split" id="hp-split" hidden>
       <button class="hp-side hp-off" id="b-start-off">
-        <!-- No date on this one: it is not an announcement, see .hp-tag.hp-og. -->
-        <span class="hp-tag hp-og">Classic draft</span>
         <span class="hp-side-name">Offense</span>
         <span class="hp-side-sub">QB RB WR TE FLEX</span>
       </button>
@@ -6272,6 +6264,10 @@ function paintHomeStart(){
   const on=canPlayDefense();
   split.hidden=!on;
   one.hidden=on;
+  /* The caption belongs to the pair, so it comes and goes with the pair. Over a lone Start a
+     run it would be telling somebody to choose between one thing. */
+  const pick=$('hp-pick');
+  if(pick) pick.hidden=!on;
   /* A LOADING STATE THAT OUTLIVED ITS OWN SCREEN. beginDefenseDraft disables the Defense
      half and spins it while the defensive pool is fetched, and on SUCCESS it left it that
      way: the draft screen replaced the front page a frame later so nobody saw it, and the

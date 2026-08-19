@@ -667,8 +667,19 @@ window.__DEF={
         h:Math.round(B.height),
       };
     };
-    return {og:read('b-start-off','.hp-og'), nw:read('b-start-def','#hp-def-new'),
+    const off=document.getElementById('b-start-off');
+    const pick=document.getElementById('hp-pick');
+    const P=pick?pick.getBoundingClientRect():null;
+    const S=document.getElementById('hp-split').getBoundingClientRect();
+    return {nw:read('b-start-def','#hp-def-new'),
       windowOpen:defenseNewLive(), until:DEFENSE_NEW_UNTIL,
+      /* Nothing on the offense half any more: the caption above the pair says what the gold
+         badge was saying, and two saturated badges on two saturated buttons were pulling the
+         eye off the headline they sat under. */
+      offTags:off?off.querySelectorAll('.hp-tag').length:-1,
+      /* The caption, and that it is actually above the buttons rather than merely present. */
+      pick:pick?{text:pick.textContent.trim(),
+        shown:pick.offsetParent!==null&&P.height>0,above:P.bottom<=S.top+1}:null,
       /* No pips any more: they repeated the line below them and half of them could not be
          seen against their own button. */
       pips:document.querySelectorAll('.hp-pips').length};
@@ -970,33 +981,37 @@ boot();`;
       await p.waitForTimeout(150);
     }
 
-    /* THE STICKERS, at every width a phone actually is. NEW rides the launch window and
-       takes itself away, so it is asserted against the date the page carries rather than
-       against a hardcoded "on"; OG carries no date because it is a fact about the mode
-       rather than an announcement, so it is simply always up.
-       The widths are the point of this block. Both labels cleared their badge at 430 and
-       ran straight under it at 390, 360 and 320, by as much as 14px, and every one of those
-       is a phone somebody is holding. */
+    /* THE STICKER AND THE CAPTION, at every width a phone actually is. NEW rides the launch
+       window and takes itself away, so it is asserted against the date the page carries
+       rather than against a hardcoded "on".
+       The widths are the point of this block. The label cleared its badge at 430 and ran
+       straight under it at 390, 360 and 320, by as much as 14px, and every one of those is a
+       phone somebody is holding. */
     for (const w of [320, 360, 390, 430]) {
       await p.setViewportSize({ width: w, height: 900 });
       await p.evaluate(() => window.__DEF.intro());
       await p.waitForTimeout(180);
       const st = await p.evaluate(() => window.__DEF.stickers());
-      ok('@' + w + ' the OG and New stickers clear their own labels',
-        !st.og.hitsName && !st.og.hitsSub && !st.nw.hitsName && !st.nw.hitsSub, st);
+      ok('@' + w + ' the New sticker clears the label under it',
+        !st.nw.hitsName && !st.nw.hitsSub, st.nw);
       ok('@' + w + ' both halves keep their label centred, inside the button, and thumb-sized',
-        st.og.labelFits && st.nw.labelFits && Math.abs(st.og.off) <= 1
-        && Math.abs(st.nw.off) <= 1 && st.og.h >= 44 && st.nw.h >= 44, st);
+        st.nw.labelFits && Math.abs(st.nw.off) <= 1 && st.nw.h >= 44, st.nw);
+      ok('@' + w + ' the caption sits above the pair and is readable',
+        !!st.pick && st.pick.shown && st.pick.above, st.pick);
     }
     await p.setViewportSize({ width: 390, height: 844 });
     await p.evaluate(() => window.__DEF.intro());
     await p.waitForTimeout(200);
     const sticker = await p.evaluate(() => window.__DEF.stickers());
-    /* The word is asserted, not just the presence of a badge: it said OG first, which reads
-       as a joke to anybody who already knew the game and as nothing at all to anybody who
-       did not. Classic draft says which of the two buttons is the game that was here. */
-    ok('Classic draft is on the offense half and does not expire',
-      sticker.og.text === 'Classic draft' && sticker.og.shown && sticker.og.absolute, sticker.og);
+    /* NOTHING ON THE OFFENSE HALF. It wore OG first, then Classic draft, and the second one
+       was still a saturated gold badge next to a saturated green one on the only two
+       coloured objects on the page. The line above the pair says what it was for, in words,
+       without competing with the headline. */
+    ok('the offense half wears no badge at all', sticker.offTags === 0,
+      { tagsOnOffense: sticker.offTags });
+    ok('and the pair is captioned instead',
+      !!sticker.pick && /side of the ball/i.test(sticker.pick.text) && sticker.pick.above,
+      sticker.pick);
     ok('New is on the defense half, and only while its window is open',
       sticker.nw.text === 'New' && sticker.nw.absolute
       && sticker.nw.shown === (shipped && sticker.windowOpen), sticker.nw);
