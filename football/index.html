@@ -5234,7 +5234,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=57"></script>
+<script src="engine.js?v=58"></script>
 <script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
@@ -8284,11 +8284,15 @@ function gameCredits(r,script){
   const hit=creditCache.get(r); if(hit) return hit;
   const seedStr=gameSeedStr(r);
   const rng=E.createSeededRNG(E.hashSeed(seedStr+'|credits'));
+  /* BOTH SIDES GET THE SCRIPT NOW. The offense needs it to know which touchdowns are its
+     own; the defense needs it because a return touchdown is not new points, it is one of the
+     touchdowns already on the board being handed to the man who scored it. Built here when
+     the caller has not built one, which is the box score's case: it opens off a tap long
+     after the broadcast has gone, and the same seed gives it the same game. */
+  const sc=script||E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
   const out=isDefRun()
-    ? {mode:'defense',events:E.takeawayScript(r.lines,rng)}
-    : {mode:'offense',events:E.touchdownCredits(
-        script||E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr))),
-        r.lines,rng)};
+    ? {mode:'defense',events:E.takeawayScript(r.lines,rng,{script:sc})}
+    : {mode:'offense',events:E.touchdownCredits(sc,r.lines,rng)};
   creditCache.set(r,out);
   return out;
 }
@@ -8301,7 +8305,7 @@ function creditPanel(r){
   const head=c.mode==='defense'?'Takeaways':'Your touchdowns';
   return '<div class="bx-plays"><div class="bx-ph">'+head+'</div>'+
     c.events.map(e=>'<div class="bx-play"><span class="bpk'+(c.mode==='defense'?' tk':'')+'">'+
-      (c.mode==='defense'?(e.kind==='INTERCEPTION'?'INT':'FUM'):'TD')+'</span>'+
+      (c.mode==='defense'?(e.td?'TD':(e.kind==='INTERCEPTION'?'INT':'FUM')):'TD')+'</span>'+
       '<span class="bpb">'+esc(e.blurb)+'</span>'+
       (c.mode==='defense'?'<span class="bpc">Q'+e.q+' '+esc(e.clock)+'</span>':'')+
       '</div>').join('')+'</div>';
@@ -10450,8 +10454,15 @@ function playPlayoffGame(r,after){
   if(credits&&credits.mode==='offense') credits.events.forEach(c=>creditAt.set(c.at,c));
   /* The defense draft's takeaways are not scores, so they are not on the timeline at all. They ride
      the clock instead: each one flashes up as the run segment sweeps past its time, which
-     costs the broadcast nothing because that animation is already running. */
-  const takeaways=credits&&credits.mode==='defense'?credits.events.slice():[];
+     costs the broadcast nothing because that animation is already running.
+     EXCEPT THE ONES THAT WENT BACK FOR SIX. A pick six is one play: it belongs on the
+     timeline as the touchdown it is, with the score moving under it, rather than as a flash
+     and then an unexplained seven points a moment later. So those leave this list and join
+     the credits, and everything downstream treats them as the score they are. */
+  const takeaways=credits&&credits.mode==='defense'
+    ? credits.events.filter(t=>{ if(!t.td||t.at==null) return true;
+        creditAt.set(t.at,t); return false; })
+    : [];
   let tkNext=0;
   /* HOW LONG EVERY KICK WAS, both teams. "You field goal" was the one line on this screen
      that said nothing at all about what happened: three points is three points, and the
@@ -10598,9 +10609,11 @@ function playPlayoffGame(r,after){
          screen is actually reporting, and the score is on the bug above it either way. */
       const c=creditAt.get(seg.i), fg=fgYards.get(seg.i);
       /* The distance goes in the headline where the kind was, because "48-YARD FIELD GOAL" is
-         the call a broadcast actually makes and the team name below it has not moved. */
-      $('po-cap').innerHTML='<div class="call '+e.team+(fg?' fg':'')+'"><b>'+
-        (fg?fg+'-YARD FIELD GOAL':e.kind)+'</b>'+
+         the call a broadcast actually makes and the team name below it has not moved. And a
+         defensive touchdown says which kind it was: PICK SIX is the call, TOUCHDOWN is what
+         every other score on the board already says. */
+      $('po-cap').innerHTML='<div class="call '+e.team+(fg?' fg':'')+(c&&c.td?' tk':'')+'"><b>'+
+        (fg?fg+'-YARD FIELD GOAL':(c&&c.head?c.head:e.kind))+'</b>'+
         '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e,seg.i);

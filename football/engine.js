@@ -1150,14 +1150,65 @@ const TAKEAWAY_BASE = 1.3;
  *
  * So a defensive lineman mostly knocks the ball loose and a defensive back mostly picks it
  * off no matter how thin his line is, and the columns move him off that only when he
- * actually has something in them: a J.J. Watt (10.1 rush, 1.6 cover) lands near 17%
- * interceptions, an Ed Reed near 90%.
+ * actually has something in them: a J.J. Watt (10.1 rush, 1.6 cover) lands near 5%
+ * interceptions, an Ed Reed near 94%.
+ *
+ * THE PRIORS ARE FIRMER THAN THEY WERE, at 0.78/0.50/0.22 measured over 400 seasons as
+ * 80/49/21. That was the right shape and too soft at both ends: one takeaway in five by a
+ * defensive tackle came out an interception, which is several times what a real one manages,
+ * and one in five by a cornerback came out a strip. A lineman's takeaways are almost all
+ * forced fumbles and a defensive back's are almost all picks; the linebackers are the only
+ * group that genuinely splits down the middle, and they are left alone.
  */
-const POS_INTERCEPTION_SHARE = { DB: 0.78, LB: 0.50, DL: 0.22 };
+const POS_INTERCEPTION_SHARE = { DB: 0.88, LB: 0.50, DL: 0.10 };
 
-function takeawayBlurb(man, kind, spot, rng) {
+/*
+ * HOW FAR IT COMES BACK.
+ *
+ * Most takeaways die roughly where they are made: an interception is caught standing still
+ * as often as not, and a loose ball is fallen on rather than picked up. So the distribution
+ * is front-loaded and has a tail, rather than being a flat draw that would give every
+ * takeaway in the game a twenty yard return.
+ */
+function takeawayReturnYards(rng) {
+  const r = rng();
+  if (r < 0.46) return Math.floor(rng() * 5);
+  if (r < 0.86) return 5 + Math.floor(rng() * 15);
+  return 20 + Math.floor(rng() * 26);
+}
+
+/*
+ * HOW OFTEN IT GOES ALL THE WAY BACK. A pick six is the loudest thing a defense can do and
+ * the reason to watch one play, so it is deliberately not rare enough to be a curiosity; a
+ * scoop and score is rarer than a pick six in the real game and is rarer here too. These are
+ * per takeaway, and a takeaway only becomes a touchdown if the game actually scored one for
+ * you at about that moment, so the rate that reaches the screen is lower than both.
+ */
+const TAKEAWAY_TD = { INTERCEPTION: 0.30, FUMBLE: 0.17 };
+/* How far either side of a takeaway the game will look for a touchdown to pin it on.
+   The takeaway's clock is then moved ONTO that touchdown, so this is not a claim about when
+   the return happened: it is a limit on how far the game is willing to move a takeaway from
+   where the stream put it. Five minutes keeps it inside its own stretch of the game and is
+   wide enough that a defense forcing three or four turnovers in a scoring game actually
+   cashes one, which at two minutes it did not: one return touchdown every thirty nine games
+   is not an event, it is a rumour. */
+const TAKEAWAY_TD_WINDOW = 300;
+
+function takeawayBlurb(man, kind, spot, ret, rng) {
   const who = man.name;
+  /* A RETURN IS ITS OWN SENTENCE, and the yard line is not repeated in it. The takeaway
+     copy says where the ball was won ("at the 22"); a return says how far it came back.
+     Saying both would need the two numbers to agree about which end of the field they are
+     measured from, and they would be checked by the one reader who cares. */
   if (kind === 'INTERCEPTION') {
+    if (ret >= 10) {
+      const runs = [
+        who + ' picks it off and brings it back ' + ret,
+        who + ' steps in front of it and returns it ' + ret,
+        who + ' reads it all the way, ' + ret + ' yards the other way',
+      ];
+      return runs[Math.floor(rng() * runs.length)];
+    }
     const forms = [
       who + ' jumps the route and picks it off at the ' + spot,
       who + ' reads it all the way, intercepted at the ' + spot,
@@ -1169,6 +1220,16 @@ function takeawayBlurb(man, kind, spot, rng) {
   /* A strip sack is a pass rusher's play and reads as a mistake next to a cornerback's
      name, so the front seven get the quarterback and the secondary get the ball carrier. */
   const pos = String(man.pos || '').toUpperCase();
+  if (ret >= 10) {
+    const runs = pos === 'DB' ? [
+      who + ' rips it free and takes it back ' + ret,
+      who + ' knocks it loose, scooped and returned ' + ret,
+    ] : [
+      who + ' strips it and takes off, ' + ret + ' yards back',
+      who + ' punches it out, scooped and returned ' + ret,
+    ];
+    return runs[Math.floor(rng() * runs.length)];
+  }
   const forms = pos === 'DB' ? [
     who + ' punches it out of the receiver, yours at the ' + spot,
     who + ' rips it free after the catch, recovered at the ' + spot,
@@ -1177,6 +1238,21 @@ function takeawayBlurb(man, kind, spot, rng) {
     who + ' strip-sacks the quarterback and you fall on it at the ' + spot,
     who + ' punches the ball out, yours at the ' + spot,
     who + ' blows up the handoff, loose ball recovered at the ' + spot,
+  ];
+  return forms[Math.floor(rng() * forms.length)];
+}
+
+/* The same play, taken to the house. */
+function takeawayTdBlurb(man, kind, ret, rng) {
+  const who = man.name;
+  const forms = kind === 'INTERCEPTION' ? [
+    who + ' jumps the route and takes it ' + ret + ' yards the other way for six',
+    who + ' picks it clean and nobody catches him, ' + ret + ' yards',
+    who + ' steps in front of it and goes ' + ret + ' yards untouched',
+  ] : [
+    who + ' scoops it and goes ' + ret + ' yards with it',
+    who + ' rips it loose, picks it up and takes it ' + ret + ' yards to the house',
+    who + ' comes up with the loose ball and runs ' + ret + ' yards for the score',
   ];
   return forms[Math.floor(rng() * forms.length)];
 }
@@ -1227,17 +1303,68 @@ function takeawayScript(men, rng, opts = {}) {
     const pInt = (cov + rsh) >= 0.4 ? base * 0.45 + (cov / (cov + rsh)) * 0.55 : base;
     const kind = rng() < pInt ? 'INTERCEPTION' : 'FUMBLE';
     const spot = 5 + Math.floor(rng() * 45);
+    const ret = takeawayReturnYards(rng);
     const q = Math.floor(t0 / QSEC);
     const sec = Math.max(1, Math.min(QSEC - 1, QSEC - (t0 - q * QSEC)));
     out.push({
       q: q + 1, sec,
       clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
       team: 'you', kind, takeaway: true,
-      by: man.name, slot: man.slot || man.pos, spot,
-      short: lastName(man.name) + (kind === 'INTERCEPTION' ? ' interception' : ' forced fumble'),
-      blurb: takeawayBlurb(man, kind, spot, rng),
+      by: man.name, slot: man.slot || man.pos, spot, ret, man,
+      short: lastName(man.name)
+        + (ret >= 10 ? ' ' + ret + '-yard ' : ' ')
+        + (kind === 'INTERCEPTION' ? 'interception' : 'forced fumble')
+        + (ret >= 10 ? ' return' : ''),
+      blurb: takeawayBlurb(man, kind, spot, ret, rng),
     });
   }
+
+  /*
+   * AND SOME OF THEM GO BACK FOR SIX.
+   *
+   * A defensive touchdown cannot be invented here: the score is already settled, and the
+   * broadcast draws it from a scoring script built out of that score. So a return touchdown
+   * is not an extra seven points, it is an EXPLANATION of seven that were already on the
+   * board. In the defense draft your offense is the league's and every touchdown of yours
+   * says nothing but "You"; this takes one of them and gives it to the man who actually
+   * produced it, which is the only way a drafted defender can appear on the scoreboard.
+   *
+   * The takeaway's clock moves onto the touchdown's, because a pick six is one play and not
+   * two, and it stops being a separate flash on screen: the score call carries it.
+   *
+   * Without a script (the box score builds credits with nothing to pin them to) none of this
+   * runs and every takeaway stays a takeaway, which is why `td` is checked and never assumed.
+   */
+  const script = Array.isArray(opts.script) ? opts.script : null;
+  if (script && script.length) {
+    const at = (q, sec) => (q - 1) * QSEC + (QSEC - sec);
+    const claimed = new Set();
+    for (const t of out) {
+      if (rng() >= (TAKEAWAY_TD[t.kind] || 0)) continue;
+      const when = at(t.q, t.sec);
+      let best = -1, bestGap = Infinity;
+      for (let i = 0; i < script.length; i++) {
+        const e = script[i];
+        if (e.team !== 'you' || e.kind !== 'TOUCHDOWN' || claimed.has(i)) continue;
+        const gap = Math.abs(at(e.q, e.sec) - when);
+        if (gap <= TAKEAWAY_TD_WINDOW && gap < bestGap) { best = i; bestGap = gap; }
+      }
+      if (best < 0) continue;
+      claimed.add(best);
+      const e = script[best];
+      t.td = true; t.at = best;
+      t.q = e.q; t.sec = e.sec; t.clock = e.clock;
+      t.ret = 20 + Math.floor(rng() * 56);
+      t.head = t.kind === 'INTERCEPTION' ? 'PICK SIX' : 'FUMBLE RETURN';
+      t.short = lastName(t.by) + ' ' + t.ret + '-yard '
+        + (t.kind === 'INTERCEPTION' ? 'pick six' : 'fumble return');
+      t.blurb = takeawayTdBlurb(t.man, t.kind, t.ret, rng);
+    }
+    /* Moving a clock can move a takeaway past its neighbour, and the broadcast walks this
+       list in order against a running clock. */
+    out.sort((a, b) => at(a.q, a.sec) - at(b.q, b.sec));
+  }
+  for (const t of out) delete t.man;
   return out;
 }
 

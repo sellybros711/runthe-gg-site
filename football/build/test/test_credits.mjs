@@ -253,6 +253,86 @@ console.log('\n=== takeaways fit the man who made them ===');
     { rushEnd: count('Rush End'), noseMan: count('Nose Man') });
 }
 
+/* ── the return ──────────────────────────────────────────────────────────── */
+console.log('\n=== and what happens after the ball changes hands ===');
+{
+  const men = [
+    { name: 'Rush End', pos: 'DL', slot: 'DL', pts: 18, avg: 18, rush: 10.1, cover: 1.6, tackle: 7.3 },
+    { name: 'Mike Backer', pos: 'LB', slot: 'LB', pts: 14, avg: 14, rush: 1.2, cover: 2.0, tackle: 9.0 },
+    { name: 'Cover Safety', pos: 'DB', slot: 'DB', pts: 13, avg: 13, rush: 0.2, cover: 7.4, tackle: 5.1 },
+  ];
+  /* Real scripts, because a return touchdown is not invented: it is one of the touchdowns
+     the game already scored, handed to the man who produced it. A script with none of yours
+     in it must produce no return touchdowns at all, which is the second half of this. */
+  let takeaways = 0, tds = 0, games = 6000, longRet = 0, retSum = 0, bad = 0;
+  let sameClock = 0, doubleClaimed = 0, offScript = 0, noRet = 0;
+  const kinds = new Map(), tdKinds = new Map();
+  for (let g = 0; g < games; g++) {
+    const seed = 'ret' + g;
+    const script = E.scoringScript(24, 20, E.createSeededRNG(E.hashSeed(seed)));
+    const evs = E.takeawayScript(men, E.createSeededRNG(E.hashSeed(seed + '|c')), { script });
+    const claimed = new Set();
+    for (const t of evs) {
+      takeaways++;
+      kinds.set(t.kind, (kinds.get(t.kind) || 0) + 1);
+      if (!(t.ret >= 0 && t.ret <= 80)) bad++;
+      if (t.ret == null) noRet++;
+      retSum += t.ret;
+      if (t.ret >= 10) longRet++;
+      if (!t.td) continue;
+      tds++;
+      tdKinds.set(t.kind, (tdKinds.get(t.kind) || 0) + 1);
+      const e = script[t.at];
+      /* THE TOUCHDOWN IT CLAIMS HAS TO BE ONE OF YOURS, and the takeaway has to have moved
+         onto its clock, or the screen shows a pick six at 9:40 and the seven points at
+         7:12. */
+      if (!e || e.team !== 'you' || e.kind !== 'TOUCHDOWN') offScript++;
+      else if (e.q !== t.q || e.sec !== t.sec || e.clock !== t.clock) sameClock++;
+      if (claimed.has(t.at)) doubleClaimed++;
+      claimed.add(t.at);
+    }
+  }
+  ok('every takeaway is returned some distance, none of them absurd', bad === 0 && noRet === 0,
+    { outOfRange: bad, missing: noRet });
+  ok('most die where they were made, and some do not',
+    longRet / takeaways > 0.25 && longRet / takeaways < 0.65,
+    { overTenYards: (longRet / takeaways * 100).toFixed(1) + '%',
+      average: (retSum / takeaways).toFixed(1) });
+  ok('a return touchdown always lands on one of YOUR touchdowns', offScript === 0, { offScript });
+  ok('and the takeaway moves onto its clock, because it is one play', sameClock === 0, { sameClock });
+  ok('and no two of them claim the same score', doubleClaimed === 0, { doubleClaimed });
+  /* Often enough to be an event, rare enough to stay one. A real defense scores about once
+     every eight or nine games. */
+  const perGame = tds / games;
+  ok('they happen about as often as a real defense scores',
+    perGame > 0.06 && perGame < 0.2,
+    { oneEvery: (1 / perGame).toFixed(1) + ' games', share: (tds / takeaways * 100).toFixed(1) + '%' });
+  /* A pick six is the commoner of the two, as it is in the real game. */
+  const pick = tdKinds.get('INTERCEPTION') || 0, scoop = tdKinds.get('FUMBLE') || 0;
+  ok('a pick six outnumbers a scoop and score', pick > scoop && scoop > 0, { pick, scoop });
+
+  /* AND WITHOUT A SCRIPT, NOTHING IS A TOUCHDOWN. The box score builds credits with nothing
+     to pin them to, and a takeaway that called itself a touchdown there would be seven
+     points that appear on no scoreboard. */
+  let loose = 0, looseN = 0;
+  for (let g = 0; g < 2000; g++) {
+    for (const t of E.takeawayScript(men, E.createSeededRNG(E.hashSeed('bare' + g)))) {
+      looseN++; if (t.td) loose++;
+    }
+  }
+  ok('with no game to pin it on, no takeaway claims a touchdown',
+    loose === 0 && looseN > 0, { claimed: loose, of: looseN });
+  /* A game your side never scored in cannot produce one either. */
+  const shutout = E.scoringScript(0, 21, E.createSeededRNG(E.hashSeed('shutout')));
+  let inShutout = 0;
+  for (let g = 0; g < 2000; g++) {
+    for (const t of E.takeawayScript(men, E.createSeededRNG(E.hashSeed('sh' + g)), { script: shutout })) {
+      if (t.td) inShutout++;
+    }
+  }
+  ok('and neither can a game you were shut out of', inShutout === 0, { inShutout });
+}
+
 /* ── both sides of a Challenge Bowl ──────────────────────────────────────── */
 console.log('\n=== the Bowl names both teams ===');
 {
@@ -453,7 +533,10 @@ console.log('\n=== the words themselves ===');
     for (const c of E.touchdownCredits(script, lines, E.createSeededRNG(E.hashSeed('v' + g)))) {
       blurbs.push(c.blurb); shorts.push(c.short); tds.push(c);
     }
-    for (const t of E.takeawayScript(men, E.createSeededRNG(E.hashSeed('u' + g)))) {
+    /* WITH the script, so the return and return-touchdown forms are in this sample too.
+       Without it they never appear, and copy that never reaches a checker is copy that
+       breaks the rule the first time somebody reads it out loud. */
+    for (const t of E.takeawayScript(men, E.createSeededRNG(E.hashSeed('u' + g)), { script })) {
       blurbs.push(t.blurb); shorts.push(t.short);
     }
   }
