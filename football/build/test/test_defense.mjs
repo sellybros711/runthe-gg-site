@@ -534,6 +534,39 @@ window.__DEF={
      take the page into the draft under the sticker assertions. */
   wallReset(){ wantOneTeam=false; wantDefense=false; },
   board(){ show('s-board'); paintComp(); },
+  /* THE SHAPE OF THE FRONT PAGE, as boxes. Wide, it is two columns with the animation in one
+     and the choice in the other; on a phone it is one column, stacked. */
+  layout(){
+    const R=(sel)=>{const e=document.querySelector(sel); if(!e) return null;
+      const r=e.getBoundingClientRect();
+      return {l:Math.round(r.left),t:Math.round(r.top),r:Math.round(r.right),
+        b:Math.round(r.bottom),w:Math.round(r.width),h:Math.round(r.height)};};
+    return {hero:R('#s-intro .hero'), split:R('#hp-split'), title:R('#s-intro .htitle'),
+      teams:R('#b-teams'), util:R('#s-intro .hp-util'), wrap:R('.wrap'),
+      sideBySide:(()=>{const a=R('#s-intro .hero'),b=R('#hp-split');
+        return !!a&&!!b&&a.r<=b.l+1&&b.t<a.b;})(),
+      overflow:document.documentElement.scrollWidth-window.innerWidth,
+      fold:window.innerHeight};
+  },
+  /* The first run guide, forced up so its placement can be measured. It is normally suppressed
+     in this suite by the seen flag, which is also why nothing here ever noticed that its arrow
+     is pinned to the middle of the VIEWPORT. */
+  guideProbe(){
+    try{ localStorage.removeItem('ps_seen_guide'); }catch(e){}
+    firstRunGuide(); frgPlace();
+    const ar=document.querySelector('.frg-arrow').getBoundingClientRect();
+    const pn=document.querySelector('.frg-panel');
+    const pr=pn.getBoundingClientRect();
+    const tg=frgTarget().getBoundingClientRect();
+    const out={up:frgUp(), arrowCx:Math.round(ar.left+ar.width/2),
+      onTarget:(ar.left+ar.width/2)>=tg.left&&(ar.left+ar.width/2)<=tg.right,
+      pointsUp:document.querySelector('.frg-arrow').classList.contains('up'),
+      panelInView:pr.top>=-1&&pr.bottom<=window.innerHeight+1&&pr.left>=-1
+        &&pr.right<=window.innerWidth+1,
+      hiddenCopy:pn.scrollHeight-pn.clientHeight};
+    frgClose();
+    return out;
+  },
   /* Has the defensive pool been fetched by this page yet. The whole of the bug below is that
      nothing on the board's path ever asked for it. */
   pool:()=>!!DDATA,
@@ -1003,6 +1036,54 @@ boot();`;
     await p.evaluate(() => window.__DEF.intro());
     await p.waitForTimeout(200);
     const sticker = await p.evaluate(() => window.__DEF.stickers());
+    /* ── AND THE SAME PAGE ON A DESKTOP ───────────────────────────────────────
+       It shipped at a 600px column, which on a 1440 monitor is a phone screenshot pasted
+       into the middle of a desktop with 420px of empty dark either side. Wide, the headline
+       runs full width and the screen splits: the reels and field in one column, the choice
+       in the other, which is the arrangement the draft, the trade market and the inherited
+       roster already use.
+
+       Measured rather than eyeballed, because the failure here is silent: a stray rule and
+       the two columns become one long one again, and everything still works. */
+    for (const [w, h] of [[1440, 900], [1280, 800], [960, 700]]) {
+      await p.setViewportSize({ width: w, height: h });
+      await p.evaluate(() => window.__DEF.intro());
+      await p.waitForTimeout(220);
+      const L = await p.evaluate(() => window.__DEF.layout());
+      ok('@' + w + 'x' + h + ' the animation and the choice are side by side',
+        L.sideBySide, { hero: L.hero, split: L.split });
+      ok('@' + w + 'x' + h + ' the headline runs across both columns',
+        L.title.w >= L.wrap.w - 30, { title: L.title.w, wrap: L.wrap.w });
+      ok('@' + w + 'x' + h + ' the page still does not scroll sideways', L.overflow <= 0,
+        { overflow: L.overflow });
+      /* THE WHOLE CHOICE ABOVE THE FOLD, which is the point of moving it out of the column:
+         on a laptop the buttons used to sit under 400px of animation. */
+      ok('@' + w + 'x' + h + ' every control is on screen without scrolling',
+        L.split.b <= L.fold && L.teams.b <= L.fold && L.util.b <= L.fold,
+        { split: L.split.b, teams: L.teams.b, util: L.util.b, fold: L.fold });
+      /* And drawn for a mouse rather than a thumb. 81px is the phone height. */
+      ok('@' + w + 'x' + h + ' the buttons are bigger than the phone ones',
+        L.split.h >= 100 && L.teams.h >= 60, { split: L.split.h, teams: L.teams.h });
+      /* THE GUIDE FOLLOWS THE BUTTON. Its arrow, its label and its panel were all pinned to
+         left:50% of the viewport, which is the middle of the button on a phone and the middle
+         of the FIELD here, so a first-time visitor on a laptop got an arrow pointing at the
+         animation. And the panel goes to the roomier side and points back up at the pair. */
+      const g = await p.evaluate(() => window.__DEF.guideProbe());
+      ok('@' + w + 'x' + h + ' the first run arrow lands on the buttons, not the page centre',
+        g.up && g.onTarget, g);
+      ok('@' + w + 'x' + h + ' and its panel is wholly on screen', g.panelInView, g);
+    }
+    /* AND THE PHONE IS UNTOUCHED: one column, stacked, animation first. Every rule above is
+       inside a min-width query, and this is what says so. */
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(220);
+    const phone = await p.evaluate(() => window.__DEF.layout());
+    ok('on a phone it is still one column, animation above the choice',
+      !phone.sideBySide && phone.hero.b <= phone.split.t + 1, { hero: phone.hero, split: phone.split });
+    ok('and the phone buttons are the size they always were',
+      phone.split.h >= 70 && phone.split.h <= 95, { h: phone.split.h });
+
     /* NOTHING ON THE OFFENSE HALF. It wore OG first, then Classic draft, and the second one
        was still a saturated gold badge next to a saturated green one on the only two
        coloured objects on the page. The line above the pair says what it was for, in words,

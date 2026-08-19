@@ -1242,6 +1242,10 @@ window.GA_ID='G-L29P5MRWKE';
   .frg-panel{position:absolute;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));
     background:linear-gradient(180deg,#16233a,#101a2c);border:1px solid var(--line-2);
     border-radius:14px;padding:14px 15px 12px;box-shadow:0 26px 60px -22px #000}
+  /* Wider where there is width for it, which is the same reason it is narrow on a phone: the
+     copy is a fixed six sentences, so every pixel of width is a line of height it does not
+     have to scroll. */
+  @media (min-width:920px) and (min-height:560px){ .frg-panel{width:min(480px,42vw)} }
   .frg-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
     color:#f87171}
   .frg-panel h2{font-family:var(--fd);font-size:22px;line-height:1.04;margin:6px 0 8px;
@@ -1264,6 +1268,12 @@ window.GA_ID='G-L29P5MRWKE';
     color:#ef4444;animation:frgNudge 1.15s ease-in-out infinite;
     filter:drop-shadow(0 7px 16px rgba(239,68,68,.75))}
   .frg-arrow svg{width:58px;height:66px;display:block}
+  /* POINTING UP IS A CLASS ON THE SVG, not a transform on the wrapper. The wrapper carries the
+     nudge animation, and an animated transform replaces an inline one outright: the rotate for
+     the below-the-button case was being thrown away every frame, so the panel sat under the
+     button with an arrow still pointing down at the panel. It never showed on a phone because
+     the guide scrolls the button to the bottom of the screen and lands above it every time. */
+  .frg-arrow.up svg{transform:rotate(180deg)}
   @keyframes frgNudge{0%,100%{transform:translateX(-50%) translateY(-5px)}
     50%{transform:translateX(-50%) translateY(4px)}}
   .frg-hint{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;
@@ -2978,6 +2988,70 @@ window.GA_ID='G-L29P5MRWKE';
     .wrap:has(#s-reveal.on){max-width:min(1040px,calc(100vw - 400px))}
     .wrap:has(#s-cut.on),
     .wrap:has(#s-fa.on){max-width:min(860px,calc(100vw - 400px))}
+  }
+  /* ================= THE FRONT PAGE ON A WIDE SCREEN =================
+     It shipped at the default 600px wrap, which on a 1440 monitor is a phone screenshot
+     pasted into the middle of a desktop: a 600px column with 420px of empty dark either
+     side, and every control on it drawn at thumb size for a hand that is holding a mouse.
+
+     THE SHAPE. The headline stays full width and centred, because it is the game's name and
+     it is the one thing that should be the same object at every size. Under it the screen
+     splits: the reels and the field on the left, which is the half that SHOWS what the game
+     is, and the choice on the right, which is the half you act on. That is the same
+     arrangement the draft, the trade market and the inherited roster already use on a wide
+     screen, so this is the fourth screen to say picture left, controls right rather than a
+     new idea invented for the landing page.
+
+     THE THRESHOLDS ARE THE ONES THIS FILE ALREADY USES: 920 to go wide, and 1200 where the
+     ad rails appear and take 200 a side. Unlike the draft, this screen does NOT fall back to
+     one column between 1200 and 1259: the draft needs 420 a side for a field plus a real
+     options grid, and this needs a field plus four buttons, which is comfortable in the 800
+     the rails leave behind.
+
+     AND MIN-HEIGHT, which is not decoration. A short window already has its own layout at
+     max-height:500px that reorders this screen with flexbox to put the buttons above the
+     animation, and that block sits earlier in this sheet: an unqualified display:grid here
+     would win on source order and quietly undo it on any window under 500 tall and over 920
+     wide. 560 leaves a margin over that. */
+  @media (min-width:920px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:1040px}
+    /* .on, for the reason #s-reveal.on carries it: an id beats .screen{display:none}. */
+    #s-intro.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:34px;align-items:start}
+    /* THE CATCH-ALL FIRST, so anything that arrives on this screen later is full width by
+       default rather than landing in whichever column happens to be free. Only the four
+       things named below opt into a column. */
+    #s-intro>*{grid-column:1/-1}
+    #s-intro>.hero{grid-column:1;grid-row:2/span 5;margin-bottom:0}
+    #s-intro>#b-start,#s-intro>#hp-pick,#s-intro>#hp-split,
+    #s-intro>#b-teams,#s-intro>.hrow.hp-util{grid-column:2}
+    #s-intro>.htitle{margin-bottom:24px}
+    /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is 500px, and a 44px-tall button
+       centred in 500px of nothing is the tell that a page was designed once and stretched.
+       Everything here is a size, not a new element: the same buttons, drawn for a screen you
+       look at from three feet away instead of one. */
+    /* THE FIELD GETS ITS SHAPE BACK. A window under 800 tall flattens it to a 116px strip,
+       which is right on a phone held sideways, where the field is the thing standing between
+       a player and the button. On this layout it is not: the buttons are in the other column
+       and nothing the field does can push them down, so a laptop at 1280x800 can have the
+       real picture rather than the emergency one. */
+    .field.hero-field{aspect-ratio:1/0.54;height:auto}
+    /* The right column starts a little below the reels rather than level with them, so the
+       two columns read as balanced against each other. The hero is the taller of the two by
+       about a hundred pixels and always will be: it is a housing plus a field. */
+    #s-intro>#hp-pick,#s-intro>#b-start{margin-top:30px}
+    #s-intro>#b-teams{margin-top:14px}
+    .hp-pick{font-size:13.5px;margin-bottom:12px}
+    .hp-side{padding:36px 14px 26px}
+    .hp-side-name{font-size:28px}
+    .hp-side-sub{font-size:11px;letter-spacing:.13em}
+    .hp-tag{font-size:9px;top:10px;right:10px}
+    #b-teams{padding-top:21px;padding-bottom:21px;font-size:16px}
+    .hrow.hp-util{margin-top:12px;gap:8px}
+    .hp-util .hp-util-btn{font-size:13.5px;padding-top:16px;padding-bottom:16px}
+  }
+  @media (min-width:1200px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
   }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
@@ -7188,27 +7262,64 @@ function frgPlace(){
   if(!f.above&&!f.below){ wrap.classList.add('tight'); f=fits(); }
   else { wrap.classList.remove('tight'); f=fits(); }
 
-  if(f.above||!f.below){
-    const arrowTop=b.top-GAP-f.ARROW;
-    arrow.style.top=arrowTop+'px';
-    arrow.style.transform='translateX(-50%)';
-    const hintTop=arrowTop-f.HINT;
-    if(hint) hint.style.top=(hintTop+2)+'px';
-    /* The room left over is what the panel gets, and it scrolls inside it if the copy is
-       longer than that. Nothing can end up underneath the arrow. */
-    const room=Math.max(80,hintTop-GAP-8);
-    panel.style.maxHeight=room+'px';
-    panel.style.top=Math.max(8,hintTop-GAP-Math.min(f.ph,room))+'px';
-  }else{
-    const arrowTop=b.bottom+GAP;
-    arrow.style.top=arrowTop+'px';
-    arrow.style.transform='translateX(-50%) rotate(180deg)';
-    const hintTop=arrowTop+f.ARROW+2;
-    if(hint) hint.style.top=hintTop+'px';
-    const panelTop=hintTop+f.HINT+GAP;
-    const room=Math.max(80,H-panelTop-8);
-    panel.style.maxHeight=room+'px';
-    panel.style.top=panelTop+'px';
+  /* ACROSS, NOT JUST DOWN. All three pieces were pinned to left:50% of the VIEWPORT, which is
+     the middle of the button on a phone and is not on a wide screen, where the front page puts
+     the buttons in a right-hand column: the arrow came down the middle of the page and pointed
+     at the field. They follow the target's own centre now. The panel is 360 wide and the
+     button can be near an edge, so its centre is clamped to keep it on screen; the arrow and
+     the label are narrow enough to sit wherever the button is. */
+  const cx=b.left+b.width/2;
+  arrow.style.left=Math.round(cx)+'px';
+  if(hint) hint.style.left=Math.round(cx)+'px';
+  const pw=panel.offsetWidth||360;
+  panel.style.left=Math.round(Math.min(W-8-pw/2,Math.max(8+pw/2,cx)))+'px';
+
+  /* THE SIDE WITH MORE ROOM, not simply the first one that fits. Above fitting at all used to
+     win, and on a laptop that meant a 230px panel squeezed into the 280px over the button and
+     scrolling inside itself while 480px of empty page sat underneath. On a phone the guide has
+     already scrolled the button to the bottom of the screen, so above always has the room and
+     this picks it exactly as before.
+
+     When NEITHER side fits, which is what a 534px panel does against a 900px laptop, it goes
+     to the roomier side too rather than defaulting above: the panel scrolls inside whatever
+     it is given, and giving it 488px to scroll in beats giving it 299. */
+  const roomAbove=b.top, roomBelow=H-b.bottom;
+  const put=(f)=>{
+    const preferAbove=(f.above!==f.below)?f.above:(roomAbove>=roomBelow);
+    if(preferAbove){
+      const arrowTop=b.top-GAP-f.ARROW;
+      arrow.style.top=arrowTop+'px';
+      arrow.style.transform='translateX(-50%)';
+      arrow.classList.remove('up');
+      const hintTop=arrowTop-f.HINT;
+      if(hint) hint.style.top=(hintTop+2)+'px';
+      /* The room left over is what the panel gets, and it scrolls inside it if the copy is
+         longer than that. Nothing can end up underneath the arrow. */
+      const room=Math.max(80,hintTop-GAP-8);
+      panel.style.maxHeight=room+'px';
+      panel.style.top=Math.max(8,hintTop-GAP-Math.min(f.ph,room))+'px';
+    }else{
+      const arrowTop=b.bottom+GAP;
+      arrow.style.top=arrowTop+'px';
+      arrow.style.transform='translateX(-50%)';
+      arrow.classList.add('up');
+      const hintTop=arrowTop+f.ARROW+2;
+      if(hint) hint.style.top=hintTop+'px';
+      const panelTop=hintTop+f.HINT+GAP;
+      const room=Math.max(80,H-panelTop-8);
+      panel.style.maxHeight=room+'px';
+      panel.style.top=panelTop+'px';
+    }
+  };
+  put(f);
+  /* AND IF IT STILL SCROLLS, TIGHTEN AND PLACE IT AGAIN. The fit test asks whether the panel
+     fits BEFORE it is placed; a few pixels either way and it is placed anyway and quietly
+     scrolls, which on this panel means the button that starts the tutorial is the part below
+     the fold. Measured after the fact instead: one retry, and the tight rules exist precisely
+     for the case where the copy has to give way. */
+  if(W>=920&&!wrap.classList.contains('tight')&&panel.scrollHeight>panel.clientHeight+2){
+    wrap.classList.add('tight');
+    put(fits());
   }
 }
 
