@@ -51,7 +51,8 @@ export const NEUTRAL_BASE = 30;
 // ── the show ─────────────────────────────────────────────────────────────────
 /* Budgets are the archive's medians. maxSongs caps a set so a run of four-minute
    songs cannot turn a set into a twelve-song sprint — real Set Is top out around
-   eight. The encore also collects whatever time the two sets left behind. */
+   eight. Time a set does not use carries into the NEXT one, so Set I's leftovers
+   are Set II's to spend and Set II's reach the encore. */
 export const SETS = [
   { key: '1', label: 'Set I',  seconds: 75 * 60, maxSongs: 8 },
   { key: '2', label: 'Set II', seconds: 70 * 60, maxSongs: 8 },
@@ -459,13 +460,21 @@ export function fmtClock(sec) {
 // ── budgets ──────────────────────────────────────────────────────────────────
 /**
  * How much stage time each set actually has, given what the earlier sets left.
- * Only the encore inherits leftovers — that is the whole reason to think about
- * pace rather than just filling.
+ *
+ * TIME CASCADES FORWARD, ONE SET AT A TIME. Finish Set I five minutes early and
+ * those five minutes are Set II's to spend; whatever Set II then leaves over
+ * (its own plus anything it inherited and did not use) goes to the encore. It
+ * used to skip the middle: both sets paid straight into the encore, so time
+ * banked in Set I could only ever be spent on a ten-minute slot at the end of
+ * the night. Running short early is a real decision now, because the set you
+ * are about to play is where it lands.
  *
  * A set only hands its leftovers over once it is CLOSED. An open set has not
  * left anything behind yet, it is simply still being played. Without that, an
  * untouched night reports an encore budget of 2h35m, which is nonsense to show
- * a player mid-game.
+ * a player mid-game. And because the carry is a chain, an open set stops it
+ * dead: while Set I is still going, Set II's inheritance is not decided, so the
+ * encore's cannot be either.
  *
  * @param {Array<Array>} sets    three arrays of performance rows
  * @param {Array<boolean>} closed which sets are finished; defaults to all of
@@ -473,13 +482,15 @@ export function fmtClock(sec) {
  */
 export function budgets(sets, closed, spent) {
   const out = SETS.map((s, i) => s.seconds - ((spent && spent[i]) || 0));
-  let spare = 0;
-  for (let i = 0; i < ENCORE_INDEX; i++) {
-    if (closed && !closed[i]) continue;
+  let carry = 0;
+  for (let i = 0; i < SETS.length; i++) {
+    out[i] += carry;
+    if (i === ENCORE_INDEX) break;          // nothing flows out of the encore
+    // No `closed` at all means a finished show, where every set has closed.
+    if (closed && !closed[i]) break;        // still open: it has banked nothing yet
     const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
-    spare += Math.max(0, out[i] - used);
+    carry = Math.max(0, out[i] - used);
   }
-  out[ENCORE_INDEX] += spare;
   return out;
 }
 

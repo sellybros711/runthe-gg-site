@@ -205,10 +205,16 @@
     var m=meta();
     scrim.innerHTML=
       '<div class="rtgpg" role="dialog" aria-modal="true"'+(m?' style="--c:'+m.accent+'"':'')+'>'+
-        '<div class="rtgpg-cap" aria-hidden="true">'+((m&&m.icon)?m.icon:'')+'</div>'+
+        /* The cap wants the game's own mark. It used to read m.icon off the
+           calendar entry, which has never carried one, so this was a 96px band
+           of flat colour on every gate on every game. gamemarks.js is where the
+           drawings live, and data-mark is how every other surface asks for one. */
+        '<div class="rtgpg-cap" data-mark="'+esc(GAME)+'" aria-hidden="true"></div>'+
         '<div class="rtgpg-body" id="rtgpgBody"></div>'+
       '</div>';
     document.body.appendChild(scrim);
+    // fill() ran at DOMContentLoaded, long before this node existed
+    try{ if(window.RTGGameMarks) RTGGameMarks.fill(scrim); }catch(e){}
     render();
   }
   function done(){ dismissed=true; if(scrim){ scrim.remove(); scrim=null; } try{ document.body.style.overflow=''; }catch(e){} }
@@ -325,9 +331,14 @@
           '</button>'
         : '')+
       '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Play it again with the Arcade Card</button>'+
+      /* This wall covers the whole page, the board's rail included, so without
+         a way through it the only answer to "how did I do against everyone
+         else" is to come back tomorrow. */
+      (window.RTG_LB ? '<div><button class="rtgpg-ghost" id="rtgpgLb" type="button">Today’s leaderboard</button></div>' : '')+
       '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
     $('rtgpgGo').onclick=function(){ openCard('out'); };
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+    if($('rtgpgLb')) $('rtgpgLb').onclick=function(){ try{ RTG_LB.open(); }catch(e){} };
     if($('rtgpgInvite')) $('rtgpgInvite').onclick=function(){ if(window.RTGReferral) RTGReferral.share(); };
   }
 

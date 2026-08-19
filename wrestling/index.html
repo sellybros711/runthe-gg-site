@@ -348,6 +348,30 @@
   .injcard .id{font-size:13px;color:var(--text-dim);margin-top:3px;}
   .opt.on{border-color:var(--brandred);background:rgba(198,57,44,.14);}
 
+  /* your half of the week: one piece of prep, instantly paid */
+  .preprow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;}
+  .wk-alt.prep.done{border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.10);}
+  .wk-alt.prep.done .wa-n{color:var(--gold);}
+  .wk-alt.prep.off{opacity:.38;cursor:default;}
+  .wk-alt.prep.off:hover{border-color:var(--line);background:var(--panel);transform:none;}
+
+  /* the booking sheet: what the office has you doing */
+  .bksheet{border:1.5px solid rgba(224,179,65,.45);border-radius:14px;padding:14px 15px;margin-bottom:14px;
+    background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.24));
+    animation:sheetIn .38s cubic-bezier(.2,1.3,.4,1);}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(-8px) scale(.985);}}
+  .bs-office{font-size:12px;font-style:italic;color:var(--text-dim);margin-top:6px;
+    border-left:2px solid rgba(224,179,65,.4);padding-left:9px;}
+  .bksheet.promo{border-color:rgba(63,127,191,.5);background:linear-gradient(180deg,rgba(63,127,191,.12),rgba(0,0,0,.24));}
+  .bksheet.dark{border-color:var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.2));}
+  .bs-k{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .bksheet.promo .bs-k{color:#7fb2e0;} .bksheet.dark .bs-k{color:var(--text-faint);}
+  .bs-t{font-family:var(--display);font-size:25px;color:var(--cream);text-transform:uppercase;line-height:1.1;margin:2px 0 3px;}
+  .bs-vs{font-size:14px;color:var(--text);} .bs-vs b{color:var(--cream);}
+  .bs-pos{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
+  .bs-pos.me{color:var(--gold);font-weight:800;} .bs-pos.op{color:var(--text-faint);}
+  .bksheet .pchip{cursor:pointer;}
+
   /* ---- home: a live ring with a different card every visit ---- */
   .homewrap{max-width:920px;margin:0 auto;padding-bottom:30px;}
   .homehero{position:relative;text-align:center;padding:16px 0 4px;}
@@ -474,15 +498,15 @@
   .cm-tick{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.3);}
   .cm-bar b{position:absolute;top:-3px;width:6px;height:19px;border-radius:3px;background:var(--cream);
     box-shadow:0 0 8px rgba(0,0,0,.9);margin-left:-3px;transition:left .45s ease;left:50%;}
-  .arena.promo{height:270px;}
+  .arena.promo{height:310px;}
   .bubble{position:absolute;max-width:44%;background:#F4E8DB;color:#1a1512;border-radius:13px;
     padding:9px 13px;font-size:13.5px;line-height:1.45;font-weight:600;z-index:6;
     box-shadow:0 6px 16px rgba(0,0,0,.6);opacity:0;transform:translateY(8px) scale(.94);
     transition:opacity .18s,transform .18s;pointer-events:none;}
   .bubble.show{opacity:1;transform:none;}
   .bubble::after{content:"";position:absolute;bottom:-8px;border:9px solid transparent;border-top-color:#F4E8DB;border-bottom:0;}
-  .bubble.me{left:3%;top:6%;} .bubble.me::after{left:22px;}
-  .bubble.opp{right:3%;top:6%;background:#e6d2c6;} .bubble.opp::after{right:22px;border-top-color:#e6d2c6;}
+  .bubble.me{left:4%;top:3%;} .bubble.me::after{left:26px;}
+  .bubble.opp{right:4%;top:3%;background:#e6d2c6;} .bubble.opp::after{right:26px;border-top-color:#e6d2c6;}
   .bubble .who{display:block;font-family:var(--display);font-size:10.5px;letter-spacing:.09em;
     text-transform:uppercase;color:#8a5a2b;margin-bottom:2px;}
   .crowdcall{position:absolute;left:0;right:0;top:44%;text-align:center;font-family:var(--display);
@@ -497,7 +521,7 @@
   .k-heel{color:#f0907f;} .k-face{color:#5bb083;} .k-cool{color:#6aa7c4;} .k-crowd{color:#e0b341;}
   .pmwrite{display:flex;gap:8px;margin-top:2px;}
   .pmwrite input{flex:1;}
-  @media(max-width:640px){ .arena.promo{height:220px;} .bubble{max-width:52%;font-size:12.5px;padding:8px 10px;} }
+  @media(max-width:640px){ .arena.promo{height:262px;} .bubble{max-width:56%;font-size:12px;padding:7px 9px;} }
 
   /* ---- the week's decision, made legible ---- */
   .advice{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;margin-bottom:14px;
@@ -2023,7 +2047,9 @@ const POSES={
   climb:    { body:[0,-24,0], shL:148, elL:-24, shR:-148, elR:24, hipL:20, knL:-44, hipR:-18, knR:42 },
   kneel:    { body:[0,10,0], hipL:72, knL:-98, hipR:-14, knR:28, shL:32, elL:-24, shR:-32, elR:24 },
   bridge:   { body:[0,4,-30], shL:-146, elL:-18, shR:146, elR:18, hipL:22, knL:-30, hipR:-18, knR:26, head:-14 },
-  pin:      { body:[0,20,-70], shL:104, elL:-26, shR:-104, elR:26, hipL:-26, knL:52, hipR:24, knR:-48 },
+  // a lateral press: chest down across the opponent, far arm hooking, legs
+  // stretched out behind. The old pin was a starfish rotated onto its back.
+  pin:      { body:[0,22,84], shL:150, elL:-20, shR:-40, elR:-70, hipL:8, knL:-14, hipR:-8, knR:12, head:-14 },
   submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
   taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:6, hipR:-6, body:[0,-2,0] },
   celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
@@ -2782,11 +2808,13 @@ function paintNav(s){ const sc=$('s-'+s); if(!sc) return;
 const TOURS={
  hub:[
   {sel:'#weekBody .advice', title:'This is your week',
-   body:'Every week you do exactly one thing. <b>Take a match</b>, or spend the week on <b>training</b>, a <b>promo</b>, or <b>rest</b>. Then the week rolls over and you choose again. Forty weeks make a year.'},
-  {sel:'#weekBody .bkg', title:'Read the bookings',
-   body:'Each offer shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> it pays, and the <b>injury risk</b>. Tap one to wrestle it.'},
-  {sel:'#weekBody .bkg', title:'Winning is not the point',
-   body:'This surprises everybody. You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. Take the hard match against the better opponent: that is how you get noticed.'},
+   body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it. Forty weeks make a year.'},
+  {sel:'#weekBody .preprow', title:'Prepare like a pro',
+   body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP, <b>tape study</b> raises your odds against tonight\'s opponent, <b>rest</b> buys back condition, and <b>working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
+  {sel:'#weekBody .bksheet', title:'The office books you',
+   body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
+  {sel:'#weekBody .bksheet', title:'Winning is not the point',
+   body:'This surprises everybody. You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
   {sel:'#weekBody select', title:'Your game plan',
    body:'These two picks are what you <b>emphasise in every match</b>. They decide which move categories you build <b>mastery</b> in, and mastery is what unlocks your better moves. Change them whenever you want to grow in a new direction.'},
   {sel:'#carTiles', title:'Your vitals',
@@ -2902,14 +2930,21 @@ window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=(TOURS[TOURN]||TO
    ============================================================ */
 const RULES=[
  {n:'The Week', h:`
-  <p class="log">A career runs <b>40 weeks a year</b>. Each week you do exactly one thing, then the week rolls over.</p>
+  <p class="log">A career runs <b>40 weeks a year</b>, and the card is not yours to write. Every week has two halves.</p>
+  <p class="log"><b>Your half: the preparation.</b> One piece of prep a week, paid on the spot.</p>
   <ul class="ruleul">
-    <li><b>Take a match.</b> Three offers a week. This is how you earn almost everything.</li>
-    <li><b>Train.</b> +45 XP, costs a little condition. Good when you are close to a training point or an unlock.</li>
-    <li><b>Cut a promo.</b> No match, but you build feuds, alliances and your character, and you move the crowd.</li>
-    <li><b>Rest.</b> Recovers condition and morale. The safest week there is.</li>
+    <li><b>Hit the gym.</b> Banks XP toward a training point. Worth more on a week you are not booked.</li>
+    <li><b>Study the tape.</b> Scout tonight's opponent: better odds, an early edge, a better match.</li>
+    <li><b>Put your feet up.</b> Buys back condition and morale.</li>
+    <li><b>Work the room.</b> Backstage politics. A slow, steady push on your standing.</li>
   </ul>
-  <p class="log">Your <b>downside guarantee</b> pays every week whether you wrestle or not, so a rest week is never free money lost.</p>`},
+  <p class="log"><b>Their half: the booking.</b> The office hands you one of three weeks.</p>
+  <ul class="ruleul">
+    <li><b>A match</b>, with your place on the card decided by your standing. Champions and hot acts main-event; everybody else earns their way out of the opener.</li>
+    <li><b>A live microphone</b>, when they want your character louder than your wrestling.</li>
+    <li><b>Nothing.</b> Not booked means not in the plans. Train, rest, and make them regret it.</li>
+  </ul>
+  <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office (more time, a different opponent, a stipulation, even the finish), and being told no costs standing, so asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
  {n:'Matches', h:`
   <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
   <ul class="ruleul">
@@ -3433,6 +3468,7 @@ function offerOdds(o){
   const me=ovr(w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
   if(o.stakes==='title') p*=0.82;
+  if(c.booking&&c.booking.o===o&&c.booking.studied) p+=0.06;   // you did the homework
   return clamp(p,0.05,0.95);
 }
 function offerRisk(o){
@@ -3472,11 +3508,11 @@ function weekAdvice(){
   if(w.tp>0) return {ico:'⭐',t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
   if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
   if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
-  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way, and indifference is worse than being hated. Get on the microphone and give them something.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
-  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way, and indifference is worse than being hated. Next time they put a microphone in your hand, give them something.',sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',sev:'bad'};
   const tp=turnProgress();
-  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. Another promo in that voice and the turn is complete. You are ${Math.round(tp.p*100)}% of the way there.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'act'};
-  if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back on the mic.`,cta:{l:'Cut a promo',f:'openPromoPicker()'},sev:'warn'};
+  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. One more promo in that voice completes the turn. You are ${Math.round(tp.p*100)}% of the way there.`,sev:'act'};
+  if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back the next time you are on the mic.`,sev:'warn'};
   const st=story();
   if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
   const _weak=allies().find(a=>a.loyalty<25);
@@ -3486,9 +3522,11 @@ function weekAdvice(){
   const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
   if(_cand) return {ico:'🤝',t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   if(c.deal&&c.deal.weeksLeft<=6) return {ico:'📄',t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
+  if(c.booking&&c.booking.type==='match'&&!c.prep&&!c.booking.studied)
+    return {ico:'📼',t:`You have not prepared this week. Studying ${c.booking.o.oppName}'s tape raises your odds tonight.`,sev:'act'};
   const t=workTier(), belt=beltName(t);
   if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
-  return {ico:'🤼',t:'Pick a match. What you emphasise in your game plan is what you get better at.',sev:'ok'};
+  return {ico:'🤼',t:'Check what the office has you doing, then make the most of it. Your game plan is what you get better at.',sev:'ok'};
 }
 /* what you are working toward, so progress is visible week to week */
 function nextGoals(){
@@ -3543,10 +3581,68 @@ function renderWeek(){
     el.innerHTML=`<p class="log">You're in camp with <b>${m?m.name:'a mentor'}</b>, ${c.mentorWeeks} week${c.mentorWeeks>1?'s':''} to go.</p>
       <button class="big" onclick="doMentorWeek()">Train This Week →</button>`; return;
   }
-  if(!c.offers) c.offers=makeOffers();
-  tagOffers(c.offers);
+  bookWeek();
+  const b=c.booking||{type:'dark'};
   const adv=weekAdvice();
-  const me=ovr(G.w);
+  const p=pullOf();
+  let sheet='';
+
+  if(b.type==='match'){
+    const o=b.o, w=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
+    const dLab = w>=0.66?'Favoured':w>=0.54?'Slight edge':w>=0.46?'Even':w>=0.34?'Underdog':'Way above you';
+    const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
+    sheet=`<div class="bksheet">
+      <div class="bs-k">You are booked</div>
+      <div class="bs-t">${o.stipLabel}</div>
+      <div class="bs-vs">vs <b>${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
+      <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
+        o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
+        o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
+      ${b.line?`<div class="bs-office">"${b.line}"</div>`:''}
+      <div class="bk-odds" style="margin-top:10px;">
+        <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
+        <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
+      </div>
+      <div class="bk-rw" style="margin-top:8px;">
+        <span>💰 <b>${money(o.purse)}</b></span>
+        <span>📈 <b>+${rep}</b> rep</span>
+        <span class="${risk>0.18?'hot':''}">🩹 <b>${Math.round(risk*100)}%</b> risk</span>
+        ${b.moreTime?'<span style="color:var(--gold)">⏱ extra time</span>':''}
+        ${b.promised?'<span style="color:var(--gold)">🤝 going over</span>':''}
+        ${b.studied?'<span style="color:var(--gold)">📼 did the homework</span>':''}
+      </div>
+      <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
+      ${p>0?`<button class="ghost" style="width:100%;margin-top:7px;" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'You have had your say':'Have a word with the office'}</button>`:
+             `<div class="hint" style="text-align:center;margin-top:7px;">You have no say in the card yet. Earn it.</div>`}
+    </div>`;
+  } else if(b.type==='promo'){
+    const t=b.targetId?charById(b.targetId):null;
+    sheet=`<div class="bksheet promo">
+      <div class="bs-k">You are booked</div>
+      <div class="bs-t">Live Microphone</div>
+      <div class="bs-vs">${t?`They are sending you out to ${t.name}`:'Open mic, in front of the crowd'}</div>
+      <div class="bs-pos">${b.why||'Say something worth hearing.'}</div>
+      <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Take The Microphone →</button>
+    </div>`;
+  } else {
+    sheet=`<div class="bksheet dark">
+      <div class="bs-k">Not on the card</div>
+      <div class="bs-t">Nothing this week</div>
+      <div class="bs-vs">The office has no plans for you${(c.standing||50)<45?', and that is a message in itself':''}. Weeks like this are where careers get built.</div>
+      <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
+    </div>`;
+  }
+
+  // your half of the week, before the show: one piece of prep, paid on the spot
+  const prep=`
+    <div class="flab" style="display:flex;justify-content:space-between;align-items:baseline;">Your week
+      <span class="hint" style="text-transform:none;letter-spacing:0;">${c.prep?'prep done, the rest is the show':'pick one, the rest of the week is theirs'}</span></div>
+    <div class="preprow">${prepOptions().map(o=>{
+      const done=c.prep===o.id, off=c.prep&&!done;
+      return `<div class="wk-alt prep ${done?'done':''} ${off?'off':''}" ${c.prep?'':`onclick="doPrep('${o.id}')"`}>
+        <div class="wa-n">${o.ico} ${o.l}${done?' ✓':''}</div><div class="wa-d">${o.d}</div></div>`;
+    }).join('')}</div>`;
+
   const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.icon} ${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
   el.innerHTML=`
@@ -3555,38 +3651,11 @@ function renderWeek(){
       <span class="ad-t">${adv.t}</span>
       ${adv.cta?`<button class="ad-b" onclick="${adv.cta.f}">${adv.cta.l} →</button>`:''}
     </div>
+    ${prep}
+    <div class="flab">The booking <span class="hint" style="text-transform:none;letter-spacing:0;">(what the office has you doing)</span></div>
+    ${sheet}
 
-    <div class="flab">Bookings <span class="hint" style="text-transform:none;letter-spacing:0;">(tap one to wrestle it)</span></div>
-    <div class="grid" style="gap:10px;margin-bottom:14px;">${c.offers.map((o,i)=>{
-      const p=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
-      const dLab = p>=0.66?'Favoured':p>=0.54?'Slight edge':p>=0.46?'Even':p>=0.34?'Underdog':'Way above you';
-      const dCol = p>=0.54?'var(--green)':p>=0.46?'var(--gold)':'#f0907f';
-      return `<div class="bkg" onclick="takeMatch(${i})">
-        ${o._tag?`<div class="bk-tag t-${o._tag.c}">${o._tag.t}</div>`:''}
-        <div class="bk-h">
-          <div><div class="bk-n">${o.oppName}</div>
-            <div class="bk-s">${o.stipLabel} · ${o.card||'Mid-Card'}</div></div>
-          <div class="bk-ov"><span>OVR</span><b style="color:${dCol}">${o.oppOvr}</b></div>
-        </div>
-        <div class="bk-odds">
-          <div class="bk-obar"><i class="you" style="width:${Math.round(p*100)}%"></i></div>
-          <div class="bk-olab"><span>You <b>${Math.round(p*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(p*100)}%</b> them</span></div>
-        </div>
-        <div class="bk-rw">
-          <span title="Purse">💰 <b>${money(o.purse)}</b></span>
-          <span title="Reputation">📈 <b>+${rep}</b> rep</span>
-          <span title="Injury risk" class="${risk>0.18?'hot':''}">🩹 <b>${Math.round(risk*100)}%</b> risk</span>
-        </div>
-      </div>`;}).join('')}</div>
-
-    <div class="flab">Or spend the week</div>
-    <div class="grid g3" style="gap:8px;margin-bottom:14px;">
-      <div class="wk-alt" onclick="doTrainWeek()"><div class="wa-n">🏋️ Train</div><div class="wa-d">+45 XP toward a training point. Costs a little condition.</div></div>
-      <div class="wk-alt" onclick="openPromoPicker()"><div class="wa-n">🎤 Cut a promo</div><div class="wa-d">Live mic. Build a feud, an alliance, or your own character, and move the crowd.</div></div>
-      <div class="wk-alt" onclick="doRest()"><div class="wa-n">🛌 Rest</div><div class="wa-d">Recover condition and morale. The safest week there is.</div></div>
-    </div>
-
-    <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasise in every match)</span></div>
+  <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasise in every match)</span></div>
     <div class="row" style="margin-bottom:6px;">
       <select onchange="setPlan('a',this.value)">${catOpt(c.plan.a,c.plan.b)}</select>
       <select onchange="setPlan('b',this.value)">${catOpt(c.plan.b,c.plan.a)}</select>
@@ -4270,6 +4339,8 @@ async function startFight(o){
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   chooseTarget(MS.me); chooseTarget(MS.opp);
+  // tape study walks to the ring with you: an early edge and a better story
+  if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
@@ -4306,6 +4377,7 @@ async function startFight(o){
   await callout('FIGHT!');
   await settle(260);
   fLog(`The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
+  if(MS.studied) fLog(`<span class="hi">You studied the tape all week. You know what is coming.</span>`);
   runFight();
 }
 
@@ -4788,6 +4860,7 @@ function skipFight(){
   const meOvr=ovr(G.w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-meOvr)/16));
   p += ((MS.me.hp-MS.opp.hp)/100)*0.35 + MS.mom/500;
+  if(G.car.booking&&G.car.booking.studied) p+=0.06;
   if(o.stakes==='title'||o.stakes==='defense') p*=0.82;
   const rest=Math.max(0,9-MS.beat);
   MS.quality += rest*2.6;                              // the unseen exchanges still happened
@@ -4804,6 +4877,150 @@ function skipFight(){
 function takeMatch(i){
   const o=G.car.offers[i]; if(!o) return;
   startFight(o);
+}
+
+/* ============================================================
+   THE BOOKING SHEET
+   ------------------------------------------------------------
+   A wrestler does not decide what they are doing this week. The
+   office does. You train and prepare between shows, they hand you
+   an assignment, and what you make of it is the whole game.
+
+   Pull is earned, never given: at the bottom you take what you are
+   given, and even at the top you get to ASK, not to decide.
+   ============================================================ */
+function pullOf(){
+  const c=G.car;
+  const s=(c.standing||50) + (c.title?14:0) + reactionOf()*0.18 + tierIdx()*2;
+  return s>=88?3 : s>=70?2 : s>=54?1 : 0;
+}
+const PULL_LABEL=['No say in it','A word now and then','They listen to you','Creative input'];
+
+// the office picks your spot: the better they think you are, the better it is
+function bookWeek(){
+  const c=G.car;
+  if(c.booking || c.freeAgent || c.injWeeks>0 || c.mentorWeeks>0 || c.retired) return;
+  const sc=schedOf(c.deal&&c.deal.sched);
+  const standing=c.standing||50;
+  // they use the people they rate. Sitting at home is what happens to
+  // everybody else, and it is how you know you are not in the plans.
+  let pMatch=0.44+standing/220+(sc.pop||0)*0.12+tierIdx()*0.03;
+  if(story()) pMatch+=0.12;                       // a live feud has to be paid off
+  if(c.streak<=-3) pMatch-=0.08;                  // cold acts get quietly rested
+  const pPromo=0.16+(gimHeat()<40?0.07:0)+(story()?0.05:0);
+  const r=rnd();
+  if(r<clamp(pMatch,0.30,0.86)){
+    if(!c.offers) c.offers=makeOffers();
+    const offs=c.offers.slice();
+    // the office ranks the night's spots and gives you the one you have earned
+    const worth=o=>(o.stakes==='title'||o.stakes==='defense'?100:o.stakes==='rivalry'||o.stakes==='rival'?70:0)
+                  + ({'Main Event':40,'Mid-Card':20,'Opener':0}[o.card]||0) + o.purse/400;
+    offs.sort((a,b)=>worth(b)-worth(a));
+    const p=pullOf();
+    const pick = p>=3 ? 0 : p>=2 ? Math.min(1,offs.length-1)
+               : p>=1 ? Math.min(1+Math.floor(rnd()*2),offs.length-1)
+               : offs.length-1;
+    c.booking={type:'match', o:offs[pick], asked:false};
+  } else if(r<clamp(pMatch,0.30,0.86)+pPromo){
+    const t=(typeof promoTargets==='function'?promoTargets():[])[0];
+    c.booking={type:'promo', targetId:t&&t.c?t.c.id:null, why:t?t.why:'They want you on the microphone.'};
+  } else {
+    c.booking={type:'dark'};
+  }
+  // the memo has a voice: how the office frames the week tells you where you stand
+  const bk=c.booking;
+  if(bk.type==='match'){
+    const lines = bk.o.card==='Main Event' ? ['Creative has plans for you. Do not waste them.','Top of the card. Top of the bill. Deliver.','The building is yours to send home happy.']
+      : bk.o.card==='Opener' ? ['Warm them up properly and someone will notice.','First out. Set the temperature for the night.','Short and loud. Make them look up from their chips.']
+      : ['Steady the middle of the card for us.','Give us ten good minutes.','Make the segment matter.'];
+    bk.line=lines[Math.floor(rnd()*lines.length)];
+    // the firsts that a career is remembered by
+    if(bk.o.card==='Main Event') award('Your first main event.','🌟');
+    if(bk.o.stakes==='title') award('Your first title shot.','🏆');
+  }
+  save();
+}
+
+/* ---- YOUR HALF OF THE WEEK ----
+   The card is theirs; the preparation is yours. One piece of prep per
+   week, applied on the spot so the payoff is visible before the bell. */
+function prepOptions(){
+  const c=G.car, b=c.booking||{type:'dark'}, dark=b.type==='dark';
+  const opts=[
+    {id:'gym',  ico:'🏋️', l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
+  ];
+  if(b.type==='match')
+    opts.push({id:'tape', ico:'📼', l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
+  opts.push({id:'rest', ico:'🛌', l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
+  opts.push({id:'room', ico:'🤝', l:'Work the room', d:'Backstage politics. The office remembers faces.'});
+  return opts;
+}
+function doPrep(id){
+  const c=G.car, w=G.w, b=c.booking||{type:'dark'}, dark=b.type==='dark';
+  if(c.prep) return;
+  c.prep=id;
+  if(id==='gym'){ const xp=dark?55:30; w.xp+=xp; while(w.xp>=100){ w.xp-=100; w.tp+=1; }
+    c.cond=clamp(c.cond-2); toast('+'+xp+' XP banked'); checkUnlocks(); }
+  if(id==='tape'){ b.studied=true; toast('You know what is coming now'); }
+  if(id==='rest'){ c.cond=clamp(c.cond+(dark?20:10)); c.morale=clamp((c.morale||70)+3); toast('Feeling fresh'); }
+  if(id==='room'){ c.standing=clamp((c.standing||50)+1.6); toast('The office noticed you today'); }
+  save(); renderCareer();
+}
+// a dark week ends when you say it does
+function endDarkWeek(){ advanceWeek(); toast('The week goes by.'); go('career'); }
+// what the office is willing to hear, and what it costs you to ask
+function officeOptions(){
+  const c=G.car, b=c.booking, p=pullOf(), out=[];
+  if(!b||b.type!=='match') return out;
+  const base=0.18+p*0.20+(c.standing-50)*0.006;
+  out.push({id:'time', l:'Ask for more time',  d:'A longer match gives you room to build to something.',
+            p:clamp(base+0.10,0.05,0.92)});
+  out.push({id:'opp',  l:'Ask for a different opponent', d:'You do not think this one gets the best out of you.',
+            p:clamp(base-0.06,0.05,0.92)});
+  if(p>=2) out.push({id:'stip', l:'Pitch a stipulation', d:'Give the match a hook the crowd can follow.',
+            p:clamp(base-0.02,0.05,0.92)});
+  if(p>=3) out.push({id:'finish', l:'Ask to go over', d:'Ask them to put you over clean. They remember being asked.',
+            p:clamp(base-0.22,0.03,0.80)});
+  return out;
+}
+function askOffice(){
+  const c=G.car, p=pullOf(), opts=officeOptions();
+  if(c.booking&&c.booking.asked){
+    modal('The office','<p class="log">You have already had your say this week. Go and wrestle.</p>',
+      [{label:'OK',fn:closeModal}]); return;
+  }
+  const body=`<p class="log"><b>${PULL_LABEL[p]}.</b> Standing with the office is <b>${Math.round(c.standing)}</b>${c.title?', and you are carrying their title':''}.</p>
+    <p class="hint">You get one conversation a week. Asking and being told no costs you standing, so pick your moment.</p>
+    <div class="paychips" style="flex-direction:column;margin-top:10px;">${
+      opts.map(o=>`<span class="pchip" style="animation:none;opacity:1;cursor:pointer;" onclick="doAsk('${o.id}')">
+        <b>${o.l}</b> · ${Math.round(o.p*100)}% they go for it<br><span class="hint">${o.d}</span></span>`).join('')}</div>`;
+  modal('Have a word', body, [{label:'Say nothing',cls:'ghost',fn:closeModal}]);
+}
+function doAsk(id){
+  closeModal();
+  const c=G.car, b=c.booking, o=(officeOptions().find(x=>x.id===id));
+  if(!b||!o) return;
+  b.asked=true;
+  const won=rnd()<o.p;
+  if(won){
+    if(id==='time'){ b.o.mult=Math.round((b.o.mult+0.25)*100)/100; b.moreTime=true; }
+    if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; } }
+    if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2]][Math.floor(rnd()*3)];
+      b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
+    if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
+    pushInboxItem({ico:'🤝',sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
+    toast('They went for it');
+  } else {
+    c.standing=clamp(c.standing-(id==='finish'?6:3));
+    pushInboxItem({ico:'📄',sev:'bad',txt:`<b>Turned down.</b> You asked, they said no, and they remember being asked.`});
+    toast('They said no');
+  }
+  save(); renderCareer();
+}
+function goBooking(){
+  const b=G.car.booking; if(!b) return;
+  if(b.type==='match') startFight(b.o);
+  else if(b.type==='promo') beginPromo(b.targetId?'callout':'crowd', b.targetId);
 }
 function simMatch(o){
   const w=G.w, c=G.car, a=w.attrs;
@@ -5042,7 +5259,7 @@ function matchStory(o,res){
    ============================================================ */
 function advanceWeek(){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
-  c.week++; c.offers=null;
+  c.week++; c.offers=null; c.booking=null; c.prep=null;   // the office starts the week fresh
   // ---- the road: recovery is slower the harder you work ----
   c.cond=clamp(c.cond + (11 - sc.wear*4) - (c.hurt?3:0));
   c.mom=c.mom+(50-c.mom)*0.10;
@@ -5628,8 +5845,23 @@ async function pmCall(t,col){
   const c=$('pCall'); c.textContent=t; c.style.color=col||'var(--gold)';
   c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(720);
 }
+// Every company has somebody carrying its belt: the biggest draw in that
+// building, unless you have taken it off them. Without this, a title promo
+// had nobody to call out and the lines fell back to a bare "them".
+function champOf(pid){
+  pid=pid||myPromoId();
+  const c=G&&G.car;
+  if(c&&c.title&&(c.deal&&c.deal.promo)===pid) return {you:true,name:G.w.name};
+  const house=CHARS.filter(x=>x.promo===pid);
+  if(!house.length) return null;
+  return house.slice().sort((a,b)=>(b.over||0)-(a.over||0))[0];
+}
+function champName(pid){ const ch=champOf(pid); return ch?(ch.you?'you':ch.name):'the champion'; }
+
 function beginPromo(mode,targetId){
-  const target=targetId?charById(targetId):null;
+  let target=targetId?charById(targetId):null;
+  // calling for a title shot means calling out whoever is holding it
+  if(!target && mode==='title'){ const ch=champOf(); if(ch&&!ch.you) target=ch; }
   PM={mode,target,beat:0,maxBeats:3,score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,done:false};
   go('promo');
   stageInit('pmArena'); dressArena($('pmArena'),myPromoId());   // same rig and ring as a match
@@ -5651,7 +5883,7 @@ function beginPromo(mode,targetId){
 }
 function pmChoices(){
   if(PM.done) return;
-  const t=PM.target, oppName=t?t.name:'them';
+  const t=PM.target, oppName=t?t.name:'whoever they put in front of me';
   const html=promoKinds(t,PM.mode).map(k=>{
     const d=PROMO_LINES[k]; if(!d) return '';
     const line=d.lines[Math.floor(rnd()*d.lines.length)](oppName);

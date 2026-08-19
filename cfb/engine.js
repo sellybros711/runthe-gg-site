@@ -543,6 +543,225 @@ function scoringScript(you, them, won, rng) {
   });
 }
 
+/* ─── WHOSE TOUCHDOWN IT WAS ──────────────────────────────────────────────────
+ *
+ * The broadcast knew a touchdown had happened and never knew whose, so a drafted roster
+ * could play a whole postseason without one of its six names being said out loud. The call
+ * banner read "TOUCHDOWN / You" and the log read "You touchdown", and which of the six men
+ * you spent the budget on did it was nowhere on the screen you are watching. This puts a
+ * man on each of them, and a line of commentary under his name.
+ *
+ * CREDIT IS DRAWN, NOT SIMULATED, which is the bargain scoringScript already makes one
+ * level up: the game was settled in fantasy space long before this runs, and the only
+ * question left is which legal, watchable version of it to show. A touchdown goes to one of
+ * the six on a weight that is how much of his season is the kind of work that ends in an end
+ * zone, times a form draw for the day. The man having the big afternoon scores most of them,
+ * the decoy tight end scores few, and neither is ever impossible.
+ *
+ * THE FORM IS DRAWN HERE RATHER THAN READ OFF THE GAME, which is the one place this differs
+ * from the NFL game's version of it. That game keeps a per-player box score for every week
+ * and weights on the column; this one resolves a game to a team total and never breaks it
+ * out, so there is no per-man number to read. Inventing one and showing it would be a box
+ * score the engine cannot stand behind. Drawing a form multiplier instead gives the same
+ * shape (somebody is hot, somebody is quiet) without claiming a stat line that does not
+ * exist anywhere else in the game.
+ *
+ * IT MUST HAVE ITS OWN RNG, AND THAT IS NOT A STYLE NOTE. The season's `rng` is one
+ * sequential stream shared by every game in a run, so drawing a scorer from it would consume
+ * values the next week depends on and silently rewrite every later result: not a crash, just
+ * a leaderboard that disagrees with itself. Callers seed a separate stream off the finished
+ * game; nothing in here is reachable from the stream that plays seasons.
+ */
+
+/* The name a commentator would use on second reference. Suffixes ride along on purpose:
+   "Ted Ginn Jr." is how that man is said out loud, and cutting to "Ginn" to satisfy a rule
+   about the last token reads as a different player. */
+function lastName(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  return parts.length > 1 ? parts.slice(1).join(' ') : (parts[0] || '');
+}
+
+function pickWeighted(items, weights, rng) {
+  let sum = 0;
+  for (const w of weights) sum += Math.max(0, w) || 0;
+  if (!(sum > 0)) return items.length ? items[Math.floor(rng() * items.length)] : null;
+  let r = rng() * sum;
+  for (let i = 0; i < items.length; i++) {
+    r -= Math.max(0, weights[i]) || 0;
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+/* HOW GOOD A DAY HE IS HAVING, on the same [0.35, 2.2] band the NFL game clips its measured
+   form to. Right-skewed: most of the six are having an ordinary afternoon and one of them is
+   not, which is what makes a game worth watching rather than six even sixths. */
+function formDraw(rng) {
+  return 0.35 + 1.85 * Math.pow(rng(), 1.7);
+}
+
+/* HOW LONG THE SCORING PLAY WAS. Most touchdowns are short and a few are the highlight of
+   somebody's season, so this is a tight base with a long tail rather than anything even.
+   Runs sit closer to the goal line than catches do, which is the shape the real thing has. */
+function touchdownYards(play, rng) {
+  const r = rng();
+  if (play === 'run') {
+    if (r < 0.72) return 1 + Math.floor(rng() * 5);
+    if (r < 0.95) return 6 + Math.floor(rng() * 15);
+    return 21 + Math.floor(rng() * 50);
+  }
+  if (r < 0.45) return 2 + Math.floor(rng() * 8);
+  if (r < 0.85) return 10 + Math.floor(rng() * 16);
+  return 26 + Math.floor(rng() * 50);
+}
+
+/*
+ * How long the kick was.
+ *
+ * BANDS RATHER THAN A FORMULA. The chip shot exists but is not the common case, the bulk of
+ * them sit between thirty and fifty, and the fifty-plus kick is ordinary now rather than
+ * remarkable. Drawing evenly across the legal range would land the median in roughly the
+ * right place and still be wrong in both tails: far too many twenty yard kicks, far too few
+ * long ones, which is the half a broadcast notices.
+ *
+ * THE BANDS ARE THE NFL GAME'S, for the same reason QUARTER_SCORING_SHARE above is. College
+ * kicking is not identical to the professional game (shorter median, a thinner fifty-plus
+ * tail) but there is no college kicking reference in this repo to calibrate against, and the
+ * shape is the same in both codes. Borrowed knowingly rather than invented precisely.
+ *
+ * BOTH TEAMS, unlike the touchdown credits above. A distance is a fact about the kick and
+ * needs no drafted player behind it, so the opponent's kicks get one too and the log reads
+ * the same on either side of the ball.
+ */
+const FIELD_GOAL_BANDS = [
+  [18, 29, 0.22],
+  [30, 39, 0.26],
+  [40, 49, 0.30],
+  [50, 56, 0.19],
+  [57, 63, 0.03],
+];
+function fieldGoalYards(rng) {
+  let r = rng();
+  for (const [lo, hi, w] of FIELD_GOAL_BANDS) {
+    if (r < w) return lo + Math.floor(rng() * (hi - lo + 1));
+    r -= w;
+  }
+  const last = FIELD_GOAL_BANDS[FIELD_GOAL_BANDS.length - 1];
+  return last[0] + Math.floor(rng() * (last[1] - last[0] + 1));
+}
+
+/*
+ * Every kick in a script, keyed by its place in it.
+ *
+ * Keyed by index rather than handed back in order because the call banner and the play log
+ * ask at different moments: the banner as the clock stops on one score, the log when the
+ * whole game is replayed at the end. Both look the kick up by the same index, so a game
+ * cannot show 48 yards live and 31 in the log afterwards.
+ */
+function fieldGoalDistances(script, rng) {
+  const out = new Map();
+  if (!Array.isArray(script)) return out;
+  script.forEach((e, i) => { if (e.kind === 'FIELD GOAL') out.set(i, fieldGoalYards(rng)); });
+  return out;
+}
+
+/* One line of commentary per touchdown. Several shapes each, drawn on the same stream, so a
+   roster that scores four in a game does not read the same sentence four times.
+   THE PHRASING IS BANDED BY DISTANCE, which is not decoration: "punches it in" is a
+   goal-line verb and reads as a mistake on a 40-yard run, and "breaks away" reads as one on
+   a sneak. Each band only holds verbs that are true at that distance. */
+function touchdownBlurb(scorer, passer, yards, play, rng) {
+  const who = scorer.name, yd = yards;
+  const pick = (forms) => forms[Math.floor(rng() * forms.length)];
+  if (play === 'run') {
+    if (yd <= 5) return pick([
+      who + ' punches it in from the ' + yd,
+      who + ' powers in from ' + yd + ' yards out',
+      who + ' gets in behind his line from the ' + yd,
+    ]);
+    if (yd <= 20) return pick([
+      who + ' finds the corner from ' + yd + ' yards',
+      who + ' cuts back for a ' + yd + '-yard touchdown',
+      who + ' carries it in from ' + yd + ' out',
+    ]);
+    return pick([
+      who + ' breaks away for ' + yd + ' yards',
+      who + ' takes it ' + yd + ' yards to the house',
+      who + ' is gone, ' + yd + ' yards untouched',
+    ]);
+  }
+  if (passer) {
+    if (yd <= 9) return pick([
+      passer.name + ' finds ' + who + ' from ' + yd + ' yards',
+      who + ' comes down with it in the corner, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' to ' + who + ' for the score from the ' + yd,
+    ]);
+    if (yd <= 25) return pick([
+      who + ' hauls in a ' + yd + '-yard score from ' + passer.name,
+      passer.name + ' to ' + who + ', ' + yd + ' yards, touchdown',
+      who + ' finds the soft spot, ' + yd + ' yards from ' + passer.name,
+    ]);
+    return pick([
+      who + ' gets behind the secondary, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' goes deep and ' + who + ' runs under it, ' + yd + ' yards',
+      who + ' takes the top off it, ' + yd + ' yards from ' + passer.name,
+    ]);
+  }
+  return pick([
+    who + ' scores on a ' + yd + '-yard catch',
+    who + ' comes down with it from ' + yd + ' yards',
+  ]);
+}
+
+/**
+ * Credit every touchdown in `script` that belongs to `you` to one of the drafted six.
+ *
+ * `men` is the roster as the broadcast has it: { name, pos, slot, pass, rush, rec }, the
+ * three production columns being a man's season per-game passing, rushing and receiving.
+ * Returns one credit per touchdown, each carrying the index of the event in `script` so a
+ * caller can hang it on the play it belongs to without matching on anything fuzzy.
+ *
+ * A roster with nobody who can reach an end zone returns an empty list, and the caller shows
+ * what it always showed. That is the honest answer: there is no drafted man to name.
+ */
+function touchdownCredits(script, men, rng) {
+  const out = [];
+  if (!Array.isArray(script) || !Array.isArray(men) || !men.length) return out;
+  /* The end-zone share of a man's game. A quarterback's passing does not make HIM the
+     scorer, it makes him the passer, so only what he does with the ball in his own hands
+     counts towards being credited with the score. */
+  const reach = men.map((m) => Math.max(0, (m.rush || 0) + (m.rec || 0)));
+  if (!reach.some((v) => v > 0)) return out;
+  /* One form draw a man, before the script is walked, so he is hot or quiet for the whole
+     game rather than re-rolled play by play. */
+  const weights = men.map((m, i) => reach[i] * formDraw(rng));
+  /* The man who throws it, if the roster has one: the biggest passing season on it. A
+     quarterback-less roster simply has no passer and the catches say so. */
+  let passer = null;
+  for (const m of men) if ((m.pass || 0) > (passer ? passer.pass : 0)) passer = m;
+
+  script.forEach((e, i) => {
+    if (e.team !== 'you' || e.kind !== 'TOUCHDOWN') return;
+    const scorer = pickWeighted(men, weights, rng);
+    if (!scorer) return;
+    /* How he got there, from what he is. A quarterback credited with a touchdown ran it in
+       himself by definition, and everybody else splits on his own rushing and receiving. */
+    const isQB = String(scorer.pos || '').toUpperCase() === 'QB';
+    const rushW = Math.max(0, scorer.rush || 0), recW = Math.max(0, scorer.rec || 0);
+    const play = isQB || (rushW + recW > 0 && rng() < rushW / (rushW + recW)) ? 'run' : 'catch';
+    const yards = touchdownYards(play, rng);
+    const withPasser = play === 'catch' && passer && passer !== scorer ? passer : null;
+    out.push({
+      at: i, kind: 'TOUCHDOWN', team: 'you',
+      scorer: scorer.name, slot: scorer.slot || scorer.pos, play, yards,
+      passer: withPasser ? withPasser.name : null,
+      short: lastName(scorer.name) + ' ' + yards + '-yard TD ' + (play === 'run' ? 'run' : 'catch'),
+      blurb: touchdownBlurb(scorer, withPasser, yards, play, rng),
+    });
+  });
+  return out;
+}
+
 // ─── playoff / bowl structure ───────────────────────────────────────────────
 
 /* The bracket, deepest first. Seeds 5 to 12 play all four rounds; the top four
@@ -2251,6 +2470,8 @@ const publicAPI = {
   teamRating, teamOverall, titleEdge, roundEdge,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
+  touchdownCredits, lastName,
+  fieldGoalYards, fieldGoalDistances, FIELD_GOAL_BANDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,

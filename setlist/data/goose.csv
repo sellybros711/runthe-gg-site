@@ -5943,7 +5943,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,1,8,Madhuvan,512,false,,515,9,161,10,75,false,false,,>,true,opener|closer|jam
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,1,9,Wipeout,953,true,Bob Berryhill,198,0,1,0,,false,false,,>,true,
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,1,10,Madhuvan,512,false,,442,0,162,0,75,false,false,,,false,opener|closer|jam
-1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,2,11,You Spin Me Round (Like A Record),950,true,Dead or Alive,511,0,1,0,,false,false,,>,true,closer|encore
+1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,2,11,You Spin Me Round (Like A Record),950,true,Dead or Alive,511,0,1,0,,false,false,,>,true,opener|closer|encore
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,2,12,Arrow,438,false,,995,3,74,0,62,false,false,,>,true,opener|closer|jam|peak
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,2,13,Running Up That Hill,955,true,Kate Bush,992,0,1,0,36,true,false,"Punishing and primal jam that would be right at home in a ""Dripfield.""",->,true,
 1719248592,2024-10-31,2024,The St. Pete Pier,St. Petersburg,FL,2,14,Arrow,438,false,,65,0,75,0,62,false,false,,",",false,opener|closer|jam|peak
@@ -6069,7 +6069,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,1,9,So Ready,421,false,,802,3,138,0,38,false,false,,,false,closer
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,10,Eminence Front,468,true,The Who,426,4,13,0,,false,false,,",",false,opener
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,11,Hungersite,740,false,,1088,5,56,0,62,false,false,,",",false,opener|jam|peak
-1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,12,You Spin Me Round (Like A Record),950,true,Dead or Alive,1036,7,2,0,,false,false,,>,true,closer|encore
+1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,12,You Spin Me Round (Like A Record),950,true,Dead or Alive,1036,7,2,0,,false,false,,>,true,opener|closer|encore
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,13,Pancakes,723,false,Great Blue,932,2,53,0,62,false,false,,->,true,opener|closer|jam|peak
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,14,Loose Ends,762,false,Vasudo,179,33,16,20,,false,false,,>,true,closer
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,15,Pancakes,723,false,Great Blue,123,0,54,0,62,false,false,,",",false,opener|closer|jam|peak
@@ -6443,7 +6443,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,2,11,Jive II,413,false,,675,14,84,10,44,false,false,,>,true,opener
 1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,2,12,Jive Lee,502,false,,613,32,84,20,57,false,false,,>,true,closer|jam
 1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,2,13,Bob Don,429,false,,565,9,55,10,38,false,false,,",",false,
-1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,2,14,You Spin Me Round (Like A Record),950,true,Dead or Alive,738,28,3,20,,false,false,,,false,closer|encore
+1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,2,14,You Spin Me Round (Like A Record),950,true,Dead or Alive,738,28,3,20,,false,false,,,false,opener|closer|encore
 1738001750,2025-06-03,2025,Brooklyn Bowl,Las Vegas,NV,E,15,Turn On Your Love Light,578,true,Bobby Blue Bland,637,20,52,20,,false,false,,,false,closer|encore
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,1,1,Hot Love & The Lazy Poet,645,false,Vasudo,406,1,24,0,38,false,false,,>,true,opener
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,1,2,Turned Clouds,400,false,,610,4,115,0,,false,false,,",",false,
@@ -6550,7 +6550,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738002457,2025-06-17,2025,Live Oak Bank Pavilion,Wilmington,NC,2,10,A Western Sun,435,false,,1329,4,72,0,51,true,false,First 20-minute version since 11/16/21 hits a typical rocking peak before the final section goes breakneck speed with stop/start jamming and some of the fastest Rick/Peter play of the tour.,",",false,
 1738002457,2025-06-17,2025,Live Oak Bank Pavilion,Wilmington,NC,2,11,Creatures,420,false,,1157,4,132,0,63,false,false,,>,true,jam
 1738002457,2025-06-17,2025,Live Oak Bank Pavilion,Wilmington,NC,2,12,Silver Rising,736,false,,571,3,63,0,36,false,false,,,false,
-1738002457,2025-06-17,2025,Live Oak Bank Pavilion,Wilmington,NC,E,13,You Spin Me Round (Like A Record),950,true,Dead or Alive,636,7,4,0,,false,false,,,false,closer|encore
+1738002457,2025-06-17,2025,Live Oak Bank Pavilion,Wilmington,NC,E,13,You Spin Me Round (Like A Record),950,true,Dead or Alive,636,7,4,0,,false,false,,,false,opener|closer|encore
 1738002473,2025-06-19,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,1,Mas Que Nada,513,true,Sergio Mendes,543,10,24,10,38,false,false,,",",false,
 1738002473,2025-06-19,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,2,Honeybee,490,false,,439,3,35,0,,false,false,,",",false,
 1738002473,2025-06-19,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,3,Torero,979,false,,1457,5,4,0,41,true,false,Spacey digital sauce mode resolves into a more grounded jam thanks to Cotter's urging. Rick and Peter meld on some churning guitar themes before working a shorter-than-usual major-key shift. Some great spacey tones and an ascending riff bring us back home.,",",false,closer|jam|peak
@@ -6662,7 +6662,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738002691,2025-06-29,2025,Westville Music Bowl,New Haven,CT,2,13,Same Old Shenanigans,541,false,,1122,8,58,10,45,false,false,,",",false,closer
 1738002691,2025-06-29,2025,Westville Music Bowl,New Haven,CT,2,14,Slow Ready,422,false,,124,14,91,10,49,false,false,,>,true,
 1738002691,2025-06-29,2025,Westville Music Bowl,New Haven,CT,2,15,fast:slow,981,false,,978,8,4,10,36,false,false,,,false,closer|jam
-1738002691,2025-06-29,2025,Westville Music Bowl,New Haven,CT,E,16,You Spin Me Round (Like A Record),950,true,Dead or Alive,659,7,5,0,,false,false,,,false,closer|encore
+1738002691,2025-06-29,2025,Westville Music Bowl,New Haven,CT,E,16,You Spin Me Round (Like A Record),950,true,Dead or Alive,659,7,5,0,,false,false,,,false,opener|closer|encore
 1745515491,2025-07-25,2025,Fort Adams State Park,Newport,RI,1,1,Rockdale,714,false,Vasudo,,2,71,0,59,false,false,,",",false,opener|closer|jam
 1745515491,2025-07-25,2025,Fort Adams State Park,Newport,RI,1,2,Hungersite,740,false,,,1,71,0,62,false,false,,",",false,opener|jam|peak
 1745515491,2025-07-25,2025,Fort Adams State Park,Newport,RI,1,3,Give It Time,931,false,,,1,25,0,,false,false,,",",false,closer|encore
@@ -6754,7 +6754,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,2,13,Echo of a Rose,463,false,Vasudo,369,5,118,0,65,false,false,,->,true,jam
 1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,2,14,Electric Avenue,464,true,Eddy Grant,876,26,39,20,43,true,false,"Late second set dance party ensues with some charging Goontz. Rick beautifully works the ""Myst"" ending chord progression and then the vocals to complete the first set's version later on.",->,true,
 1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,2,15,Into the Myst,402,false,,220,0,78,0,57,false,false,,>,true,jam
-1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,2,16,You Spin Me Round (Like A Record),950,true,Dead or Alive,625,9,6,10,,false,false,,,false,closer|encore
+1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,2,16,You Spin Me Round (Like A Record),950,true,Dead or Alive,625,9,6,10,,false,false,,,false,opener|closer|encore
 1745888102,2025-09-19,2025,Michigan Lottery Amphitheatre at Freedom Hill,Sterling Heights,MI,E,17,Rockdale,714,false,Vasudo,700,1,75,0,59,false,false,,,false,opener|closer|jam
 1745888259,2025-09-20,2025,Huntingon Bank Pavilion at Northerly Island,Chicago,IL,1,1,Eminence Front,468,true,The Who,453,15,15,10,,false,false,,>,true,opener
 1745888259,2025-09-20,2025,Huntingon Bank Pavilion at Northerly Island,Chicago,IL,1,2,Drive,462,false,,377,4,114,0,67,false,false,,>,true,opener|jam|peak
@@ -6894,7 +6894,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,1,6,Big Modern!,945,false,,1171,5,27,0,56,false,false,,>,true,opener|closer|jam|peak
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,1,7,Give It Time,931,false,,421,4,31,0,,false,false,,,false,closer|encore
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,8,Into the Myst,402,false,,1495,9,79,10,57,true,true,"Rick wastes no time in establishing a jam that is heavily reminiscent of Wanna Be Starting Something for a couple minutes of MJ dance party. The band reboots with a brief interlude of psychedelic searching. Cotter cuts through with the hi-hat as Rick plucks through a propulsive groove that becomes the centerpiece of the next 9 minutes, unleashing a high energy jam featuring the crunchy octave down guitar work and GOONTZ-y drops that have become the hallmark of 2025.",->,true,jam
-1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,9,You Spin Me Round (Like A Record),950,true,Dead or Alive,714,9,7,10,,false,false,,",",false,closer|encore
+1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,9,You Spin Me Round (Like A Record),950,true,Dead or Alive,714,9,7,10,,false,false,,",",false,opener|closer|encore
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,10,Madhuvan,512,false,,1052,5,177,0,75,true,false,"Part of an all-killer, no-filler second set, we get some phenomenal two-guitar Goose and some of the headbangiest music this band has produced. Evil power riffing absolutely DOMINATES here.",>,true,opener|closer|jam
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,11,Thatch,809,false,,493,4,59,0,69,false,false,,>,true,opener|closer|jam|peak
 1750092202,2025-10-04,2025,Mann Center for the Performing Arts,Philadelphia,PA,2,12,Elmeg The Wise,466,false,St. John's Revival,880,38,24,20,40,false,false,,,false,closer|encore
@@ -7318,7 +7318,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,2,10,Can't Get You Out Of My Head,426,true,Kylie Minogue,1052,1,26,0,44,true,false,"The Goontz treatment. Where the previous ""Tumble"" strayed from form, this goes right ahead and nails it.",->,true,jam
 1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,2,11,Tumble,418,false,Vasudo,83,0,134,0,71,false,false,,",",false,closer|jam|peak
 1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,2,12,Arcadia,403,false,,1078,4,219,0,67,false,false,,",",false,closer
-1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,2,13,You Spin Me Round (Like A Record),950,true,Dead or Alive,683,34,8,20,,false,false,,,false,closer|encore
+1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,2,13,You Spin Me Round (Like A Record),950,true,Dead or Alive,683,34,8,20,,false,false,,,false,opener|closer|encore
 1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,E,14,Give It Time,931,false,,650,1,40,0,,false,false,,>,true,closer|encore
 1769450530,2026-06-15,2026,The Dome,Virginia Beach,VA,E,15,SALT,930,false,,396,4,26,0,40,false,false,,,false,opener|closer|encore
 1769450531,2026-06-16,2026,The Dome,Virginia Beach,VA,1,1,Mr. Action,817,false,,418,5,40,0,,false,false,,",",false,
@@ -7476,7 +7476,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,2,9,Hot Tea,408,false,Vasudo,1208,8,167,10,58,false,false,,",",false,closer
 1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,2,10,Red Bird,536,false,,1167,4,64,0,59,false,false,,>,true,jam
 1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,2,11,Hungersite,740,false,,895,2,89,0,62,false,false,,->,true,opener|jam|peak
-1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,2,12,You Spin Me Round (Like A Record),950,true,Dead or Alive,678,11,9,10,,false,false,,,false,closer|encore
+1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,2,12,You Spin Me Round (Like A Record),950,true,Dead or Alive,678,11,9,10,,false,false,,,false,opener|closer|encore
 1769450539,2026-07-02,2026,PNC Bank Arts Center,Holmdel,NJ,E,13,Arcadia,403,false,,843,2,221,0,67,false,false,,,false,closer
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,1,Echo of a Rose,463,false,Vasudo,968,6,128,0,65,true,false,"Opens the SPAC run and debuts Rick's new Lemurian Sceptre guitar in a big way. Immediately heads for dark territory and builds nicely around a theme extremely similar to the Grateful Dead's ""Let It Grow.""",",",false,jam
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,2,Dustin Hoffman,970,false,,1070,4,22,0,43,true,false,"2026 ""Dustin"" riffing with a nice little twist. The jam escapes the usual straight-ahead funk build for some floaty minor-key dissonance before returning to form.",",",false,jam
@@ -7557,3 +7557,19 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,12,(((postplace))),1024,false,,,4,4,0,,false,false,,>,true,closer
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,2,13,So Ready,421,false,,,4,159,0,38,false,false,,,false,closer
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,E,14,Turn On Your Love Light,578,true,Bobby Blue Bland,,16,57,10,,false,false,,,false,closer|encore
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,1,Yeti,416,false,Great Blue,,11,130,10,50,false,false,,",",false,opener
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,2,All I Need,414,false,,,4,161,0,72,false,false,,",",false,jam|peak
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,3,Turbulence & The Night Rays,646,false,Vasudo,,12,48,10,,false,false,,",",false,opener
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,4,Time to Flee,404,false,,,43,111,20,56,false,false,,->,true,
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,5,A Western Sun,435,false,,,6,82,0,51,false,false,,->,true,
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,6,Time to Flee,404,false,,,0,112,0,56,false,false,,",",false,
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,7,Everything Must Go,805,false,,,8,49,10,54,false,false,,",",false,jam|peak
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,1,8,Hungersite,740,false,,,2,91,0,62,false,false,,,false,opener|jam|peak
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,9,You Spin Me Round (Like A Record),950,true,Dead or Alive,,6,10,0,,false,false,,>,true,opener|closer|encore
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,10,Bob Don,429,false,,,8,61,10,38,false,false,,>,true,
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,11,Wysteria Lane,405,false,Vasudo,,7,120,0,73,false,false,,>,true,opener|jam|peak
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,12,Electric Avenue,464,true,Eddy Grant,,7,43,0,43,false,false,,>,true,
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,13,Jive II,413,false,,,7,91,0,44,false,false,,",",false,opener
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,14,Tumble,418,false,Vasudo,,4,137,0,71,false,false,,->,true,closer|jam|peak
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,2,15,Don’t Leave Me This Way,964,true,Harold Melvin & The Blue Notes,,4,10,0,,false,false,,,false,closer
+1769450546,2026-08-18,2026,Commodore Ballroom,Vancouver,BC,E,16,Don't Do It,460,true,The Band,,11,43,10,,false,false,,,false,closer|encore
