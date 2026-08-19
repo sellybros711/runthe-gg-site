@@ -155,26 +155,40 @@ window.GA_ID='G-L29P5MRWKE';
        is duller to look at, and the worst label on the set is 4.6:1, exactly what
        it was before. */
     --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500; --flex:#ba22f1;
-    /* THE THREE DEFENSIVE COLORS. Not aliases of the five above, though three of them
-       currently hold the same hex: the defense draft never shows a receiver and an offense draft never shows
-       a linebacker, so the two sets are free to move apart later without either dragging
-       the other with it.
+    /* THE THREE DEFENSIVE COLORS, now their own rather than borrowed. They used to hold the
+       same three hexes as QB, TE and WR: legible, distinct from each other, and a lie about
+       what they were. A defense had no palette, it had the offense's with two entries left
+       out, and a screenshot of a defensive field was indistinguishable from a screenshot of
+       an offensive one.
 
-       The values are the three of the five that sit furthest apart, which is why they were
-       taken rather than picked fresh. The worst pair in the whole measured set is QB against
-       TE at deltaE 36.7, so a trio drawn from it cannot do worse than that, and every one of
-       them already carries a white label at 7:1 or better on the rendered gradient.
+       PICKED OUT OF THE GAPS THE OFFENSE LEAVES. Those five sit at roughly 350, 145, 208, 38
+       and 285 degrees of hue, which carves the wheel into four usable holes; these are the
+       middles of three of them. Teal at 174, lime at 83, pink at 330. Every pair inside the
+       trio is at least 91 degrees apart, which is what matters most because these three are
+       the only ones ever on screen together.
+
+       THE FOURTH HOLE WENT UNUSED on purpose. It sits around 15 degrees, between the purple
+       and the red, and anything from it reads as a slightly different red next to a QB chip.
+       Three colors that are obviously three beat four that include a near-miss.
+
+       Cross-mode distance is the loosest of the constraints and deliberately so: a defense
+       draft never shows a receiver and an offense draft never shows a linebacker, so pink at
+       330 sitting 20 degrees off QB's red costs nothing that anybody can see. What it must
+       not be is the SAME hex, which is what it was.
+
+       FLEX IS NOT IN HERE AND DOES NOT MOVE. It is the one spot both modes share, so it
+       keeps --flex in both: the same purple on an offense and on a defense, filled or empty.
 
        Without this block every defender painted --flex, the fallback in posPaint, so a
        lineman, a linebacker and a corner were one magenta and the field said nothing. */
-    --dl:#ff0a3b; --lb:#eb9500; --db:#0f93ff;
+    --dl:#14b8a6; --lb:#84cc16; --db:#ec4899;
     /* THE SAME THREE AS RGB TRIPLES, so a group's color can be used at an opacity: an
        empty spot is tinted, not filled, and `rgb(var(--dl-rgb) / .55)` is how you get
        there from a variable. THESE MUST AGREE WITH THE THREE HEXES ABOVE. They are
        written out rather than derived because getPropertyValue feeds --dl straight to
        the share card's canvas, and a canvas is the wrong place to discover that the
        notation changed. */
-    --dl-rgb:255 10 59; --lb-rgb:235 149 0; --db-rgb:15 147 255;
+    --dl-rgb:20 184 166; --lb-rgb:132 204 22; --db-rgb:236 72 153;
     /* THE LABEL ON A CHIP STAYS WHITE, and that is a measured result rather than an
        assumption. Brightening these looked like it must break white text: against
        the PURE colors, white manages only 1.7:1 on the new green and 2.1:1 on the

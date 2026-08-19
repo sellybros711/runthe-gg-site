@@ -552,6 +552,20 @@ window.__DEF={
     };
   },
   paintHome:()=>paintHomeStart(),
+  /* THE EIGHT POSITION TOKENS, straight off the stylesheet. The three defensive ones used to
+     be the same hexes as QB, TE and WR, so a defensive field was an offensive one with two
+     colours missing; this is what says they are their own. Read from the computed root
+     rather than from the source text, because the share card asks the DOM for them too. */
+  palette(){
+    const cs=getComputedStyle(document.documentElement);
+    const g=(n)=>cs.getPropertyValue('--'+n).trim().toLowerCase();
+    const rgb=(n)=>cs.getPropertyValue('--'+n+'-rgb').trim();
+    return {off:{QB:g('qb'),RB:g('rb'),WR:g('wr'),TE:g('te')},
+      def:{DL:g('dl'),LB:g('lb'),DB:g('db')},
+      flex:g('flex'),
+      /* The triples feed a canvas, where a disagreement with the hex is discovered late. */
+      triples:{DL:rgb('dl'),LB:rgb('lb'),DB:rgb('db')}};
+  },
   /* The launch sticker: whether it is up, whether its window is still open, that it is on
      the DEFENSE half and not the offense one, and that it is out of the flow. The last is
      the one that would go wrong silently: the two halves are equal grid columns, so anything
@@ -947,6 +961,32 @@ boot();`;
     ok('and the flex is none of them',
       hueOf('FLEX').length === 1 && !groups.some((h) => h[0] === hueOf('FLEX')[0]),
       hueOf('FLEX'));
+
+    /* ── THE DEFENSE OWNS ITS COLOURS ────────────────────────────────────────
+       DL, LB and DB used to be the same three hexes as QB, TE and WR. Everything above
+       still passed while that was true: they were distinct from each other, they were
+       legible, and the field drew correctly. What they were not was the DEFENSE'S, and no
+       assertion here could tell. This one can. */
+    const pal = await p.evaluate(() => window.__DEF.palette());
+    const offHexes = Object.values(pal.off);
+    const clash = Object.entries(pal.def).filter(([, v]) => offHexes.includes(v));
+    ok('no defensive colour is an offensive colour wearing a different name',
+      clash.length === 0, { clash, off: pal.off, def: pal.def });
+    ok('and the three of them are three, not two and a repeat',
+      new Set(Object.values(pal.def)).size === 3, pal.def);
+    /* FLEX is the one spot both modes share, so it is the one colour that must NOT have
+       moved: same purple on an offense and on a defense. */
+    ok('flex is untouched and is nobody else\'s colour',
+      pal.flex === '#ba22f1'
+      && !offHexes.includes(pal.flex) && !Object.values(pal.def).includes(pal.flex),
+      { flex: pal.flex });
+    /* The triples are handed to a canvas, which is the wrong place to discover that they
+       drifted from the hexes beside them. */
+    const hexToTriple = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(' ');
+    const drift = Object.entries(pal.def)
+      .filter(([k, v]) => pal.triples[k] !== hexToTriple(v));
+    ok('and each rgb triple still agrees with its own hex', drift.length === 0,
+      { drift, triples: pal.triples });
 
     let spent = 0;
     for (let i = 0; i < 9; i++) {
