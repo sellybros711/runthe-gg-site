@@ -338,6 +338,19 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.72)}
   .hp-pips{position:relative;display:flex;gap:3px}
   .hp-pips i{width:7px;height:7px;border-radius:50%}
+  /* THE LAUNCH STICKER, top right corner of the half it belongs to. Solid rather than the
+     translucent .hp-new chip beside "More ways to play": that one sits on a near-black panel
+     where a 16% green wash reads fine, and this one sits on a saturated blue button where
+     the same wash disappears into it. Dark text on solid green is the only version that
+     still reads as a sticker at 8.5px.
+     Absolutely positioned so it cannot push the label off centre: the two halves are a grid
+     of equal columns and anything in the flow of one and not the other shifts it. */
+  .hp-tag{position:absolute;top:6px;right:6px;font-family:var(--fn);font-size:8.5px;
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 5px;
+    border-radius:4px;background:#4ade80;color:#06280f;
+    box-shadow:0 1px 6px -1px rgba(0,0,0,.55)}
+  /* The attribute needs its own rule here for the same reason .hp-start[hidden] does. */
+  .hp-tag[hidden]{display:none}
   /* Loading, while the defensive pool is fetched. The pool is a second data file and on a
      slow connection the tap would otherwise do nothing visible for a second or two. */
   .hp-side.hp-loading{opacity:.6}
@@ -4257,6 +4270,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="hp-side-sub">QB RB WR TE FLEX</span>
       </button>
       <button class="hp-side hp-def" id="b-start-def">
+        <!-- Hidden in the markup and revealed by script inside its window, the same way the
+             chip on More ways to play is: if the script never runs, a missing sticker is a
+             smaller lie than one that says NEW forever. See DEFENSE_NEW_UNTIL. -->
+        <span class="hp-tag" id="hp-def-new" hidden>New</span>
         <span class="hp-pips"><i style="background:var(--dl)"></i><i style="background:var(--lb)"></i><i
           style="background:var(--db)"></i></span>
         <span class="hp-side-name">Defense</span>
@@ -5225,7 +5242,7 @@ const isDefRun=()=>!!(run&&run.defense);
    fine for hiding an unannounced game mode and would not be fine for anything else. The
    database is what actually decides whether a run is recorded, and it does not consult
    this list. */
-const DEFENSE_LIVE=false;
+const DEFENSE_LIVE=true;
 const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3'];
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
@@ -6239,6 +6256,10 @@ function paintHomeStart(){
      the front page, so it clears the state whatever left it behind. */
   const def=$('b-start-def');
   if(def){ def.disabled=false; def.classList.remove('hp-loading'); }
+  /* Painted here rather than in paintNewChip because it lives inside the split, which this
+     function is the one that governs: the sticker cannot be shown on a control that is not. */
+  const tag=$('hp-def-new');
+  if(tag) tag.hidden=!(on&&defenseNewLive());
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -6390,6 +6411,25 @@ function paintNewChip(){
   if(!el) return;
   el.hidden=!modesNewLive();
 }
+
+/* ---- THE STICKER ON THE DEFENSE HALF ----
+   Its OWN date, not MODES_NEW_UNTIL's. That constant is deliberately un-named so the next
+   thing behind "More ways to play" can reuse it by moving a date, and this is not that
+   thing: the defense draft is on the front page rather than behind that button, and it
+   launched on its own day. Two announcements that started on different days need two dates,
+   or the second one inherits however much of the first one's window happens to be left.
+
+   Expires on its own, for the reason the other one does: a NEW sticker still sitting there
+   in a month is worse than no sticker, and the thing most likely to keep it there forever is
+   a person meant to come back and delete it. Push the date out to extend it; set it to null,
+   or let it pass, to end it. */
+const DEFENSE_NEW_UNTIL='2026-09-16T00:00:00Z';
+const defenseNewLive=()=>{
+  if(!DEFENSE_NEW_UNTIL) return false;
+  const until=Date.parse(DEFENSE_NEW_UNTIL);
+  /* An unparseable date leaves it off rather than on forever. */
+  return isFinite(until)&&Date.now()<until;
+};
 const CFB_URL='/cfb/';
 
 function modeMenu(){

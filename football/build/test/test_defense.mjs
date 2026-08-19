@@ -552,6 +552,31 @@ window.__DEF={
     };
   },
   paintHome:()=>paintHomeStart(),
+  /* The launch sticker: whether it is up, whether its window is still open, that it is on
+     the DEFENSE half and not the offense one, and that it is out of the flow. The last is
+     the one that would go wrong silently: the two halves are equal grid columns, so anything
+     in the flow of one and not the other shifts that half's label off centre against its
+     twin, and nothing throws. */
+  sticker(){
+    const tag=document.getElementById('hp-def-new');
+    const def=document.getElementById('b-start-def');
+    const off=document.getElementById('b-start-off');
+    const centre=(b)=>{ const n=b&&b.querySelector('.hp-side-name'); if(!n) return null;
+      const r=n.getBoundingClientRect(), p2=b.getBoundingClientRect();
+      return Math.round((r.left+r.right)/2-(p2.left+p2.right)/2); };
+    const dc=centre(def), oc=centre(off);
+    return {
+      inDefense:!!tag&&!!def&&def.contains(tag),
+      inOffense:!!tag&&!!off&&off.contains(tag),
+      shown:!!tag&&tag.offsetParent!==null&&tag.getBoundingClientRect().height>0,
+      windowOpen:defenseNewLive(),
+      until:DEFENSE_NEW_UNTIL,
+      absolute:!!tag&&getComputedStyle(tag).position==='absolute',
+      /* Both labels the same distance off their own half's centre, within a pixel. */
+      labelCentred:dc!==null&&oc!==null&&Math.abs(dc-oc)<=1&&Math.abs(dc)<=1,
+      text:tag?tag.textContent.trim():null,
+    };
+  },
   /* The mode MOVED. A card left behind in the menu would be a second door to the same
      place, gated by different code. */
   menuHasCard:()=>!!document.getElementById('b-mc-def'),
@@ -677,10 +702,18 @@ boot();`;
   if (src.split('\nboot();').length !== 2) throw new Error('the boot() anchor moved');
   /* The gate is a const in the shipped file and stays one. The probe copy adds an override
      beside it so the same build can be seen both ways. */
+  /* THE OVERRIDE STANDS IN FOR THE FLAG, NOT FOR THE ANSWER, and the difference is the
+     whole allowlist half of this suite. Short-circuiting canPlayDefense to return the
+     override outright made setLive(false) mean "nobody, including testers", so the moment
+     DEFENSE_LIVE shipped true there was no way left to reach the state the allowlist governs:
+     flag off, named account in. Replacing the flag READ instead leaves the rest of the gate
+     doing its real work under every setting. */
   const GATE = 'const canPlayDefense=()=>{';
+  const FLAG = 'if(DEFENSE_LIVE) return true;';
   if (src.split(GATE).length !== 2) throw new Error('the defense gate moved; update this file');
-  src = src.replace(GATE, 'let __defLiveOverride=null;\n' + GATE
-    + '\n  if(__defLiveOverride!==null) return __defLiveOverride;');
+  if (src.split(FLAG).length !== 2) throw new Error('the DEFENSE_LIVE check moved; update this file');
+  src = src.replace(GATE, 'let __defLiveOverride=null;\n' + GATE)
+    .replace(FLAG, 'if(__defLiveOverride!==null?__defLiveOverride:DEFENSE_LIVE) return true;');
   fs.writeFileSync(PROBE, src.replace('\nboot();', HOOK));
   const b = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
@@ -731,14 +764,17 @@ boot();`;
 
     /* ── THE TESTER ALLOWLIST ─────────────────────────────────────────────────
        Between "nobody" and "everybody" there is a middle state: named accounts get the real
-       mode on the real database while everybody else sees the front page unchanged. The
-       override goes back to null here so the shipped gate answers, which is the only way
-       the allowlist is under test rather than bypassed. */
-    await p.evaluate(() => window.__DEF.setLive(null));
+       mode on the real database while everybody else sees the front page unchanged. The mode
+       is LIVE now, so the shipped gate answers "everybody" and would no longer exercise this
+       at all: the whole block stays under an explicit setLive(false), which is what makes it
+       a test of the ALLOWLIST rather than of the flag. It is worth keeping past launch
+       because the flag is the rollback: if the mode ever has to be pulled, this is the state
+       it goes back to, and a path nobody tests is a path nobody can trust in a hurry. */
+    await p.evaluate(() => window.__DEF.setLive(false));
     const testers = await p.evaluate(() => window.__DEF.testers());
     console.log(`  (testers: ${testers.join(', ') || 'none'})`);
-    ok('the allowlist is not empty while the mode is gated',
-      shipped === true || testers.length > 0, testers);
+    ok('the allowlist is not empty, so the rollback state still has a way in',
+      testers.length > 0, testers);
     /* Capitalised on purpose: a username is displayed the way it was typed and a tester
        should not have to match their own capitalisation to reach the mode. */
     await p.evaluate((n) => window.__DEF.auth({ ready: true, signedIn: true, name: n, userId: 'u2' }),
@@ -796,6 +832,26 @@ boot();`;
     await p.waitForTimeout(250);
     ok('signed out: one button too, and a name is what the allowlist matches on',
       await p.evaluate(() => { const h = window.__DEF.home(); return h.single && !h.split; }));
+
+    /* ── AND WHAT THE PAGE ACTUALLY SHIPS ─────────────────────────────────────
+       Everything above drove the gate through an override. This asks the shipped constant,
+       with nobody signed in, which is the state a stranger arriving at runthe.gg is in. */
+    await p.evaluate(() => window.__DEF.setLive(null));
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(250);
+    const shipState = await p.evaluate(() => window.__DEF.home());
+    ok('as shipped, a signed-out visitor gets both halves',
+      shipped === true ? (shipState.split && !shipState.single)
+        : (shipState.single && !shipState.split),
+      { DEFENSE_LIVE: shipped, split: shipState.split, single: shipState.single });
+    /* The sticker rides the launch window and takes itself away, so it is asserted against
+       the date the page carries rather than against a hardcoded expectation of "on". */
+    const sticker = await p.evaluate(() => window.__DEF.sticker());
+    ok('the New sticker is on the Defense half for its launch window, and only there',
+      sticker.inDefense && sticker.shown === (shipped && sticker.windowOpen),
+      sticker);
+    ok('and it sits in the corner without pushing the label off centre',
+      !sticker.shown || (sticker.absolute && sticker.labelCentred), sticker);
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
     await p.waitForTimeout(200);
 

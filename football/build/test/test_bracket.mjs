@@ -131,6 +131,17 @@ const buildProbe = () => {
 const on = (p, id) => p.evaluate((i) => {
   const s = document.getElementById(i); return !!s && s.classList.contains('on'); }, id);
 
+/* INTO AN OFFENSE DRAFT, whichever control the front page is currently offering it under.
+   The front page shows one full-width Start a run while the defense draft is off, and the
+   Offense half of a split once it is on; clicking #b-start by name worked until the day that
+   flag flipped and then timed out on a button that was still in the DOM and no longer
+   rendered. This suite is about the postseason and should not care which. */
+const startOffense = async (p) => {
+  const split = await p.evaluate(() => {
+    const s = document.getElementById('hp-split'); return !!s && !s.hidden; });
+  await p.click(split ? '#b-start-off' : '#b-start');
+};
+
 /* THE DRAFT, PLAYED BY SOMEBODY WHO IS TRYING. Best points per game it can afford, holding
    a floor back for the spots still to fill, which is the whole puzzle the game is built
    around and takes about 139 of the 140 available.
@@ -408,7 +419,7 @@ try {
     for (; tries < 8 && !shots.length; tries++) {
       await p.goto(HOST + '/football/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
       await p.waitForSelector('#s-intro.on', { timeout: 60000 });
-      await p.click('#b-start');
+      await startOffense(p);
       await p.waitForSelector('#opts .tile', { timeout: 30000 });
       if (await draft(p) < SPOTS) { short++; continue; }
       await p.waitForSelector('#s-squad.on,#s-season.on', { timeout: 30000 });
