@@ -521,6 +521,27 @@ window.__DEF={
     .map(o=>({value:o.value,label:o.textContent})),
   scopeFor(v){ const sel=document.getElementById('lb-comp'); sel.value=v;
     sel.dispatchEvent(new Event('change')); return lbScope(); },
+  /* THE URL EACH COMPETITION ACTUALLY ASKS FOR, with fetch stubbed so the real call is
+     built and nothing leaves the page. This is the question "does a defense run show up on
+     the classic board" reduced to something answerable: the filtering is the database's, so
+     what decides it is the run_mode the client puts in the query string. */
+  async urlFor(v){
+    const sel=document.getElementById('lb-comp'); sel.value=v;
+    sel.dispatchEvent(new Event('change'));
+    const seen=[]; const real=window.fetch;
+    window.fetch=(u,o)=>{ seen.push(String(u));
+      return Promise.resolve(new Response('[]',{status:200,
+        headers:{'Content-Type':'application/json','Content-Range':'0-0/0'}})); };
+    try{ await B.top(lbScope(),10,'record','desc'); }
+    finally{ window.fetch=real; }
+    return seen.find(u=>/ps_runs\?/.test(u))||null;
+  },
+  /* What the picker offers, as a flat list with its groupings, so the shape of the menu is
+     under test and not only the values in it. */
+  compTree:()=>[...document.querySelectorAll('#lb-comp > optgroup, #lb-comp > option')]
+    .map(el=>el.tagName==='OPTGROUP'
+      ? {group:el.label,options:[...el.children].map(o=>({v:o.value,t:o.textContent}))}
+      : {v:el.value,t:el.textContent}),
   /* THE FRONT PAGE'S OWN STATE, which is where the mode now lives. One full-width Start a
      run for everybody, or the Offense and Defense pair for anybody on the allowlist. */
   home(){
@@ -552,6 +573,10 @@ window.__DEF={
     };
   },
   paintHome:()=>paintHomeStart(),
+  /* The sentence over the rank windows on the results screen, which is a claim about WHICH
+     field the number underneath was measured in. */
+  rankCopy:()=>({against:rankAgainst(),apart:rankApart(),kind:runKindOf(
+    {run_mode:runMode(),franchise:run&&run.franchise,era:run&&run.era})}),
   /* THE EIGHT POSITION TOKENS, straight off the stylesheet. The three defensive ones used to
      be the same hexes as QB, TE and WR, so a defensive field was an offensive one with two
      colours missing; this is what says they are their own. Read from the computed root
@@ -920,6 +945,46 @@ boot();`;
       await p.evaluate(() => window.__DEF.scopeFor('defense').mode) === 'defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense')));
 
+    /* ── A DEFENSE RUN CANNOT REACH THE OFFENSE BOARD ─────────────────────────
+       The filtering is the database's, so the only thing the page can get wrong is the
+       run_mode it asks for. Both directions are checked, because one filter being right
+       says nothing about the other: the offense board asking for eq.free is what keeps a
+       defense season off it, and the defense board asking for eq.defense is what stops it
+       being ranked against six receivers. The URLs are read off a stubbed fetch, so these
+       are the requests the page really builds rather than the scope object it intended. */
+    const urlOff = await p.evaluate(() => window.__DEF.urlFor(''));
+    const urlDef = await p.evaluate(() => window.__DEF.urlFor('defense'));
+    ok('the offense board asks for run_mode=free, and never for defense',
+      !!urlOff && /run_mode=eq\.free/.test(urlOff) && !/defense/.test(urlOff),
+      urlOff && urlOff.replace(/^.*\/rest/, '').slice(0, 140));
+    ok('the defense board asks for run_mode=defense, and never for free',
+      !!urlDef && /run_mode=eq\.defense/.test(urlDef) && !/run_mode=eq\.free/.test(urlDef),
+      urlDef && urlDef.replace(/^.*\/rest/, '').slice(0, 140));
+    /* Every competition names one, so no board can ever be an unfiltered read of the table.
+       That is the property that actually prevents the leak; the two above are instances. */
+    const everyUrl = await p.evaluate(async () => {
+      const out = {};
+      for (const v of ['', 'defense', 'era:2010s', 'GB']) out[v] = await window.__DEF.urlFor(v);
+      return out;
+    });
+    ok('every competition filters on a run_mode, so no board reads the table unfiltered',
+      Object.values(everyUrl).every((u) => u && /run_mode=eq\.[a-z]+/.test(u)),
+      Object.fromEntries(Object.entries(everyUrl)
+        .map(([k, u]) => [k || 'offense', (String(u).match(/run_mode=eq\.[a-z]+/) || ['none'])[0]])));
+
+    /* ── AND THE PICKER PUTS THE TWO SIDES TOGETHER ───────────────────────────
+       They are one choice on the front page; a menu that lists Offense at the top and
+       Defense three entries below it describes a different game. */
+    const tree = await p.evaluate(() => window.__DEF.compTree());
+    const ps = tree.find((x) => x.group === 'Perfect Season');
+    ok('the picker leads with Perfect Season, holding Offense and Defense',
+      !!ps && ps.options.length === 2
+      && ps.options[0].v === '' && /Offense/.test(ps.options[0].t)
+      && ps.options[1].v === 'defense' && /Defense/.test(ps.options[1].t),
+      ps || tree.slice(0, 3));
+    ok('and nothing in it still calls the offense board Classic Mode',
+      !JSON.stringify(tree).includes('Classic'), tree.slice(0, 2));
+
     await p.evaluate(() => { window.__DEF.paintHome(); window.__DEF.intro(); });
     await p.waitForSelector('#s-intro.on', { timeout: 10000 });
     await p.waitForTimeout(300);
@@ -1076,19 +1141,45 @@ boot();`;
     const st = await p.evaluate(() => window.__DEF.state());
     ok('a full season plays', st.games === 17 && st.wins + st.losses === 17, st);
 
+    /* THE RANK IS A CLAIM ABOUT A FIELD, so the sentence over it has to name the right one.
+       It branched on run.franchise alone, so everything that was not One Franchise was told
+       it had been placed "among every free run": for a defense season that is the one board
+       it is certainly not on, printed directly above its actual placing. */
+    const copy = await p.evaluate(() => window.__DEF.rankCopy());
+    ok('the results screen ranks a defense run against Defense runs, not free ones',
+      /Defense/.test(copy.against) && !/free/i.test(copy.against)
+      && !/One Franchise/.test(copy.against), copy);
+    ok('and it says the modes are kept apart', /own board/.test(copy.apart), copy);
+    ok('and the run names itself Defense rather than a free run', copy.kind === 'Defense', copy);
+
     /* WALK IT TO THE END BEFORE READING THE WIRE, because a run that made the playoffs stops
        at seeding and has submitted nothing yet. The three assertions below read the submit
        body, so on a season good enough to be seeded they were reading an undefined request
        and failing: not a flaky mode, a flaky test, and one that only showed up when the
        drafted defense happened to be good. Measured across runs of this suite the same
        roster policy went 7-10 and then 12-5, and only the losing season passed. */
-    for (let i = 0; i < 25; i++) {
+    /* DRIVEN BY THE REAL FAST-FORWARD CONTROLS, in preference to any button whose label
+       happens to match. A 13-4 defense plays four playoff rounds, and each one is a bracket
+       reveal AND a called game; walking that on a generic text match at 800ms a click ran
+       out of iterations before the results screen, which came back as the three submit
+       assertions below failing on a request that had never been made. Those two ids are the
+       page's own skip controls and they end an animation outright. */
+    for (let i = 0; i < 60; i++) {
       if (await p.evaluate(() => document.getElementById('s-over').classList.contains('on'))) break;
-      await p.evaluate(() => { const b2 = [...document.querySelectorAll('.screen.on button')]
-        .find((x) => !x.disabled && /start|play|next|continue|see|results|skip|finish/i.test(x.textContent));
-        if (b2) b2.click(); });
-      await p.waitForTimeout(800);
+      const clicked = await p.evaluate(() => {
+        const live = (id) => { const e = document.getElementById(id);
+          return e && !e.disabled && e.offsetParent !== null ? e : null; };
+        const fast = live('b-nbrk-fast') || live('b-po-fast') || live('b-po');
+        if (fast) { fast.click(); return 'fast:' + fast.id; }
+        const b2 = [...document.querySelectorAll('.screen.on button')]
+          .find((x) => !x.disabled && /start|play|next|continue|see|results|skip|finish/i.test(x.textContent));
+        if (b2) { b2.click(); return 'text:' + (b2.id || b2.textContent.trim()); }
+        return null;
+      });
+      await p.waitForTimeout(clicked && clicked.startsWith('fast') ? 500 : 800);
     }
+    ok('the run reaches its results screen',
+      await p.evaluate(() => document.getElementById('s-over').classList.contains('on')));
 
     /* ── THE RUN HAS TO BE RECORDED AS THE GAME IT WAS ────────────────────────
        This is the assertion that would have saved the Trade Machine, and it is written

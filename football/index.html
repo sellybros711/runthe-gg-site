@@ -12818,8 +12818,17 @@ async function pfDraftsPaint(userId,tab){
       '<span class="n">'+(i+1)+'</span>'+
       '<span class="who"><b>'+esc(r.wins+'-'+r.losses+
         (r.perfect?' perfect season':' '+String(r.seed_label||'').toLowerCase()))+'</b>'+
-        '<span>'+esc((rosterLine(r.picks)||runKindOf(r))+
-          (day(r.created_at)?' · '+day(r.created_at):''))+'</span></span>'+
+        /* WHICH MODE, ALWAYS, not only when the roster cannot be read. This panel is the one
+           place in the game where the modes MIX: every board is filtered to one competition
+           and this lists your runs across all of them. The line used to be the two best
+           players OR the mode name, whichever it could manage, so a defense run whose picks
+           happened to resolve was two defenders' names and nothing at all to say it was a
+           defense. Worse, it resolved inconsistently: defender ids only resolve once the
+           defensive pool has been loaded, so the same run said "Defense" before you opened
+           that draft and named two linemen afterwards. Mode first now, players after it when
+           they are there. */
+        '<span>'+esc([runKindOf(r),rosterLine(r.picks),day(r.created_at)]
+          .filter(Boolean).join(' · '))+'</span></span>'+
       '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'—')+
         '</b><span>rating</span></span>'+
       '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
@@ -13186,7 +13195,9 @@ function fbContext(){
     const scr=(document.querySelector('.screen.on')||{}).id||'-';
     const who=authState.signedIn?(authState.name||'(no name yet)'):'(guest)';
     let where='no run';
-    const kind=run&&run.franchise?' (One Franchise: '+E.nickname(run.franchise)+')':' (free run)';
+    /* Through runKindOf so a bug report names the mode the run was actually in. It said
+       "(free run)" for every mode that was not One Franchise, including a defense. */
+    const kind=run?' ('+runKindOf({run_mode:runMode(),franchise:run.franchise,era:run.era})+')':'';
     if(run&&run.outcome) where='finished '+run.outcome.record+kind;
     else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of 6 picked'+kind;
     return 'Screen: '+scr+'\nRun: '+where+'\nAccount: '+who+
@@ -13770,10 +13781,8 @@ async function paintRanks(){
      reading. */
   if(submitted==='guest'||nameless()){
     const guest=submitted==='guest';
-    el.innerHTML='<p class="rankwho">'+(run.franchise
-        ? 'Where this would have placed among every One Franchise '+
-          esc(E.nickname(run.franchise))+' run.'
-        : 'Where this would have placed among every free run.')+'</p>'+
+    el.innerHTML='<p class="rankwho">Where this would have placed among '+
+        rankAgainst()+'.</p>'+
       '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<div class="guestgate">'+
         '<b>'+(guest?'Sign in to get on the board':'Pick a username to get on the board')+'</b>'+
@@ -13801,10 +13810,7 @@ async function paintRanks(){
     $('b-diag-x').onclick=runDiagnostics;
     return;
   }
-  el.innerHTML='<p class="rankwho">'+(run.franchise
-      ? 'Against every One Franchise '+esc(E.nickname(run.franchise))+' run. Each '+
-        'franchise has its own board.'
-      : 'Against every free run. One Franchise runs are scored separately.')+'</p>'+
+  el.innerHTML='<p class="rankwho">Against '+rankAgainst()+'. '+rankApart()+'</p>'+
     '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
@@ -14042,9 +14048,20 @@ function paintComp(){
   const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'');
   if(!sel.options.length||sel.dataset.tm!==wantTrade){
     sel.dataset.tm=wantTrade;
-    sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
+    /* THE TWO SIDES OF THE BALL, TOGETHER AND FIRST. They are one choice presented as one
+       pair on the front page, so a picker that lists Offense at the top and Defense three
+       entries below it, past the Trade Machine, is describing a different game from the one
+       the player just came out of.
+       "Offense" rather than "Classic Mode", for the same reason. Classic said what it was
+       when it was the only way to play; with a defense draft beside it the word names an
+       era rather than a side of the ball, and the two boards are not old and new, they are
+       one and the other. The stored run_mode is still 'free' and the option's value is still
+       empty: this is what the board is CALLED, not what it queries. */
+    sel.innerHTML='<optgroup label="Perfect Season">'+
+        '<option value="">Offense</option>'+
+        (canPlayDefense()?'<option value="defense">Defense</option>':'')+
+      '</optgroup>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
-      (canPlayDefense()?'<option value="defense">Defense</option>':'')+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
@@ -14577,13 +14594,47 @@ function gmCell(row){
    the player said they supported, and calling those One Franchise runs would be wrong about
    several hundred of them. Rows recorded before the column existed answer 'free', which is
    what they were. */
+/* WHAT THE RANK UNDER IT IS ACTUALLY AGAINST, in the player's own words.
+   Both call sites used to branch on run.franchise alone: One Franchise got its club named
+   and EVERYTHING else got "every free run". That was true while free play was the only
+   other thing there was. It stopped being true when the Eras Draft and the Trade Machine
+   arrived and it became actively wrong with the defense draft, which was told its season
+   had been placed among every free run: the one board it is certainly not on. A rank is a
+   claim about a field, so the sentence has to name the right field or the number over it is
+   about somebody else's competition. */
+function rankAgainst(){
+  if(run&&run.defense) return 'every Defense run';
+  if(run&&run.tradeMachine) return 'every Trade Machine run';
+  if(run&&run.franchise) return 'every One Franchise '+E.nickname(run.franchise)+' run';
+  if(run&&run.era) return 'every '+esc(run.era)+' Eras Draft run';
+  return 'every Offense run';
+}
+/* And the line that says the fields are kept apart. The club one is more specific because
+   there are thirty-two of them and that is the surprising part. */
+function rankApart(){
+  return (run&&run.franchise&&!run.defense&&!run.tradeMachine)
+    ? 'Each franchise has its own board.'
+    : 'Every mode has its own board.';
+}
 function runKindOf(row){
-  if(row&&row.run_mode==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
-  if(row&&row.run_mode==='trade') return 'Trade Machine';
-  if(row&&row.run_mode==='defense') return 'Defense';
-  if(row&&row.run_mode==='era'&&row.era) return 'Eras Draft, '+row.era;
-  if(row&&row.run_mode==='daily') return 'daily puzzle';
-  return 'free run';
+  const m=row&&row.run_mode;
+  if(m==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
+  if(m==='trade') return 'Trade Machine';
+  if(m==='defense') return 'Defense';
+  if(m==='era'&&row.era) return 'Eras Draft, '+row.era;
+  if(m==='daily') return 'daily puzzle';
+  /* OFFENSE, NOT "FREE RUN". The words were fine while this was the only way to play and
+     the only thing "free" distinguished was the absence of a club or an era. Beside a
+     Defense run it names the wrong axis: the two are not free and locked, they are the two
+     sides of the ball, and every other surface in the game now says so.
+     A row from before run_mode existed carries no mode at all, and every one of those was
+     this: the offense draft, nothing locked. So a missing mode reads the same as 'free'
+     rather than falling through to the unknown case below. */
+  if(!m||m==='free') return 'Offense';
+  /* A MODE THIS BUILD HAS NEVER HEARD OF, which is a row written by a newer one. It used to
+     come out as "free run", which is a specific claim and a wrong one. The generic is the
+     one thing that is still true of it. */
+  return 'Perfect Season';
 }
 
 /* The two best players on a board row, by the price the game put on them. Any id
