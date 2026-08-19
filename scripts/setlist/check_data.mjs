@@ -28,6 +28,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
+  'teases',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -925,6 +926,58 @@ console.log('the archive notes');
   check(!rows.some(r => /[\n\r]/.test(r.footnote) || /[\n\r]/.test(r.show_notes)),
     'notes are stored as one line');
 }
+/* TEASES: what the band quoted without playing.
+ *
+ * A few bars of somebody else's song dropped inside this one. It exists only as
+ * footnote prose ("With Axel F teases from Rick"), so the ingester parses it out
+ * into its own column and this checks the parse against the prose it came from.
+ */
+{
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const mentions = rows.filter(r => /\btease[sd]?\b/i.test(r.footnote || ''));
+  const parsed = rows.filter(r => r.teases);
+  check(mentions.length > 200, `footnotes mention teases (${mentions.length})`);
+  /* EVERY MENTION MUST YIELD A SONG. The rule got there in two goes: an
+     acronym's own full stop is not a sentence end ("Still D.R.E.", "S.O.S."),
+     and "teases from Rick and Stuart Bogie on saxophone" splits on "and" into
+     a song and a person. Both were found by looking at what it missed, and a
+     silent 99% would have shipped without this. */
+  const missed = mentions.filter(r => !r.teases);
+  check(!missed.length, 'and every one of them names a song',
+    missed.length ? `${missed.length} missed, e.g. "${missed[0].footnote}"` : '');
+  check(parsed.length === mentions.length, 'nothing is parsed out of a footnote without one');
+  const all = parsed.flatMap(r => r.teases.split('|').filter(Boolean));
+  check(all.length > mentions.length,
+    `some performances carry more than one (${all.length} teases in ${mentions.length} rows)`);
+  // Junk the rule is written to exclude, checked on the output.
+  const junk = all.filter(t => /\bon\s+(guitar|sax|saxophone|trumpet|keys|drums|percussion|vocals)$/i.test(t));
+  check(!junk.length, 'and a guest musician is not read as a teased song',
+    junk.length ? `e.g. "${junk[0]}"` : '');
+  check(!all.some(t => /\btease/i.test(t)), 'nor is the word "tease" itself');
+  check(!all.some(t => t.length > 60), 'and nothing absurdly long got through');
+  /* COMMAS ARE PART OF TITLES, and the first version of the rule split on them:
+     "With One In, One Out teases" became two songs and "Mercy, Mercy, Mercy"
+     became three. Both are single teases of a single song, and both are in this
+     archive, so they are named. */
+  for (const t of ['One In, One Out', 'Mercy, Mercy, Mercy'])
+    check(all.some(x => x.toLowerCase() === t.toLowerCase()),
+      `a title with a comma survives whole: "${t}"`);
+  // And an acronym's own full stop is not a sentence end.
+  for (const t of ['Still D.R.E.', 'S.O.S.'])
+    check(all.some(x => x.toLowerCase() === t.toLowerCase()),
+      `  as does an acronym: "${t}"`);
+}
+/* The profile stat. Counted in teases rather than performances, which is why
+   PERF_STATS.teases carries an expand: 254 rows hold 284 of them. */
+check(/teases:\s*\{ label: 'Teases you caught'/.test(gameBare),
+  'the profile counts teases');
+check(/expand: p => String\(p\.teases\)/.test(gameBare),
+  'and counts each one, not each performance that has any');
+check(/st\.teases \? \[st\.teases, 'teases', 'teases'\]/.test(gameBare),
+  'the tile is on the profile and opens its list');
+check(/p\._tease \|\| p\.song/.test(gameBare),
+  'and the list names the song that was teased');
+
 /* WHERE THEY SHOW UP. Four surfaces, and the draft is the one that was asked
    for: the note on the take you are choosing between. */
 check(/function perfNote\(perf\)/.test(gameBare), 'the note is read through one helper');
@@ -1346,12 +1399,26 @@ check(/const segues = statCount\(perf, 'segues'\)/.test(gameBare),
   'and the profile counts through it rather than inline');
 check(!/if \(String\(p\.is_segue\) === 'true'\) segues\+\+/.test(gameBare),
   'the old inline copies are gone');
-/* Named at the LIST site specifically: statCount filters with the same
-   expression, so a looser pattern is satisfied by the counter alone. */
-check(/let hits = perf\.filter\(def\.pick\);/.test(gameBare),
-  'the list filters through the same definition');
-check(/const hits = perf\.filter\(def\.pick\);/.test(gameBare),
-  'and so does the count');
+/* SLICED PER FUNCTION, because both now open with the same line. This used to
+   distinguish them by `let` versus `const`, which stopped telling them apart
+   the moment statCount needed to reassign. A pattern that matches either one
+   is satisfied by the counter alone, which is exactly the drift being guarded. */
+{
+  const fnBody = (name, end) => {
+    const i = gameBare.indexOf(`function ${name}(`);
+    return i < 0 ? '' : gameBare.slice(i, gameBare.indexOf(end, i));
+  };
+  const counter = fnBody('statCount', '\n}');
+  const lister = fnBody('openStat', 'SHOW_STATS[key]');
+  check(/perf\.filter\(def\.pick\)/.test(lister), 'the list filters through the same definition');
+  check(/perf\.filter\(def\.pick\)/.test(counter), 'and so does the count');
+  /* ONE PERFORMANCE CAN BE SEVERAL OF THE THING COUNTED. A tease footnote can
+     name two songs, so 254 performances carry 284 teases. Both sites have to
+     expand or the tile says 284 and opens a list of 254, which is the precise
+     failure the count-equals-list contract exists to prevent. */
+  check(/def\.expand/.test(counter), 'the count expands a row that holds several');
+  check(/def\.expand/.test(lister), 'and the list expands it the same way');
+}
 check(/id="statSheet"/.test(gameBare) && /function openStat\(key\)/.test(gameBare),
   'tapping a number opens what is behind it');
 check(/data-stat="\$\{esc\(stat\)\}"/.test(gameBare), 'the tiles carry the key they were counted with');
