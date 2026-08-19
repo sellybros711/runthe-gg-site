@@ -2395,7 +2395,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = '20e93049';
+const DATA_VERSION = 'c592ac14';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -4049,6 +4049,20 @@ const PERF_STATS = {
   covers:    { label: 'Covers you have heard',
                pick: p => String(p.is_cover) === 'true', unique: true,
                note: p => p.original_artist || '' },
+  /* WHAT THE BAND QUOTED WITHOUT PLAYING. A few bars of somebody else's song
+     dropped inside this one, which is the sort of thing a night gets remembered
+     for. The archive keeps them in the footnote prose; the ingester parses them
+     out into a pipe-delimited column, because one performance can carry several
+     ("With Carol Of The Bells teases from Rick and Give Up The Funk tease from
+     Trevor") and the count has to be teases rather than performances.
+     EXPANDED, so the tile and the list agree: 254 performances carry 284 teases,
+     and a tile saying 284 that opens a list of 254 is the exact bug the
+     count-equals-list guard exists to catch. */
+  teases:    { label: 'Teases you caught',
+               pick: p => !!p.teases,
+               expand: p => String(p.teases).split('|').filter(Boolean)
+                 .map(t => ({ ...p, _tease: t })),
+               note: p => `inside ${p.song}` },
 };
 
 /* The show-level ones. Same contract: the count is the size of the list. */
@@ -4062,7 +4076,10 @@ const SHOW_STATS = {
 
 function statCount(perf, key){
   const def = PERF_STATS[key];
-  const hits = perf.filter(def.pick);
+  let hits = perf.filter(def.pick);
+  // One performance can be several of the thing being counted. openStat expands
+  // the same way, so the number on the tile is the length of the list it opens.
+  if (def.expand) hits = hits.flatMap(def.expand);
   return def.unique ? new Set(hits.map(p => p.song_id || p.song)).size : hits.length;
 }
 
@@ -4154,6 +4171,7 @@ function attendanceStats(bandId){
   const bigJams = statCount(perf, 'bigJams');
   const bustouts = statCount(perf, 'bustouts');
   const coverCount = statCount(perf, 'covers');
+  const teaseCount = statCount(perf, 'teases');
 
   /* WHAT YOU KEEP GETTING DEALT. An opener is the one slot every show has
      exactly one of, so it is the only role where "most common" is a fair
@@ -4199,6 +4217,7 @@ function attendanceStats(bandId){
     seconds: secs,
     segues, jamcharts: jams, debuts, bigJams, bustouts,
     covers: coverCount,
+    teases: teaseCount,
     perShow: perf.length / withSet.length,
     since, gapDays, gapFrom, gapTo, backToBack, encores,
     topOpener: topOpener && topOpener[1] > 1 ? { song: topOpener[0], times: topOpener[1] } : null,
@@ -5802,6 +5821,7 @@ function openStat(key){
     const def = PERF_STATS[key];
     const perf = attendedPerformances(band.id) || [];
     let hits = perf.filter(def.pick);
+    if (def.expand) hits = hits.flatMap(def.expand);
     title = def.label;
     if (def.unique) {
       /* Distinct songs, newest sighting first, with how many times. The tile
@@ -5818,15 +5838,20 @@ function openStat(key){
     } else {
       hits = hits.slice().sort((a, b) => String(b.show_date).localeCompare(String(a.show_date)));
     }
-    body = hits.length ? hits.map(p => `<div class="stv-row">
-        <span class="stv-s">${esc(p.song)}</span>
-        <span class="stv-m">${p._times ? `${p._times}x`
-          : esc(fmtDate(p.show_date))}${
-          def.note && def.note(p) ? ` &middot; ${esc(def.note(p))}` : ''}</span>
-        <span class="stv-w">${p._times ? '' : `${esc(p.venue || '')}${
-          place(p) ? `, ${esc(place(p))}` : ''}`}</span>
+    /* THE NOTE SITS ON THE SECOND LINE, not beside the date. .stv-m is nowrap
+       with an auto column, so a long note eats the width the name needs: the
+       tease list, whose note is "inside <song>", was rendering "Secr..." where
+       the whole point of the row is which song was teased. The second line
+       already ellipsises, and the note reads better next to the venue anyway. */
+    body = hits.length ? hits.map(p => {
+      const note = def.note && def.note(p) ? def.note(p) : '';
+      const where = p._times ? '' : `${p.venue || ''}${place(p) ? `, ${place(p)}` : ''}`;
+      return `<div class="stv-row">
+        <span class="stv-s">${esc(p._tease || p.song)}</span>
+        <span class="stv-m">${p._times ? `${p._times}x` : esc(fmtDate(p.show_date))}</span>
+        <span class="stv-w">${[note, where].filter(Boolean).map(esc).join(' &middot; ')}</span>
         ${Number(p.length_sec) ? `<span class="stv-l">${esc(fmtClock(Number(p.length_sec)))}</span>` : ''}
-      </div>`).join('')
+      </div>`; }).join('')
       : '<div class="sgd-none">Nothing here yet.</div>';
     title += ` (${hits.length})`;
 
@@ -6456,6 +6481,7 @@ function renderProfile(){
       st.segues ? [st.segues, 'segues', 'segues'] : null,
       st.jamcharts ? [st.jamcharts, 'jamcharts', 'jamcharts'] : null,
       st.covers ? [st.covers, 'covers', 'covers'] : null,
+      st.teases ? [st.teases, 'teases', 'teases'] : null,
       st.debuts ? [st.debuts, st.debuts === 1 ? 'debut' : 'debuts', 'debuts'] : null,
       st.bigJams ? [st.bigJams, '20-min jams', 'bigJams'] : null,
       st.bustouts ? [st.bustouts, 'bustouts', 'bustouts'] : null,
