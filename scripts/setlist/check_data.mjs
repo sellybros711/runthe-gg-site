@@ -27,7 +27,7 @@ const COLUMNS = [
   'show_id', 'show_date', 'year', 'venue', 'city', 'state', 'set', 'position',
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
-  'jamchart_note', 'transition', 'is_segue', 'tags',
+  'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -795,6 +795,68 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
   // The setlist itself, arrows and all, is the part that stays.
   check(/lines\.push\(p\.song \+ mark\)/.test(fn), 'the setlist itself is untouched');
 }
+
+/* THE CURATORS' OWN WORDS, which the game had been throwing away.
+ *
+ * elgoose keeps a `footnote` on a PERFORMANCE ("Unfinished.", "80s synth
+ * version.", "With Carol Of The Bells teases from Rick.") and `shownotes` on a
+ * SHOW ("This was Aaron and Kris' first show as members of Goose."). Nothing
+ * else the game shows about a version is anything but arithmetic over lengths
+ * and counts, so this is the only prose in the data.
+ */
+console.log('the archive notes');
+{
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const withFoot = rows.filter(r => r.footnote).length;
+  check(withFoot > 1500, `performances carry a footnote (${withFoot})`);
+  /* WRITTEN ONCE PER SHOW, NOT ON EVERY ROW. Denormalising it the way
+     crowd_rating is denormalised adds 436KB raw to a 1.2MB file for one string
+     repeated eleven times, and the archive is parsed on every draft. This is
+     the guard that keeps a well-meaning "fill in the blanks" from costing a
+     third of the parse. */
+  const noted = rows.filter(r => r.show_notes);
+  const shows = new Set(noted.map(r => r.show_id));
+  check(noted.length === shows.size,
+    'the show note is written once per show, not onto every row',
+    `${noted.length} rows carry one across ${shows.size} shows`);
+  check(shows.size > 250, `shows carry a note (${shows.size})`);
+  // And the note has to survive the trip through the loader.
+  const { shows: loaded } = loadBand(read('setlist/data/goose.csv'));
+  const hoisted = loaded.filter(s => s.notes).length;
+  check(hoisted === shows.size,
+    'and the loader hoists every one of them onto its show',
+    `${hoisted} of ${shows.size}`);
+  /* NOT THE SITE'S OWN NAVIGATION. One row arrived with
+     "Next Show: 2021-06-07 ... Livingston, MT ... Pine Creek Lodge" in the
+     shownotes field, double-encoded bullets and all. One row today, but a CLASS
+     of value rather than a typo, and this text is printed to players now. */
+  check(!rows.some(r => /^(next|previous|prev)\s+show\s*:/i.test(r.show_notes)),
+    'no show note is really the site\'s next-show navigation');
+  /* One line each. 610 raw values arrive with newlines in them; the CSV would
+     survive that and a reviewer reading the diff would not. */
+  check(!rows.some(r => /[\n\r]/.test(r.footnote) || /[\n\r]/.test(r.show_notes)),
+    'notes are stored as one line');
+}
+/* WHERE THEY SHOW UP. Four surfaces, and the draft is the one that was asked
+   for: the note on the take you are choosing between. */
+check(/function perfNote\(perf\)/.test(gameBare), 'the note is read through one helper');
+/* 43% of footnotes are nothing but the cover artist, which the row already
+   prints as "orig. X" directly above. Without this the row reads "orig. The
+   Clash" and then "The Clash." */
+check(/n\.replace\(new RegExp\(`\^\$\{esc\}/.test(gameBare),
+  'and it strips a cover attribution the row already shows');
+check(/class="fnote"/.test(gameBare), 'the draft row carries the version note');
+check(/class="snote/.test(gameBare), 'the show card carries the night note');
+check(/class="bdnote"/.test(gameBare), 'the scorecard sheet carries it too');
+check(/class="ng-note"/.test(gameBare) && /class="ng-nrow"/.test(gameBare),
+  'and your own nights carry both');
+/* The night note runs to 851 characters at the long end and the song list is
+   what the draft screen is for, so it is clamped and openable rather than
+   dumped above the list. */
+check(/-webkit-line-clamp:3/.test(game) && /\.snote\.open\{-webkit-line-clamp:unset/.test(game),
+  'the night note is clamped on the draft screen and opens on a tap');
+check(/S\.showNote = false;/.test(gameBare),
+  'and a new show does not inherit the last one being open');
 
 /* THE SONG TITLE IS NOT SET IN THE DISPLAY FACE. Anton is a condensed poster
    type; a song title is mixed case with apostrophes, ampersands and brackets,

@@ -590,6 +590,17 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .wtbtn[aria-pressed="true"]{color:var(--mut);}
   .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
   .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
+  /* WHAT HAPPENED THAT NIGHT, from the archive. Clamped to three lines and
+     tappable to open, because these run from a sentence to 851 characters and
+     the song list is what the screen is for. A left rule rather than a box:
+     it is a quotation, not another control. */
+  .snote{display:block; width:100%; margin-top:10px; padding:0 0 0 10px; text-align:left;
+    background:none; border:0; border-left:2px solid var(--line2); font:inherit;
+    font-size:12px; font-weight:600; font-style:italic; color:var(--mut);
+    line-height:1.5; cursor:pointer;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
+  .snote.open{-webkit-line-clamp:unset; display:block;}
+  .snote:hover{border-left-color:var(--teal); color:var(--ink);}
 
   .setgrp{margin-bottom:14px;}
   .setgrp h3{font-size:11px; font-weight:900; letter-spacing:2.4px; text-transform:uppercase;
@@ -835,6 +846,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .song.finishes .o.seg{opacity:.75;}
   .song .o.notime{color:var(--redT); font-weight:800;}
   .song .o.notime:before{content:'\26A0'; margin-right:4px;}
+  /* THE CURATORS' NOTE ON THE TAKE. Italic and quiet: it is prose from the
+     archive rather than anything the game computed, and it is the last line on
+     the row for the same reason. Two lines at most, because "With Carol Of The
+     Bells teases from Rick and Give Up The Funk tease from Trevor" is a real
+     one and the list is fifteen rows long. */
+  .song .fnote{flex:0 0 100%; max-width:100%; margin-top:3px; font-size:11.5px;
+    font-weight:600; font-style:italic; color:var(--mut); line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    overflow:hidden;}
+  .song.used .fnote{opacity:.55;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
@@ -1931,6 +1952,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* The line that makes a night a memory rather than a list of titles. */
   .ng-facts{margin-top:9px; padding-top:8px; border-top:1px solid var(--line);
     font-size:11.5px; font-weight:700; color:var(--mut); line-height:1.5;}
+  /* THE ARCHIVE'S OWN PROSE, in both the places a night carries it: one note on
+     the show, and one per song that has one. A left rule marks them as quoted
+     rather than computed, which is the whole distinction worth drawing on this
+     screen. Not clamped here: this list is opened deliberately, one night at a
+     time, and reading it IS the reason to open it. */
+  .ng-note{margin:0 0 10px; padding-left:10px; border-left:2px solid var(--line2);
+    font-size:12px; font-weight:600; font-style:italic; color:var(--mut); line-height:1.5;}
+  .ng-notes{margin-top:9px; padding-top:8px; border-top:1px solid var(--line);}
+  .ng-nrow{padding:3px 0 3px 10px; border-left:2px solid var(--line2);
+    font-size:11.5px; font-weight:600; font-style:italic; color:var(--mut);
+    line-height:1.45;}
+  .ng-nrow b{font-style:normal; font-weight:800; color:var(--ink); margin-right:5px;}
+  /* The same quotation, on the scorecard's per-song sheet. */
+  .bdnote{margin:8px 0 2px; padding-left:10px; border-left:2px solid var(--line2);
+    font-size:12.5px; font-weight:600; font-style:italic; color:var(--mut);
+    line-height:1.5;}
 
   /* ---- the profile ---- */
   /* ---- the shows you were at, as a fan artifact ---- */
@@ -2338,7 +2375,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = 'c79e198f';
+const DATA_VERSION = '20e93049';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -2415,6 +2452,29 @@ function fmtDate(d, opts = {}){
  * take of a song says nothing at all, because a scorecard where every row
  * claims to be remarkable is a scorecard where none of them are.
  */
+/* THE CURATORS' OWN WORDS ABOUT THIS TAKE.
+ *
+ * elgoose keeps a footnote on the performance ("Unfinished.", "80s synth
+ * version.", "With Carol Of The Bells teases from Rick.") and that is the one
+ * thing on the row nothing else can tell you: everything else the game shows
+ * about a version is computed from lengths and counts.
+ *
+ * STRIPS A LEADING COVER-ARTIST ATTRIBUTION, because 43% of footnotes are
+ * nothing but the artist the row already prints as "orig. X" and would read as
+ * "orig. The Clash" directly above "The Clash." Once that is gone 21% of rows
+ * carry a note, and every one of them says something new.
+ */
+function perfNote(perf){
+  let n = String((perf && perf.footnote) || '').trim();
+  if (!n) return '';
+  const artist = String((perf && perf.original_artist) || '').trim();
+  if (artist){
+    const esc = artist.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    n = n.replace(new RegExp(`^${esc}\\s*[.;,]?\\s*`, 'i'), '').trim();
+  }
+  return n;
+}
+
 function versionNote(perf){
   const rank = Number(perf && perf.version_rank) || 0;
   const of = Number(perf && perf.version_of) || 0;
@@ -2511,6 +2571,7 @@ const S = {
   seenSongs: [],       // every song offered, for "the one that got away"
   drafted: [],         // {show, perf, si} per pick — replayed for the ceiling
   sofarAll: false,     // is the on-screen setlist showing every set?
+  showNote: false,     // is the night's note expanded past its three-line clamp?
   pickedSong: null,
   /* The close button asks twice when a segue is left open, and this is what it
      is asking about: an open segue no longer BLOCKS the close, it just costs
@@ -3287,6 +3348,11 @@ function renderDraft(){
             ? '<span class="segout" role="img" aria-label="segued into the next song"></span>' : ''}</span>
           <span class="chips">${chips.join('')}</span>
           ${oLine}
+          ${/* The curators' note on THIS take, under the computed lines rather
+                than above them: it is the most interesting thing on the row and
+                the least actionable, so it reads last. */''}
+          ${(() => { const n = perfNote(p); return n
+            ? `<span class="fnote">${esc(n)}</span>` : ''; })()}
           <!-- Decorative: the clock on the right already states the length, so
                this is hidden from assistive tech rather than read out twice. -->
           <span class="tbar${lenOf(p) > TBAR_FULL ? ' over' : ''}" aria-hidden="true"
@@ -3371,6 +3437,11 @@ function renderDraft(){
             data-show="${esc(String(show.show_id))}">${
               !ME.signedIn ? 'Sign in to save this show'
                 : wasThere(S.band.id, show.show_id) ? 'Remove from your shows' : 'I was at this show'}</button>
+          ${/* WHAT HAPPENED THAT NIGHT, in the curators' words. Clamped to three
+                lines and tappable, because these run to 851 characters at the
+                long end and the song list is what the screen is for. */''}
+          ${show.notes ? `<button class="snote${S.showNote ? ' open' : ''}" type="button"
+            data-note aria-expanded="${!!S.showNote}">${esc(show.notes)}</button>` : ''}
         </div>
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
@@ -3752,6 +3823,11 @@ function openDetail(i){
       <button class="x" type="button" id="detailClose">Close</button>
     </div>
     <div class="bdnight">${esc(whichNight(x.perf, { full: true }))}</div>
+    ${/* The archive's own words on the take, above the arithmetic. This sheet
+          exists to answer "why is this worth 74", and the curators' note is the
+          one part of the answer the game did not work out for itself. */''}
+    ${(() => { const n = perfNote(x.perf); return n
+      ? `<div class="bdnote">${esc(n)}</div>` : ''; })()}
     ${songBreakdownHTML(x.perf, x.score, { hideRole: true })}`;
   document.getElementById('detailSheet').classList.add('on');
 }
@@ -5071,6 +5147,8 @@ function drawShow(){
   const from = fresh.length ? fresh : all;
   S.show = from[Math.floor(S.rng() * from.length)];
   S.seenShows.add(S.show.show_id);
+  // A new night, so the previous night's note is not the one being read.
+  S.showNote = false;
   // Everything they were offered, for "the one that got away".
   S.show.songs.forEach(p => S.seenSongs.push(p));
 }
@@ -5445,6 +5523,9 @@ function myNights(bandId){
         n: p.song, seg: String(p.is_segue) === 'true',
         len: Number(p.length_sec) || 0, jam: String(p.is_jamchart) === 'true',
         gap: Number(p.show_gap) || 0,
+        // What the curators wrote about that take. This is a list of nights
+        // somebody actually stood at, so it is the whole reason to reread it.
+        note: perfNote(p),
       });
       if (String(p.is_jamchart) === 'true') jams++;
       secs += Number(p.length_sec) || 0;
@@ -5458,6 +5539,7 @@ function myNights(bandId){
       city: r.city, state: r.state, country: r.country, tour: r.tour,
       order: r.show_order, run: sh && sh.run ? sh.run : null,
       songs: sh ? sh.songs.length : 0, sets, jams, secs, best,
+      notes: sh ? (sh.notes || '') : '',
       hasSet: !!sh,
     };
   }).sort((a, b) => b.date.localeCompare(a.date));
@@ -5521,6 +5603,10 @@ function renderNights(){
           </button>
           ${open ? `<div class="sgdet">
             ${n.tour ? `<div class="ng-tour">${esc(n.tour)}</div>` : ''}
+            ${/* The archive's note on the night, above its setlist. This is a
+                  list of nights somebody actually stood at, so what the
+                  curators recorded about them is the point of reopening it. */''}
+            ${n.notes ? `<div class="ng-note">${esc(n.notes)}</div>` : ''}
             ${n.hasSet ? `
               <div class="lastset" style="margin-top:0; padding-top:0; border-top:0">
                 ${n.sets.map(s => `<div class="ls-row">
@@ -5541,6 +5627,15 @@ function renderNights(){
                   n.best ? `${esc(n.best.song)} after a ${n.best.gap}-show gap` : '',
                 ].filter(Boolean);
                 return facts.length ? `<div class="ng-facts">${facts.join(' &middot; ')}</div>` : '';
+              })()}
+              ${/* PER-SONG NOTES AS THEIR OWN BLOCK, not inline. The setlist
+                    above is a flowing "song, song > song" line, which is the
+                    right shape for reading an order and the wrong one for
+                    hanging a sentence off one word of it. */''}
+              ${(() => {
+                const noted = n.sets.flatMap(s => s.songs).filter(sg => sg.note);
+                return noted.length ? `<div class="ng-notes">${noted.map(sg =>
+                  `<div class="ng-nrow"><b>${esc(sg.n)}</b> ${esc(sg.note)}</div>`).join('')}</div>` : '';
               })()}`
             : `<div class="sgd-none">Nobody has typed this one up on elgoose yet,
                  so the songs cannot be counted. It still counts as a show you
@@ -6527,6 +6622,7 @@ app.addEventListener('click', e => {
   if (e.target.closest('[data-close-set]')){ closeSet(); return; }
   if (e.target.closest('#respinBtn')){ askRespin(); return; }
   if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }
+  if (e.target.closest('[data-note]')){ S.showNote = !S.showNote; renderDraft(); return; }
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;
   }
