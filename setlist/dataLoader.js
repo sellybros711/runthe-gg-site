@@ -79,10 +79,13 @@ export function setLabel(set) {
  * Build the game's view of a band's history.
  *
  * @param {string} csvText raw contents of e.g. data/goose.csv
- * @returns {{shows: Array, segues: Set<string>, partners: Map, performances: number}}
+ * @returns {{shows: Array, segues: Set<string>, partners: Map, suites: Map,
+ *            performances: number}}
  *   shows — one entry per concert, songs in running order across all sets
  *   segues — canonical "songIdA|songIdB" pairs the band has actually played
  *            back-to-back with a segue transition
+ *   suites: song_id to family key for songs that are movements of one piece
+ *            (Jive I / Jive II / Jive Lee), derived from the titles
  */
 export function loadBand(csvText) {
   const rows = parseCSV(csvText);
@@ -183,6 +186,69 @@ export function loadBand(csvText) {
   }
 
   /* ---------------------------------------------------------------------
+   * SUITES: the songs that are written to go together.
+   * ---------------------------------------------------------------------
+   * Jive I > Jive II > Jive Lee, Seekers on the Ridge pt I > pt II. These are
+   * not ordinary segues that happen to be common, they are one piece of music
+   * in several movements, and linking one back up is the most satisfying thing
+   * a setlist builder can do with this band's catalogue.
+   *
+   * The scoring had them exactly backwards. familiarityMult discounts a pair
+   * by how often the band plays it, which is right for an ordinary segue and
+   * wrong for these: Seekers pt I > pt II is the MOST played pair in the whole
+   * archive at 57 times, so it hit the 0.30 floor and scored 18 of a possible
+   * 60. The most canonical link in the catalogue paid the least.
+   *
+   * DERIVED FROM THE TITLES, NOT A LIST. A hardcoded set of ids would be wrong
+   * for the next band and would silently miss a new part. A family is a stem
+   * that two or more titles share, where at least one of them ends in a part
+   * marker:
+   *
+   *   Jive I · Jive II          -> stem "jive", and then "Jive Lee" joins on
+   *                                the stem even though it carries no numeral
+   *   Seekers on the Ridge pt I · pt II
+   *   Interlude I · II · III
+   *
+   * THE SEPARATOR IS REQUIRED and that is not fussiness. Without it "Yeti"
+   * parses as "Yet" + roman numeral I, "2021" as "202" + 1, and "Weird Fishes
+   * / Arpeggi" as "...Arpegg" + I. All three are single-member today so none
+   * would have formed a family, but each was one new song title away from
+   * inventing one. Measured over all 367 titles, the rule below matches 7 and
+   * builds exactly the 3 families above.
+   */
+  const PART = /^(.{3,}?)[\s,:]+(?:\b(?:pt\.?|part)\s+)?(?:[IVX]{1,4}|[1-9])$/i;
+  const suites = new Map();                 // song_id -> family key
+  {
+    const titles = new Map();               // song_id -> title
+    for (const show of shows) for (const p of show.songs) titles.set(p.song_id, p.song);
+    // Stems that some title spells out with a part marker.
+    const stems = new Set();
+    for (const t of titles.values()) {
+      const m = t.match(PART);
+      if (m) {
+        const stem = m[1].trim().replace(/[,:]+$/, '').toLowerCase();
+        if (stem.length >= 3) stems.add(stem);
+      }
+    }
+    const claim = new Map();                // stem -> Set(song_id)
+    for (const [id, t] of titles) {
+      const m = t.match(PART);
+      let key = null;
+      if (m) {
+        const stem = m[1].trim().replace(/[,:]+$/, '').toLowerCase();
+        if (stems.has(stem)) key = stem;
+      }
+      // A sibling with no numeral of its own, which is how Jive Lee belongs.
+      if (!key) for (const s of stems) if (t.toLowerCase().startsWith(s + ' ')) { key = s; break; }
+      if (!key) continue;
+      if (!claim.has(key)) claim.set(key, new Set());
+      claim.get(key).add(id);
+    }
+    // One title is not a family. Two movements of the same piece is.
+    for (const [key, ids] of claim) if (ids.size > 1) for (const id of ids) suites.set(id, key);
+  }
+
+  /* ---------------------------------------------------------------------
    * WHICH VERSION THIS IS, which is the thing the game is actually about.
    * ---------------------------------------------------------------------
    * You do not pick "Echo of a Rose". You pick the one from a particular
@@ -228,7 +294,7 @@ export function loadBand(csvText) {
     });
   }
 
-  return { shows, segues, segueCounts, partners, performances: rows.length };
+  return { shows, segues, segueCounts, partners, suites, performances: rows.length };
 }
 
 export default loadBand;
