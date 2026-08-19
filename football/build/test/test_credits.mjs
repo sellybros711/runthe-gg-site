@@ -455,7 +455,10 @@ console.log('\n=== the distance matches the drive chart above it ===');
      drive; this checks the two cannot disagree, because they are on screen together and the
      chart is what the player is watching while the call is up. */
   const html = fs.readFileSync(`${ROOT}/football/index.html`, 'utf8');
-  const i = html.indexOf('function generateDrives(script,rng){');
+  /* Found by NAME rather than by its whole signature: the argument list grew when the chart
+     learned about takeaways, and matching the old one returned -1, which came out of eval as
+     a syntax error in a file nobody had edited. */
+  const i = html.indexOf('function generateDrives(');
   const j = html.indexOf('\n}\n', html.indexOf('return drives;', i)) + 3;
   const generateDrives = eval('(' + html.slice(i, j).replace('function generateDrives', 'function') + ')');
   const cal = JSON.parse(fs.readFileSync(`${ROOT}/football/data/display_calibration.json`, 'utf8'));
@@ -591,6 +594,50 @@ if (process.env.BROWSER) {
      harness for this page reaches anything: one hook at the boot() anchor. */
   const HOOK = `
 window.__CR={
+  /* One defense game, built the way the broadcast builds it, handed back as its takeaways
+     and its drives so the two can be held against each other. */
+  game(lines,you,them,tag){
+    run={seed:tag,defense:true,roster:[],season:{results:[]},
+      playoffSeed:{rounds:4,roundNames:E.playoffRoundNames(4)},franchise:null,era:null};
+    const r={playoff:true,round:0,won:you>them,shownYou:you,shownThem:them,lines,
+      opponent:'2015 Denver Broncos',week:18,defMod:1};
+    const seedStr=gameSeedStr(r);
+    const script=E.scoringScript(you,them,E.createSeededRNG(E.hashSeed(seedStr)));
+    const c=gameCredits(r,script);
+    const evs=c?c.events:[];
+    const drives=generateDrives(script,E.createSeededRNG(E.hashSeed(seedStr+'|drives')),
+      {takeaways:evs});
+    return {events:evs.map(e=>({kind:e.kind,td:!!e.td,ret:e.ret,at:e.at,short:e.short})),
+      drives:drives.map(d=>({team:d.team,startYard:d.startYard,endYard:d.endYard,
+        result:d.result,takeaway:d.takeaway||null,returnTd:d.returnTd||null,
+        at:d.at==null?null:d.at,tStart:d.tStart,tEnd:d.tEnd}))};
+  },
+  /* Which colour the bar at a row actually is, off the pixels, so "it is drawn as a return"
+     is measured and not asserted from the data that was passed in. */
+  hatch(drives,upTo,row){
+    const W=680,H=210,dpr=window.devicePixelRatio||1;
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const ctx=c.getContext('2d',{willReadFrequently:true});
+    drawDriveChart(ctx,W,H,drives,upTo,'#00aaff','#ff5522','YOU','OPP');
+    const padT=10*dpr,padB=14*dpr,fh=H-padT-padB,rowH=fh/7;
+    const y=Math.round(padT+row*rowH+rowH/2);
+    const px=ctx.getImageData(0,y,W,1).data;
+    /* COUNTED AS EDGES, not as white. The stripes are painted at 55% white over a saturated
+       blue, so the pixels that carry them are a lighter blue rather than anything that reads
+       as white to a threshold. What separates a hatched bar from a solid one is that its
+       brightness keeps changing along the row: a solid bar crosses that line twice, at its
+       two ends, and a striped one crosses it once per stripe. */
+    const lum=(o)=>0.2126*px[o]+0.7152*px[o+1]+0.0722*px[o+2];
+    let blue=0,edges=0,prev=lum(0);
+    for(let x=1;x<W;x++){
+      const o=x*4;
+      if(px[o+2]>120&&px[o]<160) blue++;
+      const l=lum(o);
+      if(Math.abs(l-prev)>18) edges++;
+      prev=l;
+    }
+    return {blue,edges};
+  },
   /* Draw a chart of exactly these drives and measure where the last bar stops, in yards.
      The geometry is recomputed from drawDriveChart's own constants rather than guessed. */
   measure(drives,upTo){
@@ -667,6 +714,67 @@ boot();`;
       { team: 'them', startYard: 50, endYard: 50, result: 'punt', tStart: 0, tEnd: 100 },
       { team: 'you', startYard: 40, endYard: 86, result: 'field goal', tStart: 100, tEnd: 400, at: 0 },
     ];
+    /* ── THE PICK SIX, ON THE FIELD ───────────────────────────────────────────
+       A return touchdown drawn as an ordinary drive is a picture of a game that did not
+       happen: your offense marching eighty yards, on the one screen whose job is to show
+       what did. It is two rows now, and the assertions are about the seam between them.
+
+       The return's LENGTH is the number the call says out loud, so the bar and the words
+       cannot part company. That is the same rule the field goal distance follows six blocks
+       above, and it is here for the same reason: these two things are on screen together. */
+    const men3 = [
+      { name: 'Ed Reed', pos: 'DB', slot: 'DB', pts: 16, avg: 14, rush: 0.2, cover: 7.4, tackle: 5.1 },
+      { name: 'J.J. Watt', pos: 'DL', slot: 'DL', pts: 20, avg: 18, rush: 10.1, cover: 1.6, tackle: 7.3 },
+      { name: 'Ray Lewis', pos: 'LB', slot: 'LB', pts: 15, avg: 14, rush: 1.2, cover: 2.0, tackle: 9.0 },
+    ];
+    let seen = 0, wrongLength = 0, notFromTurnover = 0, offEndZone = 0, stillOffense = 0;
+    let loose = 0, marked = 0;
+    for (let i = 0; i < 120; i++) {
+      const g = await p.evaluate(([m, tag]) => window.__CR.game(m, 27, 20, tag), [men3, 'ch' + i]);
+      loose += g.events.filter((e) => !e.td).length;
+      marked += g.drives.filter((d) => d.takeaway && !d.returnTd).length;
+      for (const e of g.events) {
+        if (!e.td) continue;
+        seen++;
+        const ret = g.drives.find((d) => d.returnTd && d.at === e.at);
+        if (!ret) { stillOffense++; continue; }
+        /* As long as the call said it was. */
+        if (Math.round(ret.endYard - ret.startYard) !== e.ret) wrongLength++;
+        if (ret.endYard !== 100) offEndZone++;
+        /* And it starts where their drive ended, on the play before it. */
+        const idx = g.drives.indexOf(ret);
+        const prev = idx > 0 ? g.drives[idx - 1] : null;
+        if (!prev || prev.team !== 'them' || prev.result !== 'turnover'
+          || prev.endYard !== ret.startYard || !prev.takeaway) notFromTurnover++;
+      }
+    }
+    ok('every return touchdown is drawn as a return, not as a drive of yours',
+      seen > 0 && stillOffense === 0, { returnTouchdowns: seen, drawnAsADrive: stillOffense });
+    ok('and it is exactly as long as the call said it was', wrongLength === 0, { wrongLength });
+    ok('and it finishes in the end zone', offEndZone === 0, { offEndZone });
+    ok('and it starts where their drive ended, on the takeaway',
+      notFromTurnover === 0, { notFromTurnover });
+    /* The takeaways that did NOT score still have to be findable on the field. */
+    ok('and most takeaways that did not score end a drive on the chart',
+      marked / Math.max(1, loose) > 0.7,
+      { onTheField: marked, takeaways: loose,
+        share: (marked / Math.max(1, loose) * 100).toFixed(1) + '%' });
+
+    /* AND IT DOES NOT LOOK LIKE ONE EITHER, measured off the pixels: the return bar carries
+       white hatching and an ordinary drive does not. */
+    const solid = [
+      { team: 'them', startYard: 50, endYard: 50, result: 'punt', tStart: 0, tEnd: 100 },
+      { team: 'you', startYard: 30, endYard: 100, result: 'touchdown', tStart: 100, tEnd: 400, at: 0 },
+    ];
+    const striped = [
+      { team: 'them', startYard: 60, endYard: 30, result: 'turnover', takeaway: 'INTERCEPTION', tStart: 0, tEnd: 100 },
+      { team: 'you', startYard: 30, endYard: 100, result: 'touchdown', returnTd: 'INTERCEPTION', tStart: 100, tEnd: 400, at: 0 },
+    ];
+    const a1 = await p.evaluate(([d]) => window.__CR.hatch(d, 400, 1), [solid]);
+    const a2 = await p.evaluate(([d]) => window.__CR.hatch(d, 400, 1), [striped]);
+    ok('a return is visibly striped and an ordinary touchdown drive is not',
+      a2.edges > a1.edges + 12 && a1.blue > 100 && a2.blue > 100, { drive: a1, return: a2 });
+
     const atCall = await p.evaluate((d) => window.__CR.measure(d, 400), drives);
     const midDrive = await p.evaluate((d) => window.__CR.measure(d, 250), drives);
     ok('the drive is complete at the moment the call is made, not still running',

@@ -10078,8 +10078,32 @@ function buildTimeline(script,pace){
    play log would read as a bug rather than as overtime. */
 function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
 
-function generateDrives(script,rng){
+/*
+ * THE TAKEAWAYS, ON THE FIELD.
+ *
+ * `opts.takeaways` is the defense draft's own event list. Two things come of it here and
+ * neither is cosmetic.
+ *
+ * A takeaway that did NOT score still has to be visible: the opponent's drive it ended is
+ * drawn as a turnover rather than as whatever the ordinary roll would have made it, so the
+ * red X on the chart lands on the play the log is naming rather than three rows away.
+ *
+ * A takeaway that DID score is the reason this exists. The chart drew a pick six as your
+ * offense driving eighty yards into the end zone, which is a picture of a game that did not
+ * happen, on the one screen that is meant to show what did. It is drawn as two rows now: the
+ * opponent's drive ending where the ball changed hands, and your return going back the other
+ * way from that exact spot. The return's LENGTH is the number the call says out loud, so the
+ * bar and the words cannot disagree; the opponent's starting point is the part that gives,
+ * because nothing says it aloud.
+ */
+function generateDrives(script,rng,opts){
   const HALF=1800,drives=[],ticks=[];
+  const tks=(opts&&Array.isArray(opts.takeaways)?opts.takeaways:[])
+    .map(t=>({sec:(t.q-1)*900+(900-t.sec),ret:t.ret||0,kind:t.kind,td:!!t.td,at:t.at}));
+  const retAt=new Map();
+  for(const t of tks) if(t.td&&t.at!=null) retAt.set(t.at,t);
+  const loose=tks.filter(t=>!t.td);
+  const usedLoose=new Set();
   /* THE SCORE'S PLACE IN THE SCRIPT rides along on the tick and then onto the drive it
      produces. Halftime and overtime are pushed into this same list and the whole thing is
      then sorted, so a tick's position here stops being the script's the moment that happens,
@@ -10134,7 +10158,13 @@ function generateDrives(script,rng){
       }
       t=tE;continue;
     }
-    const scorePoss=(ns&&!ns.half&&!ns.ot)?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
+    /* A RETURN TOUCHDOWN IS THE OPPONENT'S POSSESSION. They had the ball, and the last drive
+       before the score is theirs rather than yours: everything below that arranges the filler
+       drives so the right team is holding it when the score lands reads this one value. */
+    const retHere=(ns&&!ns.half&&!ns.ot&&ns.kind==='TOUCHDOWN'&&ns.at!=null)?retAt.get(ns.at):null;
+    const scorePoss=(ns&&!ns.half&&!ns.ot)
+      ?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):(retHere?(ns.team==='you'?'them':'you'):ns.team))
+      :null;
     let filler=Math.max(0,Math.round(gap/220)-1+(rng()<0.45?1:0));
     if(scorePoss){
       const af=filler%2===0?pos:(pos==='you'?'them':'you');
@@ -10149,6 +10179,24 @@ function generateDrives(script,rng){
       let ey,res;
 
       if(scorePoss&&d===total-1){
+        /* THE PICK SIX, AS TWO ROWS. Their drive dies where the ball changed hands, and your
+           return starts from that exact yard line and finishes in the end zone. The spot is
+           read back off the return distance the call announces, so the bar is as long as the
+           words say it was: a 51 yard return starts at the 49 and there is nothing to argue
+           about. Their start is nudged back when it has to be, because a drive cannot end
+           further from their own goal than it began and nothing on screen states where they
+           took over. */
+        if(retHere){
+          const tk=Math.max(3,Math.min(97,100-retHere.ret));
+          const from=Math.max(tk+5,Math.min(97,sy));
+          const cut=ds+(de-ds)*0.66;
+          drives.push({team:'them',startYard:from,endYard:tk,result:'turnover',
+            takeaway:retHere.kind,tStart:ds,tEnd:cut});
+          drives.push({team:'you',startYard:tk,endYard:100,result:'touchdown',
+            returnTd:retHere.kind,tStart:cut,tEnd:de,at:ns.at});
+          pos='them';at=themKO();
+          continue;
+        }
         if(ns.kind==='TOUCHDOWN'){
           ey=pos==='you'?100:0;res='touchdown';
         }else if(ns.kind==='FIELD GOAL'){
@@ -10188,7 +10236,28 @@ function generateDrives(script,rng){
           if(roll<0.68){res='punt';at=ey-32-Math.floor(rng()*18);if(at<=0)at=20;}
           else{res='turnover';at=ey;}
         }
-        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de});
+        /* A TAKEAWAY THAT DID NOT SCORE still ends a drive, and it ends THIS one if the clock
+           says so. Without this the red X on the chart and the takeaway in the log were two
+           unrelated events that happened to be in the same quarter. */
+        /* WITH A TOLERANCE EITHER SIDE, because the takeaway's clock is drawn from its own
+           stream and knows nothing about where the drives fell: on the nose, only half of
+           them landed inside a possession of theirs and the other half landed while your
+           offense had the ball, which is not a thing that can happen. A hundred and fifty
+           seconds is about one possession: it puts nine takeaways in ten on the field, and is
+           short enough that the X stays on a row a reader would look at. Decided HERE and not afterwards, because the result decides
+           where the next possession starts: a punt rewritten into a turnover after the fact
+           would put your next drive thirty yards from the spot the ball changed hands. */
+        let mark=null;
+        if(pos==='them'){
+          const TOL=150;
+          for(let k=0;k<loose.length;k++){
+            if(usedLoose.has(k)) continue;
+            if(loose[k].sec>=ds-TOL&&loose[k].sec<de+TOL){ mark=loose[k]; usedLoose.add(k); break; }
+          }
+        }
+        if(mark){ res='turnover'; at=ey; }
+        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de,
+          ...(mark?{takeaway:mark.kind}:{})});
         flip();
       }
     }
@@ -10342,6 +10411,29 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
     barPath(left,barY,barW,barH,r);
     ctx.fill();
 
+    /* A RETURN IS NOT A DRIVE, so it is not drawn as one. Same colour, because it is still
+       your team going the same way, but hatched: a solid bar from your own end of the field
+       into theirs is the picture of an eighty yard march, and this was one play with the
+       other side's ball. The hatch is clipped to the bar, so the shape stays a bar and only
+       its surface says something different. */
+    if(d.returnTd){
+      ctx.save();
+      barPath(left,barY,barW,barH,r);
+      ctx.clip();
+      ctx.globalAlpha=Math.min(1,alpha+0.1);
+      ctx.strokeStyle='rgba(255,255,255,.55)';
+      ctx.lineWidth=1.1*dpr;
+      const step=5*dpr;
+      for(let x=left-barH;x<right+barH;x+=step){
+        ctx.beginPath();
+        ctx.moveTo(x,barY+barH);
+        ctx.lineTo(x+barH,barY);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha=alpha;
+    }
+
     /* directional arrow at leading edge */
     if(!isActive||(upTo-d.tStart)>(d.tEnd-d.tStart)*0.12){
       const tipX=d.team==='you'?right:left;
@@ -10365,10 +10457,24 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
         ctx.fillStyle=d.result==='touchdown'?'#fbbf24':'#67e8f9';ctx.fill();
       }else if(d.result==='turnover'){
         ctx.globalAlpha=Math.max(alpha,0.55);
-        ctx.fillStyle='#ef4444';const s=2.5*dpr;
+        /* YOUR takeaway is your colour, not the generic red. A turnover the chart worked out
+           for itself is a neutral event; one your six actually produced is the thing this
+           mode is about, and it is the row the log is naming at that moment. */
+        ctx.fillStyle=d.takeaway?youColor:'#ef4444';const s=2.5*dpr;
         ctx.save();ctx.translate(d.team==='you'?right:left,barY+barH/2);
         ctx.rotate(Math.PI/4);
         ctx.fillRect(-s,-0.7*dpr,s*2,1.4*dpr);ctx.fillRect(-0.7*dpr,-s,1.4*dpr,s*2);
+        ctx.restore();
+      }
+      /* WHERE THE RETURN STARTED, which is where the ball changed hands: the same mark the
+         opponent's row above it carries, on the tail of yours. The two together read as one
+         play crossing between the rows rather than as a takeaway and an unrelated score. */
+      if(d.returnTd){
+        ctx.globalAlpha=Math.max(alpha,0.75);
+        ctx.fillStyle=youColor;const s2=2.5*dpr;
+        ctx.save();ctx.translate(left,barY+barH/2);
+        ctx.rotate(Math.PI/4);
+        ctx.fillRect(-s2,-0.7*dpr,s2*2,1.4*dpr);ctx.fillRect(-0.7*dpr,-s2,1.4*dpr,s2*2);
         ctx.restore();
       }
     }
@@ -10477,7 +10583,11 @@ function playPlayoffGame(r,after){
      a score landing within five seconds of the next one is resolved without a drive being
      drawn for it at all, and those kicks still have to say something. */
   const driveRng=E.createSeededRNG(E.hashSeed(seedStr+'|drives'));
-  const drives=generateDrives(script,driveRng);
+  /* The chart is handed the takeaways so the field can show them: the drive each one ended,
+     and the return that followed the ones that scored. Empty on an offense run, which is the
+     same call it always was. */
+  const drives=generateDrives(script,driveRng,
+    {takeaways:credits&&credits.mode==='defense'?credits.events:[]});
   const fgYards=E.fieldGoalDistances(script,E.createSeededRNG(E.hashSeed(seedStr+'|fg')));
   for(const d of drives){
     if(d.result!=='field goal'||d.at==null) continue;

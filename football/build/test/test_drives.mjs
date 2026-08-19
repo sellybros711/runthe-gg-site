@@ -22,7 +22,10 @@ const require = createRequire(import.meta.url);
 const ROOT='/home/user/runthe-gg-site';
 const E=require(`${ROOT}/football/engine.js`);
 const html=fs.readFileSync(`${ROOT}/football/index.html`,'utf8');
-const i=html.indexOf('function generateDrives(script,rng){');
+/* By NAME, not by the whole signature: the argument list grew when the chart learned about
+   takeaways, and matching the old one returned -1, which reaches eval as a syntax error in a
+   file nobody had touched. */
+const i=html.indexOf('function generateDrives(');
 const j=html.indexOf('\n}\n',html.indexOf('return drives;',i))+3;
 const generateDrives=eval('('+html.slice(i,j).replace('function generateDrives','function')+')');
 /* The play log's period label lives beside it and is nested in the same scope, so it comes
