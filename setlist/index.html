@@ -1090,6 +1090,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .bd .v{font-family:var(--hero); font-size:24px; line-height:1;}
   .bd .k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
     color:var(--dim); margin-top:5px;}
+  /* One word was not enough. "Breadth 92" tells a first-time player nothing
+     about what earned it, and these four are the entire scoring model. */
+  .bd .bw{font-size:10.5px; font-weight:600; color:var(--dim); margin-top:3px;
+    line-height:1.3;}
+  .wherefrom{padding:16px 15px; margin-top:14px;}
+  .wherefrom h2{font-family:var(--hero); font-size:21px; margin:0 0 3px;
+    text-transform:uppercase;}
+  .wherefrom .sub{font-size:12.5px; color:var(--mut); font-weight:600;}
+  .wherefrom .breakdown{margin:12px 0 0;}
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
 
   /* ---------------- bottom sheet ----------------
@@ -1351,6 +1360,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .btn.closeset.urge{border-style:solid; border-color:var(--teal); background:
     color-mix(in srgb,var(--teal) 12%, transparent);}
   .btn.closeset.urge .cs-t{color:var(--tealT);}
+  /* ARMED TO GIVE UP A SEGUE. Coral rather than teal, because this is the one
+     version of the button that costs you something: the second tap closes the
+     set with the transition unfinished. Not gold, which is spoken for by
+     ratings and song tags. */
+  .btn.closeset.forfeit, .btn.listclose.forfeit{border-style:solid;
+    border-color:var(--coral);
+    background:color-mix(in srgb,var(--coral) 12%, transparent);}
+  .btn.closeset.forfeit .cs-t, .btn.listclose.forfeit .lc-t{color:var(--coralT);}
+  .btn.closeset.forfeit .cs-s, .btn.listclose.forfeit .lc-s{color:var(--coralT); opacity:.85;}
 
   .banked{margin-top:5px; font-size:11px; font-weight:800; color:var(--greenT);}
   .banked b{font-variant-numeric:tabular-nums;}
@@ -1445,6 +1463,23 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .scoresheet h2{font-family:var(--hero); font-size:24px; margin:0 0 4px; text-transform:uppercase;}
   .scoresheet .sub{font-size:13px; color:var(--mut); font-weight:600; line-height:1.55;
     margin-bottom:16px;}
+  /* FOLDED SHUT. Open, this block is over half the page: four groups, a row per
+     song, per segue and per breadth card. It is the best thing on the page for
+     the player who wants to know exactly why, and the reason the page read as a
+     wall to everybody else. A summary is a real control, so it gets a real tap
+     target and says what is inside rather than just "details". */
+  .scoresheet[open]{padding-bottom:18px;}
+  .ss-open{display:flex; flex-direction:column; gap:2px; list-style:none;
+    cursor:pointer; padding:4px 0; -webkit-tap-highlight-color:transparent;}
+  .ss-open::-webkit-details-marker{display:none;}
+  .ss-t{font-family:var(--ui); font-size:17px; color:var(--ink); letter-spacing:.4px;}
+  .ss-s{font-size:12px; font-weight:600; color:var(--dim);}
+  .ss-open:after{content:'Show'; position:absolute; right:18px; margin-top:6px;
+    font-size:12px; font-weight:800; color:var(--tealT);}
+  .scoresheet[open] .ss-open:after{content:'Hide';}
+  .scoresheet{position:relative;}
+  .scoresheet:not([open]) .sub{display:none;}
+  .scoresheet[open] .sub{margin-top:14px;}
   .sheetgrp{margin-bottom:18px;}
   .sheetgrp h3{display:flex; justify-content:space-between; align-items:baseline;
     font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
@@ -2477,6 +2512,15 @@ const S = {
   drafted: [],         // {show, perf, si} per pick — replayed for the ceiling
   sofarAll: false,     // is the on-screen setlist showing every set?
   pickedSong: null,
+  /* The close button asks twice when a segue is left open, and this is what it
+     is asking about: an open segue no longer BLOCKS the close, it just costs
+     you the transition, so the second tap is consent rather than a locked door.
+     Keyed "<set>:<songs so far>" rather than a bare index ON PURPOSE. The thing
+     being consented to is closing THIS set with THIS song dangling, so playing
+     another song has to void it, and a key that carries the length voids it by
+     construction instead of by remembering to clear it at every site that can
+     add one. */
+  closeConfirm: null,
   hint: '',
   hintBad: false,
   error: '',
@@ -2585,7 +2629,9 @@ const GUIDE_STEPS = [
         joins your set, spending <b>its real running time</b>, so a 20 minute jam
         costs you 20 minutes.</p>
       <p>You decide when a set ends. Rare songs, great versions and songs that
-        really did segue are worth the most.</p>`,
+        really did segue are worth the most.</p>
+      <p>Time you do not use is not lost: close a set early and the minutes
+        left over <b>carry into the next one</b>.</p>`,
     extra: `<div class="g-budget">
         <div><b>75</b><span>Min set I</span></div>
         <div><b>70</b><span>Min set II</span></div>
@@ -3019,6 +3065,11 @@ function renderReveal(){
   })();
 }
 
+/* WHERE UNUSED TIME LANDS, named once. Time carries one set forward, so the
+   answer is "the next set" rather than always the encore, and three separate
+   bits of copy promise it to the player. They have to agree with budgets(). */
+function bankGoesTo(si){ return SETS[si + 1] ? SETS[si + 1].label : null; }
+
 function setsPanelHTML({ live }){
   const bud = budgets(S.sets, S.closed, S.spent);
   const cur = live ? currentSet() : -1;
@@ -3030,7 +3081,12 @@ function setsPanelHTML({ live }){
     const pct = bud[i] > 0 ? Math.min(100, used / bud[i] * 100) : 0;
     const isCur = i === cur;
     const done = S.closed[i] || setFull(S.sets, i);
-    const inherited = i === ENCORE_INDEX && bud[i] > cfg.seconds;
+    /* ANY SET CAN INHERIT NOW, not just the encore: time carries one step
+       forward, so Set II wears the badge for whatever Set I banked. Measured
+       against its own base rather than the previous set, since spins are
+       already subtracted out of the base. */
+    const inherited = i > 0 && bud[i] > cfg.seconds - (S.spent[i] || 0);
+    const from = SETS[i - 1] ? SETS[i - 1].label : '';
 
     const rows = songs.map((p, j) => {
       const role = roleAt(i, j, songs.length);
@@ -3050,7 +3106,8 @@ function setsPanelHTML({ live }){
       </div>
       <div class="bar"><span style="width:${pct}%"></span></div>
       <div class="set-sub">${songs.length}/${cfg.maxSongs} songs · ${fmtClock(used)} of ${fmtClock(bud[i])}</div>
-      ${inherited ? `<div class="banked"><b>+${fmtClock(bud[i] - cfg.seconds)}</b> banked from the sets</div>` : ''}
+      ${inherited ? `<div class="banked"><b>+${fmtClock(bud[i] - cfg.seconds + (S.spent[i] || 0))}</b>
+        carried over from ${esc(from)}</div>` : ''}
       ${S.spent[i] ? `<div class="burned">&minus;${fmtClock(S.spent[i])} spent spinning</div>` : ''}
       ${rows}
     </div>`;
@@ -3074,6 +3131,19 @@ function huntingFor(){
   if (!p || !p.size) return null;
   return { from: last, partners: p };
 }
+/* Is a song on screen right now able to finish the open segue? The draft
+   screen asks this to colour the hunt banner and closeSet asks it to word the
+   warning, and they have to give the same answer or the game says a partner is
+   there and then says it is not. */
+function canLandSegue(){
+  const si = currentSet();
+  const hunt = huntingFor();
+  if (si === -1 || !hunt || !S.show) return false;
+  return S.show.songs.some(p => hunt.partners.has(p.song_id) && !pickBlock(p, si));
+}
+/* The confirm is for closing THIS set with THIS song dangling, so the key
+   carries both. Playing another song moves the length and voids it. */
+function closeKey(si){ return `${si}:${(S.sets[si] || []).length}`; }
 
 /* What is already on the setlist, kept on screen while you choose the next one.
    Collapsed to the set being built by default — that is the part a decision
@@ -3130,7 +3200,7 @@ function renderDraft(){
   const cfg = SETS[si];
   const left = remaining(S.sets, si, S.closed, S.spent);
   // The set's whole allowance, so the clock bar has something to be a fraction
-  // of — the encore's grows with whatever the two sets banked.
+  // of. A set that inherits time from the one before it has a bigger one.
   const budget = budgets(S.sets, S.closed, S.spent)[si];
 
   const bySet = new Map();
@@ -3144,8 +3214,9 @@ function renderDraft(){
   // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
   const fits = show.songs.filter(p => !pickBlock(p, si));
   const hunt = huntingFor();
-  const canFinish = hunt && show.songs.some(p =>
-    hunt.partners.has(p.song_id) && !pickBlock(p, si));
+  const canFinish = canLandSegue();
+  // Is the close button currently asking you to confirm giving up a segue?
+  const closeArmed = S.closeConfirm === closeKey(si) && !!danglingSegue(S.sets, si);
 
   const songsHTML = keys.map(k => {
     const rows = bySet.get(k).map(p => {
@@ -3226,11 +3297,15 @@ function renderDraft(){
     }).join('');
     return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
   }).join('') + (left < LIST_CLOSE_AT ? `
-    <button class="btn listclose" type="button" data-close-set>
-      <span class="lc-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
-      <span class="lc-s">${si === ENCORE_INDEX
-        ? 'Nothing here? Finish and score the night.'
-        : `Nothing here? Bank ${fmtClock(Math.max(0, left))} for the encore.`}</span>
+    <button class="btn listclose ${closeArmed ? 'forfeit' : ''}" type="button" data-close-set>
+      <span class="lc-t">${closeArmed
+        ? 'Close anyway, lose the segue'
+        : si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
+      <span class="lc-s">${closeArmed
+        ? 'Tap again to confirm'
+        : si === ENCORE_INDEX
+          ? 'Nothing here? Finish and score the night.'
+          : `Nothing here? Bank ${fmtClock(Math.max(0, left))} for ${esc(bankGoesTo(si))}.`}</span>
     </button>` : '');
 
   app.innerHTML = `
@@ -3300,12 +3375,16 @@ function renderDraft(){
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
           <b>${esc(hunt.from.song)} &rsaquo;</b>
+          ${/* CLOSING IS A WAY OUT NOW, so the line says so. It used to offer a
+                paid respin as the only alternative to playing on, which was
+                true when an open segue blocked the close button and is not
+                true any more. */''}
           ${canFinish
             ? 'is still going. A song below finishes it.'
-            : `is still going. Nothing here lands it${
+            : `is still going. Nothing here lands it: play on, or close the set
+                and give it up${
                 canRespin(S.sets, si, S.respins, S.closed, S.spent)
-                  ? `. A respin costs ${fmtClock(respinCost(S.respins))}.`
-                  : '. Play anything to move on.'}`}
+                  ? `. A respin costs ${fmtClock(respinCost(S.respins))}` : ''}.`}
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
@@ -3334,17 +3413,22 @@ function renderDraft(){
                    them to try. -->
               <div class="commit">This one segues. Land it next round and the
                 transition scores. Most shows have a song that can.</div>` : ''}
-            <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
+            <button class="btn closeset ${closeArmed ? 'forfeit' : ''} ${
+              !closeArmed && (!fits.length || left < 6 * 60) ? 'urge' : ''}"
               type="button" id="closeSetBtn" data-close-set>
-              <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
-              <span class="cs-s">${si === ENCORE_INDEX
-                ? 'Final. Scores the night.'
-                : `Banks ${fmtClock(Math.max(0, left))} for the encore`}</span>
+              <span class="cs-t">${closeArmed
+                ? 'Close anyway, lose the segue'
+                : si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
+              <span class="cs-s">${closeArmed
+                ? 'Tap again to confirm'
+                : si === ENCORE_INDEX
+                  ? 'Final. Scores the night.'
+                  : `Banks ${fmtClock(Math.max(0, left))} for ${esc(bankGoesTo(si))}`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
               || (!fits.length ? "Nothing here fits. You'll have to close the set."
-                : si === ENCORE_INDEX ? 'Leftover time from the sets is yours here.'
-                : 'Every minute you leave unplayed goes to the encore.'))}</div>
+                : si === ENCORE_INDEX ? 'Whatever Set II left over is yours here.'
+                : `Every minute you leave unplayed goes to ${bankGoesTo(si)}.`))}</div>
           </div>
         </aside>
       </div>
@@ -3519,6 +3603,19 @@ function renderResult(){
         </div>`;
       })() : ''}
 
+      <!-- THE ORDER IS THE POINT. This page used to open with the score, then a
+           regret, then four unlabelled numbers, then the setlist, then eleven
+           hundred pixels of arithmetic, all at the same volume. Read top to
+           bottom it now answers four questions in the order somebody actually
+           asks them: what did I get, how close was that to the best, what did I
+           build, and where did the points come from. The full working is still
+           here, one tap away, rather than in front of everybody. -->
+      <div class="card setlist" style="position:static">
+        <h2>The show</h2>
+        <div class="sub">Tap a song to see how it scored.</div>
+        ${setBlocks}
+      </div>
+
       ${S.missed ? `
       <div class="card gotaway">
         <div class="ga-lbl">The one that got away</div>
@@ -3534,23 +3631,32 @@ function renderResult(){
               : ''}.</div>
       </div>` : ''}
 
+      <!-- FOUR NUMBERS THAT NOW SAY WHAT THEY ARE. They were a bare row under
+           the headline: no title, no sign that they add up to the score, and a
+           one-word label each. Each one says what it rewards, and the row says
+           what it is a breakdown of. -->
+      <div class="card wherefrom">
+        <h2>Where the ${r.total} came from</h2>
+        <div class="sub">Four things are scored, and they add up to your total.</div>
+        <div class="breakdown">
+          <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div>
+            <div class="bw">what you played</div></div>
+          <div class="bd"><div class="v">${r.timeTotal}</div><div class="k">Time</div>
+            <div class="bw">filling the sets</div></div>
+          <div class="bd"><div class="v">${r.flowTotal}</div><div class="k">Flow</div>
+            <div class="bw">the running order</div></div>
+          <div class="bd"><div class="v">${r.breadthTotal}</div><div class="k">Breadth</div>
+            <div class="bw">range of the night</div></div>
+        </div>
+      </div>
+
       ${rankCardHTML()}
 
-      <div class="breakdown">
-        <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
-        <div class="bd"><div class="v">${r.timeTotal}</div><div class="k">Time</div></div>
-        <div class="bd"><div class="v">${r.flowTotal}</div><div class="k">Flow</div></div>
-        <div class="bd"><div class="v">${r.breadthTotal}</div><div class="k">Breadth</div></div>
-      </div>
-
-      <div class="card setlist" style="position:static">
-        <h2>The show</h2>
-        <div class="sub">Tap a song to see how it scored.</div>
-        ${setBlocks}
-      </div>
-
-      <div class="card scoresheet">
-        <h2>How this scored</h2>
+      <details class="card scoresheet">
+        <summary class="ss-open">
+          <span class="ss-t">See how every point was scored</span>
+          <span class="ss-s">Song by song, segue by segue</span>
+        </summary>
         <div class="sub">Each song is <b>how loved it is</b> × <b>how special that version was</b>
           × <b>how well it suited where it landed</b>. Then the night is judged as a whole.</div>
 
@@ -3609,7 +3715,7 @@ function renderResult(){
         </div>
 
         <div class="sheettot"><span>Total</span><b>${r.total}</b></div>
-      </div>
+      </details>
 
       <div class="actions">
         <button class="btn primary" type="button" id="shareImgBtn">Share score card</button>
@@ -4803,11 +4909,13 @@ function shareText(){
     lines.push('');
   });
 
-  lines.push(`${r.total} pts · ${r.stats.songs} songs · ${fmtClock(r.totalUsed)}`);
-  const got = r.breadth.filter(c => c.got).map(c => c.label.toLowerCase());
-  if (got.length) lines.push(got.join(' · '));
-  lines.push(`"${r.headline}"`);
-  lines.push('');
+  /* THE SETLIST IS THE SHARE. Everything under it used to be three more lines:
+     a stat line, the breadth tags it earned, and the headline in quotes. Pasted
+     into a message that is more furniture than message, and the stat line's
+     own clock was the worst of it, since fmtClock is mm:ss and a two and a half
+     hour show read as "144:37". A score and where it came from is the whole
+     job; anyone who wants the rest can play. */
+  lines.push(`${r.total} points`);
   lines.push('runthe.gg/setlist');
   return lines.join('\n');
 }
@@ -4950,7 +5058,7 @@ async function start(bandId){
   S.best = null;
   S.seenShows = new Set();
   S.seenSongs = [];
-  S.pickedSong = null; S.sheetForced = false;
+  S.pickedSong = null; S.sheetForced = false; S.closeConfirm = null;
   S.hint = ''; S.hintBad = false; S.result = null;
   drawShow();
   setScreen('reveal');
@@ -5019,7 +5127,7 @@ function lockIn(){
 }
 
 /**
- * Close the current set. Whatever is left flows to the encore.
+ * Close the current set. Whatever is left flows to the NEXT set.
  *
  * Deliberately does NOT draw a new show. The show on screen is the night's
  * source material, not a per-set handout — closing Set I while looking at a
@@ -5030,15 +5138,28 @@ function lockIn(){
 function closeSet(){
   const si = currentSet();
   if (si === -1) return;
+  /* AN OPEN SEGUE IS A PRICE, NOT A LOCK. This used to refuse outright: if the
+     last song segued and anything on screen could land it, the button simply
+     would not close the set, and a player who did not want any of the songs on
+     offer had no way out but a respin they had to pay for. The segue is worth
+     nothing unless the next song in the SAME set completes it, so ending the
+     set there already forfeits it: that is the cost, and it is the player's to
+     accept. It asks once so a thumb cannot spend it by accident. */
   const dangling = danglingSegue(S.sets, si);
-  const couldLand = S.show && S.show.songs.some(p => !pickBlock(p, si));
-  if (dangling && couldLand){
-    S.hint = `${dangling.song} segues. Play what it runs into before closing.`;
+  if (dangling && S.closeConfirm !== closeKey(si)){
+    S.closeConfirm = closeKey(si);
+    /* Says what closing COSTS, in points, rather than warning about segues in
+       general: the commit line that invites you into one is guarded against
+       exactly that framing, and this is the other end of the same decision. */
+    S.hint = canLandSegue()
+      ? `${dangling.song} segues and a song below lands it. Close now and that transition scores nothing.`
+      : `${dangling.song} segues, and nothing here lands it. Close now and it scores nothing.`;
     S.hintBad = true;
     renderDraft();
     return;
   }
   S.closed[si] = true;
+  S.closeConfirm = null;
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
   if (currentSet() === -1){ finishShow(); return; }
   renderDraft();
@@ -5052,6 +5173,9 @@ function respin(){
   S.spent[si] += respinCost(S.respins);
   S.respins += 1;
   S.pickedSong = null; S.sheetForced = false;
+  /* A new show changes whether anything can land the open segue, so a confirm
+     armed against the old one is stale and has to be earned again. */
+  S.closeConfirm = null;
   S.hint = ''; S.hintBad = false;
   drawShow();
   setScreen('reveal');

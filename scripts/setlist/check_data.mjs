@@ -545,6 +545,46 @@ check(!/content:'›'/.test(game), 'no typed chevrons are left');
 check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   'both screens use the drawn chevron');
 
+/* THE SCORECARD READS TOP TO BOTTOM AS A STORY, and it did not. It opened with
+   the score, then a regret, then four unlabelled numbers, then the setlist,
+   then eleven hundred pixels of arithmetic, every block at the same volume:
+   3388px at 390 wide, four full screens, over half of it the raw scoresheet.
+   The order below is the order somebody asks the questions in, and the working
+   is folded away rather than removed. */
+{
+  /* SCOPED TO renderResult, because three of these class names also appear
+     earlier in the file: the draft has its own `card setlist` aside and the
+     ceiling card has a second copy in the share renderer. Searching the whole
+     file found those instead and reported an order nothing on screen has. */
+  const from = game.indexOf('function renderResult()');
+  const body = game.slice(from, game.indexOf('function openDetail(', from));
+  check(body.length > 500, 'renderResult is findable');
+  const order = ['scorebox', 'card ceiling', 'card setlist', 'card gotaway',
+                 'card wherefrom'];
+  const at = order.map(c => body.indexOf(`<div class="${c}`));
+  check(at.every(i => i > -1), 'the scorecard has all five blocks');
+  check(at.every((v, i) => i === 0 || v > at[i - 1]),
+    'score, then the ceiling, then the show, then the regret, then the maths');
+  // The setlist has to come before the regret: you read what you built first.
+  check(body.indexOf('<div class="card setlist"') < body.indexOf('<div class="card gotaway"'),
+    'and your own setlist outranks the one that got away');
+}
+/* FOLDED, NOT DELETED. A <details> so the full working is one tap away, and a
+   summary that says what is inside rather than "details". */
+check(/<details class="card scoresheet">/.test(game), 'the full maths is folded away');
+check(/class="ss-open"/.test(game) && /See how every point was scored/.test(game),
+  'behind a summary that says what it opens');
+check(/\.scoresheet\[open\] \.ss-open:after\{content:'Hide';?\}/.test(game),
+  'and the affordance says which way it goes');
+/* The four category numbers had no title and a one-word label each, so nothing
+   said they were a breakdown of the score at all. */
+check(/Where the \$\{r\.total\} came from/.test(game),
+  'the four numbers say what they are a breakdown of');
+/* ALL FOUR, not "at least one". The first version of this passed with three of
+   the four captions deleted, which is exactly the state it exists to catch. */
+check((game.match(/class="bw"/g) || []).length === 4,
+  'and all four say what they reward');
+
 /* Two things that looked fine in the CSS and were wrong on the screen. */
 console.log('the header');
 /* THE BLURB IS CENTRED BY AUTO SIDE MARGINS, and it is capped at 32ch, so the
@@ -673,6 +713,88 @@ check(!/or \$\{partnerCount - 1\} more/.test(gameBare),
 check(/most shows have a song that can/i.test(game),
   'committing to a segue reads as an invitation');
 check(!/the transition is lost/.test(gameBare), 'not as a risk');
+
+/* AN OPEN SEGUE IS A PRICE, NOT A LOCKED DOOR. closeSet used to refuse
+   outright: if the last song segued and anything on screen could land it, the
+   set would not close, and a player who wanted none of the songs on offer had
+   no way out but a respin they had to pay for. A segue scores only when the
+   next song in the SAME set completes it, so closing there already forfeits it.
+   That is the cost, and it is the player's to accept. */
+{
+  const fn = gameBare.slice(gameBare.indexOf('function closeSet()'),
+                            gameBare.indexOf('function closeSet()') + 1400);
+  check(fn.length > 100, 'closeSet is findable');
+  check(/S\.closeConfirm/.test(fn), 'an open segue asks before it closes the set');
+  check(/S\.closed\[si\] = true;/.test(fn), 'and closing it is reachable');
+  /* The old guard returned WITHOUT ever setting closed[si]. The confirm branch
+     still returns early, so what makes this a price rather than a lock is that
+     the second tap gets past it: the confirm is stored, and the same key
+     satisfies the test next time. */
+  check(/S\.closeConfirm = closeKey\(si\)/.test(fn) && /S\.closeConfirm !== closeKey\(si\)/.test(fn),
+    'the second tap is the one that goes through');
+  check(!/Play what it runs into before closing/.test(gameBare),
+    'and the refusal it replaced is gone');
+}
+/* The confirm is consent to close THIS set with THIS song dangling, so playing
+   another song has to void it. The key carries the length so that happens by
+   construction rather than by remembering to clear it at every site. */
+check(/function closeKey\(si\)\{ return `\$\{si\}:\$\{\(S\.sets\[si\] \|\| \[\]\)\.length\}`; \}/.test(gameBare),
+  'the confirm is voided by playing another song');
+/* BOTH close buttons, not either: there is one in the pick panel and one at the
+   foot of the song list, and a player who scrolled to the list would otherwise
+   get an unarmed button that closes on the first tap. An `||` here passed with
+   one of the two reverted. */
+check((gameBare.match(/closeArmed \? 'forfeit'/g) || []).length === 2,
+  'both close buttons show the armed state');
+check((gameBare.match(/Close anyway, lose the segue/g) || []).length === 2,
+  'and both say what it gives up');
+/* The banner used to offer a paid respin as the only alternative to playing
+   on, which was true while the close was blocked and is not true now. */
+check(/close the set\s*\n?\s*and give it up/.test(gameBare),
+  'the hunt banner offers closing as a way out');
+
+/* TIME CARRIES ONE SET FORWARD, and three separate bits of copy promise it to
+   the player. They used to say "for the encore", which was true when both sets
+   paid straight into it and is a lie now that Set I's leftovers are Set II's.
+   budgets() is tested in verify-scoring; this is the promise agreeing with it.
+   Named once so the three cannot drift apart. */
+console.log('banked time');
+check(/function bankGoesTo\(si\)\{ return SETS\[si \+ 1\] \? SETS\[si \+ 1\]\.label : null; \}/.test(gameBare),
+  'where unused time goes is answered in one place');
+check(!/for the encore/.test(gameBare), 'no copy still promises it to the encore');
+check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
+  'and every promise reads it rather than naming a set');
+{
+  const sc = read('setlist/scoring.js');
+  const fn = sc.slice(sc.indexOf('export function budgets('),
+                      sc.indexOf('export function remaining('));
+  check(/let carry = 0;/.test(fn) && /carry = Math\.max\(0, out\[i\] - used\)/.test(fn),
+    'budgets carries leftovers forward one set at a time');
+  check(/out\[i\] \+= carry;/.test(fn), 'and each set spends what it inherited');
+  check(!/out\[ENCORE_INDEX\] \+= spare;/.test(fn),
+    'rather than dumping every set into the encore');
+  /* An open set has banked nothing yet, so the chain has to stop dead there:
+     without it an untouched night reports an encore budget of 2h35m. */
+  check(/if \(closed && !closed\[i\]\) break;/.test(fn),
+    'an open set stops the chain rather than being skipped over');
+}
+
+/* THE SHARE IS THE SETLIST. Under it sat three more lines: a stat line, the
+   breadth tags, and the headline in quotes. The stat line's own clock was the
+   worst of it, since fmtClock is mm:ss and a two and a half hour show read as
+   "144:37". A score and where it came from is the whole job. */
+{
+  const fn = gameBare.slice(gameBare.indexOf('function shareText()'),
+                            gameBare.indexOf('function renderLoading('));
+  check(fn.length > 100, 'shareText is findable');
+  check(/lines\.push\(`\$\{r\.total\} points`\);/.test(fn), 'the share says the score');
+  check(/runthe\.gg\/setlist/.test(fn), 'and where it came from');
+  check(!/r\.headline/.test(fn), 'and not the headline');
+  check(!/r\.breadth/.test(fn), 'nor the breadth tags');
+  check(!/fmtClock\(r\.totalUsed\)/.test(fn), 'nor a two-hour show as mm:ss');
+  // The setlist itself, arrows and all, is the part that stays.
+  check(/lines\.push\(p\.song \+ mark\)/.test(fn), 'the setlist itself is untouched');
+}
 
 /* THE SONG TITLE IS NOT SET IN THE DISPLAY FACE. Anton is a condensed poster
    type; a song title is mixed case with apostrophes, ampersands and brackets,

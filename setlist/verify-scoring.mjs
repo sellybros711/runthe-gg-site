@@ -62,25 +62,41 @@ group('the show', () => {
   eq(fmtClock(75), '1:15', 'clock formatting, seconds padded');
 });
 
-group('budgets — the encore inherits leftovers', () => {
+group('budgets: time cascades into the next set', () => {
   const OPEN = [false, false, false];
   eq(budgets([[], [], []], OPEN), [4500, 4200, 600],
-     'mid-game with both sets still open, the encore has only its own 10 minutes');
+     'mid-game with both sets still open, nobody has inherited anything');
 
+  /* THE CHANGE THIS GROUP EXISTS FOR. Time used to jump the middle: both sets
+     paid straight into the encore, so 25 minutes banked in Set I could only be
+     spent on a ten-minute slot at the end of the night. It carries one step
+     now, which is what makes running short early a real decision. */
   const short1 = [[perf({ len: 3000 })], [], []];
-  eq(budgets(short1, [true, false, false])[2], 600 + 1500,
-     'once Set I closes 25 minutes short, the encore inherits them');
-  eq(budgets(short1, OPEN)[2], 600, 'while Set I is still open it has left nothing behind');
+  eq(budgets(short1, [true, false, false])[1], 4200 + 1500,
+     'Set I closes 25 minutes short and SET II gets them');
+  eq(budgets(short1, [true, false, false])[2], 600,
+     'and the encore gets nothing yet, because Set II may spend them');
+  eq(budgets(short1, OPEN)[1], 4200, 'while Set I is still open it has left nothing behind');
 
   const full1 = [[perf({ len: 4500 })], [], []];
-  eq(budgets(full1, [true, false, false])[2], 600, 'a set used in full leaves nothing behind');
+  eq(budgets(full1, [true, false, false])[1], 4200, 'a set used in full leaves nothing behind');
 
+  // Set I banks 25 min, Set II uses 50 of its 70+25, so 45 reach the encore.
   const both = [[perf({ len: 3000 })], [perf({ len: 3000 })], []];
-  eq(budgets(both, [true, true, false])[2], 600 + 1500 + 1200,
-     'both sets closed short: the encore collects from each');
+  eq(budgets(both, [true, true, false])[2], 600 + 1200 + 1500,
+     'what Set II does not use, inherited time included, reaches the encore');
+  eq(budgets(both, [true, false, false])[2], 600,
+     'an open Set II stops the chain: the encore cannot know its share yet');
   eq(budgets(both)[0], 4500, 'Set I own budget is never changed by the maths');
-  eq(budgets(both)[2], 600 + 1500 + 1200,
+  eq(budgets(both)[2], 600 + 1200 + 1500,
      'with no closed argument every set counts, which is how a finished show scores');
+
+  /* Set II spending what Set I banked is the whole point, so it is checked
+     directly: 65 minutes does not fit 70 alone once 10 are already played, and
+     does fit when Set I handed 25 over. */
+  const spend = [[perf({ len: 3000 })], [perf({ len: 600 })], []];
+  eq(budgets(spend, [true, false, false])[1] - 600, 4200 + 1500 - 600,
+     'Set II can actually spend what Set I left');
 });
 
 group('remaining / canPlace / setFull', () => {
