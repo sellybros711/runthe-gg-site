@@ -5708,6 +5708,12 @@ function show(id){
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
+     auth change. It is the one screen a player comes back to from everywhere in the game
+     (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
+     that can be stale by then: which start control belongs on screen, and whether the
+     Defense half is still wearing the spinner it put on to fetch its pool. */
+  if(id==='s-intro'&&typeof paintHomeStart==='function') paintHomeStart();
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -6221,6 +6227,18 @@ function paintHomeStart(){
   const on=canPlayDefense();
   split.hidden=!on;
   one.hidden=on;
+  /* A LOADING STATE THAT OUTLIVED ITS OWN SCREEN. beginDefenseDraft disables the Defense
+     half and spins it while the defensive pool is fetched, and on SUCCESS it left it that
+     way: the draft screen replaced the front page a frame later so nobody saw it, and the
+     button was still disabled and still spinning when the run finished and the player came
+     back to start another one. Defense was dead until a reload.
+     The mode card this replaced never showed the fault because modeMenu rebuilt the sheet's
+     markup from scratch every time it opened, so its disabled card was thrown away and
+     redrawn. A control that lives on the page permanently has to be put back by hand, and
+     the honest place is here rather than on the success path: this runs on every return to
+     the front page, so it clears the state whatever left it behind. */
+  const def=$('b-start-def');
+  if(def){ def.disabled=false; def.classList.remove('hp-loading'); }
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -10741,6 +10759,14 @@ function paintOver(){
        without this the numbers were in the document at ~290ms and on the glass at ~720ms,
        behind the solve. One frame of patience buys the whole difference. */
     await new Promise((r)=>afterPaint(r));
+    /* THE RUN CAN BE GONE BY THE TIME WE GET HERE, and everything below reads it. Between
+       entering this callback and this line there are two awaits, one of them up to half a
+       second, and Back to start calls endRun() which sets run to null. Tap it while the
+       best-possible tile is still showing its "..." and the solve came back to a null run
+       and threw, which the player sees as the "Something broke" banner over a front page
+       that is working perfectly. Nothing below is worth doing for a screen that has already
+       been left, so it stops here. */
+    if(!run) return;
     const best=R.bestPossibleSquad(run,dataNow(),CTX);
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;

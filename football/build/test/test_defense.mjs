@@ -539,6 +539,9 @@ window.__DEF={
     return {
       split:shown(split), single:shown(one),
       splitAttr:!!split&&!split.hidden, singleAttr:!!one&&!one.hidden,
+      /* The Defense half's own state, which survives a whole run if nothing puts it back. */
+      defDisabled:!!def&&def.disabled,
+      defLoading:!!def&&/hp-loading/.test(def.className),
       singleLabel:one?one.textContent.trim():null,
       offName:off?name(off):null, defName:def?name(def):null,
       defSub:def?((def.querySelector('.hp-side-sub')||{}).textContent||'').trim():null,
@@ -999,6 +1002,22 @@ boot();`;
     ok('the share card draws, at 1080x1350, off the defensive slots',
       !!card && card.w === 1080 && card.h === 1350
       && card.slots === 'DL,DL,LB,DB,DB,FLEX' && card.bytes > 20000, card);
+
+    /* ── AND THE BUTTON IS STILL A BUTTON AFTERWARDS ──────────────────────────
+       Reported from the live build: play a defense run, come back to the front page, and
+       the Defense half is sitting there spinning and unpressable. beginDefenseDraft
+       disables it and spins it while the pool is fetched and only ever put it back on the
+       FAILURE path; on success the draft screen replaced the front page a frame later, so
+       nobody saw the state that was left behind until the run ended and they came home.
+       The mode card this replaced could not show the fault, because modeMenu rebuilt the
+       sheet's markup every time it opened. That is why this assertion did not exist and why
+       the whole path has to be walked to reach it: a fresh page load looks perfect. */
+    await p.evaluate(() => { const home = document.getElementById('b-again'); if (home) home.click(); });
+    await p.waitForSelector('#s-intro.on', { timeout: 20000 });
+    await p.waitForTimeout(400);
+    const after = await p.evaluate(() => window.__DEF.home());
+    ok('after a run, the front page comes back and Defense is pressable again',
+      after.split && !after.defDisabled && !after.defLoading, after);
     await ctx.close();
   } finally {
     await b.close();
