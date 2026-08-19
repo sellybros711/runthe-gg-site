@@ -690,15 +690,13 @@ window.GA_ID='G-L29P5MRWKE';
     /* pressed = the cabinet button actually going in */
     .gtile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acd);}
 
-    /* the crest sits in a box painted its game's own colour, the same one the
-       tile's border and shadow use, so the five read apart at a glance instead
-       of being five identical dark squares behind five small logos */
+    /* The crest sits the way it sits on the desktop card: the icon itself, a
+       thin accent edge, and the card's own colour showing through behind it.
+       No fill and no scanlines, because the colour is the tile now. */
     .gt-txt,.gt-scr{position:relative;z-index:1;}
     .gt-scr{display:grid;place-items:center;flex:0 0 auto;
       width:54px;height:54px;border-radius:3px;overflow:hidden;
-      background:var(--ac);border:2px solid var(--acq);}
-    .gt-scr:after{content:"";position:absolute;inset:0;pointer-events:none;
-      background:repeating-linear-gradient(180deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px);}
+      background:transparent;border:2px solid var(--acq);}
     .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;}
 
     .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
@@ -719,44 +717,35 @@ window.GA_ID='G-L29P5MRWKE';
     /* the marquee reads left to right, so its badge ends the line instead */
     .gtile.hero .gt-new{position:static;margin-left:auto;align-self:center;}
 
-    /* Colour alone made five identical tiles in five hues. Each one now carries
-       a scrap of its own game drawn in CSS behind the words: a marquee of
-       bulbs, two different fields, mown fairway stripes, a centre circle. No
-       images, nothing to load, and it sits under the text at low contrast so
-       the name still reads first. */
-    .gtile:before{content:"";position:absolute;inset:0;border-radius:2px;pointer-events:none;}
+    /* Each tile is painted with its game's own card background, the exact
+       gradients .feat.<game> .art uses on desktop, so the phone shows the same
+       five colours the wide layout does. The CSS field scraps that used to live
+       here (mown bands, an end zone, fairway stripes, a centre circle) are gone:
+       at tile width they read as stripes across the words rather than as a
+       pitch, and the colour now does that job on its own. */
 
-    /* the arcade: a marquee of bulbs over the pixel grid of a cabinet screen */
-    .gtile.arcade:before{
-      background:
-        radial-gradient(circle at 9px 8px, rgba(242,113,28,.5) 1.7px, transparent 2.2px) 0 0/18px 100% repeat-x,
-        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 9px),
-        repeating-linear-gradient(0deg,  rgba(255,255,255,.03) 0 1px, transparent 1px 9px);}
+    .gtile.arcade{background:
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.022) 3px 4px),
+      radial-gradient(120% 120% at 88% -10%, rgba(242,113,28,.30), transparent 55%),
+      radial-gradient(110% 130% at 3% 118%, rgba(251,146,60,.16), transparent 55%),
+      radial-gradient(90% 120% at 108% 60%, rgba(255,94,58,.14), transparent 55%),
+      linear-gradient(150deg,#3a1c0a 0%,#2a1408 48%,#180b04 100%);}
 
-    /* college football: mown bands across a field, chalked every five yards */
-    .gtile.cfb:before{
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,.075) 0 1.5px, transparent 1.5px 24px),
-        repeating-linear-gradient(90deg, rgba(16,185,129,.09) 0 12px, transparent 12px 24px);}
+    .gtile.cfb{background:
+      radial-gradient(130% 120% at 92% -12%, rgba(16,185,129,.20), transparent 55%),
+      linear-gradient(150deg,#0c3b2c 0%,#0a2d22 48%,#071a14 100%);}
 
-    /* the NFL season: the same field, but you can see an end zone from here */
-    .gtile.football:before{
-      background:
-        linear-gradient(90deg, transparent 0 76%, rgba(220,60,60,.17) 76%),
-        linear-gradient(90deg, transparent 0 76%, rgba(255,255,255,.09) 76% 77.4%, transparent 77.4%),
-        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1.5px, transparent 1.5px 21px);}
+    .gtile.football{background:
+      radial-gradient(130% 120% at 92% -12%, rgba(220,60,60,.20), transparent 55%),
+      linear-gradient(150deg,#4a1519 0%,#331014 48%,#1b0a0d 100%);}
 
-    /* the golf tour: a fairway cut on the diagonal, light falling off the green */
-    .gtile.golf:before{
-      background:
-        repeating-linear-gradient(115deg, rgba(255,255,255,.045) 0 11px, transparent 11px 22px),
-        radial-gradient(70% 90% at 92% 112%, rgba(235,166,31,.16), transparent 68%);}
+    .gtile.golf{background:
+      radial-gradient(130% 120% at 92% -12%, rgba(235,166,31,.20), transparent 55%),
+      linear-gradient(150deg,#134734 0%,#0e3826 48%,#0a2418 100%);}
 
-    /* the pitch: a halfway line and the arc of the centre circle */
-    .gtile.soccer:before{
-      background:
-        radial-gradient(circle at 50% 100%, transparent 33px, rgba(53,196,205,.22) 33px 34.5px, transparent 34.6px),
-        linear-gradient(90deg, transparent calc(50% - .75px), rgba(53,196,205,.16) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px));}
+    .gtile.soccer{background:
+      radial-gradient(130% 120% at 92% -12%, rgba(53,196,205,.20), transparent 55%),
+      linear-gradient(150deg,#123152 0%,#0e2740 48%,#0a1b2e 100%);}
 
     /* One colour per game, the same one its card, its Play button and its sheet
        use: --ac paints it, --acd is the shadow it casts, --acq the quiet edges. */
