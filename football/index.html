@@ -316,7 +316,8 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE ATTRIBUTE NEEDS A RULE BEHIND IT. `hidden` is a display:none in the UA sheet and
      .btn sets display:block, which is a class selector beating a plain element rule: setting
      b-start.hidden did exactly nothing and the front page showed Start a run AND the split,
-     stacked, one above the other. The same trap already caught .hp-new on this page. */
+     stacked, one above the other. The same trap caught the launch chip on this page before
+     that, which is how it was known about and still not applied here. */
   .hp-start[hidden]{display:none}
   /* ---- THE SPLIT START: OFFENSE AND DEFENSE ----
      ONE OBJECT, DIVIDED, rather than two buttons stacked or set in a row with a gap. The
@@ -360,11 +361,11 @@ window.GA_ID='G-L29P5MRWKE';
      it can afford the tracking it wanted all along. */
   .hp-side-sub{position:relative;font-family:var(--fn);font-size:10px;font-weight:600;
     letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-  /* THE LAUNCH STICKER, top right corner of the half it belongs to. Solid rather than the
-     translucent .hp-new chip beside "More ways to play": that one sits on a near-black panel
-     where a 16% green wash reads fine, and this one sits on a saturated blue button where
-     the same wash disappears into it. Dark text on solid green is the only version that
-     still reads as a sticker at 8.5px.
+  /* THE LAUNCH STICKER, top right corner of the half it belongs to. Solid rather than
+     translucent: a 16% green wash reads fine on a near-black panel, which is where the chip
+     beside "More ways to play" used to sit, and disappears into a saturated blue button,
+     which is where this one sits. Dark text on solid green is the only version that still
+     reads as a sticker at 8.5px.
      Absolutely positioned so it cannot push the label off centre: the two halves are a grid
      of equal columns and anything in the flow of one and not the other shifts it.
      THE TOP STRIP IS THE STICKER'S, which is what the button's 24px of top padding buys. The
@@ -409,15 +410,6 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
     stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
   .hp-secondary.locked .lk{display:block}
-  /* LAUNCH WEEK ONLY. Same green chip the newest card behind this button wears, so the
-     promise on the front page and the thing behind it are visibly the same announcement.
-     Hidden in the markup and revealed by script inside the window: if the script never
-     runs, a missing tag is a smaller lie than one that says NEW forever. See
-     MODES_NEW_UNTIL. */
-  .hp-new{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.07em;
-    text-transform:uppercase;padding:2px 5px;border-radius:4px;flex:0 0 auto;
-    background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.45)}
-  .hp-new[hidden]{display:none}
   /* THREE ACROSS, NOT TWO AND AN ORPHAN. .hrow is a two-column grid, which was right while
      this row held two buttons; adding the tutorial left Leaderboard alone on a second row at
      half width, sitting under a gap. Three equal columns is the same row it always looked
@@ -4316,10 +4308,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="hp-side-sub">DL LB DB FLEX</span>
       </button>
     </div>
-    <button class="btn hp-secondary locked" id="b-teams">More ways to play<span
-      class="hp-new" id="hp-new" hidden>New</span><svg class="lk" viewBox="0 0 24 24"
-      aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
-      d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+    <button class="btn hp-secondary locked" id="b-teams">More ways to play<svg class="lk"
+      viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>
+      <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <div class="hrow hp-util">
       <button class="btn hp-util-btn" id="b-tut">Tutorial</button>
       <button class="btn hp-util-btn" id="b-how">How to play</button>
@@ -5816,7 +5807,7 @@ async function boot(){
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
     $('h-field').innerHTML=fieldMarkings();
-    authBoot(); watchTabs(); wireDealNav(); paintNewChip(); paintHomeStart();
+    authBoot(); watchTabs(); wireDealNav(); paintHomeStart();
     bootStep('Ready');
     /* LET THE BAR VISIBLY REACH THE END, BUT ONLY WHEN THERE WAS A WAIT TO FINISH. Off a
        warm cache this whole function is over in a tenth of a second and the screen has
@@ -6293,7 +6284,7 @@ function paintHomeStart(){
      the front page, so it clears the state whatever left it behind. */
   const def=$('b-start-def');
   if(def){ def.disabled=false; def.classList.remove('hp-loading'); }
-  /* Painted here rather than in paintNewChip because it lives inside the split, which this
+  /* Painted here rather than anywhere earlier because it lives inside the split, which this
      function is the one that governs: the sticker cannot be shown on a control that is not. */
   const tag=$('hp-def-new');
   if(tag) tag.hidden=!(on&&defenseNewLive());
@@ -6478,11 +6469,6 @@ const modesNewLive=()=>{
   /* An unparseable date leaves it off rather than on forever. */
   return isFinite(until)&&Date.now()<until;
 };
-function paintNewChip(){
-  const el=$('hp-new');
-  if(!el) return;
-  el.hidden=!modesNewLive();
-}
 
 /* ---- THE STICKER ON THE DEFENSE HALF ----
    Its OWN date, not MODES_NEW_UNTIL's. That constant is deliberately un-named so the next
