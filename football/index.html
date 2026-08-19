@@ -312,43 +312,65 @@ window.GA_ID='G-L29P5MRWKE';
      Only testers see it (canPlayDefense); everybody else gets .hp-start exactly as before,
      still saying Start a run, because a lone button labelled OFFENSE offers a choice that
      is not on the page. paintHomeStart is what swaps them. */
-  .hp-split{display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:12px;
-    overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .hp-split{display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:14px;
+    overflow:hidden;box-shadow:0 10px 26px -14px #000,0 2px 8px rgba(0,0,0,.35)}
   .hp-split[hidden]{display:none}
   .hp-side{position:relative;overflow:hidden;border:0;cursor:pointer;color:#fff;
-    font-family:inherit;padding:15px 10px 14px;display:flex;flex-direction:column;
-    align-items:center;gap:7px;-webkit-appearance:none;appearance:none;
+    font-family:inherit;padding:24px 10px 15px;display:flex;flex-direction:column;
+    align-items:center;gap:4px;-webkit-appearance:none;appearance:none;
     transition:transform .07s ease,filter .15s ease}
-  /* The same 40% gloss every .btn on this page wears, so the pair belongs to the same set
-     of controls as the one it replaced. */
-  .hp-side:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
-    background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
+  /* NO COLOURED PIPS ANY MORE, and they were not pulling their weight twice over. They
+     were five dots naming QB RB WR TE FLEX directly above a line of type that spells out
+     QB RB WR TE FLEX, so the button said the same thing to itself; and half of them could
+     not be seen while it did, because QB is #ff0a3b on a #c62828 button and DB is #0f93ff
+     on a #1d4ed8 one. A row that repeats the row below it and loses two of its five marks
+     into its own background is decoration that is not even decorating.
+     The position colours are the DRAFT screen's vocabulary: the field chips, the tabs, the
+     box score. They mean something there because the pieces they colour are the things
+     being sorted. On the front page there is nothing to sort yet.
+     A gradient instead, so the halves keep the depth the dots were adding. Anchored on the
+     flat colours they replaced (#c62828 and #1d4ed8 are still the midpoints), so the pair
+     reads exactly as it did from across the room. */
+  .hp-side:before{content:'';position:absolute;left:0;right:0;top:0;height:45%;
+    background:linear-gradient(180deg,rgba(255,255,255,.16),transparent)}
   .hp-side:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
   .hp-side:disabled{cursor:default}
-  .hp-side.hp-off{background:#c62828}
-  /* Deep blue rather than the flat --blue: this sits against #c62828 at full height and the
-     lighter token vibrates next to it. --blue-2 is the token that already pairs with the red
-     everywhere else in the game. */
-  .hp-side.hp-def{background:#1d4ed8}
-  .hp-side-name{position:relative;font-family:var(--fn);font-size:19px;font-weight:700;
-    letter-spacing:.045em;text-transform:uppercase}
+  .hp-side.hp-off{background:linear-gradient(168deg,#d93a3a 0%,#c62828 52%,#a01f1f 100%)}
+  /* Deep blue rather than the flat --blue: this sits against the red at full height and the
+     lighter token vibrates next to it. */
+  .hp-side.hp-def{background:linear-gradient(168deg,#2f63e4 0%,#1d4ed8 52%,#153aa4 100%)}
+  .hp-side-name{position:relative;font-family:var(--fn);font-size:21px;font-weight:800;
+    letter-spacing:.05em;text-transform:uppercase;line-height:1.1}
   /* The spots you would actually fill, which is the whole difference between the two halves
-     and the one thing a name alone does not say. */
+     and the one thing a name alone does not say. It is the only thing under the name now, so
+     it can afford the tracking it wanted all along. */
   .hp-side-sub{position:relative;font-family:var(--fn);font-size:10px;font-weight:600;
-    letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-  .hp-pips{position:relative;display:flex;gap:3px}
-  .hp-pips i{width:7px;height:7px;border-radius:50%}
+    letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.72)}
   /* THE LAUNCH STICKER, top right corner of the half it belongs to. Solid rather than the
      translucent .hp-new chip beside "More ways to play": that one sits on a near-black panel
      where a 16% green wash reads fine, and this one sits on a saturated blue button where
      the same wash disappears into it. Dark text on solid green is the only version that
      still reads as a sticker at 8.5px.
      Absolutely positioned so it cannot push the label off centre: the two halves are a grid
-     of equal columns and anything in the flow of one and not the other shifts it. */
+     of equal columns and anything in the flow of one and not the other shifts it.
+     THE TOP STRIP IS THE STICKER'S, which is what the button's 24px of top padding buys. The
+     name is centred and nearly the full width of its half, so there is no horizontal corner
+     for a badge to hide in: measured at 320, 360 and 390 the label ran straight under it, by
+     as much as 14px on DEFENSE. Vertical separation is the only kind that holds at every
+     width, because it does not depend on how long the word is. */
   .hp-tag{position:absolute;top:6px;right:6px;font-family:var(--fn);font-size:8.5px;
     font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 5px;
     border-radius:4px;background:#4ade80;color:#06280f;
     box-shadow:0 1px 6px -1px rgba(0,0,0,.55)}
+  /* OG on the offense half, in the game's own gold rather than a second green. Green is the
+     launch colour and it is doing that job three inches to the right; two green stickers
+     side by side would say the two halves are the same kind of news, when the whole point of
+     the pair is that one of them is the game people already know. Gold is what this game
+     already uses for a thing that has been earned rather than a thing that is new.
+     IT DOES NOT EXPIRE, unlike its neighbour. NEW is an announcement with a shelf life; OG
+     is a fact about the mode that will still be true next year, so it carries no date and
+     wants no maintenance. */
+  .hp-tag.hp-og{background:#fbbf24;color:#3b2600}
   /* The attribute needs its own rule here for the same reason .hp-start[hidden] does. */
   .hp-tag[hidden]{display:none}
   /* Loading, while the defensive pool is fetched. The pool is a second data file and on a
@@ -4263,9 +4285,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <button class="btn hp-start" id="b-start">Start a run</button>
     <div class="hp-split" id="hp-split" hidden>
       <button class="hp-side hp-off" id="b-start-off">
-        <span class="hp-pips"><i style="background:var(--qb)"></i><i style="background:var(--rb)"></i><i
-          style="background:var(--wr)"></i><i style="background:var(--te)"></i><i
-          style="background:var(--flex)"></i></span>
+        <!-- No date on this one: it is not an announcement, see .hp-tag.hp-og. -->
+        <span class="hp-tag hp-og">OG</span>
         <span class="hp-side-name">Offense</span>
         <span class="hp-side-sub">QB RB WR TE FLEX</span>
       </button>
@@ -4274,8 +4295,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
              chip on More ways to play is: if the script never runs, a missing sticker is a
              smaller lie than one that says NEW forever. See DEFENSE_NEW_UNTIL. -->
         <span class="hp-tag" id="hp-def-new" hidden>New</span>
-        <span class="hp-pips"><i style="background:var(--dl)"></i><i style="background:var(--lb)"></i><i
-          style="background:var(--db)"></i></span>
         <span class="hp-side-name">Defense</span>
         <span class="hp-side-sub">DL LB DB FLEX</span>
       </button>

@@ -557,25 +557,38 @@ window.__DEF={
      the one that would go wrong silently: the two halves are equal grid columns, so anything
      in the flow of one and not the other shifts that half's label off centre against its
      twin, and nothing throws. */
-  sticker(){
-    const tag=document.getElementById('hp-def-new');
-    const def=document.getElementById('b-start-def');
-    const off=document.getElementById('b-start-off');
-    const centre=(b)=>{ const n=b&&b.querySelector('.hp-side-name'); if(!n) return null;
-      const r=n.getBoundingClientRect(), p2=b.getBoundingClientRect();
-      return Math.round((r.left+r.right)/2-(p2.left+p2.right)/2); };
-    const dc=centre(def), oc=centre(off);
-    return {
-      inDefense:!!tag&&!!def&&def.contains(tag),
-      inOffense:!!tag&&!!off&&off.contains(tag),
-      shown:!!tag&&tag.offsetParent!==null&&tag.getBoundingClientRect().height>0,
-      windowOpen:defenseNewLive(),
-      until:DEFENSE_NEW_UNTIL,
-      absolute:!!tag&&getComputedStyle(tag).position==='absolute',
-      /* Both labels the same distance off their own half's centre, within a pixel. */
-      labelCentred:dc!==null&&oc!==null&&Math.abs(dc-oc)<=1&&Math.abs(dc)<=1,
-      text:tag?tag.textContent.trim():null,
+  /* THE TWO STICKERS, and whether either has slid under the label it sits beside.
+     A badge over a word is the failure this page has had before in another form and it is
+     always silent: nothing throws, the season still plays, and the only symptom is a button
+     nobody can read. Measured as a box intersection rather than eyeballed, because it holds
+     at 390 and breaks at 360, which is not a difference anyone spots in a screenshot. */
+  stickers(){
+    const hit=(a,b)=>!(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom);
+    const read=(btnId,tagSel)=>{
+      const btn=document.getElementById(btnId); if(!btn) return null;
+      const tag=btn.querySelector(tagSel), nm=btn.querySelector('.hp-side-name'),
+            sub=btn.querySelector('.hp-side-sub');
+      if(!tag||!nm||!sub) return {missing:true};
+      const T=tag.getBoundingClientRect(), N=nm.getBoundingClientRect(),
+            S=sub.getBoundingClientRect(), B=btn.getBoundingClientRect();
+      return {
+        text:tag.textContent.trim(),
+        shown:tag.offsetParent!==null&&T.height>0,
+        absolute:getComputedStyle(tag).position==='absolute',
+        hitsName:hit(T,N), hitsSub:hit(T,S),
+        /* Inside its own half, and the label inside it too. */
+        inBox:T.right<=B.right+1&&T.top>=B.top-1,
+        labelFits:N.left>=B.left+2&&N.right<=B.right-2&&S.left>=B.left+2&&S.right<=B.right-2,
+        /* Centred against its own half, so neither sticker has pushed its label sideways. */
+        off:Math.round((N.left+N.right)/2-(B.left+B.right)/2),
+        h:Math.round(B.height),
+      };
     };
+    return {og:read('b-start-off','.hp-og'), nw:read('b-start-def','#hp-def-new'),
+      windowOpen:defenseNewLive(), until:DEFENSE_NEW_UNTIL,
+      /* No pips any more: they repeated the line below them and half of them could not be
+         seen against their own button. */
+      pips:document.querySelectorAll('.hp-pips').length};
   },
   /* The mode MOVED. A card left behind in the menu would be a second door to the same
      place, gated by different code. */
@@ -584,8 +597,7 @@ window.__DEF={
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
   /* THE SHARE CARD. It is drawn to a canvas, so what it says cannot be read back without
      an OCR pass; what CAN be read back is that it drew at all, at the right size, off the
-     right slot names. It is worth having because nothing renders this except a player
-     tapping share, so a throw in here reaches a person before it reaches a test. */
+     right slot names. */
   shareCard(){
     const before=slotsNow().join(',');
     const c=drawShareCard();
@@ -844,14 +856,37 @@ boot();`;
       shipped === true ? (shipState.split && !shipState.single)
         : (shipState.single && !shipState.split),
       { DEFENSE_LIVE: shipped, split: shipState.split, single: shipState.single });
-    /* The sticker rides the launch window and takes itself away, so it is asserted against
-       the date the page carries rather than against a hardcoded expectation of "on". */
-    const sticker = await p.evaluate(() => window.__DEF.sticker());
-    ok('the New sticker is on the Defense half for its launch window, and only there',
-      sticker.inDefense && sticker.shown === (shipped && sticker.windowOpen),
-      sticker);
-    ok('and it sits in the corner without pushing the label off centre',
-      !sticker.shown || (sticker.absolute && sticker.labelCentred), sticker);
+    /* THE STICKERS, at every width a phone actually is. NEW rides the launch window and
+       takes itself away, so it is asserted against the date the page carries rather than
+       against a hardcoded "on"; OG carries no date because it is a fact about the mode
+       rather than an announcement, so it is simply always up.
+       The widths are the point of this block. Both labels cleared their badge at 430 and
+       ran straight under it at 390, 360 and 320, by as much as 14px, and every one of those
+       is a phone somebody is holding. */
+    for (const w of [320, 360, 390, 430]) {
+      await p.setViewportSize({ width: w, height: 900 });
+      await p.evaluate(() => window.__DEF.intro());
+      await p.waitForTimeout(180);
+      const st = await p.evaluate(() => window.__DEF.stickers());
+      ok('@' + w + ' the OG and New stickers clear their own labels',
+        !st.og.hitsName && !st.og.hitsSub && !st.nw.hitsName && !st.nw.hitsSub, st);
+      ok('@' + w + ' both halves keep their label centred, inside the button, and thumb-sized',
+        st.og.labelFits && st.nw.labelFits && Math.abs(st.og.off) <= 1
+        && Math.abs(st.nw.off) <= 1 && st.og.h >= 44 && st.nw.h >= 44, st);
+    }
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(200);
+    const sticker = await p.evaluate(() => window.__DEF.stickers());
+    ok('OG is on the offense half and does not expire',
+      sticker.og.text === 'OG' && sticker.og.shown && sticker.og.absolute, sticker.og);
+    ok('New is on the defense half, and only while its window is open',
+      sticker.nw.text === 'New' && sticker.nw.absolute
+      && sticker.nw.shown === (shipped && sticker.windowOpen), sticker.nw);
+    /* The row of coloured dots is gone. It named the same five positions as the line
+       underneath it, and QB on a red button and DB on a blue one could not be seen doing it. */
+    ok('and the coloured pips are gone from both halves', sticker.pips === 0,
+      { pipRows: sticker.pips });
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
     await p.waitForTimeout(200);
 

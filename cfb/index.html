@@ -2383,38 +2383,6 @@ window.GA_ID='G-L29P5MRWKE';
      heading above gets the room that overhang needs. */
   .modecard .mc-sticker{top:-19px}
   .xpromo:has(.mc-sticker) .xp-h{margin-bottom:20px}
-  /* ON THE INTRO BUTTON it can barely hang at all, and the tilt is why.
-     That button sits 9px under "Draft your team" in a grid. A 19px overhang would
-     obviously land on it, but so did 11px: rotating a 57px-wide box by 7 degrees
-     about its top-right corner lifts the far end, and the BOUNDING RECT grows by
-     width*sin(7deg), about 7px. The sticker was 11px up and reading as 18.
-     Buying vertical room is not an option here: the intro is laid out so every
-     button clears the fold on a phone, and pushing this one down pushes Leaderboard
-     and How to play off the bottom, which is a bug this page has had before. So the
-     overhang has to fit a 7px gap, because a media query tightens .ctas to 7px on
-     anything under 700 wide, which is every phone.
-
-     AND IT CANNOT BUY THAT ROOM. Reserving 3px here for the sticker cost exactly the
-     fold: test_launch measures the front page against a browser-chrome allowance and
-     an iPhone SE went to "slack 88px, need 90". Every button on this page clearing
-     the fold is a thing that has been broken before and asked for specifically, and
-     it outranks a sticker's overhang.
-
-     So the sticker sits INSIDE the button and lets the tilt do the overhanging. Its
-     box top is 2px below the button's, the 7-degree rotation lifts the far corner
-     about 7px, and the rendered rect ends up 5px proud of the button into a 7px gap.
-     It reads as stuck on the corner, it never touches the button above, and the
-     layout does not move by a pixel. */
-  #b-modes{position:relative;overflow:visible}
-  #b-modes .mc-sticker{top:2px;right:-5px}
-  /* AND ON THE NARROWEST PHONE IT HAS TO GIVE WAY TO THE LABEL. At 320 the button's
-     own "More ways to play" runs wide enough that a full-size sticker sits on the
-     last word. The sticker is the thing that can afford to lose a point of type
-     here; the label is what the button is for. */
-  @media(max-width:359px){
-    #b-modes .mc-sticker{font-size:10px;letter-spacing:.05em;padding:4px 7px;right:-7px}
-  }
-
   .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
   .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
   .modecard.mc-alma .mc-title{color:#f2b632}
@@ -2925,7 +2893,7 @@ or endorsed by the NCAA, the CFP or any school.
          the only reason this is markup and not CSS. -->
     <div class="ctas">
       <button class="btn" id="b-play-intro">Draft your team</button>
-      <button class="btn ghost" id="b-modes">More ways to play<span class="mc-sticker">New</span></button>
+      <button class="btn ghost" id="b-modes">More ways to play</button>
       <!-- THREE UP, THE SAME SHAPE AS THE FOOTBALL GAME'S FRONT PAGE. The tutorial had
            a full-width button of its own here, which gave a practice draft the same
            weight as the two real ways in and pushed the pair below it further down.
