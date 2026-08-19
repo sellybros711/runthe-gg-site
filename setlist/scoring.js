@@ -155,6 +155,31 @@ export const SEGUE_EXACT_BONUS = 26;    // ...and it is the pair THAT take playe
 export const SEGUE_CHAIN_BONUS = 18;    // per link past the second in a run
 export const SANDWICH_BONUS = 70;       // A > B > A, closed
 
+/* ── SUITES ──────────────────────────────────────────────────────────────────
+ *
+ * Jive I > Jive II > Jive Lee. Seekers on the Ridge pt I > pt II. One piece of
+ * music in several movements, and putting one back together is the best thing
+ * a setlist builder can do with this catalogue.
+ *
+ * THE MODEL HAD THESE EXACTLY BACKWARDS. familiarityMult discounts a pair by
+ * how often the band plays it, which is right for an ordinary segue and wrong
+ * for a suite: the whole point of a suite is that it is always played that way.
+ * Seekers pt I > pt II is the MOST PLAYED PAIR IN THE ARCHIVE at 57 times, so
+ * it sat on the 0.30 floor and scored 18 out of a possible 60. Jive I > Jive
+ * Lee, 33 times, the same 18. The two most canonical links in the catalogue
+ * paid less than a pair the band had thrown together once.
+ *
+ * So a suite link is exempt from BOTH brakes and paid a bonus on top. The
+ * brakes exist to stop segue farming, and they cannot be farmed away here:
+ * suites are a closed set of 8 songs in 3 families, and you only get one if
+ * the shows you are dealt happen to offer two movements in consecutive rounds.
+ * Simulated over 6000 games: a two-part suite is linkable in 52.8% of them and
+ * a three-part in 2.65%. The band itself has managed a full Jive twice in 660
+ * shows, which is the number this is priced against.
+ */
+export const SUITE_BONUS = 55;          // per link between movements of one piece
+export const SUITE_FULL_BONUS = 90;     // once, for carrying a suite past two parts
+
 /*
  * TWO BRAKES ON SEGUE FARMING.
  *
@@ -1057,7 +1082,10 @@ export function gradeRunning(running, progress) {
   return gradeScore(running / progress);
 }
 
-export function scoreShow(sets, segues, spent, segueCounts) {
+/* `suites` is optional: a Map of song_id to family key from dataLoader. Left
+   out, suite links simply score as ordinary segues, which is what every
+   caller did before suites existed. */
+export function scoreShow(sets, segues, spent, segueCounts, suites) {
   const s = [sets[0] || [], sets[1] || [], sets[2] || []];
   const bud = budgets(s, undefined, spent);
 
@@ -1109,13 +1137,22 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   const segueHits = [];
   s.forEach((songs, si) => {
     let run = 0;
+    // Movements of the current suite carried so far, so the third one can be
+    // told from the second. Reset by anything that breaks the chain.
+    let suiteRun = 0;
     for (let i = 0; i < songs.length - 1; i++) {
       const a = songs[i], b = songs[i + 1];
       // The take has to have actually segued. A clean take of the same song
       // stops here, which is what makes the arrow worth chasing.
-      if (String(a.is_segue) !== 'true') { run = 0; continue; }
-      if (!segues || !segues.has(segueKey(a, b))) { run = 0; continue; }
+      if (String(a.is_segue) !== 'true') { run = 0; suiteRun = 0; continue; }
+      if (!segues || !segues.has(segueKey(a, b))) { run = 0; suiteRun = 0; continue; }
       run += 1;
+      {
+        const fa = suites && suites.get(a.song_id);
+        const fb = suites && suites.get(b.song_id);
+        // Two movements once the first link lands, then one per link after.
+        suiteRun = (fa && fa === fb) ? (suiteRun ? suiteRun + 1 : 2) : 0;
+      }
 
       const kinds = ['Segue'];
       let points = SEGUE_POINTS;
@@ -1133,16 +1170,33 @@ export function scoreShow(sets, segues, spent, segueCounts) {
         kinds.push('sandwich');
       }
 
+      /* A SUITE LINK, which is a different thing from a common segue. Two
+         movements of one piece, so it is paid a bonus and exempted from both
+         brakes below: discounting Seekers pt I > pt II for being played 57
+         times punishes the player for the one property that makes it a suite.
+         Cannot be farmed, being 8 songs in 3 families that have to turn up in
+         consecutive rounds. */
+      const suite = !!(suites && suites.get(a.song_id)
+        && suites.get(a.song_id) === suites.get(b.song_id));
+      if (suite) {
+        points += SUITE_BONUS;
+        kinds.push('suite');
+        /* Past two movements. The band has carried a full Jive I > II > Lee
+           exactly twice in 660 shows, so this is priced as the rarity it is.
+           `suiteRun` counts movements, not links, hence >= 3 for the second. */
+        if (suiteRun >= 3) { points += SUITE_FULL_BONUS; kinds.push('full suite'); }
+      }
+
       // Then the two brakes, applied to the graded total: how routine this
       // pair is for the band, and how many links the night has already had.
       const times = (segueCounts && segueCounts.get(segueKey(a, b))) || 1;
-      const fam = familiarityMult(times);
-      const decay = segueDecay(segueHits.length + 1);
+      const fam = suite ? 1 : familiarityMult(times);
+      const decay = suite ? 1 : segueDecay(segueHits.length + 1);
       const raw = points;
       points = Math.round(points * fam * decay);
-      if (fam < 0.75) kinds.push('routine');
+      if (!suite && fam < 0.75) kinds.push('routine');
 
-      segueHits.push({ set: si, from: i, to: i + 1, points, kinds,
+      segueHits.push({ set: si, from: i, to: i + 1, points, kinds, suite,
         raw, times, fam, decay, a: a.song, b: b.song });
     }
   });
@@ -1230,7 +1284,11 @@ export function scoreShow(sets, segues, spent, segueCounts) {
 export const BEST_BEAM = 24;
 export const BEST_CANDIDATES = 8;
 
-export function bestPossible(drafted, segues, segueCounts, spent) {
+/* `suites` threads through to scoreShow. WITHOUT IT THE CEILING IS WRONG in
+   the one case that matters: a player who lands a suite would be measured
+   against a best line scored as if suites paid nothing, and could beat 100%
+   of a target that was supposed to be unreachable. */
+export function bestPossible(drafted, segues, segueCounts, spent, suites) {
   const seq = (drafted || []).filter(d => d && d.show && d.show.songs && d.show.songs.length);
   if (!seq.length) return null;
 
@@ -1241,7 +1299,7 @@ export function bestPossible(drafted, segues, segueCounts, spent) {
     taken: new Set(st.taken),
     total: st.total,
   });
-  const rank = st => scoreShow(st.sets, segues, spent, segueCounts).total;
+  const rank = st => scoreShow(st.sets, segues, spent, segueCounts, suites).total;
 
   const fresh = () => ({ sets: [[], [], []], closed: [false, false, false], si: 0,
                          taken: new Set(), total: 0 });
@@ -1324,13 +1382,13 @@ export function bestPossible(drafted, segues, segueCounts, spent) {
   let best = all[0];
   for (const st of all) if (st.total > best.total) best = st;
   return {
-    total: scoreShow(best.sets, segues, spent, segueCounts).total,
+    total: scoreShow(best.sets, segues, spent, segueCounts, suites).total,
     sets: best.sets,
     // True when the search could not beat the line the player actually played.
     matchedPlayer: !!mirror && best === mirror,
   };
 }
 
-export function calcTotal(sets, segues, segueCounts) {
-  return scoreShow(sets, segues, undefined, segueCounts).total;
+export function calcTotal(sets, segues, segueCounts, suites) {
+  return scoreShow(sets, segues, undefined, segueCounts, suites).total;
 }

@@ -11,6 +11,7 @@ import {
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
   SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
+  SUITE_BONUS, SUITE_FULL_BONUS,
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
   ROLE_KINDS, BREADTH_ROLES, rolesMissing,
@@ -566,6 +567,58 @@ group('segues count only inside a set', () => {
   eq(scoreShow([[a], [b], []], seg).segues.length, 0, 'across the set break does not count');
   eq(scoreShow([[b, a], [], []], seg).segues.length, 0, 'segues are directional');
   eq(scoreShow([[a, b], [], []], seg).segues[0].points, SEGUE_POINTS, 'worth SEGUE_POINTS');
+});
+
+group('suites: the movements of one piece', () => {
+  /* THE BUG THIS EXISTS FOR. familiarityMult discounts a pair by how often the
+     band plays it, and Seekers on the Ridge pt I > pt II is the MOST PLAYED
+     PAIR IN THE ARCHIVE at 57 times, so it sat on the 0.30 floor and scored 18
+     of a possible 60. The most canonical link in the catalogue paid the least
+     of any link in the game. */
+  const A = { ...perf({ song_id: 'j1', len: 600 }), is_segue: 'true', song: 'Jive I' };
+  const B = { ...perf({ song_id: 'j2', len: 600 }), is_segue: 'true', song: 'Jive II' };
+  const C = { ...perf({ song_id: 'jl', len: 600 }), song: 'Jive Lee' };
+  const X = { ...perf({ song_id: 'x', len: 600 }), is_segue: 'true' };
+  const Y = { ...perf({ song_id: 'y', len: 600 }) };
+  const seg = new Set(['j1|j2', 'j2|jl', 'x|y']);
+  const counts = new Map([['j1|j2', 57], ['j2|jl', 57], ['x|y', 57]]);
+  const suites = new Map([['j1', 'jive'], ['j2', 'jive'], ['jl', 'jive']]);
+
+  const plain = scoreShow([[X, Y], [], []], seg, undefined, counts, suites).segues[0];
+  const suite = scoreShow([[A, B], [], []], seg, undefined, counts, suites).segues[0];
+  eq(plain.fam < 0.35, true, 'an ordinary pair played 57 times is still braked hard');
+  eq(suite.fam, 1, 'a suite link is not braked for being canonical');
+  eq(suite.points > plain.points * 3, true,
+     `a suite link is worth several times the same pair as an ordinary segue (${suite.points} vs ${plain.points})`);
+  /* The bonus ITSELF, not just the missing brake. Checked against raw, which is
+     the graded total before the brakes: without this the test passed with
+     SUITE_BONUS deleted, because the exemption alone already cleared 3x. */
+  eq(suite.raw, SEGUE_POINTS + SUITE_BONUS, 'and carries the suite bonus on top');
+  eq(suite.kinds.includes('suite'), true, 'and is named as one');
+  eq(suite.suite, true, 'and flagged for the scoresheet');
+
+  /* Two movements is a suite; three is the thing the band has managed twice in
+     660 shows. The full bonus fires on the SECOND link, not the first. */
+  const two = scoreShow([[A, B], [], []], seg, undefined, counts, suites).segues;
+  eq(two.some(h => h.kinds.includes('full suite')), false,
+     'two movements is not a full suite');
+  const three = scoreShow([[A, B, C], [], []], seg, undefined, counts, suites).segues;
+  eq(three.length, 2, 'three movements make two links');
+  eq(three[0].kinds.includes('full suite'), false, 'the first link is not yet the full one');
+  eq(three[1].kinds.includes('full suite'), true, 'the second one carries it past two');
+  eq(three[1].raw, SEGUE_POINTS + SUITE_BONUS + SUITE_FULL_BONUS,
+     'and is paid both bonuses');
+
+  // Only within one family, and only pairs the band has actually segued.
+  const other = new Map([['j1', 'jive'], ['j2', 'seekers'], ['jl', 'jive']]);
+  eq(scoreShow([[A, B], [], []], seg, undefined, counts, other).segues[0].suite, false,
+     'two different pieces are not a suite');
+  eq(scoreShow([[A, B], [], []], new Set(), undefined, counts, suites).segues.length, 0,
+     'and a pair the band never segued is not a link at all');
+
+  // Every caller that predates suites still works, unchanged.
+  eq(scoreShow([[A, B], [], []], seg, undefined, counts).segues[0].suite, false,
+     'without a suites map, a suite link scores as an ordinary segue');
 });
 
 group('fan headline', () => {

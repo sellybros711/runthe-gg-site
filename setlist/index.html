@@ -944,8 +944,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;
     padding:2px 7px; border-radius:3px;}
+  /* THE LOUDEST CHIP ON THE ROW, because it is the rarest thing the list can
+     offer. A suite link pays several times an ordinary one, so it is filled
+     rather than tinted, and it keeps the arrow shape a segue chip has because
+     it is still a segue: the movement it lands on is the point. */
+  .chip.suite{background:var(--violet); color:#120A24; letter-spacing:.9px;
+    padding:2px 11px 2px 7px; border-radius:3px;
+    clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   /* And they need their separator back, since they are boxes among words. */
-  .chip.seg + .chip:before, .chip.sand + .chip:before{margin-left:9px;}
+  .chip.seg + .chip:before, .chip.sand + .chip:before,
+  .chip.suite + .chip:before{margin-left:9px;}
 
   /* RARITY. */
   .chip.rare{color:var(--goldT);}
@@ -3299,6 +3307,13 @@ function renderDraft(){
       const why = pickBlock(p, si);
       const dead = !!why;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
+      /* A SUITE, which is a bigger deal than a segue and has to say so. Two
+         movements of one piece: Jive I into Jive II, Seekers pt I into pt II.
+         The scoring pays these several times an ordinary link, so the row
+         cannot describe them with the same three words. */
+      const landsSuite = finishes && S.data.suites
+        && S.data.suites.get(hunt.from.song_id)
+        && S.data.suites.get(hunt.from.song_id) === S.data.suites.get(p.song_id);
       /* The second line, decided BEFORE the chips, because the two were saying
          the same thing. A cover with no segue partner printed "orig. Bobby
          Blue Bland" AND a COVER chip on the same row: the line already names
@@ -3329,6 +3344,7 @@ function renderDraft(){
       const chips = [];
       if (sandwich && !dead) chips.push(
         `<span class="chip sand">${ICON_SANDWICH}CLOSES SANDWICH</span>`);
+      else if (landsSuite) chips.push('<span class="chip suite">COMPLETES THE SUITE</span>');
       else if (finishes) chips.push('<span class="chip seg">LANDS THE SEGUE</span>');
       /* NAMED, not just marked. The arrow after the title says a row is
          different; only a word says what the difference is FOR. It goes first,
@@ -3767,7 +3783,14 @@ function renderResult(){
           ${r.segues.length
             ? r.segues.map(x => `<div class="flowrow">
                 <div class="fl"><b>${esc(x.a)} → ${esc(x.b)}</b><i>${
-                  x.times > 1
+                  /* A SUITE IS NOT A ROUTINE PAIR, and saying "worth 30% of a
+                     first-time find" about Seekers pt I into pt II was the
+                     scoresheet explaining the bug it used to have. */
+                  x.suite
+                    ? `Two movements of one piece${
+                        x.kinds.includes('full suite') ? ', carried past a second' : ''
+                      }. Played together ${x.times} times and worth every one`
+                  : x.times > 1
                     ? `The band has played this pair ${x.times} times, worth ${
                         Math.round(x.fam * 100)}% of a first-time find`
                     : 'They have played this pair once, ever'}${
@@ -5294,11 +5317,11 @@ function nextRound(){
 }
 
 function finishShow(){
-  S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts);
+  S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts, S.data.suites);
   // The ceiling: the same shows, in the same order, played as well as we can
   // find. Guaranteed reachable, so it is a target rather than a taunt.
   try {
-    S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent);
+    S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent, S.data.suites);
   } catch (err) { S.best = null; }
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
   S.posted = null;

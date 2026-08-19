@@ -796,6 +796,70 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
   check(/lines\.push\(p\.song \+ mark\)/.test(fn), 'the setlist itself is untouched');
 }
 
+/* SUITES: the songs that are movements of one piece.
+ *
+ * Jive I > Jive II > Jive Lee, Seekers on the Ridge pt I > pt II. The scoring
+ * had these exactly backwards: familiarityMult discounts a pair by how often
+ * the band plays it, and Seekers pt I > pt II is the MOST PLAYED PAIR IN THE
+ * ARCHIVE at 57 times, so it sat on the 0.30 floor and scored 18 of a possible
+ * 60. The most canonical link in the catalogue paid the least of any link.
+ */
+console.log('suites');
+{
+  const { suites, shows } = loadBand(read('setlist/data/goose.csv'));
+  const title = new Map();
+  for (const sh of shows) for (const p of sh.songs) title.set(p.song_id, p.song);
+  const fams = new Map();
+  for (const [id, key] of suites) {
+    if (!fams.has(key)) fams.set(key, []);
+    fams.get(key).push(title.get(id));
+  }
+  check(fams.size === 3, `three families in this catalogue (${fams.size})`);
+  for (const [key, want] of [
+    ['jive', ['Jive I', 'Jive II', 'Jive Lee']],
+    ['seekers on the ridge', ['Seekers on the Ridge pt I', 'Seekers on the Ridge pt II']],
+    ['interlude', ['Interlude I', 'Interlude II', 'Interlude III']],
+  ]) {
+    const got = (fams.get(key) || []).slice().sort();
+    check(JSON.stringify(got) === JSON.stringify(want.slice().sort()),
+      `  ${key}: ${want.join(', ')}`, `got ${got.join(', ') || 'nothing'}`);
+  }
+  /* JIVE LEE HAS NO NUMERAL and belongs anyway, which is the whole reason the
+     stem rule exists alongside the part rule. */
+  check((fams.get('jive') || []).includes('Jive Lee'),
+    'a sibling with no numeral of its own still joins its family');
+  /* THE SEPARATOR IN THE PART RULE, asserted on the rule and not on its output,
+     because the output cannot currently fail. Without the separator "Yeti"
+     parses as "Yet" + roman numeral I and "2021" as "202" + 1 -- but both are
+     the only claimant of their stem, and a family needs two members, so the
+     size filter rejects them anyway and every title check still passes. The
+     separator is what stops that becoming a real family the day a song called
+     "Yet Another" or "202 Reasons" is played, and this is the only place that
+     can say so. */
+  const loader = read('setlist/dataLoader.js');
+  check(/const PART = \/\^\(\.\{3,\}\?\)\[\\s,:\]\+/.test(loader),
+    'a part marker must be separated from its stem, so "Yeti" is not "Yet I"');
+  // Belt and braces: today's catalogue really does keep them out.
+  for (const t of ['Yeti', '2021', 'Weird Fishes / Arpeggi']) {
+    const id = [...title].find(([, v]) => v === t);
+    if (!id) continue;
+    check(!suites.has(id[0]), `  and "${t}" is in no family`);
+  }
+}
+/* The scoring side: exempt from both brakes, and paid a bonus. verify-scoring
+   owns the arithmetic; this owns the wiring, which is what a UI change breaks. */
+check(/const fam = suite \? 1 : familiarityMult\(times\)/.test(read('setlist/scoring.js')),
+  'a suite link is not discounted for being canonical');
+check(/scoreShow\(S\.sets, S\.data\.segues, S\.spent, S\.data\.segueCounts, S\.data\.suites\)/.test(gameBare),
+  'the game passes its suites to the scorer');
+/* THE CEILING HAS TO KNOW TOO. Without it a player who lands a suite is
+   measured against a best line scored as if suites paid nothing, and can beat
+   100% of a target that is supposed to be unreachable. */
+check(/bestPossible\(S\.drafted, S\.data\.segues, S\.data\.segueCounts, S\.spent, S\.data\.suites\)/.test(gameBare),
+  'and to the ceiling, or a suite could beat an unbeatable target');
+check(/COMPLETES THE SUITE/.test(gameBare), 'the draft names a suite when one is on offer');
+check(/Two movements of one piece/.test(gameBare), 'and the scoresheet explains what it paid for');
+
 /* CHANGING YOUR NAME, and being able to find where. Reported as "I don't see
    where to adjust my user name": the only route in was tapping your own name in
    the top bar, which reads as a status chip rather than a control, and the
