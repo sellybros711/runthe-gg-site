@@ -675,22 +675,28 @@ window.GA_ID='G-L29P5MRWKE';
        badge reused wholesale, and hard offset shadows with no blur, which is
        the same trick the badges pull at 2px. Nothing rounds past 4px and
        nothing fades: this site is pixels. */
+    /* An <a> to the game, not a button that opens a sheet about the game. The
+       sheet was a second tap and a second read of copy the tile had already
+       given you, in front of the thing you had just asked for. text-decoration
+       and color are reset because these are links now. */
     .gtile{
       position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:11px;
       padding:13px 12px 12px;margin:0;text-align:left;cursor:pointer;
       border:2px solid var(--ac);border-radius:4px;background:var(--card);
-      box-shadow:4px 4px 0 var(--acd);
+      box-shadow:4px 4px 0 var(--acd);text-decoration:none;
       -webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);
       transition:transform .08s ease,box-shadow .08s ease;
     }
     /* pressed = the cabinet button actually going in */
     .gtile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acd);}
 
-    /* the crest sits behind glass, scanlines and all */
+    /* the crest sits in a box painted its game's own colour, the same one the
+       tile's border and shadow use, so the five read apart at a glance instead
+       of being five identical dark squares behind five small logos */
     .gt-txt,.gt-scr{position:relative;z-index:1;}
     .gt-scr{display:grid;place-items:center;flex:0 0 auto;
       width:54px;height:54px;border-radius:3px;overflow:hidden;
-      background:#0a1626;border:2px solid var(--acq);}
+      background:var(--ac);border:2px solid var(--acq);}
     .gt-scr:after{content:"";position:absolute;inset:0;pointer-events:none;
       background:repeating-linear-gradient(180deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px);}
     .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;}
@@ -702,11 +708,11 @@ window.GA_ID='G-L29P5MRWKE';
     /* the college edition needs its qualifier, but not at the size of a name */
     .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
       color:var(--mut);margin-top:3px;}
-    /* A tagline, not a spec sheet. It keeps the chip's accent bar, because that
-       is how this page marks a supporting line, but it is a sentence, so it
-       drops the uppercase and the letterspacing that go with a label. */
+    /* A tagline, not a spec sheet. No accent bar: the colour now lives in the
+       crest box, and a rule down the middle of a tile this small only chopped
+       it in two. */
     .gt-tag{font-size:11px;font-weight:700;line-height:1.35;color:var(--mut);
-      border-left:3px solid var(--acq);padding:1px 0 1px 8px;margin-top:auto;}
+      margin-top:auto;}
     /* the badge belongs to the tile, so it sits inside it and not in the gutter */
     .gt-new{position:absolute;top:9px;right:9px;z-index:2;font-size:9px;letter-spacing:.08em;
       text-transform:uppercase;font-weight:900;}
@@ -869,43 +875,43 @@ window.GA_ID='G-L29P5MRWKE';
            there is one description per game and it lives in one place. Desktop
            never sees the tiles: it has the room for the cards themselves. -->
       <div class="gtiles">
-        <button class="gtile hero arcade" type="button" data-open-game="arcade">
+        <a class="gtile hero arcade" href="/arcade/">
           <span class="gt-scr"><img class="gt-crest" src="/arcade/assets/arcade-icon.png?v=2" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">Run The <b>Arcade</b></span>
             <span class="gt-tag">Ten quick sports puzzles, new every day.</span>
           </span>
           <span class="badge-new gt-new">New</span>
-        </button>
-        <button class="gtile cfb" type="button" data-open-game="cfb">
+        </a>
+        <a class="gtile cfb" href="/cfb/">
           <span class="gt-scr"><img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">Perfect <b>Season</b><i>College Football</i></span>
             <span class="gt-tag">Sign six stars, chase the national title.</span>
           </span>
           <span class="badge-new gt-new">New</span>
-        </button>
-        <button class="gtile football" type="button" data-open-game="football">
+        </a>
+        <a class="gtile football" href="/football/">
           <span class="gt-scr"><img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">The Perfect <b>Season</b></span>
             <span class="gt-tag">Sign six legends, play a full NFL season.</span>
           </span>
-        </button>
-        <button class="gtile golf" type="button" data-open-game="golf">
+        </a>
+        <a class="gtile golf" href="/golf/">
           <span class="gt-scr"><img class="gt-crest" src="/golf/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">Run The <b>Tour</b></span>
             <span class="gt-tag">A new 18-hole course every single day.</span>
           </span>
-        </button>
-        <button class="gtile soccer" type="button" data-open-game="soccer">
+        </a>
+        <a class="gtile soccer" href="/soccer/">
           <span class="gt-scr"><img class="gt-crest" src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">Run The <b>Pitch</b></span>
             <span class="gt-tag">Draft a squad, simulate a World Cup run.</span>
           </span>
-        </button>
+        </a>
         <div class="gtile soonTile">
           <span class="gt-nm">More games coming soon</span>
           <span class="gt-tag">One account plays them all.</span>
