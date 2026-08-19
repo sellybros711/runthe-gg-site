@@ -534,6 +534,30 @@ window.__DEF={
      take the page into the draft under the sticker assertions. */
   wallReset(){ wantOneTeam=false; wantDefense=false; },
   board(){ show('s-board'); paintComp(); },
+  /* THE OTHER WAY INTO THE BOARD FROM THE RESULTS SCREEN: tapping the placing itself rather
+     than the button under it. The cells only render once the server has handed back a rank,
+     which it cannot do here, so one is put in by hand: what is under test is the click
+     handler, and the handler does not care where the button came from.
+     The board is left on the offense competition first, the way a previous visit would leave
+     it, so a pass means the tap CHANGED it rather than that it happened to be right. */
+  tapPlacing(){
+    lbTrade=false; lbDefense=false; lbEra=null; lbClub=null;
+    const host=document.getElementById('o-splits');
+    const b=document.createElement('button');
+    b.className='lbc go'; b.dataset.win='week'; b.textContent='#4 of 57';
+    host.appendChild(b);
+    b.click();
+    const out={scope:lbScope(),win:lbWin,sort:lbSort,
+      onBoard:document.getElementById('s-board').classList.contains('on')};
+    b.remove();
+    return out;
+  },
+  /* And the button beside it, which is the path that always worked. */
+  pressBoardButton(){
+    lbTrade=false; lbDefense=false; lbEra=null; lbClub=null;
+    openBoard();
+    return {scope:lbScope(),onBoard:document.getElementById('s-board').classList.contains('on')};
+  },
   /* THE SHAPE OF THE FRONT PAGE, as boxes. Wide, it is two columns with the animation in one
      and the choice in the other; on a phone it is one column, stacked. */
   layout(){
@@ -1455,6 +1479,27 @@ boot();`;
        the offense's list, so a defensive card printed six defenders under QB RB WR WR TE
        FLEX: the wrong word, on the graphic that travels furthest from the game that could
        explain it. It reads the run's own slots now, and this checks it draws from them. */
+    /* ── AND THE WAY OUT OF THIS SCREEN GOES TO THE RIGHT BOARD ───────────────
+       There are two ways to the leaderboard from a results screen: the button that says so,
+       and the placing itself, which is a button and looks like a link to the number printed
+       on it. The button called boardFromRun and went to the Defense board. The placing set
+       the club off the run and left every other competition flag as the last visit had left
+       it, so it opened the OFFENSE board: a table this run has no row in, reached by tapping
+       the rank it holds on a different one. Reported off the live build.
+
+       Both are checked, and the board is put back on the offense competition before each so
+       a pass means the tap moved it rather than that it was already there. */
+    const tapped = await p.evaluate(() => window.__DEF.tapPlacing());
+    ok('tapping the placing opens the Defense board, not whichever one was open last',
+      tapped.onBoard && tapped.scope.mode === 'defense', tapped);
+    ok('and it keeps the window that was tapped, on the record axis',
+      tapped.win === 'week' && tapped.sort === 'record', tapped);
+    const pressed = await p.evaluate(() => window.__DEF.pressBoardButton());
+    ok('and See the leaderboard still does the same',
+      pressed.onBoard && pressed.scope.mode === 'defense', pressed);
+    await p.evaluate(() => { document.getElementById('s-board').classList.remove('on');
+      document.getElementById('s-over').classList.add('on'); });
+
     /* The run was already walked to the end above, before the submit was read off the wire. */
     const card = await p.evaluate(() => window.__DEF.shareCard());
     ok('the share card draws, at 1080x1350, off the defensive slots',

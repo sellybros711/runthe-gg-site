@@ -13809,9 +13809,18 @@ function paintRankStrip(r){
    team rating. Still record even now that the rating axis answers every window: the
    number on the cell IS a record rank, from B.scoreOf, so opening on the rating axis
    would show a board that number does not come from. */
+/* WHICH BOARD IS boardFromRun's QUESTION, and this used to answer it by hand and get it
+   wrong. It set lbClub off the run and left every other competition flag exactly as the last
+   visit to the board had left it, so tapping "#4 of 57" at the end of a defense season opened
+   the OFFENSE board: a table that run has no row in, under a number that came from a
+   different one. Eras and the Trade Machine had the same fault for the same reason.
+
+   The button beside these cells has always called openBoard, which does ask. Two ways into
+   the same screen, one of them right, and the wrong one is the one that looks like a link to
+   the number above it. */
 document.addEventListener('click',(e)=>{
   const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
-  lbClub=(run&&run.franchise)||null;
+  boardFromRun();
   lbSort='record'; lbWin=b.dataset.win;
   show('s-board'); loadBoard();
 });
