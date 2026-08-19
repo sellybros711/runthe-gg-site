@@ -18,7 +18,7 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7574 performances · 660 shows · 367 songs**, 2014–2026.
+As of the last run: **7574 performances · 660 shows · 367 songs**, 2014-2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
 
 The show table from the same run: **855 shows · 660 with a setlist · 27 still to
@@ -115,6 +115,19 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `transition` | Raw transition mark out of this song (`>`, `->`, `,`, ``). |
 | `is_segue` | `true` when `transition` is a real segue (`>` / `->`). Shown in the draft as a `>` on the song and drives the segue-building mechanic. 30% of performances. |
 | `tags` | Pipe-delimited role tags. **Drives placement scoring.** |
+| `footnote` | The curators' note on **this performance**: `Unfinished.`, `80s synth version.`, `With Carol Of The Bells teases from Rick.` Display only. 38% of rows carry one, but 43% of those are nothing but the cover artist, which the row already prints as `orig. X`, so the game strips that prefix at render and 21% of rows end up showing something. |
+| `show_notes` | The curators' note on **the night**: `This was Aaron and Kris' first show as members of Goose.` 55% of shows have one. **Written on exactly one row per show and blank on the rest.** See below. Display only. |
+
+### Why `show_notes` is on one row and not all of them
+
+It belongs to the show, and the show has eleven-odd rows. Denormalising it the
+way `crowd_rating` is denormalised would add **436KB raw to a 1.2MB file** for
+one string repeated eleven times. It gzips away to almost nothing, but the parse
+does not, and the archive is parsed on every draft. Written once, it costs 36KB.
+
+The ingester writes it on the first row of each show after sorting. Nothing may
+depend on that: `dataLoader.js` hoists it onto the show by scanning the rows for
+whichever one carries it, so a reordering cannot silently drop the note.
 
 ## Tags
 

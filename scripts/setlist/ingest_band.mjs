@@ -302,7 +302,6 @@ async function fetchShowTable(playedIds) {
   const rows = await getJSON(url, { retryEmpty: true });
   if (!rows.length) throw new Error('the shows endpoint returned nothing');
 
-  const clean = s => decodeEntities(s || '').replace(/\s+/g, ' ').trim();
   const seen = new Set();
   const out = [];
   for (const r of rows) {
@@ -497,6 +496,22 @@ function decodeEntities(s) {
   );
 }
 
+/* One line, entities decoded. Used for venue and tour names and for the
+   curators' notes, all of which arrive with &quot; and stray newlines in them. */
+const clean = s => decodeEntities(s || '').replace(/\s+/g, ' ').trim();
+
+/* SHOW NOTES, MINUS THE THINGS THAT ARE NOT NOTES. One row in the archive has
+   the site's own next-show navigation sitting in the shownotes field:
+   "Next Show: 2021-06-07 <bullet> Livingston, MT <bullet> Pine Creek Lodge",
+   double-encoded bullets and all. It is one row today, but it is a CLASS of
+   value rather than a typo, and the game now prints this text to players, so
+   it is dropped rather than cleaned up. Anything that is genuinely about the
+   night survives untouched. */
+const showNote = s => {
+  const t = clean(s);
+  return /^(next|previous|prev)\s+show\s*:/i.test(t) ? '' : t;
+};
+
 const pick = (row, ...names) => {
   for (const n of names) {
     const v = row[n];
@@ -613,11 +628,30 @@ function rarityTier(gap) {
 }
 
 // ── CSV writing ──────────────────────────────────────────────────────────────
+/* THE CURATORS' OWN NOTES, and where each one lives.
+ *
+ * elgoose carries two kinds of prose the game had been throwing away: a
+ * `footnote` on a PERFORMANCE ("First known version.", "With Jeff Engborg on
+ * keys.") and `shownotes` on a SHOW ("This was Aaron and Kris' first show as
+ * members of Goose."). Measured over ten sampled years, 36% of performances
+ * carry a footnote and 54% of shows carry a note.
+ *
+ * footnote is per row and costs 8.4 chars a row, about 62KB raw on the archive.
+ * Fine.
+ *
+ * show_notes is per SHOW, and denormalising it onto all eleven-odd rows of that
+ * show would add 436KB raw to a 1.2MB file: a 37% bigger parse for one string
+ * repeated eleven times. It gzips away to nothing, but the parse does not, and
+ * the archive is parsed on every draft. So it is written ONCE, on the first row
+ * of each show, and blank on the rest: 36KB instead of 436KB. The loader scans
+ * a show's rows for the one that carries it, so nothing depends on which row
+ * that is.
+ */
 const COLUMNS = [
   'show_id', 'show_date', 'year', 'venue', 'city', 'state', 'set', 'position',
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
-  'jamchart_note', 'transition', 'is_segue', 'tags',
+  'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
 ];
 
 function csvCell(v) {
@@ -669,6 +703,15 @@ export function buildCSV(raw, opts = {}) {
       is_recommended: jc && jc.recommended ? 'true' : 'false',
       jamchart_note: jc ? jc.note : '',
       transition: String(pick(r, 'transition') || '').trim(),
+      /* `footnote`, not `footnotes`: the API carries both and they are the same
+         prose, but footnotes is a JSON-encoded array of it
+         (`["First known version."]`) on every one of the 3039 rows that has
+         either. Collapsed to one line because 610 raw values contain a newline
+         and these render inline; the CSV would survive them, a reviewer reading
+         the diff would not. */
+      footnote: clean(pick(r, 'footnote')),
+      // Carried on every row here, thinned to one row per show further down.
+      show_notes: showNote(pick(r, 'shownotes')),
     });
   }
   rows.forEach(r => { r.is_segue = isSegue(r.transition) ? 'true' : 'false'; });
@@ -691,6 +734,16 @@ export function buildCSV(raw, opts = {}) {
 
   if (limit) shows = shows.slice(-limit);
   say(`  ${shows.length} shows`);
+
+  /* THE SHOW NOTE, WRITTEN ONCE. It arrives on every row of a show, and keeping
+     it there would add 436KB raw to a 1.2MB file for one string repeated eleven
+     times. Blanked on every row but the first, which the loader finds by
+     scanning rather than by trusting a position. Done after the sort, so "first"
+     means first in the file. */
+  for (const show of shows) {
+    const note = show.songs.map(r => r.show_notes).find(Boolean) || '';
+    show.songs.forEach((r, i) => { r.show_notes = i === 0 ? note : ''; });
+  }
 
   // Pass 1 — per-song history: gap, play count, and the stats tags derive from.
   const stats = new Map();  // song_id → aggregate
