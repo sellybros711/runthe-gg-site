@@ -255,11 +255,12 @@ always been, one full-width Start a run, with no sign the other half exists. A p
 Defense button on the home screen would advertise an unannounced mode to every visitor,
 which a card buried two taps deep in a menu did not.
 
-`DEFENSE_LIVE` is `false`. That is not caution. `ps_runs_run_mode_ck` lists the recordable
-modes by name, so until `supabase/80_football_defense_mode.sql` is applied the database
-rejects every defense run outright, and a player would get a season that vanishes on submit.
+`DEFENSE_LIVE` is `true` now, and both migrations are applied. It shipped `false` first, and
+that was not caution: `ps_runs_run_mode_ck` lists the recordable modes by name, so until
+`supabase/80_football_defense_mode.sql` was applied the database rejected every defense run
+outright and a player would have got a season that vanished on submit.
 
-To open it:
+The order it went out in, which is the order to repeat for the next mode:
 
 1. run `supabase/80_football_defense_mode.sql`, then
    `supabase/81_football_defense_submit.sql`
@@ -280,6 +281,19 @@ order records nothing and shows a save failure nobody can act on.
 is readable by anybody who opens the console and forgeable by anybody who cares to. That
 is fine for hiding an unannounced mode and would not be fine for anything else; the
 database is what decides whether a run is recorded and it does not consult the list.
+
+LIVE TO EVERYBODY IS NOT THE SAME AS OPEN TO EVERYBODY. The draft still needs a free
+account, because the Defense board lists runs by name and a run with no name on it cannot be
+on it. So a signed-out visitor can press Defense and is walled, and for the first day of the
+launch that wall was the One Franchise one: it had been written for a single mode and
+hard-coded its name, its blurb and where the sign-up lands, so pressing Defense produced a
+sheet headed One Franchise explaining thirty-two club leaderboards, and finishing the sign-up
+dropped them in the club picker. The Defense half was left spinning behind it too, because
+`beginDefenseDraft` downloaded six megabytes of defenders before `beginDraft` said no and
+only the failure path put the button right. The copy comes off the mode now, the account
+check happens before the download, and four assertions in this suite hold all three of those:
+the sheet names Defense and says nothing about a franchise, the button is still pressable,
+and the sign-up is recorded as wanting the defense draft.
 
 All three states are covered by `BROWSER=1 node football/build/test/test_defense.mjs`, so
 the flip is a one-line change with a test behind it. That half also asserts the mode did not

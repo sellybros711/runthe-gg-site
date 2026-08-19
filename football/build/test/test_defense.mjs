@@ -516,6 +516,23 @@ window.__DEF={
      gets tested at all: overriding it would answer before the allowlist is consulted. */
   setLive(v){ __defLiveOverride=v; },
   launch(){ return beginDefenseDraft(); },
+  /* WHAT THE SHEET IN FRONT OF A SIGNED-OUT VISITOR ACTUALLY SAYS, plus the state of the
+     button they pressed to get it. Both halves matter: the wall was written for One
+     Franchise and named it out loud, and the Defense half was left spinning behind it. */
+  wall(){
+    const s=document.getElementById('sheet'), i=document.getElementById('sheet-in');
+    const b=document.getElementById('b-start-def');
+    return {open:s.classList.contains('on'),kind:i.dataset.kind||'',
+      eyebrow:((i.querySelector('.eyebrow')||{}).textContent||'').trim(),
+      text:i.textContent,
+      btn:b?{disabled:!!b.disabled,loading:b.classList.contains('hp-loading')}:null};
+  },
+  /* The sign-up landing, without a real account: this is the flag the auth change reads. */
+  wallSignIn(){ const b=document.getElementById('b-wall-in'); if(b) b.click();
+    return {oneTeam:wantOneTeam,defense:wantDefense}; },
+  /* Put the flag back, or the next auth change in this suite would follow through on it and
+     take the page into the draft under the sticker assertions. */
+  wallReset(){ wantOneTeam=false; wantDefense=false; },
   board(){ show('s-board'); paintComp(); },
   comps:()=>[...document.querySelectorAll('#lb-comp option')]
     .map(o=>({value:o.value,label:o.textContent})),
@@ -895,6 +912,37 @@ boot();`;
       shipped === true ? (shipState.split && !shipState.single)
         : (shipState.single && !shipState.split),
       { DEFENSE_LIVE: shipped, split: shipState.split, single: shipState.single });
+    /* ── AND WHAT PRESSING IT GETS THEM ──────────────────────────────────────
+       The mode is live to everybody but the draft still needs an account, because the
+       Defense board lists runs by name. So a signed-out visitor CAN press Defense, and what
+       came back was a sheet headed One Franchise explaining thirty-two club leaderboards,
+       with the Defense half left spinning underneath it: the wall was written for one mode
+       and hard-coded its name, its blurb and where the sign-up lands.
+
+       Three separate things, and each one is asserted: the sheet names Defense and nothing
+       else, the button they pressed is pressable again, and finishing the sign-up is
+       recorded as wanting the defense draft rather than the club picker. */
+    {
+      await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: false, name: null, userId: null }));
+      await p.evaluate(() => window.__DEF.intro());
+      await p.waitForTimeout(200);
+      await p.evaluate(() => window.__DEF.launch());
+      await p.waitForTimeout(400);
+      const w = await p.evaluate(() => window.__DEF.wall());
+      ok('signed out: pressing Defense raises a wall that names Defense',
+        w.open && w.kind === 'wall' && w.eyebrow === 'Defense', { open: w.open, kind: w.kind, eyebrow: w.eyebrow });
+      ok('and it does not talk about One Franchise', !/One Franchise|franchise/i.test(w.text),
+        w.text.slice(0, 160));
+      ok('and the Defense button is left pressable, not spinning',
+        !!w.btn && !w.btn.disabled && !w.btn.loading, w.btn);
+      const want = await p.evaluate(() => window.__DEF.wallSignIn());
+      ok('and signing up from it is remembered as wanting the defense draft',
+        want.defense === true && want.oneTeam === false, want);
+      await p.evaluate(() => window.__DEF.wallReset());
+      await p.evaluate(() => window.__DEF.intro());
+      await p.waitForTimeout(150);
+    }
+
     /* THE STICKERS, at every width a phone actually is. NEW rides the launch window and
        takes itself away, so it is asserted against the date the page carries rather than
        against a hardcoded "on"; OG carries no date because it is a fact about the mode

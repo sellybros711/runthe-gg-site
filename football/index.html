@@ -6240,7 +6240,8 @@ function newRun(opts){
 function beginDraft(opts){
   if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine||opts.defense)
     &&!oneTeamReady()){
-    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
+    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking',
+      opts.defense?'defense':'club');
   }
   replaceCtx=null;
   newRun(opts);
@@ -6304,6 +6305,13 @@ function beginDefenseDraft(){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine uses. */
   if(!canPlayDefense()) return;
+  /* THE ACCOUNT CHECK BEFORE THE DOWNLOAD, and before the button goes into its loading
+     state. beginDraft walls at the end of this either way, but getting there meant a walled
+     visitor waiting out six megabytes of defenders to be told no, and coming back to a
+     Defense button still spinning because only the failure path puts it right. */
+  if(!oneTeamReady()){
+    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','defense');
+  }
   const b=$('b-start-def');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
   loadDefensePool().then(()=>{
@@ -6341,25 +6349,52 @@ const oneTeamReady=()=>!!(authState.signedIn&&authState.name);
 /* Set when somebody is turned away from One Franchise, so that finishing the sign-up drops them
    into the team picker rather than back on the front page wondering what happened. */
 let wantOneTeam=false;
+/* The same, for the defense draft, which is behind the same account requirement and is now on
+   the front page where anybody can press it. */
+let wantDefense=false;
 
 $('b-teams').onclick=()=>{ modeMenu(); };
 
-function oneTeamWall(why){
+/* THE WALL NAMES THE MODE IT IS STANDING IN FRONT OF.
+ *
+ * It was written for One Franchise and hard-coded its name, its blurb and its follow-through,
+ * and then the defense draft was put behind the same account check and moved onto the front
+ * page. A signed-out visitor pressing Defense got a sheet headed One Franchise, telling them
+ * about thirty-two club leaderboards, and finishing the sign-up dropped them in the club
+ * picker: three different modes named in one flow, none of them the one they asked for.
+ *
+ * So the copy and the landing both come off the mode. Everything else about the sheet is
+ * unchanged, including the free run underneath, which is the right offer either way. */
+const WALL={
+  club:{name:'One Franchise',
+    what:'Draft the greatest team in one franchise\'s history. Every spin gives you that '+
+      'franchise in a different year, and you sign one player from each.',
+    note:'<b>Every franchise has its own leaderboard.</b> You are only up against people '+
+      'who picked the same one.',
+    noname:'You are signed in. Pick a username and One Franchise opens, because every run on '+
+      'these boards is listed under a name.',
+    out:'One Franchise needs a free account. It is thirty-two leaderboards, one per '+
+      'franchise, and a run has to have a name on it to be listed.'},
+  defense:{name:'Defense',
+    what:'Draft six defenders under the same cap and try to stop the league instead of '+
+      'outscoring it. Every takeaway they force is one of your men.',
+    note:'<b>Defense has its own leaderboard.</b> You are only up against people who drafted '+
+      'the same side of the ball.',
+    noname:'You are signed in. Pick a username and Defense opens, because every run on that '+
+      'board is listed under a name.',
+    out:'Defense needs a free account. It has its own leaderboard, and a run has to have a '+
+      'name on it to be listed.'},
+};
+function oneTeamWall(why,mode){
+  const w=WALL[mode]||WALL.club;
   const line=why==='checking'
     ? 'Checking your account. Give it a second and try again.'
-    : (why==='noname'
-      ? 'You are signed in. Pick a username and One Franchise opens, because every run on '+
-        'these boards is listed under a name.'
-      : 'One Franchise needs a free account. It is thirty-two leaderboards, one per '+
-        'franchise, and a run has to have a name on it to be listed.');
-  $('sheet-in').innerHTML='<div class="eyebrow red">One Franchise</div>'+
+    : (why==='noname'?w.noname:w.out);
+  $('sheet-in').innerHTML='<div class="eyebrow red">'+esc(w.name)+'</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Free members only</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft the '+
-      'greatest team in one franchise\'s history. Every spin gives you that franchise in a '+
-      'different year, and you sign one player from each.</p>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+esc(w.what)+'</p>'+
     '<ul class="modenotes">'+
-      '<li><b>Every franchise has its own leaderboard.</b> You are only up against people '+
-        'who picked the same one.</li>'+
+      '<li>'+w.note+'</li>'+
       '<li><b>'+esc(line)+'</b></li>'+
     '</ul>'+
     (why==='checking'
@@ -6372,10 +6407,11 @@ function oneTeamWall(why){
   openSheet();
   const x=$('b-wall-x'); if(x) x.onclick=closeSheet;
   const go=$('b-wall-in');
-  if(go) go.onclick=()=>{ wantOneTeam=true; profileSheet(); };
+  if(go) go.onclick=()=>{ if(w===WALL.defense) wantDefense=true; else wantOneTeam=true;
+    profileSheet(); };
   const free=$('b-wall-free');
   if(free) free.onclick=()=>{ closeSheet(); beginDraft({}); };
-  ga('one_team_blocked',{reason:why});
+  ga('one_team_blocked',{reason:why,mode:mode||'club'});
 }
 
 /* #rrggbb -> rgba() at the given alpha, for the tinted card border. */
@@ -7205,7 +7241,7 @@ function firstRunGuide(){
   if(frgSeen()) return false;
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
-  if(wantModes||wantOneTeam) return false;
+  if(wantModes||wantOneTeam||wantDefense) return false;
   const el=$('frg'); if(!el) return false;
   /* The button has to be on screen for an arrow to point at it. */
   const tgt=frgTarget();
@@ -7254,7 +7290,7 @@ function askArcadeAd(){
      they did not. */
   if(!$('s-intro').classList.contains('on')) return;
   if($('sheet').classList.contains('on')) return;
-  if(wantModes||wantOneTeam) return;
+  if(wantModes||wantOneTeam||wantDefense) return;
   A.show({from:'football'});
 }
 
@@ -12158,6 +12194,13 @@ function authBoot(){
       wantOneTeam=false;
       closeSheet();
       clubPicker();
+    }
+    /* Same again for the defense draft, which is the other mode somebody can be turned away
+       from with one press on the front page. */
+    if(wantDefense&&oneTeamReady()){
+      wantDefense=false;
+      closeSheet();
+      beginDefenseDraft();
     }
     if(wantModes&&oneTeamReady()){
       wantModes=false;
