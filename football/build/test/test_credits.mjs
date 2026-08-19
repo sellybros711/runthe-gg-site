@@ -5,7 +5,7 @@
  * A drafted roster used to play twenty-one weeks without one of its six names being said.
  * The score went up, the drive chart drew a line into the end zone, and which of your
  * players did it was not on the screen anywhere. E.touchdownCredits puts a man on every
- * touchdown and E.takeawayScript does the same for Lockdown, where your offense is the
+ * touchdown and E.takeawayScript does the same for the defense draft, where your offense is the
  * league's and the six you actually chose only show up going the other way.
  *
  * FOUR THINGS ARE WORTH TESTING HERE AND ONLY ONE OF THEM IS "IT RETURNS SOMETHING".
@@ -309,7 +309,7 @@ console.log('\n=== a defence cannot score in the Bowl ===');
     { name: 'A Passer', position: 'QB', ppr_ppg_mean: 22, pass_ppg: 21, rush_ppg: 0.5, rec_ppg: 0 },
   ];
   /* THE GUARD, AND WHY IT IS ONE. A defender carries rush_ppg too and it means his PASS
-     RUSH, while the credit weight adds rushing to receiving. Without the filter a Lockdown
+     RUSH, while the credit weight adds rushing to receiving. Without the filter a defensive
      roster reaching this screen would hand touchdowns to defensive ends on the strength of
      their sack numbers, which is a sentence the game would say with a straight face. */
   ok('a defensive roster produces no scorers at all', bowlMen(defence).length === 0,

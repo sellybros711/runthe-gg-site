@@ -972,7 +972,7 @@ function touchdownYards(play, rng) {
  * BOTH TEAMS, unlike the touchdown credits above. A distance is a fact about the kick and
  * needs no drafted player behind it, so the opponent's kicks get one too and the log reads the
  * same on either side of the ball. It is also why this is separate from the credits: it has to
- * work in Lockdown, where there are no offensive credits at all.
+ * work on a defense draft, where there are no offensive credits at all.
  */
 const FIELD_GOAL_BANDS = [
   [18, 29, 0.22],
@@ -1061,7 +1061,7 @@ function touchdownBlurb(scorer, passer, yards, play, rng) {
  * an array of credits, one per touchdown, each carrying the index of the event in `script`
  * so a caller can hang it on the play it belongs to without matching on anything fuzzy.
  *
- * A roster with nobody who can reach an end zone (which is every Lockdown roster, whose
+ * A roster with nobody who can reach an end zone (which is every defensive roster, whose
  * offense is the league's rather than drafted) returns an empty list, and the caller shows
  * what it always showed. That is the honest answer here: there is no drafted man to name.
  *
@@ -1086,7 +1086,7 @@ function touchdownCredits(script, men, rng, opts = {}) {
     return reach[i] * form;
   });
   /* The man who throws it, if the roster has one: the biggest passing game on it. A
-     Lockdown or quarterback-less roster simply has no passer and the catches say so. */
+     defensive or quarterback-less roster simply has no passer and the catches say so. */
   let passer = null;
   for (const m of men) if ((m.pass || 0) > (passer ? passer.pass : 0)) passer = m;
 
@@ -1112,9 +1112,9 @@ function touchdownCredits(script, men, rng, opts = {}) {
   return out;
 }
 
-/* ─── THE TAKEAWAYS, WHICH ARE LOCKDOWN'S TOUCHDOWNS ──────────────────────────
+/* ─── THE TAKEAWAYS, WHICH ARE THE DEFENSE DRAFT'S TOUCHDOWNS ────────────────
  *
- * In Lockdown you did not draft the offense, so naming the man who scored your points would
+ * On a defense draft you did not draft the offense, so naming the man who scored your points would
  * be naming nobody you picked: that offense is the league's. The six you did pick show up in
  * the other direction, and the play that says so out loud is the one that takes the ball
  * away. So the mode gets its own script, of interceptions and forced fumbles, credited to

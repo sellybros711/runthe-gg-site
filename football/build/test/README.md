@@ -26,12 +26,12 @@ halves run anywhere, and `BROWSER=1` adds a rendered half on top.
 | `test_drives.mjs` | Who has the ball and when it changes hands, including the coin toss and the second half kickoff. |
 | `test_credits.mjs` | That the name on a playoff touchdown is a name the roster earned: credit follows what a man actually is and how he played, a defense's takeaways fit the men who made them, and none of it touches the stream the season is played out of. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
-| `test_defense.mjs` | That Lockdown, the defense draft, is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
+| `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
 
 ## Names on the plays, and why only in the postseason
 
 `E.touchdownCredits` puts one of your six on every touchdown the broadcast calls, and
-`E.takeawayScript` does the same job for Lockdown, where your offense is the league's and
+`E.takeawayScript` does the same job for the defense draft, where your offense is the league's and
 the men you drafted only appear going the other way. Both are drawn rather than simulated,
 on the same bargain the scoring script already makes: the game was settled in fantasy space
 long before either runs, and the only question left is which legal version of it to show.
@@ -56,7 +56,7 @@ follows what a man IS rather than how he played that day.
 
 `bowlMen` also filters to QB, RB, WR and TE, and that is a guard rather than tidiness. A
 defender carries `rush_ppg` too and it means his PASS RUSH, while the credit weight adds
-rushing to receiving, so a Lockdown roster reaching that screen would hand touchdowns to
+rushing to receiving, so a defensive roster reaching that screen would hand touchdowns to
 defensive ends on the strength of their sack numbers. Two assertions cover it, and one of
 them deliberately runs a defence through the credits WITHOUT the filter to show the danger is
 real rather than theoretical.
@@ -170,7 +170,7 @@ claim is that the projection plays the mode.
 
 The How close table also prints what each roster does to the SCOREBOARD rather than to a
 fantasy total: points scored a game on a draft, points allowed a game on a defense, yours
-against the best you could have had. Only the side of the ball you drafted, because in Lockdown your offense is the league's average and in a draft your defense is not yours either,
+against the best you could have had. Only the side of the ball you drafted, because on a defense your offense is the league's average and on an offense your defense is not yours either,
 so the other half is a number no different pick could have moved.
 
 The subtle part is the RNG. `toFootballScore` turns the engine's continuous score into a
@@ -235,25 +235,36 @@ than from memory.
 ## How much of the page is covered
 
 Two files here open a browser: `test_bracket.mjs` on the postseason, and
-`test_defense.mjs` on Lockdown's gate, draft, formation and season. The engine is covered
+`test_defense.mjs` on the defense draft's gate, draft, formation and season. The engine is covered
 thoroughly. The page is covered on those screens and nowhere else, so a green run says
 nothing about a normal draft, the season screen, the results card or the leaderboard, and
 nothing at all about the offensive formation. The college game has a real browser suite
 under `cfb/build/test/` if you want the shape of one.
 
-## Lockdown is finished and gated
+## The defense draft is finished and gated
 
-`DEFENSE_LIVE` in `football/index.html` is `false`, so the mode card says Coming Soon and
-cannot be pressed. That is not caution. `ps_runs_run_mode_ck` lists the recordable modes
-by name, so until `supabase/80_football_defense_mode.sql` is applied the database rejects
-every defense run outright, and a player would get a season that vanishes on submit.
+It lives on the FRONT PAGE now, not in the mode menu. The single Start a run button splits
+into Offense and Defense for anybody who can play it, and `paintHomeStart` is the only thing
+that decides which of the two controls is on screen. The mode was called Lockdown while it
+was being built; it is called Defense everywhere a player can see, and the stored `run_mode`
+is still `defense`, which it always was.
+
+THE GATE CHANGED SHAPE WITH THE MOVE, and the shape is the decision. There is no greyed-out
+Coming Soon card any more: somebody who cannot play it sees the front page exactly as it has
+always been, one full-width Start a run, with no sign the other half exists. A padlocked
+Defense button on the home screen would advertise an unannounced mode to every visitor,
+which a card buried two taps deep in a menu did not.
+
+`DEFENSE_LIVE` is `false`. That is not caution. `ps_runs_run_mode_ck` lists the recordable
+modes by name, so until `supabase/80_football_defense_mode.sql` is applied the database
+rejects every defense run outright, and a player would get a season that vanishes on submit.
 
 To open it:
 
 1. run `supabase/80_football_defense_mode.sql`, then
    `supabase/81_football_defense_submit.sql`
-2. deploy with names in `DEFENSE_TESTERS`, who get the real mode on the real database
-   while everybody else still sees Coming Soon
+2. deploy with names in `DEFENSE_TESTERS`, who get the split on the real database while
+   everybody else still sees the one button
 3. flip `DEFENSE_LIVE` to `true` and deploy again, which opens it to everybody
 
 Both migrations, not just the first. 80 widens the table's CHECK so a defense row can
@@ -271,7 +282,19 @@ is fine for hiding an unannounced mode and would not be fine for anything else; 
 database is what decides whether a run is recorded and it does not consult the list.
 
 All three states are covered by `BROWSER=1 node football/build/test/test_defense.mjs`, so
-the flip is a one-line change with a test behind it.
+the flip is a one-line change with a test behind it. That half also asserts the mode did not
+get COPIED to the front page: a card left behind in the menu would be a second door to the
+same draft, reached through different code and gated separately.
+
+Two things there are worth knowing before a failure sends anybody hunting. The front page
+already scrolls sideways by about 119px at 390 wide, in both states, with no visible element
+wider than the viewport, so something off-screen has been contributing to `scrollWidth`
+since before the split existed; the assertion measures the split against the page WITHOUT it
+rather than against zero. And the season the suite drafts is not seeded, so it sometimes
+makes the playoffs: a run that does stops at seeding and has submitted nothing, so the run
+is walked to the end before the submit is read off the wire. Without that the three
+assertions about the submit body passed or failed on whether the drafted defense happened to
+be any good.
 
 `test_bracket.mjs` writes an instrumented copy of the game to
 `football/__test_bracket.html`, drives it, and deletes it. That name is deliberate:

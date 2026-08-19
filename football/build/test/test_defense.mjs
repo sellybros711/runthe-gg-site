@@ -503,7 +503,11 @@ if (process.env.BROWSER) {
   const HOOK = `
 window.__DEF={
   menu:()=>modeMenu(),
-  auth(st){ authState=st; },
+  /* Repaints the way the real onChange does. Assigning authState alone would leave the
+     front page showing whatever it showed before, which is exactly the bug this suite is
+     meant to catch rather than reproduce. */
+  auth(st){ authState=st; paintHomeStart(); },
+  intro(){ closeSheet(); show('s-intro'); },
   /* DEFENSE_LIVE is a const in the shipped file, so the gate is read here and overridden
      through a hook rather than reassigned: one build has to be driven through both states. */
   live:()=>DEFENSE_LIVE,
@@ -517,12 +521,37 @@ window.__DEF={
     .map(o=>({value:o.value,label:o.textContent})),
   scopeFor(v){ const sel=document.getElementById('lb-comp'); sel.value=v;
     sel.dispatchEvent(new Event('change')); return lbScope(); },
-  card:()=>{ const b=document.getElementById('b-mc-def'); if(!b) return null;
-    const cs=getComputedStyle(b);
-    return {disabled:b.disabled,soon:b.className.includes('mc-soon'),
-      tag:(b.querySelector('.mc-soon-tag')||{}).textContent||null,
-      arrow:!!b.querySelector('.mc-arrow'),opacity:Number(cs.opacity),
-      pointer:cs.pointerEvents}; },
+  /* THE FRONT PAGE'S OWN STATE, which is where the mode now lives. One full-width Start a
+     run for everybody, or the Offense and Defense pair for anybody on the allowlist. */
+  home(){
+    const split=document.getElementById('hp-split'), one=document.getElementById('b-start');
+    const off=document.getElementById('b-start-off'), def=document.getElementById('b-start-def');
+    const box=(el)=>{ const r=el.getBoundingClientRect();
+      return {w:Math.round(r.width),h:Math.round(r.height)}; };
+    const name=(el)=>((el.querySelector('.hp-side-name')||{}).textContent||'').trim();
+    /* MEASURED, NOT ASKED. Reading el.hidden says what the ATTRIBUTE is, which is not the
+       same as what the page shows: the hidden attribute is a display:none in the UA sheet and
+       .btn sets display:block, so b-start stayed on screen with the attribute set and an
+       assertion on el.hidden passed while the front page showed BOTH controls stacked, one
+       above the other. offsetParent is null only when the thing is genuinely not rendered.
+       (No backticks in here: this whole hook is a template literal.) */
+    const shown=(el)=>!!el&&el.offsetParent!==null&&el.getBoundingClientRect().height>0;
+    return {
+      split:shown(split), single:shown(one),
+      splitAttr:!!split&&!split.hidden, singleAttr:!!one&&!one.hidden,
+      singleLabel:one?one.textContent.trim():null,
+      offName:off?name(off):null, defName:def?name(def):null,
+      defSub:def?((def.querySelector('.hp-side-sub')||{}).textContent||'').trim():null,
+      offBox:off?box(off):null, defBox:def?box(def):null,
+      /* Neither half may spill out of the page: two 19px words in a 390px screen is the
+         thing most likely to break here. */
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+    };
+  },
+  paintHome:()=>paintHomeStart(),
+  /* The mode MOVED. A card left behind in the menu would be a second door to the same
+     place, gated by different code. */
+  menuHasCard:()=>!!document.getElementById('b-mc-def'),
   slots:()=>slotsNow(),
   tabs:()=>[...document.querySelectorAll('#tabs .tab')].map(t=>t.textContent),
   /* THE SHARE CARD. It is drawn to a canvas, so what it says cannot be read back without
@@ -538,7 +567,7 @@ window.__DEF={
   /* ---- WHAT ACTUALLY GOES OVER THE WIRE ----
      fetch is stubbed and the real calls are made, so this reads the URL the board asks
      for and the body the submit sends rather than the intent the page had. The two are
-     not the same thing and the difference is where Lockdown's runs were being lost. */
+     not the same thing and the difference is where the defense draft's runs were being lost. */
   async wire(){
     const seen=[]; const real=window.fetch;
     window.fetch=(u,o)=>{ seen.push({url:String(u),body:(o&&o.body)||null});
@@ -665,20 +694,23 @@ boot();`;
     await p.evaluate(() => window.__DEF.menu());
     await p.waitForTimeout(400);
     /* ── THE GATE ─────────────────────────────────────────────────────────────
-       The mode is finished and NOT recordable: ps_runs_run_mode_ck lists the modes by
-       name, so until supabase/80_football_defense_mode.sql is applied the database
-       rejects every defense run outright. A playable card would hand somebody a season
-       that vanishes on submit. Both states are checked here so flipping DEFENSE_LIVE is
-       a one-line change with a test behind it rather than a leap. */
+       The mode is finished and NOT recordable until ps_runs_run_mode_ck lists it, so a
+       pressable button would hand somebody a season that vanishes on submit. It now lives
+       on the FRONT PAGE rather than in the mode menu, and the gate shows in a different
+       shape because of that: there is no greyed-out card any more. Somebody who cannot play
+       it sees the front page it has always had, one full-width Start a run, with no sign
+       the other half exists. That is deliberate. A padlocked Defense button on the home
+       screen advertises an unannounced mode to everybody who loads the game. */
     const shipped = await p.evaluate(() => window.__DEF.live());
     console.log(`  (DEFENSE_LIVE is ${shipped}; the migration must be applied before it flips)`);
     await p.evaluate(() => window.__DEF.setLive(false));
-    await p.evaluate(() => window.__DEF.menu());
-    await p.waitForTimeout(300);
-    const gated = await p.evaluate(() => window.__DEF.card());
-    ok('gated: the card is greyed out, says Coming Soon and cannot be pressed',
-      gated && gated.disabled && gated.soon && gated.tag === 'Coming Soon'
-      && gated.opacity < 0.6 && gated.pointer === 'none' && !gated.arrow, gated);
+    await p.evaluate(() => { window.__DEF.paintHome(); window.__DEF.intro(); });
+    await p.waitForTimeout(250);
+    const gated = await p.evaluate(() => window.__DEF.home());
+    ok('gated: the front page is the one it has always been, one Start a run',
+      gated.single && !gated.split && gated.singleLabel === 'Start a run', gated);
+    ok('gated: and nothing on it hints at a mode nobody can play',
+      gated.split === false, { splitShown: gated.split });
     ok('gated: the launcher refuses even when called directly',
       await p.evaluate(async () => { window.__DEF.launch();
         await new Promise((r) => setTimeout(r, 500));
@@ -687,12 +719,18 @@ boot();`;
     await p.waitForTimeout(200);
     ok('gated: the board does not offer a competition nobody can be on',
       await p.evaluate(() => !window.__DEF.comps().some((o) => o.value === 'defense')));
+    /* THE MODE MOVED, it was not copied. A card still sitting in the menu would be a second
+       door to the same draft, reached through different code and gated separately. */
+    await p.evaluate(() => window.__DEF.menu());
+    await p.waitForTimeout(300);
+    ok('gated: and the mode menu no longer carries a card for it',
+      await p.evaluate(() => !window.__DEF.menuHasCard()));
 
     /* ── THE TESTER ALLOWLIST ─────────────────────────────────────────────────
-       Between "nobody" and "everybody" there is a middle state: named accounts get the
-       real mode on the real database while the card stays greyed out for everyone else.
-       The override goes back to null here so the shipped gate answers, which is the only
-       way the allowlist is under test rather than bypassed. */
+       Between "nobody" and "everybody" there is a middle state: named accounts get the real
+       mode on the real database while everybody else sees the front page unchanged. The
+       override goes back to null here so the shipped gate answers, which is the only way
+       the allowlist is under test rather than bypassed. */
     await p.evaluate(() => window.__DEF.setLive(null));
     const testers = await p.evaluate(() => window.__DEF.testers());
     console.log(`  (testers: ${testers.join(', ') || 'none'})`);
@@ -702,53 +740,84 @@ boot();`;
        should not have to match their own capitalisation to reach the mode. */
     await p.evaluate((n) => window.__DEF.auth({ ready: true, signedIn: true, name: n, userId: 'u2' }),
       String(testers[0] || 'malikwillislover').toUpperCase());
-    await p.evaluate(() => window.__DEF.menu());
-    await p.waitForTimeout(300);
-    const asTester = await p.evaluate(() => window.__DEF.card());
-    ok('tester: the card is pressable however the name was capitalised',
-      asTester && !asTester.disabled && !asTester.soon && !asTester.tag && asTester.arrow, asTester);
+    /* The front page has to BE on screen to be measured: the menu above left a sheet open
+       over it, and a hidden screen's children all measure zero by zero. */
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(250);
+    const asTester = await p.evaluate(() => window.__DEF.home());
+    ok('tester: the split appears however the name was capitalised',
+      asTester.split && !asTester.single, asTester);
+    /* Compared case-insensitively on purpose: every control on this page is uppercased by
+       CSS rather than in the markup, so textContent is the sentence case that was typed. */
+    ok('tester: and it is Offense and Defense, not one button renamed',
+      /^offense$/i.test(asTester.offName || '') && /^defense$/i.test(asTester.defName || ''),
+      { off: asTester.offName, def: asTester.defName });
+    /* The whole point of the pair over a single button: each half says which six spots it
+       fills, which is the only real difference between the two modes. */
+    ok('tester: each half says what it drafts', /DL/.test(asTester.defSub || ''),
+      asTester.defSub);
+    /* A 44px minimum is the accessibility floor for a touch target, and these are the two
+       most important controls in the game. */
+    ok('tester: both halves are a real thumb target',
+      asTester.offBox.h >= 44 && asTester.defBox.h >= 44
+      && asTester.offBox.w >= 44 && asTester.defBox.w >= 44,
+      { off: asTester.offBox, def: asTester.defBox });
+    /* MEASURED AGAINST THE PAGE WITHOUT THE SPLIT, not against zero. The front page already
+       scrolls sideways by about 119px at 390 wide, in both states and with no visible
+       element wider than the viewport, so something off-screen has been contributing to
+       scrollWidth since before this button existed. Asserting zero here would fail for a
+       reason that has nothing to do with the split; what this has to prove is that two
+       buttons in the width of one do not make it worse. */
+    ok('tester: the split adds no sideways scroll the single button did not already have',
+      asTester.overflow <= gated.overflow + 1,
+      { withSplit: asTester.overflow, withSingle: gated.overflow });
     await p.evaluate(() => window.__DEF.board());
     await p.waitForTimeout(200);
-    ok('tester: and the board offers Lockdown',
+    ok('tester: and the board offers Defense',
       await p.evaluate(() => window.__DEF.comps().some((o) => o.value === 'defense')));
 
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Somebody Else', userId: 'u3' }));
-    await p.evaluate(() => window.__DEF.menu());
-    await p.waitForTimeout(300);
-    const asOther = await p.evaluate(() => window.__DEF.card());
-    ok('everybody else: still Coming Soon, still unpressable',
-      asOther && asOther.disabled && asOther.soon && asOther.tag === 'Coming Soon', asOther);
+    /* On screen before it is measured, every time: home() reports what is RENDERED, and a
+       screen that is not the visible one renders nothing at all. */
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(250);
+    const asOther = await p.evaluate(() => window.__DEF.home());
+    ok('everybody else: the front page goes back to one button',
+      asOther.single && !asOther.split, asOther);
     ok('everybody else: the launcher refuses when called directly',
       await p.evaluate(async () => { window.__DEF.launch();
         await new Promise((r) => setTimeout(r, 500));
         return !document.getElementById('s-draft').classList.contains('on'); }));
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: false, name: null, userId: null }));
-    await p.evaluate(() => window.__DEF.menu());
-    await p.waitForTimeout(300);
-    ok('signed out: gated too, and a name is what the allowlist matches on',
-      await p.evaluate(() => { const c = window.__DEF.card(); return !!c && c.disabled; }));
+    await p.evaluate(() => window.__DEF.intro());
+    await p.waitForTimeout(250);
+    ok('signed out: one button too, and a name is what the allowlist matches on',
+      await p.evaluate(() => { const h = window.__DEF.home(); return h.single && !h.split; }));
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
+    await p.waitForTimeout(200);
 
     /* And what flipping it buys, so the live path is covered before it is live. */
     await p.evaluate(() => window.__DEF.setLive(true));
     await p.evaluate(() => window.__DEF.board());
     await p.waitForTimeout(200);
-    /* THE NAME ON SCREEN IS "Lockdown"; the value in the database is still 'defense'.
-       Renaming a stored enum to match a label would orphan every run already recorded
-       under the old one, so the two are deliberately allowed to differ and this asserts
-       both halves at once. */
-    ok('live: the board offers Lockdown as its own competition',
+    /* THE NAME ON SCREEN IS "Defense"; the value in the database is still 'defense', which
+       is a coincidence of this rename rather than a rule. The mode was called Lockdown when
+       it was built and the stored enum never was: renaming a stored value to match a label
+       would orphan every run already recorded under the old one, so the two are deliberately
+       allowed to differ and this asserts both halves at once. */
+    ok('live: the board offers Defense as its own competition',
       await p.evaluate(() => window.__DEF.comps()
-        .some((o) => o.value === 'defense' && /Lockdown/.test(o.label))));
+        .some((o) => o.value === 'defense' && /Defense/.test(o.label))));
     ok('live: and choosing it asks the database for run_mode defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense').mode) === 'defense',
       await p.evaluate(() => window.__DEF.scopeFor('defense')));
 
-    await p.evaluate(() => window.__DEF.menu());
+    await p.evaluate(() => { window.__DEF.paintHome(); window.__DEF.intro(); });
+    await p.waitForSelector('#s-intro.on', { timeout: 10000 });
     await p.waitForTimeout(300);
-    ok('live: the menu offers the mode', await p.evaluate(() => {
-      const b2 = document.getElementById('b-mc-def'); return !!b2 && !b2.disabled; }));
-    await p.click('#b-mc-def');
+    ok('live: the front page offers it to everybody', await p.evaluate(() => {
+      const h = window.__DEF.home(); return h.split && !h.single; }));
+    await p.click('#b-start-def');
     await p.waitForSelector('#opts .tile', { timeout: 60000 });
     await p.waitForTimeout(300);
     ok('the roster spots are a defense',
@@ -834,7 +903,7 @@ boot();`;
       { n: roster.length, spend: roster.reduce((t, r) => t + r.price, 0).toFixed(1) });
 
     /* ── THE FIELD ────────────────────────────────────────────────────────────
-       Lockdown draws its own formation, and the thing that breaks a formation is not
+       The defense draft draws its own formation, and the thing that breaks a formation is not
        arithmetic, it is a label landing on somebody's face. Six defensive spots can hold
        exactly four shapes, so all four are checked at every width the game draws a field
        at, against the rendered pixels rather than against the table they came from.
@@ -873,9 +942,23 @@ boot();`;
     const st = await p.evaluate(() => window.__DEF.state());
     ok('a full season plays', st.games === 17 && st.wins + st.losses === 17, st);
 
+    /* WALK IT TO THE END BEFORE READING THE WIRE, because a run that made the playoffs stops
+       at seeding and has submitted nothing yet. The three assertions below read the submit
+       body, so on a season good enough to be seeded they were reading an undefined request
+       and failing: not a flaky mode, a flaky test, and one that only showed up when the
+       drafted defense happened to be good. Measured across runs of this suite the same
+       roster policy went 7-10 and then 12-5, and only the losing season passed. */
+    for (let i = 0; i < 25; i++) {
+      if (await p.evaluate(() => document.getElementById('s-over').classList.contains('on'))) break;
+      await p.evaluate(() => { const b2 = [...document.querySelectorAll('.screen.on button')]
+        .find((x) => !x.disabled && /start|play|next|continue|see|results|skip|finish/i.test(x.textContent));
+        if (b2) b2.click(); });
+      await p.waitForTimeout(800);
+    }
+
     /* ── THE RUN HAS TO BE RECORDED AS THE GAME IT WAS ────────────────────────
        This is the assertion that would have saved the Trade Machine, and it is written
-       here because Lockdown repeated the fault exactly. board.js decided the mode name at
+       here because the defense draft repeated the fault exactly. board.js decided the mode name at
        four separate call sites; a new mode had to be added to all four and was added to
        none, so a defense run went out as p_mode 'free' and landed on the open draft's
        board, ranked against a game it was not playing. Nothing threw and nothing looked
@@ -904,22 +987,14 @@ boot();`;
       !!sent && !sent.p_franchise && !sent.p_era && sent.p_gm_rating == null,
       sent && { fr: sent.p_franchise, era: sent.p_era, gm: sent.p_gm_rating });
     ok('and every game was resolved as a defense',
-      st.defense === true && st.mode === 'defense' && st.label === 'Lockdown'
+      st.defense === true && st.mode === 'defense' && st.label === 'Defense'
       && st.defMods.every((m) => m > 0 && m < 5), st);
 
     /* THE ONE ARTEFACT THAT LEAVES THE SITE. The card took its six row labels from E.SLOTS,
-       the offense's list, so a Lockdown card printed six defenders under QB RB WR WR TE
+       the offense's list, so a defensive card printed six defenders under QB RB WR WR TE
        FLEX: the wrong word, on the graphic that travels furthest from the game that could
        explain it. It reads the run's own slots now, and this checks it draws from them. */
-    /* A run that made the playoffs stops at seeding, and the card reads run.outcome, which
-       is not set until the season is actually over. Walk it the rest of the way first. */
-    for (let i = 0; i < 25; i++) {
-      if (await p.evaluate(() => document.getElementById('s-over').classList.contains('on'))) break;
-      await p.evaluate(() => { const b2 = [...document.querySelectorAll('.screen.on button')]
-        .find((x) => !x.disabled && /start|play|next|continue|see|results|skip|finish/i.test(x.textContent));
-        if (b2) b2.click(); });
-      await p.waitForTimeout(800);
-    }
+    /* The run was already walked to the end above, before the submit was read off the wire. */
     const card = await p.evaluate(() => window.__DEF.shareCard());
     ok('the share card draws, at 1080x1350, off the defensive slots',
       !!card && card.w === 1080 && card.h === 1350

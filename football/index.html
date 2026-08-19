@@ -156,7 +156,7 @@ window.GA_ID='G-L29P5MRWKE';
        it was before. */
     --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500; --flex:#ba22f1;
     /* THE THREE DEFENSIVE COLORS. Not aliases of the five above, though three of them
-       currently hold the same hex: Lockdown never shows a receiver and a draft never shows
+       currently hold the same hex: the defense draft never shows a receiver and an offense draft never shows
        a linebacker, so the two sets are free to move apart later without either dragging
        the other with it.
 
@@ -299,6 +299,57 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-start{padding:18px 18px;font-size:19px;background:#c62828;box-shadow:0 2px 8px rgba(0,0,0,.35);
     border-radius:12px}
   .hp-start:before{display:none}
+  /* THE ATTRIBUTE NEEDS A RULE BEHIND IT. `hidden` is a display:none in the UA sheet and
+     .btn sets display:block, which is a class selector beating a plain element rule: setting
+     b-start.hidden did exactly nothing and the front page showed Start a run AND the split,
+     stacked, one above the other. The same trap already caught .hp-new on this page. */
+  .hp-start[hidden]{display:none}
+  /* ---- THE SPLIT START: OFFENSE AND DEFENSE ----
+     ONE OBJECT, DIVIDED, rather than two buttons stacked or set in a row with a gap. The
+     front page has always had a single thing to press and that gravity is worth keeping: a
+     2px seam reads as one control offering two doors, where an 8px gap reads as two
+     competing calls to action and neither wins.
+     Only testers see it (canPlayDefense); everybody else gets .hp-start exactly as before,
+     still saying Start a run, because a lone button labelled OFFENSE offers a choice that
+     is not on the page. paintHomeStart is what swaps them. */
+  .hp-split{display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:12px;
+    overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .hp-split[hidden]{display:none}
+  .hp-side{position:relative;overflow:hidden;border:0;cursor:pointer;color:#fff;
+    font-family:inherit;padding:15px 10px 14px;display:flex;flex-direction:column;
+    align-items:center;gap:7px;-webkit-appearance:none;appearance:none;
+    transition:transform .07s ease,filter .15s ease}
+  /* The same 40% gloss every .btn on this page wears, so the pair belongs to the same set
+     of controls as the one it replaced. */
+  .hp-side:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
+    background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
+  .hp-side:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
+  .hp-side:disabled{cursor:default}
+  .hp-side.hp-off{background:#c62828}
+  /* Deep blue rather than the flat --blue: this sits against #c62828 at full height and the
+     lighter token vibrates next to it. --blue-2 is the token that already pairs with the red
+     everywhere else in the game. */
+  .hp-side.hp-def{background:#1d4ed8}
+  .hp-side-name{position:relative;font-family:var(--fn);font-size:19px;font-weight:700;
+    letter-spacing:.045em;text-transform:uppercase}
+  /* The spots you would actually fill, which is the whole difference between the two halves
+     and the one thing a name alone does not say. */
+  .hp-side-sub{position:relative;font-family:var(--fn);font-size:10px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+  .hp-pips{position:relative;display:flex;gap:3px}
+  .hp-pips i{width:7px;height:7px;border-radius:50%}
+  /* Loading, while the defensive pool is fetched. The pool is a second data file and on a
+     slow connection the tap would otherwise do nothing visible for a second or two. */
+  .hp-side.hp-loading{opacity:.6}
+  .hp-side.hp-loading .hp-side-name{visibility:hidden}
+  .hp-side.hp-loading:after{content:'';position:absolute;left:50%;top:50%;width:18px;
+    height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);
+    border-top-color:#fff;animation:hpSpin .7s linear infinite}
+  @keyframes hpSpin{to{transform:rotate(360deg)}}
+  @media (max-width:340px){
+    .hp-side-name{font-size:17px}
+    .hp-side-sub{font-size:9px;letter-spacing:.04em}
+  }
   .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
     border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
@@ -591,7 +642,7 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro{display:flex;flex-direction:column}
     #s-intro>*{order:5}
     #s-intro .htitle{order:1;margin-bottom:12px}
-    #s-intro #b-start{order:2}
+    #s-intro #b-start,#s-intro #hp-split{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -1181,7 +1232,7 @@ window.GA_ID='G-L29P5MRWKE';
     50%{transform:translateX(-50%) translateY(4px)}}
   .frg-hint{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;
     font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#fca5a5}
-  #b-start.frg-lift{position:relative;
+  #b-start.frg-lift,#hp-split.frg-lift{position:relative;
     box-shadow:0 0 0 3px rgba(239,68,68,.55),0 0 34px -4px rgba(239,68,68,.85)}
   /* SHORT SCREENS GIVE WAY rather than pushing the panel off the top. At 320x568 the full
      panel plus the arrow plus the button does not fit in the viewport at any offset, and a
@@ -4191,7 +4242,27 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
     </div>
 
+    <!-- TWO CONTROLS, ONE OF THEM ON SCREEN AT A TIME. Everybody gets the single Start a
+         run button below; testers get the Offense and Defense pair instead, and
+         paintHomeStart is the only thing that decides which. Both are in the markup rather
+         than one being built at runtime so the first-run guide, the landscape ordering and
+         the focus ring all have something real to attach to before any script runs. -->
     <button class="btn hp-start" id="b-start">Start a run</button>
+    <div class="hp-split" id="hp-split" hidden>
+      <button class="hp-side hp-off" id="b-start-off">
+        <span class="hp-pips"><i style="background:var(--qb)"></i><i style="background:var(--rb)"></i><i
+          style="background:var(--wr)"></i><i style="background:var(--te)"></i><i
+          style="background:var(--flex)"></i></span>
+        <span class="hp-side-name">Offense</span>
+        <span class="hp-side-sub">QB RB WR TE FLEX</span>
+      </button>
+      <button class="hp-side hp-def" id="b-start-def">
+        <span class="hp-pips"><i style="background:var(--dl)"></i><i style="background:var(--lb)"></i><i
+          style="background:var(--db)"></i></span>
+        <span class="hp-side-name">Defense</span>
+        <span class="hp-side-sub">DL LB DB FLEX</span>
+      </button>
+    </div>
     <button class="btn hp-secondary locked" id="b-teams">More ways to play<span
       class="hp-new" id="hp-new" hidden>New</span><svg class="lk" viewBox="0 0 24 24"
       aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
@@ -5024,7 +5095,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=56"></script>
+<script src="engine.js?v=57"></script>
 <script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
@@ -5140,7 +5211,7 @@ const isDefRun=()=>!!(run&&run.defense);
    DEFENSE_LIVE is "is this open to everybody". It stays false until
    supabase/80_football_defense_mode.sql has been applied, and that is not caution, it is
    the truth about the mode: ps_runs_run_mode_ck lists the recordable modes by name, so
-   until that constraint is widened the database REJECTS every Lockdown run outright. The
+   until that constraint is widened the database REJECTS every defense run outright. The
    mode plays perfectly and every season it produced would vanish on submit, which is the
    worst version of shipping something because it looks finished and quietly is not.
 
@@ -5173,7 +5244,7 @@ function runMode(){
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
-  if(run&&run.defense) return 'Lockdown';
+  if(run&&run.defense) return 'Defense';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
   return 'Classic Mode';
@@ -5686,7 +5757,7 @@ async function boot(){
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
     $('h-field').innerHTML=fieldMarkings();
-    authBoot(); watchTabs(); wireDealNav(); paintNewChip();
+    authBoot(); watchTabs(); wireDealNav(); paintNewChip(); paintHomeStart();
     bootStep('Ready');
     /* LET THE BAR VISIBLY REACH THE END, BUT ONLY WHEN THERE WAS A WAIT TO FINISH. Off a
        warm cache this whole function is over in a tenth of a second and the screen has
@@ -5827,7 +5898,7 @@ function fieldMarkings(def){
 function fieldState(el){
   const def=isDefRun();
   /* A FIELD IS REBUILT WHEN THE SIDE OF THE BALL CHANGES, not just when it is first seen.
-     One page can play a draft and then a Lockdown run without reloading, and the markings are
+     One page can play an offense draft and then a defense one without reloading, and the markings are
      baked into this markup: kept, the defensive field would come back with no line of
      scrimmage and the offensive one would come back with somebody else's. */
   if(el._ps&&el._ps.def===def) return el._ps;
@@ -6131,6 +6202,26 @@ function beginDraft(opts){
   show('s-draft'); nextSpin();
 }
 $('b-start').onclick=()=>{ beginDraft({}); };
+$('b-start-off').onclick=()=>{ beginDraft({}); };
+$('b-start-def').onclick=()=>{ beginDefenseDraft(); };
+
+/* WHICH START THE FRONT PAGE IS SHOWING.
+ *
+ * One full-width Start a run for everybody, or the Offense and Defense pair for anybody who
+ * can play the defense draft. Called at boot AND on every auth change, because the username
+ * the allowlist is keyed on usually arrives one change after the sign-in does: without the
+ * second call a tester signs in, the page says nothing, and the split only appears if they
+ * happen to reload.
+ *
+ * `hidden` on both rather than a class on a parent, so the one that is not showing is out of
+ * the layout, out of the tab order and invisible to a screen reader in one attribute. */
+function paintHomeStart(){
+  const split=$('hp-split'), one=$('b-start');
+  if(!split||!one) return;
+  const on=canPlayDefense();
+  split.hidden=!on;
+  one.hidden=on;
+}
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
    does: its pool is not in the boot bundle. The wait is a second at most on a cold cache
@@ -6138,16 +6229,16 @@ $('b-start').onclick=()=>{ beginDraft({}); };
    empty board, and a failure lands on the front page with a reason instead of a draft with
    nobody in it. */
 function beginDefenseDraft(){
-  /* Checked here as well as at the card, because the card is only one way in and the DOM
-     is not the authority on what is playable. Same belt and braces the Trade Machine uses. */
+  /* Checked here as well as at the button, because the DOM is not the authority on what is
+     playable. Same belt and braces the Trade Machine uses. */
   if(!canPlayDefense()) return;
-  const b=$('b-mc-def');
-  if(b){ b.disabled=true; b.classList.add('mc-loading'); }
+  const b=$('b-start-def');
+  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
   loadDefensePool().then(()=>{
     closeSheet();
     beginDraft({defense:true});
   }).catch(()=>{
-    if(b){ b.disabled=false; b.classList.remove('mc-loading'); }
+    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
     toast('Could not load the defensive players. Check your connection and try again.');
   });
 }
@@ -6297,8 +6388,6 @@ function modeMenu(){
   const arrow='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
   const ct=canPlayTrade();
   const tradeLocked=locked||!ct;
-  const cd=canPlayDefense();
-  const defLocked=locked||!cd;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
@@ -6321,31 +6410,6 @@ function modeMenu(){
             '0-20.4Zm1.15 4.6v5.05l3.3 1.95-1.15 1.9-4.45-2.65V6.4h2.3Z"/>'+
           '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
-      '</button>'+
-      '<button class="modecard mc-def'+(cd?'':' mc-soon')+'" id="b-mc-def"'+
-        (defLocked?' disabled':'')+'>'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          /* A D and a fence picket, which is the stadium gag every fan already knows.
-             CHOSEN BY MEASUREMENT, not by taste: the mark renders at 18px on this card,
-             and of six versions drawn it is the only one whose D is still legible that
-             small. A three-picket fence reads beautifully at 96px and turns to mush at
-             eighteen, which is the size that actually ships. */
-          '<path fill-rule="evenodd" d="M2 3.8v16.4h4a8.2 8.2 0 0 0 0-16.4H2Zm3.4 3.3h.6a4.9 '+
-            '4.9 0 0 1 0 9.8h-.6V7.1Z"/>'+
-          /* The fence sits behind the D at 82%, which is what makes the pair read as a
-             logo rather than as two marks sharing a box: the letter leads, the joke
-             supports. Two pickets with a real gap, because three slim ones close up into
-             a solid block at 18px and the rails then have nothing to span. */
-          '<g opacity=".82">'+
-            '<path d="M13.8 20.4V11.2l1.8-2.4 1.8 2.4v9.2h-3.6Z"/>'+
-            '<path d="M19.6 20.4V11.2l1.8-2.4 1.8 2.4v9.2h-3.6Z"/>'+
-            '<path d="M13.2 12.7h10.6v1.5H13.2z"/><path d="M13.2 16.5h10.6v1.5H13.2z"/>'+
-          '</g>'+
-          '</svg></div><div class="mc-title">Lockdown'+
-          (cd?'':' <span class="mc-soon-tag">Coming Soon</span>')+
-          '</div>'+(cd?arrow:'')+'</div>'+
-        '<p>The same draft from the other side. Sign a front seven and a secondary under '+
-        'the same cap, and win by how few points you let the other team score.</p>'+
       '</button>'+
       '<button class="modecard mc-trade'+(ct?'':' mc-soon')+'" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
@@ -6430,11 +6494,6 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
-  const def=$('b-mc-def');
-  /* The sheet is closed by beginDefenseDraft AFTER the pool has arrived, not here, so the
-     card can stay on screen and disabled while it loads rather than dropping the player on
-     the front page with nothing happening. */
-  if(def&&!locked&&canPlayDefense()) def.onclick=()=>{ beginDefenseDraft(); };
   const trade=$('b-mc-trade');
   if(trade&&!locked&&canPlayTrade()) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
   /* Leaves this page, so it is tracked before it goes: a cross-promo whose click-through
@@ -6970,6 +7029,15 @@ const FRG_KEY='ps_seen_guide';
 function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
 function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
 function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
+/* WHAT THE GUIDE POINTS AT, which is no longer one fixed button. The front page shows either
+   Start a run or the Offense and Defense pair, so the arrow, the cut-out, the glow and the
+   dismiss-on-tap all have to follow whichever is actually on screen. Four call sites asked
+   for #b-start by name; on a tester's first load every one of them would have measured a
+   hidden button and put the hole somewhere near the top of the page. */
+function frgTarget(){
+  const split=$('hp-split');
+  return (split&&!split.hidden)?split:$('b-start');
+}
 
 /* Laid out against the button's real position rather than a guessed offset, because the
    front page reflows a long way between a 320 phone and a desktop. Panel above the arrow,
@@ -6977,7 +7045,7 @@ function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
    below it instead. */
 function frgPlace(){
   const wrap=$('frg'), panel=$('frg-panel'), arrow=$('frg-arrow'), hint=$('frg-hint'),
-        btn=$('b-start');
+        btn=frgTarget();
   if(!wrap||!panel||!btn||wrap.hidden) return;
   const b=btn.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
 
@@ -7035,7 +7103,9 @@ function frgPlace(){
 function frgClose(){
   const el=$('frg'); if(!el) return;
   el.hidden=true;
-  $('b-start').classList.remove('frg-lift');
+  /* Both, not the current target: an auth change can swap which control is on screen while
+     the guide is up, and a glow left on a hidden button comes back with it. */
+  ['b-start','hp-split'].forEach(id=>{ const e=$(id); if(e) e.classList.remove('frg-lift'); });
   frgMark();
   window.removeEventListener('resize',frgPlace);
   window.removeEventListener('scroll',frgPlace);
@@ -7047,9 +7117,10 @@ function firstRunGuide(){
   if(wantModes||wantOneTeam) return false;
   const el=$('frg'); if(!el) return false;
   /* The button has to be on screen for an arrow to point at it. */
-  try{ $('b-start').scrollIntoView({block:'end',behavior:'auto'}); }catch(e){}
+  const tgt=frgTarget();
+  try{ tgt.scrollIntoView({block:'end',behavior:'auto'}); }catch(e){}
   el.hidden=false;
-  $('b-start').classList.add('frg-lift');
+  tgt.classList.add('frg-lift');
   frgPlace();
   requestAnimationFrame(frgPlace);
   /* THE PANEL IS NOT ITS FINAL HEIGHT WHEN IT IS FIRST MEASURED. The display face arrives
@@ -7069,7 +7140,7 @@ function firstRunGuide(){
   $('frg-tut').onclick=()=>{ ga('first_run_guide_tutorial'); tutStart(); };
   /* Tapping the button both starts the run and finishes the guide; the button's own
      handler still runs, because the guide never covered it. */
-  $('b-start').addEventListener('click',frgClose,{once:true});
+  tgt.addEventListener('click',frgClose,{once:true});
   return true;
 }
 
@@ -7824,7 +7895,7 @@ function paintSquad(){
       /* A DEFENSE DOES NOT SCORE. The multiplier means the same thing on both sides, how
          much more or less the six are worth than their own numbers, but "they score 12%
          less" reads on a defense as though the roster were losing you points on offense,
-         which is the one thing a Lockdown roster has nothing to do with. */
+         which is the one thing a defensive roster has nothing to do with. */
       '<p class="fit">'+(isDefRun()
         ? (fitPct===0
           ? 'These six neither help nor hold each other back, so this defense is worth '+
@@ -7927,7 +7998,7 @@ $('b-play').onclick=()=>{ if(pendingChallenge) playBowl(); else startSeason(); }
    modelled as a team, not as players, so its side stays a team total. */
 /* ---- WHO DID IT, IN THE POSTSEASON ----
  *
- * Names on the plays: who caught the touchdown, or in Lockdown who took the ball away. The
+ * Names on the plays: who caught the touchdown, or on a defense who took the ball away. The
  * broadcast calls them and the box score for that game lists them, and both read this.
  *
  * THE POSTSEASON ONLY, WHICH IS A DECISION RATHER THAN A LIMITATION. A playoff game is the
@@ -10125,7 +10196,7 @@ function playPlayoffGame(r,after){
   const credits=gameCredits(r,script);
   const creditAt=new Map();
   if(credits&&credits.mode==='offense') credits.events.forEach(c=>creditAt.set(c.at,c));
-  /* Lockdown's takeaways are not scores, so they are not on the timeline at all. They ride
+  /* The defense draft's takeaways are not scores, so they are not on the timeline at all. They ride
      the clock instead: each one flashes up as the run segment sweeps past its time, which
      costs the broadcast nothing because that animation is already running. */
   const takeaways=credits&&credits.mode==='defense'?credits.events.slice():[];
@@ -10829,7 +10900,7 @@ function comparison(best){
        comparing 76.3 against the 44 his own men actually scored. */
     vs(isDefRun()?'Team overall':'Fantasy points a game',
       mineRating.toFixed(1),bestRating.toFixed(1))+
-    /* THE SIDE OF THE SCOREBOARD YOU DRAFTED, and only that one. In Lockdown your offense is
+    /* THE SIDE OF THE SCOREBOARD YOU DRAFTED, and only that one. In the defense draft your offense is
        the league's average and you did not pick it; in a draft your defense is not a thing
        you own either. Printing the half nobody chose would put a number next to "best" that
        no different pick could have moved. */
@@ -11012,7 +11083,7 @@ function drawShareCard(){
      Trade Machine was in the same position: it fell through to the classic line, which
      describes six spins it never took. */
   centered(run.defense
-    ? 'Lockdown. Six spins, six defenders, one shot at 20-0.'
+    ? 'Defense. Six spins, six defenders, one shot at 20-0.'
     : run.tradeMachine
     ? 'The Trade Machine. A roster you inherited and a season to fix it.'
     : run.franchise
@@ -11092,7 +11163,7 @@ function drawShareCard(){
 
   /* The six players. Position chip, name, then the year and city on the right, so
      the eye can run down either column on its own. */
-  /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a Lockdown
+  /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a defensive
      card printed six defenders under QB RB WR WR TE FLEX, and a Trade Machine card printed
      its two flexes as a second receiver. This is the one artefact that leaves the site, so
      it was the one place the wrong word travelled furthest. */
@@ -11452,7 +11523,7 @@ function paintChallengeIntro(t){
 
    OFFENSIVE POSITIONS ONLY, and that is a guard rather than tidiness. A defender carries
    rush_ppg too, meaning his PASS RUSH, and the credit weight adds rushing to receiving. Feed
-   it a Lockdown roster and it would hand touchdowns to defensive ends on the strength of
+   it a defensive roster and it would hand touchdowns to defensive ends on the strength of
    their sack numbers. Filtering here means a roster that cannot score simply names nobody. */
 const BOWL_SCORERS=new Set(['QB','RB','WR','TE']);
 function bowlMen(roster){
@@ -11958,6 +12029,12 @@ function authBoot(){
     const newAccount=st.userId!==authState.userId;
     authState=st;
     paintAvatar();
+    /* THE FRONT PAGE FOLLOWS ELIGIBILITY, and it has to be re-asked on every change rather
+       than only on the sign-in transition: the username the defense allowlist reads usually
+       arrives one auth change AFTER the sign-in, so a tester who signs in on the front page
+       would otherwise sit there looking at a single Start button. Losing eligibility (a sign
+       out, a rename) puts it back the same way. */
+    paintHomeStart();
     /* The color and initials belong to the account, so they are re-read whenever the
        account changes and cleared when there is none. Not awaited: the circle is already
        drawn from the derived default and this only ever replaces it with something more
@@ -13191,7 +13268,7 @@ function runPayload(){
     era:run.era||null,
     mode:runMode(),
     picks:run.roster.map(pickKey),
-    /* THE SLOT NAMES OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a Lockdown roster was being recorded as QB RB WR TE FLEX: six defenders filed under the
+    /* THE SLOT NAMES OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a defensive roster was being recorded as QB RB WR TE FLEX: six defenders filed under the
        positions of the game they were not playing. ps_submit_run checks these names against
        the mode, so they have to be the mode's own. */
     slots:run.roster.map((p,i)=>slotsNow()[run.slotIndex[i]]),
@@ -13798,7 +13875,7 @@ let lbEra=null;
    not in the select, lbScope() cannot return it, and tradeBoardOff() puts the board back on
    free play if eligibility is ever lost mid-session (a sign-out, or a rename). */
 let lbTrade=false;
-/* Lockdown's own board. Gated the same way the Trade Machine's is: an option
+/* The defense board. Gated the same way the Trade Machine's is: an option
    nobody can play is an option that leads to an empty table. */
 let lbDefense=false;
 function tradeBoardOff(){
@@ -13868,7 +13945,7 @@ function paintComp(){
     sel.dataset.tm=wantTrade;
     sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
-      (canPlayDefense()?'<option value="defense">Lockdown</option>':'')+
+      (canPlayDefense()?'<option value="defense">Defense</option>':'')+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
@@ -13988,7 +14065,7 @@ async function loadBoard(){
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
   $('lb-blurb').textContent=lbDefense
-    ? 'Every Lockdown season. Ranked apart from the offense boards, because a defensive '+
+    ? 'Every Defense season. Ranked apart from the offense boards, because a defensive '+
       'team rating is built from a different pool and holding people under is a different '+
       'job from outscoring them. '+clock
     : lbTrade
@@ -14404,7 +14481,7 @@ function gmCell(row){
 function runKindOf(row){
   if(row&&row.run_mode==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
   if(row&&row.run_mode==='trade') return 'Trade Machine';
-  if(row&&row.run_mode==='defense') return 'Lockdown';
+  if(row&&row.run_mode==='defense') return 'Defense';
   if(row&&row.run_mode==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(row&&row.run_mode==='daily') return 'daily puzzle';
   return 'free run';
