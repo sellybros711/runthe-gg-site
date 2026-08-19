@@ -4243,6 +4243,35 @@ window.GA_ID='G-L29P5MRWKE';
   .bestrow.top1{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
   .bestrow.top1 .n,.bestrow.top1 .rt b{color:#fcd34d}
   .bestrow:hover{border-color:var(--line-2)}
+  /* ---- THE MODE, IN ITS OWN COLOUR ----
+     The career list is the ONE place in this game where the modes mix: every board is
+     filtered to a single competition, and this is every run you have ever played in one
+     column. Thirteen rows of identical grey saying Defense, Offense, Defense, Trade
+     Machine is a list you have to read word by word to sort, so the word carries a colour
+     and the eye can group the rows without reading any of them.
+
+     THE COLOURS ARE THE ONES EACH MODE ALREADY WEARS, not a new set invented here: red is
+     the offense half of the front page and blue is the defense half, so the two that matter
+     most are the two a player has already seen on the button they pressed. The rest take
+     the colour their own screen uses. Every one is a 400-level tint rather than the
+     saturated original, because these sit as 10.5px text on a near-black card and the
+     button colours are meant for white type on a solid fill. */
+     TAG NAME AND TWO CLASSES, which is not decoration either: the line these sit in is
+     `.bestrow .who span`, and that rule sets a colour at a higher specificity than a lone
+     class. A plain .mtag rule loses to it silently, which reads as "the colours did not
+     ship" rather than as a selector problem. */
+  span.mtag{font-weight:600}
+  /* INLINE, AND SPELLED OUT TO THE SAME DEPTH AS THE RULE IT IS FIGHTING. The career line is
+     `.bestrow .who span{display:block}` and the mode tag is a span inside it, so it inherited
+     block and pushed the date onto a second row. A plain span.mtag loses that one on
+     specificity no matter where it sits in the sheet. */
+  .bestrow .who span.mtag{display:inline}
+  span.mtag.m-off{color:#f87171}
+  span.mtag.m-def{color:#60a5fa}
+  span.mtag.m-club{color:#fbbf24}
+  span.mtag.m-era{color:#c084fc}
+  span.mtag.m-trade{color:#34d399}
+  span.mtag.m-other{color:var(--dim)}
 </style>
 </head>
 <body>
@@ -12966,8 +12995,10 @@ async function pfDraftsPaint(userId,tab){
            defensive pool has been loaded, so the same run said "Defense" before you opened
            that draft and named two linemen afterwards. Mode first now, players after it when
            they are there. */
-        '<span>'+esc([runKindOf(r),rosterLine(r.picks),day(r.created_at)]
-          .filter(Boolean).join(' · '))+'</span></span>'+
+        /* The mode is markup now rather than one more field in the join, because it carries
+           its own colour. Everything after it is still escaped text. */
+        '<span>'+[modeTag(r),esc(rosterLine(r.picks)),esc(day(r.created_at))]
+          .filter(Boolean).join(' · ')+'</span></span>'+
       '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'—')+
         '</b><span>rating</span></span>'+
       '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
@@ -14544,9 +14575,11 @@ function runDetail(row,back){
      from the server yet. It goes through runMode() so the two branches cannot drift: this
      used to spell out club-or-free by hand and called a Trade Machine season a free run,
      and an Eras Draft season a free run with it. */
-  const kind=mine
-    ? runKindOf({run_mode:runMode(),franchise:run&&run.franchise,era:run&&run.era})
-    : runKindOf(row);
+  /* One row object either way, so the name and the colour cannot come from two different
+     answers to the same question. */
+  const kindRow=mine
+    ? {run_mode:runMode(),franchise:run&&run.franchise,era:run&&run.era}
+    : row;
 
   const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   const cols=club?E.teamColors(club):null;
@@ -14560,7 +14593,7 @@ function runDetail(row,back){
     '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
       esc(rec)+champBadge(fate.badge)+'</h2>'+
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
-      ' &middot; '+esc(kind)+'</p>'+
+      ' &middot; '+modeTag(kindRow)+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
       const a=topAward(m.p);
       return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
@@ -14813,6 +14846,23 @@ function runKindOf(row){
      come out as "free run", which is a specific claim and a wrong one. The generic is the
      one thing that is still true of it. */
   return 'Perfect Season';
+}
+
+/* THE SAME NAME, WEARING THE MODE'S COLOUR. Read off run_mode rather than off the words
+   runKindOf returns, so a change to the copy cannot silently uncolour a mode. Anything this
+   build does not recognise gets the plain dim treatment rather than a colour that would be a
+   guess about what it is. */
+function modeClass(row){
+  const m=row&&row.run_mode;
+  if(m==='defense') return 'm-def';
+  if(m==='trade') return 'm-trade';
+  if(m==='club'&&row.franchise) return 'm-club';
+  if(m==='era'&&row.era) return 'm-era';
+  if(!m||m==='free') return 'm-off';
+  return 'm-other';
+}
+function modeTag(row){
+  return '<span class="mtag '+modeClass(row)+'">'+esc(runKindOf(row))+'</span>';
 }
 
 /* The two best players on a board row, by the price the game put on them. Any id

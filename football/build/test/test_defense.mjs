@@ -534,6 +534,43 @@ window.__DEF={
      take the page into the draft under the sticker assertions. */
   wallReset(){ wantOneTeam=false; wantDefense=false; },
   board(){ show('s-board'); paintComp(); },
+  /* THE CAREER LIST, painted off a stubbed history rather than the network, because what is
+     under test is how a run of each mode is LABELLED and no server is needed to answer that.
+     Returns the computed colour of every mode tag, its line box, and the colour of the line
+     it sits in, so the assertions can ask about contrast and about wrapping. */
+  modeTags(rows){
+    authState={ready:true,signedIn:true,name:'Tester',userId:'u1'};
+    career={userId:'u1',rows,total:rows.length,capped:false};
+    pfDrafts('recent');
+    return true;
+  },
+  readTags(){
+    /* NO REGEX IN HERE. This whole hook is a template literal, so a backslash in a pattern is
+       eaten before the page ever sees it and the escape silently becomes a capture group.
+       Plain string comparisons say the same thing and cannot be mangled. */
+    const clear=(c)=>!c||c==='transparent'||c==='rgba(0, 0, 0, 0)'
+      ||c.indexOf('rgba(255, 255, 255, 0.')===0;
+    const back=(el)=>{ let e=el;
+      while(e){ const c=getComputedStyle(e).backgroundColor;
+        if(!clear(c)) return c;
+        e=e.parentElement; }
+      return 'rgb(8, 11, 20)'; };
+    return [...document.querySelectorAll('#pf-list .bestrow')].map(b=>{
+      const t=b.querySelector('.mtag'), line=b.querySelector('.who span');
+      const cs=t?getComputedStyle(t):null;
+      const lh=line?line.getBoundingClientRect().height:0;
+      return {text:t?t.textContent:null, cls:t?t.className.replace('mtag ',''):null,
+        color:cs?cs.color:null, display:cs?cs.display:null,
+        lineH:Math.round(lh), bg:back(b)};
+    });
+  },
+  /* And the same tag on the run detail sheet, which is the other place a mode is named. */
+  detailTag(row){ runDetail(row);
+    const t=document.querySelector('#sheet-in .mtag');
+    const out=t?{text:t.textContent,cls:t.className.replace('mtag ',''),
+      color:getComputedStyle(t).color}:null;
+    closeSheet(); return out; },
+
   /* THE OTHER WAY INTO THE BOARD FROM THE RESULTS SCREEN: tapping the placing itself rather
      than the button under it. The cells only render once the server has handed back a rank,
      which it cannot do here, so one is put in by hand: what is under test is the click
@@ -1244,6 +1281,69 @@ boot();`;
         && six.some((m) => board.rowText.includes(m.name.split(' ').slice(-1)[0])),
         board.rowText.slice(0, 160));
     }
+
+    /* ── WHICH MODE A RUN WAS, AT A GLANCE ────────────────────────────────────
+       The career list is the one place in this game where the modes MIX: every board is
+       filtered to a single competition and this is every run you have played in one column.
+       Thirteen rows of identical grey reading Defense, Offense, Defense, Trade Machine is a
+       list you have to read word by word to sort, so the mode carries its own colour and the
+       rows group without being read. Reported off the live build.
+
+       Four things are asserted and only one of them is "it has a colour": that each mode has
+       its OWN colour, that every one of them clears 4.5:1 against the row it sits on, that
+       the tag stays inline (the line it lives in is display:block, which a span inside it
+       inherits, and that pushed the date onto a second row), and that the detail sheet says
+       the same thing in the same colour. */
+    {
+      const mk = (i, mode, extra) => Object.assign({
+        id: 'r' + i, created_at: '2026-08-19T12:00:00Z', wins: 13, losses: 6, games: 19,
+        title_won: false, perfect: false, made_playoffs: true, seed_label: 'Wild card',
+        playoff_wins: 1, point_diff: 40, chemistry_pct: 1, spend_musd: 139, respins: 0,
+        team_rating: 90, squad_fppg: 50, structure_mult: 1, perfect_pct: 90,
+        run_mode: mode, franchise: null, era: null, picks: [], slots: [],
+      }, extra || {});
+      const rows = [mk(1, 'defense'), mk(2, 'free'), mk(3, 'trade'),
+        mk(4, 'club', { franchise: 'GB' }), mk(5, 'era', { era: '2010s' }),
+        mk(6, null), mk(7, 'a-mode-from-a-newer-build')];
+      await p.evaluate((r) => window.__DEF.modeTags(r), rows);
+      await p.waitForTimeout(400);
+      const tags = await p.evaluate(() => window.__DEF.readTags());
+      ok('every run in the career list names its mode', tags.length === rows.length
+        && tags.every((t) => t.text), tags.map((t) => t.text));
+      ok('and the defense runs say Defense in the defense colour',
+        tags[0].text === 'Defense' && tags[0].cls === 'm-def', tags[0]);
+      ok('and the offense runs say Offense in the offense colour',
+        tags[1].text === 'Offense' && tags[1].cls === 'm-off'
+        && tags[5].cls === 'm-off', [tags[1], tags[5]]);
+      /* A mode this build has never heard of gets the plain treatment rather than borrowing
+         a colour that would be a claim about what it is. */
+      ok('and a mode from a newer build is named without borrowing anybody colour',
+        tags[6].cls === 'm-other', tags[6]);
+      /* SIX MODES, SIX COLOURS. Two sharing one is the same failure as no colour at all. */
+      const coloured = tags.filter((t) => t.cls !== 'm-other');
+      const distinct = new Set(coloured.map((t) => t.color));
+      ok('no two modes wear the same colour',
+        distinct.size === new Set(coloured.map((t) => t.cls)).size,
+        { colours: [...distinct], classes: coloured.map((t) => t.cls) });
+      /* 10.5px text on a near-black card, so the contrast is the whole question. */
+      const lum = (c) => { const [r, g, b2] = c.match(/[\d.]+/g).map(Number);
+        const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b2); };
+      const ratios = tags.map((t) => ({ cls: t.cls,
+        r: +(((Math.max(lum(t.color), lum(t.bg)) + 0.05) / (Math.min(lum(t.color), lum(t.bg)) + 0.05)).toFixed(2)) }));
+      ok('and every one of them clears 4.5:1 on the row it sits on',
+        ratios.every((x) => x.r >= 4.5), ratios);
+      /* The line is one line. This is the rule the tag actually broke first. */
+      ok('the mode stays on the same line as the rest of the row',
+        tags.every((t) => t.display === 'inline' && t.lineH <= 20),
+        tags.map((t) => ({ d: t.display, h: t.lineH })));
+      const dt = await p.evaluate((r) => window.__DEF.detailTag(r), rows[0]);
+      ok('and the run detail sheet colours it the same way',
+        !!dt && dt.text === 'Defense' && dt.cls === 'm-def' && dt.color === tags[0].color, dt);
+      await p.evaluate(() => window.__DEF.intro());
+      await p.waitForTimeout(150);
+    }
+
 
     await p.evaluate(() => { window.__DEF.paintHome(); window.__DEF.intro(); });
     await p.waitForSelector('#s-intro.on', { timeout: 10000 });
