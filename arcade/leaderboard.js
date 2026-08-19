@@ -155,7 +155,14 @@
       '.rtglb-open .chev{font-size:17px;color:var(--mut,#A9B8CB);flex:0 0 auto;}',
 
       /* modal */
-      '.rtglb-scrim{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;justify-content:center;',
+      /* Above the pregame gate (9600), below the sign-in sheet (9999) and the
+         Arcade Card wall (10000), both of which this board can open.
+         The hub sends "Today's leaderboard" to /arcade/<game>/#lb, and by the
+         time you have a result on the hub you have used today's play, so the
+         gate is always up when that link lands. At z-index 70 the board opened
+         underneath it and the tap looked like it had done nothing but throw a
+         "Back tomorrow" wall in your face. */
+      '.rtglb-scrim{position:fixed;inset:0;z-index:9650;display:flex;align-items:flex-end;justify-content:center;',
       '  background:rgba(3,9,18,0);backdrop-filter:blur(0px);transition:background .24s ease,backdrop-filter .24s ease;}',
       '.rtglb-scrim.on{background:rgba(3,9,18,.62);backdrop-filter:blur(4px);}',
       /* an author display: rule beats the UA [hidden] rule, so without this the
@@ -340,7 +347,11 @@
     if (!openState || !modal) return;
     openState = false;
     modal.classList.remove('on');
-    try { document.body.style.overflow = ''; } catch (e) {}
+    /* The pregame gate locks the page behind it too. Handing the scroll back
+       while that is still on screen unlocks a board the visitor cannot play. */
+    try {
+      document.body.style.overflow = document.querySelector('.rtgpg-scrim') ? 'hidden' : '';
+    } catch (e) {}
     var ms = reduced() ? 0 : 240;
     setTimeout(function () { if (!openState) modal.hidden = true; }, ms);
   }
