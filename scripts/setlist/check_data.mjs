@@ -926,6 +926,24 @@ console.log('the archive notes');
   check(!rows.some(r => /[\n\r]/.test(r.footnote) || /[\n\r]/.test(r.show_notes)),
     'notes are stored as one line');
 }
+/* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
+ *
+ * data_drift lets a derived value move only for a song whose own inputs moved.
+ * Tags derive from a song's MEDIAN LENGTH, and elgoose types a setlist up the
+ * night of the show but adds track times days or weeks later, so a refresh that
+ * backfills times for a tour legitimately moves tags for songs whose play count
+ * and jamchart count are both unchanged. Without length in the fingerprint the
+ * gate called that unexplained and the scheduled refresh would have gone red on
+ * the first honest run after a tour. Reproduced against the five untimed August
+ * 2026 shows: one song moved "jam|encore" to "encore" on a length arriving.
+ */
+{
+  const gate = read('scripts/setlist/data_drift.mjs');
+  check(/timed: 0, secs: 0/.test(gate), 'the drift gate fingerprints a song\'s timings');
+  check(/a\.timed !== b\.timed \|\| a\.secs !== b\.secs/.test(gate),
+    'and counts a length arriving as an input that moved');
+}
+
 /* TEASES: what the band quoted without playing.
  *
  * A few bars of somebody else's song dropped inside this one. It exists only as

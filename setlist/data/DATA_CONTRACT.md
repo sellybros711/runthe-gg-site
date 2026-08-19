@@ -104,7 +104,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `song_id` | Stable song identity. **Segues and gap are keyed on this**, so it must be consistent across shows. |
 | `is_cover` | `true` / `false`. |
 | `original_artist` | Blank for originals. |
-| `length_sec` | Integer seconds. **Load-bearing since v4** — it is the resource a player spends, so a show is only drawable when every song in it is timed. Also feeds the version multiplier (15 / 20 min tiers). |
+| `length_sec` | Integer seconds. **Load-bearing since v4**: it is the resource a player spends, so a show is only drawable when every song in it is timed. Also feeds the version multiplier (15 / 20 min tiers). **Blank on a show elgoose has typed up but not yet timed**, which is normal for a week or two after a run: the setlist appears the same night, the track times follow. A show with any untimed song is not drawable, so it cannot be dealt in the game until they arrive. 176 of 660 shows are in that state, including the whole of the August 2026 run. |
 | `show_gap` | Shows between this play and the song's previous one. `0` on debut. **Feeds rarity scoring.** |
 | `times_played` | Running count including this play. Display only. |
 | `rarity_rating` | The rarity tier this gap lands in. Display only — `scoring.js` recomputes from `show_gap`. |
