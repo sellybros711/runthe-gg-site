@@ -16008,3 +16008,44 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   All 7 inline script blocks parse. Rendered hole-view grids reviewed by eye for all 15.
 - Tunable: the venue entries in `DAILY_COURSES`, `HV_COURSE_STYLE`/`HV_COURSE_TWEAK` for the look,
   `DSIG_HAZ` for what the signature holes ask of you, and `LEAGUE_FLAG_C` for the circuit's colour.
+
+### FREE PACKS NO LONGER MINT COINS (owner: "you should not get coins for getting a duplicate from any
+### free pack. Only from ones you purchase")
+- **This was a real faucet, and it was pointed at exactly the wrong players.** A duplicate paid
+  `PACK_DUPE_REFUND` (2,000 / 5,000 / 12,000 / 25,000 by rarity) no matter where the pack came from. Weighted
+  by the base tier's odds that is **~4,790 coins per free pack** (tour tier ~7,240) — created out of nothing,
+  and only for players who already own most of the pool, i.e. the late-game players whose completion timeline
+  the last economy pass had just stretched from 2.0 to 3.2 years. Every free-pack faucet fed it: daily quests,
+  weekly challenges, the login calendar, the 7-day streak, the prize wheel, Tour Pass grants, admin grants.
+- **The rule now lives in one function, `dupeRefund(rarity, paid)`.** A duplicate ALWAYS pays its shard, so
+  the pity ladder and the Shard Exchange are untouched no matter where the pack came from. COINS are paid
+  only when the player actually spent coins. All four duplicate sites call it, so there is one place to
+  change this again.
+- What counts as **paid**: a pack bought at `packPrice(tier)`, and a **bundle** (prepaid up front at the
+  bundle price). What counts as **free**: the one-time first-pack-free and every earned/granted credit.
+  `rollPackWin(tier, paid)` takes the flag from its caller — `startPackDeal` knows from its own free/credit
+  branch, and `packOpenRest` knows per pack (its bundle loop passes `true`, its free-credit loop `false`).
+- The **Shard Exchange still refunds coins** and was deliberately left alone: the player spent
+  `EXCHANGE_COST` shards to spin it, so it is a paid path. **Note the loophole this leaves** — free-pack
+  dupes still pay shards, and 10 shards buy an exchange spin whose duplicate pays coins. It is slow
+  (10 free-pack dupes → one spin → maybe a dupe) but it is the same faucet at a trickle. Flagged, not
+  changed, because the owner asked about packs; `dupeRefund(rarity, false)` in `grantExchangeItem` closes it
+  if that's wanted.
+- Buying packs is **still a sink and was not touched**: at the base tier the expected duplicate refund is
+  4,790 against an 8,000 price (**−3,210 a pack**); tour is −14,760. A full-collection player cannot farm
+  coins by buying packs. (A single epic dupe pays 12,000 and *looks* like profit — that's variance, not EV.)
+- Copy now tells the truth everywhere a player reads it: the reveal chip (gold **"Duplicate · +N coins"** on
+  a bought pack, muted **"Duplicate · free pack, no coins"** on a free one — the shard chip shows on both),
+  the bulk-open summary, the odds panel, the how-to-play row, and the buy confirmation, which now frames the
+  coin refund as a reason to buy.
+- Verified in Playwright: a 21-check suite, **0 fail, 0 page errors** — owning all 223 pool items so every
+  pull is a guaranteed duplicate, then driving the real entry points. Free roll pays 0 coins + 1 shard; paid
+  roll pays the rarity's exact refund + 1 shard; first-pack-free and an earned credit both pay 0 through
+  `startPackDeal`; a bought pack nets exactly `refund − price`; bulk-opening 4 free credits mints **0 coins**
+  with 4 duplicates; a prepaid bundle still refunds; the Shard Exchange still refunds; and the reveal DOM
+  says "free pack, no coins" with no coin figure. Both reveal states screenshotted and reviewed.
+- Regressions: `regress_final`, `shoptabs`, `news_test`, `pack_dev_test` clean. `shardex_test` (9),
+  `packfix_test` (1) and `coinlog_test` (1) fail with **identical counts on the deployed baseline** —
+  verified by running each against `origin/main:golf/index.html`, so they are the known stale fixtures, not
+  this change. All inline script blocks parse (block 0 is the JSON-LD tag, fails identically on baseline).
+- Tunable: `dupeRefund()` is the whole rule; `PACK_DUPE_REFUND` is still the rarity table.
