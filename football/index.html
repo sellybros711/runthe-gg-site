@@ -11095,6 +11095,8 @@ function paintOver(){
      record and the numbers appear at once instead of behind a solve. The run is SENT
      from in here, after the best-possible figure it carries has been worked out, and
      the placings are read at the same time. */
+  /* WHICH RUN THIS PAINT BELONGS TO, captured before the awaits below. See the guard. */
+  const painting=run;
   afterPaint(async ()=>{
     /*
      * LET THE PLACINGS IN FIRST.
@@ -11122,8 +11124,13 @@ function paintOver(){
        best-possible tile is still showing its "..." and the solve came back to a null run
        and threw, which the player sees as the "Something broke" banner over a front page
        that is working perfectly. Nothing below is worth doing for a screen that has already
-       been left, so it stops here. */
-    if(!run) return;
+       been left, so it stops here.
+
+       THE SAME RUN, not merely A run. Draft again does not clear the run, it REPLACES it:
+       endRun and then straight into a new draft. A null check passes on the new one, and the
+       optimizer then solved a roster with nobody in it and threw out of solve() instead. The
+       identity is what this callback actually depends on. */
+    if(run!==painting) return;
     const best=R.bestPossibleSquad(run,dataNow(),CTX);
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
@@ -15243,7 +15250,9 @@ function endRun(){
 $('b-same').onclick=()=>{
   const wasCap=run&&run.capSurvivor;
   const wasTrade=run&&run.tradeMachine;
+  const wasDef=run&&run.defense;
   const club=(run&&run.franchise)||null;
+  const era=(run&&run.era)||null;
   if(wasCap||wasTrade){
     const label=wasCap?'Salary Cap Survivor':'the Trade Machine';
     /* Verbs, not nouns. "The Trade Machine again / Classic run" read as two things rather
@@ -15261,7 +15270,15 @@ $('b-same').onclick=()=>{
     return;
   }
   endRun();
-  beginDraft(club?{franchise:club}:{});
+  /* EVERY MODE, not just the club. This read the franchise off the finished run and nothing
+     else, so Draft again after a defense season started an OFFENSE draft, and after an Eras
+     season a free one: the button that promises the same game again quietly changed which
+     game it was. The list has to be every mode that can reach this button, which is why it
+     is written out rather than inferred.
+     The defense draft goes through its own launcher because it has a data file to fetch and
+     an account check to make, and both belong in one place. */
+  if(wasDef){ beginDefenseDraft(); return; }
+  beginDraft(era?{era:era}:(club?{franchise:club}:{}));
 };
 
 $('b-again').onclick=()=>{ toIntro(); };

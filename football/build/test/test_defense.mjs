@@ -589,6 +589,12 @@ window.__DEF={
     b.remove();
     return out;
   },
+  /* Draft again, off the results screen, and what mode the run it starts is in. */
+  draftAgain(){ const b=document.getElementById('b-same'); if(b) b.click(); },
+  modeNow:()=>({defense:!!(run&&run.defense),era:(run&&run.era)||null,
+    club:(run&&run.franchise)||null,mode:run?runMode():null,
+    onDraft:document.getElementById('s-draft').classList.contains('on'),
+    slots:(run&&run.slots)?run.slots.slice():null}),
   /* And the button beside it, which is the path that always worked. */
   pressBoardButton(){
     lbTrade=false; lbDefense=false; lbEra=null; lbClub=null;
@@ -924,6 +930,11 @@ boot();`;
     } catch (e) {} });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => { bad++; console.log('  FAIL  page error   ' + String(e.message).split('\n')[0]); });
+    /* STACKS=1 prints where the error came from. The line above counts a page error as a
+       failure, which is right, but a message with no stack behind it is a bug report with
+       the address torn off: the run-identity race below was one line of message and four
+       lines of stack, and only the stack said which function. */
+    if (process.env.STACKS) p.on('pageerror', (e) => console.log('STACK\n' + e.stack));
     await p.goto(`${HOST}/football/__test_defense.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await p.waitForFunction(() => window.__DEF && document.getElementById('s-intro'), null, { timeout: 60000 });
     await p.evaluate(() => window.__DEF.auth({ ready: true, signedIn: true, name: 'Tester', userId: 'u1' }));
@@ -1605,6 +1616,33 @@ boot();`;
     ok('the share card draws, at 1080x1350, off the defensive slots',
       !!card && card.w === 1080 && card.h === 1350
       && card.slots === 'DL,DL,LB,DB,DB,FLEX' && card.bytes > 20000, card);
+
+    /* ── DRAFT AGAIN MEANS THIS GAME AGAIN ────────────────────────────────────
+       The button under the results promises the same competition, and the comment above its
+       handler says so in as many words. It read the franchise off the finished run and
+       nothing else, so after a defense season it started an OFFENSE draft: six receivers on
+       a board that had been six defenders a second earlier, under a button that said Draft
+       again. Reported off the live build. An Eras season had it too, silently becoming a
+       free run.
+
+       The flag AND the board are both checked, because either one alone would have passed
+       at some point during the fix. */
+    await p.evaluate(() => window.__DEF.draftAgain());
+    await p.waitForSelector('#s-draft.on', { timeout: 60000 });
+    /* The tabs are painted with the first board, not with the screen. */
+    await p.waitForSelector('#opts .tile', { timeout: 60000 });
+    await p.waitForTimeout(400);
+    const again = await p.evaluate(() => window.__DEF.modeNow());
+    ok('Draft again after a defense season starts another defense draft',
+      again.defense === true && again.mode === 'defense', again);
+    const againTabs = await p.evaluate(() => window.__DEF.tabs().join(' '));
+    ok('and it is dealing defenders, not receivers',
+      /DL/.test(againTabs) && /LB/.test(againTabs) && /DB/.test(againTabs)
+      && !/QB/.test(againTabs) && !/WR/.test(againTabs), againTabs);
+    ok('and the six spots it has to fill are a defense',
+      JSON.stringify(await p.evaluate(() => window.__DEF.slots()))
+        === '["DL","DL","LB","DB","DB","FLEX"]',
+      await p.evaluate(() => window.__DEF.slots()));
 
     /* ── AND THE BUTTON IS STILL A BUTTON AFTERWARDS ──────────────────────────
        Reported from the live build: play a defense run, come back to the front page, and
