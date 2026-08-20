@@ -112,14 +112,27 @@
 
   // does entity x fit every fact the clue states? (used to prove the clue
   // cannot also describe a same-surname rival)
+  function hasTeam(x, n) {
+    return (x.t || []).some(function (t) { return nick(t) === n; });
+  }
   function factsFit(x, used) {
     if (used.sport && x.sport !== used.sport) return false;
     if (used.hof && !x.hof) return false;
-    if (used.team && !(x.t || []).some(function (t) { return nick(t) === used.team; })) return false;
+    if (used.team && !hasTeam(x, used.team)) return false;
     if (used.jersey != null && (x.j || []).indexOf(used.jersey) < 0) return false;
     if (used.era != null && (x.decade || []).indexOf(used.era) < 0) return false;
     if (used.pos && x.pos !== used.pos) return false;
+    // a career path: the rival has to have worn every club the clue lists
+    if (used.teams && !used.teams.every(function (n) { return hasTeam(x, n); })) return false;
+    // one club, and only that one
+    if (used.only && ((x.t || []).length !== 1 || nick(x.t[0]) !== used.only)) return false;
+    if (used.col && colKey(x.col) !== used.col) return false;
     return true;
+  }
+  // colleges are spelled several ways across the sources ("Miami (FL)", "Ole
+  // Miss"); compare on a stripped key, the way Alma Mater does
+  function colKey(c) {
+    return c ? String(c).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z]/g, '') : null;
   }
   function ambiguous(used, rivals) {
     for (var i = 0; i < rivals.length; i++) if (factsFit(rivals[i], used)) return true;
@@ -142,6 +155,7 @@
       if (dec != null && used.era == null) { text += ', ' + eraStr(dec); used.era = dec; continue; }
       if (e.pos && !used.pos) { text += ', a ' + e.pos.toLowerCase(); used.pos = e.pos; continue; }
       if (jersey != null && used.jersey == null) { text += ', who wore ' + jersey; used.jersey = jersey; continue; }
+      if (e.col && !used.col) { text += ', out of ' + colName(e.col); used.col = colKey(e.col); continue; }
       return null;
     }
     if (ambiguous(used, rivals)) return null;
@@ -219,20 +233,95 @@
   /* The anchors a clue can open with, richest first. Each carries the facts it
      states so the rival check can prove no second player wears the same set.
      "Braves Hall of Famer", "Chargers center", "MLB Gold Glove winner". */
+  /* THE SHAPES A CLUE CAN TAKE.
+   *
+   * "Chargers offensive lineman and Pro Bowler of the 2000s" is true, unique in
+   * our file, and still not much of a puzzle: it is a category with a decade
+   * stapled on, and four of them in one grid read as the same clue four times.
+   * A fan does not search their memory by honour, they search it by CAREER.
+   *
+   * So the record gets read for the things that actually single a man out, in
+   * rough order of how much they give:
+   *
+   *   the clubs he moved between   819 of 1,078 answers have two or more
+   *   a whole career at one club   259 of them, and it is the most memorable
+   *                                fact about every one of those careers
+   *   the number on his back       736 have exactly one on file
+   *   where he came from           540 carry a college
+   *
+   * Each anchor carries a `kind`, and finalize() keeps one grid from using the
+   * same kind twice, so a puzzle reads as eight different questions. */
   function anchors(e) {
-    var tn = (e.t && e.t[0]) ? nick(e.t[0]) : null;
+    var teams = (e.t || []).filter(Boolean);
+    var tn = teams.length ? nick(teams[0]) : null;
     var pos = e.pos ? e.pos.toLowerCase() : null;
     var dist = awardPhrase(e);
+    var role = pos || (e.sport + ' player');
     var out = [];
-    if (e.hof && tn) out.push({ t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos && dist) out.push({ t: tn + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
-    if (tn && dist) out.push({ t: tn + ' ' + dist, used: { team: tn, aw: true } });
-    if (tn && pos) out.push({ t: tn + ' ' + pos, used: { team: tn, pos: e.pos } });
-    if (e.hof) out.push({ t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
-    if (dist) out.push({ t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
-    if (pos) out.push({ t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
+
+    /* The path. Three clubs in the order he wore them is the single most
+       identifying thing we hold about a well-travelled career, and it is the
+       question Career Path is built on. */
+    /* Distinct clubs, in the order he first joined them. A second spell at an
+       old club is the same club: "played for the Trail Blazers, Bucks and Trail
+       Blazers" is what listing them raw produced for Lillard, and Aaron came
+       out with the Braves twice. */
+    var seenClub = {}, path = [];
+    teams.forEach(function (t) {
+      var n = nick(t);
+      if (n && !seenClub[n]) { seenClub[n] = 1; path.push(n); }
+    });
+    /* The decade goes in FRONT of these two, never on the end: a career shape
+       already finishes on a relative clause, and " of the 1990s" tacked after
+       it lands on the last club rather than on the man. */
+    var d0 = primaryDecade(e), eraS = d0 != null ? eraStr(d0) : null;
+    if (path.length >= 3) {
+      var three = path.slice(0, 3);
+      out.push({ kind: 'path', t: cap(role) + ' who played for the ' + list(three),
+                 used: { sport: e.sport, pos: e.pos || null, teams: three } });
+      if (eraS) out.push({ kind: 'path', t: cap(role) + ' of the ' + eraS + ' who played for the ' + list(three),
+                 used: { sport: e.sport, pos: e.pos || null, teams: three, era: d0 } });
+    }
+    /* One club, all of it. Rarer than it sounds and never forgotten by the
+       people who watched it. `ns` is notable seasons rather than an exact
+       career length, so the sentence never puts a number on it. */
+    if (teams.length === 1 && (e.ns || 0) >= 8) {
+      out.push({ kind: 'oneclub', t: cap(role) + ' who spent his whole career with the ' + tn,
+                 used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn } });
+      if (eraS) out.push({ kind: 'oneclub', t: cap(role) + ' of the ' + eraS + ' who spent his whole career with the ' + tn,
+                 used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn, era: d0 } });
+    }
+    // the number, when the file holds exactly one and cannot be picking wrong
+    if (tn && pos && e.j && e.j.length === 1) {
+      out.push({ kind: 'number', t: tn + ' ' + pos + ' in number ' + e.j[0],
+                 used: { team: tn, pos: e.pos, jersey: e.j[0] } });
+    }
+    /* "Otterbein product who played outfielder for the Reds" is not a sentence
+       anybody says. Club and position first, where a fan starts, and the school
+       as the tail that narrows it. */
+    if (e.col && tn && pos) {
+      out.push({ kind: 'college', t: tn + ' ' + pos + ' out of ' + colName(e.col),
+                 used: { team: tn, pos: e.pos, col: colKey(e.col) } });
+    }
+    if (e.hof && tn) out.push({ kind: 'hofclub', t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
+    if (tn && pos && dist) out.push({ kind: 'clubaward', t: tn + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
+    if (tn && dist) out.push({ kind: 'clubaward', t: tn + ' ' + dist, used: { team: tn, aw: true } });
+    if (tn && pos) out.push({ kind: 'clubpos', t: tn + ' ' + pos, used: { team: tn, pos: e.pos } });
+    if (e.hof) out.push({ kind: 'league', t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
+    if (dist) out.push({ kind: 'league', t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
+    if (pos) out.push({ kind: 'league', t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
     return out;
   }
+  /* Which anchors can take " of the 1990s" on the end. Only the ones that
+     finish on a plain noun phrase: hang it off a number or a club list and the
+     decade lands on the wrong noun. */
+  var ERA_OK = { hofclub: 1, clubaward: 1, clubpos: 1, league: 1 };
+  function cap(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
+  function list(a) {
+    return a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  }
+  // "Miami (FL)" is a database spelling, not something anybody says
+  function colName(c) { return String(c || '').replace(/\s*\(.*?\)\s*/g, '').trim(); }
 
   /* How much a clue actually gives the solver. The club is worth the most: a
      fan searching their memory starts from a team and a position, never from
@@ -241,11 +330,15 @@
      with "MLB All-Star" written beside it. */
   function infoScore(used) {
     return (used.team ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
-           (used.era != null ? 1 : 0) + (used.ml ? 2 : 0) + (used.curated ? 6 : 0);
+           (used.era != null ? 1 : 0) + (used.ml ? 2 : 0) + (used.curated ? 6 : 0) +
+           // a club list and a one-club career are worth more than the club
+           // alone, which is the whole reason they exist
+           (used.teams ? 2 + 2 * used.teams.length : 0) + (used.only ? 5 : 0) +
+           (used.jersey != null ? 2 : 0) + (used.col ? 2 : 0);
   }
   var MIN_INFO = 5;
 
-  function clueFor(word, rng) {
+  function clueFor(word, rng, seen) {
     var e = word.e;
     if (!givenOf(e.name)) return null;         // single-name entries never qualify
     /* Every same-surname player is a rival now. The old code only guarded
@@ -270,13 +363,15 @@
        speech ...") is passed over too: the sentence should not say it twice. */
     if (hand) {
       var handLC = hand.toLowerCase();
-      var league = anch.filter(function (a) { return !a.used.team; });
+      var league = anch.filter(function (a) {
+        return !a.used.team && !a.used.teams && !a.used.only;
+      });
       for (var h = 0; h < league.length; h++) {
         var a = league[h];
         if (a.used.aw && handLC.indexOf(a.t.split(' ').slice(-1)[0].toLowerCase()) >= 0 && h + 1 < league.length) continue;
         var text = a.t + ' ' + hand;
         if (text.toUpperCase().indexOf(word.w) >= 0) continue;    // never leak the answer
-        return { text: text, facts: merge(a.used, { curated: true }) };
+        return { text: text, facts: merge(a.used, { curated: true }), kind: 'moment' };
       }
     }
 
@@ -287,16 +382,29 @@
        identical shape. */
     var cands = [];
     anch.forEach(function (a) {
-      if (ml0) cands.push({ t: a.t + ', ' + ml0, used: merge(a.used, { ml: true }) });
-      if (era) cands.push({ t: a.t + ' of the ' + era, used: merge(a.used, { era: dec }) });
+      if (ml0) cands.push({ kind: a.kind, t: a.t + ', ' + ml0, used: merge(a.used, { ml: true }) });
+      /* An era belongs on a thin anchor and clutters a rich one: "Running back
+         who played for the 49ers, Colts and Dolphins of the 2000s" reads as if
+         the clubs had the decade, not the man. */
+      if (era && ERA_OK[a.kind]) {
+        cands.push({ kind: a.kind, t: a.t + ' of the ' + era, used: merge(a.used, { era: dec }) });
+      }
       cands.push(a);
     });
     cands = cands.filter(function (c) { return infoScore(c.used) >= MIN_INFO; });
     var jitter = rng ? shuffle(cands, rng) : cands;
-    jitter.sort(function (x, y) { return infoScore(y.used) - infoScore(x.used); });
+    /* Richest first, but a shape this grid has already used drops behind
+       everything it outscores by less than a shape's worth. Eight true clues
+       that all read "<Club> <position> and Pro Bowler of the <decade>" is one
+       clue asked eight times, which is the complaint that started this. */
+    jitter.sort(function (x, y) {
+      var sx = infoScore(x.used) - (seen && seen[x.kind] ? 4 : 0);
+      var sy = infoScore(y.used) - (seen && seen[y.kind] ? 4 : 0);
+      return sy - sx;
+    });
     for (var i = 0; i < jitter.length; i++) {
       var got = tryDisambig(jitter[i], e, rivals, word.w);
-      if (got) return got;
+      if (got) { got.kind = jitter[i].kind; return got; }
     }
     return null;
   }
@@ -641,12 +749,14 @@
       }
     }
     var entries = [];
+    var seenKind = {};                 // clue shapes already spent on this grid
     for (var j = 0; j < placements.length; j++) {
       var p = placements[j];
       // team + vocab entries carry their clue directly; surnames go through
       // the disambiguating clue builder.
-      var cl = p.w.staticClue || clueFor(p.w, rng);
+      var cl = p.w.staticClue || clueFor(p.w, rng, seenKind);
       if (!cl) return null;
+      if (cl.kind) seenKind[cl.kind] = 1;
       entries.push({
         num: numAt[p.r + ',' + p.c], dir: p.dir, r: p.r, c: p.c,
         answer: p.w.w, clue: cl.text,
