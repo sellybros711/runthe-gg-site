@@ -589,6 +589,37 @@ window.__DEF={
     b.remove();
     return out;
   },
+  /* THE BADGE CABINET, painted off a stubbed career so it can be asked what a defense run
+     earns without playing forty of them. Returns the shelves and the Defense shelf's state.
+     DDATA is deliberately NOT preloaded here: the point is that achReady fetches the
+     defenders before the cabinet is derived, which is what a player who opens their badges
+     without ever having played a defense draft depends on. */
+  async badges(rows){
+    authState={ready:true,signedIn:true,name:'Tester',userId:'u1'};
+    career={userId:'u1',rows,total:rows.length,capped:false};
+    pfBadges();
+    for(let i=0;i<80;i++){
+      if(document.querySelector('#sh-ach .achgrp')) break;
+      await new Promise(r=>setTimeout(r,100));
+    }
+    const grps=[...document.querySelectorAll('#sh-ach .achgrp')].map(g=>({
+      name:((g.querySelector('.achgrp-n')||{}).textContent||'').trim(),
+      count:((g.querySelector('.achgrp-c')||{}).textContent||'').trim(),
+      el:g}));
+    const def=grps.find(g=>g.name==='Defense');
+    const chips=[...document.querySelectorAll('#sh-ach .ach')].map(c=>({
+      name:(c.querySelector('.ach-n')||{}).textContent||'',
+      got:!c.classList.contains('off')}));
+    return {shelves:grps.map(g=>g.name),pool:!!DDATA,
+      defenseCount:def?def.count:null,
+      defenseNames:def?[...def.el.querySelectorAll('.ach')].map(c=>({
+        name:(c.querySelector('.ach-n')||{}).textContent||'',
+        got:!c.classList.contains('off')})):[],
+      earned:chips.filter(c=>c.got).map(c=>c.name),
+      total:chips.length};
+  },
+  poolLoadedNow:()=>!!DDATA,
+
   /* THE SEASON STAT STRIP on the results screen, as label and value pairs. */
   seasonStats:()=>[...document.querySelectorAll('#o-stats .st')].map(el=>({
     k:el.querySelector('.k').textContent, v:el.querySelector('.v').textContent})),
@@ -1259,6 +1290,60 @@ boot();`;
     ok('and nothing in it still calls the offense board Classic Mode',
       !JSON.stringify(tree).includes('Classic'), tree.slice(0, 2));
 
+    /* ── THE BADGE CABINET KNOWS ABOUT THE MODE ───────────────────────────────
+       Every badge in this game is DERIVED from leaderboard rows rather than stored, which is
+       what makes them retroactive. That also means a new mode is invisible to them until
+       somebody writes the tests, and defense shipped without any: a defense-only player had
+       a cabinet of 359 badges with nothing on it about the game they were playing.
+
+       Two things are checked and the second is the one that would fail silently. The shelf
+       exists and fills. And THE DEFENDERS ARE FETCHED FIRST: the cabinet resolves picks
+       through the same table the draft uses, the defensive pool is a second data file, and a
+       player who opens their badges before ever playing a defense draft would otherwise have
+       every defense roster resolve to nothing. Not a wrong badge, a missing one, quietly.
+
+       ON ITS OWN PAGE, because that last assertion is about a browser that has never loaded
+       the pool, and so is the board block further down. Two virgin-state questions cannot
+       share one page: whichever ran second would be answering about a page the first had
+       already changed. */
+    {
+      const p2 = await ctx.newPage();
+      p2.on('pageerror', (e) => { bad++; console.log('  FAIL  page error   ' + String(e.message).split('\n')[0]); });
+      await p2.goto(`${HOST}/football/__test_defense.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await p2.waitForFunction(() => window.__DEF && document.getElementById('s-intro'), null, { timeout: 60000 });
+      ok('the defenders are not loaded yet, which is the state this is about',
+        !(await p2.evaluate(() => window.__DEF.poolLoadedNow())));
+      /* SIX REAL DEFENDERS, not two and four placeholders: a run whose picks cannot all be
+         resolved is deliberately skipped by every roster test, so a part-real fixture would
+         prove only that the mode badge fires. Watt led the league in sacks, Leonard in
+         tackles and Tillman in forced fumbles, so three different roster tests have
+         something to find, and every one of the six cost $48M, which is another. */
+      const men = ['00-0027949:2012', '00-0027949:2014', '00-0034846:2018',
+        '00-0007030:2000', '00-0027762:2015', '00-0022123:2012'];
+      const mk = (i) => ({
+        id: 'b' + i, created_at: '2026-08-19T15:00:00Z', wins: 14, losses: 5, games: 19,
+        title_won: false, perfect: false, made_playoffs: true, seed_label: 'Wild card',
+        playoff_wins: 2, point_diff: 4, chemistry_pct: 1, spend_musd: 138, respins: 0,
+        team_rating: 88, squad_fppg: 55, structure_mult: 1, perfect_pct: 88,
+        run_mode: 'defense', franchise: null, era: null,
+        picks: men.slice(),
+        slots: ['DL', 'DL', 'LB', 'DB', 'DB', 'FLEX'],
+      });
+      const cab = await p2.evaluate((r) => window.__DEF.badges(r), [mk(1), mk(2), mk(3)]);
+      ok('the cabinet has a Defense shelf', cab.shelves.includes('Defense'), cab.shelves);
+      ok('and it fetched the defenders before deriving it', cab.pool === true, { pool: cab.pool });
+      const won = cab.defenseNames.filter((x) => x.got).map((x) => x.name);
+      ok('and a defense season earns the mode badge', won.includes('Defense'),
+        { shelf: cab.defenseCount, earned: won });
+      /* The two real defenders in those picks are a sack leader and a tackle leader, so the
+         roster-reading badges have something to find. If the pool had not been fetched they
+         would all be locked and only the mode badge would show. */
+      ok('and the badges that read the roster found the men on it',
+        won.includes('Sack artist') && won.includes('Tackling machine')
+        && won.includes('Punch it out') && won.includes('Everybody paid'), won);
+      await p2.close();
+    }
+
     /* ── THE NAMES ON A DEFENSE ROW ───────────────────────────────────────────
        Every name on a board is resolved out of THIS browser's player data, and the
        defenders are a second data file that only starting a defense draft ever loaded. So
@@ -1273,9 +1358,17 @@ boot();`;
        never caught it: every check it made came after a draft.
 
        This block has to come BEFORE the draft below for the same reason. */
-    ok('nothing has fetched the defensive pool yet, which is the state a reader is in',
-      !(await p.evaluate(() => window.__DEF.pool())));
     {
+      /* ON ITS OWN PAGE, for the same reason the cabinet block above is: this asks about a
+         browser that has never fetched the defensive pool, and by now the main page has,
+         because selecting the Defense competition on the board fetches it on purpose. Two
+         virgin-state questions cannot share one page. */
+      const p3 = await ctx.newPage();
+      p3.on('pageerror', (e) => { bad++; console.log('  FAIL  page error   ' + String(e.message).split('\n')[0]); });
+      await p3.goto(`${HOST}/football/__test_defense.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await p3.waitForFunction(() => window.__DEF && document.getElementById('s-intro'), null, { timeout: 60000 });
+      ok('nothing has fetched the defensive pool yet, which is the state a reader is in',
+        !(await p3.evaluate(() => window.__DEF.pool())));
       /* Six real defenders off the shipped file, as the pick keys a row carries. */
       const pool = JSON.parse(fs.readFileSync(`${ROOT}/football/data/defender_seasons.json`, 'utf8'));
       const picked = new Set();
@@ -1294,17 +1387,17 @@ boot();`;
       };
       /* The sheet first, because it is the screenshot the report came with, and because the
          board below loads the pool and there is only one first time. */
-      const before = await p.evaluate((r) => window.__DEF.detail(r), row);
+      const before = await p3.evaluate((r) => window.__DEF.detail(r), row);
       ok('the sheet opens on the first tap, with nothing to name yet',
         before.names.length === 0 && /not in the player data/.test(before.text),
         before.text.slice(0, 120));
       /* Caught rather than thrown: a page that never fetches the pool is the bug, and it
          should read as a failed assertion here and not as a suite that died. */
-      const came = await p.waitForFunction(() => window.__DEF.pool(), null, { timeout: 30000 })
+      const came = await p3.waitForFunction(() => window.__DEF.pool(), null, { timeout: 30000 })
         .then(() => true).catch(() => false);
       ok('the sheet goes and gets the defenders by itself', came);
       await p.waitForTimeout(400);
-      const after = await p.evaluate(() => window.__DEF.detailNow());
+      const after = await p3.evaluate(() => window.__DEF.detailNow());
       ok('and once the defenders land the sheet names all six of them',
         after.names.length === 6, after.names);
       ok('and it no longer says the players are not in this browser',
@@ -1314,11 +1407,12 @@ boot();`;
         { drew: after.names, row: six.map((m) => m.name) });
 
       /* And the board itself, which is where the two names on each row come from. */
-      const board = await p.evaluate((r) => window.__DEF.boardWith(r), row);
+      const board = await p3.evaluate((r) => window.__DEF.boardWith(r), row);
       ok('the Defense board names players on its rows rather than counting them',
         !/6 players/.test(board.rowText)
         && six.some((m) => board.rowText.includes(m.name.split(' ').slice(-1)[0])),
         board.rowText.slice(0, 160));
+      await p3.close();
     }
 
     /* ── WHICH MODE A RUN WAS, AT A GLANCE ────────────────────────────────────

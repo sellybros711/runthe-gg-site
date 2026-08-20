@@ -805,6 +805,145 @@
     'Go perfect in the Trade Machine.', 'legend', 'Modes',
     (c) => c.any((r) => r.run_mode === 'trade' && isTrue(r.perfect))));
 
+  /* ===================== THE DEFENSE =====================
+   *
+   * ITS OWN SHELF, NOT FIVE MORE ENTRIES IN Modes, and not a fifth member of MODES either.
+   * "Tried everything" and "Wins anywhere" ask for a season and a title in every mode in
+   * that list; adding defense to it would take both badges away from everybody who has them
+   * and hand them back only after a mode that did not exist when they earned them. A new
+   * mode should be able to arrive without un-earning anything, so the list is left alone and
+   * the mode gets a shelf.
+   *
+   * WHAT THESE CAN ASK ABOUT is the roster and the row, which is the same constraint the
+   * whole file works under: picks and slots resolve to six defenders, and the row carries
+   * the record, the seed, the title, the differential, the spend, the chemistry and the team
+   * rating. Points allowed and takeaways are NOT on the row: they are derived at display
+   * time from the game's own seed, so a badge asking for them would be asking a question the
+   * leaderboard cannot answer. Hence a shelf that is mostly about the draft, which is the
+   * part of this mode a player actually controls.
+   *
+   * The defenders' own badge strings come from build/01-defenders.mjs and are spelled as
+   * that script spells them, the same way the award regexes above are.
+   */
+  const DEF = (r) => r.run_mode === 'defense';
+  const defBadge = (ros, re) => ros.some((p) => (p.badges || []).some((x) => re.test(x)));
+  const posOf = (p) => String(p.position || '').toUpperCase();
+  const realPos = (p) => String(p.real_position || '').toUpperCase();
+  const countPos = (ros, pos) => ros.filter((p) => posOf(p) === pos).length;
+
+  add(A('mode_defense', 'Defense', 'Finish a Defense season.', 'bronze', 'Defense',
+    (c) => c.modesPlayed.has('defense')));
+  add(A('def_5', 'Coordinator', 'Finish 5 Defense seasons.', 'bronze', 'Defense',
+    (c) => c.count(DEF) >= 5));
+  add(A('def_25', 'Career on that side', 'Finish 25 Defense seasons.', 'gold', 'Defense',
+    (c) => c.count(DEF) >= 25));
+  add(A('def_ring', 'Defense wins championships',
+    'Win a title with a drafted defense.', 'gold', 'Defense',
+    (c) => c.modeTitles.has('defense')));
+  add(A('def_perfect', 'Nobody scored enough', 'Go perfect with a defense.', 'legend', 'Defense',
+    (c) => c.any((r) => DEF(r) && isTrue(r.perfect))));
+  add(A('def_top_seed', 'Through your building',
+    'Take the top seed with a defense.', 'silver', 'Defense',
+    (c) => c.any((r) => DEF(r) && /top seed/i.test(String(r.seed_label || '')))));
+  add(A('def_17', 'Unbeaten front', 'Win 17 regular season games with a defense.',
+    'gold', 'Defense',
+    (c) => c.any((r) => DEF(r) && has(r.wins) && Number(r.wins) >= 17)));
+  /* THE NUMBERS ARE MEASURED, NOT GUESSED. Over 480 wheel-drafted defense seasons across
+     four draft policies the best point differential was +9.9 a game, the best team rating
+     92.5, the best perfect figure 97, the most league leaders on one roster 3 and the most
+     $20M men 5. A build that ignores the wheel and simply buys the best balanced six reaches
+     a 99.6 rating, +30 a game and a title in one season in six, which is where the ceiling
+     is. Every threshold below sits inside that gap on purpose: reachable by a good draft
+     that got some help from the wheel, out of reach for an ordinary one. A badge nobody can
+     earn is worse than no badge. */
+  add(A('def_diff', 'Nothing got through',
+    'Outscore the league by 8 a game with a defense.', 'silver', 'Defense',
+    (c) => c.any((r) => DEF(r) && has(r.point_diff) && Number(r.point_diff) >= 8)));
+  add(A('def_elite', 'Elite unit', 'Draft a defense rated 90 or better.', 'silver', 'Defense',
+    (c) => c.any((r) => DEF(r) && has(r.team_rating) && Number(r.team_rating) >= 90)));
+  add(A('def_overwhelming', 'Overwhelming', 'Draft a defense rated 95 or better.',
+    'gold', 'Defense',
+    (c) => c.any((r) => DEF(r) && has(r.team_rating) && Number(r.team_rating) >= 95)));
+  add(A('def_best_six', 'The best six on the board',
+    'Draft within 5% of the strongest defense your spins allowed.', 'gold', 'Defense',
+    (c) => c.any((r) => DEF(r) && has(r.perfect_pct) && Number(r.perfect_pct) >= 95)));
+
+  /* ---- THE FRONT, which is the one shape decision this draft actually makes ---- */
+  add(A('def_heavy', 'Heavy front', 'Draft a defense with three linemen.', 'bronze', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && countPos(ros, 'DL') >= 3)));
+  add(A('def_nickel', 'Nickel', 'Draft a defense with three defensive backs.', 'bronze', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && countPos(ros, 'DB') >= 3)));
+  add(A('def_base', 'Base defense', 'Draft a defense with two of each.', 'bronze', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && countPos(ros, 'DL') === 2
+      && countPos(ros, 'LB') === 2 && countPos(ros, 'DB') === 2)));
+  add(A('def_all_fronts', 'Every look', 'Draft all three fronts across your seasons.',
+    'gold', 'Defense',
+    (c) => ['heavy', 'nickel', 'base'].every((want) => c.anyRoster((ros, row) => {
+      if (!DEF(row)) return false;
+      const dl = countPos(ros, 'DL'), lb = countPos(ros, 'LB'), db = countPos(ros, 'DB');
+      if (want === 'heavy') return dl >= 3;
+      if (want === 'nickel') return db >= 3;
+      return dl === 2 && lb === 2 && db === 2;
+    }))));
+  /* The interior is where a run is stopped and where the cheap end of the pool lives, so a
+     roster built around it is a real choice rather than a spin nobody could avoid. */
+  add(A('def_interior', 'Two gaps', 'Draft two interior linemen in one defense.',
+    'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row)
+      && ros.filter((p) => /^(DT|NT)$/.test(realPos(p))).length >= 2)));
+  add(A('def_secondary', 'Cover men', 'Draft two corners and a safety.', 'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row)
+      && ros.filter((p) => realPos(p) === 'CB').length >= 2
+      && ros.some((p) => /^(S|FS|SAF)$/.test(realPos(p))))));
+
+  /* ---- WHO YOU SIGNED. The defenders carry their own honours, so these ask for them. ---- */
+  add(A('def_sacks', 'Sack artist', 'Draft a man who led the NFL in sacks.', 'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in sacks/i))));
+  add(A('def_picks', 'Ballhawk', 'Draft a man who led the NFL in interceptions.',
+    'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in interceptions/i))));
+  add(A('def_tackles', 'Tackling machine', 'Draft a man who led the NFL in tackles.',
+    'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in tackles/i))));
+  add(A('def_strips', 'Punch it out', 'Draft a man who led the NFL in forced fumbles.',
+    'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in forced fumbles/i))));
+  add(A('def_twenty', 'Twenty sacks', 'Draft a twenty sack season.', 'gold', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /20 sack season/i))));
+  add(A('def_leaders', 'Led the league at everything',
+    'Draft league leaders in sacks, tackles, interceptions and forced fumbles.',
+    'legend', 'Defense',
+    (c) => [/led the nfl in sacks/i, /led the nfl in tackles/i, /led the nfl in interceptions/i,
+      /led the nfl in forced fumbles/i].every((re) =>
+      c.anyRoster((ros, row) => DEF(row) && defBadge(ros, re)))));
+  add(A('def_all_stars', 'Three of a kind',
+    'Draft a defense where three of the six led the league in something.', 'gold', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row)
+      && ros.filter((p) => (p.badges || []).some((x) => /^led the nfl/i.test(x))).length >= 3)));
+
+  /* ---- WHAT IT COST ---- */
+  add(A('def_max', 'Everybody paid', 'Draft a defense with five men at $20M or more.',
+    'gold', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row)
+      && ros.filter((p) => Number(p.price_musd || 0) >= 20).length >= 5)));
+  add(A('def_bargain', 'Built cheap',
+    'Win a title with a defense costing under $110M.', 'gold', 'Defense',
+    (c) => c.any((r) => DEF(r) && isTrue(r.title_won) && has(r.spend_musd)
+      && Number(r.spend_musd) < 110)));
+  add(A('def_spread', 'Six clubs', 'Draft a defense with six men from six different clubs.',
+    'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => DEF(row) && ros.length === 6
+      && new Set(ros.map((p) => p.franchise)).size === 6)));
+  add(A('def_one_year', 'One season of football',
+    'Draft a defense with three men from the same year.', 'silver', 'Defense',
+    (c) => c.anyRoster((ros, row) => {
+      if (!DEF(row)) return false;
+      const by = {};
+      for (const p of ros) { by[p.season] = (by[p.season] || 0) + 1;
+        if (by[p.season] >= 3) return true; }
+      return false;
+    })));
+
   /* ===================== THE FRONT OFFICE =====================
    *
    * THE ONE GROUP THAT IS NOT RETROACTIVE, and it is worth being plain about why. Every
@@ -1044,8 +1183,8 @@
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
   const GROUPS = ['Milestones', 'Winning', 'Roster craft', 'Chemistry', 'Shapes', 'History',
-    'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes', 'Front office',
-    'Calendar', 'Streaks'];
+    'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes', 'Defense',
+    'Front office', 'Calendar', 'Streaks'];
 
   /*
    * Evaluate the whole catalog. A test that throws is treated as not earned rather than

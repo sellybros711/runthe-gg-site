@@ -5240,7 +5240,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=18"></script>
-<script src="achievements.js?v=8"></script>
+<script src="achievements.js?v=9"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -12919,6 +12919,16 @@ function achEvaluate(rows){
   if(!ACH) return null;
   try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks}); }catch(_){ return null; }
 }
+/* THE DEFENDERS HAVE TO BE IN THE ROOM BEFORE THE CABINET IS DERIVED. achResolve reads
+   BYKEY, and the defensive pool is a second data file that only a defense draft loads, so a
+   player who opened their badges before ever playing one had every defense run resolve to an
+   empty roster: not a wrong badge, a missing one, and silently. Every caller awaits this
+   first. A failure leaves the cabinet exactly as it was rather than blocking it. */
+function achReady(rows){
+  if(!ACH||DDATA) return Promise.resolve();
+  if(!(rows||[]).some(r=>r&&r.run_mode==='defense')) return Promise.resolve();
+  return loadDefensePool().then(()=>{},()=>{});
+}
 
 /* The two streaks, side by side. The play streak leads with the state that motivates: if
    today has not been played yet it says so, because that is the day the number is at risk. */
@@ -13206,6 +13216,7 @@ async function pfCareerPaint(userId){
   if(!slot||$('sheet-in').dataset.kind!=='profile') return;
   if(!c){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run '+
     'history could not be read just now. Nothing has been lost.</p>'; return; }
+  await achReady(c.rows);
   const res=achEvaluate(c.rows);
   /* No .bestlist to wire up any more. Opening a run from a list is the Drafts page's job,
      and it has its own handler. */
@@ -13223,6 +13234,7 @@ async function pfBadgesPaint(userId){
   const c=await careerLoad(userId);
   const slot=$('sh-ach');
   if(!slot||$('sheet-in').dataset.kind!=='profile') return;
+  if(c) await achReady(c.rows);
   const res=c?achEvaluate(c.rows):null;
   if(!res){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Nothing '+
     'to show yet. Finish a season and your first badges land here.</p>'; return; }
@@ -13833,9 +13845,11 @@ async function recordRun(){
      decoration, so a slow or failed read must not hold up recording the run. */
   if(submitted&&submitted!=='guest'&&ACH){
     careerLoad(authState.userId).then((c)=>{
-      if(!c) return;
-      const res=achEvaluate(c.rows);
-      if(res) achAnnounce(authState.userId,res,false);
+      if(!c) return null;
+      return achReady(c.rows).then(()=>{
+        const res=achEvaluate(c.rows);
+        if(res) achAnnounce(authState.userId,res,false);
+      });
     }).catch(()=>{});
   }
   return submitted;
