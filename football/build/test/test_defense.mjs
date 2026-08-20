@@ -1163,7 +1163,8 @@ boot();`;
     ok('the offense half wears no badge at all', sticker.offTags === 0,
       { tagsOnOffense: sticker.offTags });
     ok('and the pair is captioned instead',
-      !!sticker.pick && /side of the ball/i.test(sticker.pick.text) && sticker.pick.above,
+      !!sticker.pick && /^Which side of the ball will you draft\?$/.test(sticker.pick.text)
+        && sticker.pick.above,
       sticker.pick);
     ok('New is on the defense half, and only while its window is open',
       sticker.nw.text === 'New' && sticker.nw.absolute
