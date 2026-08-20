@@ -18,7 +18,7 @@
   var HUB = [
     { sel: '.zone-head .kicker',
       title: 'Welcome to the arcade',
-      html: 'Ten small sports puzzles, about a minute each. They are built from real NBA, NFL and MLB careers, ' +
+      html: 'Twelve small sports puzzles, about a minute each. They are built from real NBA, NFL and MLB careers, ' +
             'and <b>every one of them resets at midnight</b>.',
       cta: 'Show me' },
     { sel: '.tsec.daily',
@@ -28,19 +28,23 @@
     { sel: '.tsec.run',
       title: 'Streak games',
       html: 'These ones keep going until you miss. <b>How far you get is the score</b>, and it starts over tomorrow.' },
-    { sel: '#cardMatch',
+    /* Start on a game they can actually open. Common Ground is behind the
+       Arcade Card now, so pointing a brand new visitor at it walked them into
+       a paywall on step four. Sportegories is free, and it is the game people
+       come back to. */
+    { sel: '#cardSpg',
       title: 'Start here',
-      html: 'Common Ground is the easiest way in: sixteen names hide four groups of four. ' +
-            '<b>No sports trivia needed to see the idea</b>, and it takes about three minutes.' },
+      html: 'Sportegories is the one to open first: one letter, eight categories, two minutes. ' +
+            '<b>Type any player who fits</b>, and rarer answers score more.' },
     { sel: '#dprog',
       title: 'Your day, at a glance',
       html: 'One pip per game. They fill in as you play, so you can see what is left without scrolling the whole page.' },
-    { sel: '#cardMatch',
+    { sel: '#cardSpg',
       title: 'What you are chasing',
       html: 'Each game keeps <b>its own daily streak</b>: play it, and the streak grows. Miss a day and it goes back to zero. ' +
             'That is the whole game behind the games.',
-      cta: 'Play Common Ground',
-      href: '/arcade/match/' }
+      cta: 'Play Sportegories',
+      href: '/arcade/sportegories/' }
   ];
 
   /* Per game. `sel` values are the real ids and classes on those pages.

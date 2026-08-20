@@ -386,7 +386,10 @@
      inline with a most-recently-played order; these are the resting state, so
      there is no reflow for everyone else. */
   .tsec.daily{order:0;}
-  .tile.match{order:1;} .tile.spg{order:2;} .tile.cross{order:3;} .tile.roll{order:4;} .tile.chain{order:5;}
+  /* The two free dailies lead the section. A locked tile at the top of the
+     page is a door in a wall: it says "members only" before it says what any
+     of this is. */
+  .tile.spg{order:1;} .tile.cross{order:2;} .tile.match{order:3;} .tile.roll{order:4;} .tile.chain{order:5;}
   .tile.rankit{order:6;} .tile.guess{order:7;}
   .tsec.run{order:8;}
   .tile.alma{order:9;} .tile.career{order:10;} .tile.table{order:11;} .tile.oddone{order:12;} .tile.highlow{order:13;}
@@ -966,7 +969,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/nav.js?v=1"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=2"></script>
+<script src="/arcade/tourdata.js?v=3"></script>
 <script>
 /* THE FIRST NINETY SECONDS.
    Ten tiles with no explanation is the single biggest thing standing between
@@ -1074,7 +1077,7 @@ window.GA_ID='G-L29P5MRWKE';
                  guess:'cardGuess', highlow:'cardHigh', oddone:'cardOdd', table:'cardTable',
                  career:'cardCareer', almamater:'cardAlma', rollcall:'cardRoll', chain:'cardChain' };
     // section base order, free games first (matches the resting CSS)
-    var SECTIONS = [ { base:1, keys:['match','sportegories','crossword','rollcall','chain','rankit','guess'] },
+    var SECTIONS = [ { base:1, keys:['sportegories','crossword','match','rollcall','chain','rankit','guess'] },
                      { base:9, keys:['almamater','career','table','oddone','highlow'] } ];
     var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     function paint(){
