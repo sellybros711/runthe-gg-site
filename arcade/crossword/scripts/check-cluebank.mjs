@@ -95,5 +95,42 @@ const top = [...uncovered.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25);
 console.log('  most-used players still on the generated fallback:');
 top.forEach(([k, n]) => console.log(`    ${String(n).padStart(2)}x  ${k}`));
 
+/* ---- 4. no clue names the player -----------------------------------------
+ * The answer is the surname, so a clue can never print it. It can no longer
+ * print the GIVEN name either: "Hank ___, who broke the home run record" is
+ * not a puzzle, the solver reads Hank and writes AARON without meeting the
+ * trivia. This walks a year of real puzzles and proves neither name appears.  */
+console.log('\n4) no generated clue names its own player');
+const before4 = errors;
+const nk = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase().replace(/[^A-Z]/g, '');
+const SUFFIX = /^(JR|SR|II|III|IV|V)$/;
+let checked = 0;
+for (let i = 0; i < 365; i++) {
+  const d = new Date(d0.getTime() + i * 86400000).toISOString().slice(0, 10);
+  const p = gen.forDate(d, corpus);
+  if (!p) continue;
+  for (const en of p.entries) {
+    const pw = poolBy.get(en.answer);
+    if (!pw || !pw.e) continue;
+    checked++;
+    /* Word by word, not substring. Normalising the whole clue to bare letters
+       runs the words together, and "who hit 612 home runs" then "contains"
+       THOME. A possessive is still a leak, so a trailing S is allowed off. */
+    const said = nk(en.clue).length ? en.clue.split(/\s+/).map(nk).filter(Boolean) : [];
+    const names = (w, target) => w === target || w === target + 'S';
+    if (said.some((w) => names(w, en.answer))) err(`${d} ${en.answer}: clue leaks the answer -> "${en.clue}"`);
+    const parts = String(pw.e.name).trim().split(/\s+/).map(nk).filter((x) => x && !SUFFIX.test(x));
+    for (const part of parts.slice(0, -1)) {
+      // a two-letter given name ("JJ") is too short to be a real leak test
+      if (part.length > 2 && said.some((w) => names(w, part))) {
+        err(`${d} ${en.answer}: clue names ${pw.e.name} -> "${en.clue}"`);
+        break;
+      }
+    }
+  }
+}
+if (errors === before4) console.log(`  ok: ${checked} player clues over a year, not one names him`);
+
 console.log(errors ? `\n${errors} FAILURE(S)` : '\nALL CHECKS PASS');
 process.exit(errors ? 1 : 0);

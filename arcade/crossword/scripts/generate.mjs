@@ -70,14 +70,23 @@ function add(answer, category, difficulty, make) {
   bank.set(a, { answer: a, len: a.length, category, difficulty, make, theme: category !== "fill" });
 }
 
+/* Clues name nobody. The answer is the surname and printing the given name
+   beside it ("Hank ___, the longtime home run king") hands the solver the
+   answer before they read the trivia. Same rule the live generator follows
+   (arcade/crossword/gen.js): a team-and-role anchor plus the fact.
+   A note already written as a predicate ("who hit 714 career home runs") joins
+   straight on; a noun phrase gets a comma. */
+const said = (p, role) => /^who(se)? /.test(p.note || '')
+  ? `${p.team} ${role} ${p.note}`
+  : `${p.team} ${role}, ${p.note}`;
 const T = {
   player: [
-    (p) => `${p.team} Hall of Famer ${p.first} ___`,
-    (p) => `${p.first} ___, ${p.note}`,
+    (p) => said(p, 'Hall of Famer'),
+    (p) => said(p, 'great'),
   ],
   playerNonHof: [
-    (p) => `${p.team} star ${p.first} ___`,
-    (p) => `${p.first} ___, ${p.note}`,
+    (p) => said(p, 'star'),
+    (p) => said(p, 'standout'),
   ],
   team: [
     (t) => `${t.city}'s ${t.league} team`,

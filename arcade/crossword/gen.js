@@ -10,11 +10,21 @@
  *
  * Fills are SURNAMES (A-Z, len 3-9) drawn from window.GRID_ENTITIES
  * (grid/match/entities.js — must be loaded before this script in the
- * browser; Node callers pass the corpus as forDate's 2nd arg). Clues are
- * built from corpus facts (sport / first team / pos / jersey / era / HOF)
- * and NEVER contain the name. When two corpus players share a surname the
- * clue keeps gaining facts (jersey, era, team, position) until it fits the
- * chosen player ONLY — a clue both could wear is rejected outright.
+ * browser; Node callers pass the corpus as forDate's 2nd arg).
+ *
+ * CLUES NAME NOBODY. Not the surname (that is the answer) and, since this
+ * rewrite, not the given name either. "Hank ___, who broke the home run
+ * record in 1974" is not a clue, it is a fill-in-the-blank with the answer
+ * printed beside it: the solver reads "Hank" and writes AARON without ever
+ * meeting the trivia. So a clue is now a description that has to be SOLVED,
+ * "Braves slugger who broke the home run record in 1974 under a mountain of
+ * hate mail", built from a team-and-role anchor plus either a hand-written
+ * moment (cluebank.js) or the player's own facts.
+ *
+ * Dropping the given name makes every same-surname player a rival, not just
+ * the ones who share a first name, so the clue keeps gaining facts (jersey,
+ * era, team, position) until it fits the chosen player ONLY. A clue two
+ * players could wear is rejected outright.
  *
  * Grid: small dense mini (7-9), criss-cross placement — seed across word,
  * then grow by intersecting perpendicular placements (budgeted backtracking).
@@ -117,7 +127,10 @@
   }
   function merge(a, b) { var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = b[k]; return o; }
 
-  // one base template + escalating disambiguators; null if a rival still fits
+  /* one base template + escalating disambiguators; null if a rival still fits.
+     The extra facts are appended as plain comma clauses, the way a real
+     crossword narrows a clue ("Dodgers second baseman, All-Star of the 1980s"),
+     rather than the old bracketed shorthand. */
   function tryDisambig(cand, e, rivals, surname) {
     var text = cand.t, used = merge(cand.used, {});
     var jersey = (e.j && e.j.length) ? e.j[e.j.length - 1] : null;
@@ -125,10 +138,10 @@
     var tn = (e.t && e.t[0]) ? nick(e.t[0]) : null;
     var guard = 0;
     while (ambiguous(used, rivals) && guard++ < 5) {
-      if (jersey != null && used.jersey == null) { text += ' — #' + jersey; used.jersey = jersey; continue; }
-      if (dec != null && used.era == null) { text += ' (' + eraStr(dec) + ')'; used.era = dec; continue; }
-      if (tn && !used.team) { text += ', ' + tn; used.team = tn; continue; }
-      if (e.pos && !used.pos) { text += ' — ' + e.pos; used.pos = e.pos; continue; }
+      if (tn && !used.team) { text += ', of the ' + tn; used.team = tn; continue; }
+      if (dec != null && used.era == null) { text += ', ' + eraStr(dec); used.era = dec; continue; }
+      if (e.pos && !used.pos) { text += ', a ' + e.pos.toLowerCase(); used.pos = e.pos; continue; }
+      if (jersey != null && used.jersey == null) { text += ', who wore ' + jersey; used.jersey = jersey; continue; }
       return null;
     }
     if (ambiguous(used, rivals)) return null;
@@ -140,10 +153,11 @@
   // deterministic eligibility probe — succeeds iff ANY template works, so a
   // word that passes the probe always clues at build time too).
   //
-  // Every clue is anchored on the player's GIVEN name and ends in "___", the
-  // standard crossword convention for a surname answer ("Lions great Barry
-  // ___" -> SANDERS). The given name is not the answer, so it never leaks the
-  // fill; it does make the clue specific instead of "NFL star of the '80s".
+  // A clue is an ANCHOR plus a FACT. The anchor says who we are looking at in
+  // the language a fan uses ("Braves slugger", "Bulls Hall of Famer", "Chargers
+  // center"); the fact is either a hand-written moment from cluebank.js or the
+  // player's own record. Nobody is named: the surname is the answer, and the
+  // given name used to be printed right next to it.
   // ---- accolades: a player is only a valid answer if they have a real
   // distinction (award / All-Pro / All-Star / champion / HOF / milestone), and
   // the clue names it. Sources: entity.aw + entity.ml + awards.js (RTG_AWARDS).
@@ -158,7 +172,8 @@
     } catch (x) {}
     return out;
   }
-  // The single most impressive award, phrased to read in "<Team> <phrase> <First> ___".
+  // The single most impressive award, phrased to read as a noun in an anchor:
+  // "Braves MVP", "Yankees Gold Glove winner".
   var AWARD_RANK = [
     [/finals mvp/i, 'Finals MVP'], [/super bowl mvp/i, 'Super Bowl MVP'], [/world series mvp/i, 'World Series MVP'],
     [/\bmvp\b/i, 'MVP'], [/cy young/i, 'Cy Young winner'], [/defensive player/i, 'Defensive Player of the Year'],
@@ -178,19 +193,22 @@
     return !!(e && (e.hof || (e.ml && e.ml.length) || awardPhrase(e)));
   }
 
-  // A hand-written clue from cluebank.js, when this player has one. These skip
-  // the rival-disambiguation walk below on purpose: that machinery exists to
-  // stop two same-surname players from wearing the same fact list, and a clue
-  // naming one specific moment can only ever describe one of them. The bank's
-  // own validator guarantees the surname never appears in the text.
-  function curatedClue(e, given, rng) {
+  /* A hand-written predicate from cluebank.js ("who broke the home run record
+     in 1974 under a mountain of hate mail"), when this player has one. Returned
+     raw so the caller can hang it off an anchor.
+
+     These skip the rival-disambiguation walk on purpose: that machinery exists
+     to stop two same-surname players from wearing the same fact list, and a
+     clue naming one specific moment can only ever describe one of them. The
+     bank's own validator guarantees the surname never appears in the text. */
+  function curatedPredicate(e, rng) {
     try {
       var B = root && root.RTG_CLUES;
       if (!B || !B.has(e.sport, e.name)) return null;
       var list = B.get(e.sport, e.name);
       if (!list.length) return null;
       var pick = rng ? Math.floor(rng() * list.length) : 0;
-      return { text: given + ' ___, ' + list[pick].x, facts: { curated: true } };
+      return list[pick].x;
     } catch (x) { return null; }
   }
   function hasCurated(e) {
@@ -198,41 +216,86 @@
     catch (x) { return false; }
   }
 
+  /* The anchors a clue can open with, richest first. Each carries the facts it
+     states so the rival check can prove no second player wears the same set.
+     "Braves Hall of Famer", "Chargers center", "MLB Gold Glove winner". */
+  function anchors(e) {
+    var tn = (e.t && e.t[0]) ? nick(e.t[0]) : null;
+    var pos = e.pos ? e.pos.toLowerCase() : null;
+    var dist = awardPhrase(e);
+    var out = [];
+    if (e.hof && tn) out.push({ t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
+    if (tn && pos && dist) out.push({ t: tn + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
+    if (tn && dist) out.push({ t: tn + ' ' + dist, used: { team: tn, aw: true } });
+    if (tn && pos) out.push({ t: tn + ' ' + pos, used: { team: tn, pos: e.pos } });
+    if (e.hof) out.push({ t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
+    if (dist) out.push({ t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
+    if (pos) out.push({ t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
+    return out;
+  }
+
+  /* How much a clue actually gives the solver. The club is worth the most: a
+     fan searching their memory starts from a team and a position, never from
+     "NFL Pro Bowler". Anything under MIN_INFO is not a clue, it is a category,
+     and the word simply loses its place in the pool rather than being asked
+     with "MLB All-Star" written beside it. */
+  function infoScore(used) {
+    return (used.team ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
+           (used.era != null ? 1 : 0) + (used.ml ? 2 : 0) + (used.curated ? 6 : 0);
+  }
+  var MIN_INFO = 5;
+
   function clueFor(word, rng) {
     var e = word.e;
-    var fn = givenOf(e.name);
-    if (!fn) return null;
-    var hand = curatedClue(e, fn, rng);
-    if (hand) return hand;
-    // Only players who share BOTH names are genuine rivals for a named clue;
-    // a different first name already tells the solver who is meant.
-    var fnKey = norm(fn);
-    var rivals = (word.rivals || []).filter(function (r) { return norm(givenOf(r.name) || '') === fnKey; });
-    var tn = (e.t && e.t[0]) ? nick(e.t[0]) : null;
-    var jersey = (e.j && e.j.length) ? e.j[e.j.length - 1] : null;
+    if (!givenOf(e.name)) return null;         // single-name entries never qualify
+    /* Every same-surname player is a rival now. The old code only guarded
+       against players who ALSO shared a first name, because the first name was
+       printed in the clue and did the separating. Nothing prints it any more,
+       so the clue itself has to do that work. */
+    var rivals = word.rivals || [];
+    var anch = anchors(e);
+    if (!anch.length) return null;
+    var hand = curatedPredicate(e, rng);
     var dec = primaryDecade(e);
     var era = dec != null ? eraStr(dec) : null;
-    var pos = e.pos ? e.pos.toLowerCase() : null;
-    // Rich, team-anchored clues first (shuffled for variety across a grid);
-    // the generic "star of the era / standout" wordings are a last resort,
-    // right for individual-sport athletes (boxing, tennis, F1) with no team.
-    // Every eligible player has a distinction (isCwIcon requires it); the clue
-    // NAMES it - Hall of Famer, or an award/All-Pro/All-Star/champion. Plain
-    // "position / standout" wordings are gone: a player must have earned the clue.
-    var dist = awardPhrase(e);
     var ml0 = (e.ml && e.ml.length) ? e.ml[0] : null;
-    var rich = [];
-    if (e.hof && tn) rich.push({ t: tn + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true, team: tn } });
-    if (dist && tn) rich.push({ t: tn + ' ' + dist + ' ' + fn + ' ___', used: { team: tn, aw: true } });
-    if (dist && tn && pos) rich.push({ t: tn + ' ' + pos + ' and ' + dist + ' ' + fn + ' ___', used: { team: tn, pos: e.pos, aw: true } });
-    if (e.hof) rich.push({ t: e.sport + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true } });
-    if (dist) rich.push({ t: e.sport + ' ' + dist + ' ' + fn + ' ___', used: { sport: e.sport, aw: true } });
-    if (ml0 && tn) rich.push({ t: tn + '’s ' + fn + ' ___, ' + ml0, used: { team: tn, ml: true } });
-    if (ml0) rich.push({ t: fn + ' ___, ' + ml0, used: { ml: true } });
-    var lean = [];
-    var order = (rng ? shuffle(rich, rng) : rich).concat(lean);
-    for (var i = 0; i < order.length; i++) {
-      var got = tryDisambig(order[i], e, rivals, word.w);
+
+    /* A hand-written moment identifies one man on its own, so it skips the
+       rival walk. It takes a LEAGUE-level anchor, never a club one: the club we
+       hold is his FIRST, and half these moments happened somewhere else. "Twins
+       Hall of Famer who walked off consecutive nights to start the greatest
+       comeback in postseason history" is two true facts making one false
+       sentence, and it was the shape this produced for Ortiz, Bosh and Lynch.
+       An anchor whose award is the same one the moment is about ("MVP whose MVP
+       speech ...") is passed over too: the sentence should not say it twice. */
+    if (hand) {
+      var handLC = hand.toLowerCase();
+      var league = anch.filter(function (a) { return !a.used.team; });
+      for (var h = 0; h < league.length; h++) {
+        var a = league[h];
+        if (a.used.aw && handLC.indexOf(a.t.split(' ').slice(-1)[0].toLowerCase()) >= 0 && h + 1 < league.length) continue;
+        var text = a.t + ' ' + hand;
+        if (text.toUpperCase().indexOf(word.w) >= 0) continue;    // never leak the answer
+        return { text: text, facts: merge(a.used, { curated: true }) };
+      }
+    }
+
+    /* No moment on file, so the facts have to carry it, and the richest
+       combination wins rather than a random one: "Chargers center, Pro Bowl
+       pick of the 2000s" is a clue a fan can work back from, "NFL Pro Bowler"
+       is not. Ties are broken at random so a grid is not eight sentences of
+       identical shape. */
+    var cands = [];
+    anch.forEach(function (a) {
+      if (ml0) cands.push({ t: a.t + ', ' + ml0, used: merge(a.used, { ml: true }) });
+      if (era) cands.push({ t: a.t + ' of the ' + era, used: merge(a.used, { era: dec }) });
+      cands.push(a);
+    });
+    cands = cands.filter(function (c) { return infoScore(c.used) >= MIN_INFO; });
+    var jitter = rng ? shuffle(cands, rng) : cands;
+    jitter.sort(function (x, y) { return infoScore(y.used) - infoScore(x.used); });
+    for (var i = 0; i < jitter.length; i++) {
+      var got = tryDisambig(jitter[i], e, rivals, word.w);
       if (got) return got;
     }
     return null;

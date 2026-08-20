@@ -1,12 +1,12 @@
 {
   "arcade/crossword/index.html": {
     "puzzles.js": {
-      "v": "10",
-      "sha": "83c36b39db638d00"
+      "v": "11",
+      "sha": "7aea7737d6227d84"
     },
     "gen.js": {
-      "v": "5",
-      "sha": "aef643f942252c4c"
+      "v": "6",
+      "sha": "4d124fbcf7889044"
     }
   },
   "arcade/match/index.html": {
