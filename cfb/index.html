@@ -3319,7 +3319,7 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
         <button data-sort="overall">Team overall</button>
-        <button data-sort="rank">Final ranking</button>
+        <button data-sort="diff">Point diff</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -3495,7 +3495,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="run.js?v=14"></script>
 <script src="achievements.js?v=11"></script>
 <script src="auth.js?v=3"></script>
-<script src="board.js?v=5"></script>
+<script src="board.js?v=6"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -5854,8 +5854,11 @@ function lbCell(r){
   if(lbSort==='overall'){
     return {v:r.overall==null?'--':Number(r.overall).toFixed(1),k:rec,gold:!!r.perfect};
   }
-  if(lbSort==='rank'){
-    return {v:r.national_rank==null?'--':'#'+r.national_rank,k:rec,gold:!!r.perfect};
+  /* The differential in large type, the record under it. The sub-line is the RECORD and
+     not the ranking, because a differential is a rate and the record is what it was
+     scored over: plus 21 across 15 games is a different season from plus 21 across 13. */
+  if(lbSort==='diff'){
+    return {v:isFinite(d)?((d>=0?'+':'')+d.toFixed(1)):'--',k:rec,gold:!!r.perfect};
   }
   return {v:rec,k:diff||'record',gold:!!r.perfect};
 }
@@ -5950,17 +5953,18 @@ function myPlaceValue(){
      which is the only way a locally-counted place can agree with the list beside it:
        overall  submitted raw and stored as numeric(6,2). placeIn rounds it to two the way
                 Postgres does, so it is handed over unrounded rather than rounded twice.
-       rank     cfb_submit_run stores p_national_rank verbatim, and this is the same
-                expression paintOver submits.
+       diff     handed over raw. placeIn rounds it to one place the way Postgres does,
+                the same way it has always rounded the overall axis, so it is not
+                rounded twice here.
        record   scoreOf is board.js's local copy of the derived score column, rounded the
                 way Postgres rounds rather than the way Math.round does. */
   if(lbSort==='overall'){
     const v=Number(stats.overall);
     return isFinite(v)?v:null;
   }
-  if(lbSort==='rank'){
-    const v=Number(run.outcome.nationalRank||yourRank());
-    return isFinite(v)&&v>0?v:null;
+  if(lbSort==='diff'){
+    const v=Number(stats.pointDiff);
+    return isFinite(v)?v:null;
   }
   return B.scoreOf(run.outcome.wins,stats.pointDiff);
 }
@@ -5991,7 +5995,7 @@ function paintMyPin(){
      makes it: a guest's season is not on this board, and "your place" would be a lie. */
   const live=!!(authState.signedIn&&authState.name&&myRunId);
   const of={day:'today',week:'this week',all:'all time'}[lbWindow];
-  const axis={record:'record',overall:'team overall',rank:'final ranking'}[lbSort];
+  const axis={record:'record',overall:'team overall',diff:'point differential'}[lbSort];
   /* Your own circle comes from your own account rather than from a board row, because
      this season may not be on the board. A guest gets the outline, which is honest. */
   const pf=avatarOf(live?authState.name:null,myAvatar.school,myAvatar.initials);

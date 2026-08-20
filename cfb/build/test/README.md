@@ -18,6 +18,7 @@ psql -d cfbtest -f supabase/63_cfb_run_mode.sql
 psql -d cfbtest -f supabase/64_cfb_bowl_key.sql
 psql -d cfbtest -f supabase/66_cfb_profile_avatars.sql
 psql -d cfbtest -f supabase/67_cfb_named_board.sql
+psql -d cfbtest -f supabase/86_cfb_point_diff_board.sql
 node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &
 python3 -m http.server 8080 &
 ```
@@ -44,7 +45,7 @@ in as, because `cfb_submit_run()` reads the display name out of `profiles` and a
 empty table records a null name rather than failing, which reads as a product bug
 in a database that was simply never filled in.
 
-Run the three migrations in order, on a database that has never had them: that is the
+Run the migrations in order, on a database that has never had them: that is the
 same thing launch day does to the production project, and it is worth having proved
 before the day rather than during it.
 
@@ -52,7 +53,7 @@ before the day rather than during it.
 
 | File | What it proves |
 |---|---|
-| `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. |
+| `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that every board query is an index scan at 200,000 rows, on all three axes and in both directions. The differential axis is checked the same way the two it sits beside are, against the indexes `86_cfb_point_diff_board.sql` adds. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_scorelines.mjs` | That the scores on screen are scores college football has actually produced. Names every calibration key the engine reads one at a time, then demands each final be a hi/lo pair that appears in `real_pairs`, that across a few thousand real seasons nobody ever scores 1 or 4, that 2 and 5 stay near their real rates, and that the mean lands within three points of the real one. The pair check is the load-bearing one: it is what noticed that the sampler was switched off. |
 | `test_player_data.mjs` | The shipped data files, checked for what a player notices before a test does: that nobody has a fantasy average beside a blank stat line, that no name is one the pipeline would correct, that no chemistry label names a suffix instead of a man, and that every team the wheel can land on offers four men to choose between. Every assertion in it exists because somebody found it on their phone first. No database, no browser, no key. |

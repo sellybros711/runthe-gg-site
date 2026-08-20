@@ -72,30 +72,41 @@
      here rather than taking a column name from the caller, so nothing can put an
      arbitrary string into an order= parameter.
 
-     `rank` is the odd one and the most college thing on the board: it is the only
-     axis where LOW IS GOOD, because No. 1 in the country is first. DIR carries that,
-     so no caller has to remember which way each axis runs. */
-  const SORTS = { record: 'score', overall: 'overall', rank: 'national_rank' };
-  const DIR = { record: 'desc', overall: 'desc', rank: 'asc' };
+     `diff` REPLACED `national_rank`, which used to be the third axis and was the only
+     one where LOW IS GOOD. It was retired for a reason worth keeping written down: the
+     top of a board sorted by national rank was a column of "#1" all the way down,
+     because every season good enough to be near the top of any list finished first in
+     the country. The axis ranked and did not discriminate. Point differential is the
+     same season measured with a ruler rather than a place, it gives every row its own
+     value, and it answers which 14-1 was the better 14-1. See supabase/86.
+
+     All three now run DESC, so DIR is the same word three times. It stays as a map
+     rather than a constant because the ascending case is one migration away from
+     coming back and tiebreakFor below is written against it. */
+  const SORTS = { record: 'score', overall: 'overall', diff: 'point_diff' };
+  const DIR = { record: 'desc', overall: 'desc', diff: 'desc' };
 
   /* Postgres reads an index backwards as happily as forwards, but only when EVERY sort
      key reverses together: `score asc, created_at asc` against a
      (score desc, created_at asc) index is a backward scan plus an Incremental Sort, while
      `score asc, created_at desc` is a clean backward scan. So the tiebreak flips whenever
      the read does.
-     WHICH IS NOT THE SAME AS FLIPPING WITH THE LITERAL DIRECTION, and that distinction
-     cost the ranking axis its index. This used to be keyed on the word -- desc meant an
-     asc tiebreak and asc meant a desc one -- which is only true for the two axes whose
-     index happens to be (col desc, created_at asc). national_rank's index is
-     (national_rank ASC, created_at asc), so its natural read is forwards and asked for a
-     DESC tiebreak, which is a forward scan on the first key and a sort on the second: the
-     one axis where a board read could not be served from its index.
-     Keyed on whether the index is being read backwards instead, which is true for all
-     three and stays true for any axis added later, whichever way its own index runs.
-     Every created_at in the three AXIS indexes -- in 63_cfb_run_mode.sql and again as
-     partials in 67_cfb_named_board.sql -- is ASC, so forward is asc and backward is
-     desc. (The fourth in each file leads with created_at and serves a COUNT, which has
-     no order at all, so it is not one of these.) */
+     WHICH IS NOT THE SAME AS FLIPPING WITH THE LITERAL DIRECTION, and the distinction
+     once cost an axis its index. This used to be keyed on the word -- desc meant an asc
+     tiebreak and asc meant a desc one -- which is only true for an axis whose index runs
+     (col desc, created_at asc). The retired national_rank axis was indexed ASCENDING,
+     because No. 1 was best, so its natural read was forwards and this asked for a DESC
+     tiebreak: a forward scan on the first key and a sort on the second, and the one axis
+     a board read could not serve from its index.
+     Keyed on whether the index is being read BACKWARDS instead, which is the question
+     that actually decides it. All three axes now run desc, so the two forms happen to
+     agree today and the difference is invisible; it stays written this way because the
+     ascending case is one migration away from coming back and the version that agrees by
+     coincidence is the version that breaks silently when it does.
+     Every created_at in the AXIS indexes -- in 63_cfb_run_mode.sql, again as partials in
+     67_cfb_named_board.sql, and again for the differential axis in 86 -- is ASC, so
+     forward is asc and backward is desc. (The one in each file that leads with created_at
+     serves a COUNT, which has no order at all, so it is not one of these.) */
   const tiebreakFor = (key, way) => (way === DIR[key] ? 'asc' : 'desc');
 
   let offline = false;
@@ -146,7 +157,9 @@
     const v = Number(n) * f;
     return (v < 0 ? -Math.round(-v) : Math.round(v)) / f;
   };
-  /* One decimal place, matching round(p_point_diff, 1) in cfb_submit_run(). */
+  /* One decimal place, matching round(p_point_diff, 1) in cfb_submit_run(). Exported,
+     placeIn uses it for the point differential axis the same way it uses round2 for the
+     overall one: the rounding lives with the comparison rather than at the call site. */
   const round1 = (n) => roundTo(n, 1);
   /* Two, matching the numeric(6,2) overall column. THE COLUMN TYPE DOES THE ROUNDING
      ON THE WAY IN, so a place counted against an unrounded local value counts your
@@ -361,8 +374,13 @@
     const col = SORTS[key];
     const dir = dirOf(key, dirWant);
     /* Rounded to match what the column HOLDS, or the comparison is against a
-       precision the stored rows do not have and the place comes back one out. */
-    const v = col === 'overall' ? round2(value) : value;
+       precision the stored rows do not have and the place comes back one out.
+       point_diff is numeric(4,1) and cfb_submit_run rounds to one place on the way in,
+       so the differential axis needs the same treatment the overall axis has always had.
+       Done HERE rather than at the call site, so every caller of this function is
+       protected rather than the one that remembered. */
+    const v = col === 'overall' ? round2(value)
+      : col === 'point_diff' ? round1(value) : value;
     try {
       const q = base() + TABLE + '?select=id&limit=1' +
         '&' + col + '=' + (dir === 'asc' ? 'lt.' : 'gt.') + encodeURIComponent(v) +

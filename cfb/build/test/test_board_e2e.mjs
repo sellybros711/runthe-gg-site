@@ -94,6 +94,13 @@ async function playSeason(page) {
     await page.waitForTimeout(2500);
     if (await page.$('#s-squad.on')) break;
   }
+  /* THE ASK A GUEST GETS FOR FINISHING A DRAFT, dismissed the way a guest dismisses it.
+     This suite stubs a working signed-out session, which is exactly the state that sheet
+     is for, so it opens over the squad screen and every click below it is intercepted.
+     Not worked around with a force click: the sheet is real, the way past it is real, and
+     a test that reached around it would stop noticing if the way past ever broke. */
+  await page.evaluate(() => { const x = document.getElementById('gp-x'); if (x) x.click(); });
+  await page.waitForTimeout(500);
   await page.evaluate(() => { const b = document.getElementById('b-play'); if (b) b.click(); });
   await page.waitForTimeout(1100);
   for (let i = 0; i < 30; i++) {
@@ -186,7 +193,7 @@ console.log('\n=== a guest finishes a season ===');
   /* Every axis and every direction must ANSWER: a note that does not say unreachable,
      and either rows or the panel that says there are none. Those are different facts
      from a board that did not reply, and only one of them can be true at a time. */
-  for (const sort of ['overall', 'rank', 'record']) {
+  for (const sort of ['overall', 'diff', 'record']) {
     await page.click('#lb-sort button[data-sort="' + sort + '"]');
     await page.waitForTimeout(1600);
     ok('sorting by ' + sort + ' keeps the guest off',
