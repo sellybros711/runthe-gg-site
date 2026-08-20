@@ -619,6 +619,9 @@ window.__DEF={
       total:chips.length};
   },
   poolLoadedNow:()=>!!DDATA,
+  /* The offense pool, which is what BYKEY is built from and what every pick key on any row
+     is resolved against. A page that has only reached s-intro may not have it yet. */
+  dataReady:()=>!!DATA&&!!BYKEY,
   /* The tier mix of the Defense shelf against the tier mix of everything else, as fractions.
      Read off the catalog rather than off the rendered chips, because what is under test is
      how the shelf was WRITTEN, not which of it this fixture happened to earn. */
@@ -1414,6 +1417,11 @@ boot();`;
       p3.on('pageerror', (e) => { bad++; console.log('  FAIL  page error   ' + String(e.message).split('\n')[0]); });
       await p3.goto(`${HOST}/football/__test_defense.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await p3.waitForFunction(() => window.__DEF && document.getElementById('s-intro'), null, { timeout: 60000 });
+      /* AND ITS PLAYER TABLE, which is a separate wait. The screen is up long before the
+         data lands, and runDetail resolves every pick against BYKEY: without this the block
+         below reads a null map and throws, which showed up as a page error in a file nobody
+         had edited about once in every few runs. */
+      await p3.waitForFunction(() => window.__DEF.dataReady(), null, { timeout: 60000 });
       ok('nothing has fetched the defensive pool yet, which is the state a reader is in',
         !(await p3.evaluate(() => window.__DEF.pool())));
       /* Six real defenders off the shipped file, as the pick keys a row carries. */
