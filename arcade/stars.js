@@ -155,6 +155,7 @@
     'Andrew Norwell','Marshal Yanda','Joel Bitonio','Corey Linsley','Ryan Kelly',
     // Kickers / specialists / coaches worth knowing
     'Adam Vinatieri','Justin Tucker','Sebastian Janikowski','Morten Andersen','Jason Sanders',
+    'Ray Guy',
     'Harrison Butker','Bill Belichick','Andy Reid','Sean McVay','Sean Payton','Mike Tomlin',
     'John Harbaugh','Kyle Shanahan','Nick Sirianni','Dan Campbell','Zac Taylor','Kyle Shanahan',
     'Doug Pederson','Bruce Arians','Pete Carroll','Sean McDermott','Mike McCarthy','Ron Rivera'

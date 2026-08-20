@@ -570,20 +570,25 @@
   // stars.js overlay) is the primary signal — hand-curated list of ~700 NBA /
   // NFL / MLB names any casual sports fan would know. Auto-detected fallback
   // for anyone not on the curated list, so a rising legend still qualifies.
-  /* Offensive linemen are the one position a clue cannot rescue.
-     Everything the generator knows about a player is club, position, decade,
-     honour, number and school, and for a lineman that produces "Titans
-     offensive lineman and Pro Bowler of the 2000s". True, unique in our file,
-     and unanswerable: the position exists to be anonymous, and 104 of them
-     sat in the pool putting a ROOS or a STEUSSIE into one grid in seven.
+  /* Three NFL positions a generated clue cannot rescue, and one door out.
 
-     A hand-written clue is the exception, because it is the proof. If somebody
-     writes the parade speech for Jason Kelce or the sixteen straight Pro Bowls
-     for Bruce Matthews, that man has a moment a fan can name and he is back in.
-     Nobody has written one yet, so today this shuts the door on all of them. */
+     Everything the generator knows about a player is club, position, decade,
+     honour, number and school. For a lineman that assembles into "Titans
+     offensive lineman and Pro Bowler of the 2000s", and for a specialist into
+     "Vikings punter of the 2010s": true, unique in our file, and unanswerable.
+     Between them they held 151 of the 1,078 surnames in the pool and put a
+     ROOS, a STEUSSIE or a MCBRIAR into roughly one grid in four.
+
+     What a fan actually remembers about a kicker is never the résumé, it is
+     the kick: the blizzard, the 66-yarder, the chip shot he shanked in the
+     cold. So the door out is a hand-written clue from cluebank.js, and that
+     is the whole test. It is the proof the man has a moment worth asking
+     about, and it is the only shape of clue that asks about it. Write one for
+     Jason Kelce or Shane Lechler and he is back in the pool the same day. */
   function playableRole(e) {
     if (e.sport !== 'NFL') return true;
-    if (!/offensive lineman|^center$|^guard$|^tackle$/i.test(e.pos || '')) return true;
+    var p = e.pos || '';
+    if (!/offensive lineman|^center$|^guard$|^tackle$|^kicker$|^punter$/i.test(p)) return true;
     return hasCurated(e);
   }
   function isCwIcon(e) {
