@@ -2296,6 +2296,47 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard:focus-visible{outline:2px solid var(--green);outline-offset:2px}
   .modecard:disabled{cursor:default;opacity:.5}
   .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0}
+  /* A LOCKED MODE STILL SHOWS WHAT IT IS. Dimmed and not tappable, with the padlock in
+     the row of type rather than pinned to a corner, so it reads as part of the title
+     instead of a sticker stuck on afterwards. The description underneath is left at full
+     legibility on purpose: the card is an advertisement for signing in, and an
+     advertisement nobody can read is not one. */
+  .modecard.locked{cursor:default;opacity:1;border-style:dashed;
+    border-color:var(--line);background:rgba(255,255,255,.02)}
+  .modecard.locked .mc-icon{filter:grayscale(1);opacity:.6}
+  .modecard.locked .mc-title{color:var(--dim)}
+  .mc-pad{flex:0 0 auto;width:15px;height:15px;margin-left:auto;
+    fill:none;stroke:var(--dim-2);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  /* The same padlock on the home screen's button, so the lock is legible before the tap
+     rather than a surprise on the other side of it. Inline in the label, sized to the type
+     around it. */
+  #b-modes .mc-pad{width:13px;height:13px;margin:0 0 -2px 6px;stroke:currentColor;opacity:.75}
+
+  /* ── what an account gets you ───────────────────────────────────
+     Four rows, each a name and a sentence. A tick rather than an icon per row: four
+     different glyphs would be four things to decode on a screen whose job is to be
+     read in about five seconds, and the list is short enough that the eye does not
+     need help finding the next line. */
+  .perks{display:grid;gap:11px;margin-top:2px}
+  .perk{display:flex;align-items:flex-start;gap:10px}
+  .perk .pk{flex:0 0 auto;width:17px;height:17px;margin-top:1px;border-radius:50%;
+    background:rgba(16,185,129,.16);position:relative}
+  .perk .pk::after{content:'';position:absolute;left:5px;top:4px;width:5px;height:8px;
+    border:2px solid var(--green);border-top:0;border-left:0;transform:rotate(42deg)}
+  .perk b{display:block;font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
+  .perk span{display:block;font-size:12.5px;line-height:1.4;color:var(--dim);margin-top:2px}
+  /* THE WAY IN DOES NOT SCROLL AWAY. Four rows and two buttons is taller than a 320x568
+     phone, and the sheet scrolls, so on the smallest screen the call to action sat below
+     the fold: a conversion prompt that has to be scrolled to is one most people never
+     reach. Stuck to the bottom of the panel, bleeding through its own padding, with a fade
+     so the list passes under it rather than colliding with it. */
+  .pitchact{position:sticky;bottom:-16px;z-index:1;margin:14px -16px -16px;
+    padding:14px 16px 16px;display:grid;gap:8px;
+    background:linear-gradient(to bottom,rgba(19,26,43,0) 0,var(--panel) 34%)}
+  /* The labels are short enough to hold one line at 320px, but the display face is
+     uppercase and tracked and there is no room left over, so the smallest phone gets a
+     step down rather than a second line. A wrapped button reads as a paragraph. */
+  @media (max-width:360px){ .pitchact .btn{font-size:15px;letter-spacing:.01em} }
   .modecard .mc-arrow{margin-left:auto;width:20px;height:20px;fill:none;stroke:var(--dim-2);
     stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   .modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
@@ -3452,7 +3493,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=32"></script>
 <script src="run.js?v=14"></script>
-<script src="achievements.js?v=10"></script>
+<script src="achievements.js?v=11"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=5"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
@@ -4630,23 +4671,57 @@ async function sendFeedback(){
    a different page is not a third mode of this one. The NFL game carries the
    mirror image of this pointing back here. */
 const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+const PADLOCK='<svg class="mc-pad" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2"/>'+
+  '<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
+
+/* ── WHO THE CONFERENCE DRAFT IS FOR ────────────────────────────────────────
+   It is a mode of this game with its own leaderboard per conference, so it needs an
+   account to mean anything: an unnamed run on a per-conference board is a row nobody
+   can find again, including the person who set it.
+
+   ACCOUNTS OFFLINE IS STILL LOCKED, and that is not the game being difficult. The
+   card says so in gateCard's own words, which name the usual cause (an ad blocker
+   holding the sign-in script) instead of leaving somebody tapping a dead button and
+   guessing. School colours already work exactly this way, and one rule across the
+   signed-in features is worth more than a special case here. */
+const modesLocked=()=>!(authState.ready&&authState.signedIn);
+
+/* The padlock on the home screen's button, so the lock is visible before the tap.
+   Re-run on every auth change, because the page paints long before auth answers and a
+   member should never see a lock on something they own. */
+function syncModesLock(){
+  const b=$('b-modes'); if(!b) return;
+  /* NOTHING WHILE AUTH IS STILL LANDING. modesLocked() is true in that moment because
+     the mode genuinely is not playable yet, but the button is a different question: a
+     padlock that appears for a second and then vanishes tells a member their game was
+     taken away and given back. Silence until it is known. */
+  const locked=!authState.waiting&&modesLocked();
+  b.classList.toggle('locked',locked);
+  b.innerHTML='More ways to play'+(locked?PADLOCK:'');
+}
 
 function modeMenu(){
-  ga('modes_opened');
+  const locked=modesLocked();
+  ga('modes_opened',{locked});
+  $('sheet-in').dataset.kind='modes';
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     '<div class="modecards">'+
-      '<button class="modecard mc-conf" id="b-mc-conf">'+
+      '<'+(locked?'div':'button')+' class="modecard mc-conf'+(locked?' locked':'')+'"'+
+        (locked?'':' id="b-mc-conf"')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* ONE PENNANT ON A POLE. Three small ones read as a squiggle at 18px,
              which is the size this actually draws at; one big one reads as a
              pennant, and a pennant is what a conference looks like. */
           '<path d="M6 3v18"/><path d="M6 4.5h13l-3.2 4 3.2 4H6z"/>'+
-        '</svg></div><div class="mc-title">Conference Draft</div>'+ARROW+'</div>'+
+        '</svg></div><div class="mc-title">Conference Draft</div>'+(locked?PADLOCK:ARROW)+'</div>'+
         '<p>Pick one of the Power 5 and build a roster from that conference alone. '+
         'Teams are matched to the conference they were in that season, so the Pac-12 '+
-        'is the real Pac-12.</p>'+
-      '</button>'+
+        'is the real Pac-12. Each conference has its own leaderboard.</p>'+
+      '</'+(locked?'div':'button')+'>'+
+      (locked?gateCard({with:'Conference Draft comes with an account',
+                        needs:'Conference Draft needs an account.'}):'')+
     '</div>'+
     '<div class="xpromo">'+
       '<p class="xp-h">Love pro football?</p>'+
@@ -4692,7 +4767,9 @@ function modeMenu(){
     '</div>'+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x" style="width:100%">Close</button></div>';
   openSheet();
-  $('b-mc-conf').onclick=conferenceMenu;
+  const conf=$('b-mc-conf'); if(conf) conf.onclick=conferenceMenu;
+  const gin=$('sheet-in').querySelector('#gate-in');
+  if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:'modes'}); openProfile('account'); };
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
   $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
@@ -4832,11 +4909,19 @@ function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
      leaving every gate spinning forever. */
-  if(!a){ authState={ready:false,waiting:false,signedIn:false}; return; }
+  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock(); return; }
   a.onChange((st)=>{
     const wasId=authState.userId;
     authState=st;
     updateAvatar();
+    /* The padlock on the home screen follows the account. The page paints long before
+       auth answers, so without this a member would find a lock on something they own. */
+    syncModesLock();
+    /* Two sheets read the account and are repainted where they stand rather than left
+       showing the state before the change. */
+    if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
+    /* The draft finished before auth did, so the ask was deferred rather than guessed at. */
+    if(squadPitchWanted&&$('s-squad').classList.contains('on')) guestPitch();
     /* Signing in with a finished season on screen takes it over. */
     /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
        repainting a placing is not an answer to "what did I just get". The NFL game
@@ -6699,8 +6784,84 @@ function tutFinish(){
   $('tutend-play').onclick=()=>{ end.hidden=true; };
 }
 
+/* ── THE ONE ASK, AT THE ONE MOMENT IT IS WORTH ANYTHING ────────────────────
+ *
+ * A guest who has just filled six spots has done the work and has something to lose,
+ * and has not yet spent twelve games earning a result they cannot put their name on.
+ * Asking here is the difference between an offer and a consolation prize. Asking any
+ * earlier is asking somebody to sign up for a game they have not played.
+ *
+ * ONCE A DRAFT, AND NEVER IN THE TUTORIAL. A practice draft is the screen that teaches
+ * the game; interrupting it to sell an account is the surest way to lose somebody who
+ * was two minutes from being sold anyway.
+ *
+ * IT DOES NOT APPEAR WHEN ACCOUNTS ARE OFFLINE. gateState() returns nothing when the
+ * sign-in script never landed, usually an ad blocker, and a modal asking somebody to do
+ * something their browser is refusing to let them do is worse than silence.
+ *
+ * AND IT NEVER BLOCKS THE GAME. Close is a real way out, the season is one tap behind
+ * it, and nothing about the run changes either way.
+ */
+let squadPitchShown=false;    // once a draft
+let squadPitchWanted=false;   // auth had not answered when the moment came
+function guestPitch(){
+  /* Auth still landing. Do not guess and do not flash: bootAuth's onChange comes back
+     to this the moment it knows. */
+  if(authState.waiting){ squadPitchWanted=true; return; }
+  squadPitchWanted=false;
+  const g=gateState();
+  if(!g||squadPitchShown||tutorialOn) return;
+  squadPitchShown=true;
+  ga('guest_pitch_shown',{state:g});
+
+  const ACH=window.PS_CFB_ACH;
+  const badges=ACH&&ACH.CATALOG?ACH.CATALOG.length:0;
+  /* Four, and every one of them is a thing this game actually withholds. A list padded
+     with things a guest already has is the fastest way to teach somebody that the next
+     list is not worth reading either. */
+  const perks=[
+    ['Your name on the board',
+     'Every season is ranked either way. Only the ones with a name on them get listed.'],
+    ['Conference Draft',
+     'The Power 5 mode, with a separate leaderboard for each of the five.'],
+    [badges?('All '+badges+' badges'):'The whole trophy case',
+     'The case fills up as you play, and it follows the account rather than this browser.'],
+    ['Your school’s colors',
+     'They theme the home screen, the draft and the bubble up top.'],
+  ];
+  $('sheet-in').dataset.kind='pitch';
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow green">Your team is set</div>'+
+    '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 6px">'+
+      (g==='noname'?'One thing left':'Put your name on it')+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0 0 12px">'+
+      (g==='noname'
+        ? 'You are signed in, so this season is already yours. The board lists seasons by '+
+          'name, so it needs one before it can show you.'
+        : 'You can play this season as a guest and it will be ranked. Here is what an '+
+          'account adds, free, in about ten seconds.')+'</p>'+
+    '<div class="perks">'+perks.map(([t,d])=>
+      '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
+      '</span></div></div>').join('')+'</div>'+
+    '<div class="pitchact">'+
+      /* NOT GATE_WORDS[g].act FOR A GUEST. That one reads "Sign in and keep this season",
+         which is written for the results screen and is a promise about a season that has
+         already happened. Nothing has been played yet here, so there is nothing to keep,
+         and a button that overstates by one word is the one a player remembers. The
+         nameless case is unchanged, because "Pick your name" is exactly as true here. */
+      '<button class="btn" id="gp-in">'+
+        esc(g==='guest'?'Sign in or sign up':GATE_WORDS[g].act)+'</button>'+
+      '<button class="btn ghost sm" id="gp-x">Play as a guest</button>'+
+    '</div>';
+  openSheet();
+  $('gp-in').onclick=()=>{ ga('gate_clicked',{from:'squad',state:g}); openProfile('account'); };
+  $('gp-x').onclick=()=>{ ga('guest_pitch_dismissed',{state:g}); closeSheet(); };
+}
+
 function beginDraft(conference,seed){
   pendingChallenge=false;
+  /* A new draft is a new chance to ask, and the old one is over. */
+  squadPitchShown=false; squadPitchWanted=false;
   if(conference!==undefined) nextConference=conference&&E.isPowerConference(conference)?conference:null;
   newRun(seed);
   ga('game_started',{mode:runMode(run)});
@@ -7203,6 +7364,10 @@ function paintSquad(){
   }).join('');
   $('b-play').textContent=pendingChallenge?'Play the Challenge Bowl':'Play the season';
   show('s-squad');
+  /* The ask, on the one screen where the player has something to lose and has not yet
+     spent a season earning it. A challenge is somebody else's dare and ends in a single
+     game rather than on the board, so it is left alone. */
+  if(!pendingChallenge) guestPitch();
 }
 $('b-play').onclick=()=>{ if(pendingChallenge) playBowl(); else startSeason(); };
 

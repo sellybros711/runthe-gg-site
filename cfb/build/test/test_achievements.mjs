@@ -189,6 +189,80 @@ add('qb_and_target', [(p) => p.position === 'QB' && p.team_season_id === 'LSU-20
 add('splash', [(p) => p.price_musd >= 4]);
 add('bargain_six', Array(6).fill((p) => p.price_musd <= 1.5));
 
+/* THE NINE SEASONS TOLD BY THE MAN. Each is one specific person in one specific year, so
+   each needs its own solve: a $4.8M quarterback leaves $6.2M for the other five, which is
+   comfortable but is exactly the kind of thing that stops being true when prices move. */
+const LANDMARK_PLAYERS = [
+  ['Tim Tebow', 2007], ['Michael Crabtree', 2008], ['Robert Griffin III', 2011],
+  ['Johnny Manziel', 2012], ['Marcus Mariota', 2014], ['Derrick Henry', 2015],
+  ['Baker Mayfield', 2017], ['Travis Hunter', 2024], ['Ashton Jeanty', 2024],
+];
+for (const [name, season] of LANDMARK_PLAYERS) {
+  ok('the data still has ' + name + ' ' + season,
+    P.some((p) => p.name === name && p.season === season));
+  add(name + ' ' + season, [(p) => p.name === name && p.season === season]);
+}
+
+/* The shape-of-the-six badges. Every one of these is six requirements at once, which is
+   where the cap bites, so none of them is assumed. */
+const surname = (n) => String(n).trim().split(/\s+/).slice(1).join(' ');
+{
+  /* Two men who share a surname and are not the same man. Solved on whichever surname the
+     data actually has twice over rather than a name written down here. */
+  const bySur = {};
+  for (const p of P) { const s = surname(p.name); if (s) (bySur[s] = bySur[s] || []).push(p); }
+  const shared = Object.entries(bySur)
+    .filter(([, l]) => new Set(l.map((p) => p.player_id)).size >= 2)
+    .sort((a, b) => a[1][0].price_musd - b[1][0].price_musd)[0];
+  ok('some surname is carried by two different men', !!shared,
+    shared ? shared[0] + ' x' + shared[1].length : 'none');
+  if (shared) add('same_surname', Array(2).fill((p) => surname(p.name) === shared[0]));
+}
+{
+  /* Six different schools all starting with one letter. The letter is found rather than
+     chosen, so a change to the school list cannot quietly orphan the badge. */
+  const byLetter = {};
+  for (const p of P) {
+    const L = String(p.school || '')[0];
+    if (L) (byLetter[L.toUpperCase()] = byLetter[L.toUpperCase()] || new Set()).add(p.school);
+  }
+  const letter = Object.entries(byLetter).filter(([, s]) => s.size >= 6)
+    .sort((a, b) => b[1].size - a[1].size)[0];
+  ok('some letter starts six different schools', !!letter,
+    letter ? letter[0] + ': ' + letter[1].size : 'none');
+  if (letter) {
+    /* The six cheapest of that letter's schools, so the solve is not fighting the cap
+       with the six most expensive programmes in the game. */
+    const cheapest = [...letter[1]]
+      .map((s) => ({ s, price: Math.min(...P.filter((p) => p.school === s).map((p) => p.price_musd)) }))
+      .sort((a, b) => a.price - b.price).slice(0, 6).map((x) => x.s);
+    add('same_initial', cheapest.map((s) => (p) => p.school === s));
+  }
+}
+add('no_names', Array(6).fill((p) => !(p.awards || []).length && !(p.badges || []).length));
+add('six_conferences', ['ACC', 'SEC', 'Big Ten', 'Big 12', 'Pac-12', 'Mountain West']
+  .map((cf) => (p) => p.conference === cf));
+add('six_straight_years', [2015, 2016, 2017, 2018, 2019, 2020].map((y) => (p) => p.season === y));
+add('qb_ran_it', [(p) => p.position === 'QB' && (p.rush_ppg || 0) > (p.pass_ppg || 0)]);
+{
+  /* Two men from one school fifteen seasons apart, on whichever school actually spans it
+     rather than one written down here. */
+  const bySchool = {};
+  for (const p of P) (bySchool[p.school] = bySchool[p.school] || []).push(p);
+  const wide = Object.entries(bySchool)
+    .map(([s, l]) => ({ s, lo: Math.min(...l.map((p) => p.season)), hi: Math.max(...l.map((p) => p.season)) }))
+    .filter((x) => x.hi - x.lo >= 15)
+    .sort((a, b) => (b.hi - b.lo) - (a.hi - a.lo))[0];
+  ok('some school spans fifteen seasons', !!wide, wide ? wide.s + ' ' + wide.lo + '-' + wide.hi : 'none');
+  if (wide) {
+    add('then_and_now', [(p) => p.school === wide.s && p.season === wide.lo,
+      (p) => p.school === wide.s && p.season === wide.hi]);
+  }
+}
+/* Two Heisman winners AND a ring is the two-Heisman roster on a title row, which the rows
+   below arrange. The roster itself is the one heisman_2 already solved. */
+const twoHeisRoster = add('heisman_2_ring', [heis, heis]);
+
 solved.sort((a, b) => b.cost - a.cost);
 ok(solved.length + ' simultaneous-roster badges each fit inside the cap',
   solved.every((s) => s.cost <= CAP + 1e-9),
@@ -399,6 +473,18 @@ for (let i = 0; i < rosters.length; i++) rows[i % rows.length].picks = rosters[i
 const heisRoster = rosters[0].map(pkey);
 rows.push(row(900, { perfect: true, title_won: true, wins: 16, losses: 0, reg_wins: 12, reg_losses: 0,
   made_playoffs: true, seed: 1, national_rank: 1, picks: heisRoster }));
+/* A ring with TWO of them on the field, which is a different badge from a ring with one
+   and needs the two-Heisman roster rather than the first one built. */
+if (twoHeisRoster) {
+  rows.push(row(901, { title_won: true, wins: 15, losses: 1, made_playoffs: true, seed: 1,
+    national_rank: 1, picks: twoHeisRoster.map(pkey) }));
+}
+/* THE SAME MAN, TEN SEASONS RUNNING. Ten rows carrying one roster, because "sign the same
+   player ten times" is the one badge that cannot be earned by a wider career: every other
+   collection badge wants variety and this one wants the opposite. */
+for (let i = 0; i < 10; i++) {
+  rows.push(row(910 + i, { picks: rosters[0].map(pkey) }));
+}
 
 const resolve = (k) => BY.get(k) || null;
 const res = ACH.evaluate(rows, resolve, new Date(DAY0 + 60 * 86400000).toISOString());
@@ -424,9 +510,14 @@ ok('every badge has a real tier',
   ACH.CATALOG.every((a) => Object.prototype.hasOwnProperty.call(ACH.TIER_ORDER, a.tier)));
 ok('no badge description is empty', ACH.CATALOG.every((a) => a.desc && a.desc.length > 8));
 /* House style, and it is checked rather than trusted because a stray one reads as a
-   different voice on a screen full of short lines. */
-ok('no em dashes anywhere in the catalog',
-  !ACH.CATALOG.some((a) => /\u2014/.test(a.name + a.desc)));
+   different voice on a screen full of short lines. Written as code points, because the
+   house rule covers the check as well as the copy: as a literal or as an escape this line
+   was itself the only thing scripts/check-dashes.mjs found in the whole directory, which
+   is a standing false alarm people learn to scroll past. */
+const DASH_POINTS = [0x2013, 0x2014];
+const hasDash = (s) => [...String(s)].some((ch) => DASH_POINTS.includes(ch.codePointAt(0)));
+ok('no em or en dashes anywhere in the catalog',
+  !ACH.CATALOG.some((a) => hasDash(a.name + a.desc)));
 
 /* A CAPPED FETCH STILL KNOWS HOW BIG THE CAREER IS. The board hands back the most recent
    five hundred seasons and the count of all of them, so the milestone badges have to read

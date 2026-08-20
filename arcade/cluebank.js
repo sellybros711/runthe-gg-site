@@ -202,6 +202,22 @@
       { x:'who won a league MVP as a defender, which has happened almost never', g:1 }]},
     { n:'Justin Tucker', s:'NFL', c:[
       { x:'who won a game off the crossbar from 66 yards, the longest ever made', g:1 }]},
+
+    /* Specialists. A kicker or punter reaches the crossword only through this
+       bank (see playableRole in crossword/gen.js), because "Vikings punter of
+       the 2010s" is not a clue anybody can answer. What a fan remembers is the
+       kick, so every line below is one. */
+    { n:'Morten Andersen', s:'NFL', c:[
+      { x:'who kicked for 25 seasons across four decades and retired as the highest scorer in league history', g:0 },
+      { x:'whose overtime kick in the 1998 conference title game sent Atlanta to its first Super Bowl', g:0 }]},
+    { n:'Ray Guy', s:'NFL', c:[
+      { x:'who was drafted in the first round to punt, which had never happened before and has not happened since', g:0 }]},
+    { n:'Gary Anderson', s:'NFL', c:[
+      { x:'who did not miss a single kick all of the 1998 season, then missed one in the conference title game', g:0 }]},
+    { n:'Blair Walsh', s:'NFL', c:[
+      { x:'whose 27-yard chip shot went wide left in below-zero cold and ended a playoff run', g:0 }]},
+    { n:'Pat McAfee', s:'NFL', c:[
+      { x:'who recovered his own onside kick in a playoff game and now hosts a show louder than he punted', g:0 }]},
     { n:'Peyton Manning', s:'NFL', c:[
       { x:'who threw 55 touchdowns in one season and yelled a farm animal’s name at the line', g:1 }]},
     { n:'Brett Favre', s:'NFL', c:[

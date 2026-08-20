@@ -127,11 +127,29 @@ function loadGlobal(file, name) {
   new Function('window', 'self', 'module', 'exports', src)(sandbox.window, sandbox.self, sandbox.module, sandbox.module.exports);
   return sandbox.window[name] || sandbox.self[name] || sandbox.module.exports;
 }
+/* RTG_KNOWN, straight out of arcade/data.js rather than copied. data.js hangs
+   it off the global after folding former.js into GRID_ENTITIES, and it bails
+   early unless that global is a real array, so it gets an empty one: we only
+   want the function, and the function is pure. */
+function loadKnown() {
+  const sandbox = { window: { GRID_ENTITIES: [] }, module: { exports: {} } };
+  sandbox.self = sandbox.window;
+  for (const f of ['arcade/awards.js', 'arcade/data.js']) {
+    // eslint-disable-next-line no-new-func
+    new Function('window', 'self', 'module', 'exports', readFileSync(f, 'utf8'))(
+      sandbox.window, sandbox.self, sandbox.module, sandbox.module.exports);
+  }
+  return sandbox.window.RTG_KNOWN || null;
+}
+
 function loadPool() {
   const entities = loadGlobal('arcade/match/entities.js', 'GRID_ENTITIES') || [];
   const former = (loadGlobal('arcade/former.js', 'RTG_FORMER') || {}).players || [];
   const supp = (loadGlobal('arcade/supplement.js', 'RTG_SUPPLEMENT') || {}).players || [];
   const stars = loadGlobal('arcade/stars.js', 'RTG_STARS') || {};
+  const awards = loadGlobal('arcade/awards.js', 'RTG_AWARDS') || {};
+  const RTG_KNOWN = loadKnown();
+  if (!RTG_KNOWN) throw new Error('arcade/data.js did not export RTG_KNOWN');
 
   // merge exactly like data.js: curated wins on identity (name|sport), scraped/
   // supplement backfill the recognizability fields and get added if unseen.
@@ -168,6 +186,19 @@ function loadPool() {
   }
   ent.length = 0; ent.push(...deduped);
 
+  /* awards overlay, exactly as data.js merges it: for a lot of players the
+     only accolade on file lives in awards.js, and the gate below reads e.aw. */
+  if (awards.players) {
+    ent.forEach((e) => {
+      if (!e || !e.name || !e.sport) return;
+      const rec = awards.players[e.sport + '|' + String(e.name).toLowerCase()];
+      if (!rec || !rec.aw || !rec.aw.length) return;
+      if (!e.aw) e.aw = [];
+      const have = {}; e.aw.forEach((t) => { have[t] = 1; });
+      rec.aw.forEach((t) => { if (!have[t]) e.aw.push(t); });
+    });
+  }
+
   // stars overlay: mark .star and bump fame (icons->5, stars->4)
   const starBy = {};
   ent.forEach((e) => { if (e && e.name && e.sport) starBy[e.sport + '|' + nkey(e.name)] = e; });
@@ -177,17 +208,43 @@ function loadPool() {
     (pack.stars || []).forEach((n) => { const e = starBy[sp + '|' + nkey(n)]; if (e) { e.star = true; if ((e.f || 0) < 4) e.f = 4; } });
   });
 
-  // the Number Game's exact recognizability gate (arcade/table hiqStar)
+  /* WHO GETS STINTS. This used to be a hand-copied version of the Number
+     Game's old gate, and the game moved on: it asks RTG_KNOWN now, which wants
+     a real accolade rather than eight seasons of service. The copy kept the
+     old longevity rule, so anybody who is famous for a trophy rather than a
+     long career never entered the scrape. Jason Varitek, two Gold Gloves and
+     seven notable seasons, was one of them, which is why Chain could not put
+     him on the 2010 Red Sox next to Adrian Beltre. It cost 533 MLB players.
+
+     Reading the shared test instead means the pool moves with the arcade
+     automatically, and it costs nothing to fetch: the feeds are walked per
+     team-season either way, so a wider pool matches more rows out of pages we
+     were already downloading.
+
+     Two conditions of our own remain. The corpus jersey list is NOT one of
+     them any more: the number comes from the feed, so requiring e.j only
+     dropped players whose corpus row happened to lack it. */
   const TEAM = { NBA: 1, NFL: 1, MLB: 1 };
-  function hiqStar(e) {
-    if (!TEAM[e.sport] || !e.j || !e.j.length) return false;
+  /* The union of both tests, not a swap. This file is an INPUT to several
+     games and each applies its own gate on top, so the honest job here is to
+     be a superset: taking RTG_KNOWN alone would have dropped ~600 NFL players
+     whose stints are already in the file, on the strength of a rule that might
+     move again next month. Adding to it costs nothing and loses nothing. */
+  function longService(e) {
     if (e.star) return true;
-    const d = e.decade; if (!d || !d.length || d[d.length - 1] < 1990) return false;
     if ((e.f || 0) < 4) return false;
     if (e.sport === 'NFL') return e.hp === 1 && (e.ns || 0) >= 8;
     return (e.ns || 0) >= 8;
   }
-  const pool = ent.filter(hiqStar);
+  function poolGate(e) {
+    if (!TEAM[e.sport]) return false;
+    // the feeds start at 1990, so a career that ended before then can only
+    // mismatch a modern namesake
+    const d = e.decade;
+    if (!d || !d.length || d[d.length - 1] < 1990) return false;
+    return RTG_KNOWN(e) || longService(e);
+  }
+  const pool = ent.filter(poolGate);
 
   // exact name -> canonical {name, sport}; drop names shared by 2+ pooled players
   const byName = { NBA: new Map(), NFL: new Map(), MLB: new Map() };
@@ -355,7 +412,7 @@ async function buildMLB(find) {
 
 /* --------------------------------- main -------------------------------- */
 const { find, poolCount, counts } = loadPool();
-console.log('pool (hiqStar):', poolCount, '| matchable names: NFL', counts.NFL, 'NBA', counts.NBA, 'MLB', counts.MLB);
+console.log('pool:', poolCount, '| matchable names: NFL', counts.NFL, 'NBA', counts.NBA, 'MLB', counts.MLB);
 
 const ONLY = (process.env.JERSEYS_ONLY || '').toUpperCase();
 const run = (s) => !ONLY || ONLY === s;

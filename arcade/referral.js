@@ -228,7 +228,11 @@
     adStyles();
     var ad=document.createElement('div');
     ad.className='rtgref-ad';
-    ad.innerHTML='<div class="h">Out of goes? <b>Bring a friend for another.</b></div>'+
+    /* "Out of goes?" was a guess about the reader that is wrong most of the
+       time: this sits at the foot of every result screen, including a
+       cardholder's and a first play of the day. "Play again?" is true for
+       everybody looking at it. */
+    ad.innerHTML='<div class="h">Play again? <b>Refer a friend for another try.</b></div>'+
       '<div class="s">They sign up with your link, you both get an extra go at today’s games.</div>'+
       '<button type="button"><span aria-hidden="true">🎟️</span> Invite a friend</button>';
     ad.querySelector('button').addEventListener('click', function(){ share(); });

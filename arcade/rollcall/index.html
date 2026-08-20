@@ -115,6 +115,10 @@
   .slot.got{background:color-mix(in srgb, var(--rc) 13%, var(--card)); border-color:color-mix(in srgb, var(--rc) 42%, transparent);}
   .slot.got .nm{color:var(--ink);} .slot.got .no{color:var(--rcT);}
   .slot.missed .nm{color:var(--mut);}
+  /* a name the board never asked for, confirmed live: gold, so it reads as a
+     find rather than as one of the printed slots */
+  .slot.deep{background:color-mix(in srgb, var(--gold) 14%, var(--card)); border-color:color-mix(in srgb, var(--gold) 45%, transparent);}
+  .slot.deep .i{color:var(--goldT);} .slot.deep .no{color:var(--goldT); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;}
   .slot.pop{animation:pop .34s ease;}
   @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
   .shake{animation:shake .3s ease;}
@@ -225,6 +229,7 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Full names, and spelling is forgiving: the typeahead will find him from a few letters.</li>
   <li>A right player in the wrong season is not a miss. The game says so and you keep going.</li>
   <li>There is no penalty for a wrong name, only the clock. Guess out loud, so to speak.</li>
+  <li>Name somebody who really was on that roster but is not one of the blanks and he still counts, as a deep cut. The board is what we hold; it is not the whole squad.</li>
 </ul>
 <h3>One roster a day</h3>
 <p>A new club and season arrive at midnight local time, the same one for everybody, and a finished day keeps your streak alive. Roll Call is an Arcade Card game. Members play all Arcade titles without limits and replay any past day from the <a href="/arcade/archive/">Archive</a>. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
@@ -273,14 +278,16 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth.js?v=2"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=15"></script>
-<script src="/arcade/referral.js?v=8"></script>
+<script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/pregame.js?v=19"></script>
 <script src="/arcade/funnel.js?v=7"></script>
 <script src="/arcade/share.js?v=7"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/teammates.js?v=1"></script>
+<script src="/arcade/teammates.js?v=2"></script>
+<script src="/arcade/livecheck.js?v=7"></script>
+<script src="/arcade/teamcheck.js?v=1"></script>
 <script src="/arcade/type.js?v=2"></script>
 <script>
 (function(){
@@ -357,6 +364,12 @@ window.GA_ID='G-L29P5MRWKE';
   var found = {}, foundN = 0, timer=null, left=SECONDS, done=false, startedAt=0;
 
   function clubName(){ return D.teams[board.team]; }
+  // the board is one club, so its sport is the sport of anyone on it. The live
+  // check needs it: a name can be two men in two leagues.
+  function sportOf(b){
+    var first = b && b.ids && b.ids.length ? D.players[b.ids[0]] : null;
+    return first ? D.sports[first[1]] : null;
+  }
 
   function renderSetup(){
     var b = pickBoard(true, pdate());
@@ -409,9 +422,31 @@ window.GA_ID='G-L29P5MRWKE';
                                   for knowing the man but not the year would be
                                   punishing them for being roughly right.
        anyone else             -> a miss, which costs nothing but the clock */
+  /* A name we cannot place is not a name that is wrong. The board is built
+     from jersey stints and a stint we never scraped reads exactly like a
+     career that never happened, so anything our file does not know goes to the
+     live check. A confirmed man who is not one of the printed slots is a DEEP
+     CUT: he counts, and he joins the board as an extra row, because finding
+     somebody the game did not think to ask for should be worth more than
+     nothing rather than less. */
+  var extra = [], checking = false;
+  function addExtra(name, note){
+    extra.push({ name:name, note:note||'' });
+    foundN++;
+    $('tallyN').textContent=foundN;
+    var host=$('slots');
+    var el=document.createElement('div'); el.className='slot got deep pop';
+    el.innerHTML='<span class="i">+</span><span class="nm"></span><span class="no">deep cut</span>';
+    el.querySelector('.nm').textContent = name;
+    host.appendChild(el);
+  }
+  function shakeField(){
+    var wrap=$('ask').parentNode; wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake');
+  }
+
   function submitName(){
-    if(done) return;
-    var el=$('ask'), raw=el.value;
+    if(done || checking) return;
+    var el=$('ask'), raw=String(el.value||'').trim();
     var k=norm(raw);
     if(!k) return;
     el.value='';
@@ -431,6 +466,9 @@ window.GA_ID='G-L29P5MRWKE';
       if(foundN>=board.ids.length){ finish(true); }
       return;
     }
+    for(var e2=0;e2<extra.length;e2++){
+      if(norm(extra[e2].name)===k){ message('Already named ' + extra[e2].name + '.', 'warn'); return; }
+    }
     for(var b=0;b<ids.length;b++){
       var st = playedFor(ids[b], board.team);
       if(st){
@@ -438,9 +476,38 @@ window.GA_ID='G-L29P5MRWKE';
         return;
       }
     }
-    message(ids.length ? 'Not on this roster.' : 'No player by that name.', 'bad');
-    sfx('bad');
-    var wrap=$('ask').parentNode; wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake');
+    var TC = window.RTGTeamCheck;
+    if(!TC || !TC.onClubIn){
+      message(ids.length ? 'Not on this roster.' : 'No player by that name.', 'bad');
+      sfx('bad'); shakeField(); return;
+    }
+    checking = true;
+    message('Checking…', 'warn');
+    TC.onClubIn(raw, clubName(), board.year, sportOf(board)).then(function(r){
+      checking = false;
+      if(done) return;
+      if(r && r.ok === true){
+        addExtra(r.name || raw, 'live');
+        message((r.name || raw) + '. Deep cut, and he counts.', 'good');
+        sfx('good');
+        return;
+      }
+      if(r && r.ok === null){
+        /* Two different nulls. One is our network; the other is a source that
+           knows he was at the club and not which years, and telling somebody
+           "not on this roster" on that basis is the very thing this check
+           exists to stop. */
+        message(r.why === 'no years on file'
+          ? ((r.name || raw) + ' was there, but we cannot confirm the season.')
+          : 'Could not check that one just now.', 'warn');
+        shakeField(); return;
+      }
+      message(r && r.why === 'different sport' ? 'Different sport.' : 'Not on this roster.', 'bad');
+      sfx('bad'); shakeField();
+    })['catch'](function(){
+      checking = false;
+      if(!done){ message('Could not check that one just now.', 'warn'); shakeField(); }
+    });
   }
 
   function tick(){
@@ -463,6 +530,7 @@ window.GA_ID='G-L29P5MRWKE';
     var b = pickBoard(daily, pdate());
     if(!b){ toast('Could not build a board'); return; }
     board=b; isDaily=daily; found={}; foundN=0; done=false; left=SECONDS; startedAt=Date.now();
+    extra=[]; checking=false;
     if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
       var att = RTGTokens.startAttempt(GAME);
       attemptFirst = !!(att && att.first);
@@ -517,7 +585,7 @@ window.GA_ID='G-L29P5MRWKE';
 
     $('mScore').textContent = foundN;
     $('mOf').textContent = total;
-    $('mPct').textContent = Math.round(foundN/total*100)+'%';
+    $('mPct').textContent = Math.min(100, Math.round(Math.min(foundN, total)/total*100))+'%';
     $('mBest').textContent = best;
     var perfect = foundN===total;
     $('mSub').textContent = perfect ? 'Full roster' : (foundN>prevBest && foundN>0 ? 'New personal best' : (cleared ? 'Board cleared' : 'Time’s up'));
@@ -529,9 +597,10 @@ window.GA_ID='G-L29P5MRWKE';
   function cardSpec(){
     var total = board ? board.ids.length : 0;
     var cells = board ? board.ids.map(function(id){ return found[id] ? '🟩' : '⬜'; }) : [];
+    for(var x=0;x<extra.length;x++) cells.push('🟨');        // deep cuts, off the board
     var rows=[]; for(var i=0;i<cells.length;i+=5) rows.push(cells.slice(i,i+5).join(''));
     return { key:'rollcall', date:today(), grid:rows.join('\n'),
-             stat:foundN+'/'+total+' named · '+(board?clubName()+' '+board.year:''),
+             stat:foundN+'/'+total+' named'+(extra.length?(' +'+extra.length+' deep'):'')+' · '+(board?clubName()+' '+board.year:''),
              statInt:foundN, total:total };
   }
   window.RTG_CARD_SPEC = cardSpec;

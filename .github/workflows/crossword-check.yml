@@ -1,0 +1,48 @@
+name: Crossword clue check
+
+# The daily crossword's answers are surnames, so a clue may never print the
+# player's name. It used to print the given one ("Hank ___, who broke the home
+# run record"), which handed over the answer before the solver met the trivia.
+# This walks a year of real puzzles and fails if any clue names its own player,
+# alongside the cluebank's own hygiene checks.
+#
+# Runnable locally with the exact same command:
+#   node arcade/crossword/scripts/check-cluebank.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/crossword/gen.js'
+      - 'arcade/cluebank.js'
+      - 'arcade/match/entities.js'
+      - 'arcade/stars.js'
+      - 'arcade/supplement.js'
+      - 'arcade/crossword/scripts/check-cluebank.mjs'
+      - '.github/workflows/crossword-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/crossword/gen.js'
+      - 'arcade/cluebank.js'
+      - 'arcade/match/entities.js'
+      - 'arcade/stars.js'
+      - 'arcade/supplement.js'
+      - 'arcade/crossword/scripts/check-cluebank.mjs'
+      - '.github/workflows/crossword-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: crossword-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node arcade/crossword/scripts/check-cluebank.mjs

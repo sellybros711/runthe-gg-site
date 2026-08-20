@@ -129,8 +129,17 @@
     const careerSchools = new Set(), careerStates = new Set(), careerConferences = new Set();
     const careerSeasons = new Set(), careerPlayers = new Set(), careerTeamSeasons = new Set();
     const careerBadges = new Set(), heismanNames = new Set();
+    /* HOW MANY SEASONS EACH MAN HAS PLAYED FOR YOU, which the sets above cannot answer:
+       they know he was signed and not how often. Counted per RUN rather than per pick,
+       because a roster can only hold him once anyway and a second count would be a bug
+       rather than a second season. */
+    const playerRuns = new Map();
     for (const x of runs) {
       for (const p of x.roster) {
+        if (p.player_id) {
+          const k = String(p.player_id);
+          playerRuns.set(k, (playerRuns.get(k) || 0) + 1);
+        }
         if (p.school) careerSchools.add(p.school);
         if (p.home_state) careerStates.add(p.home_state);
         if (p.conference) careerConferences.add(p.conference);
@@ -190,6 +199,13 @@
       careerConferences,
       careerSeasons,
       careerPlayers,
+      playerRuns,
+      /* The most seasons any single man has played for you. */
+      mostSeasonsWith: () => {
+        let best = 0;
+        playerRuns.forEach((n) => { if (n > best) best = n; });
+        return best;
+      },
       careerTeamSeasons,
       careerBadges,
       heismanNames,
@@ -216,6 +232,26 @@
      would quietly take in Washington DC and turn a passport into a border. */
   const OVERSEAS = ['ON', 'AB', 'BC', 'PQ', 'BS', 'NSW', 'GB'];
   const fromTeamSeason = (c, id) => c.anyRoster((ros) => ros.some((p) => p.team_season_id === id));
+
+  /* Nine seasons a fan can picture, told by the MAN rather than by the team. The landmark
+     badges above are team-seasons: any player off 2005 USC earns The Bush push. These ask
+     for one specific person in one specific year, which is a harder thing to be dealt and
+     a better thing to be handed. Each is a badge of its own below and they are counted
+     together for the collector, so the list lives here once. */
+  const LANDMARK_PLAYERS = [
+    ['Tim Tebow', 2007], ['Michael Crabtree', 2008], ['Robert Griffin III', 2011],
+    ['Johnny Manziel', 2012], ['Marcus Mariota', 2014], ['Derrick Henry', 2015],
+    ['Baker Mayfield', 2017], ['Travis Hunter', 2024], ['Ashton Jeanty', 2024],
+  ];
+  const fromPlayerSeason = (c, name, season) =>
+    c.anyRoster((ros) => ros.some((p) => p.name === name && Number(p.season) === season));
+  /* The name a fan would use to say two players are related, which is everything after the
+     first word. Suffixes ride along: "Jr." is part of how that man is said out loud, and a
+     rule that cut it would call a father and son the same man. */
+  const surnameOf = (n) => {
+    const parts = String(n || '').trim().split(/\s+/);
+    return parts.length > 1 ? parts.slice(1).join(' ') : '';
+  };
 
   const CATALOG = [
     /* --- getting started --- */
@@ -918,6 +954,113 @@
     A('rank_streak_10', 'Ten years ranked', 'Finish in the top 25 ten seasons running.',
       'gold', 'Streaks',
       (c) => c.runStreak((r) => has(r.national_rank) && Number(r.national_rank) <= 25) >= 10),
+
+    /* --- nine seasons told by the man, not the team ---
+       The landmark badges further up ask for anybody off a famous roster. These ask for
+       one person in one year, which the wheel has to hand you on purpose. */
+    A('man_tebow', 'Tebow in 07', 'Sign Tim Tebow\'s 2007 season, the first sophomore to win it.',
+      'gold', 'The roster', (c) => fromPlayerSeason(c, 'Tim Tebow', 2007)),
+    A('man_crabtree', 'One second left',
+      'Sign Michael Crabtree\'s 2008 season at Texas Tech.', 'gold', 'The roster',
+      (c) => fromPlayerSeason(c, 'Michael Crabtree', 2008)),
+    A('man_rg3', 'Baylor\'s first', 'Sign Robert Griffin III\'s 2011 season.', 'gold', 'The roster',
+      (c) => fromPlayerSeason(c, 'Robert Griffin III', 2011)),
+    A('man_manziel', 'Johnny Football',
+      'Sign Johnny Manziel\'s 2012 season, the first freshman to win it.', 'gold', 'The roster',
+      (c) => fromPlayerSeason(c, 'Johnny Manziel', 2012)),
+    A('man_mariota', 'Mariota\'s year', 'Sign Marcus Mariota\'s 2014 season at Oregon.',
+      'gold', 'The roster', (c) => fromPlayerSeason(c, 'Marcus Mariota', 2014)),
+    A('man_henry', 'Every single carry',
+      'Sign Derrick Henry\'s 2015 season, all 395 carries of it.', 'gold', 'The roster',
+      (c) => fromPlayerSeason(c, 'Derrick Henry', 2015)),
+    A('man_mayfield', 'Planting the flag', 'Sign Baker Mayfield\'s 2017 season.',
+      'gold', 'The roster', (c) => fromPlayerSeason(c, 'Baker Mayfield', 2017)),
+    A('man_hunter', 'Both ways',
+      'Sign Travis Hunter\'s 2024 season, the one he played on offense and defense.',
+      'gold', 'The roster', (c) => fromPlayerSeason(c, 'Travis Hunter', 2024)),
+    A('man_jeanty', 'The Boise blur', 'Sign Ashton Jeanty\'s 2024 season.',
+      'gold', 'The roster', (c) => fromPlayerSeason(c, 'Ashton Jeanty', 2024)),
+    A('man_all', 'The whole highlight reel',
+      'Sign all nine of the seasons a fan can picture, across your career.',
+      'legend', 'The roster',
+      (c) => LANDMARK_PLAYERS.every(([n, y]) => fromPlayerSeason(c, n, y))),
+
+    /* --- the shape of the six, for its own sake --- */
+    A('same_surname', 'Same name, no relation',
+      'Field two players who share a surname.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const seen = Object.create(null);
+        for (const p of ros) {
+          const s = surnameOf(p.name).toLowerCase();
+          if (!s) continue;
+          if (seen[s] && seen[s] !== String(p.player_id)) return true;
+          seen[s] = String(p.player_id);
+        }
+        return false;
+      })),
+    A('same_initial', 'Alphabet soup',
+      'Field six players from six schools that all start with the same letter.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const schools = ros.map((p) => p.school).filter(Boolean);
+        if (schools.length !== ros.length || new Set(schools).size !== 6) return false;
+        return new Set(schools.map((s) => s[0].toUpperCase())).size === 1;
+      })),
+    A('no_names', 'Nobody you have heard of',
+      'Field six players with no award and no statistical badge between them.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.length === 6
+        && ros.every((p) => c.awardsOf(p).length === 0 && c.badgesOf(p).length === 0))),
+    A('six_conferences', 'Six different leagues',
+      'Field six players from six different conferences.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const cf = ros.map((p) => p.conference).filter(Boolean);
+        return cf.length === ros.length && new Set(cf).size === 6;
+      })),
+    A('six_straight_years', 'Six straight years',
+      'Field six players from six consecutive seasons.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const ys = ros.map((p) => Number(p.season)).filter((y) => isFinite(y));
+        if (ys.length !== ros.length || new Set(ys).size !== 6) return false;
+        return Math.max.apply(null, ys) - Math.min.apply(null, ys) === 5;
+      })),
+    /* THE BADGE THAT WAS WRITTEN AND THEN MEASURED AWAY. "Your cheapest signing outscored
+       your most expensive" is the best sentence a draft can produce and it cannot be an
+       honest badge here, because price is derived from production: the best man in the
+       game at the minimum price averages 4.4, and only three price points above the floor
+       hold anybody who scores less than that. It would have meant "your $0.3M man beat
+       your $0.6M man" while saying something else, which is worse than not existing. */
+    A('qb_ran_it', 'He ran it himself',
+      'Sign a quarterback who gained more on the ground than through the air.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => String(p.position).toUpperCase() === 'QB'
+        && has(p.rush_ppg) && has(p.pass_ppg) && Number(p.rush_ppg) > Number(p.pass_ppg)))),
+    A('then_and_now', 'Then and now',
+      'Field two players from the same school fifteen seasons apart.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const by = Object.create(null);
+        for (const p of ros) {
+          if (!p.school || !has(p.season)) continue;
+          const y = Number(p.season);
+          const e = by[p.school] || (by[p.school] = { lo: y, hi: y });
+          if (y < e.lo) e.lo = y;
+          if (y > e.hi) e.hi = y;
+          if (e.hi - e.lo >= 15) return true;
+        }
+        return false;
+      })),
+    A('your_guy', 'Your guy',
+      'Sign the same player in ten different seasons.', 'gold', 'The roster',
+      (c) => c.mostSeasonsWith() >= 10),
+
+    /* --- two more the results screen can answer --- */
+    A('talent_wasted', 'All that talent',
+      'Miss the playoff with a team rated 95 or better.', 'silver', 'Roster craft',
+      (c) => c.any((r) => !isTrue(r.made_playoffs) && has(r.overall) && Number(r.overall) >= 95)),
+    A('heisman_2_ring', 'Two winners, one ring',
+      'Win the title with two Heisman winners on the roster.', 'legend', 'The roster',
+      (c) => c.anyRoster((ros, row) => isTrue(row.title_won)
+        && ros.filter((p) => c.awardsOf(p).some((a) => /heisman/i.test(a))).length >= 2)),
   ];
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
