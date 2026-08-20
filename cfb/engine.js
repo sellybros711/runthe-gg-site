@@ -124,6 +124,67 @@ const CONSTANTS = {
      overshoots, at 80% / 35% / 18% / 8% and a fifth of the titles. */
   ROUND_EDGE_MIN: 0.97,
   ROUND_EDGE_SLOPE: 0.075,
+  /* ─── EVERYBODY'S SUPER BOWL ────────────────────────────────────────────────
+     What stops a great roster running the twelve. See weekAdvantage().
+
+     THE PROBLEM THIS SOLVES IS SPECIFIC. Going unbeaten and winning the title are
+     the same run of games, so hardening the bracket makes both rarer together:
+     that is the whole argument written into the round pivots above, and it is why
+     they cannot be the answer here. MARQUEE_GAMES was the first attempt at the
+     other half and it is switched off for a measured reason: even ONE of twelve
+     drawn from the eleven-win pool cut a 95-99 roster's 12-0 by 68% and took the
+     rest of the scale down with it, an 85-89 roster's playoff odds falling from
+     14.2% to 5.0%. Making the whole season harder is not the same thing as making
+     an unbeaten season harder.
+
+     SO THE COST IS PAID ONLY WHERE AN UNBEATEN SEASON IS ACTUALLY DECIDED. A team
+     everybody is chasing gets everybody's best game, which in this sport is the
+     truest thing there is, and it shows up against the teams good enough to raise
+     theirs. Full strength against an opponent at or above WEEK_FOE_HIGH in
+     schedule strength, fading to nothing at WEEK_FOE_LOW and below. A season
+     carries about 3 games past the low mark, 1.8 past 1.0 and under one past the
+     high mark, so this is a light touch on nine games and a real one on the two or
+     three that decide whether a record stays clean. An average season barely
+     moves; twelve straight gets harder.
+
+     AND ONLY AT THE TOP OF THE SCALE, because that is who was asked about. Nothing
+     at all below WEEK_FLOOR, ramping to full at WEEK_FULL, so a 90 is barely
+     touched and the bands that were never going unbeaten anyway are untouched.
+
+     HOW BIG, AND MEASURED ON THE RIGHT COLUMN. The number a player says out loud
+     is 15-0, but that column cannot be tuned on directly: it lands about thirty
+     times in twelve thousand seasons a band, so the difference between two
+     candidates there is the difference between twenty events and twenty-four.
+     Two of the readings taken while sweeping this looked like results and were
+     noise. 12-0 is the same thing measured with five hundred events, and what
+     follows it (three playoff games from a bye) is untouched by anything here, so
+     the regular-season column is the honest dial and the unbeaten rate rides on
+     it. At 0.10, over 40 rosters a band and 600 seasons each:
+
+       overall    12-0              playoff           title
+       85-89      0.12% unchanged   13.87% unchanged  0.00%
+       90-94      1.13% to 1.00%    36.0% to 34.5%    0.00%
+       95-99      4.51% to 3.14%    63.0% to 56.7%    1.29% to 1.08%
+       100+      13.43% to 7.30%    83.4% to 73.8%    7.28% to 5.71%
+
+     A third off the top band's unbeaten seasons and nearly half off the very best
+     rosters', for a fifth of a win on the average season and no movement at all
+     below 90, where WEEK_FLOOR puts the whole thing out of reach: the 85-89 row is
+     identical to the digit because the function returns exactly 1 there.
+
+     THE TITLE COLUMN MOVES TOO, and it is worth being straight about why rather
+     than calling it a rounding error. Fewer 12-0 seasons means fewer top seeds and
+     fewer byes, so a shorter path to the trophy is handed out less often. That is
+     a consequence of the change and not a bug in it: if being untouchable is meant
+     to be rarer, the reward for being untouchable follows it down. If the title
+     rate ever needs holding exactly where it was, the dial for that is the round
+     pivots below, which is the half of the game that is supposed to decide how far
+     a season goes. Do not fix a title rate from up here. */
+  WEEK_UPSET: 0.10,
+  WEEK_FLOOR: 90,
+  WEEK_FULL: 102,
+  WEEK_FOE_LOW: 0.7,
+  WEEK_FOE_HIGH: 1.8,
   /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
      round is an even game. A first-round opponent is beatable by a team that
      scraped into the field; the team waiting in the final is not. This is what
@@ -939,6 +1000,35 @@ function seedFromRanking(rank, wins) {
     return { ...out, bowl: 'major', rounds: 1, label: 'Bowl Game' };
   }
   return { ...out, bowl: 'minor', rounds: 1, label: 'Bowl Game' };
+}
+
+/*
+ * THE PRICE OF BEING THE TEAM EVERYBODY WANTS. See the WEEK_ constants.
+ *
+ * Returns an advantage for one regular-season game, in the same units resolveGame takes from
+ * seedAdvantage and roundEdge: 1 is a fair fight and below 1 lifts the other team. It is
+ * never above 1, so this can only ever cost a roster and never hand one a game.
+ *
+ * Two gates, multiplied, and BOTH have to open before anything happens:
+ *   how good you are      nothing under WEEK_FLOOR, full at WEEK_FULL
+ *   who you are playing   nothing at WEEK_FOE_LOW and below, full at WEEK_FOE_HIGH
+ *
+ * That pairing is the whole design. One gate alone is MARQUEE_GAMES again, in one direction
+ * or the other: scale the whole season by roster quality and a 96 simply wins fewer games,
+ * which is a worse average season rather than a rarer unbeaten one; scale it by opponent
+ * alone and every roster in the game pays for a change aimed at the top of the scale.
+ */
+function weekAdvantage(rating, opponent, constants = CONSTANTS) {
+  const C = constants;
+  if (!(C.WEEK_UPSET > 0)) return 1;
+  const rspan = C.WEEK_FULL - C.WEEK_FLOOR;
+  const cls = rspan > 0 ? Math.max(0, Math.min(1, (rating - C.WEEK_FLOOR) / rspan)) : 1;
+  if (cls <= 0) return 1;
+  const z = opponent && typeof opponent.strength_z === 'number' ? opponent.strength_z : 0;
+  const fspan = C.WEEK_FOE_HIGH - C.WEEK_FOE_LOW;
+  const foe = fspan > 0 ? Math.max(0, Math.min(1, (z - C.WEEK_FOE_LOW) / fspan)) : 1;
+  if (foe <= 0) return 1;
+  return 1 / (1 + C.WEEK_UPSET * cls * foe);
 }
 
 /* Seeding is worth something. The top seeds host the first round and are the
@@ -2282,9 +2372,14 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const results = [];
   let wins = 0, losses = 0;
 
+  /* Computed once. It is a property of the roster, not of the week, and calling it twelve
+     times would say the same thing twelve times. */
+  const seasonOverall = teamOverall(roster, chemistryMultiplier, constants);
+
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 25;
-    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants);
+    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+      weekAdvantage(seasonOverall, opp, constants));
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -2467,7 +2562,7 @@ const publicAPI = {
   BRACKET, buildBracket, openBracket, advanceBracket, bracketPairs, bracketYourRound,
   bracketOpponent, bracketPending, bracketFavourite,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
-  teamRating, teamOverall, titleEdge, roundEdge,
+  teamRating, teamOverall, titleEdge, roundEdge, weekAdvantage,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   touchdownCredits, lastName,

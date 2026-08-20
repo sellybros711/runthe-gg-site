@@ -258,9 +258,10 @@ ok('narrating a season changes none of it', diverged === 0,
 if (process.argv.includes('--browser')) {
   const { chromium } = await import('playwright');
   const SS = process.env.SS || '/tmp/';
-  /* Seed 106 is test_bracket.mjs's bye-seed run: a four seed with three playoff games to
-     watch. The same six picks, clicked by player and slot, so this drafts the roster node
-     drafts rather than whatever the tiles happen to offer first. */
+  /* Seed 106 is test_bracket.mjs's no-bye run: a ten seed, so all four rounds get watched
+     rather than three, which is more broadcast to read credits off. The same six picks,
+     clicked by player and slot, so this drafts the roster node drafts rather than whatever
+     the tiles happen to offer first. Re-pin with find_seeds.mjs if the season moves. */
   const RUN_SEED = 106;
   const PICKS = ['243503|2009:0', '4047337|2019:1', '173412|2007:4', '4259550|2022:2',
     '381959|2010:3', '3126339|2017:5'];
