@@ -9750,7 +9750,7 @@ function scrRules(){
 
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
-    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards.'],
+    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Every duplicate earns a shard; duplicates from packs you BOUGHT also refund coins.'],
     ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
@@ -28573,9 +28573,10 @@ function packCreditFields(tier){ tier=tier||'base';
   if(tier==='base') return ['packEarned','packSpent'];
   return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters — the Tour Pass grants these
 }
-/* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity ON TOP of the coin
-   refund. Collect EXCHANGE_COST shards of a rarity and feed the Shard Exchange upgrade ladder (below) to
-   trade UP a rarity - a deterministic pity path, so packs never go dead once a player owns most of a tier.
+/* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity. A duplicate from a
+   PAID pack also refunds coins (see dupeRefund below - free packs pay the shard only). Collect EXCHANGE_COST
+   shards of a rarity and feed the Shard Exchange upgrade ladder (below) to trade UP a rarity - a
+   deterministic pity path, so packs never go dead once a player owns most of a tier.
    Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
 const SHARD_COST={common:3, rare:3, epic:4, legendary:5};
 function shardBal(r){ const p=packState(); return Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0)); }
@@ -28598,9 +28599,23 @@ function poolByRarity(rar){ return packPool().filter(function(e){ return e.rarit
 function pickRarityItem(rar, preferUnowned){ var pool=poolByRarity(rar); if(!pool.length) return null;
   if(preferUnowned){ var un=pool.filter(function(e){ return !packOwns(e); }); if(un.length) return un[Math.floor(Math.random()*un.length)]; }
   return pool[Math.floor(Math.random()*pool.length)]; }
-// grant a won exchange item (or, if already owned, the same coin + shard-of-its-rarity refund a pack dupe gives)
+/* ══════ DUPLICATE PAYOUT — one rule, one place (owner: "you should not get coins for getting a duplicate
+   from any free pack. Only from ones you purchase").
+   A duplicate ALWAYS pays its shard, so the pity ladder is identical no matter where the pack came from.
+   COINS are paid only when the player actually spent coins on the pack. Free packs - the one-time
+   first-pack-free, and every earned/granted credit (daily quests, weekly challenges, login calendar,
+   7-day streak, prize wheel, Tour Pass, admin grants) - pay the shard and nothing else, so a free pack can
+   never mint coins out of nothing. Bundles ARE paid (bought up front at the bundle price).
+   Returns the coins credited (0 on a free pack), which is what the reveal UI renders. ══════ */
+function dupeRefund(rarity, paid){
+  try{ shardEarn(rarity,1); }catch(e){}
+  if(!paid) return 0;
+  var c=PACK_DUPE_REFUND[rarity]||1000; addBonusCoins(c,{silent:true}); return c;
+}
+// grant a won exchange item (or, if already owned, the same coin + shard-of-its-rarity refund a pack dupe gives).
+// The exchange is always a PAID path - the player spent EXCHANGE_COST shards to spin it - so it still refunds coins.
 function grantExchangeItem(item){ var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{ shardEarn(item.rarity,1); }catch(e){} }
+  if(dupe) refund=dupeRefund(item.rarity, true);
   else packGrant(item);
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund}; }
 function buildExchangeReel(winItem, target){ var TOTAL=54, WIN=48, reel=[];
@@ -28973,16 +28988,19 @@ function openPack(){
   var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
   packSave(p);
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
+  if(dupe) refund=dupeRefund(item.rarity, true);   // this path charged PACK_PRICE above, so it's always paid
   else packGrant(item);
-  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,paid:true}); }catch(e){}
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
 }
 
 // CS404 — WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
 // distribution, since a picked card == one roll). The coin charge lives upstream in startPackDeal, so this
 // is a pure roll+grant (a free/prepaid pack just skips the charge). Commits pity + grant immediately.
-function rollPackWin(tier){
+// `paid` = the player spent coins on this pack. It gates the DUPLICATE COIN REFUND only (see dupeRefund):
+// odds, pity and the dupe shard are identical either way. Callers must pass it honestly - startPackDeal
+// knows from its own free/credit branch, and packOpenRest knows per pack it opens.
+function rollPackWin(tier, paid){
   if(!packsOn()) return {err:'off'};
   if(!sbSignedIn()) return {err:'signin'};
   var pt=packType(tier);                                          // CS406: the tier's odds + pity floors
@@ -28997,9 +29015,9 @@ function rollPackWin(tier){
   var item=pickPackItem(rar, packBiasSet(tier)); if(!item){ packSave(p); return {err:'empty'}; }   // seasonal: bias toward the drop's items
   packSave(p);
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
+  if(dupe) refund=dupeRefund(item.rarity, !!paid);   // free pack -> shard only, no coins
   else packGrant(item);
-  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,via:'wheel',pack:pt.id}); }catch(e){}
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,via:'wheel',pack:pt.id,paid:!!paid}); }catch(e){}
   if(S.packBundle){ S.packBundle.done=(S.packBundle.done||0)+1; (S.packBundle.results=S.packBundle.results||[]).push({item:item,dupe:dupe,refund:refund}); }
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
 }
@@ -29061,10 +29079,11 @@ function pickPackCard(idx){
   else if(item.rarity==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
   else { p.sinceEpic++; p.sinceLeg++; }
   packSave(p);
+  var paid=!d.free && !d.bundleFree;                 // the deal records how it was opened; bundles are prepaid
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
+  if(dupe) refund=dupeRefund(item.rarity, paid);     // free pack -> shard only, no coins
   else packGrant(item);
-  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,paid:paid}); }catch(e){}
   d.chosen=idx; d.dupe=dupe; d.refund=refund;
   if(S.packBundle){ S.packBundle.done=(S.packBundle.done||0)+1; (S.packBundle.results=S.packBundle.results||[]).push({item:item,dupe:dupe,refund:refund}); }
   return {item:item,dupe:dupe,refund:refund};
@@ -29140,14 +29159,16 @@ function startPackDeal(opts){ opts=opts||{};
       // Nothing spends coins on a single tap: confirm first. (A free pack or a prepaid bundle
       // open costs nothing, so those go straight through.)
       if(!opts.confirmed){ confirmSpend({name:pt.name, art:packArtHTML(tier), cost:pt.price, accent:pt.col,
-        note:'One pack, one item. Duplicates pay you back in coins and shards.', label:'Buy & open ▸',
+        note:'One pack, one item. Because you\'re buying it, a duplicate pays you back in coins as well as a shard.', label:'Buy & open ▸',
         onYes:function(){ var o={}; for(var k in opts) o[k]=opts[k]; o.confirmed=true; startPackDeal(o); }}); return; }
       coinCharge(pt.price);
     }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
   }
   // CS404 — wheel spin: roll the winner up front (tier odds), build the reel, land on it.
-  var win=rollPackWin(tier); if(win.err){ toast(packErr(win.err)); return; }
+  // A bundle sub-open is prepaid (coins paid at bundle price), so it counts as PAID for the dupe refund;
+  // only a first-pack-free or an earned credit is free.
+  var win=rollPackWin(tier, !free); if(win.err){ toast(packErr(win.err)); return; }
   var wheel=buildWheelReel(win.item, tier);
   S.packWheel={reel:wheel.reel,winIdx:wheel.winIdx,win:win,spun:false,done:false,bundle:!!opts.bundle,free:!!free,pack:tier};
   S.packDeal=null; S.overlay='packwheel'; render();
@@ -29301,7 +29322,7 @@ function packOpenRest(){
   if(S.packBundle){
     var pack=S.packBundle.pack;
     var remaining=Math.max(0, S.packBundle.total-(S.packBundle.done||0));
-    for(var i=0;i<remaining;i++){ var win=rollPackWin(pack); if(win.err) break; results.push({item:win.item,dupe:win.dupe,refund:win.refund}); }   // prepaid
+    for(var i=0;i<remaining;i++){ var win=rollPackWin(pack, true); if(win.err) break; results.push({item:win.item,dupe:win.dupe,refund:win.refund}); }   // prepaid at the bundle price -> dupes still refund coins
     S.packBundle=null;
   } else {
     var tier=w.pack||'base', pt=packType(tier), guard=0;
@@ -29310,7 +29331,7 @@ function packOpenRest(){
       var cr=packCredits(tier);
       if(!freeFirst && cr<=0) break;                     // no more free/credit packs of this tier
       var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p);
-      var win2=rollPackWin(tier); if(win2.err) break;
+      var win2=rollPackWin(tier, false); if(win2.err) break;   // every pack in this loop is free/credit -> shard only
       results.push({item:win2.item,dupe:win2.dupe,refund:win2.refund});
     }
   }
@@ -29342,7 +29363,10 @@ function overlayPackBatch(app){
   foot.appendChild($('<div class="small" style="color:var(--gold);font-weight:800;margin:2px 0 8px">Your '+n+' items</div>'));
   foot.appendChild(packSumGrid(b.results));
   var totRefund=b.results.reduce(function(a,r){return a+(r.refund||0);},0);
+  var totDupe=b.results.filter(function(r){return r.dupe;}).length;
+  // free packs pay shards only, so a batch of free opens can total 0 coins and still have duplicates
   if(totRefund>0) foot.appendChild($('<div class="small muted" style="margin-top:6px;text-align:center">Duplicates refunded +'+coinFmt(totRefund)+' coins · equip your new items in the Closet</div>'));
+  else if(totDupe>0) foot.appendChild($('<div class="small muted" style="margin-top:6px;text-align:center">'+totDupe+' duplicate'+(totDupe>1?'s':'')+' \u2192 shards only (free packs don\'t pay coins) · equip your new items in the Closet</div>'));
   else foot.appendChild($('<div class="small muted" style="margin-top:6px;text-align:center">Equip your new items in the Closet</div>'));
   var btns=$('<div class="packbtns"></div>');
   var done=$('<button class="btn goldfill">Done</button>'); done.onclick=function(){ S.packBatch=null; S.overlay='shop'; S.shopSec='packs'; render(); };
@@ -29413,7 +29437,11 @@ function overlayPackWheel(app){
         +(catName?'<div class="prmeta">'+esc(catName)+(pt.id!=='base'?' · '+esc(pt.name):'')+'</div>':'')
         +(lore?'<div class="prlore">\u201c'+esc(lore)+'\u201d</div>':'')
         +'<div class="prboost'+(bObj?'':' none')+'">'+(bObj?shopBoostTxt(bObj):'Cosmetic · pure style')+'</div>'
-        +(win.dupe?('<div class="prdupe"><span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span><span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
+        // a free pack's duplicate still pays its shard, but no coins - so the coin chip only shows when there IS a refund
+        +(win.dupe?('<div class="prdupe">'
+          +(win.refund>0?'<span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span>'
+                        :'<span class="prchip" style="color:#b8c4bd;border-color:#b8c4bd">Duplicate · free pack, no coins</span>')
+          +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
       +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>');
@@ -29541,7 +29569,7 @@ function overlayPackReveal(app){
     footer.innerHTML='';
     if(d.chosen==null){ footer.appendChild($('<div class="small muted">Tap a card. You keep the one you pick.</div>')); return; }
     var item=d.cards[d.chosen];
-    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(d.dupe?'#ffd45e':'#35d6a0')+'">'+(d.dupe?('Duplicate · +'+coinFmt(d.refund)+' coins'):('You got '+esc(item.name)+'!'))+'</div>'));
+    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(d.dupe?'#ffd45e':'#35d6a0')+'">'+(d.dupe?(d.refund>0?('Duplicate · +'+coinFmt(d.refund)+' coins'):'Duplicate · shard only (free pack)'):('You got '+esc(item.name)+'!'))+'</div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !d.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
     // BUNDLE: more prepaid packs to open → "Next pack"; the last pack shows a summary of all N
@@ -29763,7 +29791,7 @@ function packShopNode(){
     tiers.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
-  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b>. Collect '+EXCHANGE_COST+' shards of a rarity and trade them in the <b>Shard Exchange</b> to upgrade to an item of the next rarity up.</div>'+shardSummaryHTML();
+  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate always earns <b style="color:#8fe0c4">1 shard of its rarity</b>, and a duplicate from a pack you <b>bought</b> also refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) &mdash; free packs pay shards only. Collect '+EXCHANGE_COST+' shards of a rarity and trade them in the <b>Shard Exchange</b> to upgrade to an item of the next rarity up.</div>'+shardSummaryHTML();
   wrap.appendChild(odds);
   // #5 discoverability: signed-in and can't afford even the cheapest pack → point at Buy Coins (tasteful,
   // only at the moment it's actually useful).
