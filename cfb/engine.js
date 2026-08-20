@@ -147,9 +147,19 @@ const CONSTANTS = {
      three that decide whether a record stays clean. An average season barely
      moves; twelve straight gets harder.
 
-     AND ONLY AT THE TOP OF THE SCALE, because that is who was asked about. Nothing
-     at all below WEEK_FLOOR, ramping to full at WEEK_FULL, so a 90 is barely
-     touched and the bands that were never going unbeaten anyway are untouched.
+     AND SCALED BY HOW GOOD YOU ARE. Nothing at all below WEEK_FLOOR, ramping to
+     full at WEEK_FULL. The floor started at 90 and came down to 84 so the band
+     under the one that was asked about pays too: at 90 a 92-overall roster was
+     getting six percent of the tax and running the twelve 1.13% of the time, and
+     the point of the change is not to draw a line at 95.
+
+     IT DOES NOT GO LOWER THAN 84, AND THE REASON IS A MEASUREMENT RATHER THAN A
+     PREFERENCE. There is nothing under there left to make harder. An 85-89 roster
+     goes unbeaten 0 times in 24,000 seasons and reaches 12-0 in 0.12% of them, so
+     dropping the floor to 78 moves that column by two hundredths of a point and
+     takes 1.2 points off the same band's playoff rate. That is paying in the one
+     currency the game is trying to be generous with (making the field is meant to
+     be common) for a rate that is already zero.
 
      HOW BIG, AND MEASURED ON THE RIGHT COLUMN. The number a player says out loud
      is 15-0, but that column cannot be tuned on directly: it lands about thirty
@@ -159,13 +169,14 @@ const CONSTANTS = {
      noise. 12-0 is the same thing measured with five hundred events, and what
      follows it (three playoff games from a bye) is untouched by anything here, so
      the regular-season column is the honest dial and the unbeaten rate rides on
-     it. At 0.10, over 40 rosters a band and 600 seasons each:
+     it. Over 40 rosters a band and 600 seasons each, before against after:
 
        overall    12-0              playoff           title
-       85-89      0.12% unchanged   13.87% unchanged  0.00%
-       90-94      1.13% to 1.00%    36.0% to 34.5%    0.00%
-       95-99      4.51% to 3.14%    63.0% to 56.7%    1.29% to 1.08%
-       100+      13.43% to 7.30%    83.4% to 73.8%    7.28% to 5.71%
+       80-84      0.00% unchanged    2.25% unchanged  0.00%
+       85-89      0.12% to 0.10%    13.9% to 13.4%    0.00%
+       90-94      1.13% to 0.91%    36.0% to 32.7%    0.00%
+       95-99      4.51% to 2.91%    63.0% to 55.2%    1.29% to 1.05%
+       100+      13.43% to 7.22%    83.4% to 73.5%    7.28% to 5.69%
 
      A third off the top band's unbeaten seasons and nearly half off the very best
      rosters', for a fifth of a win on the average season and no movement at all
@@ -181,7 +192,7 @@ const CONSTANTS = {
      pivots below, which is the half of the game that is supposed to decide how far
      a season goes. Do not fix a title rate from up here. */
   WEEK_UPSET: 0.10,
-  WEEK_FLOOR: 90,
+  WEEK_FLOOR: 84,
   WEEK_FULL: 102,
   WEEK_FOE_LOW: 0.7,
   WEEK_FOE_HIGH: 1.8,
