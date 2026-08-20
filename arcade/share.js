@@ -21,7 +21,8 @@
     table: 'Number Game', match: 'Common Ground', career: 'Career Path',
     oddone: 'Odd One Out', rankit: 'Rank It', almamater: 'Alma Mater',
     guess: 'Guess the Player', crossword: 'Daily Crossword',
-    highlow: 'High Low', sportegories: 'Sportegories'
+    highlow: 'High Low', sportegories: 'Sportegories',
+    rollcall: 'Roll Call', chain: 'Chain'
   };
   // Games with no daily puzzle number (endless / not a shared board).
   var NO_NUMBER = { highlow: 1 };
@@ -125,7 +126,8 @@
   var ACCENT = {
     table: '#F2B632', career: '#48D17A', oddone: '#A982F3', rankit: '#EC5E9C',
     guess: '#F0653A', almamater: '#F2B632',
-    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#DA6BE6'
+    match: '#2F6BFF', crossword: '#F0653A', highlow: '#F5822B', sportegories: '#DA6BE6',
+    rollcall: '#37C5D5', chain: '#96B93C'
   };
   // Emoji square -> fill on the dark card. Blanks/absent squares become faint
   // panels rather than the glaring white/black they are as text.

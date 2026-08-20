@@ -466,10 +466,16 @@ function advanceWeek(run, data, leagueContext, displayCal) {
      playRun is not, so leaving it out here would have meant the whole thing
      showed up in the projected percentages and nowhere else. */
   const isFinal = playoff && roundName === 'CFP Championship';
-  const ovr = playoff ? E.teamOverall(run.roster, s.chemistry) : 0;
+  const ovr = E.teamOverall(run.roster, s.chemistry);
   const edge = playoff ? E.roundEdge(ovr, roundName) : 1;
+  /* THE REGULAR SEASON'S OWN EDGE, and it runs the other way: a team everybody is chasing
+     gets everybody's best game, in the weeks against opponents good enough to raise theirs.
+     This is the path a real season takes and playRun is not, so leaving it out here would
+     have put the whole thing in the projected odds and nowhere else, which is the mistake
+     the round edge above already made once. */
+  const week = playoff ? 1 : E.weekAdvantage(ovr, opp);
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25,
-    rng, E.CONSTANTS, advantage / edge);
+    rng, E.CONSTANTS, advantage * week / edge);
   if (isFinal && ovr < E.CONSTANTS.TITLE_FLOOR && r.won) {
     r.oppScore = r.yourScore * 1.04;
     r.won = false;

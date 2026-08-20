@@ -28,7 +28,9 @@
     { key:'almamater',  path:'almamater',  cls:'alma',   name:'Alma Mater',       accent:'var(--gold)' },
     { key:'guess',      path:'guess',      cls:'guess',  name:'Guess the Player', accent:'var(--coral)' },
     { key:'crossword',  path:'crossword',  cls:'cross',  name:'Daily Crossword',  accent:'var(--news,#64748B)' },
-    { key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)' }
+    { key:'sportegories', path:'sportegories', cls:'spg', name:'Sportegories', accent:'var(--spg,#DA6BE6)' },
+    { key:'rollcall',   path:'rollcall',   cls:'roll',   name:'Roll Call',        accent:'var(--teal,#37C5D5)' },
+    { key:'chain',      path:'chain',      cls:'chain',  name:'Chain',            accent:'var(--moss,#96B93C)' }
   ];
 
   /* Blurbs live in gamemarks.js so the hub, the Vault and this calendar cannot

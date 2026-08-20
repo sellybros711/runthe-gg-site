@@ -23,7 +23,7 @@
 
   function gameKey(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   var GAME = gameKey();
-  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, sportegories:1 };
+  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, sportegories:1, rollcall:1, chain:1 };
   if (!GAME || !KNOWN[GAME]) return;
   if (window.RTGArchive && RTGArchive.active && RTGArchive.active()) return;   // archive practice: no gate
 
@@ -38,6 +38,8 @@
     guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
     sportegories: ['One letter, eight categories, two minutes.', 'Every answer has to start with that letter. Rarer names score more.'],
+    rollcall:   ['One club, one season, ninety seconds.', 'Name as many of that roster as you can. Wrong names cost nothing but the clock.'],
+    chain:      ['Two players, two teammates in between.', 'Each name has to have played alongside the one above it. Four wrong and the chain breaks.'],
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
@@ -50,6 +52,8 @@
     guess:      { k:'rtg:guess:v1',     f:'bestStreak', cap:'win streak' },
     crossword:  { k:'rtg:cw:v1',        f:'best',       cap:'best time', t:true },
     sportegories:{k:'rtg_sportegories_v1', f:'best',    cap:'best score' },
+    rollcall:   { k:'rtg_rollcall_v1',  f:'best',       cap:'most named' },
+    chain:      { k:'rtg_chain_v1',     f:'best',       cap:'fastest chain', t:true },
   };
 
   var T = window.RTGTokens;
@@ -249,7 +253,7 @@
       var unlimited = left===Infinity;
       var note = unlimited ? 'Unlimited plays' : 'Your free go at this one today';
       var upsell = unlimited ? '' :
-        '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all ten games, unlimited.</div>';
+        '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all twelve games, unlimited.</div>';
       var mid;
       if(!INTRO_SEEN){
         mid=intro();
@@ -303,7 +307,7 @@
         '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
         introBody()+
         '<ul class="rtgpg-perks">'+
-          '<li><b>›</b><span>All ten games, as often as you like</span></li>'+
+          '<li><b>›</b><span>All twelve games, as often as you like</span></li>'+
           '<li><b>›</b><span>NBA, NFL and MLB editions of five of them</span></li>'+
           '<li><b>›</b><span>The Archive: every past day, still playable</span></li>'+
         '</ul>'+

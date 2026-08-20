@@ -126,7 +126,7 @@
   // ---- share: hand the inviter their link ----------------------------------
   // Native share sheet where there is one (phones), clipboard everywhere else,
   // with a toast either way. cb(ok) fires when the link is out the door.
-  var SHARE_TEXT = 'Play Run The Arcade with me: ten quick daily sports puzzles. Sign up with my link and we both get an extra go today.';
+  var SHARE_TEXT = 'Play Run The Arcade with me: twelve quick daily sports puzzles. Sign up with my link and we both get an extra go today.';
   function toast(msg){
     try{
       var el=document.getElementById('rtg-ref-toast');

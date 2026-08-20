@@ -17,10 +17,11 @@
  * THE RUN SEED IS PINNED with window.PS_CFB_SEED. A good roster makes the playoff about
  * one season in six, so a test that drafts and hopes is a test that fails at random. The
  * seeds below were found by playing the same greedy draft in node and then confirming the
- * same six men come out of the wheel in a browser: 106 finishes as a four seed with a
- * bye, which is the exact case that was reported, and 19 finishes an eleven seed and so
- * plays all four rounds. Both shapes are needed, because a bye seed enters the bracket a
- * round late and that is where this went wrong the first time.
+ * same six men come out of the wheel in a browser: 259 finishes 12-0 as the top seed and
+ * so sits out the first round, which is the exact case that was reported, and 106 finishes
+ * a ten seed and plays all four rounds. Both shapes are needed, because a bye seed enters
+ * the bracket a round late and that is where this went wrong the first time.
+ * `node cfb/build/test/find_seeds.mjs` re-pins them when the season moves under them.
  */
 import { chromium } from 'playwright';
 import { createRequire } from 'module';
@@ -113,9 +114,15 @@ console.log('\n=== the pairings are the real ones ===');
    first drafts a differently shaped roster than node did: the same six men came out at a
    ten seed instead of the four seed with a bye this is here to reproduce. So the slot
    node chose is clicked by index, and the run comes out the same on both sides. */
+/* THESE GO STALE ON PURPOSE, and `node cfb/build/test/find_seeds.mjs` is what re-pins them.
+   Which seed lands on which shape is a property of the season, so anything that moves the
+   season moves them: WEEK_UPSET took seed 106 off the bye path the day it went in, and 106
+   is now the no-bye run rather than a seed to be replaced. A run that drifts to the other
+   shape does not fail quietly, it fails on the assertion below that says which path it was
+   picked for, which is the whole reason that assertion is there. */
 const PICKS = {
+  259: ['3895788|2017:1', '480370|2011:2', '3924327|2016:0', '502612|2011:4', '4360248|2019:5', '3843469|2017:3'],
   106: ['243503|2009:0', '4047337|2019:1', '173412|2007:4', '4259550|2022:2', '381959|2010:3', '3126339|2017:5'],
-  19: ['145396|2006:2', '480693|2012:3', '545319|2014:4', '4429066|2021:0', '5085024|2025:5', '535520|2012:1'],
 };
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
@@ -331,8 +338,8 @@ async function playSeed(runSeed, label, width, wantBye) {
   await p.close();
 }
 
-await playSeed(106, 'a four seed with a bye, the case that was reported', 390, true);
-await playSeed(19, 'an eleven seed, all four rounds', 360, false);
+await playSeed(259, 'a top seed with a bye, the case that was reported', 390, true);
+await playSeed(106, 'a ten seed, all four rounds', 360, false);
 
 await b.close();
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

@@ -827,7 +827,7 @@ show_id,show_date,year,tour_id,tour,venue,city,state,country,has_setlist,show_or
 1769450544,2026-08-15,2026,44,Summer Tour 2026,Frost Amphitheater,Stanford,CA,USA,true,1
 1769450545,2026-08-16,2026,44,Summer Tour 2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,USA,true,1
 1769450546,2026-08-18,2026,44,Summer Tour 2026,Commodore Ballroom,Vancouver,BC,Canada,true,1
-1769450547,2026-08-19,2026,44,Summer Tour 2026,WAMU Theater,Seattle,WA,USA,false,1
+1769450547,2026-08-19,2026,44,Summer Tour 2026,WAMU Theater,Seattle,WA,USA,true,1
 1769450548,2026-08-21,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false,1
 1769450725,2026-08-22,2026,44,Summer Tour 2026,Hayden Homes Amphitheater,Bend,OR,USA,false,1
 1769450726,2026-08-24,2026,44,Summer Tour 2026,Kettlehouse Amphitheater,Bonner,MT,USA,false,1

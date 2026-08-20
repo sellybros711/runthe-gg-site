@@ -497,7 +497,6 @@
     color:var(--ink); background:color-mix(in srgb, var(--lc) 12%, var(--card));
     border:1px solid color-mix(in srgb, var(--lc) 45%, transparent); border-radius:999px; padding:5px 11px; }
   .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
-  .hint-chip em{ font-style:normal; font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); }
 
   /* the pick-four grid: four across at every width, so sixteen tiles form a
      square and every row is a candidate group. Five across would leave a
@@ -632,7 +631,7 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Four misses close the board; a clean solve punches the day on your Arcade ticket.</li>
 </ul>
 <h3>One board a day</h3>
-<p>Everyone plays the same sixteen names, and a fresh board arrives at midnight local time. Solving it keeps your streak alive. It is one of the four games that come free with a RunThe.GG account, alongside Sportegories, Alma Mater and Career Path, with one play in each per day. The Arcade Card opens all ten Arcade games with unlimited plays, the <a href="/arcade/archive/">Archive</a> of every past day, and NBA, NFL and MLB editions of five of the games.</p>
+<p>Everyone plays the same sixteen names, and a fresh board arrives at midnight local time. Solving it keeps your streak alive. Common Ground is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
 <h3>Habits of clean solvers</h3>
 <ul>
   <li>Lock your surest group first. Every clear shrinks the decisions that remain.</li>
@@ -676,7 +675,6 @@ window.GA_ID='G-L29P5MRWKE';
         <ol>
           <li><b>Find the four hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
           <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
-          <li>The easiest group's name is <b>revealed free</b> to get you rolling.</li>
           <li>Stuck? <b>Reveal a group</b> for one guess. Four misses and your board's done.</li>
         </ol>
       </details>
@@ -764,31 +762,31 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/data.js?v=2"></script>
   <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=6"></script>
-<script src="/arcade/share.js?v=6"></script>
+<script src="/arcade/funnel.js?v=7"></script>
+<script src="/arcade/share.js?v=7"></script>
 <script src="/arcade/resultart.js?v=2"></script>
-<script src="/arcade/resultstats.js?v=1"></script>
+<script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=7"></script>
+  <script src="/arcade/tokens.js?v=9"></script>
 <script src="/arcade/mode.js?v=6"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=17"></script>
+  <script src="/arcade/board.js?v=18"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=2"></script>
-<script src="/arcade/mycard.js?v=8"></script>
+<script src="/arcade/mycard.js?v=9"></script>
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=15"></script>
 <script src="/arcade/referral.js?v=8"></script>
-<script src="/arcade/gamemarks.js?v=2"></script>
-<script src="/arcade/calendar.js?v=14"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=18"></script>
-<script src="/arcade/howto.js?v=16"></script>
+<script src="/arcade/pregame.js?v=19"></script>
+<script src="/arcade/howto.js?v=17"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=2"></script>
   <script>
@@ -940,8 +938,10 @@ window.GA_ID='G-L29P5MRWKE';
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
       poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has the same tile count, so the count-based guard in render() wouldn't catch it)
-      // free foothold: reveal the easiest group's name to start (no guess cost)
-      if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
+      /* No free category. The board used to open with the easiest group's name
+         already showing, which handed over a quarter of the puzzle before the
+         first tap and told the player which four names to stop thinking about.
+         Every group is now found, or revealed for a guess like the rest. */
     }
 
     // ---- render ----
@@ -1017,8 +1017,7 @@ window.GA_ID='G-L29P5MRWKE';
         day.lanes.forEach(function (l) {
           if (!revealedCats[l.id] || usedCat(l.id)) return;
           var c = document.createElement('span'); c.className = 'hint-chip'; c.style.setProperty('--lc', l.color);
-          c.innerHTML = '<span class="hint-dot"></span>' + escapeHtml(l.name) +
-            (day.lanes[0] && l.id === day.lanes[0].id ? ' <em>free</em>' : '');
+          c.innerHTML = '<span class="hint-dot"></span>' + escapeHtml(l.name);
           hintsEl.appendChild(c);
         });
       }
@@ -1494,7 +1493,7 @@ window.GA_ID='G-L29P5MRWKE';
     // Share the invite card every game now shares (RTGShare.send): the solve
     // order becomes the grid, the result line becomes the stat, and solve time
     // (lower is better) rides the challenge link. Replaces Match's old bespoke
-    // canvas so all nine games look identical.
+    // canvas so every game looks identical.
     function shareResultImage() { RTGShare.send(cardSpec()); }
     /* The result screen shows this card too (resultart.js), so the spec is a
        function both can call. */

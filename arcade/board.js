@@ -301,7 +301,7 @@
        reports separately, plus the shape of the result. Inert without gtag. */
     try{
       if (typeof window.gtag === 'function') {
-        var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low'};
+        var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low','rollcall':'Roll Call','chain':'Chain'};
         window.gtag('event','arcade_game_completed',{
           game_name:'Run The Arcade', arcade_game: GA_L[game] || game,
           seconds: Math.max(0, Math.round(opts.seconds || 0)),

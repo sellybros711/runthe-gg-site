@@ -23,6 +23,8 @@
     ['guess', 'Guess the Player'],
     ['crossword', 'Daily Crossword'],
     ['sportegories', 'Sportegories'],
+    ['rollcall', 'Roll Call'],
+    ['chain', 'Chain'],
     ['highlow', 'High Low']
   ];
 

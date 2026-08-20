@@ -2,7 +2,7 @@
  *
  * Every game used to carry its own renderRealBoard() and its own markup, so
  * the boards drifted apart and none of them answered the question players
- * actually have: where do I stand? This is one component for all ten games.
+ * actually have: where do I stand? This is one component for every game.
  *
  * The board is a MODAL, not a rail parked at the bottom of the page. The rail
  * slot becomes a single clear button that carries a live teaser ("You're 9th

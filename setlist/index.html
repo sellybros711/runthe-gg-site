@@ -2197,8 +2197,8 @@ window.GA_ID='G-L29P5MRWKE';
       argument the game is making: a setlist is not a list of good songs, it is an order.</p>
 
     <h3>Where the shows come from</h3>
-    <p>Every concert, song and running time is real. The current band is goosetheband, with 7,574
-      recorded performances across 660 shows between 2014 and 2026, taken from the community
+    <p>Every concert, song and running time is real. The current band is goosetheband, with 7,588
+      recorded performances across 661 shows between 2014 and 2026, taken from the community
       archive at <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
       Nothing is generated: if a show is in the game, it happened, in that order, at that
       length.</p>
@@ -2374,7 +2374,7 @@ const BANDS = [
   { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
     shows: '/setlist/data/goose_shows.csv',
     latest: '/setlist/data/goose_latest.json',
-    note: '660 shows from the elgoose.net archive' },
+    note: '661 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
     note: 'Made-up data, for testing', sample: true },
 ];
@@ -2395,7 +2395,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = 'c592ac14';
+const DATA_VERSION = 'cdc580a3';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in

@@ -19,14 +19,14 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="The Run The Arcade Vault" />
-<meta property="og:description" content="Replay any past day across all nine games and chase your personal best." />
+<meta property="og:description" content="Replay any past day across all eleven games and chase your personal best." />
 <meta property="og:url" content="https://runthe.gg/arcade/archive/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="The Run The Arcade Vault" />
-<meta name="twitter:description" content="Replay any past day across all nine games and chase your personal best." />
+<meta name="twitter:description" content="Replay any past day across all eleven games and chase your personal best." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/archive/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -34,7 +34,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
-<script src="/arcade/gamemarks.js?v=2"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -229,7 +229,7 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="zone-head">
     <span class="kicker">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4" stroke-linecap="round"/></svg>
-      <span>Every <b>past day</b> &middot; nine games</span>
+      <span>Every <b>past day</b> &middot; eleven games</span>
     </span>
     <span class="day">The Vault</span>
     <span class="vprog" id="vprog" hidden><span class="track"><i class="fill" id="vfill" style="width:0"></i></span><span id="vprogT"></span></span>
@@ -240,19 +240,19 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="foot"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/contact.html">Report a data error</a></div>
 </div>
 
-<script src="/arcade/tokens.js?v=7"></script>
+<script src="/arcade/tokens.js?v=9"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=17"></script>
+<script src="/arcade/board.js?v=18"></script>
 <script src="/arcade/auth.js?v=2"></script>
-<script src="/arcade/mycard.js?v=8"></script>
+<script src="/arcade/mycard.js?v=9"></script>
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=15"></script>
 <script src="/arcade/referral.js?v=8"></script>
 <script src="/arcade/nav.js?v=1"></script>
-<script src="/arcade/calendar.js?v=14"></script>
+<script src="/arcade/calendar.js?v=15"></script>
 <script>
 (function(){
   // days of archive since launch; drives the gate's concrete pitch
@@ -275,7 +275,7 @@ window.GA_ID='G-L29P5MRWKE';
         // the day count is live: an abstract perk becomes a specific pile
         '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Vault is an Arcade Card perk') + '</h2>'+
         '<p>' + (VAULTD > 0
-          ? ('That’s ' + (VAULTD * 9) + ' puzzles you can still play, across all nine games.')
+          ? ('That’s ' + (VAULTD * 11) + ' puzzles you can still play, across all eleven games.')
           : 'Go back and play any puzzle you missed, from any game.') + '</p>'+
         '<ul>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, every game</span></li>'+
@@ -304,7 +304,7 @@ window.GA_ID='G-L29P5MRWKE';
      under "Daily puzzles", rather than vanishing. */
   var SECTIONS=[
     { title:'Daily puzzles', sub:'One past day at a time, as many as you like.',
-      keys:['match','sportegories','crossword','rankit','guess'] },
+      keys:['match','sportegories','crossword','rollcall','chain','rankit','guess'] },
     { title:'Streak games', sub:'That day’s run, replayed until you beat it.',
       keys:['almamater','career','table','oddone'] }
   ];
