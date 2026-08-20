@@ -8277,7 +8277,42 @@ const creditCache=new WeakMap();
    reproduces exactly the touchdowns that were called on screen rather than a second, equally
    legal set of them. */
 function gameSeedStr(r){
-  return run.seed+'|'+r.round+'|'+r.shownYou+'-'+r.shownThem;
+  /* THE WEEK DISTINGUISHES A REGULAR SEASON GAME. Only the postseason was ever seeded from
+     this, and there the round does the separating; every regular-season result carries
+     round null, so two 24-20 wins in the same season shared a seed and would have produced
+     the same takeaways down to the man. Nothing looked at that until the season totals did.
+     The playoff branch is untouched, so no game anybody has already watched changes. */
+  return run.seed+'|'+(r.playoff?r.round:'w'+r.week)+'|'+r.shownYou+'-'+r.shownThem;
+}
+
+/*
+ * THE SEASON'S DEFENSIVE LINE, derived and not stored.
+ *
+ * Points allowed is on the results already; the two numbers that say what a drafted defense
+ * actually DID were only ever computed for a playoff game, at the moment the broadcast asked
+ * for them. They are computed for every game here, from each game's own seed, so the total
+ * across the season contains exactly the takeaways the postseason showed on screen rather
+ * than a second, equally legal set of them.
+ *
+ * The regular season still shows nothing while it plays. This is a season summary, which is
+ * a different question from whether a score flashing past should be narrated.
+ */
+function defenseSeasonStats(results){
+  let takeaways=0,tds=0,games=0,allowed=0,best=null;
+  for(const r of (results||[])){
+    if(!r.lines||!r.lines.length||r.shownYou==null) continue;
+    games++; allowed+=r.shownThem;
+    if(best===null||r.shownThem<best) best=r.shownThem;
+    const seedStr=gameSeedStr(r);
+    const script=E.scoringScript(r.shownYou,r.shownThem,
+      E.createSeededRNG(E.hashSeed(seedStr)));
+    const rng=E.createSeededRNG(E.hashSeed(seedStr+'|credits'));
+    for(const t of E.takeawayScript(r.lines,rng,{script})){
+      takeaways++; if(t.td) tds++;
+    }
+  }
+  return {takeaways,tds,games,allowed,fewest:best,
+    allowedPG:games?allowed/games:0};
 }
 function gameCredits(r,script){
   if(!r||!r.playoff||!r.lines||!r.lines.length||r.shownYou==null) return null;
@@ -11029,11 +11064,20 @@ function paintOver(){
   let streak=0,bestStreak=0;
   s.results.forEach(r=>{ streak=r.won?streak+1:0; if(streak>bestStreak)bestStreak=streak; });
   const tile=(v,k,cls)=>'<div class="st"><div class="v'+(cls?' '+cls:'')+'">'+v+'</div><div class="k">'+k+'</div></div>';
-  $('o-stats').innerHTML=
-    tile(forPG.toFixed(1),'Points a game')+
-    tile(agPG.toFixed(1),'Points allowed')+
-    tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
-    tile(bestStreak,'Longest streak');
+  /* A DEFENSE IS NOT SCORED ON POINTS FOR. Two of the four tiles were about an offense the
+     player did not draft: "Points a game" is the league's, and a difference built out of it
+     says as much about them as about the six men who were actually chosen. What a defense
+     draft did is points allowed, the ball it took away, and the times it scored itself. */
+  const ds=isDefRun()?defenseSeasonStats(s.results):null;
+  $('o-stats').innerHTML=ds
+    ? tile(agPG.toFixed(1),'Points allowed')+
+      tile(ds.takeaways,'Forced turnovers')+
+      tile(ds.tds,'Defensive TDs')+
+      tile(bestStreak,'Longest streak')
+    : tile(forPG.toFixed(1),'Points a game')+
+      tile(agPG.toFixed(1),'Points allowed')+
+      tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
+      tile(bestStreak,'Longest streak');
 
   /* Chemistry, money and how the six fit now sit in the hero strip, so repeating them here
      as four more tiles was the same four numbers twice. What this tab can add instead is

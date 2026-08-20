@@ -589,6 +589,33 @@ window.__DEF={
     b.remove();
     return out;
   },
+  /* THE SEASON STAT STRIP on the results screen, as label and value pairs. */
+  seasonStats:()=>[...document.querySelectorAll('#o-stats .st')].map(el=>({
+    k:el.querySelector('.k').textContent, v:el.querySelector('.v').textContent})),
+  /* The same two numbers counted a second way, straight off the run's results, so the strip
+     is checked against the games rather than against itself. */
+  countTakeaways(){
+    let tk=0,td=0,games=0;
+    for(const r of run.season.results){
+      if(!r.lines||!r.lines.length||r.shownYou==null) continue;
+      games++;
+      const seedStr=gameSeedStr(r);
+      const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
+      const rng=E.createSeededRNG(E.hashSeed(seedStr+'|credits'));
+      for(const t of E.takeawayScript(r.lines,rng,{script})){ tk++; if(t.td) td++; }
+    }
+    return {tk,td,games};
+  },
+  /* And what the BROADCAST showed for the last playoff game, which the season total has to
+     contain rather than merely resemble. */
+  playoffGameTakeaways(){
+    const r=run.season.results.filter(x=>x.playoff).slice(-1)[0];
+    if(!r) return null;
+    const c=gameCredits(r);
+    return {shown:c?c.events.length:0, tds:c?c.events.filter(e=>e.td).length:0,
+      round:r.round};
+  },
+
   /* Draft again, off the results screen, and what mode the run it starts is in. */
   draftAgain(){ const b=document.getElementById('b-same'); if(b) b.click(); },
   modeNow:()=>({defense:!!(run&&run.defense),era:(run&&run.era)||null,
@@ -1617,6 +1644,40 @@ boot();`;
     ok('the share card draws, at 1080x1350, off the defensive slots',
       !!card && card.w === 1080 && card.h === 1350
       && card.slots === 'DL,DL,LB,DB,DB,FLEX' && card.bytes > 20000, card);
+
+    /* ── WHAT A DEFENSE SEASON IS SCORED ON ───────────────────────────────────
+       The stat strip was four tiles about an offense the player did not draft: points a
+       game, points allowed, the difference between them, and the streak. Two of those are
+       the league's offense. A defense draft is judged on what it kept out, what it took
+       away and what it scored itself, and the last two existed nowhere until the postseason
+       asked for them one game at a time.
+
+       They are derived for every game from that game's own seed, so the season total holds
+       exactly the takeaways the broadcast showed rather than a second set that would also
+       have been legal. Both halves of that are checked. */
+    const strip = await p.evaluate(() => window.__DEF.seasonStats());
+    const labels = strip.map((t) => t.k);
+    ok('a defense season is scored on what the defense did',
+      JSON.stringify(labels)
+        === JSON.stringify(['Points allowed', 'Forced turnovers', 'Defensive TDs', 'Longest streak']),
+      labels);
+    const counted = await p.evaluate(() => window.__DEF.countTakeaways());
+    const shownTk = Number(strip[1].v), shownTd = Number(strip[2].v);
+    ok('the forced turnovers on screen are the ones the games produced',
+      shownTk === counted.tk && counted.games >= 17,
+      { onScreen: shownTk, counted: counted.tk, games: counted.games });
+    ok('and so are the defensive touchdowns', shownTd === counted.td,
+      { onScreen: shownTd, counted: counted.td });
+    /* A REAL DEFENSE'S SEASON, not a number that happens to render. */
+    ok('the totals are the size a season of football produces',
+      shownTk >= 8 && shownTk <= 70 && shownTd <= 12,
+      { takeaways: shownTk, defensiveTds: shownTd });
+    /* AND THE POSTSEASON AGREES WITH THE SUMMARY. The broadcast builds its takeaways from
+       the same seed; if the two ever drifted, a player would count four on screen and find
+       the season total had never heard of them. */
+    const po = await p.evaluate(() => window.__DEF.playoffGameTakeaways());
+    ok('the playoff game the broadcast called is inside the season total',
+      !po || (po.shown <= shownTk && po.tds <= shownTd), { po, shownTk, shownTd });
 
     /* ── DRAFT AGAIN MEANS THIS GAME AGAIN ────────────────────────────────────
        The button under the results promises the same competition, and the comment above its
