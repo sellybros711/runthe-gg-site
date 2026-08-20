@@ -277,6 +277,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/teammates.js?v=1"></script>
+<script src="/arcade/livecheck.js?v=7"></script>
+<script src="/arcade/teamcheck.js?v=1"></script>
 <script src="/arcade/type.js?v=2"></script>
 <script>
 (function(){
@@ -303,7 +305,8 @@ window.GA_ID='G-L29P5MRWKE';
   function nameOf(i){ return D.players[i][0]; }
   function sportOf(i){ return D.sports[D.players[i][1]]; }
   function stintsOf(i){ return D.players[i][3]; }
-  function initials(i){ return nameOf(i).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase(); }
+  function initialsOf(nm){ return String(nm||'').split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase(); }
+  function initials(i){ return initialsOf(nameOf(i)); }
 
   /* ---------- teammates ----------
      Two players are teammates when they held a stint at the same club whose
@@ -314,21 +317,39 @@ window.GA_ID='G-L29P5MRWKE';
      Keyed on the RECORD. Name-keyed, the NFL's Chris Davis merges with the
      MLB's and the three sports look like one graph, which is the trap the two
      Josh Allens sprang on Sportegories. */
-  function link(a, b){
-    if(a===b) return null;
-    var sa=stintsOf(a), sb=stintsOf(b), best=null;
-    for(var i=0;i<sa.length;i++) for(var j=0;j<sb.length;j++){
-      if(sa[i][0]!==sb[j][0]) continue;
-      var y0=Math.max(sa[i][1], sb[j][1]), y1=Math.min(sa[i][2], sb[j][2]);
-      if(y0>y1) continue;
-      // prefer the longest shared spell, which is the one a fan remembers
-      if(!best || (y1-y0) > (best.y1-best.y0)) best={ team:sa[i][0], y0:y0, y1:y1 };
-    }
+  /* A NODE is a player in the chain, and the two kinds have to be
+     interchangeable: one we hold in teammates.js, and one the live check found
+     because we do not. Both carry their clubs in the same shape, so the link
+     rule below never has to know which it is looking at. */
+  function localNode(i){
+    return { id:i, name:nameOf(i), live:false,
+             stints: stintsOf(i).map(function(s){ return { team:D.teams[s[0]], y0:s[1], y1:s[2] }; }) };
+  }
+  var TC = window.RTGTeamCheck || null;
+  /* The one rule for "were these two teammates": a club in common with
+     overlapping years. Lives in teamcheck.js so Roll Call and this game cannot
+     drift apart on it; the copy here is the fallback for a page that somehow
+     loaded without it, and it is the same rule. */
+  function linkOf(a, b){
+    if(TC && TC.linkOf) return TC.linkOf(a, b);
+    var best=null;
+    (a||[]).forEach(function(x){ (b||[]).forEach(function(y){
+      if(x.team!==y.team) return;
+      if(x.y0==null || y.y0==null){ if(!best) best={team:y.team, y0:null, y1:null, dated:false}; return; }
+      var y0=Math.max(x.y0,y.y0), y1=Math.min(x.y1,y.y1);
+      if(y0>y1) return;
+      if(!best || !best.dated || (y1-y0)>(best.y1-best.y0)) best={team:y.team, y0:y0, y1:y1, dated:true};
+    }); });
     return best;
+  }
+  function link(a, b){                        // by player index, for the reveal
+    if(a===b) return null;
+    return linkOf(localNode(a).stints, localNode(b).stints);
   }
   function linkText(l){
     if(!l) return '';
-    return D.teams[l.team] + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
+    if(!l.dated || l.y0==null) return l.team + ', years unconfirmed';
+    return l.team + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
   }
   // roster index, so neighbours can be listed without touching every player
   var ROSTER = {};
@@ -417,7 +438,9 @@ window.GA_ID='G-L29P5MRWKE';
     for(var i=0;i<slots();i++){
       h += '<div class="rung'+(filled[i]?' on':'')+'"></div>';
       if(filled[i]){
-        h += nodeHTML('filled pop', initials(filled[i].id), nameOf(filled[i].id), linkText(filled[i].link));
+        var f=filled[i];
+        h += nodeHTML('filled pop', initialsOf(f.node.name), f.node.name,
+                      linkText(f.link) + (f.node.live ? ' · checked live' : ''));
       } else {
         var active = (i===filled.length);
         h += nodeHTML('blank'+(active?' active':''), '?', active ? 'Who links them?' : 'Then who?', active ? 'Type a teammate of the name above' : '');
@@ -444,45 +467,81 @@ window.GA_ID='G-L29P5MRWKE';
     if(strikes>=STRIKES) finish(false);
   }
 
-  function submitName(){
-    if(done || filled.length>=slots()) return;
-    var el=$('ask'), k=norm(el.value);
-    if(!k) return;
-    el.value='';
-    try{ if(window.RTGType) RTGType.close(el); }catch(e){}
-    var ids = BY_NAME[k] || [];
-    if(!ids.length){ strike('No player by that name in the file.'); return; }
-    var prev = filled.length ? filled[filled.length-1].id : puz.a;
-    var last = (filled.length === slots()-1);
-    var used = {}; used[puz.a]=1; used[puz.b]=1;
-    filled.forEach(function(f){ used[f.id]=1; });
-
-    var bestId=null, bestLink=null, sawBackLink=false, sawUsed=false;
-    for(var i=0;i<ids.length;i++){
-      var id=ids[i];
-      if(used[id]){ sawUsed=true; continue; }
-      var l = link(prev, id);
-      if(!l) continue;
-      sawBackLink = true;
-      if(last && !link(id, puz.b)) continue;     // the closing name has to reach both ways
-      bestId=id; bestLink=l; break;
-    }
-    if(bestId==null){
-      if(sawUsed && !sawBackLink){ message('Already in the chain.', 'warn'); shake(); return; }
-      if(sawBackLink && last){ strike('Teammate of ' + nameOf(prev) + ', but never played with ' + nameOf(puz.b) + '.'); return; }
-      strike('Never a teammate of ' + nameOf(prev) + '.');
-      return;
-    }
-    filled.push({ id:bestId, link:bestLink });
+  function prevNode(){ return filled.length ? filled[filled.length-1].node : localNode(puz.a); }
+  function place(node, l){
+    filled.push({ node:node, link:l });
     sfx('good');
     renderLadder();
     if(filled.length>=slots()){
-      var close = link(bestId, puz.b);
-      message('Linked. ' + nameOf(bestId) + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
+      var close = linkOf(node.stints, localNode(puz.b).stints);
+      message('Linked. ' + node.name + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
       finish(true);
     } else {
-      message('Linked. ' + linkText(bestLink) + '.', 'good');
+      message('Linked. ' + linkText(l) + '.', 'good');
     }
+  }
+
+  var checking=false;
+  function submitName(){
+    if(done || checking || filled.length>=slots()) return;
+    var el=$('ask'), raw=String(el.value||'').trim(), k=norm(raw);
+    if(!k) return;
+    el.value='';
+    try{ if(window.RTGType) RTGType.close(el); }catch(e){}
+    var prev = prevNode();
+    var end = localNode(puz.b);
+    var last = (filled.length === slots()-1);
+    var used = {}; used[norm(nameOf(puz.a))]=1; used[norm(nameOf(puz.b))]=1;
+    filled.forEach(function(f){ used[norm(f.node.name)]=1; });
+    if(used[k]){ message('Already in the chain.', 'warn'); shake(); return; }
+
+    // ---- our own file first: no network, no wait
+    var ids = BY_NAME[k] || [];
+    var sawBackLink=false;
+    for(var i=0;i<ids.length;i++){
+      var node = localNode(ids[i]);
+      var l = linkOf(prev.stints, node.stints);
+      if(!l) continue;
+      sawBackLink = true;
+      if(last && !linkOf(node.stints, end.stints)) continue;   // must reach both ways
+      place(node, l); return;
+    }
+
+    /* ---- our file could not place him, which is not the same as him being
+       wrong. teammates.js is built from jersey stints and a stint we never
+       scraped reads exactly like a career that never happened: Beltre and
+       Varitek were Red Sox together in 2010 and this game called it a lie.
+       So before it costs a strike, ask the live check. */
+    if(!(TC && TC.clubs)){
+      strike(ids.length ? ('Never a teammate of ' + prev.name + '.') : 'No player by that name.');
+      return;
+    }
+    checking = true;
+    message('Checking the record books…', 'warn');
+    TC.clubs(raw, sportOf(puz.a)).then(function(found){
+      checking = false;
+      if(done) return;
+      if(!found){
+        strike(ids.length ? ('Never a teammate of ' + prev.name + '.')
+                          : 'Could not find a player by that name.');
+        return;
+      }
+      if(found.wrongSport){ strike(found.name + ' is not an ' + sportOf(puz.a) + ' player.'); return; }
+      if(found.noClubs){ strike('No clubs on file for ' + found.name + '.'); return; }
+      var l = linkOf(prev.stints, found.stints);
+      if(!l){
+        strike(found.name + ' never played with ' + prev.name + '.');
+        return;
+      }
+      if(last && !linkOf(found.stints, end.stints)){
+        strike(found.name + ' played with ' + prev.name + ', but never with ' + nameOf(puz.b) + '.');
+        return;
+      }
+      place({ id:null, name:found.name, live:true, stints:found.stints }, l);
+    })['catch'](function(){
+      checking = false;
+      if(!done) strike('Could not check that one. Try another name.');
+    });
   }
 
   function undo(){
@@ -559,18 +618,24 @@ window.GA_ID='G-L29P5MRWKE';
     // Always show a working route. On a solve it is the player's own; on a
     // failure it is one we found, because "there was a way" with no way shown
     // is the most annoying possible ending.
-    var path = solved ? [puz.a].concat(filled.map(function(f){ return f.id; })).concat([puz.b])
-                      : route(puz.a, puz.b, puz.links);
-    if(path){
+    var nodes = null;
+    if(solved){
+      nodes = [localNode(puz.a)].concat(filled.map(function(f){ return f.node; })).concat([localNode(puz.b)]);
+    } else {
+      var idx = route(puz.a, puz.b, puz.links);
+      nodes = idx ? idx.map(localNode) : null;
+    }
+    if(nodes){
       var bits=[];
-      for(var i=0;i<path.length-1;i++){
-        bits.push('<b>'+esc(nameOf(path[i]))+'</b> and <b>'+esc(nameOf(path[i+1]))+'</b>: '+esc(linkText(link(path[i], path[i+1]))));
+      for(var i=0;i<nodes.length-1;i++){
+        bits.push('<b>'+esc(nodes[i].name)+'</b> and <b>'+esc(nodes[i+1].name)+'</b>: '+
+                  esc(linkText(linkOf(nodes[i].stints, nodes[i+1].stints))));
       }
       $('mRoute').innerHTML = (solved ? '' : 'One way through:<br>') + bits.join('<br>');
     } else {
       $('mRoute').textContent = '';
     }
-    lastPath = path;
+    lastPath = nodes;
     $('scrim').classList.remove('hidden');
     if(solved) sfx('win');
   }
