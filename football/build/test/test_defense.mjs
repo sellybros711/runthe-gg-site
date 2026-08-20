@@ -619,6 +619,18 @@ window.__DEF={
       total:chips.length};
   },
   poolLoadedNow:()=>!!DDATA,
+  /* The tier mix of the Defense shelf against the tier mix of everything else, as fractions.
+     Read off the catalog rather than off the rendered chips, because what is under test is
+     how the shelf was WRITTEN, not which of it this fixture happened to earn. */
+  tierMix(){
+    const cut=(list)=>{ const t={bronze:0,silver:0,gold:0,legend:0};
+      for(const a of list) t[a.tier]=(t[a.tier]||0)+1;
+      const n=list.length||1;
+      return {bronze:t.bronze/n,silver:t.silver/n,gold:t.gold/n,legend:t.legend/n}; };
+    const all=ACH.CATALOG;
+    const shelf=all.filter(a=>a.group==='Defense');
+    return {n:shelf.length,shelf:cut(shelf),rest:cut(all.filter(a=>a.group!=='Defense'))};
+  },
 
   /* THE SEASON STAT STRIP on the results screen, as label and value pairs. */
   seasonStats:()=>[...document.querySelectorAll('#o-stats .st')].map(el=>({
@@ -1333,7 +1345,8 @@ boot();`;
       ok('the cabinet has a Defense shelf', cab.shelves.includes('Defense'), cab.shelves);
       ok('and it fetched the defenders before deriving it', cab.pool === true, { pool: cab.pool });
       const won = cab.defenseNames.filter((x) => x.got).map((x) => x.name);
-      ok('and a defense season earns the mode badge', won.includes('Defense'),
+      ok('and a defense season earns the mode badge',
+        won.includes('The other side of the ball'),
         { shelf: cab.defenseCount, earned: won });
       /* The two real defenders in those picks are a sack leader and a tackle leader, so the
          roster-reading badges have something to find. If the pool had not been fetched they
@@ -1341,6 +1354,17 @@ boot();`;
       ok('and the badges that read the roster found the men on it',
         won.includes('Sack artist') && won.includes('Tackling machine')
         && won.includes('Punch it out') && won.includes('Everybody paid'), won);
+      /* THE SHELF CANNOT BE RICHER THAN THE CABINET IT SITS IN. A new group is written in
+         one sitting by one person, which is exactly the way a third of it ends up gold: the
+         first draft of this shelf ran 36% gold against a cabinet that runs 22%, and a gold
+         that is easy to get devalues every gold already earned somewhere else. Measured
+         against the rest of the catalog rather than against a hardcoded mix, so the two move
+         together if the cabinet is ever rebalanced. */
+      const mix = await p2.evaluate(() => window.__DEF.tierMix());
+      ok('the Defense shelf is no richer than the cabinet it sits in',
+        mix.shelf.gold <= mix.rest.gold + 0.05 && mix.shelf.legend <= mix.rest.legend + 0.05
+        && mix.shelf.bronze >= mix.rest.bronze - 0.08,
+        { shelf: mix.shelf, cabinet: mix.rest, n: mix.n });
       await p2.close();
     }
 

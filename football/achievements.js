@@ -831,31 +831,37 @@
   const realPos = (p) => String(p.real_position || '').toUpperCase();
   const countPos = (ros, pos) => ros.filter((p) => posOf(p) === pos).length;
 
-  add(A('mode_defense', 'Defense', 'Finish a Defense season.', 'bronze', 'Defense',
+  add(A('mode_defense', 'The other side of the ball', 'Finish a Defense season.', 'bronze', 'Defense',
     (c) => c.modesPlayed.has('defense')));
   add(A('def_5', 'Coordinator', 'Finish 5 Defense seasons.', 'bronze', 'Defense',
     (c) => c.count(DEF) >= 5));
-  add(A('def_25', 'Career on that side', 'Finish 25 Defense seasons.', 'gold', 'Defense',
+  add(A('def_25', 'Career on that side', 'Finish 25 Defense seasons.', 'silver', 'Defense',
     (c) => c.count(DEF) >= 25));
   add(A('def_ring', 'Defense wins championships',
     'Win a title with a drafted defense.', 'gold', 'Defense',
     (c) => c.modeTitles.has('defense')));
   add(A('def_perfect', 'Nobody scored enough', 'Go perfect with a defense.', 'legend', 'Defense',
     (c) => c.any((r) => DEF(r) && isTrue(r.perfect))));
-  add(A('def_top_seed', 'Through your building',
+  add(A('def_top_seed', 'Best in the league',
     'Take the top seed with a defense.', 'silver', 'Defense',
     (c) => c.any((r) => DEF(r) && /top seed/i.test(String(r.seed_label || '')))));
   add(A('def_17', 'Unbeaten front', 'Win 17 regular season games with a defense.',
-    'gold', 'Defense',
+    'legend', 'Defense',
     (c) => c.any((r) => DEF(r) && has(r.wins) && Number(r.wins) >= 17)));
-  /* THE NUMBERS ARE MEASURED, NOT GUESSED. Over 480 wheel-drafted defense seasons across
-     four draft policies the best point differential was +9.9 a game, the best team rating
-     92.5, the best perfect figure 97, the most league leaders on one roster 3 and the most
-     $20M men 5. A build that ignores the wheel and simply buys the best balanced six reaches
-     a 99.6 rating, +30 a game and a title in one season in six, which is where the ceiling
-     is. Every threshold below sits inside that gap on purpose: reachable by a good draft
-     that got some help from the wheel, out of reach for an ordinary one. A badge nobody can
-     earn is worse than no badge. */
+  /* WHERE THESE NUMBERS COME FROM, and a warning about where they do not.
+   *
+   * They are calibrated against REAL defense runs on the live leaderboard: ratings of 90.5,
+   * 91.4, 92.2, 94.6 and 95.0, a best-possible figure of 96, and records up to 19-2. So 90
+   * is a good draft, 95 is a very good one, and 95% of the best six the wheel offered is the
+   * kind of thing a careful player hits and a hurried one does not.
+   *
+   * They are NOT calibrated against a bot, and an earlier version of this comment was. A
+   * defender's production column is idp_ppg_mean, and the page copies it onto ppr_ppg_mean
+   * when it loads the pool; a harness that skips that step drafts on undefined and plays a
+   * season with six men who produce nothing. Every "measured" figure in the first draft of
+   * this file came from exactly that mistake, which is why it claimed a 92.5 ceiling for a
+   * mode whose players had already beaten it five times. If a threshold here ever needs
+   * re-tuning, tune it against the board, not against a simulator nobody has checked. */
   add(A('def_diff', 'Nothing got through',
     'Outscore the league by 8 a game with a defense.', 'silver', 'Defense',
     (c) => c.any((r) => DEF(r) && has(r.point_diff) && Number(r.point_diff) >= 8)));
@@ -887,7 +893,7 @@
     }))));
   /* The interior is where a run is stopped and where the cheap end of the pool lives, so a
      roster built around it is a real choice rather than a spin nobody could avoid. */
-  add(A('def_interior', 'Two gaps', 'Draft two interior linemen in one defense.',
+  add(A('def_interior', 'Clog the middle', 'Draft two interior linemen in one defense.',
     'silver', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row)
       && ros.filter((p) => /^(DT|NT)$/.test(realPos(p))).length >= 2)));
@@ -897,18 +903,18 @@
       && ros.some((p) => /^(S|FS|SAF)$/.test(realPos(p))))));
 
   /* ---- WHO YOU SIGNED. The defenders carry their own honours, so these ask for them. ---- */
-  add(A('def_sacks', 'Sack artist', 'Draft a man who led the NFL in sacks.', 'silver', 'Defense',
+  add(A('def_sacks', 'Sack artist', 'Draft a man who led the NFL in sacks.', 'bronze', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in sacks/i))));
   add(A('def_picks', 'Ballhawk', 'Draft a man who led the NFL in interceptions.',
-    'silver', 'Defense',
+    'bronze', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in interceptions/i))));
   add(A('def_tackles', 'Tackling machine', 'Draft a man who led the NFL in tackles.',
-    'silver', 'Defense',
+    'bronze', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in tackles/i))));
   add(A('def_strips', 'Punch it out', 'Draft a man who led the NFL in forced fumbles.',
     'silver', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /led the nfl in forced fumbles/i))));
-  add(A('def_twenty', 'Twenty sacks', 'Draft a twenty sack season.', 'gold', 'Defense',
+  add(A('def_twenty', 'Twenty sacks', 'Draft a twenty sack season.', 'silver', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && defBadge(ros, /20 sack season/i))));
   add(A('def_leaders', 'Led the league at everything',
     'Draft league leaders in sacks, tackles, interceptions and forced fumbles.',
@@ -927,15 +933,15 @@
     (c) => c.anyRoster((ros, row) => DEF(row)
       && ros.filter((p) => Number(p.price_musd || 0) >= 20).length >= 5)));
   add(A('def_bargain', 'Built cheap',
-    'Win a title with a defense costing under $110M.', 'gold', 'Defense',
+    'Win a title with a defense costing under $110M.', 'legend', 'Defense',
     (c) => c.any((r) => DEF(r) && isTrue(r.title_won) && has(r.spend_musd)
       && Number(r.spend_musd) < 110)));
   add(A('def_spread', 'Six clubs', 'Draft a defense with six men from six different clubs.',
-    'silver', 'Defense',
+    'bronze', 'Defense',
     (c) => c.anyRoster((ros, row) => DEF(row) && ros.length === 6
       && new Set(ros.map((p) => p.franchise)).size === 6)));
   add(A('def_one_year', 'One season of football',
-    'Draft a defense with three men from the same year.', 'silver', 'Defense',
+    'Draft a defense with three men from the same year.', 'bronze', 'Defense',
     (c) => c.anyRoster((ros, row) => {
       if (!DEF(row)) return false;
       const by = {};
