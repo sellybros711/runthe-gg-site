@@ -2156,6 +2156,52 @@ window.GA_ID='G-L29P5MRWKE';
      arranged and not how a list is. Only on a board pointed its natural way: on a
      reversed one the top three are the three worst seasons in the window, and a podium
      there would be celebrating them. */
+  /* ── the board, behind glass ─────────────────────────────────
+     A GUEST SEES THAT THERE IS A BOARD AND CANNOT READ IT, which is the only honest way
+     to charge for something: the shape, the crowns, the length of the list and the count
+     above it are all still there, and the names and numbers are not. A blank panel would
+     be a wall and would say nothing about what is behind it.
+
+     THE SLAB IS CAPPED. The list runs to five hundred rows, and blurring five hundred rows
+     is both a wall of noise and a lot of filtered pixels for a phone to composite. Locked,
+     it is one screen's worth with the bottom faded into the page, which reads as "this
+     continues" rather than as a list that happens to end.
+
+     NOT A SUBSTITUTE FOR A LOCK. The rows are in the DOM and anybody who opens dev tools
+     can read them, which is fine: this is a prompt and not a paywall, and the board is
+     public data that the site puts on a public page. */
+  /* THE CARD IS THE ONE IN THE FLOW AND THE BOARD IS BEHIND IT, which is the opposite of
+     the obvious arrangement and is the only one that cannot be wrong. Absolutely
+     positioning the card over a fixed-height slab means picking a height that fits it, and
+     the first attempt picked one that did not: the sign-in button was clipped off the
+     bottom edge by the very overflow doing the capping. This way the section is exactly as
+     tall as the card plus the peek above it, and the blurred board is stretched to fill
+     whatever that comes to.
+
+     THE PEEK IS THE PADDING, AND ITS SIZE WAS MEASURED. Blurred podium above the card, so
+     the three steps and their crowns read over the top of it: that shape is the argument
+     and the card is only the ask. 150px looked right and put the sign-in button 39px
+     behind the sticky footer at 390x900, which is a call to action hiding behind two other
+     buttons. 100px clears it. test_board_gate holds the number by measuring the button
+     against the dock rather than by trusting this comment. */
+  .lblock{position:relative}
+  .lblock.locked{overflow:hidden}
+  .lblock.locked .lblock-in{position:absolute;inset:0;filter:blur(7px) saturate(.72);
+    pointer-events:none;user-select:none;-webkit-user-select:none}
+  .lblock.locked:after{content:'';position:absolute;left:0;right:0;bottom:0;height:90px;
+    z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
+  .lblock.locked .lbgate{position:relative;z-index:2;display:flex;justify-content:center;
+    padding:100px 8px 10px}
+  .lbgate .card{width:100%;max-width:330px;padding:16px 15px 15px;border-radius:14px;
+    background:rgba(19,26,43,.93);border:1px solid var(--line-2);
+    box-shadow:0 24px 60px -20px #000;backdrop-filter:blur(2px)}
+  .lbgate .card h3{font-family:var(--fn);font-size:17px;font-weight:800;margin:3px 0 5px;
+    color:var(--ink)}
+  .lbgate .card .lg-sub{font-size:12.5px;line-height:1.4;color:var(--dim);margin:0 0 12px}
+  .lbgate .perks{gap:9px}
+  .lbgate .perk b{font-size:13px}
+  .lbgate .perk span{font-size:12px}
+  .lbgate .btn{margin-top:13px}
   .podium{display:none;margin:11px 0 16px}
   .podium.on{display:block}
   /* Three steps, then ONE base under all of them. A stub of floor per step reads as
@@ -3343,8 +3389,18 @@ or endorsed by the NCAA, the CFP or any school.
     <!-- THE TOP THREE, as a podium. Empty and display:none until paintPodium fills
          it, which it only does on a board pointed the natural way with at least
          three seasons on it. -->
-    <div class="podium" id="lb-podium"></div>
-    <div class="lb" id="lb-rows"></div>
+    <!-- BLURRED FOR A GUEST, with the ask sitting on top of it. The board is the reason
+         to have an account and a guest could read the whole thing without one, so it is
+         the one screen where the offer has something to trade. The rows are still drawn
+         and still real underneath: a blur that has a leaderboard behind it is an offer,
+         and a blank panel is a wall. -->
+    <div class="lblock" id="lb-lock">
+      <div class="lblock-in">
+        <div class="podium" id="lb-podium"></div>
+        <div class="lb" id="lb-rows"></div>
+      </div>
+      <div class="lbgate" id="lb-gate" hidden></div>
+    </div>
     <p class="notlive" id="lb-note" style="display:none"></p>
     <!-- Which seasons this board counts and when it resets: fine print, so it goes at
          the foot, ABOVE the two pinned blocks so that when you do reach the real bottom
@@ -4938,6 +4994,10 @@ function bootAuth(){
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
     /* The draft finished before auth did, so the ask was deferred rather than guessed at. */
     if(squadPitchWanted&&$('s-squad').classList.contains('on')) guestPitch();
+    /* The board is blurred for a guest, so signing in while looking at it has to clear the
+       glass. Repainted rather than just unlocked, because a name arriving also changes what
+       the board says about you. */
+    if($('s-board').classList.contains('on')) paintBoard();
     /* Signing in with a finished season on screen takes it over. */
     /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
        repainting a placing is not an answer to "what did I just get". The NFL game
@@ -5757,6 +5817,62 @@ async function paintBoard(){
   paintRows();
 }
 
+/* ── THE BOARD IS THE THING AN ACCOUNT BUYS ──────────────────────────────────
+ *
+ * A guest could read the whole leaderboard and never be on it, which is the one screen in
+ * the game where the offer has something real to trade. Blurred, with the ask on top: the
+ * rows underneath are still drawn and still true, because a blur with a leaderboard behind
+ * it is an offer and a blank panel is a wall.
+ *
+ * ONLY A GUEST, AND ONLY WHEN SIGNING IN IS ACTUALLY POSSIBLE. gateState() answers nothing
+ * while auth is still landing, so the board does not flash blurred and clear on every load,
+ * and nothing at all when the sign-in script was blocked, because charging for a board in
+ * a browser that cannot create an account is a wall with no door in it.
+ *
+ * NOT A LOCK, and it does not pretend to be. The rows are in the DOM and dev tools will
+ * read them. That is fine: this is a prompt, and the board is public data on a public page.
+ * Anything stronger would mean not sending the rows, and then the blur would have nothing
+ * behind it and the offer would have nothing to show. */
+const boardLocked=()=>gateState()==='guest';
+
+function paintBoardGate(){
+  const wrap=$('lb-lock'), gate=$('lb-gate');
+  if(!wrap||!gate) return;
+  /* Nothing to sell over an empty board, and nothing to blur either: a guest looking at
+     "No seasons today yet" would get a card promising a list that is not there. */
+  const has=(lbRows||[]).length>0;
+  const on=has&&boardLocked();
+  wrap.classList.toggle('locked',on);
+  gate.hidden=!on;
+  /* Cleared as well as emptied, or a player who signs in and then signs out again gets a
+     blurred board with nothing on top of it. */
+  if(!on){ gate.innerHTML=''; gate.dataset.built=''; return; }
+  if(gate.dataset.built==='1') return;
+  gate.dataset.built='1';
+  ga('board_gate_shown',{window:lbWindow,mode:lbMode});
+  /* Three, and every one of them is about THIS screen. The trophy case and school colors
+     are real and are sold on the squad screen; here the offer has to be the board, or it
+     is a generic account pitch that happens to be standing on a leaderboard. */
+  const perks=[
+    ['Your name on this board', 'Only named seasons get listed.'],
+    ['Your place, every season', 'Where each run lands against everybody.'],
+    ['Six boards, not one', 'A separate one for each Power 5 conference.'],
+  ];
+  gate.innerHTML='<div class="card">'+
+    '<div class="eyebrow green">The leaderboard</div>'+
+    '<h3>See who is up there</h3>'+
+    '<p class="lg-sub">Guest seasons are still ranked. An account is what puts your name '+
+      'on them, free, in about ten seconds.</p>'+
+    '<div class="perks">'+perks.map(([t,d])=>
+      '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
+      '</span></div></div>').join('')+'</div>'+
+    '<button class="btn" id="lb-gate-in">Sign in or sign up</button></div>';
+  $('lb-gate-in').onclick=()=>{
+    ga('gate_clicked',{from:'board'});
+    openProfile('account');
+  };
+}
+
 /* Painting is split from loading so a repaint that changes nothing about the query --
    there is none yet, and there was none in the football game either until there was --
    never costs a round trip. */
@@ -5768,6 +5884,7 @@ function paintRows(){
     $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+
       ' yet. Yours could be the first.</div>';
     hideMyPin();
+    paintBoardGate();
     return;
   }
   /* THE LIST STARTS WHERE THE PODIUM STOPPED. Starting at one would put first, second
@@ -5779,6 +5896,7 @@ function paintRows(){
   const above=paintPodium(rows)?3:0;
   $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>lbRow(r,above+j+1,above+j)).join('');
   paintMyPin();
+  paintBoardGate();
 }
 
 /* THE TOP THREE, as a podium.
