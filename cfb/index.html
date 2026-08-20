@@ -1824,20 +1824,31 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
     color:var(--dim);text-align:center;white-space:nowrap}
   .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
-  /* RED, AND THE ONLY RED ON THE SCREEN. The primary button in this game is green, so the
-     college Account page never had the NFL game's problem of a harmless control being the
-     loudest thing on it -- but the two games should not disagree about what ending an account
-     looks like, and this is the one control on either page that is irreversible.
+  /* AN EXIT, NOT AN INVITATION, AND THE SIZE IS THE WHOLE ARGUMENT.
+     This was a full-width filled red button, on the reasoning that a tap on it only opens a
+     warning so it could afford to look like what it is. That reasoning is sound about SAFETY
+     and wrong about INTENT: nobody comes to this page wanting to end their account, and the
+     biggest, loudest thing on a screen is a suggestion whatever it does when tapped. It was
+     the only filled control on a page whose other three are ghosts, which made ending your
+     account the visual headline of managing it.
 
-     A LOUD BUTTON IS NOT A DANGEROUS ONE ANY MORE. Being quiet used to be the guard -- the
-     button was trying not to be tapped. It does not have to do that job now: a tap on this
-     opens a warning and nothing else, and the delete cannot fire until a name has been typed
-     into a field by hand. So it can afford to look like what it is.
-     The armed state still has to read as a further step, so it goes darker and takes a ring. */
+     So at rest it is a small outlined control, sized like a footnote and left aligned, so it
+     takes the width of its own words rather than the width of the sheet. Still red, still
+     labelled plainly, still one tap from anybody who wants it: quiet is not hidden, and this
+     is deliberately not tucked behind a menu or a long press.
+
+     IT GROWS WHEN IT IS ABOUT TO BE TRUE. The armed state, which is reached only after the
+     warning and only with your own name typed into a field, goes full width and filled. At
+     that point loud IS the honest shape, because the next tap is the one that does it. */
   .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .pfdanger .btn.del{color:#fff;border:none;
-    background:linear-gradient(135deg,#f05252 0%,#b91c1c 100%)}
-  .pfdanger .btn.del.armed{background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
+  .pfdanger .btn.del{display:inline-block;width:auto;padding:8px 13px;font-size:12px;
+    letter-spacing:.05em;border-radius:9px;color:#f0918e;background:none;box-shadow:none;
+    border:1px solid rgba(239,68,68,.34)}
+  .pfdanger .btn.del:before{display:none}
+  .pfdanger .btn.del:hover{color:#fca5a5;border-color:rgba(239,68,68,.6)}
+  .pfdanger .btn.del.armed{display:block;width:100%;padding:16px 18px;font-size:17px;
+    letter-spacing:.045em;border-radius:12px;color:#fff;border:none;
+    background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
     box-shadow:0 0 0 3px rgba(239,68,68,.28),var(--shadow)}
   /* One season, in a list. Same row wherever a season is listed, so a season looks the
      same on every page it appears on. */
@@ -4372,9 +4383,13 @@ function pfAccount(){
   openSheet(); wireAccount(); pfWire(box);
   if(canDelete) pfWireDelete();
 }
-const PF_DEL_NOTE='This ends your RunThe.GG account across <b>every game on the site</b>, '+
-  'not just this one. It cannot be undone. Seasons already on a leaderboard stay there '+
-  'without your name on them.';
+/* AT REST THIS IS ONE LINE, and the long version arrives on the first tap. The resting
+   note was four lines of red-flag prose about losing your account, which on a settings page
+   is the same mistake the button was making in a different medium: the largest thing in a
+   section is what that section looks like it is for. Nothing is lost by moving it, because
+   the first tap changes nothing at all and says the whole of it, with the way back already
+   on screen. See the three steps below. */
+const PF_DEL_NOTE='Ends your RunThe.GG account across <b>every game on the site</b>, permanently.';
 function pfDangerHtml(){
   return '<div class="pfdanger">'+
     '<p class="shsec" style="margin:0">Delete your account</p>'+
@@ -4433,7 +4448,8 @@ function pfWireDelete(){
       del.textContent='I understand, continue';
       note.innerHTML='<b>This cannot be undone.</b> Your sign-in, your name, your school '+
         'colors and your claim on every season you have posted in every RunThe.GG game go '+
-        'for good. There is no undo and nobody can put it back.';
+        'for good. There is no undo and nobody can put it back. Seasons already on a '+
+        'leaderboard stay there, without your name on them.';
       back.hidden=false;
       return;
     }
