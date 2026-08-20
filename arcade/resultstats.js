@@ -39,7 +39,9 @@
     ['career', 'Career Path', 'var(--green,#48D17A)'],
     ['table', 'Number Game', 'var(--gold,#F2B632)'],
     ['oddone', 'Odd One Out', 'var(--violet,#A982F3)'],
-    ['highlow', 'High Low', 'var(--teal,#37C5D5)']
+    ['highlow', 'High Low', 'var(--teal,#37C5D5)'],
+    ['rollcall', 'Roll Call', 'var(--teal,#37C5D5)'],
+    ['chain', 'Chain', 'var(--moss,#96B93C)']
   ];
 
   function findSheet() {

@@ -1,0 +1,44 @@
+name: Teammates data check
+
+# arcade/teammates.js feeds two games, and both of them derive teammate
+# adjacency from its stints at run time. This asserts the derivation agrees with
+# the decks the builder wrote: every Roll Call name really was at that club that
+# season, and every Chain pair really is solvable in the number of links the
+# board promises.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-teammates.mjs
+# And after regenerating the data:
+#   node scripts/build-teammates.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/teammates.js'
+      - 'scripts/build-teammates.mjs'
+      - 'scripts/check-teammates.mjs'
+      - '.github/workflows/teammates-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/teammates.js'
+      - 'scripts/build-teammates.mjs'
+      - 'scripts/check-teammates.mjs'
+      - '.github/workflows/teammates-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: teammates-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-teammates.mjs

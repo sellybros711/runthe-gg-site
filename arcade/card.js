@@ -152,7 +152,7 @@
 
   var CHECK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
   // Days of archive available, and the puzzle count that implies (25 puzzles a
-  // day: ten games, five of them in NBA, NFL and MLB editions too). The number
+  // day: twelve games, five of them in NBA, NFL and MLB editions too). The number
   // is the whole argument: "past days" is abstract, "475 puzzles" is not.
   function vaultDays(){
     try {
@@ -172,9 +172,9 @@
   };
   function benefitsHTML(){
     return '<ul class="rtgc-perks">' +
-      // Lead with the most differentiated perk: 25 daily puzzles vs the free 4.
+      // Lead with the most differentiated perk: 27 daily puzzles vs the free 4.
       '<li><span>' + ICN.ball + '</span><div><b><s>4</s> 25 new daily games</b>' +
-        '<small>All ten games instead of four, plus NFL, NBA and MLB specific editions of five of them.</small></div></li>' +
+        '<small>All twelve games instead of four, plus NFL, NBA and MLB specific editions of five of them.</small></div></li>' +
       '<li><span>' + ICN.hilo + '</span> Six members-only games, Higher or Lower included</li>' +
       '<li><span>' + ICN.infinity + '</span> Unlimited plays, every day</li>' +
       '<li><span>' + ICN.archive + '</span> The full Archive of all past games</li>' +
@@ -203,7 +203,7 @@
       kicker='Arcade Archive';
       head = vd > 0 ? ('Unlock ' + vd + ' days you missed') : 'Unlock the full Archive';
       sub = vd > 0
-        ? ('That’s ' + (vd*25) + ' puzzles waiting, across all ten games. Play any of them, any time.')
+        ? ('That’s ' + (vd*27) + ' puzzles waiting, across all twelve games. Play any of them, any time.')
         : 'Play any past day’s puzzles across every game with an Arcade Card.';
     } else if(reason==='locked'){
       // Name the game they just tapped. "You need the card to play THIS" is a
@@ -212,15 +212,15 @@
       var gn = opts.name || gameName(opts.game);
       kicker='Members only'; head='You need the Arcade Card';
       sub = (gn ? (gn + ' is one of six members-only games. ') : 'This is one of six members-only games. ')
-        + 'The card opens all ten, unlimited, plus NBA, NFL and MLB editions of five of them and the full Archive.';
+        + 'The card opens all twelve, unlimited, plus NBA, NFL and MLB editions of five of them and the full Archive.';
     } else if(reason==='upsell'){
-      kicker='Arcade Card'; head='4 → 25 daily games';
-      sub='All ten games instead of four, NBA, NFL and MLB editions of five of them, unlimited plays and the full archive.';
+      kicker='Arcade Card'; head='4 → 27 daily games';
+      sub='All twelve games instead of four, NBA, NFL and MLB editions of five of them, unlimited plays and the full archive.';
     } else {
       kicker='Arcade Card'; head='Keep playing, unlimited';
       sub = signedIn()
-        ? 'A free account gets one go a day at four games. Members play all ten as much as they like, every day, across 25 daily puzzles.'
-        : 'Members play all ten games as much as they like, every day, across 25 daily puzzles.';
+        ? 'A free account gets one go a day at four games. Members play all twelve as much as they like, every day, across 27 daily puzzles.'
+        : 'Members play all twelve games as much as they like, every day, across 27 daily puzzles.';
     }
     function render(){
       var b=$('rtgcardBody');
@@ -324,7 +324,7 @@
     var b=$('rtgcardBody');
     b.innerHTML =
       '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">Ready to play?</h2>'+
-      arcadeBanner('rtgcardCard','All ten games, unlimited. Every past day unlocked.')+
+      arcadeBanner('rtgcardCard','All twelve games, unlimited. Every past day unlocked.')+
       '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>Or Create a Free Account</b>'+
         '<small>One go a day at four games, and the leaderboard. Account stays with you on all RunThe.GG content.</small></button>'+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+

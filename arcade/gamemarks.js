@@ -42,6 +42,8 @@
     rankit: "<svg viewBox=\"0 0 56 56\">\n                <!-- a podium, not a bar chart: three bars sliding out read as data, and\n                     1-2-3 on a rostrum reads as finishing order -->\n                <rect x=\"4\" y=\"28\" width=\"15\" height=\"22\" rx=\"2.5\" fill=\"#F65C9C\" opacity=\".52\"/>\n                <rect x=\"20.5\" y=\"17\" width=\"15\" height=\"33\" rx=\"2.5\" fill=\"#F65C9C\"/>\n                <rect x=\"37\" y=\"34\" width=\"15\" height=\"16\" rx=\"2.5\" fill=\"#F65C9C\" opacity=\".74\"/>\n                <g class=\"rknum\" font-family=\"Anton, Impact, sans-serif\" font-size=\"12\" text-anchor=\"middle\" fill=\"#fff\" opacity=\".95\">\n                  <text x=\"11.5\" y=\"42\">2</text><text x=\"28\" y=\"34\">1</text><text x=\"44.5\" y=\"46\">3</text>\n                </g>\n              </svg>",
     almamater: "<svg viewBox=\"0 0 56 56\">\n                <path d=\"M28 12 L52 22 L28 32 L4 22 Z\" fill=\"#F2B632\"/>\n                <path d=\"M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z\" fill=\"#F2B632\" opacity=\".55\"/>\n                <path d=\"M52 22 v11\" fill=\"none\" stroke=\"#F2B632\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>\n                <circle cx=\"52\" cy=\"35\" r=\"2.6\" fill=\"#F2B632\"/>\n              </svg>",
     sportegories: "<svg viewBox=\"0 0 56 56\">\n                <!-- the game is a letter crossed with a sport, so the mark is\n                     exactly that: one letter tile, one ball, both big enough to\n                     read at icon size -->\n                <rect x=\"3\" y=\"15\" width=\"25\" height=\"27\" rx=\"5\" fill=\"none\" stroke=\"#DA6BE6\" stroke-width=\"3\"/>\n                <g font-family=\"Anton, Impact, sans-serif\" font-size=\"19\" text-anchor=\"middle\" fill=\"#DA6BE6\"><text x=\"15.5\" y=\"35.5\">S</text></g>\n                <g fill=\"none\" stroke=\"#DA6BE6\" stroke-width=\"2.6\">\n                  <circle cx=\"41\" cy=\"28.5\" r=\"12\"/>\n                  <path d=\"M29 28.5h24M41 16.5v24M33 19.4c4.6 4.6 4.6 13.6 0 18.2M49 19.4c-4.6 4.6-4.6 13.6 0 18.2\"/>\n                </g>\n              </svg>",
+    rollcall: "<svg viewBox=\"0 0 56 56\">\n                <!-- a team sheet on a clipboard: some names ticked off, the rest\n                     still blank, which is the whole round in one picture -->\n                <rect x=\"9\" y=\"8\" width=\"38\" height=\"42\" rx=\"5\" fill=\"none\" stroke=\"#37C5D5\" stroke-width=\"3\"/>\n                <rect x=\"21\" y=\"4\" width=\"14\" height=\"8\" rx=\"2.5\" fill=\"#37C5D5\"/>\n                <g stroke=\"#37C5D5\" stroke-width=\"3\" stroke-linecap=\"round\">\n                  <path d=\"M16 23h9M16 32h13M16 41h7\"/>\n                </g>\n                <g class=\"rctick\" fill=\"none\" stroke=\"#37C5D5\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n                  <path d=\"M32 22.6l2.6 2.6 5-5.2\"/>\n                  <path d=\"M34 31.6l2.6 2.6 5-5.2\"/>\n                </g>\n              </svg>",
+    chain: "<svg viewBox=\"0 0 56 56\">\n                <!-- two links hooked together. The mark is the mechanic: the\n                     game is entirely about what joins one name to another -->\n                <g fill=\"none\" stroke=\"#96B93C\" stroke-width=\"4.6\" stroke-linecap=\"round\">\n                  <rect class=\"chl\" x=\"5\" y=\"19\" width=\"27\" height=\"18\" rx=\"9\"/>\n                  <rect class=\"chr\" x=\"24\" y=\"19\" width=\"27\" height=\"18\" rx=\"9\"/>\n                </g>\n              </svg>",
     highlow: "<svg viewBox=\"0 0 56 56\">\n                <g class=\"hlup\" fill=\"#F5822B\"><path d=\"M14 6 L22 19 L6 19 Z\"/></g>\n                <g class=\"hldn\" fill=\"#F5822B\" opacity=\".62\"><path d=\"M42 50 L50 37 L34 37 Z\"/></g>\n                <!-- the number is the point: you are calling a stat, not a shape -->\n                <text x=\"28\" y=\"34\" text-anchor=\"middle\" font-family=\"Anton, Impact, sans-serif\" font-size=\"19\" fill=\"#F5822B\">27.4</text>\n              </svg>"
   };
 
@@ -59,7 +61,8 @@
   var NAMES = {
     match: 'Common Ground', sportegories: 'Sportegories', crossword: 'Daily Crossword',
     rankit: 'Rank It', guess: 'Guess the Player', almamater: 'Alma Mater',
-    career: 'Career Path', table: 'Number Game', oddone: 'Odd One Out', highlow: 'High Low'
+    career: 'Career Path', table: 'Number Game', oddone: 'Odd One Out', highlow: 'High Low',
+    rollcall: 'Roll Call', chain: 'Chain'
   };
   var DESC = {
     match: 'Can you spot what sixteen athletes have in common? Four hidden groups, four mistakes allowed.',
@@ -71,7 +74,9 @@
     career: 'How many clubs does it take before you know the player? The earlier you call it, the more it scores.',
     table: 'How well do you know athletes\u2019 jersey numbers? Go for as long as you can.',
     oddone: 'Can you spot which of five athletes does not belong? Name the link too, and keep the run alive.',
-    highlow: 'Higher or lower? Pick a stat, then call every athlete that follows until you miss.'
+    highlow: 'Higher or lower? Pick a stat, then call every athlete that follows until you miss.',
+    rollcall: 'How much of that squad do you still remember? One club, one season, ninety seconds.',
+    chain: 'Can you get from one player to another through teammates? Two names in the middle.'
   };
 
   // Aliases, because the Vault and the hub have historically keyed these

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade: Roll Call | RunThe.GG</title>
+<link rel="canonical" href="https://runthe.gg/arcade/rollcall/" />
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+(function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
+  document.documentElement.setAttribute('data-theme',t); })();
+</script>
+<meta name="description" content="Roll Call: one club, one season, ninety seconds. Name as many of that roster as you can." />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
+<style>
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --coral:#F06A5F; --gold:#F2B632; --green:#48D17A; --red:#FF625F;
+    --rc:#37C5D5; --rcT:#37C5D5;
+    --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E;
+    --onAccent:#04222A; --goldT:#F2B632; --greenT:#48D17A;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --rcT:#0E7C89; --onAccent:#04222A;
+    --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --goldT:#A87508; --greenT:#17A34A; --red:#C4372C;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--rcT); outline-offset:2px; border-radius:4px;}
+  .wrap{width:100%; max-width:640px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; min-width:0; overflow:hidden;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; line-height:1.2; letter-spacing:.12em; color:var(--mut); margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .spacer{flex:1;}
+  .themeBtn{width:30px; height:30px; border-radius:8px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .themeBtn .ic-sun{display:none;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:none;}
+
+  .panel{display:none;}
+  .panel.on{display:block;}
+
+  .card{background:var(--card); border:1px solid var(--line2); border-radius:14px; box-shadow:var(--shadow);}
+
+  /* ---- setup ---- */
+  .setup{padding:22px 18px 20px; text-align:center;}
+  .kick{font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--rcT);}
+  .clubline{font-family:var(--hero); font-weight:400; text-transform:uppercase; line-height:.98; margin:8px 0 2px;
+    font-size:clamp(30px,8.4vw,46px); letter-spacing:.01em;}
+  .season{font-family:var(--hero); font-weight:400; font-size:15px; letter-spacing:.14em; color:var(--mut);}
+  .blurb{color:var(--mut); font-size:14px; font-weight:600; margin:14px auto 18px; max-width:34ch; line-height:1.5;}
+  .gobtn{width:100%; border:0; border-radius:12px; padding:15px 16px; font-family:var(--hero); font-weight:400;
+    font-size:20px; letter-spacing:.04em; text-transform:uppercase; color:var(--onAccent); background:var(--rc); cursor:pointer;}
+  .ghost{width:100%; margin-top:9px; border:1px solid var(--line2); border-radius:12px; padding:12px 16px; background:transparent;
+    color:var(--mut); font-family:var(--f); font-weight:800; font-size:13.5px; cursor:pointer;}
+  .bestline{margin-top:14px; font-size:11.5px; color:var(--dim); font-weight:700;}
+
+  /* ---- play ---- */
+  .head{display:flex; align-items:center; gap:12px; padding:13px 14px; margin-bottom:10px;}
+  .head .who{min-width:0; flex:1;}
+  .head .club{font-family:var(--hero); font-weight:400; text-transform:uppercase; font-size:19px; line-height:1.05;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .head .yr{font-size:11px; font-weight:900; letter-spacing:.12em; color:var(--rcT); text-transform:uppercase;}
+  .clock{text-align:center; flex:0 0 auto;}
+  .clock .t{font-family:var(--hero); font-weight:400; font-size:26px; line-height:1; font-variant-numeric:tabular-nums;}
+  .clock .l{font-size:9px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);}
+  .clock.warn .t{color:var(--red);}
+  .bar{height:4px; border-radius:99px; background:var(--card2); overflow:hidden; margin:-4px 0 12px;}
+  .bar i{display:block; height:100%; width:100%; background:var(--rc); transition:width .96s linear;}
+  .bar i.warn{background:var(--red);}
+
+  .askrow{display:flex; gap:8px; align-items:stretch; margin-bottom:12px;}
+  .askrow .fieldwrap{position:relative; flex:1; min-width:0;}
+  .askrow input{width:100%; height:46px; border-radius:12px; border:1px solid var(--line2); background:var(--card);
+    color:var(--ink); font-family:var(--f); font-weight:800; font-size:16px; padding:0 13px;}
+  .askrow input::placeholder{color:var(--dim); font-weight:700;}
+  .askrow input:focus{outline:none; border-color:var(--rcT); box-shadow:0 0 0 3px color-mix(in srgb, var(--rcT) 26%, transparent);}
+  .askrow .go{flex:0 0 auto; border:0; border-radius:12px; padding:0 16px; background:var(--rc); color:var(--onAccent);
+    font-family:var(--hero); font-weight:400; font-size:17px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;}
+
+  .tally{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .tally .n{font-family:var(--hero); font-weight:400; font-size:30px; line-height:1; font-variant-numeric:tabular-nums;}
+  .tally .l{font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
+  .tally .msg{margin-left:auto; text-align:right; font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.35; min-height:17px;}
+  .tally .msg.good{color:var(--greenT);} .tally .msg.warn{color:var(--goldT);} .tally .msg.bad{color:var(--red);}
+
+  .slots{display:grid; grid-template-columns:1fr; gap:6px; margin-bottom:14px;}
+  @media (min-width:520px){ .slots{grid-template-columns:1fr 1fr;} }
+  .slot{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    background:var(--card); border:1px solid var(--line); min-height:44px;}
+  .slot .i{font-family:var(--hero); font-weight:400; font-size:14px; color:var(--dim); width:18px; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .slot .nm{font-weight:800; font-size:14.5px; color:var(--dim); letter-spacing:.02em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .slot .no{margin-left:auto; font-size:11px; font-weight:900; color:var(--dim); font-variant-numeric:tabular-nums; flex:0 0 auto;}
+  .slot.got{background:color-mix(in srgb, var(--rc) 13%, var(--card)); border-color:color-mix(in srgb, var(--rc) 42%, transparent);}
+  .slot.got .nm{color:var(--ink);} .slot.got .no{color:var(--rcT);}
+  .slot.missed .nm{color:var(--mut);}
+  .slot.pop{animation:pop .34s ease;}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
+  .shake{animation:shake .3s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @media (prefers-reduced-motion:reduce){ .slot.pop,.shake{animation:none;} .bar i{transition:none;} }
+
+  .submit{width:100%; border:1px solid var(--line2); border-radius:12px; padding:12px; background:transparent; color:var(--mut);
+    font-family:var(--f); font-weight:800; font-size:13.5px; cursor:pointer;}
+  .foot{margin-top:22px; text-align:center; font-size:11px; color:var(--dim); line-height:1.7;}
+  .foot a{color:var(--mut); text-decoration:underline;}
+
+  /* ---- result ---- */
+  .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
+  .scrim.hidden{display:none;}
+  .sheet{width:100%; max-width:420px; background:var(--card); border:1px solid var(--line2); border-radius:18px; padding:22px 18px 18px; text-align:center; position:relative;}
+  .sheet .x{position:absolute; top:10px; right:12px; background:transparent; border:0; color:var(--dim); font-size:18px; cursor:pointer;}
+  .sub-h{font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--rcT);}
+  .bigscore{font-family:var(--hero); font-weight:400; font-size:66px; line-height:1; margin:4px 0 0; font-variant-numeric:tabular-nums;}
+  .sheet h2{font-family:var(--hero); font-weight:400; font-size:17px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 0 12px;}
+  .a-runline{display:flex; align-items:center; justify-content:center; gap:10px; font-size:12px; font-weight:800; color:var(--mut); margin-bottom:16px;}
+  .a-runline i{width:1px; height:12px; background:var(--line2);}
+  .a-runline b{color:var(--ink);}
+  .abtn{width:100%; margin-top:8px; border:1px solid var(--line2); border-radius:12px; padding:12px; background:transparent; color:var(--ink); font-family:var(--f); font-weight:800; font-size:14px; cursor:pointer;}
+  .abtn.go{background:var(--rc); border-color:var(--rc); color:var(--onAccent); font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.04em; text-transform:uppercase;}
+  .abtn.spent{opacity:.6;}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(12px); background:var(--card3); color:var(--ink);
+    border:1px solid var(--line2); border-radius:10px; padding:10px 14px; font-size:13px; font-weight:800; opacity:0; pointer-events:none; transition:.2s; z-index:60;}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* how-to tab lives at the bottom of every game, collapsed by default */
+  .gj{grid-area:auto;}
+</style>
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Roll Call'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">ROLL CALL</span></a>
+    <div class="spacer"></div>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== setup ===== -->
+  <section class="panel on" id="panelSetup">
+    <div class="card setup">
+      <div class="kick" id="setupKick">Today's roster</div>
+      <div class="clubline" id="setupClub">Loading</div>
+      <div class="season" id="setupSeason"></div>
+      <p class="blurb" id="setupBlurb">Ninety seconds. Name as many of them as you can.</p>
+      <button class="gobtn" id="startBtn" type="button">Start today's roll call</button>
+      <button class="ghost" id="practiceBtn" type="button">Random roster</button>
+      <div class="bestline" id="bestLine"></div>
+    </div>
+  </section>
+
+  <!-- ===== play ===== -->
+  <section class="panel" id="panelPlay">
+    <div class="card head">
+      <div class="who">
+        <div class="club" id="playClub">Club</div>
+        <div class="yr" id="playYear">Season</div>
+      </div>
+      <div class="clock" id="clock"><div class="t" id="clockT">1:30</div><div class="l">Left</div></div>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+
+    <div class="askrow">
+      <div class="fieldwrap"><input type="text" id="ask" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name a player…" aria-label="Name a player from this roster" /></div>
+      <button class="go" id="goBtn" type="button">Add</button>
+    </div>
+
+    <div class="tally">
+      <span class="n" id="tallyN">0</span>
+      <span class="l" id="tallyL">of 0 named</span>
+      <span class="msg" id="msg"></span>
+    </div>
+
+    <div class="slots" id="slots"></div>
+    <button class="submit" id="doneBtn" type="button">I'm done</button>
+  </section>
+
+  <div class="lb"></div>
+
+<details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Roll Call</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
+<p>Roll Call is a daily roster memory test. You get one club and one season, ninety seconds, and a column of blanks. Every blank is a player who wore that uniform that year. Type the names you remember.</p>
+<ul>
+  <li>Full names, and spelling is forgiving: the typeahead will find him from a few letters.</li>
+  <li>A right player in the wrong season is not a miss. The game says so and you keep going.</li>
+  <li>There is no penalty for a wrong name, only the clock. Guess out loud, so to speak.</li>
+</ul>
+<h3>One roster a day</h3>
+<p>A new club and season arrive at midnight local time, the same one for everybody, and a finished day keeps your streak alive. Roll Call is an Arcade Card game. Members play all Arcade titles without limits and replay any past day from the <a href="/arcade/archive/">Archive</a>. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<h3>How the blanks are chosen</h3>
+<p>Rosters run deep and most of a squad is forgettable, so the blanks are only the players a sports fan would plausibly know, drawn from real jersey records. That is why a board is eight or ten names rather than fifty three, and why naming half of one is a good day.</p>
+<h3>Getting more names</h3>
+<ul>
+  <li>Start with the quarterback, the ace or the franchise guy, then work outward through the players who arrived with him.</li>
+  <li>Think about where the team finished that year. A playoff run pulls names back faster than a record does.</li>
+  <li>Deadline pickups and one-season veterans are where the last two blanks usually hide.</li>
+</ul>
+<p>More recall: name the college in <a href="/arcade/almamater/">Alma Mater</a>, or the player behind a career in <a href="/arcade/career/">Career Path</a>.</p>
+</div>
+</details>
+  <div class="foot">A daily roster recall game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+</div>
+
+<div class="scrim hidden" id="scrim">
+  <div class="sheet">
+    <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
+    <div class="sub-h" id="mSub">Time's up</div>
+    <div class="bigscore" id="mScore">0</div>
+    <h2 id="mTitle">NAMED</h2>
+    <div class="a-runline">
+      <span><b id="mOf">0</b> on the board</span><i></i>
+      <span><b id="mPct">0%</b> found</span><i></i>
+      <span><b id="mBest">0</b> best</span>
+    </div>
+    <button class="abtn go" id="mAgain" type="button">Play again</button>
+    <button class="abtn" id="mShare" type="button">Share your card</button>
+    <button class="abtn" id="mBoard" type="button">Leaderboard</button>
+    <a class="abtn" href="/arcade/" style="text-decoration:none;display:block">More games</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/arcade/tokens.js?v=9"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
+<!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
+<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/calendar.js?v=15"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=18"></script>
+<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/auth.js?v=2"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=15"></script>
+<script src="/arcade/referral.js?v=8"></script>
+<script src="/arcade/pregame.js?v=19"></script>
+<script src="/arcade/funnel.js?v=7"></script>
+<script src="/arcade/share.js?v=7"></script>
+<script src="/arcade/resultart.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/teammates.js?v=1"></script>
+<script src="/arcade/type.js?v=2"></script>
+<script>
+(function(){
+  'use strict';
+  var D = window.RTG_TEAMMATES;
+  var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
+  var GAME = 'rollcall', SAVE = 'rtg_rollcall_v1';
+  var SECONDS = 90;
+  var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
+  var attemptFirst = false;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function pdate(){ return (window.RTGArchive && RTGArchive.date) ? RTGArchive.date() : today(); }
+  function load(){ try{ return JSON.parse(LS.getItem(SAVE))||{}; }catch(e){ return {}; } }
+  function save(o){ try{ LS.setItem(SAVE, JSON.stringify(o)); }catch(e){} }
+  function sfx(fn){ try{ if(window.RTGSound && RTGSound[fn]) RTGSound[fn](); }catch(e){} }
+  function reduced(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+  /* ---------- the file ----------
+     players: [name, sportIdx, fame, [[teamIdx, y0, y1, number], ...]]
+     A player is matched on a normalised name, the same shape every other game
+     uses, so "T.J. Watt", "tj watt" and "TJ  Watt" are one man. */
+  function norm(s){
+    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .toLowerCase().replace(/[^a-z0-9]/g,'');
+  }
+  var NAMES = [];              // playerIdx -> normalised name
+  var BY_NAME = {};            // normalised name -> [playerIdx]
+  if(D && D.players){
+    D.players.forEach(function(p, i){
+      var k = norm(p[0]); NAMES[i]=k;
+      (BY_NAME[k] = BY_NAME[k] || []).push(i);
+    });
+  }
+  function nameOf(i){ return D.players[i][0]; }
+  function stintsOf(i){ return D.players[i][3]; }
+  /* The jersey number he wore there that year, for the reveal. A player can
+     hold two numbers at one club across two spells, so it is read off the
+     stint that actually covers the season, never off the player. */
+  function numberAt(i, team, year){
+    var st = stintsOf(i);
+    for(var k=0;k<st.length;k++){
+      if(st[k][0]===team && st[k][1]<=year && year<=st[k][2] && st[k][3]>=0) return st[k][3];
+    }
+    return null;
+  }
+  function playedFor(i, team){
+    var st = stintsOf(i);
+    for(var k=0;k<st.length;k++) if(st[k][0]===team) return st[k];
+    return null;
+  }
+
+  /* ---------- the daily board ----------
+     A deck walk, not a random draw: the deck is already dealt so consecutive
+     days move between sports and no club comes round twice in a fortnight.
+     Same date, same board, everywhere. */
+  function dayIndex(dateStr){
+    var t = Date.parse(dateStr+'T00:00:00Z');
+    var e = Date.parse('2026-07-22T00:00:00Z');
+    if(isNaN(t)||isNaN(e)) return 0;
+    var n = Math.floor((t-e)/86400000);
+    return ((n % D.roll.length) + D.roll.length) % D.roll.length;
+  }
+  var board=null, isDaily=true;
+  function pickBoard(daily, dateStr){
+    if(!D || !D.roll || !D.roll.length) return null;
+    var row = daily ? D.roll[dayIndex(dateStr)] : D.roll[Math.floor(Math.random()*D.roll.length)];
+    return { team: row[0], year: row[1], ids: row[2].slice() };
+  }
+
+  // ---------- state ----------
+  var found = {}, foundN = 0, timer=null, left=SECONDS, done=false, startedAt=0;
+
+  function clubName(){ return D.teams[board.team]; }
+
+  function renderSetup(){
+    var b = pickBoard(true, pdate());
+    if(!b){ $('setupClub').textContent='Data failed to load'; $('startBtn').disabled=true; return; }
+    $('setupClub').textContent = clubOf(b);
+    $('setupSeason').textContent = b.year + ' SEASON';
+    $('setupKick').textContent = ARCHIVE ? 'That day’s roster' : 'Today’s roster';
+    $('setupBlurb').textContent = 'Ninety seconds. ' + b.ids.length + ' names on the board.';
+    var st=load(), bits=[];
+    if(st.best) bits.push('Best ever: '+st.best+' named');
+    if(st.last && st.last.d===today()) bits.push('Played today: '+st.last.score+'/'+st.last.total);
+    $('bestLine').textContent = bits.join(' · ');
+  }
+  function clubOf(b){ return D.teams[b.team]; }
+
+  function renderBoard(){
+    $('playClub').textContent = clubName();
+    $('playYear').textContent = board.year + ' season · ' + board.ids.length + ' names';
+    var host=$('slots'); host.innerHTML='';
+    board.ids.forEach(function(id, i){
+      var el=document.createElement('div'); el.className='slot'; el.id='slot'+i;
+      el.innerHTML='<span class="i">'+(i+1)+'</span><span class="nm">· · ·</span><span class="no"></span>';
+      host.appendChild(el);
+    });
+    $('tallyN').textContent='0';
+    $('tallyL').textContent='of '+board.ids.length+' named';
+    message('', '');
+  }
+
+  var msgT=null;
+  function message(text, cls){
+    var el=$('msg'); el.textContent=text||''; el.className='msg'+(cls?' '+cls:'');
+    if(msgT) clearTimeout(msgT);
+    if(text) msgT=setTimeout(function(){ el.textContent=''; el.className='msg'; }, 2600);
+  }
+
+  function fillSlot(pos, id){
+    var el=$('slot'+pos); if(!el) return;
+    var num = numberAt(id, board.team, board.year);
+    el.className='slot got pop';
+    el.querySelector('.nm').textContent = nameOf(id);
+    el.querySelector('.no').textContent = (num==null? '' : '#'+num);
+  }
+
+  /* Judging a typed name. Four outcomes, and only one of them is a miss:
+       on the board            -> fill the slot
+       already named           -> say so, no penalty
+       right club, wrong year  -> say WHEN, no penalty. Our seasons are exact
+                                  and a fan's memory is not; punishing someone
+                                  for knowing the man but not the year would be
+                                  punishing them for being roughly right.
+       anyone else             -> a miss, which costs nothing but the clock */
+  function submitName(){
+    if(done) return;
+    var el=$('ask'), raw=el.value;
+    var k=norm(raw);
+    if(!k) return;
+    el.value='';
+    try{ if(window.RTGType) RTGType.close(el); }catch(e){}
+    var ids = BY_NAME[k] || [];
+    // the board first, so a name shared by two players resolves to the one
+    // this roster is asking about
+    for(var a=0;a<ids.length;a++){
+      var pos = board.ids.indexOf(ids[a]);
+      if(pos<0) continue;
+      if(found[ids[a]]){ message('Already named ' + nameOf(ids[a]) + '.', 'warn'); return; }
+      found[ids[a]]=1; foundN++;
+      fillSlot(pos, ids[a]);
+      $('tallyN').textContent=foundN;
+      message(nameOf(ids[a]) + '. Yes.', 'good');
+      sfx('good');
+      if(foundN>=board.ids.length){ finish(true); }
+      return;
+    }
+    for(var b=0;b<ids.length;b++){
+      var st = playedFor(ids[b], board.team);
+      if(st){
+        message(nameOf(ids[b]) + ' was there, but ' + (st[2]>st[1] ? 'from ' + st[1] + ' to ' + st[2] : 'in ' + st[1]) + '.', 'warn');
+        return;
+      }
+    }
+    message(ids.length ? 'Not on this roster.' : 'No player by that name.', 'bad');
+    sfx('bad');
+    var wrap=$('ask').parentNode; wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake');
+  }
+
+  function tick(){
+    var m=Math.floor(left/60), s=left%60;
+    $('clockT').textContent = m+':'+String(s).padStart(2,'0');
+    $('barFill').style.width = Math.max(0, left/SECONDS*100)+'%';
+    var warn = left<=15;
+    $('clock').classList.toggle('warn', warn);
+    $('barFill').classList.toggle('warn', warn);
+    if(left<=0){ clearInterval(timer); timer=null; finish(false); return; }
+    left--;
+  }
+
+  function startPuzzle(daily){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      toast(RTGTokens.blockMsg(GAME)); updateAgainBtn();
+      if(window.RTGCard) RTGCard.wall();
+      return;
+    }
+    var b = pickBoard(daily, pdate());
+    if(!b){ toast('Could not build a board'); return; }
+    board=b; isDaily=daily; found={}; foundN=0; done=false; left=SECONDS; startedAt=Date.now();
+    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
+      var att = RTGTokens.startAttempt(GAME);
+      attemptFirst = !!(att && att.first);
+    } else { attemptFirst = false; }
+    updateAgainBtn();
+    $('scrim').classList.add('hidden');
+    renderBoard();
+    $('panelSetup').classList.remove('on'); $('panelPlay').classList.add('on');
+    tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
+    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+
+  function finish(cleared){
+    if(done) return;
+    done=true;
+    if(timer){ clearInterval(timer); timer=null; }
+    var total = board.ids.length;
+    var secs = Math.max(3, Math.min(SECONDS, Math.round((Date.now()-startedAt)/1000)));
+    // show what was missed, with the number he wore, which is the half of this
+    // game people actually talk about afterwards
+    board.ids.forEach(function(id, i){
+      if(found[id]) return;
+      var el=$('slot'+i); if(!el) return;
+      el.className='slot missed';
+      el.querySelector('.nm').textContent = nameOf(id);
+      var num = numberAt(id, board.team, board.year);
+      el.querySelector('.no').textContent = (num==null? '' : '#'+num);
+    });
+
+    var st=load(), prevBest=st.best||0, best=Math.max(prevBest, foundN);
+    if(isDaily && !ARCHIVE){ st.best=best; st.last={d:today(), score:foundN, total:total}; save(st); }
+    else if(best>prevBest){ st.best=best; save(st); }
+    if(isDaily){
+      try{
+        if(window.RTGArchive){
+          if(RTGArchive.markDone) RTGArchive.markDone(GAME, pdate());
+          if(ARCHIVE && RTGArchive.recordBest) RTGArchive.recordBest(GAME, foundN, { higherIsBetter:true, label:'named' });
+        }
+      }catch(e){}
+    }
+    // Names found ride the run_len column: the board scores
+    // 1000000 - run_len*1000 + seconds, so most names wins and a faster board
+    // breaks the tie.
+    if(isDaily && foundN>0 && !ARCHIVE){
+      try{
+        if(window.RTG_BOARD && RTG_BOARD.submit){
+          RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:foundN, replay:!attemptFirst })
+            .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
+        }
+      }catch(e){}
+    }
+
+    $('mScore').textContent = foundN;
+    $('mOf').textContent = total;
+    $('mPct').textContent = Math.round(foundN/total*100)+'%';
+    $('mBest').textContent = best;
+    var perfect = foundN===total;
+    $('mSub').textContent = perfect ? 'Full roster' : (foundN>prevBest && foundN>0 ? 'New personal best' : (cleared ? 'Board cleared' : 'Time’s up'));
+    $('scrim').classList.remove('hidden');
+    if(perfect){ sfx('win'); }
+  }
+
+  // ---------- share ----------
+  function cardSpec(){
+    var total = board ? board.ids.length : 0;
+    var cells = board ? board.ids.map(function(id){ return found[id] ? '🟩' : '⬜'; }) : [];
+    var rows=[]; for(var i=0;i<cells.length;i+=5) rows.push(cells.slice(i,i+5).join(''));
+    return { key:'rollcall', date:today(), grid:rows.join('\n'),
+             stat:foundN+'/'+total+' named · '+(board?clubName()+' '+board.year:''),
+             statInt:foundN, total:total };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+
+  // ---------- chrome ----------
+  var toastT=null;
+  function toast(m){ var el=$('toast'); el.textContent=m; el.classList.add('on'); if(toastT)clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2200); }
+
+  function updateAgainBtn(){
+    var b=$('mAgain'); if(!b) return;
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent=RTGTokens.blockMsg(GAME); b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateAgainBtn);
+  else updateAgainBtn();
+
+  $('startBtn').addEventListener('click', function(){ startPuzzle(true); });
+  $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
+  $('goBtn').addEventListener('click', submitName);
+  $('ask').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitName(); } });
+  $('doneBtn').addEventListener('click', function(){ finish(false); });
+  $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
+  $('mAgain').addEventListener('click', function(){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard) RTGCard.wall(); return;
+    }
+    startPuzzle(false);
+  });
+  $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
+  $('mShare').addEventListener('click', function(){
+    try{ if(window.RTGShare && RTGShare.send){ RTGShare.send(cardSpec()); return; } }catch(e){}
+    toast('Sharing unavailable');
+  });
+
+  /* The typeahead searches EVERY player in the file, never this roster. A
+     roster-filtered suggester would answer the question for you. */
+  if(window.RTGType && D && D.players){
+    RTGType.mount($('ask'), {
+      source: function(q, n){
+        var k=norm(q); if(k.length<2) return [];
+        var out=[];
+        for(var i=0;i<NAMES.length && out.length<(n||8);i++){
+          if(NAMES[i].indexOf(k)===0) out.push(nameOf(i));
+        }
+        if(out.length<(n||8)){
+          for(var j=0;j<NAMES.length && out.length<(n||8);j++){
+            if(NAMES[j].indexOf(k)>0 && out.indexOf(nameOf(j))<0) out.push(nameOf(j));
+          }
+        }
+        return out;
+      },
+      accent: 'var(--rc)',
+      head: 'Any player, any league',
+      onPick: function(){ submitName(); },
+      onSubmit: function(){ submitName(); }
+    });
+  }
+
+  function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=$('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
+  applyThemeMeta();
+  $('themeBtn').addEventListener('click', function(){
+    var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ LS.setItem('runthegrid_theme',next); }catch(e){}
+    applyThemeMeta();
+  });
+
+  // board + leaderboard
+  (function(){
+    try{
+      if(window.RTG_BOARD){
+        RTG_BOARD.boot();
+        if(window.RTG_LB) RTG_LB.mount({ el:document.querySelector('.lb'), game:GAME, date:pdate(), kind:'run', unit:'named' });
+      }
+    }catch(e){}
+  })();
+
+  // boot
+  if(!D || !D.players || !D.roll){
+    $('setupClub').textContent='Data failed to load';
+    $('startBtn').disabled=true;
+  } else {
+    renderSetup();
+  }
+})();
+</script>
+<script src="/arcade/howto.js?v=17"></script>
+<script>if (window.RTGHowto) RTGHowto.init('rollcall');</script>
+</body>
+</html>

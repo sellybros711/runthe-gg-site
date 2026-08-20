@@ -40,7 +40,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=2"></script>
-<script src="/arcade/gamemarks.js?v=2"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44;
@@ -332,11 +332,11 @@
   .dprog .pips{display:flex; gap:5px;}
   .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
   /* each pip carries its game's color; a played pip fills with it (empty ones
-     keep a faint ring of the same color, so the row reads as the nine games) */
+     keep a faint ring of the same color, so the row reads as the games) */
   .dprog .pip{border-color:color-mix(in srgb, var(--pc,var(--line2)) 45%, var(--line2));}
   .dprog .pip.done{background:var(--pc,var(--green)); border-color:var(--pc,var(--green));}
   #pipT{--pc:var(--gold);} #pipM{--pc:var(--blue);} #pipR{--pc:var(--green);} #pipO{--pc:var(--violet);}
-  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipH{--pc:var(--hl,#F5822B);} #pipS{--pc:var(--spg,#DA6BE6);}
+  #pipK{--pc:var(--pink);} #pipA{--pc:var(--moss);} #pipG{--pc:var(--coral);} #pipC{--pc:var(--news);} #pipH{--pc:var(--hl,#F5822B);} #pipS{--pc:var(--spg,#DA6BE6);} #pipL{--pc:var(--teal,#37C5D5);} #pipN{--pc:var(--moss,#96B93C);}
   .dprog.all{color:var(--greenT);}
   @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
@@ -357,6 +357,8 @@
   .tile.alma{--c:var(--moss); --onC:#160B02;}
   .tile.highlow{--c:var(--brand); --onC:#160B02;}
   .tile.spg{--c:var(--spg,#DA6BE6); --onC:#160B02;}
+  .tile.roll{--c:var(--teal,#37C5D5); --onC:#04222A;}
+  .tile.chain{--c:var(--moss,#96B93C); --onC:#12190A;}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--newsT);}
@@ -368,8 +370,10 @@
   .tile.alma .nm{color:var(--mossT);}
   .tile.highlow .nm{color:var(--brandT);}
   .tile.spg .nm{color:var(--spgT,#DA6BE6);}
+  .tile.roll .nm{color:var(--tealT,#37C5D5);}
+  .tile.chain .nm{color:var(--mossT,#96B93C);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
-  /* Two groups, not one wall of ten. The split is the one the games already
+  /* Two groups, not one wall of twelve. The split is the one the games already
      make in their own descriptions: five you solve once and are done for the
      day, five that keep going until you miss. Knowing which kind a game is
      before you read its name is most of the "what even is this" problem. */
@@ -382,9 +386,10 @@
      inline with a most-recently-played order; these are the resting state, so
      there is no reflow for everyone else. */
   .tsec.daily{order:0;}
-  .tile.match{order:1;} .tile.spg{order:2;} .tile.cross{order:3;} .tile.rankit{order:4;} .tile.guess{order:5;}
-  .tsec.run{order:6;}
-  .tile.alma{order:7;} .tile.career{order:8;} .tile.table{order:9;} .tile.oddone{order:10;} .tile.highlow{order:11;}
+  .tile.match{order:1;} .tile.spg{order:2;} .tile.cross{order:3;} .tile.roll{order:4;} .tile.chain{order:5;}
+  .tile.rankit{order:6;} .tile.guess{order:7;}
+  .tsec.run{order:8;}
+  .tile.alma{order:9;} .tile.career{order:10;} .tile.table{order:11;} .tile.oddone{order:12;} .tile.highlow{order:13;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -531,7 +536,7 @@
      wide, too narrow for a sentence, so the description was simply switched
      off. That is what made the hub unreadable: ten abstract icons, ten names
      like "Alma Mater" and "Odd One Out", and no way to learn what any of them
-     were without opening all ten. A full-width row has room for the blurb that
+     were without opening all twelve. A full-width row has room for the blurb that
      was already written, so it shows it. */
   @media (max-width:640px){
     .tiles{grid-template-columns:1fr; gap:10px;}
@@ -652,7 +657,7 @@ window.GA_ID='G-L29P5MRWKE';
             <span>Daily <b>sports</b> puzzles &middot; NBA &middot; NFL &middot; MLB</span>
           </span>
           <span class="day">Today's Games</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
@@ -777,6 +782,32 @@ window.GA_ID='G-L29P5MRWKE';
             </span>
           </a>
 
+          <a class="tile roll" id="cardRoll" href="/arcade/rollcall/">
+            <span class="cap" data-mark="rollcall" aria-hidden="true">
+              <span class="status" id="stL">Ready</span>
+            </span>
+            <span class="body">
+              <span class="nm">Roll Call</span>
+              <span class="desc">How much of that squad do you still remember? One club, one season, ninety seconds.</span>
+              <span class="foot">
+                <span class="play" id="playL">PLAY <span class="arw">→</span></span>
+              </span>
+            </span>
+          </a>
+
+          <a class="tile chain" id="cardChain" href="/arcade/chain/">
+            <span class="cap" data-mark="chain" aria-hidden="true">
+              <span class="status" id="stN">Ready</span>
+            </span>
+            <span class="body">
+              <span class="nm">Chain</span>
+              <span class="desc">Can you get from one player to another through teammates? Two names in the middle.</span>
+              <span class="foot">
+                <span class="play" id="playN">PLAY <span class="arw">→</span></span>
+              </span>
+            </span>
+          </a>
+
           <a class="tile highlow" id="cardHigh" href="/arcade/highlow/">
             <span class="cap" data-mark="highlow" aria-hidden="true">
               <span class="status ready" id="stH">Ready</span>
@@ -829,8 +860,8 @@ window.GA_ID='G-L29P5MRWKE';
 
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>4</s> <b>25 daily games</b></h2>
-          <p class="cp-sub">A free account plays four games a day. The Card opens all ten, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
+          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
+          <p class="cp-sub">A free account plays four games a day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
@@ -872,7 +903,7 @@ window.GA_ID='G-L29P5MRWKE';
 
           </style>
           <h2>What is Run The Arcade?</h2>
-          <p>Run The Arcade is a set of ten quick daily sports games in one place, sharing one streak
+          <p>Run The Arcade is a set of twelve quick daily sports games in one place, sharing one streak
             ticket, one leaderboard family and one account. Every puzzle refreshes at midnight local
             time and everyone plays the same board, so the results are comparable and the group chat
             arguments are fair. Nothing installs: every game runs right in the browser.</p>
@@ -886,10 +917,12 @@ window.GA_ID='G-L29P5MRWKE';
             <li><a href="/arcade/guess/">Guess the Player</a>: crack the mystery athlete in eight guesses.</li>
             <li><a href="/arcade/rankit/">Rank It</a>: order five careers by one stat.</li>
             <li><a href="/arcade/table/">Number Game</a>: type the jersey number they wore.</li>
+            <li><a href="/arcade/rollcall/">Roll Call</a>: name one club's roster from one season.</li>
+            <li><a href="/arcade/chain/">Chain</a>: connect two players through their teammates.</li>
             <li><a href="/arcade/highlow/">High Low</a>: an endless higher-or-lower streak.</li>
           </ul>
           <p>A free RunThe.GG account plays the Daily Crossword, Sportegories, Alma Mater and Career Path
-            every day, and the Arcade Card opens all ten without limits, plus the Archive of past
+            every day, and the Arcade Card opens all twelve without limits, plus the Archive of past
             days. The same account carries your trophies and streaks across every game on
             <a href="/">RunThe.GG</a>.</p>
         </section>
@@ -920,18 +953,18 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=8"></script>
+<script src="/arcade/tokens.js?v=9"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=17"></script>
+<script src="/arcade/board.js?v=18"></script>
 <script src="/arcade/auth.js?v=2"></script>
-<script src="/arcade/mycard.js?v=8"></script>
+<script src="/arcade/mycard.js?v=9"></script>
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
 <script src="/arcade/card.js?v=15"></script>
 <script src="/arcade/referral.js?v=8"></script>
 <script src="/arcade/nav.js?v=1"></script>
-<script src="/arcade/calendar.js?v=14"></script>
+<script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=2"></script>
 <script>
@@ -1039,10 +1072,10 @@ window.GA_ID='G-L29P5MRWKE';
     if(!TOK) return;
     var TILE = { match:'cardMatch', crossword:'cardCross', sportegories:'cardSpg', rankit:'cardRank',
                  guess:'cardGuess', highlow:'cardHigh', oddone:'cardOdd', table:'cardTable',
-                 career:'cardCareer', almamater:'cardAlma' };
+                 career:'cardCareer', almamater:'cardAlma', rollcall:'cardRoll', chain:'cardChain' };
     // section base order, free games first (matches the resting CSS)
-    var SECTIONS = [ { base:1, keys:['match','sportegories','crossword','rankit','guess'] },
-                     { base:7, keys:['almamater','career','table','oddone','highlow'] } ];
+    var SECTIONS = [ { base:1, keys:['match','sportegories','crossword','rollcall','chain','rankit','guess'] },
+                     { base:9, keys:['almamater','career','table','oddone','highlow'] } ];
     var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     function paint(){
       var member = !!(TOK.hasCard && TOK.hasCard());
@@ -1105,6 +1138,8 @@ window.GA_ID='G-L29P5MRWKE';
   var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v2', '{}')) || {}; } catch (e) {}
   var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
   var sg = {}; try { sg = JSON.parse(g('rtg_sportegories_v1', '{}')) || {}; } catch (e) {}
+  var rc = {}; try { rc = JSON.parse(g('rtg_rollcall_v1', '{}')) || {}; } catch (e) {}
+  var ch = {}; try { ch = JSON.parse(g('rtg_chain_v1', '{}')) || {}; } catch (e) {}
   cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
   // High-water mark: most games only persist their CURRENT day-streak, so the
   // hub is the one place that remembers your all-time best. Fold in the games
@@ -1131,9 +1166,11 @@ window.GA_ID='G-L29P5MRWKE';
   var kDone = (ks.lastDone === t);
   var aDone = (as.lastDone === t);
   var sDone = !!(sg.last && sg.last.d === t);
+  var lDone = !!(rc.last && rc.last.d === t);
+  var nDone = !!(ch.last && ch.last.d === t);
 
   // ---- ARCADE TICKET: one daily punch-card ----
-  // A ticket you cannot finish is not a ticket. Members get all ten punches;
+  // A ticket you cannot finish is not a ticket. Members get all twelve punches;
   // everyone else gets the four they can actually play, so "3 / 4" is a real
   // thing to complete rather than a reminder of six locked doors.
   (function(){
@@ -1146,7 +1183,8 @@ window.GA_ID='G-L29P5MRWKE';
       ['Alma',aDone,'var(--mossT)','almamater'], ['Career',rDone,'var(--greenT)','career'],
       ['Number',tDone,'var(--goldT)','table'],      ['Odd One',oDone,'var(--violetT)','oddone'],
       ['Rank It',kDone,'var(--pinkT)','rankit'],    ['Guess',gDone,'var(--coralT)','guess'],
-      ['High Low',hlDone,'var(--hlT)','highlow'],  ['Crossword',cDone,'var(--newsT)','crossword']
+      ['High Low',hlDone,'var(--hlT)','highlow'],  ['Crossword',cDone,'var(--newsT)','crossword'],
+      ['Roll Call',lDone,'var(--tealT)','rollcall'], ['Chain',nDone,'var(--mossT)','chain']
     ];
     var GAMES = ALL.filter(function(x){
       try{ return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(x[3])); }catch(e){ return true; }
@@ -1252,6 +1290,8 @@ window.GA_ID='G-L29P5MRWKE';
   // High Low is endless, so "done" is simply having run it today.
   var hs = {}; try { hs = JSON.parse(g('rtg:highlow:v1', '{}')) || {}; } catch (e) {}
   var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
+  mark('cardRoll',  'pipL', 'stL', 'playL', lDone, (rc.last && rc.last.score != null) ? ('Named ' + rc.last.score + '/' + rc.last.total) : 'Played', 'rollcall');
+  mark('cardChain', 'pipN', 'stN', 'playN', nDone, (ch.last && ch.last.solved) ? 'Chained' : 'Played', 'chain');
   mark('cardHigh',  'pipH', 'stH', 'playH', hDone, runText(hs), 'highlow');
 
   /* ---- today's result, read back on the hub -------------------------------
@@ -1294,7 +1334,14 @@ window.GA_ID='G-L29P5MRWKE';
           stats: [[String(l.tries != null ? l.tries : '-'), 'Tries'], [String(v.streak||0), 'Day streak'],
                   [l.seconds != null ? secs(l.seconds) : '-', 'Time']] }; },
       highlow: function(){ var v = J('rtg:highlow:v1'), l = v.last || {};
-        return { head: 'Today\u2019s run', stats: [[String(l.run != null ? l.run : 0), 'In a row'], [String(v.best||0), 'Best ever']] }; }
+        return { head: 'Today\u2019s run', stats: [[String(l.run != null ? l.run : 0), 'In a row'], [String(v.best||0), 'Best ever']] }; },
+      rollcall: function(){ var v = J('rtg_rollcall_v1'), l = v.last || {};
+        return { head: 'Today\u2019s roster', stats: [[String(l.score != null ? l.score : 0), 'Named'],
+          [String(l.total || 0), 'On the board'], [String(v.best||0), 'Best ever']] }; },
+      chain: function(){ var v = J('rtg_chain_v1'), l = v.last || {};
+        return { head: l.solved ? 'Chain closed' : 'Chain broken',
+          stats: [[l.secs != null ? secs(l.secs) : '-', 'Time'], [String(l.strikes || 0), 'Wrong'],
+                  [v.best ? secs(v.best) : '-', 'Fastest']] }; }
     };
     // the four run-and-points games share a shape: last.run, bestRun, streak
     ['table','oddone','career','almamater'].forEach(function(k){
@@ -1397,7 +1444,7 @@ window.GA_ID='G-L29P5MRWKE';
     if (window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(paint);
   })();
 
-  // The dot row counts only the games this player can reach: all ten for a
+  // The dot row counts only the games this player can reach: all twelve for a
   // member, the free four for everyone else. A target you cannot hit is not a
   // target, and six permanently dark dots read as failure rather than as an
   // offer. The lock badges on the tiles are where the other six get sold.
@@ -1405,7 +1452,7 @@ window.GA_ID='G-L29P5MRWKE';
   var PIPS = [ ['match','pipM',mDone], ['sportegories','pipS',sDone], ['almamater','pipA',aDone],
                ['career','pipR',rDone], ['table','pipT',tDone], ['oddone','pipO',oDone],
                ['rankit','pipK',kDone], ['guess','pipG',gDone], ['highlow','pipH',hlPlayed],
-               ['crossword','pipC',cDone] ];
+               ['crossword','pipC',cDone], ['rollcall','pipL',lDone], ['chain','pipN',nDone] ];
   var total = 0, n = 0;
   PIPS.forEach(function(p){
     var el = document.getElementById(p[1]); if (!el) return;

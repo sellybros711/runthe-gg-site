@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade: Chain | RunThe.GG</title>
+<link rel="canonical" href="https://runthe.gg/arcade/chain/" />
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+(function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
+  document.documentElement.setAttribute('data-theme',t); })();
+</script>
+<meta name="description" content="Chain: two players, two teammates in between. Connect them before the clock gets embarrassing." />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
+<style>
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --gold:#F2B632; --green:#48D17A; --red:#FF625F;
+    --ch:#96B93C; --chT:#A9CE4C;
+    --brand:#FF8A3D; --brandT:#FF8A3D; --onAccent:#12190A; --goldT:#F2B632; --greenT:#48D17A; --coralT:#F06A5F;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --ch:#7FA22F; --chT:#4F6B0F; --onAccent:#FFFFFF;
+    --brandT:#B4530A; --goldT:#A87508; --greenT:#17A34A; --red:#C4372C; --coralT:#D8452F;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--chT); outline-offset:2px; border-radius:4px;}
+  .wrap{width:100%; max-width:640px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; min-width:0; overflow:hidden;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; line-height:1.2; letter-spacing:.12em; color:var(--mut); margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .spacer{flex:1;}
+  .themeBtn{width:30px; height:30px; border-radius:8px; border:1px solid var(--line2); background:var(--card2); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .themeBtn .ic-sun{display:none;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:none;}
+
+  .panel{display:none;} .panel.on{display:block;}
+  .card{background:var(--card); border:1px solid var(--line2); border-radius:14px; box-shadow:var(--shadow);}
+
+  /* ---- setup ---- */
+  .setup{padding:22px 18px 20px; text-align:center;}
+  .kick{font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--chT);}
+  .pair{display:flex; flex-direction:column; align-items:center; gap:6px; margin:12px 0 4px;}
+  .pair .nm{font-family:var(--hero); font-weight:400; text-transform:uppercase; line-height:.98; font-size:clamp(26px,7.2vw,38px);}
+  .pair .to{font-size:10.5px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; color:var(--dim);}
+  .blurb{color:var(--mut); font-size:14px; font-weight:600; margin:14px auto 18px; max-width:34ch; line-height:1.5;}
+  .gobtn{width:100%; border:0; border-radius:12px; padding:15px 16px; font-family:var(--hero); font-weight:400;
+    font-size:20px; letter-spacing:.04em; text-transform:uppercase; color:var(--onAccent); background:var(--ch); cursor:pointer;}
+  .ghost{width:100%; margin-top:9px; border:1px solid var(--line2); border-radius:12px; padding:12px 16px; background:transparent;
+    color:var(--mut); font-family:var(--f); font-weight:800; font-size:13.5px; cursor:pointer;}
+  .bestline{margin-top:14px; font-size:11.5px; color:var(--dim); font-weight:700;}
+
+  /* ---- play ---- */
+  .head{display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:12px;}
+  .head .lab{font-size:10.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--dim);}
+  .head .strikes{display:flex; gap:5px; margin-top:5px;}
+  .head .strikes i{width:9px; height:9px; border-radius:3px; background:var(--card3); border:1px solid var(--line2);}
+  .head .strikes i.on{background:var(--red); border-color:var(--red);}
+  .clock{margin-left:auto; text-align:right; flex:0 0 auto;}
+  .clock .t{font-family:var(--hero); font-weight:400; font-size:26px; line-height:1; font-variant-numeric:tabular-nums;}
+  .clock .l{font-size:9px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);}
+
+  .ladder{display:flex; flex-direction:column; gap:0; margin-bottom:14px;}
+  .node{display:flex; align-items:center; gap:11px; padding:12px 13px; border-radius:12px; border:1px solid var(--line2); background:var(--card);}
+  .node .av{width:30px; height:30px; border-radius:9px; flex:0 0 auto; display:grid; place-items:center;
+    font-family:var(--hero); font-weight:400; font-size:13px; background:var(--card3); color:var(--mut);}
+  .node .txt{min-width:0; flex:1; display:flex; flex-direction:column; gap:1px;}
+  .node .nm{display:block; font-weight:900; font-size:15px; letter-spacing:.01em; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .node .sub{display:block; font-size:11.5px; font-weight:700; color:var(--dim); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .node .sub:empty{display:none;}
+  .node.end{border-color:color-mix(in srgb, var(--ch) 45%, transparent); background:color-mix(in srgb, var(--ch) 10%, var(--card));}
+  .node.end .av{background:var(--ch); color:var(--onAccent);}
+  .node.filled{border-color:color-mix(in srgb, var(--ch) 45%, transparent);}
+  .node.filled .av{background:color-mix(in srgb, var(--ch) 30%, var(--card3)); color:var(--ink);}
+  .node.blank{border-style:dashed;}
+  .node.blank .nm{color:var(--dim); font-weight:800;}
+  .node.active{border-color:var(--chT); box-shadow:0 0 0 3px color-mix(in srgb, var(--chT) 22%, transparent);}
+  .node.pop{animation:pop .34s ease;}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
+  .rung{height:16px; margin-left:28px; border-left:2px dashed var(--line2);}
+  .rung.on{border-left-color:color-mix(in srgb, var(--ch) 60%, transparent); border-left-style:solid;}
+  .shake{animation:shake .3s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @media (prefers-reduced-motion:reduce){ .node.pop,.shake{animation:none;} }
+
+  .askrow{display:flex; gap:8px; align-items:stretch; margin-bottom:10px;}
+  .askrow .fieldwrap{position:relative; flex:1; min-width:0;}
+  .askrow input{width:100%; height:46px; border-radius:12px; border:1px solid var(--line2); background:var(--card);
+    color:var(--ink); font-family:var(--f); font-weight:800; font-size:16px; padding:0 13px;}
+  .askrow input::placeholder{color:var(--dim); font-weight:700;}
+  .askrow input:focus{outline:none; border-color:var(--chT); box-shadow:0 0 0 3px color-mix(in srgb, var(--chT) 26%, transparent);}
+  .askrow .go{flex:0 0 auto; border:0; border-radius:12px; padding:0 16px; background:var(--ch); color:var(--onAccent);
+    font-family:var(--hero); font-weight:400; font-size:17px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;}
+  .msg{min-height:18px; font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.4; margin-bottom:10px;}
+  .msg.good{color:var(--greenT);} .msg.warn{color:var(--goldT);} .msg.bad{color:var(--red);}
+  .row2{display:flex; gap:8px;}
+  .row2 button{flex:1; border:1px solid var(--line2); border-radius:12px; padding:11px; background:transparent; color:var(--mut);
+    font-family:var(--f); font-weight:800; font-size:13px; cursor:pointer;}
+
+  .foot{margin-top:22px; text-align:center; font-size:11px; color:var(--dim); line-height:1.7;}
+  .foot a{color:var(--mut); text-decoration:underline;}
+
+  /* ---- result ---- */
+  .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
+  .scrim.hidden{display:none;}
+  .sheet{width:100%; max-width:420px; background:var(--card); border:1px solid var(--line2); border-radius:18px; padding:22px 18px 18px; text-align:center; position:relative;}
+  .sheet .x{position:absolute; top:10px; right:12px; background:transparent; border:0; color:var(--dim); font-size:18px; cursor:pointer;}
+  .sub-h{font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--chT);}
+  .bigscore{font-family:var(--hero); font-weight:400; font-size:60px; line-height:1; margin:4px 0 0; font-variant-numeric:tabular-nums;}
+  .sheet h2{font-family:var(--hero); font-weight:400; font-size:17px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 0 12px;}
+  .a-runline{display:flex; align-items:center; justify-content:center; gap:10px; font-size:12px; font-weight:800; color:var(--mut); margin-bottom:14px;}
+  .a-runline i{width:1px; height:12px; background:var(--line2);}
+  .a-runline b{color:var(--ink);}
+  .route{text-align:left; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin-bottom:14px; font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.55;}
+  .route b{color:var(--ink);}
+  .abtn{width:100%; margin-top:8px; border:1px solid var(--line2); border-radius:12px; padding:12px; background:transparent; color:var(--ink); font-family:var(--f); font-weight:800; font-size:14px; cursor:pointer;}
+  .abtn.go{background:var(--ch); border-color:var(--ch); color:var(--onAccent); font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.04em; text-transform:uppercase;}
+  .abtn.spent{opacity:.6;}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(12px); background:var(--card3); color:var(--ink);
+    border:1px solid var(--line2); border-radius:10px; padding:10px 14px; font-size:13px; font-weight:800; opacity:0; pointer-events:none; transition:.2s; z-index:60;}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+  .gj{grid-area:auto;}
+</style>
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Chain'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">CHAIN</span></a>
+    <div class="spacer"></div>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== setup ===== -->
+  <section class="panel on" id="panelSetup">
+    <div class="card setup">
+      <div class="kick" id="setupKick">Today's pair</div>
+      <div class="pair">
+        <div class="nm" id="setupA">Loading</div>
+        <div class="to">to</div>
+        <div class="nm" id="setupB"></div>
+      </div>
+      <p class="blurb">Two teammates in between. Name them both and the chain closes.</p>
+      <button class="gobtn" id="startBtn" type="button">Start today's chain</button>
+      <button class="ghost" id="practiceBtn" type="button">Random pair</button>
+      <div class="bestline" id="bestLine"></div>
+    </div>
+  </section>
+
+  <!-- ===== play ===== -->
+  <section class="panel" id="panelPlay">
+    <div class="card head">
+      <div>
+        <div class="lab">Wrong names</div>
+        <div class="strikes" id="strikes"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="clock"><div class="t" id="clockT">0:00</div><div class="l">Elapsed</div></div>
+    </div>
+
+    <div class="ladder" id="ladder"></div>
+
+    <div class="askrow">
+      <div class="fieldwrap"><input type="text" id="ask" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name a teammate…" aria-label="Name the next player in the chain" /></div>
+      <button class="go" id="goBtn" type="button">Link</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="row2">
+      <button id="undoBtn" type="button">Undo last link</button>
+      <button id="giveBtn" type="button">Give up</button>
+    </div>
+  </section>
+
+  <div class="lb"></div>
+
+<details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Chain</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
+<p>Chain gives you two players and asks you to connect them through the clubs they played for. Two names go in the middle. Each one has to have been a real teammate of the name above it, and the last one has to have been a teammate of the player at the bottom.</p>
+<ul>
+  <li>Teammates means the same club in the same years, not the same club a decade apart.</li>
+  <li>Four wrong names and the chain breaks. The clock is the score, so a fast clean solve wins the day.</li>
+  <li>Any correct route counts. There is never only one.</li>
+</ul>
+<h3>One pair a day</h3>
+<p>A new pair arrives at midnight local time, the same two for everybody. Chain is an Arcade Card game. Members play all Arcade titles without limits and replay any past day from the <a href="/arcade/archive/">Archive</a>. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<h3>Finding a route</h3>
+<ul>
+  <li>Work from both ends. The player at the bottom has a short list of clubs too, and the middle is wherever those lists get close.</li>
+  <li>Journeymen are the currency of this game. A veteran who played for six teams touches half the league.</li>
+  <li>When you are stuck, think about the year rather than the club. Who else was there in that window?</li>
+</ul>
+<p>More career trivia: <a href="/arcade/career/">Career Path</a> hides the player behind the clubs, and <a href="/arcade/rollcall/">Roll Call</a> asks for a whole roster.</p>
+</div>
+</details>
+  <div class="foot">A daily teammate puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+</div>
+
+<div class="scrim hidden" id="scrim">
+  <div class="sheet">
+    <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
+    <div class="sub-h" id="mSub">Chain closed</div>
+    <div class="bigscore" id="mScore">0:00</div>
+    <h2 id="mTitle">YOUR TIME</h2>
+    <div class="a-runline">
+      <span><b id="mLinks">0</b> links</span><i></i>
+      <span><b id="mMiss">0</b> wrong</span><i></i>
+      <span><b id="mBest">-</b> best</span>
+    </div>
+    <div class="route" id="mRoute"></div>
+    <button class="abtn go" id="mAgain" type="button">Play again</button>
+    <button class="abtn" id="mShare" type="button">Share your card</button>
+    <button class="abtn" id="mBoard" type="button">Leaderboard</button>
+    <a class="abtn" href="/arcade/" style="text-decoration:none;display:block">More games</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/arcade/tokens.js?v=9"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
+<!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
+<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/calendar.js?v=15"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=18"></script>
+<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/auth.js?v=2"></script>
+<script src="/arcade/auth-ui.js?v=4"></script>
+<script src="/arcade/card.js?v=15"></script>
+<script src="/arcade/referral.js?v=8"></script>
+<script src="/arcade/pregame.js?v=19"></script>
+<script src="/arcade/funnel.js?v=7"></script>
+<script src="/arcade/share.js?v=7"></script>
+<script src="/arcade/resultart.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/teammates.js?v=1"></script>
+<script src="/arcade/type.js?v=2"></script>
+<script>
+(function(){
+  'use strict';
+  var D = window.RTG_TEAMMATES;
+  var LS = (function(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return localStorage; }catch(e){ return { getItem:function(){return null;}, setItem:function(){}, removeItem:function(){} }; } })();
+  var GAME = 'chain', SAVE = 'rtg_chain_v1';
+  var STRIKES = 4;
+  var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
+  var attemptFirst = false;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function pdate(){ return (window.RTGArchive && RTGArchive.date) ? RTGArchive.date() : today(); }
+  function load(){ try{ return JSON.parse(LS.getItem(SAVE))||{}; }catch(e){ return {}; } }
+  function save(o){ try{ LS.setItem(SAVE, JSON.stringify(o)); }catch(e){} }
+  function sfx(fn){ try{ if(window.RTGSound && RTGSound[fn]) RTGSound[fn](); }catch(e){} }
+  function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+  var NAMES=[], BY_NAME={};
+  if(D && D.players) D.players.forEach(function(p,i){ var k=norm(p[0]); NAMES[i]=k; (BY_NAME[k]=BY_NAME[k]||[]).push(i); });
+  function nameOf(i){ return D.players[i][0]; }
+  function sportOf(i){ return D.sports[D.players[i][1]]; }
+  function stintsOf(i){ return D.players[i][3]; }
+  function initials(i){ return nameOf(i).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase(); }
+
+  /* ---------- teammates ----------
+     Two players are teammates when they held a stint at the same club whose
+     year ranges overlap. Derived here rather than shipped: the same fact
+     stored twice is the fact that drifts, and 13,000 edges would be most of
+     the download.
+
+     Keyed on the RECORD. Name-keyed, the NFL's Chris Davis merges with the
+     MLB's and the three sports look like one graph, which is the trap the two
+     Josh Allens sprang on Sportegories. */
+  function link(a, b){
+    if(a===b) return null;
+    var sa=stintsOf(a), sb=stintsOf(b), best=null;
+    for(var i=0;i<sa.length;i++) for(var j=0;j<sb.length;j++){
+      if(sa[i][0]!==sb[j][0]) continue;
+      var y0=Math.max(sa[i][1], sb[j][1]), y1=Math.min(sa[i][2], sb[j][2]);
+      if(y0>y1) continue;
+      // prefer the longest shared spell, which is the one a fan remembers
+      if(!best || (y1-y0) > (best.y1-best.y0)) best={ team:sa[i][0], y0:y0, y1:y1 };
+    }
+    return best;
+  }
+  function linkText(l){
+    if(!l) return '';
+    return D.teams[l.team] + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
+  }
+  // roster index, so neighbours can be listed without touching every player
+  var ROSTER = {};
+  if(D && D.players) D.players.forEach(function(p,i){
+    p[3].forEach(function(s){
+      var k=p[1]+'|'+s[0];
+      (ROSTER[k]=ROSTER[k]||[]).push([i, s[1], s[2]]);
+    });
+  });
+  function neighbours(i){
+    var out={}, p=D.players[i];
+    p[3].forEach(function(s){
+      (ROSTER[p[1]+'|'+s[0]]||[]).forEach(function(r){
+        if(r[0]===i) return;
+        if(s[1]>r[2] || r[1]>s[2]) return;
+        out[r[0]]=1;
+      });
+    });
+    return Object.keys(out).map(Number);
+  }
+  /* One working route, for the reveal. Breadth first from the start, capped at
+     the number of links the puzzle claims, so what it prints is always a legal
+     answer to the board the player was actually shown. */
+  function route(a, b, links){
+    var prev={}, seen={}; seen[a]=1;
+    var frontier=[a], depth=0;
+    while(depth<links){
+      var next=[];
+      for(var i=0;i<frontier.length;i++){
+        var ns=neighbours(frontier[i]);
+        for(var j=0;j<ns.length;j++){
+          var n=ns[j]; if(seen[n]) continue;
+          seen[n]=1; prev[n]=frontier[i];
+          if(n===b){
+            var path=[b], c=b;
+            while(c!==a){ c=prev[c]; path.unshift(c); }
+            return path;
+          }
+          next.push(n);
+        }
+      }
+      frontier=next; depth++;
+      if(!frontier.length) break;
+    }
+    return null;
+  }
+
+  // ---------- the daily pair ----------
+  function dayIndex(dateStr){
+    var t=Date.parse(dateStr+'T00:00:00Z'), e=Date.parse('2026-07-22T00:00:00Z');
+    if(isNaN(t)||isNaN(e)) return 0;
+    var n=Math.floor((t-e)/86400000);
+    return ((n % D.chain.length) + D.chain.length) % D.chain.length;
+  }
+  function pickPair(daily, dateStr){
+    if(!D || !D.chain || !D.chain.length) return null;
+    var row = daily ? D.chain[dayIndex(dateStr)] : D.chain[Math.floor(Math.random()*D.chain.length)];
+    return { a:row[0], b:row[1], links:row[2] };
+  }
+
+  // ---------- state ----------
+  var puz=null, isDaily=true, filled=[], strikes=0, done=false, timer=null, startedAt=0, elapsed=0;
+
+  function slots(){ return puz.links-1; }        // 3 links = 2 names in between
+
+  function renderSetup(){
+    var p = pickPair(true, pdate());
+    if(!p){ $('setupA').textContent='Data failed to load'; $('startBtn').disabled=true; return; }
+    $('setupKick').textContent = ARCHIVE ? 'That day’s pair' : 'Today’s pair';
+    $('setupA').textContent = nameOf(p.a);
+    $('setupB').textContent = nameOf(p.b);
+    var st=load(), bits=[];
+    if(st.best) bits.push('Fastest: '+mmss(st.best));
+    if(st.last && st.last.d===today()) bits.push(st.last.solved ? ('Solved today in '+mmss(st.last.secs)) : 'Played today');
+    $('bestLine').textContent = bits.join(' · ');
+  }
+
+  function nodeHTML(cls, av, nm, sub){
+    return '<div class="node '+cls+'"><span class="av">'+esc(av)+'</span>' +
+      '<span class="txt"><span class="nm">'+esc(nm)+'</span>' +
+      '<span class="sub">'+esc(sub||'')+'</span></span></div>';
+  }
+  function renderLadder(){
+    var h='';
+    h += nodeHTML('end', initials(puz.a), nameOf(puz.a), sportOf(puz.a) + ' · start here');
+    for(var i=0;i<slots();i++){
+      h += '<div class="rung'+(filled[i]?' on':'')+'"></div>';
+      if(filled[i]){
+        h += nodeHTML('filled pop', initials(filled[i].id), nameOf(filled[i].id), linkText(filled[i].link));
+      } else {
+        var active = (i===filled.length);
+        h += nodeHTML('blank'+(active?' active':''), '?', active ? 'Who links them?' : 'Then who?', active ? 'Type a teammate of the name above' : '');
+      }
+    }
+    h += '<div class="rung'+(filled.length>=slots()?' on':'')+'"></div>';
+    h += nodeHTML('end', initials(puz.b), nameOf(puz.b), sportOf(puz.b) + ' · finish here');
+    $('ladder').innerHTML=h;
+    var s=$('strikes').children;
+    for(var k=0;k<s.length;k++) s[k].className = (k<strikes ? 'on' : '');
+  }
+
+  var msgT=null;
+  function message(text, cls){
+    var el=$('msg'); el.textContent=text||''; el.className='msg'+(cls?' '+cls:'');
+    if(msgT) clearTimeout(msgT);
+    if(text) msgT=setTimeout(function(){ el.textContent=''; el.className='msg'; }, 3200);
+  }
+  function shake(){
+    var w=$('ask').parentNode; w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+  }
+  function strike(msg){
+    strikes++; message(msg, 'bad'); sfx('bad'); shake(); renderLadder();
+    if(strikes>=STRIKES) finish(false);
+  }
+
+  function submitName(){
+    if(done || filled.length>=slots()) return;
+    var el=$('ask'), k=norm(el.value);
+    if(!k) return;
+    el.value='';
+    try{ if(window.RTGType) RTGType.close(el); }catch(e){}
+    var ids = BY_NAME[k] || [];
+    if(!ids.length){ strike('No player by that name in the file.'); return; }
+    var prev = filled.length ? filled[filled.length-1].id : puz.a;
+    var last = (filled.length === slots()-1);
+    var used = {}; used[puz.a]=1; used[puz.b]=1;
+    filled.forEach(function(f){ used[f.id]=1; });
+
+    var bestId=null, bestLink=null, sawBackLink=false, sawUsed=false;
+    for(var i=0;i<ids.length;i++){
+      var id=ids[i];
+      if(used[id]){ sawUsed=true; continue; }
+      var l = link(prev, id);
+      if(!l) continue;
+      sawBackLink = true;
+      if(last && !link(id, puz.b)) continue;     // the closing name has to reach both ways
+      bestId=id; bestLink=l; break;
+    }
+    if(bestId==null){
+      if(sawUsed && !sawBackLink){ message('Already in the chain.', 'warn'); shake(); return; }
+      if(sawBackLink && last){ strike('Teammate of ' + nameOf(prev) + ', but never played with ' + nameOf(puz.b) + '.'); return; }
+      strike('Never a teammate of ' + nameOf(prev) + '.');
+      return;
+    }
+    filled.push({ id:bestId, link:bestLink });
+    sfx('good');
+    renderLadder();
+    if(filled.length>=slots()){
+      var close = link(bestId, puz.b);
+      message('Linked. ' + nameOf(bestId) + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
+      finish(true);
+    } else {
+      message('Linked. ' + linkText(bestLink) + '.', 'good');
+    }
+  }
+
+  function undo(){
+    if(done || !filled.length) return;
+    filled.pop(); renderLadder(); message('', '');
+    try{ $('ask').focus(); }catch(e){}
+  }
+
+  function tick(){
+    elapsed = Math.round((Date.now()-startedAt)/1000);
+    $('clockT').textContent = mmss(elapsed);
+  }
+
+  function startPuzzle(daily){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      toast(RTGTokens.blockMsg(GAME)); updateAgainBtn();
+      if(window.RTGCard) RTGCard.wall();
+      return;
+    }
+    var p = pickPair(daily, pdate());
+    if(!p){ toast('Could not build a chain'); return; }
+    puz=p; isDaily=daily; filled=[]; strikes=0; done=false; elapsed=0; startedAt=Date.now();
+    if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
+      var att = RTGTokens.startAttempt(GAME);
+      attemptFirst = !!(att && att.first);
+    } else { attemptFirst = false; }
+    updateAgainBtn();
+    $('scrim').classList.add('hidden');
+    renderLadder(); message('', '');
+    $('panelSetup').classList.remove('on'); $('panelPlay').classList.add('on');
+    $('clockT').textContent='0:00';
+    if(timer) clearInterval(timer); timer=setInterval(tick,1000);
+    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+
+  function finish(solved){
+    if(done) return;
+    done=true;
+    if(timer){ clearInterval(timer); timer=null; }
+    elapsed = Math.max(3, Math.round((Date.now()-startedAt)/1000));
+
+    var st=load(), prevBest=st.best||0;
+    if(solved && (!prevBest || elapsed<prevBest)) st.best=elapsed;
+    if(isDaily && !ARCHIVE){ st.last={ d:today(), solved:!!solved, secs:elapsed, strikes:strikes }; }
+    save(st);
+    if(isDaily && solved){
+      try{
+        if(window.RTGArchive){
+          if(RTGArchive.markDone) RTGArchive.markDone(GAME, pdate());
+          if(ARCHIVE && RTGArchive.recordBest) RTGArchive.recordBest(GAME, elapsed, { higherIsBetter:false, label:'s' });
+        }
+      }catch(e){}
+    }
+    /* Timed game, like the crossword: the board's score is
+       seconds + mistakes*10, so it posts only on a solve. A broken chain is
+       not a run to rank, and posting one would hand out a streak day for
+       failing. */
+    if(solved && isDaily && !ARCHIVE){
+      try{
+        if(window.RTG_BOARD && RTG_BOARD.submit){
+          RTG_BOARD.submit(GAME, today(), { seconds:elapsed, mistakes:strikes, reveals:0, replay:!attemptFirst })
+            .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
+        }
+      }catch(e){}
+    }
+
+    $('mSub').textContent = solved ? (strikes===0 ? 'Clean chain' : 'Chain closed') : (strikes>=STRIKES ? 'Chain broken' : 'Gave up');
+    $('mScore').textContent = solved ? mmss(elapsed) : '--';
+    $('mTitle').textContent = solved ? 'YOUR TIME' : 'NO ROUTE';
+    $('mLinks').textContent = puz.links;
+    $('mMiss').textContent = strikes;
+    $('mBest').textContent = st.best ? mmss(st.best) : '-';
+
+    // Always show a working route. On a solve it is the player's own; on a
+    // failure it is one we found, because "there was a way" with no way shown
+    // is the most annoying possible ending.
+    var path = solved ? [puz.a].concat(filled.map(function(f){ return f.id; })).concat([puz.b])
+                      : route(puz.a, puz.b, puz.links);
+    if(path){
+      var bits=[];
+      for(var i=0;i<path.length-1;i++){
+        bits.push('<b>'+esc(nameOf(path[i]))+'</b> and <b>'+esc(nameOf(path[i+1]))+'</b>: '+esc(linkText(link(path[i], path[i+1]))));
+      }
+      $('mRoute').innerHTML = (solved ? '' : 'One way through:<br>') + bits.join('<br>');
+    } else {
+      $('mRoute').textContent = '';
+    }
+    lastPath = path;
+    $('scrim').classList.remove('hidden');
+    if(solved) sfx('win');
+  }
+
+  var lastPath=null;
+  function cardSpec(){
+    var cells = [];
+    for(var i=0;i<(puz?puz.links-1:0);i++) cells.push(i<filled.length ? '🟩' : '⬜');
+    for(var s=0;s<strikes;s++) cells.push('🟥');
+    var solved = filled.length>=(puz?puz.links-1:1) && done;
+    return { key:'chain', date:today(), grid:cells.join(''),
+             stat: solved ? (mmss(elapsed)+' · '+strikes+' wrong') : 'Chain broken',
+             statInt: solved ? elapsed : null };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+
+  var toastT=null;
+  function toast(m){ var el=$('toast'); el.textContent=m; el.classList.add('on'); if(toastT)clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2200); }
+
+  function updateAgainBtn(){
+    var b=$('mAgain'); if(!b) return;
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent=RTGTokens.blockMsg(GAME); b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateAgainBtn);
+  else updateAgainBtn();
+
+  $('startBtn').addEventListener('click', function(){ startPuzzle(true); });
+  $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
+  $('goBtn').addEventListener('click', submitName);
+  $('ask').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitName(); } });
+  $('undoBtn').addEventListener('click', undo);
+  $('giveBtn').addEventListener('click', function(){ finish(false); });
+  $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
+  $('mAgain').addEventListener('click', function(){
+    if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+      if(window.RTGCard) RTGCard.wall(); return;
+    }
+    startPuzzle(false);
+  });
+  $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
+  $('mShare').addEventListener('click', function(){
+    try{ if(window.RTGShare && RTGShare.send){ RTGShare.send(cardSpec()); return; } }catch(e){}
+    toast('Sharing unavailable');
+  });
+
+  if(window.RTGType && D && D.players){
+    RTGType.mount($('ask'), {
+      source: function(q, n){
+        var k=norm(q); if(k.length<2) return [];
+        var out=[];
+        for(var i=0;i<NAMES.length && out.length<(n||8);i++) if(NAMES[i].indexOf(k)===0) out.push(nameOf(i));
+        for(var j=0;j<NAMES.length && out.length<(n||8);j++){
+          if(NAMES[j].indexOf(k)>0 && out.indexOf(nameOf(j))<0) out.push(nameOf(j));
+        }
+        return out;
+      },
+      accent: 'var(--ch)',
+      head: 'Any player, any league',
+      onPick: function(){ submitName(); },
+      onSubmit: function(){ submitName(); }
+    });
+  }
+
+  function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=$('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
+  applyThemeMeta();
+  $('themeBtn').addEventListener('click', function(){
+    var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ LS.setItem('runthegrid_theme',next); }catch(e){}
+    applyThemeMeta();
+  });
+
+  (function(){
+    try{
+      if(window.RTG_BOARD){
+        RTG_BOARD.boot();
+        if(window.RTG_LB) RTG_LB.mount({ el:document.querySelector('.lb'), game:GAME, date:pdate(), kind:'time' });
+      }
+    }catch(e){}
+  })();
+
+  if(!D || !D.players || !D.chain){
+    $('setupA').textContent='Data failed to load';
+    $('startBtn').disabled=true;
+  } else {
+    renderSetup();
+  }
+})();
+</script>
+<script src="/arcade/howto.js?v=17"></script>
+<script>if (window.RTGHowto) RTGHowto.init('chain');</script>
+</body>
+</html>

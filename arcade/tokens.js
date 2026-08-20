@@ -5,12 +5,12 @@
  *                          asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
  *                          Daily Crossword, Sportegories, Alma Mater, Career Path.
- *                          The other six are Arcade Card only.
- *   ARCADE CARD (paid)   → all ten, unlimited, plus the Archive.
+ *                          The other eight are Arcade Card only.
+ *   ARCADE CARD (paid)   → all twelve, unlimited, plus the Archive.
  *
  * This replaces the old shared wallet (guest 1/day, account 3/day). The cap is
  * no longer a pool you spend anywhere: it is per game, so a free player always
- * has four distinct things to come back to tomorrow, and the six premium games
+ * has four distinct things to come back to tomorrow, and the eight premium games
  * are locked rather than rationed. Plays reset at local midnight, the same
  * boundary the daily puzzles use, and do NOT bank.
  *
@@ -37,7 +37,7 @@
   'use strict';
   var LS = window.localStorage;
   var KEY = 'runthegrid_tokens_v3';
-  var GAMES = ['match','crossword','highlow','oddone','sportegories','career','guess','rankit','almamater','table'];
+  var GAMES = ['match','crossword','highlow','oddone','sportegories','career','guess','rankit','almamater','table','rollcall','chain'];
 
   // The four free games, in the order the hub lists them (daily pair first,
   // then the streak pair). Everything not in here is Arcade Card only.
@@ -102,8 +102,8 @@
   function locked(game){ return !unlocked(game); }
   // "Is this game behind the card for this player?" - unlike locked(), a signed
   // OUT visitor is not locked out of the free four, they just need an account.
-  // The hub shows locks with this, so a visitor sees four games on offer and six
-  // to buy, rather than ten closed doors.
+  // The hub shows locks with this, so a visitor sees four games on offer and eight
+  // to buy, rather than twelve closed doors.
   function cardOnly(game){ return !unlimited() && !isFreeGame(game); }
 
   // Lifetime totals (never reset at midnight) - powers the Arcade Card's

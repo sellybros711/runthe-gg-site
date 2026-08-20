@@ -61,6 +61,18 @@
       'Bank the easy ones fast; you can come back to anything that stalls.',
       'The clock ends the round. Fill all eight for a perfect day.'
     ],
+    rollcall: [
+      'One club, one season, ninety seconds on the clock.',
+      'Every blank is a player who wore that uniform that year. Type the names you remember.',
+      'A right player in the wrong season is not a miss: the game tells you when he was there.',
+      'Wrong names cost nothing but time. The score is how many you get.'
+    ],
+    chain: [
+      'Two players, and two teammates to find in between.',
+      'Each name has to have played alongside the one above it, same club, same years.',
+      'The last name has to reach the player at the bottom as well.',
+      'Four wrong names breaks the chain. The clock is the score, so a clean solve wins the day.'
+    ],
     highlow: [
       'Pick a category: NBA, NFL or MLB stat pools.',
       'Players come two at a time. Call whether the next one sits higher or lower on the stat.',

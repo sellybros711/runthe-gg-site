@@ -39,7 +39,9 @@
     rankit:     { name: 'Rank It',       href: '/arcade/rankit/',     tone: 'var(--pinkT,#F778AE)' },
     almamater:  { name: 'Alma Mater',    href: '/arcade/almamater/',  tone: 'var(--goldT,#F2B632)' },
     guess:      { name: 'Guess the Player', href: '/arcade/guess/',   tone: 'var(--coralT,#F06A5F)' },
-    crossword:  { name: 'Daily Crossword', href: '/arcade/crossword/', tone: 'var(--newsT,#9CADC0)' }
+    crossword:  { name: 'Daily Crossword', href: '/arcade/crossword/', tone: 'var(--newsT,#9CADC0)' },
+    rollcall:   { name: 'Roll Call',     href: '/arcade/rollcall/',   tone: 'var(--tealT,#37C5D5)' },
+    chain:      { name: 'Chain',         href: '/arcade/chain/',      tone: 'var(--mossT,#96B93C)' }
   };
 
   function stats() {
