@@ -4,7 +4,7 @@
  *   SIGNED OUT           → nothing is playable. The hub browses fine; any PLAY
  *                          asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
- *                          Common Ground, Sportegories, Alma Mater, Career Path.
+ *                          Daily Crossword, Sportegories, Alma Mater, Career Path.
  *                          The other six are Arcade Card only.
  *   ARCADE CARD (paid)   → all ten, unlimited, plus the Archive.
  *
@@ -14,11 +14,13 @@
  * are locked rather than rationed. Plays reset at local midnight, the same
  * boundary the daily puzzles use, and do NOT bank.
  *
- * WHY THESE FOUR: they are the quickest to understand and the quickest to pay
- * off (a Connections grid, a letter-and-a-clock scramble, name the college,
- * name the well-travelled player). They sell the arcade in five seconds. The
- * deeper games - High Low, the Crossword, Odd One Out, Guess the Player, Rank
- * It, the Number Game - are the ones worth paying for.
+ * WHY THESE FOUR: every one of them makes you PRODUCE the answer. You type a
+ * name, a college, a word into a grid; nothing on screen can be tapped until it
+ * turns green. That is what the two most-played games have in common, and it is
+ * the habit worth giving away, because a player who can do it comes back.
+ * Common Ground was the odd one out here and moved behind the card with the
+ * other recognition games - High Low, Odd One Out, Guess the Player, Rank It,
+ * the Number Game.
  *
  * ENTITLEMENT: Arcade Card is the paid membership. Server truth lives in the
  * Supabase `subscriptions` row; board.js mirrors an active/trialing sub into
@@ -39,7 +41,12 @@
 
   // The four free games, in the order the hub lists them (daily pair first,
   // then the streak pair). Everything not in here is Arcade Card only.
-  var FREE_LIST = ['match','sportegories','almamater','career'];
+  // The REAL gate is public.arcade_free_games() in the database; this copy only
+  // paints the locks. Nothing reconciles one against the other at runtime, so a
+  // difference between them shows FREE on a game the spend RPC then refuses.
+  // scripts/check-freegames.mjs fails the build if they drift.
+  // See supabase/84_free_games_crossword.sql.
+  var FREE_LIST = ['crossword','sportegories','almamater','career'];
   var FREE = {};
   for (var fi=0; fi<FREE_LIST.length; fi++) FREE[FREE_LIST[fi]] = 1;
 
