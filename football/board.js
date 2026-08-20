@@ -80,9 +80,15 @@
      the names and avatars are there and these are not. Only the badge cabinet reads them,
      so losing them costs a few Trade Machine badges rather than the board. */
   let tradeColumns = true;
+  /* A FOURTH, arriving with 86_football_defense_stats.sql, dropped on its own for exactly
+     the reason the other three are: between the deploy and the migration a project is in a
+     real state where everything else is there and these are not, and losing them should cost
+     three numbers on a defense run rather than the whole board. */
+  let defColumns = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
-    (tradeColumns ? ',gm_rating,trade_moves' : '');
+    (tradeColumns ? ',gm_rating,trade_moves' : '') +
+    (defColumns ? ',def_takeaways,def_tds,points_allowed' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -90,6 +96,7 @@
   const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
+  const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -419,6 +426,14 @@
        case is that trade runs fail there, which is what they already do today. */
     if (payload.gmRating != null) args.p_gm_rating = payload.gmRating;
     if (payload.tradeMoves != null) args.p_trade_moves = payload.tradeMoves;
+    /* THE DEFENSE COLUMNS, on the same terms and for the same reason: PostgREST resolves an
+       RPC by the set of keys in the body, so naming these on every submit would 404 every
+       run on a database that has not run 86_football_defense_stats.sql. Sent only by a
+       defense run, so the worst case is that defense runs fail there until it is applied,
+       which is exactly the bargain 61 struck for the Trade Machine. */
+    if (payload.defTakeaways != null) args.p_def_takeaways = payload.defTakeaways;
+    if (payload.defTds != null) args.p_def_tds = payload.defTds;
+    if (payload.pointsAllowed != null) args.p_points_allowed = round1(payload.pointsAllowed);
     const body = JSON.stringify(args);
     const ATTEMPTS = 3;
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
@@ -612,13 +627,15 @@
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
       let res = await timed(url(), { headers: headers() });
-      /* UP TO THREE RETRIES, one per optional set, narrowest first. Each pass reads the
+      /* UP TO FOUR RETRIES, one per optional set, narrowest first. Each pass reads the
          body before deciding, so a genuinely broken query still surfaces as itself rather
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
-      for (let pass = 0; pass < 3 && !res.ok && res.status === 400; pass++) {
+      for (let pass = 0; pass < 4 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (tradeColumns && missingTradeColumn(body)) {
+        if (defColumns && missingDefColumn(body)) {
+          defColumns = false;
+        } else if (tradeColumns && missingTradeColumn(body)) {
           tradeColumns = false;
         } else if (avatarColumns && missingAvatarColumn(body)) {
           avatarColumns = false;
@@ -703,12 +720,12 @@
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
       let res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-      if (!res.ok && res.status === 400 && tradeColumns) {
+      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (missingTradeColumn(body)) {
-          tradeColumns = false;
-          res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-        }
+        if (defColumns && missingDefColumn(body)) defColumns = false;
+        else if (tradeColumns && missingTradeColumn(body)) tradeColumns = false;
+        else break;
+        res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
       }
       if (!res.ok) return await fail('mine', res);
       const rows = await res.json().catch(() => null);

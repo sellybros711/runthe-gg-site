@@ -5239,7 +5239,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=18"></script>
+<script src="board.js?v=19"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
@@ -11670,11 +11670,26 @@ function drawShareCard(){
     x.letterSpacing='0px';
   };
   const rband=(v)=>v>=75?'#4ade80':(v>=50?'#fbbf24':'#f87171');
-  stat('TEAM RATING',rating===null||rating===undefined?'--':Number(rating).toFixed(1),
-    CARD.W*0.22,rating===null||rating===undefined?'#e2e8f0':rband(Number(rating)),70);
-  stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,
-    chem>0.05?'#4ade80':'#e2e8f0');
-  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
+  const ratTxt=rating===null||rating===undefined?'--':Number(rating).toFixed(1);
+  const ratCol=rating===null||rating===undefined?'#e2e8f0':rband(Number(rating));
+  /* FOUR ACROSS ON A DEFENSE CARD, and they are not the same four. Chemistry and spend
+     describe how a roster was assembled, which is the draft's story; this card is the
+     SEASON's, and a defense season is points allowed and the ball it took away. The rating
+     stays because it is the number the game ranks rosters on and the one thing two cards can
+     be compared by. Offense keeps its three exactly as they were. */
+  if(isDefRun()){
+    const d=defenseSeasonStats(run.season.results);
+    const at4=[0.14,0.38,0.62,0.86].map(f=>CARD.W*f);
+    stat('TEAM RATING',ratTxt,at4[0],ratCol,54);
+    stat('ALLOWED',d.allowedPG.toFixed(1),at4[1],'#7dd3fc',54);
+    stat('TAKEAWAYS',String(d.takeaways),at4[2],'#7dd3fc',54);
+    stat('DEF TDS',String(d.tds),at4[3],d.tds>0?'#4ade80':'#e2e8f0',54);
+  }else{
+    stat('TEAM RATING',ratTxt,CARD.W*0.22,ratCol,70);
+    stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,
+      chem>0.05?'#4ade80':'#e2e8f0');
+    stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
+  }
 
   /* THE DARE, AND THEN THE WAY TO TAKE IT. The card used to end on a gray line of small
      caps that read as a watermark rather than as somewhere to go: an address printed at 34px
@@ -13765,6 +13780,16 @@ function runPayload(){
        came back; without this a badge about dealing has no way to ask. Free-agent
        signings ride on the trade that opened the hole, flagged rather than listed, which
        is the same shape acceptTrade records. */
+    /* ---- WHAT A DEFENSE SEASON DID, and null for every other mode ----
+       Derived here rather than recomputed by whoever wants to show it, because the derivation
+       needs each game's own seed and the row keeps neither the seed nor the scores. Stored so
+       every screen that can show a run can show these: the board, the run detail sheet, the
+       career list, somebody else's row. Without them they exist only on the machine that
+       played the season, which is the wrong way round for the two numbers this mode is
+       actually about. See supabase/86_football_defense_stats.sql. */
+    ...(isDefRun()?(()=>{ const d=defenseSeasonStats(s.results);
+      return {defTakeaways:d.takeaways,defTds:d.tds,
+        pointsAllowed:Math.round(d.allowedPG*10)/10}; })():{}),
     gmRating:run.tradeMachine?(o.gmRating??null):null,
     tradeMoves:run.tradeMachine?(run.tradeHistory||[]).map(h=>{
       const m={w:h.week||0,t:h.type,out:h.outKeys||[],in:(h.inKeys||[]).slice()};
@@ -14765,6 +14790,20 @@ function runDetail(row,back){
      and an Eras Draft season a free run with it. */
   /* One row object either way, so the name and the colour cannot come from two different
      answers to the same question. */
+  /* THE THREE DEFENSE NUMBERS. A row carries them from 86 onward; your own just-finished
+     run can derive them, which is what makes them appear on the results screen the instant
+     the season ends rather than after a round trip. Null when this is not a defense run, and
+     null when it is one from before the columns existed: a tile reading 0 takeaways would be
+     a claim about a season nobody counted. */
+  const defRow=mine
+    ? (isDefRun()?(()=>{ const d=defenseSeasonStats(run.season.results);
+        return {pa:d.allowedPG,tk:d.takeaways,td:d.tds}; })():null)
+    : (row.run_mode==='defense'
+        ? {pa:row.points_allowed==null?null:Number(row.points_allowed),
+           tk:row.def_takeaways==null?null:Number(row.def_takeaways),
+           td:row.def_tds==null?null:Number(row.def_tds)}
+        : null);
+  const defStat=(defRow&&(defRow.pa!==null||defRow.tk!==null||defRow.td!==null))?defRow:null;
   const kindRow=mine
     ? {run_mode:runMode(),franchise:run&&run.franchise,era:run&&run.era}
     : row;
@@ -14802,6 +14841,16 @@ function runDetail(row,back){
       tile(pc(chem/100),'Chemistry')+
       tile(M0(spend),'Spent')+
     '</div>'+
+    /* AND WHAT A DEFENSE SEASON DID, on every screen a run can be opened from rather than
+       only on the machine that played it. Off the row when the row has them, and off the
+       live run when this is your own season and the row has not come back yet. A run
+       recorded before 86_football_defense_stats.sql has nulls and prints nothing at all,
+       which is the same rule the rest of this sheet follows: absent is not zero. */
+    (defStat?'<div class="rdstat" style="margin-top:8px">'+
+      tile(defStat.pa===null?'--':defStat.pa.toFixed(1),'Points allowed')+
+      tile(defStat.tk===null?'--':defStat.tk,'Forced turnovers')+
+      tile(defStat.td===null?'--':defStat.td,'Defensive TDs')+
+    '</div>':'')+
     (fppg!==null&&mult!==null&&rating!==null
       ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
         pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase()+', which is '+

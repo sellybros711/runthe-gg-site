@@ -632,6 +632,29 @@ window.__DEF={
     return {n:shelf.length,shelf:cut(shelf),rest:cut(all.filter(a=>a.group!=='Defense'))};
   },
 
+  /* The share card's stat row, read off the canvas call sites rather than the pixels: what
+     is under test is which four numbers a defense card carries. */
+  cardStats(){
+    const seen=[];
+    const c=document.createElement('canvas'); c.width=CARD.W; c.height=CARD.H;
+    const real=document.createElement;
+    /* Intercepting fillText is enough: every label on that row goes through it. */
+    const ctx=c.getContext('2d');
+    const orig=CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText=function(t,x2,y2){
+      seen.push({t:String(t),y:Math.round(y2)}); return orig.apply(this,arguments); };
+    try{ drawShareCard(); } finally { CanvasRenderingContext2D.prototype.fillText=orig; }
+    void real;
+    const labels=seen.filter(v=>/^[A-Z ]{4,}$/.test(v.t)).map(v=>v.t);
+    return {labels,all:seen.map(v=>v.t)};
+  },
+  /* The run detail sheet for your own finished run, and which tiles it carries. */
+  detailTiles(){ runDetail(null);
+    const t=[...document.querySelectorAll('#sheet-in .rdstat div')].map(d=>({
+      k:(d.querySelector('span')||{}).textContent||'',
+      v:(d.querySelector('b')||{}).textContent||''}));
+    closeSheet(); return t; },
+
   /* THE SEASON STAT STRIP on the results screen, as label and value pairs. */
   seasonStats:()=>[...document.querySelectorAll('#o-stats .st')].map(el=>({
     k:el.querySelector('.k').textContent, v:el.querySelector('.v').textContent})),
@@ -1796,6 +1819,24 @@ boot();`;
     const po = await p.evaluate(() => window.__DEF.playoffGameTakeaways());
     ok('the playoff game the broadcast called is inside the season total',
       !po || (po.shown <= shownTk && po.tds <= shownTd), { po, shownTk, shownTd });
+
+    /* ── AND THE SAME THREE NUMBERS WHEREVER THE RUN IS LOOKED AT ─────────────
+       They were on the results screen and nowhere else, which meant the two numbers this
+       mode is actually about existed only on the machine that played the season. The detail
+       sheet is the run as anybody opens it, off the leaderboard or off the career list, and
+       the share card is the run as it leaves the site. */
+    const tiles = await p.evaluate(() => window.__DEF.detailTiles());
+    const tileKeys = tiles.map((t) => t.k);
+    ok('the run detail sheet carries the defense numbers too',
+      tileKeys.includes('Points allowed') && tileKeys.includes('Forced turnovers')
+      && tileKeys.includes('Defensive TDs'), tileKeys);
+    ok('and it still says what the roster cost and how it fit',
+      tileKeys.includes('Team rating') && tileKeys.includes('Spent'), tileKeys);
+    const cardRow = await p.evaluate(() => window.__DEF.cardStats());
+    ok('and the share card is a defense card, not an offense one',
+      cardRow.labels.includes('ALLOWED') && cardRow.labels.includes('TAKEAWAYS')
+      && cardRow.labels.includes('DEF TDS') && cardRow.labels.includes('TEAM RATING')
+      && !cardRow.labels.includes('CHEMISTRY'), cardRow.labels);
 
     /* ── DRAFT AGAIN MEANS THIS GAME AGAIN ────────────────────────────────────
        The button under the results promises the same competition, and the comment above its
