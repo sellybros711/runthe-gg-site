@@ -570,10 +570,27 @@
   // stars.js overlay) is the primary signal — hand-curated list of ~700 NBA /
   // NFL / MLB names any casual sports fan would know. Auto-detected fallback
   // for anyone not on the curated list, so a rising legend still qualifies.
+  /* Offensive linemen are the one position a clue cannot rescue.
+     Everything the generator knows about a player is club, position, decade,
+     honour, number and school, and for a lineman that produces "Titans
+     offensive lineman and Pro Bowler of the 2000s". True, unique in our file,
+     and unanswerable: the position exists to be anonymous, and 104 of them
+     sat in the pool putting a ROOS or a STEUSSIE into one grid in seven.
+
+     A hand-written clue is the exception, because it is the proof. If somebody
+     writes the parade speech for Jason Kelce or the sixteen straight Pro Bowls
+     for Bruce Matthews, that man has a moment a fan can name and he is back in.
+     Nobody has written one yet, so today this shuts the door on all of them. */
+  function playableRole(e) {
+    if (e.sport !== 'NFL') return true;
+    if (!/offensive lineman|^center$|^guard$|^tackle$/i.test(e.pos || '')) return true;
+    return hasCurated(e);
+  }
   function isCwIcon(e) {
     var T = { NBA: 1, NFL: 1, MLB: 1 };
     if (!T[e.sport]) return false;
     if (!hasDistinction(e)) return false;   // must have a real accolade to earn a clue
+    if (!playableRole(e)) return false;
     if (e.star) return true;
     var d = e.decade;
     if (!d || !d.length || d[d.length - 1] < 1990) return false;
