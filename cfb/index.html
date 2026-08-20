@@ -5391,41 +5391,34 @@ function peekCaseHtml(res){
   const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off blur')+'">'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
 
-  let head;
-  if(!s.runs){
-    head='<p class="dim" style="font-size:13.5px;margin:0 0 10px">Finish a season and '+
-      'this starts filling up. There are <b style="color:var(--ink)">'+res.total+
-      '</b> badges in here, from reaching a bowl to winning the title from the 9 seed.</p>';
-  }else{
-    head='<p class="shsec" style="margin-top:0">Your career</p>'+careerCells(s);
-  }
-
-  /* Earned first and in full. A player who has been going a while should see their
-     own badges here, not a teaser of somebody else's. */
-  const got=res.earned.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
-  const gotHtml=got.length
-    ? '<p class="shsec">Earned <span class="cnt">'+got.length+' of '+res.total+'</span></p>'+
-      '<div class="achlist">'+got.map(a=>chip(a,true)).join('')+'</div>'
-    : '';
+  /* NOTHING IS EARNED HERE, because a guest earns nothing: see announceRunBadges. This
+     used to show a signed-out player their own badges in full and it was a promise the
+     browser could not keep. What is shown instead is the whole catalog, locked, and the
+     seasons they have actually played, which are real and are theirs. */
+  const head='<p class="dim" style="font-size:13.5px;margin:0 0 10px">Badges come with an '+
+    'account. There are <b style="color:var(--ink)">'+res.total+'</b> in here, from '+
+    'reaching a bowl to winning the title from the 9 seed, and they are earned from the '+
+    'seasons you have already played the moment you sign in.</p>'+
+    (s.runs?'<p class="shsec" style="margin-top:0">Your seasons so far</p>'+careerCells(s):'');
 
   /* And a blurred taste of the rest. Highest tier first, so what is behind the blur
      is the interesting end of the catalog. */
-  const rest=res.locked.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+  const rest=A.CATALOG.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
   const peek=rest.slice(0,PEEK_LOCKED);
   const more=rest.length-peek.length;
   const peekHtml=peek.length
-    ? '<p class="shsec">Still out there <span class="cnt">'+rest.length+' more</span></p>'+
+    ? '<p class="shsec">What is in here <span class="cnt">'+rest.length+' badges</span></p>'+
       '<div class="achlist peek">'+peek.map(a=>chip(a,false)).join('')+'</div>'+
       (more?'<p class="dim" style="font-size:11.5px;margin:8px 0 0;text-align:center">'+
         'and '+more+' more</p>':'')
     : '';
 
-  return head+gotHtml+peekHtml+
+  return head+peekHtml+
     gateCard({with:'The full trophy case comes with an account',
               needs:'Keeping your trophy case needs an account.'})+
-    '<p class="dim" style="font-size:11px;margin:11px 0 0;line-height:1.4">Right now these '+
-    'are kept in this browser, so clearing its data clears them. An account keeps them '+
-    'for good and carries them to any device you sign in on.</p>';
+    '<p class="dim" style="font-size:11px;margin:11px 0 0;line-height:1.4">Your seasons are '+
+    'kept in this browser either way. An account is what turns them into badges, keeps '+
+    'them for good and carries them to any device you sign in on.</p>';
 }
 
 /* ── THE CABINET ─────────────────────────────────────────────────────
@@ -5551,11 +5544,17 @@ function showAchHeadline(text){
    the point where the best-possible search has finished and the perfect-draft badge is
    finally knowable -- announcing before that and again after meant two overlapping runs of
    banners with the cap applying to each separately.
-   achState falls back to this browser's own history when the board rows are not in, which
-   is what makes this work for a signed-out player too -- the NFL game has no signed-out
-   case to serve here and this one does. Anything already marked seen is skipped, so an
-   extra call can never repeat a badge. */
+   achState falls back to this browser's own history when the board rows are not in yet, so
+   a member whose seasons are still loading is still told what they just earned. Anything
+   already marked seen is skipped, so an extra call can never repeat a badge. */
 function announceRunBadges(){
+  /* BADGES ARE AN ACCOUNT FEATURE, so a guest is never told they earned one. This used to
+     fall back to local history and announce for a signed-out player too, which read as
+     generosity and was the opposite: the banner promised a trophy case that lives in one
+     browser's storage, disappears when it is cleared, and does not follow them to a phone.
+     Earning something you are going to lose is worse than not earning it. The offer is
+     made instead, on the results screen and the board and after the draft. */
+  if(!authState.signedIn) return;
   const res=achState(careerRows||null);
   if(res) achAnnounce(authState.userId,res,false);
 }
@@ -5677,8 +5676,13 @@ function recordRun(row){
   if(tutorialOn){ lastEarned=[]; return lastEarned; }
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
+  /* THE SEASON IS STILL WRITTEN DOWN FOR A GUEST, and no badge comes out of it. The row is
+     their own history and the results screen reads it; the badge is the thing an account
+     buys. Recorded before the early return so that signing in later derives the whole
+     cabinet from seasons already played rather than starting them at zero. */
   const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
+  if(!authState.signedIn){ lastEarned=[]; return lastEarned; }
   lastEarned=A
     ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
     : [];
@@ -5852,17 +5856,22 @@ function paintBoardGate(){
   ga('board_gate_shown',{window:lbWindow,mode:lbMode});
   /* Three, and every one of them is about THIS screen. The trophy case and school colors
      are real and are sold on the squad screen; here the offer has to be the board, or it
-     is a generic account pitch that happens to be standing on a leaderboard. */
+     is a generic account pitch that happens to be standing on a leaderboard.
+     ONE THOUGHT A LINE. A title with a comma in the middle is two ideas glued together
+     and reads as a slogan rather than a sentence, so each of these says one thing and
+     the line under it says one more. */
   const perks=[
-    ['Your name on this board', 'Only named seasons get listed.'],
-    ['Your place, every season', 'Where each run lands against everybody.'],
-    ['Six boards, not one', 'A separate one for each Power 5 conference.'],
+    ['Your name on the board', 'Guest seasons are ranked but never listed.'],
+    ['Your place every season', 'See exactly where each run landed.'],
+    ['Six different leaderboards', 'One for each Power 5 conference.'],
   ];
   gate.innerHTML='<div class="card">'+
     '<div class="eyebrow green">The leaderboard</div>'+
     '<h3>See who is up there</h3>'+
-    '<p class="lg-sub">Guest seasons are still ranked. An account is what puts your name '+
-      'on them, free, in about ten seconds.</p>'+
+    /* NOT "guest seasons are still ranked" HERE ANY MORE. The first bullet says it and
+       says it better, and a card that opens by making the same point its own list is
+       about to make reads as padding before the reader has reached anything. */
+    '<p class="lg-sub">An account is free and takes about ten seconds.</p>'+
     '<div class="perks">'+perks.map(([t,d])=>
       '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
       '</span></div></div>').join('')+'</div>'+
@@ -6954,18 +6963,24 @@ function guestPitch(){
 
   const ACH=window.PS_CFB_ACH;
   const badges=ACH&&ACH.CATALOG?ACH.CATALOG.length:0;
-  /* Four, and every one of them is a thing this game actually withholds. A list padded
-     with things a guest already has is the fastest way to teach somebody that the next
-     list is not worth reading either. */
-  const perks=[
-    ['Your name on the board',
-     'Every season is ranked either way. Only the ones with a name on them get listed.'],
-    ['Conference Draft',
-     'The Power 5 mode, with a separate leaderboard for each of the five.'],
-    [badges?('All '+badges+' badges'):'The whole trophy case',
-     'The case fills up as you play, and it follows the account rather than this browser.'],
-    ['Your school’s colors',
-     'They theme the home screen, the draft and the bubble up top.'],
+  /* Every one of them is a thing this game actually withholds FROM THE PERSON READING IT.
+     A list padded with things they already have is the fastest way to teach somebody that
+     the next list is not worth reading either, and that is exactly what the four-item
+     version did to a player who is signed in and has not picked a name: Conference Draft,
+     the badges and the school colors all follow the account, so three of the four were
+     already theirs and only the first was true. The nameless case gets its own two.
+
+     ONE THOUGHT A LINE. Short enough to read at a glance, no comma splicing two ideas
+     into one title, and the sentence under it adds a fact rather than qualifying the
+     title back down again. */
+  const perks=g==='noname'?[
+    ['Your name on the leaderboard', 'Nameless seasons are ranked but never listed.'],
+    ['It takes one tap', 'Pick a name and you are on there.'],
+  ]:[
+    ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
+    ['Conference Draft', 'Draft a single Power 5 conference.'],
+    [badges?('All '+badges+' badges'):'Every badge in the game', 'Guests earn none of them.'],
+    ['Your school’s colors', 'They theme the whole game.'],
   ];
   $('sheet-in').dataset.kind='pitch';
   $('sheet-in').innerHTML=
@@ -6975,9 +6990,10 @@ function guestPitch(){
     '<p class="dim" style="font-size:13.5px;margin:0 0 12px">'+
       (g==='noname'
         ? 'You are signed in, so this season is already yours. The board lists seasons by '+
-          'name, so it needs one before it can show you.'
-        : 'You can play this season as a guest and it will be ranked. Here is what an '+
-          'account adds, free, in about ten seconds.')+'</p>'+
+          'name and you have not picked one yet.'
+        /* The first bullet already says the season is ranked either way, so this line
+           does not say it a second time on the way to the list. */
+        : 'An account is free and takes about ten seconds.')+'</p>'+
     '<div class="perks">'+perks.map(([t,d])=>
       '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
       '</span></div></div>').join('')+'</div>'+

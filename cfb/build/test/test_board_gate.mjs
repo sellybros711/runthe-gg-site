@@ -115,8 +115,12 @@ const state = (p) => p.evaluate(() => {
   ok('it lists what the board gives you', s.perks.length === 3, s.perks.join(' | '));
   ok('and every one of them is about this screen',
     s.perks.every((t) => /board|place|season/i.test(t)), s.perks.join(' | '));
-  ok('it says a guest season is still ranked', /still ranked/i.test(s.gateText),
-    s.gateText.slice(0, 90));
+  /* THE REASSURANCE HAS TO SURVIVE THE TRIM. A card that only lists what is missing reads
+     as "you have been playing for nothing", so somewhere on it, it still has to say the
+     season counts. It moved from the paragraph into the first bullet rather than being
+     said twice; what this pins is that it is said at all. */
+  ok('it says a guest season is ranked anyway', /ranked but never listed/i.test(s.gateText),
+    s.gateText.slice(0, 120));
   /* THE COUNT IS THE ARGUMENT. "2,719 on the board" over a blurred list is the reason
      anybody presses the button, so it must not be behind the glass with the names. */
   ok('the count above it stays readable', !s.countBlurred && /season/i.test(s.count), s.count);
