@@ -428,6 +428,17 @@
    "titles": [],
    "current": true
   },
+  "CHA": {
+   "code": "CHA",
+   "city": "Charlotte",
+   "name": "Bobcats",
+   "full": "Charlotte Bobcats",
+   "founded": 2005,
+   "folded": 2014,
+   "became": "CHO",
+   "titles": [],
+   "current": false
+  },
   "SEA": {
    "code": "SEA",
    "city": "Seattle",
@@ -634,6 +645,127 @@
    "founded": 1974,
    "folded": 1979,
    "became": "UTA",
+   "titles": [],
+   "current": false
+  },
+  "PHW": {
+   "code": "PHW",
+   "city": "Philadelphia",
+   "name": "Warriors",
+   "full": "Philadelphia Warriors",
+   "founded": 1946,
+   "folded": 1962,
+   "became": "GSW",
+   "titles": [],
+   "current": false
+  },
+  "SYR": {
+   "code": "SYR",
+   "city": "Syracuse",
+   "name": "Nationals",
+   "full": "Syracuse Nationals",
+   "founded": 1949,
+   "folded": 1963,
+   "became": "PHI",
+   "titles": [],
+   "current": false
+  },
+  "ROC": {
+   "code": "ROC",
+   "city": "Rochester",
+   "name": "Royals",
+   "full": "Rochester Royals",
+   "founded": 1948,
+   "folded": 1957,
+   "became": "SAC",
+   "titles": [],
+   "current": false
+  },
+  "MNL": {
+   "code": "MNL",
+   "city": "Minneapolis",
+   "name": "Lakers",
+   "full": "Minneapolis Lakers",
+   "founded": 1948,
+   "folded": 1960,
+   "became": "LAL",
+   "titles": [],
+   "current": false
+  },
+  "FTW": {
+   "code": "FTW",
+   "city": "Fort Wayne",
+   "name": "Pistons",
+   "full": "Fort Wayne Pistons",
+   "founded": 1948,
+   "folded": 1957,
+   "became": "DET",
+   "titles": [],
+   "current": false
+  },
+  "MLH": {
+   "code": "MLH",
+   "city": "Milwaukee",
+   "name": "Hawks",
+   "full": "Milwaukee Hawks",
+   "founded": 1951,
+   "folded": 1955,
+   "became": "ATL",
+   "titles": [],
+   "current": false
+  },
+  "TRI": {
+   "code": "TRI",
+   "city": "Tri-Cities",
+   "name": "Blackhawks",
+   "full": "Tri-Cities Blackhawks",
+   "founded": 1949,
+   "folded": 1951,
+   "became": "ATL",
+   "titles": [],
+   "current": false
+  },
+  "CHZ": {
+   "code": "CHZ",
+   "city": "Chicago",
+   "name": "Zephyrs",
+   "full": "Chicago Zephyrs",
+   "founded": 1962,
+   "folded": 1963,
+   "became": "WAS",
+   "titles": [],
+   "current": false
+  },
+  "CHP": {
+   "code": "CHP",
+   "city": "Chicago",
+   "name": "Packers",
+   "full": "Chicago Packers",
+   "founded": 1961,
+   "folded": 1962,
+   "became": "WAS",
+   "titles": [],
+   "current": false
+  },
+  "SDA": {
+   "code": "SDA",
+   "city": "San Diego",
+   "name": "Sails",
+   "full": "San Diego Sails",
+   "founded": 1975,
+   "folded": 1976,
+   "became": null,
+   "titles": [],
+   "current": false
+  },
+  "NYA": {
+   "code": "NYA",
+   "city": "New York",
+   "name": "Nets",
+   "full": "New York Nets",
+   "founded": 1968,
+   "folded": 1976,
+   "became": "BRK",
    "titles": [],
    "current": false
   }

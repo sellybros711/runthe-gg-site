@@ -49,6 +49,13 @@ const TO_BBREF = { BKN: 'BRK', PHX: 'PHO', CHA: 'CHO' };
 /* Clubs that no longer exist under that name, and what they became. Every one
    of these is drawable in this game, so every one has to print correctly. */
 const DEFUNCT = {
+  /* CHARLOTTE IS THE AWKWARD ONE, and it is worth spelling out because the
+     mapping above already claims CHA. Basketball-Reference uses CHA for the
+     BOBCATS (2005 to 2014) and CHO for the Hornets who came after them, while
+     NBA.com uses CHA for the club that exists now. So CHA is not an alias for
+     the current franchise in this data, it is a different club that played in
+     the same building, and a run drawing a 2010 season needs it by name. */
+  CHA: { city: 'Charlotte', name: 'Bobcats', from: 2005, to: 2014, became: 'CHO' },
   SEA: { city: 'Seattle', name: 'SuperSonics', from: 1967, to: 2008, became: 'OKC' },
   VAN: { city: 'Vancouver', name: 'Grizzlies', from: 1995, to: 2001, became: 'MEM' },
   NJN: { city: 'New Jersey', name: 'Nets', from: 1977, to: 2012, became: 'BRK' },
@@ -68,6 +75,20 @@ const DEFUNCT = {
   STL: { city: 'St. Louis', name: 'Hawks', from: 1955, to: 1968, became: 'ATL' },
   SDR: { city: 'San Diego', name: 'Rockets', from: 1967, to: 1971, became: 'HOU' },
   NOJ: { city: 'New Orleans', name: 'Jazz', from: 1974, to: 1979, became: 'UTA' },
+  SDR: { city: 'San Diego', name: 'Rockets', from: 1967, to: 1971, became: 'HOU' },
+  PHW: { city: 'Philadelphia', name: 'Warriors', from: 1946, to: 1962, became: 'GSW' },
+  SYR: { city: 'Syracuse', name: 'Nationals', from: 1949, to: 1963, became: 'PHI' },
+  ROC: { city: 'Rochester', name: 'Royals', from: 1948, to: 1957, became: 'SAC' },
+  MNL: { city: 'Minneapolis', name: 'Lakers', from: 1948, to: 1960, became: 'LAL' },
+  FTW: { city: 'Fort Wayne', name: 'Pistons', from: 1948, to: 1957, became: 'DET' },
+  MLH: { city: 'Milwaukee', name: 'Hawks', from: 1951, to: 1955, became: 'ATL' },
+  TRI: { city: 'Tri-Cities', name: 'Blackhawks', from: 1949, to: 1951, became: 'ATL' },
+  CHZ: { city: 'Chicago', name: 'Zephyrs', from: 1962, to: 1963, became: 'WAS' },
+  CHP: { city: 'Chicago', name: 'Packers', from: 1961, to: 1962, became: 'WAS' },
+  /* The ABA clubs that came in at the 1976 merger, under the codes BBRef uses
+     for their first NBA seasons. */
+  SDA: { city: 'San Diego', name: 'Sails', from: 1975, to: 1976, became: null },
+  NYA: { city: 'New York', name: 'Nets', from: 1968, to: 1976, became: 'BRK' },
 };
 
 async function main() {

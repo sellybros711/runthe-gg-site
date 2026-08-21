@@ -76,6 +76,12 @@ jobs:
       - name: Draft years and colleges
         run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
 
+      # Franchises change: a club relocates, renames, or wins a title. Refreshed
+      # in the same run so the team table and the player table are never built
+      # from two different days.
+      - name: Franchises
+        run: node hoops/build/fetch-teams.mjs
+
       - name: Price it and write the file the game loads
         run: |
           node hoops/build/build-players.mjs \
@@ -88,8 +94,10 @@ jobs:
       # and leaves the data to look at while working out why it failed.
       - uses: actions/upload-artifact@v4
         with:
-          name: hoops-players
-          path: hoops/data/players.json
+          name: hoops-data
+          path: |
+            hoops/data/players.json
+            hoops/data/teams.json
           if-no-files-found: error
 
       # The engine has to still be a working game after the data underneath it
@@ -107,7 +115,7 @@ jobs:
         run: |
           git config user.name "hoops-data-bot"
           git config user.email "noreply@anthropic.com"
-          git add hoops/data/players.json
+          git add hoops/data/players.json hoops/data/teams.json
           git diff --cached --quiet && echo "data unchanged" || {
             git commit -m "Refresh Run The Floor player data from Basketball-Reference"
             for i in 1 2 3 4 5; do
