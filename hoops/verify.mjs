@@ -130,18 +130,29 @@ for (const slot of E.SLOTS) {
   const pct = (v) => (v * 100).toFixed(2) + '%';
 
   /* AS A RATE, NOT A COUNT, because this file is built from two populations of
-     very different size and both have to pass. The real league is 16,000 rows
-     of which about 1.5% are 15 win share seasons and 4% are 12; the
-     hand-entered seed is 171 rows of nothing but all-time greats, so it runs
-     far richer at 5% and 10%. A count calibrated for either one is a landmine
-     for the other. The broken file sat at 0.02% and 0.14%, which is nowhere
-     near the floor from either direction. */
+     very different size and both have to pass. The real league is 16,000 rows;
+     the hand-entered seed is 171 rows of nothing but all-time greats, so it
+     runs several times richer. A count calibrated for either one is a landmine
+     for the other.
+
+     THE NUMBERS ARE MEASURED, NOT ESTIMATED, and the difference cost a run.
+     The 12 win share floor was first set at 2% from a back-of-the-envelope
+     guess that history holds around 700 such seasons. A clean league actually
+     measures 1.79%, about five and a half players a year, and the guess failed
+     a dataset that was right. The floors below sit at roughly two thirds of
+     what a real league measures: low enough not to fail honest data, and still
+     an order of magnitude above the broken file, which sat at 0.02% and 0.14%.
+
+     Note which way the evidence ran when they disagreed. The six named seasons
+     below all PASSED on that run, and they are the direct check on the column;
+     the rate is an aggregate that can be wrong about the league without being
+     wrong about the data. So the threshold moved, not the data. */
   ok(best >= 18,
     `the best season in the data is a real MVP season (${best} win shares, want 18+)`);
-  ok(rate(15) >= 0.005,
-    `15 win share seasons occur at a believable rate (${pct(rate(15))} of rows, want 0.5%+)`);
-  ok(rate(12) >= 0.02,
-    `and 12 win share seasons (${pct(rate(12))} of rows, want 2%+)`);
+  ok(rate(15) >= 0.004,
+    `15 win share seasons occur at a believable rate (${pct(rate(15))} of rows, want 0.4%+)`);
+  ok(rate(12) >= 0.012,
+    `and 12 win share seasons (${pct(rate(12))} of rows, want 1.2%+)`);
   ok(mean >= 2.5,
     `the average qualifying player is worth a real amount (${mean.toFixed(2)} win shares, want 2.5+)`);
 

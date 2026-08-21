@@ -98,25 +98,28 @@ const decode = (s) => String(s || '')
   .replace(/\s+/g, ' ').trim();
 
 const strip = (h) => decode(String(h || '').replace(/<[^>]*>/g, ''));
-const uncomment = (h) => String(h || '').replace(/<!--/g, '').replace(/-->/g, '');
+export const uncomment = (h) => String(h || '').replace(/<!--/g, '').replace(/-->/g, '');
 
 /* ── SPLITTING A PAGE INTO ROWS WITHOUT REQUIRING </tr> ────────────────────
  *
  * This used to be `match(/<tr[\s\S]*?<\/tr>/gi)`, which needs a closing tag on
- * every row. HTML5 does not: </tr> is optional, and Basketball-Reference omits
- * it on the draft pages while writing it on the season pages. So the season
- * fetch worked perfectly and the draft fetch returned ZERO PICKS FOR ALL
- * SIXTY-SIX YEARS, twice, on a page that had loaded correctly and contained
- * every pick.
- *
- * The diagnostic that caught it said the page was titled "1960 NBA Draft",
- * was 389,886 bytes, held 143 <tr>, and contained the link
- * /players/r/roberos01.html. Right page, rows present, links present, nothing
- * parsed. The only thing left is the closing tag.
- *
- * A row therefore runs from one <tr> to whatever ends it FIRST: a </tr>, the
+ * every row. HTML5 does not: </tr>, </td> and </th> are all optional, so a
+ * parser that demands them is correct only for the pages that happen to write
+ * them. A row here runs from one <tr> to whatever ends it FIRST: a </tr>, the
  * next <tr>, or the end of the table. That is what a browser does, and it is
- * correct on both shapes rather than on one of them.
+ * right on both shapes rather than on one of them.
+ *
+ * HONESTY ABOUT WHY THIS WAS WRITTEN. It was written to fix the draft fetch,
+ * which had returned zero picks for all sixty-six years three runs running,
+ * and it DID NOT FIX IT. The next run's diagnostic reported 143 <tr> and 143
+ * </tr> on the same page: the closing tags were there all along, so the
+ * missing-tag theory was wrong and the draft failure is still open.
+ *
+ * The change stays because it is strictly more correct than what it replaced,
+ * and it costs nothing. But it is not the draft's bug, and leaving a
+ * confident wrong explanation here would send the next person down the same
+ * dead end. The draft page's real shape is what the diagnostic in
+ * fetch-draft.mjs now prints.
  */
 function rowChunks(html) {
   const out = [];

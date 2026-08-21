@@ -34,7 +34,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bbrRows, cell } from './fetch-nba.mjs';
+import { bbrRows, cell, uncomment } from './fetch-nba.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RAW_DIR = path.join(HERE, 'raw');
@@ -95,18 +95,24 @@ async function main() {
       console.log(`    bytes: ${html.length}, <tr>: ${open}, </tr>: ${close}, </td>: ${(html.match(/<\/td>/gi) || []).length}`);
       const link = /href="?\/players\/[a-z]\/[a-z0-9.'-]+\.html"?/i.exec(html);
       console.log(`    first player link: ${link ? link[0] : 'NONE FOUND'}`);
-      /* THE MARKUP ITSELF, because everything above this line was already
-         printed once and still did not say what was wrong. The page was the
-         right page, the rows were there and the links were there, and the
-         answer turned out to be that </tr> was absent: a fact none of those
-         counts revealed until they were compared to each other. Print the row
-         and the next person reads the answer instead of inferring it. */
-      if (link) {
-        const at = html.lastIndexOf('<tr', html.indexOf(link[0]));
-        if (at !== -1) {
-          console.log('    the row that link sits in, as delivered:');
-          console.log('      ' + html.slice(at, at + 420).replace(/\s+/g, ' '));
-        }
+      /* THE MARKUP ITSELF. Three runs have now printed counts at this point
+         and none of them said what was wrong, because a count can only confirm
+         a theory you already have. The first attempt anchored on the first
+         player link ANYWHERE on the page, which turned out to sit in the
+         navigation ahead of every table, so it printed nothing at all.
+
+         So: print the rows, chosen by what a pick row must contain rather than
+         by where a link happens to be, and print a plain one if none matches
+         so the output is never empty. */
+      const chunks = (uncomment(html).match(/<tr[\s\S]*?<\/tr>/gi) || []);
+      const interesting = chunks.filter(t => /\/players\//i.test(t) || /data-stat="player/i.test(t));
+      const sample = (interesting.length ? interesting : chunks).slice(0, 2);
+      console.log(`    ${chunks.length} row chunks, ${interesting.length} of them with a player cell or link.`);
+      if (!sample.length) {
+        console.log('    NO ROW CHUNKS AT ALL, so the table is not where <tr> is.');
+      }
+      for (const t of sample) {
+        console.log('      ' + t.replace(/\s+/g, ' ').slice(0, 500));
       }
     }
 
