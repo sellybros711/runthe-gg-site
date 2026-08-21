@@ -395,36 +395,59 @@ function achTotal(){
 }
 const BRONZE_MIN=5;       /* below this you are unranked, and the crest says nothing */
 
-const TIERS=[
-  { id:'bronze', name:'Bronze', a:'#F6CE98', b:'#7a481f', mid:'#C77B3A', edge:'#5e2f0f', pips:1 },
-  { id:'silver', name:'Silver', a:'#ffffff', b:'#7f868d', mid:'#CFD3D8', edge:'#48525f', pips:2 },
-  { id:'gold',   name:'Gold',   a:'#FFF7C2', b:'#9a6c12', mid:'#F4C430', edge:'#6b4703', pips:3 },
-  { id:'legend', name:'Legend', a:'#ffffff', b:'#8fd0ff', mid:'#cdeeff', edge:'#1d4e73', pips:0, star:true },
-  { id:'goat',   name:'GOAT',   a:'#FFD24A', b:'#FFC0E6', mid:'#FFF2A0', edge:'#6b4703', pips:0, star:true, halo:true }
-];
-/* The same shape as the soccer game's tierFromBadges: GOAT is every badge, the four steps
-   below it are quarters of the total, and under the floor there is no tier at all. */
+/* TEN RANKS, THREE METALS AND A STAR.
+
+   Five steps was too coarse for a cabinet of nearly four hundred: the gap between Bronze and
+   Silver was ninety badges, which is most of a year, and nothing moved on the crest for any
+   of it. Three chevrons inside each metal turns one long climb into nine short ones, and the
+   chevron count is the rank, which is why it goes 1, 2, 3 and not a different glyph each
+   time. GOAT keeps the star because it is the only rank that means every badge in the game,
+   and a star is the only shape here that is not a count of something. */
+const METAL={
+  bronze:{ a:'#F6CE98', b:'#7a481f', mid:'#C77B3A', edge:'#5e2f0f' },
+  silver:{ a:'#ffffff', b:'#7f868d', mid:'#CFD3D8', edge:'#48525f' },
+  gold:  { a:'#FFF7C2', b:'#9a6c12', mid:'#F4C430', edge:'#6b4703' }
+};
+const TIERS=[];
+[['bronze','Bronze'],['silver','Silver'],['gold','Gold']].forEach(function(m){
+  for(let n=1;n<=3;n++){
+    const t={ id:m[0]+n, name:m[1]+' '+n, metal:m[0], pips:n };
+    Object.keys(METAL[m[0]]).forEach(function(k){ t[k]=METAL[m[0]][k]; });
+    TIERS.push(t);
+  }
+});
+TIERS.push({ id:'goat', name:'GOAT', metal:'goat',
+  a:'#FFD24A', b:'#FFC0E6', mid:'#FFF2A0', edge:'#6b4703', pips:0, star:true, holo:true });
+
+/* GOAT is every badge, the nine steps below it are ninths of the total, and under the floor
+   there is no rank at all. Same shape as the soccer game's, one more time round. */
 function tierFromBadges(b){
   b=+b||0;
   const total=achTotal();
-  if(b>=total) return TIERS[4];
+  if(b>=total) return TIERS[9];
   if(b<BRONZE_MIN) return null;
-  return TIERS[Math.min(3,Math.floor((b*4)/total))];
+  return TIERS[Math.min(8,Math.floor((b*9)/total))];
 }
 function tierAt(id){ return TIERS.filter(function(t){ return t.id===id; })[0]||null; }
-/* What the next step costs, for the "62 to Gold" line. */
+/* What the next step costs, for a "24 to Silver 1" line. */
 function nextTierAt(i){
   const total=achTotal();
-  return i>=3?total:Math.ceil(((i+1)*total)/4);
+  return i>=8?total:Math.ceil(((i+1)*total)/9);
 }
 
-/* The glyph inside the seal. Chevrons count the first three steps, a star takes over at
-   Legend. All of it is gravy: at 40px the METAL is the signal and the glyph is texture. */
+/* The glyph inside the seal. Chevrons count the rank inside the metal, and the star belongs
+   to GOAT alone.
+
+   NO RING OF ITS OWN, at any rank. The star used to carry one, and a ring drawn on a badge
+   that is struck into the rim of a circle reads as a ring around the circle: the tier looked
+   like it was decorating the club's edge rather than sitting on it. The tier is the little
+   disc and nothing else.
+
+   The stack is NOT centred by these coordinates and does not try to be. One chevron, two and
+   three have three different ink heights, and the offset that centres each is measured off
+   the rendered shape below, the same way every mark is. */
 function tierGlyph(t,col){
-  if(t.star){
-    return poly(starPts(50,50,30,12,5,0),col)+
-      (t.halo?'<circle cx="50" cy="50" r="42" fill="none" stroke="'+col+'" stroke-width="7"/>':'');
-  }
+  if(t.star) return poly(starPts(50,50,32,13,5,0),col);
   let s='';
   for(let i=0;i<t.pips;i++){
     const y=30+i*20;
@@ -893,10 +916,11 @@ const RUNGS=[
 const SVGNS='http://www.w3.org/2000/svg';
 let MEASURE=null;
 const CENTRE={};
-function markOffset(id){
-  if(CENTRE[id]) return CENTRE[id];
-  const m=MARKS[id];
-  if(!m||id==='init') return (CENTRE[id]={x:0,y:0});
+
+/* Draw one lump of SVG on the 100 grid, read back where the ink actually landed, and return
+   the offset that puts the middle of that ink at 50,50. Everything drawn inside a circle on
+   this page goes through here: the marks, and the chevrons and star in the tier seal. */
+function measureOffset(svg){
   if(!MEASURE){
     MEASURE=document.createElementNS(SVGNS,'svg');
     MEASURE.setAttribute('viewBox','0 0 100 100');
@@ -906,14 +930,29 @@ function markOffset(id){
     MEASURE.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden';
     document.body.appendChild(MEASURE);
   }
-  MEASURE.innerHTML='<g>'+m.draw('#ffffff','#888888','ms'+id)+'</g>';
+  MEASURE.innerHTML='<g>'+svg+'</g>';
   const g=MEASURE.firstChild;
   const a=g.getBoundingClientRect(), b=MEASURE.getBoundingClientRect();
-  if(!a.width||!a.height) return (CENTRE[id]={x:0,y:0});
-  return (CENTRE[id]={
+  if(!a.width||!a.height) return {x:0,y:0};
+  return {
     x:50-((a.left-b.left)+a.width/2),
     y:50-((a.top-b.top)+a.height/2)
-  });
+  };
+}
+function markOffset(id){
+  if(CENTRE[id]) return CENTRE[id];
+  const m=MARKS[id];
+  if(!m||id==='init') return (CENTRE[id]={x:0,y:0});
+  return (CENTRE[id]=measureOffset(m.draw('#ffffff','#888888','ms'+id)));
+}
+/* THE SEAL'S GLYPH, MEASURED THE SAME WAY, and it needed it more than the marks did. One
+   chevron sat at the top of the disc, two straddled the middle and three hung off the
+   bottom, because they are stacked from a fixed y and their ink height changes with the
+   count. Every one of the ten now sits in the middle of its own disc. */
+const GCENTRE={};
+function glyphOffset(t){
+  if(GCENTRE[t.id]) return GCENTRE[t.id];
+  return (GCENTRE[t.id]=measureOffset(tierGlyph(t,'#ffffff')));
 }
 
 /* ============================================================
@@ -1067,9 +1106,11 @@ function crest(o){
   /* ---- the tier seal, struck into the lower right rim ---- */
   if(tier){
     const px=75, py=75, pr=17.5;
-    if(tier.halo){
+    const go=glyphOffset(tier);
+    if(tier.holo){
       /* GOAT is the only holographic one, and it is holographic because it is the only one
-         that means every badge in the game. */
+         that means every badge in the game. This is what makes it special now that the ring
+         it used to carry is gone. */
       defs+='<linearGradient id="p'+u+'" x1="0" y1="0" x2="1" y2="1">'+
         '<stop offset="0" stop-color="#FFD24A"/><stop offset=".22" stop-color="#ffffff"/>'+
         '<stop offset=".44" stop-color="#FFE680"/><stop offset=".62" stop-color="#9FE0FF"/>'+
@@ -1085,14 +1126,19 @@ function crest(o){
          black rather than the page background: a crest gets dropped on the board panel, the
          sunk profile card and the raised card, and a hardcoded background colour would show
          as a wrong coloured halo on two of the three. */
-      '<circle cx="'+px+'" cy="'+py+'" r="'+(pr+3)+'" fill="#000" fill-opacity=".5"/>'+
+      /* A HAIRLINE, NOT A RING. This separator was three units wide, which at the seal's
+         position on the rim painted a dark arc across the club's own edge: the tier read as
+         something done to the circle rather than a badge sitting on it. It is now just wide
+         enough to stop the seal touching the field it sits on. */
+      '<circle cx="'+px+'" cy="'+py+'" r="'+(pr+1.5)+'" fill="#000" fill-opacity=".42"/>'+
       '<circle cx="'+px+'" cy="'+py+'" r="'+pr+'" fill="url(#p'+u+')"/>'+
       '<circle cx="'+px+'" cy="'+py+'" r="'+pr+'" fill="none" stroke="'+tier.edge+
         '" stroke-opacity=".55" stroke-width="1.6"/>'+
       /* the highlight that makes it struck metal rather than a coloured dot */
       '<path d="M'+(px-pr*.72)+' '+(py-pr*.34)+'a'+pr+' '+pr+' 0 0 1 '+(pr*1.44)+' 0" '+
         'fill="none" stroke="#ffffff" stroke-opacity=".42" stroke-width="2.4" stroke-linecap="round"/>'+
-      '<g transform="translate('+px+' '+py+') scale('+(pr/50*.9)+') translate(-50 -50)">'+
+      '<g transform="translate('+px+' '+py+') scale('+(pr/50*.9)+') translate(-50 -50) '+
+        'translate('+go.x.toFixed(2)+' '+go.y.toFixed(2)+')">'+
         tierGlyph(tier,tier.edge)+'</g>'+
     '</g>';
   }

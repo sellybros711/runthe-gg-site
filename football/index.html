@@ -1126,6 +1126,17 @@ window.GA_ID='G-L29P5MRWKE';
     stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
     filter:drop-shadow(0 1px 2.5px rgba(0,0,0,.95))}
   .markpick.locked .mn{color:var(--dim)}
+  /* One row for the rank: the seal at the size it is actually worn, and the distance to the
+     next one. Unlike the ring and the mark this layer moves on its own, so the useful
+     question is not how to unlock it but how far off the next one is. */
+  .rankrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--line);margin-top:4px}
+  .rankrow svg{display:block;flex:0 0 auto}
+  .rankrow .rl{min-width:0}
+  .rankrow .rl b{display:block;font-family:var(--fn);font-size:13.5px;font-weight:600;
+    color:var(--ink)}
+  .rankrow .rl span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
+    line-height:1.35}
   /* The rings are a status board, not a picker, so they are not buttons and do not lift. */
   .markgrid.rings .markpick{cursor:default}
   /* A LOCKED RING IS DIMMED LESS THAN A LOCKED MARK, and it has to be. What separates these
@@ -5368,7 +5379,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=2"></script>
+<script src="crest.js?v=3"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -13014,8 +13025,9 @@ function whatsNewSheet(){
         'initials. There are twelve, each one opened by a badge you already have: a '+
         'perfect season, a 17-0, a title from a wild card seed, going 0-17. Pick which '+
         'one you wear in Customize.</span></li>'+
-      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your account tier, '+
-        'which climbs with your badge count. Bronze, Silver, Gold, Legend, GOAT. '+
+      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your rank, which '+
+        'climbs with your badge count. Ten of them: Bronze 1, 2 and 3, then Silver, then '+
+        'Gold, then GOAT for every badge in the game. The chevrons are the number. '+
         'Nothing to choose: it is your cabinet, in one shape.</span></li>'+
       '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
         'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
@@ -13134,6 +13146,37 @@ function paintRingRow(){
       (worn?'<span class="worn">Worn now</span>':'')+'</div>';
   }).join('');
 }
+/* YOUR RANK, AND WHAT THE NEXT ONE COSTS.
+
+   Ten ranks over nearly four hundred badges is a step every forty three, so unlike the ring
+   and the mark this one moves on its own and the useful question is not "how do I unlock it"
+   but "how far off am I". One line, one number, and the seal drawn at the size it is worn. */
+function paintRankRow(a){
+  const host=$('crest-rank'); if(!host||!myCrest||!window.PS_CREST) return;
+  const C=window.PS_CREST;
+  const t=myCrest.tier?C.tierAt(myCrest.tier):null;
+  const club=a.chosen?a.key:null;
+  let svg='';
+  try{ svg=C.crest({ club:club, rung:crestRungFor(club), mark:'init', ring:'club',
+    tier:myCrest.tier, size:56, text:a.text }); }catch(_){ svg=''; }
+  const i=t?C.TIERS.map(function(x){ return x.id; }).indexOf(t.id):-1;
+  let line;
+  if(!t){
+    /* Under the floor there is no rank at all, and saying so is kinder than showing an
+       empty disc: five badges is one or two sittings, not a wall. */
+    const need=5-myCrest.badges;
+    line='<b>Not ranked yet</b><span>'+need+' more badge'+(need===1?'':'s')+
+      ' and you start at Bronze 1.</span>';
+  }else if(i>=C.TIERS.length-1){
+    line='<b>'+esc(t.name)+'</b><span>Every badge in the game. There is nothing above this.</span>';
+  }else{
+    const at=C.nextTierAt(i), next=C.TIERS[i+1];
+    line='<b>'+esc(t.name)+'</b><span>'+myCrest.badges+' of '+myCrest.total+' badges. '+
+      Math.max(0,at-myCrest.badges)+' more to '+esc(next.name)+'.</span>';
+  }
+  host.innerHTML='<div class="rankrow">'+svg+'<span class="rl">'+line+'</span></div>';
+}
+
 /* Both of these ask the cabinet rather than answering for themselves, exactly as the marks
    do, so there is no second copy of what a ring costs. */
 function ringEarned(id){
@@ -13253,6 +13296,7 @@ function paintPfpEdit(nm){
     paintClubSteps(a);
     paintMarkGrid();
     paintRingRow();
+    paintRankRow(a);
   };
   /* A PADLOCK ON THE CLUBS YOU HAVE NOT DRAFTED WITH. Without it the grid offers thirty two
      clubs and silently gives you a grey crest for thirty of them, which reads as a bug in
@@ -13880,7 +13924,12 @@ function pfLook(){
        '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The outer edge of the circle. '+
          '<b>Nothing to choose here.</b> The best one you have earned is worn automatically, '+
          'and this is the whole list so you can see what the other ones take.</p>'+
-       '<div class="markgrid rings" id="crest-rings"></div>'
+       '<div class="markgrid rings" id="crest-rings"></div>'+
+       '<p class="shsec" style="margin-top:20px">Your rank</p>'+
+       '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The little seal on the rim. '+
+         '<b>Nothing to choose here either.</b> It is your badge count and it moves on its '+
+         'own, ten ranks from Bronze 1 up to GOAT.</p>'+
+       '<div id="crest-rank"></div>'
       :'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon(); paintPfpEdit(nm);
