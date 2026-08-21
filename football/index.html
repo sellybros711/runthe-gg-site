@@ -13020,9 +13020,36 @@ function saveMyMark(k){
       /* The rung comes back with it, because a backfill or a club change can have moved it
          since this browser last worked it out, and the server is the one that knows. */
       if(myCrest&&r.rung!==undefined&&r.rung!==null) myCrest.rung=+r.rung;
+      repaintMyCircles();
     }).catch(()=>{});
   }
+  /* And immediately, without waiting for the write. The crest is drawn from what this
+     browser holds, so it is already right; waiting for the round trip would leave the board
+     showing the old mark for as long as the network takes. */
+  repaintMyCircles();
 }
+/* EVERYWHERE YOUR OWN CIRCLE IS DRAWN, repainted at once.
+
+   Your crest is drawn from your own history rather than from the row it sits on, so every
+   one of your leaderboard entries wears whatever you are wearing NOW: change your mark and
+   all of them change together, old seasons included. That was already true of the data and
+   not of the screen. Changing the club reloaded the board, changing the mark repainted the
+   header and nothing else, so somebody who picked a new mark with the board open watched
+   their entries keep the old one until they navigated away and back.
+
+   The board is RELOADED rather than repainted, and the extra round trip is the point: the
+   database rewrote every one of your rows in the same transaction, so a refetch is what
+   makes the version everybody ELSE will see arrive on your screen too. */
+function repaintMyCircles(){
+  paintAvatar();
+  if($('s-board')&&$('s-board').classList.contains('on')) loadBoard();
+  /* The results screen carries your circle twice, in the pinned row and on the podium, and
+     it is the screen a run most often ends on. */
+  if($('s-over')&&$('s-over').classList.contains('on')&&typeof paintRanks==='function'){
+    try{ paintRanks(); }catch(_){}
+  }
+}
+
 /* ---- WHAT YOU HAVE UNLOCKED AND NOT YET LOOKED AT ----
    Everything on the Customize page is earned somewhere else: a mark by a badge, a ring by a
    title, a club's colors by a draft with them. So the moment a thing unlocks, the player is
@@ -13633,10 +13660,13 @@ function paintPfpEdit(nm){
     /* What the DATABASE stored, not what was sent. It strips and uppercases, and a settings
        screen that shows the request rather than the result is a settings screen that lies. */
     myAvatar={color:r.color,initials:r.initials,loaded:true};
-    paintAvatar();
+    /* THE CLUB MOVES THE LADDER, so the rung has to be re-read before anything repaints:
+       88 recomputes crest_rung for the new club server-side, and this browser's copy is
+       still the old club's. Cheap, because it is three flags over rows already in hand. */
+    if(myCrestRows) crestRefresh(myCrestRows);
     /* Every row of yours was rewritten server-side in the same transaction, so anything
        already on screen is now a repaint behind. */
-    if($('s-board').classList.contains('on')) loadBoard();
+    repaintMyCircles();
     profileSheet('Saved.',true);
   };
 }
