@@ -58,7 +58,10 @@
       linear-gradient(180deg,#101725 0%, var(--bg) 48%, #090d13 100%);
     background-attachment:fixed;
   }
-  .wrap{max-width:660px;margin:0 auto;padding:20px 16px 64px;}
+  /* No padding at the top: the app bar is the first thing in here and it is
+     chrome, so it sits flush against the top of the window rather than floating
+     20px down it and then jumping up the moment you scroll. */
+  .wrap{max-width:660px;margin:0 auto;padding:0 16px 64px;}
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
   .dim{color:var(--mut);}
 
@@ -97,10 +100,6 @@
   .btnrow > *{flex:1 1 0;}
   /* An anchor styled as a ghost button. It stays an anchor because it is a real
      navigation to a real page, which a crawler and a middle-click both need. */
-  .ghostlink{display:block;text-align:center;font-family:var(--body);font-weight:800;
-    font-size:14px;border-radius:9px;padding:11px 20px;border:1px solid var(--cardb);
-    color:var(--mut);text-decoration:none;}
-  .ghostlink:hover{background:rgba(255,255,255,.05);color:var(--ink);}
 
   .screen{display:none;} .screen.active{display:block;}
 
@@ -568,7 +567,9 @@
   .perslot b{color:var(--ink);font-weight:700;}
   #c-note.warn{color:var(--gold);}
   body.inplay header.mast{display:none;}
-  body.inplay .wrap{padding-top:12px;}
+  /* There used to be a 12px pad here to stand in for the hidden masthead. The
+     app bar is that now, on every screen, and the pad only pushed it off the
+     top of the window until the first scroll yanked it back up. */
 
   /* ══ PORTED FROM THE FOOTBALL AND COLLEGE GAMES ════════════════════════
      Four components those two already got right, rebuilt here rather than
@@ -647,10 +648,103 @@
   /* ── the ring ───────────────────────────────────────────────────────────
      Winning is the whole point and it used to change one word on the screen. */
   .confetti-cv{position:fixed;inset:0;z-index:80;pointer-events:none;}
+
+  /* ══ THE TWO BARS ══════════════════════════════════════════════════════
+     A sticky top bar and a pinned bottom dock, on the college game's pattern.
+     The top one says where you are and gives a way out. The bottom one holds
+     the ONE action the current screen is for, at the bottom of the phone where
+     a thumb already is. */
+  :root{--hdr:50px; --dock:66px;}
+
+  .appbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;
+    justify-content:space-between;gap:10px;height:var(--hdr);margin:0 0 10px;}
+  /* ITS OWN BACKDROP, BLED TO THE VIEWPORT, not to the wrap. Bleeding only as
+     far as the wrap's padding leaves a 660px band of flat colour sitting in the
+     middle of the page's orange glow on a desktop, which reads as a card rather
+     than as chrome. body has overflow-x:hidden, so the overhang is clipped
+     rather than turning into a scrollbar.
+     Translucent and blurred rather than opaque, like the dock: the glow behind
+     it survives, and content passing under it goes soft instead of vanishing at
+     a hard line. */
+  .appbar:before{content:'';position:absolute;inset:0 calc(50% - 50vw);
+    background:rgba(13,17,23,.82);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);z-index:-1;}
+  /* Full bar height, not the height of the type inside it. The mark is the way
+     home from every screen, so its TAP TARGET is the thing that matters, and a
+     22px one is half of what a thumb needs. */
+  .appbar .mark{display:flex;align-items:center;gap:7px;min-width:0;height:100%;
+    background:none;border:0;padding:0 6px 0 0;color:inherit;font-family:inherit;
+    cursor:pointer;min-height:0;}
+  .appbar .ball{flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--orange);position:relative;}
+  .appbar .ball:before,.appbar .ball:after{content:'';position:absolute;background:var(--orange);}
+  .appbar .ball:before{left:50%;top:0;bottom:0;width:1.5px;margin-left:-.75px;}
+  .appbar .ball:after{top:50%;left:0;right:0;height:1.5px;margin-top:-.75px;}
+  .appbar .wm{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:15px;letter-spacing:.02em;line-height:1;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;}
+  .appbar .wm span{color:var(--orange);}
+  .appbar .right{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+  .appbar button.link{background:transparent;border:1px solid var(--cardb);color:var(--mut);
+    font-size:12px;font-weight:700;padding:0 11px;height:34px;min-height:34px;border-radius:8px;}
+  .appbar button.link:hover{color:var(--ink);}
+  /* The state chip: what the top bar can say that the wordmark cannot. */
+  .appbar .state{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold);
+    padding:0 9px;height:34px;display:flex;align-items:center;border-radius:8px;
+    background:rgba(242,193,78,.1);white-space:nowrap;}
+  /* display:flex ON A CLASS BEATS THE BROWSER'S OWN [hidden]{display:none}, which
+     is a UA rule and loses every specificity contest. Without this pair, setting
+     .hidden = true on the chip leaves an empty pill sitting in the bar. */
+  .appbar .state[hidden],.appbar button.link[hidden]{display:none;}
+  /* The mark is the way home from every screen, so it has to read as a control
+     rather than as a logo printed on the page. */
+  .appbar .mark:active{opacity:.6;}
+  @media(max-width:374px){ .appbar .wm{font-size:13.5px;} }
+
+  /* The capwrap now sticks UNDER the bar rather than over it. */
+  .capwrap{top:var(--hdr);}
+
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:55;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(180deg,rgba(13,17,23,.72),var(--bg) 42%);
+    backdrop-filter:blur(9px);border-top:1px solid var(--line);
+    display:flex;gap:8px;align-items:center;}
+  .dock > *{flex:1 1 auto;margin:0;min-width:0;}
+  /* A secondary sits beside the primary rather than splitting the bar with it,
+     but a secondary that is ALONE in the dock is the action, so it takes the
+     width. Otherwise the lone Re-spin sits in a stub at the left. */
+  .dock .ghost{flex:0 0 auto;}
+  .dock .ghost:only-child{flex:1 1 auto;}
+  .dock:empty{display:none;}
+  /* Nothing at the end of the page may hide behind it. --dock is MEASURED from
+     the dock after every render rather than typed here, because its height
+     changes with the buttons in it and with the reader's font size, and a
+     guessed number hides the last line of the footer. */
+  body.hasdock{padding-bottom:calc(var(--dock) + 6px + env(safe-area-inset-bottom,0px));}
+  @media(min-width:840px){
+    .dock{left:50%;transform:translateX(-50%);max-width:692px;border-radius:14px 14px 0 0;
+      border:1px solid var(--line);border-bottom:0;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
+
+<!-- THE TOP BAR. Where you are, what the run is doing, and a way out. It is
+     sticky, so the way out is never a scroll away, and it paints its own
+     backdrop across the whole window rather than across the wrap. The wordmark
+     is the way home from every screen; the button beside it is the career
+     record, which is why neither of those is a button on a screen any more. -->
+<div class="appbar">
+  <button class="mark" id="b-mark" aria-label="Run The Floor, back to the home screen">
+    <span class="ball" aria-hidden="true"></span>
+    <span class="wm">Run The <span>Floor</span></span>
+  </button>
+  <div class="right">
+    <span class="state" id="ab-state" hidden></span>
+    <button class="link" id="ab-action" hidden></button>
+  </div>
+</div>
 
 <header class="mast">
   <div class="eyebrow">RunThe.GG</div>
@@ -660,11 +754,14 @@
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
 <div class="screen active" id="s-home">
-  <div class="card hero">
-    <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
-         page used to jump straight back into it on load, which meant a returning
-         player never saw this screen at all and had no way to abandon a draft
-         that had gone badly except a button labelled Reset. -->
+  <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
+       page used to jump straight back into it on load, which meant a returning
+       player never saw this screen at all and had no way to abandon a draft
+       that had gone badly except a button labelled Reset.
+       The card is hidden along with its contents rather than left standing
+       empty, because Start moved down to the dock and what remained on a first
+       visit was a bordered box with nothing in it. -->
+  <div class="card hero" id="herocard" style="display:none">
     <div class="resume" id="home-resume" style="display:none">
       <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
       <p class="who" id="rz-who"></p>
@@ -673,13 +770,14 @@
         <button class="ghost" id="b-abandon">Abandon</button>
       </div>
     </div>
-
-    <button class="big" id="b-start">Start a run</button>
-    <div class="btnrow" style="margin-top:8px">
-      <a class="ghostlink" href="/hoops/how-to-play.html">How to play</a>
-      <button class="ghost" id="b-prof">Career</button>
-    </div>
   </div>
+
+  <!-- OUTSIDE THE CARD ABOVE, because the dock borrows this button and puts it
+       back here afterwards, and it cannot be put back into something hidden.
+       How to play used to sit under it; the rules are linked from the run-goes
+       card below and from the footer, and Career from the bar, so what was left
+       here was three ways to leave a screen nobody had started yet. -->
+  <button class="big" id="b-start">Start a run</button>
 
   <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
        numbers are the file's rather than a claim typed into the markup. -->
@@ -706,9 +804,6 @@
       <span><span class="big-n" id="hc-best">-</span> <span class="lab">best</span></span>
     </div>
     <p class="lastrun" id="hc-last"></p>
-    <div class="btnrow" style="margin-top:11px">
-      <button class="ghost" id="b-prof3" style="flex:1">Career record</button>
-    </div>
   </div>
 
   <div class="card">
@@ -845,7 +940,9 @@
     </aside>
   </div>
 
-  <div class="card" style="margin-top:14px">
+  <!-- Hidden until there is a roster to have a shape. An empty card with a
+       heading on it reads as something that failed to load. -->
+  <div class="card" id="fitcard" style="margin-top:14px;display:none">
     <h2>The shape of it <span class="sub" id="r-chem"></span></h2>
     <div class="fitbox" id="r-fit"></div>
   </div>
@@ -930,9 +1027,10 @@
   </div>
 
   <button class="big" id="b-again">Run it back</button>
+  <!-- Career record used to sit here as well, an inch below the Career button
+       in the bar above it. The bar owns the record now, on every screen. -->
   <div class="btnrow" style="margin-top:8px">
-    <button class="ghost" id="b-prof2">Career record</button>
-    <button class="ghost" id="b-home">Home</button>
+    <button class="ghost" id="b-home" style="flex:1">Home</button>
   </div>
 </div>
 
@@ -957,6 +1055,13 @@
       Clearing site data or a private window loses it, and nothing here is sent anywhere.</p>
   </div>
 </div>
+
+<!-- THE BOTTOM DOCK holds the ONE action the current screen is for, at the
+     bottom of the phone where a thumb already is. The buttons are not copies:
+     renderDock MOVES the real element in and out, so there is one button with
+     one handler and one disabled state, and no way for a copy to drift out of
+     step with the thing it is copying. -->
+<div class="dock" id="dock"></div>
 
 <footer class="legal">
   <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
@@ -1002,7 +1107,112 @@ function show(id){
   var all = document.querySelectorAll('.screen');
   for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   $(id).classList.add('active');
+  renderDock(id);
+  renderAppBar(id);
   window.scrollTo(0, 0);
+}
+
+// ── the two bars ───────────────────────────────────────────────────────────
+
+/* THE DOCK MOVES THE REAL BUTTON, it does not make a copy of it.
+ *
+ * A copied button is two elements that have to agree about a label, an enabled
+ * state and a handler, and they stop agreeing the first time one path forgets to
+ * update the other. Moving the element keeps its id, its onclick and its
+ * disabled flag, so every existing line that reaches for $('b-play') still
+ * reaches the button the player can actually see.
+ *
+ * Each screen names its primary action and, where there is one, a secondary.
+ * A screen with neither gets an empty dock, which CSS hides.
+ */
+var DOCK_FOR = {
+  's-home':   function(){ return [$('b-start')]; },
+  's-draft':  function(){
+    /* Between draws the action is the spin. During one it is picking a player
+       off the board, which is not a button, so the dock carries the way OUT of
+       a board you do not like instead. */
+    return run && run.currentDraw ? [$('b-respin')] : [$('b-spin')];
+  },
+  's-season': function(){
+    /* Before tip-off the action is Play. Once the season is running Play is
+       spent, and the only thing left to do is stop watching, so Skip takes the
+       bar on its own. */
+    var play = $('b-play');
+    return play && !play.disabled ? [play] : [$('b-skip')];
+  },
+  's-over':   function(){ return [$('b-again')]; }
+};
+
+/* Where each button lives when it is not in the dock, so it can be put back
+   rather than lost. Captured once, at boot, before anything has moved. */
+var HOME_OF = {};
+
+function rememberHomes(){
+  var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = $(ids[i]);
+    if (el && el.parentNode) HOME_OF[ids[i]] = el.parentNode;
+  }
+}
+
+function renderDock(screen){
+  var dock = $('dock');
+  if (!dock) return;
+
+  /* Put back whatever is currently in the dock first, or a button that is no
+     longer wanted here would simply vanish from the document. */
+  while (dock.firstChild) {
+    var el = dock.firstChild;
+    var home = el.id && HOME_OF[el.id];
+    if (home) home.appendChild(el); else dock.removeChild(el);
+  }
+
+  var pick = DOCK_FOR[screen];
+  var want = pick ? pick().filter(Boolean) : [];
+  /* A BUTTON ITS OWN SCREEN IS NOT SHOWING IS NOT THE ACTION RIGHT NOW, and it
+     is the button's CONTAINER that usually hides it: Skip lives inside the sim
+     card, which does not exist until the season is running. Reading the
+     button's own display would have docked a Skip with no handler on it yet.
+     offsetParent is null for anything with a hidden ancestor, and this runs
+     after the screen has been made active and before anything is moved, so the
+     buttons are all sitting at home where that answer is the true one. */
+  want = want.filter(function(b){ return b.offsetParent !== null; });
+  for (var i = 0; i < want.length; i++) dock.appendChild(want[i]);
+
+  document.body.classList.toggle('hasdock', want.length > 0);
+  /* Measure rather than assume. The dock is one row on most screens and two
+     buttons tall on none of them, but its height still moves with the button
+     padding and with the reader's font size, and the body padding that keeps
+     the footer clear of it is only right if it matches. */
+  document.documentElement.style.setProperty('--dock',
+    (want.length ? dock.offsetHeight : 0) + 'px');
+}
+
+/* The top bar says what the wordmark cannot: where the run is up to. Its one
+   button is Career on every screen, so the record is reachable mid-run rather
+   than only from home, and the WORDMARK is the way back out. That split is the
+   ordinary phone convention (mark home-left, account right), and it means the
+   bar never carries two buttons the home screen already has below it. */
+function renderAppBar(screen){
+  var state = $('ab-state'), action = $('ab-action');
+  if (!state || !action) return;
+  action.hidden = false;
+  action.textContent = 'Career';
+  action.onclick = openProfile;
+
+  /* NOT ON THE DRAFT SCREEN. The cap HUD sticks directly under this bar and
+     says the slot and the money bigger and in more detail, so a chip repeating
+     it is a second copy of the same two numbers, and at 360px it is the copy
+     that pushes the wordmark into an ellipsis. */
+  state.hidden = true;
+  if (!run || screen === 's-home') return;
+  if (screen === 's-season' || screen === 's-over') {
+    /* Mid-sim this is the live record, which is the one number worth carrying
+       above a screen you are watching rather than reading. */
+    var w = simWins, l = simLosses;
+    if (screen === 's-over' && run.outcome) { w = run.outcome.wins; l = run.outcome.losses; }
+    if (w + l > 0) { state.hidden = false; state.textContent = w + '-' + l; }
+  }
 }
 
 // ── loading ────────────────────────────────────────────────────────────────
@@ -1624,6 +1834,11 @@ function renderDraft(justSlot){
 
   renderFit();
   drawRail();
+  /* The spin and the re-spin swap places as a draw comes and goes, so the dock
+     has to be rebuilt on every draft render rather than only on a screen
+     change. */
+  renderDock('s-draft');
+  renderAppBar('s-draft');
 }
 
 /* THE TABS ARE THE OPEN SLOTS, not every position. A board is six players and
@@ -1883,9 +2098,10 @@ var FIT_ROWS = [
 ];
 
 function renderFit(){
-  var box = $('r-fit');
+  var box = $('r-fit'), card = $('fitcard');
   if (!box) return;
   box.textContent = '';
+  if (card) card.style.display = run.roster.length ? '' : 'none';
   if (!run.roster.length) return;
 
   var f = R.fitNow(run, null);
@@ -1990,13 +2206,18 @@ function renderRoster(slotsEl){
 // ── the season ─────────────────────────────────────────────────────────────
 
 function toSeason(){
-  show('s-season');
-  /* Re-entering the season screen, which a restored run does, must not show the
-     last run's strip or a play button that has already been pressed. */
+  /* THE RESET COMES BEFORE show(), not after it. Re-entering this screen, which
+     a second run and a restored run both do, must not show the last run's strip
+     or a play button that has already been pressed. show() also asks the dock
+     what this screen's action is, and the dock answers by reading exactly these
+     two things: Play enabled, and the sim card that holds Skip hidden. Doing the
+     reset afterwards left the dock holding a Skip from the previous season. */
   stopSim();
   $('simcard').style.display = 'none';
   $('b-play').disabled = false;
+  $('b-play').style.display = '';
   $('b-play').textContent = 'Play all 82';
+  show('s-season');
   var proj = R.projectSeason(run, 120);
   var tagged = run.roster.map(function(p, i){
     var c = {}; for (var k in p) c[k] = p[k];
@@ -2025,6 +2246,9 @@ function toSeason(){
  * frame or a reduced-motion setting cannot produce a different record.
  */
 var simTimer = null;
+/* Mirrors of the running tally, so the top bar can carry the record without
+   reaching into playSeason's closure. Zero means there is nothing to show. */
+var simWins = 0, simLosses = 0;
 
 function stopSim(){
   if (simTimer) { clearInterval(simTimer); simTimer = null; }
@@ -2037,10 +2261,18 @@ function playSeason(){
      time somebody reopened the tab on a season they had already won. */
   if (!run.recorded) { run.recorded = true; recordRun(out); }
   save();
+  /* HIDDEN, NOT JUST DISABLED. Disabling it is what tells the dock to swap it
+     for Skip, so that stays. But the dock hands it back to its card on the way
+     out, and a dead brown slab reading "Season in progress" sitting above a
+     live sim card is a caption, not a button. */
   $('b-play').disabled = true;
+  $('b-play').style.display = 'none';
   $('b-play').textContent = 'Season in progress';
   $('simcard').style.display = '';
   $('sim-bracket').textContent = '';
+  /* Play has just been spent and the sim card that holds Skip has just
+     appeared, so the dock's answer for this screen has changed. */
+  renderDock('s-season');
 
   var strip = $('sim-strip');
   strip.textContent = '';
@@ -2053,6 +2285,7 @@ function playSeason(){
   }
 
   var g = 0, w = 0, l = 0, streak = 0, homeW = 0, homeL = 0, marqW = 0, marqL = 0;
+  simWins = 0; simLosses = 0;
 
   var finish = function(){
     stopSim();
@@ -2067,7 +2300,9 @@ function playSeason(){
     if (gm.won) { w++; if (sc.home) homeW++; if (sc.marquee) marqW++; }
     else { l++; if (sc.home) homeL++; if (sc.marquee) marqL++; }
     streak = gm.won ? (streak >= 0 ? streak + 1 : 1) : (streak <= 0 ? streak - 1 : -1);
+    simWins = w; simLosses = l;
     if (quiet) return;
+    renderAppBar('s-season');
     if (idx > 0) cells[idx - 1].classList.remove('now');
     cells[idx].classList.add('now');
     $('sim-rec').textContent = w + '-' + l;
@@ -2506,10 +2741,11 @@ function clearCareer(){
  * stat block is worse than no stat block.
  */
 function renderHome(){
-  var rz = $('home-resume');
+  var rz = $('home-resume'), hero = $('herocard');
 
   if (run && run.phase !== R.PHASES.OVER) {
     rz.style.display = '';
+    if (hero) hero.style.display = '';
     var drafting = run.phase === R.PHASES.DRAFT;
     $('rz-title').textContent = drafting ? 'Draft in progress' : 'Season not played';
     $('rz-where').textContent = drafting
@@ -2536,6 +2772,7 @@ function renderHome(){
     $('b-start').textContent = 'Start a new run';
   } else {
     rz.style.display = 'none';
+    if (hero) hero.style.display = 'none';
     $('b-start').textContent = run ? 'Run it back' : 'Start a run';
   }
 
@@ -2620,14 +2857,12 @@ $('b-start').disabled = true;
 $('b-start').onclick = startRun;
 $('b-resume').onclick = resumeRun;
 $('b-abandon').onclick = abandonRun;
-$('b-prof3').onclick = openProfile;
+$('b-mark').onclick = function(){ renderHome(); show('s-home'); };
 $('b-home').onclick = function(){ renderHome(); show('s-home'); };
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
 $('b-again').onclick = startRun;
-$('b-prof').onclick = openProfile;
-$('b-prof2').onclick = openProfile;
 $('b-prof-x').onclick = closeProfile;
 $('b-prof-clear').onclick = clearCareer;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
@@ -2635,6 +2870,9 @@ $('b-prof-clear').onclick = clearCareer;
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
 document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeProfile(); });
 
+rememberHomes();
+renderDock('s-home');
+renderAppBar('s-home');
 boot();
 })();
 </script>
