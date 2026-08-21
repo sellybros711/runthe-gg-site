@@ -23,6 +23,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const E = require(path.join(HERE, 'engine.js'));
 const R = require(path.join(HERE, 'run.js'));
+import { AWARDS } from './build/fetch-awards.mjs';
 
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
@@ -160,10 +161,13 @@ for (const slot of E.SLOTS) {
  * championships and nobody on either roster was told.
  */
 {
-  const CODES = new Set(['mvp', 'fmvp', 'an1', 'dpoy', 'ring', 'an2', 'an3',
-    'roy', 'smoy', 'mip', 'ad1', 'ad2', 'star']);
-  const RANK = ['mvp', 'fmvp', 'an1', 'dpoy', 'ring', 'an2', 'an3', 'roy',
-    'smoy', 'mip', 'ad1', 'ad2', 'star'];
+  /* THE LIST LIVES IN ONE PLACE. It was written out here as well and that is
+     three copies of it with the fetcher and the page, which is three chances
+     for a new award to be added to two of them. The page cannot import this
+     (it is one self-contained script by site convention), so the page's copy is
+     checked against this one below instead of trusted. */
+  const CODES = new Set(AWARDS.map((a) => a.code));
+  const RANK = AWARDS.map((a) => a.code);
 
   const bad = [];
   let decorated = 0, rings = 0;
@@ -207,6 +211,20 @@ for (const slot of E.SLOTS) {
   /* Not a blocking check: the individual honours arrive from a fetch that runs
      in CI, so a working tree that has never run it legitimately has rings only.
      Reported so that state is visible rather than mistaken for a broken join. */
+  /* THE PAGE HAS TO KNOW EVERY CODE THE PIPELINE CAN WRITE. It carries its own
+     copy of the labels because it is one self-contained file, so an award added
+     to the fetcher and not to the page renders as a raw "smoy" on a gold plate.
+     Read as text rather than executed, which is all this needs to answer. */
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const labels = /var AWARD_LABEL = \{([\s\S]*?)\};/.exec(pageSrc);
+  ok(!!labels, 'the page has an award label table');
+  if (labels) {
+    const unnamed = AWARDS.map((a) => a.code)
+      .filter((c) => !new RegExp(`\\b${c}\\s*:`).test(labels[1]));
+    ok(unnamed.length === 0,
+      `the page can name every award the pipeline writes${unnamed.length ? ` (missing ${unnamed.join(', ')})` : ''}`);
+  }
+
   const solo = players.filter((p) => p.aw && p.aw.some((c) => c !== 'ring')).length;
   if (!solo) {
     console.log('  note: rings only. hoops/build/fetch-awards.mjs has not run against this data yet,');

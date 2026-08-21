@@ -94,14 +94,20 @@ export const AWARDS = [
 ];
 export const AWARD_RANK = Object.fromEntries(AWARDS.map((a, i) => [a.code, i]));
 
-/* The single-winner pages. One row per season, one player on it. */
+/* The single-winner pages. One row per season, one player on it.
+ *
+ * `first` is the season the award was FIRST GIVEN, and it is what the guard at
+ * the bottom counts against. An award invented in 1983 has 43 winners in a
+ * 1974-2025 window and not 52, so a floor written as "about one a year across
+ * the whole range" fails three of these six on perfectly good data. That is the
+ * mistake this file already made once. */
 const SOLO_PAGES = [
-  { code: 'mvp', url: '/awards/mvp.html' },
-  { code: 'fmvp', url: '/awards/finals_mvp.html' },
-  { code: 'dpoy', url: '/awards/dpoy.html' },
-  { code: 'roy', url: '/awards/roy.html' },
-  { code: 'smoy', url: '/awards/smoy.html' },
-  { code: 'mip', url: '/awards/mip.html' },
+  { code: 'mvp', url: '/awards/mvp.html', first: 1956 },
+  { code: 'fmvp', url: '/awards/finals_mvp.html', first: 1969 },
+  { code: 'dpoy', url: '/awards/dpoy.html', first: 1983 },
+  { code: 'roy', url: '/awards/roy.html', first: 1953 },
+  { code: 'smoy', url: '/awards/smoy.html', first: 1983 },
+  { code: 'mip', url: '/awards/mip.html', first: 1986 },
 ];
 
 /* The team pages. One row per season PER TIER, five players on it, and a cell
@@ -273,7 +279,12 @@ async function main() {
       counts[row.code] = (counts[row.code] || 0) + row.slugs.length;
     }
     if (!n) empty.push(page.url);
-    console.log(`  ${page.url.padEnd(28)} ${String(n).padStart(4)} selections`);
+    /* PER TIER, not just per page. When this failed the first time the log said
+       "735 selections" and nothing about how they split, so working out whether
+       the first team had come back right meant inferring it from a total. */
+    const split = Object.values(page.tiers)
+      .map((c) => `${c} ${counts[c] || 0}`).join(' · ');
+    console.log(`  ${page.url.padEnd(28)} ${String(n).padStart(4)} selections  (${split})`);
   }
 
   let starYears = 0;
@@ -292,43 +303,78 @@ async function main() {
   }
 
   const keys = Object.keys(byKey).length;
+  const years = to - from + 1;
+
+  /* ── THE TALLY PRINTS BEFORE THE GUARD, ALWAYS ────────────────────────────
+   * The first version printed it after, so the one run that failed threw away
+   * the only evidence that would have said WHICH award came back wrong, and the
+   * per-tier split had to be inferred from a page total. A failure should carry
+   * its evidence: fetch-draft.mjs learned this the same expensive way. */
+  console.log(`\n  ${keys} player-seasons carry at least one award.`);
+  for (const a of AWARDS) {
+    if (a.code === 'ring') continue;   // added at build time from teams.json
+    console.log(`    ${a.label.padEnd(20)} ${String(counts[a.code] || 0).padStart(5)}`);
+  }
+  console.log('');
 
   /* ── THE SILENT ZERO GUARD ────────────────────────────────────────────────
-   * The whole reason fetch-draft.mjs has one. A broken parser and a league that
-   * gave out no awards look identical in the output, and this runs where nobody
-   * is watching it. Every number below is a floor a real answer clears easily.
+   *
+   * The whole reason fetch-draft.mjs has one: a broken parser and an award
+   * nobody won produce the same empty list, and this runs where nobody is
+   * watching it.
+   *
+   * EVERY BOUND BELOW IS ANCHORED TO A FACT ABOUT THE AWARD rather than to an
+   * estimate, because the first version of this guard was an estimate and it
+   * failed a perfectly good fetch. It asked for "player-seasons carrying any
+   * award" to clear 40 a season; the real answer is 32, because the awards
+   * OVERLAP heavily (an MVP is also an All-NBA first teamer and an All-Star,
+   * and all three land on one player-season). Nothing about that number was
+   * knowable in advance, so it should never have been the test.
+   *
+   * What IS knowable: when each award started, and how many go out a year.
    */
   const problems = [];
   if (empty.length) problems.push(`${empty.length} page(s) yielded nothing: ${empty.join(', ')}`);
-  const years = to - from + 1;
-  /* BOUNDED ON BOTH SIDES, and the upper bound is the one that matters.
-   *
-   * Too few is a parser that found nothing, which is loud. Too many is a parser
-   * that found the WRONG TABLE, which is silent and worse: if one of these pages
-   * ever carries the full ballot rather than the winner, every player who got a
-   * third-place vote comes back an MVP, the file is bigger rather than smaller,
-   * and the game shows a visitor a false claim about a real person.
-   *
-   * One a season is the floor. The ceiling allows for the ABA, which awarded its
-   * own MVP alongside the NBA's until 1976, and for a shared award, and nothing
-   * beyond that. */
-  for (const code of ['mvp', 'fmvp', 'dpoy', 'roy']) {
+
+  /* Seasons in the fetched window during which this award existed at all. */
+  const eligible = (first) => Math.max(0, Math.min(to, 2100) - Math.max(from, first) + 1);
+
+  for (const page of SOLO_PAGES) {
+    const n = counts[page.code] || 0;
+    const want = eligible(page.first);
+    if (!want) continue;
+    /* Under one a season means winners are being missed. Well over one means
+       the WRONG TABLE was read, which is the silent failure: if one of these
+       pages ever carries the full ballot, every player who took a third-place
+       vote comes back a winner and the file is bigger rather than smaller.
+       The 1.4 ceiling covers the ABA, which gave its own awards alongside the
+       NBA's until 1976, and a shared award. Nothing beyond that. */
+    if (n < want * 0.9) {
+      problems.push(`${page.code}: ${n} winners across ${want} seasons of the award `
+        + `(first given ${page.first}), expected about one a year`);
+    }
+    if (n > want * 1.4) {
+      problems.push(`${page.code}: ${n} winners across ${want} seasons of the award, `
+        + 'far more than one a year. This reads as a ballot table rather than a winners table.');
+    }
+  }
+
+  /* Five men make a team, every season, in both awards. */
+  for (const [code, label] of [['an1', 'All-NBA 1st'], ['ad1', 'All-Defensive 1st']]) {
     const n = counts[code] || 0;
-    if (n < years * 0.8) {
-      problems.push(`${code}: ${n} winners across ${years} seasons, expected about one a year`);
-    }
-    if (n > years * 1.6) {
-      problems.push(`${code}: ${n} winners across ${years} seasons, which is far more than one a year. `
-        + 'This reads as a ballot table rather than a winners table.');
-    }
+    if (n < years * 4.5) problems.push(`${label}: ${n} across ${years} seasons, expected five a season`);
+    if (n > years * 7) problems.push(`${label}: ${n} across ${years} seasons, which is more than a team a year`);
   }
-  /* Five a season on a first team, and never appreciably more. Same reasoning. */
-  if ((counts.an1 || 0) > years * 9) {
-    problems.push(`All-NBA 1st: ${counts.an1}, which is more than five a season across ${years} seasons`);
-  }
-  if ((counts.an1 || 0) < years * 4) problems.push(`All-NBA 1st: ${counts.an1 || 0}, expected 5 a season`);
+
   if (starYears < years * 0.85) problems.push(`only ${starYears} of ${years} seasons produced an All-Star roster`);
-  if (keys < years * 40) problems.push(`only ${keys} player-seasons carry any award at all`);
+  /* DERIVED, NOT GUESSED. Every All-Star is a player-season with an award on
+     it, so the total can never be below the number of distinct All-Stars, and a
+     total that is not comfortably above it means the other nine awards joined
+     to nobody. */
+  if (keys < (counts.star || 0) * 0.9) {
+    problems.push(`${keys} player-seasons carry an award but ${counts.star} All-Star selections were read, `
+      + 'so selections are being lost between the fetch and the file');
+  }
 
   if (problems.length) {
     console.error('\nTHIS FETCH DID NOT WORK, and nothing has been written.\n');
@@ -343,12 +389,7 @@ async function main() {
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(byKey) + '\n');
 
-  console.log(`\nWrote ${path.relative(process.cwd(), out)}`);
-  console.log(`  ${keys} player-seasons carry at least one award`);
-  for (const a of AWARDS) {
-    if (a.code === 'ring') continue;   // added at build time from teams.json
-    console.log(`    ${a.label.padEnd(20)} ${counts[a.code] || 0}`);
-  }
+  console.log(`Wrote ${path.relative(process.cwd(), out)}`);
   console.log('\n  Championships are NOT fetched: teams.json already knows every title year,');
   console.log('  and build-players.mjs attaches the ring to everyone on that roster.');
 }
