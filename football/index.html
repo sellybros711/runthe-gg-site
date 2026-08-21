@@ -4174,6 +4174,20 @@ window.GA_ID='G-L29P5MRWKE';
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  /* The chip and the slot note under it, as one column, so the row's other children keep
+     the widths they have always had whether or not there is a note. */
+  /* The run detail sheet's header: the record on the left, whose run it is on the right. */
+  .rdhead{display:flex;align-items:flex-start;gap:12px}
+  .rdhead .rdid{flex:1;min-width:0}
+  .rdhead .rdwho{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;
+    max-width:96px}
+  .rdhead .rdnm{font-family:var(--fn);font-size:10.5px;font-weight:600;color:var(--dim);
+    text-align:center;line-height:1.2;max-width:96px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;width:100%}
+  .rrow .tagwrap{flex:0 0 40px;display:flex;flex-direction:column;align-items:stretch;gap:2px}
+  .rrow .tagwrap .tag{flex:0 0 auto}
+  .rrow .tagsub{font-family:var(--fn);font-size:8px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim-2);text-align:center;line-height:1}
   .rrow .tag{color:#fff;flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
@@ -5829,10 +5843,49 @@ const awardChip=(a,short)=>'<span class="awd'+(AWARD_MAJOR.has(a)?'':' minor')+'
    player's awards by prestige, so it is the first. */
 const topAward=(p)=>(p&&p.awards&&p.awards.length)?p.awards[0]:null;
 
+/* THE CHIP SAYS THE POSITION, and it always did say it in the position's COLOUR: a flex
+   running back has been painted running back green since this function existed, because
+   posPaint is handed the man's position and not his slot. What it said was FLEX, in green,
+   which is a word from one vocabulary in a colour from another, and it read as neither.
+
+   It says RB now, and the slot goes underneath in small type where it is a note rather than
+   a heading. Both facts are still on screen and the loud one is the one you sort by. */
 function slotTag(slot,pos){
-  const label=slot||pos;
-  return '<span class="tag" style="'+posPaint(pos||slot)+'">'+esc(label)+'</span>';
+  const p=pos||slot;
+  const flex=slot&&pos&&slot!==pos;
+  return '<span class="tagwrap"><span class="tag" style="'+posPaint(p)+'">'+esc(p)+'</span>'+
+    (flex?'<span class="tagsub">'+esc(slot)+'</span>':'')+'</span>';
 }
+/* THE ROSTER READ AS POSITIONS, which is not the same as read as slots.
+
+   bySlotOrder below puts the six in QB RB WR WR TE FLEX, which is the shape of the roster
+   and is what the draft screen and the field want. A run detail sheet wants something else:
+   the flex man is a running back or a receiver, and listing him last under a purple-named
+   slot files him away from the position he actually plays. Two running backs on a roster
+   should read as two running backs.
+
+   So this orders by the man's POSITION and keeps slot order inside each one, which puts the
+   true running back ahead of the flex running back and leaves the two receivers in their own
+   order. Whatever side of the ball it is: the order is taken from the positions present
+   rather than from a list, so a defense reads DL LB DB without this function knowing that. */
+function byPositionOrder(men){
+  const order=(men.some(m=>m.p&&['DL','LB','DB'].includes(m.p.position))
+    ? (E.DEFENSE_POSITIONS||['DL','LB','DB'])
+    : OFFENSE_POSITIONS);
+  const slotOrder=E.SLOTS.slice();
+  const rank=(m)=>{
+    const i=order.indexOf(m.p&&m.p.position);
+    /* A man whose position is not in the list sorts last rather than first, which is what
+       an unknown would do with indexOf's -1. */
+    return i<0?99:i;
+  };
+  const slotRank=(m)=>{
+    const i=slotOrder.indexOf(m.slot);
+    return i<0?99:i;
+  };
+  return men.slice().sort((a,b)=>rank(a)-rank(b)||slotRank(a)-slotRank(b));
+}
+
 /* Roster order, always QB RB WR WR TE FLEX, whatever order the picks were made in.
    Duplicated slots are consumed left to right, so the two receivers keep their own places. */
 function bySlotOrder(men){
@@ -15886,7 +15939,12 @@ function runDetail(row,back){
   /* Sorted into slot order, not pick order. A row on the board was listing whatever order the
      six spins happened to come in, so the same six players read differently on the results page
      and in this sheet. */
-  const men=bySlotOrder(picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''})));
+  /* BY POSITION, not by slot. See byPositionOrder: this is the one screen where the flex
+     man should read as the running back he is rather than as the last row under a slot
+     name. Anything that did not resolve has no position to sort by, so those fall to the
+     end, which is also where the "could not be looked up" line below points. */
+  const men=byPositionOrder(bySlotOrder(
+    picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''}))));
   const known=men.filter(m=>m.p);
   /* The scheme this roster fits, for the fit line's wording. Only when all six resolved
      against this browser's data, since a partial roster detects the wrong scheme or none.
@@ -15950,12 +16008,29 @@ function runDetail(row,back){
      this browser has older player data than the browser that recorded the run. */
   const missing=men.length-known.length;
 
+  /* WHOSE RUN THIS IS, top right and big. A leaderboard row is somebody's, and opening it
+     used to drop that: six players and four numbers with no sign of who drafted them. The
+     crest is the identity everywhere else on the page, so it is the identity here.
+
+     Drawn at 56 rather than the 26 of the row that was tapped, which is above the size rule's
+     line, so a run opened from the board is the one place another player's pattern and rank
+     glyph are seen at full size. Their ring is still absent: 88 does not store it, and this
+     is not worth a fourth column. */
+  const rdWho=mine
+    ? avatarOf(authState.name,myAvatar.color,myAvatar.initials)
+    : avatarOf(row.display_name,row.display_color,row.display_initials,
+        {mark:row.display_mark,rung:row.display_rung,tier:row.display_tier});
+  const rdName=mine?(authState.name||''):((row&&row.display_name)||'');
   $('sheet-in').innerHTML=
-    '<div class="eyebrow">'+(mine?'Your run':'Run detail')+'</div>'+
-    '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
-      esc(rec)+champBadge(fate.badge)+'</h2>'+
-    '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
-      ' &middot; '+modeTag(kindRow)+'</p>'+
+    '<div class="rdhead"><div class="rdid">'+
+      '<div class="eyebrow">'+(mine?'Your run':'Run detail')+'</div>'+
+      '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
+        esc(rec)+champBadge(fate.badge)+'</h2>'+
+      '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
+        ' &middot; '+modeTag(kindRow)+'</p></div>'+
+      (rdWho.anon?'':'<div class="rdwho">'+avatarHTML(rdWho,'huge')+
+        (rdName?'<span class="rdnm">'+esc(rdName)+'</span>':'')+'</div>')+
+    '</div>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
       const a=topAward(m.p);
       return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
