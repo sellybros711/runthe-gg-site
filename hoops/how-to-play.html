@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- NOINDEXED, LIKE THE GAME IT DESCRIBES, and for the same reason.
+     /hoops/ is an unlaunched preview whose player data is still a hand-entered
+     placeholder. A how-to-play page that was indexable while the game it points at was
+     not would put half an unfinished game into the surface AdSense reviews and leave
+     the other half out, which is the worst of both. These two pages launch together or
+     not at all, and hoops/check-posture.mjs asserts exactly that. -->
+<meta name="robots" content="noindex, nofollow">
+<title>How to Play Run The Floor: The NBA Draft Game | RunThe.GG</title>
+<meta name="description" content="The rules of Run The Floor, and the basketball behind them: the shot budget, spacing measured against era, rim protection, and the ten NBA systems the game can recognise in a roster.">
+<meta name="theme-color" content="#0d1117">
+<link rel="canonical" href="https://runthe.gg/hoops/how-to-play.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b26; --cardb:#242c3d; --ink:#eef2f9; --mut:#94a3b8;
+    --dim:#6b7a90; --orange:#f0782d; --gold:#f2c14e; --green:#22c55e;
+    --line:rgba(255,255,255,.09);
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--body);color:var(--ink);line-height:1.62;min-height:100vh;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    background:
+      radial-gradient(1100px 520px at 50% -8%, rgba(240,120,45,.14), transparent 60%),
+      linear-gradient(180deg,#101725 0%, var(--bg) 46%, #090d13 100%);
+    background-attachment:fixed;}
+  .wrap{max-width:660px;margin:0 auto;padding:22px 18px 60px;}
+
+  .devbar{background:linear-gradient(180deg,#3a2410,#2a1a0c);border:1px solid #5d3a15;
+    border-radius:10px;padding:11px 14px;margin:0 0 18px;font-size:13px;color:#f0c9a0;}
+  .devbar b{color:var(--gold);font-weight:800;}
+
+  .crumb{font-size:12.5px;color:var(--dim);margin:0 0 14px;text-align:center;}
+  .crumb a{color:#9db0cb;text-decoration:none;font-weight:700;}
+  .crumb a:hover{color:var(--ink);}
+  .crumb .sep{margin:0 7px;color:#3c4a60;}
+
+  h1{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.01em;
+    font-size:clamp(27px,7vw,40px);line-height:1.04;margin:0 0 10px;}
+  h1 span{color:var(--orange);}
+  .lede{font-size:16.5px;color:#c3d0e2;margin:0 0 24px;}
+
+  h2{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.03em;
+    font-size:17px;margin:30px 0 11px;display:flex;align-items:center;color:var(--ink);}
+  h2:before{content:"";width:9px;height:9px;background:var(--orange);border-radius:2px;
+    margin-right:9px;flex:0 0 auto;}
+  h3{font-size:14.5px;margin:19px 0 5px;color:var(--ink);font-weight:800;}
+  p{margin:0 0 13px;font-size:15.5px;color:var(--mut);}
+  p b,strong,li b,td b{color:var(--ink);font-weight:800;}
+  a{color:#5eead4;font-weight:700;text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  ol.rules{margin:0 0 6px;padding:0;list-style:none;counter-reset:r;}
+  ol.rules li{position:relative;counter-increment:r;padding:0 0 0 34px;margin:0 0 13px;
+    font-size:15.5px;color:var(--mut);}
+  ol.rules li:before{content:counter(r);position:absolute;left:0;top:2px;width:23px;height:23px;
+    border-radius:6px;background:linear-gradient(180deg,#f0782d,#c25916);color:#fff;
+    font:900 12.5px/23px var(--body);text-align:center;}
+
+  .spots{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 16px;}
+  .spot{font-family:var(--display);font-size:15px;letter-spacing:.08em;color:#fff;
+    padding:6px 13px;border-radius:8px;background:linear-gradient(180deg,#f0782d,#a8460f);}
+  .spot.flex{background:linear-gradient(180deg,#7c5cff,#4a2fb8);}
+
+  table{width:100%;border-collapse:collapse;margin:6px 0 16px;font-size:14px;}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);
+    color:var(--mut);vertical-align:top;}
+  th{color:var(--ink);font-weight:800;font-size:12px;text-transform:uppercase;
+    letter-spacing:.07em;}
+  td:first-child{color:var(--ink);font-weight:700;white-space:nowrap;}
+  .scroll{overflow-x:auto;}
+
+  .note{background:rgba(240,120,45,.08);border-left:3px solid var(--orange);
+    border-radius:0 8px 8px 0;padding:12px 15px;margin:16px 0;}
+  .note p:last-child{margin-bottom:0;}
+
+  .cta{display:block;text-align:center;background:linear-gradient(180deg,#f0782d,#c25916);
+    color:#fff;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:16px;
+    padding:15px 26px;border-radius:9px;text-decoration:none;margin:28px 0 4px;}
+  .cta:hover{filter:brightness(1.07);text-decoration:none;}
+
+  footer.legal{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
+    text-align:center;font-size:12.5px;color:var(--dim);line-height:2;}
+  footer.legal a{color:#9db0cb;text-decoration:none;font-weight:700;}
+  footer.legal a:hover{color:var(--ink);}
+  footer.legal span{margin:0 7px;color:#3c4a60;}
+  footer.legal .src{font-size:11.5px;line-height:1.6;margin-top:8px;color:#5b6b80;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="devbar">
+  <b>In development.</b> Run The Floor is not finished and is not linked from anywhere on
+  the site. The player data behind it is a hand-entered placeholder, so treat nothing in
+  the game as a record of a real season yet.
+</div>
+
+<p class="crumb"><a href="/">RunThe.GG</a><span class="sep">/</span><a href="/hoops/">Run The Floor</a><span class="sep">/</span>How to play</p>
+
+<h1>How to play <span>Run The Floor</span></h1>
+<p class="lede">
+  Spin for a club and a season, sign one player off that roster, and do it six times. Then
+  play all 82 games. The whole game is what happens in between: six great players are not a
+  team, and this one is built to know the difference.
+</p>
+
+<h2>The rules</h2>
+<ol class="rules">
+  <li>The wheel gives you <b>a club and a season</b>, anywhere from 1972 to 2023. You sign
+    one player off that roster.</li>
+  <li>Six spins fill six spots. Five starters and the first man off the bench:</li>
+</ol>
+<div class="spots">
+  <span class="spot">PG</span><span class="spot">SG</span><span class="spot">SF</span>
+  <span class="spot">PF</span><span class="spot">C</span><span class="spot flex">6TH</span>
+</div>
+<ol class="rules" start="3">
+  <li>Every signing comes out of a <b>$145M cap</b>, which is roughly the real one. The
+    most expensive player in the game costs $60M, so one superstar eats 41% of your roster
+    and the other five have to fit under $85M.</li>
+  <li>You may <b>re-spin</b> three times, for $5M, then $10M, then $15M, charged against
+    the same cap. A re-spin burns the club you turned down.</li>
+  <li>The sixth man slot takes <b>anybody</b>, and he plays about 72% of a starter's
+    minutes. It is the cheapest place to hide a star and the easiest place to waste one.</li>
+  <li>No roster may hold more than <b>two of the same position</b>, and no club may give
+    up more than <b>two players</b> across a whole run.</li>
+  <li>Then you play <b>82 games</b> against real team-seasons out of the same data. Win 50
+    and you are a top-six seed. Win 43 and you are in the play-in. Below that is the
+    lottery.</li>
+</ol>
+
+<div class="note">
+  <p><b>The cap is the game.</b> Taking the best man on every board runs to about $300M and
+  busts before the season starts. You get one great player comfortably, two if you are
+  careful about everything else, and three only by filling the rest of the roster with
+  minimum contracts and hoping.</p>
+</div>
+
+<h2>Six great players are not a team</h2>
+<p>
+  Most draft games stop at "who is worth the most". This one does not, because that is not
+  how a basketball roster works, and every fan already knows it. Five things get measured
+  after the sixth signature, and every one of them is an argument people have been having
+  about actual NBA teams for forty years.
+</p>
+
+<h3>The ball only bounces once</h3>
+<p>
+  An NBA team takes about 88 shots a night, and a six man core accounts for roughly 72 of
+  them. Every player carries the shots he actually took. Sign six men who each took twenty
+  a night on their own team and you have a roster asking for 120 shots that do not exist,
+  and the game charges you for every one of them. This is the single largest penalty in the
+  model, and it is the reason a lineup of Jordan, Harden, Bryant, Malone and O'Neal is a
+  bad basketball team rather than the best one ever assembled.
+</p>
+
+<h3>Spacing, measured against the player's own era</h3>
+<p>
+  Somebody has to be able to shoot or the paint is a car park. But the three-point line did
+  not exist until 1980, and Jerry West attempted zero of them in 1972 because nobody could.
+  That is a fact about the league, not a flaw in Jerry West.
+</p>
+<p>
+  So spacing is <b>relative</b>. A player is compared to what his own league shot, on two
+  counts: how many threes he took against his era's volume, and what share of his own shots
+  came from out there. Steve Kerr took only 2.9 a night, which is unremarkable, but they
+  were half his attempts, which is not. A player from before the line comes back exactly
+  neutral: neither credited nor punished for a shot nobody was taking.
+</p>
+
+<h3>Rim protection is an anchor, not a sum</h3>
+<p>
+  Five men with 0.4 blocks each do not add up to a rim protector. One man with two of them
+  is one. The game reads the best shot blocker on your roster rather than the total, which
+  is why Ben Wallace or Hakeem Olajuwon changes a defense in a way that five willing
+  helpers do not.
+</p>
+
+<h3>Somebody has to make the pass</h3>
+<p>
+  Same shape: a primary creator is a person, not a committee. A roster whose best passer
+  averages two assists is five men taking turns. The roster's total assists matter too, but
+  less, because the question a defense asks is who is going to make the read.
+</p>
+
+<h3>The glass</h3>
+<p>
+  The oldest argument in the sport, and the simplest one here: a core six should account for
+  about 34 rebounds a night. Below that you are giving away possessions.
+</p>
+
+<h2>Era translation</h2>
+<p>
+  A 1972 team played about 108 possessions a night. A 1999 team played 89. Comparing raw
+  per-game numbers across that gap hands the 1970s an enormous unearned advantage in every
+  counting stat, so every number in this game is <b>pace-adjusted</b> into one common
+  league before anything is measured.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Era</th><th>Pace</th><th>League 3PA</th><th>What changed</th></tr></thead>
+  <tbody>
+    <tr><td>Before 1980</td><td>108</td><td>none</td><td>No three-point line at all</td></tr>
+    <tr><td>1980 to 1986</td><td>103</td><td>2.4</td><td>The line arrives, nobody trusts it</td></tr>
+    <tr><td>1987 to 1994</td><td>97</td><td>7.0</td><td>It becomes a real weapon</td></tr>
+    <tr><td>1995 to 1997</td><td>92</td><td>15.3</td><td>The line is shortened to 22 feet</td></tr>
+    <tr><td>1998 to 2004</td><td>90.5</td><td>13.7</td><td>Moved back out, hand-checking legal</td></tr>
+    <tr><td>2005 to 2011</td><td>92</td><td>18.1</td><td>Hand-checking outlawed</td></tr>
+    <tr><td>2012 to 2017</td><td>95</td><td>22.4</td><td>Pace and space</td></tr>
+    <tr><td>2018 onward</td><td>99.5</td><td>33.0</td><td>The three-point revolution</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>What your roster plays</h2>
+<p>
+  When the sixth man signs, the game looks at what you have actually built and names it.
+  These are real systems that real teams won with, detected from the players in front of
+  you rather than picked off a menu. Each one is worth a fraction of a rating point, which
+  is a reward for building something coherent and never a substitute for building something
+  good.
+</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>System</th><th>What it takes</th></tr></thead>
+  <tbody>
+    <tr><td>Showtime</td><td>A great passer and a roster that moves the ball, with no third big</td></tr>
+    <tr><td>The Triangle</td><td>A dominant wing, a post to play through, and no lead guard dominating it</td></tr>
+    <tr><td>Pick and Roll</td><td>A guard who reads it and a big who scores off it</td></tr>
+    <tr><td>Grit and Grind</td><td>Value sitting disproportionately at the defensive end, and no spacing</td></tr>
+    <tr><td>Twin Towers</td><td>Two genuine bigs and the glass owned at both ends</td></tr>
+    <tr><td>Bully Ball</td><td>A post man scoring 18 a night with the floor tight</td></tr>
+    <tr><td>Point Centre</td><td>A centre who is the roster's primary passer</td></tr>
+    <tr><td>Moreyball</td><td>A high-volume shooting guard and a rim runner who never shoots</td></tr>
+    <tr><td>Seven Seconds or Less</td><td>A shooting point guard and a floor stretched to the arc</td></tr>
+    <tr><td>The Death Lineup</td><td>No true centre at all, shooting everywhere, hands in every passing lane</td></tr>
+    <tr><td>Pace and Space</td><td>Shooting across the roster, however you got there</td></tr>
+    <tr><td>Motion Offense</td><td>Nobody dominating the ball and everybody passing</td></tr>
+    <tr><td>Iso Ball</td><td>One man taking a third of the shots and nobody creating</td></tr>
+    <tr><td>Too Many Mouths</td><td>Not a system. A warning, and it overrides everything else</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Chemistry</h2>
+<p>
+  Players who share something real fit together faster. Brothers and fathers and sons are
+  worth the most, then actual teammates from the same club in the same season, then a
+  backcourt or a frontcourt that genuinely played together, then a shared college, then the
+  same club in different years, then a draft class.
+</p>
+<p>
+  It <b>saturates</b>, hard. Six players off one roster collect fifteen links and get paid
+  for about three of them, because otherwise stacking one team-season would beat every
+  other decision in the draft. The ceiling is worth about seven wins across a season, which
+  is a real prize and nowhere near enough to replace talent.
+</p>
+
+<h2>The season, and what happens after it</h2>
+<p>
+  Your 82 games are drawn from real team-seasons in the same dataset, weighted toward the
+  better ones, with eighteen marquee nights against the very best of them. Home and away
+  alternate. A win is worth what a win is worth.
+</p>
+<p>
+  Finish with 50 and you enter the playoffs as a top-six seed: four rounds, all best of
+  seven. Finish with 43 to 49 and you play a single play-in game to get there. The opponent
+  stiffens every round, and stiffens further if your roster is not good enough to belong,
+  so a ring means you built something rather than that you got hot for two months.
+</p>
+<p>
+  Seventy-two wins is the 1996 Bulls. Seventy-three is the 2016 Warriors. Seventy-four has
+  never happened.
+</p>
+
+<a class="cta" href="/hoops/">Play Run The Floor</a>
+
+<footer class="legal">
+  <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
+    href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
+    href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+    href="/hoops/">Play</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">More games</a></p>
+  <p class="src">An unofficial fan project in development, not affiliated with or endorsed by
+    the NBA or any club. Player data is a hand-entered placeholder and is not a record of any
+    real season.</p>
+</footer>
+
+</div>
+</body>
+</html>

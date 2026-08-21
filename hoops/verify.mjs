@@ -161,6 +161,100 @@ is(atOnce.season.map(g => `${g.yourPoints}-${g.oppPoints}`),
 is(walkedOutcome.titleWon, bulkOutcome.titleWon, 'and the same postseason');
 ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it built');
 
+// ─── the basketball ─────────────────────────────────────────────────────────
+
+/* THE FIT MODEL, CHECKED AGAINST TEAMS PEOPLE ALREADY HAVE OPINIONS ABOUT.
+ *
+ * This is the part of the game that claims to be about basketball rather than
+ * about a value number, and the only honest way to test that claim is to hand
+ * it real lineups and see whether it says what a fan would say. Every one of
+ * these is the actual starting five plus the actual sixth man, and every
+ * expected answer is what that team is known for.
+ *
+ * These assertions have already earned their place several times over. They
+ * caught the 2018 Rockets being labelled Showtime off Harden's assist average,
+ * the 1986 Celtics being labelled Moreyball, the 2016 Warriors being labelled
+ * Point Centre because Draymond Green is eligible at centre, and the 1996 Bulls
+ * being excluded from the triangle because Luc Longley averaged 9.1 rather than
+ * 12. A model that gets these wrong is not a basketball model, whatever its
+ * calibration report says.
+ */
+const lineup = (names) => {
+  const rows = names.map(([n, s]) => players.find(p => p.n === n && p.s === s));
+  const missing = names.filter((_, i) => !rows[i]);
+  if (missing.length) return null;
+  return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+};
+
+/* PG, SG, SF, PF, C, sixth man, in that order. */
+const KNOWN = [
+  ['the 1996 Bulls', 'The Triangle', [['Steve Kerr', 1996], ['Michael Jordan', 1996],
+    ['Scottie Pippen', 1996], ['Dennis Rodman', 1996], ['Luc Longley', 1996], ['Toni Kukoc', 1996]]],
+  ['the 1987 Lakers', 'Showtime', [['Magic Johnson', 1987], ['Byron Scott', 1987],
+    ['James Worthy', 1987], ['A.C. Green', 1987], ['Kareem Abdul-Jabbar', 1987], ['Michael Cooper', 1987]]],
+  ['the 1989 Pistons', 'Grit and Grind', [['Isiah Thomas', 1989], ['Joe Dumars', 1989],
+    ['Mark Aguirre', 1989], ['Dennis Rodman', 1989], ['Bill Laimbeer', 1989], ['Vinnie Johnson', 1989]]],
+  ['the 2004 Pistons', 'Grit and Grind', [['Chauncey Billups', 2004], ['Richard Hamilton', 2004],
+    ['Tayshaun Prince', 2004], ['Rasheed Wallace', 2004], ['Ben Wallace', 2004], ['Corliss Williamson', 2004]]],
+  ['the 1998 Jazz', 'Pick and Roll', [['John Stockton', 1998], ['Jeff Hornacek', 1998],
+    ['Bryon Russell', 1998], ['Karl Malone', 1998], ['Greg Ostertag', 1998], ['Howard Eisley', 1998]]],
+  ['the 2018 Rockets', 'Moreyball', [['Chris Paul', 2018], ['James Harden', 2018],
+    ['Trevor Ariza', 2018], ['P.J. Tucker', 2018], ['Clint Capela', 2018], ['Eric Gordon', 2018]]],
+  ['the 2016 Warriors', 'Pace and Space', [['Stephen Curry', 2016], ['Klay Thompson', 2016],
+    ['Harrison Barnes', 2016], ['Draymond Green', 2016], ['Andrew Bogut', 2016], ['Andre Iguodala', 2016]]],
+  ['the 2023 Nuggets', 'Point Centre', [['Jamal Murray', 2023], ['Kentavious Caldwell-Pope', 2023],
+    ['Michael Porter Jr.', 2023], ['Aaron Gordon', 2023], ['Nikola Jokic', 2023], ['Bruce Brown', 2023]]],
+  ['the 2001 Lakers', 'Bully Ball', [['Derek Fisher', 2001], ['Kobe Bryant', 2001],
+    ['Rick Fox', 2001], ['Horace Grant', 2001], ["Shaquille O'Neal", 2001], ['Robert Horry', 2001]]],
+];
+
+for (const [who, expected, names] of KNOWN) {
+  const six = lineup(names);
+  if (!six) { failures.push(`${who}: a player in that lineup is not in the data`); continue; }
+  const f = E.rosterFit(six);
+  is(f.system && f.system.name, expected, `${who} plays ${expected}`);
+}
+
+/* EVERY REAL LINEUP GETS AN IDENTITY. A roster that matches nothing is allowed
+   and is information, but if actual championship teams match nothing then the
+   thresholds are set for rosters that do not exist. */
+const unnamed = KNOWN.filter(([, , names]) => {
+  const six = lineup(names);
+  return six && !E.rosterFit(six).system;
+});
+is(unnamed.length, 0, 'every real championship lineup is recognised as something');
+
+/* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit
+   model says. Six players who each carried their own offense cannot carry one
+   together, and if that is cheap then the draft has no shape. */
+const hogs = lineup([['Michael Jordan', 1996], ['James Harden', 2018], ['Kobe Bryant', 2001],
+  ['Karl Malone', 1998], ["Shaquille O'Neal", 2001], ['Gail Goodrich', 1972]]);
+if (hogs) {
+  const f = E.rosterFit(hogs);
+  ok(f.profile.shots > E.FIT.SHOT_BUDGET + 25,
+    `six ball-dominant stars want far more shots than exist (${f.profile.shots.toFixed(0)})`);
+  ok(f.bonus <= E.FIT.MIN + 1e-9, 'and the fit model charges them its full penalty');
+  is(f.system && f.system.name, 'Too Many Mouths', 'and names the problem rather than a system');
+}
+
+/* SPACING IS MEASURED AGAINST THE PLAYER'S OWN ERA. The three-point line did not
+   exist before 1980, so a 1972 roster attempting zero of them is a fact about
+   the league and not a flaw in the roster. Punishing it would be the single
+   most obviously wrong thing this model could do. */
+const preThree = lineup([['Jerry West', 1972], ['Gail Goodrich', 1972], ['Jim McMillian', 1972],
+  ['Happy Hairston', 1972], ['Wilt Chamberlain', 1972], ['Flynn Robinson', 1972]]);
+if (preThree) {
+  const f = E.rosterFit(preThree);
+  is(f.profile.tpa, 0, 'the 1972 Lakers attempted no three-pointers, because nobody could');
+  ok(f.parts.spacing >= 0, 'and they are not docked a single point for spacing');
+  ok(E.spacingIndex(preThree[0]) === 1.0, 'a player from before the line reads as era-neutral');
+}
+
+/* And pace translation runs the other way: a 1972 per-game line is inflated by
+   nineteen more possessions a night than this game is played at. */
+ok(E.paceAdjust(20, 1972) < 19, 'a 1972 counting stat is deflated to the modern game');
+ok(E.paceAdjust(20, 1999) > 20, 'and a 1999 one is inflated');
+
 /* Chemistry saturates. Six players off one club cannot be worth six times one
    link, or stacking one team-season beats every talent decision in the draft. */
 const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, 6);
@@ -181,7 +275,7 @@ ok((chem6.bonus / chem2.bonus) < (chem6.links.length / chem2.links.length) / 3,
    terms are capped in rating points, and a point of net rating is about 2.7
    wins, so the pair of them together can never be worth more than about 11
    wins. */
-const chemCeilingWins = (E.CHEMISTRY.MAX + E.STRUCTURE.MAX) * 2.7;
+const chemCeilingWins = (E.CHEMISTRY.MAX + E.FIT.MAX) * 2.7;
 ok(chemCeilingWins < 15,
   `chemistry and shape together are worth under 15 wins (${chemCeilingWins.toFixed(1)})`);
 
@@ -261,7 +355,7 @@ console.log('  shapes    ' + Object.entries(arch).sort((x, y) => y[1] - x[1])
 const chems = seasons.map(s => s.chemistry.bonus).sort((x, y) => x - y);
 const shapes = seasons.map(s => s.structure.bonus).sort((x, y) => x - y);
 console.log(`  chemistry median +${q(chems, 0.5).toFixed(2)} · p90 +${q(chems, 0.9).toFixed(2)} · ceiling +${E.CHEMISTRY.MAX} rating points`);
-console.log(`  shape     median ${q(shapes, 0.5).toFixed(2)} · p10 ${q(shapes, 0.1).toFixed(2)} · floor ${E.STRUCTURE.MIN} rating points`);
+console.log(`  fit       median ${q(shapes, 0.5).toFixed(2)} · p10 ${q(shapes, 0.1).toFixed(2)} · floor ${E.FIT.MIN} rating points`);
 
 /* The two ratings, so the difficulty dial is visible rather than inferred from
    the win column. League average is 113 at both ends by definition. */

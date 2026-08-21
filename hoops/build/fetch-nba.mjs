@@ -194,6 +194,16 @@ async function season(year) {
       pts: num(r, 'pts_per_g'),
       reb: num(r, 'trb_per_g'),
       ast: num(r, 'ast_per_g'),
+      /* THE FOUR THE FIT MODEL RUNS ON, and every one of them is already on this
+         same page, so they cost nothing extra to take. Shot attempts are how the
+         engine knows six men cannot all have the ball; three-point attempts are
+         spacing, read against what the player's OWN era shot; blocks are rim
+         protection; steals are perimeter defense. Drop any of them and the
+         corresponding half of the fit model goes quiet rather than loud. */
+      fga: num(r, 'fga_per_g'),
+      tpa: num(r, 'fg3a_per_g'),
+      blk: num(r, 'blk_per_g'),
+      stl: num(r, 'stl_per_g'),
       g: num(r, 'games', 'g'),
       /* College and draft year are chemistry inputs and neither is on a season
          page. build-colleges.mjs fills them from the player pages; until it has

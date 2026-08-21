@@ -40,7 +40,9 @@ const PER_GAME_NEW = `
 <td data-stat="name_display" data-append-csv="jokicni01"><a href="/players/j/jokicni01.html">Nikola Jokic</a></td>
 <td data-stat="age">27</td><td data-stat="team_name_abbr"><a href="/teams/DEN/2023.html">DEN</a></td>
 <td data-stat="pos">C</td><td data-stat="games">69</td>
-<td data-stat="pts_per_g">24.5</td><td data-stat="trb_per_g">11.8</td><td data-stat="ast_per_g">9.8</td></tr>
+<td data-stat="fga_per_g">14.8</td><td data-stat="fg3a_per_g">2.4</td>
+<td data-stat="pts_per_g">24.5</td><td data-stat="trb_per_g">11.8</td><td data-stat="ast_per_g">9.8</td>
+<td data-stat="stl_per_g">1.3</td><td data-stat="blk_per_g">0.7</td></tr>
 <tr><th scope="row" data-stat="ranker">2</th>
 <td data-stat="name_display" data-append-csv="jamesle01"><a href="/players/j/jamesle01.html">LeBron James</a></td>
 <td data-stat="age">38</td><td data-stat="team_name_abbr"><a href="/teams/LAL/2023.html">LAL</a></td>
@@ -86,6 +88,16 @@ is(perGameNew.map(r => r.slug), ['jokicni01', 'jamesle01', 'smithja01'], 'every 
 is(cell(perGameNew[0], 'name_display', 'player'), 'Nikola Jokic', 'the name comes out of the link');
 is(cell(perGameNew[0], 'team_name_abbr', 'team_id'), 'DEN', 'the current team column is read');
 is(cell(perGameNew[0], 'pts_per_g'), '24.5', 'points per game');
+
+/* THE FOUR THE FIT MODEL RUNS ON. Each one is a whole component of the roster
+   model, and losing one to a column rename does not break anything loudly: it
+   reads as zero, and zero shot attempts or zero three-point attempts is a
+   perfectly plausible number for a real player, so the model just quietly
+   starts scoring every roster the same way. */
+is(cell(perGameNew[0], 'fga_per_g'), '14.8', 'field goal attempts, which is the usage model');
+is(cell(perGameNew[0], 'fg3a_per_g'), '2.4', 'three-point attempts, which is the spacing model');
+is(cell(perGameNew[0], 'blk_per_g'), '0.7', 'blocks, which is rim protection');
+is(cell(perGameNew[0], 'stl_per_g'), '1.3', 'steals, which is perimeter defense');
 
 /* THE COLUMN RENAME IS THE WHOLE POINT OF THE FALLBACK LIST. team_id became
    team_name_abbr in 2024 and player became name_display, and a scrape that

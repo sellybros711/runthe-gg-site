@@ -564,83 +564,586 @@ function minutesShare(p) {
   return p._slot === '6TH' ? MINUTES_SHARE.sixth : MINUTES_SHARE.starter;
 }
 
-// ─── roster structure ───────────────────────────────────────────────────────
+// ─── what this team actually plays ──────────────────────────────────────────
 
-/* WIN SHARES MEASURE TALENT, STRUCTURE MEASURES ARRANGEMENT. Three factors,
-   each 1.0 when the shape is right and below 1.0 when it is off, damped by
-   SHAPE_STRENGTH so shape modulates a roster rather than deciding it.
+/* THE SYSTEMS ARE REAL AND SO ARE THE TEAMS THEY ARE NAMED FOR. Every one of
+ * these is a way an actual NBA team actually won games, detected off the six
+ * players in front of you rather than picked from a menu, and the point of them
+ * is that a fan should be able to look at a finished roster and say "yes, that
+ * is what that is" before reading the label.
+ *
+ * They are ordered MOST SPECIFIC FIRST and the first match wins, because the
+ * demanding identities are the interesting ones: a roster that genuinely is the
+ * Death Lineup also satisfies Pace and Space, and being told it is Pace and
+ * Space would be true and boring.
+ *
+ * The bonus is small on purpose, a fraction of a rating point. A system is a
+ * reward for building something coherent, not a substitute for building
+ * something good, and a player who chases the label at the cost of two win
+ * shares has made a bad trade. That is the correct trade to make available.
+ */
+const SYSTEMS = [
+  {
+    /* CHECKED FIRST, BECAUSE IT OVERRIDES EVERYTHING. A roster whose six men
+       want thirty more shots a night than exist is not playing a system, it is
+       six players taking turns, and whatever else it might have qualified for
+       is not what a fan would call it. This was found the honest way: a roster
+       of Jordan, Harden, Bryant, Malone and O'Neal came back labelled Showtime,
+       off Harden's assist average, while the shot model was charging it eight
+       and a half rating points for being unplayable. */
+    key: 'too_many_mouths',
+    name: 'Too Many Mouths',
+    blurb: 'Six men who all had the ball on their own team. Somebody here is not getting it back.',
+    detect: (r, P) => (P.shots > FIT.SHOT_BUDGET + 18 ? 1 : -1),
+    bonus: 0,
+  },
+  {
+    key: 'point_centre',
+    name: 'Point Centre',
+    blurb: 'The offense runs through a seven footer at the elbow. Everything is a read, and he makes all of them.',
+    detect: (r, P) => {
+      /* HIS PRIMARY POSITION, not merely eligible there. Draymond Green can
+         play the five and passed like a guard, and on eligibility alone the
+         2016 Warriors came back Point Centre rather than the spacing team the
+         whole league spent five years copying. */
+      const big = r.filter(p => p.pp === 'C')
+        .sort((a, b) => paceAdjust(b.ast || 0, b.s) - paceAdjust(a.ast || 0, a.s))[0];
+      if (!big || paceAdjust(big.ast || 0, big.s) < 6.0) return -1;
+      /* And he has to be the one doing it, not a passing big standing next to a
+         nine assist point guard. */
+      if (paceAdjust(big.ast, big.s) < P.bestCreator - 0.5) return -1;
+      return fit(over(paceAdjust(big.ast, big.s), 6.0, 4.0));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'moreyball',
+    name: 'Moreyball',
+    blurb: 'Threes and layups, nothing in between. A guard who shoots from the logo and a centre who only dunks.',
+    detect: (r, P) => {
+      const shooter = r.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G', 'GF']))
+        .map(spacingIndex).sort((a, b) => b - a)[0] || 0;
+      if (shooter < 1.35 || P.tpa < FIT.MODERN_TPA) return -1;
+      const topTpa = Math.max(...r.map(p => paceAdjust(p.tpa || 0, p.s)));
+      if (topTpa < FIT.MODERN_SHOOTER_TPA) return -1;
+      /* The other half of it, and the half people forget: a rim runner who
+         never shoots. The shape is deliberate, not a gap in the roster. */
+      const rimRunner = r.find(p => hasAny(positionsOf(p), ['C', 'FC'])
+        && (p.tpa || 0) < 1.0 && paceAdjust(p.reb || 0, p.s) >= 8);
+      if (!rimRunner || P.bestCreator < 6.0) return -1;
+      return fit(over(shooter, 1.35, 1.0), over(P.bestCreator, 6.0, 4.0));
+    },
+    bonus: 0.50,
+  },
+  {
+    key: 'seven_seconds',
+    name: 'Seven Seconds or Less',
+    blurb: 'A shooting point guard, a floor stretched to the arc, and a shot up before the defense is set.',
+    detect: (r, P) => {
+      const pg = r.find(p => (p._slot || p.pp) === 'PG');
+      if (!pg || spacingIndex(pg) < 1.4 || paceAdjust(pg.ast || 0, pg.s) < 5.5) return -1;
+      if (P.spacing < 1.25 || P.tpa < FIT.MODERN_TPA) return -1;
+      if (paceAdjust(pg.tpa || 0, pg.s) < FIT.MODERN_SHOOTER_TPA) return -1;
+      return fit(over(P.spacing, 1.25, 0.7), over(spacingIndex(pg), 1.4, 1.4));
+    },
+    bonus: 0.60,
+  },
+  {
+    key: 'death_lineup',
+    name: 'The Death Lineup',
+    blurb: 'No true centre, five men who can switch every screen, and shooting at every position.',
+    detect: (r, P) => {
+      /* A TRUE CENTRE BY POSITION, not by rebound count. The lineup this is
+         named after played Draymond Green at the five and he pulled down 9.5 a
+         night, so testing on rebounds excluded the exact roster the system
+         exists to recognise. What makes it the Death Lineup is that the biggest
+         man on the floor is a forward. */
+      const centres = r.filter(p => p.pp === 'C').length;
+      if (centres) return -1;
+      if (P.spacing < 1.2 || P.steals < 5.5 || P.tpa < FIT.MODERN_TPA) return -1;
+      return fit(over(P.spacing, 1.2, 0.8), over(P.steals, 5.5, 3.0));
+    },
+    bonus: 0.60,
+  },
+  {
+    key: 'pick_and_roll',
+    name: 'Pick and Roll',
+    blurb: 'A guard who reads it perfectly and a big who sets it and dives. Two men, and nobody has ever guarded it.',
+    detect: (r, P) => {
+      const guard = r.filter(p => hasAny(positionsOf(p), ['PG', 'G']))
+        .sort((a, b) => paceAdjust(b.ast || 0, b.s) - paceAdjust(a.ast || 0, a.s))[0];
+      if (!guard || paceAdjust(guard.ast || 0, guard.s) < 7.0) return -1;
+      const big = r.filter(p => hasAny(positionsOf(p), ['PF', 'C', 'FC']))
+        .sort((a, b) => paceAdjust(b.pts || 0, b.s) - paceAdjust(a.pts || 0, a.s))[0];
+      if (!big || paceAdjust(big.pts || 0, big.s) < 18) return -1;
+      return fit(over(paceAdjust(guard.ast, guard.s), 7.0, 5.0),
+                 over(paceAdjust(big.pts, big.s), 18, 10));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'twin_towers',
+    name: 'Twin Towers',
+    blurb: 'Two genuine bigs, the glass owned at both ends, and nothing easy at the rim.',
+    detect: (r, P) => {
+      const bigs = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])
+        && paceAdjust(p.reb || 0, p.s) >= 8).length;
+      if (bigs < 2 || P.bestRim < 1.4) return -1;
+      return fit(over(P.reb, 38, 10), over(P.bestRim, 1.4, 1.6));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'grit_and_grind',
+    name: 'Grit and Grind',
+    blurb: 'Nobody scores easily, nobody scores often, and the game is played in the mud.',
+    detect: (r, P) => {
+      const dws = r.reduce((s, p) => s + Math.max(0, p.dw), 0);
+      const ows = r.reduce((s, p) => s + Math.max(0, p.ow), 0);
+      if (dws < 13 || P.spacing > 1.0 || P.shots > 70) return -1;
+      /* THE SHARE, NOT THE TOTAL. Thirteen defensive win shares is true of
+         almost any good roster, so on the total alone this became the label for
+         half the league: the 2013 Heat and the 2023 Nuggets both came back Grit
+         and Grind, which is not what either of those teams was. What actually
+         makes a team this is that its value sits disproportionately at the
+         defensive end. Above 38% is the 1989 Pistons and the 2004 Pistons; the
+         2013 Heat are at 30% and are correctly something else. */
+      const share = (ows + dws) > 0 ? dws / (ows + dws) : 0;
+      if (share < 0.38) return -1;
+      return fit(over(share, 0.38, 0.10), over(P.bestRim, 0.9, 1.6));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'triangle',
+    name: 'The Triangle',
+    blurb: 'A dominant wing, a post to play through, and everybody spaced where the read expects them.',
+    detect: (r, P) => {
+      const wing = r.filter(p => hasAny(positionsOf(p), ['SG', 'SF', 'GF']))
+        .sort((a, b) => (b.ow || 0) - (a.ow || 0))[0];
+      if (!wing || (wing.ow || 0) < 8) return -1;
+      /* NINE POINTS, NOT TWELVE. The triangle needs somebody who can catch it
+         and play out of the post, not a scoring centre: Luc Longley averaged
+         9.1 on the team this offense is most famous for, and a threshold of
+         twelve excluded the 1996 Bulls from the system they ran. */
+      const post = r.find(p => hasAny(positionsOf(p), ['C', 'FC'])
+        && paceAdjust(p.pts || 0, p.s) >= 9);
+      if (!post) return -1;
+      /* The triangle famously does not need a point guard, and that is the
+         thing to detect: a roster whose creation comes from the wing rather
+         than from a lead guard. */
+      if (P.bestCreator > 8.0) return -1;
+      /* AND IT IS NOT A SPACING OFFENSE. The triangle is read-and-react out of
+         the post with the floor divided into strong side and weak side, which
+         is close to the opposite of pulling everybody to the arc. Without this
+         it claimed the 2017 Warriors, who are the team that ended the argument
+         in favour of the other thing. */
+      if (P.spacing > 1.05) return -1;
+      return fit(over(wing.ow, 8, 6), over(paceAdjust(post.pts, post.s), 12, 10));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'seven_footers',
+    name: 'Bully Ball',
+    blurb: 'The ball goes inside, it stays inside, and the rest of the league gets tired.',
+    detect: (r, P) => {
+      const post = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])
+        && paceAdjust(p.pts || 0, p.s) >= 18)[0];
+      if (!post || P.spacing > 1.0) return -1;
+      return fit(over(paceAdjust(post.pts, post.s), 18, 10), over(P.reb, 36, 10));
+    },
+    bonus: 0.45,
+  },
+  {
+    key: 'showtime',
+    name: 'Showtime',
+    blurb: 'A great passer pushing it every time, and wings who beat everybody down the floor.',
+    detect: (r, P) => {
+      if (P.bestCreator < 8.0) return -1;
+      const bigs = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])).length;
+      if (bigs > 2) return -1;
+      /* EVERYBODY PASSED, which is the half a single assist average cannot see.
+         One man averaging nine assists on a roster that never moves the ball is
+         not Showtime, it is a great point guard on an iso team, and the ratio
+         of the roster's assists to its shots is what tells them apart. */
+      if (!P.shots || P.ast / P.shots < 0.32) return -1;
+      return fit(over(P.bestCreator, 8.0, 5.0), over(P.ast / P.shots, 0.32, 0.08));
+    },
+    bonus: 0.55,
+  },
+  {
+    key: 'motion',
+    name: 'Motion Offense',
+    blurb: 'Nobody dominates the ball, everybody touches it, and the extra pass is always there.',
+    detect: (r, P) => {
+      const hog = Math.max(...r.map(p => paceAdjust(p.fga || 0, p.s)));
+      if (hog > 17 || P.ast < 22) return -1;
+      return fit(over(P.ast, 22, 8), 1 - over(hog, 12, 6));
+    },
+    bonus: 0.50,
+  },
+  {
+    key: 'pace_and_space',
+    name: 'Pace and Space',
+    blurb: 'Shooting everywhere, a rim runner to finish, and the floor pulled wide open.',
+    detect: (r, P) => {
+      if (P.spacing < 1.05 || P.tpa < FIT.MODERN_TPA) return -1;
+      return fit(over(P.spacing, 1.05, 0.9));
+    },
+    bonus: 0.45,
+  },
+  {
+    key: 'iso',
+    name: 'Iso Ball',
+    blurb: 'One man with the ball and four men watching. It works right up until it does not.',
+    detect: (r, P) => {
+      /* SHARE, not attempts. Every good team has a man taking twenty shots a
+         night: Jordan took 22.6 on a 72 win team. What makes it iso ball is
+         that nobody ELSE is taking any, so this reads his share of the
+         roster's shots rather than his raw total. */
+      const hog = Math.max(...r.map(p => paceAdjust(p.fga || 0, p.s)));
+      const share = P.shots ? hog / P.shots : 0;
+      if (share < 0.32 || P.bestCreator > 7.0) return -1;
+      return fit(over(share, 0.32, 0.12));
+    },
+    /* NO BONUS. Iso ball is a real identity and a real way to lose in May, so
+       it is named without being rewarded. Naming it is the point: a player who
+       drafts three volume scorers should be told what he has built. */
+    bonus: 0,
+  },
+];
 
-   Thresholds come from real drafted six-man rosters, not from theory: the
-   median roster puts 0.26 of its win shares in its best player, 0.19 in its
-   bottom two, and splits 0.55 to the three perimeter slots. */
-const STRUCTURE = {
-  /* Rating points, like chemistry and for the same reason. A badly shaped
-     roster gives back two and a half points of offense, which is about seven
-     wins; a well shaped one gets a point and a half. Neither is close to what
-     the talent on the roster is worth, which is the correct order of things. */
-  MIN: -2.5, MAX: 1.5,
-  CONCENTRATION_START: 0.32, CONCENTRATION_WEIGHT: 0.80,
-  FLOOR_START: 0.13, FLOOR_WEIGHT: 1.10,
-  IDEAL_PERIMETER_SHARE: 0.55, PERIMETER_TOLERANCE: 0.12, BALANCE_WEIGHT: 0.95,
-  /* How many rating points a fully mis-shapen roster gives up. The three
-     factors below each run from 1.0 down, and their product times this is the
-     penalty. */
-  SHAPE_POINTS: 6.0,
-  ARCHETYPE_BONUS: 0.4,
-};
+const over = (v, min, span) => clamp(((v || 0) - min) / span, 0, 1);
+const fit = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-/* Name the roster's identity. Flavor for the coach report, and a small bonus
-   when the shape reads as a build somebody meant rather than six names that
-   happened to be affordable. */
-function detectArchetype(m) {
-  if (m.topShare >= 0.38)
-    return { key: 'hero_ball', name: 'Hero Ball', bonus: 0 };
-  if (m.floorShare >= 0.22 && m.topShare <= 0.28)
-    return { key: 'deep_rotation', name: 'Deep Rotation', bonus: STRUCTURE.ARCHETYPE_BONUS };
-  if (m.perimeterShare >= 0.70)
-    return { key: 'small_ball', name: 'Small Ball', bonus: STRUCTURE.ARCHETYPE_BONUS };
-  if (m.perimeterShare <= 0.38)
-    return { key: 'twin_towers', name: 'Twin Towers', bonus: STRUCTURE.ARCHETYPE_BONUS * 0.5 };
-  if (m.perimeterShare >= 0.48 && m.perimeterShare <= 0.62 &&
-      m.floorShare >= 0.16 && m.topShare <= 0.32)
-    return { key: 'balanced', name: 'Balanced Contender', bonus: STRUCTURE.ARCHETYPE_BONUS };
-  return { key: 'mixed', name: 'Mixed Bag', bonus: 0 };
+/* First match wins, most specific first. A roster that matches nothing is not
+   punished, it is just told it has no identity, which is information. */
+function detectSystem(roster, profile) {
+  const P = profile || rosterProfile(roster);
+  for (const s of SYSTEMS) {
+    const f = s.detect(roster, P);
+    if (f >= 0) {
+      return {
+        key: s.key,
+        name: s.name,
+        blurb: s.blurb,
+        fit: clamp(f, 0, 1),
+        /* A partial fit earns a partial bonus, so scraping into an identity is
+           worth less than genuinely being one. */
+        bonus: s.bonus * (0.55 + 0.45 * clamp(f, 0, 1)),
+      };
+    }
+  }
+  return null;
 }
 
-const PERIMETER_SLOTS = ['PG', 'SG', 'SF'];
+// ─── the league a player came from ──────────────────────────────────────────
 
-function rosterStructure(roster) {
-  const wars = roster.map(p => Math.max(0, p.w));
-  const total = wars.reduce((s, w) => s + w, 0) || 1;
-  const sorted = [...wars].sort((a, b) => b - a);
+/* WHAT THE GAME WAS LIKE WHEN HE PLAYED IT, and the reason this table exists at
+ * all: without it, "does this roster space the floor" is a question that
+ * punishes every player who retired before 1980 for a line that did not exist
+ * yet. Jerry West attempted zero three-pointers in 1972. So did everybody. That
+ * is a fact about the league, not about Jerry West, and a game that reads it as
+ * a flaw in his game is not a basketball game, it is a spreadsheet with a
+ * scoreboard on it.
+ *
+ * So spacing is measured RELATIVE TO ERA. A player is compared to what his own
+ * league shot, and a 1972 roster comes out neutral rather than broken.
+ *
+ * The boundaries are real rule changes and real inflection points, which is why
+ * they are uneven:
+ *
+ *   1980  the three-point line arrives, and nobody trusts it for years
+ *   1995  the line is SHORTENED to a uniform 22 feet and volume triples
+ *   1998  the line goes back out, and scoring collapses to a modern low
+ *   2002  the illegal defense rules go, zone comes in
+ *   2005  hand-checking is outlawed, guards get the league back
+ *   2015  the pace-and-space era proper
+ *   2018  freedom of movement is re-emphasised and volume explodes again
+ *
+ * PACE is possessions per 48 minutes and it is the other half of era
+ * translation: a 1972 team played about 108 possessions a night and a 1999 team
+ * played 89. Raw per-game numbers are not comparable across that gap, and a
+ * game that pretends otherwise hands the 1960s and 1970s an enormous unearned
+ * edge in every counting stat.
+ */
+const ERA_CONTEXT = [
+  { from: 0,    to: 1979, pace: 108.0, tpa: 0.0,  name: 'Before the three' },
+  { from: 1980, to: 1986, pace: 103.0, tpa: 2.4,  name: 'The line arrives' },
+  { from: 1987, to: 1994, pace: 97.0,  tpa: 7.0,  name: 'The late eighties' },
+  { from: 1995, to: 1997, pace: 92.0,  tpa: 15.3, name: 'The shortened line' },
+  { from: 1998, to: 2004, pace: 90.5,  tpa: 13.7, name: 'Hand-check basketball' },
+  { from: 2005, to: 2011, pace: 92.0,  tpa: 18.1, name: 'Freedom of movement' },
+  { from: 2012, to: 2017, pace: 95.0,  tpa: 22.4, name: 'Pace and space' },
+  { from: 2018, to: 9999, pace: 99.5,  tpa: 33.0, name: 'The three-point revolution' },
+];
 
-  const topShare = sorted[0] / total;
-  const floorShare = sorted.slice(-2).reduce((s, w) => s + w, 0) / total;
-  const perimeterWar = roster
-    .filter(p => PERIMETER_SLOTS.includes(p._slot) ||
-      (p._slot === '6TH' && hasAny(positionsOf(p), ['PG', 'SG', 'SF', 'G', 'GF'])))
-    .reduce((s, p) => s + Math.max(0, p.w), 0);
-  const perimeterShare = perimeterWar / total;
+function eraOf(season) {
+  for (const e of ERA_CONTEXT) if (season >= e.from && season <= e.to) return e;
+  return ERA_CONTEXT[ERA_CONTEXT.length - 1];
+}
 
-  const S = STRUCTURE;
-  const conc = 1 - S.CONCENTRATION_WEIGHT * Math.max(0, topShare - S.CONCENTRATION_START);
-  const floor = 1 - S.FLOOR_WEIGHT * Math.max(0, S.FLOOR_START - floorShare);
-  const balance = 1 - S.BALANCE_WEIGHT *
-    Math.max(0, Math.abs(perimeterShare - S.IDEAL_PERIMETER_SHARE) - S.PERIMETER_TOLERANCE);
+/* Per-game counting stats, translated out of the player's own pace and into the
+   league this game is played at. A 1972 line is deflated because 1972 played
+   nineteen more possessions a night than the game does here; a 1999 line is
+   inflated for the same reason in reverse. */
+function paceAdjust(value, season) {
+  return value * (CONSTANTS.LEAGUE_PACE / eraOf(season).pace);
+}
 
-  const metrics = { topShare, floorShare, perimeterShare };
-  const archetype = detectArchetype(metrics);
-  const shape = Math.max(0.3, conc) * Math.max(0.3, floor) * Math.max(0.3, balance);
-  const bonus = clamp((shape - 1) * S.SHAPE_POINTS + archetype.bonus, S.MIN, S.MAX);
+/* HOW MUCH THIS MAN SPACED THE FLOOR, as a share of what his own league shot
+   from three. 1.0 is exactly a league-average volume shooter for his era, 2.0
+   is double it, and a player from before the line comes back 1.0 rather than 0:
+   he is neither credited nor punished for a shot nobody was taking.
+
+   Volume rather than percentage on purpose. A defense has to decide whether to
+   leave a man, and it decides on whether he SHOOTS, which is why a 38% shooter
+   who takes nine of them bends a defense further out of shape than a 44%
+   shooter who takes one. */
+/* TWO HALVES, BECAUSE VOLUME ALONE GETS STEVE KERR WRONG.
+ *
+ * On volume against his era, the best shooter of the 1990s reads as exactly
+ * average: Kerr attempted 2.9 threes a night in a league attempting 15.3 across
+ * five men, so the ratio is 0.95 and the model had nothing to say about him.
+ * That is plainly a wrong answer about a man who took half his shots from
+ * behind the line.
+ *
+ * So the other half is SHOT PROFILE: what share of his own attempts came from
+ * three, against what share his league took. Kerr is 48% against a league at
+ * 17%, which is the number that actually describes him. Curry scores high on
+ * both. A centre who never shoots one scores zero on both. Averaging them means
+ * a man is a spacer if he shoots a lot of them, or if that is mostly what he
+ * shoots, and most if both.
+ *
+ * Both halves are still era-relative, so a player from before the line comes
+ * back 1.0 and is neither credited nor punished for a shot nobody was taking. */
+const LEAGUE_FGA = 88;                         // attempts by a whole team, a night
+/* Both halves are ratios against a league average, and in an era that barely
+   shot threes at all the denominator is tiny: Larry Bird's 2.3 attempts a night
+   in 1986 came out at four and a half times league average on volume and over
+   four times on rate. Uncapped, that made the early eighties read as the best
+   spacing era in the game, which is the opposite of true. */
+const SPACING_CAP = 2.5;
+
+function spacingIndex(player) {
+  const era = eraOf(player.s);
+  if (!era.tpa) return 1.0;
+
+  const perMan = era.tpa / 5;
+  const volume = clamp((player.tpa || 0) / perMan, 0, SPACING_CAP);
+
+  const leagueRate = era.tpa / LEAGUE_FGA;
+  const rate = (player.fga || 0) > 0 && leagueRate > 0
+    ? clamp(((player.tpa || 0) / player.fga) / leagueRate, 0, SPACING_CAP)
+    : 0;
+
+  return clamp((volume + rate) / 2, 0, SPACING_CAP);
+}
+
+// ─── roster fit ─────────────────────────────────────────────────────────────
+
+/* WIN SHARES MEASURE TALENT. FIT MEASURES WHETHER THESE PARTICULAR SIX CAN PLAY
+ * TOGETHER, and it is where this stops being a game about picking the biggest
+ * numbers.
+ *
+ * Five components, each worth rating points, each one an argument basketball
+ * fans have already been having for forty years:
+ *
+ *   SHOTS      the ball only bounces once. Six players who each took twenty
+ *              shots a night cannot all take twenty on the same team.
+ *   SPACING    somebody has to be able to shoot, or the paint is a car park.
+ *   RIM        an anchor at the back, or every drive is a layup.
+ *   CREATION   somebody has to make the pass, or the offense is five men
+ *              taking turns.
+ *   GLASS      possessions, which is the oldest argument in the sport.
+ *
+ * WHY POINTS AND NOT PERCENTAGES. Same reason as chemistry: at a Pythagorean
+ * exponent of 13.91 a percentage bonus becomes the largest term in the whole
+ * model. See PYTH_EXP. Everything that shapes a roster in this engine is
+ * denominated in rating points so it can be compared to everything else, and so
+ * the results screen can print "spacing cost you 1.4" and have that mean
+ * something exact.
+ */
+const FIT = {
+  MIN: -6.0,
+  MAX: 3.0,
+
+  /* THE SHOT BUDGET. An NBA team takes about 88 field goal attempts a game, and
+     a six man core is not the whole team: the rest of the bench takes theirs
+     too. 72 is what a real core six accounts for. Every attempt over that is a
+     shot somebody on this roster is not going to get, and it is charged for. */
+  SHOT_BUDGET: 72,
+  SHOT_COST: 0.16,          // rating points per attempt over budget
+  /* Under budget is a real problem too, but a much smaller one, because a
+     roster nobody wants to shoot on has already been punished by having no
+     offensive win shares. This is just the last nudge. */
+  SHOT_SHY: 58,
+  SHOT_SHY_COST: 0.07,
+
+  /* SPACING. The roster's mean spacing index, where 1.0 is five league-average
+     volume shooters for their own eras. Below 0.75 the paint closes. */
+  SPACING_FLOOR: 0.75,
+  SPACING_GOOD: 1.35,
+  SPACING_COST: 3.4,        // points lost at zero spacing
+  SPACING_GAIN: 1.2,        // points gained at elite spacing
+
+  /* RIM PROTECTION IS AN ANCHOR, NOT A SUM. Five men with 0.4 blocks each do
+     not add up to a rim protector; one man with 2.0 is one. So this reads the
+     best shot blocker on the roster, not the total. */
+  RIM_ANCHOR: 1.30,
+  RIM_NONE: 0.45,
+  RIM_COST: 2.2,
+  RIM_GAIN: 0.9,
+
+  /* CREATION. Same shape: a primary creator is a person, not a committee. Read
+     off the best passer, with a smaller nod to the roster's total. */
+  CREATOR: 5.5,
+  CREATOR_NONE: 2.5,
+  CREATION_COST: 2.0,
+  CREATION_GAIN: 0.8,
+  TEAM_AST: 20.0,
+  TEAM_AST_WEIGHT: 0.04,
+
+  /* SOME SYSTEMS DID NOT EXIST BEFORE THE THREE-POINT LINE, and naming a roster
+     after one of them because its era-relative spacing looked high is how the
+     1986 Celtics came back labelled Moreyball. Era-relative is exactly right for
+     the spacing PENALTY, because a 1972 team should not be docked for a shot
+     nobody was taking. It is exactly wrong for naming a modern system, because
+     a guard taking 1.2 threes a night in a league that took 2.4 is twice league
+     average and still not spacing anybody out. So the modern identities carry an
+     absolute floor in actual attempts on top of the relative one. */
+  MODERN_TPA: 18.0,          // the roster's own three-point attempts per game
+  MODERN_SHOOTER_TPA: 5.0,   // and what one man has to be taking
+
+  /* THE GLASS. A core six accounts for about 34 of a team's rebounds. */
+  REB_TARGET: 34.0,
+  REB_WEIGHT: 0.07,
+  REB_CAP: 1.2,
+};
+
+/* Everything the fit model needs about a roster, computed once. Pace-adjusted
+   throughout, so a 1972 line and a 2023 line are being asked the same question.
+   The sixth man contributes at his minutes share, like everywhere else. */
+function rosterProfile(roster) {
+  let shots = 0, ast = 0, reb = 0, spacing = 0, weight = 0, tpa = 0;
+  let bestRim = 0, bestCreator = 0, bestSpacing = 0, steals = 0;
+
+  for (const p of roster) {
+    const m = minutesShare(p);
+    shots += paceAdjust(p.fga || 0, p.s) * m;
+    ast += paceAdjust(p.ast || 0, p.s) * m;
+    reb += paceAdjust(p.reb || 0, p.s) * m;
+    steals += paceAdjust(p.stl || 0, p.s) * m;
+    tpa += paceAdjust(p.tpa || 0, p.s) * m;
+
+    const si = spacingIndex(p);
+    spacing += si * m;
+    weight += m;
+    if (si > bestSpacing) bestSpacing = si;
+
+    /* The anchors are read at full strength whoever they are. A rim protector
+       coming off the bench still protects the rim while he is out there, and
+       docking him for it would say something false about basketball. */
+    const blk = paceAdjust(p.blk || 0, p.s);
+    if (blk > bestRim) bestRim = blk;
+    const a = paceAdjust(p.ast || 0, p.s);
+    if (a > bestCreator) bestCreator = a;
+  }
+
+  return {
+    shots, ast, reb, steals, tpa,
+    spacing: weight ? spacing / weight : 1,
+    bestRim, bestCreator, bestSpacing,
+  };
+}
+
+/* WHAT THIS MAN IS FOR, in the words the game charges for.
+ *
+ * The fit model is only strategy if a player can look at a board and see which
+ * of these five names is missing from his roster. Showing the SIGNED CHANGE to
+ * each component instead was the first attempt and it was useless: on a two man
+ * roster every candidate reads as a huge improvement to everything, because
+ * what is actually being measured is that the roster has four empty slots.
+ *
+ * So a board says what a player IS, and the roster panel says what the roster
+ * still NEEDS, and the two meet in the middle. Thresholds are the same ones
+ * rosterFit charges against, so a badge is never a claim the model disagrees
+ * with. Pace-adjusted, so a 1972 line and a 2023 line earn the same badge on
+ * the same evidence.
+ */
+function playerTags(player) {
+  const tags = [];
+  const si = spacingIndex(player);
+  const fga = paceAdjust(player.fga || 0, player.s);
+  const ast = paceAdjust(player.ast || 0, player.s);
+  const blk = paceAdjust(player.blk || 0, player.s);
+  const reb = paceAdjust(player.reb || 0, player.s);
+  const stl = paceAdjust(player.stl || 0, player.s);
+
+  if (si >= 1.35) tags.push({ key: 'shooter', label: 'Shooter', good: true });
+  if (blk >= FIT.RIM_ANCHOR) tags.push({ key: 'rim', label: 'Rim protector', good: true });
+  if (ast >= FIT.CREATOR) tags.push({ key: 'creator', label: 'Creator', good: true });
+  if (reb >= 9.5) tags.push({ key: 'glass', label: 'Rebounder', good: true });
+  if (stl >= 1.8) tags.push({ key: 'hands', label: 'Ball hawk', good: true });
+
+  /* THE ONE THAT COSTS. A high volume scorer is not a bad player, he is an
+     expensive one in a currency that is not dollars, and the badge is there so
+     that cost is visible before the click rather than after the season. */
+  if (fga >= 17) tags.push({ key: 'volume', label: `${fga.toFixed(0)} shots`, good: false });
+  if (si < 0.35 && eraOf(player.s).tpa > 0) {
+    tags.push({ key: 'nonshooter', label: 'No range', good: false });
+  }
+  return tags;
+}
+
+/* A component's contribution, in rating points: nothing in the dead band, a
+   linear penalty below it, a linear (and smaller) bonus above. */
+function band(value, floor, good, cost, gain) {
+  if (value < floor) return -cost * clamp((floor - value) / floor, 0, 1);
+  if (value > good) return gain * clamp((value - good) / good, 0, 1);
+  return 0;
+}
+
+function rosterFit(roster) {
+  const P = rosterProfile(roster);
+  const F = FIT;
+
+  // The ball only bounces once.
+  let shots = 0;
+  if (P.shots > F.SHOT_BUDGET) shots = -(P.shots - F.SHOT_BUDGET) * F.SHOT_COST;
+  else if (P.shots < F.SHOT_SHY) shots = -(F.SHOT_SHY - P.shots) * F.SHOT_SHY_COST;
+
+  const spacing = band(P.spacing, F.SPACING_FLOOR, F.SPACING_GOOD,
+    F.SPACING_COST, F.SPACING_GAIN);
+  const rim = band(P.bestRim, F.RIM_ANCHOR, F.RIM_ANCHOR * 1.7,
+    F.RIM_COST, F.RIM_GAIN) - (P.bestRim < F.RIM_NONE ? F.RIM_COST * 0.35 : 0);
+
+  const creation = band(P.bestCreator, F.CREATOR, F.CREATOR * 1.5,
+    F.CREATION_COST, F.CREATION_GAIN)
+    - (P.bestCreator < F.CREATOR_NONE ? F.CREATION_COST * 0.4 : 0)
+    + clamp((P.ast - F.TEAM_AST) * F.TEAM_AST_WEIGHT, -1.0, 0.8);
+
+  const glass = clamp((P.reb - F.REB_TARGET) * F.REB_WEIGHT, -F.REB_CAP, F.REB_CAP);
+
+  const system = detectSystem(roster, P);
+  const parts = { shots, spacing, rim, creation, glass, system: system ? system.bonus : 0 };
+  const bonus = clamp(shots + spacing + rim + creation + glass + parts.system, F.MIN, F.MAX);
 
   return {
     bonus,
-    archetype,
-    conc, floor, balance,
+    parts,
+    profile: P,
+    system,
+    /* Kept for the sibling engines' vocabulary and for anything that still reads
+       an archetype off a roster. The system IS the archetype in this game. */
+    archetype: system
+      ? { key: system.key, name: system.name, bonus: system.bonus }
+      : { key: 'mixed', name: 'No Identity', bonus: 0 },
     multiplier: 1 + bonus / CONSTANTS.LEAGUE_RTG,   // display only
-    ...metrics,
   };
 }
+
 
 // ─── one game ───────────────────────────────────────────────────────────────
 
@@ -993,7 +1496,7 @@ function playRun(roster, rng, slotNames, pool) {
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
   const chem = resolveChemistry(tagged);
-  const structure = rosterStructure(tagged);
+  const structure = rosterFit(tagged);
   const ortg = rosterOffense(tagged, chem.bonus, structure.bonus);
   const drtg = rosterDefense(tagged, chem.bonus);
 
@@ -1083,13 +1586,15 @@ function teamName(code) {
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
-  CONSTANTS, ERAS, CHEMISTRY, STRUCTURE, SCHEDULE, TITLE,
+  CONSTANTS, ERAS, CHEMISTRY, SCHEDULE, TITLE,
   SLOTS, SLOT_ELIGIBILITY, POSITION_MAX, MINUTES_SHARE,
   positionsOf, canFillSlot, teamSeasonId, pkey,
   hashSeed, createSeededRNG, normal,
   indexData, buildCheapBy, teamStrength,
   pairLinks, resolveChemistry, setCuratedChemistry,
-  rosterOffense, rosterDefense, rosterStructure, detectArchetype, minutesShare,
+  rosterOffense, rosterDefense, rosterFit, detectSystem, minutesShare,
+  rosterProfile, spacingIndex, paceAdjust, eraOf, ERA_CONTEXT, SYSTEMS, FIT,
+  playerTags,
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,
   resolveGame, playoffSeries, generatePlayoffs, playRun, homeAdvantage,

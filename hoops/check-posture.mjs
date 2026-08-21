@@ -71,6 +71,33 @@ if (!Array.isArray(players) || players.length < 50) {
     + 'fill a six man roster out of that.');
 }
 
+/* 6. The how-to-play page gets the same treatment as the game, or half an
+      unfinished game ends up in the indexed site and half does not. */
+const howTo = read('hoops/how-to-play.html');
+if (!/name=["']robots["'][^>]*noindex/i.test(howTo)) {
+  problems.push('hoops/how-to-play.html is not noindexed. It describes a game that is not '
+    + 'launched, so the two pages launch together or not at all.');
+}
+if (howTo.includes('pagead2.googlesyndication.com')) {
+  problems.push('hoops/how-to-play.html carries the AdSense publisher tag.');
+}
+
+/* 7. EVERY SYSTEM THE ENGINE CAN NAME IS EXPLAINED SOMEWHERE THE PLAYER CAN READ IT.
+      The rules page is written by hand and the systems live in engine.js, so the
+      two drift apart the moment somebody adds one. A player told his roster
+      plays "Moreyball" and given nowhere to find out what that means has been
+      shown a label, not taught a game. */
+const engine = read('hoops/engine.js');
+const named = [...engine.matchAll(/^\s{4}name: '([^']+)',$/gm)].map(m => m[1]);
+const undocumented = [...new Set(named)].filter(n => !howTo.includes(n));
+if (!named.length) {
+  problems.push('could not find any system names in engine.js, so this check is not '
+    + 'checking anything. Has the SYSTEMS shape changed?');
+} else if (undocumented.length) {
+  problems.push(`how-to-play.html does not explain: ${undocumented.join(', ')}. `
+    + 'Every system the engine can put on screen needs a line the player can read.');
+}
+
 if (problems.length) {
   console.error(`Run The Floor posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);

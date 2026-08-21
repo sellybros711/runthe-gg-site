@@ -85,6 +85,13 @@
   button.ghost:hover:not(:disabled){background:rgba(255,255,255,.05);color:var(--ink);}
   button.big{width:100%;padding:15px;font-size:16px;text-transform:uppercase;letter-spacing:.04em;}
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;}
+  .btnrow > *{flex:1 1 0;}
+  /* An anchor styled as a ghost button. It stays an anchor because it is a real
+     navigation to a real page, which a crawler and a middle-click both need. */
+  .ghostlink{display:block;text-align:center;font-family:var(--body);font-weight:800;
+    font-size:14px;border-radius:9px;padding:11px 20px;border:1px solid var(--cardb);
+    color:var(--mut);text-decoration:none;}
+  .ghostlink:hover{background:rgba(255,255,255,.05);color:var(--ink);}
 
   .screen{display:none;} .screen.active{display:block;}
 
@@ -126,6 +133,32 @@
     border:1px solid rgba(240,120,45,.35);}
   .drawhead .club{font-family:var(--display);font-size:21px;letter-spacing:.02em;text-transform:uppercase;}
   .drawhead .rec{font-family:var(--mono);font-size:12px;color:var(--mut);}
+
+  /* role badges on the board */
+  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 7px;border-radius:999px;background:rgba(34,197,94,.14);color:#5fd98a;
+    border:1px solid rgba(34,197,94,.32);}
+  .badge.cost{background:rgba(239,68,68,.12);color:#f08a8a;border-color:rgba(239,68,68,.3);}
+
+  /* the fit read-out */
+  .fitbox{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .fitrow{display:grid;grid-template-columns:76px 1fr 62px;gap:9px;align-items:center;
+    margin-bottom:6px;font-size:12px;}
+  .fitrow .nm{color:var(--mut);font-weight:700;}
+  .fitrow .val{font-family:var(--mono);text-align:right;font-size:11.5px;color:var(--dim);}
+  .meter{height:7px;border-radius:4px;background:rgba(255,255,255,.07);position:relative;
+    overflow:hidden;}
+  .meter i{position:absolute;top:0;bottom:0;left:0;border-radius:4px;display:block;
+    background:linear-gradient(90deg,#22c55e,#4ade80);}
+  .meter i.warn{background:linear-gradient(90deg,#f2c14e,#facc15);}
+  .meter i.bad{background:linear-gradient(90deg,#ef4444,#f87171);}
+  /* Where the model stops charging. A player should be able to see the line, not
+     just his distance from it. */
+  .meter u{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.45);}
+  .sysline{margin:10px 0 0;font-size:12.5px;color:var(--mut);}
+  .sysline b{color:var(--gold);font-family:var(--display);font-weight:400;font-size:15px;
+    letter-spacing:.02em;text-transform:uppercase;display:block;}
 
   .links{margin:10px 0 0;padding:0;list-style:none;}
   .links li{font-size:12.5px;color:var(--mut);padding:3px 0 3px 16px;position:relative;}
@@ -192,7 +225,8 @@
     </p>
     <button class="big" id="b-start">Start a run</button>
     <div class="btnrow" style="margin-top:8px">
-      <button class="ghost" id="b-reset" style="flex:1">Reset</button>
+      <a class="ghostlink" href="/hoops/how-to-play.html">How to play</a>
+      <button class="ghost" id="b-reset">Reset</button>
     </div>
   </div>
   <div class="card" id="loadbox">
@@ -225,6 +259,7 @@
   <div class="card">
     <h2>Your rotation <span class="sub" id="r-chem"></span></h2>
     <div class="slots" id="r-slots"></div>
+    <div class="fitbox" id="r-fit"></div>
     <ul class="links" id="r-links"></ul>
   </div>
 </div>
@@ -274,6 +309,7 @@
   <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
     href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
     href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+    href="/hoops/how-to-play.html">How to play</a><span>&middot;</span><a
     href="/" target="_blank" rel="noopener">More games</a></p>
   <p class="src">An unofficial fan project in development, not affiliated with or endorsed by
     the NBA or any club. Player data is a hand-entered placeholder and is not a record of any
@@ -407,6 +443,23 @@ function renderDraft(){
           + (entry.block ? ' · ' + (BLOCK_TEXT[entry.block] || entry.block) : '');
         name.appendChild(small);
 
+        /* WHAT HE IS FOR. Without this the board is six names and six prices and
+           the fit model may as well not exist: a player cannot decide he needs
+           shooting more than he needs the better man if nothing on screen says
+           who the shooters are. */
+        var tags = E.playerTags(p);
+        if (tags.length) {
+          var row = document.createElement('span');
+          row.className = 'badges';
+          for (var t = 0; t < tags.length; t++) {
+            var b2 = document.createElement('span');
+            b2.className = 'badge' + (tags[t].good ? '' : ' cost');
+            b2.textContent = tags[t].label;
+            row.appendChild(b2);
+          }
+          name.appendChild(row);
+        }
+
         var price = document.createElement('span');
         price.className = 'price';
         price.textContent = money(p.p);
@@ -441,6 +494,96 @@ function sign(p){
   save();
   if (run.phase === R.PHASES.SEASON) { toSeason(); return; }
   spin();
+}
+
+/* THE FIVE THINGS A BASKETBALL TEAM NEEDS, live, while there is still time to
+ * do something about it.
+ *
+ * Each row is read as "where are you against the line the model stops charging
+ * at", with the line drawn on the meter rather than described. Shot allocation
+ * is the odd one out and is drawn inverted, because it is the only row where
+ * MORE is worse: the budget is 72 attempts and every one past it is a shot
+ * somebody on this roster is not getting.
+ */
+var FIT_ROWS = [
+  { key: 'spacing', name: 'Spacing',
+    get: function(P){ return P.spacing; }, target: E.FIT.SPACING_FLOOR, good: E.FIT.SPACING_GOOD,
+    fmt: function(v){ return v.toFixed(2) + 'x'; } },
+  { key: 'rim', name: 'Rim',
+    get: function(P){ return P.bestRim; }, target: E.FIT.RIM_ANCHOR, good: E.FIT.RIM_ANCHOR * 1.7,
+    fmt: function(v){ return v.toFixed(1) + ' blk'; } },
+  { key: 'creation', name: 'Creation',
+    get: function(P){ return P.bestCreator; }, target: E.FIT.CREATOR, good: E.FIT.CREATOR * 1.5,
+    fmt: function(v){ return v.toFixed(1) + ' ast'; } },
+  { key: 'glass', name: 'The glass',
+    get: function(P){ return P.reb; }, target: E.FIT.REB_TARGET, good: E.FIT.REB_TARGET * 1.2,
+    fmt: function(v){ return v.toFixed(0) + ' reb'; } },
+  { key: 'shots', name: 'Shots', invert: true,
+    get: function(P){ return P.shots; }, target: E.FIT.SHOT_BUDGET, good: E.FIT.SHOT_BUDGET,
+    fmt: function(v){ return v.toFixed(0) + '/' + E.FIT.SHOT_BUDGET; } },
+];
+
+function renderFit(){
+  var box = $('r-fit');
+  if (!box) return;
+  box.textContent = '';
+  if (!run.roster.length) return;
+
+  var f = R.fitNow(run, null);
+  var P = f.profile;
+
+  for (var i = 0; i < FIT_ROWS.length; i++) {
+    var row = FIT_ROWS[i];
+    var v = row.get(P);
+    var part = f.parts[row.key] || 0;
+
+    var el = document.createElement('div');
+    el.className = 'fitrow';
+
+    var nm = document.createElement('span');
+    nm.className = 'nm';
+    nm.textContent = row.name;
+
+    var meter = document.createElement('span');
+    meter.className = 'meter';
+    var bar = document.createElement('i');
+    /* Scaled so the target line lands at 60% of the width, which leaves room to
+       show being comfortably past it rather than pinning every good roster at
+       the right edge. */
+    var scale = row.target > 0 ? (v / row.target) * 60 : 0;
+    bar.style.width = Math.max(2, Math.min(100, scale)) + '%';
+    bar.className = part < -0.05 ? 'bad' : part > 0.05 ? '' : 'warn';
+    var mark = document.createElement('u');
+    mark.style.left = '60%';
+    meter.appendChild(bar);
+    meter.appendChild(mark);
+
+    var val = document.createElement('span');
+    val.className = 'val';
+    val.textContent = row.fmt(v);
+
+    el.appendChild(nm); el.appendChild(meter); el.appendChild(val);
+    box.appendChild(el);
+  }
+
+  /* The identity, once there is enough roster for one to mean anything. */
+  var line = document.createElement('p');
+  line.className = 'sysline';
+  if (run.roster.length < 4) {
+    line.textContent = 'Sign a few more and this roster will start to look like something.';
+  } else if (f.system) {
+    var b = document.createElement('b');
+    b.textContent = f.system.name;
+    line.appendChild(b);
+    line.appendChild(document.createTextNode(f.system.blurb));
+  } else {
+    var b2 = document.createElement('b');
+    b2.textContent = 'No identity yet';
+    line.appendChild(b2);
+    line.appendChild(document.createTextNode(
+      'Six good players, but nothing they obviously do together.'));
+  }
+  box.appendChild(line);
 }
 
 function renderRoster(slotsEl, linksEl){
@@ -478,6 +621,8 @@ function renderRoster(slotsEl, linksEl){
     slotsEl.appendChild(row);
   }
 
+  renderFit();
+
   if (!linksEl) return;
   var chem = E.resolveChemistry(run.roster);
   var head = document.getElementById('r-chem');
@@ -512,7 +657,7 @@ function toSeason(){
     return c;
   });
   var chem = E.resolveChemistry(tagged);
-  var st = E.rosterStructure(tagged);
+  var st = E.rosterFit(tagged);
   var ortg = E.rosterOffense(tagged, chem.bonus, st.bonus);
   var drtg = E.rosterDefense(tagged, chem.bonus);
 

@@ -368,6 +368,45 @@ function sign(run, player, slotIdx) {
   return run;
 }
 
+/* WHAT THE ROSTER LOOKS LIKE AS A BASKETBALL TEAM RIGHT NOW, and what it would
+ * look like with this man added.
+ *
+ * A FIT MODEL THE PLAYER CANNOT SEE WHILE DRAFTING IS NOT STRATEGY, IT IS A
+ * HIDDEN DICE ROLL. The whole point of charging a roster for having no spacing
+ * is that somebody can look at the board, see the hole, and decide whether the
+ * shooter is worth more to them than the better player next to him. That
+ * decision cannot be made from a number revealed after the season.
+ *
+ * Partial rosters are scored as-is rather than projected. A two man roster
+ * genuinely has no rim protection, and saying so is honest: the number moves as
+ * the roster fills, which is the point.
+ */
+function fitNow(run, player) {
+  const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
+  if (!player) return E.rosterFit(tagged);
+  const slot = slotForPlayer(run, player);
+  return E.rosterFit(tagged.concat([{
+    ...player, _slot: slot === null ? '6TH' : E.SLOTS[slot],
+  }]));
+}
+
+/* The signed difference this player would make to each part of the fit, so the
+   board can say "he is your spacing" or "he is another mouth". */
+function previewFit(run, player) {
+  const before = fitNow(run, null);
+  const after = fitNow(run, player);
+  const delta = {};
+  for (const k of Object.keys(after.parts)) {
+    delta[k] = after.parts[k] - (before.parts[k] || 0);
+  }
+  return {
+    before, after, delta,
+    bonusDelta: after.bonus - before.bonus,
+    system: after.system,
+    systemChanged: (after.system && after.system.key) !== (before.system && before.system.key),
+  };
+}
+
 /* What signing this player would do to chemistry, before you commit. The links
    it reports are the NEW ones only, so the panel says what you are buying
    rather than restating what you already have. */
@@ -430,7 +469,7 @@ function advanceGame(run, gameIndex) {
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
     const chem = E.resolveChemistry(tagged);
-    const structure = E.rosterStructure(tagged);
+    const structure = E.rosterFit(tagged);
     const ortg = E.rosterOffense(tagged, chem.bonus, structure.bonus);
     const drtg = E.rosterDefense(tagged, chem.bonus);
     const schedule = E.generateSchedule(
@@ -689,7 +728,7 @@ const publicAPI = {
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
-  previewSigning, bestPossibleSquad, projectSeason,
+  previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
   indexData, drawable,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, blockFor, positionFull,
