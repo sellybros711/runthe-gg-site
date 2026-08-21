@@ -327,9 +327,32 @@ window.GA_ID='G-L29P5MRWKE';
      Only testers see it (canPlayDefense); everybody else gets .hp-start exactly as before,
      still saying Start a run, because a lone button labelled OFFENSE offers a choice that
      is not on the page. paintHomeStart is what swaps them. */
-  .hp-split{display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:14px;
+  .hp-split{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;
+    border-radius:14px;
     overflow:hidden;box-shadow:0 10px 26px -14px #000,0 2px 8px rgba(0,0,0,.35)}
   .hp-split[hidden]{display:none}
+  /* THE SEAM, NAMED. The 2px gap already says the two halves are one control rather than
+     two; this says what the control is asking, at the point where the question is.
+
+     A PSEUDO ELEMENT AND NOT A THIRD CHILD. The halves are a grid of two equal columns and
+     anything in the flow of one and not the other shifts that half's label off centre. It
+     is the same trap .hp-tag is absolutely positioned to avoid, and a real element in the
+     middle would need a third column, which would make the two sides unequal instead.
+
+     POINTER-EVENTS NONE IS NOT OPTIONAL. This sits dead centre of a control whose entire
+     job is to be pressed, and both halves reach the seam. A chip that swallows taps there
+     would look perfectly normal and do nothing, which is exactly the failure written up on
+     .rtp-ad-mobile-bottom. It is decoration, so it must be transparent to the thumb.
+
+     Painted in the page's own background rather than in a wash of either side: a chip that
+     borrows the red or the blue belongs to that half, and this belongs to neither. */
+  .hp-split::after{content:'or';position:absolute;left:50%;top:50%;z-index:2;
+    transform:translate(-50%,-50%);pointer-events:none;
+    width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+    background:#0d1424;border:1px solid rgba(255,255,255,.24);
+    box-shadow:0 2px 9px rgba(0,0,0,.55);
+    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.03em;
+    color:rgba(255,255,255,.82);line-height:1}
   .hp-side{position:relative;overflow:hidden;border:0;cursor:pointer;color:#fff;
     font-family:inherit;padding:24px 10px 15px;display:flex;flex-direction:column;
     align-items:center;gap:4px;-webkit-appearance:none;appearance:none;
