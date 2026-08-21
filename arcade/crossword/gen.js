@@ -109,6 +109,16 @@
     return d[Math.floor((d.length - 1) / 2)];
   }
   function eraStr(d) { return d >= 2000 ? d + 's' : "'" + String(d).slice(2) + 's'; }
+  /* The decade a clue is allowed to PRINT as decoration.
+     "Eagles quarterback and Super Bowl MVP of the 2020s", read in 2026, narrows
+     nothing: every man still playing is a 2020s player. It is filler that also
+     dates the puzzle. So the decade the puzzle itself falls in is never hung on
+     a clue, and eraOf returns null for it.
+     Read off the puzzle's own date rather than the clock, so a given day's grid
+     is the same grid whenever it is generated, which is what the archive
+     depends on. */
+  var CUR_DECADE = null;
+  function eraOf(d) { return (d == null || d === CUR_DECADE) ? null : eraStr(d); }
 
   // does entity x fit every fact the clue states? (used to prove the clue
   // cannot also describe a same-surname rival)
@@ -154,7 +164,7 @@
     var guard = 0;
     while (ambiguous(used, rivals) && guard++ < 5) {
       if (tn && !used.team) { text += ', of the ' + tn; used.team = tn; continue; }
-      if (dec != null && used.era == null) { text += ', ' + eraStr(dec); used.era = dec; continue; }
+      if (eraOf(dec) && used.era == null) { text += ', ' + eraOf(dec); used.era = dec; continue; }
       if (e.pos && !used.pos) { text += ', a ' + e.pos.toLowerCase(); used.pos = e.pos; continue; }
       if (jersey != null && used.jersey == null) { text += ', who wore ' + jersey; used.jersey = jersey; continue; }
       if (e.col && !used.col) { text += ', out of ' + colName(e.col); used.col = colKey(e.col); continue; }
@@ -276,7 +286,7 @@
     /* The decade goes in FRONT of these two, never on the end: a career shape
        already finishes on a relative clause, and " of the 1990s" tacked after
        it lands on the last club rather than on the man. */
-    var d0 = primaryDecade(e), eraS = d0 != null ? eraStr(d0) : null;
+    var d0 = primaryDecade(e), eraS = eraOf(d0);
     if (path.length >= 3) {
       var three = path.slice(0, 3);
       out.push({ kind: 'path', t: cap(role) + ' who played for the ' + list(three),
@@ -380,7 +390,7 @@
     if (!anch.length) return null;
     var hand = curatedPredicate(e, rng);
     var dec = primaryDecade(e);
-    var era = dec != null ? eraStr(dec) : null;
+    var era = eraOf(dec);
     var ml0 = (e.ml && e.ml.length) ? e.ml[0] : null;
 
     /* A hand-written moment identifies one man on its own, so it skips the
@@ -660,10 +670,12 @@
   // Tuned against a 365-day run — see scripts/check-cluebank.mjs, which reports
   // the resulting share of curated clue slots.
   var CURATED_WEIGHT = 14;
-  var _poolSrc = null, _poolCache = null;
+  // CUR_DECADE is part of the key: eligibility is decided by clueFor, which
+  // reads it, so a pool built in one decade must not be reused in the next.
+  var _poolSrc = null, _poolCache = null, _poolDec = null;
   function getPool(corpus) {
-    if (_poolSrc !== corpus) {
-      _poolSrc = corpus;
+    if (_poolSrc !== corpus || _poolDec !== CUR_DECADE) {
+      _poolSrc = corpus; _poolDec = CUR_DECADE;
       // Mixed pool: player surnames (deep pool + generated clues) plus static
       // team-nickname and sport-vocab entries. Non-surname items carry a
       // `staticClue` so finalize skips the surname clue generator for them.
@@ -836,6 +848,7 @@
    * corpusOpt is for Node/tests; the page relies on window.GRID_ENTITIES. */
   function forDate(dateStr, corpusOpt) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''))) return null;
+    CUR_DECADE = Math.floor(+String(dateStr).slice(0, 4) / 10) * 10;
     var corpus = corpusOpt || (root && root.GRID_ENTITIES) || [];
     if (!corpus.length) return null;
     var pool = getPool(corpus);
