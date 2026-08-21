@@ -291,37 +291,58 @@
       if (eraS) out.push({ kind: 'oneclub', t: cap(role) + ' of the ' + eraS + ' who spent his whole career with the ' + tn,
                  used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn, era: d0 } });
     }
-    /* PAST TENSE, ALWAYS, WHEREVER A CLUB APPEARS.
+    /* A CLUB IS NEVER STATED IN THE PRESENT TENSE.
        "Timberwolves center in number 32" is a claim about today's roster, and
        our team list is a CAREER: the man it described had already moved to New
-       York. Every club anchor below therefore leads with the player and puts
-       the club inside a relative clause, which is true of a man who left in
-       2024 and equally true of one who never has. The decade goes in front of
-       him for the same reason it does on the path shapes: hang it off the end
-       and it lands on the club instead. */
-    function clubAnchor(kind, head, tail, used) {
-      out.push({ kind: kind, t: head + ' ' + tail, used: used });
-      if (eraS) out.push({ kind: kind, t: head + ' of the ' + eraS + ' ' + tail,
-                           used: merge(used, { era: d0 }) });
+       York. "Former Timberwolves center" is the same clue, one word longer,
+       and true.
+
+       But "former" is only printed where the file can PROVE he left, which is
+       when the last club on his record is not the one being named. A long list
+       is not proof on its own: Lillard went Blazers, Bucks, Blazers, and he is
+       a Blazer now. Where it cannot be proved, the club goes inside a relative
+       clause instead ("Center who played for the Timberwolves"), which is true
+       of a man who left and equally true of one who never has, and the decade
+       then goes in FRONT of him, because hung off the end it lands on the
+       club. */
+    var lastClub = teams.length ? nick(teams[teams.length - 1]) : null;
+    var gone = !!(tn && lastClub && lastClub !== tn);
+    function clubAnchor(kind, compact, head, tail, used) {
+      out.push({ kind: kind, t: gone ? 'Former ' + compact : head + ' ' + tail, used: used });
+    }
+    function clubAnchorEra(kind, compact, head, tail, used) {
+      clubAnchor(kind, compact, head, tail, used);
+      if (!eraS) return;
+      out.push({ kind: kind,
+                 t: gone ? 'Former ' + compact + ' of the ' + eraS : head + ' of the ' + eraS + ' ' + tail,
+                 used: merge(used, { era: d0 }) });
     }
     // the number, when the file holds exactly one and cannot be picking wrong
     if (tn && pos && e.j && e.j.length === 1) {
-      clubAnchor('number', cap(pos), 'who wore number ' + e.j[0] + ' for the ' + tn,
-                 { team: tn, pos: e.pos, jersey: e.j[0] });
+      var numUsed = { team: tn, pos: e.pos, jersey: e.j[0] };
+      clubAnchor('number', tn + ' ' + pos + ' in number ' + e.j[0],
+                 cap(pos), 'who wore number ' + e.j[0] + ' for the ' + tn, numUsed);
+      // era only on the clause form: a decade after a shirt number reads as if
+      // the NUMBER had the decade
+      if (eraS && !gone) {
+        out.push({ kind: 'number', t: cap(pos) + ' of the ' + eraS + ' who wore number ' + e.j[0] + ' for the ' + tn,
+                   used: merge(numUsed, { era: d0 }) });
+      }
     }
     /* "Otterbein product who played outfielder for the Reds" is not a sentence
-       anybody says. The man and his position first, where a fan starts, then
-       the school, then the club that narrows it. */
+       anybody says. Club and position first, where a fan starts, and the school
+       as the tail that narrows it. */
     if (e.col && tn && pos) {
-      out.push({ kind: 'college', t: cap(pos) + ' out of ' + colName(e.col) + ' who played for the ' + tn,
-                 used: { team: tn, pos: e.pos, col: colKey(e.col) } });
+      clubAnchor('college', tn + ' ' + pos + ' out of ' + colName(e.col),
+                 cap(pos) + ' out of ' + colName(e.col), 'who played for the ' + tn,
+                 { team: tn, pos: e.pos, col: colKey(e.col) });
     }
-    // A Hall of Famer is retired by definition, so this one club-first phrasing
-    // cannot claim a roster spot he does not hold.
+    // No "former" on a Hall of Famer: a man in Canton is on nobody's roster,
+    // so the bare club-first form cannot claim a place he does not hold.
     if (e.hof && tn) out.push({ kind: 'hofclub', t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos && dist) clubAnchor('clubaward', dist, 'who played ' + pos + ' for the ' + tn, { team: tn, pos: e.pos, aw: true });
-    if (tn && dist) clubAnchor('clubaward', dist, 'who played for the ' + tn, { team: tn, aw: true });
-    if (tn && pos) clubAnchor('clubpos', cap(pos), 'who played for the ' + tn, { team: tn, pos: e.pos });
+    if (tn && pos && dist) clubAnchorEra('clubaward', tn + ' ' + pos + ' and ' + dist, dist, 'who played ' + pos + ' for the ' + tn, { team: tn, pos: e.pos, aw: true });
+    if (tn && dist) clubAnchorEra('clubaward', tn + ' ' + dist, dist, 'who played for the ' + tn, { team: tn, aw: true });
+    if (tn && pos) clubAnchorEra('clubpos', tn + ' ' + pos, cap(pos), 'who played for the ' + tn, { team: tn, pos: e.pos });
     if (e.hof) out.push({ kind: 'league', t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
     if (dist) out.push({ kind: 'league', t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
     if (pos) out.push({ kind: 'league', t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
