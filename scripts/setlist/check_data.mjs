@@ -204,13 +204,13 @@ check(!/\.chip\.acc\{/.test(game),
 // Deduped: the jamchart chip has a second rule for its selected state.
 const dyed = [...new Set([...game.matchAll(/\.chip\.([a-z]+)\{[^}]*var\(--dye\)/g)]
   .map(m => m[1]))].sort();
-/* THE DYE IS DOWN TO ONE CHIP, and that is the same lesson as the segue arrow
-   and the account pill: it needs room. At 9.5px a five-colour border around
-   four letters is a smudge, so JAMCHART is gold now (the colour the archive
-   already uses for its other flag). RECOMMENDED keeps it because it is not in
-   the draft list at all: it appears once on the playback screen, on its own
-   line, at full badge size. */
-check(dyed.join(',') === 'rec', 'only the archive badge uses tie dye',
+/* THE DYE IS THE ARCHIVE FAMILY'S, and only that family's. It stops meaning
+   anything if it spreads to a third chip.
+   It was down to RECOMMENDED alone for a while, because at 9.5px with no box
+   to put it on a five-colour border round four letters was a smudge. Both of
+   those conditions are gone: the pills are back and the type is 11px, so the
+   wheel crosses a real border and JAMCHART is unmistakable again. */
+check(dyed.join(',') === 'jc,rec', 'the tie dye belongs to the archive family',
   `dyed: ${dyed.join(', ') || 'none'}`);
 
 console.log();
@@ -1371,16 +1371,35 @@ check(/\.showcard \.d\{[^}]*font-family:var\(--ui\)/.test(game),
    descriptor and 74% carry none or one. The pills were never solving a density
    problem, so the box came off and the colour stayed. */
 console.log('the descriptors');
-check(/\.chip\{[^}]*background:none/.test(game), 'the base chip has no fill');
-check(/\.chip\{[^}]*padding:0/.test(game), 'and no padding');
-check(/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
-  'descriptors are separated by a middot instead');
+/* THE PILLS ARE BACK, and the fill is OPAQUE, which the old ones were not.
+   A translucent tint always moves the ground towards the ink: it lightens in a
+   dark theme and darkens in a light one, so the text loses contrast either
+   way. Measured on the old 20% hue tints, every light-theme chip failed at
+   every strength from 36% down to 12%, because no tint of a colour fails to
+   drag the ground toward that colour. The pill sits BACK from the page
+   instead, a deeper navy in the dark theme and white in the light, and being
+   opaque it also measures the same on a song row as inside a sheet. */
+check(/\.chip\{[^}]*background:color-mix\(in srgb, var\(--chipHue/.test(game),
+  'the base chip is a pill again');
+check(/var\(--pillBase\)\)/.test(game), 'filled onto an opaque base');
+check(/--pillBase:#0A1A2E/.test(game) && /--pillBase:#FFFFFF/.test(game),
+  'which sits back from the page in both themes');
+check(/\.chip\{[^}]*padding:2px 7px/.test(game), 'with padding to be a box at all');
+check(/\.chip\{[^}]*border-color:color-mix\(in srgb, var\(--chipHue/.test(game),
+  'and the hue on a border, which cannot touch the text contrast');
+/* Boxes space themselves, so the middot that separated bare words has to go:
+   a dot between two pills reads as a third chip. */
+check(!/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
+  'and no middot between them, because boxes space themselves');
+check(/\.chips\{gap:5px;\}/.test(game), 'the gap does the separating instead');
 // The rarity, monotony and archive words are colour only. The role words are
 // too, but one rule per role rather than one shared rule, so they are checked
 // against accentOf's list in the chip-legibility block below.
-for (const k of ['rare', 'mono', 'jc'])
-  check(new RegExp(`\\.chip\\.${k}\\{color:var\\(--[a-zA-Z]+\\);\\}`).test(game),
-    `the ${k} descriptor is colour only`);
+/* Rarity and monotony are tinted pills like the roles: a hue and an ink. The
+   jamchart is the dyed one and is checked with the archive family above. */
+for (const k of ['rare', 'mono'])
+  check(new RegExp(`\\.chip\\.${k}\\{--chipHue:var\\(--[a-z]+\\); color:var\\(--c[A-Z][a-zA-Z]*\\);\\}`).test(game),
+    `the ${k} descriptor declares a hue and an ink`);
 
 /* AND THEY HAVE TO BE READABLE, which is a different claim from having a
  * colour and was not being made at all.
@@ -1451,40 +1470,124 @@ console.log('the descriptors are readable');
   check(!!mq && pairs(mq) === pairs(lightBlock),
     'the light theme reads the same by system setting and by toggle');
 
-  /* Which ink each chip draws in, read off the rules rather than assumed. */
+  /* WHICH INK EACH CHIP DRAWS IN AND WHAT IT DRAWS ON, both read off the
+     rules. The pill is what makes this interesting: the ground is no longer
+     the page, it is the chip's own fill, and a fill of the ink's own hue is
+     exactly the thing that eats contrast. */
   const rules = {};
-  for (const m of game.matchAll(/\.chip(?:\.acc)?\.([a-z]+)\s*\{color:var\(--(c[A-Z][a-zA-Z]*)\);\}/g))
-    rules[m[1]] = m[2];
+  for (const m of game.matchAll(
+    /\.chip(?:\.acc)?\.([a-z]+)\s*\{--chipHue:var\(--([a-zA-Z]+)\);\s*color:var\(--(c[A-Z][a-zA-Z]*)\);/g))
+    rules[m[1]] = { hue: m[2], ink: m[3] };
   const roleNames = roles.map(r => r.chip).filter(c => c && c !== '(none)');
   const unstyled = roleNames.filter(r => !rules[r]);
-  check(!unstyled.length, `all ${roleNames.length} roles from accentOf draw in a chip ink`,
+  check(!unstyled.length, `all ${roleNames.length} roles from accentOf declare a hue and an ink`,
     unstyled.length ? `no rule for ${unstyled.join(', ')}` : '');
-  for (const extra of ['rare', 'mono', 'jc'])
+  for (const extra of ['rare', 'mono'])
     check(!!rules[extra], `  and so does ${extra}`);
 
-  /* THE WORST BACKGROUND EACH THEME PUTS A CHIP ON. In the dark that is --card
-     (lighter than --bg, so closer to light ink); in the light it is --bg
-     (darker than --card). A chip appears on both: song rows sit on the page,
-     the glossary sits on a card. */
-  const bgDark = (game.match(/--bg:#071426; --card:(#[0-9A-Fa-f]{6})/) || [])[1];
-  const bgLight = (game.match(/--bg:(#[0-9A-Fa-f]{6}); --card:#FFFFFF/) || [])[1];
-  check(!!bgDark && !!bgLight, `worst-case grounds found: dark ${bgDark}, light ${bgLight}`);
+  /* The base hues live in the dark root and are NOT redefined by the light
+     theme; only the *T inks are. --pinkT is a *T, so it moves. Resolving per
+     theme rather than assuming either way. */
+  const hueOf = (name, theme) => (theme === 'light' ? tokLight[name] : tokDark[name])
+    || (palette(darkRoot)[name])
+    || (darkRoot.match(new RegExp(`--${name}:(#[0-9A-Fa-f]{6})`)) || [])[1];
+
+  const pill = {
+    dark: (game.match(/:root\{ --pillBase:(#[0-9A-Fa-f]{6}); \}/) || [])[1],
+    light: (game.match(/:root\[data-theme="light"\]\{ --pillBase:(#[0-9A-Fa-f]{6}); \}/) || [])[1],
+  };
+  check(!!pill.dark && !!pill.light, `pill base: dark ${pill.dark}, light ${pill.light}`);
+  /* `[^)]*` stopped at the `)` of the nested var() fallback, so this read NaN
+     and the whole contrast sweep below then passed VACUOUSLY: mixing at NaN
+     gives an unparseable colour, ratio() gives NaN, and `NaN < 4.5` is false,
+     so every failing cell was filtered out as if it had passed. A guard that
+     cannot fail is worse than no guard, so the parse is asserted first and
+     every composited colour is checked for being a colour at all. */
+  const tintPct = Number((game.match(/var\(--chipHue[\s\S]{0,40}?(\d+)%/) || [])[1]);
+  check(Number.isFinite(tintPct) && tintPct > 0 && tintPct <= 20,
+    `the fill carries ${tintPct}% of the hue`);
+
+  const mix = (fg, pct, bg) => {
+    const F = hex(fg), B = hex(bg);
+    return '#' + F.map((v, i) => Math.round(v * pct + B[i] * (1 - pct))
+      .toString(16).padStart(2, '0')).join('');
+  };
   const AA = 4.5;
-  for (const [theme, ink, bg] of [['dark', inkBase, bgDark], ['light', inkLight, bgLight]]) {
-    const bad = Object.entries(rules)
-      .map(([chip, t]) => ({ chip, c: ink[t], r: ratio(ink[t], bg) }))
-      .filter(x => x.c && x.r < AA)
-      .sort((a, b) => a.r - b.r);
-    check(!bad.length, `every chip clears ${AA}:1 on the ${theme} theme`,
-      bad.map(x => `${x.chip} ${x.c} is ${x.r.toFixed(2)}`).join('; '));
+  for (const [theme, ink, base] of [['dark', inkBase, pill.dark], ['light', inkLight, pill.light]]) {
+    const cells = [];
+    for (const [chip, r] of Object.entries(rules)) {
+      const hue = hueOf(r.hue, theme);
+      if (!hue || !ink[r.ink]) continue;
+      /* A chip may override the shared tint, and .opens does: a clipped chip
+         cannot keep a border, so its fill has to carry the shape. Read the
+         override rather than assuming every chip is at the base strength,
+         or the sweep measures the wrong ground and passes for the wrong
+         reason. */
+      const own = (game.match(new RegExp(
+        `\\.chip(?:\\.acc)?\\.${chip}\\s*\\{[^}]*background:color-mix\\(in srgb, var\\(--[a-zA-Z]+\\) (\\d+)%`)) || [])[1];
+      cells.push({ chip, ink: ink[r.ink], on: mix(hue, (own ? Number(own) : tintPct) / 100, base) });
+    }
+    /* The dyed one draws --ink on the plain base, and the three solid ones put
+       a near-black on a saturated fill. Both are in the sweep, not exempt. */
+    cells.push({ chip: 'jamchart', ink: theme === 'dark' ? '#F4F7FB' : '#0D1B2C', on: base });
+    for (const [chip, hue, lit] of [['segue', 'green', '#06210F'],
+                                    ['sandwich', 'green', '#06210F'],
+                                    ['suite', 'violet', '#120A24']])
+      cells.push({ chip, ink: lit, on: hueOf(hue, theme) });
+    const HEX = /^#[0-9A-Fa-f]{6}$/;
+    const unreadable = cells.filter(c => !HEX.test(c.ink) || !HEX.test(c.on));
+    check(!unreadable.length, `  every ${theme} cell resolved to a real colour`,
+      unreadable.map(c => `${c.chip}: ink ${c.ink} on ${c.on}`).join('; '));
+    check(cells.length >= 10, `  ${cells.length} ${theme} chips measured`);
+    const bad = cells.map(c => ({ ...c, r: ratio(c.ink, c.on) }))
+      .filter(c => !(c.r >= AA)).sort((x, y) => x.r - y.r);
+    check(!bad.length, `every chip clears ${AA}:1 against its own fill, ${theme} theme`,
+      bad.map(c => `${c.chip} ${c.ink} on ${c.on} is ${c.r.toFixed(2)}`).join('; '));
   }
 }
-/* THE TWO THAT KEEP A FILL are not descriptions of the song, they are a thing
-   the player can do this turn, and they land on a handful of rows at most. */
-check(/\.chip\.seg\{[^}]*background:color-mix/.test(game),
-  'landing a segue keeps its fill');
-check(/\.chip\.sand\{[^}]*background:var\(--green\)/.test(game),
-  'and so does closing a sandwich');
+/* THE THREE THAT ARE SOLID, not tinted. They are not descriptions of the song,
+   they are a thing the player can do this turn, and they land on a handful of
+   rows at most, so they are the ones allowed to shout. Dark ink on a saturated
+   fill is also the most legible pairing on the row: the sandwich measures
+   8.66:1 against its own green. */
+for (const [sel, what] of [['seg', 'landing a segue'], ['sand', 'closing a sandwich'],
+                           ['suite', 'completing a suite']])
+  check(new RegExp(`\\.chip\\.${sel}\\{[^}]*background:var\\(--(green|violet)\\)`).test(game),
+    `${what} gets a solid fill`);
+/* AND THE TWO THAT ARE SHAPED LIKE WHAT THEY MEAN. A setlist writes a segue as
+   ">", so the chip points at the song it lands on, and a suite link is still a
+   segue. The shape is the thing a player recognises before the word. */
+for (const sel of ['seg', 'suite', 'opens'])
+  check(new RegExp(`\\.chip\\.${sel}\\{[^}]*clip-path:polygon`).test(game),
+    `  and .${sel} keeps the arrow a setlist draws`);
+/* A CLIPPED CHIP CANNOT KEEP A BORDER. The clip cuts the box and the border
+   with it, leaving the right edge as a sliver floating clear of the body: the
+   arrow rendered as a pill with a crumb after it. Anything with a clip-path
+   has to state border-color:transparent and carry its shape in the fill. */
+for (const sel of ['seg', 'suite', 'opens'])
+  check(new RegExp(`\\.chip\\.${sel}\\{[^}]*border-color:transparent`).test(game),
+    `  .${sel} drops the border its clip would slice`);
+
+/* AND THE SHAPE IS LOAD-BEARING, not decoration. SEGUE and the JAM role are
+   both violet and both turn up on the same row: violet is the segue colour
+   everywhere else in the game, and every other hue in the palette is spoken
+   for, so the arrow is the only thing telling them apart. A role must never
+   point at anything or the distinction collapses. */
+{
+  const hueOfChip = (sel) => (game.match(
+    new RegExp(`\\.chip(?:\\.acc)?\\.${sel}\\s*\\{--chipHue:var\\(--([a-zA-Z]+)\\)`)) || [])[1];
+  const shared = hueOfChip('opens');
+  check(!!shared && shared === hueOfChip('jam'),
+    'SEGUE and the JAM role really do share a hue, so this is not a dead guard',
+    `opens ${hueOfChip('opens')}, jam ${hueOfChip('jam')}`);
+  const pointing = roles.map(r => r.chip).filter(r => r && r !== '(none)').filter(r =>
+    new RegExp(`\\.chip\\.acc\\.${r}\\s*\\{[^}]*clip-path`).test(game));
+  check(!pointing.length, 'and no role chip points at anything', pointing.join(', '));
+}
+/* The peak melts, which needs a body to carve out of. The drip vanished with
+   the boxes and comes back with them. */
+check(/\.chip\.acc\.peak\{[^}]*mask:var\(--melt\)/.test(game),
+  'and the peak melts again');
 
 /* THE TIME BAR. Length is the resource the game spends and it was a number you
    had to convert. The 25 minute scale is measured: 20 clips 7.2% of songs, 25
