@@ -186,13 +186,43 @@ you into Set II still holding it.
 10:00, then 15:00, then no more. Time spent spinning is gone — it does not reach
 the encore — so a reroll is a real decision rather than a button to mash.
 
-**Closing a set is a first-class action**, not a footnote — it states what it
-banks, and turns urgent when the set is nearly spent or nothing on offer fits.
-The encore's row shows time banked from the sets and time burned on spins, so
-the trade is visible while it is being made rather than only at the end.
+**Closing a set is your way out, not a play.** The button is prominent and turns
+urgent when the set is nearly spent or nothing on offer fits, and unspent time
+really does carry to the next set. What it does **not** do is pay. Measured over
+400 identical show sequences played greedily, closing early cost points at every
+threshold tried and cost more the earlier it happened:
 
-After the final score, **the one that got away**: the best song you were shown
-and did not play, scored in the role it best suits, so the sting is specific.
+| closed with | Set I | Set II |
+|---|---|---|
+| 4 min left | -8 | -5 |
+| 12 min left | -12 | -18 |
+| 25 min left | -19 | -29 |
+
+100% of those sets ended on the clock, none on the eight-song cap. The cascade
+is not broken: the time score pays on how much of the budget you used, the
+carried minutes inflate the next set's budget as well, and no song in the
+archive is long enough that a 70-minute set could not already hold it. So
+banking buys nothing and pays a short-set penalty in both directions.
+
+Making it a real decision means inventing a reward for it, which is a design
+change rather than a wording one. Until then the copy says what is true, and
+`check_data` forbids any string that sells unspent time as a gain.
+
+After the final score, **the one that got away**: a swap, not a taunt. For each
+pick, the alternatives are the other songs **in that same show**, scored in **the
+same role** the pick ended up filling and capped at the length of the song
+actually taken, so the swap was certainly affordable. The biggest of those gaps
+is what surfaces, and both numbers are printed.
+
+It used to take the best song ever offered, judged in the best of six roles it
+never had to earn, and print one number next to a setlist scored one role per
+song. Over 300 random games it beat every song the player played in **296 of
+them**: median 166 against a best-played of 93 and a median song of 43. A card
+that always says you missed something better than anything you did carries no
+information. Rebuilt, a greedy player sees it in 58% of games with a median gap
+of 11, and a random one in every game with a median gap of 35, which is what a
+regret should look like. Takes under `TEASE_SECONDS` are excluded: the length
+cap let anything short through, and 13% of the regrets it found were snippets.
 
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.

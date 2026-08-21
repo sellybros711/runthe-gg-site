@@ -186,10 +186,18 @@ check(shared.length === 0, 'every role has its own colour',
 
 // Each family needs its own rule, or a chip silently falls back to the base
 // grey and stops meaning anything.
-for (const [sel, what] of [['.chip.acc', 'role'], ['.chip.seg', 'segue'],
+/* The role words are one rule EACH now, so `.chip.acc{` no longer exists and
+   asserting it would be asserting the old shape. What matters is that every
+   family still has a rule of its own: without one a chip silently falls back
+   to the base grey and stops meaning anything. The per-role version of this
+   check, plus the contrast every one of them has to clear, is in "the
+   descriptors are readable" below. */
+for (const [sel, what] of [['.chip.seg', 'segue'],
                            ['.chip.sand', 'sandwich'], ['.chip.rare', 'rarity'],
                            ['.chip.rec', 'recommended'], ['.chip.jc', 'jamchart']])
   check(game.includes(sel + '{'), `${what} chips are styled (${sel})`);
+check(!/\.chip\.acc\{/.test(game),
+  'and the role words are coloured per role rather than from the strip');
 
 // Tie dye is the archive family's alone — it is what makes those two chips
 // unmistakable, and it stops meaning anything if it spreads.
@@ -295,10 +303,29 @@ for (const href of ['/', '/about.html', '/privacy.html', '/terms.html',
    playing against. It shipped once with the set name and the countdown at the
    same size over a full green bar, which reads as healthy progress. */
 check(/\.hc-n\{[^}]*font-size:4\dpx/.test(game), 'the countdown is the biggest thing in the HUD');
-check(/>Respin<\/button>/.test(game), 'the respin button just says Respin');
-check(!/Respin\s*&middot;\s*\$\{fmtClock\(cost\)\}/.test(game),
-      'and does not carry its price in the label');
-check(/class="respin-cost"/.test(game), 'the price is on the confirm instead');
+/* THE RESPIN BUTTON CARRIES ITS PRICE, BUT NOT AS A CLOCK.
+ *
+ * It read "Respin · 5:00" once and the price was taken off, for a good reason
+ * that still holds: an mm:ss beside a 44px mm:ss countdown is a second clock in
+ * a HUD whose whole job is to make the first one the thing you play against.
+ *
+ * But hiding the price entirely put it in a hover title, which a phone never
+ * shows, so the one control on the screen that spends the game's only resource
+ * looked free and could only be priced by pressing it. Both of those are real,
+ * and minutes settle it: the cost is on the face, and with no colon and no
+ * seconds it cannot be misread as the countdown. */
+check(/>Respin <b>\$\{Math\.round\(cost \/ 60\)\} min<\/b><\/button>/.test(game),
+      'the respin button says what it costs');
+check(!/Respin[^<]*\$\{fmtClock\(cost\)\}/.test(game),
+      'in minutes, not as a second clock in the HUD');
+check(/aria-label="\$\{can/.test(game),
+      'and a screen reader gets the whole trade, not just the number');
+check(/class="respin-cost"/.test(game), 'the confirm still spells the price out');
+/* "Time" named the clock it sat beside rather than what pressing it does, which
+   is open the setlist you have built so far. */
+check(/id="openSets"[\s\S]{0,160}?>Setlist<\/button>/.test(game),
+      'and the button beside it is named after what it opens');
+check(!/id="openSets">Time<\/button>/.test(game), 'not after the clock next to it');
 check(/class="nightstrip"/.test(game), 'the HUD shows the shape of the night');
 
 /* The home page's block gaps were six different numbers before they were put
@@ -569,6 +596,92 @@ check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   // The setlist has to come before the regret: you read what you built first.
   check(body.indexOf('<div class="card setlist"') < body.indexOf('<div class="card gotaway"'),
     'and your own setlist outranks the one that got away');
+
+  /* THE REGRET IS A SWAP, and the card has to show both halves of it.
+   *
+   * It used to print one number, "it was worth 176", beside a setlist whose
+   * songs scored 27 to 59, because it took the best song ever offered and
+   * judged it in the best of six roles it never had to earn. Measured over 300
+   * random games it beat every song the player played in 296 of them: median
+   * 166 against a best-played of 93. A card that always says you missed
+   * something better than anything you did is not a finding, and the number it
+   * printed had no peer anywhere on the page.
+   *
+   * Both numbers, the song it is measured against, and the clause saying the
+   * swap was affordable. Any one of them missing and it is a taunt again. */
+  const ga = body.slice(body.indexOf('<div class="card gotaway">'),
+                        body.indexOf('<div class="card wherefrom">'));
+  check(/S\.missed\.took\.subtotal/.test(ga), 'the card shows what the song you took scored');
+  check(/S\.missed\.score\.subtotal/.test(ga), 'and what the one you left scored');
+  check(/S\.missed\.instead\.song/.test(ga), 'naming the song it is measured against');
+  check(/class="ga-fine"/.test(ga) && /no longer than the one you took/.test(ga),
+    'and saying the clock was never what stopped you');
+}
+/* THE TWO MODULES CARRY A CACHE VERSION, and it has to be covered.
+ *
+ * index.html revalidates on every visit; scoring.js and dataLoader.js do not, so
+ * the page reaches them as `./scoring.js?v=N` after a cached index.html met a
+ * fresh scoring.js and served a blank page (#157).
+ *
+ * check-cachebust.mjs is what holds the version to the file, and until now it
+ * only matched `<script src>` tags, so these two imports were invisible to it:
+ * it reported "26 versioned scripts ok" while both files changed three times
+ * under a frozen v=39. This asserts the import form the checker looks for is
+ * the form the page actually uses, because a passing checker that reads
+ * nothing is worse than no checker.
+ */
+console.log('the module cache version');
+{
+  const cb = read('scripts/check-cachebust.mjs');
+  check(/const MOD = /.test(cb), 'the checker looks at module imports as well as script tags');
+  check(/for \(const re of \[TAG, MOD\]\)/.test(cb), 'and runs both over every page');
+  const mods = [...gameBare.matchAll(/from '\.\/([A-Za-z0-9_.-]+\.js)\?v=(\d+)'/g)];
+  check(mods.length >= 2, `the page versions ${mods.length} sibling modules`);
+  /* The checker's own regex, run against the page, has to find what the page
+     has. Reading MOD out of the checker rather than restating it: a guard that
+     writes its own copy of the pattern proves only that the copy works. */
+  const src = (cb.match(/const MOD = \/(.*)\/gm;/) || [])[1];
+  check(!!src, 'the module pattern is readable');
+  const seen = src ? [...read('setlist/index.html').matchAll(new RegExp(src, 'gm'))] : [];
+  check(seen.length === mods.length,
+    `and the checker's own pattern finds all ${mods.length} of them`,
+    `found ${seen.length}`);
+  const man = JSON.parse(read('scripts/cachebust.json'));
+  const page = man['setlist/index.html'] || {};
+  for (const [, name] of mods)
+    check(!!page[name], `  ${name} is recorded in the manifest`);
+}
+
+/* THE SWAP IS BUILT FROM THE PICKS, not from everything ever shown. Passing the
+   flat seen list still runs and still returns a song, so this is asserted at the
+   call site rather than left to the shape of the data. */
+check(/theOneThatGotAway\(S\.drafted, S\.sets\)/.test(gameBare),
+  'the regret is worked out from the rounds you actually played');
+{
+  const sc = read('setlist/scoring.js');
+  const fn = sc.slice(sc.indexOf('export function theOneThatGotAway('),
+                      sc.indexOf('// ── scoring a whole show'));
+  check(fn.length > 200, 'theOneThatGotAway is findable');
+  /* SAME ROLE for both halves, or the two numbers are not comparable and the
+     card is back to grading one song on a curve the other never got. */
+  check(/const role = roleAt\(si, idx, \(sets\[si\] \|\| \[\]\)\.length\);/.test(fn),
+    'the slot the pick really filled decides the role');
+  check(/const took = scorePerf\(d\.perf, role\);/.test(fn)
+    && /const sc = scorePerf\(alt, role\);/.test(fn),
+    'and both songs are scored in it');
+  check(/const idx = at\[si\]\+\+;/.test(fn), 'the slot advances with the picks');
+  /* AFFORDABLE, or the regret was never on offer. */
+  check(/if \(!al \|\| al > len\) continue;/.test(fn),
+    'an alternative longer than the song taken is not a missed chance');
+  /* And the cap lets anything SHORT through, which surfaced a 1:23 snippet as
+     the night's regret in 13% of measured games. This file already has a word
+     for those and does not count them as songs anywhere else. */
+  check(/if \(al < TEASE_SECONDS\) continue;/.test(fn),
+    'nor is a take the game itself calls a tease');
+  /* AND IT HAS TO BE ABLE TO FIND NOTHING. The old card fired every game. */
+  check(/if \(gap <= 0\) continue;/.test(fn), 'only a better song is a regret');
+  check(!/roleAt\(1, 2, 4\)/.test(fn),
+    'no hypothetical best-of-six role is tried on the song you did not play');
 }
 /* FOLDED, NOT DELETED. A <details> so the full working is one tap away, and a
    summary that says what is inside rather than "details". */
@@ -780,6 +893,37 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
     'an open set stops the chain rather than being skipped over');
 }
 
+/* AND THE COPY DOES NOT SELL IT AS A PRIZE.
+ *
+ * The close button read "Banks 12:34 for Set II" and the rules read "you decide
+ * when a set ends". Measured over 400 identical show sequences played greedily,
+ * closing a set early cost points at every threshold tried and cost more the
+ * earlier it happened: Set I -8 at four minutes out to -19 at twenty-five, Set
+ * II -5 out to -29. 100% of sets ended on the clock, none on the eight song
+ * cap. The cascade is not broken; there is simply nothing banking buys, since
+ * the time score pays on budget used and the carried minutes inflate the next
+ * set's budget as well.
+ *
+ * So no player-facing string may present unspent time as a gain on its own.
+ * "carries" is a fact about where it goes; "banks" is a promise about what it
+ * is worth, and the game cannot keep it. */
+{
+  const say = gameBare.replace(/\s+/g, ' ');
+  check(!/\bBanks? \$\{fmtClock/.test(say) && !/\bBank \$\{fmtClock/.test(say),
+    'no button offers to bank the clock');
+  check(!/you decide when (a|the) set ends/i.test(say),
+    'and the rules do not promise a decision the scoring punishes');
+  /* The cost has to be said where the choice is made, or leaving it out is the
+     same omission in the other direction. */
+  check(/a short set scores less/.test(say),
+    'the close button states what a short set costs');
+  check(/the crowd notices a short set/.test(say),
+    'and so does the hint beside it');
+  /* WHERE it goes is still true and still said: the cascade is real. */
+  check(/carries to \$\{esc\(bankGoesTo\(si\)\)\}/.test(gameBare),
+    'while still saying where the time actually goes');
+}
+
 /* THE SHARE IS THE SETLIST. Under it sat three more lines: a stat line, the
    breadth tags, and the headline in quotes. The stat line's own clock was the
    worst of it, since fmtClock is mm:ss and a two and a half hour show read as
@@ -973,6 +1117,146 @@ check(/!S\.sets\.flat\(\)\.length \? `<div class="firsthint">/.test(gameBare),
     'the start step is one paragraph, not three');
 }
 
+/* PLAYED COLD, START TO SCORECARD, WITH NOTHING IN LOCALSTORAGE. Six things a
+ * first-time player was never told, each one measured on the rendered page
+ * rather than argued about.
+ */
+console.log('arriving knowing nothing');
+
+/* Both helpers are declared here rather than reached for: the walkthrough
+   section further down has its own copies, and a shared one at module scope
+   would be read by this block before its own initialiser ran. */
+const cdSlice = (from, to) => {
+  const i = gameBare.indexOf(from);
+  return i < 0 ? '' : gameBare.slice(i, gameBare.indexOf(to, i + from.length));
+};
+const homePage = cdSlice('function renderHome(){', '\n}');
+check(!!homePage, 'renderHome can be read');
+
+/* 1. THE RULES WERE BELOW THE PLAY BUTTON. "How it works" is the clearest
+      explanation on the site and it sat 420px under the thing it explains, so
+      the walkthrough existed to carry it up. It is above the band panel now,
+      and the order is asserted because it is one edit away from drifting back:
+      both blocks live in the same template literal. */
+{
+  const how = homePage.indexOf('<section class="how">');
+  const bands = homePage.indexOf('<div class="bands">');
+  check(how > -1 && bands > -1, 'the home screen has rules and a band panel');
+  check(how < bands, 'and the rules come before the button that needs them');
+  /* Exactly one copy of it. It was moved rather than duplicated, and a second
+     "How it works" further down is the obvious bad merge. */
+  check((homePage.match(/<section class="how">/g) || []).length === 1,
+    'stated once, not twice');
+}
+/* AND THE HERO STATES THE LOOP. "Choose a band. Build the show you've always
+   dreamed of." is a tagline: it says nothing about what a turn is. The three
+   facts a player needs before the first press are one show at a time, one song
+   off each, and that the song costs its running time. */
+{
+  const hero = homePage.slice(homePage.indexOf('<div class="hero">'),
+    homePage.indexOf('</div>', homePage.indexOf('<p>', homePage.indexOf('<div class="hero">'))));
+  /* \s+ between the words rather than a literal space: the source wraps these
+     sentences at 80 columns, so where a phrase breaks across two lines is an
+     accident of formatting and a guard that depends on it fails on a reflow. */
+  check(/one\s+real\s+concert\s+at\s+a\s+time/i.test(hero),
+    'the hero says one show at a time');
+  check(/a\s+song\s+off\s+each/i.test(hero), 'and one song off each');
+  check(/running\s+time/i.test(hero), 'and what that song costs');
+}
+
+/* 2. THE SAMPLE BAND WAS ON THE LIVE PAGE, one tap under the real one, over the
+      words "Made-up data we use for testing". Nothing on the page told a new
+      player that is not part of the game. */
+check(/const DEV_MODE = /.test(gameBare), 'the sample band needs dev mode');
+check(/const test = DEV_MODE \? BANDS\.filter\(b => b\.sample\) : \[\]/.test(gameBare),
+  'and the home screen offers it only there');
+check(/dev'\) === '1'/.test(gameBare) && /localhost/.test(gameBare),
+  'which is localhost or an explicit ?dev=1');
+
+/* 3. TEN UNDEFINED WORDS ON THE DRAFT SCREEN, counted on one rendered list:
+      SEGUE, LANDS THE SEGUE, JAMCHART, opener, peak, jam, cover, closer,
+      encore and "44 show gap". Every one is a scoring input, so not knowing
+      them is not knowing what the game pays for. Each term the draft can print
+      has to be defined in the glossary, and the list is derived from the chips
+      the renderer can emit rather than typed out here, so a new chip fails
+      this until it is explained. */
+{
+  /* To the next sheet, not to the next `</div>`: the glossary is nested markup
+     and the first `</div>` after it is one of its own rows. */
+  const key = cdSlice('id="keySheet"', '<div class="sheet"');
+  check(!!key && /id="keyBtn"/.test(gameBare), 'the draft screen opens a glossary');
+  check(/openKey\(\); return;/.test(gameBare), 'and the button is wired');
+  /* AND THE WAY OUT IS BOUND WHERE THE BUTTON ACTUALLY IS. The close button is
+     static markup outside #app, so wiring it into the app's own click handler
+     leaves the backdrop as the only exit. */
+  check(/getElementById\('keySheet'\)\.addEventListener/.test(gameBare),
+    'and the sheet closes itself');
+  const draft = cdSlice('function renderDraft(){', '\n}');
+  /* The leading `${...}` is optional because the sandwich chip opens with its
+     own icon constant, and a chip that draws an icon still needs defining. */
+  const chipped = [...new Set([...draft.matchAll(
+    /<span class="chip [a-z]+">(?:\$\{[A-Z_]+\})?([A-Z][A-Za-z ]*)</g)].map(m => m[1].trim()))];
+  check(chipped.length >= 5, `the draft can print ${chipped.length} named chips`);
+  const undefinedTerms = chipped.filter(t => !key.includes(t));
+  check(!undefinedTerms.length, 'and every one of them is in the glossary',
+    undefinedTerms.length ? `missing: ${undefinedTerms.join(', ')}` : '');
+  /* The role chips are interpolated (`acc.chip`), so they never appear as
+     literals above. They come from accentOf, which is the one list of them. */
+  const roles = [...new Set([...gameBare.matchAll(/chip: '([a-z]+)' \}/g)].map(m => m[1]))];
+  check(roles.length >= 6, `accentOf can print ${roles.length} role chips`);
+  const undefinedRoles = roles.filter(t => !key.includes(`>${t}<`));
+  check(!undefinedRoles.length, 'and the glossary defines each role too',
+    undefinedRoles.length ? `missing: ${undefinedRoles.join(', ')}` : '');
+  /* IN THE COLOUR THE GAME ACTUALLY USES, and by the same rule rather than a
+     copy of it. Each of these carried an inline --acc, because a role chip
+     used to read its colour off the song row it sits on and a sheet has no
+     song row: shipped without one, the whole group drew in the fallback ink
+     and the key taught a colour that appears nowhere in the game.
+     The colour is on the class now, so key and list cannot drift. What is
+     left to check is that the key uses the class at all, and that the class
+     really is what carries the colour (asserted per role, with the contrast
+     each has to clear, under "the descriptors are readable"). */
+  const accents = [...gameBare.matchAll(/return \{ v: 'var\(--[a-zA-Z]+\)',\s+chip: '([a-z]+)' \}/g)]
+    .map(m => m[1]);
+  check(accents.length >= 6, `accentOf assigns ${accents.length} roles`);
+  const uncoloured = accents.filter(a => !key.includes(`class="chip acc ${a}"`));
+  check(!uncoloured.length, 'each shown as the chip class that colours it',
+    uncoloured.length ? `wrong: ${uncoloured.join(', ')}` : '');
+  check(!/class="chip acc [a-z]+" style="--acc:/.test(key),
+    'and not by an inline colour the list does not use');
+  /* The two marks that are not chips and were explained nowhere at all. */
+  check(/class="keyseg"/.test(key), 'the segue mark after a title is explained');
+  check(/class="keybar"/.test(key), 'and so is the coloured length bar');
+}
+
+/* 4. TWO DIFFERENT "SET I"s ON ONE SCREEN. The list is grouped by the sets of
+      the show that was dealt while the clock above says you are filling Set I,
+      and nothing distinguished them. */
+check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(gameBare),
+  'the dealt show\'s sets are named as the band\'s');
+
+/* 5. THE SCORE LED WITH A NUMBER THAT MEANS NOTHING ALONE. 1053 at 124px, and
+      the game's own answer to "was that good" ("80% of it") in 13px prose in a
+      card below. The percentage is now under the score, in the grade colour. */
+{
+  const box = gameBare.slice(gameBare.indexOf('<div class="scorebox">'),
+    gameBare.indexOf('</div>', gameBare.indexOf('band-meta', gameBare.indexOf('<div class="scorebox">'))));
+  check(/class="sb-pct"/.test(box), 'the percentage is inside the score box');
+  check(/best show those nights had in them/.test(box), 'and says what it is a percentage of');
+  check(/grade-\$\{gradeScore\(r\.total\)\}/.test(box), 'coloured by the same grade as the score');
+  /* Above the headline, not below it: the quip is flavour and this is the
+     answer to the question the player is actually asking. */
+  check(box.indexOf('sb-pct') < box.indexOf('class="headline"'),
+    'and it reads before the quip');
+  /* NOT SAID TWICE. The ceiling card used to carry the same percentage in the
+     same sentence, which is what made neither of them land. */
+  /* The interpolation is part of the anchor: rankCard reuses `.ceiling` for
+     the leaderboard panel and comes first in the file, so `class="card
+     ceiling` alone sliced the wrong card and the guard could not fail. */
+  const ceil = cdSlice('class="card ceiling${gap <= 0', 'ceil-fine');
+  check(!/\$\{pct\}%/.test(ceil), 'the card below does not repeat the figure');
+}
+
 /* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
  *
  * data_drift lets a derived value move only for a song whose own inputs moved.
@@ -1091,10 +1375,110 @@ check(/\.chip\{[^}]*background:none/.test(game), 'the base chip has no fill');
 check(/\.chip\{[^}]*padding:0/.test(game), 'and no padding');
 check(/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
   'descriptors are separated by a middot instead');
-// The role, rarity, monotony and archive words are colour only now.
-for (const k of ['acc', 'rare', 'mono', 'jc'])
+// The rarity, monotony and archive words are colour only. The role words are
+// too, but one rule per role rather than one shared rule, so they are checked
+// against accentOf's list in the chip-legibility block below.
+for (const k of ['rare', 'mono', 'jc'])
   check(new RegExp(`\\.chip\\.${k}\\{color:var\\(--[a-zA-Z]+\\);\\}`).test(game),
     `the ${k} descriptor is colour only`);
+
+/* AND THEY HAVE TO BE READABLE, which is a different claim from having a
+ * colour and was not being made at all.
+ *
+ * A chip is text. It borrowed the accent tokens, which are a 3px STRIP down the
+ * side of a row, and a strip has no contrast requirement because nobody reads
+ * a bar. Measured against the worst background each theme actually puts a chip
+ * on, four of them failed AA in the light theme and one, the opener, failed
+ * even the 3:1 large-text floor at 2.93:1.
+ *
+ * Computed here rather than listed, so a palette change cannot quietly drop one
+ * back under the bar. Everything below is derived from the file: the chip ink
+ * tokens, their light-theme overrides, and which rule each role points at.
+ */
+console.log('the descriptors are readable');
+{
+  const hex = h => { h = h.replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i,i+2),16)); };
+  const lin = c => { c/=255; return c<=.03928 ? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
+  const lum = h => { const [r,g,b]=hex(h); return .2126*lin(r)+.7152*lin(g)+.0722*lin(b); };
+  const ratio = (a,b) => { const x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+
+  /* 11px at weight 900 is NORMAL text to WCAG. Large starts at 18.66px bold,
+     so the bar is 4.5 and not 3. */
+  const size = (game.match(/\.chip\{[^}]*font-size:([\d.]+)px/) || [])[1];
+  check(Number(size) >= 11, `the chip is ${size}px, big enough to be read`);
+  const track = (game.match(/\.chip\{[^}]*letter-spacing:([\d.]+)px/) || [])[1];
+  /* Tracking is a ratio to the size, not an absolute: 1.6px on 9.5px type is
+     17% of the em, which spaces a word into loose letters. */
+  check(Number(track) / Number(size) <= 0.09,
+    `tracking is ${(100 * Number(track) / Number(size)).toFixed(0)}% of the em, not a row of separate letters`);
+
+  /* THE ACCENT PALETTE IS REDEFINED PER THEME, so it has to be read per theme.
+     Scraping --*T across the whole file collects the dark block and then the
+     light one overwrites it, which had this guard measuring light values
+     against the dark ground and reporting nine failures that do not exist. */
+  const palette = (block) => {
+    const t = {};
+    for (const m of block.matchAll(/--([a-zA-Z]+T):\s*(#[0-9A-Fa-f]{6})/g)) t[m[1]] = m[2];
+    return t;
+  };
+  const darkRoot  = (game.match(/:root\{\s*\n\s*--bg:#071426;[\s\S]*?\n  \}/) || [''])[0];
+  const lightRoot = (game.match(/:root\[data-theme="light"\]\{\s*\n\s*--bg:[\s\S]*?\n  \}/) || [''])[0];
+  check(!!darkRoot && !!lightRoot, 'both theme palettes are readable');
+  const tokDark = palette(darkRoot);
+  const tokLight = { ...tokDark, ...palette(lightRoot) };
+
+  /* The ink names, and which accent each one defaults to. */
+  const baseBlock = (game.match(/:root\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const defaults = {};
+  for (const m of baseBlock.matchAll(/--(c[A-Z][a-zA-Z]*):var\(--([a-zA-Z]+)\)/g))
+    defaults[m[1]] = m[2];
+  const lightBlock = (game.match(/:root\[data-theme="light"\]\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const inkBase = {}, inkLight = {};
+  for (const [name, acc] of Object.entries(defaults)) {
+    inkBase[name] = tokDark[acc];
+    inkLight[name] = tokLight[acc];
+  }
+  for (const m of lightBlock.matchAll(/--(c[A-Z][a-zA-Z]*):(#[0-9A-Fa-f]{6})/g))
+    inkLight[m[1]] = m[2];
+  check(Object.keys(inkBase).length >= 8, `${Object.keys(inkBase).length} chip inks are defined`);
+
+  /* THE MEDIA-QUERY COPY HAS TO MATCH THE ATTRIBUTE COPY. The theme is set
+     three ways (system, [data-theme=light], [data-theme=dark]) and a value
+     redefined in only one of them makes the toggle disagree with the OS. */
+  const mq = (game.match(/:root:not\(\[data-theme="dark"\]\)\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const pairs = s => [...s.matchAll(/--(c[A-Z][a-zA-Z]*):(#[0-9A-Fa-f]{6})/g)]
+    .map(m => `${m[1]}=${m[2]}`).sort().join(' ');
+  check(!!mq && pairs(mq) === pairs(lightBlock),
+    'the light theme reads the same by system setting and by toggle');
+
+  /* Which ink each chip draws in, read off the rules rather than assumed. */
+  const rules = {};
+  for (const m of game.matchAll(/\.chip(?:\.acc)?\.([a-z]+)\s*\{color:var\(--(c[A-Z][a-zA-Z]*)\);\}/g))
+    rules[m[1]] = m[2];
+  const roleNames = roles.map(r => r.chip).filter(c => c && c !== '(none)');
+  const unstyled = roleNames.filter(r => !rules[r]);
+  check(!unstyled.length, `all ${roleNames.length} roles from accentOf draw in a chip ink`,
+    unstyled.length ? `no rule for ${unstyled.join(', ')}` : '');
+  for (const extra of ['rare', 'mono', 'jc'])
+    check(!!rules[extra], `  and so does ${extra}`);
+
+  /* THE WORST BACKGROUND EACH THEME PUTS A CHIP ON. In the dark that is --card
+     (lighter than --bg, so closer to light ink); in the light it is --bg
+     (darker than --card). A chip appears on both: song rows sit on the page,
+     the glossary sits on a card. */
+  const bgDark = (game.match(/--bg:#071426; --card:(#[0-9A-Fa-f]{6})/) || [])[1];
+  const bgLight = (game.match(/--bg:(#[0-9A-Fa-f]{6}); --card:#FFFFFF/) || [])[1];
+  check(!!bgDark && !!bgLight, `worst-case grounds found: dark ${bgDark}, light ${bgLight}`);
+  const AA = 4.5;
+  for (const [theme, ink, bg] of [['dark', inkBase, bgDark], ['light', inkLight, bgLight]]) {
+    const bad = Object.entries(rules)
+      .map(([chip, t]) => ({ chip, c: ink[t], r: ratio(ink[t], bg) }))
+      .filter(x => x.c && x.r < AA)
+      .sort((a, b) => a.r - b.r);
+    check(!bad.length, `every chip clears ${AA}:1 on the ${theme} theme`,
+      bad.map(x => `${x.chip} ${x.c} is ${x.r.toFixed(2)}`).join('; '));
+  }
+}
 /* THE TWO THAT KEEP A FILL are not descriptions of the song, they are a thing
    the player can do this turn, and they land on a handful of rows at most. */
 check(/\.chip\.seg\{[^}]*background:color-mix/.test(game),
@@ -1560,10 +1944,12 @@ check(!!fanLabel && /white-space:nowrap/.test(fanLabel[0]), 'the row labels do n
 check(!!fanLabel && Number((fanLabel[0].match(/flex:0 0 (\d+)px/) || [])[1]) >= 80,
   'and the label column is wide enough for the longest of them');
 
-/* THE WALKTHROUGH, and the measurement that says it has to exist. On a 390x844
-   screen the "Draft a setlist" button sits at 414px while the first rule starts
-   at 809px and all five end below the fold, so a first-time player meets the
-   button 400px before they meet a single word of explanation. */
+/* THE WALKTHROUGH. It used to carry the rules, because on a 390x844 screen the
+   "Draft a setlist" button sat at 414px and the first rule at 809px, so a
+   first-time player met the button 400px before they met a word of
+   explanation. That was a layout problem being papered over with a modal, and
+   the layout is fixed: the rules are above the band panel now and the loop is
+   in the hero. What is left is two steps and a pointer at the tab bar. */
 console.log('the walkthrough');
 check(/const GUIDE_STEPS = \[/.test(gameBare), 'a first visit gets walked through the page');
 check(/id="guide"/.test(gameBare), 'the overlay is in the markup');
@@ -1581,32 +1967,66 @@ check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
 /* EVERY STEP AIMS AT SOMETHING THAT EXISTS. The arrow is positioned from the
    target's measured rect, so a renamed hook does not throw, it silently points
    at nothing. */
-for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]',
-  '[data-go="tour"]', '[data-go="songs"]', '[data-go="browse"]', '[data-go="profile"]'])
-  check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
-    `a step aims at ${sel}`);
+const guideSrc = (() => {
+  const at = gameBare.indexOf('const GUIDE_STEPS = [');
+  return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\n];', at));
+})();
+check(!!guideSrc, 'GUIDE_STEPS can be read');
+check(guideSrc.includes(`aim: () => document.querySelector('.band:not(.soon) [data-start]')`),
+  'a step aims at the play button');
+check(guideSrc.includes(`aim: () => document.getElementById('tabbar')`),
+  'and a step aims at the tab bar');
 
-/* AND EVERY BUTTON ON THE HOME SCREEN HAS A STEP, which is the guard that
-   matters, because the other direction is the one that actually failed. The
-   walkthrough shipped covering Leaderboard and Your shows; two commits later
-   On tour and Every show were added to the same row and nothing said a word
-   about them, which is precisely the gap the walkthrough exists to close,
-   reopened by the person who closed it.
+/* IT STAYS SHORT. Seven steps is not a how-to-play, it is a product tour, and
+   five of those seven walked past screens that are now permanent tabs. The
+   count is asserted rather than trusted because the failure mode is additive:
+   every new screen wants a step, and nobody ever removes one. */
+const stepCount = (guideSrc.match(/^  \{$/gm) || []).length;
+check(stepCount > 0 && stepCount <= 3,
+  `the walkthrough is ${stepCount} steps before the first press`);
+
+/* AND EVERY SCREEN THE HOME PAGE LINKS TO IS ON THE TAB BAR, which is the
+   guard that matters and the one direction that actually failed before: the
+   walkthrough shipped covering Leaderboard and Your shows, two commits later
+   On tour and Every show were added to the same row, and nothing said a word
+   about them. The step that covers them is now one step naming a bar, so the
+   thing to assert is that the bar really does reach all of them.
    Reading renderHome rather than the whole file on purpose: `data-go="browse"`
-   also appears on the tour screen, and that one is a cross-link, not a thing a
-   first visit has to be introduced to. */
+   also appears on the tour screen, and that one is a cross-link. */
 const homeSrc = (() => {
   const at = gameBare.indexOf('function renderHome(){');
   return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\n}', at));
 })();
 check(!!homeSrc, 'renderHome can be read');
 const homeGos = [...new Set([...homeSrc.matchAll(/data-go="([a-z]+)"/g)].map(m => m[1]))];
-const aimed = [...new Set([...gameBare.matchAll(/aim: \(\) => document\.querySelector\('\[data-go="([a-z]+)"\]'\)/g)]
-  .map(m => m[1]))];
-const unexplained = homeGos.filter(g => !aimed.includes(g));
+const tabs = [...new Set([...gameBare.matchAll(/data-tab="([a-z]+)"/g)].map(m => m[1]))];
+/* A screen with no tab of its own still counts as covered when TAB_LIT lights
+   another tab for it: "browse" lives under You, and that is a real answer to
+   "where did that go", not a gap. */
+const litSrc = (() => {
+  const at = gameBare.indexOf('const TAB_LIT = {');
+  return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('};', at));
+})();
+const lit = [...new Set([...litSrc.matchAll(/([a-z]+):\s*'[a-z]+'/g)].map(m => m[1]))];
+const stranded = homeGos.filter(g => !tabs.includes(g) && !lit.includes(g));
 check(homeGos.length >= 4, `the home screen offers ${homeGos.length} screens`);
-check(!unexplained.length, 'every screen the home screen links to gets a step',
-  unexplained.length ? `no step for ${unexplained.map(g => `"${g}"`).join(', ')}` : '');
+check(tabs.length >= 5, `the tab bar carries ${tabs.length} tabs`);
+check(!stranded.length, 'every screen the home screen links to is on the tab bar',
+  stranded.length ? `no tab reaches ${stranded.map(g => `"${g}"`).join(', ')}` : '');
+/* AND THE STEP NAMES THEM. Pointing a ring at a bar of five icons and saying
+   nothing about them is the same gap in a smaller box, so each tab's own label
+   has to appear in the step's prose. Home is exempt: it is the screen the step
+   is being read on. */
+const tabWords = [...gameBare.matchAll(/data-tab="([a-z]+)"[\s\S]{0,900}?<span>([A-Za-z]+)<\/span>/g)]
+  .map(m => ({ tab: m[1], word: m[2] })).filter(t => t.tab !== 'home');
+const tabStep = (() => {
+  const at = guideSrc.indexOf(`aim: () => document.getElementById('tabbar')`);
+  return at < 0 ? '' : guideSrc.slice(at);
+})();
+check(tabWords.length >= 4, `the bar labels ${tabWords.length} tabs beyond Home`);
+const unnamed = tabWords.filter(t => !new RegExp(`<b>${t.word}</b>`).test(tabStep));
+check(!unnamed.length, 'and the step says what each one is',
+  unnamed.length ? `unexplained: ${unnamed.map(t => t.word).join(', ')}` : '');
 check(/class="card band"/.test(gameBare) && /class="card band soon"/.test(gameBare)
   && /data-start="\$\{b\.id\}"/.test(gameBare),
   'and the home screen still carries the hooks they aim at');
@@ -1734,14 +2154,18 @@ check(!/class="homelinks"/.test(homeSrc), 'the old grid of equal ghost buttons i
 {
   /* The order is load-bearing and was wrong once. The setlist is the LAST
      show's detail, so a button between them separates a heading from the thing
-     it heads; the countdown is one line and earns the space above the primary
-     action. Measured: 470px for the draft button this way against 665px with
-     the whole live section on top of it. */
+     it heads. Measured: 470px for the draft button with the live section split
+     around it, against 665px with the whole of it on top.
+     The COUNTDOWN then moved below the button too, and that was measured as
+     well: hoisting the rules above this panel put the draft button at 915px on
+     a 390x844 screen, and the countdown was 91px of the way back down. The
+     button now sits at 765px, above the fold, which is the only reason it is
+     ordered this way. */
   const iNext = homeSrc.indexOf('class="nextline"');
   const iBtn = homeSrc.indexOf('data-start="${b.id}"');
   const iSet = homeSrc.indexOf('class="lastset"');
-  check(iNext > -1 && iBtn > iNext && iSet > iBtn,
-    'countdown, then the button, then the setlist under its own heading');
+  check(iBtn > -1 && iNext > iBtn && iSet > iNext,
+    'the button, then the countdown, then the setlist under its own heading');
 }
 /* The separator TRAILS its song: in a setlist the mark belongs to the song it
    leaves, and reading it off the previous song put every caret one title late. */
