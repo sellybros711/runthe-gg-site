@@ -114,6 +114,119 @@ node scripts/setlist/check_data.mjs
 node setlist/verify-scoring.mjs
 ```
 
+## Run The Floor, the NBA game
+
+`hoops/`, at `/hoops/`. The football and college football skeleton reskinned for
+basketball, and the direct sibling of `baseball/`, which is the previous reskin
+of the same thing. Unlike the two one-file games above, it is split the way the
+football and college games are: `engine.js` and `run.js` load beside the page and
+carry cache versions, so **read the cache-busting section above before editing
+either**.
+
+It is an **unlaunched preview**, on the same footing as the wrestling game:
+
+| | wrestling | hoops | setlist |
+|---|---|---|---|
+| in `sitemap.xml` | no | no | **yes** |
+| indexable | no, noindexed | no, noindexed | **yes** |
+| carries the AdSense tag | no | no | yes |
+| linked from the homepage or nav | no | no | no |
+
+That noindex is doing more work than it looks like. `scripts/check-adsense.mjs`
+audits every INDEXABLE page and skips noindexed ones, so the robots tag is the
+only thing keeping an unfinished game out of the surface AdSense reviews. Remove
+it and nothing fails: hoops silently becomes the 32nd indexable page, and the
+checker then starts demanding an ad tag on it. `hoops/check-posture.mjs` asserts
+all four rows of that column, so launching the game means editing a guard on
+purpose.
+
+The regression suite, none of which needs a network:
+
+```
+node hoops/check-posture.mjs      discoverability, per the table above
+node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
+node hoops/verify.mjs             draft legality, seed replay, and calibration
+```
+
+`verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
+the constants: it states what the balance is supposed to look like and flags what
+is outside its band.
+
+**Two targets are out of band today and no constant will fix them.** The four
+numbers that turn win shares into a record are now FITTED to twenty-two real NBA
+records (rms 3.5 wins), so a roster is worth what it was worth in life: rating
+all 1403 team-seasons puts the 2012 Bobcats last at 10.5 wins and the 1996 Bulls
+first at 73.8. What is still off is the GAP between a thoughtless draft and a
+perfect one, which never exceeds about six wins at any cap, because
+`build-players.mjs` prices players off `p.w` alone. Price being a monotone
+function of value means the board holds no bargains, so best-available is close
+to optimal. Fixing it means pricing on something other than value, or widening
+what roster shape is worth. Both are design changes. The TARGETS block says all
+of this at the point of failure, so read it there rather than trusting this
+paragraph to stay current.
+
+**Refit, do not nudge.** If the data changes shape, re-run the solve rather than
+moving one constant: they trade off against each other, and the reason the
+previous set was uniformly 15 wins low is that no single number showed it.
+
+### The data pipeline
+
+Basketball-Reference is **blocked from the dev sandbox and open from GitHub's
+runners**, the same split `scripts/build-register.mjs` documents. So the fetch
+cannot be run here, and `.github/workflows/hoops-data.yml` exists to run it.
+That workflow file is also on `main`, on its own, because GitHub will not
+dispatch a `workflow_dispatch` workflow unless it exists on the default branch.
+
+```
+node hoops/build/fetch-nba.mjs --from 1974 --to 2025   box scores, win shares, position, team
+node hoops/build/fetch-draft.mjs --from 1960           draft year and college
+node hoops/build/fetch-teams.mjs                       franchises (this one DOES run locally)
+node hoops/build/build-players.mjs --from hoops/build/raw/nba_player_seasons.json
+```
+
+Things worth knowing before you change it:
+
+- **A season page carries the PLAYOFF table too.** The scrape must stay scoped to
+  the regular-season table, which `seasonTables()` does by table id and document
+  order, either of which alone is a silent failure. This shipped once: win shares
+  join on player and club, so a finalist's playoff row simply overwrote his
+  season, Jordan's 1996 arrived at 4.7 win shares instead of 20.4, and nothing
+  failed. `verify.mjs` now asserts the shape of the win-share distribution plus
+  six great seasons by name.
+- **Never demand a particular way of writing a link.** The draft fetch returned
+  zero picks for sixty-six years on four separate runs because the parser wanted
+  `href="/players/...`, which assumes a relative origin, a double quote, and
+  nothing after `.html`. Six of seven plausible forms fail that. Ask for the
+  path.
+- **Not every season is 82 games.** 1999 played 50, 2012 66, 2021 72, and 2020
+  between 63 and 75 by club. Win shares are a counting stat, so `build-players`
+  normalizes each club to an 82 game schedule, or Iverson's 1999 MVP season
+  arrives looking like a rotation guard. A club that played 78 or more counts as
+  full: in the modern game nobody plays all 82, and treating rest days as a short
+  season inflates recent players.
+- **Draft year and college are on no season page.** They are chemistry inputs,
+  so without `fetch-draft.mjs` the `alma_mater` and `draft_class` links are
+  permanently silent rather than wrong. It reads the per-year draft pages (about
+  seventy requests) rather than five thousand player pages.
+- **A playing-time floor of 12 mpg across 20 games** is applied at build time.
+  Without it the wheel spends most of its time on players who appeared in nine
+  games, and every visitor downloads three times the file.
+- **`hoops/data/teams.json` is a second source** (the static franchise table in
+  `nba_api`) joined on the team code. NBA.com and BBRef disagree on three codes,
+  and BBRef's `CHA` is the **Bobcats** while `CHO` is the Hornets, which is a
+  different club rather than an alias. `check-posture.mjs` asserts every team
+  code in the player data has a franchise row, because that join fails silently.
+
+The fetch has now run. `hoops/data/players.json` holds **16,057 player-seasons
+from 1974 to 2025**, 14,612 of them with a draft year and 13,109 with a college.
+If it ever holds 171 rows again, the game has fallen back to
+`hoops/build/seed-rosters.mjs`: values entered from memory and rounded, which
+must never be shown to a player as a fact about a real season. The dev banner
+said so and has come off, because saying it now would be false in the other
+direction.
+
+## Segue's data
+
 Its data refreshes itself daily at 6am Eastern
 (`.github/workflows/setlist-data.yml`) and commits three files:
 `goose.csv` (performances), `goose_shows.csv` (every show, past and future,

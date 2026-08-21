@@ -1,0 +1,61 @@
+name: Hoops checks
+
+# Run The Floor is headless underneath: the engine and the draft loop touch no
+# DOM, so a whole 82 game season can be replayed from a seed in Node. This
+# workflow is what that buys. All three commands run locally, unchanged:
+#
+#   node hoops/check-posture.mjs        the game stays out of the indexed site
+#   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
+#   node hoops/verify.mjs               draft rules, replay, and the calibration
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'hoops/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/hoops-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hoops/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/hoops-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: hoops-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # FIRST, because it is the one with consequences beyond this game. The
+      # robots tag on hoops/index.html is what keeps an unfinished game out of
+      # the surface AdSense reviews, and losing it fails nothing on its own.
+      - name: Discoverability posture
+        run: node hoops/check-posture.mjs
+
+      # The fetcher can only run where Basketball-Reference is reachable, which
+      # is not the dev sandbox, so its parsers are tested against saved markup.
+      # A BBRef redesign that moves a column fails here rather than silently
+      # returning zero rows six weeks later.
+      - name: Fetch parsers
+        run: node hoops/build/check-fetch.mjs
+
+      # Draft legality over 400 drafts (the cap, slot eligibility, position
+      # limits, draw limits), seed replay, and then the calibration report.
+      # The report is printed rather than asserted on purpose: read the TARGETS
+      # block in the log after any change to the data or the constants.
+      - name: Engine and draft rules
+        run: node hoops/verify.mjs

@@ -4476,8 +4476,15 @@ const ARCADE_GAMES=[
   ['Number Game','#F2B632'],['Odd One Out','#B79BF6'],['Career Path','#48D17A'],['Rank It','#F778AE'],
   ['Alma Mater','#96B93C'],['High Low','#FF8A3D']
 ];
+/* Owner: "can we remove the arcade pop up ad from the run the tour home page?" — no, it no longer
+   opens itself on the title screen. Flip this to true to bring it back: the overlay, its styling and
+   the ?arcadead=1 device check are all still here and still work, so this is a one-word restore.
+   Scope note: this is the RunTheTour popup only. The site-wide house ad described above (shared keys
+   with /assets/arcade-ad.js, used by the homepage and the NFL game) is a separate surface, untouched. */
+const ARCADE_AD_ENABLED=false;
 function maybeArcadeAd(force){ try{
   if(!force){
+    if(!ARCADE_AD_ENABLED) return;                        // owner: taken off the home screen
     if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
     if(S.overlay || S.screen!=='title') return;
     if(typeof tourRunning==='function' && tourRunning()) return;              // a guided tour (e.g. the Roster hint) owns the screen — never stack the ad on it

@@ -1,6 +1,7 @@
 name: Dash check
 
-# Em dashes and en dashes are banned in the wrestling game. See CLAUDE.md.
+# Em dashes and en dashes are banned in the wrestling game and in hoops. See
+# CLAUDE.md, and the GUARDED list at the top of scripts/check-dashes.mjs.
 # Runnable locally with the exact same command:
 #   node scripts/check-dashes.mjs
 #
@@ -10,12 +11,14 @@ on:
   pull_request:
     paths:
       - 'wrestling/**'
+      - 'hoops/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
     branches: [main]
     paths:
       - 'wrestling/**'
+      - 'hoops/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}
