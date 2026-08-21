@@ -1216,6 +1216,23 @@ function clubRung(rows,club){
   });
   return rung;
 }
+/* All thirty two at once, in one pass. The unread dots have to ask "which clubs have I
+   unlocked" every time the profile paints, and thirty two separate walks over five hundred
+   rows to answer one question is thirty one walks too many. */
+function clubRungs(rows){
+  const out={};
+  (rows||[]).forEach(function(r){
+    if(!r||r.run_mode!=='club'||!r.franchise) return;
+    const k=r.franchise;
+    const cur=out[k]||0;
+    let v=Math.max(cur,1);
+    if(isTrue(r.made_playoffs)) v=Math.max(v,2);
+    if(isTrue(r.title_won)) v=3;
+    out[k]=Math.max(cur,v);
+  });
+  return out;
+}
+
 /* The database hands booleans back as true, 't' and 'true' depending on the path they came
    in by, which is why achievements.js has this function too. */
 function isTrue(v){ return v===true||v===1||v==='t'||v==='true'||v==='1'; }
@@ -1269,7 +1286,7 @@ function markUnlock(key){
 if(!Object.keys(CLUBS).length) return;
 
 window.PS_CREST={
-  crest:crest, unlocks:unlocks, markUnlock:markUnlock, clubRung:clubRung,
+  crest:crest, unlocks:unlocks, markUnlock:markUnlock, clubRung:clubRung, clubRungs:clubRungs,
   MARKS:MARKS, MARK_KEYS:MARK_KEYS, MARK_BADGE:MARK_BADGE,
   RINGS:RINGS, RUNGS:RUNGS, TIERS:TIERS, RING_BADGE_BY_ID:RING_BADGE_BY_ID,
   tierFromBadges:tierFromBadges, tierAt:tierAt, nextTierAt:nextTierAt, achTotal:achTotal,

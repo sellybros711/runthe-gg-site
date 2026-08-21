@@ -1048,7 +1048,8 @@ window.GA_ID='G-L29P5MRWKE';
      390 without a second breakpoint. */
   .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));
     gap:8px 6px;margin-top:10px}
-  .swatch{padding:0;background:none;border:none;display:grid;justify-items:center;gap:3px}
+  .swatch{padding:0;background:none;border:none;display:grid;justify-items:center;gap:3px;
+    position:relative}
   /* The disc itself, so the button around it can carry the label and stay a 44px target. */
   .swatch i{display:block;width:34px;height:34px;border-radius:50%}
   .swatch span{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.04em;
@@ -1067,6 +1068,26 @@ window.GA_ID='G-L29P5MRWKE';
   .wnchk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;
     color:var(--dim-2);cursor:pointer}
   .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
+  /* ---------- THE UNREAD DOT ---------- */
+  /* Red, and the only red circle on any of these screens, because it has to be findable in
+     the corner of an eye rather than read. It sits on the tile corner where an icon badge
+     always sits, and it never moves the thing it marks: absolutely positioned, so a tile
+     with one and a tile without are the same size and the grid does not reflow. */
+  .newdot{position:absolute;top:-5px;right:-5px;z-index:2;width:17px;height:17px;
+    border-radius:50%;background:var(--red);border:2px solid var(--panel);
+    display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+  .newdot b{font-family:var(--fn);font-size:10.5px;font-weight:800;line-height:1;color:#fff;
+    /* The exclamation mark's own bottom sidebearing puts it a hair low in a circle. */
+    transform:translateY(-.5px)}
+  /* On a hub row it is in the flow instead, between the label and the chevron, because a
+     corner dot on a full width row is nowhere near the word it belongs to. */
+  .pfrow .newdot{position:static;flex:0 0 auto;border-color:transparent;margin-right:2px}
+  /* The swatch is 100% club colour, so the dot needs the page behind its edge rather than
+     the panel, or it reads as a hole punched in the club. */
+  .swatch .newdot{top:-3px;right:-1px;width:15px;height:15px;border-color:var(--bg)}
+  .swatch .newdot b{font-size:9.5px}
+  .rankrow{position:relative}
+
   /* ---------- THE CREST CONTROLS ---------- */
   /* THE THREE STEPS PER CLUB. This replaced a line that said "rung 2 of 3", which told
      nobody which two, what they were for, or what the third one costs. */
@@ -5379,7 +5400,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=3"></script>
+<script src="crest.js?v=4"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -12683,8 +12704,8 @@ function authBoot(){
        username the tester list reads usually arrives one auth change AFTER the sign-in, and
        the crest is gated on that username. Signing out drops it, so the next account never
        inherits the last one's marks. */
-    if(!st.signedIn){ myCrest=null; myMark=null; }
-    else { loadMyMark(); crestBoot(); }
+    if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
+    else { loadMyMark(); loadSeen(); crestBoot(); }
   });
   a.boot();
 }
@@ -12841,6 +12862,59 @@ function saveMyMark(k){
     else localStorage.removeItem(crestMarkKey());
   }catch(_){}
 }
+/* ---- WHAT YOU HAVE UNLOCKED AND NOT YET LOOKED AT ----
+   Everything on the Customize page is earned somewhere else: a mark by a badge, a ring by a
+   title, a club's colors by a draft with them. So the moment a thing unlocks, the player is
+   on a results screen and the page that changed is two taps away and gives no sign that it
+   did. A dot is that sign.
+
+   ONE ID PER UNLOCKABLE THING, in a set in this browser. Not a timestamp and not a count: a
+   count cannot say WHICH one is new, and the whole point is the dot on the tile.
+
+   THE FIRST SIGHTING COUNTS AS UNSEEN, deliberately. A player arriving at this for the first
+   time has genuinely never looked at any of it, so their first visit lights up everything
+   they have already earned. That is a real thing to go and see rather than noise, and it
+   happens exactly once per account. */
+const crestSeenKey=()=>'ps_crest_seen:'+String(authState.name||'').trim().toLowerCase();
+let mySeen=null;
+function loadSeen(){
+  try{
+    const raw=localStorage.getItem(crestSeenKey());
+    mySeen=new Set(raw?JSON.parse(raw):[]);
+  }catch(_){ mySeen=new Set(); }
+}
+function saveSeen(){
+  try{ localStorage.setItem(crestSeenKey(),JSON.stringify(Array.from(mySeen))); }catch(_){}
+}
+/* Every id this account has open right now. The monogram and the plain club ring are never
+   in here: they are not unlocks, they are where everybody starts. */
+function crestUnlockedIds(){
+  if(!myCrest||!window.PS_CREST) return [];
+  const out=[];
+  myCrest.marks.forEach(function(k){ if(k!=='init') out.push('m:'+k); });
+  window.PS_CREST.RINGS.forEach(function(r){
+    if(r.id!=='club'&&ringEarned(r.id)) out.push('r:'+r.id);
+  });
+  /* ONE ID PER RUNG, not one per club. Winning a title with a club you had already drafted
+     with unlocks that club's pattern, which is a new thing to go and look at, and a single
+     id per club would have said nothing had changed. */
+  Object.keys(myCrestRungs||{}).forEach(function(k){
+    for(let r=1;r<=(myCrestRungs[k]||0);r++) out.push('c:'+k+':'+r);
+  });
+  if(myCrest.tier) out.push('t:'+myCrest.tier);
+  return out;
+}
+function crestUnseen(){
+  if(!mySeen) return [];
+  return crestUnlockedIds().filter(function(id){ return !mySeen.has(id); });
+}
+function crestMarkSeen(ids){
+  if(!mySeen) return;
+  let moved=false;
+  (ids||[]).forEach(function(id){ if(!mySeen.has(id)){ mySeen.add(id); moved=true; } });
+  if(moved) saveSeen();
+}
+
 /* The mark actually drawn. A mark they have not unlocked is never drawn even if the string
    is still in storage, because unlocks can only be checked against rows and rows change. */
 function wornMark(){
@@ -12851,13 +12925,17 @@ function wornMark(){
 /* Recompute from the rows careerLoad already holds. Cheap, and called from the same places
    the cabinet is derived, so the crest and the badges can never disagree. */
 let myCrestRows=null;
+let myCrestRungs=null;
 function crestRefresh(rows){
-  if(!window.PS_CREST||!authState.signedIn){ myCrest=null; myCrestRows=null; return; }
+  if(!window.PS_CREST||!authState.signedIn){
+    myCrest=null; myCrestRows=null; myCrestRungs=null; return;
+  }
   const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
   let res=null;
   try{ res=achEvaluate(rows||[]); }catch(_){ res=null; }
   try{
     myCrestRows=rows||[];
+    myCrestRungs=window.PS_CREST.clubRungs(myCrestRows);
     myCrest=window.PS_CREST.unlocks(myCrestRows,res,a.chosen?a.key:null);
   }catch(_){ myCrest=null; }
 }
@@ -12865,8 +12943,8 @@ function crestRefresh(rows){
    redraws as the swatches are touched, and it has to answer "what would I look like in
    these colours", which for the top rung is a different answer per club. */
 function crestRungFor(club){
-  if(!window.PS_CREST||!myCrestRows) return 0;
-  try{ return window.PS_CREST.clubRung(myCrestRows,club); }catch(_){ return 0; }
+  if(!club||!myCrestRungs) return 0;
+  return myCrestRungs[club]||0;
 }
 
 /* The crest options for one circle, or null if this circle is not getting one. Only your
@@ -13140,6 +13218,7 @@ function paintRingRow(){
     try{ svg=C.crest({ club:club, rung:rung, mark:'init', ring:r.id, tier:null,
       size:60, text:a.text }); }catch(_){ svg=''; }
     return '<div class="markpick'+(got?'':' locked')+(worn?' on':'')+'">'+
+      (pfIsNew('r:'+r.id)?NEWDOT:'')+
       '<span class="mi">'+svg+(got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
       '<span class="mn">'+esc(r.t||r.name)+'</span>'+
       '<span class="'+(got?'mu':'mh')+'">'+esc(ringNeed(r.id))+'</span>'+
@@ -13174,7 +13253,8 @@ function paintRankRow(a){
     line='<b>'+esc(t.name)+'</b><span>'+myCrest.badges+' of '+myCrest.total+' badges. '+
       Math.max(0,at-myCrest.badges)+' more to '+esc(next.name)+'.</span>';
   }
-  host.innerHTML='<div class="rankrow">'+svg+'<span class="rl">'+line+'</span></div>';
+  host.innerHTML='<div class="rankrow">'+
+    (t&&pfIsNew('t:'+t.id)?NEWDOT:'')+svg+'<span class="rl">'+line+'</span></div>';
 }
 
 /* Both of these ask the cabinet rather than answering for themselves, exactly as the marks
@@ -13231,7 +13311,7 @@ function paintMarkGrid(){
        what carries "locked" rather than the text having to. */
     return '<button type="button" class="markpick'+(got?'':' locked')+
       (k===worn?' on':'')+'" data-m="'+k+'"'+(got?'':' aria-disabled="true"')+
-      ' title="'+esc(m.name||k)+'"><span class="mi">'+svg+
+      ' title="'+esc(m.name||k)+'">'+(pfIsNew('m:'+k)?NEWDOT:'')+'<span class="mi">'+svg+
       (got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
       '<span class="mn">'+esc(m.name||k)+'</span>'+
       '<span class="mu">'+esc(u.name||'Yours from the start')+'</span>'+
@@ -13265,6 +13345,18 @@ function paintMarkGrid(){
 let pfpPend={color:null,initials:null};
 let pfpDirty=false;
 
+/* WHAT WAS NEW WHEN THIS PAGE OPENED. Held separately from the stored set on purpose: the
+   page marks everything seen as soon as it has drawn, so reading mySeen directly would clear
+   the dots in the same frame that drew them and the player would never see one. This is the
+   snapshot the tiles are drawn against, and it lasts as long as the page is open. */
+let pfNewIds=null;
+const pfIsNew=(id)=>!!(pfNewIds&&pfNewIds.has(id));
+/* A club is new if any rung of it is. Three ids, one dot: the swatch is one thing to tap. */
+function pfClubNew(k){
+  if(!pfNewIds||!myCrestRungs) return false;
+  for(let r=1;r<=(myCrestRungs[k]||0);r++) if(pfNewIds.has('c:'+k+':'+r)) return true;
+  return false;
+}
 function paintPfpEdit(nm){
   /* A repaint normally starts from what is stored. The exception is a repaint caused by a
      failed save, which has to start from what they were trying to store. */
@@ -13309,6 +13401,7 @@ function paintPfpEdit(nm){
     return '<button type="button" class="swatch'+(locked?' locked':'')+'" data-c="'+k+'" '+
       'aria-label="'+esc(E.nickname(k))+(locked?', locked':'')+'" '+
       'title="'+esc(E.nickname(k))+'" style="--ring:'+c.secondary+'">'+
+      (pfClubNew(k)?NEWDOT:'')+
       '<i style="background:'+c.primary+';box-shadow:inset 0 0 0 2px '+c.secondary+'">'+
       (locked?LOCK:'')+'</i>'+
       '<span>'+esc(k)+'</span></button>';
@@ -13690,13 +13783,17 @@ const PF_ICON_EXTRA={
   look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
   acct:'<circle cx="12" cy="8.6" r="4"/>'
 };
-function pfNavRow(id,title,sub,icon){
+/* THE DOT. One shape, used on a hub row and on a tile, because two drawings of "new" is two
+   things to notice rather than one thing to recognise. */
+const NEWDOT='<span class="newdot" aria-label="New"><b>!</b></span>';
+function pfNavRow(id,title,sub,icon,dot){
   const ic=icon&&PF_ICON[icon]
     ?'<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
       (PF_ICON_EXTRA[icon]||'')+'<path d="'+PF_ICON[icon]+'"/></svg></span>'
     :'';
   return '<button class="pfrow" id="'+id+'">'+ic+'<span class="t"><b>'+esc(title)+'</b>'+
-    '<span>'+esc(sub)+'</span></span><span class="go">&rsaquo;</span></button>';
+    '<span>'+esc(sub)+'</span></span>'+(dot?NEWDOT:'')+
+    '<span class="go">&rsaquo;</span></button>';
 }
 
 function pfHub(msg,ok){
@@ -13714,7 +13811,10 @@ function pfHub(msg,ok){
       /* Reversed, so the two pages that are about YOU sit under your name and the two that
          are about your record sit at the bottom, nearest the thumb. */
       pfNavRow('pf-go-acct','Account','Your name, feedback, signing out','acct')+
-      pfNavRow('pf-go-look','Customize','Your circle, initials and club colors','look')+
+      /* The only row that can carry a dot, because it is the only page where a thing you
+         have unlocked is waiting to be looked at. */
+      pfNavRow('pf-go-look','Customize','Your circle, initials and club colors','look',
+        crestUnseen().length>0)+
       pfNavRow('pf-go-badges','Badges','What you have earned so far','badges')+
       pfNavRow('pf-go-career','Career','Every number, and your streak','career')+
       pfNavRow('pf-go-drafts','Your drafts','Recent, best rated and best record','drafts')+
@@ -13932,7 +14032,16 @@ function pfLook(){
        '<div id="crest-rank"></div>'
       :'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
-  openSheet(); pfWireCommon(); paintPfpEdit(nm);
+  openSheet(); pfWireCommon();
+  /* THE SNAPSHOT IS TAKEN HERE, ONCE PER OPENING OF THIS PAGE, and not inside paintPfpEdit:
+     that runs again on every swatch tap and every mark tap, and re-reading the set there
+     would wipe the dots the moment somebody touched anything. */
+  if(canUseCrest()&&myCrest) pfNewIds=new Set(crestUnseen()); else pfNewIds=null;
+  paintPfpEdit(nm);
+  /* Seen the moment the page has drawn. Looking at it IS the thing the dot was asking for,
+     so there is nothing else to wait for, and writing now means the promise holds however
+     they leave: back, close, or the tab going away. */
+  if(pfNewIds&&pfNewIds.size) crestMarkSeen(Array.from(pfNewIds));
 }
 function pfAccount(msg,ok){
   const box=$('sheet-in'); box.dataset.kind='profile';
