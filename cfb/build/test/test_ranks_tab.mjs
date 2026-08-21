@@ -246,7 +246,9 @@ console.log('\n=== the sign-in ask on the results screen itself ===');
 
   const gateEl=await p.$('#o-place .gateline');
   const gate=gateEl?((await gateEl.textContent())||''):'';
-  ok('the sign-in prompt is there too', /Sign in and keep this season/.test(gate), gate.slice(0,80));
+  /* THE SENTENCE IS ALWAYS THERE, and it is the explanation of the number directly above
+     it: where the season WOULD sit, and why it is not on the list. */
+  ok('the sign-in prompt is there too', /go on the board/.test(gate), gate.slice(0,80));
   /* The whole point. "would sit" makes the number contingent on the button. */
   ok('  and it says the placing is what you WOULD get', /would/i.test(gate), gate.slice(0,90));
   /* And it does NOT hand back the reason not to bother. That sentence belongs only
@@ -254,15 +256,30 @@ console.log('\n=== the sign-in ask on the results screen itself ===');
   ok('  without telling them it is saved either way anyway',
     !/either way/i.test(gate), gate.slice(0,120));
 
+  /* WHICH BUTTON IS THE ASK DEPENDS ON WHETHER THE SEASON EARNED ANYTHING, and one of
+     them is always the ask. A guest who earned badges gets the claim panel, which says
+     everything this line says and names what is waiting as well, so this line keeps its
+     sentence and gives up its button rather than stacking a second full-width sign-in
+     under the first. A season that earned nothing leaves this line as the only ask, and
+     it keeps its button. */
+  const which=await p.evaluate(()=>({
+    claim:!!document.querySelector('#o-claim .claimbox'),
+    gateBtn:!!document.querySelector('#o-place .gateline button'),
+  }));
+  ok('  exactly one sign-in button on the screen', which.claim!==which.gateBtn,
+    JSON.stringify(which));
+
   /* Above the fold on a small phone, because a prompt below it is the tab problem
-     again in a different costume. */
+     again in a different costume. Whichever of the two is the ask. */
   await p.setViewportSize({width:375,height:667});
   await p.waitForTimeout(400);
   const seen=await p.evaluate(()=>{
-    const btn=document.querySelector('#o-place .gateline button');
+    const btn=document.querySelector('#o-claim .claimbox button')
+      ||document.querySelector('#o-place .gateline button');
     if(!btn) return null;
     const r=btn.getBoundingClientRect();
-    return {top:Math.round(r.top),vh:window.innerHeight};
+    return {top:Math.round(r.top),vh:window.innerHeight,
+      label:(btn.textContent||'').trim()};
   });
   ok('the button is on the first screen of a 375x667 phone',
     seen&&seen.top<seen.vh, JSON.stringify(seen));
