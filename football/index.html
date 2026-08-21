@@ -4261,21 +4261,39 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
     color:var(--dim);text-align:center;white-space:nowrap}
   .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
-  /* THE RED BELONGS HERE, AND IT USED TO BELONG TO "CHANGE MY NAME".
-     Every primary button in this game is the red gradient, so on the Account page the loudest
-     control was Change my name and the quietest was Delete my account, which is the hierarchy
-     of that page exactly backwards: the eye landed on the harmless one and slid past the
-     irreversible one. The two have swapped. Change my name is a ghost button now, alongside
-     Send feedback and Sign out, and this is the only filled control on the screen.
+  /* AN EXIT, NOT AN INVITATION, AND THE SIZE IS THE WHOLE ARGUMENT.
+     Two changes ago the loudest control on this page was Change my name and the quietest was
+     Delete my account, which is that page's hierarchy exactly backwards. The fix was to swap
+     them, and it overshot: Change my name became a ghost, correctly, and Delete became the
+     only filled control on the screen, which made ending your account the visual headline of
+     managing it. Both cannot be the headline, and neither should be.
 
-     A LOUD BUTTON IS NOT A DANGEROUS ONE ANY MORE. Being quiet used to be the guard -- the
-     button was trying not to be tapped. It does not have to do that job now: a tap on this
-     opens a warning and nothing else, and the delete cannot fire until a name has been typed
-     into a field by hand. So it can afford to look like what it is.
-     The armed state still has to read as a further step, so it goes darker and takes a ring. */
+     The reasoning for the loud version was that a tap on it only opens a warning, so it could
+     afford to look like what it is. That is sound about SAFETY and wrong about INTENT: nobody
+     arrives here wanting to end their account, and the biggest thing on a screen is a
+     suggestion whatever it does when tapped.
+
+     So at rest it is a small outlined control, sized like a footnote and left aligned, taking
+     the width of its own words rather than the width of the sheet. Still red, still labelled
+     plainly, still one tap from anybody who wants it: quiet is not hidden, and this is
+     deliberately not tucked behind a menu or a long press. The page now has no filled button
+     at all, which is right for a page whose whole job is settings.
+
+     IT GROWS WHEN IT IS ABOUT TO BE TRUE. The armed state, reached only after the warning and
+     only with your own name typed into a field, goes full width and filled, because at that
+     point the next tap is the one that does it.
+
+     Character for character what the college game does, because it is one account and one
+     deletion. See cfb/index.html. */
   .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .pfdanger .btn.del{color:#fff;border:none;background:var(--grad-red)}
-  .pfdanger .btn.del.armed{background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
+  .pfdanger .btn.del{display:inline-block;width:auto;padding:8px 13px;font-size:12px;
+    letter-spacing:.05em;border-radius:9px;color:#f0918e;background:none;box-shadow:none;
+    border:1px solid rgba(239,68,68,.34)}
+  .pfdanger .btn.del:before{display:none}
+  .pfdanger .btn.del:hover{color:#fca5a5;border-color:rgba(239,68,68,.6)}
+  .pfdanger .btn.del.armed{display:block;width:100%;padding:16px 18px;font-size:17px;
+    letter-spacing:.045em;border-radius:12px;color:#fff;border:none;
+    background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
     box-shadow:0 0 0 3px rgba(239,68,68,.28),var(--shadow)}
   .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
   .bestrow{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;
@@ -13708,9 +13726,13 @@ function pfAccount(msg,ok){
   openSheet(); pfWireCommon(); pfWireDelete();
 }
 
-const PF_DEL_NOTE='This ends your RunThe.GG account across <b>every game on the site</b>, '+
-  'not just this one. It cannot be undone. Runs already on a leaderboard stay there without '+
-  'your name on them.';
+/* AT REST THIS IS ONE LINE, and the long version arrives on the first tap. The resting
+   note was four lines of red-flag prose about losing your account, which on a settings page
+   is the same mistake the button was making in a different medium: the largest thing in a
+   section is what that section looks like it is for. Nothing is lost by moving it, because
+   the first tap changes nothing at all and says the whole of it, with the way back already
+   on screen. See the three steps below. */
+const PF_DEL_NOTE='Ends your RunThe.GG account across <b>every game on the site</b>, permanently.';
 function pfDangerHtml(){
   return '<div class="pfdanger">'+
     '<p class="shsec" style="margin:0">Delete your account</p>'+
@@ -13764,7 +13786,8 @@ function pfWireDelete(){
       del.textContent='I understand, continue';
       note.innerHTML='<b>This cannot be undone.</b> Your sign-in, your name, your circle and '+
         'your claim on every run you have posted in every RunThe.GG game go for good. There '+
-        'is no undo and nobody can put it back.';
+        'is no undo and nobody can put it back. Runs already on a leaderboard stay there, '+
+        'without your name on them.';
       back.hidden=false;
       return;
     }

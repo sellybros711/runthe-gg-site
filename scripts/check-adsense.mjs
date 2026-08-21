@@ -62,17 +62,40 @@ for (const file of walk(ROOT).sort()) {
   const fail = (msg) => problems.push(`${rel}: ${msg}`);
 
   if (!src.includes(PUB)) fail('no AdSense publisher tag');
+
+  /* Consent Mode defaults, and they must run BEFORE the ad tag. privacy.html
+   * promises no advertising cookie is set before the CMP answers, and a page
+   * that loads adsbygoogle.js with no defaults in front of it breaks that
+   * promise silently. Two pages shipped without this while the check only
+   * looked for the ad tag, which is why the ordering is asserted too. */
+  const consent = src.indexOf("consent','default'");
+  if (consent === -1) fail('no Consent Mode defaults');
+  else {
+    if (!/analytics_storage:'granted'/.test(src)) {
+      fail("analytics_storage is not 'granted' (the page goes dark in GA4 outside the EEA)");
+    }
+    const adTag = src.indexOf(PUB);
+    if (adTag !== -1 && adTag < consent) fail('AdSense tag loads before the Consent Mode defaults');
+  }
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
   if (!/name=["']description["'][^>]*content=["']\s*\S/i.test(src)) fail('no meta description');
 
   /* The root pages link relatively (href="privacy.html"), the game pages absolutely
    * (href="/privacy.html"). Both resolve, so match the href itself rather than a
-   * leading slash. A page that is itself the target does not need to link to itself. */
+   * leading slash. A page that is itself the target does not need to link to itself.
+   *
+   * <noscript> is stripped first, and that is the whole point of this block. The golf
+   * page passed for weeks on a policy link that existed ONLY inside <noscript>: every
+   * visitor and every crawler that runs JavaScript, which includes Googlebot, saw a
+   * page with no route to the policy pages at all. A link a reader cannot reach is
+   * not a link. This still cannot see a footer built at runtime by JavaScript, so it
+   * is a floor and not a proof; the rendered check is a browser. */
+  const visible = src.replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ');
   for (const page of ['privacy', 'terms']) {
     if (rel.endsWith(`${page}.html`)) continue;
-    const linked = new RegExp(`href=["'][^"']*\\b${page}\\.html`, 'i').test(src);
-    if (!linked) fail(`no link to ${page}.html`);
+    const linked = new RegExp(`href=["'][^"']*\\b${page}\\.html`, 'i').test(visible);
+    if (!linked) fail(`no link to ${page}.html outside <noscript>`);
   }
 
   if (!SHORT_OK.has(rel)) {

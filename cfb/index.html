@@ -1824,20 +1824,31 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);font-family:var(--fn);font-size:11.5px;font-weight:600;
     color:var(--dim);text-align:center;white-space:nowrap}
   .pftab.on{color:var(--ink);border-color:var(--line-2);background:var(--panel-2)}
-  /* RED, AND THE ONLY RED ON THE SCREEN. The primary button in this game is green, so the
-     college Account page never had the NFL game's problem of a harmless control being the
-     loudest thing on it -- but the two games should not disagree about what ending an account
-     looks like, and this is the one control on either page that is irreversible.
+  /* AN EXIT, NOT AN INVITATION, AND THE SIZE IS THE WHOLE ARGUMENT.
+     This was a full-width filled red button, on the reasoning that a tap on it only opens a
+     warning so it could afford to look like what it is. That reasoning is sound about SAFETY
+     and wrong about INTENT: nobody comes to this page wanting to end their account, and the
+     biggest, loudest thing on a screen is a suggestion whatever it does when tapped. It was
+     the only filled control on a page whose other three are ghosts, which made ending your
+     account the visual headline of managing it.
 
-     A LOUD BUTTON IS NOT A DANGEROUS ONE ANY MORE. Being quiet used to be the guard -- the
-     button was trying not to be tapped. It does not have to do that job now: a tap on this
-     opens a warning and nothing else, and the delete cannot fire until a name has been typed
-     into a field by hand. So it can afford to look like what it is.
-     The armed state still has to read as a further step, so it goes darker and takes a ring. */
+     So at rest it is a small outlined control, sized like a footnote and left aligned, so it
+     takes the width of its own words rather than the width of the sheet. Still red, still
+     labelled plainly, still one tap from anybody who wants it: quiet is not hidden, and this
+     is deliberately not tucked behind a menu or a long press.
+
+     IT GROWS WHEN IT IS ABOUT TO BE TRUE. The armed state, which is reached only after the
+     warning and only with your own name typed into a field, goes full width and filled. At
+     that point loud IS the honest shape, because the next tap is the one that does it. */
   .pfdanger{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .pfdanger .btn.del{color:#fff;border:none;
-    background:linear-gradient(135deg,#f05252 0%,#b91c1c 100%)}
-  .pfdanger .btn.del.armed{background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
+  .pfdanger .btn.del{display:inline-block;width:auto;padding:8px 13px;font-size:12px;
+    letter-spacing:.05em;border-radius:9px;color:#f0918e;background:none;box-shadow:none;
+    border:1px solid rgba(239,68,68,.34)}
+  .pfdanger .btn.del:before{display:none}
+  .pfdanger .btn.del:hover{color:#fca5a5;border-color:rgba(239,68,68,.6)}
+  .pfdanger .btn.del.armed{display:block;width:100%;padding:16px 18px;font-size:17px;
+    letter-spacing:.045em;border-radius:12px;color:#fff;border:none;
+    background:linear-gradient(135deg,#dc2626 0%,#7f1d1d 100%);
     box-shadow:0 0 0 3px rgba(239,68,68,.28),var(--shadow)}
   /* One season, in a list. Same row wherever a season is listed, so a season looks the
      same on every page it appears on. */
@@ -2145,6 +2156,52 @@ window.GA_ID='G-L29P5MRWKE';
      arranged and not how a list is. Only on a board pointed its natural way: on a
      reversed one the top three are the three worst seasons in the window, and a podium
      there would be celebrating them. */
+  /* ── the board, behind glass ─────────────────────────────────
+     A GUEST SEES THAT THERE IS A BOARD AND CANNOT READ IT, which is the only honest way
+     to charge for something: the shape, the crowns, the length of the list and the count
+     above it are all still there, and the names and numbers are not. A blank panel would
+     be a wall and would say nothing about what is behind it.
+
+     THE SLAB IS CAPPED. The list runs to five hundred rows, and blurring five hundred rows
+     is both a wall of noise and a lot of filtered pixels for a phone to composite. Locked,
+     it is one screen's worth with the bottom faded into the page, which reads as "this
+     continues" rather than as a list that happens to end.
+
+     NOT A SUBSTITUTE FOR A LOCK. The rows are in the DOM and anybody who opens dev tools
+     can read them, which is fine: this is a prompt and not a paywall, and the board is
+     public data that the site puts on a public page. */
+  /* THE CARD IS THE ONE IN THE FLOW AND THE BOARD IS BEHIND IT, which is the opposite of
+     the obvious arrangement and is the only one that cannot be wrong. Absolutely
+     positioning the card over a fixed-height slab means picking a height that fits it, and
+     the first attempt picked one that did not: the sign-in button was clipped off the
+     bottom edge by the very overflow doing the capping. This way the section is exactly as
+     tall as the card plus the peek above it, and the blurred board is stretched to fill
+     whatever that comes to.
+
+     THE PEEK IS THE PADDING, AND ITS SIZE WAS MEASURED. Blurred podium above the card, so
+     the three steps and their crowns read over the top of it: that shape is the argument
+     and the card is only the ask. 150px looked right and put the sign-in button 39px
+     behind the sticky footer at 390x900, which is a call to action hiding behind two other
+     buttons. 100px clears it. test_board_gate holds the number by measuring the button
+     against the dock rather than by trusting this comment. */
+  .lblock{position:relative}
+  .lblock.locked{overflow:hidden}
+  .lblock.locked .lblock-in{position:absolute;inset:0;filter:blur(7px) saturate(.72);
+    pointer-events:none;user-select:none;-webkit-user-select:none}
+  .lblock.locked:after{content:'';position:absolute;left:0;right:0;bottom:0;height:90px;
+    z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
+  .lblock.locked .lbgate{position:relative;z-index:2;display:flex;justify-content:center;
+    padding:100px 8px 10px}
+  .lbgate .card{width:100%;max-width:330px;padding:16px 15px 15px;border-radius:14px;
+    background:rgba(19,26,43,.93);border:1px solid var(--line-2);
+    box-shadow:0 24px 60px -20px #000;backdrop-filter:blur(2px)}
+  .lbgate .card h3{font-family:var(--fn);font-size:17px;font-weight:800;margin:3px 0 5px;
+    color:var(--ink)}
+  .lbgate .card .lg-sub{font-size:12.5px;line-height:1.4;color:var(--dim);margin:0 0 12px}
+  .lbgate .perks{gap:9px}
+  .lbgate .perk b{font-size:13px}
+  .lbgate .perk span{font-size:12px}
+  .lbgate .btn{margin-top:13px}
   .podium{display:none;margin:11px 0 16px}
   .podium.on{display:block}
   /* Three steps, then ONE base under all of them. A stub of floor per step reads as
@@ -3319,7 +3376,7 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
         <button data-sort="overall">Team overall</button>
-        <button data-sort="rank">Final ranking</button>
+        <button data-sort="diff">Point diff</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -3332,8 +3389,18 @@ or endorsed by the NCAA, the CFP or any school.
     <!-- THE TOP THREE, as a podium. Empty and display:none until paintPodium fills
          it, which it only does on a board pointed the natural way with at least
          three seasons on it. -->
-    <div class="podium" id="lb-podium"></div>
-    <div class="lb" id="lb-rows"></div>
+    <!-- BLURRED FOR A GUEST, with the ask sitting on top of it. The board is the reason
+         to have an account and a guest could read the whole thing without one, so it is
+         the one screen where the offer has something to trade. The rows are still drawn
+         and still real underneath: a blur that has a leaderboard behind it is an offer,
+         and a blank panel is a wall. -->
+    <div class="lblock" id="lb-lock">
+      <div class="lblock-in">
+        <div class="podium" id="lb-podium"></div>
+        <div class="lb" id="lb-rows"></div>
+      </div>
+      <div class="lbgate" id="lb-gate" hidden></div>
+    </div>
     <p class="notlive" id="lb-note" style="display:none"></p>
     <!-- Which seasons this board counts and when it resets: fine print, so it goes at
          the foot, ABOVE the two pinned blocks so that when you do reach the real bottom
@@ -3491,11 +3558,11 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=32"></script>
+<script src="engine.js?v=33"></script>
 <script src="run.js?v=14"></script>
 <script src="achievements.js?v=11"></script>
 <script src="auth.js?v=3"></script>
-<script src="board.js?v=5"></script>
+<script src="board.js?v=6"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4372,9 +4439,13 @@ function pfAccount(){
   openSheet(); wireAccount(); pfWire(box);
   if(canDelete) pfWireDelete();
 }
-const PF_DEL_NOTE='This ends your RunThe.GG account across <b>every game on the site</b>, '+
-  'not just this one. It cannot be undone. Seasons already on a leaderboard stay there '+
-  'without your name on them.';
+/* AT REST THIS IS ONE LINE, and the long version arrives on the first tap. The resting
+   note was four lines of red-flag prose about losing your account, which on a settings page
+   is the same mistake the button was making in a different medium: the largest thing in a
+   section is what that section looks like it is for. Nothing is lost by moving it, because
+   the first tap changes nothing at all and says the whole of it, with the way back already
+   on screen. See the three steps below. */
+const PF_DEL_NOTE='Ends your RunThe.GG account across <b>every game on the site</b>, permanently.';
 function pfDangerHtml(){
   return '<div class="pfdanger">'+
     '<p class="shsec" style="margin:0">Delete your account</p>'+
@@ -4433,7 +4504,8 @@ function pfWireDelete(){
       del.textContent='I understand, continue';
       note.innerHTML='<b>This cannot be undone.</b> Your sign-in, your name, your school '+
         'colors and your claim on every season you have posted in every RunThe.GG game go '+
-        'for good. There is no undo and nobody can put it back.';
+        'for good. There is no undo and nobody can put it back. Seasons already on a '+
+        'leaderboard stay there, without your name on them.';
       back.hidden=false;
       return;
     }
@@ -4922,6 +4994,10 @@ function bootAuth(){
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
     /* The draft finished before auth did, so the ask was deferred rather than guessed at. */
     if(squadPitchWanted&&$('s-squad').classList.contains('on')) guestPitch();
+    /* The board is blurred for a guest, so signing in while looking at it has to clear the
+       glass. Repainted rather than just unlocked, because a name arriving also changes what
+       the board says about you. */
+    if($('s-board').classList.contains('on')) paintBoard();
     /* Signing in with a finished season on screen takes it over. */
     /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
        repainting a placing is not an answer to "what did I just get". The NFL game
@@ -5315,41 +5391,34 @@ function peekCaseHtml(res){
   const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off blur')+'">'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
 
-  let head;
-  if(!s.runs){
-    head='<p class="dim" style="font-size:13.5px;margin:0 0 10px">Finish a season and '+
-      'this starts filling up. There are <b style="color:var(--ink)">'+res.total+
-      '</b> badges in here, from reaching a bowl to winning the title from the 9 seed.</p>';
-  }else{
-    head='<p class="shsec" style="margin-top:0">Your career</p>'+careerCells(s);
-  }
-
-  /* Earned first and in full. A player who has been going a while should see their
-     own badges here, not a teaser of somebody else's. */
-  const got=res.earned.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
-  const gotHtml=got.length
-    ? '<p class="shsec">Earned <span class="cnt">'+got.length+' of '+res.total+'</span></p>'+
-      '<div class="achlist">'+got.map(a=>chip(a,true)).join('')+'</div>'
-    : '';
+  /* NOTHING IS EARNED HERE, because a guest earns nothing: see announceRunBadges. This
+     used to show a signed-out player their own badges in full and it was a promise the
+     browser could not keep. What is shown instead is the whole catalog, locked, and the
+     seasons they have actually played, which are real and are theirs. */
+  const head='<p class="dim" style="font-size:13.5px;margin:0 0 10px">Badges come with an '+
+    'account. There are <b style="color:var(--ink)">'+res.total+'</b> in here, from '+
+    'reaching a bowl to winning the title from the 9 seed, and they are earned from the '+
+    'seasons you have already played the moment you sign in.</p>'+
+    (s.runs?'<p class="shsec" style="margin-top:0">Your seasons so far</p>'+careerCells(s):'');
 
   /* And a blurred taste of the rest. Highest tier first, so what is behind the blur
      is the interesting end of the catalog. */
-  const rest=res.locked.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+  const rest=A.CATALOG.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
   const peek=rest.slice(0,PEEK_LOCKED);
   const more=rest.length-peek.length;
   const peekHtml=peek.length
-    ? '<p class="shsec">Still out there <span class="cnt">'+rest.length+' more</span></p>'+
+    ? '<p class="shsec">What is in here <span class="cnt">'+rest.length+' badges</span></p>'+
       '<div class="achlist peek">'+peek.map(a=>chip(a,false)).join('')+'</div>'+
       (more?'<p class="dim" style="font-size:11.5px;margin:8px 0 0;text-align:center">'+
         'and '+more+' more</p>':'')
     : '';
 
-  return head+gotHtml+peekHtml+
+  return head+peekHtml+
     gateCard({with:'The full trophy case comes with an account',
               needs:'Keeping your trophy case needs an account.'})+
-    '<p class="dim" style="font-size:11px;margin:11px 0 0;line-height:1.4">Right now these '+
-    'are kept in this browser, so clearing its data clears them. An account keeps them '+
-    'for good and carries them to any device you sign in on.</p>';
+    '<p class="dim" style="font-size:11px;margin:11px 0 0;line-height:1.4">Your seasons are '+
+    'kept in this browser either way. An account is what turns them into badges, keeps '+
+    'them for good and carries them to any device you sign in on.</p>';
 }
 
 /* ── THE CABINET ─────────────────────────────────────────────────────
@@ -5475,11 +5544,17 @@ function showAchHeadline(text){
    the point where the best-possible search has finished and the perfect-draft badge is
    finally knowable -- announcing before that and again after meant two overlapping runs of
    banners with the cap applying to each separately.
-   achState falls back to this browser's own history when the board rows are not in, which
-   is what makes this work for a signed-out player too -- the NFL game has no signed-out
-   case to serve here and this one does. Anything already marked seen is skipped, so an
-   extra call can never repeat a badge. */
+   achState falls back to this browser's own history when the board rows are not in yet, so
+   a member whose seasons are still loading is still told what they just earned. Anything
+   already marked seen is skipped, so an extra call can never repeat a badge. */
 function announceRunBadges(){
+  /* BADGES ARE AN ACCOUNT FEATURE, so a guest is never told they earned one. This used to
+     fall back to local history and announce for a signed-out player too, which read as
+     generosity and was the opposite: the banner promised a trophy case that lives in one
+     browser's storage, disappears when it is cleared, and does not follow them to a phone.
+     Earning something you are going to lose is worse than not earning it. The offer is
+     made instead, on the results screen and the board and after the draft. */
+  if(!authState.signedIn) return;
   const res=achState(careerRows||null);
   if(res) achAnnounce(authState.userId,res,false);
 }
@@ -5601,8 +5676,13 @@ function recordRun(row){
   if(tutorialOn){ lastEarned=[]; return lastEarned; }
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
+  /* THE SEASON IS STILL WRITTEN DOWN FOR A GUEST, and no badge comes out of it. The row is
+     their own history and the results screen reads it; the badge is the thing an account
+     buys. Recorded before the early return so that signing in later derives the whole
+     cabinet from seasons already played rather than starting them at zero. */
   const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
+  if(!authState.signedIn){ lastEarned=[]; return lastEarned; }
   lastEarned=A
     ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
     : [];
@@ -5741,6 +5821,67 @@ async function paintBoard(){
   paintRows();
 }
 
+/* ── THE BOARD IS THE THING AN ACCOUNT BUYS ──────────────────────────────────
+ *
+ * A guest could read the whole leaderboard and never be on it, which is the one screen in
+ * the game where the offer has something real to trade. Blurred, with the ask on top: the
+ * rows underneath are still drawn and still true, because a blur with a leaderboard behind
+ * it is an offer and a blank panel is a wall.
+ *
+ * ONLY A GUEST, AND ONLY WHEN SIGNING IN IS ACTUALLY POSSIBLE. gateState() answers nothing
+ * while auth is still landing, so the board does not flash blurred and clear on every load,
+ * and nothing at all when the sign-in script was blocked, because charging for a board in
+ * a browser that cannot create an account is a wall with no door in it.
+ *
+ * NOT A LOCK, and it does not pretend to be. The rows are in the DOM and dev tools will
+ * read them. That is fine: this is a prompt, and the board is public data on a public page.
+ * Anything stronger would mean not sending the rows, and then the blur would have nothing
+ * behind it and the offer would have nothing to show. */
+const boardLocked=()=>gateState()==='guest';
+
+function paintBoardGate(){
+  const wrap=$('lb-lock'), gate=$('lb-gate');
+  if(!wrap||!gate) return;
+  /* Nothing to sell over an empty board, and nothing to blur either: a guest looking at
+     "No seasons today yet" would get a card promising a list that is not there. */
+  const has=(lbRows||[]).length>0;
+  const on=has&&boardLocked();
+  wrap.classList.toggle('locked',on);
+  gate.hidden=!on;
+  /* Cleared as well as emptied, or a player who signs in and then signs out again gets a
+     blurred board with nothing on top of it. */
+  if(!on){ gate.innerHTML=''; gate.dataset.built=''; return; }
+  if(gate.dataset.built==='1') return;
+  gate.dataset.built='1';
+  ga('board_gate_shown',{window:lbWindow,mode:lbMode});
+  /* Three, and every one of them is about THIS screen. The trophy case and school colors
+     are real and are sold on the squad screen; here the offer has to be the board, or it
+     is a generic account pitch that happens to be standing on a leaderboard.
+     ONE THOUGHT A LINE. A title with a comma in the middle is two ideas glued together
+     and reads as a slogan rather than a sentence, so each of these says one thing and
+     the line under it says one more. */
+  const perks=[
+    ['Your name on the board', 'Guest seasons are ranked but never listed.'],
+    ['Your place every season', 'See exactly where each run landed.'],
+    ['Six different leaderboards', 'One for each Power 5 conference.'],
+  ];
+  gate.innerHTML='<div class="card">'+
+    '<div class="eyebrow green">The leaderboard</div>'+
+    '<h3>See who is up there</h3>'+
+    /* NOT "guest seasons are still ranked" HERE ANY MORE. The first bullet says it and
+       says it better, and a card that opens by making the same point its own list is
+       about to make reads as padding before the reader has reached anything. */
+    '<p class="lg-sub">An account is free and takes about ten seconds.</p>'+
+    '<div class="perks">'+perks.map(([t,d])=>
+      '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
+      '</span></div></div>').join('')+'</div>'+
+    '<button class="btn" id="lb-gate-in">Sign in or sign up</button></div>';
+  $('lb-gate-in').onclick=()=>{
+    ga('gate_clicked',{from:'board'});
+    openProfile('account');
+  };
+}
+
 /* Painting is split from loading so a repaint that changes nothing about the query --
    there is none yet, and there was none in the football game either until there was --
    never costs a round trip. */
@@ -5752,6 +5893,7 @@ function paintRows(){
     $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+
       ' yet. Yours could be the first.</div>';
     hideMyPin();
+    paintBoardGate();
     return;
   }
   /* THE LIST STARTS WHERE THE PODIUM STOPPED. Starting at one would put first, second
@@ -5763,6 +5905,7 @@ function paintRows(){
   const above=paintPodium(rows)?3:0;
   $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>lbRow(r,above+j+1,above+j)).join('');
   paintMyPin();
+  paintBoardGate();
 }
 
 /* THE TOP THREE, as a podium.
@@ -5854,8 +5997,11 @@ function lbCell(r){
   if(lbSort==='overall'){
     return {v:r.overall==null?'--':Number(r.overall).toFixed(1),k:rec,gold:!!r.perfect};
   }
-  if(lbSort==='rank'){
-    return {v:r.national_rank==null?'--':'#'+r.national_rank,k:rec,gold:!!r.perfect};
+  /* The differential in large type, the record under it. The sub-line is the RECORD and
+     not the ranking, because a differential is a rate and the record is what it was
+     scored over: plus 21 across 15 games is a different season from plus 21 across 13. */
+  if(lbSort==='diff'){
+    return {v:isFinite(d)?((d>=0?'+':'')+d.toFixed(1)):'--',k:rec,gold:!!r.perfect};
   }
   return {v:rec,k:diff||'record',gold:!!r.perfect};
 }
@@ -5950,17 +6096,18 @@ function myPlaceValue(){
      which is the only way a locally-counted place can agree with the list beside it:
        overall  submitted raw and stored as numeric(6,2). placeIn rounds it to two the way
                 Postgres does, so it is handed over unrounded rather than rounded twice.
-       rank     cfb_submit_run stores p_national_rank verbatim, and this is the same
-                expression paintOver submits.
+       diff     handed over raw. placeIn rounds it to one place the way Postgres does,
+                the same way it has always rounded the overall axis, so it is not
+                rounded twice here.
        record   scoreOf is board.js's local copy of the derived score column, rounded the
                 way Postgres rounds rather than the way Math.round does. */
   if(lbSort==='overall'){
     const v=Number(stats.overall);
     return isFinite(v)?v:null;
   }
-  if(lbSort==='rank'){
-    const v=Number(run.outcome.nationalRank||yourRank());
-    return isFinite(v)&&v>0?v:null;
+  if(lbSort==='diff'){
+    const v=Number(stats.pointDiff);
+    return isFinite(v)?v:null;
   }
   return B.scoreOf(run.outcome.wins,stats.pointDiff);
 }
@@ -5991,7 +6138,7 @@ function paintMyPin(){
      makes it: a guest's season is not on this board, and "your place" would be a lie. */
   const live=!!(authState.signedIn&&authState.name&&myRunId);
   const of={day:'today',week:'this week',all:'all time'}[lbWindow];
-  const axis={record:'record',overall:'team overall',rank:'final ranking'}[lbSort];
+  const axis={record:'record',overall:'team overall',diff:'point differential'}[lbSort];
   /* Your own circle comes from your own account rather than from a board row, because
      this season may not be on the board. A guest gets the outline, which is honest. */
   const pf=avatarOf(live?authState.name:null,myAvatar.school,myAvatar.initials);
@@ -6816,18 +6963,24 @@ function guestPitch(){
 
   const ACH=window.PS_CFB_ACH;
   const badges=ACH&&ACH.CATALOG?ACH.CATALOG.length:0;
-  /* Four, and every one of them is a thing this game actually withholds. A list padded
-     with things a guest already has is the fastest way to teach somebody that the next
-     list is not worth reading either. */
-  const perks=[
-    ['Your name on the board',
-     'Every season is ranked either way. Only the ones with a name on them get listed.'],
-    ['Conference Draft',
-     'The Power 5 mode, with a separate leaderboard for each of the five.'],
-    [badges?('All '+badges+' badges'):'The whole trophy case',
-     'The case fills up as you play, and it follows the account rather than this browser.'],
-    ['Your school’s colors',
-     'They theme the home screen, the draft and the bubble up top.'],
+  /* Every one of them is a thing this game actually withholds FROM THE PERSON READING IT.
+     A list padded with things they already have is the fastest way to teach somebody that
+     the next list is not worth reading either, and that is exactly what the four-item
+     version did to a player who is signed in and has not picked a name: Conference Draft,
+     the badges and the school colors all follow the account, so three of the four were
+     already theirs and only the first was true. The nameless case gets its own two.
+
+     ONE THOUGHT A LINE. Short enough to read at a glance, no comma splicing two ideas
+     into one title, and the sentence under it adds a fact rather than qualifying the
+     title back down again. */
+  const perks=g==='noname'?[
+    ['Your name on the leaderboard', 'Nameless seasons are ranked but never listed.'],
+    ['It takes one tap', 'Pick a name and you are on there.'],
+  ]:[
+    ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
+    ['Conference Draft', 'Draft a single Power 5 conference.'],
+    [badges?('All '+badges+' badges'):'Every badge in the game', 'Guests earn none of them.'],
+    ['Your school’s colors', 'They theme the whole game.'],
   ];
   $('sheet-in').dataset.kind='pitch';
   $('sheet-in').innerHTML=
@@ -6837,9 +6990,10 @@ function guestPitch(){
     '<p class="dim" style="font-size:13.5px;margin:0 0 12px">'+
       (g==='noname'
         ? 'You are signed in, so this season is already yours. The board lists seasons by '+
-          'name, so it needs one before it can show you.'
-        : 'You can play this season as a guest and it will be ranked. Here is what an '+
-          'account adds, free, in about ten seconds.')+'</p>'+
+          'name and you have not picked one yet.'
+        /* The first bullet already says the season is ranked either way, so this line
+           does not say it a second time on the way to the list. */
+        : 'An account is free and takes about ten seconds.')+'</p>'+
     '<div class="perks">'+perks.map(([t,d])=>
       '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
       '</span></div></div>').join('')+'</div>'+

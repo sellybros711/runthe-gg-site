@@ -334,9 +334,9 @@ select t_ok('the record board uses cfb_runs_mode_score_idx',
 select t_ok('the overall board uses cfb_runs_mode_overall_idx',
   t_plan('select id from cfb_runs where run_mode = ''free'' and overall is not null order by overall desc, created_at asc limit 50')
     like '%cfb_runs_mode_overall_idx%');
-select t_ok('the ranking board uses cfb_runs_mode_rank_idx',
-  t_plan('select id from cfb_runs where run_mode = ''free'' order by national_rank asc, created_at asc limit 50')
-    like '%cfb_runs_mode_rank_idx%');
+select t_ok('the differential board uses cfb_runs_mode_diff_idx',
+  t_plan('select id from cfb_runs where run_mode = ''free'' order by point_diff desc, created_at asc limit 50')
+    like '%cfb_runs_mode_diff_idx%');
 select t_ok('a conference board is an index scan too',
   t_plan('select id from cfb_runs where run_mode = ''conf:SEC'' order by score desc, created_at asc limit 50')
     like '%cfb_runs_mode_score_idx%');
@@ -366,8 +366,8 @@ select t_ok('the named record board scans a named index',
 select t_ok('the named overall board scans a named index',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null and overall is not null order by overall desc, created_at asc limit 50')
     like '%cfb_runs_named%');
-select t_ok('the named ranking board scans a named index',
-  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by national_rank asc, created_at asc limit 50')
+select t_ok('the named differential board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by point_diff desc, created_at asc limit 50')
     like '%cfb_runs_named%');
 select t_ok('the newest-first board scans a named index',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by created_at desc, score desc limit 50')
@@ -379,20 +379,20 @@ select t_ok('the newest-first board scans a named index',
 -- it sends with the direction turned round, and they have to land on a partial index
 -- exactly as the natural three above do.
 --
--- Note the tiebreak on the ranking axis: reversed is created_at DESC, and NATURAL is
--- created_at ASC, matching the ranking check above. That is not symmetry for its own
--- sake -- national_rank's index is (national_rank ASC, created_at asc), so its natural
--- read is forwards, and asking for a DESC tiebreak there was a forward scan plus a
--- sort. board.js used to key the tiebreak on the literal direction, which is only
--- right for the two axes whose index runs (col desc, created_at asc).
+-- All three axes now run (col desc, created_at asc), so all three reverse the same way
+-- and the tiebreak flips with the key every time. That was NOT always true: the retired
+-- national_rank axis was indexed ASCENDING, because No. 1 was best, so its natural read
+-- was forwards and asking for a DESC tiebreak there was a forward scan plus a sort.
+-- board.js keys the flip on whether the index is being read backwards rather than on the
+-- literal direction, which is the version that survives an ascending axis coming back.
 select t_ok('the reversed record board scans a named index',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by score asc, created_at desc limit 50')
     like '%cfb_runs_named%');
 select t_ok('the reversed overall board scans a named index',
   t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null and overall is not null order by overall asc, created_at desc limit 50')
     like '%cfb_runs_named%');
-select t_ok('the reversed ranking board scans a named index',
-  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by national_rank desc, created_at desc limit 50')
+select t_ok('the reversed differential board scans a named index',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and display_name is not null order by point_diff asc, created_at desc limit 50')
     like '%cfb_runs_named%');
 
 -- And the thing those four are really guarding against, stated once directly.

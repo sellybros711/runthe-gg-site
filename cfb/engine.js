@@ -311,7 +311,13 @@ const CONSTANTS = {
      any change here, and read the title column rather than the perfect one, which is
      counted in the tens and is noise at this sample size. */
   BRACKET_ELITE_SEEDS: 1,
-  BRACKET_GREAT_SEEDS: 7,
+  /* SEVEN UNTIL THE FIELD GOT A BAR ON IT. The bottom seats used to be any nine or ten
+     win team and are now only the ones this game's own ranking puts inside twelve, which
+     is a stronger last five seeds and made the title 24% rarer on its own: 0.199% to
+     0.152% over 57,200 seasons. Moving one seat back out of the eleven-win tier put it
+     back exactly, 0.199% and 114 titles against 0.199% and 114. The field is the lever,
+     the same way the note above says it is. */
+  BRACKET_GREAT_SEEDS: 6,
   /* Off means playRun falls back to the old strength ladder. Nothing ships with this
      off; it is here so the ladder's rates can still be measured at full sample size,
      which is the only honest thing to tune the bracket against. */
@@ -326,6 +332,61 @@ const CONSTANTS = {
   BOWL_MIN_WINS: 6,
   BOWL_NY6_RANK: 18,
   BOWL_MAJOR_RANK: 40,
+  /* ── HOW HARD A SCHEDULE IS ALLOWED TO BE, in the unit that decides a season ───────
+     generateSchedule balanced every slate to the same TOTAL opponent strength, which
+     says nothing about its shape, and the shape is the whole of it: three ranked teams
+     and three cupcakes totals the same as twelve ordinary opponents and is a completely
+     different season, because the cupcakes were already wins and the ranked teams mostly
+     are not. Measured, that was worth more to a season than the draft was.
+
+     So a slate is scored on EXPECTED LOSSES: every opponent's z through this curve,
+     summed, held to a band. Total strength is linear in z and cannot see a shape; a loss
+     probability is not, which is the entire difference.
+
+     THE CURVE IS MEASURED AND NOT FITTED, and that is not fussiness. Two closed forms
+     were tried first and both broke in the same place. The win rate runs 93% at z -1 and
+     61% at 0, which looks like a logistic of slope 2.4, and then falls off a cliff: 10%
+     at +1, 0.5% at +1.5, 0% at +2, because damping the week-to-week variance means an
+     opponent whose mean clears yours is not an upset waiting to happen, it is a result
+     already written. A logistic undercharges exactly those games; balancing on it let
+     top-heavy slates through on the strength of cupcakes that were never going to be
+     losses, and the playoff spread came out WIDER than it started, 20.3% at nought
+     ranked opponents against 4.8% at two. Holding the top of the schedule instead
+     overcorrected the other way, because at a fixed top-four average a spiky slate is
+     easier than a flat one, for the same reason in reverse.
+
+     So: the readings, in order, and interpolated between. Re-measure with
+     `probe_economy.mjs rounds` after any move to SCALE, the cap, DEFENSE_WEIGHT or the
+     consistency pair, all of which change what a game against a given z is worth.
+
+     THE TOLERANCE IS A BAND, NOT A CAGE. Nought is not the target: slates should still
+     differ, they should just stop deciding.
+
+     PAR IS MEASURED, NOT DERIVED, and getting it wrong is a difficulty change wearing a
+     fairness change's clothes. Three numbers, and they are all different:
+
+       5.38   twelve opponents drawn at random from the data
+       5.49   what this generator was already dealing, one season per PROGRAM and then
+              balanced on the total, both of which pull it upwards
+       5.45   what the band is centred on, and what holds the game where it was
+
+     Centring on 5.38 made every schedule a tenth of a loss easier than the ones it
+     replaced and put a whole point on the playoff rate. Centring on 5.49, the honest
+     mean of what was being dealt before, took two thirds of a point OFF it, and that is
+     worth understanding rather than patching: playoff odds are CONVEX in how easy a
+     schedule is, so the lucky tail was contributing more berths than the unlucky tail
+     was taking away, and clipping both ends at the old mean is a net loss of berths.
+     They have to be given back somewhere, and par is where. At 5.45 the playoff rate is
+     15.40% against 15.45% before and the title rate is 0.192% against 0.199%, which is
+     four titles in 57,200 seasons and not a difference.
+     probe_schedule.mjs prints par against what is actually dealt, so if the team data
+     changes enough for these to part company, that is where it will show. */
+  SCHEDULE_LOSS_PAR: 5.45,
+  SCHEDULE_LOSS_CURVE: [
+    [-2.5, 0.00], [-2.0, 0.01], [-1.5, 0.03], [-1.0, 0.07], [-0.5, 0.16],
+    [0.0, 0.39], [0.5, 0.68], [1.0, 0.90], [1.5, 0.995], [2.0, 1.00],
+  ],
+  SCHEDULE_LOSS_TOL: 0.20,
   // How often, out of every bowl, the assignment is the house's own RunThe.GG Bowl.
   RUNTHE_BOWL_CHANCE: 0.05,
   /* How much each side's score is pulled toward its true mean each game. Higher
@@ -855,8 +916,67 @@ function playoffRoundNames(rounds) {
    was worth about 1.8, so being dominant was arithmetically incapable of making
    up for losing once, and the playoff was a cliff at eleven wins.
    Only WIN + LOSS matters for ordering, not the split: the formula is
-   (WIN + LOSS) * w - LOSS * games, and the second term is the same for everyone. */
-const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 4.5, SOS: 1.8 };
+   (WIN + LOSS) * w - LOSS * games, and the second term is the same for everyone.
+   SLATE is the half of who-you-played that the mean cannot see, weighted in the same
+   units before SOS multiplies the pair: see scheduleStrength below. At 3.2 the whole
+   range of schedules this game deals is worth about a quarter of a win, which is a
+   tie-break between two teams with the same record and nothing more than that. */
+const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 4.5, SOS: 1.8, SLATE: 3.2 };
+
+/* HOW LIKELY A GAME AGAINST THIS OPPONENT IS TO BE A LOSS, read off the measured curve
+   on SCHEDULE_LOSS_CURVE and interpolated between its readings. Flat outside the ends,
+   because past z 2 it is a loss and below -2.5 it is a win.
+   BOTH THE SCHEDULE AND THE RESUME ASK THIS, and they have to get the same answer, which
+   is the only reason it lives up here on its own. */
+function lossOdds(z, constants = CONSTANTS) {
+  const c = constants.SCHEDULE_LOSS_CURVE;
+  if (!c || !c.length) return 0.5;
+  if (z <= c[0][0]) return c[0][1];
+  for (let i = 1; i < c.length; i++) {
+    if (z <= c[i][0]) {
+      const [x0, y0] = c[i - 1], [x1, y1] = c[i];
+      return y0 + (y1 - y0) * (z - x0) / (x1 - x0);
+    }
+  }
+  return c[c.length - 1][1];
+}
+/* The losses a slate is worth, which is the whole of what makes one schedule harder
+   than another. Takes team seasons or bare z values. */
+function expectedLosses(games, constants = CONSTANTS) {
+  if (!games || !games.length) return 0;
+  return games.reduce((s, g) =>
+    s + lossOdds(typeof g === 'number' ? g : (g && g.strength_z) || 0, constants), 0);
+}
+
+/* HOW HARD THE SCHEDULE WAS, in the one number the resume reads.
+ *
+ * It used to be the plain mean of the opponents' z, and against this game's schedules
+ * that is very nearly a constant: the generator balances every slate to the same total,
+ * so the mean ran from -0.04 to +0.04 and the term multiplying it was worth about a
+ * seventh of a win across that entire range. Strength of schedule was in the formula and
+ * absent from the game.
+ *
+ * So the difficulty the mean cannot see is added to it: the losses this slate was worth
+ * against the losses an average slate is worth, which is the same measure the generator
+ * balances on. Positive for a hard draw, negative for a soft one, nought for a normal
+ * one. Centred on nought is what keeps this comparable with the real team seasons in the
+ * resume table, whose sos is the conference they played in that year: they have no game
+ * list to take a loss count from, and a term that averages to zero leaves their side of
+ * the comparison exactly where it was.
+ *
+ * IT IS A TIE-BREAK, NOT A VERDICT, deliberately. The generator holds expected losses to
+ * a band, so what reaches here is the difference left over inside that band. A term big
+ * enough to overturn a win would be a thumb on the scale of exactly the kind this is
+ * fixing, pressing the other way. */
+function scheduleStrength(oppZs, prepared, constants = CONSTANTS) {
+  if (!oppZs || !oppZs.length) return 0;
+  const mean = oppZs.reduce((a, b) => a + b, 0) / oppZs.length;
+  const base = prepared && prepared.meanScheduleLosses;
+  if (base == null) return mean;
+  const games = oppZs.length;
+  const par = base * games / (constants.REGULAR_SEASON_GAMES || games);
+  return mean + RESUME.SLATE * (expectedLosses(oppZs, constants) - par);
+}
 
 function resumeScore(wins, losses, z, sos) {
   const played = wins + losses;
@@ -921,7 +1041,7 @@ function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
   const mu = prepared && prepared.pointDiffMean != null ? prepared.pointDiffMean : 0;
   const sd = prepared && prepared.pointDiffSd ? prepared.pointDiffSd : 1;
   const z = (marginPerGame - mu) / sd * MARGIN_GAIN;
-  const sos = oppZs && oppZs.length ? oppZs.reduce((a, b) => a + b, 0) / oppZs.length : 0;
+  const sos = scheduleStrength(oppZs, prepared);
   const resume = resumeScore(wins, losses, z, sos);
   return { z, sos, resume, rank: nationalRank(resume, prepared) };
 }
@@ -1911,6 +2031,34 @@ function generateSchedule(data, rng, opts = {}) {
   const hard = (data.greatPool && data.greatPool.length) ? data.greatPool : null;
   const ordinary = count - (hard ? marquee : 0);
   const target = meanScheduleStrength * ordinary / count;
+  /* ── AND THE SHAPE OF IT, NOT ONLY THE TOTAL ───────────────────────────────
+   *
+   * Balancing the total left the one thing that actually decides a season free to
+   * wander. Three ranked teams and three cupcakes has the SAME total as twelve
+   * ordinary opponents and is a different season, because the cupcakes were already
+   * wins and the ranked ones mostly are not: measured over 2,880 seasons, at a record
+   * that moves by a tenth of a win, the playoff rate ran
+   *
+   *     0 ranked opponents 16.4%     1 ranked 12.2%     2 ranked 7.8%
+   *
+   * so the slate the wheel happened to deal was worth twice what the draft was. A
+   * player wrote in having noticed, which is the part that matters: they were 9-3 with
+   * a hard schedule watching 9-3 teams in the field.
+   *
+   * The resume cannot fix this on its own. Its strength-of-schedule term reads the MEAN,
+   * and the mean is what was already pinned; the shape is invisible to it. So the shape
+   * is pinned here, where the schedule is made, in expected losses: see the curve on
+   * SCHEDULE_LOSS_CURVE, which also records the two ways of doing this that did not
+   * work. The resume then credits what is left over inside the band, which is small
+   * enough to be a tie-break rather than a verdict.
+   *
+   * WHAT THIS IS NOT is a flat schedule. Every slate still has its ranked teams and its
+   * cupcakes and they are different teams every season. What it does not have any more
+   * is a season where the wheel quietly dealt you four of them, or none. */
+  const C = opts.constants || CONSTANTS;
+  const lossTol = opts.lossTolerance ?? C.SCHEDULE_LOSS_TOL ?? 0.2;
+  const lossTarget = opts.lossTarget != null ? opts.lossTarget * ordinary / count
+    : (data.meanScheduleLosses == null ? null : data.meanScheduleLosses * ordinary / count);
 
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -1957,12 +2105,22 @@ function generateSchedule(data, rng, opts = {}) {
        attempts before falling through to the least bad one it saw. */
     const ordElite = unordered.slice(0, ordinary).filter(g => g.strength_z >= eliteThreshold).length;
     const drift = Math.abs(ordTotal - target);
+    const losses = expectedLosses(unordered.slice(0, ordinary), C);
+    const lossDrift = lossTarget == null ? 0 : Math.abs(losses - lossTarget);
     const ok = drift <= Math.abs(target * tolerance) + tolerance * ordinary
-      && ordElite <= maxElite;
-    if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
-    if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
+      && ordElite <= maxElite
+      && lossDrift <= lossTol;
+    if (ok) return { games: ordered, total, elite, losses, attempts: attempt + 1 };
+    /* THE LEAST BAD ONE SEEN has to be judged on both, or a run of four hundred attempts
+       that never satisfies the loss band falls back to whichever schedule had the
+       flattest total, which is the schedule this is trying not to deal. A loss is worth
+       a great deal of z, hence the weight on it. */
+    const cost = drift + lossDrift * ordinary;
+    if (!best || cost < best.cost) {
+      best = { games: ordered, total, elite, losses, drift, cost, attempts: attempt + 1 };
+    }
   }
-  return { games: best.games, total: best.total, elite: best.elite,
+  return { games: best.games, total: best.total, elite: best.elite, losses: best.losses,
     attempts: maxAttempts, relaxed: true };
 }
 
@@ -2055,12 +2213,28 @@ const BRACKET = {
  * roster in that slot is the player's own and does not come out of a pool.
  */
 function buildBracket(data, rng, yourSeed, constants = CONSTANTS) {
-  const { goodPool, greatPool, elitePool } = data;
-  const elite = elitePool.length ? elitePool : greatPool;
-  const great = greatPool.length ? greatPool : goodPool;
-  const good = goodPool.length ? goodPool : greatPool;
+  /* EVERY SEAT COMES OUT OF THE FIELD, which is the list of real seasons this game's own
+     ranking puts inside the top twelve. It arrives best first, so the three tiers are
+     slices of it rather than three separate win-count filters: the top slice for the
+     seats BRACKET_ELITE_SEEDS covers, the next for everything down to
+     BRACKET_GREAT_SEEDS, the tail for the rest. The tiers are proportional to the seats
+     they fill, so a one seed is drawn from the best twelfth or so of the qualified
+     seasons and a twelve seed from the last third of them.
+     The old win-count pools are the fallback for data too thin to rank, which is only
+     ever a test fixture: a real prepareData always returns a field. */
+  const { goodPool, greatPool, elitePool, fringePool } = data;
   const topN = constants.BRACKET_ELITE_SEEDS;
   const midN = constants.BRACKET_GREAT_SEEDS;
+  const elite = elitePool.length ? elitePool : greatPool;
+  const great = greatPool.length ? greatPool : goodPool;
+  /* ONLY THE BOTTOM TIER CHANGED, and only by having a bar. The top two tiers are eleven
+     and twelve win teams, every one of which this game's ranking puts inside the field
+     anyway, so they are what they were and the difficulty they were tuned to holds.
+     The bottom seats used to be ANY nine or ten win team, half of which would never have
+     been selected, and are now the ones that would: mostly 10-2, some 11-2, and a 9-3
+     only when that particular 9-3 really does rank inside twelve. */
+  const good = (fringePool && fringePool.length >= constants.PLAYOFF_TEAMS)
+    ? fringePool : (goodPool.length ? goodPool : greatPool);
   const poolFor = (seed) => (seed <= topN ? elite : seed <= midN ? great : good);
 
   /* NO SCHOOL TWICE IN ONE BRACKET, not merely no season twice. The pools hold many
@@ -2185,10 +2359,27 @@ function bracketPending(bracket, roundIdx) {
   return null;
 }
 
+/* WHO ELSE IS IN THIS BOWL, and the answer has to be a team that is IN A BOWL.
+ *
+ * It used to be a win count: a New Year's Six opponent was any eleven-win team in the
+ * data, which has no ceiling on it, so a quarter of them were undefeated and one in six
+ * was 13-0. A player wrote in about it, and they were right twice over. The bowl is
+ * where ranks 13 to 18 go, so they were a three-loss team being sent out against the
+ * national champion; and the champion was in a bowl at all, which cannot happen, because
+ * a team that good is playing in the bracket.
+ *
+ * Now each tier draws from the teams whose own season ended in that same tier, worked out
+ * by running the country through nationalRank and seedFromRanking. So the Fiesta is the
+ * best teams that missed the field, the marquee bowls are the tier under that, and the
+ * rest of the slate is the rest of the bowl-eligible country. Nobody in a bowl here is
+ * somebody the game would have put in the playoff.
+ *
+ * The win-count pools remain the fallback, for a caller whose data was too thin to rank. */
 function generateBowlOpponent(data, rng, tier) {
-  if (tier === 'ny6') return pickFrom(data.greatPool.length ? data.greatPool : data.goodPool, rng);
-  if (tier === 'major') return pickFrom(data.goodPool.length ? data.goodPool : data.bowlPool, rng);
-  return pickFrom(data.bowlPool.length ? data.bowlPool : data.goodPool, rng);
+  const use = (a, b) => pickFrom(a && a.length ? a : b, rng);
+  if (tier === 'ny6') return use(data.ny6Pool, data.greatPool.length ? data.greatPool : data.goodPool);
+  if (tier === 'major') return use(data.majorPool, data.goodPool.length ? data.goodPool : data.bowlPool);
+  return use(data.minorPool, data.bowlPool.length ? data.bowlPool : data.goodPool);
 }
 
 // ─── game resolution ────────────────────────────────────────────────────────
@@ -2531,13 +2722,63 @@ function prepareData(teamSeasons) {
     confSum[k] = (confSum[k] || 0) + t.strength_z;
     confCount[k] = (confCount[k] || 0) + 1;
   }
-  const resumeTable = teamSeasons.map((t) => {
+  const scored = teamSeasons.map((t) => {
     const parts = String(t.record).split('-');
     const w = Number(parts[0]) || 0, l = Number(parts[1]) || 0;
     const k = t.season + '|' + t.conference;
     const sos = confCount[k] ? confSum[k] / confCount[k] : 0;
-    return resumeScore(w, l, t.strength_z, sos);
-  }).sort((a, b) => b - a);
+    return { team: t, wins: w, games: w + l, resume: resumeScore(w, l, t.strength_z, sos) };
+  });
+  const resumeTable = scored.map(s => s.resume).sort((a, b) => b - a);
+
+  /* ── THE POSTSEASON, SELECTED RATHER THAN DEALT ────────────────────────────
+   *
+   * The pools above sort real seasons by WIN COUNT, and every postseason opponent used
+   * to be drawn from one of them. That is not the rule the player is judged by, and the
+   * two disagreed loudly enough that a player wrote in about both ends of it:
+   *
+   *   the bracket's bottom seats came out of goodPool, ANY nine or ten win team, so
+   *   seeds 8 through 12 were a 9-3 team about four times in ten -- while the player's
+   *   own 9-3 was ranked 20th and missed the field in 556 seasons out of 556. Only 21
+   *   of the 130 nine-win seasons in the data rank inside twelve on their own resume.
+   *
+   *   a New Year's Six opponent came out of greatPool, ELEVEN WINS AND UP WITH NO
+   *   CEILING, so a quarter of them were undefeated. That bowl is where ranks 13 to 18
+   *   go, which is a nine or ten win team being sent to play the national champion.
+   *
+   * So the country is run through the game's own two functions instead. Every real
+   * season already has a resume here; nationalRank turns it into a place and
+   * seedFromRanking says what that place earns. A team is in the bracket because it
+   * would have been selected, and in the Fiesta Bowl because that is where its season
+   * finished, by the same arithmetic that decides where the player goes.
+   *
+   * THE OLD POOLS STAY. generatePlayoffs, the pre-bracket ladder, still reads them, and
+   * generateSchedule uses greatPool for its marquee games. Nothing here is about who you
+   * play in September; it is about who is standing in the postseason.
+   */
+  const ranked = scored.map(s => ({ ...s, rank: nationalRank(s.resume, { resumeTable }) }))
+    .sort((a, b) => a.rank - b.rank || b.resume - a.resume);
+  /* WIN HALF YOUR GAMES, which is the bar the player clears at six of twelve and the bar
+     real college football uses. As a fraction rather than a count on purpose: 2020 was
+     five and six game seasons, and 4-1 Colorado went bowling that year on a record that
+     never reaches six. A flat six would have called them ineligible for a bowl they
+     actually played in. */
+  const bowlEligible = (s) => s.wins * 2 >= s.games;
+  const band = (lo, hi) => ranked
+    .filter(s => s.rank >= lo && s.rank <= hi && bowlEligible(s)).map(s => s.team);
+  /* Best first, so buildBracket can cut it into strength tiers without sorting again.
+     No eligibility filter on the field: a team ranked inside twelve has a record that
+     clears any bar there is, and the bracket is not a bowl. */
+  const fieldPool = ranked.filter(s => s.rank <= CONSTANTS.PLAYOFF_TEAMS).map(s => s.team);
+  /* THE LAST TEAMS IN: qualified, but not by the win count that fills the top of a
+     bracket. Every eleven-win season in the data ranks inside twelve on its own, so
+     greatPool is already a subset of the field and the two top tiers did not need
+     filtering; this is the tier that did. */
+  const fringePool = fieldPool.filter(t => (Number(String(t.record).split('-')[0]) || 0) < 11);
+  const ny6Pool = band(CONSTANTS.PLAYOFF_TEAMS + 1, CONSTANTS.BOWL_NY6_RANK);
+  const majorPool = band(CONSTANTS.BOWL_NY6_RANK + 1, CONSTANTS.BOWL_MAJOR_RANK);
+  /* And the rest of the bowl-eligible country. */
+  const minorPool = band(CONSTANTS.BOWL_MAJOR_RANK + 1, CONSTANTS.FIELD_SIZE);
 
   const diffs = teamSeasons.map(t => t.point_diff_pg || 0);
   const pointDiffMean = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
@@ -2545,6 +2786,13 @@ function prepareData(teamSeasons) {
     diffs.reduce((s, d) => s + (d - pointDiffMean) * (d - pointDiffMean), 0) / (diffs.length || 1)) || 1;
 
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
+  /* WHAT AN AVERAGE SLATE IS WORTH IN LOSSES, so generateSchedule has something to hold
+     against and rankSeason has something to measure yours against. The measured par,
+     which is what the generator deals rather than what a random draw is worth; see the
+     note on SCHEDULE_LOSS_PAR for why those differ and why the difference matters. The
+     random draw is the fallback, for data this constant was never measured against. */
+  const meanScheduleLosses = CONSTANTS.SCHEDULE_LOSS_PAR
+    ?? (expectedLosses(teamSeasons) / (teamSeasons.length || 1) * CONSTANTS.REGULAR_SEASON_GAMES);
   return {
     byProgram,
     eliteThreshold,
@@ -2552,11 +2800,17 @@ function prepareData(teamSeasons) {
     greatPool,
     elitePool,
     bowlPool,
+    fieldPool,
+    fringePool,
+    ny6Pool,
+    majorPool,
+    minorPool,
     resumeTable,
     pointDiffMean,
     pointDiffSd,
     byId: (id) => index[id],
     meanScheduleStrength: meanZ * CONSTANTS.REGULAR_SEASON_GAMES,
+    meanScheduleLosses,
   };
 }
 
@@ -2573,6 +2827,7 @@ const publicAPI = {
   BRACKET, buildBracket, openBracket, advanceBracket, bracketPairs, bracketYourRound,
   bracketOpponent, bracketPending, bracketFavourite,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
+  scheduleStrength, expectedLosses, lossOdds,
   teamRating, teamOverall, titleEdge, roundEdge, weekAdvantage,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,

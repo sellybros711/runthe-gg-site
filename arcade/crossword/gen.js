@@ -109,6 +109,16 @@
     return d[Math.floor((d.length - 1) / 2)];
   }
   function eraStr(d) { return d >= 2000 ? d + 's' : "'" + String(d).slice(2) + 's'; }
+  /* The decade a clue is allowed to PRINT as decoration.
+     "Eagles quarterback and Super Bowl MVP of the 2020s", read in 2026, narrows
+     nothing: every man still playing is a 2020s player. It is filler that also
+     dates the puzzle. So the decade the puzzle itself falls in is never hung on
+     a clue, and eraOf returns null for it.
+     Read off the puzzle's own date rather than the clock, so a given day's grid
+     is the same grid whenever it is generated, which is what the archive
+     depends on. */
+  var CUR_DECADE = null;
+  function eraOf(d) { return (d == null || d === CUR_DECADE) ? null : eraStr(d); }
 
   // does entity x fit every fact the clue states? (used to prove the clue
   // cannot also describe a same-surname rival)
@@ -119,6 +129,8 @@
     if (used.sport && x.sport !== used.sport) return false;
     if (used.hof && !x.hof) return false;
     if (used.team && !hasTeam(x, used.team)) return false;
+    // the club he left for: a rival only fits if he wore that one too
+    if (used.team2 && !hasTeam(x, used.team2)) return false;
     if (used.jersey != null && (x.j || []).indexOf(used.jersey) < 0) return false;
     if (used.era != null && (x.decade || []).indexOf(used.era) < 0) return false;
     if (used.pos && x.pos !== used.pos) return false;
@@ -152,7 +164,7 @@
     var guard = 0;
     while (ambiguous(used, rivals) && guard++ < 5) {
       if (tn && !used.team) { text += ', of the ' + tn; used.team = tn; continue; }
-      if (dec != null && used.era == null) { text += ', ' + eraStr(dec); used.era = dec; continue; }
+      if (eraOf(dec) && used.era == null) { text += ', ' + eraOf(dec); used.era = dec; continue; }
       if (e.pos && !used.pos) { text += ', a ' + e.pos.toLowerCase(); used.pos = e.pos; continue; }
       if (jersey != null && used.jersey == null) { text += ', who wore ' + jersey; used.jersey = jersey; continue; }
       if (e.col && !used.col) { text += ', out of ' + colName(e.col); used.col = colKey(e.col); continue; }
@@ -274,7 +286,7 @@
     /* The decade goes in FRONT of these two, never on the end: a career shape
        already finishes on a relative clause, and " of the 1990s" tacked after
        it lands on the last club rather than on the man. */
-    var d0 = primaryDecade(e), eraS = d0 != null ? eraStr(d0) : null;
+    var d0 = primaryDecade(e), eraS = eraOf(d0);
     if (path.length >= 3) {
       var three = path.slice(0, 3);
       out.push({ kind: 'path', t: cap(role) + ' who played for the ' + list(three),
@@ -291,30 +303,58 @@
       if (eraS) out.push({ kind: 'oneclub', t: cap(role) + ' of the ' + eraS + ' who spent his whole career with the ' + tn,
                  used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn, era: d0 } });
     }
+    /* ONE WORD DECIDES WHETHER A CLUB LINE IS TRUE.
+       "Timberwolves center in number 32" is a claim about today's roster, and
+       our team list is a CAREER: the man it described had already moved to New
+       York. "Former Timberwolves center" is the same clue and true.
+
+       So `was` is the club with "Former" in front of it, and the prefix goes on
+       only where the record can PROVE he left, which is when the last club on
+       his sheet is not the one being named. A long list is not proof on its
+       own: Lillard went Blazers, Bucks, Blazers and is a Blazer today, so he
+       stays a Blazers guard, exactly like Curry and Mahomes and everybody else
+       who never moved.
+
+       And when he did leave, the club he left FOR is the sharpest thing we
+       hold about that career, so it gets a shape of its own: "Former Mets
+       pitcher who left for the Rangers" is the sentence a fan would actually
+       say. path[1] is where he went, because path is his clubs in the order he
+       joined them. */
+    var lastClub = teams.length ? nick(teams[teams.length - 1]) : null;
+    var gone = !!(tn && lastClub && lastClub !== tn);
+    var wentTo = gone && path.length > 1 ? path[1] : null;
+    var was = gone ? 'Former ' + tn : tn;
     // the number, when the file holds exactly one and cannot be picking wrong
     if (tn && pos && e.j && e.j.length === 1) {
-      out.push({ kind: 'number', t: tn + ' ' + pos + ' in number ' + e.j[0],
+      out.push({ kind: 'number', t: was + ' ' + pos + ' in number ' + e.j[0],
                  used: { team: tn, pos: e.pos, jersey: e.j[0] } });
     }
     /* "Otterbein product who played outfielder for the Reds" is not a sentence
        anybody says. Club and position first, where a fan starts, and the school
        as the tail that narrows it. */
     if (e.col && tn && pos) {
-      out.push({ kind: 'college', t: tn + ' ' + pos + ' out of ' + colName(e.col),
+      out.push({ kind: 'college', t: was + ' ' + pos + ' out of ' + colName(e.col),
                  used: { team: tn, pos: e.pos, col: colKey(e.col) } });
     }
+    // the move itself
+    if (wentTo && pos) {
+      out.push({ kind: 'left', t: was + ' ' + pos + ' who left for the ' + wentTo,
+                 used: { team: tn, pos: e.pos, team2: wentTo } });
+    }
+    // No "Former" on a Hall of Famer: a man in Canton is on nobody's roster,
+    // so the bare club form was never claiming a place he does not hold.
     if (e.hof && tn) out.push({ kind: 'hofclub', t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos && dist) out.push({ kind: 'clubaward', t: tn + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
-    if (tn && dist) out.push({ kind: 'clubaward', t: tn + ' ' + dist, used: { team: tn, aw: true } });
-    if (tn && pos) out.push({ kind: 'clubpos', t: tn + ' ' + pos, used: { team: tn, pos: e.pos } });
+    if (tn && pos && dist) out.push({ kind: 'clubaward', t: was + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
+    if (tn && dist) out.push({ kind: 'clubaward', t: was + ' ' + dist, used: { team: tn, aw: true } });
+    if (tn && pos) out.push({ kind: 'clubpos', t: was + ' ' + pos, used: { team: tn, pos: e.pos } });
     if (e.hof) out.push({ kind: 'league', t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
     if (dist) out.push({ kind: 'league', t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
     if (pos) out.push({ kind: 'league', t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
     return out;
   }
   /* Which anchors can take " of the 1990s" on the end. Only the ones that
-     finish on a plain noun phrase: hang it off a number or a club list and the
-     decade lands on the wrong noun. */
+     finish on a plain noun phrase: hang it off a number, a school, a club list
+     or the club he left for and the decade lands on the wrong noun. */
   var ERA_OK = { hofclub: 1, clubaward: 1, clubpos: 1, league: 1 };
   function cap(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
   function list(a) {
@@ -329,7 +369,7 @@
      and the word simply loses its place in the pool rather than being asked
      with "MLB All-Star" written beside it. */
   function infoScore(used) {
-    return (used.team ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
+    return (used.team ? 3 : 0) + (used.team2 ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
            (used.era != null ? 1 : 0) + (used.ml ? 2 : 0) + (used.curated ? 6 : 0) +
            // a club list and a one-club career are worth more than the club
            // alone, which is the whole reason they exist
@@ -350,7 +390,7 @@
     if (!anch.length) return null;
     var hand = curatedPredicate(e, rng);
     var dec = primaryDecade(e);
-    var era = dec != null ? eraStr(dec) : null;
+    var era = eraOf(dec);
     var ml0 = (e.ml && e.ml.length) ? e.ml[0] : null;
 
     /* A hand-written moment identifies one man on its own, so it skips the
@@ -630,10 +670,12 @@
   // Tuned against a 365-day run — see scripts/check-cluebank.mjs, which reports
   // the resulting share of curated clue slots.
   var CURATED_WEIGHT = 14;
-  var _poolSrc = null, _poolCache = null;
+  // CUR_DECADE is part of the key: eligibility is decided by clueFor, which
+  // reads it, so a pool built in one decade must not be reused in the next.
+  var _poolSrc = null, _poolCache = null, _poolDec = null;
   function getPool(corpus) {
-    if (_poolSrc !== corpus) {
-      _poolSrc = corpus;
+    if (_poolSrc !== corpus || _poolDec !== CUR_DECADE) {
+      _poolSrc = corpus; _poolDec = CUR_DECADE;
       // Mixed pool: player surnames (deep pool + generated clues) plus static
       // team-nickname and sport-vocab entries. Non-surname items carry a
       // `staticClue` so finalize skips the surname clue generator for them.
@@ -806,6 +848,7 @@
    * corpusOpt is for Node/tests; the page relies on window.GRID_ENTITIES. */
   function forDate(dateStr, corpusOpt) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''))) return null;
+    CUR_DECADE = Math.floor(+String(dateStr).slice(0, 4) / 10) * 10;
     var corpus = corpusOpt || (root && root.GRID_ENTITIES) || [];
     if (!corpus.length) return null;
     var pool = getPool(corpus);

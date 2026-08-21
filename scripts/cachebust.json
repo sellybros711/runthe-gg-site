@@ -5,8 +5,8 @@
       "sha": "7aea7737d6227d84"
     },
     "gen.js": {
-      "v": "9",
-      "sha": "c2429f27e987f05a"
+      "v": "13",
+      "sha": "8bcd16d33269bba6"
     }
   },
   "arcade/match/index.html": {
@@ -49,8 +49,8 @@
   },
   "cfb/index.html": {
     "engine.js": {
-      "v": "32",
-      "sha": "9a1f6e9fb525c74a"
+      "v": "33",
+      "sha": "54a1af307d1dffbd"
     },
     "run.js": {
       "v": "14",
@@ -65,8 +65,8 @@
       "sha": "4c67387d3696ab36"
     },
     "board.js": {
-      "v": "5",
-      "sha": "34af025993c1e615"
+      "v": "6",
+      "sha": "13d061370a98bbe8"
     }
   },
   "football/index.html": {

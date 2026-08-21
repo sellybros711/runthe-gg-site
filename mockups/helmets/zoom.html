@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- The angles side by side, large. Which one is the helmet in your head? -->
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Angles</title>
+<body style="margin:0;background:#0b1220;padding:18px;font:12px system-ui;color:#9fb3c8">
+<script src="helmet.js"></script><script src="kits.js"></script>
+<div id="out"></div>
+<script>
+(async function () {
+  const schools = await KITS.load('../../cfb/data/cfb_team_seasons.json');
+  const out = document.getElementById('out');
+  for (const shape of ['side', 'front']) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:16px;align-items:flex-end;margin-bottom:22px';
+    row.insertAdjacentHTML('beforeend',
+      '<div style="width:70px;font-weight:700;color:#e8eef8">' + shape + '</div>');
+    for (const name of ['Alabama', 'Michigan', 'Penn State', 'Notre Dame', 'Oregon']) {
+      const k = schools.find((x) => x.name === name);
+      const c = document.createElement('canvas');
+      PixelHelmet.render(c, k, 5, shape);
+      c.style.imageRendering = 'pixelated';
+      row.appendChild(c);
+    }
+    const a = schools.find((x) => x.name === 'Alabama');
+    [3, 2, 1].forEach((s) => {
+      const c = document.createElement('canvas');
+      PixelHelmet.render(c, a, s, shape);
+      c.style.imageRendering = 'pixelated';
+      row.appendChild(c);
+    });
+    out.appendChild(row);
+  }
+})();
+</script>

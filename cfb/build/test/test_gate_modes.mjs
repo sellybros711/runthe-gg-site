@@ -141,8 +141,12 @@ async function draftSix(p) {
   ok('the ask comes up on the squad screen', pitch.open && pitch.kind === 'pitch', pitch.kind);
   ok('it lists what an account gets you', pitch.perks.length === 4, pitch.perks.join(' | '));
   ok('and the Conference Draft is one of them', pitch.perks.some((t) => /Conference Draft/.test(t)));
-  ok('it says the season is ranked either way', /ranked/.test(pitch.text),
-    pitch.text.slice(0, 120));
+  /* SOMEWHERE ON IT, it still has to say the season counts without an account. A list of
+     only what is withheld reads as "you have been playing for nothing", which is a reason
+     to stop rather than a reason to sign up. It lives in the first bullet now instead of
+     being said in the paragraph above and again underneath it. */
+  ok('it says the season is ranked either way', /ranked but never listed/i.test(pitch.text),
+    pitch.text.slice(0, 140));
   ok('there is a way in and a way past', !!pitch.cta && /guest/.test(pitch.out || ''),
     pitch.cta + ' / ' + pitch.out);
   /* Nothing has been played yet, so the button must not promise to keep a season. */

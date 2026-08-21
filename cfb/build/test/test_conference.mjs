@@ -25,12 +25,13 @@ const psql = (sql) => execFileSync('psql', ['-X', '-A', '-t', '-d', DB, '-c', sq
     PGPORT: process.env.PGPORT || '5433', PGUSER: process.env.PGUSER || 'postgres' } }).trim();
 
 /* A NAMED SEASON IN ONE COMPETITION, so there is a field to be placed against. The
-   board lists named seasons only now, and this suite plays signed out, so without
-   this the Pac-12 board is empty and the honest answer is "nobody has signed in for
-   this one yet" rather than a placing. That is correct behaviour and not what this
-   file is trying to test: the property here is that a conference season is counted
-   against ITS OWN competition and not against free play, which needs a field in one
-   of them and nothing in the other to be visible at all. */
+   board lists named seasons only, and the account this suite signs in as has no name
+   on it, so the season it plays is ranked and not listed: without this row the Pac-12
+   board is empty and the honest answer is "nobody has put a name on this one yet"
+   rather than a placing. That is correct behaviour and not what this file is trying to
+   test: the property here is that a conference season is counted against ITS OWN
+   competition and not against free play, which needs a field in one of them and
+   nothing in the other to be visible at all. */
 const seedNamed = (mode, tag) => psql(
   `delete from cfb_runs where display_name = '${tag}';
    insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games, national_rank,
@@ -52,10 +53,22 @@ const ok = (name, pass, extra) => {
   console.log((pass ? '  ok   ' : ' FAIL  ') + name + (extra ? '   ' + extra : ''));
 };
 
+/* SIGNED IN, because Conference Draft is an account feature now. It is not a leaderboard
+   stub and it is not trying to be: the board still answers from PostgREST, and this only
+   gets the mode unlocked. Signed out, #b-mc-conf is not a button at all, it is the locked
+   card with the gate on it, and every click below waits thirty seconds for an element the
+   page is deliberately not drawing. */
+const SIGNED_IN = `window.supabase={createClient(){return{
+  auth:{onAuthStateChange(cb){setTimeout(()=>cb('SIGNED_IN',{user:{id:'u1',email:'a@b.c'}}),0);return{data:{}}},
+    getSession:()=>Promise.resolve({data:{session:{user:{id:'u1',email:'a@b.c'}}}}),
+    signOut:()=>Promise.resolve({})},
+  from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve({data:{username:'tester'}})}}}}}},
+  rpc:()=>Promise.resolve({data:null,error:null})}}};`;
+
 async function open() {
   const page = await browser.newPage({ viewport: { width: 600, height: 1000 } });
   page.on('pageerror', (e) => { console.log('  PAGE ERROR: ' + e.message); bad++; });
-  await page.addInitScript("window.PS_CFB_BOARD_URL='http://localhost:5555';");
+  await page.addInitScript(SIGNED_IN + "window.PS_CFB_BOARD_URL='http://localhost:5555';");
   await page.goto('http://localhost:8080/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
   await page.waitForTimeout(2800);
   await page.evaluate(async () => {
@@ -182,8 +195,11 @@ console.log('\n=== a conference season, all the way through ===');
     row ? row.run_mode : 'no row');
 
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ');
-  ok('the place is counted inside that competition', /Pac-12 draft seasons/.test(place),
-    place.slice(0, 70));
+  /* "Among every Pac-12 draft season recorded." Singular, because the line reads as a
+     sentence rather than a count; it was written plural here and the two never met,
+     because the mode being locked meant this assertion had not run in a while. */
+  ok('the place is counted inside that competition', /Pac-12 draft season/.test(place),
+    place.slice(0, 90));
 
   console.log('\n=== the boards stay apart ===');
   await page.click('#o-lb'); await page.waitForTimeout(2600);
