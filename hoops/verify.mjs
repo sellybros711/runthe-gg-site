@@ -161,6 +161,44 @@ is(atOnce.season.map(g => `${g.yourPoints}-${g.oppPoints}`),
 is(walkedOutcome.titleWon, bulkOutcome.titleWon, 'and the same postseason');
 ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it built');
 
+/* A TRADED PLAYER HAS TWO ROWS IN ONE SEASON, AND BOTH ARE REAL.
+ *
+ * This is the assertion the hand-entered seed could never have produced, and
+ * the first real data run died on it: keyed on id and season alone, the two
+ * rows of a February trade collide, the lookup table keeps whichever was
+ * written last, and a board built from one club resolves to the other club's
+ * row. The player is then offered at a slot his colliding twin cannot play, and
+ * signing him throws "no slot" from a code path that is correct.
+ *
+ * The seed has no traded players in it, so this is built by hand rather than
+ * drawn from the data: the point is to keep the property true no matter what
+ * the data happens to contain today.
+ */
+{
+  const base = players[0];
+  const mid = { ...base, i: 'tradedguy01', s: 2011, t: 'DEN', pp: 'PG', ep: 'PG;G' };
+  const end = { ...base, i: 'tradedguy01', s: 2011, t: 'NYK', pp: 'C', ep: 'C;FC' };
+
+  ok(E.pkey(mid) !== E.pkey(end),
+    'the same man on two clubs in one season gets two different keys');
+
+  const idx = E.indexData([...players, mid, end]);
+  ok(idx.allPlayers[E.pkey(mid)] && idx.allPlayers[E.pkey(end)],
+    'and both rows survive indexing rather than one overwriting the other');
+  is(idx.allPlayers[E.pkey(mid)].t, 'DEN', 'the first club resolves to the first club');
+  is(idx.allPlayers[E.pkey(end)].t, 'NYK', 'and the second to the second');
+
+  /* And the thing that must NOT change: signing one still takes the other off
+     the board, because a run may not hold the same man twice. That is blocked
+     on the player id, not on this key. */
+  const run = R.createRun({ seed: 1 });
+  run.roster.push(mid);
+  run.slotIndex.push(0);
+  run.usedPlayers.push(mid.i);
+  is(R.blockFor(run, end), R.BLOCK.DRAFTED,
+    'and signing one club version still blocks the other, by player id');
+}
+
 // ─── the basketball ─────────────────────────────────────────────────────────
 
 /* THE FIT MODEL, CHECKED AGAINST TEAMS PEOPLE ALREADY HAVE OPINIONS ABOUT.

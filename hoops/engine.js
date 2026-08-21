@@ -293,10 +293,26 @@ function indexData(players) {
   };
 }
 
-/* The key a player is addressed by everywhere: id plus season. A player has one
-   row per season, so the pair is unique, and a run stores keys rather than
-   objects so it stays serializable. */
-const pkey = (p) => `${p.i}|${p.s}`;
+/* THE KEY A PLAYER-SEASON IS ADDRESSED BY: id, season, AND CLUB.
+ *
+ * The club is in there because "a player has one row per season" is false, and
+ * it is false in a way that only a real league shows you. A man who is traded in
+ * February has TWO rows that season, one per club, and both are real: the 2021
+ * Bucks P.J. Tucker and the 2021 Rockets P.J. Tucker are different roster spots
+ * a draft can land on.
+ *
+ * Keyed on id and season alone those two collide, the lookup table keeps
+ * whichever was written last, and a board built from one club resolves to the
+ * other one's row. The first real data run died on exactly that: a player was
+ * offered at a slot his colliding twin could not play, and signing him threw
+ * "no slot" from a code path that had been correct for every one of the 171
+ * hand-entered rows, because no hand-entered row was ever traded.
+ *
+ * Signing is still blocked by PLAYER ID, not by this key, so drafting one
+ * P.J. Tucker still takes the other off the board. That part was already right.
+ *
+ * A run stores keys rather than objects so it stays serializable. */
+const pkey = (p) => `${p.i}|${p.s}|${p.t}`;
 
 /* What a team-season is worth if you drafted its best six.
  *
