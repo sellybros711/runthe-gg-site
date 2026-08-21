@@ -7945,6 +7945,25 @@ function reel(el,faces,target,ms,done,onLand){
   el._raf=requestAnimationFrame(step);
 }
 
+/* THE DRAFT WHEELS, STOPPED DEAD. The same three lines heroStop() uses on the intro reels,
+   and the thing endRun() was missing.
+
+   A spin is a requestAnimationFrame chain that ENDS BY CALLING BACK INTO THE RUN it was
+   spinning for. Quitting is one tap on the header from any screen and the opening spin runs
+   about two seconds, so there is a two second window at the start of every run where the
+   wheel lands on a run that has just been set to null. It shipped that way, as
+
+     TypeError: null is not an object (evaluating 'run.roster')
+
+   showing up on the FRONT PAGE a second after leaving a draft, which is the worst place to
+   read it: the screen you are looking at is fine, so the message looks like the game is
+   broken rather than like something you just left. */
+function stopSpin(){
+  ['reel-y','reel-t'].forEach((id)=>{
+    const el=$(id); if(el&&el._raf){ cancelAnimationFrame(el._raf); el._raf=0; }
+  });
+}
+
 /* Year lands first, then the team, so the reveal has two beats. */
 function spinBoth(draw,done){
   const yEl=$('reel-y'), tEl=$('reel-t'), tBox=$('box-t');
@@ -8011,7 +8030,18 @@ function nextSpin(){
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
   const draw=R.spin(run,dataNow());
-  spinBoth(draw,()=>{ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName,franchise:draw.franchise,mode:runMode(),club:run&&run.franchise||null});paintOpts(draw);});
+  /* THE RUN CAN BE GONE BY THE TIME THE WHEEL LANDS. stopSpin() in endRun is what normally
+     stops this callback ever running, and this is the belt to that brace: it costs one
+     comparison and it covers any future path that tears a run down without going through
+     endRun. The old guard here was `(run.roster||[])`, which protects against the ROSTER
+     being missing and reads run.roster to do it, so a null run threw before the || was
+     reached. */
+  spinBoth(draw,()=>{
+    if(!run) return;
+    ga('spin_completed',{spin_n:run.roster.length+1,year:draw.season,team:draw.teamName,
+      franchise:draw.franchise,mode:runMode(),club:run.franchise||null});
+    paintOpts(draw);
+  });
 }
 
 let activeTab=null;
@@ -16639,6 +16669,11 @@ $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{s
    too, but this also covers Start over, which ends with no run at all. */
 function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
+  /* The draft wheels are the fourth thing that outlives a run, and they were the one that
+     was missed. See stopSpin(): a spin ends by calling back into the run it was spinning
+     for, which is exactly the "keeps firing into a screen that has moved on" this comment
+     block warns about, and it went unlisted because a wheel is not a timer by name. */
+  stopSpin();
   run=null; lastChem=1;
   submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null; lastPerfectShare=null;
   /* After run=null, so it reads the absence of a run rather than the team that just left. */
