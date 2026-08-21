@@ -75,6 +75,13 @@ async function main() {
   const byPlayer = {};
   let empty = 0;
   let first = true;
+  /* KEPT SO THE FAILURE CAN REPRINT IT. The diagnostic fires on the first year
+     and is then buried under sixty-five lines of "0 picks", which put it about
+     two hundred lines from the end of the CI log. Reading it back cost several
+     oversized log fetches, and twice the fetch simply did not reach far enough
+     and the round trip was wasted. A failure should carry its evidence. */
+  const diagnosis = [];
+  const say = (line) => { diagnosis.push(line); console.log(line); };
 
   for (let year = from; year <= to; year++) {
     const html = await get(`${BBR}/draft/NBA_${year}.html`);
@@ -91,10 +98,10 @@ async function main() {
       const title = (/<title>([\s\S]*?)<\/title>/i.exec(html) || [])[1] || '(no title)';
       const open = (html.match(/<tr\b/gi) || []).length;
       const close = (html.match(/<\/tr>/gi) || []).length;
-      console.log(`    nothing parsed. title: ${title.trim().slice(0, 90)}`);
-      console.log(`    bytes: ${html.length}, <tr>: ${open}, </tr>: ${close}, </td>: ${(html.match(/<\/td>/gi) || []).length}`);
+      say(`    nothing parsed. title: ${title.trim().slice(0, 90)}`);
+      say(`    bytes: ${html.length}, <tr>: ${open}, </tr>: ${close}, </td>: ${(html.match(/<\/td>/gi) || []).length}`);
       const link = /href="?\/players\/[a-z]\/[a-z0-9.'-]+\.html"?/i.exec(html);
-      console.log(`    first player link: ${link ? link[0] : 'NONE FOUND'}`);
+      say(`    first player link: ${link ? link[0] : 'NONE FOUND'}`);
       /* THE MARKUP ITSELF. Three runs have now printed counts at this point
          and none of them said what was wrong, because a count can only confirm
          a theory you already have. The first attempt anchored on the first
@@ -107,12 +114,12 @@ async function main() {
       const chunks = (uncomment(html).match(/<tr[\s\S]*?<\/tr>/gi) || []);
       const interesting = chunks.filter(t => /\/players\//i.test(t) || /data-stat="player/i.test(t));
       const sample = (interesting.length ? interesting : chunks).slice(0, 2);
-      console.log(`    ${chunks.length} row chunks, ${interesting.length} of them with a player cell or link.`);
+      say(`    ${chunks.length} row chunks, ${interesting.length} of them with a player cell or link.`);
       if (!sample.length) {
-        console.log('    NO ROW CHUNKS AT ALL, so the table is not where <tr> is.');
+        say('    NO ROW CHUNKS AT ALL, so the table is not where <tr> is.');
       }
       for (const t of sample) {
-        console.log('      ' + t.replace(/\s+/g, ' ').slice(0, 500));
+        say('      ' + t.replace(/\s+/g, ' ').slice(0, 500));
       }
     }
 
@@ -139,6 +146,12 @@ async function main() {
      same silent zero the season fetch guards against. */
   if (empty > 3 || total < (to - from) * 20) {
     console.error(`\n${empty} year(s) returned no picks and ${total} players were found in total.`);
+    if (diagnosis.length) {
+      console.error('\nWHAT THE FIRST PAGE ACTUALLY LOOKED LIKE, repeated here because it was');
+      console.error('printed sixty-six lines ago and that is too far back to find in CI:');
+      for (const d of diagnosis) console.error(d);
+      console.error('');
+    }
     console.error('A real NBA draft year has 30 to 200 picks. This is a broken parser or a');
     console.error('blocked fetch. Nothing was written, so the two chemistry links that need');
     console.error('this data stay silent, which is harmless. The player data is unaffected.');

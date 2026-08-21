@@ -238,6 +238,49 @@ is(cell(unclosed[0], 'pick_overall'), '1', 'a th cell closes the same way');
    picks up Carmelo's college and every row becomes the whole table. */
 is(cell(unclosed[0], 'player'), 'LeBron James', 'a row stops where the next row starts');
 
+/* ---------- EVERY WAY A PLAYER LINK CAN BE WRITTEN ----------
+ *
+ * The draft fetch has returned zero picks for all sixty-six years on four
+ * separate runs, while the diagnostic printed at it insisted the page was the
+ * right page with the rows and the links present. Each round trip tested ONE
+ * guess about the markup and cost ten minutes.
+ *
+ * The pattern demanded `href="/players/...`, which quietly asserts three
+ * things at once: that the origin is relative, that the quote is a double one,
+ * and that .html is the end of the attribute. Any of those being different
+ * gives exactly the symptom seen, and none of them changes which player the
+ * row is about. So the parser now asks for the path and nothing else, and
+ * every variant is pinned here rather than guessed at one run at a time. */
+const HREF_FORMS = [
+  ['relative, double quoted', '<a href="/players/j/jamesle01.html">LeBron James</a>'],
+  ['absolute', '<a href="https://www.basketball-reference.com/players/j/jamesle01.html">LeBron James</a>'],
+  ['protocol relative', '<a href="//www.basketball-reference.com/players/j/jamesle01.html">LeBron</a>'],
+  ['single quoted', "<a href='/players/j/jamesle01.html'>LeBron James</a>"],
+  ['unquoted', '<a href=/players/j/jamesle01.html>LeBron James</a>'],
+  ['with a query string', '<a href="/players/j/jamesle01.html?utm=draft">LeBron James</a>'],
+  ['with a fragment', '<a href="/players/j/jamesle01.html#totals">LeBron James</a>'],
+  ['extra attributes first', '<a class="x" data-foo="1" href="/players/j/jamesle01.html">LeBron</a>'],
+];
+for (const [what, anchor] of HREF_FORMS) {
+  const r = bbrRows(`<tr><td data-stat="player">${anchor}</td></tr>`);
+  is(r.length && r[0].slug, 'jamesle01', `the slug is found when the link is ${what}`);
+}
+
+/* And data-append-csv still wins, however IT is quoted. */
+for (const [what, attr] of [['double quoted', '"realslug01"'], ['single quoted', "'realslug01'"]]) {
+  const r = bbrRows(`<tr><td data-stat="player" data-append-csv=${attr}>`
+    + '<a href="/players/x/wrongslug99.html">Somebody</a></td></tr>');
+  is(r.length && r[0].slug, 'realslug01', `data-append-csv wins when ${what}`);
+}
+
+/* A row with no player in it is still not a player. This is the assertion that
+   stops the permissive pattern above turning headers and league-average rows
+   into people. */
+is(bbrRows('<tr><th data-stat="ranker">Rk</th><th data-stat="player">Player</th></tr>').length, 0,
+  'a header row still yields nobody');
+is(bbrRows('<tr><td data-stat="player">League Average</td><td data-stat="pts_per_g">9.9</td></tr>').length, 0,
+  'and a league-average row is not a player either');
+
 // ─── multi-team rows are stat lines, not clubs ──────────────────────────────
 
 const traded = perGameNew.find(r => r.slug === 'smithja01');

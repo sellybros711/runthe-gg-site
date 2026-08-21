@@ -145,8 +145,18 @@ export function bbrRows(html) {
      * The attribute still wins where it exists, so nothing about the season
      * pages changes. The href is the fallback.
      */
-    let slug = (/data-append-csv="([a-z0-9.'-]+)"/i.exec(tr) || [])[1];
-    if (!slug) slug = (/href="\/players\/[a-z]\/([a-z0-9.'-]+)\.html"/i.exec(tr) || [])[1];
+    let slug = (/data-append-csv=["']?([a-z0-9.-]+)["']?/i.exec(tr) || [])[1];
+    /* THE HREF FORM ASKS FOR THE PATH AND NOTHING ELSE, deliberately. It used
+       to require `href="/players/...` exactly, which is one guess about how the
+       link is written, and the draft fetch has now returned zero picks four
+       runs running while every count printed at it said the page was fine.
+
+       A player path is unambiguous wherever it appears in a row, so this stops
+       asserting things it cannot see: the origin may be absolute, the quotes
+       may be single or absent, and there may be a query string or a fragment
+       after .html. Any of those broke the old pattern and none of them changes
+       which player the row is about. */
+    if (!slug) slug = (/\/players\/[a-z]\/([a-z0-9.'-]+)\.html/i.exec(tr) || [])[1];
     if (!slug) return null;                           // a header row is not a player
 
     /* AND THE CELLS END THE SAME WAY. </td> and </th> are optional in HTML5

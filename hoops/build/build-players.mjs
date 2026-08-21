@@ -180,11 +180,24 @@ function main() {
        that by three would invent a superstar out of a parsing error, so it is
        left alone and reported instead. */
     const SHORTEST_REAL_SCHEDULE = 45;
+    /* AND A CLUB THAT PLAYED 78 OR MORE HAD A FULL SCHEDULE, whatever its
+       attendance sheet says. This started as `played >= FULL`, which assumed
+       somebody on every club plays all 82, and in the modern game nobody does:
+       the first real run normalized 2022, 2023 and 2025, which are ordinary 82
+       game seasons, because their best-attended player rested a few nights.
+       That inflated recent players by three or four percent, which is precisely
+       the era bias this correction exists to remove, pointed the other way.
+
+       Below 78 no amount of load management explains the gap and a real short
+       schedule does: 1999 played 50, 2012 66, 2021 72, and 2020 between 63 and
+       75 by club. Over-correcting invents value out of a rest day; under-
+       correcting only leaves a player slightly cheap. */
+    const FULL_ENOUGH = 78;
     const scaled = new Map();
     const suspect = [];
     for (const r of rows) {
       const played = teamGames.get(`${r.s}|${r.t}`);
-      if (!played || played >= FULL) continue;
+      if (!played || played >= FULL_ENOUGH) continue;
       if (played < SHORTEST_REAL_SCHEDULE) {
         suspect.push(`${r.s} ${r.t} (${played} games)`);
         continue;
