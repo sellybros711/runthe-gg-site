@@ -97,6 +97,36 @@ function main() {
     source = 'the hand-entered seed (hoops/build/seed-rosters.mjs)';
   }
 
+  /* WHO IS WORTH PUTTING ON A BOARD.
+   *
+   * A real NBA season is about 500 player-seasons and most of them are men who
+   * barely played. Fifty seasons of that is 25,000 rows, the large majority of
+   * which are a fourth-string centre who appeared in nine games. Ship all of
+   * them and two things break at once: the wheel spends most of its time on
+   * players nobody has heard of, and the file the browser downloads triples for
+   * the privilege.
+   *
+   * So a row has to clear a floor of real playing time. Twelve minutes a night
+   * across twenty games is deliberately LOW: it keeps the last man in a real
+   * rotation, who is exactly the sort of cheap useful player the cap needs to be
+   * able to buy, and drops the man who was called up in March.
+   *
+   * The seed has no minutes on it at all and is exempt, which is the correct
+   * behaviour rather than an oversight: 171 hand-entered rows are all rotation
+   * players by construction.
+   */
+  const MIN_MPG = 12.0;
+  const MIN_GAMES = 20;
+  const before = rows.length;
+  rows = rows.filter((r) => {
+    if (typeof r.mp !== 'number') return true;          // the seed, which has none
+    return r.mp >= MIN_MPG && (r.g || 0) >= MIN_GAMES;
+  });
+  if (rows.length !== before) {
+    console.log(`  playing time floor: kept ${rows.length} of ${before} rows `
+      + `(${MIN_MPG} mpg across ${MIN_GAMES} games)`);
+  }
+
   /* Draft year and college, if the draft pass has been run. Neither is on a
      season page, so without this join both chemistry links that depend on them
      are permanently silent on real data. A player the draft pass never saw keeps
@@ -108,12 +138,18 @@ function main() {
 
   const priced = rows.map((row) => {
     const extra = draft && draft[row.i];
-    return {
+    const out = {
       ...row,
       dr: row.dr ?? (extra ? extra.dr : null),
       col: row.col ?? (extra ? extra.col : null),
       p: priceOf(row.w),
     };
+    /* Games played was an input to the playing-time floor above and is not read
+       by anything at runtime. Every field in this file is downloaded by every
+       visitor, so a field nobody uses is bytes on somebody's phone. Minutes
+       stays: a draft board saying 34 a night is telling the reader something. */
+    delete out.g;
+    return out;
   });
 
   if (draft) {

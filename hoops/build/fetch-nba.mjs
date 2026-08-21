@@ -205,6 +205,12 @@ async function season(year) {
       blk: num(r, 'blk_per_g'),
       stl: num(r, 'stl_per_g'),
       g: num(r, 'games', 'g'),
+      /* MINUTES, and they are not decoration. A real league is mostly players
+         who barely played: without a floor, a draft board is a list of men who
+         logged forty minutes across a whole season, and the wheel spends most of
+         its time on them. build-players.mjs uses this to decide who is drawable
+         at all. */
+      mp: num(r, 'mp_per_g'),
       /* College and draft year are chemistry inputs and neither is on a season
          page. build-colleges.mjs fills them from the player pages; until it has
          run they are null, which is a link that correctly never fires rather
