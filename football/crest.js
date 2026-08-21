@@ -353,12 +353,24 @@ const MARKS={
   dog:{ name:'The Underdog', got:false, t:'The Underdog',
     note:'Win the title from a wild card seed. You were not supposed to be there.',
     rare:'0.019', tier:'gold',
+    /* THE FOUR TOES ARE SET BY MEASURED GAPS, NOT BY EVEN CENTRES.
+
+       They were at 26, 42, 58 and 74: even sixteens apart, which looks right written down
+       and is not. A toe is a TALL ellipse turned a few degrees, and turning it widens what
+       it occupies horizontally, by more for the outer pair because they are turned further.
+       At sixteen apart the middle two ran into each other and fused into one shape, while
+       the outer pairs were left a 2.5 unit slot.
+
+       So the gaps were rasterised and measured rather than derived: each toe drawn alone at
+       six pixels per unit, then one mask grown a ring at a time until it met the next. These
+       numbers put 3.67 units of clear field between all three pairs, the same on both sides
+       and in the middle, which is what makes four toes read as four. */
     draw:function(f){
       return '<path d="M50 52c13 0 23 9 23 19 0 9-7 15-23 15s-23-6-23-15c0-10 10-19 23-19z" fill="'+f+'"/>'+
-        '<ellipse cx="26" cy="40" rx="9" ry="11.5" fill="'+f+'" transform="rotate(-18 26 40)"/>'+
-        '<ellipse cx="42" cy="27" rx="8.5" ry="11.5" fill="'+f+'" transform="rotate(-7 42 27)"/>'+
-        '<ellipse cx="58" cy="27" rx="8.5" ry="11.5" fill="'+f+'" transform="rotate(7 58 27)"/>'+
-        '<ellipse cx="74" cy="40" rx="9" ry="11.5" fill="'+f+'" transform="rotate(18 74 40)"/>';
+        '<ellipse cx="23.5" cy="40" rx="8.8" ry="11.5" fill="'+f+'" transform="rotate(-18 23.5 40)"/>'+
+        '<ellipse cx="40" cy="27" rx="8.1" ry="11.5" fill="'+f+'" transform="rotate(-7 40 27)"/>'+
+        '<ellipse cx="60" cy="27" rx="8.1" ry="11.5" fill="'+f+'" transform="rotate(7 60 27)"/>'+
+        '<ellipse cx="76.5" cy="40" rx="8.8" ry="11.5" fill="'+f+'" transform="rotate(18 76.5 40)"/>';
     } }
 };
 const MARK_KEYS=['init','pad','posts','egg','signal','rafters','wall','headset',
