@@ -9326,9 +9326,24 @@ function footer(){
   // Real anchors, not overlay buttons: a crawler (and an ad-network reviewer) has to be able to
   // reach the guide and the policy pages from the page itself, which an in-app overlay never gives them.
   links.appendChild($(`<a href="/golf/how-to-play.html" style="color:inherit;text-decoration:none;cursor:pointer">How to play</a>`));
-  links.appendChild(mk('About',()=>{S.overlay='about';render();}));
-  links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
-  links.appendChild(mk('Terms',()=>{S.overlay='terms';render();}));
+  /* About, Privacy and Terms are anchors that behave like the overlay buttons they used to be.
+     They were plain <button>s, which meant the paragraph above this was describing something the
+     code did not do: a crawler, and an AdSense reviewer, found no link to the policy pages
+     anywhere on this page. The only privacy href in the file sat inside <noscript>, invisible to
+     anyone running JavaScript. The href is what a reviewer and a crawler follow; the click
+     handler keeps a player who is mid-run in the overlay, because there is no mid-run save and
+     navigating away would throw the run out. Cmd/ctrl/middle-click fall through to the href. */
+  const mkLink=(t,href,fn)=>{
+    const a=$(`<a href="${href}" style="color:inherit;text-decoration:none;cursor:pointer">${t}</a>`);
+    a.onclick=(e)=>{
+      if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button) return;   // let the browser open it
+      e.preventDefault(); fn();
+    };
+    return a;
+  };
+  links.appendChild(mkLink('About','/about.html',()=>{S.overlay='about';render();}));
+  links.appendChild(mkLink('Privacy','/privacy.html',()=>{S.overlay='privacy';render();}));
+  links.appendChild(mkLink('Terms','/terms.html',()=>{S.overlay='terms';render();}));
   links.appendChild($(`<a href="/disclaimer.html" style="color:inherit;text-decoration:none;cursor:pointer">Disclaimer</a>`));
   links.appendChild($(`<a href="/contact.html" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
   links.appendChild(mk('Feedback',()=>openFeedback()));
