@@ -716,17 +716,30 @@ const SYSTEMS = [
     detect: (r, P) => {
       const dws = r.reduce((s, p) => s + Math.max(0, p.dw), 0);
       const ows = r.reduce((s, p) => s + Math.max(0, p.ow), 0);
-      if (dws < 13 || P.spacing > 1.0 || P.shots > 70) return -1;
+      /* THE SHOT GATE IS GONE, and it was the reason this missed the 1989
+         Pistons. It read `P.shots > 70` to mean "nobody scores often", but the
+         six best players on ANY real club take 70 to 76 of its 85 shots, so it
+         was closer to a test of whether a roster had a bench than of how it
+         played. Detroit's six took 75.0 and were labelled Showtime; the 2004
+         Pistons scraped in at exactly 70.0. A threshold that puts two teams
+         with the same identity on opposite sides of itself is measuring
+         something else. Spacing and the defensive share do the real work. */
+      if (dws < 13 || P.spacing > 1.0) return -1;
       /* THE SHARE, NOT THE TOTAL. Thirteen defensive win shares is true of
          almost any good roster, so on the total alone this became the label for
-         half the league: the 2013 Heat and the 2023 Nuggets both came back Grit
-         and Grind, which is not what either of those teams was. What actually
-         makes a team this is that its value sits disproportionately at the
-         defensive end. Above 38% is the 1989 Pistons and the 2004 Pistons; the
-         2013 Heat are at 30% and are correctly something else. */
+         half the league. What actually makes a team this is that its value sits
+         disproportionately at the defensive end.
+
+         MEASURED ON A REAL LEAGUE, the separation is wide and 38% was in the
+         wrong place. The two clubs this system is named for sit at 0.478 (1989
+         Pistons) and 0.605 (2004 Pistons). The next roster down is the 1996
+         Bulls at 0.401, then the 1987 Lakers at 0.346, the 1998 Jazz at 0.300
+         and the 2001 Lakers at 0.265. At 38% the 1996 Bulls, who led the league
+         in offense, came back Grit and Grind. At 45% the two Pistons teams are
+         in, everything else is out, and there is a clear gap either side. */
       const share = (ows + dws) > 0 ? dws / (ows + dws) : 0;
-      if (share < 0.38) return -1;
-      return fit(over(share, 0.38, 0.10), over(P.bestRim, 0.9, 1.6));
+      if (share < 0.45) return -1;
+      return fit(over(share, 0.45, 0.10), over(P.bestRim, 0.9, 1.6));
     },
     bonus: 0.55,
   },

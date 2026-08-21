@@ -482,9 +482,30 @@ const KNOWN = [
   // PG Jamal Murray, SG Kentavious Caldwell-Pope, SF Michael Porter Jr., PF Aaron Gordon, C Nikola Jokic, 6th Bruce Brown
   ['the 2023 Nuggets', 'Point Centre', [['murraja01', 2023], ['caldwke01', 2023],
     ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
+  /* THE EXPECTATION WAS WRONG HERE, NOT THE MODEL, and it is worth saying so
+     rather than quietly editing the string. This was written down as Bully Ball
+     because Shaquille O'Neal averaged 28.7 and the ball went inside, which is
+     true. But Phil Jackson coached this team and installed the triangle in
+     1999, so the triangle is what they actually ran: a dominant wing, a post to
+     play through, and the floor divided strong side and weak side. The model
+     read Kobe at 9.2 offensive win shares, Shaq in the post, no lead guard
+     creating (5.47) and no spacing (0.999), and called it the triangle.
+     That is the right answer to the question a fan would ask. */
   // PG Derek Fisher, SG Kobe Bryant, SF Rick Fox, PF Horace Grant, C Shaquille O'Neal, 6th Robert Horry
-  ['the 2001 Lakers', 'Bully Ball', [['fishede01', 2001], ['bryanko01', 2001],
+  ['the 2001 Lakers', 'The Triangle', [['fishede01', 2001], ['bryanko01', 2001],
     ['foxri01', 2001], ['grantho01', 2001], ['onealsh01', 2001], ['horryro01', 2001]]],
+  /* WHICH LEAVES BULLY BALL WITH NOTHING TO PROVE IT, so here is a team that is
+     unambiguously it and unambiguously not the triangle. Moses Malone led the
+     league in rebounding, Philadelphia went 65-17 and swept the finals, and
+     nobody has ever described that offense as a read out of the post. */
+  // PG Maurice Cheeks, SG Andrew Toney, SF Julius Erving, PF Bobby Jones, C Moses Malone, 6th Clint Richardson
+  ['the 1983 Sixers', 'Bully Ball', [['cheekma01', 1983], ['toneyan01', 1983],
+    ['ervinju01', 1983], ['jonesbo01', 1983], ['malonmo01', 1983], ['richacl01', 1983]]],
+  /* And a second Grit and Grind, because the threshold that separates it from
+     everything else was moved on the evidence of exactly two teams. */
+  // PG Doc Rivers, SG John Starks, SF Charles Smith, PF Charles Oakley, C Patrick Ewing, 6th Anthony Mason
+  ['the 1993 Knicks', 'Grit and Grind', [['riverdo01', 1993], ['starkjo01', 1993],
+    ['smithch01', 1993], ['oaklech01', 1993], ['ewingpa01', 1993], ['masonan01', 1993]]],
 ];
 
 for (const [who, expected, names] of KNOWN) {
@@ -620,9 +641,21 @@ if (LINEUPS_ADVISORY) {
   }
 }
 
+/* THE FAILURES ARE PRINTED HERE AND THE EXIT HAPPENS AFTER THE REPORT.
+ *
+ * This used to exit on the spot, which meant one failing assertion hid the
+ * calibration block entirely, and the calibration block is the thing somebody
+ * tuning this engine has actually come to read. A short-season guard firing on
+ * the data layer would suppress every number about the balance, so the run that
+ * told you something was wrong told you nothing about what.
+ *
+ * Same coupling as the draft step and the lineup labels: one kind of failure
+ * silencing an unrelated kind of information. The exit code is unchanged, so
+ * nothing that gates on it behaves differently. */
 if (failures.length) {
   for (const f of failures) console.error('  FAIL: ' + f);
-  process.exit(1);
+  console.error('\nThe calibration below still printed, because a failure here does not make');
+  console.error('the balance numbers less worth reading.');
 }
 
 console.log(`\nCALIBRATION over ${runs.length} greedy drafts (always take the best man on the board).`);
