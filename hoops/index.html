@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $135M cap, then play all 82 games and chase a ring.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $134M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
@@ -259,21 +259,39 @@
      candidates that slides; a mask at both ends keeps only the middle band
      legible, and the band takes the result's colour only once it lands, so
      colour reads as an answer instead of as decoration on a blur. */
-  .dcols{display:grid;gap:12px;}
-  @media(min-width:720px){.dcols{grid-template-columns:1fr 1fr;align-items:start;}}
-  .reels{display:grid;grid-template-columns:92px 1fr;gap:8px;}
+  .draftmain{display:grid;gap:14px;}
+  /* A GRID CHILD DEFAULTS TO min-width:auto, which means it sizes to its widest
+     content rather than to its track, and one long club name ("Trail Blazers")
+     pushed the whole draft column to 460px inside a 390px phone. Everything to
+     its right then hung off the screen: the price column, the re-spin button,
+     the tabs. This one line is the difference. */
+  .draftmain > *{min-width:0;}
+  /* On a phone the court follows the board. On a wide screen it becomes a rail
+     that stays put while the player list scrolls. */
+  @media(min-width:840px){
+    .draftmain{grid-template-columns:minmax(0,1fr) 316px;align-items:start;}
+    .dside{position:sticky;top:180px;}
+  }
+  /* Shorter on a phone, because it is reference and the board is the decision. */
+  @media(max-width:839px){
+    .court{aspect-ratio:1/0.72;}
+    .spot{width:64px;}
+    .spot .disc{width:30px;height:30px;font-size:9px;}
+  }
+  .reels{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;}
   .reelbox{position:relative;height:104px;overflow:hidden;border-radius:13px;
     background:linear-gradient(180deg,#131a28,#0a0e17 55%,#070a11);
     border:1px solid var(--cardb);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
     transition:border-color .2s ease;}
   .reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
-    background:linear-gradient(180deg,#070a11 2%,rgba(7,10,17,.12) 34%,
-      rgba(7,10,17,.12) 66%,#070a11 98%);}
+    background:linear-gradient(180deg,#070a11 6%,rgba(7,10,17,.62) 30%,
+      rgba(7,10,17,.05) 50%,rgba(7,10,17,.62) 70%,#070a11 94%);}
   .reel-strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform;}
   .reel-i{height:34px;display:flex;align-items:center;justify-content:center;
     color:var(--ink);opacity:.5;padding:0 6px;text-align:center;}
   .reelbox.season .reel-i{font-family:var(--mono);font-size:20px;font-weight:700;}
   .reelbox.club .reel-i{font-size:13.5px;font-weight:800;line-height:1.1;}
+  .reel-i span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .reel-win{position:absolute;left:5px;right:5px;top:50%;height:34px;margin-top:-17px;z-index:3;
     border-radius:8px;border:1px solid rgba(255,255,255,.12);pointer-events:none;
     transition:border-color .25s ease,background .25s ease;}
@@ -459,6 +477,98 @@
   .lastrun{font-size:13px;color:var(--mut);margin:10px 0 0;line-height:1.5;}
   .lastrun b{color:var(--ink);}
   .ring{color:var(--gold);}
+
+  /* ══ POSITION COLOURS ══════════════════════════════════════════════════
+     The football game paints every position its own colour and puts it on a
+     pill, which is the one bit of that UI worth stealing wholesale: a board of
+     six names is scannable by shape and colour before a word of it is read.
+     Ported here with the same rule it uses, that a man who plays two spots gets
+     TWO pills in their own colours rather than one pill reading "PG/SG" painted
+     whichever colour came first.
+
+     Backcourt cool, frontcourt warm, so the two halves of a lineup separate at a
+     glance even for somebody who cannot name the five positions. The bench spot
+     is purple and deliberately outside that scheme, because it is a place on the
+     roster rather than a position anybody plays. */
+  :root{
+    --pg:#3b82f6; --sg:#06b6d4; --sf:#22c55e; --pf:#f59e0b; --c:#ef4444;
+    --sixth:#a855f7; --g:#6366f1; --f:#84cc16;
+  }
+  .poss{display:flex;align-items:center;gap:3px;flex:0 0 auto;flex-wrap:wrap;}
+  .pos{flex:0 0 auto;min-width:30px;text-align:center;padding:3px 5px;border-radius:6px;
+    color:#fff;font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.06em;
+    line-height:1.25;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .pos.sm{min-width:24px;font-size:9px;padding:2px 4px;}
+  .off .pos{filter:grayscale(1);opacity:.45;}
+
+  /* ══ THE PLAYER BOARD ══════════════════════════════════════════════════
+     Rebuilt for a phone first. The old row put the name, four stats, the badges
+     and the price on one line, which on a 390px screen wrapped into a paragraph
+     and made six of them an undifferentiated wall. */
+  .opts{display:grid;gap:9px;margin-top:10px;}
+  .ptile{display:grid;grid-template-columns:1fr auto;gap:10px 12px;align-items:start;
+    width:100%;text-align:left;padding:12px 13px;border-radius:12px;
+    border:1px solid var(--cardb);background:linear-gradient(180deg,var(--card),#10151f);
+    color:var(--ink);font-family:var(--body);cursor:pointer;
+    animation:optin .26s ease-out both;transition:border-color .12s ease,transform .08s ease;}
+  .ptile:active{transform:scale(.99);}
+  .ptile:hover:not(.off){border-color:#3d4a60;}
+  .ptile.off{cursor:not-allowed;border-style:dashed;border-color:rgba(255,255,255,.08);
+    background:rgba(255,255,255,.015);}
+  .ptile.off .nm,.ptile.off .price{color:var(--dim);}
+
+  .ptile > *{min-width:0;}
+  .ptile .top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;}
+  .ptile .nm{font-size:16.5px;font-weight:800;line-height:1.15;letter-spacing:.005em;}
+  .ptile .from{grid-column:1/-1;font-size:11.5px;color:var(--dim);margin-top:-4px;}
+
+  /* The price block, and the thing that was missing: what that price BUYS. */
+  .ptile .money{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+  .ptile .price{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1;
+    font-variant-numeric:tabular-nums;}
+  .ptile .price.no{color:var(--red);}
+  .deal{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    padding:3px 6px;border-radius:5px;white-space:nowrap;}
+  .deal.good{color:#4ade80;background:rgba(34,197,94,.14);}
+  .deal.fair{color:var(--mut);background:rgba(255,255,255,.06);}
+  .deal.bad{color:#fca5a5;background:rgba(239,68,68,.12);}
+
+  /* The stat line as labelled figures rather than a run-on sentence. */
+  .ptile .stats{grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap;margin-top:2px;}
+  .ptile .st{display:flex;align-items:baseline;gap:3px;}
+  .ptile .st b{font-family:var(--mono);font-size:13.5px;font-weight:700;}
+  .ptile .st i{font-style:normal;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--dim);font-weight:700;}
+  .ptile .st.key b{color:var(--gold);}
+  .ptile .badges{grid-column:1/-1;margin-top:1px;}
+  .ptile .why{grid-column:1/-1;font-size:11px;font-weight:700;color:#fca5a5;
+    background:rgba(239,68,68,.1);padding:4px 7px;border-radius:5px;margin-top:2px;}
+
+  /* A heading above each group when the board is grouped by slot. */
+  .optgroup{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:6px 0 -2px;}
+  .optgroup .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;}
+  .optgroup .rule{flex:1;height:1px;background:var(--line);}
+
+  .sortbar{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:11.5px;
+    color:var(--dim);flex-wrap:wrap;}
+  .sortbar button{background:rgba(255,255,255,.03);border:1px solid var(--line);
+    color:var(--mut);font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:7px;
+    min-height:32px;}
+  .sortbar button.on{color:#fff;border-color:transparent;
+    background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5));}
+
+  /* ══ THE BUDGET, SAID AS A BUDGET ══════════════════════════════════════
+     The hero number used to be "Cap space", which frames not spending as
+     winning. It is the opposite: a draft that finishes $40M under the cap wins
+     about thirteen games. What matters is what is left PER SLOT, so that is
+     what the HUD leads with now. */
+  .perslot{font-family:var(--mono);font-size:12.5px;color:var(--mut);
+    font-variant-numeric:tabular-nums;}
+  .perslot b{color:var(--ink);font-weight:700;}
+  #c-note.warn{color:var(--gold);}
+  body.inplay header.mast{display:none;}
+  body.inplay .wrap{padding-top:12px;}
 </style>
 </head>
 <body>
@@ -526,7 +636,7 @@
       The wheel gives you a club and a season. You sign one player off that roster, and
       you do it six times to fill a point guard, a shooting guard, a small forward, a
       power forward, a centre and a sixth man. Every signing comes out of a
-      <b style="color:var(--ink)">$135M</b> cap, and the cap is the whole game: the best
+      <b style="color:var(--ink)">$134M</b> cap, and the cap is the whole game: the best
       man on every board runs to about $300M, so it cannot be done.
     </p>
     <p class="dim" style="font-size:14px;margin:0 0 4px">
@@ -597,7 +707,7 @@
   <div class="capwrap">
     <div class="cap-head">
       <div class="cap-budget">
-        <span class="lbl">Cap space</span>
+        <span class="lbl">Left to spend</span>
         <span class="capamt" id="c-amt">$138.0M</span>
       </div>
       <div class="cap-meta">
@@ -611,21 +721,14 @@
     <div class="dpips" id="d-pips" aria-hidden="true"></div>
   </div>
 
-  <div class="dcols">
-    <div class="dcol">
-      <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
-        <div class="base"></div>
-        <div class="ln arc3"></div>
-        <div class="ln key"></div>
-        <div class="ln circ"></div>
-        <div class="rim"></div>
-        <div class="side"></div>
-        <div class="benchlbl">Bench</div>
-      </div>
-      <ul class="links" id="r-links"></ul>
-    </div>
-
-    <div class="dcol">
+  <!-- ORDER IS MOBILE ORDER. What you drew, then who you can sign, then the
+       court. The court used to come first and on a 390px phone that meant
+       scrolling past a full screen of reference before reaching a single
+       player: the decision was buried under the picture of the decision. On a
+       wide screen it moves into a rail beside the board, where it costs
+       nothing. -->
+  <div class="draftmain">
+    <div class="dpick">
       <div class="reels">
         <div class="reelbox season waiting" id="box-s" aria-label="Season">
           <div class="reel-strip" id="reel-s"></div>
@@ -642,11 +745,24 @@
         <button class="ghost" id="b-respin">Re-spin</button>
       </div>
       <p class="drawnote" id="d-note"></p>
-    </div>
-  </div>
 
-  <div class="tabs" id="tabs" role="tablist"></div>
-  <div class="opts" id="opts"></div>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="opts" id="opts"></div>
+    </div>
+
+    <aside class="dside">
+      <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
+        <div class="base"></div>
+        <div class="ln arc3"></div>
+        <div class="ln key"></div>
+        <div class="ln circ"></div>
+        <div class="rim"></div>
+        <div class="side"></div>
+        <div class="benchlbl">Bench</div>
+      </div>
+      <ul class="links" id="r-links"></ul>
+    </aside>
+  </div>
 
   <div class="card" style="margin-top:14px">
     <h2>The shape of it <span class="sub" id="r-chem"></span></h2>
@@ -770,7 +886,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=5"></script>
+<script src="engine.js?v=6"></script>
 <script src="run.js?v=1"></script>
 <script>
 (function(){
@@ -782,7 +898,12 @@ var DATA = null, run = null, board = [];
 var $ = function(id){ return document.getElementById(id); };
 var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
 
+/* THE TITLE BELONGS ON THE TITLE SCREEN. It is 230px of masthead above every
+   screen in the game, which on a phone is most of the space between the top of
+   the draft and the first player on the board. Home keeps it; the screens you
+   are playing on do not. */
 function show(id){
+  document.body.classList.toggle('inplay', id !== 's-home');
   /* A running reveal belongs to the screen it started on. Leaving without
      stopping it leaves an interval painting cells nobody can see, and on the
      way back it would race the fresh one. */
@@ -806,6 +927,7 @@ function boot(){
        during indexing and a 1995 Vancouver roster has to read as Vancouver. */
     if (res[2]) E.setTeams(res[2]);
     DATA = R.indexData(res[0]);
+    buildGoingRate(res[0]);
 
     var seasons = {}, franchises = {};
     for (var i = 0; i < DATA.teamSeasons.length; i++) {
@@ -885,6 +1007,97 @@ function drawInto(fn){
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
 function respin(){ drawInto(function(){ R.respin(run, DATA); }); }
 
+// ── position pills ─────────────────────────────────────────────────────────
+
+/* ONE PLACE THAT PAINTS A POSITION, which is the football game's rule and the
+ * reason a palette change there is one edit rather than a hunt through six call
+ * sites writing the same gradient four slightly different ways. */
+var POS_COL = { PG: '--pg', SG: '--sg', SF: '--sf', PF: '--pf', C: '--c',
+  '6TH': '--sixth', G: '--g', F: '--f', GF: '--sf', FC: '--pf' };
+
+function posPaint(pos){
+  return 'linear-gradient(160deg,var(' + (POS_COL[pos] || '--g') + '),rgba(0,0,0,.42))';
+}
+
+function posPill(pos, small){
+  var el = document.createElement('span');
+  el.className = 'pos' + (small ? ' sm' : '');
+  el.style.background = posPaint(pos);
+  el.textContent = pos;
+  return el;
+}
+
+/* A MAN WHO PLAYS TWO SPOTS GETS TWO PILLS, each its own colour, rather than one
+   pill reading "PG/SG" painted whichever position the data listed first. The
+   old line said the right words in the wrong colour, and the two positions that
+   make a player worth drafting looked like one. */
+function posPills(p, small){
+  var wrap = document.createElement('span');
+  wrap.className = 'poss';
+  var list = E.positionsOf(p);
+  for (var i = 0; i < list.length; i++) wrap.appendChild(posPill(list[i], small));
+  return wrap;
+}
+
+// ── what a price is worth ──────────────────────────────────────────────────
+
+/* THE MONEY WAS THE PART NOBODY COULD READ, and that is a UI failure rather than
+ * a model one. Price comes off a market score and value is win shares, so the
+ * two deliberately disagree, and the whole game lives in that gap. A board that
+ * prints both numbers and leaves the player to divide one by the other in their
+ * head has hidden the game inside arithmetic.
+ *
+ * WHY NOT JUST SHOW WIN SHARES PER DOLLAR. Because it is a trap, and a measured
+ * one: drafting purely on it buys six minimum-salary players, spends $45M of the
+ * cap and wins THIRTEEN GAMES. Cheap men have wonderful ratios and no value. The
+ * useful question is not "how much value per dollar" but "is this man dear or
+ * cheap FOR A PLAYER OF HIS CALIBRE", which is the market residual and the thing
+ * the pricing model actually encodes.
+ *
+ * So the league is bucketed by win shares and each bucket's median price becomes
+ * the going rate. A player at 60% of the going rate is a bargain; one at 150% is
+ * being paid for his points.
+ */
+var GOING_RATE = null;
+
+function buildGoingRate(rows){
+  var buckets = {};
+  for (var i = 0; i < rows.length; i++) {
+    var b = Math.max(0, Math.round(rows[i].w));
+    (buckets[b] = buckets[b] || []).push(rows[i].p);
+  }
+  var rate = {};
+  for (var k in buckets) {
+    var v = buckets[k].sort(function(a, b2){ return a - b2; });
+    rate[k] = v[Math.floor(v.length / 2)];
+  }
+  GOING_RATE = rate;
+}
+
+function goingRate(w){
+  if (!GOING_RATE) return null;
+  var b = Math.max(0, Math.round(w));
+  /* Walk outward for a bucket that exists, because the top of the league is
+     thin: there is no median price for 21 win shares off two seasons. */
+  for (var step = 0; step <= 6; step++) {
+    if (GOING_RATE[b - step] != null) return GOING_RATE[b - step];
+    if (GOING_RATE[b + step] != null) return GOING_RATE[b + step];
+  }
+  return null;
+}
+
+/* Returns null for a player too cheap for the question to mean anything. At two
+   million everybody is a bargain by ratio and none of them helps. */
+function dealOf(p){
+  if (p.w < 3) return null;
+  var fair = goingRate(p.w);
+  if (!fair || !p.p) return null;
+  var ratio = fair / p.p;
+  if (ratio >= 1.25) return { key: 'good', label: 'Bargain' };
+  if (ratio <= 0.78) return { key: 'bad', label: 'Paying for points' };
+  return { key: 'fair', label: 'Going rate' };
+}
+
 // ── the reels ──────────────────────────────────────────────────────────────
 
 /* WHAT YOU DREW, DRAWN. The football and college games spin two reels for the
@@ -905,7 +1118,11 @@ function reelFill(stripEl, items, landIndex){
   for (var i = 0; i < items.length; i++) {
     var d = document.createElement('div');
     d.className = 'reel-i' + (i === landIndex ? ' land' : '');
-    d.textContent = items[i];
+    /* Inside a span so a long club name can be clipped rather than widening the
+       reel, which widened the column, which pushed the board off the screen. */
+    var inner = document.createElement('span');
+    inner.textContent = items[i];
+    d.appendChild(inner);
     stripEl.appendChild(d);
   }
 }
@@ -992,6 +1209,7 @@ function renderCourt(justSlot, into){
 
     var disc = document.createElement('div');
     disc.className = 'disc';
+    if (p) disc.style.background = posPaint(slot);
     disc.textContent = slot;
     sp.appendChild(disc);
 
@@ -1025,10 +1243,38 @@ function renderHud(justSlot){
   $('c-barwrap').className = 'capbar' + (pct < 14 ? ' broke' : pct < 30 ? ' tight' : '');
 
   /* WHAT IS LEFT PER REMAINING SLOT, which is the number that actually decides
-     the next pick and the one nobody works out in their head mid-draft. */
-  $('c-per').textContent = left > 0
-    ? money(Math.max(0, spendable)) + ' spendable now, ' + left + ' slot' + (left === 1 ? '' : 's') + ' to fill'
-    : 'Rotation full.';
+     the next pick and the one nobody works out in their head mid-draft.
+     A CAP IS A BUDGET TO SPEND. Finishing under it is not thrift, it is thirteen
+     wins, measured: drafting on value alone leaves $45M unspent and the season
+     falls apart. So the HUD says what is available PER SLOT rather than treating
+     a large remaining balance as a good sign, and says so out loud when a draft
+     is drifting toward finishing rich and bad. */
+  var per = $('c-per');
+  per.textContent = '';
+  per.className = 'perslot';
+  if (left > 0) {
+    per.appendChild(document.createTextNode('Up to '));
+    var sb = document.createElement('b');
+    sb.textContent = money(Math.max(0, spendable));
+    per.appendChild(sb);
+    per.appendChild(document.createTextNode(' on this pick, then ' + (left - 1)
+      + ' more slot' + (left === 1 ? '' : 's') + ' at ' + money(E.CONSTANTS.MIN_CONTRACT_MUSD || 2) + ' minimum'));
+  } else {
+    per.textContent = 'Rotation full.';
+  }
+
+  var note = $('c-note');
+  note.textContent = '';
+  note.className = '';
+  /* Only once there is enough draft behind you for the warning to be true. */
+  if (left > 0 && left < 6) {
+    var perSlot = remaining / left;
+    if (perSlot > 26 && left <= 3) {
+      note.className = 'warn';
+      note.textContent = 'You have ' + money(remaining) + ' for ' + left + ' slot'
+        + (left === 1 ? '' : 's') + '. Cap left over at the end is worth nothing, so spend it.';
+    }
+  }
 
   var chem = E.resolveChemistry(run.roster);
   var cv = $('c-chem');
@@ -1044,6 +1290,7 @@ function renderHud(justSlot){
     var slot = E.SLOTS[s], p = filled[slot];
     var pip = document.createElement('span');
     pip.className = 'dpip' + (p ? ' on' : '') + (p && slot === justSlot ? ' just' : '');
+    if (p) pip.style.background = posPaint(slot);
     pip.textContent = slot;
     pips.appendChild(pip);
   }
@@ -1076,9 +1323,12 @@ function renderDraft(justSlot){
     renderOptions(draw);
   }
 
+  /* A DISABLED BUTTON READING "Pick a player" IS NOT A BUTTON, it is a caption
+     taking up a tap target. It only exists between draws, so it is only on
+     screen between draws. */
   var canSpin = !draw && run.phase === R.PHASES.DRAFT;
-  $('b-spin').disabled = !canSpin || reelBusy;
-  $('b-spin').textContent = canSpin ? 'Spin' : 'Pick a player';
+  $('b-spin').style.display = canSpin ? '' : 'none';
+  $('b-spin').disabled = reelBusy;
 
   var re = R.canRespin(run);
   $('b-respin').disabled = !re.ok || !draw || reelBusy;
@@ -1111,6 +1361,12 @@ function renderTabs(draw){
     var b = document.createElement('button');
     b.className = 'tab' + (activeTab === key ? ' on' : '') + (full ? ' full' : '');
     b.setAttribute('role', 'tab');
+    if (key !== 'ALL') {
+      b.style.borderColor = 'transparent';
+      b.style.background = activeTab === key ? posPaint(key)
+        : 'linear-gradient(160deg,rgba(255,255,255,.07),rgba(0,0,0,.3))';
+      if (activeTab === key) b.style.color = '#fff';
+    }
     b.appendChild(document.createTextNode(label));
     if (n != null) {
       var sm = document.createElement('span');
@@ -1128,62 +1384,176 @@ function renderTabs(draw){
   }
 }
 
+var optSort = 'best';
+
+/* HOW THE BOARD IS ARRANGED, which used to be "whatever order the club's roster
+ * came in". Six names in roster order is a list to read rather than a decision
+ * to make.
+ *
+ * Signable men come first and the ones you cannot have are pushed to the bottom
+ * rather than hidden, because "the centre here is out of your price range" is
+ * information. Within that, the sort is the player's choice, and it defaults to
+ * the one that answers the question the draft actually asks: who is the best
+ * player here that I can afford.
+ */
 function renderOptions(draw){
   var boardEl = $('opts');
   boardEl.textContent = '';
 
+  var rows = [];
   for (var i = 0; i < draw.board.length; i++) {
-    (function(entry, idx){
-      var p = DATA.allPlayers[entry.key];
-      if (!p) return;
-      if (activeTab !== 'ALL' && !E.canFillSlot(p, activeTab)) return;
-
-      var b = document.createElement('button');
-      b.className = 'pick';
-      b.disabled = !!entry.block;
-      b.style.animationDelay = (idx * 34) + 'ms';
-
-      var name = document.createElement('span');
-      var strong = document.createElement('b');
-      strong.textContent = p.n;
-      name.appendChild(strong);
-      var small = document.createElement('small');
-      small.textContent = p.ep.split(';').join('/') + ' · ' + p.pts + ' pts, '
-        + p.reb + ' reb, ' + p.ast + ' ast · ' + p.w + ' win shares'
-        + (entry.block ? ' · ' + (BLOCK_TEXT[entry.block] || entry.block) : '');
-      name.appendChild(small);
-
-      var tags = E.playerTags(p);
-      if (tags.length) {
-        var row = document.createElement('span');
-        row.className = 'badges';
-        for (var t = 0; t < tags.length; t++) {
-          var b2 = document.createElement('span');
-          b2.className = 'badge' + (tags[t].good ? '' : ' cost');
-          b2.textContent = tags[t].label;
-          row.appendChild(b2);
-        }
-        name.appendChild(row);
-      }
-
-      var price = document.createElement('span');
-      price.className = 'price';
-      price.textContent = money(p.p);
-
-      b.appendChild(name);
-      b.appendChild(price);
-      if (!entry.block) b.onclick = function(){ sign(p); };
-      boardEl.appendChild(b);
-    })(draw.board[i], i);
+    var p = DATA.allPlayers[draw.board[i].key];
+    if (!p) continue;
+    if (activeTab !== 'ALL' && !E.canFillSlot(p, activeTab)) continue;
+    rows.push({ p: p, block: draw.board[i].block });
   }
 
-  if (!boardEl.children.length) {
+  var afford = R.spendable(run);
+  var rank = {
+    best: function(a, b){ return b.p.w - a.p.w; },
+    value: function(a, b){
+      var ra = (goingRate(a.p.w) || a.p.p) / a.p.p, rb = (goingRate(b.p.w) || b.p.p) / b.p.p;
+      return rb - ra;
+    },
+    cheap: function(a, b){ return a.p.p - b.p.p; }
+  }[optSort];
+
+  rows.sort(function(a, b){
+    /* Blocked to the bottom, then unaffordable, then the chosen sort. */
+    var ba = a.block ? 2 : (a.p.p > afford ? 1 : 0);
+    var bb = b.block ? 2 : (b.p.p > afford ? 1 : 0);
+    if (ba !== bb) return ba - bb;
+    return rank(a, b);
+  });
+
+  renderSortBar(draw);
+
+  var lastGroup = null;
+  for (var r = 0; r < rows.length; r++) {
+    var p = rows[r].p, block = rows[r].block;
+    var tooDear = !block && p.p > afford;
+    var group = block ? 'Cannot sign' : tooDear ? 'Out of budget' : 'Signable';
+    if (group !== lastGroup) {
+      lastGroup = group;
+      var g = document.createElement('div');
+      g.className = 'optgroup';
+      var lb = document.createElement('span');
+      lb.className = 'lbl';
+      lb.textContent = group;
+      var rule = document.createElement('span');
+      rule.className = 'rule';
+      g.appendChild(lb); g.appendChild(rule);
+      boardEl.appendChild(g);
+    }
+    boardEl.appendChild(playerTile(p, block, tooDear, r));
+  }
+
+  if (!rows.length) {
     var none = document.createElement('p');
     none.className = 'dim';
     none.style.cssText = 'font-size:13px;margin:8px 0';
     none.textContent = 'Nobody on this board can play there. Try another tab.';
     boardEl.appendChild(none);
   }
+}
+
+function renderSortBar(draw){
+  var bar = document.createElement('div');
+  bar.className = 'sortbar';
+  var lbl = document.createElement('span');
+  lbl.textContent = 'Sort';
+  bar.appendChild(lbl);
+  var opts = [['best', 'Best player'], ['value', 'Best value'], ['cheap', 'Cheapest']];
+  for (var i = 0; i < opts.length; i++) {
+    (function(key, text){
+      var b = document.createElement('button');
+      b.className = optSort === key ? 'on' : '';
+      b.textContent = text;
+      b.onclick = function(){ optSort = key; renderOptions(draw); };
+      bar.appendChild(b);
+    })(opts[i][0], opts[i][1]);
+  }
+  $('opts').appendChild(bar);
+}
+
+function statBit(value, label, key){
+  var st = document.createElement('span');
+  st.className = 'st' + (key ? ' key' : '');
+  var b = document.createElement('b');
+  b.textContent = value;
+  var i = document.createElement('i');
+  i.textContent = label;
+  st.appendChild(b); st.appendChild(i);
+  return st;
+}
+
+function playerTile(p, block, tooDear, idx){
+  var off = !!block || tooDear;
+  var b = document.createElement('button');
+  b.className = 'ptile' + (off ? ' off' : '');
+  b.disabled = off;
+  b.style.animationDelay = Math.min(idx * 30, 260) + 'ms';
+
+  var top = document.createElement('span');
+  top.className = 'top';
+  top.appendChild(posPills(p));
+  var nm = document.createElement('span');
+  nm.className = 'nm';
+  nm.textContent = p.n;
+  top.appendChild(nm);
+  b.appendChild(top);
+
+  var money = document.createElement('span');
+  money.className = 'money';
+  var price = document.createElement('span');
+  price.className = 'price' + (tooDear ? ' no' : '');
+  price.textContent = '$' + p.p.toFixed(1) + 'M';
+  money.appendChild(price);
+  var deal = dealOf(p);
+  if (deal && !block) {
+    var d = document.createElement('span');
+    d.className = 'deal ' + deal.key;
+    d.textContent = deal.label;
+    money.appendChild(d);
+  }
+  b.appendChild(money);
+
+  var from = document.createElement('span');
+  from.className = 'from';
+  from.textContent = p.s + ' ' + E.teamName(p.t);
+  b.appendChild(from);
+
+  var stats = document.createElement('span');
+  stats.className = 'stats';
+  stats.appendChild(statBit(p.w.toFixed(1), 'win shares', true));
+  stats.appendChild(statBit(String(p.pts), 'pts'));
+  stats.appendChild(statBit(String(p.reb), 'reb'));
+  stats.appendChild(statBit(String(p.ast), 'ast'));
+  b.appendChild(stats);
+
+  var tags = E.playerTags(p);
+  if (tags.length) {
+    var row = document.createElement('span');
+    row.className = 'badges';
+    for (var t = 0; t < tags.length; t++) {
+      var b2 = document.createElement('span');
+      b2.className = 'badge' + (tags[t].good ? '' : ' cost');
+      b2.textContent = tags[t].label;
+      row.appendChild(b2);
+    }
+    b.appendChild(row);
+  }
+
+  if (block || tooDear) {
+    var why = document.createElement('span');
+    why.className = 'why';
+    why.textContent = block ? (BLOCK_TEXT[block] || block)
+      : 'Needs $' + (p.p - R.spendable(run)).toFixed(1) + 'M more than you can spend here';
+    b.appendChild(why);
+  } else {
+    b.onclick = function(){ sign(p); };
+  }
+  return b;
 }
 
 function renderLinks(chem){
@@ -1330,8 +1700,8 @@ function renderRoster(slotsEl, linksEl){
     row.className = 'slot' + (p ? '' : ' empty');
 
     var pos = document.createElement('div');
-    pos.className = 'pos';
-    pos.textContent = E.SLOTS[s];
+    pos.className = 'poswrap';
+    pos.appendChild(posPill(E.SLOTS[s]));
 
     var who = document.createElement('div');
     who.className = 'who';
