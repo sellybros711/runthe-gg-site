@@ -1,0 +1,641 @@
+{
+ "_source": "Franchise table from nba_api (MIT), keyed to Basketball-Reference codes. Defunct franchises are carried by hand: a table of current clubs cannot name the 1995 Vancouver Grizzlies.",
+ "teams": {
+  "ATL": {
+   "code": "ATL",
+   "nbaCode": "ATL",
+   "city": "Atlanta",
+   "name": "Hawks",
+   "full": "Atlanta Hawks",
+   "state": "Georgia",
+   "founded": 1949,
+   "titles": [
+    1958
+   ],
+   "current": true
+  },
+  "BOS": {
+   "code": "BOS",
+   "nbaCode": "BOS",
+   "city": "Boston",
+   "name": "Celtics",
+   "full": "Boston Celtics",
+   "state": "Massachusetts",
+   "founded": 1946,
+   "titles": [
+    1957,
+    1959,
+    1960,
+    1961,
+    1962,
+    1963,
+    1964,
+    1965,
+    1966,
+    1968,
+    1969,
+    1974,
+    1976,
+    1981,
+    1984,
+    1986,
+    2008
+   ],
+   "current": true
+  },
+  "CLE": {
+   "code": "CLE",
+   "nbaCode": "CLE",
+   "city": "Cleveland",
+   "name": "Cavaliers",
+   "full": "Cleveland Cavaliers",
+   "state": "Ohio",
+   "founded": 1970,
+   "titles": [
+    2016
+   ],
+   "current": true
+  },
+  "NOP": {
+   "code": "NOP",
+   "nbaCode": "NOP",
+   "city": "New Orleans",
+   "name": "Pelicans",
+   "full": "New Orleans Pelicans",
+   "state": "Louisiana",
+   "founded": 2002,
+   "titles": [],
+   "current": true
+  },
+  "CHI": {
+   "code": "CHI",
+   "nbaCode": "CHI",
+   "city": "Chicago",
+   "name": "Bulls",
+   "full": "Chicago Bulls",
+   "state": "Illinois",
+   "founded": 1966,
+   "titles": [
+    1991,
+    1992,
+    1993,
+    1996,
+    1997,
+    1998
+   ],
+   "current": true
+  },
+  "DAL": {
+   "code": "DAL",
+   "nbaCode": "DAL",
+   "city": "Dallas",
+   "name": "Mavericks",
+   "full": "Dallas Mavericks",
+   "state": "Texas",
+   "founded": 1980,
+   "titles": [
+    2011
+   ],
+   "current": true
+  },
+  "DEN": {
+   "code": "DEN",
+   "nbaCode": "DEN",
+   "city": "Denver",
+   "name": "Nuggets",
+   "full": "Denver Nuggets",
+   "state": "Colorado",
+   "founded": 1976,
+   "titles": [
+    2023
+   ],
+   "current": true
+  },
+  "GSW": {
+   "code": "GSW",
+   "nbaCode": "GSW",
+   "city": "San Francisco",
+   "name": "Warriors",
+   "full": "Golden State Warriors",
+   "state": "California",
+   "founded": 1946,
+   "titles": [
+    1947,
+    1956,
+    1975,
+    2015,
+    2017,
+    2018,
+    2022
+   ],
+   "current": true
+  },
+  "HOU": {
+   "code": "HOU",
+   "nbaCode": "HOU",
+   "city": "Houston",
+   "name": "Rockets",
+   "full": "Houston Rockets",
+   "state": "Texas",
+   "founded": 1967,
+   "titles": [
+    1994,
+    1995
+   ],
+   "current": true
+  },
+  "LAC": {
+   "code": "LAC",
+   "nbaCode": "LAC",
+   "city": "Los Angeles",
+   "name": "Clippers",
+   "full": "Los Angeles Clippers",
+   "state": "California",
+   "founded": 1970,
+   "titles": [],
+   "current": true
+  },
+  "LAL": {
+   "code": "LAL",
+   "nbaCode": "LAL",
+   "city": "Los Angeles",
+   "name": "Lakers",
+   "full": "Los Angeles Lakers",
+   "state": "California",
+   "founded": 1948,
+   "titles": [
+    1949,
+    1950,
+    1952,
+    1953,
+    1954,
+    1972,
+    1980,
+    1982,
+    1985,
+    1987,
+    1988,
+    2000,
+    2001,
+    2002,
+    2009,
+    2010,
+    2020
+   ],
+   "current": true
+  },
+  "MIA": {
+   "code": "MIA",
+   "nbaCode": "MIA",
+   "city": "Miami",
+   "name": "Heat",
+   "full": "Miami Heat",
+   "state": "Florida",
+   "founded": 1988,
+   "titles": [
+    2006,
+    2012,
+    2013
+   ],
+   "current": true
+  },
+  "MIL": {
+   "code": "MIL",
+   "nbaCode": "MIL",
+   "city": "Milwaukee",
+   "name": "Bucks",
+   "full": "Milwaukee Bucks",
+   "state": "Wisconsin",
+   "founded": 1968,
+   "titles": [
+    1971,
+    2021
+   ],
+   "current": true
+  },
+  "MIN": {
+   "code": "MIN",
+   "nbaCode": "MIN",
+   "city": "Minnesota",
+   "name": "Timberwolves",
+   "full": "Minnesota Timberwolves",
+   "state": "Minnesota",
+   "founded": 1989,
+   "titles": [],
+   "current": true
+  },
+  "BRK": {
+   "code": "BRK",
+   "nbaCode": "BKN",
+   "city": "Brooklyn",
+   "name": "Nets",
+   "full": "Brooklyn Nets",
+   "state": "New York",
+   "founded": 1976,
+   "titles": [],
+   "current": true
+  },
+  "NYK": {
+   "code": "NYK",
+   "nbaCode": "NYK",
+   "city": "New York",
+   "name": "Knicks",
+   "full": "New York Knicks",
+   "state": "New York",
+   "founded": 1946,
+   "titles": [
+    1970,
+    1973
+   ],
+   "current": true
+  },
+  "ORL": {
+   "code": "ORL",
+   "nbaCode": "ORL",
+   "city": "Orlando",
+   "name": "Magic",
+   "full": "Orlando Magic",
+   "state": "Florida",
+   "founded": 1989,
+   "titles": [],
+   "current": true
+  },
+  "IND": {
+   "code": "IND",
+   "nbaCode": "IND",
+   "city": "Indiana",
+   "name": "Pacers",
+   "full": "Indiana Pacers",
+   "state": "Indiana",
+   "founded": 1976,
+   "titles": [],
+   "current": true
+  },
+  "PHI": {
+   "code": "PHI",
+   "nbaCode": "PHI",
+   "city": "Philadelphia",
+   "name": "76ers",
+   "full": "Philadelphia 76ers",
+   "state": "Pennsylvania",
+   "founded": 1949,
+   "titles": [
+    1955,
+    1967,
+    1983
+   ],
+   "current": true
+  },
+  "PHO": {
+   "code": "PHO",
+   "nbaCode": "PHX",
+   "city": "Phoenix",
+   "name": "Suns",
+   "full": "Phoenix Suns",
+   "state": "Arizona",
+   "founded": 1968,
+   "titles": [],
+   "current": true
+  },
+  "POR": {
+   "code": "POR",
+   "nbaCode": "POR",
+   "city": "Portland",
+   "name": "Trail Blazers",
+   "full": "Portland Trail Blazers",
+   "state": "Oregon",
+   "founded": 1970,
+   "titles": [
+    1977
+   ],
+   "current": true
+  },
+  "SAC": {
+   "code": "SAC",
+   "nbaCode": "SAC",
+   "city": "Sacramento",
+   "name": "Kings",
+   "full": "Sacramento Kings",
+   "state": "California",
+   "founded": 1948,
+   "titles": [
+    1951
+   ],
+   "current": true
+  },
+  "SAS": {
+   "code": "SAS",
+   "nbaCode": "SAS",
+   "city": "San Antonio",
+   "name": "Spurs",
+   "full": "San Antonio Spurs",
+   "state": "Texas",
+   "founded": 1976,
+   "titles": [
+    1999,
+    2003,
+    2005,
+    2007,
+    2014
+   ],
+   "current": true
+  },
+  "OKC": {
+   "code": "OKC",
+   "nbaCode": "OKC",
+   "city": "Oklahoma City",
+   "name": "Thunder",
+   "full": "Oklahoma City Thunder",
+   "state": "Oklahoma",
+   "founded": 1967,
+   "titles": [
+    1979,
+    2025
+   ],
+   "current": true
+  },
+  "TOR": {
+   "code": "TOR",
+   "nbaCode": "TOR",
+   "city": "Toronto",
+   "name": "Raptors",
+   "full": "Toronto Raptors",
+   "state": "Ontario",
+   "founded": 1995,
+   "titles": [
+    2019
+   ],
+   "current": true
+  },
+  "UTA": {
+   "code": "UTA",
+   "nbaCode": "UTA",
+   "city": "Utah",
+   "name": "Jazz",
+   "full": "Utah Jazz",
+   "state": "Utah",
+   "founded": 1974,
+   "titles": [],
+   "current": true
+  },
+  "MEM": {
+   "code": "MEM",
+   "nbaCode": "MEM",
+   "city": "Memphis",
+   "name": "Grizzlies",
+   "full": "Memphis Grizzlies",
+   "state": "Tennessee",
+   "founded": 1995,
+   "titles": [],
+   "current": true
+  },
+  "WAS": {
+   "code": "WAS",
+   "nbaCode": "WAS",
+   "city": "Washington",
+   "name": "Wizards",
+   "full": "Washington Wizards",
+   "state": "District of Columbia",
+   "founded": 1961,
+   "titles": [
+    1978
+   ],
+   "current": true
+  },
+  "DET": {
+   "code": "DET",
+   "nbaCode": "DET",
+   "city": "Detroit",
+   "name": "Pistons",
+   "full": "Detroit Pistons",
+   "state": "Michigan",
+   "founded": 1948,
+   "titles": [
+    1989,
+    1990,
+    2004
+   ],
+   "current": true
+  },
+  "CHO": {
+   "code": "CHO",
+   "nbaCode": "CHA",
+   "city": "Charlotte",
+   "name": "Hornets",
+   "full": "Charlotte Hornets",
+   "state": "North Carolina",
+   "founded": 1988,
+   "titles": [],
+   "current": true
+  },
+  "SEA": {
+   "code": "SEA",
+   "city": "Seattle",
+   "name": "SuperSonics",
+   "full": "Seattle SuperSonics",
+   "founded": 1967,
+   "folded": 2008,
+   "became": "OKC",
+   "titles": [],
+   "current": false
+  },
+  "VAN": {
+   "code": "VAN",
+   "city": "Vancouver",
+   "name": "Grizzlies",
+   "full": "Vancouver Grizzlies",
+   "founded": 1995,
+   "folded": 2001,
+   "became": "MEM",
+   "titles": [],
+   "current": false
+  },
+  "NJN": {
+   "code": "NJN",
+   "city": "New Jersey",
+   "name": "Nets",
+   "full": "New Jersey Nets",
+   "founded": 1977,
+   "folded": 2012,
+   "became": "BRK",
+   "titles": [],
+   "current": false
+  },
+  "NYN": {
+   "code": "NYN",
+   "city": "New York",
+   "name": "Nets",
+   "full": "New York Nets",
+   "founded": 1968,
+   "folded": 1977,
+   "became": "BRK",
+   "titles": [],
+   "current": false
+  },
+  "WSB": {
+   "code": "WSB",
+   "city": "Washington",
+   "name": "Bullets",
+   "full": "Washington Bullets",
+   "founded": 1974,
+   "folded": 1997,
+   "became": "WAS",
+   "titles": [],
+   "current": false
+  },
+  "CAP": {
+   "code": "CAP",
+   "city": "Capital",
+   "name": "Bullets",
+   "full": "Capital Bullets",
+   "founded": 1973,
+   "folded": 1974,
+   "became": "WAS",
+   "titles": [],
+   "current": false
+  },
+  "BAL": {
+   "code": "BAL",
+   "city": "Baltimore",
+   "name": "Bullets",
+   "full": "Baltimore Bullets",
+   "founded": 1963,
+   "folded": 1973,
+   "became": "WAS",
+   "titles": [],
+   "current": false
+  },
+  "KCK": {
+   "code": "KCK",
+   "city": "Kansas City",
+   "name": "Kings",
+   "full": "Kansas City Kings",
+   "founded": 1975,
+   "folded": 1985,
+   "became": "SAC",
+   "titles": [],
+   "current": false
+  },
+  "KCO": {
+   "code": "KCO",
+   "city": "Kansas City-Omaha",
+   "name": "Kings",
+   "full": "Kansas City-Omaha Kings",
+   "founded": 1972,
+   "folded": 1975,
+   "became": "SAC",
+   "titles": [],
+   "current": false
+  },
+  "CIN": {
+   "code": "CIN",
+   "city": "Cincinnati",
+   "name": "Royals",
+   "full": "Cincinnati Royals",
+   "founded": 1957,
+   "folded": 1972,
+   "became": "SAC",
+   "titles": [],
+   "current": false
+  },
+  "SDC": {
+   "code": "SDC",
+   "city": "San Diego",
+   "name": "Clippers",
+   "full": "San Diego Clippers",
+   "founded": 1978,
+   "folded": 1984,
+   "became": "LAC",
+   "titles": [],
+   "current": false
+  },
+  "BUF": {
+   "code": "BUF",
+   "city": "Buffalo",
+   "name": "Braves",
+   "full": "Buffalo Braves",
+   "founded": 1970,
+   "folded": 1978,
+   "became": "LAC",
+   "titles": [],
+   "current": false
+  },
+  "NOH": {
+   "code": "NOH",
+   "city": "New Orleans",
+   "name": "Hornets",
+   "full": "New Orleans Hornets",
+   "founded": 2002,
+   "folded": 2013,
+   "became": "NOP",
+   "titles": [],
+   "current": false
+  },
+  "NOK": {
+   "code": "NOK",
+   "city": "New Orleans/Oklahoma City",
+   "name": "Hornets",
+   "full": "New Orleans/Oklahoma City Hornets",
+   "founded": 2005,
+   "folded": 2007,
+   "became": "NOP",
+   "titles": [],
+   "current": false
+  },
+  "CHH": {
+   "code": "CHH",
+   "city": "Charlotte",
+   "name": "Hornets",
+   "full": "Charlotte Hornets",
+   "founded": 1988,
+   "folded": 2002,
+   "became": "NOP",
+   "titles": [],
+   "current": false
+  },
+  "SFW": {
+   "code": "SFW",
+   "city": "San Francisco",
+   "name": "Warriors",
+   "full": "San Francisco Warriors",
+   "founded": 1962,
+   "folded": 1971,
+   "became": "GSW",
+   "titles": [],
+   "current": false
+  },
+  "STL": {
+   "code": "STL",
+   "city": "St. Louis",
+   "name": "Hawks",
+   "full": "St. Louis Hawks",
+   "founded": 1955,
+   "folded": 1968,
+   "became": "ATL",
+   "titles": [],
+   "current": false
+  },
+  "SDR": {
+   "code": "SDR",
+   "city": "San Diego",
+   "name": "Rockets",
+   "full": "San Diego Rockets",
+   "founded": 1967,
+   "folded": 1971,
+   "became": "HOU",
+   "titles": [],
+   "current": false
+  },
+  "NOJ": {
+   "code": "NOJ",
+   "city": "New Orleans",
+   "name": "Jazz",
+   "full": "New Orleans Jazz",
+   "founded": 1974,
+   "folded": 1979,
+   "became": "UTA",
+   "titles": [],
+   "current": false
+  }
+ }
+}

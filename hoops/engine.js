@@ -261,7 +261,7 @@ function indexData(players) {
       team_season_id: teamSeasonId(first.t, first.s),
       team: first.t,
       season: first.s,
-      display: `${first.s} ${TEAM_NAMES[first.t] || first.t}`,
+      display: teamDisplay(first.t, first.s),
     });
   }
 
@@ -1578,8 +1578,62 @@ function teamColors(code) {
   return TEAM_COLORS[code] || ['#2b2b33', '#c9ccd6'];
 }
 
+/* REAL FRANCHISE DATA, when the page has loaded it.
+ *
+ * data/teams.json carries the city, the full name, the year the club was
+ * founded and every championship it has won, for the thirty current franchises
+ * and the nineteen defunct ones this game can still draw. The table above stays
+ * as a fallback so the engine is a working engine with no data file at all,
+ * which is what lets verify.mjs and the fixtures run without one.
+ */
+let TEAMS = null;
+function setTeams(json) {
+  TEAMS = (json && json.teams) || null;
+}
+
+function team(code) {
+  const t = TEAMS && TEAMS[code];
+  if (t) return t;
+  const name = TEAM_NAMES[code];
+  return name ? { code, name, full: name, titles: [] } : { code, name: code, full: code, titles: [] };
+}
+
 function teamName(code) {
-  return TEAM_NAMES[code] || code;
+  const t = TEAMS && TEAMS[code];
+  return (t && t.name) || TEAM_NAMES[code] || code;
+}
+
+/* "1996 Chicago Bulls", with the city the club actually played in that year.
+   A 1995 Vancouver roster is not a Memphis roster, and this is where that
+   distinction reaches the screen. */
+function teamDisplay(code, season) {
+  const t = team(code);
+  return `${season} ${t.full || t.name}`;
+}
+
+/* One line of context a fan would recognise: when they started, what they won.
+   Returns null rather than an empty string when there is nothing to say. */
+function teamNote(code, season) {
+  const t = team(code);
+  const bits = [];
+  if (t.founded) bits.push(`founded ${t.founded}`);
+  if (t.titles && t.titles.length) {
+    /* Titles won BY this season, because a 1987 roster has not won the ones
+       that came later and saying otherwise is just wrong. */
+    const won = typeof season === 'number' ? t.titles.filter(y => y <= season) : t.titles;
+    if (won.length) {
+      bits.push(won.length === 1 ? '1 championship' : `${won.length} championships`);
+      if (won.length <= 3) bits.push(`(${won.join(', ')})`);
+    }
+  }
+  /* The FULL name of what they became, because half of these kept their
+     nickname and moved city: "the Vancouver Grizzlies, later the Grizzlies"
+     tells a reader nothing at all. */
+  if (t.current === false && t.became) {
+    const now = team(t.became);
+    bits.push(`later the ${now.full || now.name}`);
+  }
+  return bits.length ? bits.join(' · ') : null;
 }
 
 // ─── exports ────────────────────────────────────────────────────────────────
@@ -1603,6 +1657,7 @@ const publicAPI = {
   respinCost, respinFees,
   coachReport, lastNameOf,
   TEAM_NAMES, TEAM_COLORS, teamColors, teamName,
+  setTeams, team, teamDisplay, teamNote,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

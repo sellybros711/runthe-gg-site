@@ -71,7 +71,24 @@ if (!Array.isArray(players) || players.length < 50) {
     + 'fill a six man roster out of that.');
 }
 
-/* 6. The how-to-play page gets the same treatment as the game, or half an
+/* 6. EVERY CLUB IN THE PLAYER DATA HAS A FRANCHISE ROW.
+      The two files are built by different scripts from different sources, and
+      they are joined on a Basketball-Reference team code. A miss is silent by
+      construction: the engine falls back to printing the raw code, so a broken
+      join reads as a wheel that landed on "VAN" rather than on the Vancouver
+      Grizzlies. It is also the likeliest thing to break, because NBA.com and
+      BBRef disagree about three current clubs and the historical codes are
+      carried by hand. */
+const teams = JSON.parse(read('hoops/data/teams.json')).teams;
+const codes = [...new Set(players.map((p) => p.t))].sort();
+const orphans = codes.filter((c) => !teams[c]);
+if (orphans.length) {
+  problems.push(`no franchise row for: ${orphans.join(', ')}. Those clubs will print as `
+    + 'a bare three letter code. Add them to DEFUNCT in hoops/build/fetch-teams.mjs, or '
+    + 'fix the NBA.com to Basketball-Reference code mapping beside it.');
+}
+
+/* 7. The how-to-play page gets the same treatment as the game, or half an
       unfinished game ends up in the indexed site and half does not. */
 const howTo = read('hoops/how-to-play.html');
 if (!/name=["']robots["'][^>]*noindex/i.test(howTo)) {
@@ -82,7 +99,7 @@ if (howTo.includes('pagead2.googlesyndication.com')) {
   problems.push('hoops/how-to-play.html carries the AdSense publisher tag.');
 }
 
-/* 7. EVERY SYSTEM THE ENGINE CAN NAME IS EXPLAINED SOMEWHERE THE PLAYER CAN READ IT.
+/* 8. EVERY SYSTEM THE ENGINE CAN NAME IS EXPLAINED SOMEWHERE THE PLAYER CAN READ IT.
       The rules page is written by hand and the systems live in engine.js, so the
       two drift apart the moment somebody adds one. A player told his roster
       plays "Moreyball" and given nowhere to find out what that means has been
