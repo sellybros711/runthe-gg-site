@@ -115,6 +115,40 @@ is(adv.length, 1, 'a commented-out table is still parsed');
 is(cell(adv[0], 'ws_off', 'ows'), '10.7', 'offensive win shares');
 is(cell(adv[0], 'ws_def', 'dws'), '4.2', 'defensive win shares');
 
+/* ---------- a draft page, which does NOT carry data-append-csv ----------
+ * This fixture exists because its absence cost a whole CI run: the draft fetch
+ * returned zero picks for all sixty-five years, because the parser demanded an
+ * attribute that only the STATS tables carry. On a draft page the only copy of
+ * the slug is in the player link's href. The high-school pick is in here on
+ * purpose too: his college cell is empty, and empty has to stay empty rather
+ * than becoming a college nobody attended. */
+const DRAFT = `
+<table id="stats"><thead>
+<tr><th data-stat="pick_overall">Pk</th><th data-stat="player">Player</th></tr>
+</thead><tbody>
+<tr><th scope="row" data-stat="pick_overall">1</th>
+<td data-stat="team_id"><a href="/teams/CLE/2004.html">CLE</a></td>
+<td data-stat="player"><a href="/players/j/jamesle01.html">LeBron James</a></td>
+<td data-stat="college_name"></td></tr>
+<tr><th scope="row" data-stat="pick_overall">3</th>
+<td data-stat="team_id"><a href="/teams/DEN/2004.html">DEN</a></td>
+<td data-stat="player"><a href="/players/a/anthoca01.html">Carmelo Anthony</a></td>
+<td data-stat="college_name"><a href="/friv/colleges.cgi?college=syracuse">Syracuse</a></td></tr>
+</tbody></table>`;
+
+const draft = bbrRows(DRAFT);
+is(draft.length, 2, 'a draft page parses without data-append-csv anywhere on it');
+is(draft.map(r => r.slug), ['jamesle01', 'anthoca01'], 'the slug comes out of the player link');
+is(cell(draft[1], 'college_name', 'college'), 'Syracuse', 'and the college with it');
+is(cell(draft[0], 'college_name', 'college'), '',
+  'a player who went straight from high school has no college, and gets none invented');
+
+/* The attribute still wins where both are present, so nothing about the season
+   pages changed when the fallback was added. */
+const both = bbrRows(`<tr><td data-stat="player" data-append-csv="realslug01">
+  <a href="/players/x/wrongslug99.html">Somebody</a></td></tr>`);
+is(both[0].slug, 'realslug01', 'data-append-csv still wins over the href');
+
 // ─── multi-team rows are stat lines, not clubs ──────────────────────────────
 
 const traded = perGameNew.find(r => r.slug === 'smithja01');

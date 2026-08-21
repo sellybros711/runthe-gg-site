@@ -102,13 +102,26 @@ const uncomment = (h) => String(h || '').replace(/<!--/g, '').replace(/-->/g, ''
 
 export function bbrRows(html) {
   return (uncomment(html).match(/<tr[\s\S]*?<\/tr>/gi) || []).map((tr) => {
-    const slug = /data-append-csv="([a-z0-9.'-]+)"/i.exec(tr);
+    /* THE SLUG, FROM EITHER PLACE BBREF PUTS IT.
+     *
+     * The stats tables tag every player row with data-append-csv. The DRAFT
+     * tables do not: there the only copy of the slug is inside the player
+     * link's href. Requiring the attribute made the draft fetch return zero
+     * picks for all sixty-five years, which is precisely the silent zero the
+     * row-count guards exist to catch, and they did catch it.
+     *
+     * The attribute still wins where it exists, so nothing about the season
+     * pages changes. The href is the fallback.
+     */
+    let slug = (/data-append-csv="([a-z0-9.'-]+)"/i.exec(tr) || [])[1];
+    if (!slug) slug = (/href="\/players\/[a-z]\/([a-z0-9.'-]+)\.html"/i.exec(tr) || [])[1];
     if (!slug) return null;                           // a header row is not a player
+
     const cells = {};
     const re = /data-stat="([a-z0-9_]+)"[^>]*>([\s\S]*?)<\/t[dh]>/gi;
     let m;
     while ((m = re.exec(tr))) cells[m[1]] = m[2];
-    return { slug: slug[1], cells };
+    return { slug, cells };
   }).filter(Boolean);
 }
 
