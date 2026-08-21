@@ -9,13 +9,12 @@
   :root{
     --bg:#080b14; --panel:#0f1729; --panel-2:#152036; --line:#1e2b45; --line-2:#2b3c5c;
     --ink:#e8eef8; --dim:#8fa3c0; --green:#22c55e; --gold:#ffd23a;
-    --shadow:0 10px 30px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     -webkit-font-smoothing:antialiased}
-  .wrap{max-width:1040px;margin:0 auto;padding:28px 18px 80px}
+  .wrap{max-width:1060px;margin:0 auto;padding:28px 18px 80px}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);
     font-weight:800;margin:0 0 6px}
   h1{font-size:clamp(26px,5vw,38px);line-height:1.05;margin:0 0 10px;letter-spacing:-.02em}
@@ -23,21 +22,23 @@
   h2:before{content:"";width:9px;height:9px;background:var(--green);border-radius:2px;flex:0 0 auto}
   .lede{color:#c3d0e2;font-size:16px;margin:0 0 4px}
   .dim{color:var(--dim)}
-  .sub{color:var(--dim);font-size:13.5px;margin:4px 0 16px;max-width:70ch}
+  .sub{color:var(--dim);font-size:13.5px;margin:4px 0 16px;max-width:72ch}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
   canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 
-  /* the league grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
   .cell{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:10px 6px 8px;text-align:center;cursor:pointer;transition:border-color .12s,transform .12s}
+    padding:10px 6px 9px;text-align:center;cursor:pointer;
+    transition:border-color .12s,transform .12s}
   .cell:hover{border-color:var(--line-2);transform:translateY(-2px)}
   .cell.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
   .cell canvas{margin:0 auto}
   .cell b{display:block;font-size:11.5px;margin-top:7px;font-weight:700;letter-spacing:.02em}
-  .cell span{display:block;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+  .cell span.sub{display:block;font-size:10px;color:var(--dim);letter-spacing:.06em;
+    text-transform:uppercase;margin:0}
+  .how{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.35}
+  .how.warn{color:#e0b64a}
 
-  /* the anatomy panel */
   .anat{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
   .slots{flex:1 1 300px;min-width:260px}
   .slot{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
@@ -46,18 +47,15 @@
   .slot b{font-size:13px;min-width:96px}
   .slot span{font-size:12px;color:var(--dim)}
 
-  /* sizes */
   .sizes{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
   .sizes figure{margin:0;text-align:center}
   .sizes figcaption{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.05em}
 
-  /* in place */
   .fakebar{display:flex;align-items:center;gap:10px;background:var(--panel-2);
     border:1px solid var(--line);border-radius:12px;padding:9px 12px}
   .fakebar .title{font-weight:800;letter-spacing:.02em;font-size:14px;flex:1}
   .bub{width:38px;height:38px;border-radius:50%;background:#0b1220;border:1px solid var(--line-2);
     display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
-  .bub canvas{transform:translateY(1px)}
   .rows{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .row{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--panel);
     border-bottom:1px solid var(--line)}
@@ -67,14 +65,12 @@
   .row .rec{font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim)}
   .row.me{background:rgba(34,197,94,.07)}
 
-  /* unlockables */
   .locked canvas{filter:grayscale(1) brightness(.42)}
   .cell .tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
     padding:2px 6px;border-radius:99px;margin-top:6px;font-weight:800}
   .tag.retro{background:rgba(255,210,58,.14);color:var(--gold)}
   .tag.special{background:rgba(34,197,94,.14);color:var(--green)}
   .tag.lock{background:rgba(255,255,255,.06);color:var(--dim)}
-  .how{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.35}
 
   .note{background:rgba(255,210,58,.06);border:1px solid rgba(255,210,58,.22);
     border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13.5px;color:#dfe7f4}
@@ -83,6 +79,11 @@
   li{margin:5px 0;font-size:13.5px;color:#c3d0e2}
   code{background:var(--panel-2);border:1px solid var(--line);border-radius:5px;
     padding:1px 5px;font-size:12px;color:#cfe0f7}
+  .toggle{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+  .toggle button{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    border-radius:99px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;
+    letter-spacing:.03em}
+  .toggle button.on{border-color:var(--green);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -90,16 +91,17 @@
 
   <p class="eyebrow">Mockup, nothing wired up</p>
   <h1>Pixel helmets as profile pictures</h1>
-  <p class="lede">One drawing, thirty two paint jobs, and a shelf of unlockables behind it.</p>
-  <p class="sub">Nothing on this page is in either game. It lives in <code>mockups/helmets/</code>
-    so it can be looked at, argued with and thrown away without touching a thing.</p>
+  <p class="lede">One drawing, eighty three paint jobs, and a shelf of unlockables behind it.</p>
+  <p class="sub">For <b>College Football: Perfect Season</b>. Nothing on this page is in the
+    game: it lives in <code>mockups/helmets/</code> so it can be looked at, argued with and
+    thrown away without touching a thing.</p>
 
   <h2>The idea</h2>
-  <p class="sub">A helmet is not thirty two drawings. The shell, the face opening, the cage and
-    the place a mark sits are the same for every club; what changes is four colours, a stripe
-    and a small logo. So the shape is drawn once, by hand, as a grid of characters, and a club
-    is six fields. That is what makes a full league possible in an afternoon instead of a
-    month, and what makes a retro just another row of colours.</p>
+  <p class="sub">A helmet is not eighty three drawings. The shell, the ear hole, the brow,
+    the face opening and the cage are the same for every school; what changes is four colours,
+    a stripe and a small mark. So the shape is drawn once, by hand, as a grid of characters,
+    and a school is five fields. That is what makes a whole country possible in an afternoon
+    instead of a month, and what makes a throwback just another row of colours.</p>
 
   <div class="card anat">
     <div><canvas id="anat-big"></canvas></div>
@@ -107,21 +109,19 @@
   </div>
 
   <h2>At the sizes it would actually be used</h2>
-  <p class="sub">A profile picture is small. The whole design is judged at the third one along,
-    not the first: if it does not survive 24 pixels it does not work, however good the big one
-    looks.</p>
+  <p class="sub">A profile picture is small. The whole thing is judged at the last two, not
+    the first: if it does not survive 30 pixels it does not work, however good the big one looks.</p>
   <div class="card sizes" id="sizes"></div>
 
-  <h2>The league, in 2026 colours</h2>
-  <p class="sub">Tap one to load it into the panels above and below. Shell, facemask and stripe
-    are a first pass from memory and want checking club by club: the point here is that the
-    system carries a whole league, not that every hex is right.</p>
+  <h2>Every school in the game</h2>
+  <p class="sub">Built from <code>cfb/data/cfb_team_seasons.json</code>, the colours the game
+    already paints its own screens with. Tap one to load it into the panels above and below.</p>
+  <div class="toggle" id="filter"></div>
   <div class="grid" id="league"></div>
 
   <h2>In place</h2>
-  <p class="sub">The bubble in the header, and a leaderboard where everybody is wearing one. This
-    is the thing to judge: thirty two of them in a column, at 26 pixels, still telling you who
-    is who.</p>
+  <p class="sub">The bubble in the header, and a leaderboard where everybody is wearing one.
+    This is the thing to judge: a column of them at 30 pixels, still telling you who is who.</p>
   <div class="card">
     <div class="fakebar">
       <span class="title">PERFECT SEASON</span>
@@ -132,89 +132,82 @@
   </div>
 
   <h2>Retro and specials, as unlockables</h2>
-  <p class="sub">The same six fields, different values. A retro is a real helmet a club used to
-    wear; a special is one nobody ever wore. Locked ones are drawn and drained of colour rather
-    than hidden, because a shelf you can see is a reason to play and an empty one is not.</p>
+  <p class="sub">The same fields, different values. A retro is a helmet a school really wore;
+    a special is one nobody ever did. Locked ones are drawn and drained of colour rather than
+    hidden, because a shelf you can see is a reason to play and an empty one is not.</p>
   <div class="grid" id="vault"></div>
-
-  <h2>It covers college too</h2>
-  <p class="sub">The college game already ships colours for eighty three schools, so the same
-    renderer gets a full set there for the cost of a stripe and a mark each.</p>
-  <div class="grid" id="college"></div>
 
   <div class="note">
     <b>What is honest about this mockup and what is not.</b>
     <ul>
-      <li>The <b>shape, the stripe, the cage and the colours</b> are real work and would ship
-        roughly as they are.</li>
-      <li>The <b>marks are not finished</b>. Ten of them are drawn: the star, the horseshoe, the
-        bolt, the horns, the fleur, the wing, the shield, the flag, the arrowhead and the
-        dolphin, and Pittsburgh's three diamonds. Under every other helmet is a label saying
-        which of the two problems it has: <span class="dim">letter mark</span> means the club's
-        real mark was never going to survive nine pixels and it is wearing initials for now,
-        and <span class="dim">mark needs a pass</span> means something is drawn there and it is
-        not good enough. A leaping panther, a raven and a charging buffalo at this size are
-        pixel art, not programming, and want somebody sitting down with them.</li>
-      <li><b>Nothing is unlockable yet.</b> The lock states below are drawn on, not earned. What
-        they would hang off is the badge system that already exists in both games.</li>
-      <li>Two club quirks the system already handles and which are worth keeping:
-        Cincinnati's shell is a <b>pattern</b> rather than a colour, and Cleveland, Pittsburgh
-        and Tampa Bay wear <b>no stripe at all</b>, which is a real look rather than a missing
-        field.</li>
+      <li>The <b>shape</b> is real work and would ship roughly as it is. It took three goes:
+        a side profile with the mask beside the shell reads as an egg behind a fence, and a
+        turned-toward-you version reads as a circle with a window in it. What makes it a
+        helmet is that the <b>cage hangs off the front</b>, past the shell, over a face
+        opening cut out of it.</li>
+      <li><b>Thirty two schools are done by hand</b> and the other fifty one are generated
+        from their two colours: primary shell, secondary stripe, initials on the side. Every
+        generated one says <span class="dim">generated from its colours</span> underneath, so
+        nothing is claiming to be a real helmet when it is a guess.</li>
+      <li><b>College suits this better than the pros do.</b> Half these schools really do wear
+        a single letter, and a letter is the one thing a nine pixel box is good at. The same
+        renderer aimed at the NFL game wanted a leaping panther and a raven at that size,
+        which is a different and much harder job.</li>
+      <li><b>Nothing is unlockable yet.</b> The lock states below are drawn on, not earned.
+        What they would hang off is the badge system the game already has.</li>
     </ul>
   </div>
 
   <h2>If this goes ahead</h2>
-  <p class="sub">The work in rough order: finish the marks, check every club's three colours
-    against a photograph, decide what unlocks what, then a way to pick one. Storage is one short
-    text column on the account, the same shape as the school colours the college game already
-    keeps, and the helmet is drawn from it on the fly rather than stored as an image.</p>
+  <p class="sub">In rough order: finish the hand list so every school in the game is right,
+    check each against a photograph, draw the handful of marks that are not letters, decide
+    what unlocks what, then a picker. Storage is one short text column on the account, the
+    same shape as the school colours the game already keeps, and the helmet is drawn from it
+    on the fly rather than stored as an image.</p>
 
 </div>
 
 <script src="helmet.js"></script>
 <script src="kits.js"></script>
 <script>
-(function(){
+(async function(){
   const $ = (id) => document.getElementById(id);
   const H = window.PixelHelmet;
+  const schools = await window.KITS.load('../../cfb/data/cfb_team_seasons.json');
 
-  function mk(kit, scale, cls) {
+  function mk(kit, scale) {
     const c = document.createElement('canvas');
-    if (cls) c.className = cls;
     H.render(c, kit, scale);
     return c;
   }
 
-  /* ── anatomy ─────────────────────────────────────────────────────── */
   const SLOTS = [
     ['shell', 'Shell', 'the body of the helmet'],
-    ['mask', 'Facemask', 'its own colour, and half of what identifies a club'],
-    ['stripeMain', 'Stripe', 'over the crown, running away to the left'],
+    ['mask', 'Facemask', 'its own colour, and half of what identifies a school'],
+    ['stripeMain', 'Stripe', 'over the crown, front to back'],
     ['stripeTrim', 'Stripe trim', 'the thin edge either side of it'],
     ['ink1', 'Mark', 'up to two colours, inside a nine by seven box'],
     ['face', 'Face', 'dark whatever the shell is, because it is the inside of a helmet'],
   ];
   function paintAnatomy(kit) {
-    H.render($('anat-big'), kit, 9);
-    const box = $('anat-slots');
+    H.render($('anat-big'), kit, 8);
     const val = {
       shell: kit.shell, mask: kit.mask,
       stripeMain: (kit.stripe || [])[0] || kit.shell,
       stripeTrim: (kit.stripe || [])[1] || (kit.stripe || [])[0] || kit.shell,
       ink1: (kit.ink || [])[0] || kit.shell, face: kit.face || '#131a26',
     };
-    box.innerHTML = SLOTS.map(([k, label, note]) =>
+    $('anat-slots').innerHTML = SLOTS.map(([k, label, note]) =>
       '<div class="slot"><span class="sw" style="background:' + val[k] + '"></span>' +
       '<b>' + label + '</b><span>' + note + '</span></div>').join('') +
       '<div class="slot"><span class="sw" style="background:transparent;border-style:dashed">' +
-      '</span><b>Everything else</b><span>shared by all thirty two</span></div>';
+      '</span><b>Everything else</b><span>shared by all eighty three</span></div>';
   }
 
   function paintSizes(kit) {
     $('sizes').innerHTML = '';
-    [[8, '192px, a share card'], [4, '96px, a profile page'], [2, '48px, a leaderboard row'],
-     [1, '24px, a header bubble']].forEach(([s, label]) => {
+    [[6, '180px, a share card'], [3, '90px, a profile page'], [2, '60px, a leaderboard row'],
+     [1, '30px, a header bubble']].forEach(([s, label]) => {
       const f = document.createElement('figure');
       f.appendChild(mk(kit, s));
       const cap = document.createElement('figcaption');
@@ -224,7 +217,6 @@
     });
   }
 
-  /* ── the league ──────────────────────────────────────────────────── */
   function cell(kit, opts) {
     const d = document.createElement('div');
     d.className = 'cell' + (opts && opts.locked ? ' locked' : '');
@@ -233,6 +225,7 @@
     b.textContent = kit.name;
     d.appendChild(b);
     const s = document.createElement('span');
+    s.className = 'sub';
     s.textContent = kit.sub || '';
     d.appendChild(s);
     if (opts && opts.tag) {
@@ -243,29 +236,58 @@
     }
     if (opts && opts.how) {
       const h = document.createElement('div');
-      h.className = 'how';
+      h.className = 'how' + (opts.warn ? ' warn' : '');
       h.textContent = opts.how;
       d.appendChild(h);
     }
     return d;
   }
 
+  let current = null;
   function select(kit) {
+    current = kit;
     paintAnatomy(kit);
     paintSizes(kit);
     $('bub-head').innerHTML = '';
     $('bub-head').appendChild(mk(kit, 1));
-    [...document.querySelectorAll('#league .cell')].forEach((c, i) =>
-      c.classList.toggle('on', window.KITS.nfl[i] === kit));
+    [...document.querySelectorAll('#league .cell')].forEach((c) =>
+      c.classList.toggle('on', c.dataset.school === kit.name));
   }
 
-  window.KITS.nfl.forEach((kit) => {
-    const c = cell(kit, {
-      how: kit.placeholder ? 'letter mark' : (kit.rough ? 'mark needs a pass' : ''),
-    });
-    c.onclick = () => select(kit);
-    $('league').appendChild(c);
+  /* By conference, because eighty three in one run is a wall and a conference is how
+     anybody actually looks for their school. */
+  const CONFS = ['All', 'Hand drawn'].concat(
+    [...new Set(schools.map((s) => s.conference))].filter(Boolean).sort());
+  let filter = 'All';
+  function paintLeague() {
+    $('league').innerHTML = '';
+    schools
+      .filter((k) => filter === 'All' || (filter === 'Hand drawn' ? !k.generated
+        : k.conference === filter))
+      .forEach((kit) => {
+        const c = cell(kit, {
+          how: kit.note || (kit.generated ? 'generated from its colours' : ''),
+          warn: !!kit.note,
+        });
+        c.dataset.school = kit.name;
+        c.onclick = () => select(kit);
+        $('league').appendChild(c);
+      });
+    if (current) select(current);
+  }
+  $('filter').innerHTML = '';
+  CONFS.forEach((name) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.className = name === filter ? 'on' : '';
+    b.onclick = () => {
+      filter = name;
+      [...$('filter').children].forEach((x) => x.classList.toggle('on', x === b));
+      paintLeague();
+    };
+    $('filter').appendChild(b);
   });
+  paintLeague();
 
   window.KITS.vault.forEach((v) => {
     $('vault').appendChild(cell(v.kit, {
@@ -274,25 +296,23 @@
     }));
   });
 
-  window.KITS.college.forEach((kit) => $('college').appendChild(cell(kit, {})));
-
-  /* ── a leaderboard wearing them ──────────────────────────────────── */
   const BOARD = [
-    ['bigmike', '15-0', 'MIA', true], ['coachprime', '14-1', 'KC'],
-    ['thedude', '14-1', 'PHI'], ['jets_forever', '13-2', 'NYJ'],
-    ['papabear', '13-2', 'CHI'], ['bolt_up', '12-3', 'LAC'],
+    ['bigmike', '15-0', 'Alabama', true], ['coachprime', '14-1', 'Oregon'],
+    ['thedude', '14-1', 'Michigan'], ['rolltide22', '13-2', 'LSU'],
+    ['papabear', '13-2', 'Ohio State'], ['hookem', '12-3', 'Texas'],
   ];
-  const byAbbr = {};
-  window.KITS.nfl.forEach((k) => { byAbbr[k.sub] = k; });
+  const byName = {};
+  schools.forEach((k) => { byName[k.name] = k; });
   $('rows').innerHTML = '';
-  BOARD.forEach(([name, rec, abbr, me], i) => {
+  BOARD.forEach(([name, rec, school, me], i) => {
+    const kit = byName[school] || schools[0];
     const r = document.createElement('div');
     r.className = 'row' + (me ? ' me' : '');
     r.innerHTML = '<span class="pl">' + (i + 1) + '</span>';
     const bub = document.createElement('span');
     bub.className = 'bub';
-    bub.style.width = '26px'; bub.style.height = '26px';
-    bub.appendChild(mk(byAbbr[abbr] || window.KITS.nfl[0], 1));
+    bub.style.width = '30px'; bub.style.height = '30px';
+    bub.appendChild(mk(kit, 1));
     r.appendChild(bub);
     const nm = document.createElement('span');
     nm.className = 'nm'; nm.textContent = me ? 'You' : name;
@@ -303,7 +323,7 @@
     $('rows').appendChild(r);
   });
 
-  select(byAbbr.MIA || window.KITS.nfl[0]);
+  select(byName.Alabama || schools[0]);
 })();
 </script>
 </body>

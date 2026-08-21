@@ -21,66 +21,62 @@
   'use strict';
 
   /* ── the shell ────────────────────────────────────────────────────────────────
-   * Facing right, 26 wide by 24 tall. The mask is part of the same grid rather than a
-   * second sprite: a mask drawn separately has to be positioned per team and there is no
-   * reason for it to move.
-   */
-  /* ── the shell ────────────────────────────────────────────────────────────────
    *
-   * THREE QUARTERS ON, not side on, and that was the second attempt rather than a style
-   * choice. A side profile is the obvious way to draw a helmet and it falls apart at this
-   * size: the shell becomes an egg, the mask becomes a fence beside the egg, and the face
-   * opening that would have made it read is four pixels of nothing. Turned toward you the
-   * mask is a CAGE OVER A DARK FACE, a shape the eye gets instantly, and the whole left of
-   * the shell is left over for the mark.
+   * SIDE ON, facing right, and the thing that makes it a helmet rather than a ball is that
+   * THE CAGE STICKS OUT PAST THE SHELL. That was the whole of what was wrong with the
+   * first two attempts: one was an egg with a fence beside it, and the turned-toward-you
+   * version that replaced it was a circle with a window in it. Neither had a jaw, a brow
+   * or a mask hanging in front of a face, which are the four lines a person actually reads.
+   * The mask now hangs off the front, below the brow and forward of it, over an opening
+   * cut out of the shell, and the jaw closes underneath it.
    *
-   * HAND PLACED, not generated. The third attempt built this from a silhouette function
-   * and a stripe derived from the shell edge, which is the programmer's instinct and the
+   * HAND PLACED, not generated. An earlier version built the silhouette from a function
+   * and derived the stripe from the shell edge, which is the programmer's instinct and the
    * wrong one: derived, the stripe inherits every jog in the outline and comes out as a
-   * dotted ladder rather than a stripe. Pixel art is placed. So it is typed out, and
-   * anybody can move a pixel without reading a line of code.
+   * dotted ladder. Pixel art is placed. So it is typed out, and anybody can move a pixel
+   * without reading a line of code.
+   *
+   * THE STRIPE IS INSET, with a row of shell above it and a pixel of shell at either end.
+   * Run to the very top of the crown instead, which is where a stripe honestly is, and it
+   * reads as a flat bar balanced on the helmet rather than as paint on it: there is nothing
+   * for the eye to read as curvature. One row of shell above it is the whole fix.
    *
    *   .  nothing     #  shell        o  shell underside     =  stripe    -  stripe trim
-   *   M  mask bar    e  face, which is dark whatever the shell is
-   *
-   * THE STRIPE IS SIX WIDE, four of colour and one of trim either side, and it started at
-   * four. At four it read as a candy cane rather than a stripe: the band steps one pixel
-   * left per row, so a one pixel trim sits directly under the colour above it and the eye
-   * joins them diagonally into alternating beads. Widening the colour is what separates
-   * the two trim lines enough to read as edges of one band.
+   *   M  mask bar    e  the face opening, dark whatever the shell is
+   *   E  ear hole ring       g  ear hole
    */
   const HELMET = [
-    '........................',
-    '........................',
-    '.......#-====-##........',
-    '.....##-====-#####......',
-    '....##-====-#######.....',
-    '...##-====-#########....',
-    '..##-====-###########...',
-    '..#-====-############...',
-    '.##-====-#############..',
-    '.#-====-####MMMMMMMMM#..',
-    '.#-====-####MeeeMeeeM#..',
-    '.###########MeeeMeeeM#..',
-    '.###########MMMMMMMMM#..',
-    '.###########MeeeMeeeM#..',
-    '.###########MeeeMeeeM#..',
-    '.###########MMMMMMMMM...',
-    '..###########MMMMMM#....',
-    '..############MMMM#.....',
-    '...###############......',
-    '....oooooooooooo........',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
+    '..............................',
+    '..............................',
+    '.........########.............',
+    '.......#------------#.........',
+    '......##============##........',
+    '.....###------------###.......',
+    '....####################......',
+    '...######################.....',
+    '..#######################.....',
+    '..########################....',
+    '..########################....',
+    '..########################....',
+    '..#####E##################....',
+    '..####EgE#############MMMMMM..',
+    '..#####E##########eeeeeeeeeM..',
+    '..#################eeeeeeeeM..',
+    '..#################MMMMMMMMM..',
+    '..################eeeeeeeeeM..',
+    '..###############MMMMMMMMMM...',
+    '..oo############..............',
+    '...ooooooooooo................',
+    '.....oooooooo.................',
+    '..............................',
+    '..............................',
   ];
 
   /* Where the mark sits, and how big a box it gets. Every logo is drawn inside this box, so
      a mark too big for a helmet is caught by the box rather than by somebody noticing it
-     later. Low and left, which is where a club actually puts one and, not by accident, the
-     only part of a turned helmet with room for it. */
-  const LOGO_BOX = { x: 3, y: 11, w: 9, h: 7 };
+     later. Mid shell and forward of the ear hole, which is where a school actually puts
+     one. */
+  const LOGO_BOX = { x: 11, y: 6, w: 9, h: 7 };
 
   /* ── a tiny alphabet ──────────────────────────────────────────────────────────
    * 3x5, because a helmet's side is nine pixels across and two letters plus a gap is
@@ -220,6 +216,12 @@
         /* The face opening is dark whatever the shell is: it is the inside of a helmet
            with a head in it, not a tinted version of the paint. */
         else if (c === 'e') put(x, y, faceInk);
+        /* The ear hole. A ring rather than a dot: one pixel of dark reads as dirt on the
+           screen, three by three reads as a hole in a helmet. */
+        /* The ear hole, a diamond rather than a square: three by three filled reads as a
+           sticker on the side of the helmet, and the corners knocked off reads as round. */
+        else if (c === 'E') put(x, y, shade(shell, dark ? 0.10 : -0.13));
+        else if (c === 'g') put(x, y, shade(shell, dark ? -0.26 : -0.40));
       }
     }
 

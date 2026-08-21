@@ -5,14 +5,20 @@
   font:11px system-ui;color:#9fb3c8">
 <script src="helmet.js"></script><script src="kits.js"></script>
 <script>
-for (const ab of ['LV','NO','PHI','CLE','CIN','PIT','SEA','ARI','MIN','TB','HOU','KC']) {
-  const k = KITS.nfl.find((x) => x.sub === ab);
-  const d = document.createElement('div');
-  const c = document.createElement('canvas');
-  PixelHelmet.render(c, k, 7);
-  c.style.imageRendering = 'pixelated';
-  d.appendChild(c);
-  d.insertAdjacentHTML('beforeend', '<div>' + k.name + '</div>');
-  document.body.appendChild(d);
-}
+(async function () {
+  const schools = await KITS.load('../../cfb/data/cfb_team_seasons.json');
+  const want = ['Alabama','Michigan','Ohio State','Notre Dame','Texas','Oregon','Georgia',
+    'Penn State','LSU','Clemson','Miami','Nebraska'];
+  for (const name of want) {
+    const k = schools.find((x) => x.name === name);
+    if (!k) continue;
+    const d = document.createElement('div');
+    const c = document.createElement('canvas');
+    PixelHelmet.render(c, k, 6);
+    c.style.imageRendering = 'pixelated';
+    d.appendChild(c);
+    d.insertAdjacentHTML('beforeend', '<div>' + k.name + '</div>');
+    document.body.appendChild(d);
+  }
+})();
 </script>
