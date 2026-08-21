@@ -828,8 +828,32 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* The affordance, NAMED. A glyph alone says "something is different about
      this row"; it does not say what, and it cannot say what it is for. The
-     chip is the one place the game gets to use the word. */
-  .chip.opens{color:var(--violetT);}
+     chip is the one place the game gets to use the word.
+   *
+   * IT IS AN ARROW, and it has to be, because it shares violet with the JAM
+   * role and the two turn up on the same row: "Madhuvan > SEGUE JAM" came up
+   * on the first show drawn while checking this. Violet is the segue colour
+   * everywhere else in the game (the mark after the title, the caret in the
+   * setlist, the suite chip), so moving it would be moving the wrong one, and
+   * every other hue in the palette is already spoken for.
+   * So the flow chips are told apart by SHAPE, which is what the old design
+   * did with them anyway: everything that means "this ran into that" points at
+   * the thing it ran into, and a role never points at anything. The clip only
+   * eats the right-hand corner, so the border survives on the other three
+   * sides and the fill stays the same 11% every other chip uses. */
+  /* NO BORDER ON A CLIPPED CHIP. The clip cuts the box, and it cuts the border
+     with it: the right-hand edge came out as a sliver floating a pixel clear
+     of the body, so the arrow read as a pill with a crumb after it. Anything
+     clip-path touches has to carry its shape in the FILL, which is why the
+     three solid flow chips look the way they do.
+     This one is a description rather than an action, so it stays tinted rather
+     than going solid, at 26% instead of the usual 11%: enough for the point to
+     read on its own, and measured at 4.96:1 dark and 5.06:1 light against its
+     own ink, which is more headroom than the bordered chips have. */
+  .chip.opens{--chipHue:var(--violet); color:var(--cViolet);
+    background:color-mix(in srgb, var(--violet) 26%, var(--pillBase));
+    border-color:transparent; padding-right:12px;
+    clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
@@ -995,63 +1019,153 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      So the word keeps its colour, which is where all the meaning was, and
      loses the box. Letterspaced small caps, middot separated, the way a
      printed setlist or a sleeve note sets the same kind of aside. */
-  .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
-    letter-spacing:1.6px; text-transform:uppercase; color:var(--mut);
-    padding:0; background:none; border-radius:0;}
-  .chips{gap:0 !important;}
-  .chip + .chip:before{content:'\00b7'; margin:0 7px; color:var(--line2);
-    letter-spacing:0; font-weight:700;}
+  /* ---------------- CHIP INK, and why it is not the accent palette ----------
+   *
+   * A chip is TEXT. The accent tokens it borrowed are a STRIP: a 3px bar down
+   * the side of a row, where contrast rules do not apply because nobody reads
+   * a bar. Measured against the worst background each theme actually puts a
+   * chip on (--card in the dark, --bg in the light, since each is the closer
+   * of the two to the ink):
+   *
+   *              dark          light
+   *   opener     8.07  ok      2.93  fails even the 3:1 large-text floor
+   *   encore     8.70  ok      3.58  fails
+   *   rarity     8.70  ok      3.58  fails
+   *   jamchart   8.70  ok      3.58  fails
+   *   cover      5.24  ok      3.88  fails
+   *   closer     7.64  ok      4.38  fails
+   *   jam/peak/ballad/monotony        pass in both
+   *
+   * At 11px bold these are NORMAL text to WCAG, not large, so the bar is 4.5.
+   * Four of the light values are darkened until they clear it, hue and
+   * saturation held so a chip is the same colour it always was. The dark theme
+   * is untouched: every one of those already passes against the card.
+   *
+   * This is the same fix, for the same reason, as --gradeHot further down: the
+   * light --bg is lighter than the dark --card is dark, so a colour that is
+   * comfortable on a chip in one theme is not automatically comfortable in the
+   * other. check_data computes all of these rather than trusting this table.
+   *
+   * The strip keeps --acc and is deliberately left alone. */
+  :root{ --cGreen:var(--greenT); --cTeal:var(--tealT); --cGold:var(--goldT);
+         --cCoral:var(--coralT); --cViolet:var(--violetT); --cPink:var(--pinkT);
+         --cBlue:var(--blueT); --cRed:var(--redT); }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --cGreen:#127D39; --cTeal:#0E7884;
+      --cGold:#906407; --cCoral:#C73A25; }
+  }
+  :root[data-theme="light"]{ --cGreen:#127D39; --cTeal:#0E7884;
+    --cGold:#906407; --cCoral:#C73A25; }
+
+  /* AND THE SIZE, which is the rest of the legibility problem and most of it.
+     9.5px at 1.6px of tracking is not small type, it is a row of separated
+     letters: at that size the tracking is 17% of the em, so JAMCHART reads as
+     eight things rather than one word. 11px with the tracking cut to 0.6
+     leaves the same small-caps aside and gives it back its word shapes.
+
+     WHAT THE BOX COSTS, measured rather than waved at. Going from bare type to
+     the pill on a 390px phone, one drawn show, 10 rows with 9 of them tagged:
+     median row +1px, five rows grew, one grew 25px, and the whole song column
+     went from 1073px to 1109px. So about 3% taller overall, and the 25px row
+     is the shape of it: a chip shares a line whose height the title already
+     sets, so the padding is free until the chips wrap onto their own line, and
+     then it is not. That is the price of the boxes and it is worth saying out
+     loud rather than discovering on a long setlist. */
+  /* ---------------- THE PILL, AND WHY IT IS OPAQUE ------------------------
+   *
+   * The descriptors were pills once, each family shaped like what it meant: a
+   * peak that melted, a segue drawn as the arrow a setlist writes it with, a
+   * sandwich with a bun, a jamchart in the tie dye. They were flattened to
+   * plain type, and the shapes went with the boxes. They are back.
+   *
+   * THE FILL IS OPAQUE, which the old ones were not, and that is the whole
+   * difference. A translucent tint always moves the ground TOWARDS the ink: in
+   * a dark theme a fill lightens, in a light theme it darkens, and either way
+   * the text loses contrast. Measured on the old 20% hue tints, every one of
+   * the light-theme chips failed at every strength tried, from 36% down to
+   * 12%, because there is no tint of a colour that does not drag the ground
+   * toward that colour.
+   *
+   *   old .seg  green 20%  light 4.11   old .rare gold 20%  light 4.21
+   *   old .mono red   16%  light 4.06   old .peak pink 26%  light 3.24
+   *
+   * So the pill sits BACK from the page instead of forward: a deeper navy in
+   * the dark theme, plain white in the light one. Being opaque also means a
+   * chip measures the same on a song row as inside a sheet, which the old
+   * translucent ones did not.
+   *
+   * The hue then rides on a BORDER and the ink, and a border cannot touch text
+   * contrast at all. The fill carries just enough hue to tint it: 11% is the
+   * most every one of the eight hues can take and still clear 4.5:1 in both
+   * themes, the binding case being pink. Worst measured cell is 4.54. */
+  :root{ --pillBase:#0A1A2E; }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --pillBase:#FFFFFF; } }
+  :root[data-theme="light"]{ --pillBase:#FFFFFF; }
+
+  .chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:900;
+    letter-spacing:.6px; text-transform:uppercase; color:var(--mut);
+    padding:2px 7px; border-radius:5px; border:1px solid transparent;
+    background:color-mix(in srgb, var(--chipHue, var(--dim)) 11%, var(--pillBase));
+    border-color:color-mix(in srgb, var(--chipHue, var(--dim)) 45%, transparent);}
+  /* Boxes space themselves. The middot was there because words needed
+     separating; a row of pills does not, and a dot between two boxes reads as
+     a third thing. */
+  .chips{gap:5px;}
   .chip svg{display:block; flex:0 0 auto;}
 
-  /* ROLE. Colour only, which is all it ever carried. */
-  .chip.acc{color:var(--acc);}
+  /* ROLE. Colour only, which is all it ever carried, but off the chip ink
+     rather than the strip's --acc so the light theme can darken it. Named per
+     role rather than read from an inline style: the colour is a property of
+     what the chip SAYS, so the class that says it should carry it. */
+  /* Each role declares its hue and its ink. The pill rule above reads
+     --chipHue for the fill and the border, so one declaration per role sets
+     all three and they cannot drift apart. */
+  .chip.acc.opener{--chipHue:var(--green);  color:var(--cGreen);}
+  .chip.acc.closer{--chipHue:var(--teal);   color:var(--cTeal);}
+  .chip.acc.encore{--chipHue:var(--gold);   color:var(--cGold);}
+  .chip.acc.cover {--chipHue:var(--coral);  color:var(--cCoral);}
+  .chip.acc.jam   {--chipHue:var(--violet); color:var(--cViolet);}
+  .chip.acc.ballad{--chipHue:var(--blue);   color:var(--cBlue);}
 
   /* ...except the peak, which melts. The drip is cut out of the chip's own
      body by an SVG mask, so it stays inside the chip's box and can never reach
      the row below. Percent encoded rather than raw angle brackets so it is not
-     a Chrome-only trick.
-     Tinted, not filled: solid pink with dark ink at 9.5px was hard to read and
-     shouted over every other chip on the row. Same weight as its neighbours
-     now, and the melt still reads. The lobes are half as deep as the first
-     cut, which was eating into the text. */
-  /* THE MELT GOES WITH THE BOX. It was a drip cut out of the chip's body, and
-     with no body to cut it from there is nothing to melt. A peak is now the
-     word in its own pink like every other role; the drip lives on in the peak
-     chip on the scorecard, which still has a filled shape to carve. */
-  .chip.acc.peak{color:var(--acc);}
+     a Chrome-only trick, and the lobes are shallow because a deeper cut ate
+     into the text.
+     It needs a BODY to carve, which is why the melt disappeared when the boxes
+     did and comes back with them. Square top corners so the drip reads as the
+     bottom edge running rather than as a rounded tab. */
+  .chip.acc.peak{--chipHue:var(--pinkT); color:var(--cPink);
+    padding:2px 7px 5px; border-radius:5px 5px 0 0; border-bottom:0;
+    -webkit-mask:var(--melt) no-repeat center/100% 100%;
+    mask:var(--melt) no-repeat center/100% 100%;}
 
-  /* FLOW — solid green, and both of them are shaped like what they mean.
-     A setlist writes a segue as ">", so the segue chip is an arrow pointing
-     at the song it lands on. A sandwich is drawn as one: crust on top and
-     bottom, filling between, domed like a bun. */
-  /* FLOW. The two that are worth shouting keep a fill, and ONLY these two:
-     they are not descriptions of the song, they are a thing the player can go
-     and do this turn, and they appear on a handful of rows at most. The arrow
-     shape survives because a setlist writes a segue as ">" and the chip still
-     points at the song it lands on. */
-  .chip.seg{background:color-mix(in srgb,var(--green) 22%, transparent); color:var(--greenT);
-    letter-spacing:.9px; padding:2px 11px 2px 6px; border-radius:3px;
+  /* FLOW. Shaped like what they mean, which is the part of the old design
+     worth having back. A setlist writes a segue as ">", so the segue chip is
+     an arrow pointing at the song it lands on; a sandwich carries the bun.
+     These two are not descriptions of the song, they are a thing the player
+     can go and do this turn, so they are the ones that get a solid fill.
+     The clip-path cuts the border off with the corner, so the arrow states its
+     hue through the fill instead. */
+  .chip.seg{background:var(--green); color:#06210F; border-color:transparent;
+    letter-spacing:.9px; padding:2px 12px 2px 7px; border-radius:4px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
-  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;
-    padding:2px 7px; border-radius:3px;}
+  .chip.sand{--chipHue:var(--green); background:var(--green); color:#06210F;
+    border-color:transparent; letter-spacing:.9px; padding:2px 8px; border-radius:4px;}
   /* THE LOUDEST CHIP ON THE ROW, because it is the rarest thing the list can
-     offer. A suite link pays several times an ordinary one, so it is filled
-     rather than tinted, and it keeps the arrow shape a segue chip has because
-     it is still a segue: the movement it lands on is the point. */
-  .chip.suite{background:var(--violet); color:#120A24; letter-spacing:.9px;
-    padding:2px 11px 2px 7px; border-radius:3px;
+     offer. A suite link pays several times an ordinary one, so it keeps the
+     arrow a segue has, in the violet that belongs to nothing else here. */
+  .chip.suite{background:var(--violet); color:#120A24; border-color:transparent;
+    letter-spacing:.9px; padding:2px 12px 2px 8px; border-radius:4px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
-  /* And they need their separator back, since they are boxes among words. */
-  .chip.seg + .chip:before, .chip.sand + .chip:before,
-  .chip.suite + .chip:before{margin-left:9px;}
 
   /* RARITY. */
-  .chip.rare{color:var(--goldT);}
+  .chip.rare{--chipHue:var(--gold); color:var(--cGold);}
 
   /* MONOTONY — the only chip that warns rather than tempts, so it is the only
      one in red. It has to be on the card BEFORE the pick: a penalty you first
      meet on the scorecard is a gotcha. */
-  .chip.mono{color:var(--redT);}
+  .chip.mono{--chipHue:var(--red); color:var(--cRed);}
 
   /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
    *
@@ -1082,11 +1196,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      therefore declares the padding the base rule no longer provides. */
   .chip.rec{background:var(--dye); background-size:100% 100%; color:#0A1524;
     letter-spacing:.9px; padding:3px 9px; border-radius:4px;}
-  /* ARCHIVE. The dye-bordered box goes with the rest of them, and it is no
-     loss: at 9.5px a five-colour border round four letters was the same smudge
-     the segue arrow was, for the same reason. Gold instead, which is the
-     colour the archive already uses for its other flag, the show gap. */
-  .chip.jc{color:var(--goldT);}
+  /* ARCHIVE. THE DYE COMES BACK, because the reason it went is gone. It was
+     dropped as "a five-colour border round four letters at 9.5px", which was a
+     smudge, and it was a smudge because there was no box to put it on and the
+     type was two thirds this size. At 11px in a real pill the wheel crosses
+     the border and it is the one chip nobody can mistake for another.
+     The fill is the pill base rather than the card, so a jamchart measures the
+     same on a song row as it does inside a sheet, like every other chip.
+     --ink on that base is the highest contrast pairing on the row, which is
+     right: it is the strongest signal in the data. */
+  .chip.jc{color:var(--ink); border:1.5px solid transparent; padding:2px 7px;
+    background:linear-gradient(var(--pillBase),var(--pillBase)) padding-box,
+               var(--dye) border-box;
+    background-size:auto, 100% 100%;}
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
@@ -2457,24 +2579,24 @@ setTimeout(function(){
 
     <h3 class="keygrp">What kind of song it is</h3>
     <dl class="keylist">
-      <!-- --acc IS SET ON EACH ONE. A role chip takes its colour from the song
-           row it sits on (`style="--acc:${acc.v}"`), and there is no song row
-           here, so without this the whole group drew in the fallback ink and
-           the key showed a colour the game never uses. The values are
-           accentOf's, and check_data holds them to it. -->
-      <dt><span class="chip acc opener" style="--acc:var(--greenT)">opener</span><span
-        class="chip acc closer" style="--acc:var(--tealT)">closer</span><span
-        class="chip acc encore" style="--acc:var(--goldT)">encore</span></dt>
+      <!-- NO INLINE --acc. These carried one each, because a role chip used to
+           read its colour off the song row it sits on and there is no song row
+           in a sheet. The colour is a property of what the chip says, so it is
+           on the class now: the key and the list cannot disagree, because they
+           are the same rule. -->
+      <dt><span class="chip acc opener">opener</span><span
+        class="chip acc closer">closer</span><span
+        class="chip acc encore">encore</span></dt>
       <dd>Where the band tends to put it. Play a song in the slot it belongs in
         and it scores more; open a set with a ballad and it scores less.</dd>
-      <dt><span class="chip acc jam" style="--acc:var(--violetT)">jam</span><span
-        class="chip acc peak" style="--acc:var(--pinkT)">peak</span></dt>
+      <dt><span class="chip acc jam">jam</span><span
+        class="chip acc peak">peak</span></dt>
       <dd>A song they stretch out. <b>Peak</b> is the top of that: long and
         written up by the archivists again and again.</dd>
-      <dt><span class="chip acc ballad" style="--acc:var(--blueT)">ballad</span></dt>
+      <dt><span class="chip acc ballad">ballad</span></dt>
       <dd>Short and slow. Cheap on the clock, and the thing to follow three
         twenty-minute jams with.</dd>
-      <dt><span class="chip acc cover" style="--acc:var(--coralT)">cover</span></dt>
+      <dt><span class="chip acc cover">cover</span></dt>
       <dd>Not their song. The row tells you whose.</dd>
     </dl>
 

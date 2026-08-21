@@ -96,12 +96,17 @@
      running one migration and not the next would turn the crest off on the board entirely
      rather than costing it a rank seal. */
   let tierColumn = true;
+  /* 90's column, tracked separately again and for the third time for the same reason. Each
+     migration's columns get their own flag or running N and not N+1 costs the board
+     everything the earlier files added. */
+  let ringColumn = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
     (tradeColumns ? ',gm_rating,trade_moves' : '') +
     (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
     (crestColumns ? ',display_mark,display_rung' : '') +
-    (crestColumns && tierColumn ? ',display_tier' : '');
+    (crestColumns && tierColumn ? ',display_tier' : '') +
+    (crestColumns && ringColumn ? ',display_ring' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -112,6 +117,7 @@
   const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
   const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
   const missingTierColumn = (body) => missingCol(body, /display_tier/);
+  const missingRingColumn = (body) => missingCol(body, /display_ring/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -659,9 +665,11 @@
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
       /* ONE PASS PER OPTIONAL SET, narrowest first. */
-      for (let pass = 0; pass < 6 && !res.ok && res.status === 400; pass++) {
+      for (let pass = 0; pass < 7 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (tierColumn && missingTierColumn(body)) {
+        if (ringColumn && missingRingColumn(body)) {
+          ringColumn = false;
+        } else if (tierColumn && missingTierColumn(body)) {
           tierColumn = false;
         } else if (crestColumns && missingCrestColumn(body)) {
           crestColumns = false;
@@ -796,25 +804,48 @@
         const rows = await res.json().catch(() => null);
         return (Array.isArray(rows) && rows[0]) || {};
       };
-      let r = (crestColumns && tierColumn)
-        ? await one('avatar_color,avatar_initials,crest_mark,crest_tier') : null;
-      /* 88 without 89: crest_mark is there and crest_tier is not, so ask again without it
-         rather than falling all the way back to the pre-88 pair. */
-      if (r === null && crestColumns && tierColumn) {
-        tierColumn = false;
-        r = await one('avatar_color,avatar_initials,crest_mark');
-      } else if (crestColumns && !tierColumn && r === null) {
-        r = await one('avatar_color,avatar_initials,crest_mark');
+      /* A LADDER OF COLUMN SETS, widest first, each rung dropping the flag that let it in
+         and falling to the next. Written as a table rather than as a chain of ifs because
+         there are three optional crest columns now, from three migrations, and the chain
+         that handled two was already hard to check by eye. 88 without 89 asks for the mark
+         and not the rank; 89 without 90 asks for the rank and not the ring; a project that
+         has run none of them lands on the pre-88 pair, which is what it drew before. */
+      const rungs = [
+        { on: () => crestColumns && tierColumn && ringColumn,
+          cols: 'avatar_color,avatar_initials,crest_mark,crest_tier,crest_ring',
+          drop: () => { ringColumn = false; } },
+        { on: () => crestColumns && tierColumn,
+          cols: 'avatar_color,avatar_initials,crest_mark,crest_tier',
+          drop: () => { tierColumn = false; } },
+        { on: () => crestColumns,
+          cols: 'avatar_color,avatar_initials,crest_mark',
+          drop: () => { crestColumns = false; } },
+        /* A project that has not run 53 yet has no such columns either, and that is not an
+           error worth surfacing: it is the same "one file behind" state top() handles, and
+           the answer is the same, which is that nothing has been chosen. */
+        { on: () => true, cols: 'avatar_color,avatar_initials', drop: () => {} }
+      ];
+      let r = null, asked = '';
+      for (let i = 0; i < rungs.length; i++) {
+        if (!rungs[i].on()) continue;
+        asked = rungs[i].cols;
+        /* Null means 400, which on this table means the column is not there yet. */
+        r = await one(asked);
+        if (r !== null) break;
+        rungs[i].drop();
       }
-      /* Null means 400, which on this table means the column is not there yet. */
-      if (r === null && crestColumns) { crestColumns = false; }
-      if (r === null) r = await one('avatar_color,avatar_initials');
-      /* A project that has not run 53 yet has no such columns either, and that is not an
-         error worth surfacing: it is the same "one file behind" state top() handles, and
-         the answer is the same, which is that nothing has been chosen. */
-      if (r === null) return { color: null, initials: null, mark: null, tier: null };
+      if (r === null) return { color: null, initials: null, mark: null, tier: null,
+        ring: null };
+      /* UNDEFINED WHERE THE COLUMN WAS NEVER ASKED FOR, which is a different answer from
+         null and the callers already read it as one: null means the account has chosen
+         nothing, undefined means this database cannot say. Returning null for both is how a
+         player on a project one file behind gets the mark they picked on this browser wiped
+         by a column that does not exist. */
+      const had = (c) => asked.indexOf(c) >= 0;
       return { color: r.avatar_color || null, initials: r.avatar_initials || null,
-        mark: r.crest_mark || null, tier: r.crest_tier || null };
+        mark: had('crest_mark') ? (r.crest_mark || null) : undefined,
+        tier: had('crest_tier') ? (r.crest_tier || null) : undefined,
+        ring: had('crest_ring') ? (r.crest_ring || null) : undefined };
     } catch (e) { return failThrown('avatar', e); }
   }
 
@@ -831,26 +862,52 @@
      Missing-function handling is deliberately the SAME flag setAvatar uses. Both are the
      profile writer, both are missing for exactly one reason (a migration has not been run),
      and one flag means the diagnostics have one sentence to say rather than two. */
-  async function setCrest(mark, tier) {
+  /* AN ARGUMENT IS AS DROPPABLE AS A COLUMN, and for a sharper reason. PostgREST resolves an
+     RPC by the argument NAMES in the body, so sending p_ring to a project that has run 89 and
+     not 90 does not ignore the extra argument: it finds no function of that shape and answers
+     404 PGRST202, which reads exactly like "ps_set_crest does not exist". Without the ladder
+     below, one migration behind would set avatarFnMissing and stop the mark being saved at
+     all, which is worse than the ring not being saved. Same three flags as the reads, so a
+     project one file behind says so once rather than in two places. */
+  async function setCrest(mark, tier, ring) {
     try {
-      /* p_tier is omitted rather than sent empty when there is nothing to say. Null means
-         "leave the rank alone" in 89, and a rank moves on its own as badges are earned, so a
-         call that is only changing the mark must not touch it. */
-      const body0 = { p_mark: mark || '' };
-      if (tier) body0.p_tier = tier;
-      const res = await timed(base() + 'rpc/ps_set_crest', {
-        method: 'POST', headers: headers(),
-        body: JSON.stringify(body0) });
-      const body = await res.json().catch(() => null);
+      /* p_tier and p_ring are omitted rather than sent empty when there is nothing to say.
+         Null means "leave it alone" for both in 89 and 90, and both move on their own as
+         badges are earned, so a call that is only changing the mark must not touch either. */
+      const send = async (withTier, withRing) => {
+        const b = { p_mark: mark || '' };
+        if (withTier && tier) b.p_tier = tier;
+        if (withRing && ring) b.p_ring = ring;
+        const res = await timed(base() + 'rpc/ps_set_crest', {
+          method: 'POST', headers: headers(), body: JSON.stringify(b) });
+        return { res, body: await res.json().catch(() => null) };
+      };
+      const gone = (res, body) => res.status === 404 ||
+        ((body && body.code) || '') === 'PGRST202';
+      let { res, body } = await send(tierColumn, ringColumn);
+      /* One retry per optional argument, narrowest first, each clearing the flag that let it
+         in so the next call goes straight to the shape that works. */
+      if (!res.ok && gone(res, body) && ringColumn && ring) {
+        ringColumn = false;
+        ({ res, body } = await send(tierColumn, false));
+      }
+      if (!res.ok && gone(res, body) && tierColumn && tier) {
+        tierColumn = false;
+        ({ res, body } = await send(false, false));
+      }
       if (!res.ok) {
         lastError = { where: 'crest', status: res.status, code: (body && body.code) || '',
           message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
-        if (res.status === 404 || lastError.code === 'PGRST202') avatarFnMissing = true;
+        if (gone(res, body)) avatarFnMissing = true;
         return { error: lastError.message, code: lastError.code, status: res.status,
           missing: avatarFnMissing };
       }
       const row = Array.isArray(body) ? body[0] : body;
       return { mark: (row && row.mark) || null, tier: (row && row.tier) || null,
+        /* Undefined once the ladder above has learned this project has no ring yet, for the
+           reason myAvatar spells out: null would read as "the account wears none", and the
+           caller would push the same ring again on every refresh forever. */
+        ring: ringColumn ? ((row && row.ring) || null) : undefined,
         rung: (row && row.rung !== null && row.rung !== undefined) ? Number(row.rung) : 0 };
     } catch (e) {
       lastError = { where: 'crest', status: 0, code: '', message: String(e && e.message || e) };
