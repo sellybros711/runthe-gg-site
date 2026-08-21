@@ -32,15 +32,17 @@ on:
         description: 'Commit the rebuilt data back to this branch?'
         type: boolean
         default: true
-  # NO SCHEDULE YET, AND THAT IS DELIBERATE. A scheduled run fires against the
-  # DEFAULT branch, and hoops/ does not exist there while the game is still on
-  # its feature branch: an annual cron would be an annual guaranteed red build
-  # on main. Turn this on in the same commit that merges the game:
+  # ANNUAL, ONCE THE SEASON IS OVER. A scheduled run fires against the DEFAULT
+  # branch, so this stayed commented out while hoops/ existed only on a feature
+  # branch, where it would have been a guaranteed red build every July. It is
+  # turned on in the same commit that merges the game, which is what the note
+  # here used to promise.
   #
-  #   schedule:
-  #     - cron: '0 9 5 7 *'   # July 5th, once the season is finished
-  #
-  # Until then this is dispatch-only, which is all the first run needs.
+  # The commit step is safe to leave armed: verify.mjs and check-posture.mjs both
+  # gate it, so a refresh that breaks the win-share column or the discoverability
+  # posture fails without writing anything.
+  schedule:
+    - cron: '0 9 5 7 *'   # July 5th, after the finals and the draft
 
 permissions:
   contents: write
