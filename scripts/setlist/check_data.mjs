@@ -973,6 +973,141 @@ check(/!S\.sets\.flat\(\)\.length \? `<div class="firsthint">/.test(gameBare),
     'the start step is one paragraph, not three');
 }
 
+/* PLAYED COLD, START TO SCORECARD, WITH NOTHING IN LOCALSTORAGE. Six things a
+ * first-time player was never told, each one measured on the rendered page
+ * rather than argued about.
+ */
+console.log('arriving knowing nothing');
+
+/* Both helpers are declared here rather than reached for: the walkthrough
+   section further down has its own copies, and a shared one at module scope
+   would be read by this block before its own initialiser ran. */
+const cdSlice = (from, to) => {
+  const i = gameBare.indexOf(from);
+  return i < 0 ? '' : gameBare.slice(i, gameBare.indexOf(to, i + from.length));
+};
+const homePage = cdSlice('function renderHome(){', '\n}');
+check(!!homePage, 'renderHome can be read');
+
+/* 1. THE RULES WERE BELOW THE PLAY BUTTON. "How it works" is the clearest
+      explanation on the site and it sat 420px under the thing it explains, so
+      the walkthrough existed to carry it up. It is above the band panel now,
+      and the order is asserted because it is one edit away from drifting back:
+      both blocks live in the same template literal. */
+{
+  const how = homePage.indexOf('<section class="how">');
+  const bands = homePage.indexOf('<div class="bands">');
+  check(how > -1 && bands > -1, 'the home screen has rules and a band panel');
+  check(how < bands, 'and the rules come before the button that needs them');
+  /* Exactly one copy of it. It was moved rather than duplicated, and a second
+     "How it works" further down is the obvious bad merge. */
+  check((homePage.match(/<section class="how">/g) || []).length === 1,
+    'stated once, not twice');
+}
+/* AND THE HERO STATES THE LOOP. "Choose a band. Build the show you've always
+   dreamed of." is a tagline: it says nothing about what a turn is. The three
+   facts a player needs before the first press are one show at a time, one song
+   off each, and that the song costs its running time. */
+{
+  const hero = homePage.slice(homePage.indexOf('<div class="hero">'),
+    homePage.indexOf('</div>', homePage.indexOf('<p>', homePage.indexOf('<div class="hero">'))));
+  /* \s+ between the words rather than a literal space: the source wraps these
+     sentences at 80 columns, so where a phrase breaks across two lines is an
+     accident of formatting and a guard that depends on it fails on a reflow. */
+  check(/one\s+real\s+concert\s+at\s+a\s+time/i.test(hero),
+    'the hero says one show at a time');
+  check(/a\s+song\s+off\s+each/i.test(hero), 'and one song off each');
+  check(/running\s+time/i.test(hero), 'and what that song costs');
+}
+
+/* 2. THE SAMPLE BAND WAS ON THE LIVE PAGE, one tap under the real one, over the
+      words "Made-up data we use for testing". Nothing on the page told a new
+      player that is not part of the game. */
+check(/const DEV_MODE = /.test(gameBare), 'the sample band needs dev mode');
+check(/const test = DEV_MODE \? BANDS\.filter\(b => b\.sample\) : \[\]/.test(gameBare),
+  'and the home screen offers it only there');
+check(/dev'\) === '1'/.test(gameBare) && /localhost/.test(gameBare),
+  'which is localhost or an explicit ?dev=1');
+
+/* 3. TEN UNDEFINED WORDS ON THE DRAFT SCREEN, counted on one rendered list:
+      SEGUE, LANDS THE SEGUE, JAMCHART, opener, peak, jam, cover, closer,
+      encore and "44 show gap". Every one is a scoring input, so not knowing
+      them is not knowing what the game pays for. Each term the draft can print
+      has to be defined in the glossary, and the list is derived from the chips
+      the renderer can emit rather than typed out here, so a new chip fails
+      this until it is explained. */
+{
+  /* To the next sheet, not to the next `</div>`: the glossary is nested markup
+     and the first `</div>` after it is one of its own rows. */
+  const key = cdSlice('id="keySheet"', '<div class="sheet"');
+  check(!!key && /id="keyBtn"/.test(gameBare), 'the draft screen opens a glossary');
+  check(/openKey\(\); return;/.test(gameBare), 'and the button is wired');
+  /* AND THE WAY OUT IS BOUND WHERE THE BUTTON ACTUALLY IS. The close button is
+     static markup outside #app, so wiring it into the app's own click handler
+     leaves the backdrop as the only exit. */
+  check(/getElementById\('keySheet'\)\.addEventListener/.test(gameBare),
+    'and the sheet closes itself');
+  const draft = cdSlice('function renderDraft(){', '\n}');
+  /* The leading `${...}` is optional because the sandwich chip opens with its
+     own icon constant, and a chip that draws an icon still needs defining. */
+  const chipped = [...new Set([...draft.matchAll(
+    /<span class="chip [a-z]+">(?:\$\{[A-Z_]+\})?([A-Z][A-Za-z ]*)</g)].map(m => m[1].trim()))];
+  check(chipped.length >= 5, `the draft can print ${chipped.length} named chips`);
+  const undefinedTerms = chipped.filter(t => !key.includes(t));
+  check(!undefinedTerms.length, 'and every one of them is in the glossary',
+    undefinedTerms.length ? `missing: ${undefinedTerms.join(', ')}` : '');
+  /* The role chips are interpolated (`acc.chip`), so they never appear as
+     literals above. They come from accentOf, which is the one list of them. */
+  const roles = [...new Set([...gameBare.matchAll(/chip: '([a-z]+)' \}/g)].map(m => m[1]))];
+  check(roles.length >= 6, `accentOf can print ${roles.length} role chips`);
+  const undefinedRoles = roles.filter(t => !key.includes(`>${t}<`));
+  check(!undefinedRoles.length, 'and the glossary defines each role too',
+    undefinedRoles.length ? `missing: ${undefinedRoles.join(', ')}` : '');
+  /* IN THE COLOUR THE GAME ACTUALLY USES. A role chip reads --acc off the song
+     row it sits on, and the glossary has no song row: shipped without an
+     explicit --acc, the whole group drew in the fallback ink, so the key
+     taught a colour that appears nowhere in the game. Each one is checked
+     against accentOf's own value rather than a list copied from it. */
+  const accents = [...gameBare.matchAll(/return \{ v: '(var\(--[a-zA-Z]+\))',\s+chip: '([a-z]+)' \}/g)]
+    .map(m => ({ v: m[1], chip: m[2] }));
+  check(accents.length >= 6, `accentOf assigns ${accents.length} colours`);
+  const miscoloured = accents.filter(a =>
+    !key.includes(`class="chip acc ${a.chip}" style="--acc:${a.v}"`));
+  check(!miscoloured.length, 'each in the colour accentOf gives it',
+    miscoloured.length ? `wrong: ${miscoloured.map(a => a.chip).join(', ')}` : '');
+  /* The two marks that are not chips and were explained nowhere at all. */
+  check(/class="keyseg"/.test(key), 'the segue mark after a title is explained');
+  check(/class="keybar"/.test(key), 'and so is the coloured length bar');
+}
+
+/* 4. TWO DIFFERENT "SET I"s ON ONE SCREEN. The list is grouped by the sets of
+      the show that was dealt while the clock above says you are filling Set I,
+      and nothing distinguished them. */
+check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(gameBare),
+  'the dealt show\'s sets are named as the band\'s');
+
+/* 5. THE SCORE LED WITH A NUMBER THAT MEANS NOTHING ALONE. 1053 at 124px, and
+      the game's own answer to "was that good" ("80% of it") in 13px prose in a
+      card below. The percentage is now under the score, in the grade colour. */
+{
+  const box = gameBare.slice(gameBare.indexOf('<div class="scorebox">'),
+    gameBare.indexOf('</div>', gameBare.indexOf('band-meta', gameBare.indexOf('<div class="scorebox">'))));
+  check(/class="sb-pct"/.test(box), 'the percentage is inside the score box');
+  check(/best show those nights had in them/.test(box), 'and says what it is a percentage of');
+  check(/grade-\$\{gradeScore\(r\.total\)\}/.test(box), 'coloured by the same grade as the score');
+  /* Above the headline, not below it: the quip is flavour and this is the
+     answer to the question the player is actually asking. */
+  check(box.indexOf('sb-pct') < box.indexOf('class="headline"'),
+    'and it reads before the quip');
+  /* NOT SAID TWICE. The ceiling card used to carry the same percentage in the
+     same sentence, which is what made neither of them land. */
+  /* The interpolation is part of the anchor: rankCard reuses `.ceiling` for
+     the leaderboard panel and comes first in the file, so `class="card
+     ceiling` alone sliced the wrong card and the guard could not fail. */
+  const ceil = cdSlice('class="card ceiling${gap <= 0', 'ceil-fine');
+  check(!/\$\{pct\}%/.test(ceil), 'the card below does not repeat the figure');
+}
+
 /* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
  *
  * data_drift lets a derived value move only for a song whose own inputs moved.
@@ -1560,10 +1695,12 @@ check(!!fanLabel && /white-space:nowrap/.test(fanLabel[0]), 'the row labels do n
 check(!!fanLabel && Number((fanLabel[0].match(/flex:0 0 (\d+)px/) || [])[1]) >= 80,
   'and the label column is wide enough for the longest of them');
 
-/* THE WALKTHROUGH, and the measurement that says it has to exist. On a 390x844
-   screen the "Draft a setlist" button sits at 414px while the first rule starts
-   at 809px and all five end below the fold, so a first-time player meets the
-   button 400px before they meet a single word of explanation. */
+/* THE WALKTHROUGH. It used to carry the rules, because on a 390x844 screen the
+   "Draft a setlist" button sat at 414px and the first rule at 809px, so a
+   first-time player met the button 400px before they met a word of
+   explanation. That was a layout problem being papered over with a modal, and
+   the layout is fixed: the rules are above the band panel now and the loop is
+   in the hero. What is left is two steps and a pointer at the tab bar. */
 console.log('the walkthrough');
 check(/const GUIDE_STEPS = \[/.test(gameBare), 'a first visit gets walked through the page');
 check(/id="guide"/.test(gameBare), 'the overlay is in the markup');
@@ -1581,32 +1718,66 @@ check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
 /* EVERY STEP AIMS AT SOMETHING THAT EXISTS. The arrow is positioned from the
    target's measured rect, so a renamed hook does not throw, it silently points
    at nothing. */
-for (const sel of ['.band:not(.soon) [data-start]', '[data-go="board"]',
-  '[data-go="tour"]', '[data-go="songs"]', '[data-go="browse"]', '[data-go="profile"]'])
-  check(gameBare.includes(`aim: () => document.querySelector('${sel}')`),
-    `a step aims at ${sel}`);
+const guideSrc = (() => {
+  const at = gameBare.indexOf('const GUIDE_STEPS = [');
+  return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\n];', at));
+})();
+check(!!guideSrc, 'GUIDE_STEPS can be read');
+check(guideSrc.includes(`aim: () => document.querySelector('.band:not(.soon) [data-start]')`),
+  'a step aims at the play button');
+check(guideSrc.includes(`aim: () => document.getElementById('tabbar')`),
+  'and a step aims at the tab bar');
 
-/* AND EVERY BUTTON ON THE HOME SCREEN HAS A STEP, which is the guard that
-   matters, because the other direction is the one that actually failed. The
-   walkthrough shipped covering Leaderboard and Your shows; two commits later
-   On tour and Every show were added to the same row and nothing said a word
-   about them, which is precisely the gap the walkthrough exists to close,
-   reopened by the person who closed it.
+/* IT STAYS SHORT. Seven steps is not a how-to-play, it is a product tour, and
+   five of those seven walked past screens that are now permanent tabs. The
+   count is asserted rather than trusted because the failure mode is additive:
+   every new screen wants a step, and nobody ever removes one. */
+const stepCount = (guideSrc.match(/^  \{$/gm) || []).length;
+check(stepCount > 0 && stepCount <= 3,
+  `the walkthrough is ${stepCount} steps before the first press`);
+
+/* AND EVERY SCREEN THE HOME PAGE LINKS TO IS ON THE TAB BAR, which is the
+   guard that matters and the one direction that actually failed before: the
+   walkthrough shipped covering Leaderboard and Your shows, two commits later
+   On tour and Every show were added to the same row, and nothing said a word
+   about them. The step that covers them is now one step naming a bar, so the
+   thing to assert is that the bar really does reach all of them.
    Reading renderHome rather than the whole file on purpose: `data-go="browse"`
-   also appears on the tour screen, and that one is a cross-link, not a thing a
-   first visit has to be introduced to. */
+   also appears on the tour screen, and that one is a cross-link. */
 const homeSrc = (() => {
   const at = gameBare.indexOf('function renderHome(){');
   return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\n}', at));
 })();
 check(!!homeSrc, 'renderHome can be read');
 const homeGos = [...new Set([...homeSrc.matchAll(/data-go="([a-z]+)"/g)].map(m => m[1]))];
-const aimed = [...new Set([...gameBare.matchAll(/aim: \(\) => document\.querySelector\('\[data-go="([a-z]+)"\]'\)/g)]
-  .map(m => m[1]))];
-const unexplained = homeGos.filter(g => !aimed.includes(g));
+const tabs = [...new Set([...gameBare.matchAll(/data-tab="([a-z]+)"/g)].map(m => m[1]))];
+/* A screen with no tab of its own still counts as covered when TAB_LIT lights
+   another tab for it: "browse" lives under You, and that is a real answer to
+   "where did that go", not a gap. */
+const litSrc = (() => {
+  const at = gameBare.indexOf('const TAB_LIT = {');
+  return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('};', at));
+})();
+const lit = [...new Set([...litSrc.matchAll(/([a-z]+):\s*'[a-z]+'/g)].map(m => m[1]))];
+const stranded = homeGos.filter(g => !tabs.includes(g) && !lit.includes(g));
 check(homeGos.length >= 4, `the home screen offers ${homeGos.length} screens`);
-check(!unexplained.length, 'every screen the home screen links to gets a step',
-  unexplained.length ? `no step for ${unexplained.map(g => `"${g}"`).join(', ')}` : '');
+check(tabs.length >= 5, `the tab bar carries ${tabs.length} tabs`);
+check(!stranded.length, 'every screen the home screen links to is on the tab bar',
+  stranded.length ? `no tab reaches ${stranded.map(g => `"${g}"`).join(', ')}` : '');
+/* AND THE STEP NAMES THEM. Pointing a ring at a bar of five icons and saying
+   nothing about them is the same gap in a smaller box, so each tab's own label
+   has to appear in the step's prose. Home is exempt: it is the screen the step
+   is being read on. */
+const tabWords = [...gameBare.matchAll(/data-tab="([a-z]+)"[\s\S]{0,900}?<span>([A-Za-z]+)<\/span>/g)]
+  .map(m => ({ tab: m[1], word: m[2] })).filter(t => t.tab !== 'home');
+const tabStep = (() => {
+  const at = guideSrc.indexOf(`aim: () => document.getElementById('tabbar')`);
+  return at < 0 ? '' : guideSrc.slice(at);
+})();
+check(tabWords.length >= 4, `the bar labels ${tabWords.length} tabs beyond Home`);
+const unnamed = tabWords.filter(t => !new RegExp(`<b>${t.word}</b>`).test(tabStep));
+check(!unnamed.length, 'and the step says what each one is',
+  unnamed.length ? `unexplained: ${unnamed.map(t => t.word).join(', ')}` : '');
 check(/class="card band"/.test(gameBare) && /class="card band soon"/.test(gameBare)
   && /data-start="\$\{b\.id\}"/.test(gameBare),
   'and the home screen still carries the hooks they aim at');
@@ -1734,14 +1905,18 @@ check(!/class="homelinks"/.test(homeSrc), 'the old grid of equal ghost buttons i
 {
   /* The order is load-bearing and was wrong once. The setlist is the LAST
      show's detail, so a button between them separates a heading from the thing
-     it heads; the countdown is one line and earns the space above the primary
-     action. Measured: 470px for the draft button this way against 665px with
-     the whole live section on top of it. */
+     it heads. Measured: 470px for the draft button with the live section split
+     around it, against 665px with the whole of it on top.
+     The COUNTDOWN then moved below the button too, and that was measured as
+     well: hoisting the rules above this panel put the draft button at 915px on
+     a 390x844 screen, and the countdown was 91px of the way back down. The
+     button now sits at 765px, above the fold, which is the only reason it is
+     ordered this way. */
   const iNext = homeSrc.indexOf('class="nextline"');
   const iBtn = homeSrc.indexOf('data-start="${b.id}"');
   const iSet = homeSrc.indexOf('class="lastset"');
-  check(iNext > -1 && iBtn > iNext && iSet > iBtn,
-    'countdown, then the button, then the setlist under its own heading');
+  check(iBtn > -1 && iNext > iBtn && iSet > iNext,
+    'the button, then the countdown, then the setlist under its own heading');
 }
 /* The separator TRAILS its song: in a setlist the mark belongs to the song it
    leaves, and reading it off the previous song put every caret one title late. */

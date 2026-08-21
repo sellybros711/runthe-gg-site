@@ -376,19 +376,27 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      Plain sentences, second person, contractions. The first version wrote
      every line as a bold fragment followed by a supporting fragment, five
      times running, which is a rhythm nobody uses out loud. */
-  .how{margin:var(--sp-4) 0 0;}
+  /* Above the band panel now, so the margin runs below it rather than above. */
+  .how{margin:var(--sp-3) 0 var(--sp-3);}
   /* A heading with a rule running off the end of it, so the section reads as
      a block on a poster rather than as a label floating above a list. */
   .how h3{font-family:var(--ui); font-size:15px; letter-spacing:3px; text-transform:uppercase;
     color:var(--ink); margin:0 0 12px; font-weight:400;
     display:flex; align-items:center; gap:10px;}
-  .how h3:after{content:''; flex:1; height:3px; background:var(--ink); opacity:.85;}
+  /* The rule runs between the heading and the button, so the button is ordered
+     past the pseudo-element rather than the pseudo-element being moved. */
+  .how h3:after{content:''; flex:1; height:3px; background:var(--ink); opacity:.85; order:1;}
+  .how h3 .btn{order:2; flex:0 0 auto; letter-spacing:.2px; text-transform:none;
+    font-family:var(--body, inherit);}
   /* Numbered teal circles are the single most default component on the web,
      and five of them stacked is what made this read as a template. The number
      is set in the display face at the size of a track number on a sleeve, and
      the rule between rows does the separating that the circles were doing. */
   .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
-  .steps li{display:flex; gap:10px; align-items:flex-start; padding:8px 0;
+  /* 6px rather than 8. Five rows share the fold with a play button now, and
+     20px of row padding is what stood between the button and the bottom of a
+     390x844 screen. */
+  .steps li{display:flex; gap:10px; align-items:flex-start; padding:6px 0;
     border-top:1px solid var(--line);}
   .steps li:first-child{border-top:0; padding-top:2px;}
   /* The numerals were baseline aligned and still read as floating: measured,
@@ -635,9 +643,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .snote.open{-webkit-line-clamp:unset; display:block;}
   .snote:hover{border-left-color:var(--teal); color:var(--ink);}
 
+  /* The way into the glossary, above the first set heading: the terms it
+     explains are all in the list below it. */
+  .keyline{display:flex; justify-content:flex-end; margin:2px 0 10px;}
+  .keybtn{flex:0 0 auto; background:none; border:0; padding:2px 0; font-family:inherit;
+    font-size:12px; font-weight:800; color:var(--tealT); text-decoration:underline;
+    text-underline-offset:3px; text-decoration-thickness:1.5px;
+    -webkit-tap-highlight-color:transparent;}
+
   .setgrp{margin-bottom:14px;}
   .setgrp h3{font-size:11px; font-weight:900; letter-spacing:2.4px; text-transform:uppercase;
     color:var(--dim); margin:0 0 8px;}
+  /* "Their" is the disambiguator and not the noun, so it is set back a step
+     from the set name it qualifies. */
+  .sg-w{font-weight:700; opacity:.65; letter-spacing:1.6px;}
   /* THE SONG LIST IS A SETLIST, NOT A STACK OF CARDS.
      Fourteen identical rounded panels in a column is the default mobile list
      and it read as one: a card per song spent a border, a radius, a shadow
@@ -740,6 +759,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      are the brand and they keep the dye. */
   .song .segout, .song .o.seg .segmark, .sim-seg .segmark,
   .rrow .segout, .sf-seg{background:var(--violetT);}
+
+  /* ---- the glossary sheet ----
+     A definition list, because that is what it is. The chip is the term, so it
+     is shown at full size in the dt rather than described in words: a player
+     matches what they saw on the row to what they are reading here by shape
+     and colour, not by name. */
+  /* THE ONE SHEET THAT IS LONGER THAN THE SCREEN. Measured at 390x844 it runs
+     1330px inside an 82dvh box, so the header, and with it the only Close
+     button, scrolls away four rows in. Every other sheet on the site fits, so
+     this is stuck rather than the shared style being changed. */
+  #keySheet .sheet-hd{position:sticky; top:-8px; z-index:1; background:var(--card);
+    margin:0 -16px; padding:6px 16px 8px; box-shadow:0 8px 12px -10px rgba(0,0,0,.5);}
+  .keynote{font-size:12.5px; font-weight:700; line-height:1.5; color:var(--mut);
+    margin:8px 0 4px;}
+  .keygrp{font-size:10.5px; font-weight:900; letter-spacing:2.2px; text-transform:uppercase;
+    color:var(--dim); margin:18px 0 8px; padding-top:11px; border-top:1px solid var(--line);}
+  .keylist{margin:0; padding:0;}
+  .keylist dt{display:flex; flex-wrap:wrap; gap:4px; margin:0 0 5px;}
+  .keylist dd{margin:0 0 13px; font-size:12.5px; line-height:1.5; font-weight:600;
+    color:var(--mut);}
+  .keylist dd:last-child{margin-bottom:0;}
+  .keylist dd b{color:var(--ink); font-weight:800;}
+  /* The two marks that are not chips, drawn at the size they appear on a row so
+     the sheet is a key and not an illustration. --acc is what .tbar reads for
+     its colour and no song is in scope here, so it is set locally. */
+  .keyseg{display:inline-block; font-size:15px; color:var(--ink);}
+  .keyseg .segout{background:var(--violetT); margin-left:0;}
+  .keybar{display:block; width:118px;}
+  .keybar i{display:block; height:4px; width:66%; border-radius:99px;
+    background:color-mix(in srgb, var(--violetT) 42%, transparent);}
 
   .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
     font-weight:700; line-height:1.45; color:var(--greenT);
@@ -1109,6 +1158,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       var(--teal) 75%, var(--violet) 100%);}
   .scorebox .n{font-family:var(--hero); font-size:clamp(76px,23vw,124px); line-height:.86;
     letter-spacing:.01em; font-variant-numeric:tabular-nums;}
+  /* Under the score and above the headline. The percentage is set in the UI
+     face rather than the display one so it reads as a statement about the
+     number above it and not as a second score competing with it. */
+  .sb-pct{margin:9px auto 0; max-width:26ch; font-size:15px; line-height:1.35;
+    font-weight:800; color:var(--mut);}
+  /* The grade colour lands on the figure alone. Carrying it across the whole
+     sentence made a red line of prose under a red number, which reads as an
+     error message rather than as a score. */
+  .sb-pct b{font-family:var(--hero); font-size:26px; line-height:1;
+    letter-spacing:.01em; font-variant-numeric:tabular-nums;}
 
   /* A score's colour is a rating and nothing else — green good, yellow middling,
      red weak — so no tie dye goes anywhere near one. The dye stays on identity
@@ -1192,28 +1251,24 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     margin:4px auto 12px;}
 
   /* ---- THE WALKTHROUGH --------------------------------------------------
-     MEASURED, and the measurement is the argument for it existing. On a
-     390x844 screen:
+     WHAT IT USED TO BE FOR, and why that job is gone. Measured on a 390x844
+     screen, before the home screen was reordered:
 
          414px   "Draft a setlist"
-         694px   Leaderboard and Your shows
-         752px   On tour and Every show
          838px   the HOW IT WORKS heading, itself on the fold
          867px   step 1, and every one of the five steps below it
 
-     So a first-time player meets the button 450 pixels before they meet a
-     single rule, and the FOUR buttons under it are unlabelled beyond their own
-     names. They press Draft not knowing what a draft is, what they are scored
-     on, or that "Your shows" is where their own concert history lives.
+     A first-time player met the button 450 pixels before they met a single
+     rule, so the rules were carried to them in a modal instead. That is fixing
+     a layout problem with a popup. The rules now sit ABOVE the band panel and
+     the loop is stated in the hero, which is the actual fix, and it left the
+     walkthrough with two honest jobs: name the goal once before the first
+     press, and point out that the tab bar exists.
 
-     Those numbers got worse, not better, after this was first built: adding the
-     tour and browser screens pushed the rules a further 58px down the page.
-     That is the failure mode this whole block exists to prevent, so the guard
-     in check_data now asserts every nav button on the home screen is covered
-     by a step rather than trusting anybody to remember. Moving
-     the rules above the button would fix that for the first visit and punish
-     every visit after it, so instead the rules come to the player, pointing at
-     the thing each one is about, once.
+     The five steps that walked past Leaderboard, On tour, Every song, Every
+     show and Your shows are gone with it. Those are five tabs pinned to the
+     bottom of every screen now, so the guard in check_data asserts the tab bar
+     is covered rather than each destination separately.
 
      The spotlight is a RING WITH AN ENORMOUS SPREAD SHADOW rather than an SVG
      mask or a clip-path: one element, nothing to support-test, and it tracks a
@@ -2360,6 +2415,87 @@ setTimeout(function(){
   <div class="inner" id="statInner"></div>
 </div>
 
+<!-- THE GLOSSARY. Counted on one draft screen, a first-time player is shown ten
+     words nothing on the page defines: SEGUE, LANDS THE SEGUE, JAMCHART, opener,
+     peak, jam, cover, closer, encore and "44 show gap". Every one of them is a
+     scoring input, so not knowing them is not knowing what the game rewards.
+     Written out here rather than built in JS because it is static prose and it
+     is the one thing on the screen that must not depend on the round. -->
+<div class="sheet" id="keySheet" role="dialog" aria-modal="true" aria-labelledby="keyHd">
+  <div class="inner">
+    <div class="grab"></div>
+    <div class="sheet-hd">
+      <h2 id="keyHd">What the tags mean</h2>
+      <button class="x" type="button" id="keyClose">Close</button>
+    </div>
+    <div class="keynote">Every tag on a song is something the scoring pays for.
+      The band's own history decides them, not us.</div>
+
+    <h3 class="keygrp">Things you can go and do</h3>
+    <dl class="keylist">
+      <dt><span class="chip opens">SEGUE</span></dt>
+      <dd>The band ran this song straight into the next one that night. Play it,
+        and if the next show hands you the song it ran into, you can land the
+        transition for a bonus. About three shows in four have one that fits.</dd>
+      <dt><span class="chip seg">LANDS THE SEGUE</span></dt>
+      <dd>You have a segue open and this is the song it ran into. Take it and
+        the pair scores together.</dd>
+      <dt><span class="chip suite">COMPLETES THE SUITE</span></dt>
+      <dd>The same, but the two songs are movements of one piece: Jive I into
+        Jive II, Seekers pt I into pt II. Worth much more than an ordinary link.</dd>
+      <dt><span class="chip sand">CLOSES SANDWICH</span></dt>
+      <dd>You started a song, played something else, and this brings the first
+        one back. The oldest trick in the jam band book.</dd>
+    </dl>
+
+    <h3 class="keygrp">What kind of song it is</h3>
+    <dl class="keylist">
+      <!-- --acc IS SET ON EACH ONE. A role chip takes its colour from the song
+           row it sits on (`style="--acc:${acc.v}"`), and there is no song row
+           here, so without this the whole group drew in the fallback ink and
+           the key showed a colour the game never uses. The values are
+           accentOf's, and check_data holds them to it. -->
+      <dt><span class="chip acc opener" style="--acc:var(--greenT)">opener</span><span
+        class="chip acc closer" style="--acc:var(--tealT)">closer</span><span
+        class="chip acc encore" style="--acc:var(--goldT)">encore</span></dt>
+      <dd>Where the band tends to put it. Play a song in the slot it belongs in
+        and it scores more; open a set with a ballad and it scores less.</dd>
+      <dt><span class="chip acc jam" style="--acc:var(--violetT)">jam</span><span
+        class="chip acc peak" style="--acc:var(--pinkT)">peak</span></dt>
+      <dd>A song they stretch out. <b>Peak</b> is the top of that: long and
+        written up by the archivists again and again.</dd>
+      <dt><span class="chip acc ballad" style="--acc:var(--blueT)">ballad</span></dt>
+      <dd>Short and slow. Cheap on the clock, and the thing to follow three
+        twenty-minute jams with.</dd>
+      <dt><span class="chip acc cover" style="--acc:var(--coralT)">cover</span></dt>
+      <dd>Not their song. The row tells you whose.</dd>
+    </dl>
+
+    <h3 class="keygrp">How special this take was</h3>
+    <dl class="keylist">
+      <dt><span class="chip jc">JAMCHART</span></dt>
+      <dd>The elgoose.net archivists wrote <b>this exact performance</b> up as
+        one worth hearing. It is the strongest quality signal in the data.</dd>
+      <dt><span class="chip rare">44 show gap</span></dt>
+      <dd>How many shows passed since they last played it. A big number is a
+        rarity, and rarity is worth points.</dd>
+      <dt><span class="chip mono">THIRD IN A ROW</span></dt>
+      <dd>A warning, not a prize. Three of the same kind of song back to back
+        and the set loses points for being one note.</dd>
+    </dl>
+
+    <h3 class="keygrp">Two things that are not tags</h3>
+    <dl class="keylist">
+      <dt><span class="keyseg"><i class="segout"></i></span></dt>
+      <dd>The mark after a title is the same thing the SEGUE tag says: this one
+        ran into the next.</dd>
+      <dt><span class="keybar"><i></i></span></dt>
+      <dd>The coloured bar under a title is how long the song is against a
+        20-minute yardstick. A full bar is a set-eater.</dd>
+    </dl>
+  </div>
+</div>
+
 <div class="sheet" id="bandSheet" role="dialog" aria-modal="true" aria-labelledby="bandSheetHd">
   <div class="inner">
     <div class="grab"></div>
@@ -2411,6 +2547,17 @@ import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=39';
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
 // scripts/setlist/make_sample.mjs. Real bands come from the ingester.
+/* Whether the sample band is offered at all. Kept beside BANDS rather than in
+   renderHome so the one place that decides is next to the thing it decides
+   about. `?dev=1` works on the live host too, so a bug in the fixture pipeline
+   is still reproducible without a local server. */
+const DEV_MODE = (() => {
+  try {
+    if (new URLSearchParams(location.search).get('dev') === '1') return true;
+    return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  } catch { return false; }
+})();
+
 const BANDS = [
   { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
     shows: '/setlist/data/goose_shows.csv',
@@ -2714,15 +2861,20 @@ document.getElementById('tabbar').addEventListener('click', e => {
 
 /* ── the walkthrough ─────────────────────────────────────────────────────────
  *
- * WHY IT EXISTS is measured in the CSS above: the primary button sits 400px
- * higher on the page than the first word of explanation, and the two buttons
- * beneath it are never explained at all.
+ * WHY IT IS THREE STEPS AND NOT SEVEN.
  *
- * WHAT IT SAYS is measured too. "Picking at random gets you about three
- * quarters of it" is six full games played by choosing a random legal song
- * every round: 71, 71, 76, 78, 88 and 93 percent of the ceiling, median 77.
- * Worth stating, because the ceiling is the one thing about the scoring that
- * is genuinely not guessable, and without it a first score is just a number.
+ * It was seven, and five of them were a product tour: leaderboard, tour dates,
+ * catalogue, show browser, profile. Every one of those is now a tab along the
+ * bottom of the screen, permanently, so walking somebody past them one modal
+ * at a time before they have played a single round is teaching the furniture
+ * ahead of the game. The one step that covers them all now points at the tab
+ * bar and says the bar is there.
+ *
+ * The first step also used to explain the ceiling: that Segue replays your
+ * nights and works out the best show you could have had, and that random play
+ * gets about three quarters of it. That is true, it is the most interesting
+ * thing about the scoring, and it is meaningless before you have picked a
+ * song. It lives on the result screen now, where the number is on the page.
  *
  * Each step names an element to aim at, and everything else about the layout
  * comes from that element's measured rect at paint time. Nothing is
@@ -2737,11 +2889,8 @@ const GUIDE_STEPS = [
     body: `<p>Segue deals you a <b>real Goose show</b>, one at a time, and you take
         one song off each. What you end up with is a setlist the band never played
         but could have.</p>
-      <p>You are not chasing a high score out of nowhere. When you finish, Segue
-        replays <b>the same nights in the same order</b> and works out the best show
-        that was actually available to you. That is what you are up against.</p>
-      <p>Picking at random gets you about <b>three quarters</b> of it. The last
-        quarter is the game.</p>`,
+      <p>Two sets and an encore, each on a clock. Every song costs the time it
+        really ran, so what you are spending is <b>stage time</b>.</p>`,
   },
   {
     aim: () => document.querySelector('.band:not(.soon) [data-start]'),
@@ -2765,52 +2914,17 @@ const GUIDE_STEPS = [
       </div>`,
   },
   {
-    aim: () => document.querySelector('[data-go="board"]'),
-    eyebrow: 'When you finish',
-    hd: 'The leaderboard',
-    body: `<p>Every finished show is ranked two ways: on <b>total points</b>, and on
-        <b>how close you got to your own ceiling</b>.</p>
-      <p>The second one is the fairer fight. It does not care whether the nights
-        you were dealt were loaded or thin, only what you did with them.</p>`,
-  },
-  {
-    aim: () => document.querySelector('[data-go="tour"]'),
-    eyebrow: 'While you are here',
-    hd: 'The band is on tour',
-    body: `<p>Every date Goose has announced, with how many days until each one.
-        This follows elgoose.net, so it fills in as they book.</p>
-      <p>The setlist from each night lands in the game the <b>next morning</b>,
-        which means the show you just saw is draftable by breakfast.</p>`,
-  },
-  {
-    aim: () => document.querySelector('[data-go="songs"]'),
-    eyebrow: 'The whole catalogue',
-    hd: 'All 367 songs',
-    body: `<p>Every song Goose has ever played, and how often. Tap one and it
-        opens <b>every time you heard it</b>: the date, the venue, how long it
-        ran.</p>
-      <p>Sort it by what they play most and filter to what you have never
-        caught, and it becomes the list of what you are still missing.</p>`,
-  },
-  {
-    aim: () => document.querySelector('[data-go="browse"]'),
-    eyebrow: 'If you have been to a few',
-    hd: 'Claim the ones you were at',
-    body: `<p>Every show in the archive, filtered by <b>year and tour</b>, and you
-        tick the nights you were there.</p>
-      <p>Start here rather than waiting for the game to deal you one: the draft
-        picks at random, so marking a decade of shows one draw at a time would
-        take longer than the decade did.</p>`,
-  },
-  {
-    aim: () => document.querySelector('[data-go="profile"]'),
-    eyebrow: 'What that gets you',
-    hd: 'Your shows',
-    body: `<p>Once nights are marked, Segue works out <b>how much of the catalogue
-        you have heard live</b>: how many songs, which one you have seen most, and
-        how many are still out there.</p>
-      <p>It stays on this device unless you sign in, and it never appears on the
-        leaderboard.</p>`,
+    /* ONE STEP FOR THE OTHER FOUR SCREENS. They each had a modal of their own
+       and none of them is anything you do before your first round. The bar is
+       on screen from here on, so the useful thing to say is that it is. */
+    aim: () => document.getElementById('tabbar'),
+    eyebrow: 'Everything else',
+    hd: 'It all lives down here',
+    body: `<p><b>Tour</b> is every date Goose has announced. <b>Songs</b> is the
+        whole catalogue. <b>Board</b> is the leaderboard, and <b>You</b> is where
+        you tick off the shows you were actually at.</p>
+      <p>None of it is needed to play, so none of it is in the way. Let's deal
+        you a show.</p>`,
   },
 ];
 
@@ -2939,7 +3053,11 @@ function placeGuideCard(card, target, ring, arrow){
 // ── home ─────────────────────────────────────────────────────────────────────
 function renderHome(){
   const real = BANDS.filter(b => !b.sample);
-  const test = BANDS.filter(b => b.sample);
+  /* THE SAMPLE BAND IS A DEVELOPMENT FIXTURE and it was on the live page, one
+     tap under the real one, labelled "Made-up data we use for testing". A
+     first-time player has no way to know that is not part of the game. It now
+     needs asking for: localhost, or `?dev=1` on any host. */
+  const test = DEV_MODE ? BANDS.filter(b => b.sample) : [];
 
   loadLatest();
 
@@ -2972,14 +3090,20 @@ function renderHome(){
         <div class="band-meta">${esc(b.note)}${mine
           ? ` <b class="mine">&middot; ${mine} you were at</b>` : ''}</div>
 
+        ${/* THE BUTTON COMES BEFORE THE NEWS. Moving the rules above this panel
+              cost the play button its place on the fold: measured at 390x844 it
+              went from 414px to 915px, which is a scroll away from a screen
+              whose whole job is to be pressed. The countdown was 91px of that,
+              and it is the one thing in the card that nobody came here to
+              press. Rules, then the button, then what the band is up to. */''}
+        <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
+
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
           <b class="nl-v">${esc(countdownWords(days))}</b>
           <span class="nl-p">${esc(fmtDate(next.date, { short: true }))} &middot;
             ${esc(next.venue)}${place(next) ? `, ${esc(place(next))}` : ''}</span>
         </div>` : ''}
-
-        <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
 
         ${last && last.sets.length ? `<div class="lastset">
           <div class="ls-hd"><span class="ls-hk">Last show</span>
@@ -3007,18 +3131,48 @@ function renderHome(){
       </section>`;
   };
 
-  /* The button comes before the how-it-works, not after. A returning player
-     wants the button; a new one gets a single sentence above it and the rules
-     underneath, where they can read them or not. */
+  /* WHERE THE RULES SIT, and why they moved.
+     They were under the play button, about 840px down, which put the clearest
+     explanation on the site below the fold on every phone. The walkthrough
+     existed largely to cover that gap, and a walkthrough is a worse manual
+     than a list you can re-read.
+     So the loop is now stated in the hero, in one sentence, and the five steps
+     sit above the band panel rather than below it. The play button is still
+     the biggest thing on the screen; it is now the biggest thing on the screen
+     AFTER you have been told what pressing it does. */
   app.innerHTML = `
     <div class="hero">
       <div class="eyebrow">RunThe.GG presents</div>
       <h1><span class="accent">Segue</span></h1>
       <div class="tagline">The Setlist Builder Game</div>
-      <p>Choose a band. Build the show you've always dreamed of.</p>
+      <p>One real concert at a time. Take a song off each, pay its running
+        time, build the night they never played.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
+
+    <section class="how">
+      <!-- The walkthrough runs itself on a first visit. This is how anybody
+           gets it back, which is what makes it a manual rather than a popup.
+           On the heading's own line rather than in a 46px block under the
+           list: the list is what has to clear the fold, and a secondary way
+           of reading the same rules is not worth a row to itself. -->
+      <h3>How it works<button class="btn ghost tiny" type="button"
+        id="guideBtn">Show me around</button></h3>
+      <ol class="steps">
+        <li><b>1</b><span>You get a random show from the band's history.
+          Pick one song off it.</span></li>
+        <li><b>2</b><span>That song uses up its real running time, so a
+          20-minute jam costs you 20 minutes.</span></li>
+        <li><b>3</b><span>You've got two sets and an encore, each on a clock,
+          and you decide when a set ends.</span></li>
+        <li><b>4</b><span>Rare songs, great versions and real segues are worth
+          the most.</span></li>
+        <li><b>5</b><span>When you're done, the show plays back song by song
+          and the crowd reacts.</span></li>
+      </ol>
+    </section>
+
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
         <div class="band-hd"><h2>More bands coming soon</h2></div>
@@ -3035,25 +3189,6 @@ function renderHome(){
       <button type="button" data-go="board">Leaderboard</button>
       <button type="button" data-go="profile">Your shows</button>
     </div>
-
-    <section class="how">
-      <h3>How it works</h3>
-      <ol class="steps">
-        <li><b>1</b><span>You get a random show from the band's history.
-          Pick one song off it.</span></li>
-        <li><b>2</b><span>That song uses up its real running time, so a
-          20-minute jam costs you 20 minutes.</span></li>
-        <li><b>3</b><span>You've got two sets and an encore, each on a clock,
-          and you decide when a set ends.</span></li>
-        <li><b>4</b><span>Rare songs, great versions and real segues are worth
-          the most.</span></li>
-        <li><b>5</b><span>When you're done, the show plays back song by song
-          and the crowd reacts.</span></li>
-      </ol>
-      <!-- The walkthrough runs itself on a first visit. This is how anybody
-           gets it back, which is what makes it a manual rather than a popup. -->
-      <button class="btn ghost" type="button" id="guideBtn">Show me around</button>
-    </section>
 
     ${test.length ? `<div class="tryout">
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
@@ -3460,7 +3595,13 @@ function renderDraft(){
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
       </button>`;
     }).join('');
-    return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
+    /* WHOSE SET I THIS IS. The list below is grouped by the sets of the show
+       that was dealt, and the clock above says you are filling Set I, so a
+       first-time player reads two different "Set I"s on one screen and has no
+       way to tell they are different things. The band's sets are named as
+       theirs; yours is the one the clock is counting. */
+    return `<div class="setgrp"><h3><span class="sg-w">Their</span> ${
+      esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
   }).join('') + (left < LIST_CLOSE_AT ? `
     <button class="btn listclose ${closeArmed ? 'forfeit' : ''}" type="button" data-close-set>
       <span class="lc-t">${closeArmed
@@ -3569,6 +3710,17 @@ function renderDraft(){
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
+        ${/* THE KEY TO THE LIST BELOW IT, which is where it has to be: the
+              vocabulary is all on the song rows, so the way in sits at the top
+              of the song rows rather than in the clock above them. It stays on
+              every round, unlike the first-round hint, because ten terms are
+              not learned in one pass. */''}
+        ${/* NO LABEL BESIDE IT. "Set list from that night" wrapped to two lines
+              at 390px, collided with the link, and said the same thing as the
+              "Their Set I" heading directly under it. */''}
+        <div class="keyline">
+          <button class="keybtn" type="button" id="keyBtn">What do the tags mean?</button>
+        </div>
         ${songsHTML}
       </div>
 
@@ -3766,11 +3918,25 @@ function renderResult(){
       </div>`;
   }).join('');
 
+  /* THE NUMBER THAT MEANS SOMETHING, promoted. 1053 points is unreadable on
+     its own: nobody arriving at their first scorecard knows whether that is
+     good, and the game's own answer to that question ("80% of the best show
+     those nights had in them") was set at a third the size, in a card below,
+     as the second half of a sentence about the gap.
+     So the percentage now sits directly under the score, at the size of a
+     headline, in the grade colour. The score stays the big number because it is
+     what the leaderboard ranks and what the share card carries; the line under
+     it is what tells you how you did. */
+  const pct = S.best ? Math.round(100 * r.total / Math.max(1, S.best.total)) : null;
+
   app.innerHTML = `
     <div class="result">
       <div class="scorebox">
         <div class="eyebrow">Final score</div>
         <div class="n" id="scoreN">0</div>
+        ${pct === null ? '' : `<div class="sb-pct">
+          <b class="grade-${gradeScore(r.total)}">${pct}%</b>
+          of the best show those nights had in them</div>`}
         <div class="headline">&ldquo;${esc(r.headline)}&rdquo;</div>
         <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
@@ -3778,18 +3944,19 @@ function renderResult(){
 
       ${S.best ? (() => {
         const gap = S.best.total - r.total;
-        const pct = Math.round(100 * r.total / Math.max(1, S.best.total));
         return `<div class="card ceiling${gap <= 0 ? ' maxed' : ''}">
-          <div class="ceil-lbl">The best line through your shows</div>
+          <div class="ceil-lbl">Where that percentage comes from</div>
           <div class="ceil-row">
             <div class="ceil-n">${S.best.total}</div>
             <div class="ceil-say">${gap <= 0
-              ? 'Nothing we tried beat it. That is the show those nights had in them.'
-              : `${gap} more was on the table. You got <b>${pct}%</b> of it.`}</div>
+              ? 'Nothing we tried beat you. That is the show those nights had in them.'
+              : `is the most those nights could have scored, so ${gap} points
+                 were left on the table.`}</div>
           </div>
           <div class="ceil-bar"><span style="width:${Math.min(100, pct)}%"></span></div>
-          <div class="ceil-fine">Same nights, same order, same rules. Every point of it
-            was yours to take.</div>
+          <div class="ceil-fine">We replayed the same shows in the same order and
+            played them as well as we could. Same rules, same clock. Picking at
+            random gets about 77% of it.</div>
         </div>`;
       })() : ''}
 
@@ -3958,6 +4125,10 @@ function openDetail(i){
   document.getElementById('detailSheet').classList.add('on');
 }
 function closeDetail(){ document.getElementById('detailSheet').classList.remove('on'); }
+
+/* The glossary. Static markup, so opening it is one class. */
+function openKey(){ document.getElementById('keySheet').classList.add('on'); }
+function closeKeySheet(){ document.getElementById('keySheet').classList.remove('on'); }
 
 /* Respin asks first. It spends stage time out of the set you are building, and
    a thumb landing on it by accident used to cost five minutes with no way back.
@@ -4720,6 +4891,15 @@ document.getElementById('statSheet').addEventListener('click', e => {
   if (e.target.id === 'statSheet' || e.target.closest('#statClose')) closeStat();
 });
 
+/* BOUND ON THE SHEET, like its siblings above, and not in the app's own click
+   handler. The button that OPENS the glossary is drawn by renderDraft so it
+   belongs there; the button that closes it is in static markup outside #app,
+   where an app-scoped listener never sees it. It shipped that way for one run
+   and the only way out of the sheet was the backdrop. */
+document.getElementById('keySheet').addEventListener('click', e => {
+  if (e.target.id === 'keySheet' || e.target.closest('#keyClose')) closeKeySheet();
+});
+
 /* The about sheet. Bound on the document rather than on the app, because the
    button lives in the static footer and not in anything render() rewrites. */
 const aboutSheet = document.getElementById('aboutSheet');
@@ -4772,6 +4952,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (document.getElementById('guide').classList.contains('on')){ closeGuide(); return; }
   if (document.getElementById('statSheet').classList.contains('on')){ closeStat(); return; }
+  if (document.getElementById('keySheet').classList.contains('on')){ closeKeySheet(); return; }
   if (aboutSheet.classList.contains('on')){ aboutSheet.classList.remove('on'); return; }
   if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
   if (document.body.classList.contains('sheet-on')){
@@ -6799,6 +6980,7 @@ app.addEventListener('click', e => {
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;
   }
+  if (e.target.closest('#keyBtn')){ openKey(); return; }
   if (e.target.closest('#homeBtn')){ setScreen('home'); return; }
 
   const peek = e.target.closest('[data-peek]');
