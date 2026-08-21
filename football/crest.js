@@ -991,7 +991,16 @@ function crest(o){
   /* THE SIZE RULE, enforced by the renderer rather than by every caller remembering it. */
   const rich=size>=40;
   /* The seal is detail, so the board row does not get one. Same rule as the pattern. */
-  const tier=rich?(o.tier?tierAt(o.tier):null):null;
+  /* THE SEAL IS THE ONE PIECE OF DETAIL THAT SURVIVES THE BOARD ROW, and it earns the
+     exception. A pattern and a ring treatment are texture, and at 26px texture is a smudge.
+     A rank is a fact about the person whose name is next to it, and the METAL carries it on
+     its own: bronze, silver, gold and the holographic one are four different colours before
+     they are four different glyphs. So the seal draws wherever the crest does, and the glyph
+     inside it is what obeys the size rule instead. */
+  const tier=o.tier?tierAt(o.tier):null;
+  /* Chevrons and stars at 26px are mush, and mush over the mark is worse than nothing: it
+     costs the shape that says WHO this is to say something the colour already said. */
+  const sealGlyph=rich;
   const ringId=rich?(o.ring||'club'):'club';
   /* A pattern is detail, and detail is the first thing the board row cannot hold. Below
      40px every crest falls back to the plain lit field. It is also the club's OWN pattern
@@ -1117,8 +1126,12 @@ function crest(o){
 
   /* ---- the tier seal, struck into the lower right rim ---- */
   if(tier){
-    const px=75, py=75, pr=17.5;
-    const go=glyphOffset(tier);
+    /* Smaller on a small crest, in absolute terms as well as relative. At 26px a seal at
+       the full 17.5 covers a third of the mark; pulled in to 14.5 it sits on the rim and
+       lets the shape underneath finish. */
+    const pr=rich?17.5:14.5;
+    const px=rich?75:76, py=rich?75:76;
+    const go=sealGlyph?glyphOffset(tier):{x:0,y:0};
     if(tier.holo){
       /* GOAT is the only holographic one, and it is holographic because it is the only one
          that means every badge in the game. This is what makes it special now that the ring
@@ -1149,9 +1162,11 @@ function crest(o){
       /* the highlight that makes it struck metal rather than a coloured dot */
       '<path d="M'+(px-pr*.72)+' '+(py-pr*.34)+'a'+pr+' '+pr+' 0 0 1 '+(pr*1.44)+' 0" '+
         'fill="none" stroke="#ffffff" stroke-opacity=".42" stroke-width="2.4" stroke-linecap="round"/>'+
-      '<g transform="translate('+px+' '+py+') scale('+(pr/50*.9)+') translate(-50 -50) '+
-        'translate('+go.x.toFixed(2)+' '+go.y.toFixed(2)+')">'+
-        tierGlyph(tier,tier.edge)+'</g>'+
+      (sealGlyph
+        ?'<g transform="translate('+px+' '+py+') scale('+(pr/50*.9)+') translate(-50 -50) '+
+          'translate('+go.x.toFixed(2)+' '+go.y.toFixed(2)+')">'+
+          tierGlyph(tier,tier.edge)+'</g>'
+        :'')+
     '</g>';
   }
 

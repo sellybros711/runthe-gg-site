@@ -90,11 +90,18 @@
      the board. Without them every row draws the flat disc, which is what it drew before
      88 existed. */
   let crestColumns = true;
+  /* 89's column is tracked SEPARATELY from 88's two, and that is not tidiness. A project
+     that has run 88 and not 89 has display_mark and display_rung and no display_tier, and
+     one flag covering all three would drop the two that work because the third does not:
+     running one migration and not the next would turn the crest off on the board entirely
+     rather than costing it a rank seal. */
+  let tierColumn = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
     (tradeColumns ? ',gm_rating,trade_moves' : '') +
     (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
-    (crestColumns ? ',display_mark,display_rung' : '');
+    (crestColumns ? ',display_mark,display_rung' : '') +
+    (crestColumns && tierColumn ? ',display_tier' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -104,6 +111,7 @@
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
   const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
   const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
+  const missingTierColumn = (body) => missingCol(body, /display_tier/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -650,10 +658,12 @@
          body before deciding, so a genuinely broken query still surfaces as itself rather
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
-      /* FIVE PASSES NOW, one per optional set, narrowest first. */
-      for (let pass = 0; pass < 5 && !res.ok && res.status === 400; pass++) {
+      /* ONE PASS PER OPTIONAL SET, narrowest first. */
+      for (let pass = 0; pass < 6 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (crestColumns && missingCrestColumn(body)) {
+        if (tierColumn && missingTierColumn(body)) {
+          tierColumn = false;
+        } else if (crestColumns && missingCrestColumn(body)) {
           crestColumns = false;
         } else if (defColumns && missingDefColumn(body)) {
           defColumns = false;
@@ -786,16 +796,25 @@
         const rows = await res.json().catch(() => null);
         return (Array.isArray(rows) && rows[0]) || {};
       };
-      let r = crestColumns ? await one('avatar_color,avatar_initials,crest_mark') : null;
+      let r = (crestColumns && tierColumn)
+        ? await one('avatar_color,avatar_initials,crest_mark,crest_tier') : null;
+      /* 88 without 89: crest_mark is there and crest_tier is not, so ask again without it
+         rather than falling all the way back to the pre-88 pair. */
+      if (r === null && crestColumns && tierColumn) {
+        tierColumn = false;
+        r = await one('avatar_color,avatar_initials,crest_mark');
+      } else if (crestColumns && !tierColumn && r === null) {
+        r = await one('avatar_color,avatar_initials,crest_mark');
+      }
       /* Null means 400, which on this table means the column is not there yet. */
       if (r === null && crestColumns) { crestColumns = false; }
       if (r === null) r = await one('avatar_color,avatar_initials');
       /* A project that has not run 53 yet has no such columns either, and that is not an
          error worth surfacing: it is the same "one file behind" state top() handles, and
          the answer is the same, which is that nothing has been chosen. */
-      if (r === null) return { color: null, initials: null, mark: null };
+      if (r === null) return { color: null, initials: null, mark: null, tier: null };
       return { color: r.avatar_color || null, initials: r.avatar_initials || null,
-        mark: r.crest_mark || null };
+        mark: r.crest_mark || null, tier: r.crest_tier || null };
     } catch (e) { return failThrown('avatar', e); }
   }
 
@@ -812,11 +831,16 @@
      Missing-function handling is deliberately the SAME flag setAvatar uses. Both are the
      profile writer, both are missing for exactly one reason (a migration has not been run),
      and one flag means the diagnostics have one sentence to say rather than two. */
-  async function setCrest(mark) {
+  async function setCrest(mark, tier) {
     try {
+      /* p_tier is omitted rather than sent empty when there is nothing to say. Null means
+         "leave the rank alone" in 89, and a rank moves on its own as badges are earned, so a
+         call that is only changing the mark must not touch it. */
+      const body0 = { p_mark: mark || '' };
+      if (tier) body0.p_tier = tier;
       const res = await timed(base() + 'rpc/ps_set_crest', {
         method: 'POST', headers: headers(),
-        body: JSON.stringify({ p_mark: mark || '' }) });
+        body: JSON.stringify(body0) });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         lastError = { where: 'crest', status: res.status, code: (body && body.code) || '',
@@ -826,7 +850,7 @@
           missing: avatarFnMissing };
       }
       const row = Array.isArray(body) ? body[0] : body;
-      return { mark: (row && row.mark) || null,
+      return { mark: (row && row.mark) || null, tier: (row && row.tier) || null,
         rung: (row && row.rung !== null && row.rung !== undefined) ? Number(row.rung) : 0 };
     } catch (e) {
       lastError = { where: 'crest', status: 0, code: '', message: String(e && e.message || e) };

@@ -79,16 +79,16 @@
       "sha": "275b4b0e312a313a"
     },
     "board.js": {
-      "v": "21",
-      "sha": "8c0f7f91a7605160"
+      "v": "23",
+      "sha": "7d6b23b5d48089ff"
     },
     "achievements.js": {
       "v": "10",
       "sha": "4217a68cfdd14e74"
     },
     "crest.js": {
-      "v": "5",
-      "sha": "d75234f42febbdee"
+      "v": "6",
+      "sha": "d94c1ec5b647f151"
     },
     "auth.js": {
       "v": "2",

@@ -123,3 +123,52 @@ update ps_runs r
 select ok('backfilled the account', (select crest_rung::text from profiles), '3');
 select ok('backfilled every row', (select min(display_rung)::text from ps_runs), '3');
 select ok('and both rows, not one', (select count(*)::text from ps_runs where display_rung=3), '2');
+
+-- ---------------------------------------------------------------------------
+-- 89: the rank seal
+-- ---------------------------------------------------------------------------
+delete from ps_runs; delete from profiles; delete from auth.session;
+insert into profiles(id,username) values
+  ('33333333-3333-3333-3333-333333333333','ranked');
+insert into auth.session values ('33333333-3333-3333-3333-333333333333');
+select ps_set_avatar('MIA','RK');
+select play('club','MIA',true,true);
+
+select ok('no rank until one is sent', (select crest_tier from profiles), null);
+select ps_set_crest('dog','silver2');
+select ok('rank stored', (select crest_tier from profiles), 'silver2');
+select ok('rank on the rows', (select min(display_tier) from ps_runs), 'silver2');
+
+-- The mark and the rank move independently: sending only a mark must not wipe a
+-- rank the player has already earned.
+select ps_set_crest('crown');
+select ok('mark alone leaves the rank', (select crest_tier from profiles), 'silver2');
+select ok('and the mark did change', (select crest_mark from profiles), 'crown');
+select ok('rows kept the rank', (select min(display_tier) from ps_runs), 'silver2');
+
+-- Clearing the mark still works, and still leaves the rank.
+select ps_set_crest('');
+select ok('mark cleared', (select crest_mark from profiles), null);
+select ok('rank survived the clear', (select crest_tier from profiles), 'silver2');
+
+-- A rank climbs.
+select ps_set_crest('', 'gold1');
+select ok('rank climbed', (select crest_tier from profiles), 'gold1');
+select ok('rows climbed too', (select min(display_tier) from ps_runs), 'gold1');
+
+-- And a bogus one is refused.
+do $$ begin
+  perform ps_set_crest('', 'platinum9');
+  raise notice 'FAIL  a bogus rank was accepted';
+exception when others then
+  raise notice ' ok   a bogus rank is refused: %', sqlerrm;
+end $$;
+
+-- A new run carries the rank without being told it.
+select play('club','MIA',true,false);
+select ok('a new run is stamped', (select display_tier from ps_runs order by id desc limit 1), 'gold1');
+
+-- The one argument call still resolves, which is what a client one version behind
+-- would make.
+select ok('one argument still works', (select mark from ps_set_crest('dog')), 'dog');
+select ok('and left the rank alone', (select crest_tier from profiles), 'gold1');
