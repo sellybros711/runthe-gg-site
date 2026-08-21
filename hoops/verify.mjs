@@ -199,6 +199,56 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
     'and signing one club version still blocks the other, by player id');
 }
 
+/* THE ROWS A REAL LEAGUE HAS THAT A HAND-WRITTEN SEED NEVER WILL.
+ *
+ * Every row in the seed is a rotation player from a good team, because somebody
+ * chose them. A real dataset is mostly not that: a third of it has NEGATIVE win
+ * shares, plenty of defensive centres attempt no three-pointers at all, and some
+ * players barely shoot. Each of those is a division or a ratio somewhere in the
+ * fit model, and each is a chance to produce NaN, which does not throw. It
+ * propagates: one NaN in a spacing index becomes a NaN rating, a NaN win
+ * probability, and a season of scorelines that are all "NaN-NaN".
+ *
+ * So the awkward rows are constructed rather than waited for. */
+{
+  /* THE SEASON ON EACH OF THESE IS LOAD-BEARING, and getting it wrong made this
+     whole block pass for the wrong reason. players.json is sorted by season, so
+     players[0..5] are all 1972 rows, and spacingIndex returns early for any
+     season before the three-point line existed: the awkward rows never reached
+     the division they were written to exercise. Removing the divide-by-zero
+     guard from the engine did not fail this test until the seasons were pinned
+     to the modern era. */
+  const modern = { s: 2020 };
+  const awkward = [
+    { ...players[0], ...modern, i: 'neg01', w: -2.1, ow: -1.4, dw: -0.7 },   // negative value
+    { ...players[1], ...modern, i: 'noshot01', fga: 0, tpa: 0, pts: 0 },     // never shoots
+    { ...players[2], ...modern, i: 'nothree01', tpa: 0 },                    // no range at all
+    { ...players[3], ...modern, i: 'zero01', ow: 0, dw: 0, w: 0, fga: 0, tpa: 0, ast: 0, reb: 0, blk: 0, stl: 0 },
+    { ...players[4], i: 'old01', s: 1974 },                                  // before the line
+    { ...players[5], i: 'new01', s: 2025 },                                  // the modern game
+  ];
+  const six = awkward.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+
+  for (const p of awkward) {
+    ok(Number.isFinite(E.spacingIndex(p)), `spacing index is a number for ${p.i}`);
+  }
+
+  const fit = E.rosterFit(six);
+  const chem = E.resolveChemistry(six);
+  const ortg = E.rosterOffense(six, chem.bonus, fit.bonus);
+  const drtg = E.rosterDefense(six, chem.bonus);
+
+  ok(Number.isFinite(fit.bonus), 'a roster of awkward rows still produces a real fit number');
+  ok(Object.values(fit.parts).every(Number.isFinite), 'and every component of it is a number');
+  ok(Number.isFinite(chem.bonus), 'chemistry survives them');
+  ok(Number.isFinite(ortg) && Number.isFinite(drtg), 'and both ratings come out finite');
+
+  const season = E.playRun(awkward, E.createSeededRNG(31337), E.SLOTS, data.oppPool);
+  ok(Number.isFinite(season.rating), 'a season played by that roster has a real rating');
+  ok(season.season.every(g => Number.isFinite(g.yourPoints) && Number.isFinite(g.oppPoints)),
+    'and all 82 scorelines are numbers rather than NaN');
+}
+
 // ─── the basketball ─────────────────────────────────────────────────────────
 
 /* THE FIT MODEL, CHECKED AGAINST TEAMS PEOPLE ALREADY HAVE OPINIONS ABOUT.
