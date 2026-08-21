@@ -65,9 +65,17 @@ function pages(dir, out = []) {
     const full = path.join(dir, name);
     const st = fs.statSync(full);
     if (st.isDirectory()) { pages(full, out); continue; }
-    /* __test*.html is an instrumented copy written by a suite and deleted after; it is in
-       .gitignore and is never served. */
-    if (!name.endsWith('.html') || name.startsWith('__test')) continue;
+    /* A LEADING __ MEANS A TEST-ONLY FILE, written by a suite and deleted after. It is in
+       .gitignore, it is never served, and __authstub.js beside the football game is the
+       same convention.
+
+       This used to name __test exactly, and the gap has already been walked into once: a
+       smoke copy called __smoke.html was on disk during an --update, so the record file
+       learned four scripts belonging to a page that does not exist and the checker failed
+       on every run afterwards with "recorded but no longer on the page". Caught in the
+       working tree that time. Widened to the prefix, because the next throwaway will not be
+       called __test either. */
+    if (!name.endsWith('.html') || name.startsWith('__')) continue;
     out.push(full);
   }
   return out;

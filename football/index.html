@@ -931,9 +931,10 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* THE PODIUM
      The top three, second and first and third across, which is how a podium is
-     actually arranged and not how a list is. Only on a board pointed high to low:
-     on a reversed one the top three are the three worst runs and a podium would be
-     celebrating them. */
+     actually arranged and not how a list is. Only on a board pointed the way its axis
+     is best: on a reversed one the top three are the three worst runs and a podium
+     would be celebrating them. That is high to low on every axis but points allowed,
+     where low is the good end; see paintPodium. */
   .podium{display:none;margin:11px 0 16px}
   .podium.on{display:block}
   /* The three steps, then ONE base under all of them. Each step used to carry its own
@@ -1021,7 +1022,12 @@ window.GA_ID='G-L29P5MRWKE';
      invented letters in it. It is still drawn, so every name on the board starts at the
      same x and the column reads as a column. */
   .pfp.anon{border:1px dashed var(--line-2);background:none !important}
-  .pfp.big{width:34px;height:34px;font-size:13px}
+  /* THE PODIUM STEP, AND ONLY THE PODIUM STEP. 44 rather than 34 because the crest's size
+     rule turns on at 40: below it the pattern, the sheen and the rank's chevrons are all
+     dropped as detail that cannot survive, so a podium at 34 showed the top three of the
+     board wearing less than they own. The step has the room, and a podium is the one place
+     on the board that is meant to be looked AT rather than scanned down. */
+  .pfp.big{width:44px;height:44px;font-size:16px}
   /* The one in the settings, big enough to be the thing you are editing. */
   .pfp.huge{width:56px;height:56px;font-size:20px}
   /* A crest fills the same box. The disc is drawn by the SVG now, so the span's own colour
@@ -5490,7 +5496,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=7"></script>
+<script src="crest.js?v=8"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -13264,7 +13270,11 @@ function crestFor(a,size){
    row leans on it being the first flex child). Swapping the element for an `<svg>` would
    mean finding all of that and getting it right; wrapping keeps every existing rule true
    and costs one class. */
-const PFP_PX={ big:34, huge:56 };
+/* Kept in step with .pfp.big and .pfp.huge above BY HAND, because the crest is an SVG that
+   has to be told its own size and CSS cannot tell it. A number here that disagrees with the
+   stylesheet does not misdraw anything, it silently picks the wrong side of the size rule:
+   the crest scales to the box either way and decides on detail from what it was told. */
+const PFP_PX={ big:44, huge:56 };
 function avatarHTML(a,cls){
   const c=crestFor(a,PFP_PX[cls]||26);
   if(c){
@@ -15842,14 +15852,22 @@ async function loadBoard(){
 }
 
 /* THE TOP THREE, as a podium.
-   Hidden when the board is reversed, because the first three rows of a low-to-high
-   board are the three worst runs in the window and putting them on a podium would be
-   congratulating them. Hidden below three rows too: a podium with one step is a box. */
+   Hidden when the board is reversed, because the first three rows of a reversed board are
+   the three worst runs in the window and putting them on a podium would be congratulating
+   them. Hidden below three rows too: a podium with one step is a box. */
+/* REVERSED IS NOT THE SAME AS ASCENDING, and reading it as one cost the points allowed
+   board its podium entirely. Every other axis is better when the number is bigger, so for
+   five of the six "descending" and "the good way round" are the same sentence. On points
+   allowed low IS the good way round: that board OPENS ascending, and the test below then
+   read the best defenses in the game as the three worst runs in the window and hid them.
+   The question is whether the board is pointed the way the axis is best, which is what
+   sortBestDir already answers for the sort bar. */
 /* Returns whether it actually drew, because the list below has to know how many runs
    have already been shown above it. */
 function paintPodium(rows){
   const el=$('lb-podium');
-  if(lbDir!=='desc'||rows.length<3){ el.className='podium'; el.innerHTML=''; return false; }
+  if(lbDir!==sortBestDir(lbSort)||rows.length<3){
+    el.className='podium'; el.innerHTML=''; return false; }
   const order=[1,0,2];                    // second, first, third: an actual podium
   el.className='podium on';
   el.innerHTML='<div class="podrow">'+order.map((i)=>{

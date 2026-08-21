@@ -1133,11 +1133,34 @@ function crest(o){
 
   /* ---- the tier seal, struck into the lower right rim ---- */
   if(tier){
-    /* Smaller on a small crest, in absolute terms as well as relative. At 26px a seal at
-       the full 17.5 covers a third of the mark; pulled in to 14.5 it sits on the rim and
-       lets the shape underneath finish. */
-    const pr=rich?17.5:14.5;
-    const px=rich?75:76, py=rich?75:76;
+    /* WHERE THE SEAL SITS IS MEASURED, NOT CHOSEN, and these three numbers are the answer
+       to one question: how far out and how big can it be without covering a single pixel of
+       the mark or the monogram underneath it.
+
+       It used to sit at 75,75 with a radius of 17.5, which left 0.88 units of clearance to
+       the nearest ink and therefore covered eighteen units of it. On a monogram that is the
+       second letter with a metal disc through it.
+
+       The measurement is a pixel test, not a bounding box: each mark is rasterized at four
+       device pixels per unit, diffed against the same crest with an empty monogram to get
+       the mark's own ink, and every painted pixel's distance to a candidate centre is taken.
+       A box would have been wrong by a wide margin here, because the paw and the crown both
+       have an empty lower right corner that their box does not know about.
+
+       Two constraints cross at 51.25 units out along the diagonal, and that crossing is what
+       fixes all three numbers:
+         push it further out and the 100 box clips it   (max radius 50 - d/root2)
+         pull it in and the crown and the pad reach it  (clearance grows about 0.9 a unit)
+       At the crossing there is room for 12.25 and it is drawn at 12, which leaves a quarter
+       of a unit in hand and puts the separator's outer edge at 99.7 of 100.
+
+       ONE SIZE AT EVERY SIZE now. The old pair existed because a seal that covered the mark
+       covered proportionally more of a small one, and a seal that covers nothing has no
+       reason to change. */
+    const pr=12, px=86.2, py=86.2;
+    /* The two decorative strokes were absolute, tuned against a radius of 17.5, and at 12
+       they read as a thick band and a bright bar rather than an edge and a highlight. */
+    const pk=pr/17.5;
     const go=sealGlyph?glyphOffset(tier):{x:0,y:0};
     if(tier.holo){
       /* GOAT is the only holographic one, and it is holographic because it is the only one
@@ -1165,12 +1188,15 @@ function crest(o){
       '<circle cx="'+px+'" cy="'+py+'" r="'+(pr+1.5)+'" fill="#000" fill-opacity=".42"/>'+
       '<circle cx="'+px+'" cy="'+py+'" r="'+pr+'" fill="url(#p'+u+')"/>'+
       '<circle cx="'+px+'" cy="'+py+'" r="'+pr+'" fill="none" stroke="'+tier.edge+
-        '" stroke-opacity=".55" stroke-width="1.6"/>'+
+        '" stroke-opacity=".55" stroke-width="'+(1.6*pk).toFixed(2)+'"/>'+
       /* the highlight that makes it struck metal rather than a coloured dot */
       '<path d="M'+(px-pr*.72)+' '+(py-pr*.34)+'a'+pr+' '+pr+' 0 0 1 '+(pr*1.44)+' 0" '+
-        'fill="none" stroke="#ffffff" stroke-opacity=".42" stroke-width="2.4" stroke-linecap="round"/>'+
+        'fill="none" stroke="#ffffff" stroke-opacity=".42" stroke-width="'+(2.4*pk).toFixed(2)+
+        '" stroke-linecap="round"/>'+
+      /* The glyph fills more of a smaller seal: at .9 of a radius of 12 three chevrons are
+         mush even on the profile, which is the one place they are meant to be readable. */
       (sealGlyph
-        ?'<g transform="translate('+px+' '+py+') scale('+(pr/50*.9)+') translate(-50 -50) '+
+        ?'<g transform="translate('+px+' '+py+') scale('+(pr/50*1.06)+') translate(-50 -50) '+
           'translate('+go.x.toFixed(2)+' '+go.y.toFixed(2)+')">'+
           tierGlyph(tier,tier.edge)+'</g>'
         :'')+
