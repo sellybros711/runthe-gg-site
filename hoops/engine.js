@@ -6,7 +6,7 @@
  * previous reskin of that skeleton. Adapted for basketball:
  *
  *   6 roster slots (PG, SG, SF, PF, C, 6TH)
- *   a $135M cap, in the range of a real NBA cap
+ *   a $134M cap, in the range of a real NBA cap
  *   an 82 game season against real all-time team-seasons
  *   offense and defense expressed as ratings per 100 possessions, not per game
  *   Pythagorean expectation at the basketball exponent
@@ -41,7 +41,7 @@ const ENGINE_API_VERSION = 1;
 
 const CONSTANTS = {
   /* THE CAP HAS TO SAY NO, or the draft is not a decision, it is a sequence of
-     clicks on whoever scored most. $135M is about $22M a slot across six
+     clicks on whoever scored most. $134M is about $22M a slot across six
      players, and the priciest player in the data costs $60M. So one superstar
      eats nearly half the roster and the other five have to come in under $75M.
      That is the shape of the squeeze: one great player is comfortable, two is
@@ -52,14 +52,14 @@ const CONSTANTS = {
      THE NUMBER IS SWEPT, NOT PICKED. Every time the model underneath it
      changed, the cap was re-measured across its whole range rather than nudged:
      $145M when the ratings were guessed, $125M once they were fitted to real
-     records, and $135M once price stopped being a function of value and the
-     playoff bracket was fitted to history. At $135M all four calibration
-     targets land inside their bands together, which none of the earlier
-     settings managed. It is also roughly the real cap of a season or two ago.
+     records, $138M once price stopped being a function of value and the playoff
+     bracket was fitted to history, and $134M once the schedule stopped being
+     harder than a real one. All four calibration targets land inside their
+     bands together at this setting. It is also roughly a real NBA cap.
 
      Priced against hoops/build/build-players.mjs, and the two numbers are one
      decision: moving either without the other breaks the draft. */
-  CAP_MUSD: 138,
+  CAP_MUSD: 134,
   REGULAR_SEASON_GAMES: 82,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -1257,22 +1257,42 @@ function resolveGame(pointsFor, pointsAgainst, rng, advantage) {
  *
  * So the pool is a PERCENTILE (the slate always exists, whatever it is drawn
  * from), and its strength is NORMALIZED (the average opponent is always
- * SLATE_NET better than league average, whatever the pool happens to hold).
+ * the season averages out to SEASON_NET, whatever the pool happens to hold).
  * The spread between opponents survives; the level does not. That is what keeps
  * a fetch that doubles the dataset from also rebalancing the game.
  */
 const SCHEDULE = {
-  CONTENDER_PERCENTILE: 0.40,   // the slate is drawn from the top 60%
+  /* THE WHOLE LEAGUE, not the top of it. This drew from the best 60% of every
+     team-season, which is not a schedule anybody has ever played: a real season
+     is the Celtics some nights and the Wizards others, and it averages out to
+     league average by definition, because the league is what it is averaged
+     against.
+   *
+   * Drawing from the top and then adding a marquee slice on top of that was a
+   * difficulty dial wearing a schedule's clothes. It cost about four wins a
+   * season and had no basketball behind it, and it is most of why a sensible
+   * draft came out at 43 wins and a coin flip on the play-in. */
+  POOL_PERCENTILE: 0.0,
   MARQUEE_PERCENTILE: 0.88,     // the top 12% are the marquee nights
   MARQUEE_GAMES: 18,
   OPP_GAME_SD: 2.4,
-  /* THE DIFFICULTY DIAL, in net rating points. The average night is a slightly
-     above average team and a marquee night is a title contender, which over 82
-     games works out at about 1.5 points of net rating harder than a neutral
-     schedule: roughly four wins, and most of the reason 72 is hard. */
-  SLATE_NET: 0.5,
+
+  /* AND THE SEASON AVERAGES OUT TO THIS, which is zero: league average, the way
+     a balanced schedule does. The marquee nights are still genuinely hard, so
+     the ordinary nights carry the other side of it and come in slightly under
+     average. That is arithmetic rather than a dial:
+     (64 * ORDINARY + 18 * MARQUEE) / 82 = SEASON_NET. */
+  SEASON_NET: 0.0,
   MARQUEE_NET: 5.0,
 };
+
+/* Solved rather than typed, so changing the marquee count or its strength
+   cannot silently make the whole season harder. */
+function ordinaryNet(){
+  const games = CONSTANTS.REGULAR_SEASON_GAMES;
+  const m = Math.min(SCHEDULE.MARQUEE_GAMES, games);
+  return (SCHEDULE.SEASON_NET * games - m * SCHEDULE.MARQUEE_NET) / (games - m);
+}
 
 /* Re-center a set of opponents so their MEAN net rating is `targetNet` and
    their mean offensive rating sits where league average puts it, without
@@ -1298,7 +1318,7 @@ function buildOpponentPool(teamSeasons) {
   }));
 
   return {
-    contenders: normalizePool(asOpponents(cut(SCHEDULE.CONTENDER_PERCENTILE)), SCHEDULE.SLATE_NET),
+    contenders: normalizePool(asOpponents(cut(SCHEDULE.POOL_PERCENTILE)), ordinaryNet()),
     marquee: normalizePool(asOpponents(cut(SCHEDULE.MARQUEE_PERCENTILE)), SCHEDULE.MARQUEE_NET),
   };
 }
@@ -1338,7 +1358,7 @@ function generateSchedule(rng, games, pool) {
      run in the shipped game, and it exists so that a broken dataset produces a
      playable season rather than a crash. */
   for (let i = 0; i < count; i++) {
-    const net = SCHEDULE.SLATE_NET;
+    const net = SCHEDULE.SEASON_NET;
     schedule.push({
       game: i + 1,
       home: i % 2 === 0,
