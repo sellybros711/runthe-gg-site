@@ -1855,6 +1855,12 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);transition:border-color .12s ease,transform .08s ease}
   .pfrow:hover{border-color:var(--line-2)}
   .pfrow:active{transform:scale(.985)}
+  /* The icon leads the row at the same weight as the chevron that closes it, so the two
+     bracket the label rather than competing with it. */
+  .pfrow .ic{flex:0 0 auto;display:grid;place-items:center;width:22px;height:22px}
+  .pfrow .ic svg{width:22px;height:22px;display:block;fill:none;stroke:var(--dim);
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .pfrow:hover .ic svg{stroke:var(--ink)}
   .pfrow .t{flex:1;min-width:0}
   .pfrow .t b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:600;
     color:var(--ink)}
@@ -4174,8 +4180,32 @@ function pfHead(title){
     (pfHubOk()?'<button class="pfback" id="pf-back" aria-label="Back to your profile">&lsaquo;</button>':'')+
     '<span class="pftitle">'+esc(title)+'</span></div>';
 }
-function pfNavRow(id,title,sub){
-  return '<button class="pfrow" id="'+id+'"><span class="t"><b>'+esc(title)+'</b>'+
+/* THE FOUR ICONS, on the same 24 grid and in the same stroke weight as every other icon in
+   this page, so the hub does not read as a control panel borrowed from somewhere else. The
+   NFL game's hub carries the same set and these are the same drawings: one account plays
+   both games, and the row that means Account should not be two different pictures.
+
+   Each one is the thing the page contains rather than a metaphor for it: a list of seasons,
+   a medal, two sliders, a person. The person is the same path the header button draws when
+   there is no name on the account yet, on purpose. */
+const PF_ICON={
+  seasons:'M4 7h2M9 7h11M4 12h2M9 12h11M4 17h2M9 17h7',
+  case:'M8.6 13.6 7 21l5-2.7 5 2.7-1.6-7.4',
+  look:'M4 8h8M4 16h6M16 8h4M14 16h6',
+  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4'
+};
+/* Three of them need a circle as well as a path, and a circle is not expressible as one. */
+const PF_ICON_EXTRA={
+  case:'<circle cx="12" cy="9" r="5.2"/>',
+  look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
+  acct:'<circle cx="12" cy="8.6" r="4"/>'
+};
+function pfNavRow(id,title,sub,icon){
+  const ic=icon&&PF_ICON[icon]
+    ?'<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
+      (PF_ICON_EXTRA[icon]||'')+'<path d="'+PF_ICON[icon]+'"/></svg></span>'
+    :'';
+  return '<button class="pfrow" id="'+id+'">'+ic+'<span class="t"><b>'+esc(title)+'</b>'+
     '<span>'+esc(sub)+'</span></span><span class="go">&rsaquo;</span></button>';
 }
 const pfClose=()=>'<div style="margin-top:14px"><button class="btn ghost sm" id="sp-x" '+
@@ -4226,10 +4256,10 @@ function pfHub(){
       '<div class="pfstat"><b id="pf-best">&hellip;</b><span>Best overall</span></div>'+
     '</div>'+
     '<div class="pfnav">'+
-      pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record')+
-      pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges')+
-      pfNavRow('pf-go-look','Customize','The school colors you play in')+
-      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out')+
+      pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record','seasons')+
+      pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges','case')+
+      pfNavRow('pf-go-look','Customize','The school colors you play in','look')+
+      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out','acct')+
     '</div>'+pfClose();
   openSheet(); pfWire(box);
   $('pf-go-seasons').onclick=()=>openProfile('seasons');
