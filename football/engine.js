@@ -3505,7 +3505,16 @@ function defenseSuppression(defenseTotal, constants = CONSTANTS) {
  * reads ~80, the same green a well-drafted offense reads, so "took the best on every board"
  * means the same thing on both sides; and a near-perfect one (~55) reaches ~95, which is the
  * whole point, because that is where the elite seeding and a winnable Super Bowl live. Below
- * the first pair it runs to the origin; above the last it clamps at 100.
+ * the first pair it runs to the origin; above the last it KEEPS GOING at the same slope.
+ *
+ * IT USED TO CLAMP AT 100, and that was wrong in a way that only showed on one line. An
+ * offense overall is an unbounded product: the best six the pool allows reads about 150. The
+ * defense map was the only side with a ceiling, so every defense strong enough to pass the
+ * top anchor printed the same 100.0 no matter how much better it was. A drafted defense never
+ * gets near it (400 wheel drafts top out around 74), but the BEST POSSIBLE squad on the
+ * results screen is not a drafted one, and that comparison line was reading a flat 100.0 for
+ * defenses that were not equally good. Extrapolating instead of clamping keeps the two sides
+ * on the same footing: neither has a cap, and a better defense reads higher.
  *
  * NOT USED FOR SUPPRESSION. How many points a defense allows is the RAW total against DEF_REF
  * in resolveGameDefense. This is the grade and the seeding input, nothing else. The win
@@ -3528,7 +3537,7 @@ function defenseOverall(defenseTotal) {
     }
   }
   const [x0, y0] = m[m.length - 2], [x1, y1] = m[m.length - 1];
-  return Math.min(100, y1 + (y1 - y0) * (defenseTotal - x1) / (x1 - x0));
+  return y1 + (y1 - y0) * (defenseTotal - x1) / (x1 - x0);
 }
 
 /** The overall of a roster as drafted, either side of the ball, in one place. */

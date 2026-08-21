@@ -572,6 +572,12 @@ window.GA_ID='G-L29P5MRWKE';
      thrown that away for exactly those four. */
   .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:currentColor;
     letter-spacing:.04em}
+  /* A CREST IN THE HEADER BUTTON. Two rules above have to be undone for it: the :before
+     that draws the 34px disc, which would show as a rim around a crest that draws its own,
+     and the svg rule, which is sized and stroked for the anonymous person glyph and would
+     shrink a crest to 19px and paint it grey. */
+  .avatar.crested:before{display:none}
+  .avatar.crested svg{width:34px;height:34px;fill:initial;stroke:none;display:block}
 
   /* SIGNED OUT, IT SAYS SO IN WORDS.
      A line-art figure in a circle is the convention for "your account" and says nothing at
@@ -1011,6 +1017,25 @@ window.GA_ID='G-L29P5MRWKE';
   .pfp.big{width:34px;height:34px;font-size:13px}
   /* The one in the settings, big enough to be the thing you are editing. */
   .pfp.huge{width:56px;height:56px;font-size:20px}
+  /* A crest fills the same box. The disc is drawn by the SVG now, so the span's own colour
+     and ring have to go or they show as a rim behind it. */
+  .pfp.crested{background:none !important;box-shadow:none !important;overflow:visible}
+  .pfp.crested svg{display:block;width:100%;height:100%}
+  /* THE ONLY MOTION IN THE CREST: light moving over a still object. The first version turned
+     a dashed ring, which is a loading spinner wherever it appears, and a spinner means wait.
+     Here the ring is solid and never moves; a highlight travels round it, and a sheen crosses
+     the face once every seven seconds with the delay derived from the crest's own id so a
+     board full of them is never in step. */
+  @keyframes crestSheen{ 0%,74%{ transform:translateX(0) } 100%{ transform:translateX(252px) } }
+  @keyframes crestGlint{ to{ transform:rotate(360deg) } }
+  .crest .sheen{ animation:crestSheen 7.2s linear infinite }
+  .crest .glint{ animation:crestGlint 5.4s linear infinite }
+  .crest .glint.fast{ animation-duration:3.2s }
+  @media (prefers-reduced-motion:reduce){
+    /* Neither is load bearing: the sheen parks off the edge of the disc and the glint parks
+       at the top of the ring, which is where a highlight belongs anyway. */
+    .crest .sheen,.crest .glint{ animation:none }
+  }
 
   /* ---------- CHOOSING ONE, in the profile sheet ---------- */
   .pfpedit{display:flex;align-items:center;gap:13px;margin-top:11px}
@@ -1033,6 +1058,35 @@ window.GA_ID='G-L29P5MRWKE';
   .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
   /* Which club is picked, spelled out. A ringed disc in a grid of thirty-two does not tell
      anybody they have chosen the Jaguars. */
+  /* ---------- WHAT IS NEW ---------- */
+  .wnrow{display:flex;gap:13px;align-items:center;margin:0 0 12px}
+  .pfp.wnbig{width:88px;height:88px}
+  .wnlead{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}
+  .wnlist{margin-top:0}
+  .wnnow{font-size:11.5px;margin:12px 0 0}
+  .wnchk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;
+    color:var(--dim-2);cursor:pointer}
+  .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
+  /* ---------- THE CREST CONTROLS ---------- */
+  .crestrung{margin:5px 0 0;font-size:11.5px;color:var(--dim);line-height:1.45}
+  .crestrung b{color:var(--ink)}
+  .markgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;
+    margin-top:8px}
+  .markpick{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 5px 8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;cursor:pointer;
+    color:inherit;font:inherit;text-align:center;min-width:0}
+  .markpick svg{display:block}
+  .markpick .mn{font-family:var(--fn);font-size:11px;font-weight:600;color:var(--ink);
+    line-height:1.2}
+  /* The unlock line wraps to two and stops. A badge description is a full sentence and the
+     tile is 96px wide, so without the clamp one long one sets the height of the whole row. */
+  .markpick .mu{font-size:10px;color:var(--dim);line-height:1.3;display:-webkit-box;
+    -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .markpick.on{border-color:#F4B413;box-shadow:0 0 0 1px #F4B413 inset}
+  /* LOCKED IS DIMMED, NOT REDRAWN. The crest under it is the real one in the player's own
+     colours, so what they are being shown is the thing they would get. */
+  .markpick.locked svg{opacity:.28;filter:saturate(.35)}
+  .markpick.locked .mn{color:var(--dim)}
   .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
     color:var(--dim)}
   .pfpteam b{color:var(--ink)}
@@ -5252,13 +5306,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=59"></script>
+<script src="engine.js?v=60"></script>
 <script src="run.js?v=70"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=19"></script>
 <script src="achievements.js?v=10"></script>
+<!-- The profile crest. Optional in the same way the two above are: it reads the catalog
+     achievements.js installs, and if either fails to load the game falls back to the flat
+     disc it drew before any of this existed. -->
+<script src="crest.js?v=1"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -5871,6 +5929,12 @@ function show(id){
      that can be stale by then: which start control belongs on screen, and whether the
      Defense half is still wearing the spinner it put on to fetch its pool. */
   if(id==='s-intro'&&typeof paintHomeStart==='function') paintHomeStart();
+  /* The what is new panel waits for the front page, and this is the only place that knows
+     when the front page has arrived. Asking at boot alone was not enough: it fires off a
+     network round trip, and on a connection where that round trip beats the loading screen
+     the panel would find the wrong screen on and never fire at all. It declines quietly
+     whenever it has already been shown, been opted out of, or has nothing to show. */
+  if(id==='s-intro'&&typeof whatsNewMaybe==='function') whatsNewMaybe();
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -12551,8 +12615,37 @@ function authBoot(){
     }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
+    /* THE CREST FOLLOWS THE ACCOUNT, and like the two eligibility checks above it is asked
+       on every change rather than on the sign-in transition, for the same reason: the
+       username the tester list reads usually arrives one auth change AFTER the sign-in, and
+       the crest is gated on that username. Signing out drops it, so the next account never
+       inherits the last one's marks. */
+    if(!st.signedIn){ myCrest=null; myMark=null; }
+    else { loadMyMark(); crestBoot(); }
   });
   a.boot();
+}
+
+/* Fetch the rows the crest needs, once per account, and repaint what is already on screen.
+   careerLoad is cached and the cabinet already asks for the same rows, so on a player who
+   opens their profile this costs nothing at all: it is the same promise resolved twice.
+   Never awaited and never allowed to throw. A crest is decoration, and decoration must not
+   be able to hold up or take down a page that works without it. */
+let crestBooting=null;
+function crestBoot(){
+  if(!canUseCrest()||!authState.userId) return;
+  if(crestBooting===authState.userId) return;
+  crestBooting=authState.userId;
+  careerLoad(authState.userId).then((c)=>{
+    if(!c) return null;
+    return achReady(c.rows).then(()=>{
+      crestRefresh(c.rows);
+      paintAvatar();
+      whatsNewMaybe();
+      if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
+        profileSheet();
+    });
+  }).catch(()=>{ crestBooting=null; });
 }
 
 async function claimThisRun(){
@@ -12639,15 +12732,109 @@ function avatarOf(name,color,initials){
   const chosen=!!E.TEAM_COLORS[color];
   const key=chosen?color:AVATAR_TEAMS[avatarHash(nm.toLowerCase())%AVATAR_TEAMS.length];
   const c=E.teamColors(key);
-  return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key,
+  /* `name` is carried through so a caller can ask whose circle this is. avatarHTML needs it
+     to know whether to draw a crest: the crest is built from the signed-in player's own run
+     history, and there is no such history for anybody else's row. */
+  return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key,name:nm,
     team:E.nickname(key),chosen};
+}
+
+/* ---- WHO SEES THE CREST ----
+   The same two-gate shape as canPlayDefense above, and the long argument for why a list of
+   names in the page is a feature flag rather than a permission is written out there.
+
+   The difference worth naming: DEFENSE_LIVE is false until a migration is applied, because
+   the database rejects the runs until then. This one has no database side at all yet. The
+   crest is drawn from rows the client already fetched for the badge cabinet, so a tester
+   sees the real thing on production against real data, and NOTHING IS STORED: the chosen
+   mark lives in this browser until the migration that denormalises it onto ps_runs lands.
+   That is also why only your own circle changes. Everybody else's row carries a colour and
+   two letters and nothing else, so drawing them a crest would mean inventing one. */
+const CREST_LIVE=false;
+const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+const canUseCrest=()=>{
+  if(!window.PS_CREST) return false;
+  if(!authState.signedIn) return false;
+  if(CREST_LIVE) return true;
+  const me=String(authState.name||'').trim().toLowerCase();
+  return !!me&&CREST_TESTERS.indexOf(me)>=0;
+};
+
+/* What the signed-in player has earned, derived once per career load rather than per paint.
+   Null until the rows are in, which is most of the first second of the page, and every
+   reader treats null as "draw the flat disc" rather than waiting. */
+let myCrest=null;
+/* Which mark they are wearing. Local to this browser for now, and keyed by account so two
+   people on one machine do not wear each other's. */
+let myMark=null;
+const crestMarkKey=()=>'ps_crest_mark:'+String(authState.name||'').trim().toLowerCase();
+function loadMyMark(){
+  try{ myMark=localStorage.getItem(crestMarkKey())||null; }catch(_){ myMark=null; }
+}
+function saveMyMark(k){
+  myMark=k||null;
+  try{
+    if(k) localStorage.setItem(crestMarkKey(),k);
+    else localStorage.removeItem(crestMarkKey());
+  }catch(_){}
+}
+/* The mark actually drawn. A mark they have not unlocked is never drawn even if the string
+   is still in storage, because unlocks can only be checked against rows and rows change. */
+function wornMark(){
+  if(!myCrest) return 'init';
+  return (myMark&&myCrest.marks.indexOf(myMark)>=0)?myMark:'init';
+}
+
+/* Recompute from the rows careerLoad already holds. Cheap, and called from the same places
+   the cabinet is derived, so the crest and the badges can never disagree. */
+let myCrestRows=null;
+function crestRefresh(rows){
+  if(!window.PS_CREST||!authState.signedIn){ myCrest=null; myCrestRows=null; return; }
+  const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
+  let res=null;
+  try{ res=achEvaluate(rows||[]); }catch(_){ res=null; }
+  try{
+    myCrestRows=rows||[];
+    myCrest=window.PS_CREST.unlocks(myCrestRows,res,a.chosen?a.key:null);
+  }catch(_){ myCrest=null; }
+}
+/* The rung for a club that is being TRIED ON rather than the one saved. The Customize page
+   redraws as the swatches are touched, and it has to answer "what would I look like in
+   these colours", which for the top rung is a different answer per club. */
+function crestRungFor(club){
+  if(!window.PS_CREST||!myCrestRows) return 0;
+  try{ return window.PS_CREST.clubRung(myCrestRows,club); }catch(_){ return 0; }
+}
+
+/* The crest options for one circle, or null if this circle is not getting one. Only your
+   own, and only when the rows behind it have arrived. */
+function crestFor(a,size){
+  if(!a||a.anon||!canUseCrest()||!myCrest) return null;
+  const me=String(authState.name||'').trim().toLowerCase();
+  if(!me||String(a.name||'').trim().toLowerCase()!==me) return null;
+  return { club:myCrest.club, rung:myCrest.rung, mark:wornMark(), ring:myCrest.ring,
+    tier:myCrest.tier, size:size, text:a.text };
 }
 
 /* One circle, as markup. `cls` lets the caller size it: the board rows, the podium and the
    settings use the same element at three sizes rather than three that can drift apart.
    The ring is an inset box-shadow rather than a border, so it costs the disc no width and
-   26px stays 26px wherever it is dropped in. */
+   26px stays 26px wherever it is dropped in.
+
+   THE CREST GOES INSIDE THE SAME SPAN rather than replacing it. Every caller on this page
+   positions `.pfp`, and two of them style it further (`.pod .pfp` has a margin, the board
+   row leans on it being the first flex child). Swapping the element for an `<svg>` would
+   mean finding all of that and getting it right; wrapping keeps every existing rule true
+   and costs one class. */
+const PFP_PX={ big:34, huge:56 };
 function avatarHTML(a,cls){
+  const c=crestFor(a,PFP_PX[cls]||26);
+  if(c){
+    let svg='';
+    try{ svg=window.PS_CREST.crest(c); }catch(_){ svg=''; }
+    if(svg) return '<span class="pfp'+(cls?' '+cls:'')+' crested" aria-hidden="true">'+
+      svg+'</span>';
+  }
   return '<span class="pfp'+(cls?' '+cls:'')+(a.anon?' anon':'')+'" aria-hidden="true" '+
     'style="background:'+a.bg+';color:'+a.fg+
     (a.ring?';box-shadow:inset 0 0 0 2px '+a.ring:'')+'">'+a.text+'</span>';
@@ -12676,10 +12863,24 @@ function paintAvatar(){
        every board row. It used to be a fixed blue with the first two letters of the name;
        both of those are now the fallback inside avatarOf rather than a second rule here. */
     const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
-    b.style.setProperty('--pfp',a.bg);
-    b.style.setProperty('--pfpring',a.ring||'transparent');
-    b.style.color=a.fg;
-    b.innerHTML='<span class="in">'+a.text+'</span>';
+    /* The crest goes in the header too, and it has to, because the header is the one circle
+       a player sees on every screen. The button is 34px across and draws its own disc from
+       --pfp, so when a crest is in it that disc has to be turned off or it rims the crest. */
+    const c=crestFor(a,34);
+    let svg='';
+    if(c){ try{ svg=window.PS_CREST.crest(c); }catch(_){ svg=''; } }
+    b.classList.toggle('crested',!!svg);
+    if(svg){
+      b.style.removeProperty('--pfp');
+      b.style.removeProperty('--pfpring');
+      b.style.removeProperty('color');
+      b.innerHTML=svg;
+    }else{
+      b.style.setProperty('--pfp',a.bg);
+      b.style.setProperty('--pfpring',a.ring||'transparent');
+      b.style.color=a.fg;
+      b.innerHTML='<span class="in">'+a.text+'</span>';
+    }
   }
   else b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>'+
     '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
@@ -12705,6 +12906,189 @@ async function loadMyAvatar(){
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
 
+/* ---------------- WHAT IS NEW ----------------
+   Shown once to a signed-in player who can see the crest, because a profile system nobody
+   is told about is a profile system nobody opens. Three rules it follows:
+
+   ONLY WHEN THERE IS NOTHING ELSE ON SCREEN. It arrives off a network round trip, so it can
+   land at any moment, including the middle of a draft or over a results screen somebody is
+   reading. A popup that interrupts a run is worse than no popup, so it waits for the front
+   page. It is asked twice for that reason: once when the rows land, and again by show()
+   every time the front page is arrived at, which covers both orders those can happen in.
+
+   ONCE PER VISIT AT MOST, whatever else happens. The auth library fires onChange more than
+   once on a normal sign-in, and each of those is a fresh chance to open this.
+
+   THE BOX IS WRITTEN THE MOMENT IT IS TICKED, not on the way out, because the promise it
+   makes has to hold however the sheet is dismissed, including the tab being closed. */
+const WHATSNEW_KEY='ps_crest_whatsnew_off:1';
+let whatsNewShown=false;
+function whatsNewOff(){
+  try{ return localStorage.getItem(WHATSNEW_KEY)==='1'; }catch(_){ return false; }
+}
+function whatsNewMaybe(){
+  if(whatsNewShown||whatsNewOff()||!canUseCrest()||!myCrest) return;
+  if(!$('s-intro').classList.contains('on')) return;
+  if($('sheet').classList.contains('on')) return;
+  whatsNewShown=true;
+  whatsNewSheet();
+}
+function whatsNewSheet(){
+  const box=$('sheet-in'); box.dataset.kind='whatsnew';
+  const C=window.PS_CREST;
+  const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
+  const club=a.chosen?a.key:null;
+  const rung=crestRungFor(club);
+  /* Their own crest, not a picture of somebody else's. The whole argument for the thing is
+     that it is yours, and a stock illustration would be making that argument badly. */
+  let mine='';
+  try{ mine=C.crest({ club:club, rung:rung, mark:wornMark(), ring:myCrest.ring,
+    tier:myCrest.tier, size:88, text:a.text }); }catch(_){ mine=''; }
+  const tier=myCrest.tier?C.tierAt(myCrest.tier):null;
+  box.innerHTML='<div class="eyebrow">New</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Your circle is a crest now</h2>'+
+    '<div class="wnrow">'+
+      '<span class="pfp crested wnbig" aria-hidden="true">'+mine+'</span>'+
+      '<p class="wnlead">That is yours, drawn from what you have actually done. '+
+        'Four things go into it, and every one of them is earned rather than picked '+
+        'off a list.</p>'+
+    '</div>'+
+    '<ul class="rules wnlist">'+
+      '<li><span class="n">1</span><span><b>Your club\'s colors</b>, in three steps. '+
+        'Play one draft with a club and the crest takes their colors. Reach the playoffs '+
+        'with them and their second color becomes the ring. Win it all with them and you '+
+        'get that club\'s own pattern, and all thirty two are different.</span></li>'+
+      '<li><span class="n">2</span><span><b>A mark</b> in the middle, instead of your '+
+        'initials. There are twelve, each one opened by a badge you already have: a '+
+        'perfect season, a 17-0, a title from a wild card seed, going 0-17. Pick which '+
+        'one you wear in Customize.</span></li>'+
+      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your account tier, '+
+        'which climbs with your badge count. Bronze, Silver, Gold, Legend, GOAT. '+
+        'Nothing to choose: it is your cabinet, in one shape.</span></li>'+
+      '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
+        'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
+        'starts moving round it.</span></li>'+
+    '</ul>'+
+    '<p class="dim wnnow">'+esc(whatsNewStanding(a,rung,tier))+'</p>'+
+    '<div class="hrow" style="margin-top:14px">'+
+      '<button class="btn sm" id="wn-go">Set mine up</button>'+
+      '<button class="btn ghost sm" id="sh-x">Not now</button></div>'+
+    '<label class="wnchk"><input type="checkbox" id="wn-off"'+(whatsNewOff()?' checked':'')+'>'+
+      '<span>Don\'t show this again</span></label>';
+  openSheet();
+  $('sh-x').onclick=closeSheet;
+  $('wn-go').onclick=()=>pfLook();
+  const chk=$('wn-off');
+  chk.onchange=()=>{
+    try{
+      if(chk.checked) localStorage.setItem(WHATSNEW_KEY,'1');
+      else localStorage.removeItem(WHATSNEW_KEY);
+    }catch(_){}
+  };
+  ga('crest_whatsnew_shown',{rung:rung,badges:myCrest.badges});
+}
+/* Where they stand right now, in one line, because the four rules above are abstract until
+   somebody sees their own numbers against them. */
+function whatsNewStanding(a,rung,tier){
+  const bits=[];
+  bits.push(a.chosen?a.team+', rung '+rung+' of 3':'No club picked yet');
+  bits.push(myCrest.badges+' of '+myCrest.total+' badges'+(tier?', '+tier.name:''));
+  const n=myCrest.marks.length;
+  bits.push(n===1?'one mark unlocked':n+' marks unlocked');
+  return 'Right now: '+bits.join(' · ')+'.';
+}
+
+/* ---------------- THE CREST, IN THE CUSTOMIZE PAGE ----------------
+   Three controls that were one. The club grid below already existed; what is new is that the
+   club now has a ladder behind it, and that there is a shape inside the circle to choose.
+
+   Everything here draws itself from the same unlocks() result the header draws from, so the
+   picker cannot offer a mark the crest would refuse to wear. */
+
+/* The crest as it would look with what is currently being tried on, or null when this
+   player is not on the crest at all. */
+function crestPreview(a,size){
+  if(!canUseCrest()||!myCrest||!a||a.anon) return null;
+  const club=a.chosen?a.key:null;
+  let svg='';
+  try{
+    svg=window.PS_CREST.crest({ club:club, rung:crestRungFor(club), mark:wornMark(),
+      ring:myCrest.ring, tier:myCrest.tier, size:size, text:a.text });
+  }catch(_){ return null; }
+  return svg?'<span class="pfp huge crested" aria-hidden="true">'+svg+'</span>':null;
+}
+
+/* WHERE YOU ARE ON THIS CLUB'S LADDER, in one sentence, and it has to be the sentence for
+   the club under the cursor rather than the one saved: somebody comparing two clubs is
+   asking exactly this question about both of them. */
+const RUNG_LINE=[
+  'Play one draft with them and the crest takes their colors.',
+  'Their colors are yours. Reach the playoffs with them for the ring.',
+  'Colors and ring. Win it all with them and their own pattern unlocks.',
+  'Colors, ring and their own pattern. There is nothing left to earn here.'
+];
+function paintRungLine(a){
+  const el=$('crest-rung'); if(!el) return;
+  if(!a.chosen){ el.innerHTML='Pick a club and the ladder starts.'; return; }
+  const r=crestRungFor(a.key);
+  el.innerHTML='<b>'+esc(a.team)+'</b> &middot; rung '+r+' of 3. '+RUNG_LINE[r];
+}
+
+/* The marks, unlocked ones first and in the order they are defined, because that order is
+   the set as designed rather than the set as earned and it should not reshuffle under
+   somebody as they play. Locked ones stay visible: a locked mark with the badge that opens
+   it written underneath is the only part of this screen that gives anybody a reason to
+   play, and hiding them would throw that away. */
+function paintMarkGrid(){
+  const host=$('crest-marks'); if(!host||!myCrest||!window.PS_CREST) return;
+  const C=window.PS_CREST;
+  const a=avatarOf(authState.name,pfpPend.color,pfpPend.initials);
+  const club=a.chosen?a.key:null;
+  const rung=crestRungFor(club);
+  const worn=wornMark();
+  host.innerHTML=C.MARK_KEYS.map((k)=>{
+    const got=myCrest.marks.indexOf(k)>=0;
+    const u=C.markUnlock(k);
+    const m=C.MARKS[k]||{};
+    let svg='';
+    /* Drawn at 44 so it is above the 40px line and the field is the real one: mark against
+       club colours and club pattern is exactly the thing being judged here, and choosing off
+       a 26px smudge is guessing.
+
+       WITHOUT THE RING AND THE SEAL, THOUGH. Both are the same on all thirteen tiles, so
+       they carry no information in a grid whose only job is to tell the marks apart, and
+       they eat the rim the mark needs. The preview at the top of this page is the whole
+       crest, so nothing is being hidden, it is being shown once instead of thirteen times.
+
+       A locked one is drawn in the same colours and dimmed by CSS rather than drawn grey, so
+       what is offered is the real thing and not an approximation of it. */
+    try{ svg=C.crest({ club:club, rung:rung, mark:k, ring:'club', tier:null,
+      size:44, text:a.text }); }catch(_){ svg=''; }
+    return '<button type="button" class="markpick'+(got?'':' locked')+
+      (k===worn?' on':'')+'" data-m="'+k+'"'+(got?'':' aria-disabled="true"')+
+      ' title="'+esc(m.name||k)+'">'+svg+
+      '<span class="mn">'+esc(m.name||k)+'</span>'+
+      '<span class="mu">'+esc(got?(u.name||'Yours from the start')
+        :(u.name?u.name+': '+u.desc:'Locked'))+'</span></button>';
+  }).join('');
+  host.onclick=(e)=>{
+    const b=e.target.closest('.markpick'); if(!b) return;
+    if(b.classList.contains('locked')){
+      /* Not silence. A locked mark that does nothing when tapped reads as a broken button,
+         and the badge behind it is the interesting part. */
+      const u=C.markUnlock(b.dataset.m);
+      toast(u.name?u.name+': '+u.desc:'Not unlocked yet');
+      return;
+    }
+    /* Saved on the tap rather than behind the Save button below it. That button writes the
+       club and initials to the account and this one is local to the browser for now, so
+       parking the mark behind it would promise a round trip that is not happening. */
+    saveMyMark(b.dataset.m==='init'?null:b.dataset.m);
+    paintPfpEdit(authState.name||'');
+    paintAvatar();
+  };
+}
+
 /* ---------------- CHOOSING YOUR CIRCLE ----------------
    Live, not on save: the swatches and the initials field both redraw the big circle beside
    them as they are touched, because the only question this control has to answer is "what
@@ -12726,7 +13110,11 @@ function paintPfpEdit(nm){
   const label=$('pfp-team');
   const draw=()=>{
     const a=avatarOf(nm,pfpPend.color,pfpPend.initials);
-    demo.innerHTML=avatarHTML(a,'huge');
+    /* The preview follows what is being TRIED ON, so it cannot go through avatarHTML: that
+       draws the crest from the club actually saved, which is the whole thing this control
+       is in the middle of changing. */
+    const c=crestPreview(a,56);
+    demo.innerHTML=c||avatarHTML(a,'huge');
     /* The chosen club is marked. Nothing is marked when nothing is chosen: unlike the nine
        colors this replaced, the derived circle is NOT one of the options, so highlighting
        the club whose color happens to be nearest would claim a choice never made. */
@@ -12739,6 +13127,8 @@ function paintPfpEdit(nm){
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
         : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colors for now';
     }
+    paintRungLine(a);
+    paintMarkGrid();
   };
   swatches.innerHTML=AVATAR_TEAMS.map(k=>{
     const c=E.teamColors(k);
@@ -13129,11 +13519,24 @@ function pfHub(msg,ok){
   try{
     const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
     const av=$('pf-av');
-    av.className='pfav avatar signed';
-    av.style.setProperty('--pfp',a.bg);
-    av.style.setProperty('--pfpring',a.ring||'transparent');
-    av.style.color=a.fg;
-    av.innerHTML='<span class="in">'+a.text+'</span>';
+    /* 34 rather than 44: .pfav is styled as .avatar, whose crest rule sizes the SVG to the
+       34px disc that class draws. Asking for a bigger one here would render it and then have
+       CSS shrink it, which costs the size rule inside the renderer its meaning. */
+    const c=crestFor(a,34);
+    let svg='';
+    if(c){ try{ svg=window.PS_CREST.crest(c); }catch(_){ svg=''; } }
+    av.className='pfav avatar signed'+(svg?' crested':'');
+    if(svg){
+      av.style.removeProperty('--pfp');
+      av.style.removeProperty('--pfpring');
+      av.style.removeProperty('color');
+      av.innerHTML=svg;
+    }else{
+      av.style.setProperty('--pfp',a.bg);
+      av.style.setProperty('--pfpring',a.ring||'transparent');
+      av.style.color=a.fg;
+      av.innerHTML='<span class="in">'+a.text+'</span>';
+    }
   }catch(e){}
   $('pf-go-drafts').onclick=()=>pfDrafts('recent');
   $('pf-go-career').onclick=()=>pfCareer();
@@ -13288,11 +13691,19 @@ function pfLook(){
       '</div>'+
     '</div>'+
     '<p class="pfpteam" id="pfp-team"></p>'+
+    (canUseCrest()?'<p class="crestrung" id="crest-rung"></p>':'')+
     '<div class="swatches" id="a-swatches"></div>'+
     '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colors you '+
       'want beside your name, or tap it again for none. Initials are two letters or numbers, '+
       'or leave them blank for the first two of your name.</p>'+
     '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
+    (canUseCrest()
+      ?'<p class="shsec" style="margin-top:18px">Your mark</p>'+
+       '<p class="dim" style="font-size:11.5px;margin:0 0 4px">The shape inside the circle. '+
+         'Every one of them is a badge you already have, and the locked ones say what opens '+
+         'them. This one saves as you tap it.</p>'+
+       '<div class="markgrid" id="crest-marks"></div>'
+      :'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon(); paintPfpEdit(nm);
 }
@@ -13897,6 +14308,11 @@ async function recordRun(){
       return achReady(c.rows).then(()=>{
         const res=achEvaluate(c.rows);
         if(res) achAnnounce(authState.userId,res,false);
+        /* The run that just earned a badge can also be the run that unlocked a mark or the
+           first draft with a club. Refreshed from the same rows and repainted, so the crest
+           in the header is right by the time they leave the results screen. */
+        crestRefresh(c.rows);
+        paintAvatar();
       });
     }).catch(()=>{});
   }
