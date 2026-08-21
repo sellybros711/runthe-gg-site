@@ -152,6 +152,17 @@
   /* how-to tab lives at the bottom of every game, collapsed by default */
   .gj{grid-area:auto;}
 </style>
+<!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP
+     (loaded by the AdSense tag below) records the user's choice. Analytics storage defaults to
+     granted so first-party measurement works, matching every other page on runthe.gg. Must run
+     BEFORE the ad and analytics tags. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google AdSense, same publisher as the rest of runthe.gg. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
