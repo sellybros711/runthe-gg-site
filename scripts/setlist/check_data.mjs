@@ -186,10 +186,18 @@ check(shared.length === 0, 'every role has its own colour',
 
 // Each family needs its own rule, or a chip silently falls back to the base
 // grey and stops meaning anything.
-for (const [sel, what] of [['.chip.acc', 'role'], ['.chip.seg', 'segue'],
+/* The role words are one rule EACH now, so `.chip.acc{` no longer exists and
+   asserting it would be asserting the old shape. What matters is that every
+   family still has a rule of its own: without one a chip silently falls back
+   to the base grey and stops meaning anything. The per-role version of this
+   check, plus the contrast every one of them has to clear, is in "the
+   descriptors are readable" below. */
+for (const [sel, what] of [['.chip.seg', 'segue'],
                            ['.chip.sand', 'sandwich'], ['.chip.rare', 'rarity'],
                            ['.chip.rec', 'recommended'], ['.chip.jc', 'jamchart']])
   check(game.includes(sel + '{'), `${what} chips are styled (${sel})`);
+check(!/\.chip\.acc\{/.test(game),
+  'and the role words are coloured per role rather than from the strip');
 
 // Tie dye is the archive family's alone — it is what makes those two chips
 // unmistakable, and it stops meaning anything if it spreads.
@@ -1199,18 +1207,23 @@ check(/dev'\) === '1'/.test(gameBare) && /localhost/.test(gameBare),
   const undefinedRoles = roles.filter(t => !key.includes(`>${t}<`));
   check(!undefinedRoles.length, 'and the glossary defines each role too',
     undefinedRoles.length ? `missing: ${undefinedRoles.join(', ')}` : '');
-  /* IN THE COLOUR THE GAME ACTUALLY USES. A role chip reads --acc off the song
-     row it sits on, and the glossary has no song row: shipped without an
-     explicit --acc, the whole group drew in the fallback ink, so the key
-     taught a colour that appears nowhere in the game. Each one is checked
-     against accentOf's own value rather than a list copied from it. */
-  const accents = [...gameBare.matchAll(/return \{ v: '(var\(--[a-zA-Z]+\))',\s+chip: '([a-z]+)' \}/g)]
-    .map(m => ({ v: m[1], chip: m[2] }));
-  check(accents.length >= 6, `accentOf assigns ${accents.length} colours`);
-  const miscoloured = accents.filter(a =>
-    !key.includes(`class="chip acc ${a.chip}" style="--acc:${a.v}"`));
-  check(!miscoloured.length, 'each in the colour accentOf gives it',
-    miscoloured.length ? `wrong: ${miscoloured.map(a => a.chip).join(', ')}` : '');
+  /* IN THE COLOUR THE GAME ACTUALLY USES, and by the same rule rather than a
+     copy of it. Each of these carried an inline --acc, because a role chip
+     used to read its colour off the song row it sits on and a sheet has no
+     song row: shipped without one, the whole group drew in the fallback ink
+     and the key taught a colour that appears nowhere in the game.
+     The colour is on the class now, so key and list cannot drift. What is
+     left to check is that the key uses the class at all, and that the class
+     really is what carries the colour (asserted per role, with the contrast
+     each has to clear, under "the descriptors are readable"). */
+  const accents = [...gameBare.matchAll(/return \{ v: 'var\(--[a-zA-Z]+\)',\s+chip: '([a-z]+)' \}/g)]
+    .map(m => m[1]);
+  check(accents.length >= 6, `accentOf assigns ${accents.length} roles`);
+  const uncoloured = accents.filter(a => !key.includes(`class="chip acc ${a}"`));
+  check(!uncoloured.length, 'each shown as the chip class that colours it',
+    uncoloured.length ? `wrong: ${uncoloured.join(', ')}` : '');
+  check(!/class="chip acc [a-z]+" style="--acc:/.test(key),
+    'and not by an inline colour the list does not use');
   /* The two marks that are not chips and were explained nowhere at all. */
   check(/class="keyseg"/.test(key), 'the segue mark after a title is explained');
   check(/class="keybar"/.test(key), 'and so is the coloured length bar');
@@ -1362,10 +1375,110 @@ check(/\.chip\{[^}]*background:none/.test(game), 'the base chip has no fill');
 check(/\.chip\{[^}]*padding:0/.test(game), 'and no padding');
 check(/\.chip \+ \.chip:before\{[^}]*content:/.test(game),
   'descriptors are separated by a middot instead');
-// The role, rarity, monotony and archive words are colour only now.
-for (const k of ['acc', 'rare', 'mono', 'jc'])
+// The rarity, monotony and archive words are colour only. The role words are
+// too, but one rule per role rather than one shared rule, so they are checked
+// against accentOf's list in the chip-legibility block below.
+for (const k of ['rare', 'mono', 'jc'])
   check(new RegExp(`\\.chip\\.${k}\\{color:var\\(--[a-zA-Z]+\\);\\}`).test(game),
     `the ${k} descriptor is colour only`);
+
+/* AND THEY HAVE TO BE READABLE, which is a different claim from having a
+ * colour and was not being made at all.
+ *
+ * A chip is text. It borrowed the accent tokens, which are a 3px STRIP down the
+ * side of a row, and a strip has no contrast requirement because nobody reads
+ * a bar. Measured against the worst background each theme actually puts a chip
+ * on, four of them failed AA in the light theme and one, the opener, failed
+ * even the 3:1 large-text floor at 2.93:1.
+ *
+ * Computed here rather than listed, so a palette change cannot quietly drop one
+ * back under the bar. Everything below is derived from the file: the chip ink
+ * tokens, their light-theme overrides, and which rule each role points at.
+ */
+console.log('the descriptors are readable');
+{
+  const hex = h => { h = h.replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i,i+2),16)); };
+  const lin = c => { c/=255; return c<=.03928 ? c/12.92 : Math.pow((c+.055)/1.055,2.4); };
+  const lum = h => { const [r,g,b]=hex(h); return .2126*lin(r)+.7152*lin(g)+.0722*lin(b); };
+  const ratio = (a,b) => { const x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+
+  /* 11px at weight 900 is NORMAL text to WCAG. Large starts at 18.66px bold,
+     so the bar is 4.5 and not 3. */
+  const size = (game.match(/\.chip\{[^}]*font-size:([\d.]+)px/) || [])[1];
+  check(Number(size) >= 11, `the chip is ${size}px, big enough to be read`);
+  const track = (game.match(/\.chip\{[^}]*letter-spacing:([\d.]+)px/) || [])[1];
+  /* Tracking is a ratio to the size, not an absolute: 1.6px on 9.5px type is
+     17% of the em, which spaces a word into loose letters. */
+  check(Number(track) / Number(size) <= 0.09,
+    `tracking is ${(100 * Number(track) / Number(size)).toFixed(0)}% of the em, not a row of separate letters`);
+
+  /* THE ACCENT PALETTE IS REDEFINED PER THEME, so it has to be read per theme.
+     Scraping --*T across the whole file collects the dark block and then the
+     light one overwrites it, which had this guard measuring light values
+     against the dark ground and reporting nine failures that do not exist. */
+  const palette = (block) => {
+    const t = {};
+    for (const m of block.matchAll(/--([a-zA-Z]+T):\s*(#[0-9A-Fa-f]{6})/g)) t[m[1]] = m[2];
+    return t;
+  };
+  const darkRoot  = (game.match(/:root\{\s*\n\s*--bg:#071426;[\s\S]*?\n  \}/) || [''])[0];
+  const lightRoot = (game.match(/:root\[data-theme="light"\]\{\s*\n\s*--bg:[\s\S]*?\n  \}/) || [''])[0];
+  check(!!darkRoot && !!lightRoot, 'both theme palettes are readable');
+  const tokDark = palette(darkRoot);
+  const tokLight = { ...tokDark, ...palette(lightRoot) };
+
+  /* The ink names, and which accent each one defaults to. */
+  const baseBlock = (game.match(/:root\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const defaults = {};
+  for (const m of baseBlock.matchAll(/--(c[A-Z][a-zA-Z]*):var\(--([a-zA-Z]+)\)/g))
+    defaults[m[1]] = m[2];
+  const lightBlock = (game.match(/:root\[data-theme="light"\]\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const inkBase = {}, inkLight = {};
+  for (const [name, acc] of Object.entries(defaults)) {
+    inkBase[name] = tokDark[acc];
+    inkLight[name] = tokLight[acc];
+  }
+  for (const m of lightBlock.matchAll(/--(c[A-Z][a-zA-Z]*):(#[0-9A-Fa-f]{6})/g))
+    inkLight[m[1]] = m[2];
+  check(Object.keys(inkBase).length >= 8, `${Object.keys(inkBase).length} chip inks are defined`);
+
+  /* THE MEDIA-QUERY COPY HAS TO MATCH THE ATTRIBUTE COPY. The theme is set
+     three ways (system, [data-theme=light], [data-theme=dark]) and a value
+     redefined in only one of them makes the toggle disagree with the OS. */
+  const mq = (game.match(/:root:not\(\[data-theme="dark"\]\)\{ --cGreen:[\s\S]*?\}/) || [''])[0];
+  const pairs = s => [...s.matchAll(/--(c[A-Z][a-zA-Z]*):(#[0-9A-Fa-f]{6})/g)]
+    .map(m => `${m[1]}=${m[2]}`).sort().join(' ');
+  check(!!mq && pairs(mq) === pairs(lightBlock),
+    'the light theme reads the same by system setting and by toggle');
+
+  /* Which ink each chip draws in, read off the rules rather than assumed. */
+  const rules = {};
+  for (const m of game.matchAll(/\.chip(?:\.acc)?\.([a-z]+)\s*\{color:var\(--(c[A-Z][a-zA-Z]*)\);\}/g))
+    rules[m[1]] = m[2];
+  const roleNames = roles.map(r => r.chip).filter(c => c && c !== '(none)');
+  const unstyled = roleNames.filter(r => !rules[r]);
+  check(!unstyled.length, `all ${roleNames.length} roles from accentOf draw in a chip ink`,
+    unstyled.length ? `no rule for ${unstyled.join(', ')}` : '');
+  for (const extra of ['rare', 'mono', 'jc'])
+    check(!!rules[extra], `  and so does ${extra}`);
+
+  /* THE WORST BACKGROUND EACH THEME PUTS A CHIP ON. In the dark that is --card
+     (lighter than --bg, so closer to light ink); in the light it is --bg
+     (darker than --card). A chip appears on both: song rows sit on the page,
+     the glossary sits on a card. */
+  const bgDark = (game.match(/--bg:#071426; --card:(#[0-9A-Fa-f]{6})/) || [])[1];
+  const bgLight = (game.match(/--bg:(#[0-9A-Fa-f]{6}); --card:#FFFFFF/) || [])[1];
+  check(!!bgDark && !!bgLight, `worst-case grounds found: dark ${bgDark}, light ${bgLight}`);
+  const AA = 4.5;
+  for (const [theme, ink, bg] of [['dark', inkBase, bgDark], ['light', inkLight, bgLight]]) {
+    const bad = Object.entries(rules)
+      .map(([chip, t]) => ({ chip, c: ink[t], r: ratio(ink[t], bg) }))
+      .filter(x => x.c && x.r < AA)
+      .sort((a, b) => a.r - b.r);
+    check(!bad.length, `every chip clears ${AA}:1 on the ${theme} theme`,
+      bad.map(x => `${x.chip} ${x.c} is ${x.r.toFixed(2)}`).join('; '));
+  }
+}
 /* THE TWO THAT KEEP A FILL are not descriptions of the song, they are a thing
    the player can do this turn, and they land on a handful of rows at most. */
 check(/\.chip\.seg\{[^}]*background:color-mix/.test(game),

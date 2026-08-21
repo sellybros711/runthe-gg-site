@@ -995,16 +995,82 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      So the word keeps its colour, which is where all the meaning was, and
      loses the box. Letterspaced small caps, middot separated, the way a
      printed setlist or a sleeve note sets the same kind of aside. */
-  .chip{display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:900;
-    letter-spacing:1.6px; text-transform:uppercase; color:var(--mut);
+  /* ---------------- CHIP INK, and why it is not the accent palette ----------
+   *
+   * A chip is TEXT. The accent tokens it borrowed are a STRIP: a 3px bar down
+   * the side of a row, where contrast rules do not apply because nobody reads
+   * a bar. Measured against the worst background each theme actually puts a
+   * chip on (--card in the dark, --bg in the light, since each is the closer
+   * of the two to the ink):
+   *
+   *              dark          light
+   *   opener     8.07  ok      2.93  fails even the 3:1 large-text floor
+   *   encore     8.70  ok      3.58  fails
+   *   rarity     8.70  ok      3.58  fails
+   *   jamchart   8.70  ok      3.58  fails
+   *   cover      5.24  ok      3.88  fails
+   *   closer     7.64  ok      4.38  fails
+   *   jam/peak/ballad/monotony        pass in both
+   *
+   * At 11px bold these are NORMAL text to WCAG, not large, so the bar is 4.5.
+   * Four of the light values are darkened until they clear it, hue and
+   * saturation held so a chip is the same colour it always was. The dark theme
+   * is untouched: every one of those already passes against the card.
+   *
+   * This is the same fix, for the same reason, as --gradeHot further down: the
+   * light --bg is lighter than the dark --card is dark, so a colour that is
+   * comfortable on a chip in one theme is not automatically comfortable in the
+   * other. check_data computes all of these rather than trusting this table.
+   *
+   * The strip keeps --acc and is deliberately left alone. */
+  :root{ --cGreen:var(--greenT); --cTeal:var(--tealT); --cGold:var(--goldT);
+         --cCoral:var(--coralT); --cViolet:var(--violetT); --cPink:var(--pinkT);
+         --cBlue:var(--blueT); --cRed:var(--redT); }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --cGreen:#127D39; --cTeal:#0E7884;
+      --cGold:#906407; --cCoral:#C73A25; }
+  }
+  :root[data-theme="light"]{ --cGreen:#127D39; --cTeal:#0E7884;
+    --cGold:#906407; --cCoral:#C73A25; }
+
+  /* AND THE SIZE, which is the rest of the legibility problem and most of it.
+     9.5px at 1.6px of tracking is not small type, it is a row of separated
+     letters: at that size the tracking is 17% of the em, so JAMCHART reads as
+     eight things rather than one word. 11px with the tracking cut to 0.6
+     leaves the same small-caps aside and gives it back its word shapes.
+
+     IT COSTS ALMOST NOTHING VERTICALLY, which is not obvious and is the reason
+     this is safe. Measured on a 390px phone across one drawn show, 16 rows,
+     12 of them tagged: median row change 0px, one row grew, and the whole song
+     column went from 1447px to 1449px. A chip sits on a line whose height is
+     already set by the 19px title beside it, so a taller chip only costs
+     anything on a row where the chips wrap onto their own line. */
+  .chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:900;
+    letter-spacing:.6px; text-transform:uppercase; color:var(--mut);
     padding:0; background:none; border-radius:0;}
   .chips{gap:0 !important;}
-  .chip + .chip:before{content:'\00b7'; margin:0 7px; color:var(--line2);
+  /* THE SEPARATOR IS A GLYPH, NOT A HAIRLINE. It was --line2, which is the
+     token for 1px rules, where being almost invisible is the whole point:
+     composited against the ground it sits on, the middot measured 1.57:1 in
+     the dark theme and 1.45:1 in the light. At 9.5px that read as a gap rather
+     than a mark, and at 11px the words either side got clearer while the thing
+     dividing them did not, so JAMCHART PEAK started to read as one tag.
+     --mut at weight 700 against the chips' 900 keeps it plainly secondary to
+     the words while actually being visible: 7.86:1 and 5.47:1. */
+  .chip + .chip:before{content:'\00b7'; margin:0 7px; color:var(--mut);
     letter-spacing:0; font-weight:700;}
   .chip svg{display:block; flex:0 0 auto;}
 
-  /* ROLE. Colour only, which is all it ever carried. */
-  .chip.acc{color:var(--acc);}
+  /* ROLE. Colour only, which is all it ever carried, but off the chip ink
+     rather than the strip's --acc so the light theme can darken it. Named per
+     role rather than read from an inline style: the colour is a property of
+     what the chip SAYS, so the class that says it should carry it. */
+  .chip.acc.opener{color:var(--cGreen);}
+  .chip.acc.closer{color:var(--cTeal);}
+  .chip.acc.encore{color:var(--cGold);}
+  .chip.acc.cover {color:var(--cCoral);}
+  .chip.acc.jam   {color:var(--cViolet);}
+  .chip.acc.ballad{color:var(--cBlue);}
 
   /* ...except the peak, which melts. The drip is cut out of the chip's own
      body by an SVG mask, so it stays inside the chip's box and can never reach
@@ -1018,7 +1084,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      with no body to cut it from there is nothing to melt. A peak is now the
      word in its own pink like every other role; the drip lives on in the peak
      chip on the scorecard, which still has a filled shape to carve. */
-  .chip.acc.peak{color:var(--acc);}
+  .chip.acc.peak{color:var(--cPink);}
 
   /* FLOW — solid green, and both of them are shaped like what they mean.
      A setlist writes a segue as ">", so the segue chip is an arrow pointing
@@ -1046,12 +1112,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .chip.suite + .chip:before{margin-left:9px;}
 
   /* RARITY. */
-  .chip.rare{color:var(--goldT);}
+  .chip.rare{color:var(--cGold);}
 
   /* MONOTONY — the only chip that warns rather than tempts, so it is the only
      one in red. It has to be on the card BEFORE the pick: a penalty you first
      meet on the scorecard is a gotcha. */
-  .chip.mono{color:var(--redT);}
+  .chip.mono{color:var(--cRed);}
 
   /* ARCHIVE — tie dye. JAMCHART is on the draft card; RECOMMENDED is NOT.
    *
@@ -1086,7 +1152,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      loss: at 9.5px a five-colour border round four letters was the same smudge
      the segue arrow was, for the same reason. Gold instead, which is the
      colour the archive already uses for its other flag, the show gap. */
-  .chip.jc{color:var(--goldT);}
+  .chip.jc{color:var(--cGold);}
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
@@ -2457,24 +2523,24 @@ setTimeout(function(){
 
     <h3 class="keygrp">What kind of song it is</h3>
     <dl class="keylist">
-      <!-- --acc IS SET ON EACH ONE. A role chip takes its colour from the song
-           row it sits on (`style="--acc:${acc.v}"`), and there is no song row
-           here, so without this the whole group drew in the fallback ink and
-           the key showed a colour the game never uses. The values are
-           accentOf's, and check_data holds them to it. -->
-      <dt><span class="chip acc opener" style="--acc:var(--greenT)">opener</span><span
-        class="chip acc closer" style="--acc:var(--tealT)">closer</span><span
-        class="chip acc encore" style="--acc:var(--goldT)">encore</span></dt>
+      <!-- NO INLINE --acc. These carried one each, because a role chip used to
+           read its colour off the song row it sits on and there is no song row
+           in a sheet. The colour is a property of what the chip says, so it is
+           on the class now: the key and the list cannot disagree, because they
+           are the same rule. -->
+      <dt><span class="chip acc opener">opener</span><span
+        class="chip acc closer">closer</span><span
+        class="chip acc encore">encore</span></dt>
       <dd>Where the band tends to put it. Play a song in the slot it belongs in
         and it scores more; open a set with a ballad and it scores less.</dd>
-      <dt><span class="chip acc jam" style="--acc:var(--violetT)">jam</span><span
-        class="chip acc peak" style="--acc:var(--pinkT)">peak</span></dt>
+      <dt><span class="chip acc jam">jam</span><span
+        class="chip acc peak">peak</span></dt>
       <dd>A song they stretch out. <b>Peak</b> is the top of that: long and
         written up by the archivists again and again.</dd>
-      <dt><span class="chip acc ballad" style="--acc:var(--blueT)">ballad</span></dt>
+      <dt><span class="chip acc ballad">ballad</span></dt>
       <dd>Short and slow. Cheap on the clock, and the thing to follow three
         twenty-minute jams with.</dd>
-      <dt><span class="chip acc cover" style="--acc:var(--coralT)">cover</span></dt>
+      <dt><span class="chip acc cover">cover</span></dt>
       <dd>Not their song. The row tells you whose.</dd>
     </dl>
 
