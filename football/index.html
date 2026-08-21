@@ -1127,10 +1127,10 @@ window.GA_ID='G-L29P5MRWKE';
   .markpick .mi{position:relative;display:block;line-height:0}
   .markpick .mn{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--ink);
     line-height:1.2;margin-top:2px}
-  .markpick .mu{font-size:10px;color:var(--dim);line-height:1.3}
-  /* What it takes, unclipped. Truncating this is worse than not printing it: the number is
-     the requirement, and "Build a team rated 1..." leaves somebody with no idea what it wants. */
-  .markpick .mh{font-size:10px;color:var(--dim-2);line-height:1.35;margin-top:1px}
+  /* The one subtitle: what it takes, unclipped and identical whether it is yours or not.
+     Truncating this is worse than not printing it, because the number is the requirement and
+     "Build a team rated 1..." leaves somebody with no idea what it wants. */
+  .markpick .mu{font-size:10px;color:var(--dim-2);line-height:1.35}
   .markpick .worn{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.08em;
     text-transform:uppercase;color:#F4B413;margin-top:2px}
   .markpick.on{border-color:#F4B413;box-shadow:0 0 0 1px #F4B413 inset}
@@ -13221,7 +13221,9 @@ function paintRingRow(){
       (pfIsNew('r:'+r.id)?NEWDOT:'')+
       '<span class="mi">'+svg+(got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
       '<span class="mn">'+esc(r.t||r.name)+'</span>'+
-      '<span class="'+(got?'mu':'mh')+'">'+esc(ringNeed(r.id))+'</span>'+
+      /* Same class in both states, for the same reason as the marks above: a tile that
+         restyles its own subtitle the moment you earn it is a tile that moves under you. */
+      '<span class="mu">'+esc(ringNeed(r.id))+'</span>'+
       (worn?'<span class="worn">Worn now</span>':'')+'</div>';
   }).join('');
 }
@@ -13304,18 +13306,23 @@ function paintMarkGrid(){
        what is offered is the real thing and not an approximation of it. */
     try{ svg=C.crest({ club:club, rung:rung, mark:k, ring:'club', tier:null,
       size:44, text:a.text }); }catch(_){ svg=''; }
-    /* A LOCKED TILE SAYS WHAT TO GO AND DO, IN FULL. Truncating that line to "Build a team
-       rated 1..." is worse than not printing it: the number IS the requirement, and cutting
-       it off leaves somebody with a mark they cannot get and no idea what it wants. So the
-       badge name is one line, its description sits under it unclipped, and the padlock is
-       what carries "locked" rather than the text having to. */
+    /* ONE LINE UNDER THE NAME, AND IT IS HOW YOU GET IT.
+
+       The tile used to carry two. The first was the badge's NAME, which is flavour and not
+       an instruction: "Running up the score" tells nobody what to go and do. The second was
+       the badge's description, and it only appeared while the mark was locked, so the tile
+       rearranged itself the moment you earned the thing.
+
+       Both problems have the same fix. The description is the line, it is the line whether
+       the mark is yours or not, and the padlock is what says locked. The badge's name is
+       still there for anybody who wants it, in the title attribute where it costs no room. */
     return '<button type="button" class="markpick'+(got?'':' locked')+
       (k===worn?' on':'')+'" data-m="'+k+'"'+(got?'':' aria-disabled="true"')+
-      ' title="'+esc(m.name||k)+'">'+(pfIsNew('m:'+k)?NEWDOT:'')+'<span class="mi">'+svg+
+      ' title="'+esc((m.name||k)+(u.name?' \u00b7 '+u.name:''))+'">'+
+      (pfIsNew('m:'+k)?NEWDOT:'')+'<span class="mi">'+svg+
       (got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
       '<span class="mn">'+esc(m.name||k)+'</span>'+
-      '<span class="mu">'+esc(u.name||'Yours from the start')+'</span>'+
-      (got?'':'<span class="mh">'+esc(u.desc||'')+'</span>')+'</button>';
+      '<span class="mu">'+esc(u.desc||'')+'</span></button>';
   }).join('');
   host.onclick=(e)=>{
     const b=e.target.closest('.markpick'); if(!b) return;
