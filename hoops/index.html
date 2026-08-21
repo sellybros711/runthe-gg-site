@@ -218,6 +218,223 @@
 
   footer.legal span{margin:0 7px;color:#3c4a60;}
   footer.legal .src{font-size:11.5px;line-height:1.6;margin-top:8px;color:#5b6b80;}
+
+  /* ══ THE DRAFT SCREEN ══════════════════════════════════════════════════
+     Modelled on the football and college games, which are the house pattern
+     for this: a pinned budget HUD, two slot machine reels for what you drew,
+     a visual of the roster you are building, and the player list under both.
+     The parts are named the same as theirs so the three read as one family. */
+
+  /* ── the pinned cap HUD ─────────────────────────────────────────────────
+     It sticks under the top of the viewport so the budget, the slot count and
+     your lineup stay on screen the whole way down a long player list. Opaque,
+     with a scrim above it, or the cards scrolling behind show through. */
+  .capwrap{position:sticky;top:0;z-index:30;padding:13px 15px;border-radius:13px;
+    border:1px solid var(--cardb);background:linear-gradient(180deg,var(--card),#10151f);
+    margin:0 0 12px;}
+  .capwrap:before{content:'';position:absolute;left:-1px;right:-1px;top:-14px;height:16px;
+    background:var(--bg);z-index:-1;}
+  .cap-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .cap-budget .lbl,.mstat .lbl{display:block;font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;}
+  .capamt{font-family:var(--mono);font-size:27px;font-weight:700;line-height:1.05;
+    font-variant-numeric:tabular-nums;display:block;transition:color .2s ease;}
+  .capamt.warn{color:var(--gold);} .capamt.bad{color:var(--red);}
+  .cap-meta{display:flex;gap:14px;text-align:right;}
+  .mstat b{font-family:var(--mono);font-size:15px;font-weight:700;display:block;}
+  .chemval.zero{color:var(--dim);} .chemval.up{color:var(--green);}
+  .capbar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
+    margin:9px 0 6px;}
+  .capbar i{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--orange),var(--gold));
+    transition:width .45s cubic-bezier(.2,.8,.3,1),background .3s ease;}
+  .capbar.tight i{background:linear-gradient(90deg,#b45309,var(--gold));}
+  .capbar.broke i{background:linear-gradient(90deg,#b91c1c,var(--red));}
+  #c-per{font-size:11px;color:var(--dim);}
+  #c-note{font-size:11.5px;color:#fca5a5;margin-top:4px;min-height:0;}
+
+  /* The lineup as six dots, so the HUD can say what you have without the
+     roster card being on screen. Filled dots carry the slot's first letter. */
+  .dpips{display:flex;gap:5px;margin-top:9px;}
+  .dpip{flex:1 1 0;height:26px;border-radius:7px;border:1px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;
+    letter-spacing:.06em;color:var(--dim);background:rgba(255,255,255,.02);
+    transition:all .3s cubic-bezier(.2,1.4,.4,1);}
+  .dpip.on{border-style:solid;border-color:transparent;color:#fff;
+    background:linear-gradient(135deg,var(--orange),var(--orange-dk));}
+  .dpip.just{animation:pipdrop .45s cubic-bezier(.2,1.5,.35,1);}
+  @keyframes pipdrop{0%{transform:scale(.6) translateY(-8px);opacity:.2}100%{transform:none;opacity:1}}
+
+  /* ── the reels ──────────────────────────────────────────────────────────
+     A season and a club, drawn rather than announced. The strip is a column of
+     candidates that slides; a mask at both ends keeps only the middle band
+     legible, and the band takes the result's colour only once it lands, so
+     colour reads as an answer instead of as decoration on a blur. */
+  .dcols{display:grid;gap:12px;}
+  @media(min-width:720px){.dcols{grid-template-columns:1fr 1fr;align-items:start;}}
+  .reels{display:grid;grid-template-columns:92px 1fr;gap:8px;}
+  .reelbox{position:relative;height:104px;overflow:hidden;border-radius:13px;
+    background:linear-gradient(180deg,#131a28,#0a0e17 55%,#070a11);
+    border:1px solid var(--cardb);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+    transition:border-color .2s ease;}
+  .reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,#070a11 2%,rgba(7,10,17,.12) 34%,
+      rgba(7,10,17,.12) 66%,#070a11 98%);}
+  .reel-strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform;}
+  .reel-i{height:34px;display:flex;align-items:center;justify-content:center;
+    color:var(--ink);opacity:.5;padding:0 6px;text-align:center;}
+  .reelbox.season .reel-i{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .reelbox.club .reel-i{font-size:13.5px;font-weight:800;line-height:1.1;}
+  .reel-win{position:absolute;left:5px;right:5px;top:50%;height:34px;margin-top:-17px;z-index:3;
+    border-radius:8px;border:1px solid rgba(255,255,255,.12);pointer-events:none;
+    transition:border-color .25s ease,background .25s ease;}
+  .reelbox.waiting{opacity:.4;}
+  .reelbox.spin{border-color:rgba(255,255,255,.55);}
+  .reelbox.spin .reel-win{border-color:rgba(255,255,255,.6);}
+  .reelbox.done .reel-i.land{opacity:1;}
+  .reelbox.season.done .reel-win{border-color:rgba(242,193,78,.5);background:rgba(242,193,78,.07);}
+  .reelbox.club.done .reel-win{border-color:rgba(240,120,45,.55);background:rgba(240,120,45,.08);}
+  .reelbox.hit .reel-win{animation:bandhit .5s ease-out;}
+  .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1);}
+  @keyframes bandhit{0%{box-shadow:0 0 0 0 rgba(240,120,45,.55)}100%{box-shadow:0 0 0 13px rgba(240,120,45,0)}}
+  @keyframes facehit{0%{transform:scale(.72)}60%{transform:scale(1.1)}100%{transform:none}}
+  .drawnote{font-size:11.5px;color:var(--dim);margin:8px 0 0;min-height:15px;}
+
+  /* ── the half court ─────────────────────────────────────────────────────
+     The football games draw a field with the roster standing on it. This is
+     the same idea in the sport it belongs to: five spots where those players
+     actually stand, plus the sixth man on the bench outside the sideline,
+     because he is not on the floor and the picture should not pretend he is. */
+  .court{position:relative;width:100%;aspect-ratio:1/0.94;border-radius:13px;overflow:hidden;
+    background:radial-gradient(120% 80% at 50% 0%,#2a1c10 0%,#1a1109 55%,#120c07 100%);
+    border:1px solid var(--cardb);contain:layout;}
+  .court .ln{position:absolute;border:1.5px solid rgba(255,255,255,.16);}
+  .court .arc3{left:6%;right:6%;top:-64%;height:150%;border-radius:50%;border-top:0;}
+  .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;}
+  .court .circ{left:41%;right:41%;top:30%;height:16%;border-radius:50%;}
+  .court .rim{position:absolute;left:50%;top:7%;width:15px;height:15px;margin-left:-7.5px;
+    border:2px solid rgba(240,120,45,.75);border-radius:50%;}
+  .court .base{position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.28);}
+  .court .side{position:absolute;left:0;right:0;bottom:20%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);}
+  .court .benchlbl{position:absolute;left:8px;bottom:5px;font-size:8.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;}
+  .spot{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;
+    transition:opacity .3s ease;}
+  .spot .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;
+    border:1.5px dashed rgba(255,255,255,.22);display:flex;align-items:center;
+    justify-content:center;font-size:10px;font-weight:800;color:var(--dim);
+    background:rgba(0,0,0,.35);transition:all .3s cubic-bezier(.2,1.4,.4,1);}
+  .spot.on .disc{border-style:solid;border-color:rgba(255,255,255,.35);color:#fff;
+    background:linear-gradient(150deg,var(--orange),var(--orange-dk));
+    box-shadow:0 3px 12px rgba(0,0,0,.5);}
+  .spot.just .disc{animation:chipdrop .5s cubic-bezier(.2,1.5,.35,1);}
+  @keyframes chipdrop{0%{transform:scale(.3) translateY(-16px);opacity:0}100%{transform:none;opacity:1}}
+  .spot .nm{display:block;font-size:9.5px;font-weight:700;margin-top:3px;line-height:1.15;
+    color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.9);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .spot .yr{display:block;font-size:8.5px;color:var(--mut);}
+  .spot:not(.on) .nm,.spot:not(.on) .yr{color:var(--dim);}
+
+  /* ── slot tabs and the player list ──────────────────────────────────────*/
+  .tabs{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto;padding-bottom:2px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto;padding:9px 13px;border-radius:9px;border:1.5px solid var(--line);
+    background:rgba(255,255,255,.03);font-family:var(--body);font-size:13px;font-weight:700;
+    color:var(--mut);cursor:pointer;white-space:nowrap;transition:all .12s ease;min-height:38px;}
+  .tab .n{font-size:10.5px;opacity:.7;margin-left:4px;}
+  .tab.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5));}
+  .tab:active{transform:scale(.97);}
+  .tab.full{color:var(--dim);border-style:dashed;}
+  .opts{display:grid;gap:8px;margin-top:10px;}
+  .opts .pick{animation:optin .26s ease-out both;}
+  @keyframes optin{0%{opacity:0;transform:translateY(7px)}100%{opacity:1;transform:none}}
+
+  /* ══ THE SEASON, PLAYED RATHER THAN ANNOUNCED ══════════════════════════
+     The result is computed in full before the first cell lights: playSeason is
+     deterministic off the run's seed, so this animates a REVEAL and can be
+     skipped at any point without changing a single scoreline. */
+  .scoreboard{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin:0 0 10px;}
+  .scoreboard .rec{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;
+    font-variant-numeric:tabular-nums;}
+  .scoreboard .streak{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);}
+  .scoreboard .streak.hot{color:var(--green);} .scoreboard .streak.cold{color:var(--red);}
+  .lastgame{font-size:13px;color:var(--mut);min-height:19px;margin:0 0 10px;
+    font-variant-numeric:tabular-nums;}
+  .lastgame b{color:var(--ink);}
+
+  /* 82 cells. On a phone they are about 4px wide, which is enough to read the
+     shape of a season at a glance: a green run is a winning streak. */
+  .gamestrip{display:grid;grid-template-columns:repeat(41,1fr);gap:2px;margin:0 0 12px;}
+  .gcell{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.05);
+    transform:scale(.55);opacity:.35;transition:all .18s ease;}
+  .gcell.w{background:var(--green);transform:none;opacity:1;}
+  .gcell.l{background:#7f1d1d;transform:none;opacity:1;}
+  .gcell.marq{box-shadow:0 0 0 1px var(--gold);}
+  .gcell.now{transform:scale(1.5);box-shadow:0 0 0 2px var(--ink);}
+
+  .simbars{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px;}
+  .simbar{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;}
+  .simbar .lbl{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+    font-weight:800;display:block;}
+  .simbar b{font-family:var(--mono);font-size:16px;font-weight:700;}
+
+  /* The bracket, one row a round, each revealed as it is played. */
+  .bracket{display:grid;gap:6px;margin:4px 0 0;}
+  .brow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;
+    padding:10px 12px;border-radius:9px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);animation:optin .3s ease-out both;}
+  .brow .rd{font-size:13px;font-weight:700;}
+  .brow .opp{font-size:11px;color:var(--dim);display:block;font-weight:400;}
+  .brow .res{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:5px;}
+  .brow .res.w{color:var(--green);background:rgba(34,197,94,.12);}
+  .brow .res.l{color:var(--red);background:rgba(239,68,68,.12);}
+  .brow .sc{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .brow.title{border-color:var(--gold);background:rgba(242,193,78,.08);}
+
+  /* ══ THE PROFILE SHEET ═════════════════════════════════════════════════ */
+  .sheet{position:fixed;inset:0;z-index:60;display:none;background:rgba(5,8,14,.72);
+    backdrop-filter:blur(3px);}
+  .sheet.open{display:block;animation:fadein .18s ease-out;}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:86vh;overflow:auto;
+    background:linear-gradient(180deg,var(--card),#0c1017);border-top:1px solid var(--cardb);
+    border-radius:16px 16px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom));
+    animation:sheetup .26s cubic-bezier(.2,.9,.3,1);}
+  @keyframes sheetup{from{transform:translateY(16px)}to{transform:none}}
+  @media(min-width:640px){.sheet .panel{max-width:520px;margin:0 auto;border-radius:16px;
+    bottom:auto;top:50%;transform:translateY(-50%);}}
+  .sheet h2{margin-bottom:4px;}
+  .pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
+  .pstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px;text-align:center;}
+  .pstat .lbl{display:block;font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;}
+  .pstat b{font-family:var(--mono);font-size:18px;font-weight:700;}
+  .plist{list-style:none;padding:0;margin:10px 0 0;font-size:13.5px;}
+  .plist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
+    border-top:1px solid var(--line);color:var(--mut);}
+  .plist li b{color:var(--ink);font-weight:700;}
+  .profbtn{position:absolute;right:0;top:2px;background:transparent;border:1px solid var(--cardb);
+    color:var(--mut);padding:7px 12px;font-size:12px;min-height:34px;}
+
+  /* ── motion ─────────────────────────────────────────────────────────────
+     A screen change is a cut otherwise, and on a phone a cut between two dark
+     screens reads as a failed tap. */
+  .screen.active{animation:screenin .28s ease-out;}
+  @keyframes screenin{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+  /* AND ALL OF IT IS OPTIONAL. Every animation in this file is decoration over
+     a result that was already computed, so removing them changes nothing about
+     what the game says. Somebody who has asked their system for less motion has
+     asked for a reason. */
+  @media(prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+      transition-duration:.001ms!important;scroll-behavior:auto!important;}
+  }
 </style>
 </head>
 <body>
@@ -255,6 +472,7 @@
     <button class="big" id="b-start">Start a run</button>
     <div class="btnrow" style="margin-top:8px">
       <a class="ghostlink" href="/hoops/how-to-play.html">How to play</a>
+      <button class="ghost" id="b-prof">Career</button>
       <button class="ghost" id="b-reset">Reset</button>
     </div>
   </div>
@@ -315,32 +533,66 @@
 
 <!-- ── draft ────────────────────────────────────────────────────────────── -->
 <div class="screen" id="s-draft">
-  <div class="hud">
-    <div class="cell"><div class="label">Cap space</div><div class="value" id="h-cap">$145.0M</div></div>
-    <div class="cell"><div class="label">Spendable</div><div class="value" id="h-spend">$0.0M</div></div>
-    <div class="cell"><div class="label">Slots left</div><div class="value" id="h-slots">6</div></div>
-    <div class="cell"><div class="label">Re-spins</div><div class="value" id="h-respin">3</div></div>
+  <!-- THE PINNED HUD. Budget on the left as the hero, slot count and chemistry
+       on the right as two matched tiles, a bar under all three, and the lineup
+       as six pips so the roster is legible without the court being on screen. -->
+  <div class="capwrap">
+    <div class="cap-head">
+      <div class="cap-budget">
+        <span class="lbl">Cap space</span>
+        <span class="capamt" id="c-amt">$138.0M</span>
+      </div>
+      <div class="cap-meta">
+        <div class="mstat"><span class="lbl">Slot</span><b id="d-count">1 of 6</b></div>
+        <div class="mstat"><span class="lbl">Chemistry</span><b class="chemval zero" id="c-chem">None</b></div>
+      </div>
+    </div>
+    <div class="capbar" id="c-barwrap"><i id="c-bar" style="width:100%"></i></div>
+    <div id="c-per"></div>
+    <div id="c-note"></div>
+    <div class="dpips" id="d-pips" aria-hidden="true"></div>
   </div>
 
-  <div class="card">
-    <div class="drawhead">
-      <div class="club" id="d-club">Spin the wheel</div>
-      <div class="rec" id="d-rec"></div>
+  <div class="dcols">
+    <div class="dcol">
+      <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
+        <div class="base"></div>
+        <div class="ln arc3"></div>
+        <div class="ln key"></div>
+        <div class="ln circ"></div>
+        <div class="rim"></div>
+        <div class="side"></div>
+        <div class="benchlbl">Bench</div>
+      </div>
+      <ul class="links" id="r-links"></ul>
     </div>
-    <p class="clubnote" id="d-note2"></p>
-    <div class="board" id="d-board"></div>
-    <div class="btnrow" style="margin-top:12px">
-      <button id="b-spin" style="flex:1">Spin</button>
-      <button class="ghost" id="b-respin">Re-spin</button>
+
+    <div class="dcol">
+      <div class="reels">
+        <div class="reelbox season waiting" id="box-s" aria-label="Season">
+          <div class="reel-strip" id="reel-s"></div>
+          <div class="reel-win"></div>
+        </div>
+        <div class="reelbox club waiting" id="box-c" aria-label="Club">
+          <div class="reel-strip" id="reel-c"></div>
+          <div class="reel-win"></div>
+        </div>
+      </div>
+      <p class="drawnote" id="d-note2"></p>
+      <div class="btnrow" style="margin-top:10px">
+        <button id="b-spin" style="flex:1">Spin</button>
+        <button class="ghost" id="b-respin">Re-spin</button>
+      </div>
+      <p class="drawnote" id="d-note"></p>
     </div>
-    <p class="dim" style="font-size:12px;margin:9px 0 0" id="d-note"></p>
   </div>
 
-  <div class="card">
-    <h2>Your rotation <span class="sub" id="r-chem"></span></h2>
-    <div class="slots" id="r-slots"></div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="opts" id="opts"></div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>The shape of it <span class="sub" id="r-chem"></span></h2>
     <div class="fitbox" id="r-fit"></div>
-    <ul class="links" id="r-links"></ul>
   </div>
 </div>
 
@@ -354,6 +606,25 @@
       <div class="cell"><div class="label">Rating</div><div class="value" id="p-rating">-</div></div>
     </div>
     <button class="big" id="b-play">Play all 82</button>
+  </div>
+
+  <!-- Hidden until the season is actually running, so the screen before tipoff
+       is the projection and nothing else. -->
+  <div class="card" id="simcard" style="display:none">
+    <div class="scoreboard">
+      <span class="rec" id="sim-rec">0-0</span>
+      <span class="streak" id="sim-streak"></span>
+    </div>
+    <p class="lastgame" id="sim-last"></p>
+    <div class="gamestrip" id="sim-strip"></div>
+    <div class="simbars">
+      <div class="simbar"><span class="lbl">Home</span><b id="sim-home">0-0</b></div>
+      <div class="simbar"><span class="lbl">Marquee nights</span><b id="sim-marq">0-0</b></div>
+    </div>
+    <div class="bracket" id="sim-bracket"></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="ghost" id="b-skip">Skip to the result</button>
+    </div>
   </div>
 </div>
 
@@ -373,7 +644,18 @@
 
   <div class="card">
     <h2>Your draft <span class="sub" id="o-grade"></span></h2>
-    <div class="slots" id="o-slots"></div>
+    <!-- The same court as the draft screen, so the six men you finished with are
+         seen where they played rather than only listed. -->
+    <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
+      <div class="base"></div>
+      <div class="ln arc3"></div>
+      <div class="ln key"></div>
+      <div class="ln circ"></div>
+      <div class="rim"></div>
+      <div class="side"></div>
+      <div class="benchlbl">Bench</div>
+    </div>
+    <div class="slots" id="o-slots" style="margin-top:12px"></div>
     <p class="dim" style="font-size:12.5px;margin:10px 0 0" id="o-best"></p>
   </div>
 
@@ -383,6 +665,31 @@
   </div>
 
   <button class="big" id="b-again">Run it back</button>
+  <div class="btnrow" style="margin-top:8px">
+    <button class="ghost" id="b-prof2">Career record</button>
+  </div>
+</div>
+
+<!-- ── career, kept on this device ───────────────────────────────────────
+     Every run that reaches a result adds a line to this. It never leaves the
+     browser it was played in: there is no account and nothing is sent
+     anywhere, which is also why it can vanish, and the sheet says so. -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="prof-h">
+  <div class="panel">
+    <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
+    <div class="pstats">
+      <div class="pstat"><span class="lbl">Runs</span><b id="pf-runs">0</b></div>
+      <div class="pstat"><span class="lbl">Rings</span><b id="pf-rings">0</b></div>
+      <div class="pstat"><span class="lbl">Best</span><b id="pf-best">-</b></div>
+    </div>
+    <ul class="plist" id="pf-list"></ul>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="ghost" id="b-prof-clear">Clear career</button>
+      <button id="b-prof-x" style="flex:1">Close</button>
+    </div>
+    <p class="dim" style="font-size:11.5px;margin:10px 0 0">Stored in this browser only.
+      Clearing site data or a private window loses it, and nothing here is sent anywhere.</p>
+  </div>
 </div>
 
 <footer class="legal">
@@ -417,6 +724,10 @@ var $ = function(id){ return document.getElementById(id); };
 var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
 
 function show(id){
+  /* A running reveal belongs to the screen it started on. Leaving without
+     stopping it leaves an interval painting cells nobody can see, and on the
+     way back it would race the fresh one. */
+  stopSim();
   var all = document.querySelectorAll('.screen');
   for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   $(id).classList.add('active');
@@ -450,32 +761,215 @@ function boot(){
 
 function startRun(){
   run = R.createRun({});
+  activeTab = 'ALL';
   save();
   show('s-draft');
   renderDraft();
   spin();
 }
 
-function spin(){
+/* THE DRAW HAPPENS FIRST AND THE REELS CATCH UP. run.js picks the club, then
+   the strips are built to land on it. The board is held back until they settle
+   so the answer is not readable underneath before the reel says it, but every
+   path that can leave a reel mid-flight also calls finish, so the draft can
+   never be left waiting on an animation that did not arrive. */
+function drawInto(fn){
+  if (reelBusy) return;
   try {
-    R.spin(run, DATA);
+    fn();
   } catch (err) {
     $('d-note').textContent = err.message;
     return;
   }
-  renderDraft();
   save();
+  var draw = run.currentDraw;
+  if (!draw) { renderDraft(); return; }
+
+  reelBusy = true;
+  renderDraft();
+  $('tabs').textContent = '';
+  $('opts').textContent = '';
+
+  var pools = reelPools(), pending = 2;
+  var settled = function(){
+    if (--pending > 0) return;
+    reelBusy = false;
+    renderDraft();
+  };
+  spinReel($('box-s'), $('reel-s'), pools.seasons, String(draw.season), settled);
+  /* The club lands a beat after the season, which is the order the question is
+     asked in: which year, and then whose team. */
+  setTimeout(function(){
+    spinReel($('box-c'), $('reel-c'), pools.clubs, E.teamName(draw.team), settled);
+  }, 130);
 }
 
-function respin(){
-  try {
-    R.respin(run, DATA);
-  } catch (err) {
-    $('d-note').textContent = err.message;
-    return;
+function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
+function respin(){ drawInto(function(){ R.respin(run, DATA); }); }
+
+// ── the reels ──────────────────────────────────────────────────────────────
+
+/* WHAT YOU DREW, DRAWN. The football and college games spin two reels for the
+ * year and the school, and a basketball draw is the same two questions, so this
+ * is the same component: a strip of candidates that slides and settles on the
+ * one you got.
+ *
+ * IT IS A DECORATION OVER A DECISION ALREADY MADE. run.js has picked the club
+ * before a pixel moves, and the strip is built to END on that pick. Nothing
+ * here can change what was drawn, and if the animation is skipped or never
+ * runs, the same club is on screen either way.
+ */
+var ROW_H = 34, SPIN_MS = 560;
+var reelBusy = false;
+
+function reelFill(stripEl, items, landIndex){
+  stripEl.textContent = '';
+  for (var i = 0; i < items.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'reel-i' + (i === landIndex ? ' land' : '');
+    d.textContent = items[i];
+    stripEl.appendChild(d);
   }
-  renderDraft();
-  save();
+}
+
+/* A strip long enough to look like motion, ending on the answer. The window
+   sits at the middle of the box, so the landing offset backs the chosen row up
+   to it rather than to the top. */
+function spinReel(boxEl, stripEl, pool, answer, done){
+  var items = [], n = 14;
+  for (var i = 0; i < n; i++) {
+    items.push(pool.length ? pool[Math.floor(Math.random() * pool.length)] : answer);
+  }
+  items.push(answer);
+  var land = items.length - 1;
+  reelFill(stripEl, items, land);
+
+  var mid = (boxEl.clientHeight - ROW_H) / 2;
+  stripEl.style.transition = 'none';
+  stripEl.style.transform = 'translateY(' + mid + 'px)';
+  boxEl.classList.remove('waiting', 'done', 'hit');
+  boxEl.classList.add('spin');
+
+  /* Two frames, not one: the first commits the reset transform, the second
+     starts the move. Setting both in one frame makes the browser collapse them
+     and the reel jumps to the answer with no travel. */
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      stripEl.style.transition = 'transform ' + SPIN_MS + 'ms cubic-bezier(.15,.85,.25,1)';
+      stripEl.style.transform = 'translateY(' + (mid - land * ROW_H) + 'px)';
+    });
+  });
+
+  var settle = function(){
+    stripEl.removeEventListener('transitionend', settle);
+    boxEl.classList.remove('spin');
+    boxEl.classList.add('done', 'hit');
+    setTimeout(function(){ boxEl.classList.remove('hit'); }, 520);
+    if (done) done();
+  };
+  stripEl.addEventListener('transitionend', settle);
+  /* A belt and braces timer, because a transitionend that never fires (a
+     background tab, a reduced-motion setting that zeroes the duration) would
+     otherwise leave the draft permanently mid-spin and unclickable. */
+  setTimeout(function(){ if (boxEl.classList.contains('spin')) settle(); }, SPIN_MS + 220);
+}
+
+function reelPools(){
+  var seasons = {}, clubs = {};
+  for (var i = 0; i < DATA.teamSeasons.length; i++) {
+    var t = DATA.teamSeasons[i];
+    seasons[t.season] = 1;
+    clubs[E.teamName(t.team)] = 1;
+  }
+  return { seasons: Object.keys(seasons), clubs: Object.keys(clubs) };
+}
+
+// ── the court ──────────────────────────────────────────────────────────────
+
+/* WHERE THESE MEN ACTUALLY STAND. The five on the floor sit where their
+   position plays: the point at the top of the key, the wings out beyond the
+   arc, the forward on the weak side block and the centre in the paint. The
+   sixth man is deliberately BELOW the sideline, off the floor, because he is
+   not on it and a picture that puts him there is telling a small lie. */
+var SPOTS = {
+  PG:  { x: 50, y: 62 }, SG: { x: 84, y: 46 }, SF: { x: 16, y: 46 },
+  PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }, '6TH': { x: 50, y: 89 }
+};
+
+function renderCourt(justSlot, into){
+  var el = into || $('court');
+  if (!el) return;
+  var old = el.querySelectorAll('.spot');
+  for (var i = 0; i < old.length; i++) old[i].remove();
+
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+
+  for (var s = 0; s < E.SLOTS.length; s++) {
+    var slot = E.SLOTS[s], pos = SPOTS[slot], p = filled[slot];
+    var sp = document.createElement('div');
+    sp.className = 'spot' + (p ? ' on' : '') + (p && slot === justSlot ? ' just' : '');
+    sp.style.left = pos.x + '%';
+    sp.style.top = pos.y + '%';
+
+    var disc = document.createElement('div');
+    disc.className = 'disc';
+    disc.textContent = slot;
+    sp.appendChild(disc);
+
+    var nm = document.createElement('span');
+    nm.className = 'nm';
+    nm.textContent = p ? p.n : 'open';
+    sp.appendChild(nm);
+
+    if (p) {
+      var yr = document.createElement('span');
+      yr.className = 'yr';
+      yr.textContent = p.s + ' ' + E.teamName(p.t);
+      sp.appendChild(yr);
+    }
+    el.appendChild(sp);
+  }
+}
+
+// ── the pinned HUD ─────────────────────────────────────────────────────────
+
+function renderHud(justSlot){
+  var remaining = R.remaining(run), left = R.slotsLeft(run), spendable = R.spendable(run);
+  var cap = E.CONSTANTS.CAP_MUSD;
+
+  $('c-amt').textContent = money(remaining);
+  $('c-amt').className = 'capamt' + (remaining < cap * 0.14 ? ' bad' : remaining < cap * 0.3 ? ' warn' : '');
+  $('d-count').textContent = (run.roster.length + 1 > 6 ? 6 : run.roster.length + 1) + ' of 6';
+
+  var pct = Math.max(0, Math.min(100, (remaining / cap) * 100));
+  $('c-bar').style.width = pct + '%';
+  $('c-barwrap').className = 'capbar' + (pct < 14 ? ' broke' : pct < 30 ? ' tight' : '');
+
+  /* WHAT IS LEFT PER REMAINING SLOT, which is the number that actually decides
+     the next pick and the one nobody works out in their head mid-draft. */
+  $('c-per').textContent = left > 0
+    ? money(Math.max(0, spendable)) + ' spendable now, ' + left + ' slot' + (left === 1 ? '' : 's') + ' to fill'
+    : 'Rotation full.';
+
+  var chem = E.resolveChemistry(run.roster);
+  var cv = $('c-chem');
+  cv.textContent = run.roster.length < 2 ? 'None'
+    : (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2);
+  cv.className = 'chemval' + (run.roster.length >= 2 && chem.bonus > 0.01 ? ' up' : ' zero');
+
+  var pips = $('d-pips');
+  pips.textContent = '';
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+  for (var s = 0; s < E.SLOTS.length; s++) {
+    var slot = E.SLOTS[s], p = filled[slot];
+    var pip = document.createElement('span');
+    pip.className = 'dpip' + (p ? ' on' : '') + (p && slot === justSlot ? ' just' : '');
+    pip.textContent = slot;
+    pips.appendChild(pip);
+  }
+  return chem;
 }
 
 var BLOCK_TEXT = {
@@ -485,92 +979,160 @@ var BLOCK_TEXT = {
   price: 'cannot afford'
 };
 
-function renderDraft(){
-  var left = R.slotsLeft(run);
-  var remaining = R.remaining(run);
-  var spendable = R.spendable(run);
+var activeTab = 'ALL';
 
-  $('h-cap').textContent = money(remaining);
-  $('h-cap').className = 'value' + (remaining < 20 ? ' warn' : '');
-  $('h-spend').textContent = money(Math.max(0, spendable));
-  $('h-spend').className = 'value' + (spendable < 6 ? ' bad' : spendable < 18 ? ' warn' : '');
-  $('h-slots').textContent = String(left);
-  $('h-respin').textContent = String(E.CONSTANTS.MAX_RESPINS - run.respinsUsed);
+function renderDraft(justSlot){
+  var chem = renderHud(justSlot);
+  renderCourt(justSlot);
 
   var draw = run.currentDraw;
-  var boardEl = $('d-board');
-  boardEl.textContent = '';
-  board = [];
-
   if (!draw) {
-    $('d-club').textContent = 'Spin the wheel';
-    $('d-rec').textContent = '';
+    $('d-note2').textContent = 'Spin for a season and a club.';
+    $('tabs').textContent = '';
+    $('opts').textContent = '';
   } else {
-    $('d-club').textContent = draw.display;
-    $('d-rec').textContent = 'filling ' + draw.openSlots.join(' / ');
     var note = E.teamNote(draw.team, draw.season);
-    $('d-note2').textContent = note || '';
-
-    for (var i = 0; i < draw.board.length; i++) {
-      (function(entry){
-        var p = DATA.allPlayers[entry.key];
-        if (!p) return;
-        var b = document.createElement('button');
-        b.className = 'pick';
-        b.disabled = !!entry.block;
-
-        var name = document.createElement('span');
-        var strong = document.createElement('b');
-        strong.textContent = p.n;
-        name.appendChild(strong);
-        var small = document.createElement('small');
-        small.textContent = p.ep.split(';').join('/') + ' · ' + p.pts + ' pts, '
-          + p.reb + ' reb, ' + p.ast + ' ast · ' + p.w + ' win shares'
-          + (entry.block ? ' · ' + (BLOCK_TEXT[entry.block] || entry.block) : '');
-        name.appendChild(small);
-
-        /* WHAT HE IS FOR. Without this the board is six names and six prices and
-           the fit model may as well not exist: a player cannot decide he needs
-           shooting more than he needs the better man if nothing on screen says
-           who the shooters are. */
-        var tags = E.playerTags(p);
-        if (tags.length) {
-          var row = document.createElement('span');
-          row.className = 'badges';
-          for (var t = 0; t < tags.length; t++) {
-            var b2 = document.createElement('span');
-            b2.className = 'badge' + (tags[t].good ? '' : ' cost');
-            b2.textContent = tags[t].label;
-            row.appendChild(b2);
-          }
-          name.appendChild(row);
-        }
-
-        var price = document.createElement('span');
-        price.className = 'price';
-        price.textContent = money(p.p);
-
-        b.appendChild(name);
-        b.appendChild(price);
-        if (!entry.block) b.onclick = function(){ sign(p); };
-        boardEl.appendChild(b);
-      })(draw.board[i]);
-    }
+    $('d-note2').textContent = 'Filling ' + draw.openSlots.join(' / ')
+      + (note ? ' · ' + note : '');
+    renderTabs(draw);
+    renderOptions(draw);
   }
 
   var canSpin = !draw && run.phase === R.PHASES.DRAFT;
-  $('b-spin').disabled = !canSpin;
+  $('b-spin').disabled = !canSpin || reelBusy;
   $('b-spin').textContent = canSpin ? 'Spin' : 'Pick a player';
 
   var re = R.canRespin(run);
-  $('b-respin').disabled = !re.ok || !draw;
+  $('b-respin').disabled = !re.ok || !draw || reelBusy;
   $('b-respin').textContent = 'Re-spin (' + money(re.cost) + ')';
   $('d-note').textContent = re.ok ? '' : (draw ? re.reason : '');
 
-  renderRoster($('r-slots'), $('r-links'));
+  renderFit();
+  renderLinks(chem);
+}
+
+/* THE TABS ARE THE OPEN SLOTS, not every position. A board is six players and
+   the question is which hole each one fills, so a tab that cannot be filled is
+   shown struck through rather than hidden: knowing the centre spot is already
+   gone is part of reading the board. */
+function renderTabs(draw){
+  var el = $('tabs');
+  el.textContent = '';
+  var counts = {}, any = 0;
+  for (var i = 0; i < draw.board.length; i++) {
+    var p = DATA.allPlayers[draw.board[i].key];
+    if (!p || draw.board[i].block) continue;
+    any++;
+    for (var s = 0; s < E.SLOTS.length; s++) {
+      if (E.canFillSlot(p, E.SLOTS[s])) counts[E.SLOTS[s]] = (counts[E.SLOTS[s]] || 0) + 1;
+    }
+  }
+  if (activeTab !== 'ALL' && !counts[activeTab]) activeTab = 'ALL';
+
+  var mk = function(key, label, n, full){
+    var b = document.createElement('button');
+    b.className = 'tab' + (activeTab === key ? ' on' : '') + (full ? ' full' : '');
+    b.setAttribute('role', 'tab');
+    b.appendChild(document.createTextNode(label));
+    if (n != null) {
+      var sm = document.createElement('span');
+      sm.className = 'n';
+      sm.textContent = String(n);
+      b.appendChild(sm);
+    }
+    b.onclick = function(){ activeTab = key; renderTabs(draw); renderOptions(draw); };
+    el.appendChild(b);
+  };
+  mk('ALL', 'All', any, false);
+  for (var t = 0; t < E.SLOTS.length; t++) {
+    var slot = E.SLOTS[t];
+    mk(slot, slot, counts[slot] || 0, !counts[slot]);
+  }
+}
+
+function renderOptions(draw){
+  var boardEl = $('opts');
+  boardEl.textContent = '';
+
+  for (var i = 0; i < draw.board.length; i++) {
+    (function(entry, idx){
+      var p = DATA.allPlayers[entry.key];
+      if (!p) return;
+      if (activeTab !== 'ALL' && !E.canFillSlot(p, activeTab)) return;
+
+      var b = document.createElement('button');
+      b.className = 'pick';
+      b.disabled = !!entry.block;
+      b.style.animationDelay = (idx * 34) + 'ms';
+
+      var name = document.createElement('span');
+      var strong = document.createElement('b');
+      strong.textContent = p.n;
+      name.appendChild(strong);
+      var small = document.createElement('small');
+      small.textContent = p.ep.split(';').join('/') + ' · ' + p.pts + ' pts, '
+        + p.reb + ' reb, ' + p.ast + ' ast · ' + p.w + ' win shares'
+        + (entry.block ? ' · ' + (BLOCK_TEXT[entry.block] || entry.block) : '');
+      name.appendChild(small);
+
+      var tags = E.playerTags(p);
+      if (tags.length) {
+        var row = document.createElement('span');
+        row.className = 'badges';
+        for (var t = 0; t < tags.length; t++) {
+          var b2 = document.createElement('span');
+          b2.className = 'badge' + (tags[t].good ? '' : ' cost');
+          b2.textContent = tags[t].label;
+          row.appendChild(b2);
+        }
+        name.appendChild(row);
+      }
+
+      var price = document.createElement('span');
+      price.className = 'price';
+      price.textContent = money(p.p);
+
+      b.appendChild(name);
+      b.appendChild(price);
+      if (!entry.block) b.onclick = function(){ sign(p); };
+      boardEl.appendChild(b);
+    })(draw.board[i], i);
+  }
+
+  if (!boardEl.children.length) {
+    var none = document.createElement('p');
+    none.className = 'dim';
+    none.style.cssText = 'font-size:13px;margin:8px 0';
+    none.textContent = 'Nobody on this board can play there. Try another tab.';
+    boardEl.appendChild(none);
+  }
+}
+
+function renderLinks(chem){
+  var linksEl = $('r-links');
+  if (!linksEl) return;
+  var head = $('r-chem');
+  if (head) {
+    head.textContent = run.roster.length < 2 ? ''
+      : 'chemistry ' + (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2) + ' rating';
+  }
+  linksEl.textContent = '';
+  var seen = {};
+  for (var k = 0; k < chem.links.length; k++) {
+    var l = chem.links[k];
+    if (seen[l.label]) continue;
+    seen[l.label] = 1;
+    var li = document.createElement('li');
+    var b = document.createElement('b');
+    b.textContent = l.label;
+    li.appendChild(b);
+    li.appendChild(document.createTextNode(': ' + l.a + ' and ' + l.b));
+    linksEl.appendChild(li);
+  }
 }
 
 function sign(p){
+  var before = run.roster.length;
   try {
     R.sign(run, p);
   } catch (err) {
@@ -578,8 +1140,14 @@ function sign(p){
     return;
   }
   save();
-  if (run.phase === R.PHASES.SEASON) { toSeason(); return; }
-  spin();
+  /* Which slot he just went into, so the court and the pips can land that one
+     chip rather than re-animating all six every time. */
+  var justSlot = run.roster.length > before ? E.SLOTS[run.slotIndex[run.roster.length - 1]] : null;
+  activeTab = 'ALL';
+  if (run.phase === R.PHASES.SEASON) { renderDraft(justSlot); toSeason(); return; }
+  renderDraft(justSlot);
+  /* A beat to watch the chip land before the reels start again. */
+  setTimeout(spin, 240);
 }
 
 /* THE FIVE THINGS A BASKETBALL TEAM NEEDS, live, while there is still time to
@@ -736,6 +1304,12 @@ function renderRoster(slotsEl, linksEl){
 
 function toSeason(){
   show('s-season');
+  /* Re-entering the season screen, which a restored run does, must not show the
+     last run's strip or a play button that has already been pressed. */
+  stopSim();
+  $('simcard').style.display = 'none';
+  $('b-play').disabled = false;
+  $('b-play').textContent = 'Play all 82';
   var proj = R.projectSeason(run, 120);
   var tagged = run.roster.map(function(p, i){
     var c = {}; for (var k in p) c[k] = p[k];
@@ -754,11 +1328,131 @@ function toSeason(){
     + proj.typical + '-' + (82 - proj.typical) + ', title ' + proj.titlePct + '%';
 }
 
+/* THE SEASON IS ALREADY PLAYED BEFORE THE FIRST CELL LIGHTS.
+ *
+ * R.playSeason is deterministic off the run's seed and returns the whole thing
+ * at once, so what follows is a REVEAL rather than a simulation. That is the
+ * property that makes it safe to skip: pressing the button at game nine gives
+ * exactly the same 82 games as watching all of them, because they were decided
+ * before the animation started. It also means a backgrounded tab, a dropped
+ * frame or a reduced-motion setting cannot produce a different record.
+ */
+var simTimer = null;
+
+function stopSim(){
+  if (simTimer) { clearInterval(simTimer); simTimer = null; }
+}
+
 function playSeason(){
   var out = R.playSeason(run);
+  /* ONCE PER RUN, AND THE FLAG RIDES IN THE SAVED RUN. renderOver is also what
+     a restored finished run calls, so recording there would add a ring every
+     time somebody reopened the tab on a season they had already won. */
+  if (!run.recorded) { run.recorded = true; recordRun(out); }
   save();
-  renderOver(out);
-  show('s-over');
+  $('b-play').disabled = true;
+  $('b-play').textContent = 'Season in progress';
+  $('simcard').style.display = '';
+  $('sim-bracket').textContent = '';
+
+  var strip = $('sim-strip');
+  strip.textContent = '';
+  var cells = [];
+  for (var i = 0; i < run.season.length; i++) {
+    var c = document.createElement('span');
+    c.className = 'gcell' + (run.schedule[i] && run.schedule[i].marquee ? ' marq' : '');
+    strip.appendChild(c);
+    cells.push(c);
+  }
+
+  var g = 0, w = 0, l = 0, streak = 0, homeW = 0, homeL = 0, marqW = 0, marqL = 0;
+
+  var finish = function(){
+    stopSim();
+    for (var k = g; k < run.season.length; k++) paint(k, true);
+    g = run.season.length;
+    revealBracket(out);
+  };
+
+  function paint(idx, quiet){
+    var gm = run.season[idx], sc = run.schedule[idx] || {};
+    cells[idx].className = 'gcell' + (sc.marquee ? ' marq' : '') + (gm.won ? ' w' : ' l');
+    if (gm.won) { w++; if (sc.home) homeW++; if (sc.marquee) marqW++; }
+    else { l++; if (sc.home) homeL++; if (sc.marquee) marqL++; }
+    streak = gm.won ? (streak >= 0 ? streak + 1 : 1) : (streak <= 0 ? streak - 1 : -1);
+    if (quiet) return;
+    if (idx > 0) cells[idx - 1].classList.remove('now');
+    cells[idx].classList.add('now');
+    $('sim-rec').textContent = w + '-' + l;
+    var st = $('sim-streak');
+    st.textContent = Math.abs(streak) < 2 ? '' : (streak > 0 ? 'won ' : 'lost ') + Math.abs(streak) + ' straight';
+    st.className = 'streak' + (streak >= 3 ? ' hot' : streak <= -3 ? ' cold' : '');
+    $('sim-last').textContent = '';
+    var lead = document.createElement('b');
+    lead.textContent = (gm.won ? 'W ' : 'L ') + gm.yourPoints + '-' + gm.oppPoints + (gm.ot ? ' OT' : '');
+    $('sim-last').appendChild(lead);
+    $('sim-last').appendChild(document.createTextNode(
+      '  ' + (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent') + (sc.marquee ? ' (marquee)' : '')));
+    $('sim-home').textContent = homeW + '-' + homeL;
+    $('sim-marq').textContent = marqW + '-' + marqL;
+  }
+
+  stopSim();
+  simTimer = setInterval(function(){
+    if (g >= run.season.length) { finish(); return; }
+    paint(g++, false);
+  }, 34);
+
+  $('b-skip').onclick = finish;
+
+  function revealBracket(o){
+    var el = $('sim-bracket');
+    el.textContent = '';
+    $('sim-rec').textContent = o.wins + '-' + o.losses;
+    $('sim-home').textContent = homeW + '-' + homeL;
+    $('sim-marq').textContent = marqW + '-' + marqL;
+    for (var c = 0; c < cells.length; c++) cells[c].classList.remove('now');
+
+    var rounds = run.playoffs ? run.playoffs.rounds : [];
+    var i = 0;
+    var step = function(){
+      if (i >= rounds.length) {
+        setTimeout(function(){ renderOver(o); show('s-over'); }, 620);
+        return;
+      }
+      var rd = rounds[i++];
+      var row = document.createElement('div');
+      row.className = 'brow' + (rd.won && rd.round === 'NBA Finals' ? ' title' : '');
+      var left = document.createElement('span');
+      var nm = document.createElement('span');
+      nm.className = 'rd';
+      nm.textContent = rd.round;
+      left.appendChild(nm);
+      var opp = document.createElement('span');
+      opp.className = 'opp';
+      opp.textContent = 'opponent rated ' + (rd.oppNet >= 0 ? '+' : '') + rd.oppNet + ' net';
+      left.appendChild(opp);
+      var res = document.createElement('span');
+      res.className = 'res ' + (rd.won ? 'w' : 'l');
+      res.textContent = rd.won ? 'WON' : 'LOST';
+      var sc = document.createElement('span');
+      sc.className = 'sc';
+      sc.textContent = rd.yourWins + '-' + rd.oppWins;
+      row.appendChild(left); row.appendChild(res); row.appendChild(sc);
+      el.appendChild(row);
+      setTimeout(step, 480);
+    };
+    if (!rounds.length) {
+      var none = document.createElement('p');
+      none.className = 'dim';
+      none.style.cssText = 'margin:6px 0 0;font-size:13px';
+      none.textContent = 'No playoffs. ' + E.CONSTANTS.PLAY_IN_WINS + ' wins reaches the play-in.';
+      el.appendChild(none);
+      setTimeout(function(){ renderOver(o); show('s-over'); }, 900);
+      return;
+    }
+    setTimeout(step, 340);
+  }
 }
 
 // ── results ────────────────────────────────────────────────────────────────
@@ -857,6 +1551,7 @@ function renderOver(out){
   }
 
   renderRoster($('o-slots'), null);
+  renderCourt(null, $('o-court'));
 
   var squad = R.bestPossibleSquad(run, DATA);
   if (squad) {
@@ -888,6 +1583,116 @@ function renderOver(out){
     row.appendChild(n); row.appendChild(opp); row.appendChild(res); row.appendChild(score);
     games.appendChild(row);
   }
+}
+
+// ── career, on this device ─────────────────────────────────────────────────
+
+/* EVERY ACCESS IS WRAPPED, and not out of habit. A private window throws on the
+ * localStorage ACCESSOR rather than returning null, so an unguarded read is not
+ * a missing profile, it is a game that does not start. The whole feature is
+ * allowed to be absent and every reader below copes with an empty object.
+ */
+var PKEY = 'runthefloor_career_v1';
+
+function loadCareer(){
+  try {
+    var raw = localStorage.getItem(PKEY);
+    if (!raw) return null;
+    var c = JSON.parse(raw);
+    return (c && c.version === 1) ? c : null;
+  } catch (e) { return null; }
+}
+
+function blankCareer(){
+  return { version: 1, runs: 0, rings: 0, playoffs: 0, bestWins: 0, bestRating: 0,
+    bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0 };
+}
+
+/* Called once, when a run reaches a result. Recording it anywhere earlier would
+   count an abandoned draft as a season. */
+function recordRun(out){
+  var c = loadCareer() || blankCareer();
+  c.runs++;
+  c.totalWins += out.wins;
+  c.totalLosses += out.losses;
+  if (out.titleWon) c.rings++;
+  if (out.beatRecord) c.beat72++;
+  if (run.playoffs && run.playoffs.rounds.length) c.playoffs++;
+  if (out.wins > c.bestWins) {
+    c.bestWins = out.wins;
+    c.bestLabel = out.wins + '-' + out.losses;
+  }
+  if (out.rating > c.bestRating) c.bestRating = out.rating;
+
+  var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
+  if (shape) c.shapes[shape] = (c.shapes[shape] || 0) + 1;
+  for (var i = 0; i < run.roster.length; i++) {
+    var nm = E.teamName(run.roster[i].t);
+    c.clubs[nm] = (c.clubs[nm] || 0) + 1;
+  }
+  try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
+  return c;
+}
+
+function topOf(map){
+  var best = null, n = 0;
+  for (var k in map) if (map[k] > n) { n = map[k]; best = k; }
+  return best ? { name: best, n: n } : null;
+}
+
+function renderCareer(){
+  var c = loadCareer();
+  var list = $('pf-list');
+  list.textContent = '';
+
+  if (!c || !c.runs) {
+    $('pf-runs').textContent = '0';
+    $('pf-rings').textContent = '0';
+    $('pf-best').textContent = '-';
+    $('prof-sub').textContent = '';
+    var li = document.createElement('li');
+    li.style.cssText = 'display:block;border:0;color:var(--mut)';
+    li.textContent = 'No finished runs yet. Draft six and play the 82.';
+    list.appendChild(li);
+    return;
+  }
+
+  $('pf-runs').textContent = String(c.runs);
+  $('pf-rings').textContent = String(c.rings);
+  $('pf-best').textContent = c.bestLabel || '-';
+  $('prof-sub').textContent = c.runs + ' run' + (c.runs === 1 ? '' : 's') + ' on this device';
+
+  var row = function(label, value){
+    var li = document.createElement('li');
+    li.appendChild(document.createTextNode(label));
+    var b = document.createElement('b');
+    b.textContent = value;
+    li.appendChild(b);
+    list.appendChild(li);
+  };
+
+  var games = c.totalWins + c.totalLosses;
+  row('Career record', c.totalWins + '-' + c.totalLosses);
+  row('Wins a season', games ? (c.totalWins / c.runs).toFixed(1) : '-');
+  row('Playoff seasons', c.playoffs + ' of ' + c.runs);
+  row('Best rating', c.bestRating ? c.bestRating.toFixed(0) : '-');
+  if (c.beat72) row('Seasons past 72 wins', String(c.beat72));
+
+  var shape = topOf(c.shapes);
+  if (shape) row('Most drafted shape', shape.name + ' (' + shape.n + ')');
+  var club = topOf(c.clubs);
+  if (club) row('Most drafted club', club.name + ' (' + club.n + ')');
+}
+
+function openProfile(){
+  renderCareer();
+  $('sheet').classList.add('open');
+}
+function closeProfile(){ $('sheet').classList.remove('open'); }
+
+function clearCareer(){
+  try { localStorage.removeItem(PKEY); } catch (e) {}
+  renderCareer();
 }
 
 // ── saving ─────────────────────────────────────────────────────────────────
@@ -941,6 +1746,14 @@ $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
 $('b-again').onclick = startRun;
+$('b-prof').onclick = openProfile;
+$('b-prof2').onclick = openProfile;
+$('b-prof-x').onclick = closeProfile;
+$('b-prof-clear').onclick = clearCareer;
+/* Tapping the scrim closes it, which is what a sheet is expected to do, but a
+   tap INSIDE the panel must not, or every button press dismisses the thing. */
+$('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
+document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeProfile(); });
 
 boot();
 })();
