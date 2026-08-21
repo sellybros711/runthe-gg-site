@@ -259,6 +259,31 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:inset 0 0 0 2px var(--pfpring,rgba(255,255,255,.28))}
   .avatar.signed svg{display:none}
   .avatar.signed .ab{display:block}
+  /* SIGNED OUT, IT SAYS SO IN WORDS. Ported from the NFL game, in this game's green.
+     A line-art figure in a circle is the convention for "your account" and says nothing
+     at all to somebody who does not have one: it reads as a decorative avatar, and the
+     one control that puts your name on the leaderboard looked like a picture of a
+     person. So when the library has answered and nobody is signed in, the circle
+     becomes a pill that says Sign in.
+
+     ONLY THEN. authState.ready is false until auth answers and false for good when the
+     script is blocked, and both of those keep the plain circle: telling a returning
+     player to sign in for the half second before their session restores would be worse
+     than saying nothing, and telling somebody whose browser is blocking the sign-in
+     script to sign in is worse again.
+
+     The button carries its own border here rather than drawing a disc in :before the way
+     the NFL one does, so the pill is the button: same 40px tap height, rounded ends,
+     width from the word. */
+  .avatar .lbl{display:none;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:#a7f3d0;white-space:nowrap}
+  .avatar.signin{flex:0 0 auto;width:auto;padding:0 12px;border-radius:99px;
+    border-color:rgba(52,211,153,.5)}
+  .avatar.signin:before{inset:0;border-radius:99px;background:rgba(16,185,129,.14)}
+  .avatar.signin svg{display:none}
+  .avatar.signin .lbl{display:block}
+  .avatar.signin:hover{border-color:rgba(52,211,153,.8)}
+  .avatar.signin:hover:before{background:rgba(16,185,129,.24)}
   /* The three-word wordmark is longer than the old two, and Anton can be slow to
      arrive, iOS falls back to the wider Impact, so the type is sized in vw and
      scales with the screen rather than clipping. On a phone the RunThe.GG pill
@@ -266,6 +291,24 @@ window.GA_ID='G-L29P5MRWKE';
      keeps its room; the wordmark may wrap before it ever clips. */
   @media(max-width:480px){
     .pill.site{font-size:9.5px;padding:5px 8px;letter-spacing:.1em}
+  }
+  /* THE WORD COSTS 35px AND A SMALL PHONE DID NOT HAVE THEM. Measured: the pill is 75px
+     where the circle was 34, and with it in place the three-word wordmark broke onto two
+     lines at 360 and 390 and ran 15px off the edge at 320. The reductions that already
+     make this header fit are pulled in a step further, and only while the pill is
+     actually there, so a signed-in player on the same phone keeps the type they have.
+     The wordmark's floor comes down with them: at 320 the clamp was already pinned to
+     its 10px minimum, so nothing else here could have given it the room.
+
+     :has, which this stylesheet already depends on for the school theme. Where it is not
+     supported none of this applies and the wordmark wraps, which it is built to do. */
+  @media(max-width:399px){
+    header:has(.avatar.signin) .brand{font-size:clamp(8.5px,2.65vw,13px)}
+    header:has(.avatar.signin) .pill.site{font-size:9px;padding:5px 7px;letter-spacing:.07em}
+    header:has(.avatar.signin) .hdr-r{gap:6px}
+    header:has(.avatar.signin) .avatar.signin{padding:0 9px}
+    header:has(.avatar.signin) .lbl{font-size:9.5px;letter-spacing:.05em}
+    header:has(.avatar.signin) .mark{margin-right:6px}
   }
   @media(max-width:360px){
     .mark{width:26px;height:23px;margin-right:7px}
@@ -2929,6 +2972,10 @@ or endorsed by the NCAA, the CFP or any school.
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>
           <path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>
         <span class="ab"></span>
+        <!-- Shown in place of the head once auth has answered and nobody is signed in.
+             In the markup rather than written in, so the three states are one class
+             swap and none of them rebuilds the button. -->
+        <span class="lbl">Sign in</span>
       </button>
     </div>
   </header>
@@ -4066,9 +4113,16 @@ function updateAvatar(){
   const ini=name?((myAvatar.initials||initialsOf(name))||'') : '';
   if(ini){ av.classList.add('signed'); ab.textContent=ini; }
   else{ av.classList.remove('signed'); ab.textContent=''; }
+  /* THE THIRD STATE, AND WHAT MAKES IT THE THIRD RATHER THAN THE ABSENCE OF THE OTHER
+     TWO. Signed out is only knowable once auth has answered: ready is false while the
+     library is still landing and false for good if it never does, and in both of those
+     the honest thing on screen is the plain head. So this is not !signedIn. */
+  const out=authState.ready&&!authState.signedIn;
+  av.classList.toggle('signin',out);
   av.setAttribute('aria-label',
-    (name?'Signed in as '+name+'. ':'Not signed in. ')+
-    (selectedSchool?'Colors: '+selectedSchool.school+'. ':'')+'Open your profile');
+    out?'Sign in or create an account'
+      :(name?'Signed in as '+name+'. ':'Not signed in. ')+
+        (selectedSchool?'Colors: '+selectedSchool.school+'. ':'')+'Open your profile');
 }
 /* ── THE PROFILE HUB AND ITS PAGES ──────────────────────────────────
    THIS USED TO BE THREE TABS ACROSS THE TOP OF ONE SHEET: your account, the colors

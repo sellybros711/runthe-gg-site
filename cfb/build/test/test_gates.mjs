@@ -22,9 +22,13 @@
  *   the saved school must survive a sign-out rather than being forgotten, and
  *   a signed-in trophy case must not spin forever when the board cannot answer.
  *
- * The offline-accounts case (the sign-in script blocked outright) is not here: the gate a
- * guest can actually reach is the More ways to play sheet, and test_gate_modes.mjs walks
- * all three of its states including that one.
+ * THE BUTTON IN THE HEADER has all three of its states here, because it is the one
+ * control on every screen of the game and the three are one class swap apart: the pill
+ * that says Sign in, the bubble with your initials, and the plain head for the case
+ * where nobody has answered yet or the script never landed at all.
+ *
+ * The offline case is otherwise not here: the gate a guest can actually reach is the
+ * More ways to play sheet, and test_gate_modes.mjs walks all three of its states.
  */
 import { chromium } from 'playwright';
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
@@ -86,6 +90,15 @@ console.log('\n=== a guest opens the profile ===');
   await p.addInitScript(stub(false));
   await p.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(2800);
+  /* THE BUTTON IN THE CORNER SAYS SO IN WORDS. A line-art head in a circle is the
+     convention for "your account" and says nothing to somebody who has not got one:
+     it reads as decoration, and it is the one control on every screen of the game. */
+  ok('the header button is a Sign in pill',
+    await p.$eval('#b-profile',e=>e.classList.contains('signin')));
+  ok('and it says Sign in', /sign in/i.test(await p.$eval('#b-profile',e=>e.textContent||'')),
+    (await p.$eval('#b-profile',e=>(e.textContent||'').trim())));
+  ok('the head is not drawn behind the word',
+    await p.$eval('#b-profile svg',e=>getComputedStyle(e).display==='none'));
   await p.click('#b-profile'); await p.waitForTimeout(600);
   ok('it opens on the sign-in form', !!(await p.$('#ac-email')));
   ok('and not on a hub, because there is no account to be the hub of',
@@ -168,6 +181,8 @@ console.log('\n=== a member opens the profile ===');
   await p.addInitScript(stub(true));
   await p.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(2800);
+  ok('the header button is the bubble again, not a pill',
+    !(await p.$eval('#b-profile',e=>e.classList.contains('signin'))));
   await p.click('#b-profile'); await p.waitForTimeout(600);
   ok('it opens on the hub', !!(await p.$('#pf-go-case')));
   await p.click('#pf-go-look'); await p.waitForTimeout(600);
@@ -254,6 +269,28 @@ console.log('\n=== signed in, but the board cannot answer ===');
   ok('the case does not spin forever', !/Fetching your seasons/.test(t), t.slice(0,80));
   ok('it says the fetch failed and nothing is lost', /could not be fetched/.test(t)||/No seasons yet/.test(t));
   await p.screenshot({path:SS+'gate_case_boarddown.png'});
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the sign-in script never landed ===');
+{
+  /* THE THIRD STATE OF THE HEADER BUTTON, and the reason it is not simply "not signed
+     in". The library is given fifteen seconds to turn up and then declared absent, which
+     in the wild is an ad blocker. Telling somebody to sign in when their browser is
+     refusing to load the thing that would let them is worse than saying nothing, and the
+     same rule covers the half second before a returning player's session restores. */
+  const p=await b.newPage({viewport:{width:600,height:1000}});
+  const errs=[];p.on('pageerror',e=>errs.push(e.message));
+  await p.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(3000);
+  ok('early on it is still the plain head, not an invitation',
+    !(await p.$eval('#b-profile',e=>e.classList.contains('signin'))));
+  await p.waitForTimeout(15000);      // past auth.js's GIVE_UP_MS
+  ok('and it stays the plain head once accounts are declared offline',
+    !(await p.$eval('#b-profile',e=>e.classList.contains('signin'))));
+  ok('the head is drawn', await p.$eval('#b-profile svg',e=>getComputedStyle(e).display!=='none'));
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
