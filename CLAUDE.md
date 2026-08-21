@@ -150,8 +150,24 @@ node hoops/verify.mjs             draft legality, seed replay, and calibration
 
 `verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
 the constants: it states what the balance is supposed to look like and flags what
-is outside its band. Two targets are deliberately out of band today, because the
-data is a hand-entered seed. See `hoops/build/README.md`.
+is outside its band.
+
+**Two targets are out of band today and no constant will fix them.** The four
+numbers that turn win shares into a record are now FITTED to twenty-two real NBA
+records (rms 3.5 wins), so a roster is worth what it was worth in life: rating
+all 1403 team-seasons puts the 2012 Bobcats last at 10.5 wins and the 1996 Bulls
+first at 73.8. What is still off is the GAP between a thoughtless draft and a
+perfect one, which never exceeds about six wins at any cap, because
+`build-players.mjs` prices players off `p.w` alone. Price being a monotone
+function of value means the board holds no bargains, so best-available is close
+to optimal. Fixing it means pricing on something other than value, or widening
+what roster shape is worth. Both are design changes. The TARGETS block says all
+of this at the point of failure, so read it there rather than trusting this
+paragraph to stay current.
+
+**Refit, do not nudge.** If the data changes shape, re-run the solve rather than
+moving one constant: they trade off against each other, and the reason the
+previous set was uniformly 15 wins low is that no single number showed it.
 
 ### The data pipeline
 
@@ -168,8 +184,26 @@ node hoops/build/fetch-teams.mjs                       franchises (this one DOES
 node hoops/build/build-players.mjs --from hoops/build/raw/nba_player_seasons.json
 ```
 
-Three things about it are worth knowing before you change it:
+Things worth knowing before you change it:
 
+- **A season page carries the PLAYOFF table too.** The scrape must stay scoped to
+  the regular-season table, which `seasonTables()` does by table id and document
+  order, either of which alone is a silent failure. This shipped once: win shares
+  join on player and club, so a finalist's playoff row simply overwrote his
+  season, Jordan's 1996 arrived at 4.7 win shares instead of 20.4, and nothing
+  failed. `verify.mjs` now asserts the shape of the win-share distribution plus
+  six great seasons by name.
+- **Never demand a particular way of writing a link.** The draft fetch returned
+  zero picks for sixty-six years on four separate runs because the parser wanted
+  `href="/players/...`, which assumes a relative origin, a double quote, and
+  nothing after `.html`. Six of seven plausible forms fail that. Ask for the
+  path.
+- **Not every season is 82 games.** 1999 played 50, 2012 66, 2021 72, and 2020
+  between 63 and 75 by club. Win shares are a counting stat, so `build-players`
+  normalizes each club to an 82 game schedule, or Iverson's 1999 MVP season
+  arrives looking like a rotation guard. A club that played 78 or more counts as
+  full: in the modern game nobody plays all 82, and treating rest days as a short
+  season inflates recent players.
 - **Draft year and college are on no season page.** They are chemistry inputs,
   so without `fetch-draft.mjs` the `alma_mater` and `draft_class` links are
   permanently silent rather than wrong. It reads the per-year draft pages (about
@@ -183,11 +217,13 @@ Three things about it are worth knowing before you change it:
   different club rather than an alias. `check-posture.mjs` asserts every team
   code in the player data has a franchise row, because that join fails silently.
 
-If `hoops/data/players.json` still holds 171 rows, the fetch has never
-succeeded and the game is playing on `hoops/build/seed-rosters.mjs`: values
-entered from memory and rounded, which must never be shown to a player as a fact
-about a real season. The dev banner on the page says so, and it comes off when
-the data is real, not before.
+The fetch has now run. `hoops/data/players.json` holds **16,057 player-seasons
+from 1974 to 2025**, 14,612 of them with a draft year and 13,109 with a college.
+If it ever holds 171 rows again, the game has fallen back to
+`hoops/build/seed-rosters.mjs`: values entered from memory and rounded, which
+must never be shown to a player as a fact about a real season. The dev banner
+said so and has come off, because saying it now would be false in the other
+direction.
 
 ## Segue's data
 

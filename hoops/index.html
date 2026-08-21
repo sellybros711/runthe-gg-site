@@ -62,9 +62,12 @@
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
   .dim{color:var(--mut);}
 
-  /* The development banner. It is the first thing on the page because the data
-     under this game is hand entered and approximate, and a visitor who somehow
-     reaches an unlisted URL should be told that before reading a stat line. */
+  /* The development banner. It is the first thing on the page because a visitor who
+     somehow reaches an unlisted URL deserves to know what state the game is in before
+     they judge it. It used to warn that the numbers were hand entered and approximate,
+     which was true of the 171 row seed and is not true of the fetched data. Saying so
+     now would be false in the other direction, and a game that understates its own
+     sources teaches people not to trust the ones it does have. */
   .devbar{
     background:linear-gradient(180deg,#3a2410,#2a1a0c); border:1px solid #5d3a15;
     border-radius:10px; padding:11px 14px; margin:0 0 18px; font-size:13px; color:#f0c9a0;
@@ -221,10 +224,10 @@
 <div class="wrap">
 
 <div class="devbar">
-  <b>In development.</b> This page is a working skeleton, not a finished game. The player
-  data behind it is a hand-entered placeholder: 171 seasons off 22 clubs, with win share
-  splits and per-game lines entered from memory and rounded. Treat nothing here as a fact
-  about a real season until the data pipeline has run.
+  <b>In development.</b> This page is not a finished game: the balance is still being
+  tuned and it is linked from nowhere on the site. The data behind it IS real, 16,057
+  player-seasons from 1974 to 2025 out of Basketball-Reference, so a stat line on a card
+  is that player's actual season.
 </div>
 
 <header class="mast">
@@ -389,8 +392,8 @@
     href="/hoops/how-to-play.html">How to play</a><span>&middot;</span><a
     href="/" target="_blank" rel="noopener">More games</a></p>
   <p class="src">An unofficial fan project in development, not affiliated with or endorsed by
-    the NBA or any club. Player data is a hand-entered placeholder and is not a record of any
-    real season.</p>
+    the NBA or any club. Player and franchise data from Basketball-Reference, used for a
+    non-commercial fan project.</p>
 </footer>
 
 </div>
