@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- A dozen helmets, large, for judging the pixels rather than the page. Edit the list. -->
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Helmets, close up</title>
+<body style="margin:0;background:#0b1220;padding:16px;display:flex;flex-wrap:wrap;gap:14px;
+  font:11px system-ui;color:#9fb3c8">
+<script src="helmet.js"></script><script src="kits.js"></script>
+<script>
+for (const ab of ['LV','NO','PHI','CLE','CIN','PIT','SEA','ARI','MIN','TB','HOU','KC']) {
+  const k = KITS.nfl.find((x) => x.sub === ab);
+  const d = document.createElement('div');
+  const c = document.createElement('canvas');
+  PixelHelmet.render(c, k, 7);
+  c.style.imageRendering = 'pixelated';
+  d.appendChild(c);
+  d.insertAdjacentHTML('beforeend', '<div>' + k.name + '</div>');
+  document.body.appendChild(d);
+}
+</script>
