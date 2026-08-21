@@ -1427,6 +1427,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     color:var(--violetT); font-variant-numeric:tabular-nums;}
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
+  /* The price rides on the button, so it is set apart from the verb: tabular
+     so it does not jump between 5:00, 10:00 and 15:00, and lighter than the
+     word because the word is what you press and the number is the terms. */
+  .btn.tiny.spin b{margin-left:4px; font-weight:900; font-variant-numeric:tabular-nums;
+    opacity:.82;}
   .hud-btns{display:flex; gap:6px; align-items:center; flex:0 0 auto;}
   /* Red, because it spends the one thing you cannot get back. */
   .btn.tiny.spin{border-color:color-mix(in srgb,var(--red) 50%, transparent);
@@ -1509,6 +1514,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .ga-meta{font-size:12px; font-weight:700; color:var(--dim); margin-top:3px;}
   .ga-why{font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.5; margin-top:7px;}
   .ga-why b{color:var(--ink);}
+  /* The clause that stops the card being arguable: the swap was affordable. */
+  .ga-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45; margin-top:5px;}
 
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
     color:var(--mut); font-style:italic;}
@@ -2529,8 +2536,8 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=39" defer></script>
-<script src="/setlist/board.js?v=39" defer></script>
+<script src="/setlist/auth.js?v=40" defer></script>
+<script src="/setlist/board.js?v=40" defer></script>
 
 <script type="module">
 import {
@@ -2541,8 +2548,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=39';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=39';
+} from './scoring.js?v=40';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=40';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3164,8 +3171,14 @@ function renderHome(){
           Pick one song off it.</span></li>
         <li><b>2</b><span>That song uses up its real running time, so a
           20-minute jam costs you 20 minutes.</span></li>
-        <li><b>3</b><span>You've got two sets and an encore, each on a clock,
-          and you decide when a set ends.</span></li>
+        ${/* NOT "you decide when a set ends". Measured over 400 identical show
+              sequences, closing a set early cost points at every threshold from
+              4 to 25 minutes and cost more the earlier it happened, and 100% of
+              sets ended on the clock. See bankGoesTo. Promising a decision the
+              scoring does not reward is how a player learns to distrust the
+              rules, so the step says what actually ends a set. */''}
+        <li><b>3</b><span>You've got two sets and an encore, each on a clock.
+          A set runs until the clock does.</span></li>
         <li><b>4</b><span>Rare songs, great versions and real segues are worth
           the most.</span></li>
         <li><b>5</b><span>When you're done, the show plays back song by song
@@ -3354,7 +3367,28 @@ function renderReveal(){
 
 /* WHERE UNUSED TIME LANDS, named once. Time carries one set forward, so the
    answer is "the next set" rather than always the encore, and three separate
-   bits of copy promise it to the player. They have to agree with budgets(). */
+   bits of copy promise it to the player. They have to agree with budgets().
+ *
+ * AND WHAT THAT COPY IS NOW ALLOWED TO CLAIM. It used to read "Banks 12:34 for
+ * Set II", which frames time you did not spend as a prize. Measured, it is the
+ * opposite: 400 identical show sequences played greedily, closing a set early
+ * at every threshold from 4 to 25 minutes, cost points every time and cost
+ * more the earlier it happened.
+ *
+ *     close Set I with   4 min left  -8     close Set II   4 min left   -5
+ *                       12 min left  -12                  12 min left  -18
+ *                       25 min left  -19                  25 min left  -29
+ *
+ * That is not a bug in the cascade. The time score pays on how much of the
+ * budget you used, the carried minutes raise the NEXT set's budget too, and no
+ * song in the archive is long enough that a 70 minute set could not already
+ * hold it. So banking buys nothing and pays a short-set penalty, in both
+ * directions, and 100% of sets in that run ended on the clock rather than on
+ * the eight song cap.
+ *
+ * Making it a real choice means inventing a reward for it, which is a design
+ * change and not a wording one. Until then the copy says what is true: closing
+ * early is the way out when nothing fits, and it costs. */
 function bankGoesTo(si){ return SETS[si + 1] ? SETS[si + 1].label : null; }
 
 function setsPanelHTML({ live }){
@@ -3611,7 +3645,7 @@ function renderDraft(){
         ? 'Tap again to confirm'
         : si === ENCORE_INDEX
           ? 'Nothing here? Finish and score the night.'
-          : `Nothing here? Bank ${fmtClock(Math.max(0, left))} for ${esc(bankGoesTo(si))}.`}</span>
+          : `Nothing here fits? The last ${fmtClock(Math.max(0, left))} carries to ${esc(bankGoesTo(si))}.`}</span>
     </button>` : '');
 
   app.innerHTML = `
@@ -3642,11 +3676,28 @@ function renderDraft(){
         <div class="hud-where">${esc(cfg.label)} &middot; pick ${S.round + 1}${
           S.respins ? ` &middot; ${S.respins} respin${S.respins > 1 ? 's' : ''}` : ''}</div>
         <div class="hud-btns">
+          ${/* TWO CONTROLS THAT SAID NOTHING.
+                "Respin" hid its price in a hover title, which a phone never
+                shows, so the one button on this screen that spends the
+                resource the whole game is about looked free. Pressing it to
+                find out is not a fair way to learn a price.
+                The price came OFF this button once, on purpose, and that
+                reason still holds: it was "Respin · 5:00", and an mm:ss beside
+                a 44px mm:ss countdown is a second clock. So it is back in
+                MINUTES. No colon, no seconds, nothing that can be mistaken for
+                the number you are playing against, and the confirm sheet still
+                spells out the full trade before anything is spent.
+                "Time" is the other one. It is not a noun for anything: it
+                opens the setlist you have built, on a card whose own heading
+                says "Tonight", next to the clock it appears to name. */''}
           ${cost === null ? '<span class="nospin">No spins left</span>'
             : `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
-                title="${can ? 'Trade stage time for a different show' : 'Not enough time left in this set'}"
-                >Respin</button>`}
-          <button class="btn tiny" type="button" id="openSets">Time</button>
+                aria-label="${can
+                  ? `Draw a different show. Costs ${fmtClock(cost)} of stage time.`
+                  : `A different show costs ${fmtClock(cost)} and there is not that much left.`}"
+                >Respin <b>${Math.round(cost / 60)} min</b></button>`}
+          <button class="btn tiny" type="button" id="openSets"
+            aria-label="Show the setlist you have built so far">Setlist</button>
         </div>
       </div>
       <div class="hud-clock" role="img"
@@ -3706,7 +3757,8 @@ function renderDraft(){
               dismiss button or a flag to remember. */''}
         ${!S.sets.flat().length ? `<div class="firsthint">
           <b>Tap any song below to add it to ${esc(cfg.label)}.</b>
-          Its running time comes off your clock, and you decide when the set ends.
+          Its running time comes off your clock, and the set runs until the
+          clock does.
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
@@ -3765,12 +3817,12 @@ function renderDraft(){
                 ? 'Tap again to confirm'
                 : si === ENCORE_INDEX
                   ? 'Final. Scores the night.'
-                  : `Banks ${fmtClock(Math.max(0, left))} for ${esc(bankGoesTo(si))}`}</span>
+                  : `${fmtClock(Math.max(0, left))} carries to ${esc(bankGoesTo(si))}, and a short set scores less`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
               || (!fits.length ? "Nothing here fits. You'll have to close the set."
                 : si === ENCORE_INDEX ? 'Whatever Set II left over is yours here.'
-                : `Every minute you leave unplayed goes to ${bankGoesTo(si)}.`))}</div>
+                : `Close early and the rest of the clock carries to ${bankGoesTo(si)}, but the crowd notices a short set.`))}</div>
           </div>
         </aside>
       </div>
@@ -3980,12 +4032,24 @@ function renderResult(){
           <span class="ga-len">${fmtClock(lenOf(S.missed.perf))}</span></div>
         <div class="ga-meta">${esc(fmtDate(S.missed.perf.show_date))} ·
           ${esc(S.missed.perf.venue || '')}</div>
-        <div class="ga-why">You were shown it and left it there.
-          ${S.missed.role ? `As ${esc(S.missed.role.name.toLowerCase())} it` : 'It'}
+        ${/* THE TWO NUMBERS ARE THE POINT, and until now there was only one of
+              them. "It was worth 176" sat beside a setlist of songs scoring
+              27 to 59 with nothing saying why the scales differed: the card
+              took the best song ever offered, judged in the best of six roles
+              it never had to earn, and beat everything the player did in 296
+              of 300 measured games.
+              It names the swap instead. Same show, same slot in the set, same
+              role, and no longer than what was actually spent there, so the
+              only thing that differs between the two numbers is the song. */''}
+        <div class="ga-why">You took <b>${esc(S.missed.instead.song)}</b> out of
+          that show for <b>${S.missed.took.subtotal}</b>. In the same slot, this
           was worth <b>${S.missed.score.subtotal}</b>${
+            S.missed.role ? ` as ${esc(S.missed.role.name.toLowerCase())}` : ''}${
             S.missed.score.versionReasons.length
               ? ': ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
               : ''}.</div>
+        <div class="ga-fine">It was no longer than the one you took, so the
+          clock was never what stopped you.</div>
       </div>` : ''}
 
       <!-- FOUR NUMBERS THAT NOW SAY WHAT THEY ARE. They were a bare row under
@@ -5614,7 +5678,9 @@ function finishShow(){
   try {
     S.best = bestPossible(S.drafted, S.data.segues, S.data.segueCounts, S.spent, S.data.suites);
   } catch (err) { S.best = null; }
-  S.missed = theOneThatGotAway(S.seenSongs, S.sets);
+  /* DRAFTED, NOT SEEN. The card is a swap now: same round, same slot, one song
+     different, so it needs the pick each alternative was an alternative TO. */
+  S.missed = theOneThatGotAway(S.drafted, S.sets);
   S.posted = null;
   recordShow();       // fire and forget; the playback does not wait on a network
   setScreen('show');

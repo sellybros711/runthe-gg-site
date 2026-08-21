@@ -40,6 +40,25 @@ const UPDATE = process.argv.includes('--update');
    new game cannot be added to the site and left out of this by forgetting a list. */
 const TAG = /<script[^>]*\ssrc="([A-Za-z0-9_.-]+\.js)\?v=([^"]+)"/g;
 
+/* AND EVERY PAGE THAT IMPORTS ONE AS A MODULE, which this did not see for a year.
+ *
+ * A `<script src>` is not the only way a page pairs itself with a file that caches
+ * separately. setlist/index.html is an ES module and reaches its two siblings with
+ *
+ *   import { scoreShow, ... } from './scoring.js?v=39';
+ *
+ * for exactly the reason this checker exists: it shipped a blank page once when v4
+ * renamed the scoring exports and a cached index.html met a fresh scoring.js. Those
+ * versions were then invisible here, so the check reported "26 versioned scripts ok"
+ * on a commit that changed scoring.js and left ?v=39 alone. The failure that would
+ * have caused is quieter than a crash: theOneThatGotAway kept its arity across the
+ * rewrite, so a returning player's cached copy would have been handed the new
+ * argument, found no song_id on it, and silently dropped the card.
+ *
+ * Both quote styles, and the `./` is optional so the two forms record under the same
+ * name as a <script src> would. */
+const MOD = /(?:^|[\s({,])(?:import|export)[^;'"]*?from\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]/gm;
+
 function pages(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
     if (name === '.git' || name === 'node_modules') continue;
@@ -61,11 +80,13 @@ const found = {};
 for (const page of pages(ROOT)) {
   const html = fs.readFileSync(page, 'utf8');
   const rel = path.relative(ROOT, page);
-  for (const m of html.matchAll(TAG)) {
-    const script = path.join(path.dirname(page), m[1]);
-    /* Only files that live beside the page. A missing one is somebody else's bug. */
-    if (!fs.existsSync(script)) continue;
-    (found[rel] ??= {})[m[1]] = { v: m[2], sha: sha(script) };
+  for (const re of [TAG, MOD]) {
+    for (const m of html.matchAll(re)) {
+      const script = path.join(path.dirname(page), m[1]);
+      /* Only files that live beside the page. A missing one is somebody else's bug. */
+      if (!fs.existsSync(script)) continue;
+      (found[rel] ??= {})[m[1]] = { v: m[2], sha: sha(script) };
+    }
   }
 }
 
