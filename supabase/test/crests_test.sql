@@ -172,3 +172,79 @@ select ok('a new run is stamped', (select display_tier from ps_runs order by id 
 -- would make.
 select ok('one argument still works', (select mark from ps_set_crest('dog')), 'dog');
 select ok('and left the rank alone', (select crest_tier from profiles), 'gold1');
+
+-- ---------------------------------------------------------------------------
+-- 90: the honour ring
+-- ---------------------------------------------------------------------------
+delete from ps_runs; delete from profiles; delete from auth.session;
+insert into profiles(id,username) values
+  ('44444444-4444-4444-4444-444444444444','ringed');
+insert into auth.session values ('44444444-4444-4444-4444-444444444444');
+select ps_set_avatar('MIA','RG');
+select play('club','MIA',true,true);
+
+select ok('no ring until one is sent', (select crest_ring from profiles), null);
+select ps_set_crest('dog','silver2','gold');
+select ok('ring stored', (select crest_ring from profiles), 'gold');
+select ok('ring on the rows', (select min(display_ring) from ps_runs), 'gold');
+
+-- All three move independently: a call that only changes the mark must leave the
+-- rank AND the ring where they are.
+select ps_set_crest('crown');
+select ok('mark alone leaves the ring', (select crest_ring from profiles), 'gold');
+select ok('mark alone leaves the rank', (select crest_tier from profiles), 'silver2');
+select ok('rows kept the ring', (select min(display_ring) from ps_runs), 'gold');
+
+-- Clearing the mark leaves the ring, exactly as it leaves the rank.
+select ps_set_crest('');
+select ok('mark cleared', (select crest_mark from profiles), null);
+select ok('ring survived the clear', (select crest_ring from profiles), 'gold');
+
+-- A ring climbs.
+select ps_set_crest('', null, 'perfect');
+select ok('ring climbed', (select crest_ring from profiles), 'perfect');
+select ok('rows climbed too', (select min(display_ring) from ps_runs), 'perfect');
+
+-- 'club' is the ABSENCE of an honour, and the setter takes that word without
+-- storing it, the same way it takes 'init' for the monogram. It must not clear a
+-- ring either: coalesce means the client cannot give one up by accident.
+select ps_set_crest('', null, 'club');
+select ok('club is not stored as a value', (select crest_ring from profiles), 'perfect');
+
+-- A bogus ring is refused.
+do $$ begin
+  perform ps_set_crest('', null, 'platinum');
+  raise notice 'FAIL  a bogus ring was accepted';
+exception when others then
+  raise notice ' ok   a bogus ring is refused: %', sqlerrm;
+end $$;
+
+-- The rank still moves on its own with a ring in place.
+select ps_set_crest('', 'goat');
+select ok('rank climbed past the ring', (select crest_tier from profiles), 'goat');
+select ok('ring untouched by a rank move', (select crest_ring from profiles), 'perfect');
+
+-- A new run carries all three without being told any of them.
+select play('club','MIA',true,false);
+select ok('a new run is stamped with the ring',
+  (select display_ring from ps_runs order by id desc limit 1), 'perfect');
+select ok('and with the rank',
+  (select display_tier from ps_runs order by id desc limit 1), 'goat');
+
+-- Both the one and two argument calls still resolve, which is what a client one or
+-- two versions behind would make. Neither may touch the ring.
+select ok('one argument still works', (select mark from ps_set_crest('dog')), 'dog');
+select ok('one argument left the ring', (select crest_ring from profiles), 'perfect');
+select ok('two arguments still work', (select tier from ps_set_crest('dog','gold3')), 'gold3');
+select ok('two arguments left the ring', (select crest_ring from profiles), 'perfect');
+
+-- ps_rename_runs carries all seven display fields. The rank is set here rather than
+-- read from further up: the two checks above moved it, and a test that depends on
+-- what an earlier check happened to leave behind fails for the wrong reason later.
+select ps_set_crest('dog','goat');
+update profiles set username='renamed' where id=auth.uid();
+select ps_rename_runs();
+select ok('rename carried the name', (select min(display_name) from ps_runs), 'renamed');
+select ok('rename carried the ring', (select min(display_ring) from ps_runs), 'perfect');
+select ok('rename carried the rank', (select min(display_tier) from ps_runs), 'goat');
+select ok('rename carried the mark', (select min(display_mark) from ps_runs), 'dog');
