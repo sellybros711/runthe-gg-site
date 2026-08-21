@@ -42,8 +42,15 @@ const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x?'   '+x:''));};
 
-/* One season, start to finish, the way a player plays it. Returns at the results screen. */
-async function playSeason(p){
+/* One season, start to finish, the way a player plays it. Returns at the results screen.
+ *
+ * `worst` DRAFTS THE CHEAPEST MAN OFFERED EVERY ROUND, and the guest blocks below need
+ * it. A guest who makes the playoff is stopped at the seeding screen now and asked for
+ * an account, which is the whole of test_playoff_gate.mjs, so a strong draft here would
+ * hang against a wall that is working correctly. A minimum roster reaches neither the
+ * playoff nor a bowl in sixty seasons, so the season ends at seeding and this file gets
+ * on with what it is actually about: what a finished season announces, and to whom. */
+async function playSeason(p,worst){
   await p.evaluate(()=>document.getElementById('b-play-intro').click());
   await p.waitForTimeout(1400);
   for(let i=0;i<40;i++){
@@ -52,11 +59,13 @@ async function playSeason(p){
        tile click while that sheet is up lands on the sheet. Answer it first. */
     const slot=await p.$('#sheet.on .slotopt[data-i]');
     if(slot){ await slot.click(); await p.waitForTimeout(800); continue; }
-    const took=await p.evaluate(()=>{
+    const took=await p.evaluate((low)=>{
       const t=[...document.querySelectorAll('#opts .tile:not(.off)')];
       if(!t.length) return false;
+      const fppg=(e)=>parseFloat((e.querySelector('.pts b')||{}).textContent||'0')||0;
+      if(low) t.sort((a,b)=>fppg(a)-fppg(b));
       t[0].click(); return true;
-    });
+    },!!worst);
     await p.waitForTimeout(took?2200:600);
   }
   /* The post-draft ask stands over the squad screen for a guest. Dismissed the way a
@@ -108,7 +117,7 @@ console.log('\n=== a guest finishes a season ===');
     new MutationObserver(()=>{ if(el.classList.contains('on')) window.__heads.push(el.textContent||''); })
       .observe(el,{attributes:true,childList:true,characterData:true,subtree:true});
   });
-  await playSeason(p);
+  await playSeason(p,true);
   await p.waitForTimeout(9000);   // past achAnnounce's 900ms + 2100ms spacing for three
   const heads=await p.evaluate(()=>window.__heads||[]);
   ok('the season finished', !!(await p.$('#s-over.on')));
