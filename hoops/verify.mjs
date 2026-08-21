@@ -40,6 +40,37 @@ function is(actual, expect, what) {
   ok(a === e, `${what}\n      expected ${e}, got ${a}`);
 }
 
+/* ── TWO KINDS OF FAILURE, AND THEY DESERVE DIFFERENT POWERS ────────────────
+ *
+ * Most of this file asserts INTEGRITY: a draft may never break the cap, a slot
+ * may never hold a player who cannot play it, a seed must replay, a rating must
+ * be a number. Those are properties of the CODE. They are true or the game is
+ * broken, and they block everything, always.
+ *
+ * The lineup expectations are a different animal. "The 1996 Bulls should come
+ * back running the Triangle" is a judgement about a MODEL, calibrated when the
+ * only data available was 171 rows somebody typed from memory. Real
+ * Basketball-Reference numbers can legitimately move a borderline roster from
+ * one identity to a neighbouring one, and when they do, the right response is
+ * to look at the real numbers and decide, not to reject the data.
+ *
+ * So a data refresh runs with --lineups-advisory: the labels are still checked
+ * and still printed loudly, but they do not stop ground truth from landing.
+ * Everything else still blocks. Running the file with no flag, which is what a
+ * pull request does, enforces all of it.
+ */
+const LINEUPS_ADVISORY = process.argv.includes('--lineups-advisory');
+const lineupDrift = [];
+
+function expectLineup(cond, what) {
+  if (cond) { pass++; return; }
+  (LINEUPS_ADVISORY ? lineupDrift : failures).push(what);
+}
+function isLineup(actual, expect, what) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expect);
+  expectLineup(a === e, `${what}\n      expected ${e}, got ${a}`);
+}
+
 // ─── the data itself ────────────────────────────────────────────────────────
 
 ok(players.length > 0, 'players.json is not empty');
@@ -312,9 +343,13 @@ const KNOWN = [
 
 for (const [who, expected, names] of KNOWN) {
   const six = lineup(names);
-  if (!six) { failures.push(`${who}: a player in that lineup is not in the data`); continue; }
+  if (!six) {
+    (LINEUPS_ADVISORY ? lineupDrift : failures)
+      .push(`${who}: a player in that lineup is not in the data`);
+    continue;
+  }
   const f = E.rosterFit(six);
-  is(f.system && f.system.name, expected, `${who} plays ${expected}`);
+  isLineup(f.system && f.system.name, expected, `${who} plays ${expected}`);
 }
 
 /* EVERY REAL LINEUP GETS AN IDENTITY. A roster that matches nothing is allowed
@@ -324,7 +359,7 @@ const unnamed = KNOWN.filter(([, , names]) => {
   const six = lineup(names);
   return six && !E.rosterFit(six).system;
 });
-is(unnamed.length, 0, 'every real championship lineup is recognised as something');
+isLineup(unnamed.length, 0, 'every real championship lineup is recognised as something');
 
 /* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit
    model says. Six players who each carried their own offense cannot carry one
@@ -336,7 +371,7 @@ if (hogs) {
   ok(f.profile.shots > E.FIT.SHOT_BUDGET + 25,
     `six ball-dominant stars want far more shots than exist (${f.profile.shots.toFixed(0)})`);
   ok(f.bonus <= E.FIT.MIN + 1e-9, 'and the fit model charges them its full penalty');
-  is(f.system && f.system.name, 'Too Many Mouths', 'and names the problem rather than a system');
+  isLineup(f.system && f.system.name, 'Too Many Mouths', 'and names the problem rather than a system');
 }
 
 /* SPACING IS MEASURED AGAINST THE PLAYER'S OWN ERA. The three-point line did not
@@ -418,6 +453,26 @@ ok(sample.season.every(g => g.yourPoints >= 50 && g.oppPoints >= 50), 'no scorel
 // ─── the report ─────────────────────────────────────────────────────────────
 
 console.log(`\n${pass} assertions passed` + (failures.length ? `, ${failures.length} FAILED` : ''));
+
+/* PRINTED BEFORE THE EXIT, deliberately. The drift is the most useful thing in
+   this log after a data refresh, and burying it behind an unrelated integrity
+   failure means the one run that fetched real numbers tells you nothing about
+   what they did to the model. Printed whether or not it is empty, because "the
+   labels did not move" is itself the answer somebody is looking for. */
+if (LINEUPS_ADVISORY) {
+  if (lineupDrift.length) {
+    console.log(`\n${lineupDrift.length} LINEUP LABEL(S) MOVED under this data:\n`);
+    for (const d of lineupDrift) console.log('  ~ ' + d);
+    console.log(`
+  These are advisory on a data refresh and blocking everywhere else. Real numbers
+  can legitimately move a borderline roster to a neighbouring identity, so the
+  next step is to LOOK at the roster and decide whether the model or the
+  expectation is wrong. Do not just update the expectation to whatever came out.`);
+  } else {
+    console.log('\nEvery lineup label held under this data.');
+  }
+}
+
 if (failures.length) {
   for (const f of failures) console.error('  FAIL: ' + f);
   process.exit(1);

@@ -113,10 +113,21 @@ jobs:
 
       # The engine has to still be a working game after the data underneath it
       # changes by two orders of magnitude. This asserts the draft rules, the
-      # replay, and the basketball: real lineups still have to come back as the
-      # systems they are known for.
+      # replay, the cap, and that every rating is a number.
+      #
+      # --lineups-advisory IS THE WHOLE POINT OF RUNNING IT HERE. The lineup
+      # expectations ("the 1996 Bulls run the Triangle") were calibrated against
+      # 171 rows typed from memory, and real numbers can legitimately move a
+      # borderline roster to a neighbouring identity. Blocking on them is the
+      # same coupling mistake the draft step already made: a JUDGEMENT ABOUT A
+      # MODEL stopping GROUND TRUTH from landing, and it cost a full run once.
+      #
+      # They are still checked and still printed loudly in this log, and the
+      # pull request check (hoops-checks.yml) runs the same file WITHOUT the
+      # flag, so nothing can be quietly left drifted. Everything else blocks
+      # here exactly as it does there.
       - name: Engine, draft rules, and the fit model
-        run: node hoops/verify.mjs
+        run: node hoops/verify.mjs --lineups-advisory
 
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
