@@ -153,12 +153,41 @@ the constants: it states what the balance is supposed to look like and flags wha
 is outside its band. Two targets are deliberately out of band today, because the
 data is a hand-entered seed. See `hoops/build/README.md`.
 
-The data is **not real yet**. `hoops/data/players.json` is built from
-`hoops/build/seed-rosters.mjs`, 171 player-seasons entered from memory and
-rounded, and nothing in it should be shown to a player as a fact about a real
-season. The real pipeline is written and needs Basketball-Reference, which is
-blocked from the dev sandbox and open in CI, exactly as `build-register.mjs`
-documents.
+### The data pipeline
+
+Basketball-Reference is **blocked from the dev sandbox and open from GitHub's
+runners**, the same split `scripts/build-register.mjs` documents. So the fetch
+cannot be run here, and `.github/workflows/hoops-data.yml` exists to run it.
+That workflow file is also on `main`, on its own, because GitHub will not
+dispatch a `workflow_dispatch` workflow unless it exists on the default branch.
+
+```
+node hoops/build/fetch-nba.mjs --from 1974 --to 2025   box scores, win shares, position, team
+node hoops/build/fetch-draft.mjs --from 1960           draft year and college
+node hoops/build/fetch-teams.mjs                       franchises (this one DOES run locally)
+node hoops/build/build-players.mjs --from hoops/build/raw/nba_player_seasons.json
+```
+
+Three things about it are worth knowing before you change it:
+
+- **Draft year and college are on no season page.** They are chemistry inputs,
+  so without `fetch-draft.mjs` the `alma_mater` and `draft_class` links are
+  permanently silent rather than wrong. It reads the per-year draft pages (about
+  seventy requests) rather than five thousand player pages.
+- **A playing-time floor of 12 mpg across 20 games** is applied at build time.
+  Without it the wheel spends most of its time on players who appeared in nine
+  games, and every visitor downloads three times the file.
+- **`hoops/data/teams.json` is a second source** (the static franchise table in
+  `nba_api`) joined on the team code. NBA.com and BBRef disagree on three codes,
+  and BBRef's `CHA` is the **Bobcats** while `CHO` is the Hornets, which is a
+  different club rather than an alias. `check-posture.mjs` asserts every team
+  code in the player data has a franchise row, because that join fails silently.
+
+If `hoops/data/players.json` still holds 171 rows, the fetch has never
+succeeded and the game is playing on `hoops/build/seed-rosters.mjs`: values
+entered from memory and rounded, which must never be shown to a player as a fact
+about a real season. The dev banner on the page says so, and it comes off when
+the data is real, not before.
 
 ## Segue's data
 
