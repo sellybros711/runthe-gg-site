@@ -8,32 +8,66 @@
  * so pricing is decided in exactly one place no matter where the rows came
  * from, and a pipeline run cannot quietly reprice the league by accident.
  *
+ * ── PRICE IS WHAT THE MARKET PAYS, NOT WHAT THE PLAYER IS WORTH ────────────
+ *
+ * This priced off win shares, which are also what the player is WORTH to the
+ * team. Both at once is the one thing pricing must never be, and it quietly
+ * removed the game from the game.
+ *
+ * If price is a monotone function of value then every player on the board is
+ * exactly the same deal. There is no bargain to find and no trap to avoid, so
+ * "take the best man available" is close to the optimal strategy, and it was:
+ * measured across the whole cap range, a thoughtless draft and a perfect one
+ * never separated by more than about six wins. The draft was a sequence of
+ * clicks on the biggest number, which is what the cap comment claims to
+ * prevent and did not.
+ *
+ * REAL BASKETBALL MARKETS PAY FOR THE BOX SCORE. They pay for POINTS above all,
+ * then for the other things a fan sees in a highlight, and they systematically
+ * underpay for efficiency, for defense and for rebounding. That is not a flaw
+ * to model around, it is the single most familiar fact about NBA contracts, and
+ * it is exactly the knowledge a basketball fan brings to a draft.
+ *
+ * So price comes off a MARKET SCORE built from the counting stats, and value
+ * stays win shares. The two correlate at 0.755 rather than 1.000, and the
+ * residual is the game. What falls out of the real data, without anybody
+ * choosing it:
+ *
+ *   BARGAINS  Dennis Rodman 1990, Tyson Chandler 2012, Horace Grant 1992,
+ *             Tristan Thompson 2016, Kevon Looney 2023. Every one of them a
+ *             glue man who won something and never scored.
+ *   TRAPS     Adam Morrison 2007, Emmanuel Mudiay 2016, Michael Beasley 2013,
+ *             Scoot Henderson 2024. High usage, low efficiency, bad team.
+ *
+ * A fan who knows why the 1990 Pistons wanted Rodman can now beat somebody
+ * clicking the biggest number, which is the entire point of the thing.
+ *
  * ── WHY THE CURVE LOOKS LIKE THIS ──────────────────────────────────────────
  *
- * price = BASE + (MAX - BASE) * t^K, where t is how far a player's win shares
- * sit between a replacement player and the best season anyone has had.
+ * price = BASE + (MAX - BASE) * t^K, where t is how far a player's MARKET SCORE
+ * sits between a bench player and the most famous season anyone has had.
  *
  * BOTH ENDS ARE PINNED whatever K is: the last man on the bench costs BASE and
- * the best player in the data costs MAX. So K only moves what the MIDDLE costs,
- * and the middle is where six slots on a $145M cap actually shop.
+ * the biggest name in the data costs MAX. So K only moves what the MIDDLE
+ * costs, and the middle is where six slots on the cap actually shop.
  *
- * K IS ABOVE 1 ON PURPOSE, which makes a star cost MORE than his win shares are
- * worth per dollar. That is the entire decision in the draft. At K = 1 the
- * price is linear in value, every player is the same deal, and the right play is
- * always "take the best one on the board", which is not a game. At 1.45 a
- * superstar is a luxury you pay a premium for and then have to fill four slots
- * out of what is left.
- *
- * THE CAP HAS TO SAY NO. $145M is roughly the real NBA cap, and against this
- * curve it bites where it should: best-available on every spin runs to about
- * $300M and busts by game one, one superstar plus a very good second plus four
- * solid role players lands at about $140M and just fits.
+ * K IS ABOVE 1 ON PURPOSE, so a star costs more per unit than a role player.
+ * That squeeze is now the SECOND decision in the draft rather than the only
+ * one: on top of it sits the question of whether this particular name is being
+ * paid for what he does or for what he scores.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { seedPlayerSeasons } from './seed-rosters.mjs';
+
+/* The engine owns the era-to-modern pace translation and there must not be a
+   second copy of it. Required rather than imported because engine.js is the
+   browser's script and stays CommonJS. */
+const require = createRequire(import.meta.url);
+const E = require(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'engine.js'));
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(HERE, '..', 'data');
@@ -42,19 +76,39 @@ export const PRICING = {
   BASE_MUSD: 2,
   MAX_MUSD: 60,
   K: 1.45,
-  /* Win shares at each end of the scale. REPLACEMENT is what a end-of-bench
-     player is worth over a season, and TOP is where the curve tops out: a
-     handful of seasons in history clear 18 and they all cost the max, which is
-     correct, because in a game with one price ceiling they are all "the most
-     expensive player you can sign". */
-  REPLACEMENT_WS: 0.5,
-  TOP_WS: 18,
+  /* WHAT THE MARKET NOTICES, and roughly in what proportion. Points first and
+     by a distance, then the rest of the line a fan can recite. These are not
+     fitted to anything, because there is nothing honest to fit them to: no
+     public number says "what an NBA front office overpays for". They are a
+     stated opinion about how basketball is watched, and the test of them is the
+     one in the header, that the bargains come out as glue men and the traps as
+     volume scorers on bad teams. */
+  WEIGHTS: { pts: 1.0, reb: 0.6, ast: 0.8, blk: 0.8, stl: 0.8 },
+  /* Market score at each end of the scale. A real league runs from about 3 to
+     50, so the floor is a genuine bench player and the ceiling is set at the
+     99th percentile rather than the maximum: the handful of seasons above it
+     all cost the max, which is right, because in a game with one price ceiling
+     they are all simply "the most expensive man you can sign". */
+  FLOOR_SCORE: 6,
+  TOP_SCORE: 40,
 };
 
-export function priceOf(winShares) {
+/* PACE ADJUSTED, or this is an era tax rather than a market. A 1974 game had
+   nineteen more possessions in it than a modern one, so the same player scores
+   more in it, and pricing raw counting stats would make every player from the
+   seventies expensive for reasons that have nothing to do with him. The engine
+   already owns that translation and there is no second copy of it here. */
+export function marketScore(row) {
+  const W = PRICING.WEIGHTS;
+  const at = (v) => E.paceAdjust(v || 0, row.s);
+  return at(row.pts) * W.pts + at(row.reb) * W.reb + at(row.ast) * W.ast
+    + at(row.blk) * W.blk + at(row.stl) * W.stl;
+}
+
+export function priceOf(row) {
   const P = PRICING;
-  const span = P.TOP_WS - P.REPLACEMENT_WS;
-  const t = Math.max(0, Math.min(1, (winShares - P.REPLACEMENT_WS) / span));
+  const span = P.TOP_SCORE - P.FLOOR_SCORE;
+  const t = Math.max(0, Math.min(1, (marketScore(row) - P.FLOOR_SCORE) / span));
   const price = P.BASE_MUSD + (P.MAX_MUSD - P.BASE_MUSD) * Math.pow(t, P.K);
   return Math.round(price * 10) / 10;
 }
@@ -237,7 +291,7 @@ function main() {
       ...row,
       dr: row.dr ?? (extra ? extra.dr : null),
       col: row.col ?? (extra ? extra.col : null),
-      p: priceOf(row.w),
+      p: priceOf(row),
     };
     /* Games played was an input to the playing-time floor above and is not read
        by anything at runtime. Every field in this file is downloaded by every

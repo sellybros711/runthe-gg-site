@@ -139,8 +139,13 @@ async function draftSix(p) {
     };
   });
   ok('the ask comes up on the squad screen', pitch.open && pitch.kind === 'pitch', pitch.kind);
-  ok('it lists what an account gets you', pitch.perks.length === 4, pitch.perks.join(' | '));
+  ok('it lists what an account gets you', pitch.perks.length === 5, pitch.perks.join(' | '));
   ok('and the Conference Draft is one of them', pitch.perks.some((t) => /Conference Draft/.test(t)));
+  /* THE PLAYOFF LEADS, and it is the only one of the five that will actually stop them.
+     Being told here is the difference between a wall they were warned about and one that
+     turns up in week thirteen. */
+  ok('the playoffs are the first thing on the list', /playoff/i.test(pitch.perks[0] || ''),
+    pitch.perks[0]);
   /* SOMEWHERE ON IT, it still has to say the season counts without an account. A list of
      only what is withheld reads as "you have been playing for nothing", which is a reason
      to stop rather than a reason to sign up. It lives in the first bullet now instead of
