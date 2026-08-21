@@ -127,6 +127,88 @@ function main() {
       + `(${MIN_MPG} mpg across ${MIN_GAMES} games)`);
   }
 
+  /* ── WIN SHARES ARE A COUNTING STAT, AND NOT EVERY SEASON IS 82 GAMES ─────
+   *
+   * Four of the fifty-two seasons in this data were short. The 1999 lockout cut
+   * the schedule to 50 games, the 2012 one to 66, COVID ended 2020 between 63
+   * and 75 games depending on the club, and 2021 was 72. Win shares count wins
+   * contributed, so a player in those years earns proportionally fewer of them
+   * for exactly the same basketball.
+   *
+   * It shows up in the data as a cliff. The average team's best six is worth 34
+   * win shares in a normal year and 21.2 in 1999, 26.3 in 2012, 26.7 in 2020
+   * and 26.5 in 2021.
+   *
+   * Left alone that is not a rounding error, it is a whole category of player
+   * the game quietly rates as mediocre. Allen Iverson's 1999 was an MVP-calibre
+   * season and would arrive on the board looking like a rotation guard. A fan
+   * who drew him would spot it immediately, and would be right.
+   *
+   * THIS GAME PLAYS 82 GAMES (CONSTANTS.REGULAR_SEASON_GAMES), so the honest
+   * question a price and a rating answer is "what is this man worth over a
+   * season", and the season in question is 82 games long. Normalizing to that
+   * is the same move paceAdjust already makes for per-game stats against era:
+   * put every player on the same terms before comparing them.
+   *
+   * PER CLUB, NOT PER SEASON, because 2020 genuinely differs by club: one team
+   * played 63 games and another 75, so a single factor for that year would
+   * under-correct one and over-correct the other. A club's schedule is read as
+   * the most games any of its players managed, which is what a schedule is.
+   *
+   * What this deliberately does NOT do is reward missing games. The factor
+   * comes from the CLUB's schedule, never the player's own appearances, so a
+   * man who played 40 of 82 is still worth half a season and a man who played
+   * 40 of 50 is not.
+   */
+  {
+    const teamGames = new Map();
+    for (const r of rows) {
+      if (typeof r.g !== 'number') continue;
+      const k = `${r.s}|${r.t}`;
+      teamGames.set(k, Math.max(teamGames.get(k) || 0, r.g));
+    }
+    const FULL = 82;
+    /* THE SHORTEST REAL SCHEDULE IS 50 GAMES, the 1999 lockout, and that is the
+       floor rather than a cap on the factor. Capping the factor was the first
+       attempt and it was wrong in the most embarrassing possible way: 82/50 is
+       1.64, a cap of 1.45 clipped it, and the one season the whole correction
+       exists for came out still short. The synthetic 50 game club landed at 5.4
+       against the 6.0 it was built to match.
+
+       A club below this floor has not played a short season, it has a broken
+       row: BBRef served a partial table, or the games column moved. Scaling
+       that by three would invent a superstar out of a parsing error, so it is
+       left alone and reported instead. */
+    const SHORTEST_REAL_SCHEDULE = 45;
+    const scaled = new Map();
+    const suspect = [];
+    for (const r of rows) {
+      const played = teamGames.get(`${r.s}|${r.t}`);
+      if (!played || played >= FULL) continue;
+      if (played < SHORTEST_REAL_SCHEDULE) {
+        suspect.push(`${r.s} ${r.t} (${played} games)`);
+        continue;
+      }
+      const factor = FULL / played;
+      r.ow = Math.round(r.ow * factor * 10) / 10;
+      r.dw = Math.round(r.dw * factor * 10) / 10;
+      r.w = Math.round((r.ow + r.dw) * 10) / 10;
+      scaled.set(r.s, (scaled.get(r.s) || 0) + 1);
+    }
+    if (scaled.size) {
+      const worst = [...scaled.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+      console.log(`  short seasons normalized to ${FULL} games: `
+        + worst.map(([s, n]) => `${s} (${n} rows)`).join(', ')
+        + (scaled.size > 6 ? `, and ${scaled.size - 6} more` : ''));
+    }
+    if (suspect.length) {
+      const uniq = [...new Set(suspect)];
+      console.log(`  NOT normalized, and worth a look: ${uniq.length} club-season(s) `
+        + `claim fewer than ${SHORTEST_REAL_SCHEDULE} games, which no real NBA season has been.`);
+      console.log(`    ${uniq.slice(0, 8).join(', ')}${uniq.length > 8 ? ', ...' : ''}`);
+    }
+  }
+
   /* Draft year and college, if the draft pass has been run. Neither is on a
      season page, so without this join both chemistry links that depend on them
      are permanently silent on real data. A player the draft pass never saw keeps

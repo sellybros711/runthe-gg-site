@@ -173,6 +173,48 @@ for (const slot of E.SLOTS) {
       `${row.n} ${s} is priced off his season, not his postseason `
       + `(${row.w} win shares, real season was about ${real})`);
   }
+
+  /* NO SEASON MAY BE WORTH LESS THAN THE OTHERS FOR NOT HAPPENING.
+   *
+   * Win shares count wins contributed, and four of these fifty-two seasons were
+   * not 82 games: the 1999 lockout played 50, the 2012 lockout 66, COVID ended
+   * 2020 between 63 and 75 by club, and 2021 played 72. Untouched, every player
+   * in those years arrives worth a third less for the same basketball, and
+   * Allen Iverson's MVP-calibre 1999 reads as a rotation guard.
+   *
+   * build-players.mjs normalizes each club to an 82 game schedule. This is the
+   * assertion that says it happened, and it is written against the SHAPE of the
+   * league rather than against a list of lockout years, so the next shortened
+   * season is caught without anybody remembering to add it. */
+  const bySeason = new Map();
+  for (const p of players) {
+    const k = `${p.s}|${p.t}`;
+    if (!bySeason.has(k)) bySeason.set(k, []);
+    bySeason.get(k).push(p);
+  }
+  const seasonTop6 = new Map();
+  for (const [k, ros] of bySeason) {
+    if (ros.length < 6) continue;
+    const s = Number(k.split('|')[0]);
+    const six = [...ros].sort((a, b) => b.w - a.w).slice(0, 6).reduce((a, b) => a + b.w, 0);
+    if (!seasonTop6.has(s)) seasonTop6.set(s, []);
+    seasonTop6.get(s).push(six);
+  }
+  const seasonMean = [...seasonTop6.entries()]
+    .map(([s, v]) => [s, v.reduce((a, b) => a + b, 0) / v.length]);
+  if (seasonMean.length >= 10) {
+    const all = seasonMean.map(([, v]) => v).sort((a, b) => a - b);
+    const median = all[Math.floor(all.length / 2)];
+    /* 0.82 of the median is well below normal year-to-year drift, which runs
+       about 0.90 to 1.05 across five decades, and well above an unnormalized
+       50 game season, which lands at 0.62. */
+    const thin = seasonMean.filter(([, v]) => v < median * 0.82);
+    ok(thin.length === 0,
+      'every season is worth a full season of win shares'
+      + (thin.length
+        ? `\n      ${thin.map(([s, v]) => `${s} at ${v.toFixed(1)} against a median of ${median.toFixed(1)}`).join('\n      ')}`
+        : ''));
+  }
 }
 
 // ─── the rules ──────────────────────────────────────────────────────────────
