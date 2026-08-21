@@ -97,7 +97,33 @@ function main() {
     source = 'the hand-entered seed (hoops/build/seed-rosters.mjs)';
   }
 
-  const priced = rows.map((p) => ({ ...p, p: priceOf(p.w) }));
+  /* Draft year and college, if the draft pass has been run. Neither is on a
+     season page, so without this join both chemistry links that depend on them
+     are permanently silent on real data. A player the draft pass never saw keeps
+     whatever the source row had, which for the fetcher is null and for the seed
+     is the hand-entered value. */
+  const draftFile = path.join(HERE, 'raw', 'nba_draft.json');
+  let draft = null;
+  if (fs.existsSync(draftFile)) draft = JSON.parse(fs.readFileSync(draftFile, 'utf8'));
+
+  const priced = rows.map((row) => {
+    const extra = draft && draft[row.i];
+    return {
+      ...row,
+      dr: row.dr ?? (extra ? extra.dr : null),
+      col: row.col ?? (extra ? extra.col : null),
+      p: priceOf(row.w),
+    };
+  });
+
+  if (draft) {
+    const withDraft = priced.filter(p => p.dr).length;
+    const withCollege = priced.filter(p => p.col).length;
+    console.log(`  joined the draft pass: ${withDraft} rows have a draft year, ${withCollege} a college`);
+  } else {
+    console.log('  no raw/nba_draft.json, so draft-class and alma-mater chemistry will be sparse.');
+    console.log('  Run: node hoops/build/fetch-draft.mjs');
+  }
 
   /* Sorted by season then team then price, so a diff between two builds reads
      as a list of what changed rather than as the whole file moving. */
