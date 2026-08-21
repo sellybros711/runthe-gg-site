@@ -266,7 +266,74 @@ check(/\.hero\{[^}]*linear-gradient\(rgba\(255,255,255/.test(game),
       'the contrast lift is in the hero background, below the content');
 check(!/\.hero:after\{[^}]*rgba\(255,255,255/.test(game),
       'and not in an ::after that would cover the type');
-check(/\.song\{[^}]*border-radius:0/.test(game), 'songs are sheet rows, not cards');
+/* EACH SONG IS A BUBBLE YOU PICK ONE OF. It was a sheet row: no box, a
+   hairline between lines, on the argument that a set list is typed rather than
+   stacked in cards. That describes a set list and not this screen, which is a
+   question with eleven answers where exactly one gets taken, and nothing about
+   hairline-separated lines says pick one. Asked for in those words.
+   Guarded as a set, because a card is only an affordance if it has all of it:
+   a surface, an edge, room inside, and space from its neighbours. */
+{
+  const row = (game.match(/\n  \.song\{[^}]*\}/) || [''])[0];
+  check(/border-radius:1?\d+px/.test(row), 'a song is a rounded bubble');
+  check(/background:var\(--card\)/.test(row), 'on a surface lifted off the page');
+  check(/border:1px solid/.test(row), 'with an edge of its own');
+  check(/padding:\d+px \d+px/.test(row) && !/padding:9px 4px/.test(row),
+    'and room inside it');
+  check(/\.songs\{[^}]*gap:\d+px/.test(game), 'spaced from its neighbours');
+  check(!/\.song\{[^}]*border-bottom:1px solid/.test(game),
+    'rather than ruled off from them');
+  /* A surface that moves under the thumb is the most literal way to say a
+     thing can be taken, and it is the one state a line of text cannot have. */
+  check(/\.song:active\{[^}]*transform:scale/.test(game), 'and it presses when pressed');
+}
+/* THE THREE STATES THE BUBBLE EXISTS TO CARRY. Picked, pickable-and-special,
+   and ruled out: each has to change something structural, not just a colour,
+   or the bubble is decoration. */
+check(/\.song\[aria-pressed="true"\]\{[^}]*box-shadow:inset[^}]*\}/.test(game),
+  'the picked one gets a ring');
+check(/\.song\[aria-pressed="true"\]\{[^}]*border-color:var\(--teal\)/.test(game),
+  'and its edge goes to the action colour');
+check(/\.song\.finishes\{[^}]*border-color:color-mix/.test(game),
+  'the one that lands the segue gets its own edge');
+check(/\.song\.used\{[^}]*background:transparent/.test(game)
+  && /\.song\.used\{[^}]*border-style:dashed/.test(game),
+  'and a song that will not fit stops being a bubble at all');
+
+/* A PSEUDO-ELEMENT RULE WITH NO `content` DRAWS NOTHING, and it looks exactly
+   like a rule that works. This shipped: the selected song set
+   `.song[aria-pressed="true"]:before{background:var(--teal); width:4px; ...}`
+   with no content anywhere on .song:before, so the left rule it describes was
+   never generated and selection was carried by a background wash alone. It
+   went unnoticed for months because a wash on a sheet is roughly what a wash
+   on a sheet looks like.
+   So: any :before/:after rule that paints must either declare content itself
+   or share its element with a rule that does. */
+{
+  const PAINT = /(?:^|;)\s*(?:background|width|height|border(?!-)|border-width|inset|top|bottom|left|right)\s*:/;
+  const rules = [...game.matchAll(/([^{}]+)::?(before|after)\s*\{([^}]*)\}/g)]
+    .map(m => ({ sel: m[1].trim().split('\n').pop().trim(), pseudo: m[2], body: m[3] }));
+  /* KEYED ON THE LAST COMPOUND, not on every class in the selector. A pseudo
+     attaches to the element the selector ENDS on, so `.song .o.notime:before`
+     is a rule about .notime and says nothing about whether .song has a
+     ::before. Matching every class credited .song for it and let the real bug
+     through on the first try at this guard. */
+  const attachesTo = (sel) => {
+    const last = sel.split(/[\s>+~]+/).filter(Boolean).pop() || '';
+    return last.match(/\.[a-zA-Z][\w-]*/g) || [];
+  };
+  const hasContent = (body) => /(?:^|;)\s*content\s*:/.test(body);
+  const withContent = new Set();
+  for (const r of rules)
+    if (hasContent(r.body))
+      for (const cls of attachesTo(r.sel)) withContent.add(`${cls}:${r.pseudo}`);
+  const silent = rules.filter(r =>
+    !hasContent(r.body) && PAINT.test(r.body) &&
+    !attachesTo(r.sel).some(c => withContent.has(`${c}:${r.pseudo}`)));
+  check(rules.length >= 15, `${rules.length} pseudo-element rules read`);
+  check(!silent.length, 'every pseudo-element that paints has a content to paint',
+    silent.map(r => `${r.sel}:${r.pseudo}`).join('; '));
+}
 check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
       'how-it-works dropped the numbered circles');
 /* THE ABOUT COPY IS BEHIND A BUTTON, and what used to be one guard is now
