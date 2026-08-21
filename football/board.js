@@ -123,6 +123,18 @@
        this axis returns an empty board rather than a wrong one.
        ps_runs_trade_gm_idx is (gm_rating desc, created_at asc) where run_mode='trade'. */
     gm: 'gm_rating',
+    /* POINT DIFFERENTIAL, ON ITS OWN. It is already inside `score`, where it is the
+       tiebreak behind wins, so a 13-4 season that won by forty a week ranks under a 14-3
+       that squeaked every game. As an axis of its own it answers the other question: not
+       who won most, but who was furthest ahead. Offense boards only. */
+    diff: 'point_diff',
+    /* POINTS ALLOWED PER GAME, and the defense board's own axis for the same reason the GM
+       rating is the Trade Machine's: record and team rating describe a roster, and this is
+       the one number that measures what the roster was drafted to do. Null on every other
+       mode, so the not.is.null the query already appends keeps other boards empty rather
+       than wrong. LOWER IS BETTER, which is the first axis here where that is true, and the
+       page opens it ascending for that reason. */
+    pa: 'points_allowed',
   };
 
   /* THE TIEBREAK REVERSES WITH THE SORT, and that is a performance decision as much

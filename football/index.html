@@ -4761,9 +4761,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
         <button data-sort="rating">Team rating</button>
-        <!-- The Trade Machine's own axis. Hidden on every other board: gm_rating is null
-             outside that mode, so the button would only ever produce an empty table. -->
+        <!-- THE THIRD SLOT, and which axis fills it depends on the board. All three are
+             hidden by default and exactly one is revealed, because each is null outside its
+             own mode and would otherwise only ever produce an empty table.
+               Trade Machine   the GM rating, the season's actual work
+               Defense         points allowed per game, what the roster was drafted to do
+               everything else point differential, which is inside score as a tiebreak and
+                               is a different question when it is the axis -->
         <button data-sort="gm" id="b-lb-gm" hidden>GM rating</button>
+        <button data-sort="pa" id="b-lb-pa" hidden>Allowed</button>
+        <button data-sort="diff" id="b-lb-diff" hidden>Point diff</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -5395,7 +5402,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=19"></script>
+<script src="board.js?v=20"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -5483,7 +5490,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
   cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
-  SORTS:{record:'score',rating:'team_rating'},
+  SORTS:{record:'score',rating:'team_rating',gm:'gm_rating',diff:'point_diff',pa:'points_allowed'},
   /* The stub has to answer everything the module does, or a blocked board.js turns a
      missing method into a thrown error somewhere far away from the cause. The probe's
      answer is the honest one for this state: the board is not there to ask. */
@@ -14731,7 +14738,7 @@ async function showMyRowOnBoard(){
      has no row in, on an axis the mode is not scored on, when the whole point of this path is
      to show the player their own row. */
   boardFromRun();
-  lbWin='day'; lbSort=defaultSort(); lbDir='desc';
+  lbWin='day'; lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -14847,7 +14854,8 @@ function paintRankStrip(r){
 document.addEventListener('click',(e)=>{
   const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
   boardFromRun();
-  lbSort='record'; lbWin=b.dataset.win;
+  /* The record, which every board has, so this needs no fixSort. */
+  lbSort='record'; lbDir='desc'; lbWin=b.dataset.win;
   show('s-board'); loadBoard();
 });
 
@@ -15164,7 +15172,7 @@ let lbTrade=false;
    nobody can play is an option that leads to an empty table. */
 let lbDefense=false;
 function tradeBoardOff(){
-  if(lbTrade&&!canPlayTrade()){ lbTrade=false; if(lbSort==='gm') lbSort='rating'; return true; }
+  if(lbTrade&&!canPlayTrade()){ lbTrade=false; fixSort(); return true; }
   return false;
 }
 /* The same guard for the defense board. It matters more here than for the Trade Machine,
@@ -15276,14 +15284,16 @@ $('lb-comp').addEventListener('change',()=>{
     lbSort='gm';
   }else if(v==='defense'&&canPlayDefense()){
     lbDefense=true; lbTrade=false; lbEra=null; lbClub=null;
-    if(lbSort==='gm') lbSort='rating';
+    /* Same argument, the other mode: this is the board where what you allowed is the point. */
+    lbSort='pa';
   }else if(v.startsWith('era:')){
     lbTrade=false; lbDefense=false; lbEra=v.slice(4); lbClub=null;
-    if(lbSort==='gm') lbSort='rating';
   }else{
     lbTrade=false; lbDefense=false; lbEra=null; lbClub=v||null;
-    if(lbSort==='gm') lbSort='rating';
   }
+  /* One call instead of a copy of the rule in each branch above. */
+  fixSort();
+  lbDir=sortBestDir(lbSort);
   ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
@@ -15298,6 +15308,8 @@ const SORT_META={
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
   record:{label:'Record', of:(r)=>recordCell(r)},
   gm:{label:'GM rating', of:(r)=>gmCell(r)},
+  diff:{label:'Point diff', of:(r)=>diffCell(r)},
+  pa:{label:'Points allowed', of:(r)=>paCell(r)},
 };
 
 /* Coming off a run, open the board that run is actually on. Landing a One Franchise Dolphins
@@ -15320,12 +15332,30 @@ function boardFromRun(){
    tab its board opens on; record and team rating both mostly describe the roster you were
    handed, while the GM rating is the season's work. Every other competition leads with the
    record. */
-function defaultSort(){ return lbTrade?'gm':'record'; }
+function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }
+
+/* WHICH AXES THIS BOARD HAS, in one place. Four callers used to each carry their own copy of
+   `if(lbSort==='gm') lbSort='rating'`, which was already one copy too many at one mode-only
+   axis and is unmaintainable at three. Anything not offered here falls back to the record,
+   which every board has. */
+function sortAllowed(k){
+  if(k==='gm') return lbTrade;
+  if(k==='pa') return lbDefense;
+  if(k==='diff') return !lbTrade&&!lbDefense;
+  return true;
+}
+function fixSort(){ if(!sortAllowed(lbSort)) lbSort=defaultSort(); }
+/* THE DIRECTION THAT MEANS "BEST FIRST", which is not the same way for every axis. Points
+   allowed is the only one where less is better, and opening it high to low would put the
+   worst defense in the league on the podium. */
+const sortBestDir=(k)=>k==='pa'?'asc':'desc';
 
 function openBoard(){
   if(run&&run.outcome){
     boardFromRun();
-    if(lbTrade) lbSort='gm'; else if(lbSort==='gm') lbSort='rating';
+    if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
+    fixSort();
+    lbDir=sortBestDir(lbSort);
   }
   tradeBoardOff();
   const m=lbTrade?'trade':lbEra?'era':lbClub?'club':'free';
@@ -15352,11 +15382,14 @@ async function loadBoard(){
   /* The GM axis is only offered where the column has values. Hiding rather than disabling,
      because on every other board it is not a choice somebody is being denied, it is a
      quantity that does not apply. */
-  const gmBtn=$('b-lb-gm');
-  if(gmBtn){
+  const gmBtn=$('b-lb-gm'), paBtn=$('b-lb-pa'), diffBtn=$('b-lb-diff');
+  if(gmBtn&&paBtn&&diffBtn){
     gmBtn.hidden=!lbTrade;
+    paBtn.hidden=!lbDefense;
+    diffBtn.hidden=lbTrade||lbDefense;
     const bar=gmBtn.closest('.sortbar');
-    if(bar) bar.classList.toggle('three',!!lbTrade);
+    /* Always three now, on every board, because every board has a third axis. */
+    if(bar) bar.classList.add('three');
   }
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
@@ -15451,13 +15484,20 @@ function paintPodium(rows){
        only whether the axis was rating and otherwise print the record, which put the record
        on the steps of a board sorted by GM rating: three figures that had nothing to do with
        the order they were standing in. */
-    const fig=lbSort==='gm'
-      ? ((row.gm_rating===null||row.gm_rating===undefined)?'--':Number(row.gm_rating).toFixed(1))
-      : lbSort==='rating'
-      ? (row.team_rating===null?'--':Number(row.team_rating).toFixed(1))
+    const podNum=(v,sign)=>{
+      if(v===null||v===undefined) return '--';
+      const n=Number(v);
+      return (sign&&n>0?'+':'')+n.toFixed(1);
+    };
+    const fig=lbSort==='gm' ? podNum(row.gm_rating)
+      : lbSort==='rating' ? podNum(row.team_rating)
+      : lbSort==='diff' ? podNum(row.point_diff,true)
+      : lbSort==='pa' ? podNum(row.points_allowed)
       : row.wins+'-'+row.losses;
     const sub=lbSort==='gm'?'GM rating'
       :lbSort==='rating'?'rating'
+      :lbSort==='diff'?'point diff'
+      :lbSort==='pa'?'allowed a game'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
     const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
     return '<div class="pod p'+place+(mine?' mine':'')+(just?' just':'')+
@@ -15809,6 +15849,23 @@ function ratingCell(row){
    A dash rather than a zero for a null: a Trade Machine run recorded before the column
    existed has no rating, and printing 0.00 would rank it as the worst season ever played
    instead of saying it is not known. */
+/* POINT DIFFERENTIAL, SIGNED, because the sign is most of the information: +9.4 and -9.4
+   are the two ends of the board and an unsigned 9.4 is neither. The record goes underneath
+   the way every other axis carries its second line. */
+function diffCell(row){
+  const d=(row.point_diff===null||row.point_diff===undefined)?null:Number(row.point_diff);
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+
+    (d===null?'--':(d>0?'+':'')+d.toFixed(1))+'</b>'+
+    '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
+}
+/* POINTS ALLOWED PER GAME. A dash rather than a zero for a null, and the reason is sharper
+   here than anywhere else: on this axis low is good, so a defense run recorded before the
+   column existed would print 0.0 and rank as the best season anybody has ever played. */
+function paCell(row){
+  const v=(row.points_allowed===null||row.points_allowed===undefined)?null:Number(row.points_allowed);
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+(v===null?'--':v.toFixed(1))+'</b>'+
+    '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
+}
 function gmCell(row){
   const g=(row.gm_rating===null||row.gm_rating===undefined)?null:Number(row.gm_rating);
   /* GOLD IS THE PERFECT SEASON AND NOTHING ELSE. This gilded any GM rating over 90, which
@@ -15929,6 +15986,17 @@ function myPlaceValue(){
   }
   if(lbSort==='rating'){
     return (p.teamRating===null||p.teamRating===undefined)?null:Number(p.teamRating);
+  }
+  /* Rounded to one place because that is what the column HOLDS: ps_submit_run stores
+     round(p_point_diff, 1), so comparing the unrounded figure would count rows as ahead of
+     you that are actually level and pin you one place low. */
+  if(lbSort==='diff'){
+    return (p.pointDiff===null||p.pointDiff===undefined)
+      ?null:Math.round(Number(p.pointDiff)*10)/10;
+  }
+  if(lbSort==='pa'){
+    return (p.pointsAllowed===null||p.pointsAllowed===undefined)
+      ?null:Math.round(Number(p.pointsAllowed)*10)/10;
   }
   return B.scoreOf(run.outcome.wins,p.pointDiff);
 }
@@ -16107,7 +16175,13 @@ $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
   /* The window survives a change of axis now. Switching to rating used to yank the tab
      back to All time, because rating could not answer a window; it can. */
-  lbSort=t.dataset.sort; ga('board_sort',{sort:lbSort});
+  lbSort=t.dataset.sort;
+  /* THE DIRECTION FOLLOWS THE AXIS. Points allowed is the one axis where less is better, so
+     carrying the previous axis's direction across would open it on the worst defenses in the
+     league, and coming back off it would leave the record board pointed at the losers. The
+     arrow still flips it by hand afterwards. */
+  lbDir=sortBestDir(lbSort);
+  ga('board_sort',{sort:lbSort});
   loadBoard();
 });
 $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{sort:lbSort,dir:lbDir}); loadBoard(); };
