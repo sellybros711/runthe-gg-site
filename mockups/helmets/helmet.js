@@ -41,7 +41,8 @@
    * reads as a flat bar balanced on the helmet rather than as paint on it: there is nothing
    * for the eye to read as curvature. One row of shell above it is the whole fix.
    *
-   *   .  nothing     #  shell        o  shell underside     =  stripe    -  stripe trim
+   *   .  nothing     #  shell        o  shell underside     ^  the glint
+   *   =  stripe       -  stripe trim
    *   M  mask bar    e  the face opening, dark whatever the shell is
    *   E  ear hole ring       g  ear hole
    */
@@ -52,8 +53,8 @@
     '.......#------------#.........',
     '......##============##........',
     '.....###------------###.......',
-    '....####################......',
-    '...######################.....',
+    '....#^^#################......',
+    '...#^^###################.....',
     '..#######################.....',
     '..########################....',
     '..########################....',
@@ -155,16 +156,66 @@
     return out;
   }
 
-  const lum = (hex) => {
-    const n = parseInt(hex.slice(1), 16);
-    return (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+  const rgb = (hex) => {
+    const n = parseInt(String(hex).replace('#', ''), 16);
+    return [n >> 16, (n >> 8) & 255, n & 255];
   };
-  const shade = (hex, amount) => {
-    const n = parseInt(hex.slice(1), 16);
-    const f = (v) => Math.max(0, Math.min(255, Math.round(v + amount * 255)));
-    return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)]
-      .map((v) => v.toString(16).padStart(2, '0')).join('');
+  const hex = (a) => '#' + a.map((v) =>
+    Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const lum = (c) => {
+    const [r, g, b] = rgb(c);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   };
+  const shade = (c, amount) => hex(rgb(c).map((v) => v + amount * 255));
+  /* TOWARD WHITE AND TOWARD BLACK, not plus and minus a fixed amount, which is what this
+     used to do and why every dark helmet lost its shading. Adding 40 to a navy is a visible
+     step and adding 40 to a white is nothing at all, so a white shell had a highlight and a
+     black one did not. Moving a proportion of the distance to the end of the range keeps
+     the hue, keeps the step visible at both ends, and cannot clip. */
+  const lighten = (c, k) => hex(rgb(c).map((v) => v + (255 - v) * k));
+  const darken = (c, k) => hex(rgb(c).map((v) => v * (1 - k)));
+  const mix = (a, b, k) => {
+    const A = rgb(a), B = rgb(b);
+    return hex(A.map((v, i) => v + (B[i] - v) * k));
+  };
+
+  /* ── LIGHT ────────────────────────────────────────────────────────────────────
+   *
+   * FLAT FILL IS WHAT A SHAPE LOOKS LIKE WITH NOTHING SHINING ON IT. The silhouette was
+   * right and every helmet still read as a sticker, because one colour across a curved
+   * object tells the eye the object is not curved. A helmet is close to a sphere and a
+   * sphere is the easiest thing there is to light, so it gets lit properly: a normal is
+   * worked out for every pixel from where it sits on the dome, dotted against a light up
+   * and to the left, and quantised to five tones.
+   *
+   * FIVE TONES, NOT A GRADIENT. Anything smoother stops being pixel art: the bands ARE the
+   * style, the same way they are on a Mario coin or a Zelda pot. The ramp is anchored so
+   * tone 2 is the school's actual colour, with two above it and two below, which is what
+   * keeps a crimson helmet crimson rather than turning it into a pink one with a red edge.
+   *
+   * AND A RIM, because a lit sphere is not enough on its own: where the shell turns away at
+   * the bottom and the back it gets one tone darker still, and the whole silhouette carries
+   * a dark outline. The outline is the single thing that makes a sprite sit on a background
+   * rather than float in front of it.
+   */
+  const LIGHT = { x: -0.52, y: -0.66, z: 0.54 };
+  const DOME = { cx: 12.5, cy: 11.0, rx: 13.0, ry: 10.5 };
+
+  function domeLevel(x, y) {
+    const nx = (x + 0.5 - DOME.cx) / DOME.rx;
+    const ny = (y + 0.5 - DOME.cy) / DOME.ry;
+    const nz = Math.sqrt(Math.max(0.05, 1 - Math.min(1, nx * nx + ny * ny)));
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    const d = (nx * LIGHT.x + ny * LIGHT.y + nz * LIGHT.z) / len;
+    return Math.max(0, Math.min(4, Math.round((d + 0.42) * 3.1)));
+  }
+
+  /* Tone 2 is the colour as given. The steps either side are deliberately uneven: the eye
+     forgives a dark side that is too dark long before it forgives a highlight that has
+     turned the paint into a different colour. */
+  const RAMP = [0.34, 0.16, 0, 0.13, 0.30];
+  const tone = (c, level) => (level === 2 ? c
+    : level > 2 ? lighten(c, RAMP[level]) : darken(c, RAMP[level]));
 
   /* ── drawing ──────────────────────────────────────────────────────────────────
    * kit fields: shell, mask, stripe (an array of one to three colors), logo (a glyph name
@@ -198,42 +249,72 @@
     const faceInk = kit.face || (lum(mask) < 0.28 ? shade(mask, 0.19)
       : (dark ? shade(shell, -0.24) : '#131a26'));
 
+    /* THE OUTLINE GOES DOWN FIRST, into the empty pixels touching the sprite, so nothing
+       has to know where the edge is: it is wherever paint meets nothing. Mixed toward the
+       page's own dark rather than pure black, which keeps a black helmet from having an
+       outline that is invisible and a white one from wearing a hard cartoon border. */
+    const solid = (x, y) => {
+      const row = HELMET[y];
+      return !!row && row[x] && row[x] !== '.';
+    };
+    const outline = mix(shell, '#080b14', 0.74);
+    for (let y = 0; y < HELMET.length; y++) {
+      for (let x = 0; x < HELMET[y].length; x++) {
+        if (solid(x, y)) continue;
+        if (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) {
+          put(x, y, outline);
+        }
+      }
+    }
+
     for (let y = 0; y < HELMET.length; y++) {
       const row = HELMET[y];
       for (let x = 0; x < row.length; x++) {
         const c = row[x];
         if (c === '.') continue;
-        if (c === '#') put(x, y, shell);
-        else if (c === 'o') put(x, y, shade(shell, -0.13));
-        else if (c === '^') put(x, y, shade(shell, 0.13));
-        /* No stripe at all is a real look, not a missing field: Cleveland and Tampa Bay
-           wear a bare shell, so an empty stripe paints shell and the crown disappears. */
-        else if (c === '=') put(x, y, stripe[0]);
-        else if (c === '-') put(x, y, stripe[1] || stripe[0]);
-        else if (c === '_') put(x, y, stripe[2] || stripe[0]);
-        else if (c === 'M') put(x, y, mask);
-        else if (c === 'm') put(x, y, shade(mask, -0.12));
+        /* Where the shell turns away at the edge it loses another tone. Only on the dark
+           side: the top left edge is where the light lands and darkening it there would
+           put a shadow on the brightest part of the helmet. */
+        let L = domeLevel(x, y);
+        const edge = !solid(x - 1, y) || !solid(x + 1, y) || !solid(x, y - 1) || !solid(x, y + 1);
+        if (edge && L <= 2) L = Math.max(0, L - 1);
+
+        if (c === '#') put(x, y, tone(shell, L));
+        else if (c === 'o') put(x, y, tone(shell, Math.max(0, L - 1)));
+        /* THE GLINT, and it is placed rather than computed. The lit side of the dome is
+           already a tone brighter than the rest and it reads as a lit surface; four pixels
+           of near white read as a hard shiny one, which is what a helmet is. It is the only
+           part of the shading that is not derived from the geometry, for the same reason a
+           painter puts the catchlight in an eye by hand. */
+        else if (c === '^') put(x, y, lighten(shell, 0.62));
+        /* The stripe curves with the shell it is painted on, which is the whole reason it
+           reads as paint rather than as a sticker laid over the top. Same light, same five
+           tones, its own colour. */
+        else if (c === '=') put(x, y, tone(stripe[0], L));
+        else if (c === '-') put(x, y, tone(stripe[1] || stripe[0], L));
+        else if (c === '_') put(x, y, tone(stripe[2] || stripe[0], L));
+        /* The cage is not on the dome, it hangs in front of it, so it is lit by height
+           instead: the top bar catches the light, the chin bar is in its own shadow. */
+        else if (c === 'M') put(x, y, tone(mask, y <= 13 ? 3 : y <= 16 ? 2 : 1));
+        else if (c === 'm') put(x, y, tone(mask, 1));
         /* The face opening is dark whatever the shell is: it is the inside of a helmet
            with a head in it, not a tinted version of the paint. */
         else if (c === 'e') put(x, y, faceInk);
-        /* The ear hole. A ring rather than a dot: one pixel of dark reads as dirt on the
-           screen, three by three reads as a hole in a helmet. */
         /* The ear hole, a diamond rather than a square: three by three filled reads as a
-           sticker on the side of the helmet, and the corners knocked off reads as round. */
-        else if (c === 'E') put(x, y, shade(shell, dark ? 0.10 : -0.13));
-        else if (c === 'g') put(x, y, shade(shell, dark ? -0.26 : -0.40));
+           sticker on the side of the helmet, and the corners knocked off reads as round.
+           The ring above the hole catches light and the hole itself never does. */
+        else if (c === 'E') put(x, y, tone(shell, Math.min(4, L + 1)));
+        else if (c === 'g') put(x, y, darken(shell, 0.55));
       }
     }
 
-    /* The stripe rides the crown. Three colors means an outline either side of a centre
-       band, which is what most of the league's stripes actually are. */
     if (kit.pattern) {
       const g = GLYPHS[kit.pattern];
       for (let y = 0; y < HELMET.length; y++) {
         for (let x = 0; x < HELMET[y].length; x++) {
           if (HELMET[y][x] !== '#') continue;
           const p = g[y % g.length][x % g[0].length];
-          if (p === '1') put(x, y, kit.patternInk || '#000000');
+          if (p === '1') put(x, y, tone(kit.patternInk || '#000000', domeLevel(x, y)));
         }
       }
     }
@@ -246,7 +327,7 @@
         if (c === '.') continue;
         const gx = LOGO_BOX.x + x, gy = LOGO_BOX.y + y;
         if ((HELMET[gy] || '')[gx] !== '#') continue;   // never paint outside the shell
-        put(gx, gy, c === '2' ? (ink[1] || ink[0]) : ink[0]);
+        put(gx, gy, tone(c === '2' ? (ink[1] || ink[0]) : ink[0], domeLevel(gx, gy)));
       }
     }
   }
@@ -262,5 +343,6 @@
     return canvas;
   }
 
-  window.PixelHelmet = { HELMET, GLYPHS, FONT, LOGO_BOX, render, paint, wordGlyph, shade };
+  window.PixelHelmet = { HELMET, GLYPHS, FONT, LOGO_BOX, render, paint, wordGlyph,
+    shade, tone, domeLevel };
 })();

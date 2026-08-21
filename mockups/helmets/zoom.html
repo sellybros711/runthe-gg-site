@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- A dozen helmets, large, for judging the pixels rather than the page. Edit the list. -->
+<!-- A few helmets large, then one at the sizes it would be used, for judging the pixels. -->
 <meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Helmets, close up</title>
 <body style="margin:0;background:#0b1220;padding:16px;display:flex;flex-wrap:wrap;gap:14px;
   font:11px system-ui;color:#9fb3c8">
@@ -7,18 +7,20 @@
 <script>
 (async function () {
   const schools = await KITS.load('../../cfb/data/cfb_team_seasons.json');
-  const want = ['Alabama','Michigan','Ohio State','Notre Dame','Texas','Oregon','Georgia',
-    'Penn State','LSU','Clemson','Miami','Nebraska'];
-  for (const name of want) {
-    const k = schools.find((x) => x.name === name);
-    if (!k) continue;
+  const show = (k, s, label) => {
     const d = document.createElement('div');
     const c = document.createElement('canvas');
-    PixelHelmet.render(c, k, 6);
+    PixelHelmet.render(c, k, s);
     c.style.imageRendering = 'pixelated';
     d.appendChild(c);
-    d.insertAdjacentHTML('beforeend', '<div>' + k.name + '</div>');
+    d.insertAdjacentHTML('beforeend', '<div>' + (label || k.name) + '</div>');
     document.body.appendChild(d);
+  };
+  for (const name of ['Alabama', 'Michigan', 'Penn State', 'Notre Dame', 'Oregon', 'Georgia']) {
+    const k = schools.find((x) => x.name === name);
+    if (k) show(k, 6);
   }
+  const a = schools.find((x) => x.name === 'Alabama');
+  [6, 4, 3, 2, 1].forEach((s) => show(a, s, s + 'x'));
 })();
 </script>
