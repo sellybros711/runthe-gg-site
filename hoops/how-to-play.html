@@ -17,7 +17,19 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
+     A stylesheet from a third-party host is render-blocking, and the inline script
+     that boots the game runs after it. Measured with the host unreachable: 13 SECONDS
+     to a playable page, against 260ms when it answers. That is a real failure mode
+     rather than a lab curiosity, because fonts.googleapis.com is slow on bad networks
+     and blocked outright in some countries, and this game has to work there.
+     Loading it as print media and promoting it on load makes it non-blocking. Every
+     face below has a real fallback stack, so text paints immediately in the fallback
+     and swaps when Anton and Archivo arrive. -->
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap">
+<noscript><link rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap"></noscript>
 
 <style>
   :root{
