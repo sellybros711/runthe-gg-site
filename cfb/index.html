@@ -2008,6 +2008,50 @@ window.GA_ID='G-L29P5MRWKE';
     text-align:center;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
   .headline.on{opacity:1}
   .headline.big{color:var(--ink);border-color:rgba(148,163,184,.4)}
+
+  /* ---------- A BADGE, ANNOUNCED ----------
+     Its own element rather than the headline above it. That one is a canned one-line string
+     with in-run timing; this is two lines, tappable, and on screen four times as long, which
+     is enough divergence that sharing an element would mean one serving two jobs badly.
+     Same rules as the NFL game's, in this game's tier colors. */
+  .achtoasts{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:601;
+    display:flex;flex-direction:column;gap:7px;align-items:center;width:max-content;
+    max-width:min(92vw,380px);pointer-events:none}
+  .achtoast{pointer-events:auto;display:block;width:100%;text-align:left;
+    padding:9px 13px;border-radius:11px;background:rgba(19,26,43,.96);
+    border:1px solid var(--line-2);box-shadow:var(--shadow);color:inherit;font:inherit;
+    opacity:0;transform:translateY(-8px);transition:opacity .28s ease,transform .28s ease}
+  .achtoast.on{opacity:1;transform:none}
+  .achtoast .at-k{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2)}
+  .achtoast .at-n{display:block;font-family:var(--fd);font-size:15px;font-weight:700;
+    letter-spacing:.02em;color:var(--ink);margin-top:2px;line-height:1.15}
+  /* THE LINE THAT SAYS WHAT YOU DID. Not clamped and not ellipsised: a badge description is
+     one short sentence and it is the whole reason this toast is two lines instead of one. */
+  .achtoast .at-d{display:block;font-size:11.5px;color:var(--dim);line-height:1.35;
+    margin-top:3px}
+  .achtoast .at-go{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+  /* The four tiers, the same four colors the cards in the cabinet wear, so the toast and the
+     badge it takes you to are recognisably the same object. */
+  .achtoast.legend{border-color:rgba(168,85,247,.6)}
+  .achtoast.legend .at-k{color:#c084fc}
+  .achtoast.gold{border-color:rgba(251,191,36,.55)}
+  .achtoast.gold .at-k{color:#fbbf24}
+  .achtoast.silver{border-color:rgba(203,213,225,.55)}
+  .achtoast.bronze{border-color:rgba(180,120,70,.55)}
+  .achtoast:active{transform:scale(.98)}
+  /* Where a tapped toast lands. Long enough to find with your eye after a smooth scroll,
+     short enough that it is gone before it becomes decoration. */
+  .achfound{animation:achFound 2.6s ease-out}
+  @keyframes achFound{
+    0%,60%{ box-shadow:0 0 0 2px #fbbf24, 0 0 18px -2px rgba(251,191,36,.6) }
+    100%{ box-shadow:0 0 0 0 rgba(251,191,36,0) }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .achtoast{transition:none}
+    .achfound{animation:none;box-shadow:0 0 0 2px #fbbf24}
+  }
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);z-index:99;
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
@@ -3607,6 +3651,11 @@ or endorsed by the NCAA, the CFP or any school.
      Same element and the same job as the NFL game's: the toast is for things you did on
      purpose and this is for something the game noticed. -->
 <div class="headline" id="headline"></div>
+<!-- BADGES EARNED ON THE SEASON THAT JUST FINISHED. Its own element rather than the headline
+     above it: that one is a canned one-line string with in-run timing, and this is two lines,
+     tappable, and on screen four times as long. Stacked rather than queued, so three badges
+     are three seconds of cascade instead of fifteen seconds of one at a time. -->
+<div class="achtoasts" id="achtoasts" aria-live="polite"></div>
 
 <!-- The tutorial coach bar, and the panel that closes it out. -->
 <div class="tut" id="tut" hidden>
@@ -4182,9 +4231,16 @@ const pfHubOk=()=>!!(A()&&authState.ready&&authState.signedIn&&authState.name);
 let pfPaint=0;
 
 const PF_PAGES={account:1,school:1,case:1,seasons:1};
-function openProfile(tab){
+/* `badge` is a badge id to land on, which is what a tapped toast passes. It survives the
+   case's own repaint: trophyCaseHtml paints a spinner while the seasons are fetched and
+   calls back through here with no argument, so the wanted id is parked rather than passed,
+   and consumed by whichever paint is the one that actually has the cabinet in it. */
+let achRevealWanted=null;
+function openProfile(tab,badge){
   if(!DATA) return;
+  if(badge) achRevealWanted=badge;
   const page=PF_PAGES[tab]?tab:(pfHubOk()?'hub':'account');
+  if(page!=='case') achRevealWanted=null;
   if(page==='hub') return pfHub();
   if(page==='seasons') return pfSeasons('recent');
   if(page==='school') return pfLook();
@@ -4501,6 +4557,11 @@ function pfCase(){
      pass and not on the one that has nothing to evaluate. */
   const res=(careerRows||!authState.signedIn)?achState(careerRows||null):null;
   if(res) achAnnounce(authState.userId,res,true);
+  /* A badge a toast asked for. The spinner pass hands it on to the paint that has the
+     cabinet in it; every other pass consumes it, found or not, so a badge that cannot be
+     located here does not lie in wait and fire on some later visit to the case. */
+  const loading=authState.signedIn&&!careerRows&&!careerFailed;
+  if(achRevealWanted&&!loading){ achReveal(box,achRevealWanted); achRevealWanted=null; }
 }
 function pfLook(msg,ok){
   profileTab='school'; pfPaint++;
@@ -5570,7 +5631,12 @@ function achShelves(res){
   const A=window.PS_CFB_ACH;
   const pct=(n,d)=>d?Math.round(n/d*100):0;
   const bar=(n,d)=>'<div class="achbar"><i style="width:'+pct(n,d)+'%"></i></div>';
-  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
+  /* data-a IS HOW A TOAST FINDS ITS BADGE. Every card carries it, the locked ones included:
+     a badge earned on the season being announced is earned, but the same lookup is used from
+     elsewhere and pointing only at what you own would make it fail on exactly the case
+     somebody is most likely to go looking for. */
+  const chip=(a,got,solo)=>'<div class="ach '+a.tier+(got?'':' off')+'"'+
+    (solo?'':' data-a="'+esc(a.id)+'"')+'>'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
 
   let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+
@@ -5579,8 +5645,10 @@ function achShelves(res){
   const showcase=res.earned.filter(a=>a.tier==='legend'||a.tier==='gold')
     .sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]).slice(0,6);
   if(showcase.length){
+    /* solo: the shelf repeats badges that also appear in their own group below, and a lookup
+       should land on the one among its neighbours rather than on the trophy shelf. */
     h+='<div class="achshelf-h">Your best</div><div class="achlist achshelf">'+
-      showcase.map(a=>chip(a,true)).join('')+'</div>';
+      showcase.map(a=>chip(a,true,true)).join('')+'</div>';
   }
 
   A.GROUPS.forEach((g)=>{
@@ -5652,21 +5720,85 @@ function achAnnounce(userId,res,silent){
      `silent` is the cabinet saying the same thing for a different reason: you are looking
      straight at the badges, so announcing them over the top of themselves is noise. */
   if(silent||firstSighting) return fresh;
-  /* Three at most, spaced, because the banner is one line and a queue of eleven is a wall
-     rather than a reward. The timings are the NFL game's, so a player who moves between
-     them is not learning a second rhythm. */
-  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>{
-    showAchHeadline('Achievement: '+a.name);
-  },900+i*2100));
+  /* STACKED, NOT QUEUED. One at a time meant each badge waited out the one before it, so
+     three of them was fifteen seconds of banner and the third arrived long after anybody had
+     stopped looking. They cascade in seven tenths of a second apart and sit there together,
+     which is both shorter overall and easier to read. Three at most: a queue of eleven is a
+     wall rather than a reward. The timings are the NFL game's, so a player who moves between
+     the two is not learning a second rhythm. */
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>showAchToast(a),900+i*700));
   fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   return fresh;
 }
-function showAchHeadline(text){
-  const el=$('headline'); if(!el) return;
-  el.textContent=text;
-  el.className='headline on big';
+
+/* SIX SECONDS, not two and a half. The old timing was sized for a one-line canned string and
+   this carries a name, a sentence and an invitation to tap it, which nobody reads in 2400ms,
+   let alone decides to act on. */
+const ACH_TOAST_MS=6000;
+function showAchToast(a){
+  const host=$('achtoasts'); if(!host||!a) return;
+  const el=document.createElement('button');
+  el.type='button';
+  el.className='achtoast '+(a.tier||'');
+  el.dataset.a=a.id;
+  /* THE DESCRIPTION IS THE POINT. "Achievement: Bowl eligible" names a thing without saying
+     what it was, and a good half of this cabinet is named for the line rather than the deed:
+     Storm the field, Blue blood, Nobody's schedule. The badge's own description goes
+     underneath, so the toast reads "Blue blood / Win the title with a team from a program
+     that has won one." */
+  el.innerHTML='<span class="at-k">Achievement unlocked</span>'+
+    '<span class="at-n">'+esc(a.name)+'</span>'+
+    '<span class="at-d">'+esc(a.desc||'')+'</span>'+
+    '<span class="at-go">Tap to see it &rsaquo;</span>';
+  el.onclick=()=>{
+    /* ALL OF THEM, not just this one. Tapping opens the case over the top of the stack, so
+       the ones left behind sit on the page they just took you to, covering the badge they
+       sent you to look at. Acting on one is being done with the banner. */
+    clearAchToasts();
+    ga('achievement_toast_tap',{id:a.id,tier:a.tier});
+    /* Straight to the badge, not to the top of the case. */
+    openProfile('case',a.id);
+  };
+  host.appendChild(el);
+  /* A frame before the class, or the element is inserted already at its final state and the
+     transition has nothing to run from. */
+  requestAnimationFrame(()=>el.classList.add('on'));
+  el._h=setTimeout(()=>dismissAchToast(el),ACH_TOAST_MS);
+}
+function clearAchToasts(){
+  const host=$('achtoasts'); if(!host) return;
+  [...host.children].forEach(dismissAchToast);
+}
+function dismissAchToast(el){
+  if(!el||el._gone) return;
+  el._gone=true;
   clearTimeout(el._h);
-  el._h=setTimeout(()=>el.classList.remove('on'),2400);
+  el.classList.remove('on');
+  /* Removed after the fade rather than at once, so the stack does not jump under the ones
+     still on screen. */
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); },320);
+}
+
+/* OPEN THE GROUP THE BADGE IS IN, put it on screen, and mark it for a moment.
+   AFTER A FRAME, AND TWO OF THEM, because the group body animates from 0fr to 1fr: asking
+   for its position in the same tick that opens it measures a box with no height and scrolls
+   to the wrong place. */
+function achReveal(root,id){
+  const el=root&&root.querySelector('[data-a="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+  if(!el) return false;
+  const grp=el.closest('.achgrp');
+  if(grp&&!grp.classList.contains('open')){
+    grp.classList.add('open');
+    const head=grp.querySelector('.achgrp-h');
+    if(head) head.setAttribute('aria-expanded','true');
+  }
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }
+    catch(e){ el.scrollIntoView(); }
+    el.classList.add('achfound');
+    setTimeout(()=>el.classList.remove('achfound'),2600);
+  }));
+  return true;
 }
 
 /* WHAT THE RUN JUST EARNED, announced over the results screen. Called ONCE per run, from
