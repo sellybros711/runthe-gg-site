@@ -81,6 +81,17 @@ jobs:
           node hoops/build/build-players.mjs \
             --from hoops/build/raw/nba_player_seasons.json
 
+      # BEFORE the assertions, deliberately. Everything above this line is a
+      # quarter of an hour of throttled fetching, and everything below it is a
+      # second of arithmetic that can fail. Uploading first means a failed
+      # assertion costs a rerun of the CHECK rather than a rerun of the FETCH,
+      # and leaves the data to look at while working out why it failed.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hoops-players
+          path: hoops/data/players.json
+          if-no-files-found: error
+
       # The engine has to still be a working game after the data underneath it
       # changes by two orders of magnitude. This asserts the draft rules, the
       # replay, and the basketball: real lineups still have to come back as the
@@ -90,14 +101,6 @@ jobs:
 
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
-
-      # Uploaded whether or not it is committed, so a run with commit unchecked
-      # is still a way to look at what the pipeline would produce.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hoops-players
-          path: hoops/data/players.json
-          if-no-files-found: error
 
       - name: Commit
         if: ${{ inputs.commit }}

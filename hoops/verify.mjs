@@ -179,33 +179,47 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
  * 12. A model that gets these wrong is not a basketball model, whatever its
  * calibration report says.
  */
-const lineup = (names) => {
-  const rows = names.map(([n, s]) => players.find(p => p.n === n && p.s === s));
-  const missing = names.filter((_, i) => !rows[i]);
-  if (missing.length) return null;
+/* BY PLAYER ID, NEVER BY NAME. Basketball-Reference renders names with their
+   diacritics, so the real dataset holds "Nikola Jokic" with an accent on the c
+   and "Manu Ginobili" with one on the o. A lookup by name silently finds
+   nothing, and an assertion that silently finds nothing is an assertion that
+   passes for the wrong reason or fails for a reason that has nothing to do with
+   basketball. The slug is stable and is the key everything else joins on. */
+const lineup = (ids) => {
+  const rows = ids.map(([id, s]) => players.find(p => p.i === id && p.s === s));
+  if (rows.some(r => !r)) return null;
   return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 };
 
 /* PG, SG, SF, PF, C, sixth man, in that order. */
 const KNOWN = [
-  ['the 1996 Bulls', 'The Triangle', [['Steve Kerr', 1996], ['Michael Jordan', 1996],
-    ['Scottie Pippen', 1996], ['Dennis Rodman', 1996], ['Luc Longley', 1996], ['Toni Kukoc', 1996]]],
-  ['the 1987 Lakers', 'Showtime', [['Magic Johnson', 1987], ['Byron Scott', 1987],
-    ['James Worthy', 1987], ['A.C. Green', 1987], ['Kareem Abdul-Jabbar', 1987], ['Michael Cooper', 1987]]],
-  ['the 1989 Pistons', 'Grit and Grind', [['Isiah Thomas', 1989], ['Joe Dumars', 1989],
-    ['Mark Aguirre', 1989], ['Dennis Rodman', 1989], ['Bill Laimbeer', 1989], ['Vinnie Johnson', 1989]]],
-  ['the 2004 Pistons', 'Grit and Grind', [['Chauncey Billups', 2004], ['Richard Hamilton', 2004],
-    ['Tayshaun Prince', 2004], ['Rasheed Wallace', 2004], ['Ben Wallace', 2004], ['Corliss Williamson', 2004]]],
-  ['the 1998 Jazz', 'Pick and Roll', [['John Stockton', 1998], ['Jeff Hornacek', 1998],
-    ['Bryon Russell', 1998], ['Karl Malone', 1998], ['Greg Ostertag', 1998], ['Howard Eisley', 1998]]],
-  ['the 2018 Rockets', 'Moreyball', [['Chris Paul', 2018], ['James Harden', 2018],
-    ['Trevor Ariza', 2018], ['P.J. Tucker', 2018], ['Clint Capela', 2018], ['Eric Gordon', 2018]]],
-  ['the 2016 Warriors', 'Pace and Space', [['Stephen Curry', 2016], ['Klay Thompson', 2016],
-    ['Harrison Barnes', 2016], ['Draymond Green', 2016], ['Andrew Bogut', 2016], ['Andre Iguodala', 2016]]],
-  ['the 2023 Nuggets', 'Point Centre', [['Jamal Murray', 2023], ['Kentavious Caldwell-Pope', 2023],
-    ['Michael Porter Jr.', 2023], ['Aaron Gordon', 2023], ['Nikola Jokic', 2023], ['Bruce Brown', 2023]]],
-  ['the 2001 Lakers', 'Bully Ball', [['Derek Fisher', 2001], ['Kobe Bryant', 2001],
-    ['Rick Fox', 2001], ['Horace Grant', 2001], ["Shaquille O'Neal", 2001], ['Robert Horry', 2001]]],
+  // PG Steve Kerr, SG Michael Jordan, SF Scottie Pippen, PF Dennis Rodman, C Luc Longley, 6th Toni Kukoc
+  ['the 1996 Bulls', 'The Triangle', [['kerrst01', 1996], ['jordami01', 1996],
+    ['pippesc01', 1996], ['rodmade01', 1996], ['longllu01', 1996], ['kukocto01', 1996]]],
+  // PG Magic Johnson, SG Byron Scott, SF James Worthy, PF A.C. Green, C Kareem Abdul-Jabbar, 6th Michael Cooper
+  ['the 1987 Lakers', 'Showtime', [['johnsma02', 1987], ['scottby01', 1987],
+    ['worthja01', 1987], ['greenac01', 1987], ['abdulka01', 1987], ['coopemi01', 1987]]],
+  // PG Isiah Thomas, SG Joe Dumars, SF Mark Aguirre, PF Dennis Rodman, C Bill Laimbeer, 6th Vinnie Johnson
+  ['the 1989 Pistons', 'Grit and Grind', [['thomais01', 1989], ['dumarjo01', 1989],
+    ['aguirma01', 1989], ['rodmade01', 1989], ['laimbbi01', 1989], ['johnsvi01', 1989]]],
+  // PG Chauncey Billups, SG Richard Hamilton, SF Tayshaun Prince, PF Rasheed Wallace, C Ben Wallace, 6th Corliss Williamson
+  ['the 2004 Pistons', 'Grit and Grind', [['billuch01', 2004], ['hamilri01', 2004],
+    ['princta01', 2004], ['wallara01', 2004], ['wallabe01', 2004], ['williaco01', 2004]]],
+  // PG John Stockton, SG Jeff Hornacek, SF Bryon Russell, PF Karl Malone, C Greg Ostertag, 6th Howard Eisley
+  ['the 1998 Jazz', 'Pick and Roll', [['stockjo01', 1998], ['hornaje01', 1998],
+    ['russebr01', 1998], ['malonka01', 1998], ['ostergr01', 1998], ['eisleho01', 1998]]],
+  // PG Chris Paul, SG James Harden, SF Trevor Ariza, PF P.J. Tucker, C Clint Capela, 6th Eric Gordon
+  ['the 2018 Rockets', 'Moreyball', [['paulch01', 2018], ['hardeja01', 2018],
+    ['arizatr01', 2018], ['tuckepj01', 2018], ['capelcl01', 2018], ['gordoer01', 2018]]],
+  // PG Stephen Curry, SG Klay Thompson, SF Harrison Barnes, PF Draymond Green, C Andrew Bogut, 6th Andre Iguodala
+  ['the 2016 Warriors', 'Pace and Space', [['curryst01', 2016], ['thompkl01', 2016],
+    ['barneha02', 2016], ['greendr01', 2016], ['bogutan01', 2016], ['iguodan01', 2016]]],
+  // PG Jamal Murray, SG Kentavious Caldwell-Pope, SF Michael Porter Jr., PF Aaron Gordon, C Nikola Jokic, 6th Bruce Brown
+  ['the 2023 Nuggets', 'Point Centre', [['murraja01', 2023], ['caldwke01', 2023],
+    ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
+  // PG Derek Fisher, SG Kobe Bryant, SF Rick Fox, PF Horace Grant, C Shaquille O'Neal, 6th Robert Horry
+  ['the 2001 Lakers', 'Bully Ball', [['fishede01', 2001], ['bryanko01', 2001],
+    ['foxri01', 2001], ['granth01', 2001], ['onealsh01', 2001], ['horryro01', 2001]]],
 ];
 
 for (const [who, expected, names] of KNOWN) {
@@ -227,8 +241,8 @@ is(unnamed.length, 0, 'every real championship lineup is recognised as something
 /* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit
    model says. Six players who each carried their own offense cannot carry one
    together, and if that is cheap then the draft has no shape. */
-const hogs = lineup([['Michael Jordan', 1996], ['James Harden', 2018], ['Kobe Bryant', 2001],
-  ['Karl Malone', 1998], ["Shaquille O'Neal", 2001], ['Gail Goodrich', 1972]]);
+const hogs = lineup([['jordami01', 1996], ['hardeja01', 2018], ['bryanko01', 2001],
+  ['malonka01', 1998], ['onealsh01', 2001], ['goodrga01', 1972]]);
 if (hogs) {
   const f = E.rosterFit(hogs);
   ok(f.profile.shots > E.FIT.SHOT_BUDGET + 25,
@@ -241,8 +255,8 @@ if (hogs) {
    exist before 1980, so a 1972 roster attempting zero of them is a fact about
    the league and not a flaw in the roster. Punishing it would be the single
    most obviously wrong thing this model could do. */
-const preThree = lineup([['Jerry West', 1972], ['Gail Goodrich', 1972], ['Jim McMillian', 1972],
-  ['Happy Hairston', 1972], ['Wilt Chamberlain', 1972], ['Flynn Robinson', 1972]]);
+const preThree = lineup([['westje01', 1972], ['goodrga01', 1972], ['mcmilji01', 1972],
+  ['hairsha01', 1972], ['chambwi01', 1972], ['robinfl01', 1972]]);
 if (preThree) {
   const f = E.rosterFit(preThree);
   is(f.profile.tpa, 0, 'the 1972 Lakers attempted no three-pointers, because nobody could');
