@@ -569,6 +569,84 @@
   #c-note.warn{color:var(--gold);}
   body.inplay header.mast{display:none;}
   body.inplay .wrap{padding-top:12px;}
+
+  /* ══ PORTED FROM THE FOOTBALL AND COLLEGE GAMES ════════════════════════
+     Four components those two already got right, rebuilt here rather than
+     copied, because hoops carries different data underneath them. */
+
+  /* ── the loading bar ────────────────────────────────────────────────────
+     FIVE STEPS, AND EVERY ONE IS SOMETHING THAT ACTUALLY FINISHED: the three
+     data files as each parses, the league index, and the first paint. The bar
+     reports rather than performs. A bar that always fills in two seconds is a
+     worse lie than three dots, because it looks like information. */
+  .boot{margin:12px 0 0;}
+  .boottrack{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .boottrack i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--orange),var(--gold));
+    transition:width .3s cubic-bezier(.2,.8,.3,1);}
+  .boot.failed .boottrack i{background:var(--red);}
+
+  /* ── the connection rail ────────────────────────────────────────────────
+     An arc diagram, the same one both football games use. Every slot is a node
+     in one row and every link is an arc hanging BELOW that row, so an arc can
+     never cross a player: players on the line, arcs under it. Depth grows with
+     the span an arc covers, so a long one sits outside a short one. Tap a node
+     to keep only its arcs and answer "who is THIS man tied to".
+
+     It replaces a bullet list. The list said the same facts and none of the
+     shape: six players with one dense cluster and one loner is a picture, and
+     it was five lines of prose. */
+  .rail{position:relative;margin:10px 0 0;transition:height .28s ease;}
+  .rail.off{height:0;margin:0;overflow:hidden;opacity:0;}
+  .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2;}
+  .rnode{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;
+    gap:3px;cursor:pointer;position:relative;opacity:.45;transition:opacity .15s ease;}
+  .rnode.on{opacity:1;}
+  .rnode:after{content:'';position:absolute;left:0;right:0;top:-6px;bottom:-14px;}
+  .rnode .rdot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+    border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);
+    font-size:8.5px;font-weight:800;color:#fff;}
+  .rnode.focus .rdot{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.16);}
+  .rnode .rnm{font-size:9px;font-weight:700;color:var(--dim);max-width:100%;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;text-align:center;}
+  .rnode.focus .rnm{color:var(--ink);}
+  .rarcs{position:absolute;left:0;right:0;top:44px;width:100%;overflow:visible;pointer-events:none;}
+  .railnote{font-size:10.5px;color:var(--dim);text-align:center;margin:6px 0 0;min-height:13px;}
+
+  /* ── how close it was ───────────────────────────────────────────────────
+     A season that misses by two games and one that misses by twenty read the
+     same on a scoreboard. This says which it was, because "you were three wins
+     off" is the sentence that makes somebody press the button again. */
+  .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 14px;}
+  .pgauge .pv{font-family:var(--display);font-size:46px;line-height:.85;flex:0 0 auto;
+    font-weight:400;}
+  .pgauge .pr{flex:1;min-width:0;}
+  .pgauge .ptrack{height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .pgauge .ptrack i{display:block;height:100%;border-radius:99px;
+    transition:width .8s cubic-bezier(.2,.8,.3,1);}
+  .pgauge .pl{font-size:12.5px;color:var(--mut);margin-top:7px;line-height:1.4;}
+  .pgood{color:var(--green);} .pmid{color:var(--gold);} .pbad{color:var(--red);}
+
+  /* ── the schedule, folded ───────────────────────────────────────────────
+     Eighty-two rows in a scroll box is a data dump. Folded into months it is a
+     season: you can see the March you went 12-3 without reading a single row. */
+  .months{display:grid;gap:7px;}
+  .month{border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.02);}
+  .month > summary{list-style:none;cursor:pointer;padding:11px 13px;display:grid;
+    grid-template-columns:auto 1fr auto;gap:10px;align-items:center;min-height:44px;}
+  .month > summary::-webkit-details-marker{display:none;}
+  .month .mn{font-size:13px;font-weight:800;}
+  .month .mrec{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .month .mbar{display:flex;gap:2px;}
+  .month .mbar i{width:5px;height:14px;border-radius:1px;background:#7f1d1d;}
+  .month .mbar i.w{background:var(--green);}
+  .month[open] > summary{border-bottom:1px solid var(--line);}
+  .month table{width:100%;border-collapse:collapse;}
+
+  /* ── the ring ───────────────────────────────────────────────────────────
+     Winning is the whole point and it used to change one word on the screen. */
+  .confetti-cv{position:fixed;inset:0;z-index:80;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -612,7 +690,10 @@
       <div class="lstat"><b id="ls-clubs">-</b><span>Club seasons</span></div>
       <div class="lstat"><b id="ls-teams">-</b><span>Franchises</span></div>
     </div>
-    <p class="dim" style="font-size:13px;margin:11px 0 0" id="loadmsg">Loading the league...</p>
+    <div class="boot" id="boot">
+      <div class="boottrack"><i id="boot-bar"></i></div>
+      <p class="dim" style="font-size:13px;margin:9px 0 0" id="loadmsg">Loading the league...</p>
+    </div>
   </div>
 
   <!-- The career strip, which is hidden until there is a career to show. An
@@ -760,7 +841,7 @@
         <div class="side"></div>
         <div class="benchlbl">Bench</div>
       </div>
-      <ul class="links" id="r-links"></ul>
+      <div class="rail off" id="rail"></div>
     </aside>
   </div>
 
@@ -805,7 +886,12 @@
 <!-- ── results ──────────────────────────────────────────────────────────── -->
 <div class="screen" id="s-over">
   <div class="card">
-    <div class="verdict" id="o-verdict">-</div>
+    <div class="pgauge" id="o-gauge" hidden>
+    <span class="pv" id="o-gv"></span>
+    <span class="pr"><span class="ptrack"><i id="o-gbar"></i></span>
+      <span class="pl" id="o-gl"></span></span>
+  </div>
+  <div class="verdict" id="o-verdict">-</div>
     <div class="record mono" id="o-record">-</div>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
@@ -834,6 +920,11 @@
   </div>
 
   <div class="card">
+    <h2>Every game <span class="sub" id="o-monthsub"></span></h2>
+    <div class="months" id="o-months"></div>
+  </div>
+
+  <div class="card" id="o-flatcard" hidden>
     <h2>Every game</h2>
     <div class="scroll"><table class="season"><tbody id="o-games"></tbody></table></div>
   </div>
@@ -918,9 +1009,12 @@ function show(id){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=2').then(function(r){ return r.json(); }),
-    fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); }).catch(function(){ return null; }),
-    fetch('data/teams.json?v=1').then(function(r){ return r.json(); }).catch(function(){ return null; })
+    fetch('data/players.json?v=2').then(function(r){ return r.json(); })
+      .then(function(v){ bootStep('Players loaded.'); return v; }),
+    fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
+      .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
+    fetch('data/teams.json?v=1').then(function(r){ return r.json(); })
+      .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
     /* Franchise data BEFORE indexData, because the wheel's club names are built
@@ -928,6 +1022,7 @@ function boot(){
     if (res[2]) E.setTeams(res[2]);
     DATA = R.indexData(res[0]);
     buildGoingRate(res[0]);
+    bootStep('Indexing the league.');
 
     var seasons = {}, franchises = {};
     for (var i = 0; i < DATA.teamSeasons.length; i++) {
@@ -939,8 +1034,8 @@ function boot(){
     $('ls-clubs').textContent = DATA.teamSeasons.length.toLocaleString();
     $('ls-teams').textContent = String(Object.keys(franchises).length);
     if (yrs.length) $('home-era').textContent = yrs[0] + ' to ' + yrs[yrs.length - 1];
-    $('loadmsg').textContent = 'Every line is that player\'s real season, from Basketball-Reference.';
     $('b-start').disabled = false;
+    bootStep('Every line is that player\'s real season, from Basketball-Reference.');
 
     /* A SAVED RUN NO LONGER HIJACKS THE LOAD. It used to jump straight to
        whatever screen the run was on, so a returning player never saw this page
@@ -953,7 +1048,7 @@ function boot(){
        past its own masthead reads as a broken page rather than a restored one. */
     window.scrollTo(0, 0);
   }).catch(function(err){
-    $('loadmsg').textContent = 'The league did not load: ' + err.message;
+    bootFailed('The league did not load: ' + err.message);
   });
 }
 
@@ -1006,6 +1101,193 @@ function drawInto(fn){
 
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
 function respin(){ drawInto(function(){ R.respin(run, DATA); }); }
+
+// ── the loading bar ────────────────────────────────────────────────────────
+
+/* FIVE STEPS, AND EVERY ONE OF THEM IS SOMETHING THAT ACTUALLY FINISHED. The
+ * bar reports rather than performs, so it moves at whatever speed the
+ * connection is really going. Every lookup is guarded because this also runs
+ * after the error branch has replaced the screen with a message, and a boot
+ * that throws inside its own progress meter turns a readable failure into a
+ * blank one. */
+var BOOT_STEPS = 5, bootAt = 0;
+
+function bootStep(say){
+  bootAt++;
+  var bar = $('boot-bar'), msg = $('loadmsg');
+  if (bar) bar.style.width = Math.min(100, Math.round(100 * bootAt / BOOT_STEPS)) + '%';
+  if (msg && say) msg.textContent = say;
+}
+
+function bootFailed(message){
+  var box = $('boot'), msg = $('loadmsg');
+  if (box) box.className = 'boot failed';
+  if ($('boot-bar')) $('boot-bar').style.width = '100%';
+  if (msg) msg.textContent = message;
+}
+
+// ── the connection rail ────────────────────────────────────────────────────
+
+/* TIERED BY WHAT THE LINK IS WORTH, and carried three ways at once: colour,
+ * thickness and dash. A bond's strength stays legible to somebody who cannot
+ * separate the colours, which is roughly one man in twelve. */
+var RAIL_TIERS = [
+  { min: 0.9, color: '#f2c14e', w: 2.6, dash: 'none', op: 0.95 },
+  { min: 0.5, color: '#22c55e', w: 2.0, dash: '5 3',  op: 0.8 },
+  { min: 0.0, color: '#6aa9ff', w: 1.4, dash: '2 3',  op: 0.62 }
+];
+var RAIL = { NODE_BLOCK: 44, MIN_DEPTH: 13, PER_SPAN: 7, MAX_DEPTH: 40, PAD: 8 };
+var railFocus = null;
+
+function railTier(v){
+  for (var i = 0; i < RAIL_TIERS.length; i++) if (v >= RAIL_TIERS[i].min) return RAIL_TIERS[i];
+  return RAIL_TIERS[RAIL_TIERS.length - 1];
+}
+
+function lastName(n){
+  var bits = String(n || '').split(' ');
+  return bits.length > 1 ? bits.slice(1).join(' ') : n;
+}
+
+function drawRail(){
+  var el = $('rail');
+  if (!el) return;
+  var n = E.SLOTS.length;
+  var bySlot = new Array(n).fill(null);
+  for (var i = 0; i < run.roster.length; i++) bySlot[run.slotIndex[i]] = run.roster[i];
+
+  var signed = bySlot.filter(Boolean).length;
+  el.textContent = '';
+  if (signed < 2) { el.className = 'rail off'; el.style.height = '0px'; return; }
+  el.className = 'rail';
+
+  var nodes = document.createElement('div');
+  nodes.className = 'rnodes';
+  var at = {};
+  for (var r = 0; r < run.roster.length; r++) at[run.roster[r].n] = run.slotIndex[r];
+
+  for (var s = 0; s < n; s++) {
+    (function(idx, p){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rnode' + (p ? ' on' : '') + (railFocus === idx ? ' focus' : '');
+      var dot = document.createElement('span');
+      dot.className = 'rdot';
+      dot.textContent = E.SLOTS[idx];
+      if (p) dot.style.background = posPaint(E.SLOTS[idx]);
+      var nm = document.createElement('span');
+      nm.className = 'rnm';
+      nm.textContent = p ? lastName(p.n) : '';
+      b.appendChild(dot); b.appendChild(nm);
+      /* Tapping the same node twice clears it, or the only way out of a filter
+         is to find another node, which on six nodes is a puzzle. */
+      b.onclick = function(){ railFocus = (railFocus === idx ? null : idx); drawRail(); };
+      nodes.appendChild(b);
+    })(s, bySlot[s]);
+  }
+  el.appendChild(nodes);
+
+  var links = E.resolveChemistry(run.roster).links;
+  var arcs = [];
+  for (var k = 0; k < links.length; k++) {
+    var l = links[k];
+    if (at[l.a] == null || at[l.b] == null) continue;
+    var a = Math.min(at[l.a], at[l.b]), b2 = Math.max(at[l.a], at[l.b]);
+    arcs.push({ a: a, b: b2, t: railTier(l.value || 0), label: l.label });
+  }
+  arcs.sort(function(x, y){ return (x.b - x.a) - (y.b - y.a); });
+
+  var cx = function(i){ return ((i + 0.5) / n) * 100; };
+  var depth = function(span){
+    return Math.min(RAIL.MAX_DEPTH, RAIL.MIN_DEPTH + (span - 1) * RAIL.PER_SPAN);
+  };
+  var deepest = 0;
+  for (var d = 0; d < arcs.length; d++) deepest = Math.max(deepest, depth(arcs[d].b - arcs[d].a));
+
+  el.style.height = (RAIL.NODE_BLOCK + (arcs.length ? deepest + RAIL.PAD : 0)) + 'px';
+
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'rarcs');
+  svg.setAttribute('viewBox', '0 0 100 ' + (deepest + RAIL.PAD));
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.style.height = (deepest + RAIL.PAD) + 'px';
+  for (var c = 0; c < arcs.length; c++) {
+    var arc = arcs[c], dd = depth(arc.b - arc.a);
+    var dim = railFocus !== null && railFocus !== arc.a && railFocus !== arc.b;
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M ' + cx(arc.a).toFixed(2) + ' 0 Q '
+      + ((cx(arc.a) + cx(arc.b)) / 2).toFixed(2) + ' ' + (dd * 2) + ' '
+      + cx(arc.b).toFixed(2) + ' 0');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', arc.t.color);
+    path.setAttribute('stroke-width', (arc.t.w * 0.5).toFixed(2));
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
+    if (arc.t.dash !== 'none') path.setAttribute('stroke-dasharray', arc.t.dash);
+    path.setAttribute('opacity', dim ? 0.09 : arc.t.op);
+    svg.appendChild(path);
+  }
+  el.appendChild(svg);
+
+  var note = document.createElement('p');
+  note.className = 'railnote';
+  if (railFocus !== null && bySlot[railFocus]) {
+    var mine = arcs.filter(function(x){ return x.a === railFocus || x.b === railFocus; });
+    note.textContent = bySlot[railFocus].n + ': ' + (mine.length
+      ? mine.length + ' link' + (mine.length === 1 ? '' : 's') + ', ' + mine[0].label
+      : 'no links to anybody here');
+  } else {
+    note.textContent = arcs.length
+      ? arcs.length + ' link' + (arcs.length === 1 ? '' : 's') + '. Tap a man to see only his.'
+      : 'No links yet. Men who shared a club, a college or a draft class build them.';
+  }
+  el.appendChild(note);
+}
+
+// ── the ring ───────────────────────────────────────────────────────────────
+
+/* WINNING USED TO CHANGE ONE WORD ON THE SCREEN. Off by default for anybody who
+   has asked their system for less motion, and it removes itself. */
+function fireConfetti(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var colors = ['#f2c14e', '#f0782d', '#ffffff', '#fde68a', '#22c55e'];
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  var cv = document.createElement('canvas');
+  cv.className = 'confetti-cv';
+  cv.width = Math.floor(window.innerWidth * dpr);
+  cv.height = Math.floor(window.innerHeight * dpr);
+  document.body.appendChild(cv);
+  var ctx = cv.getContext('2d'), W = cv.width, H = cv.height, parts = [];
+  for (var i = 0; i < 160; i++) {
+    parts.push({
+      x: Math.random() * W, y: -Math.random() * H * 0.5,
+      w: (5 + Math.random() * 6) * dpr, h: (8 + Math.random() * 8) * dpr,
+      vy: (1.6 + Math.random() * 2.6) * dpr, vx: (Math.random() - 0.5) * 1.6 * dpr,
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.22,
+      c: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+  var start = Date.now(), DUR = 3600;
+  (function frame(){
+    var t = Date.now() - start;
+    if (t > DUR) { if (cv.parentNode) cv.parentNode.removeChild(cv); return; }
+    ctx.clearRect(0, 0, W, H);
+    var fade = t > DUR - 900 ? Math.max(0, (DUR - t) / 900) : 1;
+    for (var j = 0; j < parts.length; j++) {
+      var p = parts[j];
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      if (p.y > H + 40) { p.y = -40; p.x = Math.random() * W; }
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  })();
+}
 
 // ── position pills ─────────────────────────────────────────────────────────
 
@@ -1277,6 +1559,11 @@ function renderHud(justSlot){
   }
 
   var chem = E.resolveChemistry(run.roster);
+  var head = $('r-chem');
+  if (head) {
+    head.textContent = run.roster.length < 2 ? ''
+      : 'chemistry ' + (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2) + ' rating';
+  }
   var cv = $('c-chem');
   cv.textContent = run.roster.length < 2 ? 'None'
     : (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2);
@@ -1336,7 +1623,7 @@ function renderDraft(justSlot){
   $('d-note').textContent = re.ok ? '' : (draw ? re.reason : '');
 
   renderFit();
-  renderLinks(chem);
+  drawRail();
 }
 
 /* THE TABS ARE THE OPEN SLOTS, not every position. A board is six players and
@@ -1556,28 +1843,6 @@ function playerTile(p, block, tooDear, idx){
   return b;
 }
 
-function renderLinks(chem){
-  var linksEl = $('r-links');
-  if (!linksEl) return;
-  var head = $('r-chem');
-  if (head) {
-    head.textContent = run.roster.length < 2 ? ''
-      : 'chemistry ' + (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2) + ' rating';
-  }
-  linksEl.textContent = '';
-  var seen = {};
-  for (var k = 0; k < chem.links.length; k++) {
-    var l = chem.links[k];
-    if (seen[l.label]) continue;
-    seen[l.label] = 1;
-    var li = document.createElement('li');
-    var b = document.createElement('b');
-    b.textContent = l.label;
-    li.appendChild(b);
-    li.appendChild(document.createTextNode(': ' + l.a + ' and ' + l.b));
-    linksEl.appendChild(li);
-  }
-}
 
 function sign(p){
   var before = run.roster.length;
@@ -1598,15 +1863,7 @@ function sign(p){
   setTimeout(spin, 240);
 }
 
-/* THE FIVE THINGS A BASKETBALL TEAM NEEDS, live, while there is still time to
- * do something about it.
- *
- * Each row is read as "where are you against the line the model stops charging
- * at", with the line drawn on the meter rather than described. Shot allocation
- * is the odd one out and is drawn inverted, because it is the only row where
- * MORE is worse: the budget is 72 attempts and every one past it is a shot
- * somebody on this roster is not getting.
- */
+
 var FIT_ROWS = [
   { key: 'spacing', name: 'Spacing',
     get: function(P){ return P.spacing; }, target: E.FIT.SPACING_FLOOR, good: E.FIT.SPACING_GOOD,
@@ -1688,7 +1945,7 @@ function renderFit(){
   box.appendChild(line);
 }
 
-function renderRoster(slotsEl, linksEl){
+function renderRoster(slotsEl){
   slotsEl.textContent = '';
 
   var filled = {};
@@ -1725,28 +1982,10 @@ function renderRoster(slotsEl, linksEl){
 
   renderFit();
 
-  if (!linksEl) return;
-  var chem = E.resolveChemistry(run.roster);
-  var head = document.getElementById('r-chem');
-  if (head) {
-    head.textContent = run.roster.length < 2 ? ''
-      : 'chemistry ' + (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2) + ' rating';
-  }
-
-  linksEl.textContent = '';
-  var seen = {};
-  for (var k = 0; k < chem.links.length; k++) {
-    var l = chem.links[k];
-    if (seen[l.label]) continue;
-    seen[l.label] = 1;
-    var li = document.createElement('li');
-    var b = document.createElement('b');
-    b.textContent = l.label;
-    li.appendChild(b);
-    li.appendChild(document.createTextNode(': ' + l.a + ' and ' + l.b));
-    linksEl.appendChild(li);
-  }
 }
+
+
+
 
 // ── the season ─────────────────────────────────────────────────────────────
 
@@ -1865,7 +2104,11 @@ function playSeason(){
     var i = 0;
     var step = function(){
       if (i >= rounds.length) {
-        setTimeout(function(){ renderOver(o); show('s-over'); }, 620);
+        setTimeout(function(){
+          renderOver(o);
+          show('s-over');
+          if (o.titleWon) fireConfetti();
+        }, 620);
         return;
       }
       var rd = rounds[i++];
@@ -1998,7 +2241,7 @@ function renderOver(out){
     po.appendChild(tbl);
   }
 
-  renderRoster($('o-slots'), null);
+  renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
   var squad = R.bestPossibleSquad(run, DATA);
@@ -2012,24 +2255,131 @@ function renderOver(out){
     $('o-best').textContent = '';
   }
 
+  renderGauge(out);
+  renderMonths();
+
+  /* The flat table stays in the markup and stays hidden: it is the fallback if
+     the fold ever fails to build, and it costs nothing. */
   var games = $('o-games');
   games.textContent = '';
-  for (var g = 0; g < run.season.length; g++) {
-    var gm = run.season[g], sc = run.schedule[g];
-    var row = document.createElement('tr');
-    var n = document.createElement('td');
-    n.textContent = String(gm.game);
-    var opp = document.createElement('td');
-    opp.textContent = (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent')
-      + (sc.marquee ? ' ★' : '');
-    var res = document.createElement('td');
-    res.className = gm.won ? 'w' : 'l';
-    res.textContent = gm.won ? 'W' : 'L';
-    var score = document.createElement('td');
-    score.className = 'sc';
-    score.textContent = gm.yourPoints + '-' + gm.oppPoints + (gm.ot ? ' OT' : '');
-    row.appendChild(n); row.appendChild(opp); row.appendChild(res); row.appendChild(score);
-    games.appendChild(row);
+}
+
+/* ── HOW CLOSE IT WAS ──────────────────────────────────────────────────────
+ *
+ * A season that missed by two games and one that missed by twenty read the same
+ * on a scoreboard, and this game gives out a lot of near misses on purpose. "You
+ * were three wins short" is the sentence that makes somebody press the button
+ * again; "Missed the playoffs" is the sentence that makes them close the tab.
+ */
+function renderGauge(out){
+  var box = $('o-gauge');
+  if (!box) return;
+  box.hidden = false;
+  var wins = out.wins;
+  var playIn = E.CONSTANTS.PLAY_IN_WINS, seed = E.CONSTANTS.TOP_SIX_WINS;
+  var big, cls, pct, line;
+
+  if (out.titleWon) {
+    big = 'RING'; cls = 'pgood'; pct = 100;
+    line = wins + '-' + out.losses + ' and the title. Nothing left to chase but the record.';
+  } else if (run.playoffs && run.playoffs.rounds.length) {
+    var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
+    big = String(last.yourWins) + '-' + last.oppWins; cls = 'pmid';
+    pct = Math.round(100 * last.yourWins / Math.max(1, last.yourWins + last.oppWins));
+    line = 'Out in the ' + last.round + '. ' + (last.yourWins >= 3
+      ? 'One game the other way and you are still playing.'
+      : 'The bracket got stiffer than the roster.');
+  } else if (wins >= playIn - 6) {
+    var short = playIn - wins;
+    big = short <= 0 ? '0' : String(short); cls = 'pmid';
+    pct = Math.round(100 * wins / playIn);
+    line = short <= 0 ? 'Enough wins, wrong side of the tiebreak.'
+      : short + ' win' + (short === 1 ? '' : 's') + ' short of the play-in. '
+        + 'One better signing anywhere in the six is worth about that.';
+  } else {
+    big = String(playIn - wins); cls = 'pbad';
+    pct = Math.round(100 * wins / playIn);
+    line = (playIn - wins) + ' wins short of the play-in. '
+      + (out.spendLeft > 15 ? 'You finished with cap left over, which is worth nothing.'
+        : 'The roster never had a shape. Read the fit rows next time.');
+  }
+  $('o-gv').textContent = big;
+  $('o-gv').className = 'pv ' + cls;
+  $('o-gl').textContent = line + (wins >= seed ? '' : '');
+  var bar = $('o-gbar');
+  bar.style.width = '0%';
+  bar.style.background = cls === 'pgood' ? 'var(--green)'
+    : cls === 'pmid' ? 'var(--gold)' : 'var(--red)';
+  /* Next frame, so the width transition has something to animate from. */
+  requestAnimationFrame(function(){ bar.style.width = Math.max(3, Math.min(100, pct)) + '%'; });
+}
+
+/* ── THE SEASON, FOLDED INTO MONTHS ───────────────────────────────────────
+ *
+ * Eighty-two rows in a scroll box is a data dump. Folded, it is a season: the
+ * March you went 12-3 is visible without reading a row, and the row is still
+ * there for anybody who wants it. Twelve games a block, which is about a month.
+ */
+function renderMonths(){
+  var box = $('o-months');
+  if (!box) return;
+  box.textContent = '';
+  var PER = 12, blocks = [];
+  for (var i = 0; i < run.season.length; i += PER) {
+    blocks.push({ from: i, to: Math.min(i + PER, run.season.length) });
+  }
+  var best = null;
+  for (var b = 0; b < blocks.length; b++) {
+    var blk = blocks[b], w = 0, l = 0;
+    for (var g = blk.from; g < blk.to; g++) run.season[g].won ? w++ : l++;
+    blk.w = w; blk.l = l;
+    if (!best || w - l > best.w - best.l) best = blk;
+
+    var d = document.createElement('details');
+    d.className = 'month';
+    var sum = document.createElement('summary');
+    var nm = document.createElement('span');
+    nm.className = 'mn';
+    nm.textContent = 'Games ' + (blk.from + 1) + ' to ' + blk.to;
+    var bar = document.createElement('span');
+    bar.className = 'mbar';
+    for (var q = blk.from; q < blk.to; q++) {
+      var tick = document.createElement('i');
+      if (run.season[q].won) tick.className = 'w';
+      bar.appendChild(tick);
+    }
+    var rec = document.createElement('span');
+    rec.className = 'mrec';
+    rec.textContent = w + '-' + l;
+    sum.appendChild(nm); sum.appendChild(bar); sum.appendChild(rec);
+    d.appendChild(sum);
+
+    var tbl = document.createElement('table');
+    tbl.className = 'season';
+    var tb = document.createElement('tbody');
+    for (var k = blk.from; k < blk.to; k++) {
+      var gm = run.season[k], sc = run.schedule[k] || {};
+      var tr = document.createElement('tr');
+      var c1 = document.createElement('td');
+      c1.textContent = String(gm.game);
+      var c2 = document.createElement('td');
+      c2.textContent = (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent') + (sc.marquee ? ' *' : '');
+      var c3 = document.createElement('td');
+      c3.className = gm.won ? 'w' : 'l';
+      c3.textContent = gm.won ? 'W' : 'L';
+      var c4 = document.createElement('td');
+      c4.className = 'sc';
+      c4.textContent = gm.yourPoints + '-' + gm.oppPoints + (gm.ot ? ' OT' : '');
+      tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tr.appendChild(c4);
+      tb.appendChild(tr);
+    }
+    tbl.appendChild(tb);
+    d.appendChild(tbl);
+    box.appendChild(d);
+  }
+  if (best) {
+    $('o-monthsub').textContent = 'best stretch ' + best.w + '-' + best.l
+      + ', games ' + (best.from + 1) + ' to ' + best.to;
   }
 }
 
