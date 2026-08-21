@@ -459,6 +459,27 @@ window.GA_ID='G-L29P5MRWKE';
   /* .newach, .acase and @keyframes achpop lived here and drew the results-screen panel that
      the headline replaced. Nothing else in the game used any of them. */
 
+  /* ── WHAT A GUEST EARNED, AND THE OFFER TO KEEP IT ────────────────
+     The badge cards inside are the cabinet's own, on purpose: what is being offered is
+     these exact objects, so they should be the objects, not a summary of them. What the
+     panel adds around them is the frame that says they are not yours yet. */
+  .claimbox{margin-top:12px;border-radius:14px;padding:14px 15px;
+    border:1px solid rgba(251,191,36,.34);
+    background:linear-gradient(160deg,rgba(251,191,36,.07),var(--panel))}
+  .claimbox .cb-k{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:#fbbf24}
+  .claimbox .cb-t{display:block;font-family:var(--fd);font-size:19px;letter-spacing:.02em;
+    color:var(--ink);margin-top:3px;line-height:1.15}
+  .claimbox .cb-s{margin:5px 0 11px;font-size:12.5px;line-height:1.45;color:var(--dim)}
+  .claimbox .btn{margin-bottom:12px}
+  .claimbox .cb-more{margin:9px 0 0;font-size:11.5px;line-height:1.4;color:var(--dim-2);
+    text-align:center}
+  /* Claimed. The same box, once the account has taken them, because a panel that simply
+     vanishes leaves nothing that says the offer was honoured. */
+  .claimbox.done{border-color:rgba(16,185,129,.4);
+    background:linear-gradient(160deg,rgba(16,185,129,.08),var(--panel))}
+  .claimbox.done .cb-k{color:var(--green)}
+
   /* ── hero/intro ─────────────────────────────────────────────────
      The title is sized to sit inside the 600px column, not overrun it: at 70px
      "The Perfect Season" is wider than the wrap and used to spill off the right
@@ -3579,6 +3600,15 @@ or endorsed by the NCAA, the CFP or any school.
          season just played and they keep, the ask does not: the football game puts the
          placings and the prompt directly under the headline numbers and converts
          better. -->
+    <!-- WHAT A GUEST JUST EARNED, and the offer to keep it. Empty for a member, who has
+         had it announced already, and empty for a guest whose season earned nothing.
+
+         ABOVE THE PLACING, because when it is here it is the ask on this screen and the
+         placing panel gives up its button to it. Measured: below the placing its button
+         landed 932px down a 667px phone, which is the tab problem this screen was built to
+         get away from, in a different costume. -->
+    <div id="o-claim"></div>
+
     <div id="o-place"></div>
 
     <div class="resume" id="o-resume"></div>
@@ -5099,6 +5129,55 @@ let authMsg=null;         // {err} or {ok}
    day cannot re-claim a row that is no longer the one on screen. */
 let pendingClaim=null;
 
+/* ── TAKING OVER THE SEASONS PLAYED BEFORE THE ACCOUNT ────────────────────────
+   A guest's seasons are already on the board, submitted with no name on them, and this
+   browser has kept the id of each. Signing in hands them over.
+
+   ALL OF THEM, not just the one on screen, because a trophy case is derived from the whole
+   set. Half the catalog counts seasons rather than describing one: Milestones, the streaks,
+   Dynasty, Perennial contender. Claiming the last season alone would put those badges on an
+   account that cannot support them, which is the sort of promise that is worse than not
+   making it at all.
+
+   CAPPED, and the cap is honest about what it is. This is one request a season and they are
+   not free, so it takes the most recent sixty and leaves the rest. Sixty is far past what
+   anybody plays without an account: the pitch comes up after the first draft and the playoff
+   gate stops the first good season, so a guest with sixty finished seasons has declined the
+   offer many times over.
+
+   RUN ONCE PER ACCOUNT PER LOAD. auth fires its listener on every token refresh, and a
+   sweep on each of those would be the same rows claimed and re-claimed all session. */
+const CLAIM_SWEEP_MAX=60;
+let claimSweptFor=null;
+async function claimPastSeasons(){
+  const a=A();
+  if(!a||!a.claim||!authState.signedIn||!authState.userId) return;
+  if(claimSweptFor===authState.userId) return;
+  claimSweptFor=authState.userId;
+  /* Not the season on screen. The block above is already claiming that one and is doing it
+     first because the placing line is waiting on the answer; both firing would be the same
+     row asked for twice, and the second answer is always no. */
+  const rows=unclaimedRuns().filter((r)=>r.run_id!==pendingClaim).slice(-CLAIM_SWEEP_MAX);
+  if(!rows.length) return;
+  const got=[];
+  for(const r of rows){
+    /* Sequential on purpose. Nothing is waiting on this, and sixty at once against a
+       leaderboard that also has a board to serve is rude for no gain. */
+    try{ if(await a.claim(r.run_id)) got.push(r.run_id); }catch(e){}
+  }
+  if(!got.length) return;
+  markClaimed(got); claimTaken=true;
+  ga('runs_claimed',{count:got.length});
+  /* The board had no id for the season on screen, so the block that normally does this never
+     ran. The payoff is still owed. */
+  if(signInForClaim&&authState.name){ signInForClaim=false; closeSheet(); }
+  /* The cabinet on screen is now several seasons short of the truth. */
+  careerRows=null; careerRaw=null; careerTotal=0;
+  paintClaim();
+  if($('s-board').classList.contains('on')) paintBoard();
+  if($('sheet').classList.contains('on')&&profileTab==='case') openProfile('case');
+}
+
 /* ── ASKING FOR THE SIGN-IN, AND PAYING IT OFF ──────────────────────────────
    This screen used to ask in prose: "Sign in to put your name on it", with no
    button under it. The player then had to know the avatar in the corner opens an
@@ -5139,15 +5218,28 @@ const GATE_WORDS={
            dry:'Your season is saved and yours. The board lists seasons by name, so it needs one before it can show this.',
            act:'Pick your name' },
 };
-/* `placed` says whether a real placing is on screen above this line. */
-function gateCta(placed){
+/* `placed` says whether a real placing is on screen above this line.
+
+   `quiet` KEEPS THE SENTENCE AND DROPS THE BUTTON. The results screen can carry a second
+   and stronger ask: a guest whose season earned badges gets the claim panel, which says
+   everything this line says and names what is waiting as well. Two full-width sign-in
+   buttons one under the other is a page nagging rather than offering, and the weaker of
+   the two is the one that goes. The sentence stays because it is the explanation of the
+   placing directly above it, which the claim panel does not repeat. */
+function gateCta(placed,quiet){
   const g=gateState(); if(!g) return '';
   const w=GATE_WORDS[g];
   return '<div class="gateline"><span>'+(placed?w.say:w.dry)+'</span>'+
-    '<button class="btn sm" data-gate="'+g+'">'+w.act+'</button></div>';
+    (quiet?'':'<button class="btn sm" data-gate="'+g+'">'+w.act+'</button>')+'</div>';
 }
+/* Whether the claim panel is the ask on this screen. */
+const claimUp=()=>!authState.signedIn&&guestEarned.length>0&&!!gateState();
 /* Delegated, so every repaint of either panel keeps working without rewiring. */
 let signInForBoard=false;
+/* The sign-in came from the claim panel, which means the payoff is on the screen behind the
+   sheet rather than on the board. Closing it is the whole of that payoff: the panel they
+   pressed now says Claimed. */
+let signInForClaim=false;
 document.addEventListener('click',(e)=>{
   const b=e.target.closest&&e.target.closest('[data-gate]'); if(!b) return;
   const g=b.dataset.gate;
@@ -5204,13 +5296,24 @@ function bootAuth(){
       const wanted=signInForBoard; signInForBoard=false;
       a.claim(id).then((got)=>{
         if(!got) return;
-        pendingClaim=null; ga('run_claimed');
-        paintPlace();
+        pendingClaim=null; markClaimed([id]); claimTaken=true; ga('run_claimed');
+        paintPlace(); paintClaim();
+        /* Nameless first, whichever button they came from. The sheet they are looking at is
+           where a name gets picked, so this is the one case that keeps it open. */
         if(!authState.name){ toast('Season saved. Pick a name to get it on the board'); return; }
+        if(signInForClaim){ signInForClaim=false; closeSheet(); return; }
         if(wanted&&run){ closeSheet(); openBoard(runMode(run)); }
         else toast('Your season is on the board');
       });
     }
+    /* AND EVERY SEASON BEFORE IT. The season on screen is claimed above because the screen
+       is waiting on the answer; the rest of this browser's seasons are swept up behind it,
+       because a badge is derived from ALL of somebody's rows and half of them are worth
+       nothing on their own. "Finish 10 seasons" earned as a guest and then handed over one
+       season at a time is a badge that arrives on an account already broken.
+       Quiet, unawaited and allowed to fail: nothing on screen is waiting for it, and a row
+       that does not claim stays unclaimed and is tried again next time. */
+    if(st.signedIn) claimPastSeasons();
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
     if(st.userId!==wasId){ careerRows=null; careerRaw=null; careerTotal=0;
@@ -5809,15 +5912,83 @@ function achReveal(root,id){
    a member whose seasons are still loading is still told what they just earned. Anything
    already marked seen is skipped, so an extra call can never repeat a badge. */
 function announceRunBadges(){
-  /* BADGES ARE AN ACCOUNT FEATURE, so a guest is never told they earned one. This used to
-     fall back to local history and announce for a signed-out player too, which read as
-     generosity and was the opposite: the banner promised a trophy case that lives in one
-     browser's storage, disappears when it is cleared, and does not follow them to a phone.
-     Earning something you are going to lose is worse than not earning it. The offer is
-     made instead, on the results screen and the board and after the draft. */
-  if(!authState.signedIn) return;
+  /* A TOAST IS A CELEBRATION AND IT IS FOR SOMEBODY WHO GETS TO KEEP THE THING. A guest is
+     not told nothing, they are told something different and in a different place: the panel
+     on the results screen, which names the same badges and offers them rather than
+     announcing them. Cascading toasts at a player who owns none of it is the version that
+     reads as generosity and is the opposite. */
+  if(!authState.signedIn) return paintClaim();
   const res=achState(careerRows||null);
   if(res) achAnnounce(authState.userId,res,false);
+}
+
+/* ── WHAT A GUEST EARNED, ON THE SCREEN WHERE THEY EARNED IT ──────────────────
+   The badges are real: they come out of the same evaluate() a member's do, off a season
+   that is already on the board. What is missing is only somebody to own them. So they are
+   named, in full, in the cabinet's own cards, and the button under them is the one thing
+   that turns them into a trophy case.
+
+   NOT A TOAST. Toasts are the member's celebration and they fly past in six seconds; this
+   is an offer, and an offer has to sit still and be readable for as long as somebody wants
+   to look at it.
+
+   THREE AT MOST. A season can light up eight badges at once, and eight cards plus a button
+   is a screen of its own on a phone, on a page that already has a season's worth of payoff
+   under it. The rest are counted rather than listed. */
+const CLAIM_SHOW=3;
+/* Whether the offer was actually honoured, rather than merely signed in. A board that could
+   not be reached has no id to claim, and congratulating somebody for taking delivery of
+   something that never arrived is the one thing this panel must not do. */
+let claimTaken=false;
+/* Counted once a season. paintClaim runs again on every auth change and on the sweep. */
+let claimShown=false;
+function paintClaim(){
+  const box=$('o-claim'); if(!box) return;
+  if(authState.signedIn){
+    if(!guestEarned.length||!claimTaken){ box.innerHTML=''; return; }
+    /* They took it. The same box says so rather than disappearing, because a panel that
+       vanishes on the tap leaves nothing that says the offer was honoured. */
+    const n=guestEarned.length;
+    box.innerHTML='<div class="claimbox done"><span class="cb-k">Claimed</span>'+
+      '<span class="cb-t">'+(n===1?'That badge is yours':'Those '+n+' badges are yours')+
+      '</span><p class="cb-s">'+(n===1?'It is':'They are')+' in your trophy case, along with '+
+      'every season this browser has played.</p>'+
+      '<button class="btn ghost sm" id="cb-see" style="width:100%">See your trophy case</button></div>';
+    const see=$('cb-see'); if(see) see.onclick=()=>openProfile('case');
+    return;
+  }
+  if(!guestEarned.length||!gateState()){ box.innerHTML=''; return; }
+  const show=guestEarned.slice(0,CLAIM_SHOW), more=guestEarned.length-show.length;
+  const n=guestEarned.length;
+  /* THE BUTTON GOES ABOVE THE CARDS, which is not the order it reads in and is the order
+     it has to be in. Measured on a 375x667 phone: the verdict, the overall and the splits
+     are 400px of season before this panel starts, so a button under three badge cards
+     landed 733px down a 667px screen. That is the tab problem this screen was built to get
+     away from, wearing a different costume.
+     Nothing is lost by the swap. The kicker already says how many, the title says what is
+     standing between them and you, and the cards under the button are the evidence for
+     anybody who wants to see it before deciding. */
+  box.innerHTML='<div class="claimbox"><span class="cb-k">'+
+      (n===1?'You earned a badge':'You earned '+n+' badges')+'</span>'+
+    '<span class="cb-t">'+(n===1?'It is waiting for an account':'They are waiting for an account')+
+      '</span>'+
+    '<p class="cb-s">This season is already on the board with no name on it. Sign in and it '+
+      'becomes yours, '+(n===1?'and so does the badge':'and so do the badges')+'.</p>'+
+    '<button class="btn" id="cb-in" style="width:100%">'+
+      (n===1?'Sign in to claim it':'Sign in to claim them')+'</button>'+
+    '<div class="achlist">'+show.map(a=>
+      '<div class="ach '+a.tier+'"><div class="ach-n">'+esc(a.name)+'</div>'+
+      '<div class="ach-d">'+esc(a.desc||'')+'</div></div>').join('')+'</div>'+
+    '<p class="cb-more">'+(more?'and '+more+' more. ':'')+
+      'Signing in also takes over every other season you have played in this browser.</p>'+
+    '</div>';
+  const cta=$('cb-in');
+  if(cta) cta.onclick=()=>{
+    ga('claim_clicked',{badges:n});
+    signInForClaim=true;
+    openProfile('account');
+  };
+  if(!claimShown){ claimShown=true; ga('claim_shown',{badges:n}); }
 }
 $('b-profile').onclick=()=>openProfile();
 /* NOT APPLIED HERE ANY MORE. The saved school is read at the top of applyTheme's
@@ -5844,6 +6015,30 @@ function loadHistory(){
 }
 function saveHistory(rows){
   try{ localStorage.setItem(HIST_KEY,JSON.stringify(rows.slice(-HIST_MAX))); }catch(e){}
+}
+/* THE BOARD'S ID FOR THE SEASON, WRITTEN ONTO THIS BROWSER'S OWN ROW.
+   A season is recorded locally the moment it ends and submitted to the board a moment
+   later, so the id arrives after the row does and has to be stamped on. It is what lets a
+   sign-in claim seasons played BEFORE it: without it, only the season on screen could ever
+   be claimed, and a guest who played ten of them would hand over one. */
+function stampRunId(id){
+  if(!id) return;
+  const rows=loadHistory();
+  const last=rows[rows.length-1];
+  if(!last||last.run_id) return;
+  last.run_id=id;
+  saveHistory(rows);
+}
+/* Every season this browser recorded that has an id and has not been taken over yet. */
+function unclaimedRuns(){
+  return loadHistory().filter((r)=>r&&r.run_id&&!r.claimed);
+}
+function markClaimed(ids){
+  if(!ids||!ids.length) return;
+  const set=new Set(ids);
+  const rows=loadHistory();
+  rows.forEach((r)=>{ if(r&&set.has(r.run_id)) r.claimed=true; });
+  saveHistory(rows);
 }
 /* Rows keep a pick as "player_id|season" rather than the whole player, so a
    season costs a few hundred bytes instead of a few thousand and a later fix to
@@ -5930,23 +6125,35 @@ function achState(rows){
    exists so the analytics event fires for the season that earned each one rather than for
    whichever screen happened to read the cabinet. */
 let lastEarned=[];
+/* THE SAME SET, EARNED BY SOMEBODY WITHOUT AN ACCOUNT TO PUT IT ON. Held apart from
+   lastEarned rather than folded into it, because the two are answers to different
+   questions: lastEarned is what to celebrate and what to count in the analytics, and this
+   is what to OFFER. Nothing here is announced, nothing here is counted as earned, and the
+   results screen shows it as a thing waiting to be claimed. */
+let guestEarned=[];
 function recordRun(row){
   /* A COACHED DRAFT IS NOT A SEASON YOU PLAYED. It never reaches the history, so it can
      never reach a badge, the trophy case or the profile counters either, all of which
      are derived from these rows. */
-  if(tutorialOn){ lastEarned=[]; return lastEarned; }
+  if(tutorialOn){ lastEarned=[]; guestEarned=[]; return lastEarned; }
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
-  /* THE SEASON IS STILL WRITTEN DOWN FOR A GUEST, and no badge comes out of it. The row is
-     their own history and the results screen reads it; the badge is the thing an account
-     buys. Recorded before the early return so that signing in later derives the whole
-     cabinet from seasons already played rather than starting them at zero. */
+  /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
+     results screen reads it; what an account buys is the badge actually being yours. */
   const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
-  if(!authState.signedIn){ lastEarned=[]; return lastEarned; }
-  lastEarned=A
+  const gained=A
     ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
     : [];
+  /* A GUEST IS TOLD WHAT THEY EARNED AND OFFERED IT, rather than told nothing. Telling them
+     nothing was the previous rule and it was half right: what it was protecting against is a
+     trophy case kept in one browser's storage, which vanishes when the browser is cleared
+     and never reaches a phone. But the seasons underneath it are already on the board, so
+     the badges are not a promise this game cannot keep, they are a promise it has to be
+     asked to keep. Signing in claims those seasons, and the badges come with them. */
+  if(!authState.signedIn){ lastEarned=[]; guestEarned=gained; return lastEarned; }
+  guestEarned=[];
+  lastEarned=gained;
   return lastEarned;
 }
 /* ── the leaderboard ──────────────────────────────────────────────
@@ -6476,7 +6683,12 @@ async function submitRun(o,selectionRank,stats){
   };
   const id=await B.submit(payload);
   if(id){ myRunId=id; pendingClaim=authState.signedIn?null:id;
-    if(authState.signedIn) ga('run_recorded',{signed_in:true}); else ga('run_recorded',{signed_in:false}); }
+    /* Onto this browser's own row, so a sign-in weeks from now can still take this season
+       over. A signed-in player's row is already theirs, so it is marked claimed on the way
+       past rather than left to be swept later. */
+    stampRunId(id);
+    if(authState.signedIn){ markClaimed([id]); ga('run_recorded',{signed_in:true}); }
+    else ga('run_recorded',{signed_in:false}); }
   return id;
 }
 
@@ -6537,7 +6749,7 @@ async function paintPlace(){
       ? 'The leaderboard opens at launch. This season is saved and goes into the '+
         'standings the moment it does.'
       : 'The leaderboard is not reachable right now. This season is still yours; it '+
-        'just is not ranked yet.')+'</div>'+gateCta(false)+
+        'just is not ranked yet.')+'</div>'+gateCta(false,claimUp())+
       '<button id="o-lb">Board</button></div>';
   }else if(live.every(([k])=>r[k].total===0)){
     /* AN EMPTY BOARD IS NOT A FIRST PLACE. The board lists named seasons only, so
@@ -6547,7 +6759,7 @@ async function paintPlace(){
        fact and the one that tells them what to do about it. */
     el.innerHTML='<div class="placebox"><div class="pl">'+
       'No named season has been put on the'+which+' board yet. '+
-      'Yours would be the first.</div>'+gateCta(false)+
+      'Yours would be the first.</div>'+gateCta(false,claimUp())+
       '<button id="o-lb">Board</button></div>';
   }else{
     const wk=r.week; if(wk&&wk.place!=null) myPlace=wk.place;
@@ -6558,7 +6770,7 @@ async function paintPlace(){
     el.innerHTML='<div class="placebox">'+
       '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k],null,k)).join('')+'</div>'+
       (which?'<div class="plwho">Among every'+which+' season recorded.</div>':'')+
-      gateCta(true)+
+      gateCta(true,claimUp())+
       '<button id="o-lb">Board</button></div>';
   }
   const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
@@ -7246,7 +7458,7 @@ function guestPitch(){
     ['The playoffs', 'A guest season stops once the field is set.'],
     ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
     ['Conference Draft', 'Draft a single Power 5 conference.'],
-    [badges?('All '+badges+' badges'):'Every badge in the game', 'Guests earn none of them.'],
+    [badges?('All '+badges+' badges'):'Every badge in the game', 'Earned as a guest, kept with an account.'],
     ['Your school’s colors', 'They theme the whole game.'],
   ];
   $('sheet-in').dataset.kind='pitch';
@@ -7286,6 +7498,8 @@ function beginDraft(conference,seed){
   /* Starting a fresh one is how a player says they are done with a held season, and it
      is the only way out of the loop where every load reopens the same seeding screen. */
   gateSeen=false; dropHold();
+  /* The last season's offer belongs to the last season. */
+  guestEarned=[]; claimTaken=false; claimShown=false;
   if(conference!==undefined) nextConference=conference&&E.isPowerConference(conference)?conference:null;
   newRun(seed);
   ga('game_started',{mode:runMode(run)});
@@ -8357,7 +8571,7 @@ function paintSeed(){
       const perks=[
         ['Play the playoffs out','The field is set and your first game is waiting.'],
         ['Your name on the leaderboard','Guest seasons are ranked but never listed.'],
-        [nb?('All '+nb+' badges'):'Every badge in the game','Guests earn none of them.'],
+        [nb?('All '+nb+' badges'):'Every badge in the game','Earned as a guest, kept with an account.'],
       ];
       $('sd-gate-perks').innerHTML=perks.map(([t,d])=>
         '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
