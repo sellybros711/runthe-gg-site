@@ -1,0 +1,5 @@
+# Raw scrape output from fetch-nba.mjs. Regenerable from the source, large, and
+# not what the game loads: hoops/data/players.json is the built artefact and it
+# IS committed. Keeping the raw pull out of git means a refresh diff shows what
+# changed about the game rather than what changed about a scrape.
+*.json

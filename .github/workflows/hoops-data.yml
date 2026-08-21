@@ -4,14 +4,16 @@ name: Refresh Run The Floor player data
 #
 # THIS IS THE ONLY PLACE THE PIPELINE CAN RUN. Basketball-Reference is blocked
 # from the development sandbox and open from GitHub's runners, which is the same
-# split scripts/build-register.mjs documents and the reason hoops/build/
-# ships with a hand-entered seed at all. Until this workflow has run, the game
-# is playing on 171 rows somebody typed from memory.
+# split scripts/build-register.mjs documents and the reason hoops/build/ ships
+# with a hand-entered seed at all. That seed is a fallback now rather than the
+# state of things: this workflow has run, and the game plays on 16,057 real
+# player-seasons. If it ever drops back to 171 rows, the fetch has failed.
 #
-# Three stages, and the order matters:
+# Four stages, and the order matters:
 #   fetch-nba.mjs     every player-season: box score, win shares, position, team
 #   fetch-draft.mjs   draft year and college, which no season page carries
-#   build-players.mjs prices everything and joins the two
+#   fetch-teams.mjs   the franchises, including the ones that no longer exist
+#   build-players.mjs normalizes short seasons, prices everything, joins the rest
 #
 # Runnable locally by anyone who can reach the source, with the same commands.
 #
@@ -32,15 +34,17 @@ on:
         description: 'Commit the rebuilt data back to this branch?'
         type: boolean
         default: true
-  # NO SCHEDULE YET, AND THAT IS DELIBERATE. A scheduled run fires against the
-  # DEFAULT branch, and hoops/ does not exist there while the game is still on
-  # its feature branch: an annual cron would be an annual guaranteed red build
-  # on main. Turn this on in the same commit that merges the game:
+  # ANNUAL, ONCE THE SEASON IS OVER. A scheduled run fires against the DEFAULT
+  # branch, so this stayed commented out while hoops/ existed only on a feature
+  # branch, where it would have been a guaranteed red build every July. It is
+  # turned on in the same commit that merges the game, which is what the note
+  # here used to promise.
   #
-  #   schedule:
-  #     - cron: '0 9 5 7 *'   # July 5th, once the season is finished
-  #
-  # Until then this is dispatch-only, which is all the first run needs.
+  # The commit step is safe to leave armed: verify.mjs and check-posture.mjs both
+  # gate it, so a refresh that breaks the win-share column or the discoverability
+  # posture fails without writing anything.
+  schedule:
+    - cron: '0 9 5 7 *'   # July 5th, after the finals and the draft
 
 permissions:
   contents: write
@@ -73,38 +77,71 @@ jobs:
             --from "${{ inputs.from_season || '1974' }}" \
             --to "${{ inputs.to_season || '2025' }}"
 
+      # NON-FATAL, AND THAT IS A DELIBERATE DEMOTION. Draft year and college feed
+      # exactly two chemistry links out of eight. The player data is the point of
+      # this workflow, and it has already been fetched by the time this runs, so
+      # letting a secondary enrichment abort the run threw away six minutes of
+      # good data twice in a row. Without it those two links stay silent, which
+      # is the documented harmless state rather than a wrong one.
+      #
+      # It still fails loudly IN ITS OWN LOG, and build-players.mjs prints
+      # whether it found the file, so a quiet failure here is visible rather
+      # than invisible.
       - name: Draft years and colleges
+        continue-on-error: true
         run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
+
+      # Franchises change: a club relocates, renames, or wins a title. Refreshed
+      # in the same run so the team table and the player table are never built
+      # from two different days.
+      - name: Franchises
+        run: node hoops/build/fetch-teams.mjs
 
       - name: Price it and write the file the game loads
         run: |
           node hoops/build/build-players.mjs \
             --from hoops/build/raw/nba_player_seasons.json
 
+      # BEFORE the assertions, deliberately. Everything above this line is a
+      # quarter of an hour of throttled fetching, and everything below it is a
+      # second of arithmetic that can fail. Uploading first means a failed
+      # assertion costs a rerun of the CHECK rather than a rerun of the FETCH,
+      # and leaves the data to look at while working out why it failed.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hoops-data
+          path: |
+            hoops/data/players.json
+            hoops/data/teams.json
+          if-no-files-found: error
+
       # The engine has to still be a working game after the data underneath it
       # changes by two orders of magnitude. This asserts the draft rules, the
-      # replay, and the basketball: real lineups still have to come back as the
-      # systems they are known for.
+      # replay, the cap, and that every rating is a number.
+      #
+      # --lineups-advisory IS THE WHOLE POINT OF RUNNING IT HERE. The lineup
+      # expectations ("the 1996 Bulls run the Triangle") were calibrated against
+      # 171 rows typed from memory, and real numbers can legitimately move a
+      # borderline roster to a neighbouring identity. Blocking on them is the
+      # same coupling mistake the draft step already made: a JUDGEMENT ABOUT A
+      # MODEL stopping GROUND TRUTH from landing, and it cost a full run once.
+      #
+      # They are still checked and still printed loudly in this log, and the
+      # pull request check (hoops-checks.yml) runs the same file WITHOUT the
+      # flag, so nothing can be quietly left drifted. Everything else blocks
+      # here exactly as it does there.
       - name: Engine, draft rules, and the fit model
-        run: node hoops/verify.mjs
+        run: node hoops/verify.mjs --lineups-advisory
 
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
-
-      # Uploaded whether or not it is committed, so a run with commit unchecked
-      # is still a way to look at what the pipeline would produce.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hoops-players
-          path: hoops/data/players.json
-          if-no-files-found: error
 
       - name: Commit
         if: ${{ inputs.commit }}
         run: |
           git config user.name "hoops-data-bot"
           git config user.email "noreply@anthropic.com"
-          git add hoops/data/players.json
+          git add hoops/data/players.json hoops/data/teams.json
           git diff --cached --quiet && echo "data unchanged" || {
             git commit -m "Refresh Run The Floor player data from Basketball-Reference"
             for i in 1 2 3 4 5; do
