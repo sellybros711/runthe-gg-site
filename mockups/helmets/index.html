@@ -54,7 +54,7 @@
   .fakebar{display:flex;align-items:center;gap:10px;background:var(--panel-2);
     border:1px solid var(--line);border-radius:12px;padding:9px 12px}
   .fakebar .title{font-weight:800;letter-spacing:.02em;font-size:14px;flex:1}
-  .bub{width:38px;height:38px;border-radius:50%;background:#0b1220;border:1px solid var(--line-2);
+  .bub{width:38px;height:38px;border-radius:11px;background:#0b1220;border:1px solid var(--line-2);
     display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
   .rows{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .row{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--panel);
@@ -97,11 +97,15 @@
     thrown away without touching a thing.</p>
 
   <h2>The idea</h2>
-  <p class="sub">A helmet is not eighty three drawings. The shell, the ear hole, the brow,
-    the face opening and the cage are the same for every school; what changes is four colours,
+  <p class="sub">A helmet is not eighty three drawings. The shell, the ear hole, the crown,
+    the cage and where a mark sits are the same for every school; what changes is four colours,
     a stripe and a small mark. So the shape is drawn once, by hand, as a grid of characters,
     and a school is five fields. That is what makes a whole country possible in an afternoon
     instead of a month, and what makes a throwback just another row of colours.</p>
+  <p class="sub">The angle is turned just far enough to see the crown, which is what puts the
+    stripe on screen: dead side on, a helmet stripe is a line along the top edge and might as
+    well not be there. And the <b>cage sticks out past the front of the shell</b> with nothing
+    behind it, because that is the one silhouette everybody recognises.</p>
 
   <div class="card anat">
     <div><canvas id="anat-big"></canvas></div>
@@ -134,7 +138,9 @@
 
   <h2>In place</h2>
   <p class="sub">The bubble in the header, and a leaderboard where everybody is wearing one.
-    This is the thing to judge: a column of them at 30 pixels, still telling you who is who.</p>
+    This is the thing to judge: a column of them at 30 pixels, still telling you who is who.
+    Rounded square rather than a circle, because a circle crops the one part of the sprite
+    that says helmet, which is the cage sticking out the front.</p>
   <div class="card">
     <div class="fakebar">
       <span class="title">PERFECT SEASON</span>
@@ -154,11 +160,12 @@
     <b>What is honest about this mockup and what is not.</b>
     <ul>
       <li>The <b>shape and the lighting</b> are real work and would ship roughly as they are.
-        The shape took three goes: a side profile with the mask beside the shell reads as an
-        egg behind a fence, and a turned-toward-you version reads as a circle with a window in
-        it. What makes it a helmet is that the <b>cage hangs off the front</b>, past the shell,
-        over a face opening cut out of it. What makes it an object rather than a sticker is the
-        light on it.</li>
+        The facemask took four goes and each wrong one is worth knowing: an even grid of four
+        openings is a window, not a face; a cage with a border round it is a picture frame
+        stuck on a ball; and a cage whose gaps are filled with a dark face colour welds itself
+        into one slab on a dark page. <b>You can see through a facemask.</b> The gaps are
+        nothing at all, so the bars are lines with daylight round them and the mask joins the
+        silhouette instead of decorating it.</li>
       <li><b>Thirty two schools are done by hand</b> and the other fifty one are generated
         from their two colours: primary shell, secondary stripe, initials on the side. Every
         generated one says <span class="dim">generated from its colours</span> underneath, so
@@ -325,7 +332,7 @@
     r.innerHTML = '<span class="pl">' + (i + 1) + '</span>';
     const bub = document.createElement('span');
     bub.className = 'bub';
-    bub.style.width = '30px'; bub.style.height = '30px';
+    bub.style.width = '34px'; bub.style.height = '34px';
     bub.appendChild(mk(kit, 1));
     r.appendChild(bub);
     const nm = document.createElement('span');

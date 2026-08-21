@@ -22,62 +22,69 @@
 
   /* ── the shell ────────────────────────────────────────────────────────────────
    *
-   * SIDE ON, facing right, and the thing that makes it a helmet rather than a ball is that
-   * THE CAGE STICKS OUT PAST THE SHELL. That was the whole of what was wrong with the
-   * first two attempts: one was an egg with a fence beside it, and the turned-toward-you
-   * version that replaced it was a circle with a window in it. Neither had a jaw, a brow
-   * or a mask hanging in front of a face, which are the four lines a person actually reads.
-   * The mask now hangs off the front, below the brow and forward of it, over an opening
-   * cut out of the shell, and the jaw closes underneath it.
+   * TURNED TOWARD YOU, the way the reference is, and the mask is the whole reason. Side on,
+   * a facemask is two or three bars in profile and there is nothing there to recognise. From
+   * the front you get the shape everybody actually knows: A BROW BAR, TWO EYE OPENINGS WITH
+   * THE NOSE BAR BETWEEN THEM, and a mouth under it. That arrangement is what says helmet.
    *
-   * HAND PLACED, not generated. An earlier version built the silhouette from a function
-   * and derived the stripe from the shell edge, which is the programmer's instinct and the
-   * wrong one: derived, the stripe inherits every jog in the outline and comes out as a
-   * dotted ladder. Pixel art is placed. So it is typed out, and anybody can move a pixel
-   * without reading a line of code.
+   * THE GAPS IN A CAGE ARE HOLES, and that one word is what three attempts at the facemask
+   * got wrong. Filling the space between the bars with a dark face colour is the honest
+   * thing to do and it is fatal: on a dark page a dark fill and a dark outline weld the bars
+   * into one slab, and the slab reads as a window, a picture frame or a welding mask
+   * depending on how it is bordered. It was tried as an even grid of four openings, as a
+   * bordered box, and as a bordered box on a rounder shell. All three are a rectangle stuck
+   * on a ball.
+   * You can SEE THROUGH a facemask. So the gaps are nothing at all, the bars are lines with
+   * daylight round them, and the mask joins the silhouette instead of decorating it.
    *
-   * THE STRIPE IS INSET, with a row of shell above it and a pixel of shell at either end.
-   * Run to the very top of the crown instead, which is where a stripe honestly is, and it
-   * reads as a flat bar balanced on the helmet rather than as paint on it: there is nothing
-   * for the eye to read as curvature. One row of shell above it is the whole fix.
+   * HAND PLACED, not generated. An earlier version built the outline from a function and
+   * derived the stripe from the shell edge, which is the programmer's instinct and the wrong
+   * one: derived, the stripe inherits every jog in the outline and comes out as a dotted
+   * ladder. Pixel art is placed. So it is typed out, and anybody can move a pixel without
+   * reading a line of code.
    *
    *   .  nothing     #  shell        o  shell underside     ^  the glint
-   *   =  stripe       -  stripe trim
-   *   M  mask bar    e  the face opening, dark whatever the shell is
+   *   =  stripe      -  stripe trim
+   *   M  cage bar    e  an opening, dark whatever the shell is
    *   E  ear hole ring       g  ear hole
    */
   const HELMET = [
     '..............................',
     '..............................',
-    '.........########.............',
-    '.......#------------#.........',
-    '......##============##........',
-    '.....###------------###.......',
-    '....#^^#################......',
-    '...#^^###################.....',
+    '.........#-====-#.............',
+    '.......##-====-###............',
+    '......##-====-#####...........',
+    '.....##-====-^^#####..........',
+    '....##-====-^^########........',
+    '...##-====-###########........',
+    '...##-====-#############......',
+    '..##-====-###############.....',
     '..#######################.....',
     '..########################....',
-    '..########################....',
-    '..########################....',
-    '..#####E##################....',
-    '..####EgE#############MMMMMM..',
-    '..#####E##########eeeeeeeeeM..',
-    '..#################eeeeeeeeM..',
-    '..#################MMMMMMMMM..',
-    '..################eeeeeeeeeM..',
-    '..###############MMMMMMMMMM...',
-    '..oo############..............',
-    '...ooooooooooo................',
-    '.....oooooooo.................',
+    '..#######################.....',
+    '..#####################MMMMMMM',
+    '..###################.......MM',
+    '..######EEE##########.......MM',
+    '..######EgE##########.......MM',
+    '..######EEE##########MMMMMMMMM',
+    '..###################.......MM',
+    '..###################......MM.',
+    '..####################....MM..',
+    '...###################MMMMM...',
+    '....#################.........',
+    '.....##############...........',
+    '.......ooooooooo..............',
+    '.........ooooo................',
+    '..............................',
+    '..............................',
     '..............................',
     '..............................',
   ];
 
   /* Where the mark sits, and how big a box it gets. Every logo is drawn inside this box, so
      a mark too big for a helmet is caught by the box rather than by somebody noticing it
-     later. Mid shell and forward of the ear hole, which is where a school actually puts
-     one. */
-  const LOGO_BOX = { x: 11, y: 6, w: 9, h: 7 };
+     later. On the side of the shell, clear of the stripe above it and the cage in front. */
+  const LOGO_BOX = { x: 11, y: 11, w: 9, h: 7 };
 
   /* ── a tiny alphabet ──────────────────────────────────────────────────────────
    * 3x5, because a helmet's side is nine pixels across and two letters plus a gap is
@@ -199,7 +206,7 @@
    * rather than float in front of it.
    */
   const LIGHT = { x: -0.52, y: -0.66, z: 0.54 };
-  const DOME = { cx: 12.5, cy: 11.0, rx: 13.0, ry: 10.5 };
+  const DOME = { cx: 13.5, cy: 13.5, rx: 13.0, ry: 12.0 };
 
   function domeLevel(x, y) {
     const nx = (x + 0.5 - DOME.cx) / DOME.rx;
@@ -295,7 +302,7 @@
         else if (c === '_') put(x, y, tone(stripe[2] || stripe[0], L));
         /* The cage is not on the dome, it hangs in front of it, so it is lit by height
            instead: the top bar catches the light, the chin bar is in its own shadow. */
-        else if (c === 'M') put(x, y, tone(mask, y <= 13 ? 3 : y <= 16 ? 2 : 1));
+        else if (c === 'M') put(x, y, tone(mask, y <= 13 ? 3 : y <= 19 ? 2 : 1));
         else if (c === 'm') put(x, y, tone(mask, 1));
         /* The face opening is dark whatever the shell is: it is the inside of a helmet
            with a head in it, not a tinted version of the paint. */
