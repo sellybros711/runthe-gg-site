@@ -9,11 +9,15 @@ name: Refresh Run The Floor player data
 # state of things: this workflow has run, and the game plays on 16,057 real
 # player-seasons. If it ever drops back to 171 rows, the fetch has failed.
 #
-# Four stages, and the order matters:
+# Five stages, and the order matters:
 #   fetch-nba.mjs     every player-season: box score, win shares, position, team
 #   fetch-draft.mjs   draft year and college, which no season page carries
+#   fetch-awards.mjs  MVP, All-NBA, All-Defensive, All-Star and the rest
 #   fetch-teams.mjs   the franchises, including the ones that no longer exist
 #   build-players.mjs normalizes short seasons, prices everything, joins the rest
+#
+# Championships are NOT fetched. teams.json already carries every title year, so
+# build-players.mjs works out who was on that roster and hands them the ring.
 #
 # Runnable locally by anyone who can reach the source, with the same commands.
 #
@@ -56,8 +60,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # The throttle is the runtime: two pages a season plus one a draft year, all
-    # at 3.2s apart. Fifty seasons is roughly fifteen minutes of waiting.
+    # The throttle is the runtime: two pages a season, one a draft year, and one
+    # an All-Star game, all at 3.2s apart. Fifty seasons is roughly twenty
+    # minutes of waiting.
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +95,22 @@ jobs:
       - name: Draft years and colleges
         continue-on-error: true
         run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
+
+      # NON-FATAL FOR THE SAME REASON as the draft step above, and it is worth
+      # saying which reason: the player data is the point of this workflow and
+      # has already been fetched by the time this runs. Hardware is what the
+      # board SHOWS about a player, not what the engine does with him, so a
+      # failure here costs a tile some decoration and costs the run nothing.
+      #
+      # Without this file the only hardware is the ring, which needs no network
+      # at all: teams.json knows every title year. build-players.mjs prints
+      # which of the two it found, so a quiet failure here is still visible.
+      - name: Awards and hardware
+        continue-on-error: true
+        run: |
+          node hoops/build/fetch-awards.mjs \
+            --from "${{ inputs.from_season || '1974' }}" \
+            --to "${{ inputs.to_season || '2025' }}"
 
       # Franchises change: a club relocates, renames, or wins a title. Refreshed
       # in the same run so the team table and the player table are never built

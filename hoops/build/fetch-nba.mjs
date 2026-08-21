@@ -121,7 +121,7 @@ export const uncomment = (h) => String(h || '').replace(/<!--/g, '').replace(/--
  * dead end. The draft page's real shape is what the diagnostic in
  * fetch-draft.mjs now prints.
  */
-function rowChunks(html) {
+export function rowChunks(html) {
   const out = [];
   const re = /<tr\b[^>]*>([\s\S]*?)(?=<\/tr>|<tr\b|<\/tbody\b|<\/table\b|$)/gi;
   let m;

@@ -62,6 +62,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { seedPlayerSeasons } from './seed-rosters.mjs';
+import { AWARDS, AWARD_RANK } from './fetch-awards.mjs';
 
 /* The engine owns the era-to-modern pace translation and there must not be a
    second copy of it. Required rather than imported because engine.js is the
@@ -285,14 +286,44 @@ function main() {
   let draft = null;
   if (fs.existsSync(draftFile)) draft = JSON.parse(fs.readFileSync(draftFile, 'utf8'));
 
+  /* ── HARDWARE ────────────────────────────────────────────────────────────
+   * Two sources, joined here rather than in the fetcher, because only one of
+   * them is fetched at all.
+   *
+   * raw/nba_awards.json is the individual honours, keyed slug|season, from
+   * fetch-awards.mjs. teams.json already knows every championship year, so the
+   * ring is computed rather than downloaded: every man on a title roster gets
+   * it, which is both true and the reason a role player on the 1996 Bulls is
+   * worth recognising.
+   *
+   * E.wonTitle resolves the title to the code the club WORE that season. The
+   * naive lookup put 1978 under WAS and 1979 under OKC, because a franchise
+   * table files honours under the modern row, and those two rings joined to
+   * nobody at all. */
+  const awardsFile = path.join(HERE, 'raw', 'nba_awards.json');
+  let awards = null;
+  if (fs.existsSync(awardsFile)) awards = JSON.parse(fs.readFileSync(awardsFile, 'utf8'));
+  const teamsFile = path.join(DATA_DIR, 'teams.json');
+  if (fs.existsSync(teamsFile)) E.setTeams(JSON.parse(fs.readFileSync(teamsFile, 'utf8')));
+
   const priced = rows.map((row) => {
     const extra = draft && draft[row.i];
+    const won = [...((awards && awards[`${row.i}|${row.s}`]) || [])];
+    if (E.wonTitle(row.t, row.s)) won.push('ring');
     const out = {
       ...row,
       dr: row.dr ?? (extra ? extra.dr : null),
       col: row.col ?? (extra ? extra.col : null),
       p: priceOf(row),
     };
+    /* SORTED BY PRESTIGE HERE, once, at build time. The page shows the best one
+       on a tile and the whole list on a roster row, and doing the ordering in
+       the browser would mean shipping the ranking table to every visitor and
+       re-sorting 16,000 lists to render six of them. */
+    if (won.length) {
+      won.sort((a, b) => (AWARD_RANK[a] ?? 99) - (AWARD_RANK[b] ?? 99));
+      out.aw = won;
+    }
     /* Games played was an input to the playing-time floor above and is not read
        by anything at runtime. Every field in this file is downloaded by every
        visitor, so a field nobody uses is bytes on somebody's phone. Minutes
@@ -308,6 +339,18 @@ function main() {
   } else {
     console.log('  no raw/nba_draft.json, so draft-class and alma-mater chemistry will be sparse.');
     console.log('  Run: node hoops/build/fetch-draft.mjs');
+  }
+
+  const rings = priced.filter(p => p.aw && p.aw.includes('ring')).length;
+  if (awards) {
+    const decorated = priced.filter(p => p.aw).length;
+    const tally = {};
+    for (const p of priced) for (const a of p.aw || []) tally[a] = (tally[a] || 0) + 1;
+    console.log(`  joined the awards pass: ${decorated} rows carry hardware`);
+    console.log('    ' + AWARDS.map(a => `${a.code} ${tally[a.code] || 0}`).join(' · '));
+  } else {
+    console.log(`  no raw/nba_awards.json, so the only hardware is the ${rings} rings from teams.json.`);
+    console.log('  Run: node hoops/build/fetch-awards.mjs');
   }
 
   /* Sorted by season then team then price, so a diff between two builds reads

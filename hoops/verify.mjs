@@ -27,6 +27,12 @@ const R = require(path.join(HERE, 'run.js'));
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
 E.setCuratedChemistry(chemistry);
+/* THE PAGE LOADS THIS AND SO MUST THE HARNESS. Franchise data is what turns a
+   team code into a name, a founding year and a list of championships, and the
+   ring on a player is asserted against it below. Verifying against an engine
+   that has never seen it is verifying a different engine from the one that
+   ships. */
+E.setTeams(JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'teams.json'), 'utf8')));
 const data = R.indexData(players);
 
 let pass = 0;
@@ -97,6 +103,115 @@ pass += 4;
 for (const slot of E.SLOTS) {
   const n = players.filter(p => E.canFillSlot(p, slot)).length;
   ok(n > 0, `at least one player can play ${slot} (found ${n})`);
+}
+
+/* ── EVERY CLUB THE WHEEL CAN LAND ON HAS TO BE VISIBLE ─────────────────────
+ *
+ * When the reels stop, both boxes take that club's colors. The published hex
+ * is not usable as-is on a #0d1117 page: San Antonio's black and Brooklyn's
+ * black disappear into it, and a dark second color (Chicago's black on
+ * Chicago's red) is a border nobody can see. engine.js floors each color into a
+ * range that shows and lifts the band until it is measurably clear of the fill.
+ *
+ * WHY THIS IS ASSERTED AND NOT EYEBALLED. The failures are per-club and there
+ * are 45 of them, so the way this breaks is that somebody corrects one club's
+ * hex, it renders fine for the club they were looking at, and the Hornets go
+ * back to being one flat teal rectangle with a seam in it. Three clubs failed
+ * exactly that way on the first pass and none of them was the one on screen.
+ *
+ * 2.6:1 for the band and 4.5:1 for the text are the bars engine.js works to.
+ * The fill is deliberately NOT asserted against the page: a club that wears
+ * black should read black, and the band is what draws the box for those.
+ */
+{
+  const inPlay = [...new Set(players.map((p) => p.t))].sort();
+  ok(inPlay.length > 20, `enough clubs in the data to be worth checking (${inPlay.length})`);
+  const dim = [];
+  for (const code of inPlay) {
+    const skin = E.clubSkin(code);
+    if (!/^#[0-9a-f]{6}$/i.test(skin.bg) || !/^#[0-9a-f]{6}$/i.test(skin.accent)) {
+      dim.push(`${code}: ${skin.bg} / ${skin.accent} is not a color`);
+      continue;
+    }
+    const band = E.contrast(skin.accent, skin.bg);
+    const text = E.contrast(skin.on, skin.bg);
+    if (band < 2.6) dim.push(`${code} band ${band.toFixed(2)}:1 on its own fill`);
+    if (text < 4.5) dim.push(`${code} text ${text.toFixed(2)}:1 on its own fill`);
+  }
+  ok(dim.length === 0, `every club reads on the dark page${dim.length ? `\n      ${dim.join('\n      ')}` : ''}`);
+
+  /* A club in the data with no entry falls back to a grey nobody chose, which
+     is not a crash and is not the club either. */
+  const uncolored = inPlay.filter((c) => !E.TEAM_COLORS[c]);
+  ok(uncolored.length === 0, `every club in the data has its own colors${uncolored.length ? ` (missing ${uncolored.join(', ')})` : ''}`);
+}
+
+/* ── HARDWARE ──────────────────────────────────────────────────────────────
+ *
+ * Awards are DECORATION: the engine never reads them and no rating moves
+ * because a player has one. That is exactly why they need asserting. A field
+ * nothing computes with can be wrong for a year without a single number
+ * looking odd, and the failure mode is showing a visitor a false claim about a
+ * real person, which is the one thing this data must never do.
+ *
+ * The ring is checked hardest because it is the one the game DERIVES rather
+ * than fetches, from the title years in teams.json. Its first version filed
+ * 1978 under WAS and 1979 under OKC, so the Bullets and the Sonics won those
+ * championships and nobody on either roster was told.
+ */
+{
+  const CODES = new Set(['mvp', 'fmvp', 'an1', 'dpoy', 'ring', 'an2', 'an3',
+    'roy', 'smoy', 'mip', 'ad1', 'ad2', 'star']);
+  const RANK = ['mvp', 'fmvp', 'an1', 'dpoy', 'ring', 'an2', 'an3', 'roy',
+    'smoy', 'mip', 'ad1', 'ad2', 'star'];
+
+  const bad = [];
+  let decorated = 0, rings = 0;
+  for (const p of players) {
+    if (!p.aw) continue;
+    decorated++;
+    if (!Array.isArray(p.aw)) { bad.push(`${p.n} ${p.s}: aw is not a list`); continue; }
+    for (const code of p.aw) {
+      if (!CODES.has(code)) bad.push(`${p.n} ${p.s}: "${code}" is not an award this game knows`);
+    }
+    if (new Set(p.aw).size !== p.aw.length) bad.push(`${p.n} ${p.s} won the same award twice`);
+    /* SORTED AT BUILD TIME, once, because the page shows the first entry as the
+       best one and does no ranking of its own. An unsorted list silently
+       promotes an All-Star nod over an MVP on the tile. */
+    const ranks = p.aw.map((c) => RANK.indexOf(c));
+    for (let i = 1; i < ranks.length; i++) {
+      if (ranks[i] < ranks[i - 1]) { bad.push(`${p.n} ${p.s}: ${p.aw.join(',')} is not in prestige order`); break; }
+    }
+    if (p.aw.includes('ring')) {
+      rings++;
+      if (!E.wonTitle(p.t, p.s)) bad.push(`${p.n} has a ring for ${p.s} ${p.t}, which won nothing`);
+    } else if (E.wonTitle(p.t, p.s)) {
+      bad.push(`${p.n} played for the ${p.s} champions and has no ring`);
+    }
+    if (bad.length > 6) break;
+  }
+  ok(bad.length === 0, `every award on a player is one this game knows${bad.length ? `\n      ${bad.join('\n      ')}` : ''}`);
+
+  /* EVERY TITLE SEASON IN RANGE MUST REACH SOMEBODY. A ring that joins to no
+     roster is the WSB/OKC bug, and it is invisible: the count just comes back
+     a little lower than it should and nothing fails. */
+  const seasons = [...new Set(players.map((p) => p.s))];
+  const lo = Math.min(...seasons), hi = Math.max(...seasons);
+  const won = new Set(players.filter((p) => p.aw && p.aw.includes('ring')).map((p) => p.s));
+  const silent = seasons.filter((s) => ![...won].includes(s)).sort();
+  ok(silent.length === 0,
+    `every season from ${lo} to ${hi} has a champion in the data`
+    + (silent.length ? ` (${silent.length} do not: ${silent.slice(0, 8).join(', ')})` : ''));
+  ok(rings > 300, `enough champions to be a real answer (${rings} player-seasons)`);
+
+  /* Not a blocking check: the individual honours arrive from a fetch that runs
+     in CI, so a working tree that has never run it legitimately has rings only.
+     Reported so that state is visible rather than mistaken for a broken join. */
+  const solo = players.filter((p) => p.aw && p.aw.some((c) => c !== 'ring')).length;
+  if (!solo) {
+    console.log('  note: rings only. hoops/build/fetch-awards.mjs has not run against this data yet,');
+    console.log(`        so ${decorated} player-seasons carry a championship and none carry an MVP.`);
+  }
 }
 
 /* ── WIN SHARES HAVE TO BE THE SEASON'S, AND THE FILE HAS TO SAY SO ────────
