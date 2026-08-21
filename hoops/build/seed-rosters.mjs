@@ -109,7 +109,7 @@ export const SEED_TEAM_SEASONS = [
     ['horryro01', 'Robert Horry',    'PF;SF;F',  2.1, 2.4,  5.4,  4.6, 1.8,  4.8, 2.4, 0.9, 1.0, 'Alabama', 1992],
     ['fishede01', 'Derek Fisher',    'PG;G',     1.9, 1.2, 11.5,  2.0, 2.6,  9.4, 3.6, 0.1, 1.2, 'Arkansas-Little Rock', 1996],
     ['foxri01',   'Rick Fox',        'SF;F;GF',  1.9, 1.7,  9.1,  4.2, 2.8,  7.3, 1.6, 0.3, 0.9, 'North Carolina', 1991],
-    ['granth01',  'Horace Grant',    'PF;F;FC',  2.0, 2.3,  8.5,  6.6, 1.4,  6.9, 0.0, 0.8, 0.8, 'Clemson', 1987],
+    ['grantho01',  'Horace Grant',    'PF;F;FC',  2.0, 2.3,  8.5,  6.6, 1.4,  6.9, 0.0, 0.8, 0.8, 'Clemson', 1987],
     ['shawbr01',  'Brian Shaw',      'PG;SG;G',  1.2, 1.0,  5.5,  2.6, 2.7,  4.9, 1.5, 0.2, 0.5, 'UC Santa Barbara', 1988],
   ]},
 
@@ -130,7 +130,7 @@ export const SEED_TEAM_SEASONS = [
     ['rodmade01', 'Dennis Rodman',  'PF;SF;F',  4.2, 4.7,  9.0, 9.4, 1.2,  6.5, 0.1, 0.9, 0.7, 'Southeastern Oklahoma State', 1986],
     ['laimbbi01', 'Bill Laimbeer',  'C;FC',     4.5, 3.2, 13.7, 9.6, 1.8, 11.0, 1.0, 0.4, 0.6, 'Notre Dame', 1979],
     ['aguirma01', 'Mark Aguirre',   'SF;F;GF',  2.2, 1.1, 15.5, 3.5, 1.9, 12.0, 0.6, 0.2, 0.5, 'DePaul', 1981],
-    ['salleljo01','John Salley',    'PF;C;FC',  2.3, 2.2,  6.9, 4.6, 1.1,  5.1, 0.0, 1.3, 0.6, 'Georgia Tech', 1986],
+    ['sallejo01','John Salley',    'PF;C;FC',  2.3, 2.2,  6.9, 4.6, 1.1,  5.1, 0.0, 1.3, 0.6, 'Georgia Tech', 1986],
     ['johnsvi01', 'Vinnie Johnson', 'SG;G',     2.2, 1.0, 13.8, 2.9, 3.3, 11.6, 0.3, 0.2, 0.8, 'Baylor', 1979],
     ['edwarja01', 'James Edwards',  'C;FC',     1.7, 0.9,  7.4, 3.1, 0.6,  6.3, 0.0, 0.4, 0.2, 'Washington', 1977],
   ]},
@@ -175,7 +175,7 @@ export const SEED_TEAM_SEASONS = [
     ['smithke01', 'Kenny Smith',      'PG;G',     3.9, 1.3, 12.8,  1.9, 4.2,  9.5, 3.1, 0.1, 1.0, 'North Carolina', 1987],
     ['horryro01', 'Robert Horry',     'SF;PF;F',  2.2, 2.1,  9.9,  5.4, 2.4,  8.4, 2.0, 1.0, 1.5, 'Alabama', 1992],
     ['cassesa01', 'Sam Cassell',      'PG;G',     2.3, 1.1,  6.7,  1.7, 2.5,  5.6, 1.1, 0.1, 0.8, 'Florida State', 1993],
-    ['elutma01',  'Mario Elie',       'SG;SF;GF', 2.7, 1.2,  8.5,  2.9, 1.9,  6.2, 1.4, 0.2, 0.9, 'American International', 1985],
+    ['eliema01',  'Mario Elie',       'SG;SF;GF', 2.7, 1.2,  8.5,  2.9, 1.9,  6.2, 1.4, 0.2, 0.9, 'American International', 1985],
     ['herreca01', 'Carl Herrera',     'PF;F;FC',  1.3, 1.1,  6.2,  4.1, 0.9,  5.0, 0.0, 0.5, 0.6, 'Houston', 1990],
   ]},
 
@@ -208,7 +208,7 @@ export const SEED_TEAM_SEASONS = [
     ['gordoaa01', 'Aaron Gordon',              'PF;F;FC', 4.2, 2.4, 16.3,  6.6, 3.0, 10.9, 2.2, 0.8, 0.8, 'Arizona', 2014],
     ['caldwke01', 'Kentavious Caldwell-Pope',  'SG;G',    3.5, 1.9, 10.8,  2.4, 2.4,  7.9, 4.4, 0.3, 1.4, 'Georgia', 2013],
     ['brownbr01', 'Bruce Brown',               'SG;SF;GF',2.6, 1.5, 11.5,  4.1, 3.4,  8.6, 2.7, 0.4, 0.8, 'Miami (FL)', 2018],
-    ['brauncr01', 'Christian Braun',           'SG;G;GF', 1.5, 0.8,  4.7,  2.5, 0.8,  3.6, 1.2, 0.2, 0.4, 'Kansas', 2022],
+    ['braunch01', 'Christian Braun',           'SG;G;GF', 1.5, 0.8,  4.7,  2.5, 0.8,  3.6, 1.2, 0.2, 0.4, 'Kansas', 2022],
     ['greenje02','Jeff Green',                 'PF;F;FC', 1.8, 0.8,  7.8,  2.5, 1.0,  5.5, 1.3, 0.3, 0.4, 'Georgetown', 2007],
   ]},
 
@@ -218,7 +218,7 @@ export const SEED_TEAM_SEASONS = [
     ['wallabe01', 'Ben Wallace',        'C;PF;FC',  3.0, 6.5,  9.5, 12.4, 1.7,  7.6, 0.0, 3.0, 1.8, 'Virginia Union', null],
     ['wallara01', 'Rasheed Wallace',    'PF;C;FC',  1.1, 1.1, 13.7,  6.9, 1.7, 11.4, 2.6, 1.5, 0.9, 'North Carolina', 1995],
     ['princta01', 'Tayshaun Prince',    'SF;F;GF',  3.1, 2.3, 10.3,  4.8, 2.3,  8.4, 1.4, 0.7, 0.8, 'Kentucky', 2002],
-    ['williaco01','Corliss Williamson', 'PF;F;FC',  2.6, 1.1,  9.4,  3.1, 0.8,  7.2, 0.0, 0.3, 0.5, 'Arkansas', 1995],
+    ['willico02','Corliss Williamson', 'PF;F;FC',  2.6, 1.1,  9.4,  3.1, 0.8,  7.2, 0.0, 0.3, 0.5, 'Arkansas', 1995],
     ['okurme01', 'Mehmet Okur',         'C;PF;FC',  2.0, 1.4,  9.6,  5.9, 1.1,  7.5, 1.1, 0.5, 0.5, null, 2001],
     ['hunteli01','Lindsey Hunter',      'PG;SG;G',  0.9, 1.0,  4.7,  1.6, 1.6,  4.6, 1.3, 0.1, 1.1, 'Jackson State', 1993],
   ]},
@@ -247,7 +247,7 @@ export const SEED_TEAM_SEASONS = [
   { t: 'HOU', s: 2018, record: '65-17', players: [
     ['hardeja01', 'James Harden',      'SG;PG;G', 12.1, 3.3, 30.4,  5.4, 8.8, 20.1, 10.0, 0.7, 1.8, 'Arizona State', 2009],
     ['paulch01',  'Chris Paul',        'PG;G',     6.5, 2.9, 18.6,  5.4, 7.9, 14.2,  6.6, 0.2, 1.7, 'Wake Forest', 2005],
-    ['capelcl01', 'Clint Capela',      'C;FC',     6.2, 3.7, 13.9, 10.8, 0.9,  8.8,  0.0, 1.9, 0.8, null, 2014],
+    ['capelca01', 'Clint Capela',      'C;FC',     6.2, 3.7, 13.9, 10.8, 0.9,  8.8,  0.0, 1.9, 0.8, null, 2014],
     ['arizatr01', 'Trevor Ariza',      'SF;F;GF',  2.8, 2.3, 11.7,  4.4, 1.6,  9.5,  6.6, 0.3, 1.4, 'UCLA', 2004],
     ['gordoer01', 'Eric Gordon',       'SG;G',     3.5, 1.5, 18.0,  2.5, 2.2, 14.3,  8.7, 0.4, 0.6, 'Indiana', 2008],
     ['tuckepj01', 'P.J. Tucker',       'PF;F;FC',  2.3, 2.1,  6.2,  5.6, 1.2,  5.2,  3.7, 0.3, 1.0, 'Texas', 2006],
@@ -278,8 +278,8 @@ export const SEED_TEAM_SEASONS = [
 
   { t: 'ORL', s: 1995, record: '57-25', players: [
     ['onealsh01', "Shaquille O'Neal",   'C;FC',    9.6, 4.5, 29.3, 11.4, 2.7, 19.9, 0.0, 2.4, 0.9, 'LSU', 1992],
-    ['hardwan01', 'Anfernee Hardaway', 'PG;SG;G', 7.8, 3.1, 20.9,  4.4, 7.2, 15.8, 2.4, 0.3, 1.7, 'Memphis', 1993],
-    ['granth01',  'Horace Grant',      'PF;F;FC', 4.9, 3.7, 12.8,  9.7, 2.4,  9.5, 0.0, 1.2, 1.1, 'Clemson', 1987],
+    ['hardaan01', 'Anfernee Hardaway', 'PG;SG;G', 7.8, 3.1, 20.9,  4.4, 7.2, 15.8, 2.4, 0.3, 1.7, 'Memphis', 1993],
+    ['grantho01',  'Horace Grant',      'PF;F;FC', 4.9, 3.7, 12.8,  9.7, 2.4,  9.5, 0.0, 1.2, 1.1, 'Clemson', 1987],
     ['anderni01', 'Nick Anderson',     'SG;SF;GF',5.4, 2.0, 15.8,  5.4, 3.7, 11.9, 4.3, 0.5, 1.6, 'Illinois', 1989],
     ['scottde01', 'Dennis Scott',      'SF;F;GF', 2.7, 1.0, 12.9,  2.9, 2.1, 10.3, 5.7, 0.3, 0.8, 'Georgia Tech', 1990],
     ['shawbr01',  'Brian Shaw',        'PG;SG;G', 1.1, 0.9,  5.9,  2.5, 3.1,  5.4, 2.0, 0.2, 0.6, 'UC Santa Barbara', 1988],

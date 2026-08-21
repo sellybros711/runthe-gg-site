@@ -89,10 +89,25 @@ async function main() {
     if (first && !bbrRows(html).length) {
       first = false;
       const title = (/<title>([\s\S]*?)<\/title>/i.exec(html) || [])[1] || '(no title)';
+      const open = (html.match(/<tr\b/gi) || []).length;
+      const close = (html.match(/<\/tr>/gi) || []).length;
       console.log(`    nothing parsed. title: ${title.trim().slice(0, 90)}`);
-      console.log(`    bytes: ${html.length}, <tr> count: ${(html.match(/<tr/gi) || []).length}`);
+      console.log(`    bytes: ${html.length}, <tr>: ${open}, </tr>: ${close}, </td>: ${(html.match(/<\/td>/gi) || []).length}`);
       const link = /href="?\/players\/[a-z]\/[a-z0-9.'-]+\.html"?/i.exec(html);
       console.log(`    first player link: ${link ? link[0] : 'NONE FOUND'}`);
+      /* THE MARKUP ITSELF, because everything above this line was already
+         printed once and still did not say what was wrong. The page was the
+         right page, the rows were there and the links were there, and the
+         answer turned out to be that </tr> was absent: a fact none of those
+         counts revealed until they were compared to each other. Print the row
+         and the next person reads the answer instead of inferring it. */
+      if (link) {
+        const at = html.lastIndexOf('<tr', html.indexOf(link[0]));
+        if (at !== -1) {
+          console.log('    the row that link sits in, as delivered:');
+          console.log('      ' + html.slice(at, at + 420).replace(/\s+/g, ' '));
+        }
+      }
     }
 
     let n = 0;

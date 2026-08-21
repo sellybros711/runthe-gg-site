@@ -99,6 +99,71 @@ for (const slot of E.SLOTS) {
   ok(n > 0, `at least one player can play ${slot} (found ${n})`);
 }
 
+/* ── WIN SHARES HAVE TO BE THE SEASON'S, AND THE FILE HAS TO SAY SO ────────
+ *
+ * Win shares are the currency. Price, draft value, team rating and every
+ * target in the calibration block are computed from this one column, so a
+ * column that is quietly the WRONG NUMBER breaks the whole game while every
+ * other assertion in this file still passes.
+ *
+ * That is not hypothetical. The first real fetch shipped a file in which
+ * Michael Jordan's 72 win season carried 4.7 win shares instead of 20.4, Karl
+ * Malone's 1996 carried 2.5 instead of 16.3, and Nikola Jokic's 2022 carried
+ * 0.7 instead of 15.2. A Basketball-Reference season page also carries the
+ * PLAYOFF table, the scrape read every row on the page, and the playoff row
+ * for a player overwrote his regular season one. Anybody whose club played a
+ * postseason game got priced off a fortnight in May.
+ *
+ * Nothing failed. The draft was legal, the seasons replayed, every rating was
+ * a number, and the game was unplayable for a reason no assertion could name:
+ * the calibration simply said a perfect draft was a 27 win team.
+ *
+ * So the shape of the distribution is asserted directly, against the league
+ * this data is supposed to be. These are deliberately loose. They are not a
+ * calibration, they are a smoke alarm, and the number they are set to catch is
+ * a whole league of great seasons that arrived two thirds too small.
+ */
+{
+  const best = Math.max(...players.map(p => p.w));
+  const rate = (n) => players.filter(p => p.w >= n).length / players.length;
+  const mean = players.reduce((s, p) => s + p.w, 0) / players.length;
+  const pct = (v) => (v * 100).toFixed(2) + '%';
+
+  /* AS A RATE, NOT A COUNT, because this file is built from two populations of
+     very different size and both have to pass. The real league is 16,000 rows
+     of which about 1.5% are 15 win share seasons and 4% are 12; the
+     hand-entered seed is 171 rows of nothing but all-time greats, so it runs
+     far richer at 5% and 10%. A count calibrated for either one is a landmine
+     for the other. The broken file sat at 0.02% and 0.14%, which is nowhere
+     near the floor from either direction. */
+  ok(best >= 18,
+    `the best season in the data is a real MVP season (${best} win shares, want 18+)`);
+  ok(rate(15) >= 0.005,
+    `15 win share seasons occur at a believable rate (${pct(rate(15))} of rows, want 0.5%+)`);
+  ok(rate(12) >= 0.02,
+    `and 12 win share seasons (${pct(rate(12))} of rows, want 2%+)`);
+  ok(mean >= 2.5,
+    `the average qualifying player is worth a real amount (${mean.toFixed(2)} win shares, want 2.5+)`);
+
+  /* AND A HANDFUL BY NAME, because the counts above can be satisfied by a file
+     that is right in aggregate and wrong for exactly the players a fan will
+     look up first. Every one of these clubs played deep into a postseason,
+     which is precisely the population the bug above corrupted. The floor is
+     far below each man's real figure on purpose: this catches a collapse, not
+     a revision. */
+  const GREATS = [
+    ['jordami01', 1996, 20.4], ['onealsh01', 2000, 18.6], ['duncati01', 2003, 16.5],
+    ['malonka01', 1996, 16.3], ['jokicni01', 2022, 15.2], ['curryst01', 2016, 17.9],
+  ];
+  for (const [id, s, real] of GREATS) {
+    const row = players.find(p => p.i === id && p.s === s);
+    if (!row) continue;              // a short fetch need not contain that year
+    ok(row.w >= real * 0.6,
+      `${row.n} ${s} is priced off his season, not his postseason `
+      + `(${row.w} win shares, real season was about ${real})`);
+  }
+}
+
 // ─── the rules ──────────────────────────────────────────────────────────────
 
 /* Play a full draft by always taking the best player the board will let you
@@ -310,6 +375,34 @@ const lineup = (ids) => {
   return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 };
 
+/* WHICH MAN IS MISSING, AND WHAT HE IS PROBABLY CALLED INSTEAD.
+ *
+ * "a player in that lineup is not in the data" is a message that costs a
+ * twenty minute round trip to act on, because the data only exists after a CI
+ * fetch and the failure does not say which of six ids to look at. Three of
+ * these fired on the first real run and all three were slugs I had typed
+ * wrong.
+ *
+ * A Basketball-Reference id is the first five letters of the surname, the
+ * first two of the forename, and a two digit tiebreaker: grantho01 is Horace
+ * Grant, and the 01 becomes 02 when somebody got there first. So a miss is
+ * nearly always a right stem with a wrong tail, and the data itself can be
+ * asked who owns that stem. */
+const missingFrom = (ids) => {
+  const out = [];
+  for (const [id, s] of ids) {
+    if (players.some(p => p.i === id && p.s === s)) continue;
+    const stem = id.replace(/\d+$/, '');
+    const sameStem = [...new Set(players.filter(p => p.i.startsWith(stem)).map(p => `${p.i} ${p.n}`))];
+    const inLeague = players.some(p => p.i === id);
+    out.push(`${id} in ${s}: `
+      + (inLeague ? 'that id exists but not in that season'
+        : sameStem.length ? `no such id. Same stem in the data: ${sameStem.join(', ')}`
+          : 'no such id, and nothing shares its stem'));
+  }
+  return out;
+};
+
 /* PG, SG, SF, PF, C, sixth man, in that order. */
 const KNOWN = [
   // PG Steve Kerr, SG Michael Jordan, SF Scottie Pippen, PF Dennis Rodman, C Luc Longley, 6th Toni Kukoc
@@ -323,13 +416,13 @@ const KNOWN = [
     ['aguirma01', 1989], ['rodmade01', 1989], ['laimbbi01', 1989], ['johnsvi01', 1989]]],
   // PG Chauncey Billups, SG Richard Hamilton, SF Tayshaun Prince, PF Rasheed Wallace, C Ben Wallace, 6th Corliss Williamson
   ['the 2004 Pistons', 'Grit and Grind', [['billuch01', 2004], ['hamilri01', 2004],
-    ['princta01', 2004], ['wallara01', 2004], ['wallabe01', 2004], ['williaco01', 2004]]],
+    ['princta01', 2004], ['wallara01', 2004], ['wallabe01', 2004], ['willico02', 2004]]],
   // PG John Stockton, SG Jeff Hornacek, SF Bryon Russell, PF Karl Malone, C Greg Ostertag, 6th Howard Eisley
   ['the 1998 Jazz', 'Pick and Roll', [['stockjo01', 1998], ['hornaje01', 1998],
     ['russebr01', 1998], ['malonka01', 1998], ['ostergr01', 1998], ['eisleho01', 1998]]],
   // PG Chris Paul, SG James Harden, SF Trevor Ariza, PF P.J. Tucker, C Clint Capela, 6th Eric Gordon
   ['the 2018 Rockets', 'Moreyball', [['paulch01', 2018], ['hardeja01', 2018],
-    ['arizatr01', 2018], ['tuckepj01', 2018], ['capelcl01', 2018], ['gordoer01', 2018]]],
+    ['arizatr01', 2018], ['tuckepj01', 2018], ['capelca01', 2018], ['gordoer01', 2018]]],
   // PG Stephen Curry, SG Klay Thompson, SF Harrison Barnes, PF Draymond Green, C Andrew Bogut, 6th Andre Iguodala
   ['the 2016 Warriors', 'Pace and Space', [['curryst01', 2016], ['thompkl01', 2016],
     ['barneha02', 2016], ['greendr01', 2016], ['bogutan01', 2016], ['iguodan01', 2016]]],
@@ -338,14 +431,15 @@ const KNOWN = [
     ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
   // PG Derek Fisher, SG Kobe Bryant, SF Rick Fox, PF Horace Grant, C Shaquille O'Neal, 6th Robert Horry
   ['the 2001 Lakers', 'Bully Ball', [['fishede01', 2001], ['bryanko01', 2001],
-    ['foxri01', 2001], ['granth01', 2001], ['onealsh01', 2001], ['horryro01', 2001]]],
+    ['foxri01', 2001], ['grantho01', 2001], ['onealsh01', 2001], ['horryro01', 2001]]],
 ];
 
 for (const [who, expected, names] of KNOWN) {
   const six = lineup(names);
   if (!six) {
     (LINEUPS_ADVISORY ? lineupDrift : failures)
-      .push(`${who}: a player in that lineup is not in the data`);
+      .push(`${who}: a player in that lineup is not in the data\n`
+        + missingFrom(names).map(m => `      ${m}`).join('\n'));
     continue;
   }
   const f = E.rosterFit(six);

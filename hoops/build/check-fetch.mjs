@@ -15,7 +15,7 @@
  * sandbox, in a second, instead of six weeks later in a dataset nobody diffed.
  */
 
-import { bbrRows, cell, positions } from './fetch-nba.mjs';
+import { bbrRows, cell, positions, seasonTables } from './fetch-nba.mjs';
 
 let pass = 0;
 const bad = [];
@@ -115,6 +115,57 @@ is(adv.length, 1, 'a commented-out table is still parsed');
 is(cell(adv[0], 'ws_off', 'ows'), '10.7', 'offensive win shares');
 is(cell(adv[0], 'ws_def', 'dws'), '4.2', 'defensive win shares');
 
+// ─── the postseason table is on the same page, and is not a season ──────────
+
+/* THIS FIXTURE IS A REPRODUCTION OF A BUG THAT SHIPPED. The first real fetch
+   returned 531 doubled rows and every club they belonged to was an NBA
+   finalist, because a season page carries the playoff table too and the parser
+   read every <tr> on the page. Jordan's 1998 arrived twice: 28.7 points in
+   38.8 minutes, and 32.4 in 41.5.
+
+   The second row is not merely redundant. Win shares join on player and club,
+   so the playoff box score inherited the REGULAR SEASON value and became a
+   season that never happened. */
+const SEASON_PAGE = `
+<table id="per_game_stats"><tbody>
+<tr><th data-stat="ranker">1</th>
+<td data-stat="name_display" data-append-csv="jordami01"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="team_name_abbr">CHI</td><td data-stat="pos">SG</td>
+<td data-stat="pts_per_g">28.7</td><td data-stat="mp_per_g">38.8</td></tr>
+</tbody></table>
+<table id="playoffs_per_game"><tbody>
+<tr><th data-stat="ranker">1</th>
+<td data-stat="name_display" data-append-csv="jordami01"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="team_name_abbr">CHI</td><td data-stat="pos">SG</td>
+<td data-stat="pts_per_g">32.4</td><td data-stat="mp_per_g">41.5</td></tr>
+</tbody></table>`;
+
+const whole = bbrRows(SEASON_PAGE);
+is(whole.length, 2, 'a whole-page scan really does see both Jordans');
+
+const scoped = seasonTables(SEASON_PAGE);
+is(scoped.rows.length, 1, 'the season scrape takes one row per player');
+is(cell(scoped.rows[0], 'pts_per_g'), '28.7', 'and it is the regular season, not the playoffs');
+is(scoped.skipped, 1, 'the playoff row is counted rather than silently dropped');
+
+/* EITHER SIGNAL ALONE HAS TO WORK, because relying on both means a single
+   rename or a single reorder puts the postseason back in the data. */
+const noId = SEASON_PAGE.replace('id="playoffs_per_game"', 'id="pg_2"');
+is(cell(seasonTables(noId).rows[0], 'pts_per_g'), '28.7',
+  'order alone is enough when the playoff table is renamed');
+
+const reordered = `<table id="playoffs_per_game"><tbody>
+<tr><td data-stat="name_display" data-append-csv="jordami01"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="team_name_abbr">CHI</td><td data-stat="pts_per_g">32.4</td></tr>
+</tbody></table>` + SEASON_PAGE.split('<table id="playoffs_per_game">')[0];
+is(cell(seasonTables(reordered).rows[0], 'pts_per_g'), '28.7',
+  'the id alone is enough when the playoff table comes first');
+
+/* A page with no <table> at all is a shape change, not an empty league. Losing
+   every row to it would be the silent zero the row guards exist to catch. */
+const noTables = `<div><tr><td data-stat="name_display" data-append-csv="jordami01"><a href="/players/j/jordami01.html">MJ</a></td><td data-stat="pts_per_g">28.7</td></tr></div>`;
+is(seasonTables(noTables).rows.length, 1, 'a page with no table falls back to the whole page');
+
 /* ---------- a draft page, which does NOT carry data-append-csv ----------
  * This fixture exists because its absence cost a whole CI run: the draft fetch
  * returned zero picks for all sixty-five years, because the parser demanded an
@@ -148,6 +199,44 @@ is(cell(draft[0], 'college_name', 'college'), '',
 const both = bbrRows(`<tr><td data-stat="player" data-append-csv="realslug01">
   <a href="/players/x/wrongslug99.html">Somebody</a></td></tr>`);
 is(both[0].slug, 'realslug01', 'data-append-csv still wins over the href');
+
+/* ---------- THE SAME DRAFT TABLE WITH ITS CLOSING TAGS LEFT OUT ----------
+ *
+ * This is the shape that actually beat the fetch twice. </tr>, </td> and </th>
+ * are all OPTIONAL in HTML5, and Basketball-Reference omits them on the draft
+ * pages while writing them on the season pages. A parser built against a
+ * season page therefore works perfectly and returns zero picks for every draft
+ * year, on a page that loaded fine and contained every pick.
+ *
+ * The fixture above could never have caught it, because it was written by hand
+ * with the tags closed. This one is the same table with them removed and
+ * nothing else changed, and it must parse identically. */
+const DRAFT_UNCLOSED = `
+<table id="stats"><thead>
+<tr><th data-stat="pick_overall">Pk<th data-stat="player">Player
+</thead><tbody>
+<tr><th scope="row" data-stat="pick_overall">1
+<td data-stat="team_id"><a href="/teams/CLE/2004.html">CLE</a>
+<td data-stat="player"><a href="/players/j/jamesle01.html">LeBron James</a>
+<td data-stat="college_name">
+<tr><th scope="row" data-stat="pick_overall">3
+<td data-stat="team_id"><a href="/teams/DEN/2004.html">DEN</a>
+<td data-stat="player"><a href="/players/a/anthoca01.html">Carmelo Anthony</a>
+<td data-stat="college_name"><a href="/friv/colleges.cgi?college=syracuse">Syracuse</a>
+</tbody></table>`;
+
+const unclosed = bbrRows(DRAFT_UNCLOSED);
+is(unclosed.length, 2, 'a table with no closing tags still yields both picks');
+is(unclosed.map(r => r.slug), ['jamesle01', 'anthoca01'], 'and both slugs');
+is(cell(unclosed[1], 'college_name', 'college'), 'Syracuse',
+  'and the cells end at the next cell rather than at a tag that is not there');
+is(cell(unclosed[0], 'college_name', 'college'), '',
+  'and an empty college is still empty rather than swallowing the rest of the row');
+is(cell(unclosed[0], 'pick_overall'), '1', 'a th cell closes the same way');
+
+/* A row must not bleed into the next one. If the boundary is wrong, pick 1
+   picks up Carmelo's college and every row becomes the whole table. */
+is(cell(unclosed[0], 'player'), 'LeBron James', 'a row stops where the next row starts');
 
 // ─── multi-team rows are stat lines, not clubs ──────────────────────────────
 

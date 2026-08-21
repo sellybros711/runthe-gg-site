@@ -100,8 +100,37 @@ const decode = (s) => String(s || '')
 const strip = (h) => decode(String(h || '').replace(/<[^>]*>/g, ''));
 const uncomment = (h) => String(h || '').replace(/<!--/g, '').replace(/-->/g, '');
 
+/* ── SPLITTING A PAGE INTO ROWS WITHOUT REQUIRING </tr> ────────────────────
+ *
+ * This used to be `match(/<tr[\s\S]*?<\/tr>/gi)`, which needs a closing tag on
+ * every row. HTML5 does not: </tr> is optional, and Basketball-Reference omits
+ * it on the draft pages while writing it on the season pages. So the season
+ * fetch worked perfectly and the draft fetch returned ZERO PICKS FOR ALL
+ * SIXTY-SIX YEARS, twice, on a page that had loaded correctly and contained
+ * every pick.
+ *
+ * The diagnostic that caught it said the page was titled "1960 NBA Draft",
+ * was 389,886 bytes, held 143 <tr>, and contained the link
+ * /players/r/roberos01.html. Right page, rows present, links present, nothing
+ * parsed. The only thing left is the closing tag.
+ *
+ * A row therefore runs from one <tr> to whatever ends it FIRST: a </tr>, the
+ * next <tr>, or the end of the table. That is what a browser does, and it is
+ * correct on both shapes rather than on one of them.
+ */
+function rowChunks(html) {
+  const out = [];
+  const re = /<tr\b[^>]*>([\s\S]*?)(?=<\/tr>|<tr\b|<\/tbody\b|<\/table\b|$)/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    out.push(m[0]);
+    if (re.lastIndex === m.index) re.lastIndex++;   // never spin on an empty match
+  }
+  return out;
+}
+
 export function bbrRows(html) {
-  return (uncomment(html).match(/<tr[\s\S]*?<\/tr>/gi) || []).map((tr) => {
+  return rowChunks(uncomment(html)).map((tr) => {
     /* THE SLUG, FROM EITHER PLACE BBREF PUTS IT.
      *
      * The stats tables tag every player row with data-append-csv. The DRAFT
@@ -117,12 +146,75 @@ export function bbrRows(html) {
     if (!slug) slug = (/href="\/players\/[a-z]\/([a-z0-9.'-]+)\.html"/i.exec(tr) || [])[1];
     if (!slug) return null;                           // a header row is not a player
 
+    /* AND THE CELLS END THE SAME WAY. </td> and </th> are optional in HTML5
+       too, so a parser that demands them fails on exactly the pages that omit
+       </tr>. A cell runs until it is closed, until the next cell starts, or
+       until the row ends, whichever comes first. */
     const cells = {};
-    const re = /data-stat="([a-z0-9_]+)"[^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    const re = /data-stat="([a-z0-9_]+)"[^>]*>([\s\S]*?)(?=<\/t[dh]>|<t[dh]\b|<\/tr>|$)/gi;
     let m;
-    while ((m = re.exec(tr))) cells[m[1]] = m[2];
+    while ((m = re.exec(tr))) {
+      if (cells[m[1]] == null) cells[m[1]] = m[2];
+      if (re.lastIndex === m.index) re.lastIndex++;
+    }
     return { slug, cells };
   }).filter(Boolean);
+}
+
+/* ── THE REGULAR SEASON TABLE, AND ONLY THAT ONE ───────────────────────────
+ *
+ * bbrRows above scans the WHOLE page, which is right for a draft page (one
+ * table) and wrong for a season page. A Basketball-Reference season page
+ * carries the regular season table AND the playoff table, so a scan of every
+ * <tr> on it returns a finalist's players TWICE: once with their season, once
+ * with their postseason.
+ *
+ * That shipped. The first real fetch produced 531 doubled rows, and the list
+ * of clubs they belonged to was a roll call of NBA finalists: 1978 Seattle and
+ * Washington, 1984 Boston and the Lakers, 2016 Cleveland and Golden State,
+ * 2025 Indiana and Oklahoma City. Michael Jordan's 1998 came back twice, at
+ * 28.7 points in 38.8 minutes and again at 32.4 in 41.5, which are his regular
+ * season and his playoff lines.
+ *
+ * It is worse than a duplicate. The win share join is keyed on player and club
+ * alone, so BOTH rows got the REGULAR SEASON win shares. The second row is a
+ * hybrid that never happened: a postseason box score priced off a regular
+ * season value, presented to a player as a fact about a real season. This game
+ * is not allowed to do that.
+ *
+ * TWO INDEPENDENT SIGNALS, because either one alone is a way to lose silently:
+ *
+ *   the id     BBRef ids its playoff tables playoffs_per_game and
+ *              playoffs_advanced. Skipping any table whose id says playoff is
+ *              exact, and it is also the thing most likely to be renamed.
+ *   the order  The regular season table comes first. That survives a rename
+ *              and cannot survive a reorder.
+ *
+ * They agree today. Requiring both to fail before a playoff row is admitted is
+ * what makes this quiet rather than fragile, and the caller reports what it
+ * skipped so a page that stops matching says so in the log.
+ */
+const TABLE = /<table\b[^>]*>[\s\S]*?<\/table>/gi;
+
+export function seasonTables(html) {
+  const page = uncomment(html);
+  const tables = page.match(TABLE) || [];
+  /* No <table> at all means the page shape moved, not that it holds no
+     players. Falling back to the whole page keeps such a run producing data
+     instead of a silent zero, and the count it returns makes it visible. */
+  if (!tables.length) return { rows: bbrRows(page), skipped: 0, tables: 0 };
+
+  let rows = null;
+  let skipped = 0;
+  for (const t of tables) {
+    const id = (/<table\b[^>]*\bid="([^"]*)"/i.exec(t) || [])[1] || '';
+    const these = bbrRows(t);
+    if (!these.length) continue;
+    if (/playoff|post_?season/i.test(id)) { skipped += these.length; continue; }
+    if (rows) { skipped += these.length; continue; }   // first player table wins
+    rows = these;
+  }
+  return { rows: rows || [], skipped, tables: tables.length };
 }
 
 export const cell = (r, ...names) => {
@@ -168,8 +260,11 @@ async function season(year) {
 
   /* Win shares first, because a player with no win share row is a player this
      game has no way to price. */
+  const advTable = seasonTables(advanced);
+  const pgTable = seasonTables(perGame);
+
   const ws = {};
-  for (const r of bbrRows(advanced)) {
+  for (const r of advTable.rows) {
     const team = cell(r, 'team_name_abbr', 'team_id', 'team');
     /* TOT / 2TM / 3TM are Basketball-Reference's combined line for a player who
        was traded. It is a stat line and not a club, so it can never be a thing
@@ -184,12 +279,22 @@ async function season(year) {
   }
 
   const rows = [];
-  for (const r of bbrRows(perGame)) {
+  /* ONE ROW PER PLAYER PER CLUB PER SEASON, asserted here rather than assumed.
+     The table scoping above is what stops the postseason getting in; this is
+     the check that says so out loud if it ever stops working. */
+  const seen = new Set();
+  let doubled = 0;
+
+  for (const r of pgTable.rows) {
     const team = cell(r, 'team_name_abbr', 'team_id', 'team');
     if (/^(TOT|\dTM)$/i.test(team)) continue;
 
     const shares = ws[`${r.slug}|${team}`];
     if (!shares) continue;
+
+    const key = `${r.slug}|${team}`;
+    if (seen.has(key)) { doubled++; continue; }
+    seen.add(key);
 
     const pos = positions(cell(r, 'pos'));
     if (!pos) continue;
@@ -233,7 +338,7 @@ async function season(year) {
     });
   }
 
-  return { year, rows };
+  return { year, rows, postseason: pgTable.skipped + advTable.skipped, doubled };
 }
 
 const round1 = (v) => Math.round(v * 10) / 10;
@@ -248,15 +353,34 @@ async function main() {
 
   const all = [];
   const thin = [];
+  let postseason = 0, doubled = 0;
   for (let y = from; y <= to; y++) {
-    const { rows, reason } = await season(y);
+    const r = await season(y);
+    const { rows, reason } = r;
+    postseason += r.postseason || 0;
+    doubled += r.doubled || 0;
+    /* The postseason count is printed rather than hidden because it is the
+       number that says the table scoping is still working. A season that skips
+       zero playoff rows in a year somebody won a title means the playoff table
+       stopped being recognisable, and the next thing that happens is finalists
+       getting drafted with their playoff numbers. */
+    const note = r.doubled ? `   ${r.doubled} DOUBLED` : '';
     if (rows.length < MIN_ROWS_PER_SEASON) {
       thin.push(`${y}: ${rows.length} rows${reason ? ` (${reason})` : ''}`);
       console.log(`  ${y}  ${String(rows.length).padStart(4)} rows   THIN`);
     } else {
-      console.log(`  ${y}  ${String(rows.length).padStart(4)} rows`);
+      console.log(`  ${y}  ${String(rows.length).padStart(4)} rows  ${String(r.postseason || 0).padStart(4)} postseason skipped${note}`);
     }
     all.push(...rows);
+  }
+  console.log(`\n${postseason} postseason rows were skipped across the run.`);
+  if (!postseason) {
+    console.log('NONE AT ALL, which is suspicious: every season here had a playoff.');
+    console.log('Check that the playoff table is still being recognised, because if it');
+    console.log('is not, a finalist is about to be priced off his postseason.');
+  }
+  if (doubled) {
+    console.log(`${doubled} row(s) repeated a player at the same club and were dropped.`);
   }
 
   /* A SILENT ZERO IS THE FAILURE MODE THIS GUARD EXISTS FOR. The register's
