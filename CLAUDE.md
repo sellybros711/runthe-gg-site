@@ -178,11 +178,15 @@ That workflow file is also on `main`, on its own, because GitHub will not
 dispatch a `workflow_dispatch` workflow unless it exists on the default branch.
 
 ```
-node hoops/build/fetch-nba.mjs --from 1974 --to 2025   box scores, win shares, position, team
-node hoops/build/fetch-draft.mjs --from 1960           draft year and college
-node hoops/build/fetch-teams.mjs                       franchises (this one DOES run locally)
+node hoops/build/fetch-nba.mjs --from 1974 --to 2025    box scores, win shares, position, team
+node hoops/build/fetch-draft.mjs --from 1960            draft year and college
+node hoops/build/fetch-awards.mjs --from 1974           MVP, All-NBA, All-Star and the rest
+node hoops/build/fetch-teams.mjs                        franchises (this one DOES run locally)
 node hoops/build/build-players.mjs --from hoops/build/raw/nba_player_seasons.json
 ```
+
+Championships are **not** fetched. `teams.json` already carries every title year,
+so `build-players.mjs` hands the ring to everyone on that roster.
 
 Things worth knowing before you change it:
 
@@ -211,6 +215,29 @@ Things worth knowing before you change it:
 - **A playing-time floor of 12 mpg across 20 games** is applied at build time.
   Without it the wheel spends most of its time on players who appeared in nine
   games, and every visitor downloads three times the file.
+- **A title is filed under the club's MODERN code, and a roster is not.** A
+  franchise table writes one row of honours per club as it exists today, so
+  `WAS` carries 1978 and the 1978 roster is `WSB`; `OKC` carries 1979 and the
+  1979 roster is Seattle. Both of those rings joined to nobody and nothing
+  failed. `titlesByCode()` in the engine walks each franchise's aliases and
+  hands every title year to the record whose own lifetime contains it.
+  `verify.mjs` asserts that every season in the data has a champion in it, which
+  is what catches this class of miss. 2024 was simply absent from the table.
+- **A club's published hex is not usable on the page.** The reels take the
+  drawn club's colors, and San Antonio's black, Brooklyn's black and every navy
+  are within a hair of `#0d1117`. `wheelColors()` floors each color into a range
+  that shows, then lifts the band by MEASUREMENT until it clears the fill,
+  because HSL lightness is not brightness: the original Hornets' purple at
+  lightness 55 is darker than their teal at 26 and came back at 1.16:1. All 45
+  franchises are asserted in `verify.mjs`, because the way this breaks is that
+  somebody corrects one club's hex and three others go dim without either being
+  the club they were looking at.
+- **Hardware is decoration and that is why it needs asserting.** The engine
+  never reads `aw` and no rating moves for it, so a wrong award can sit there for
+  a year without a single number looking odd, and the failure mode is telling a
+  visitor something false about a real person. `verify.mjs` checks the codes, the
+  prestige ordering (the page shows the first entry as the best and ranks
+  nothing itself) and every ring against `teams.json`.
 - **`hoops/data/teams.json` is a second source** (the static franchise table in
   `nba_api`) joined on the team code. NBA.com and BBRef disagree on three codes,
   and BBRef's `CHA` is the **Bobcats** while `CHO` is the Hornets, which is a
