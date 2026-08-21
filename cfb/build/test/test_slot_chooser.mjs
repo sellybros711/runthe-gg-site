@@ -8,6 +8,11 @@
  * first spin is always 2008 Texas A&M with Ryan Tannehill (QB/WR) on the board. Clicking
  * until a two-position man turned up took minutes and usually did not: they are 143 of
  * 14,154 players.
+ *
+ * THE BOARD'S SORT CONTROL IS CHECKED HERE FOR THE SAME REASON. All three orders want a
+ * board that is known before it is drawn, and this file already has one. It also has the
+ * two-position man they disagree about: he sorts under the earlier of his positions rather
+ * than wherever the list happened to reach him.
  */
 import { chromium } from 'playwright';
 const SS = process.env.SS || '/tmp/';
@@ -29,19 +34,67 @@ await p.waitForTimeout(400);
 const board = (await p.$$eval('#opts .tile', (es) => es.map((e) => e.textContent.replace(/\s+/g, ' ')).join(' | ')));
 ok('the pinned spin lands where it should', /Texas A&M/.test(board), board.slice(0, 90));
 
-/* THE ALL TAB IS PRICED HIGH TO LOW, the way the NFL game's default tab is. It used to
-   group by position, four little lists in a fixed order; now the board opens on the most
-   expensive man, which is the decision the budget forces. This holds for any board, so it
-   is asserted on whatever the pinned seed deals rather than a seed chosen to make it true.
-   Only the signable rows are checked: blocked ones still sink to the bottom regardless of
-   price, which is a separate rule the position tabs share. */
-const allTab = await p.$$eval('#opts .tile:not(.off)', (es) => es.map((e) => {
+/* HOW THE BOARD IS ORDERED IS A CHOICE NOW, and the three orders are checked on whatever
+   this pinned seed deals rather than on a board picked to make them true. Only the signable
+   rows: blocked ones sink to the bottom whichever order is on, which is the one rule all
+   three inherit and the reason it is applied outside the comparator. */
+const rows = () => p.$$eval('#opts .tile:not(.off)', (es) => es.map((e) => {
   const m = /\$([\d.]+)(M|K)/.exec(e.textContent || '');
-  return m ? (m[2] === 'K' ? +m[1] / 1000 : +m[1]) : null;
-}).filter((v) => v !== null));
-let priced = true;
-for (let i = 1; i < allTab.length; i++) if (allTab[i] > allTab[i - 1] + 1e-9) priced = false;
-ok('the ALL tab sorts signable players by price, high to low', priced, allTab.join(', '));
+  const f = e.querySelector('.pts b');
+  return {
+    price: m ? (m[2] === 'K' ? +m[1] / 1000 : +m[1]) : null,
+    fppg: f ? parseFloat(f.textContent) : null,
+    pos: [...e.querySelectorAll('.pos')].map((x) => x.textContent),
+  };
+}));
+const ORDER = ['QB', 'RB', 'WR', 'TE'];
+const desc = (a) => a.every((v, i) => i === 0 || v <= a[i - 1] + 1e-9);
+const sortOn = async (k) => { await p.click('#opt-sort button[data-os="' + k + '"]'); await p.waitForTimeout(400); };
+
+/* The order the game opens on. Position is the honest default: points across positions is
+   not a ranking, it is a board of quarterbacks. */
+ok('it opens in position order', await p.$eval('#opt-sort button[data-os="pos"]',
+  (e) => e.classList.contains('on')));
+{
+  const r = await rows();
+  /* A two-position man sorts under the earlier of his positions, which is what idx() picks,
+     so the rank read back here has to do the same. */
+  const rank = (x) => Math.min(...x.pos.map((q) => (ORDER.indexOf(q) + 1 || 99)));
+  const grouped = r.every((x, i) => i === 0 || rank(x) >= rank(r[i - 1]));
+  ok('  positions come in order', grouped, r.map((x) => x.pos.join('/')).join(' '));
+  /* The thing position order got wrong the first time, pinned: inside a position it ranks by
+     points, so the top of a group cannot be decided by the order the rows arrived in. */
+  let inner = true;
+  for (let i = 1; i < r.length; i++) {
+    if (rank(r[i]) === rank(r[i - 1]) && r[i].fppg > r[i - 1].fppg + 1e-9) inner = false;
+  }
+  ok('  and ranks by points inside each one', inner, r.map((x) => x.fppg).join(', '));
+}
+
+await sortOn('salary');
+{
+  const r = await rows();
+  ok('salary orders the board by price, high to low', desc(r.map((x) => x.price)),
+    r.map((x) => x.price).join(', '));
+}
+
+await sortOn('fppg');
+{
+  const r = await rows();
+  ok('FPPG orders it by points, high to low', desc(r.map((x) => x.fppg)),
+    r.map((x) => x.fppg).join(', '));
+}
+
+/* THE WHOLE POINT OF THE CONTROL IS NOT SAYING IT AGAIN. Somebody who reads a board by
+   points reads every board by points, and six spins a draft is six times to say so. */
+await p.reload({ waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(3000);
+await p.evaluate(() => document.getElementById('b-play-intro').click());
+await p.waitForSelector('#opts .tile', { timeout: 30000 });
+await p.waitForTimeout(400);
+ok('and the next visit opens in the order you left it in',
+  await p.$eval('#opt-sort button[data-os="fppg"]', (e) => e.classList.contains('on')));
+ok('  with the board actually in it', desc((await rows()).map((x) => x.fppg)));
 
 const clicked = await p.evaluate(() => {
   const t = [...document.querySelectorAll('#opts .tile:not(.off)')]
