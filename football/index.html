@@ -1830,6 +1830,44 @@ window.GA_ID='G-L29P5MRWKE';
   .headline.big{color:var(--ink);border-color:rgba(148,163,184,.4)}
   .headline.neutral{color:var(--dim)}
 
+  /* ---------- A BADGE, ANNOUNCED ---------- */
+  .achtoasts{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:601;
+    display:flex;flex-direction:column;gap:7px;align-items:center;width:max-content;
+    max-width:min(92vw,380px);pointer-events:none}
+  .achtoast{pointer-events:auto;display:block;width:100%;text-align:left;
+    padding:9px 13px;border-radius:11px;background:rgba(19,26,43,.96);
+    border:1px solid var(--line-2);box-shadow:var(--shadow);color:inherit;font:inherit;
+    opacity:0;transform:translateY(-8px);transition:opacity .28s ease,transform .28s ease}
+  .achtoast.on{opacity:1;transform:none}
+  .achtoast .at-k{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2)}
+  .achtoast .at-n{display:block;font-family:var(--fd);font-size:15px;font-weight:700;
+    letter-spacing:.02em;color:var(--ink);margin-top:2px;line-height:1.15}
+  /* THE LINE THAT SAYS WHAT YOU DID. Not clamped and not ellipsised: a badge description is
+     one short sentence and it is the whole reason this toast is two lines instead of one. */
+  .achtoast .at-d{display:block;font-size:11.5px;color:var(--dim);line-height:1.35;
+    margin-top:3px}
+  .achtoast .at-go{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+  .achtoast.legend{border-color:rgba(159,224,255,.45)}
+  .achtoast.legend .at-k{color:#9fd8ff}
+  .achtoast.gold{border-color:rgba(244,196,48,.45)}
+  .achtoast.gold .at-k{color:#F4C430}
+  .achtoast.silver{border-color:rgba(207,211,216,.4)}
+  .achtoast.bronze{border-color:rgba(199,123,58,.42)}
+  .achtoast:active{transform:scale(.98)}
+  /* Where a tapped toast lands. Long enough to find with your eye after a smooth scroll,
+     short enough that it is gone before it becomes decoration. */
+  .achfound{animation:achFound 2.6s ease-out}
+  @keyframes achFound{
+    0%,60%{ box-shadow:0 0 0 2px #F4C430, 0 0 18px -2px rgba(244,196,48,.6) }
+    100%{ box-shadow:0 0 0 0 rgba(244,196,48,0) }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .achtoast{transition:none}
+    .achfound{animation:none;box-shadow:0 0 0 2px #F4C430}
+  }
+
   .gm-badge{margin-top:12px;text-align:center}
   .gm-badge .gm-val{font-family:var(--fd);font-size:36px;font-weight:700;color:var(--ink)}
   .gm-badge .gm-lbl{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
@@ -5346,6 +5384,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="headline" id="headline"></div>
+<!-- BADGES EARNED ON THE RUN THAT JUST FINISHED. Its own element rather than the headline
+     above it: that one is a canned one-line string with in-run timing, and this is two
+     lines, tappable, and on screen four times as long. Stacked rather than queued, so three
+     badges are three seconds of cascade instead of fifteen seconds of one-at-a-time. -->
+<div class="achtoasts" id="achtoasts" aria-live="polite"></div>
 <!-- s-nbrk: the bracket, between playoff rounds. The field is drawn once and walked
      forward a round at a time; the other games resolve on screen one after another and
      when the player's own is the last one left it hands off to the broadcast. -->
@@ -13721,20 +13764,59 @@ function achAnnounce(userId,res,silent){
   /* A player whose cabinet was already full before this shipped would otherwise get fifty
      toasts at once. The first sighting is recorded quietly; only later ones celebrate. */
   if(silent||firstSighting) return fresh;
-  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>{
-    showAchHeadline('Achievement: '+a.name);
-  },900+i*2100));
+  /* STACKED, NOT QUEUED. One at a time meant each badge waited for the one before it, so
+     three of them was fifteen seconds of banner and the third arrived long after anybody had
+     stopped looking. They cascade in seven tenths of a second apart and all sit there
+     together, which is both shorter overall and easier to read. */
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>showAchToast(a),900+i*700));
   fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   return fresh;
 }
-/* showHeadline takes a fixed set of canned keys; a badge name is arbitrary text, so this
-   drives the same banner element directly. */
-function showAchHeadline(text){
-  const el=$('headline'); if(!el) return;
-  el.textContent=text;
-  el.className='headline on big';
+
+/* SIX SECONDS, not two and a half. The old one was sized for a one-line canned string and
+   this carries a name, a sentence and an invitation to tap it, which nobody can read in
+   2400ms, let alone decide to act on. */
+const ACH_TOAST_MS=6000;
+function showAchToast(a){
+  const host=$('achtoasts'); if(!host||!a) return;
+  const el=document.createElement('button');
+  el.type='button';
+  el.className='achtoast '+(a.tier||'');
+  el.dataset.a=a.id;
+  /* THE DESCRIPTION IS THE POINT. "Achievement: Wild card run" names a thing without saying
+     what it was, and half the cabinet is named for the joke rather than the deed. The line
+     underneath is what you actually did. */
+  el.innerHTML='<span class="at-k">Achievement unlocked</span>'+
+    '<span class="at-n">'+esc(a.name)+'</span>'+
+    '<span class="at-d">'+esc(a.desc||'')+'</span>'+
+    '<span class="at-go">Tap to see it &rsaquo;</span>';
+  el.onclick=()=>{
+    /* ALL OF THEM, not just this one. Tapping one opens the cabinet over the top of the
+       stack, so the ones left behind sit on the page they just took you to, covering the
+       badge they sent you to look at. Acting on one is being done with the banner. */
+    clearAchToasts();
+    ga('achievement_toast_tap',{id:a.id,tier:a.tier});
+    /* Straight to the badge, not to the top of the cabinet. */
+    pfBadges(a.id);
+  };
+  host.appendChild(el);
+  /* A frame before the class, or the element is inserted already at its final state and the
+     transition has nothing to run from. */
+  requestAnimationFrame(()=>el.classList.add('on'));
+  el._h=setTimeout(()=>dismissAchToast(el),ACH_TOAST_MS);
+}
+function clearAchToasts(){
+  const host=$('achtoasts'); if(!host) return;
+  [...host.children].forEach(dismissAchToast);
+}
+function dismissAchToast(el){
+  if(!el||el._gone) return;
+  el._gone=true;
   clearTimeout(el._h);
-  el._h=setTimeout(()=>el.classList.remove('on'),2400);
+  el.classList.remove('on');
+  /* Removed after the fade rather than at once, so the stack does not jump under the ones
+     still on screen. */
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); },320);
 }
 
 /* ---------- THE BADGE CABINET AND THE TWO STREAKS ----------
@@ -13808,10 +13890,15 @@ function achBlock(res){
   const earned=res.earned,locked=res.locked;
   const pct=(n,d)=>d?Math.round(n/d*100):0;
   const bar=(n,d)=>'<div class="achbar"><i style="width:'+pct(n,d)+'%"></i></div>';
-  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
+  /* data-a is how a toast finds its badge. Every card and tile carries it, including the
+     locked ones: a badge earned on the run that is being announced is earned, but the same
+     lookup is used from elsewhere and pointing only at what you own would make it fail on
+     exactly the case somebody is most likely to go looking for. */
+  const chip=(a,got,solo)=>'<div class="ach '+a.tier+(got?'':' off')+'"'+
+    (solo?'':' data-a="'+esc(a.id)+'"')+'>'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
-  const tile=(a,got)=>'<div class="acht '+a.tier+(got?'':' off')+'" title="'+esc(a.desc)+'">'+
-    esc(a.name)+'</div>';
+  const tile=(a,got)=>'<div class="acht '+a.tier+(got?'':' off')+'" data-a="'+esc(a.id)+
+    '" title="'+esc(a.desc)+'">'+esc(a.name)+'</div>';
 
   let h='<p class="shsec">Achievements <span class="achcount">'+earned.length+' of '+res.total+
     '</span></p>'+bar(earned.length,res.total);
@@ -13821,7 +13908,9 @@ function achBlock(res){
     .sort((a,b)=>ACH.TIER_ORDER[b.tier]-ACH.TIER_ORDER[a.tier]).slice(0,6);
   if(showcase.length){
     h+='<div class="achshelf-h">Your best</div><div class="achlist achshelf">';
-    showcase.forEach(a=>{h+=chip(a,true);});
+    /* solo: the shelf repeats badges that also appear in their own group below, and a
+       lookup should land on the one among its neighbours rather than on the trophy shelf. */
+    showcase.forEach(a=>{h+=chip(a,true,true);});
     h+='</div>';
   }
 
@@ -14106,15 +14195,18 @@ async function pfCareerPaint(userId){
      and it has its own handler. */
   slot.innerHTML=careerBlock(c)+(res?streakBlock(res):'');
 }
-function pfBadges(){
+/* `target` is a badge id to land on, which is what a toast passes when it is tapped. The
+   cabinet is sixteen collapsed groups and several hundred badges, so opening it at the top
+   and leaving somebody to find the one they just earned is not taking them to it. */
+function pfBadges(target){
   const box=$('sheet-in'); box.dataset.kind='profile';
   box.innerHTML=pfHead('Badges')+
     '<div id="sh-ach"><div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
       '<span>Reading your runs</span></div></div>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
-  openSheet(); pfWireCommon(); pfBadgesPaint(authState.userId);
+  openSheet(); pfWireCommon(); pfBadgesPaint(authState.userId,target);
 }
-async function pfBadgesPaint(userId){
+async function pfBadgesPaint(userId,target){
   const c=await careerLoad(userId);
   const slot=$('sh-ach');
   if(!slot||$('sheet-in').dataset.kind!=='profile') return;
@@ -14124,6 +14216,28 @@ async function pfBadgesPaint(userId){
     'to show yet. Finish a season and your first badges land here.</p>'; return; }
   slot.innerHTML=achBlock(res);
   achWire(slot); achAnnounce(userId,res,true);
+  if(target) achReveal(slot,target);
+}
+
+/* Open the group the badge is in, put it on screen, and mark it for a moment.
+   AFTER A FRAME, and two of them, because the group body animates from 0fr to 1fr: asking
+   for its position in the same tick that opens it measures a box with no height and scrolls
+   to the wrong place. */
+function achReveal(slot,id){
+  const el=slot.querySelector('[data-a="'+CSS.escape(id)+'"]');
+  if(!el) return;
+  const grp=el.closest('.achgrp');
+  if(grp&&!grp.classList.contains('open')){
+    grp.classList.add('open');
+    const head=grp.querySelector('.achgrp-h');
+    if(head) head.setAttribute('aria-expanded','true');
+  }
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }
+    catch(_){ el.scrollIntoView(); }
+    el.classList.add('achfound');
+    setTimeout(()=>el.classList.remove('achfound'),2600);
+  }));
 }
 function pfLook(){
   const box=$('sheet-in'); box.dataset.kind='profile';
